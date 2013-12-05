@@ -9,4 +9,7 @@ set MAIN=%1
 if "%MAIN%" equ "" set MAIN=sas.test.TestMain
 if "%MAIN%" equ "b" set MAIN=sas.test.TestDBBenchmark
 
+md log 2>nul
+md db 2>nul
+
 java %JVM% -cp %LIB%;sas-core.jar;sas-test.jar;. %MAIN% %2 %3 %4 %5 %6 %7 %8 %9
