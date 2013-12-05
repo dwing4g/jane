@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project name="SmartAppServer" default="dist">
+	<!-- install jdk,ant first:
+		example: add this line in linux ~/.bash_profile:
+		export PATH=$PATH:$HOME/apache-ant-1.9.2/bin
+	-->
+	<property name="root" value="."/>
+	<property name="classes" value="${root}/classes"/>
+	<property name="src" value="${root}/src"/>
+	<property name="lib" value="${root}/lib"/>
+
+	<target name="clean">
+		<delete dir="${classes}"/>
+		<delete file="sas-core.jar"/>
+		<delete file="sas-test.jar"/>
+	</target>
+
+	<target name="compile">
+		<mkdir dir="${classes}"/>
+		<path id="classpath">
+			<fileset dir="${lib}">
+				<include name="*.jar"/>
+			</fileset>
+		</path>
+		<javac destdir="${classes}" encoding="utf-8" classpathref="classpath" source="1.7" target="1.7" debug="true" debuglevel="lines,source" fork="true" memoryMaximumSize="512m" includeantruntime="false">
+			<!--compilerarg value="-nowarn"/-->
+			<!--compilerarg value="-Xlint:deprecation"/-->
+			<!--compilerarg value="-Xlint:unchecked"/-->
+			<compilerarg value="-XDignore.symbol.file"/><!-- suppress "Sun proprietary api" warning -->
+			<src path="${src}/"/>
+			<src path="${lib}/hashmap/"/>
+			<src path="${lib}/mapdb/"/>
+			<src path="${lib}/mvstore/"/>
+		</javac>
+	</target>
+
+	<target name="dist" depends="clean, compile">
+		<jar jarfile="sas-core.jar" basedir="${classes}" excludes="**/sas/bean/**,**/sas/handler/**,**/sas/test/**"/>
+		<jar jarfile="sas-test.jar" basedir="${classes}" includes="**/sas/bean/**,**/sas/handler/**,**/sas/test/**"/>
+	</target>
+</project>
