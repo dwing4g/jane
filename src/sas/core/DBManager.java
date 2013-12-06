@@ -26,7 +26,7 @@ public final class DBManager
 	private final ExecutorService                    _proc_threads;                             // 事务线程池
 	private final Map<Object, ArrayDeque<Procedure>> _qmap        = Util.newConcurrentHashMap(); // 当前sid队列的数量
 	private final AtomicLong                         _proc_count  = new AtomicLong();           // 绑定过sid的在队列中未运行的事务数量
-	private final AtomicLong                         _mod_count   = new AtomicLong();           // 当前缓存修改的记录数
+	private final AtomicLong                         _modcount   = new AtomicLong();           // 当前缓存修改的记录数
 	private final CommitTask                         _commit_task = new CommitTask();           // 数据提交的任务
 	private volatile Storage                         _storage;                                  // 存储引擎
 	private volatile ScheduledFuture<?>              _commit_future;                            // 数据提交的结果
@@ -88,7 +88,7 @@ public final class DBManager
 		@Override
 		public void run()
 		{
-			if(_mod_count.get() < _mod_count_max && System.currentTimeMillis() - _commit_time < _commit_period) return;
+			if(_modcount.get() < _mod_count_max && System.currentTimeMillis() - _commit_time < _commit_period) return;
 			_commit_time += _commit_period;
 			if(_storage == null) return;
 			try
@@ -98,7 +98,7 @@ public final class DBManager
 					if(_storage == null || Thread.interrupted()) return;
 					// 1.首先尝试遍历单个加锁的方式保存已修改的记录. 此时和其它事务可以并发
 					long t0 = System.currentTimeMillis(), t1 = 0;
-					Log.log.info("db-commit saving:{}...", _mod_count.get());
+					Log.log.info("db-commit saving:{}...", _modcount.get());
 					_counts[0] = _counts[1] = 0;
 					_storage.putBegin();
 					Table.trySaveModifiedAll(_counts);
@@ -122,7 +122,7 @@ public final class DBManager
 						wl.lock();
 						try
 						{
-							_mod_count.set(0);
+							_modcount.set(0);
 							Log.log.info("db-commit saving left...");
 							Log.log.info("db-commit saved:{}, flushing left...", Table.saveModifiedAll() + TableLong.saveModifiedAll());
 							_storage.putFlush(true);
@@ -140,9 +140,7 @@ public final class DBManager
 					long t2 = System.currentTimeMillis();
 					_storage.commit();
 					long t3 = System.currentTimeMillis();
-					_storage.sync();
-					long t4 = System.currentTimeMillis();
-					Log.log.info("db-commit completed. ({}/{}/{}/{} ms)", t1, t3 - t2, t4 - t3, t4 - t0);
+					Log.log.info("db-commit completed. ({}/{}/{} ms)", t1, t3 - t2, t3 - t0);
 
 					// 5.判断备份周期并启动备份
 					t0 = System.currentTimeMillis();
@@ -184,7 +182,7 @@ public final class DBManager
 	 */
 	void incModCount()
 	{
-		_mod_count.incrementAndGet();
+		_modcount.incrementAndGet();
 	}
 
 	/**

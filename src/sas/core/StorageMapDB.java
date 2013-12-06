@@ -312,7 +312,8 @@ public class StorageMapDB implements Storage
 		DBMaker<?> dbmaker = DBMaker.newFileDB(file);
 		// 取消注释下面的syncOnCommitDisable可以加快一点commit的速度,写数据量大的时候可以避免同时读非cache数据卡住过长时间
 		// 但程序崩溃的话,有可能导致某些未刷新的数据丢失或影响后面的备份操作,建议平时都要注释
-		// 不过在commit后调用下面的sync可以让数据丢失的可能性降到极低,而且sync操作可以和读操作并发,更不影响cache层的读写
+		// 不过在commit后对StoreWAL调用phys和index的sync可以让数据丢失的可能性降到极低,而且sync操作可以和读操作并发,更不影响cache层的读写
+		// 当然更安全的做法是考虑换用StorageMapDB2或StorageMVStore,事务暂停时间都更短
 		// dbmaker = dbmaker.syncOnCommitDisable();
 		// dbmaker = dbmaker.snapshotEnable(); // 使用此行可以获取到数据库的只读快照,目前尚未使用此特性,建议注释
 		dbmaker = dbmaker.asyncWriteEnable(); // 如果注释此行,提交过程的性能会大幅降低,建议不注释
@@ -377,31 +378,6 @@ public class StorageMapDB implements Storage
 		if(_modcount != 0 && _db != null && !_db.isClosed())
 		    _db.commit(); // MapDB的commit时间和之前put的数量成正比,所以可以限制commit前put的数量来保证不会提交太久
 		_modcount = 0;
-	}
-
-	@Override
-	public void sync()
-	{
-		/*if(_db != null && !_db.isClosed())
-		{
-			Engine e = _db.getEngine();
-			if(e instanceof EngineWrapper)
-			{
-				e = ((EngineWrapper)e).getWrappedEngine();
-				if(e instanceof EngineWrapper)
-				{
-					e = ((EngineWrapper)e).getWrappedEngine();
-					if(e instanceof StoreWAL)
-					{
-						((StoreWAL)e).sync(); // StoreWAL.sync is in an unofficial patch below
-						// public void sync() {
-						// if(phys != null) phys.sync();
-						// if(index != null) index.sync();
-						// }
-					}
-				}
-			}
-		}*/
 	}
 
 	@Override

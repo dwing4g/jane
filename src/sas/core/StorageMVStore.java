@@ -410,13 +410,8 @@ public class StorageMVStore implements Storage
 	@Override
 	public void commit()
 	{
-		_modcount = 0;
-	}
-
-	@Override
-	public void sync()
-	{
 		// if(_db != null && !_db.isClosed()) _db.getFileStore().sync();
+		_modcount = 0;
 	}
 
 	@Override

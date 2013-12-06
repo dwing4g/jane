@@ -157,18 +157,11 @@ public interface Storage
 	void putFlush(boolean islast);
 
 	/**
-	 * 提交数据库
+	 * 提交并刷新数据库
 	 * <p>
-	 * 把已写入数据库的数据完整地刷新到磁盘缓存
+	 * 把已写入数据库的数据完整地刷新到磁盘上
 	 */
 	void commit();
-
-	/**
-	 * 刷新数据库
-	 * <p>
-	 * 把磁盘缓存中的数据完整地刷新到磁盘上
-	 */
-	void sync();
 
 	/**
 	 * 关闭数据库

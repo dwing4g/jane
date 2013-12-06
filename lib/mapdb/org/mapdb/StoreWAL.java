@@ -833,12 +833,6 @@ public class StoreWAL extends StoreDirect {
         assert(structuralLock.isHeldByCurrentThread());
     }
 
-    //PATCH: sas begin
-    public void sync() {
-        if(phys != null) phys.sync();
-        if(index != null) index.sync();
-    }
-    //PATCH: sas end
 
 
     @Override
