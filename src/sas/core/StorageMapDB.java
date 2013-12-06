@@ -18,6 +18,7 @@ import org.mapdb.DBMaker;
 import org.mapdb.DataInput2;
 import org.mapdb.DataOutput2;
 import org.mapdb.Serializer;
+import org.mapdb.Utils;
 
 /**
  * MapDB存储引擎的实现(单件)
@@ -147,6 +148,9 @@ public class StorageMapDB implements Storage
 		@Override
 		public Bean<?> deserialize(DataInput in, int available) throws IOException
 		{
+			int format = in.readByte();
+			if(format != 0)
+			    throw new RuntimeException("unknown record value format(" + format + ") in table(" + _tablename + ')');
 			if(_stub == null)
 			{
 				_stub = _table_stub_v.get(_tablename);
@@ -161,9 +165,6 @@ public class StorageMapDB implements Storage
 				OctetsStream os = OctetsStream.wrap(bb.array(), offset + bb.limit());
 				os.setExceptionInfo(true);
 				os.setPosition(offset + di2.pos);
-				int format = os.unmarshalByte();
-				if(format != 0)
-				    throw new RuntimeException("unknown record value format(" + format + ") in table(" + _tablename + ')');
 				bean = _stub.create();
 				bean.unmarshal(os);
 				di2.pos = (available >= 0 ? di2.pos + available : os.position() - offset);
@@ -174,9 +175,6 @@ public class StorageMapDB implements Storage
 				OctetsStream os = ByteBufferStream.wrap(bb);
 				os.setExceptionInfo(true);
 				os.setPosition(di2.pos);
-				int format = os.unmarshalByte();
-				if(format != 0)
-				    throw new RuntimeException("unknown record value format(" + format + ") in table(" + _tablename + ')');
 				bean = _stub.create();
 				bean.unmarshal(os);
 				di2.pos = (available >= 0 ? di2.pos + available : bb.position());
@@ -193,42 +191,25 @@ public class StorageMapDB implements Storage
 		@Override
 		public void serialize(DataOutput out, int start, int end, Object[] keys) throws IOException
 		{
-			DataOutput2 do2 = (DataOutput2)out;
-			OctetsStream os = OctetsStream.wrap(do2.buf, do2.pos);
 			for(int i = start; i < end; ++i)
-				os.marshal((Octets)keys[i]);
-			do2.buf = os.array();
-			do2.pos = os.size();
+			{
+				Octets o = (Octets)keys[i];
+				Utils.packInt(out, o.size());
+				out.write(o.array(), 0, o.size());
+			}
 		}
 
 		@Override
 		public Object[] deserialize(DataInput in, int start, int end, int size) throws IOException
 		{
-			DataInput2 di2 = (DataInput2)in;
-			ByteBuffer bb = di2.buf;
-			Object[] objs;
-			if(bb.hasArray())
+			Object[] objs = new Object[size];
+			for(int i = start; i < end; ++i)
 			{
-				int offset = bb.arrayOffset();
-				OctetsStream os = OctetsStream.wrap(bb.array(), offset + bb.limit());
-				os.setExceptionInfo(true);
-				os.setPosition(offset + di2.pos);
-				objs = new Object[size];
-				for(int i = start; i < end; ++i)
-					objs[i] = os.unmarshalOctets();
-				di2.pos = os.position() - offset;
-			}
-			else
-			{
-				int pos = bb.position();
-				OctetsStream os = ByteBufferStream.wrap(bb);
-				os.setExceptionInfo(true);
-				os.setPosition(di2.pos);
-				objs = new Object[size];
-				for(int i = start; i < end; ++i)
-					objs[i] = os.unmarshalOctets();
-				di2.pos = bb.position();
-				bb.position(pos);
+				int n = Utils.unpackInt(in);
+				Octets o = new Octets();
+				o.resize(n);
+				in.readFully(o.array(), 0, n);
+				objs[i] = o;
 			}
 			return objs;
 		}
