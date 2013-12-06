@@ -26,7 +26,7 @@ public final class DBManager
 	private final ExecutorService                    _proc_threads;                             // 事务线程池
 	private final Map<Object, ArrayDeque<Procedure>> _qmap        = Util.newConcurrentHashMap(); // 当前sid队列的数量
 	private final AtomicLong                         _proc_count  = new AtomicLong();           // 绑定过sid的在队列中未运行的事务数量
-	private final AtomicLong                         _modcount   = new AtomicLong();           // 当前缓存修改的记录数
+	private final AtomicLong                         _modcount    = new AtomicLong();           // 当前缓存修改的记录数
 	private final CommitTask                         _commit_task = new CommitTask();           // 数据提交的任务
 	private volatile Storage                         _storage;                                  // 存储引擎
 	private volatile ScheduledFuture<?>              _commit_future;                            // 数据提交的结果
