@@ -147,10 +147,12 @@ public class StorageMVStore implements Storage
 
 	private static final class MVStoreBeanType implements DataType
 	{
+		private final String  _tablename;
 		private final Bean<?> _stub;
 
-		public MVStoreBeanType(Bean<?> stub)
+		public MVStoreBeanType(String tablename, Bean<?> stub)
 		{
+			_tablename = tablename;
 			_stub = stub;
 		}
 
@@ -175,7 +177,7 @@ public class StorageMVStore implements Storage
 			if(bb.arrayOffset() == 0)
 			{
 				byte[] array = bb.array();
-				OctetsStream os = OctetsStream.wrap(array, bb.position());
+				OctetsStream os = OctetsStream.wrap(array, bb.position()).marshal1((byte)0); // format
 				b.marshal(os);
 				if(os.array() == array)
 					bb.position(os.size());
@@ -184,7 +186,7 @@ public class StorageMVStore implements Storage
 			}
 			else
 			{
-				OctetsStream os = new OctetsStream(b.initSize());
+				OctetsStream os = new OctetsStream(b.initSize()).marshal1((byte)0); // format
 				b.marshal(os);
 				buf.put(os.array(), 0, os.size());
 			}
@@ -200,6 +202,9 @@ public class StorageMVStore implements Storage
 			Bean<?> b = _stub.create();
 			try
 			{
+				int format = os.unmarshalByte();
+				if(format != 0)
+				    throw new RuntimeException("unknown record value format(" + format + ") in table(" + _tablename + ')');
 				b.unmarshal(os);
 				buf.position(os.position() - offset);
 			}
@@ -326,7 +331,7 @@ public class StorageMVStore implements Storage
 		}
 		else if(stub_k instanceof Bean)
 		{
-			dt_k = new MVStoreBeanType((Bean<?>)stub_k);
+			dt_k = new MVStoreBeanType(tablename, (Bean<?>)stub_k);
 			dt_name = "Bean";
 		}
 		else
@@ -348,7 +353,8 @@ public class StorageMVStore implements Storage
 		}
 		else
 			_keytype.put(tablename, dt_name);
-		return new Table<>(_db.openMap(tablename, new MVMap.Builder<K, V>().keyType(dt_k).valueType(new MVStoreBeanType(stub_v))));
+		return new Table<>(_db.openMap(tablename, new MVMap.Builder<K, V>().keyType(dt_k).
+		        valueType(new MVStoreBeanType(tablename, stub_v))));
 	}
 
 	@Override
@@ -369,7 +375,7 @@ public class StorageMVStore implements Storage
 		else
 			_keytype.put(tablename, "Long");
 		return new TableLong<>(_db.openMap(tablename, new MVMap.Builder<Long, V>().keyType(MVStoreLongType.instance()).
-		        valueType(new MVStoreBeanType(stub_v))), tablename);
+		        valueType(new MVStoreBeanType(tablename, stub_v))), tablename);
 	}
 
 	public static <K, V> MVMap<K, V> openTable(MVStore sto, String tablename, MVMap<String, String> keytype)
@@ -384,11 +390,11 @@ public class StorageMVStore implements Storage
 		else if("String".equals(dt_name))
 			dt_k = StringDataType.INSTANCE;
 		else if("Bean".equals(dt_name))
-			dt_k = new MVStoreBeanType(bean);
+			dt_k = new MVStoreBeanType(tablename, bean);
 		else
 			dt_k = null;
 		if(!tablename.startsWith("."))
-			dt_v = new MVStoreBeanType(bean);
+			dt_v = new MVStoreBeanType(tablename, bean);
 		else
 			dt_v = null;
 		return sto.openMap(tablename, new MVMap.Builder<K, V>().keyType(dt_k).valueType(dt_v));

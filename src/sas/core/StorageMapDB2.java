@@ -23,11 +23,13 @@ public class StorageMapDB2 extends StorageMapDB
 	private final class Table<K, V extends Bean<V>> implements Storage.Table<K, V>
 	{
 		private final BTreeMap<K, Octets> _map;
+		private final String              _tablename;
 		private final V                   _stub_v;
 
-		public Table(BTreeMap<K, Octets> map, V stub_v)
+		public Table(BTreeMap<K, Octets> map, String tablename, V stub_v)
 		{
 			_map = map;
+			_tablename = tablename;
 			_stub_v = stub_v;
 		}
 
@@ -41,6 +43,9 @@ public class StorageMapDB2 extends StorageMapDB
 			V v = _stub_v.create();
 			try
 			{
+				int format = os.unmarshalByte();
+				if(format != 0)
+				    throw new RuntimeException("unknown record value format(" + format + ") in table(" + _tablename + "),key=(" + k + ')');
 				v.unmarshal(os);
 			}
 			catch(MarshalException e)
@@ -53,7 +58,7 @@ public class StorageMapDB2 extends StorageMapDB
 		@Override
 		public void put(K k, V v)
 		{
-			_map.put(k, v.marshal(new OctetsStream(_stub_v.initSize())));
+			_map.put(k, v.marshal(new OctetsStream(_stub_v.initSize()).marshal1((byte)0))); // format
 			++_modcount;
 		}
 
@@ -74,12 +79,14 @@ public class StorageMapDB2 extends StorageMapDB
 	private final class TableLong<V extends Bean<V>> implements Storage.TableLong<V>
 	{
 		private final BTreeMap<Long, Octets> _map;
+		private final String                 _tablename;
 		private final Atomic.Long            _idcounter;
 		private final V                      _stub_v;
 
 		public TableLong(BTreeMap<Long, Octets> map, String tablename, V stub_v)
 		{
 			_map = map;
+			_tablename = tablename;
 			_idcounter = _db.getAtomicLong(tablename + ".idcounter");
 			_stub_v = stub_v;
 		}
@@ -94,6 +101,9 @@ public class StorageMapDB2 extends StorageMapDB
 			V v = _stub_v.create();
 			try
 			{
+				int format = os.unmarshalByte();
+				if(format != 0)
+				    throw new RuntimeException("unknown record value format(" + format + ") in table(" + _tablename + "),key=(" + k + ')');
 				v.unmarshal(os);
 			}
 			catch(MarshalException e)
@@ -106,7 +116,7 @@ public class StorageMapDB2 extends StorageMapDB
 		@Override
 		public void put(long k, V v)
 		{
-			_map.put(k, v.marshal(new OctetsStream(_stub_v.initSize())));
+			_map.put(k, v.marshal(new OctetsStream(_stub_v.initSize()).marshal1((byte)0))); // format
 			++_modcount;
 		}
 
@@ -185,7 +195,7 @@ public class StorageMapDB2 extends StorageMapDB
 			_table_stub_k.put(tablename, (Bean<?>)stub_k);
 			btmm = btmm.keySerializer(new MapDBKeyBeanSerializer(tablename, (Bean<?>)stub_k));
 		}
-		return new Table<K, V>(btmm.<K, Octets>makeOrGet(), stub_v);
+		return new Table<K, V>(btmm.<K, Octets>makeOrGet(), tablename, stub_v);
 	}
 
 	@Override

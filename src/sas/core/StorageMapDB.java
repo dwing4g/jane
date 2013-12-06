@@ -138,6 +138,7 @@ public class StorageMapDB implements Storage
 			DataOutput2 do2 = (DataOutput2)out;
 			OctetsStream os = OctetsStream.wrap(do2.buf, do2.pos);
 			os.reserve(do2.pos + bean.initSize());
+			os.marshal1((byte)0); // format
 			bean.marshal(os);
 			do2.buf = os.array();
 			do2.pos = os.size();
@@ -160,6 +161,9 @@ public class StorageMapDB implements Storage
 				OctetsStream os = OctetsStream.wrap(bb.array(), offset + bb.limit());
 				os.setExceptionInfo(true);
 				os.setPosition(offset + di2.pos);
+				int format = os.unmarshalByte();
+				if(format != 0)
+				    throw new RuntimeException("unknown record value format(" + format + ") in table(" + _tablename + ')');
 				bean = _stub.create();
 				bean.unmarshal(os);
 				di2.pos = (available >= 0 ? di2.pos + available : os.position() - offset);
@@ -170,6 +174,9 @@ public class StorageMapDB implements Storage
 				OctetsStream os = ByteBufferStream.wrap(bb);
 				os.setExceptionInfo(true);
 				os.setPosition(di2.pos);
+				int format = os.unmarshalByte();
+				if(format != 0)
+				    throw new RuntimeException("unknown record value format(" + format + ") in table(" + _tablename + ')');
 				bean = _stub.create();
 				bean.unmarshal(os);
 				di2.pos = (available >= 0 ? di2.pos + available : bb.position());
