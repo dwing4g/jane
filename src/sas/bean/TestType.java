@@ -25,7 +25,7 @@ import sas.core.Util;
 public final class TestType extends Bean<TestType> implements Comparable<TestType>
 {
 	private static final long serialVersionUID = 0xbeacabe90777739dL;
-	public  static final int BEAN_TYPE = 2;
+	public  static final int BEAN_TYPE = 3;
 
 	public  /* 1*/ boolean v1; // 1字节布尔,0表示假,1表示真,其它默认表示真
 	public  /* 2*/ byte v2; // 1字节整数
@@ -272,7 +272,7 @@ public final class TestType extends Bean<TestType> implements Comparable<TestTyp
 	@Override
 	public int type()
 	{
-		return 2;
+		return 3;
 	}
 
 	@Override
@@ -488,7 +488,7 @@ public final class TestType extends Bean<TestType> implements Comparable<TestTyp
 	@Override
 	public int hashCode()
 	{
-		int h = 2 * 0x9e3779b1;
+		int h = 3 * 0x9e3779b1;
 		h = h * 31 + 1 + (this.v1 ? 0xcafebabe : 0xdeadbeef);
 		h = h * 31 + 1 + this.v2;
 		h = h * 31 + 1 + this.v3;

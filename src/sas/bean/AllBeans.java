@@ -16,8 +16,9 @@ public final class AllBeans
 	/** 注册全部的beans到网络管理器. 必须在网络连接之前调用 */
 	public static void register()
 	{
-		List<Bean<?>> r = new ArrayList<>(5);
+		List<Bean<?>> r = new ArrayList<>(6);
 		r.add(new TestBean());
+		r.add(new TestKeyBean());
 		r.add(new TestType());
 		r.add(new TestEmpty());
 		r.add(new TestRPCBean());
@@ -29,9 +30,9 @@ public final class AllBeans
 	{
 		IntMap<BeanHandler<?>> r = new IntMap<>(4 * 4);
 		r.put(1, new sas.handler.testserver.TestBeanHandler());
-		r.put(2, new sas.handler.testserver.TestTypeHandler());
-		r.put(3, new sas.handler.testserver.TestEmptyHandler());
-		r.put(4, new sas.handler.testserver.TestRPCBeanHandler());
+		r.put(3, new sas.handler.testserver.TestTypeHandler());
+		r.put(4, new sas.handler.testserver.TestEmptyHandler());
+		r.put(5, new sas.handler.testserver.TestRPCBeanHandler());
 		return r;
 	}
 
@@ -39,9 +40,9 @@ public final class AllBeans
 	{
 		IntMap<BeanHandler<?>> r = new IntMap<>(4 * 4);
 		r.put(1, new sas.handler.testclient.TestBeanHandler());
-		r.put(2, new sas.handler.testclient.TestTypeHandler());
-		r.put(3, new sas.handler.testclient.TestEmptyHandler());
-		r.put(4, new sas.handler.testclient.TestRPCBeanHandler());
+		r.put(3, new sas.handler.testclient.TestTypeHandler());
+		r.put(4, new sas.handler.testclient.TestEmptyHandler());
+		r.put(5, new sas.handler.testclient.TestRPCBeanHandler());
 		return r;
 	}
 }

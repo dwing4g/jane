@@ -1,7 +1,5 @@
 package sas.core;
 
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -116,7 +114,6 @@ public class OctetsStream extends Octets
 	@Override
 	public int compareTo(Octets o)
 	{
-		if(!(o instanceof OctetsStream)) return 1;
 		OctetsStream os = (OctetsStream)o;
 		int c = super.compareTo(os);
 		if(c != 0) return c;
@@ -364,39 +361,18 @@ public class OctetsStream extends Octets
 
 	public OctetsStream marshal(String str)
 	{
-		if(str.isEmpty())
+		int cn = str.length();
+		int bn = 0;
+		for(int i = 0; i < cn; ++i)
 		{
-			marshal((byte)0);
-			return this;
+			int c = str.charAt(i);
+			if(c < 0x80) ++bn;
+			else bn += (c < 0x4000 ? 2 : 3);
 		}
-		return marshal(str.getBytes(Const.stringCharset));
-	}
-
-	public OctetsStream marshal(String str, Charset charset)
-	{
-		if(str.isEmpty())
-		{
-			marshal((byte)0);
-			return this;
-		}
-		return marshal(str.getBytes(charset));
-	}
-
-	public OctetsStream marshal(String str, String charset)
-	{
-		if(str.isEmpty())
-		{
-			marshal((byte)0);
-			return this;
-		}
-		try
-		{
-			return marshal(str.getBytes(charset));
-		}
-		catch(UnsupportedEncodingException e)
-		{
-			throw new RuntimeException(e);
-		}
+		marshalUInt(bn);
+		for(int i = 0; i < cn; ++i)
+			marshalUInt(str.charAt(i));
+		return this;
 	}
 
 	public OctetsStream marshal(Bean<?> m)
@@ -1131,80 +1107,24 @@ public class OctetsStream extends Octets
 		int pos_new = pos + size;
 		if(pos_new > count) throw MarshalException.createEOF(exceptionInfo);
 		if(pos_new < pos) throw MarshalException.create(exceptionInfo);
-		int cur = pos;
+		char[] tmp = new char[size];
+		int n = 0;
+		for(; pos < pos_new; ++n)
+			tmp[n] = (char)unmarshalUInt();
 		pos = pos_new;
-		return new String(buffer, cur, size, Const.stringCharset);
-	}
-
-	public String unmarshalString(Charset charset) throws MarshalException
-	{
-		int size = unmarshalUInt();
-		if(size <= 0) return "";
-		int pos_new = pos + size;
-		if(pos_new > count) throw MarshalException.createEOF(exceptionInfo);
-		if(pos_new < pos) throw MarshalException.create(exceptionInfo);
-		int cur = pos;
-		pos = pos_new;
-		return new String(buffer, cur, size, charset);
-	}
-
-	public String unmarshalString(String charset) throws MarshalException
-	{
-		int size = unmarshalUInt();
-		if(size <= 0) return "";
-		int pos_new = pos + size;
-		if(pos_new > count) throw MarshalException.createEOF(exceptionInfo);
-		if(pos_new < pos) throw MarshalException.create(exceptionInfo);
-		int cur = pos;
-		pos = pos_new;
-		try
-		{
-			return new String(buffer, cur, size, charset);
-		}
-		catch(UnsupportedEncodingException e)
-		{
-			throw MarshalException.create(e, exceptionInfo);
-		}
+		return new String(tmp, 0, n);
 	}
 
 	public String unmarshalString(int type) throws MarshalException
 	{
-		if(type == 1) return unmarshalString(Const.stringCharset);
-		unmarshalSkipVar(type);
-		return "";
-	}
-
-	public String unmarshalString(Charset charset, int type) throws MarshalException
-	{
-		if(type == 1) return unmarshalString(charset);
-		unmarshalSkipVar(type);
-		return "";
-	}
-
-	public String unmarshalString(String charset, int type) throws MarshalException
-	{
-		if(type == 1) return unmarshalString(charset);
+		if(type == 1) return unmarshalString();
 		unmarshalSkipVar(type);
 		return "";
 	}
 
 	public String unmarshalStringKV(int type) throws MarshalException
 	{
-		if(type == 1) return unmarshalString(Const.stringCharset);
-		unmarshalSkipKV(type);
-		return "";
-	}
-
-	public String unmarshalStringKV(Charset charset, int type) throws MarshalException
-	{
-		if(type == 1) return unmarshalString(charset);
-		unmarshalSkipKV(type);
-		return "";
-	}
-
-	public String unmarshalStringKV(String charset, int type) throws MarshalException
-	{
-		if(type == 1) return unmarshalString(charset);
+		if(type == 1) return unmarshalString();
 		unmarshalSkipKV(type);
 		return "";
 	}

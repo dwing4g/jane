@@ -11,7 +11,7 @@ import sas.core.OctetsStream;
 public final class TestEmpty extends Bean<TestEmpty> implements Comparable<TestEmpty>
 {
 	private static final long serialVersionUID = 0xbeac245da40b43f8L;
-	public  static final int BEAN_TYPE = 3;
+	public  static final int BEAN_TYPE = 4;
 
 	@Override
 	public void reset()
@@ -26,7 +26,7 @@ public final class TestEmpty extends Bean<TestEmpty> implements Comparable<TestE
 	@Override
 	public int type()
 	{
-		return 3;
+		return 4;
 	}
 
 	@Override
@@ -72,7 +72,7 @@ public final class TestEmpty extends Bean<TestEmpty> implements Comparable<TestE
 	@Override
 	public int hashCode()
 	{
-		int h = 3 * 0x9e3779b1;
+		int h = 4 * 0x9e3779b1;
 		return h;
 	}
 

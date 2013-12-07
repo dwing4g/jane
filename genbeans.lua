@@ -682,6 +682,23 @@ local function bean_common(bean)
 	name_bean[bean.name] = bean
 	bean.comment = bean.comment and #bean.comment > 0 and "\n/**\n * " .. bean.comment:gsub("\n", "<br>\n * ") .. "\n */" or ""
 end
+local function bean_const(code)
+	return code:gsub("public  /%*", "private /*"):
+		gsub("\tpublic void assign%(.-\n\t}\n\n", ""):
+		gsub("\tpublic void set.-\n\t}\n\n", ""):
+		gsub("\t@Override\n\tpublic void reset%(.-\n\t}", [[
+	@Override
+	public void reset()
+	{
+		throw new UnsupportedOperationException();
+	}]]):
+		gsub("\t@Override\n\tpublic OctetsStream unmarshal%(.-\n\t}", [[
+	@Override
+	public OctetsStream unmarshal(OctetsStream s) throws MarshalException
+	{
+		throw new UnsupportedOperationException();
+	}]])
+end
 local function get_imports(import)
 	local imports = {}
 	for k in pairs(import) do
@@ -725,6 +742,7 @@ function bean(bean)
 	bean.param_warning = (#bean > 0 and "" or "/** @param b unused */\n\t")
 	name_code[bean.name] = code_conv(code, "bean", bean):gsub(#bean > 0 and "#[<>]#" or "#<#(.-)#>#", ""):gsub("\r", "")
 	bean_order[#bean_order + 1] = bean.name
+	if bean.const then name_code[bean.name] = bean_const(name_code[bean.name]) end
 end
 function rpc(bean)
 	bean_common(bean)
@@ -773,9 +791,9 @@ local function checksave(fn, d, change_count, pattern, typename)
 		if change_count > 0 then
 			d = s:gsub("\n\t/%*\\.-\n\t\\%*/", d:gmatch("\n\t/%*\\.-\n\t\\%*/"), change_count):gsub(pattern, typename, 1)
 		end
-		if s == d then d = nil else print("modify: " .. fn) end
+		if s == d then d = nil else print(" * " .. fn) end
 	else
-		print("create: " .. fn)
+		print("+  " .. fn)
 	end
 	if d then
 		f = open(fn, "wb")

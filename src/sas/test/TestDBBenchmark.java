@@ -7,7 +7,6 @@ import sas.core.Procedure;
 import sas.core.Storage;
 import sas.core.StorageMVStore;
 import sas.core.StorageMapDB;
-import sas.core.StorageMapDB2;
 
 // JVM: -Xms512M -Xmx512M
 public final class TestDBBenchmark
@@ -17,10 +16,10 @@ public final class TestDBBenchmark
 		Storage sto = StorageMapDB.instance();
 		if(args.length > 0)
 		{
-			if("md2".equals(args[0]))
-				sto = StorageMapDB2.instance();
-			else if("mv1".equals(args[0]))
-			    sto = StorageMVStore.instance();
+			if("mv1".equals(args[0]))
+				sto = StorageMVStore.instance();
+			else
+				sto = StorageMapDB.instance(); // if("md1".equals(args[0]))
 		}
 		int count = 8;
 		if(args.length > 1)

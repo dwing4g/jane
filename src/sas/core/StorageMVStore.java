@@ -301,7 +301,7 @@ public class StorageMVStore implements Storage
 	@Override
 	public String getFileSuffix()
 	{
-		return "mv1";
+		return "mv";
 	}
 
 	@Override

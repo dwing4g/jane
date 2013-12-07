@@ -127,7 +127,7 @@ public final class Table<K, V extends Bean<V>>
 							_stotable.remove(k);
 						else
 						{
-							v.unmodify();
+							v.setState(1);
 							_stotable.put(k, v);
 						}
 						_cache_mod.remove(k, v);
@@ -158,7 +158,7 @@ public final class Table<K, V extends Bean<V>>
 				_stotable.remove(k);
 			else
 			{
-				v.unmodify();
+				v.setState(1);
 				_stotable.put(k, v);
 			}
 		}
@@ -186,7 +186,11 @@ public final class Table<K, V extends Bean<V>>
 			return v;
 		}
 		v = _stotable.get(k);
-		if(v != null) _cache.put(k, v);
+		if(v != null)
+		{
+			v.setState(1);
+			_cache.put(k, v);
+		}
 		return v;
 	}
 
@@ -218,11 +222,21 @@ public final class Table<K, V extends Bean<V>>
 	 */
 	public void modify(K k, V v)
 	{
-		if(!v.isModified())
+		if(!v.modified())
 		{
-			v.modify();
-			if(_cache_mod != null && _cache_mod.put(k, v) == null)
-			    DBManager.instance().incModCount();
+			if(_cache_mod != null)
+			{
+				V v_old = _cache_mod.put(k, v);
+				if(v_old == null)
+					DBManager.instance().incModCount();
+				else if(v_old != v)
+				{
+					_cache_mod.put(k, v_old);
+					throw new IllegalStateException("modify unmatched record: t=" + _tablename +
+					        ",k=" + k + ",v_old=" + v_old + ",v=" + v);
+				}
+			}
+			v.setState(2);
 		}
 	}
 
@@ -234,13 +248,23 @@ public final class Table<K, V extends Bean<V>>
 	 */
 	public void put(K k, V v)
 	{
-		if(_cache.put(k, v) == v)
+		V v_old = _cache.put(k, v);
+		if(v_old == v)
 			modify(k, v);
 		else
 		{
-			v.modify();
-			if(_cache_mod != null && _cache_mod.put(k, v) == null)
-			    DBManager.instance().incModCount();
+			if(!v.stored())
+			{
+				v.setState(2);
+				if(_cache_mod != null && _cache_mod.put(k, v) == null)
+				    DBManager.instance().incModCount();
+			}
+			else
+			{
+				_cache.put(k, v_old);
+				throw new IllegalStateException("put unmatched record: t=" + _tablename +
+				        ",k=" + k + ",v_old=" + v_old + ",v=" + v);
+			}
 		}
 	}
 
@@ -251,7 +275,8 @@ public final class Table<K, V extends Bean<V>>
 	 */
 	public void remove(K k)
 	{
-		_cache.remove(k);
+		V v_old = _cache.remove(k);
+		if(v_old != null) v_old.setState(0);
 		if(_cache_mod != null && _cache_mod.put(k, _deleted) == null)
 		    DBManager.instance().incModCount();
 	}

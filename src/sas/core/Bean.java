@@ -12,7 +12,7 @@ public abstract class Bean<B extends Bean<B>> implements Serializable, Cloneable
 {
 	private static final long        serialVersionUID = 28942740885777620L;
 	private transient BeanHandler<B> _callback;                            // 发送成功的回调处理
-	private transient boolean        _modified;                            // 是否有修改. 用于数据库缓存
+	private transient int            _state;                               // 存储状态: 0:未存储,1:已存储但未修改,2:已存储且已修改
 
 	/**
 	 * 获取回调处理
@@ -35,33 +35,34 @@ public abstract class Bean<B extends Bean<B>> implements Serializable, Cloneable
 	}
 
 	/**
+	 * 获取存储标记
+	 * <p>
+	 * 如果已保存在数据库cache中,则有此标记,直到被删除为止,新建的对象没有此标记<br>
+	 * 有此标记的bean不能被其它的记录共享保存,以免出现意外的修改
+	 */
+	public final boolean stored()
+	{
+		return _state > 0;
+	}
+
+	/**
 	 * 获取修改标记
 	 * <p>
 	 * 作为数据库记录时有效. 标记此记录是否在缓存中有修改(和数据库存储的记录有差异),即脏记录
 	 */
-	public final boolean isModified()
+	public final boolean modified()
 	{
-		return _modified;
+		return _state > 1;
 	}
 
 	/**
-	 * 设置修改标记
+	 * 设置存储状态
 	 * <p>
-	 * 作为数据库记录时有效. 当此记录在事务内有修改时,会设置这个标记以提示数据库缓存系统在合适的时机提交到数据库存储系统
+	 * @param state 当此记录在事务内有修改时,会设置为2以提示数据库缓存系统在合适的时机提交到数据库存储系统
 	 */
-	final void modify()
+	final void setState(int state)
 	{
-		_modified = true;
-	}
-
-	/**
-	 * 清除修改标记
-	 * <p>
-	 * 作为数据库记录时有效. 当数据库缓存系统已提交到数据库存储系统后,会调用此方法清除修改标记
-	 */
-	final void unmodify()
-	{
-		_modified = false;
+		_state = state;
 	}
 
 	/**

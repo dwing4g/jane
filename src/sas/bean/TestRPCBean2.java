@@ -8,7 +8,7 @@ public final class TestRPCBean2 extends RPCBean<TestBean, TestBean>
 	private static final long serialVersionUID = 0xbeac3a46ee8864faL;
 	public TestRPCBean2() {}
 	public TestRPCBean2(TestBean a) { arg = a; }
-	@Override public int type() { return 5; }
+	@Override public int type() { return 6; }
 	@Override public TestRPCBean2 create() { return new TestRPCBean2(); }
 	@Override public TestBean createArg() { return new TestBean(); }
 	@Override public TestBean createRes() { return new TestBean(); }

@@ -1,16 +1,13 @@
 package sas.core;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 
 /**
  * 基于{@link java.nio.ByteBuffer}的可扩展字节流的类型<p>
- * 包括各种所需的序列化/反序列化<br>
- * 多用于包装{@link java.nio.DirectByteBuffer}
+ * 只支持只读数据的反序列化,目前仅内部使用,多用于包装{@link java.nio.DirectByteBuffer}
  * @formatter:off
  */
-public final class ByteBufferStream extends OctetsStream
+final class ByteBufferStream extends OctetsStream
 {
 	private ByteBuffer bb; // 包装的ByteBuffer对象
 
@@ -25,14 +22,13 @@ public final class ByteBufferStream extends OctetsStream
 
 	private ByteBufferStream()
 	{
-		buffer = null;
+		buffer = null; // 不使用内部的缓冲区,所以不支持调用某些接口,会导致空指针异常
 	}
 
 	@Override
-	public void setPosition(int pos)
+	public void setPosition(int p)
 	{
-		bb.position(pos);
-		this.pos = pos;
+		bb.position(pos = p);
 	}
 
 	@Override
@@ -42,29 +38,10 @@ public final class ByteBufferStream extends OctetsStream
 	}
 
 	@Override
-	public void setByte(int p, byte b)
-	{
-		bb.put(p, b);
-	}
-
-	@Override
-	public void clear()
-	{
-		bb.clear();
-		count = 0;
-	}
-
-	@Override
-	public void reset()
-	{
-		bb.clear();
-		count = 0;
-	}
-
-	@Override
 	public ByteBufferStream clone()
 	{
 		ByteBufferStream os = new ByteBufferStream();
+		os.count = count;
 		os.pos = pos;
 		os.exceptionInfo = exceptionInfo;
 		os.bb = bb.duplicate();
@@ -80,11 +57,9 @@ public final class ByteBufferStream extends OctetsStream
 	@Override
 	public int compareTo(Octets o)
 	{
-		if(!(o instanceof ByteBufferStream)) return 1;
 		ByteBufferStream os = (ByteBufferStream)o;
 		int c = bb.compareTo(os.bb);
-		if(c != 0) return c;
-		return pos - os.pos;
+		return c != 0 ? c : pos - os.pos;
 	}
 
 	@Override
@@ -94,152 +69,6 @@ public final class ByteBufferStream extends OctetsStream
 		if(!(o instanceof ByteBufferStream)) return false;
 		ByteBufferStream os = (ByteBufferStream)o;
 		return pos == os.pos && bb.equals(os.bb);
-	}
-
-	@Override
-	public ByteBufferStream marshal1(byte x)
-	{
-		bb.put(x);
-		++count;
-		return this;
-	}
-
-	@Override
-	public ByteBufferStream marshal2(int x)
-	{
-		bb.put((byte)(x >> 8));
-		bb.put((byte)x);
-		count += 2;
-		return this;
-	}
-
-	@Override
-	public ByteBufferStream marshal3(int x)
-	{
-		bb.put((byte)(x >> 16));
-		bb.put((byte)(x >> 8));
-		bb.put((byte)x);
-		count += 3;
-		return this;
-	}
-
-	@Override
-	public ByteBufferStream marshal4(int x)
-	{
-		bb.put((byte)(x >> 24));
-		bb.put((byte)(x >> 16));
-		bb.put((byte)(x >> 8));
-		bb.put((byte)x);
-		count += 4;
-		return this;
-	}
-
-	@Override
-	public ByteBufferStream marshal5(byte b, int x)
-	{
-		bb.put(b);
-		bb.put((byte)(x >> 24));
-		bb.put((byte)(x >> 16));
-		bb.put((byte)(x >> 8));
-		bb.put((byte)x);
-		count += 5;
-		return this;
-	}
-
-	@Override
-	public ByteBufferStream marshal5(long x)
-	{
-		bb.put((byte)(x >> 32));
-		bb.put((byte)(x >> 24));
-		bb.put((byte)(x >> 16));
-		bb.put((byte)(x >> 8));
-		bb.put((byte)x);
-		count += 5;
-		return this;
-	}
-
-	@Override
-	public ByteBufferStream marshal6(long x)
-	{
-		bb.put((byte)(x >> 40));
-		bb.put((byte)(x >> 32));
-		bb.put((byte)(x >> 24));
-		bb.put((byte)(x >> 16));
-		bb.put((byte)(x >> 8));
-		bb.put((byte)x);
-		count += 6;
-		return this;
-	}
-
-	@Override
-	public ByteBufferStream marshal7(long x)
-	{
-		bb.put((byte)(x >> 48));
-		bb.put((byte)(x >> 40));
-		bb.put((byte)(x >> 32));
-		bb.put((byte)(x >> 24));
-		bb.put((byte)(x >> 16));
-		bb.put((byte)(x >> 8));
-		bb.put((byte)x);
-		count += 7;
-		return this;
-	}
-
-	@Override
-	public ByteBufferStream marshal8(long x)
-	{
-		bb.put((byte)(x >> 56));
-		bb.put((byte)(x >> 48));
-		bb.put((byte)(x >> 40));
-		bb.put((byte)(x >> 32));
-		bb.put((byte)(x >> 24));
-		bb.put((byte)(x >> 16));
-		bb.put((byte)(x >> 8));
-		bb.put((byte)x);
-		count += 8;
-		return this;
-	}
-
-	@Override
-	public ByteBufferStream marshal9(byte b, long x)
-	{
-		bb.put(b);
-		bb.put((byte)(x >> 56));
-		bb.put((byte)(x >> 48));
-		bb.put((byte)(x >> 40));
-		bb.put((byte)(x >> 32));
-		bb.put((byte)(x >> 24));
-		bb.put((byte)(x >> 16));
-		bb.put((byte)(x >> 8));
-		bb.put((byte)x);
-		count += 9;
-		return this;
-	}
-
-	@Override
-	public ByteBufferStream marshal(boolean b)
-	{
-		bb.put((byte)(b ? 1 : 0));
-		++count;
-		return this;
-	}
-
-	@Override
-	public ByteBufferStream marshal(byte[] bytes)
-	{
-		marshalUInt(bytes.length);
-		bb.put(bytes);
-		count += bytes.length;
-		return this;
-	}
-
-	@Override
-	public ByteBufferStream marshal(Octets o)
-	{
-		marshalUInt(o.size());
-		bb.put(o.buffer, 0, o.count);
-		count += o.count;
-		return this;
 	}
 
 	@Override
@@ -402,8 +231,7 @@ public final class ByteBufferStream extends OctetsStream
 		if(n < 0) throw MarshalException.create(exceptionInfo);
 		int pos_new = pos + n;
 		if(pos_new > count) throw MarshalException.createEOF(exceptionInfo);
-		bb.position(bb.position() + n);
-		pos = pos_new;
+		bb.position(pos = pos_new);
 		return this;
 	}
 
@@ -455,25 +283,8 @@ public final class ByteBufferStream extends OctetsStream
 	@Override
 	public String unmarshalString() throws MarshalException
 	{
-		return new String(unmarshalBytes());
-	}
-
-	@Override
-	public String unmarshalString(Charset charset) throws MarshalException
-	{
-		return new String(unmarshalBytes(), charset);
-	}
-
-	@Override
-	public String unmarshalString(String charset) throws MarshalException
-	{
-		try
-		{
-			return new String(unmarshalBytes(), charset);
-		}
-		catch(UnsupportedEncodingException e)
-		{
-			throw MarshalException.create(e, exceptionInfo);
-		}
+		String s = super.unmarshalString();
+		bb.position(pos);
+		return s;
 	}
 }
