@@ -249,8 +249,7 @@ public class StorageMVStore implements Storage
 		public Object read(ByteBuffer buf)
 		{
 			int n = DataUtils.readVarInt(buf);
-			Octets o = new Octets();
-			o.resize(n);
+			Octets o = Octets.createSpace(n);
 			buf.get(o.array(), 0, n);
 			return o;
 		}

@@ -335,6 +335,13 @@ public class OctetsStream extends Octets
 		                    return marshal5((byte)0xf0, x);     // 1111 0000 +4B
 	}
 
+	public OctetsStream marshalUTF8(char x)
+	{
+		if(x < 0x80)        return marshal1((byte)x);           // 0xxx xxxx
+		if(x < 0x800)       return marshal2(((x << 2) & 0x1f00) + (x & 0x3f) + 0xc8); // 110x xxxx  10xx xxxx
+		return marshal3(((x << 4) & 0xf0000) + ((x << 2) & 0x3f00) + (x & 0x3f) + 0xe08080); // 1110 xxxx  10xx xxxx  10xx xxxx
+	}
+
 	public OctetsStream marshal(float x)
 	{
 		return marshal4(Float.floatToRawIntBits(x));
@@ -367,11 +374,11 @@ public class OctetsStream extends Octets
 		{
 			int c = str.charAt(i);
 			if(c < 0x80) ++bn;
-			else bn += (c < 0x4000 ? 2 : 3);
+			else bn += (c < 0x800 ? 2 : 3);
 		}
 		marshalUInt(bn);
 		for(int i = 0; i < cn; ++i)
-			marshalUInt(str.charAt(i));
+			marshalUTF8(str.charAt(i));
 		return this;
 	}
 
@@ -893,6 +900,15 @@ public class OctetsStream extends Octets
 		}
 	}
 
+	public char unmarshalUTF8() throws MarshalException
+	{
+		int b = unmarshalByte();
+		if(b >= 0) return (char)b;
+		if(b < -0x20) return (char)(((b & 0x1f) << 6) + (unmarshalByte() & 0x3f));
+		int c = unmarshalByte();
+		return (char)(((b & 0xf) << 12) + ((c & 0x3f) << 6) + (unmarshalByte() & 0x3f));
+	}
+
 	public int unmarshalInt(int type) throws MarshalException
 	{
 		if(type == 0) return unmarshalInt();
@@ -1110,7 +1126,7 @@ public class OctetsStream extends Octets
 		char[] tmp = new char[size];
 		int n = 0;
 		for(; pos < pos_new; ++n)
-			tmp[n] = (char)unmarshalUInt();
+			tmp[n] = unmarshalUTF8();
 		pos = pos_new;
 		return new String(tmp, 0, n);
 	}

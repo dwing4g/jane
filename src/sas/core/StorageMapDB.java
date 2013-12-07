@@ -245,8 +245,7 @@ public class StorageMapDB implements Storage
 		public Octets deserialize(DataInput in, int available) throws IOException
 		{
 			int n = Utils.unpackInt(in);
-			Octets o = new Octets();
-			o.resize(n);
+			Octets o = Octets.createSpace(n);
 			in.readFully(o.array(), 0, n);
 			return o;
 		}
@@ -280,8 +279,7 @@ public class StorageMapDB implements Storage
 			for(int i = start; i < end; ++i)
 			{
 				int n = Utils.unpackInt(in);
-				Octets o = new Octets();
-				o.resize(n);
+				Octets o = Octets.createSpace(n);
 				in.readFully(o.array(), 0, n);
 				objs[i] = o;
 			}
