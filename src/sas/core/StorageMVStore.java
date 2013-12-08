@@ -318,7 +318,12 @@ public class StorageMVStore implements Storage
 	{
 		DataType dt_k;
 		String dt_name;
-		if(stub_k instanceof Octets)
+		if(stub_k instanceof Long)
+		{
+			dt_k = MVStoreLongType.instance();
+			dt_name = "Long";
+		}
+		else if(stub_k instanceof Octets)
 		{
 			dt_k = MVStoreOctetsType.instance();
 			dt_name = "Octets";
@@ -380,7 +385,6 @@ public class StorageMVStore implements Storage
 	public static <K, V> MVMap<K, V> openTable(MVStore sto, String tablename, MVMap<String, String> keytype)
 	{
 		String dt_name = keytype.get(tablename);
-		DynBean bean = new DynBean();
 		DataType dt_k, dt_v;
 		if("Long".equals(dt_name))
 			dt_k = MVStoreLongType.instance();
@@ -389,11 +393,11 @@ public class StorageMVStore implements Storage
 		else if("String".equals(dt_name))
 			dt_k = StringDataType.INSTANCE;
 		else if("Bean".equals(dt_name))
-			dt_k = new MVStoreBeanType(tablename, bean);
+			dt_k = new MVStoreBeanType(tablename, new DynBean());
 		else
 			dt_k = null;
 		if(!tablename.startsWith("."))
-			dt_v = new MVStoreBeanType(tablename, bean);
+			dt_v = new MVStoreBeanType(tablename, new DynBean());
 		else
 			dt_v = null;
 		return sto.openMap(tablename, new MVMap.Builder<K, V>().keyType(dt_k).valueType(dt_v));

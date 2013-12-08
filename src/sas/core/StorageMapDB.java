@@ -29,7 +29,6 @@ public class StorageMapDB implements Storage
 {
 	private static final StorageMapDB           _instance     = new StorageMapDB();
 	protected static final Map<String, Bean<?>> _table_stub_k = new HashMap<>();   // 保存的bean类型key的存根. 用于序列化
-	protected static final Map<String, Bean<?>> _table_stub_v = new HashMap<>();   // 保存的bean类型value的存根. 用于序列化
 	protected DB                                _db;                               // MapDB的数据库对象(会多线程并发访问)
 	protected File                              _dbfile;                           // 当前数据库的文件
 	protected int                               _modcount;                         // 统计一次提交的put数量(不会被多线程访问)
@@ -163,9 +162,9 @@ public class StorageMapDB implements Storage
 
 	private static final class MapDBSerializer implements Serializer<Bean<?>>, Serializable
 	{
-		private static final long serialVersionUID = 2524574473300271970L;
-		private final String      _tablename;
-		private transient Bean<?> _stub;
+		private static final long       serialVersionUID = 2524574473300271970L;
+		private final String            _tablename;
+		private final transient Bean<?> _stub;
 
 		public MapDBSerializer(String tablename, Bean<?> stub)
 		{
@@ -191,11 +190,6 @@ public class StorageMapDB implements Storage
 			int format = in.readByte();
 			if(format != 0)
 			    throw new RuntimeException("unknown record value format(" + format + ") in table(" + _tablename + ')');
-			if(_stub == null)
-			{
-				_stub = _table_stub_v.get(_tablename);
-				if(_stub == null) _stub = new DynBean();
-			}
 			DataInput2 di2 = (DataInput2)in;
 			ByteBuffer bb = di2.buf;
 			Bean<?> bean;
@@ -363,11 +357,6 @@ public class StorageMapDB implements Storage
 	public static void registerKeyBean(Map<String, Bean<?>> stub_k_map)
 	{
 		_table_stub_k.putAll(stub_k_map);
-	}
-
-	public static void registerValueBean(Map<String, Bean<?>> stub_v_map)
-	{
-		_table_stub_v.putAll(stub_v_map);
 	}
 
 	protected static <K, V> boolean walk(BTreeMap<K, V> btm, WalkHandler<K> handler, K from, K to, boolean inclusive, boolean reverse)

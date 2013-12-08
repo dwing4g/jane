@@ -30,7 +30,6 @@ public final class MapDBExport
 		DB db = DBMaker.newFileDB(new File(filename)).closeOnJvmShutdown().readOnly().randomAccessFileEnable().make();
 
 		// StorageMapDB.registerKeyBean(AllTables.Types.getKeyTypes());
-		// StorageMapDB.registerValueBean(AllTables.Types.getValueTypes());
 
 		Map<String, Object> maps = db.getAll();
 		System.err.println("INFO: exporting db (" + maps.size() + " entries) ...");
@@ -57,7 +56,9 @@ public final class MapDBExport
 					}
 					sb.setLength(0);
 					sb.append("{k=");
-					if(k2 instanceof String)
+					if(k2 instanceof Number)
+						sb.append(k2);
+					else if(k2 instanceof String)
 						Util.toJStr(sb, (String)k2);
 					else if(k2 instanceof Octets)
 						((Octets)k2).dumpJStr(sb);
@@ -66,14 +67,23 @@ public final class MapDBExport
 					else
 						Util.toJStr(sb, k2.toString());
 					sb.append(",v=");
-					if(v2 instanceof Bean<?>)
-						((Bean<?>)v2).toLua(sb);
-					else if(v2 instanceof Octets) // for StorageMapDB2
+					if(v2 instanceof Octets)
 					{
 						bean.reset();
-						bean.unmarshal(OctetsStream.wrap((Octets)v2));
-						bean.toLua(sb);
+						OctetsStream os = OctetsStream.wrap((Octets)v2);
+						int format = os.unmarshalByte();
+						if(format != 0)
+							sb.append("\"format=").append(format).append(",size=").append(((Octets)v2).size());
+						else
+						{
+							bean.unmarshal(os);
+							bean.toLua(sb);
+						}
 					}
+					else if(v2 instanceof Bean<?>)
+						((Bean<?>)v2).toLua(sb);
+					else if(v2 instanceof Number)
+						sb.append(v2);
 					else
 						Util.toJStr(sb, v2.toString());
 					System.out.println(sb.append("},"));

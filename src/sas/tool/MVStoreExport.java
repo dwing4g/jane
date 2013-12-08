@@ -50,7 +50,9 @@ public final class MVStoreExport
 				    System.out.println("k=\"" + k.getClass().getName() + "\",v=\"" + v.getClass().getName() + "\",");
 				sb.setLength(0);
 				sb.append("{k=");
-				if(k instanceof String)
+				if(k instanceof Number)
+					sb.append(k);
+				else if(k instanceof String)
 					Util.toJStr(sb, (String)k);
 				else if(k instanceof Octets)
 					((Octets)k).dumpJStr(sb);
@@ -61,7 +63,7 @@ public final class MVStoreExport
 				sb.append(",v=");
 				if(v instanceof Bean<?>)
 					((Bean<?>)v).toLua(sb);
-				else if(v instanceof Long)
+				else if(v instanceof Number)
 					sb.append(v);
 				else
 					Util.toJStr(sb, v.toString());
