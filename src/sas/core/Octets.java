@@ -381,10 +381,11 @@ public class Octets implements Cloneable, Comparable<Octets>
 	{
 		if(o == null) return 1;
 		int n = (count <= o.count ? count : o.count);
+		byte[] buf = buffer;
 		byte[] data = o.buffer;
 		for(int i = 0; i < n; ++i)
 		{
-			int v = buffer[i] - data[i];
+			int v = buf[i] - data[i];
 			if(v != 0) return v;
 		}
 		return count - o.count;
@@ -397,9 +398,10 @@ public class Octets implements Cloneable, Comparable<Octets>
 		if(!(o instanceof Octets)) return false;
 		Octets oct = (Octets)o;
 		if(count != oct.count) return false;
+		byte[] buf = buffer;
 		byte[] data = oct.buffer;
 		for(int i = 0; i < count; ++i)
-			if(buffer[i] != data[i]) return false;
+			if(buf[i] != data[i]) return false;
 		return getClass() == o.getClass();
 	}
 

@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentNavigableMap;
@@ -279,6 +280,19 @@ public class StorageMapDB implements Storage
 			}
 			return objs;
 		}
+
+		@Override
+		public Comparator<Octets> getComparator()
+		{
+			return new Comparator<Octets>()
+			{
+				@Override
+				public int compare(Octets o1, Octets o2)
+				{
+					return o1.compareTo(o2);
+				}
+			};
+		}
 	}
 
 	protected static final class MapDBKeyStringSerializer extends BTreeKeySerializer<String> implements Serializable
@@ -305,6 +319,19 @@ public class StorageMapDB implements Storage
 			for(int i = start; i < end; ++i)
 				objs[i] = in.readUTF();
 			return objs;
+		}
+
+		@Override
+		public Comparator<String> getComparator()
+		{
+			return new Comparator<String>()
+			{
+				@Override
+				public int compare(String s1, String s2)
+				{
+					return s1.compareTo(s2);
+				}
+			};
 		}
 	}
 
@@ -346,6 +373,20 @@ public class StorageMapDB implements Storage
 			for(int i = start; i < end; ++i)
 				objs[i] = _serializer.deserialize(in, -1);
 			return objs;
+		}
+
+		@Override
+		public Comparator<Bean<?>> getComparator()
+		{
+			return new Comparator<Bean<?>>()
+			{
+				@SuppressWarnings("unchecked")
+				@Override
+				public int compare(Bean<?> s1, Bean<?> s2)
+				{
+					return ((Comparable<Bean<?>>)s1).compareTo(s2);
+				}
+			};
 		}
 	}
 
