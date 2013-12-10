@@ -284,14 +284,7 @@ public class StorageMapDB implements Storage
 		@Override
 		public Comparator<Octets> getComparator()
 		{
-			return new Comparator<Octets>()
-			{
-				@Override
-				public int compare(Octets o1, Octets o2)
-				{
-					return o1.compareTo(o2);
-				}
-			};
+			return null;
 		}
 	}
 
@@ -324,14 +317,7 @@ public class StorageMapDB implements Storage
 		@Override
 		public Comparator<String> getComparator()
 		{
-			return new Comparator<String>()
-			{
-				@Override
-				public int compare(String s1, String s2)
-				{
-					return s1.compareTo(s2);
-				}
-			};
+			return null;
 		}
 	}
 
@@ -378,15 +364,7 @@ public class StorageMapDB implements Storage
 		@Override
 		public Comparator<Bean<?>> getComparator()
 		{
-			return new Comparator<Bean<?>>()
-			{
-				@SuppressWarnings("unchecked")
-				@Override
-				public int compare(Bean<?> s1, Bean<?> s2)
-				{
-					return ((Comparable<Bean<?>>)s1).compareTo(s2);
-				}
-			};
+			return null;
 		}
 	}
 
