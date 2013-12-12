@@ -23,7 +23,7 @@ public final class AllBeans
 		r.add(new TestEmpty());
 		r.add(new TestRPCBean());
 		r.add(new TestRPCBean2());
-		BeanCodec.instance().registerAllBeans(r);
+		BeanCodec.registerAllBeans(r);
 	}
 
 	public static IntMap<BeanHandler<?>> getTestServerHandlers()

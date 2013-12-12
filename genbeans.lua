@@ -194,7 +194,7 @@ public final class AllBeans
 	{
 		List<Bean<?>> r = new ArrayList<]=] .. (jdk7 and "" or "Bean<?>") .. [=[>(#(bean.count));
 #(#		r.add(new #(bean.name)());
-#)#		BeanCodec.instance().registerAllBeans(r);
+#)#		BeanCodec.registerAllBeans(r);
 	}
 #[#
 	public static IntMap<BeanHandler<?>> get#(hdl.name)Handlers()

@@ -96,6 +96,26 @@ public class OctetsStream extends Octets
 		exceptionInfo = enable;
 	}
 
+	public void wraps(byte[] data, int size)
+	{
+		buffer = data;
+		if(size > data.length)  count = data.length;
+		else if(size < 0)       count = 0;
+		else                    count = size;
+	}
+
+	public void wraps(byte[] data)
+	{
+		buffer = data;
+		count = data.length;
+	}
+
+	public void wraps(Octets o)
+	{
+		buffer = o.buffer;
+		count = o.count;
+	}
+
 	@Override
 	public OctetsStream clone()
 	{
