@@ -18,8 +18,8 @@ Todo:
  * import database from text file
 
 平台:
- * Oracle JDK 6+ (需要ant作为构建环境)
- * Linux/Windows (运行环境, 推荐64位4核4G内存以上, 开发可使用32位)
+ * Oracle/Open JDK 6+ (需要ant作为构建环境)
+ * Linux/Windows (运行环境, 推荐64位4核4GB内存以上, 开发可使用32位)
  * Eclipse 4.3+  (主要开发环境)
 
 语言:

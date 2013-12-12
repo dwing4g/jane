@@ -23,7 +23,7 @@
 			</fileset>
 		</path>
 		<javac destdir="${classes}" encoding="utf-8" classpathref="classpath" source="1.6" target="1.6" debug="true" debuglevel="lines,source" fork="true" memoryMaximumSize="512m" includeantruntime="false">
-			<!--compilerarg value="-nowarn"/-->
+			<compilerarg value="-nowarn"/>
 			<!--compilerarg value="-Xlint:deprecation"/-->
 			<!--compilerarg value="-Xlint:unchecked"/-->
 			<compilerarg value="-XDignore.symbol.file"/><!-- suppress "Sun proprietary api" warning -->
