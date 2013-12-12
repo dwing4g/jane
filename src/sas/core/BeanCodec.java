@@ -16,8 +16,8 @@ import org.apache.mina.filter.codec.ProtocolEncoderOutput;
 public class BeanCodec extends CumulativeProtocolDecoder implements ProtocolEncoder, ProtocolCodecFactory
 {
 	private static final BeanCodec  _instance = new BeanCodec();
-	protected final IntMap<Integer> _maxsize  = new IntMap<>(65536, 0.5f); // 所有注册beans的最大空间限制
-	protected final IntMap<Bean<?>> _stubmap  = new IntMap<>(65536, 0.5f); // 所有注册beans的存根对象
+	protected final IntMap<Integer> _maxsize  = new IntMap<Integer>(65536, 0.5f); // 所有注册beans的最大空间限制
+	protected final IntMap<Bean<?>> _stubmap  = new IntMap<Bean<?>>(65536, 0.5f); // 所有注册beans的存根对象
 
 	public static BeanCodec instance()
 	{

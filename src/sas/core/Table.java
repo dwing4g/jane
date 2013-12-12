@@ -12,13 +12,13 @@ import java.util.concurrent.locks.Lock;
  */
 public final class Table<K, V extends Bean<V>>
 {
-	private static final List<Table<?, ?>> _tables = new ArrayList<>(16); // 所有的通用key类型的表列表
-	private final String                   _tablename;                   // 表名
-	private final Storage.Table<K, V>      _stotable;                    // 存储引擎的表对象
-	private final Map<K, V>                _cache;                       // 读缓存. 有大小限制,溢出自动清理
-	private final ConcurrentMap<K, V>      _cache_mod;                   // 写缓存. 不会溢出,保存到数据库存储引擎后清理
-	private final V                        _deleted;                     // 表示已删除的value. 同存根bean
-	private final int                      _lockid;                      // 当前表的锁ID. 即锁名的hash值,一般和记录key的hash值计算得出记录的lockid
+	private static final List<Table<?, ?>> _tables = new ArrayList<Table<?, ?>>(16); // 所有的通用key类型的表列表
+	private final String                   _tablename;                              // 表名
+	private final Storage.Table<K, V>      _stotable;                               // 存储引擎的表对象
+	private final Map<K, V>                _cache;                                  // 读缓存. 有大小限制,溢出自动清理
+	private final ConcurrentMap<K, V>      _cache_mod;                              // 写缓存. 不会溢出,保存到数据库存储引擎后清理
+	private final V                        _deleted;                                // 表示已删除的value. 同存根bean
+	private final int                      _lockid;                                 // 当前表的锁ID. 即锁名的hash值,一般和记录key的hash值计算得出记录的lockid
 
 	/**
 	 * 尝试依次加锁并保存全部表已修改的记录

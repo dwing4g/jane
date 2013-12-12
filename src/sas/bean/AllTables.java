@@ -40,7 +40,7 @@ public final class AllTables
 	{
 		public static HashMap<String, Bean<?>> getKeyTypes()
 		{
-			HashMap<String, Bean<?>> r = new HashMap<>(3 * 2);
+			HashMap<String, Bean<?>> r = new HashMap<String, Bean<?>>(3 * 2);
 			r.put("TestTable", null);
 			r.put("BeanTable", new TestBean());
 			r.put("OctetsTable", null);
@@ -49,7 +49,7 @@ public final class AllTables
 
 		public static HashMap<String, Bean<?>> getValueTypes()
 		{
-			HashMap<String, Bean<?>> r = new HashMap<>(3 * 2);
+			HashMap<String, Bean<?>> r = new HashMap<String, Bean<?>>(3 * 2);
 			r.put("TestTable", new TestType());
 			r.put("BeanTable", new TestBean());
 			r.put("OctetsTable", null);

@@ -17,16 +17,16 @@ import org.mapdb.LongMap.LongMapIterator;
  */
 public final class TableLong<V extends Bean<V>>
 {
-	private static final List<TableLong<?>> _tables          = new ArrayList<>(256); // 所有的表列表
-	private final String                    _tablename;                              // 表名
-	private final Storage.TableLong<V>      _stotable;                               // 存储引擎的表对象
-	private final LongMap<V>                _cache;                                  // 读缓存. 有大小限制,溢出自动清理
-	private final LongConcurrentHashMap<V>  _cache_mod;                              // 写缓存. 不会溢出,保存到数据库存储引擎后清理
-	private final V                         _deleted;                                // 表示已删除的value. 同存根bean
-	private final AtomicLong                _idcounter       = new AtomicLong();     // 用于自增长ID的统计器, 当前值表示当前表已存在的最大ID值
-	private final int                       _lockid;                                 // 当前表的锁ID. 即锁名的hash值,一般和记录key的hash值计算得出记录的lockid
-	private int                             _auto_id_lowbits = Const.autoIDLowBits;  // 自增长ID的预留低位位数
-	private int                             _auto_id_offset  = Const.autoIDLowOffset; // 自增长ID的低位偏移值
+	private static final List<TableLong<?>> _tables          = new ArrayList<TableLong<?>>(256); // 所有的表列表
+	private final String                    _tablename;                                         // 表名
+	private final Storage.TableLong<V>      _stotable;                                          // 存储引擎的表对象
+	private final LongMap<V>                _cache;                                             // 读缓存. 有大小限制,溢出自动清理
+	private final LongConcurrentHashMap<V>  _cache_mod;                                         // 写缓存. 不会溢出,保存到数据库存储引擎后清理
+	private final V                         _deleted;                                           // 表示已删除的value. 同存根bean
+	private final AtomicLong                _idcounter       = new AtomicLong();                // 用于自增长ID的统计器, 当前值表示当前表已存在的最大ID值
+	private final int                       _lockid;                                            // 当前表的锁ID. 即锁名的hash值,一般和记录key的hash值计算得出记录的lockid
+	private int                             _auto_id_lowbits = Const.autoIDLowBits;             // 自增长ID的预留低位位数
+	private int                             _auto_id_offset  = Const.autoIDLowOffset;           // 自增长ID的低位偏移值
 
 	/**
 	 * 尝试依次加锁并保存全部表已修改的记录
@@ -89,7 +89,7 @@ public final class TableLong<V extends Bean<V>>
 		_tablename = tablename;
 		_stotable = stotable;
 		_lockid = lockname.hashCode();
-		_cache = new LongConcurrentLRUMap<>(cachesize + cachesize / 2, cachesize);
+		_cache = new LongConcurrentLRUMap<V>(cachesize + cachesize / 2, cachesize);
 		_cache_mod = (stotable != null ? new LongConcurrentHashMap<V>() : null);
 		_deleted = stub_v;
 		if(stotable != null)

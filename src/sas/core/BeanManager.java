@@ -34,11 +34,11 @@ import org.mapdb.LongMap.LongMapIterator;
 public class BeanManager extends IoHandlerAdapter
 {
 	private static final ProtocolCodecFilter      _pcf_def  = new ProtocolCodecFilter(BeanCodec.instance()); // 协议编码器
-	private static final LongMap<RPCBean<?, ?>>   _rpcs     = new LongConcurrentHashMap<>();                // 当前管理器等待回复的RPC
+	private static final LongMap<RPCBean<?, ?>>   _rpcs     = new LongConcurrentHashMap<RPCBean<?, ?>>();   // 当前管理器等待回复的RPC
 	private static final ScheduledExecutorService _rpc_thread;                                              // 处理RPC超时和重连的线程
 	private final String                          _name     = getClass().getName();                         // 当前管理器的名字
 	private ProtocolCodecFilter                   _pcf      = _pcf_def;                                     // 协议编码器
-	private IntMap<BeanHandler<?>>                _handlers = new IntMap<>(0);                              // bean的处理器
+	private IntMap<BeanHandler<?>>                _handlers = new IntMap<BeanHandler<?>>(0);                // bean的处理器
 	private NioSocketAcceptor                     _acceptor;                                                // mina的网络监听器
 	private NioSocketConnector                    _connector;                                               // mina的网络连接器
 

@@ -3,7 +3,7 @@
 simple, fast, powerful application server framework based on tcp and embedded database
 
 Feature:
- * application server framework in pure Java (JDK7)
+ * application server framework in pure Java (JDK6)
  * TCP server and client framework based on Apache Mina
  * simple, extensible and compact protocol on TCP
  * embedded database based on MapDB with extremely fast in-memory cache
@@ -18,12 +18,12 @@ Todo:
  * import database from text file
 
 平台:
- * Oracle JDK 7+ (需要ant作为构建环境)
+ * Oracle JDK 6+ (需要ant作为构建环境)
  * Linux/Windows (运行环境, 推荐64位4核4G内存以上, 开发可使用32位)
  * Eclipse 4.3+  (主要开发环境)
 
 语言:
- * Java 7+ (框架和逻辑编写的主语言)
+ * Java 6+ (框架和逻辑编写的主语言)
  * Lua 5.1 (基于Luaj的实现, 目前主要用于代码生成的脚本, 也可作为逻辑调用的脚本)
 
 原则:

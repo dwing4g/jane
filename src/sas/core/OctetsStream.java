@@ -745,7 +745,7 @@ public class OctetsStream extends Octets
 		{
 			subtype &= 7;
 			int n = unmarshalUInt();
-			Collection<Object> list = new ArrayList<>(n < 0x10000 ? n : 0x10000);
+			Collection<Object> list = new ArrayList<Object>(n < 0x10000 ? n : 0x10000);
 			for(; n > 0; --n)
 				list.add(unmarshalKV(subtype));
 			return list;
@@ -755,7 +755,7 @@ public class OctetsStream extends Octets
 			int keytype = (subtype >> 3) & 7;
 			subtype &= 7;
 			int n = unmarshalUInt();
-			Map<Object, Object> map = new HashMap<>(n < 0x10000 ? n : 0x10000);
+			Map<Object, Object> map = new HashMap<Object, Object>(n < 0x10000 ? n : 0x10000);
 			for(; n > 0; --n)
 				map.put(unmarshalKV(keytype), unmarshalKV(subtype));
 			return map;

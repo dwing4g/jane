@@ -16,7 +16,7 @@ public final class AllBeans
 	/** 注册全部的beans到网络管理器. 必须在网络连接之前调用 */
 	public static void register()
 	{
-		List<Bean<?>> r = new ArrayList<>(6);
+		List<Bean<?>> r = new ArrayList<Bean<?>>(6);
 		r.add(new TestBean());
 		r.add(new TestKeyBean());
 		r.add(new TestType());
@@ -28,7 +28,7 @@ public final class AllBeans
 
 	public static IntMap<BeanHandler<?>> getTestServerHandlers()
 	{
-		IntMap<BeanHandler<?>> r = new IntMap<>(4 * 4);
+		IntMap<BeanHandler<?>> r = new IntMap<BeanHandler<?>>(4 * 4);
 		r.put(1, new sas.handler.testserver.TestBeanHandler());
 		r.put(3, new sas.handler.testserver.TestTypeHandler());
 		r.put(4, new sas.handler.testserver.TestEmptyHandler());
@@ -38,7 +38,7 @@ public final class AllBeans
 
 	public static IntMap<BeanHandler<?>> getTestClientHandlers()
 	{
-		IntMap<BeanHandler<?>> r = new IntMap<>(4 * 4);
+		IntMap<BeanHandler<?>> r = new IntMap<BeanHandler<?>>(4 * 4);
 		r.put(1, new sas.handler.testclient.TestBeanHandler());
 		r.put(3, new sas.handler.testclient.TestTypeHandler());
 		r.put(4, new sas.handler.testclient.TestEmptyHandler());

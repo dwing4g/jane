@@ -51,15 +51,15 @@ public final class TestType extends Bean<TestType> implements Comparable<TestTyp
 	{
 		v8 = new Octets(5);
 		v9 = "";
-		v10 = new ArrayList<>(10);
-		v11 = new LinkedList<>();
-		v12 = new ArrayDeque<>();
-		v13 = new HashSet<>();
-		v14 = new TreeSet<>();
-		v15 = new LinkedHashSet<>();
-		v16 = new HashMap<>(0);
-		v17 = new TreeMap<>();
-		v18 = new LinkedHashMap<>();
+		v10 = new ArrayList<Boolean>(10);
+		v11 = new LinkedList<Byte>();
+		v12 = new ArrayDeque<Integer>();
+		v13 = new HashSet<Long>();
+		v14 = new TreeSet<Float>();
+		v15 = new LinkedHashSet<Double>();
+		v16 = new HashMap<Long, String>(0);
+		v17 = new TreeMap<TestBean, Boolean>();
+		v18 = new LinkedHashMap<Octets, TestBean>();
 		v19 = new TestBean();
 	}
 
@@ -74,15 +74,15 @@ public final class TestType extends Bean<TestType> implements Comparable<TestTyp
 		this.v7 = v7;
 		this.v8 = new Octets(5); if(v8 != null) this.v8.replace(v8);
 		this.v9 = (v9 != null ? v9 : "");
-		this.v10 = new ArrayList<>(10); if(v10 != null) this.v10.addAll(v10);
-		this.v11 = new LinkedList<>(); if(v11 != null) this.v11.addAll(v11);
-		this.v12 = new ArrayDeque<>(); if(v12 != null) this.v12.addAll(v12);
-		this.v13 = new HashSet<>(); if(v13 != null) this.v13.addAll(v13);
-		this.v14 = new TreeSet<>(); if(v14 != null) this.v14.addAll(v14);
-		this.v15 = new LinkedHashSet<>(); if(v15 != null) this.v15.addAll(v15);
-		this.v16 = new HashMap<>(0); if(v16 != null) this.v16.putAll(v16);
-		this.v17 = new TreeMap<>(); if(v17 != null) this.v17.putAll(v17);
-		this.v18 = new LinkedHashMap<>(); if(v18 != null) this.v18.putAll(v18);
+		this.v10 = new ArrayList<Boolean>(10); if(v10 != null) this.v10.addAll(v10);
+		this.v11 = new LinkedList<Byte>(); if(v11 != null) this.v11.addAll(v11);
+		this.v12 = new ArrayDeque<Integer>(); if(v12 != null) this.v12.addAll(v12);
+		this.v13 = new HashSet<Long>(); if(v13 != null) this.v13.addAll(v13);
+		this.v14 = new TreeSet<Float>(); if(v14 != null) this.v14.addAll(v14);
+		this.v15 = new LinkedHashSet<Double>(); if(v15 != null) this.v15.addAll(v15);
+		this.v16 = new HashMap<Long, String>(0); if(v16 != null) this.v16.putAll(v16);
+		this.v17 = new TreeMap<TestBean, Boolean>(); if(v17 != null) this.v17.putAll(v17);
+		this.v18 = new LinkedHashMap<Octets, TestBean>(); if(v18 != null) this.v18.putAll(v18);
 		this.v19 = (v19 != null ? v19.clone() : new TestBean());
 	}
 

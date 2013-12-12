@@ -70,13 +70,9 @@ public final class Xlsx2Xml
 		Node node = elem.getElementsByTagName("v").item(0);
 		if(node == null) return "";
 		String v = node.getTextContent().trim();
-		switch(elem.getAttribute("t"))
-		{
-			case "s":
-				return str_table[Integer.parseInt(v)];
-			case "b":
-				return v.equals("1") ? "TRUE" : "FALSE";
-		}
+		String t = elem.getAttribute("t");
+		if(t.equals("s")) return str_table[Integer.parseInt(v)];
+		if(t.equals("b")) return v.equals("1") ? "TRUE" : "FALSE";
 		return v;
 	}
 
@@ -107,24 +103,27 @@ public final class Xlsx2Xml
 		byte[] xml_str = null, xml_sheet = null;
 		String file_sheet = "xl/worksheets/sheet" + sheet_id + ".xml";
 
-		try(ZipInputStream zis = new ZipInputStream(is_xlsx))
+		ZipInputStream zis = new ZipInputStream(is_xlsx);
+		try
 		{
-			try(BufferedInputStream bis = new BufferedInputStream(zis))
+			BufferedInputStream bis = new BufferedInputStream(zis);
+			for(ZipEntry ze; (ze = zis.getNextEntry()) != null;)
 			{
-				for(ZipEntry ze; (ze = zis.getNextEntry()) != null;)
+				if(ze.getName().equals("xl/sharedStrings.xml"))
 				{
-					if(ze.getName().equals("xl/sharedStrings.xml"))
-					{
-						if(log != null) log.println("INFO: reading xl/sharedStrings.xml ...");
-						bis.read(xml_str = new byte[(int)ze.getSize()]);
-					}
-					else if(ze.getName().equals(file_sheet))
-					{
-						if(log != null) log.println("INFO: reading " + file_sheet + " ...");
-						bis.read(xml_sheet = new byte[(int)ze.getSize()]);
-					}
+					if(log != null) log.println("INFO: reading xl/sharedStrings.xml ...");
+					bis.read(xml_str = new byte[(int)ze.getSize()]);
+				}
+				else if(ze.getName().equals(file_sheet))
+				{
+					if(log != null) log.println("INFO: reading " + file_sheet + " ...");
+					bis.read(xml_sheet = new byte[(int)ze.getSize()]);
 				}
 			}
+		}
+		finally
+		{
+			zis.close();
 		}
 
 		if(xml_str == null) throw new IOException("ERROR: not found xl/sharedStrings.xml");
@@ -183,7 +182,8 @@ public final class Xlsx2Xml
 		int n = nl.getLength();
 		if(log != null) log.println("INFO:     found " + (n - 1) + " rows");
 		if(log != null) log.println("INFO: writing xml file ...");
-		try(PrintWriter pw = new PrintWriter(new OutputStreamWriter(out_xml, "UTF-8")))
+		PrintWriter pw = new PrintWriter(new OutputStreamWriter(out_xml, "UTF-8"));
+		try
 		{
 			pw.print("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<table xlsx=\"");
 			if(table_name != null) pw.print(toXmlStr(table_name));
@@ -226,6 +226,10 @@ public final class Xlsx2Xml
 			}
 			pw.print("</table>\n");
 		}
+		finally
+		{
+			pw.close();
+		}
 		if(log != null) log.println("INFO: completed!");
 	}
 
@@ -240,13 +244,26 @@ public final class Xlsx2Xml
 		int sheet_id = (args.length >= 3 ? Integer.parseInt(args[2].trim()) : 1);
 		String key_column = (args.length >= 4 ? args[3] : null);
 		System.err.println("INFO: convert " + args[0] + " <" + sheet_id + "> => " + args[1] + " ...");
-		try(InputStream is = new FileInputStream(args[0].trim()); OutputStream os = new FileOutputStream(args[1].trim()))
+		InputStream is = new FileInputStream(args[0].trim());
+		try
 		{
-			convert(is, sheet_id, key_column, os, args[0], System.err);
+			OutputStream os = new FileOutputStream(args[1].trim());
+			try
+			{
+				convert(is, sheet_id, key_column, os, args[0], System.err);
+			}
+			finally
+			{
+				os.close();
+			}
+		}
+		finally
+		{
+			is.close();
 		}
 
 		// usage sample:
-		// Map<Integer, TestType> beanmap = new HashMap<>();
+		// Map<Integer, TestType> beanmap = new HashMap<Integer, TestType>();
 		// Util.xml2BeanMap(args[1], beanmap, Integer.class, TestType.class, null);
 		// for(Entry<Integer, TestType> e : beanmap.entrySet())
 		// {

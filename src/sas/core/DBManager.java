@@ -238,7 +238,6 @@ public final class DBManager
 				catch(Throwable e)
 				{
 					Log.log.error("DBManager.JVMShutDown: exception:", e);
-					throw e;
 				}
 			}
 		});
@@ -378,7 +377,7 @@ public final class DBManager
 	{
 		if(_storage == null) throw new IllegalArgumentException("call DBManager.startup before open any table");
 		Storage.Table<K, V> stotable = (stub_v != null ? _storage.<K, V>openTable(tablename, stub_k, stub_v) : null);
-		return new Table<>(tablename, stotable, lockname, cachesize, stub_v);
+		return new Table<K, V>(tablename, stotable, lockname, cachesize, stub_v);
 	}
 
 	/**
@@ -396,7 +395,7 @@ public final class DBManager
 	{
 		if(_storage == null) throw new IllegalArgumentException("call DBManager.startup before open any table");
 		Storage.TableLong<V> stotable = (stub_v != null ? _storage.openTable(tablename, stub_v) : null);
-		return new TableLong<>(tablename, stotable, lockname, cachesize, stub_v);
+		return new TableLong<V>(tablename, stotable, lockname, cachesize, stub_v);
 	}
 
 	/**
@@ -429,7 +428,7 @@ public final class DBManager
 			q = _qmap.get(sid);
 			if(q == null)
 			{
-				_qmap.put(sid, q = new ArrayDeque<>());
+				_qmap.put(sid, q = new ArrayDeque<Procedure>());
 				q.add(p);
 				_proc_count.incrementAndGet();
 			}

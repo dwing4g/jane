@@ -12,8 +12,8 @@ import java.util.TreeMap;
 public final class DynBean extends Bean<DynBean>
 {
 	private static final long          serialVersionUID = 5378682312012592276L;
-	private int                        _type;                                  // bean的类型(可用可不用,不影响序列化/反序列化)
-	private final Map<Integer, Object> _fields          = new TreeMap<>();     // key是字段ID. 为了方便格式化成字符串,使用有序的容器
+	private int                        _type;                                            // bean的类型(可用可不用,不影响序列化/反序列化)
+	private final Map<Integer, Object> _fields          = new TreeMap<Integer, Object>(); // key是字段ID. 为了方便格式化成字符串,使用有序的容器
 
 	public DynBean()
 	{

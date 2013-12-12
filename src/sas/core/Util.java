@@ -43,7 +43,7 @@ public final class Util
 	 */
 	public static <K, V> ConcurrentMap<K, V> newConcurrentHashMap()
 	{
-		return new ConcurrentHashMapV8<>(16, 0.5f, Const.dbThreadCount);
+		return new ConcurrentHashMapV8<K, V>(16, 0.5f, Const.dbThreadCount);
 	}
 
 	/**
@@ -53,7 +53,7 @@ public final class Util
 	 */
 	public static <K, V> Map<K, V> newProcThreadsMap()
 	{
-		return new ConcurrentHashMapV8<>(Math.max(Const.dbThreadCount * 2, 16));
+		return new ConcurrentHashMapV8<K, V>(Math.max(Const.dbThreadCount * 2, 16));
 	}
 
 	/**
@@ -233,7 +233,8 @@ public final class Util
 	public static long copyFile(FileChannel srcfc, File dstfile) throws IOException
 	{
 		long r = 0;
-		try(FileOutputStream fos = new FileOutputStream(dstfile))
+		FileOutputStream fos = new FileOutputStream(dstfile);
+		try
 		{
 			ByteBuffer bb = ByteBuffer.allocate(32768);
 			for(int n; (n = srcfc.read(bb)) != -1;)
@@ -244,14 +245,23 @@ public final class Util
 				r += n;
 			}
 		}
+		finally
+		{
+			fos.close();
+		}
 		return r;
 	}
 
 	public static long copyFile(File srcfile, File dstfile) throws IOException
 	{
-		try(FileInputStream fis = new FileInputStream(srcfile))
+		FileInputStream fis = new FileInputStream(srcfile);
+		try
 		{
 			return copyFile(fis.getChannel(), dstfile);
+		}
+		finally
+		{
+			fis.close();
 		}
 	}
 
@@ -269,7 +279,8 @@ public final class Util
 	public static <K, B> void xml2BeanMap(String xmlfile, Map<K, B> beanmap, Class<K> keycls, Class<B> beancls, Map<String, ?> enummap) throws Exception
 	{
 		beanmap.clear();
-		try(InputStream is = new FileInputStream(xmlfile))
+		InputStream is = new FileInputStream(xmlfile);
+		try
 		{
 			Element elem = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(is).getDocumentElement();
 			String keystr = elem.getAttribute("key").trim();
@@ -277,7 +288,7 @@ public final class Util
 			Field[] fields = beancls.getDeclaredFields();
 			int n_field = fields.length;
 			Constructor<?>[] con_field = new Constructor<?>[n_field];
-			HashMap<Class<?>, Class<?>> clsmap = new HashMap<>();
+			HashMap<Class<?>, Class<?>> clsmap = new HashMap<Class<?>, Class<?>>();
 			clsmap.put(byte.class, Byte.class);
 			clsmap.put(short.class, Short.class);
 			clsmap.put(int.class, Integer.class);
@@ -363,6 +374,10 @@ public final class Util
 				if(beanmap.put(key, bean) != null)
 				    throw new IllegalStateException("duplicate key:" + keystr + "=\"" + key + "\" in " + xmlfile);
 			}
+		}
+		finally
+		{
+			is.close();
 		}
 	}
 

@@ -357,7 +357,7 @@ public class StorageMVStore implements Storage
 		}
 		else
 			_keytype.put(tablename, dt_name);
-		return new Table<>(_db.openMap(tablename, new MVMap.Builder<K, V>().keyType(dt_k).
+		return new Table<K, V>(_db.openMap(tablename, new MVMap.Builder<K, V>().keyType(dt_k).
 		        valueType(new MVStoreBeanType(tablename, stub_v))));
 	}
 
@@ -378,7 +378,7 @@ public class StorageMVStore implements Storage
 		}
 		else
 			_keytype.put(tablename, "Long");
-		return new TableLong<>(_db.openMap(tablename, new MVMap.Builder<Long, V>().keyType(MVStoreLongType.instance()).
+		return new TableLong<V>(_db.openMap(tablename, new MVMap.Builder<Long, V>().keyType(MVStoreLongType.instance()).
 		        valueType(new MVStoreBeanType(tablename, stub_v))), tablename);
 	}
 
