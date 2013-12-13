@@ -11,7 +11,7 @@ import org.apache.mina.filter.codec.ProtocolEncoder;
 import org.apache.mina.filter.codec.ProtocolEncoderOutput;
 
 /**
- * bean的mina协议编解码过滤器(单件)
+ * bean的mina协议编解码过滤器
  */
 public class BeanCodec extends ProtocolDecoderAdapter implements ProtocolEncoder, ProtocolCodecFactory
 {
