@@ -15,17 +15,11 @@ import org.apache.mina.filter.codec.ProtocolEncoderOutput;
  */
 public class BeanCodec extends ProtocolDecoderAdapter implements ProtocolEncoder, ProtocolCodecFactory
 {
-	private static final BeanCodec         _instance = new BeanCodec();                 // 这个单件用于通用的编码器和解码器工厂
-	protected static final IntMap<Integer> _maxsize  = new IntMap<Integer>(65536, 0.5f); // 所有注册beans的最大空间限制
-	protected static final IntMap<Bean<?>> _stubmap  = new IntMap<Bean<?>>(65536, 0.5f); // 所有注册beans的存根对象
-	private final OctetsStream             _os       = new OctetsStream();              // 用于解码器的数据缓存
-	private int                            _ptype;                                      // 当前数据缓存中获得的协议类型
-	private int                            _psize    = -1;                              // 当前数据缓存中获得的协议大小. -1表示没获取到
-
-	public static BeanCodec instance()
-	{
-		return _instance;
-	}
+	protected static final IntMap<Integer> _maxsize = new IntMap<Integer>(65536, 0.5f); // 所有注册beans的最大空间限制
+	protected static final IntMap<Bean<?>> _stubmap = new IntMap<Bean<?>>(65536, 0.5f); // 所有注册beans的存根对象
+	protected final OctetsStream           _os      = new OctetsStream();              // 用于解码器的数据缓存
+	protected int                          _ptype;                                     // 当前数据缓存中获得的协议类型
+	protected int                          _psize   = -1;                              // 当前数据缓存中获得的协议大小. -1表示没获取到
 
 	/**
 	 * 重新注册所有的beans
@@ -64,10 +58,6 @@ public class BeanCodec extends ProtocolDecoderAdapter implements ProtocolEncoder
 	{
 		Bean<?> bean = _stubmap.get(type);
 		return bean != null ? bean.create() : null;
-	}
-
-	protected BeanCodec()
-	{
 	}
 
 	@Override
@@ -181,16 +171,12 @@ public class BeanCodec extends ProtocolDecoderAdapter implements ProtocolEncoder
 	@Override
 	public ProtocolEncoder getEncoder(IoSession session) throws Exception
 	{
-		return _instance;
+		return this;
 	}
 
 	@Override
 	public ProtocolDecoder getDecoder(IoSession session) throws Exception
 	{
-		Object obj = session.getAttribute("decoder");
-		if(obj != null) return (BeanCodec)obj;
-		BeanCodec codec = new BeanCodec();
-		session.setAttribute("decoder", codec);
-		return codec;
+		return this;
 	}
 }
