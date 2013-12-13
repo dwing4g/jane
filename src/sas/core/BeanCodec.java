@@ -94,39 +94,40 @@ public class BeanCodec extends ProtocolDecoderAdapter implements ProtocolEncoder
 
 	protected boolean decodeProtocol(OctetsStream os, ProtocolDecoderOutput out) throws Exception
 	{
-		int pos = os.position();
-		try
+		if(_psize < 0)
 		{
-			if(_psize < 0)
+			int pos = os.position();
+			try
 			{
 				_ptype = os.unmarshalUInt();
 				_psize = os.unmarshalUInt();
-				pos = os.position();
-				int maxsize = beanMaxSize(_ptype);
-				if(maxsize < 0) maxsize = Const.maxRawBeanSize;
-				if(_psize > maxsize)
-				    throw new Exception("bean maxsize overflow: type=" + _ptype + ",size=" + _psize + ",maxsize=" + maxsize);
 			}
-			if(_psize > os.remain()) return false;
-			Bean<?> bean = createBean(_ptype);
-			if(bean != null)
+			catch(MarshalException.EOF e)
 			{
-				bean.unmarshalProtocol(os);
-				int realsize = os.position() - pos;
-				if(realsize > _psize)
-				    throw new Exception("bean realsize overflow: type=" + _ptype + ",size=" + _psize + ",realsize=" + realsize);
-				out.write(bean);
+				os.setPosition(pos);
+				return false;
 			}
-			else
-				out.write(new RawBean(_ptype, os.unmarshalRaw(_psize)));
-			_psize = -1;
-			return true;
+			int maxsize = beanMaxSize(_ptype);
+			if(maxsize < 0) maxsize = Const.maxRawBeanSize;
+			if(_psize < 0 || _psize > maxsize)
+			    throw new Exception("bean maxsize overflow: type=" + _ptype + ",size=" + _psize + ",maxsize=" + maxsize);
 		}
-		catch(MarshalException.EOF e)
+		if(_psize > os.remain()) return false;
+		Bean<?> bean = createBean(_ptype);
+		if(bean != null)
 		{
-			os.setPosition(pos);
-			return false;
+			int pos = os.position();
+			bean.unmarshalProtocol(os);
+			int realsize = os.position() - pos;
+			if(realsize > _psize)
+			    throw new Exception("bean realsize overflow: type=" + _ptype + ",size=" + _psize + ",realsize=" + realsize);
+			os.setPosition(pos + _psize);
+			out.write(bean);
 		}
+		else
+			out.write(new RawBean(_ptype, os.unmarshalRaw(_psize)));
+		_psize = -1;
+		return true;
 	}
 
 	@Override
@@ -134,56 +135,47 @@ public class BeanCodec extends ProtocolDecoderAdapter implements ProtocolEncoder
 	{
 		if(!_os.empty())
 		{
-			if(_psize < 0)
+			int r = in.remaining();
+			int s = _os.size();
+			int n = Math.min(_psize < 0 ? 10 - s : _psize, r); // 前者情况因两个unmarshalUInt不会超过10字节,所以s肯定是<10的
+			_os.resize(s + n);
+			in.get(_os.array(), s, n);
+			r -= n;
+			s += n;
+			if(!decodeProtocol(_os, out)) // 能正好解出一个协议,或者因之前无法解出头部或者in的数据还不够导致失败
 			{
-				int s = _os.size();
-				int n = 10 - s;
-				if(n > 0)
+				if(r <= 0) return; // 如果in已经无数据可取就直接等下次,之前无法解出头部的话,in也肯定无数据了
+				n = _psize - _os.remain();
+				if(r < n) // 如果数据不够多就先累积到缓存里
 				{
-					n = Math.min(n, in.remaining());
-					_os.resize(s + n);
-					in.get(_os.array(), s, n);
+					_os.resize(s + r);
+					in.get(_os.array(), s, r);
+					return;
 				}
+				_os.resize(s + n);
+				in.get(_os.array(), s, n);
+				decodeProtocol(_os, out); // 应该能正好解出一个协议
+				_os.clear();
+				if(r <= n) return;
 			}
 			else
 			{
-				int s = _os.size();
-				int n = Math.min(_psize, in.remaining());
-				_os.resize(s + n);
-				in.get(_os.array(), s, n);
+				n = _os.remain();
+				_os.clear();
+				if(n > 0) // 有很小的可能因为之前无法解出头部,而补足10字节却过多的情况,可以调整in的位置
+					in.position(in.position() - n);
+				else if(r <= 0) return;
 			}
-			if(!decodeProtocol(_os, out))
-			{
-				int r = in.remaining();
-				int s = _psize - _os.remain();
-				int p = in.position();
-				if(r < s)
-				{
-					_os.append(in.array(), p, r);
-					in.position(p + r);
-					return;
-				}
-				_os.append(in.array(), p, s);
-				in.position(p + s);
-				decodeProtocol(_os, out);
-			}
-			else if(_os.remain() > 0)
-			    in.position(in.position() - _os.remain());
-			_os.clear();
-			if(in.remaining() <= 0) return;
 		}
 		int n = in.limit();
 		OctetsStream os = OctetsStream.wrap(in.array(), n);
 		os.setPosition(in.position());
 		in.position(n);
 		while(decodeProtocol(os, out))
-		{
-		}
-		if(os.remain() > 0)
-		{
-			_os.replace(os.array(), os.position(), os.remain());
-			_os.setPosition(0);
-		}
+			if(os.remain() <= 0) return;
+		if(os.remain() <= 0) return;
+		_os.replace(os.array(), os.position(), os.remain());
+		_os.setPosition(0);
 	}
 
 	@Override
@@ -195,6 +187,10 @@ public class BeanCodec extends ProtocolDecoderAdapter implements ProtocolEncoder
 	@Override
 	public ProtocolDecoder getDecoder(IoSession session) throws Exception
 	{
-		return new BeanCodec();
+		Object obj = session.getAttribute("decoder");
+		if(obj != null) return (BeanCodec)obj;
+		BeanCodec codec = new BeanCodec();
+		session.setAttribute("decoder", codec);
+		return codec;
 	}
 }
