@@ -11,17 +11,17 @@ import java.io.Serializable;
 public abstract class Bean<B extends Bean<B>> implements Serializable, Cloneable
 {
 	private static final long        serialVersionUID = 28942740885777620L;
-	private transient BeanHandler<B> _callback;                            // 发送成功的回调处理
-	private transient int            _state;                               // 存储状态: 0:未存储,1:已存储但未修改,2:已存储且已修改
+	private transient BeanHandler<B> _send_callback;                       // 发送成功的回调处理
+	private transient int            _save_state;                          // 存储状态: 0:未存储,1:已存储但未修改,2:已存储且已修改
 
 	/**
 	 * 获取回调处理
 	 * <p>
 	 * 仅用于网络发送此bean成功时的回调
 	 */
-	public final BeanHandler<B> getCallback()
+	public final BeanHandler<B> getSendCallback()
 	{
-		return _callback;
+		return _send_callback;
 	}
 
 	/**
@@ -29,9 +29,9 @@ public abstract class Bean<B extends Bean<B>> implements Serializable, Cloneable
 	 * <p>
 	 * 仅用于网络发送此bean成功时的回调
 	 */
-	public final void setCallback(BeanHandler<B> callback)
+	public final void setCallBack(BeanHandler<B> callback)
 	{
-		_callback = callback;
+		_send_callback = callback;
 	}
 
 	/**
@@ -42,7 +42,7 @@ public abstract class Bean<B extends Bean<B>> implements Serializable, Cloneable
 	 */
 	public final boolean stored()
 	{
-		return _state > 0;
+		return _save_state > 0;
 	}
 
 	/**
@@ -52,17 +52,17 @@ public abstract class Bean<B extends Bean<B>> implements Serializable, Cloneable
 	 */
 	public final boolean modified()
 	{
-		return _state > 1;
+		return _save_state > 1;
 	}
 
 	/**
 	 * 设置存储状态
 	 * <p>
-	 * @param state 当此记录在事务内有修改时,会设置为2以提示数据库缓存系统在合适的时机提交到数据库存储系统
+	 * @param save_state 当此记录在事务内有修改时,会设置为2以提示数据库缓存系统在合适的时机提交到数据库存储系统
 	 */
-	final void setState(int state)
+	final void setSaveState(int save_state)
 	{
-		_state = state;
+		_save_state = save_state;
 	}
 
 	/**

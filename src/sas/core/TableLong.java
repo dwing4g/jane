@@ -162,7 +162,7 @@ public final class TableLong<V extends Bean<V>>
 							_stotable.remove(k);
 						else
 						{
-							v.setState(1);
+							v.setSaveState(1);
 							_stotable.put(k, v);
 						}
 						_cache_mod.remove(k, v);
@@ -193,7 +193,7 @@ public final class TableLong<V extends Bean<V>>
 				_stotable.remove(k);
 			else
 			{
-				v.setState(1);
+				v.setSaveState(1);
 				_stotable.put(k, v);
 			}
 		}
@@ -223,7 +223,7 @@ public final class TableLong<V extends Bean<V>>
 		v = _stotable.get(k);
 		if(v != null)
 		{
-			v.setState(1);
+			v.setSaveState(1);
 			_cache.put(k, v);
 		}
 		return v;
@@ -271,7 +271,7 @@ public final class TableLong<V extends Bean<V>>
 					        ",k=" + k + ",v_old=" + v_old + ",v=" + v);
 				}
 			}
-			v.setState(2);
+			v.setSaveState(2);
 		}
 	}
 
@@ -291,7 +291,7 @@ public final class TableLong<V extends Bean<V>>
 		{
 			if(!v.stored())
 			{
-				v.setState(2);
+				v.setSaveState(2);
 				if(_cache_mod != null && _cache_mod.put(k, v) == null)
 				    DBManager.instance().incModCount();
 			}
@@ -317,7 +317,7 @@ public final class TableLong<V extends Bean<V>>
 	{
 		if(v.stored())
 		    throw new IllegalStateException("insert shared record: t=" + _tablename + ",v=" + v);
-		v.setState(2);
+		v.setSaveState(2);
 		long k = (_idcounter.incrementAndGet() << _auto_id_lowbits) + _auto_id_offset;
 		_cache.put(k, v);
 		if(_cache_mod != null && _cache_mod.put(k, v) == null)
@@ -333,7 +333,7 @@ public final class TableLong<V extends Bean<V>>
 	public void remove(long k)
 	{
 		V v_old = _cache.remove(k);
-		if(v_old != null) v_old.setState(0);
+		if(v_old != null) v_old.setSaveState(0);
 		if(_cache_mod != null && _cache_mod.put(k, _deleted) == null)
 		    DBManager.instance().incModCount();
 	}

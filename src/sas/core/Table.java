@@ -127,7 +127,7 @@ public final class Table<K, V extends Bean<V>>
 							_stotable.remove(k);
 						else
 						{
-							v.setState(1);
+							v.setSaveState(1);
 							_stotable.put(k, v);
 						}
 						_cache_mod.remove(k, v);
@@ -158,7 +158,7 @@ public final class Table<K, V extends Bean<V>>
 				_stotable.remove(k);
 			else
 			{
-				v.setState(1);
+				v.setSaveState(1);
 				_stotable.put(k, v);
 			}
 		}
@@ -188,7 +188,7 @@ public final class Table<K, V extends Bean<V>>
 		v = _stotable.get(k);
 		if(v != null)
 		{
-			v.setState(1);
+			v.setSaveState(1);
 			_cache.put(k, v);
 		}
 		return v;
@@ -236,7 +236,7 @@ public final class Table<K, V extends Bean<V>>
 					        ",k=" + k + ",v_old=" + v_old + ",v=" + v);
 				}
 			}
-			v.setState(2);
+			v.setSaveState(2);
 		}
 	}
 
@@ -255,7 +255,7 @@ public final class Table<K, V extends Bean<V>>
 		{
 			if(!v.stored())
 			{
-				v.setState(2);
+				v.setSaveState(2);
 				if(_cache_mod != null && _cache_mod.put(k, v) == null)
 				    DBManager.instance().incModCount();
 			}
@@ -276,7 +276,7 @@ public final class Table<K, V extends Bean<V>>
 	public void remove(K k)
 	{
 		V v_old = _cache.remove(k);
-		if(v_old != null) v_old.setState(0);
+		if(v_old != null) v_old.setSaveState(0);
 		if(_cache_mod != null && _cache_mod.put(k, _deleted) == null)
 		    DBManager.instance().incModCount();
 	}

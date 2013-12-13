@@ -360,7 +360,7 @@ public class BeanManager extends IoHandlerAdapter
 	public <A extends Bean<A>> boolean send(IoSession session, A bean, BeanHandler<A> callback)
 	{
 		if(callback != null) callback.setArg(bean);
-		bean.setCallback(callback);
+		bean.setCallBack(callback);
 		return session.write(bean).getException() == null;
 	}
 
@@ -495,7 +495,7 @@ public class BeanManager extends IoHandlerAdapter
 	{
 		if(Log.hasTrace) Log.log.trace("{}({}): send: {}:{}", _name, session.getId(), message.getClass().getSimpleName(), message);
 		Bean<?> bean = (Bean<?>)message;
-		BeanHandler<?> callback = bean.getCallback();
+		BeanHandler<?> callback = bean.getSendCallback();
 		if(callback != null)
 		{
 			try
