@@ -345,7 +345,7 @@ public class BeanManager extends IoHandlerAdapter
 	@SuppressWarnings("static-method")
 	public boolean send(IoSession session, Bean<?> bean)
 	{
-		return session.write(bean).getException() == null;
+		return !session.isClosing() && session.write(bean).getException() == null;
 	}
 
 	/**
@@ -359,6 +359,7 @@ public class BeanManager extends IoHandlerAdapter
 	@SuppressWarnings("static-method")
 	public <A extends Bean<A>> boolean send(IoSession session, A bean, BeanHandler<A> callback)
 	{
+		if(session.isClosing()) return false;
 		if(callback != null) callback.setArg(bean);
 		bean.setCallBack(callback);
 		return session.write(bean).getException() == null;
@@ -373,6 +374,7 @@ public class BeanManager extends IoHandlerAdapter
 	 */
 	public <A extends Bean<A>, R extends Bean<R>> boolean sendRPC(final IoSession session, final RPCBean<A, R> rpcbean, RPCHandler<A, R> handler)
 	{
+		if(session.isClosing()) return false;
 		if(handler != null)
 		    handler.setArg(rpcbean.getArg());
 		rpcbean.setRequest();
@@ -392,7 +394,7 @@ public class BeanManager extends IoHandlerAdapter
 	public void clientBroadcast(Bean<?> bean)
 	{
 		for(IoSession session : getClientSessions().values())
-			session.write(bean);
+			if(!session.isClosing()) session.write(bean);
 	}
 
 	/**
@@ -403,7 +405,7 @@ public class BeanManager extends IoHandlerAdapter
 	public void serverBroadcast(Bean<?> bean)
 	{
 		for(IoSession session : getServerSessions().values())
-			session.write(bean);
+			if(!session.isClosing()) session.write(bean);
 	}
 
 	/**
