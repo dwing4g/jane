@@ -32,7 +32,7 @@ Todo:
 
 依赖库:
  * 日志库: slf4j-1.7.x (后端用logback-1.0.x, 以后考虑把后端换成log4j-2.x)
- * 网络库: mina-core-2.0.x
+ * 网络库: mina-core-2.0.x nanohttpd-2.0.x (后者仅适用于连接数较少的http接口控制平台)
  * 数据库: mapdb-0.9.x (最好等待1.0稳定版再投入正式使用) mvstore-1.3.x (目前版本也不能保证稳定性)
  * 脚本库: luaj-jse-2.0.x
  * 基础库: com.googlecode.concurrentlinkedhashmap (高速并发hashmap/linkedhashmap)
@@ -45,6 +45,7 @@ Todo:
  * 网络库:
   * mina:           http://mina.apache.org/
   * netty:          http://netty.io/
+  * nanohttpd:      https://github.com/NanoHttpd/nanohttpd
  * 数据库:
   * mapdb:          http://www.mapdb.org/
   * mvstore:        http://www.h2database.com/html/mvstore.html

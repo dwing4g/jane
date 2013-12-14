@@ -31,6 +31,7 @@
 			<src path="${lib}/hashmap/"/>
 			<src path="${lib}/mapdb/"/>
 			<src path="${lib}/mvstore/"/>
+			<src path="${lib}/nanohttpd/"/>
 		</javac>
 	</target>
 
