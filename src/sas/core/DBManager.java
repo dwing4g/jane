@@ -148,7 +148,8 @@ public final class DBManager
 					{
 						_backup_time += _backup_period;
 						Log.log.info("db-commit backup begin...");
-						long r = _storage.backupDB(new File(Const.dbFilename + '.' + _storage.getFileSuffix() + _sdf.format(new Date())));
+						long r = _storage.backupDB(new File(Const.dbBackupPath, new File(Const.dbFilename).getName() +
+						        '.' + _storage.getFileSuffix() + _sdf.format(new Date())));
 						Log.log.info("db-commit backup end. ({} bytes) ({} ms)", r, System.currentTimeMillis() - t0);
 					}
 				}

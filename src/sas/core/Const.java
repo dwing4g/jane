@@ -19,6 +19,7 @@ public final class Const
 	public static final int         rpcCheckInterval;
 	public static final int         maxRawBeanSize;
 	public static final String      dbFilename;
+	public static final String      dbBackupPath;
 	public static final int         dbThreadCount;
 	public static final int         maxSessionProcedure;
 	public static final int         maxBatchProceduer;
@@ -55,6 +56,7 @@ public final class Const
 		rpcCheckInterval = getPropInt("rpcCheckInterval", 3, 1);
 		maxRawBeanSize = getPropInt("maxRawBeanSize", 65536, 0);
 		dbFilename = getPropStr("dbFilename", "db/database");
+		dbBackupPath = getPropStr("dbBackupPath", "db");
 		dbThreadCount = getPropInt("dbThreadCount", 1, 1, 1000);
 		maxSessionProcedure = getPropInt("maxSessionProceduer", 65536, 1);
 		maxBatchProceduer = getPropInt("maxBatchProceduer", 256, 1);
