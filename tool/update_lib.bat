@@ -2,8 +2,11 @@
 setlocal
 pushd %~dp0
 
+set NANOHTTPD=..\..\nanohttpd
 set MAPDB=..\..\mapdb
 set H2DB=..\..\h2database
+
+	copy /y %NANOHTTPD%\core\src\main\java\fi\iki\elonen\NanoHTTPD.java		..\lib\nanohttpd\fi\iki\elonen\
 
 	copy /y %MAPDB%\src\main\java\org\mapdb\*.java							..\lib\mapdb\org\mapdb\
 
