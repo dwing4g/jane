@@ -38,7 +38,7 @@ public class TestRPCBeanHandler extends RPCHandler<TestBean, TestType>
 	\*/
 
 	@Override
-	public boolean onServer(BeanManager manager, IoSession session)
+	public boolean onServer(BeanManager manager, IoSession session, TestBean arg, TestType res)
 	{
 		Log.log.debug("{}: onServer: {}", getClass().getName(), toString());
 		res.setV4(arg.getValue1());

@@ -75,7 +75,7 @@ public class BeanManager extends IoHandlerAdapter
 								IoHandler manager = session.getHandler();
 								try
 								{
-									onClient.onTimeout((BeanManager)manager, session);
+									onClient.onTimeout((BeanManager)manager, session, rpcbean);
 								}
 								catch(Throwable ex)
 								{
@@ -360,7 +360,6 @@ public class BeanManager extends IoHandlerAdapter
 	public <A extends Bean<A>> boolean send(IoSession session, A bean, BeanHandler<A> callback)
 	{
 		if(session.isClosing()) return false;
-		if(callback != null) callback.setArg(bean);
 		bean.setCallBack(callback);
 		return session.write(bean).getException() == null;
 	}
@@ -372,16 +371,15 @@ public class BeanManager extends IoHandlerAdapter
 	 * @param handler 可设置一个回调对象,用于在RPC回复和超时时回调. null表示使用注册的处理器处理回复和超时(RPCHandler.onClient/onTimeout)
 	 * @return 如果连接已经失效则返回false且不会有回复和超时的回调, 否则返回true
 	 */
+	@SuppressWarnings("unchecked")
 	public <A extends Bean<A>, R extends Bean<R>> boolean sendRPC(final IoSession session, final RPCBean<A, R> rpcbean, RPCHandler<A, R> handler)
 	{
 		if(session.isClosing()) return false;
-		if(handler != null)
-		    handler.setArg(rpcbean.getArg());
 		rpcbean.setRequest();
 		if(!send(session, rpcbean)) return false;
 		rpcbean.setReqTime((int)(System.currentTimeMillis() / 1000));
 		rpcbean.setSession(session);
-		rpcbean.setOnClient(handler);
+		rpcbean.setOnClient(handler != null ? handler : (RPCHandler<A, R>)_handlers.get(rpcbean.type()));
 		_rpcs.put(rpcbean.getRPCID(), rpcbean);
 		return true;
 	}
@@ -502,7 +500,7 @@ public class BeanManager extends IoHandlerAdapter
 		{
 			try
 			{
-				callback.onProcess(this, session);
+				callback.process(this, session, bean);
 			}
 			catch(Throwable e)
 			{

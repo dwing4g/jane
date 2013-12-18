@@ -19,22 +19,22 @@ public class TestBeanHandler extends BeanHandler<TestBean>
 	\*/
 
 	@Override
-	public void onProcess(BeanManager manager, IoSession session)
+	public void onProcess(BeanManager manager, IoSession session, TestBean arg)
 	{
 		Log.log.debug("{}: arg={}", getClass().getName(), arg);
 		manager.sendRPC(session, new TestRPCBean(arg), new RPCHandler<TestBean, TestType>()
 		{
 			@Override
-			public void onClient(BeanManager mgr, IoSession ses)
+			public void onClient(BeanManager mgr, IoSession ses, TestBean a, TestType r)
 			{
-				Log.log.info("{}: onClient: {}", getClass().getName(), this);
+				Log.log.info("{}: onClient: a={},r={}", getClass().getName(), a, r);
 				ses.close(false);
 			}
 
 			@Override
-			public void onTimeout(BeanManager mgr, IoSession ses)
+			public void onTimeout(BeanManager mgr, IoSession ses, TestBean a)
 			{
-				Log.log.info("{}: onTimeout: {}", getClass().getName(), this);
+				Log.log.info("{}: onTimeout: {}", getClass().getName(), a);
 				ses.close(false);
 			}
 		});

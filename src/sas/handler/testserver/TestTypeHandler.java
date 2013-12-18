@@ -31,7 +31,7 @@ public class TestTypeHandler extends BeanHandler<TestType>
 	\*/
 
 	@Override
-	public void onProcess(BeanManager manager, IoSession session)
+	public void onProcess(BeanManager manager, IoSession session, TestType arg)
 	{
 		Log.log.debug("{}.onProcess: arg={}", getClass().getName(), arg);
 	}

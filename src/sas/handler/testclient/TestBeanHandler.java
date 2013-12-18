@@ -17,7 +17,7 @@ public class TestBeanHandler extends BeanHandler<TestBean>
 	\*/
 
 	@Override
-	public void onProcess(BeanManager manager, IoSession session)
+	public void onProcess(BeanManager manager, IoSession session, TestBean arg)
 	{
 		Log.log.debug("{}: arg={}", getClass().getName(), arg);
 

@@ -215,14 +215,14 @@ import sas.core.BeanHandler;
 import sas.core.BeanManager;
 import sas.core.Log;
 
-public final class #(bean.name)Handler extends BeanHandler<#(bean.name)>
+public class #(bean.name)Handler extends BeanHandler<#(bean.name)>
 {
 	/*\
 #(#	|*| #(var.type) #(var.name)#(var.value);#(var.comment)
 #)#	\*/
 
 	@Override
-	public void onProcess(BeanManager manager, IoSession session)
+	public void onProcess(BeanManager manager, IoSession session, #(bean.name) arg)
 	{
 		Log.log.debug("{}.onProcess: arg={}", getClass().getName(), arg);
 	}
@@ -239,7 +239,7 @@ import sas.core.BeanManager;
 import sas.core.Log;
 import sas.core.RPCHandler;
 
-public final class #(bean.name)Handler extends RPCHandler<#(bean_arg.name), #(bean_res.name)>
+public class #(bean.name)Handler extends RPCHandler<#(bean_arg.name), #(bean_res.name)>
 {
 	/*\
 #(#	|*| #(var.type) #(var.name)#(var.value);#(var.comment)
@@ -249,9 +249,22 @@ public final class #(bean.name)Handler extends RPCHandler<#(bean_arg.name), #(be
 #)#	\*/
 
 	@Override
-	public void onProcess(BeanManager manager, IoSession session)
+	public boolean onServer(BeanManager manager, IoSession session, #(bean_arg.name) arg, #(bean_res.name) res)
 	{
-		Log.log.debug("{}.onProcess: {}", getClass().getName(), toString());
+		Log.log.debug("{}: onServer: {}", getClass().getName(), arg);
+		return true;
+	}
+
+	@Override
+	public void onClient(BeanManager manager, IoSession session, #(bean_arg.name) arg, #(bean_res.name) res)
+	{
+		Log.log.debug("{}: onClient: arg={},res={}", getClass().getName(), arg, res);
+	}
+
+	@Override
+	public void onTimeout(BeanManager manager, IoSession session, #(bean_arg.name) arg)
+	{
+		Log.log.debug("{}: onTimeout: {}", getClass().getName(), arg);
 	}
 }
 ]=]
