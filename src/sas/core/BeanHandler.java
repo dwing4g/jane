@@ -11,7 +11,7 @@ public abstract class BeanHandler<A extends Bean<A>>
 	 * 处理的入口
 	 */
 	@SuppressWarnings("unchecked")
-	void process(BeanManager manager, IoSession session, Bean<?> bean) throws Exception
+	final void process(BeanManager manager, IoSession session, Bean<?> bean) throws Exception
 	{
 		onProcess(manager, session, (A)bean);
 	}

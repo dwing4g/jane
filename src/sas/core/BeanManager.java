@@ -75,7 +75,7 @@ public class BeanManager extends IoHandlerAdapter
 								IoHandler manager = session.getHandler();
 								try
 								{
-									onClient.onTimeout((BeanManager)manager, session, rpcbean);
+									onClient.timeout((BeanManager)manager, session, rpcbean.getArg());
 								}
 								catch(Throwable ex)
 								{
@@ -360,7 +360,7 @@ public class BeanManager extends IoHandlerAdapter
 	public <A extends Bean<A>> boolean send(IoSession session, A bean, BeanHandler<A> callback)
 	{
 		if(session.isClosing()) return false;
-		bean.setCallBack(callback);
+		bean.setSendCallBack(callback);
 		return session.write(bean).getException() == null;
 	}
 

@@ -29,7 +29,7 @@ public abstract class Bean<B extends Bean<B>> implements Serializable, Cloneable
 	 * <p>
 	 * 仅用于网络发送此bean成功时的回调
 	 */
-	public final void setCallBack(BeanHandler<B> callback)
+	public final void setSendCallBack(BeanHandler<B> callback)
 	{
 		_send_callback = callback;
 	}

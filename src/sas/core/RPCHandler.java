@@ -52,9 +52,9 @@ public abstract class RPCHandler<A extends Bean<A>, R extends Bean<R>> extends B
 	}
 
 	@SuppressWarnings("unchecked")
-	public void onTimeout(BeanManager manager, IoSession session, RPCBean<?, ?> rpcbean) throws Exception
+	final void timeout(BeanManager manager, IoSession session, Object arg) throws Exception
 	{
-		onTimeout(manager, session, (A)rpcbean);
+		onTimeout(manager, session, (A)arg);
 	}
 
 	@Override
