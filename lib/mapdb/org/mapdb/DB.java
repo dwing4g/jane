@@ -312,6 +312,12 @@ public class DB {
         String type = catGet(name + ".type", null);
         if(type==null){
             checkShouldCreate(name);
+            if(engine.isReadOnly()){
+                Engine e = new StoreHeap();
+                new DB(e).getHashMap("a");
+                return namedPut(name,
+                        new DB(new EngineWrapper.ReadOnlyEngine(e)).getHashMap("a"));
+            }
             return createHashMap(name).make();
         }
 
@@ -339,9 +345,10 @@ public class DB {
         return ret;
     }
 
-    protected void namedPut(String name, Object ret) {
+    protected  <V> V namedPut(String name, Object ret) {
         namesInstanciated.put(name, new WeakReference<Object>(ret));
         namesLookup.put(ret,name);
+        return (V) ret;
     }
 
 
@@ -423,6 +430,12 @@ public class DB {
         String type = catGet(name + ".type", null);
         if(type==null){
             checkShouldCreate(name);
+            if(engine.isReadOnly()){
+                Engine e = new StoreHeap();
+                new DB(e).getHashSet("a");
+                return namedPut(name,
+                        new DB(new EngineWrapper.ReadOnlyEngine(e)).getHashSet("a"));
+            }
             return createHashSet(name).makeOrGet();
         }
 
@@ -517,6 +530,7 @@ public class DB {
         protected Fun.Function1 pumpKeyExtractor;
         protected Fun.Function1 pumpValueExtractor;
         protected int pumpPresortBatchSize = -1;
+        protected boolean pumpIgnoreDuplicates = false;
 
 
         /** nodeSize maximal size of node, larger node causes overflow and creation of new BTree node. Use large number for small keys, use small number for large keys.*/
@@ -582,6 +596,15 @@ public class DB {
         }
 
 
+        /**
+         * If source iteretor contains an duplicate key, exception is thrown.
+         * This options will only use firts key and ignore any consequentive duplicates.
+         */
+        public <K> BTreeMapMaker pumpIgnoreDuplicates(){
+            this.pumpIgnoreDuplicates = true;
+            return this;
+        }
+
         public <K,V> BTreeMap<K,V> make(){
             return DB.this.createTreeMap(BTreeMapMaker.this);
         }
@@ -623,7 +646,7 @@ public class DB {
 
         protected Iterator pumpSource;
         protected int pumpPresortBatchSize = -1;
-
+        protected boolean pumpIgnoreDuplicates = false;
 
         /** nodeSize maximal size of node, larger node causes overflow and creation of new BTree node. Use large number for small keys, use small number for large keys.*/
         public BTreeSetMaker nodeSize(int nodeSize){
@@ -655,6 +678,14 @@ public class DB {
             return this;
         }
 
+        /**
+         * If source iteretor contains an duplicate key, exception is thrown.
+         * This options will only use firts key and ignore any consequentive duplicates.
+         */
+        public <K> BTreeSetMaker pumpIgnoreDuplicates(){
+            this.pumpIgnoreDuplicates = true;
+            return this;
+        }
 
         public BTreeSetMaker pumpPresort(int batchSize){
             this.pumpPresortBatchSize = batchSize;
@@ -710,6 +741,12 @@ public class DB {
         String type = catGet(name + ".type", null);
         if(type==null){
             checkShouldCreate(name);
+            if(engine.isReadOnly()){
+                Engine e = new StoreHeap();
+                new DB(e).getTreeMap("a");
+                return namedPut(name,
+                        new DB(new EngineWrapper.ReadOnlyEngine(e)).getTreeMap("a"));
+            }
             return createTreeMap(name).make();
 
         }
@@ -761,7 +798,8 @@ public class DB {
         if(m.pumpSource==null){
             rootRecidRef = BTreeMap.createRootRef(engine,m.keySerializer,m.valueSerializer,m.comparator);
         }else{
-            rootRecidRef = Pump.buildTreeMap(m.pumpSource,engine,m.pumpKeyExtractor,m.pumpValueExtractor,m.nodeSize,
+            rootRecidRef = Pump.buildTreeMap(m.pumpSource,engine,m.pumpKeyExtractor,m.pumpValueExtractor,
+                    m.pumpIgnoreDuplicates,m.nodeSize,
                     m.valuesOutsideNodes,counterRecid,m.keySerializer,m.valueSerializer,m.comparator);
         }
 
@@ -838,6 +876,12 @@ public class DB {
         String type = catGet(name + ".type", null);
         if(type==null){
             checkShouldCreate(name);
+            if(engine.isReadOnly()){
+                Engine e = new StoreHeap();
+                new DB(e).getTreeSet("a");
+                return namedPut(name,
+                        new DB(new EngineWrapper.ReadOnlyEngine(e)).getTreeSet("a"));
+            }
             return createTreeSet(name).make();
 
         }
@@ -875,7 +919,7 @@ public class DB {
         m.comparator = catPut(m.name+".comparator",m.comparator,Utils.COMPARABLE_COMPARATOR);
 
         if(m.pumpPresortBatchSize!=-1){
-            m.pumpSource = Pump.sort(m.pumpSource,m.pumpPresortBatchSize,Collections.reverseOrder(m.comparator),getDefaultSerializer());
+            m.pumpSource = Pump.sort(m.pumpSource,m.pumpIgnoreDuplicates, m.pumpPresortBatchSize,Collections.reverseOrder(m.comparator),getDefaultSerializer());
         }
 
         long counterRecid = !m.counter ?0L:engine.put(0L, Serializer.LONG);
@@ -884,7 +928,7 @@ public class DB {
         if(m.pumpSource==null){
             rootRecidRef = BTreeMap.createRootRef(engine,m.serializer,null,m.comparator);
         }else{
-            rootRecidRef = Pump.buildTreeMap(m.pumpSource,engine,Fun.noTransformExtractor(),null,m.nodeSize,
+            rootRecidRef = Pump.buildTreeMap(m.pumpSource,engine,Fun.noTransformExtractor(),null,m.pumpIgnoreDuplicates, m.nodeSize,
                     false,counterRecid,m.serializer,null,m.comparator);
         }
 
@@ -909,6 +953,12 @@ public class DB {
         String type = catGet(name + ".type", null);
         if(type==null){
             checkShouldCreate(name);
+            if(engine.isReadOnly()){
+                Engine e = new StoreHeap();
+                new DB(e).getQueue("a");
+                return namedPut(name,
+                        new DB(new EngineWrapper.ReadOnlyEngine(e)).getQueue("a"));
+            }
             return createQueue(name,null,true);
         }
         checkType(type, "Queue");
@@ -951,6 +1001,12 @@ public class DB {
         String type = catGet(name + ".type", null);
         if(type==null){
             checkShouldCreate(name);
+            if(engine.isReadOnly()){
+                Engine e = new StoreHeap();
+                new DB(e).getStack("a");
+                return namedPut(name,
+                        new DB(new EngineWrapper.ReadOnlyEngine(e)).getStack("a"));
+            }
             return createStack(name,null,true);
         }
 
@@ -992,6 +1048,12 @@ public class DB {
         String type = catGet(name + ".type", null);
         if(type==null){
             checkShouldCreate(name);
+            if(engine.isReadOnly()){
+                Engine e = new StoreHeap();
+                new DB(e).getCircularQueue("a");
+                return namedPut(name,
+                        new DB(new EngineWrapper.ReadOnlyEngine(e)).getCircularQueue("a"));
+            }
             return createCircularQueue(name,null, 1024);
         }
 
@@ -1063,6 +1125,12 @@ public class DB {
         String type = catGet(name + ".type", null);
         if(type==null){
             checkShouldCreate(name);
+            if(engine.isReadOnly()){
+                Engine e = new StoreHeap();
+                new DB(e).getAtomicLong("a");
+                return namedPut(name,
+                        new DB(new EngineWrapper.ReadOnlyEngine(e)).getAtomicLong("a"));
+            }
             return createAtomicLong(name,0L);
         }
         checkType(type, "AtomicLong");
@@ -1094,6 +1162,12 @@ public class DB {
         String type = catGet(name + ".type", null);
         if(type==null){
             checkShouldCreate(name);
+            if(engine.isReadOnly()){
+                Engine e = new StoreHeap();
+                new DB(e).getAtomicInteger("a");
+                return namedPut(name,
+                        new DB(new EngineWrapper.ReadOnlyEngine(e)).getAtomicInteger("a"));
+            }
             return createAtomicInteger(name, 0);
         }
         checkType(type, "AtomicInteger");
@@ -1125,6 +1199,12 @@ public class DB {
         String type = catGet(name + ".type", null);
         if(type==null){
             checkShouldCreate(name);
+            if(engine.isReadOnly()){
+                Engine e = new StoreHeap();
+                new DB(e).getAtomicBoolean("a");
+                return namedPut(name,
+                        new DB(new EngineWrapper.ReadOnlyEngine(e)).getAtomicBoolean("a"));
+            }
             return createAtomicBoolean(name, false);
         }
         checkType(type, "AtomicBoolean");
@@ -1160,6 +1240,12 @@ public class DB {
         String type = catGet(name + ".type", null);
         if(type==null){
             checkShouldCreate(name);
+            if(engine.isReadOnly()){
+                Engine e = new StoreHeap();
+                new DB(e).getAtomicString("a");
+                return namedPut(name,
+                        new DB(new EngineWrapper.ReadOnlyEngine(e)).getAtomicString("a"));
+            }
             return createAtomicString(name, "");
         }
         checkType(type, "AtomicString");
@@ -1191,9 +1277,15 @@ public class DB {
         String type = catGet(name + ".type", null);
         if(type==null){
             checkShouldCreate(name);
+            if(engine.isReadOnly()){
+                Engine e = new StoreHeap();
+                new DB(e).getAtomicVar("a");
+                return namedPut(name,
+                        new DB(new EngineWrapper.ReadOnlyEngine(e)).getAtomicVar("a"));
+            }
             return createAtomicVar(name, null, getDefaultSerializer());
         }
-        checkType(type, "AtomicString");
+        checkType(type, "AtomicVar");
 
         ret = new Atomic.Var(engine, (Long) catGet(name+".recid"), (Serializer) catGet(name+".serializer"));
         namedPut(name, ret);
