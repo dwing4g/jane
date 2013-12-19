@@ -80,7 +80,10 @@ public abstract class RPCHandler<A extends Bean<A>, R extends Bean<R>> extends B
 			{
 				rpcbean_old.setSession(null); // 绑定期已过,清除对session的引用
 				RPCHandler<A, R> onClient = rpcbean_old.getOnClient();
-				if(onClient == null) onClient = this;
+				if(onClient != null)
+					rpcbean_old.setOnClient(null);
+				else
+					onClient = this;
 				onClient.onClient(manager, session, rpcbean.getArg(), rpcbean.getRes());
 			}
 		}

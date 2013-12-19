@@ -67,19 +67,23 @@ public class BeanManager extends IoHandlerAdapter
 						RPCBean<?, ?> rpcbean = it.value();
 						if(now - rpcbean.getReqTime() > rpcbean.getTimeout() && _rpcs.remove(it.key()) != null)
 						{
-							RPCHandler<?, ?> onClient = rpcbean.getOnClient();
+							RPCHandler<?, ?> onclient = rpcbean.getOnClient();
 							IoSession session = rpcbean.getSession();
 							rpcbean.setSession(null); // 绑定期已过,清除对session的引用
-							if(onClient != null && session != null)
+							if(onclient != null)
 							{
-								IoHandler manager = session.getHandler();
-								try
+								rpcbean.setOnClient(null);
+								if(session != null)
 								{
-									onClient.timeout((BeanManager)manager, session, rpcbean.getArg());
-								}
-								catch(Throwable ex)
-								{
-									Log.log.error(manager.getClass().getName() + '(' + session.getId() + "): onTimeout exception:", ex);
+									IoHandler manager = session.getHandler();
+									try
+									{
+										onclient.timeout((BeanManager)manager, session, rpcbean.getArg());
+									}
+									catch(Throwable ex)
+									{
+										Log.log.error(manager.getClass().getName() + '(' + session.getId() + "): onTimeout exception:", ex);
+									}
 								}
 							}
 						}
@@ -498,6 +502,7 @@ public class BeanManager extends IoHandlerAdapter
 		BeanHandler<?> callback = bean.getSendCallback();
 		if(callback != null)
 		{
+			bean.setSendCallBack(null);
 			try
 			{
 				callback.process(this, session, bean);

@@ -13,20 +13,20 @@ public abstract class RPCBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 	private static final long          serialVersionUID = -1390859818193499717L;
 	private static final AtomicInteger RPCID            = new AtomicInteger();                 // RPC的ID分配器
 	private transient int              _rpcid           = RPCID.getAndIncrement() & 0x7fffffff; // RPC的ID. 用于匹配请求和回复的RPC
-	private transient int              _reqTime;                                               // 发送请求的时间戳(秒)
+	private transient int              _reqtime;                                               // 发送请求的时间戳(秒)
 	private transient IoSession        _session;                                               // 请求时绑定的session
-	private transient RPCHandler<A, R> _onClient;                                              // 回复的回调
+	private transient RPCHandler<A, R> _onclient;                                              // 回复的回调
 	protected A                        arg;                                                    // 请求bean
 	protected R                        res;                                                    // 回复bean
 
 	int getReqTime()
 	{
-		return _reqTime;
+		return _reqtime;
 	}
 
 	void setReqTime(int time)
 	{
-		_reqTime = time;
+		_reqtime = time;
 	}
 
 	IoSession getSession()
@@ -41,12 +41,12 @@ public abstract class RPCBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 
 	public RPCHandler<A, R> getOnClient()
 	{
-		return _onClient;
+		return _onclient;
 	}
 
 	public void setOnClient(RPCHandler<A, R> handler)
 	{
-		_onClient = handler;
+		_onclient = handler;
 	}
 
 	/**

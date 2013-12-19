@@ -11,7 +11,7 @@ public class MarshalException extends IOException
 {
 	private static final long             serialVersionUID = 139797375712050877L;
 	private static final MarshalException _instance        = new MarshalException();
-	private static final EOF              _instanceEOF     = new EOF();
+	private static final EOF              _instance_eof    = new EOF();
 
 	/**
 	 * 带栈信息的{@link MarshalException}异常
@@ -90,7 +90,7 @@ public class MarshalException extends IOException
 
 	public static EOF createEOF(boolean withtrace)
 	{
-		return withtrace ? new EOFWithTrace() : _instanceEOF;
+		return withtrace ? new EOFWithTrace() : _instance_eof;
 	}
 
 	public static EOF createEOF(Throwable e, boolean withtrace)
