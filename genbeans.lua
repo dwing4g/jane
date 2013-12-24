@@ -84,7 +84,7 @@ public final class #(bean.name) extends Bean<#(bean.name)> implements Comparable
 	@Override
 	public OctetsStream unmarshal(OctetsStream s) throws MarshalException
 	{
-		for(;;) { int i = s.unmarshalByte() & 0xff, t = i >> 6; switch(i & 0x3f)
+		for(;;) { int i = s.unmarshalByte() & 0xff, t = i & 3; switch(i >> 6)
 		{
 			case 0: return s;
 #(#			#(var.unmarshal) break;
@@ -371,7 +371,7 @@ typedef.byte =
 		this.#(var.name) = #(var.name);
 	}
 ]],
-	marshal = "if(this.#(var.name) != 0) s.marshal1((byte)#(var.id)).marshal(this.#(var.name));",
+	marshal = function(var) return string.format("if(this.#(var.name) != 0) s.marshal1((byte)0x%02x).marshal(this.#(var.name));", var.id * 4) end,
 	unmarshal = "case #(var.id): this.#(var.name) = (#(var.type))s.unmarshalInt(t);",
 	unmarshal_kv = function(var, kv, t) if kv then return "(" .. typename(var, var[kv]) .. ")s.unmarshalIntKV(" .. t .. ")" end end,
 	hashcode = "this.#(var.name)",
@@ -405,7 +405,7 @@ typedef.bool = merge(typedef.byte,
 {
 	type = "boolean", type_i = "boolean", type_o = "Boolean",
 	reset = "#(var.name) = false",
-	marshal = "if(this.#(var.name)) s.marshal1((byte)#(var.id)).marshal1((byte)1);",
+	marshal = function(var) return string.format("if(this.#(var.name)) s.marshal1((byte)0x%02x).marshal1((byte)1);", var.id * 4) end,
 	unmarshal = "case #(var.id): this.#(var.name) = (s.unmarshalInt(t) != 0);",
 	unmarshal_kv = function(var, kv, t) if kv then return "(s.unmarshalIntKV(" .. t .. ") != 0)" end end,
 	hashcode = "(this.#(var.name) ? 0xcafebabe : 0xdeadbeef)",
@@ -415,7 +415,7 @@ typedef.float = merge(typedef.byte,
 {
 	type = "float", type_i = "float", type_o = "Float",
 	subtypeid = 4,
-	marshal = function(var) return string.format("if(this.#(var.name) != 0) s.marshal2(0x%04x).marshal(this.#(var.name));", 0xc000 + var.id * 0x100) end,
+	marshal = function(var) return string.format("if(this.#(var.name) != 0) s.marshal2(0x%04x).marshal(this.#(var.name));", var.id * 0x400 + 0x308) end,
 	unmarshal = "case #(var.id): this.#(var.name) = s.unmarshalFloat(t);",
 	unmarshal_kv = function(var, kv, t) if kv then return "s.unmarshalFloatKV(" .. t .. ")" end end,
 	hashcode = "Float.floatToRawIntBits(this.#(var.name))",
@@ -425,7 +425,7 @@ typedef.double = merge(typedef.byte,
 {
 	type = "double", type_i = "double", type_o = "Double",
 	subtypeid = 5,
-	marshal = function(var) return string.format("if(this.#(var.name) != 0) s.marshal2(0x%04x).marshal(this.#(var.name));", 0xc001 + var.id * 0x100) end,
+	marshal = function(var) return string.format("if(this.#(var.name) != 0) s.marshal2(0x%04x).marshal(this.#(var.name));", var.id * 0x400 + 0x309) end,
 	unmarshal = "case #(var.id): this.#(var.name) = s.unmarshalDouble(t);",
 	unmarshal_kv = function(var, kv, t) if kv then return "s.unmarshalDoubleKV(" .. t .. ")" end end,
 	hashcode = "(int)Double.doubleToRawLongBits(this.#(var.name))",
@@ -448,7 +448,7 @@ typedef.string = merge(typedef.byte,
 		this.#(var.name) = (#(var.name) != null ? #(var.name) : "");
 	}
 ]],
-	marshal = function(var) return string.format("if(!this.#(var.name).isEmpty()) s.marshal1((byte)0x%02x).marshal(this.#(var.name));", 0x40 + var.id) end,
+	marshal = function(var) return string.format("if(!this.#(var.name).isEmpty()) s.marshal1((byte)0x%02x).marshal(this.#(var.name));", var.id * 4 + 1) end,
 	unmarshal = "case #(var.id): this.#(var.name) = s.unmarshalString(t);",
 	unmarshal_kv = function(var, kv, t) if kv then return "s.unmarshalStringKV(" .. t .. ")" end end,
 	hashcode = "this.#(var.name).hashCode()",
@@ -468,7 +468,7 @@ typedef.octets = merge(typedef.string,
 	reset = "#(var.name).clear()",
 	assign = "if(b.#(var.name) != null) this.#(var.name).replace(b.#(var.name)); else this.#(var.name).clear()",
 	set = "",
-	marshal = function(var) return string.format("if(!this.#(var.name).empty()) s.marshal1((byte)0x%02x).marshal(this.#(var.name));", 0x40 + var.id) end,
+	marshal = function(var) return string.format("if(!this.#(var.name).empty()) s.marshal1((byte)0x%02x).marshal(this.#(var.name));", var.id * 4 + 1) end,
 	unmarshal = "case #(var.id): s.unmarshal(this.#(var.name), t);",
 	unmarshal_kv = function(var, kv, t) if kv then return "s.unmarshalOctetsKV(" .. t .. ")" end end,
 	tojson = "this.#(var.name).dumpJStr(s.append(\"\\\"#(var.name)\\\":\")).append(',')",
@@ -487,13 +487,13 @@ typedef.vector = merge(typedef.octets,
 			s.marshal2(0x%04x).marshalUInt(this.#(var.name).size());
 			for(%s v : this.#(var.name))
 				s.marshal(v);
-		}]], 0xc080 + var.id * 0x100 + subtypeid(var.k), subtypename(var, var.k)) end,
+		}]], var.id * 0x400 + 0x300 + subtypeid(var.k), subtypename(var, var.k)) end,
 	unmarshal = function(var) return string.format([[case #(var.id):
 			{
 				this.#(var.name).clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
 				t = s.unmarshalByte();
-				if((t & 0xc0) != 0x80) { s.unmarshalSkipVarSub(t); break; }
+				if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 				t &= 7;
 				int n = s.unmarshalUInt();
 				this.#(var.name).ensureCapacity(n < 0x10000 ? n : 0x10000);
@@ -516,7 +516,7 @@ typedef.list = merge(typedef.vector,
 				this.#(var.name).clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
 				t = s.unmarshalByte();
-				if((t & 0xc0) != 0x80) { s.unmarshalSkipVarSub(t); break; }
+				if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 				t &= 7;
 				for(int n = s.unmarshalUInt(); n > 0; --n)
 					this.#(var.name).add(%s);
@@ -562,13 +562,13 @@ typedef.hashmap = merge(typedef.list,
 			s.marshal2(0x%04x).marshalUInt(this.#(var.name).size());
 			for(Entry<%s, %s> e : this.#(var.name).entrySet())
 				s.marshal(e.getKey()).marshal(e.getValue());
-		}]], 0xc0c0 + var.id * 0x100 + subtypeid(var.k) * 8 + subtypeid(var.v), subtypename(var, var.k), subtypename(var, var.v)) end,
+		}]], var.id * 0x400 + 0x340 + subtypeid(var.k) * 8 + subtypeid(var.v), subtypename(var, var.k), subtypename(var, var.v)) end,
 	unmarshal = function(var) return string.format([[case #(var.id):
 			{
 				this.#(var.name).clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
 				t = s.unmarshalByte();
-				if((t & 0xc0) != 0xc0) { s.unmarshalSkipVarSub(t); break; }
+				if((t >> 6) != 1) { s.unmarshalSkipVarSub(t); break; }
 				int k = (t >> 3) & 7; t &= 7;
 				for(int n = s.unmarshalUInt(); n > 0; --n)
 					this.#(var.name).put(%s, %s);
@@ -608,7 +608,7 @@ typedef.bean = merge(typedef.octets,
 			int n = s.size();
 			this.#(var.name).marshal(s.marshal1((byte)0x%02x));
 			if(s.size() - n < 3) s.resize(n);
-		}]], 0x80 + var.id) end,
+		}]], var.id * 4 + 2) end,
 	unmarshal = "case #(var.id): s.unmarshalBean(this.#(var.name), t);",
 	unmarshal_kv = function(var, kv, t) if kv then return "s.unmarshalBeanKV(new " .. typename(var, var[kv]) .. "(), " .. t .. ")" end end,
 	compareto = "this.#(var.name).compareTo(b.#(var.name))",

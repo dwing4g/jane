@@ -89,15 +89,15 @@ public final class TestBean extends Bean<TestBean> implements Comparable<TestBea
 	@Override
 	public OctetsStream marshal(OctetsStream s)
 	{
-		if(this.value1 != 0) s.marshal1((byte)1).marshal(this.value1);
-		if(this.value2 != 0) s.marshal1((byte)2).marshal(this.value2);
+		if(this.value1 != 0) s.marshal1((byte)0x04).marshal(this.value1);
+		if(this.value2 != 0) s.marshal1((byte)0x08).marshal(this.value2);
 		return s.marshal1((byte)0);
 	}
 
 	@Override
 	public OctetsStream unmarshal(OctetsStream s) throws MarshalException
 	{
-		for(;;) { int i = s.unmarshalByte() & 0xff, t = i >> 6; switch(i & 0x3f)
+		for(;;) { int i = s.unmarshalByte() & 0xff, t = i & 3; switch(i >> 6)
 		{
 			case 0: return s;
 			case 1: this.value1 = s.unmarshalInt(t); break;

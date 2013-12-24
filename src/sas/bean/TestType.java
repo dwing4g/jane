@@ -296,72 +296,72 @@ public final class TestType extends Bean<TestType> implements Comparable<TestTyp
 	@Override
 	public OctetsStream marshal(OctetsStream s)
 	{
-		if(this.v1) s.marshal1((byte)1).marshal1((byte)1);
-		if(this.v2 != 0) s.marshal1((byte)2).marshal(this.v2);
-		if(this.v3 != 0) s.marshal1((byte)3).marshal(this.v3);
-		if(this.v4 != 0) s.marshal1((byte)4).marshal(this.v4);
-		if(this.v5 != 0) s.marshal1((byte)5).marshal(this.v5);
-		if(this.v6 != 0) s.marshal2(0xc600).marshal(this.v6);
-		if(this.v7 != 0) s.marshal2(0xc701).marshal(this.v7);
-		if(!this.v8.empty()) s.marshal1((byte)0x48).marshal(this.v8);
-		if(!this.v9.isEmpty()) s.marshal1((byte)0x49).marshal(this.v9);
+		if(this.v1) s.marshal1((byte)0x04).marshal1((byte)1);
+		if(this.v2 != 0) s.marshal1((byte)0x08).marshal(this.v2);
+		if(this.v3 != 0) s.marshal1((byte)0x0c).marshal(this.v3);
+		if(this.v4 != 0) s.marshal1((byte)0x10).marshal(this.v4);
+		if(this.v5 != 0) s.marshal1((byte)0x14).marshal(this.v5);
+		if(this.v6 != 0) s.marshal2(0x1b08).marshal(this.v6);
+		if(this.v7 != 0) s.marshal2(0x1f09).marshal(this.v7);
+		if(!this.v8.empty()) s.marshal1((byte)0x21).marshal(this.v8);
+		if(!this.v9.isEmpty()) s.marshal1((byte)0x25).marshal(this.v9);
 		if(!this.v10.isEmpty())
 		{
-			s.marshal2(0xca80).marshalUInt(this.v10.size());
+			s.marshal2(0x2b00).marshalUInt(this.v10.size());
 			for(Boolean v : this.v10)
 				s.marshal(v);
 		}
 		if(!this.v11.isEmpty())
 		{
-			s.marshal2(0xcb80).marshalUInt(this.v11.size());
+			s.marshal2(0x2f00).marshalUInt(this.v11.size());
 			for(Byte v : this.v11)
 				s.marshal(v);
 		}
 		if(!this.v12.isEmpty())
 		{
-			s.marshal2(0xcc80).marshalUInt(this.v12.size());
+			s.marshal2(0x3300).marshalUInt(this.v12.size());
 			for(Integer v : this.v12)
 				s.marshal(v);
 		}
 		if(!this.v13.isEmpty())
 		{
-			s.marshal2(0xcd80).marshalUInt(this.v13.size());
+			s.marshal2(0x3700).marshalUInt(this.v13.size());
 			for(Long v : this.v13)
 				s.marshal(v);
 		}
 		if(!this.v14.isEmpty())
 		{
-			s.marshal2(0xce84).marshalUInt(this.v14.size());
+			s.marshal2(0x3b04).marshalUInt(this.v14.size());
 			for(Float v : this.v14)
 				s.marshal(v);
 		}
 		if(!this.v15.isEmpty())
 		{
-			s.marshal2(0xcf85).marshalUInt(this.v15.size());
+			s.marshal2(0x3f05).marshalUInt(this.v15.size());
 			for(Double v : this.v15)
 				s.marshal(v);
 		}
 		if(!this.v16.isEmpty())
 		{
-			s.marshal2(0xd0c1).marshalUInt(this.v16.size());
+			s.marshal2(0x4341).marshalUInt(this.v16.size());
 			for(Entry<Long, String> e : this.v16.entrySet())
 				s.marshal(e.getKey()).marshal(e.getValue());
 		}
 		if(!this.v17.isEmpty())
 		{
-			s.marshal2(0xd1d0).marshalUInt(this.v17.size());
+			s.marshal2(0x4750).marshalUInt(this.v17.size());
 			for(Entry<TestBean, Boolean> e : this.v17.entrySet())
 				s.marshal(e.getKey()).marshal(e.getValue());
 		}
 		if(!this.v18.isEmpty())
 		{
-			s.marshal2(0xd2ca).marshalUInt(this.v18.size());
+			s.marshal2(0x4b4a).marshalUInt(this.v18.size());
 			for(Entry<Octets, TestBean> e : this.v18.entrySet())
 				s.marshal(e.getKey()).marshal(e.getValue());
 		}
 		{
 			int n = s.size();
-			this.v19.marshal(s.marshal1((byte)0x93));
+			this.v19.marshal(s.marshal1((byte)0x4e));
 			if(s.size() - n < 3) s.resize(n);
 		}
 		return s.marshal1((byte)0);
@@ -370,7 +370,7 @@ public final class TestType extends Bean<TestType> implements Comparable<TestTyp
 	@Override
 	public OctetsStream unmarshal(OctetsStream s) throws MarshalException
 	{
-		for(;;) { int i = s.unmarshalByte() & 0xff, t = i >> 6; switch(i & 0x3f)
+		for(;;) { int i = s.unmarshalByte() & 0xff, t = i & 3; switch(i >> 6)
 		{
 			case 0: return s;
 			case 1: this.v1 = (s.unmarshalInt(t) != 0); break;
@@ -387,7 +387,7 @@ public final class TestType extends Bean<TestType> implements Comparable<TestTyp
 				this.v10.clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
 				t = s.unmarshalByte();
-				if((t & 0xc0) != 0x80) { s.unmarshalSkipVarSub(t); break; }
+				if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 				t &= 7;
 				int n = s.unmarshalUInt();
 				this.v10.ensureCapacity(n < 0x10000 ? n : 0x10000);
@@ -399,7 +399,7 @@ public final class TestType extends Bean<TestType> implements Comparable<TestTyp
 				this.v11.clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
 				t = s.unmarshalByte();
-				if((t & 0xc0) != 0x80) { s.unmarshalSkipVarSub(t); break; }
+				if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 				t &= 7;
 				for(int n = s.unmarshalUInt(); n > 0; --n)
 					this.v11.add((byte)s.unmarshalIntKV(t));
@@ -409,7 +409,7 @@ public final class TestType extends Bean<TestType> implements Comparable<TestTyp
 				this.v12.clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
 				t = s.unmarshalByte();
-				if((t & 0xc0) != 0x80) { s.unmarshalSkipVarSub(t); break; }
+				if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 				t &= 7;
 				for(int n = s.unmarshalUInt(); n > 0; --n)
 					this.v12.add(s.unmarshalIntKV(t));
@@ -419,7 +419,7 @@ public final class TestType extends Bean<TestType> implements Comparable<TestTyp
 				this.v13.clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
 				t = s.unmarshalByte();
-				if((t & 0xc0) != 0x80) { s.unmarshalSkipVarSub(t); break; }
+				if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 				t &= 7;
 				for(int n = s.unmarshalUInt(); n > 0; --n)
 					this.v13.add(s.unmarshalLongKV(t));
@@ -429,7 +429,7 @@ public final class TestType extends Bean<TestType> implements Comparable<TestTyp
 				this.v14.clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
 				t = s.unmarshalByte();
-				if((t & 0xc0) != 0x80) { s.unmarshalSkipVarSub(t); break; }
+				if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 				t &= 7;
 				for(int n = s.unmarshalUInt(); n > 0; --n)
 					this.v14.add(s.unmarshalFloatKV(t));
@@ -439,7 +439,7 @@ public final class TestType extends Bean<TestType> implements Comparable<TestTyp
 				this.v15.clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
 				t = s.unmarshalByte();
-				if((t & 0xc0) != 0x80) { s.unmarshalSkipVarSub(t); break; }
+				if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 				t &= 7;
 				for(int n = s.unmarshalUInt(); n > 0; --n)
 					this.v15.add(s.unmarshalDoubleKV(t));
@@ -449,7 +449,7 @@ public final class TestType extends Bean<TestType> implements Comparable<TestTyp
 				this.v16.clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
 				t = s.unmarshalByte();
-				if((t & 0xc0) != 0xc0) { s.unmarshalSkipVarSub(t); break; }
+				if((t >> 6) != 1) { s.unmarshalSkipVarSub(t); break; }
 				int k = (t >> 3) & 7; t &= 7;
 				for(int n = s.unmarshalUInt(); n > 0; --n)
 					this.v16.put(s.unmarshalLongKV(k), s.unmarshalStringKV(t));
@@ -459,7 +459,7 @@ public final class TestType extends Bean<TestType> implements Comparable<TestTyp
 				this.v17.clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
 				t = s.unmarshalByte();
-				if((t & 0xc0) != 0xc0) { s.unmarshalSkipVarSub(t); break; }
+				if((t >> 6) != 1) { s.unmarshalSkipVarSub(t); break; }
 				int k = (t >> 3) & 7; t &= 7;
 				for(int n = s.unmarshalUInt(); n > 0; --n)
 					this.v17.put(s.unmarshalBeanKV(new TestBean(), k), (s.unmarshalIntKV(t) != 0));
@@ -469,7 +469,7 @@ public final class TestType extends Bean<TestType> implements Comparable<TestTyp
 				this.v18.clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
 				t = s.unmarshalByte();
-				if((t & 0xc0) != 0xc0) { s.unmarshalSkipVarSub(t); break; }
+				if((t >> 6) != 1) { s.unmarshalSkipVarSub(t); break; }
 				int k = (t >> 3) & 7; t &= 7;
 				for(int n = s.unmarshalUInt(); n > 0; --n)
 					this.v18.put(s.unmarshalOctetsKV(k), s.unmarshalBeanKV(new TestBean(), t));

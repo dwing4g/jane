@@ -71,8 +71,8 @@ public final class TestKeyBean extends Bean<TestKeyBean> implements Comparable<T
 	@Override
 	public OctetsStream marshal(OctetsStream s)
 	{
-		if(this.key1 != 0) s.marshal1((byte)1).marshal(this.key1);
-		if(!this.key2.isEmpty()) s.marshal1((byte)0x42).marshal(this.key2);
+		if(this.key1 != 0) s.marshal1((byte)0x04).marshal(this.key1);
+		if(!this.key2.isEmpty()) s.marshal1((byte)0x09).marshal(this.key2);
 		return s.marshal1((byte)0);
 	}
 

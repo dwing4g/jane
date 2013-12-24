@@ -433,43 +433,43 @@ public class OctetsStream extends Octets
 			if(o instanceof Float)
 			{
 				float v = (Float)o;
-				if(v != 0) marshal2((0xc0 + id) << 8).marshal(v);
+				if(v != 0) marshal2((id << 10) + 0x308).marshal(v);
 			}
 			else if(o instanceof Double)
 			{
 				double v = (Double)o;
-				if(v != 0) marshal2(((0xc0 + id) << 8) + 1).marshal(v);
+				if(v != 0) marshal2((id << 10) + 0x309).marshal(v);
 			}
 			else
 			{
 				long v = ((Number)o).longValue();
-				if(v != 0) marshal1((byte)id).marshal(v);
+				if(v != 0) marshal1((byte)(id << 2)).marshal(v);
 			}
 		}
 		else if(o instanceof Boolean)
 		{
 			boolean v = (Boolean)o;
-			if(v) marshal2((id << 8) + 1);
+			if(v) marshal2((id << 10) + 1);
 		}
 		else if(o instanceof Character)
 		{
 			int v = (Character)o;
-			if(v != 0) marshal1((byte)id).marshal(v);
+			if(v != 0) marshal1((byte)(id << 2)).marshal(v);
 		}
 		else if(o instanceof Octets)
 		{
 			Octets oct = (Octets)o;
-			if(!oct.empty()) marshal1((byte)(0x40 + id)).marshal(oct);
+			if(!oct.empty()) marshal1((byte)((id << 2) + 1)).marshal(oct);
 		}
 		else if(o instanceof String)
 		{
 			String str = (String)o;
-			if(!str.isEmpty()) marshal1((byte)(0x40 + id)).marshal(str);
+			if(!str.isEmpty()) marshal1((byte)((id << 2) + 1)).marshal(str);
 		}
 		else if(o instanceof Bean)
 		{
 			int n = count;
-			((Bean<?>)o).marshal(marshal1((byte)(0x80 + id)));
+			((Bean<?>)o).marshal(marshal1((byte)((id << 2) + 2)));
 			if(count - n < 3) resize(n);
 		}
 		else if(o instanceof Collection)
@@ -478,7 +478,7 @@ public class OctetsStream extends Octets
 			if(!list.isEmpty())
 			{
 				int vtype = getKVType(list.iterator().next());
-				marshal2(((0xc0 + id) << 8) + 0x80 + vtype).marshalUInt(list.size());
+				marshal2((id << 10) + 0x300 + vtype).marshalUInt(list.size());
 				for(Object v : list)
 					marshalKV(vtype, v);
 			}
@@ -491,7 +491,7 @@ public class OctetsStream extends Octets
 				Entry<?, ?> et = map.entrySet().iterator().next();
 				int ktype = getKVType(et.getKey());
 				int vtype = getKVType(et.getValue());
-				marshal2(((0xc0 + id) << 8) + 0xc0 + (ktype << 3) + vtype).marshalUInt(map.size());
+				marshal2((id << 10) + 0x340 + (ktype << 3) + vtype).marshalUInt(map.size());
 				for(Entry<?, ?> e : map.entrySet())
 					marshalKV(ktype, e.getKey()).marshalKV(vtype, e.getValue());
 			}
@@ -699,7 +699,7 @@ public class OctetsStream extends Octets
 		{
 			int tag = unmarshalByte();
 			if(tag == 0) return;
-			unmarshalSkipVar((tag >> 6) & 3);
+			unmarshalSkipVar(tag & 3);
 		}
 	}
 
@@ -729,16 +729,19 @@ public class OctetsStream extends Octets
 		}
 	}
 
-	public void unmarshalSkipVarSub(int subtype) throws MarshalException
+	public void unmarshalSkipVarSub(int subtype) throws MarshalException // [ttkkkvvv] [4] / [8] / <n>[kv*n]
 	{
-		int t = subtype & 0xc0; // [ttkkkvvv] [4] / [8] / <n>[kv*n]
-		if(t == 0x80) // collection: <n>[v*n]
+		if(subtype == 8) // float: [4]
+			unmarshalSkip(4);
+		else if(subtype == 9) // double: [8]
+			unmarshalSkip(8);
+		else if(subtype < 0x40) // collection: <n>[v*n]
 		{
 			subtype &= 7;
 			for(int n = unmarshalUInt(); n > 0; --n)
 				unmarshalSkipKV(subtype);
 		}
-		else if(t == 0xc0) // map: <n>[kv*n]
+		else // map: <n>[kv*n]
 		{
 			int keytype = (subtype >> 3) & 7;
 			subtype &= 7;
@@ -748,20 +751,13 @@ public class OctetsStream extends Octets
 				unmarshalSkipKV(subtype);
 			}
 		}
-		else if(subtype == 0) // float: [4]
-			unmarshalSkip(4);
-		else if(subtype == 1) // double: [8]
-			unmarshalSkip(8);
-		else
-			throw MarshalException.create(has_ex_info);
 	}
 
 	public Object unmarshalVarSub(int subtype) throws MarshalException
 	{
-		if(subtype == 0) return unmarshalFloat();
-		if(subtype == 1) return unmarshalDouble();
-		int t = subtype & 0xc0;
-		if(t == 0x80)
+		if(subtype == 8) return unmarshalFloat();
+		if(subtype == 9) return unmarshalDouble();
+		if(subtype < 0x40)
 		{
 			subtype &= 7;
 			int n = unmarshalUInt();
@@ -770,17 +766,13 @@ public class OctetsStream extends Octets
 				list.add(unmarshalKV(subtype));
 			return list;
 		}
-		if(t == 0xc0)
-		{
-			int keytype = (subtype >> 3) & 7;
-			subtype &= 7;
-			int n = unmarshalUInt();
-			Map<Object, Object> map = new HashMap<Object, Object>(n < 0x10000 ? n : 0x10000);
-			for(; n > 0; --n)
-				map.put(unmarshalKV(keytype), unmarshalKV(subtype));
-			return map;
-		}
-		throw MarshalException.create(has_ex_info);
+		int keytype = (subtype >> 3) & 7;
+		subtype &= 7;
+		int n = unmarshalUInt();
+		Map<Object, Object> map = new HashMap<Object, Object>(n < 0x10000 ? n : 0x10000);
+		for(; n > 0; --n)
+			map.put(unmarshalKV(keytype), unmarshalKV(subtype));
+		return map;
 	}
 
 	public void unmarshalSkipKV(int kvtype) throws MarshalException
@@ -935,8 +927,8 @@ public class OctetsStream extends Octets
 		if(type == 3)
 		{
 			type = unmarshalByte();
-			if(type == 0) return (int)unmarshalFloat();
-			if(type == 1) return (int)unmarshalDouble();
+			if(type == 8) return (int)unmarshalFloat();
+			if(type == 9) return (int)unmarshalDouble();
 			unmarshalSkipVarSub(type);
 			return 0;
 		}
@@ -950,8 +942,8 @@ public class OctetsStream extends Octets
 		if(type == 3)
 		{
 			type = unmarshalByte();
-			if(type == 0) return (long)unmarshalFloat();
-			if(type == 1) return (long)unmarshalDouble();
+			if(type == 8) return (long)unmarshalFloat();
+			if(type == 9) return (long)unmarshalDouble();
 			unmarshalSkipVarSub(type);
 			return 0;
 		}
@@ -964,8 +956,8 @@ public class OctetsStream extends Octets
 		if(type == 3)
 		{
 			type = unmarshalByte();
-			if(type == 0) return unmarshalFloat();
-			if(type == 1) return (float)unmarshalDouble();
+			if(type == 8) return unmarshalFloat();
+			if(type == 9) return (float)unmarshalDouble();
 			unmarshalSkipVarSub(type);
 			return 0;
 		}
@@ -979,8 +971,8 @@ public class OctetsStream extends Octets
 		if(type == 3)
 		{
 			type = unmarshalByte();
-			if(type == 1) return unmarshalDouble();
-			if(type == 0) return unmarshalFloat();
+			if(type == 9) return unmarshalDouble();
+			if(type == 8) return unmarshalFloat();
 			unmarshalSkipVarSub(type);
 			return 0;
 		}
