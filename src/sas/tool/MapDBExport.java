@@ -27,7 +27,7 @@ public final class MapDBExport
 
 		long t = System.currentTimeMillis();
 		System.err.println("INFO: opening " + filename + " ...");
-		DB db = DBMaker.newFileDB(new File(filename)).closeOnJvmShutdown().readOnly().randomAccessFileEnable().make();
+		DB db = DBMaker.newFileDB(new File(filename)).closeOnJvmShutdown().readOnly().make();
 
 		// StorageMapDB.registerKeyBean(AllTables.Types.getKeyTypes());
 

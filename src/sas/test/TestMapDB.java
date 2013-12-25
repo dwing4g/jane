@@ -49,7 +49,7 @@ public final class TestMapDB
 	{
 		System.out.println("begin");
 		DB db = DBMaker.newFileDB(new File("mapdb_test.md1")).closeOnJvmShutdown()
-		        .snapshotEnable().asyncWriteEnable().cacheSize(32768).randomAccessFileEnable().make();
+		        .snapshotEnable().asyncWriteEnable().cacheSize(32768).make();
 		BTreeMap<Long, TestMapDB> map = db.createTreeMap("test").valueSerializer(new VS()).makeOrGet();
 
 		System.out.println("start");

@@ -20,7 +20,7 @@ public final class DBCompact
 		System.err.println("INFO: opening " + filename + " ...");
 		if(filename.endsWith(".md1") || filename.endsWith(".md2"))
 		{
-			DB db = DBMaker.newFileDB(new File(filename)).closeOnJvmShutdown().randomAccessFileEnable().make();
+			DB db = DBMaker.newFileDB(new File(filename)).closeOnJvmShutdown().make();
 			System.err.println("INFO: compacting db ...");
 			db.compact();
 			System.err.println("INFO: closing db ...");
