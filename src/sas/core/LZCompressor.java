@@ -3,7 +3,8 @@ package sas.core;
 import java.util.Arrays;
 
 /**
- * 基于LZ77的无损压缩算法(实验中)<p>
+ * 基于LZ77的无损压缩算法(实验中)
+ * <p>
  * 主要用于处理bean序列化的数据并为此专门优化,均衡对待压缩率/处理速度/算法复杂度/可定制性<br>
  * 对于普通数据的压缩也有较好的效果,尤其是处理小数据量<br>
  * 注意目标缓冲区长度不足或解压错误数据可能抛出异常
@@ -19,7 +20,8 @@ public final class LZCompressor
 	private int         cache;
 
 	/**
-	 * 重置当前对象<p>
+	 * 重置当前对象
+	 * <p>
 	 * 此操作是可选的,一般用于在压缩/解压时抛出异常后清除传入缓冲区的引用
 	 */
 	public void reset()

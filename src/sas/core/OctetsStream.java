@@ -7,7 +7,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 /**
- * 基于{@link Octets}的可扩展字节流的类型<p>
+ * 基于{@link Octets}的可扩展字节流的类型
+ * <p>
  * 包括各种所需的序列化/反序列化
  * @formatter:off
  */

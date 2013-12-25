@@ -3,7 +3,8 @@ package sas.core;
 import java.nio.ByteBuffer;
 
 /**
- * 基于{@link java.nio.ByteBuffer}的可扩展字节流的类型<p>
+ * 基于{@link java.nio.ByteBuffer}的可扩展字节流的类型
+ * <p>
  * 只支持只读数据的反序列化,目前仅内部使用,多用于包装{@link java.nio.DirectByteBuffer}
  * @formatter:off
  */
