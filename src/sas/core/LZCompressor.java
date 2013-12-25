@@ -115,8 +115,8 @@ public final class LZCompressor
 
 	private void putbyte(byte c)
 	{
-		if(c >= 0)	putbits(c & 0xff, 8);
-		else		putbits((c & 0x7f) + 0x100, 9);
+		if(c >= 0) putbits(c & 0xff, 8);
+		else       putbits((c & 0x7f) + 0x100, 9);
 	}
 
 	public int compress(byte[] src, int srcpos, int srclen, byte[] dst, int dstpos)
@@ -149,31 +149,31 @@ public final class LZCompressor
 				while(n < m && src[p + n] == src[srcpos + n]) ++n;
 				srcpos += n;
 				if(srcpos < srclen) b = src[srcpos];
-				if(f == offt[n & 0xf]) putbits(0xc, 4);				// 1100
+				if(f == offt[n & 0xf]) putbits(0xc, 4);             // 1100
 				else {  offt[n & 0xf] = f;
-					 if(f < 0x41)	putbits(f + 0x3bf, 10);			// 11 11xx xxxx
-				else if(f < 0x141)	putbits(f + 0xdbf, 12);			// 1110 xxxx xxxx
-				else				putbits(f + 0x19ebf, 17); }		// 1 101x xxxx xxxx xxxx
-					 if(n == len)	putbits(0, 2);					// 00
-				else if(n < 4)	   {putbits(1, 2); len = 3;}		// 01
-				else if(n < 8)	   {putbits(n + 4, 4);if(n<6)len=n;}// 10xx
-				else if(n < 0x10)	putbits(n + 0x28, 6);			// 11 0xxx
-				else if(n < 0x20)	putbits(n + 0xd0, 8);			// 1110 xxxx
-				else if(n < 0x40)	putbits(n + 0x3a0, 10);			// 11 110x xxxx
-				else if(n < 0x80)	putbits(n + 0xf40, 12);			// 1111 10xx xxxx
-				else if(n < 0x100)	putbits(n + 0x3e80, 14);		// 11 1111 0xxx xxxx
-				else if(n < 0x200)	putbits(n + 0xfd00, 16);		// 1111 1110 xxxx xxxx
-				else if(n < 0x400)	putbits(n + 0x3fa00, 18);		// 11 1111 110x xxxx xxxx
-				else if(n < 0x800)	putbits(n + 0xff400, 20);		// 1111 1111 10xx xxxx xxxx
-				else if(n < 0x1000)	putbits(n + 0x3fe800, 22);		// 11 1111 1111 0xxx xxxx xxxx
-				else if(n < 0x2000)	putbits(n + 0xffd000, 24);		// 1111 1111 1110 xxxx xxxx xxxx
-				else 			   {putbits(0xfff, 12); len = n;}	// 1111 1111 1111
+				     if(f < 0x41)   putbits(f + 0x3bf, 10);         // 11 11xx xxxx
+				else if(f < 0x141)  putbits(f + 0xdbf, 12);         // 1110 xxxx xxxx
+				else                putbits(f + 0x19ebf, 17); }     // 1 101x xxxx xxxx xxxx
+				     if(n == len)   putbits(0, 2);                  // 00
+				else if(n < 4)     {putbits(1, 2); len = 3;}        // 01
+				else if(n < 8)     {putbits(n + 4, 4);if(n<6)len=n;}// 10xx
+				else if(n < 0x10)   putbits(n + 0x28, 6);           // 11 0xxx
+				else if(n < 0x20)   putbits(n + 0xd0, 8);           // 1110 xxxx
+				else if(n < 0x40)   putbits(n + 0x3a0, 10);         // 11 110x xxxx
+				else if(n < 0x80)   putbits(n + 0xf40, 12);         // 1111 10xx xxxx
+				else if(n < 0x100)  putbits(n + 0x3e80, 14);        // 11 1111 0xxx xxxx
+				else if(n < 0x200)  putbits(n + 0xfd00, 16);        // 1111 1110 xxxx xxxx
+				else if(n < 0x400)  putbits(n + 0x3fa00, 18);       // 11 1111 110x xxxx xxxx
+				else if(n < 0x800)  putbits(n + 0xff400, 20);       // 1111 1111 10xx xxxx xxxx
+				else if(n < 0x1000) putbits(n + 0x3fe800, 22);      // 11 1111 1111 0xxx xxxx xxxx
+				else if(n < 0x2000) putbits(n + 0xffd000, 24);      // 1111 1111 1110 xxxx xxxx xxxx
+				else               {putbits(0xfff, 12); len = n;}   // 1111 1111 1111
 			}
 		}
 		while(srcpos < srclen) putbyte(src[srcpos++]);
 		putflush();
 		com = null;
-		return compos;
+		return compos - dstpos;
 	}
 
 	public void decompress(byte[] src, int srcpos, byte[] dst, int dstpos, int dstlen)
@@ -185,32 +185,32 @@ public final class LZCompressor
 		int f, n, len = 3;
 		for(dstlen += dstpos; dstpos < dstlen;)
 		{
-					 if(getbit() >= 0)	dst[dstpos++] = (byte)getbits(7);			// 0xxx xxxx
-			else 	 if(getbit() >= 0)	dst[dstpos++] = (byte)(getbits(7) + 0x80);	// 1 0xxx xxxx
+			         if(getbit() >= 0)  dst[dstpos++] = (byte)getbits(7);          // 0xxx xxxx
+			else     if(getbit() >= 0)  dst[dstpos++] = (byte)(getbits(7) + 0x80); // 1 0xxx xxxx
 			else
 			{
-					 if(getbit() >= 0)
-					 if(getbit() >= 0)	f = 0;
-				else					f = getbits(13) + 0x141;
-				else if(getbit() >= 0)	f = getbits(8) + 0x41;
-				else					f = getbits(6) + 1;
-					 if(getbit() >= 0)	n = (getbit() >= 0 ? len : (len = 3));
-				else if(getbit() >= 0) {n = getbits(2) + 4; if(n < 6) len = n;}
-				else if(getbit() >= 0)	n = getbits(3) + 8;
-				else if(getbit() >= 0)	n = getbits(4) + 0x10;
-				else if(getbit() >= 0)	n = getbits(5) + 0x20;
-				else if(getbit() >= 0)	n = getbits(6) + 0x40;
-				else if(getbit() >= 0)	n = getbits(7) + 0x80;
-				else if(getbit() >= 0)	n = getbits(8) + 0x100;
-				else if(getbit() >= 0)	n = getbits(9) + 0x200;
-				else if(getbit() >= 0)	n = getbits(10) + 0x400;
-				else if(getbit() >= 0)	n = getbits(11) + 0x800;
-				else if(getbit() >= 0)	n = getbits(12) + 0x1000;
-				else				   {n = 0x2000; len = n;}
-				if(f == 0) f = offt[n & 0xf];
-				else offt[n & 0xf] = f;
-				for(; --n >= 0; ++dstpos)
-					dst[dstpos] = dst[dstpos - f];
+			         if(getbit() >= 0)
+			         if(getbit() >= 0)  f = 0;
+			    else                    f = getbits(13) + 0x141;
+			    else if(getbit() >= 0)  f = getbits(8) + 0x41;
+			    else                    f = getbits(6) + 1;
+			         if(getbit() >= 0)  n = (getbit() >= 0 ? len : (len = 3));
+			    else if(getbit() >= 0) {n = getbits(2) + 4; if(n < 6) len = n;}
+			    else if(getbit() >= 0)  n = getbits(3) + 8;
+			    else if(getbit() >= 0)  n = getbits(4) + 0x10;
+			    else if(getbit() >= 0)  n = getbits(5) + 0x20;
+			    else if(getbit() >= 0)  n = getbits(6) + 0x40;
+			    else if(getbit() >= 0)  n = getbits(7) + 0x80;
+			    else if(getbit() >= 0)  n = getbits(8) + 0x100;
+			    else if(getbit() >= 0)  n = getbits(9) + 0x200;
+			    else if(getbit() >= 0)  n = getbits(10) + 0x400;
+			    else if(getbit() >= 0)  n = getbits(11) + 0x800;
+			    else if(getbit() >= 0)  n = getbits(12) + 0x1000;
+			    else                   {n = 0x2000; len = n;}
+			    if(f == 0) f = offt[n & 0xf];
+			    else offt[n & 0xf] = f;
+			    for(; --n >= 0; ++dstpos)
+			        dst[dstpos] = dst[dstpos - f];
 			}
 		}
 		com = null;
