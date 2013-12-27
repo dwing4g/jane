@@ -7,16 +7,16 @@ import java.util.Arrays;
  * <p>
  * 主要用于处理bean序列化的数据并为此专门优化,均衡对待压缩率/处理速度/算法复杂度/可定制性<br>
  * 对于普通数据的压缩也有较好的效果,尤其是处理小数据量<br>
- * 注意目标缓冲区长度不足或解压错误数据可能抛出异常
+ * 注意目标缓冲区长度不足或解压错误数据可能抛出异常,本类的对象非线程安全
  * @formatter:off
  */
 public final class LZCompressor
 {
-	private final int[] hash = new int[0x10000];
-	private byte[]      com;
-	private int         compos;
-	private int         bits;
-	private int         cache;
+	private int[]  hash;
+	private byte[] com;
+	private int    compos;
+	private int    bits;
+	private int    cache;
 
 	/**
 	 * 重置当前对象
@@ -25,7 +25,7 @@ public final class LZCompressor
 	 */
 	public void reset()
 	{
-		Arrays.fill(hash, 0);
+		if(hash != null) Arrays.fill(hash, 0);
 		com = null;
 		compos = bits = cache = 0;
 	}
@@ -38,9 +38,9 @@ public final class LZCompressor
 		return srclen + (srclen + 7) / 8;
 	}
 
-	private void putbits(int v, int n) // n = 1~24
+	private void putbits(int v, int n) // n = 2~24
 	{
-		// System.out.format("\t0x%X %d", v, n);
+		// System.out.format("\t0x%X %d\n", v, n);
 		int b = bits + n, c = cache + (v << (32 - b));
 		if(b < 8)
 		{
@@ -117,7 +117,7 @@ public final class LZCompressor
 		}
 		bits = b - n;
 		cache = c << n;
-		// System.out.format("\t0x%X %d", c >>> (32 - n), n);
+		// System.out.format("\t0x%X %d\n", c >>> (32 - n), n);
 		return c >>> (32 - n);
 	}
 
@@ -131,12 +131,13 @@ public final class LZCompressor
 	public int compress(byte[] src, int srcpos, int srclen, byte[] dst, int dstpos)
 	{
 		if(srclen <= 0) return 0;
+		if(hash == null) hash = new int[0x10000];
 		com = dst;
 		compos = dstpos;
 		bits = cache = 0;
-		int h, p, n, f, f1 = 1, f2 = 2, f3 = 3;
+		int h, p, n, f, f1 = 1, f2 = 2, f3 = 3, f4 = 4;
 		byte a, b = src[0];
-		for(srclen += srcpos; srclen - srcpos > 2;)
+		for(srclen += srcpos - 2; srcpos < srclen;)
 		{
 			a = b; b = src[srcpos + 1];
 			h = ((a << 8) + b) & 0xffff;
@@ -145,16 +146,17 @@ public final class LZCompressor
 			f = srcpos - p;
 			if(f > 0x82080 || f <= 0 || src[p] != a || src[p + 2] != src[srcpos + 2] || src[p + 1] != b)
 				{ putbyte(a); ++srcpos; continue; }
-			n = 3; h = srclen - srcpos;
+			n = 3; h = srclen - srcpos + 2;
 			if(h > 0x2001) h = 0x2001;
 			while(n < h && src[p + n] == src[srcpos + n]) ++n;
-			     if(f == f1)    putbits(0x0c, 4);                         // 1100
-			else if(f == f2)   {putbits(0x0d, 4); h=f1;f1=f2;f2=h;}       // 1101
-			else if(f == f3)   {putbits(0x1c, 5); h=f1;f1=f3;f3=f2;f2=h;} // 1 1100
-			else{if(f < 0x81)   putbits(f + 0x000e7f, 12);                // 1110 1xxx xxxx
-			else if(f < 0x2081) putbits(f + 0x03bf7f, 18);                // 11 110x xxxx xxxx xxxx
-			else if(n > 3)      putbits(f + 0xf7df7f, 24);                // 1111 1xxx xxxx xxxx xxxx xxxx
-			     else          {putbyte(a); ++srcpos; continue;} f3=f2;f2=f1;f1=f;}
+			     if(f == f1)    putbits(0x0c, 4);                    // 1100
+			else if(f == f2)   {putbits(0x1a, 5); f2=f1;f1=f;}       // 1 1010
+			else if(f == f3)   {putbits(0x1b, 5); f3=f2;f2=f1;f1=f;} // 1 1011
+			else{if(f == f4)    putbits(0x1c, 5);                    // 1 1100
+			else if(f < 0x81)   putbits(f + 0x000e7f, 12);           // 1110 1xxx xxxx
+			else if(f < 0x2081) putbits(f + 0x03bf7f, 18);           // 11 110x xxxx xxxx xxxx
+			else if(n > 3)      putbits(f + 0xf7df7f, 24);           // 1111 1xxx xxxx xxxx xxxx xxxx
+			     else          {putbyte(a); ++srcpos; continue;} f4=f3;f3=f2;f2=f1;f1=f;}
 			     if(n < 5)      putbits(n - 3, 2);         // 0x
 			else if(n < 9)      putbits(n + 3, 4);         // 10xx
 			else if(n < 0x11)   putbits(n + 0x27, 6);      // 11 0xxx
@@ -168,10 +170,10 @@ public final class LZCompressor
 			else if(n < 0x1001) putbits(n + 0x3fe7ff, 22); // 11 1111 1111 0xxx xxxx xxxx
 			else if(n < 0x2001) putbits(n + 0xffcfff, 24); // 1111 1111 1110 xxxx xxxx xxxx
 			else                putbits(0xfff, 12);        // 1111 1111 1111
-			srcpos += n; // System.out.format("N: %4d %d - %d %d %d\n", f, n, f1, f2, f3);
-			if(srcpos < srclen) b = src[srcpos];
+			srcpos += n; // System.out.format("C: %4d %d\n", f, n);
+			if(srcpos < srclen + 2) b = src[srcpos];
 		}
-		while(srcpos < srclen) putbyte(src[srcpos++]);
+		while(srcpos < srclen + 2) putbyte(src[srcpos++]);
 		putflush();
 		com = null;
 		return compos - dstpos;
@@ -182,19 +184,20 @@ public final class LZCompressor
 		com = src;
 		compos = srcpos;
 		bits = cache = 0;
-		int n, f, f1 = 1, f2 = 2, f3 = 3;
+		int n, f = 1, f2 = 2, f3 = 3, f4 = 4;
 		for(dstlen += dstpos; dstpos < dstlen;)
 		{
 			     if(getbit() >= 0)  dst[dstpos++] = (byte)getbits(7);
 			else if(getbit() >= 0)  dst[dstpos++] = (byte)(getbits(7) + 0x80);
 			else{if(getbit() >= 0)
-			     if(getbit() >= 0)  f = f1;
-			     else              {f = f2; n=f1;f1=f2;f2=n;}
-			else if(getbit() >= 0)
-			     if(getbit() >= 0) {f = f3; n=f1;f1=f3;f3=f2;f2=n;}
-			     else              {f = getbits(7) + 1; f3=f2;f2=f1;f1=f;}
-			else{if(getbit() >= 0)  f = getbits(13) + 0x81;
-			     else               f = getbits(19) + 0x2081; f3=f2;f2=f1;f1=f;}
+			    {if(getbit() <  0)
+			     if(getbit() >= 0) {n = f2; f2=f;f=n;}
+			     else              {n = f3; f3=f2;f2=f;f=n;}}
+			else{if(getbit() >= 0)
+			     if(getbit() >= 0)  n = f4;
+			     else               n = getbits(7) + 1;
+			else if(getbit() >= 0)  n = getbits(13) + 0x81;
+			     else               n = getbits(19) + 0x2081; f4=f3;f3=f2;f2=f;f=n;}
 			     if(getbit() >= 0)  n =(getbit() >>> 31) + 3;
 			else if(getbit() >= 0)  n = getbits(2) + 5;
 			else if(getbit() >= 0)  n = getbits(3) + 9;
@@ -207,7 +210,7 @@ public final class LZCompressor
 			else if(getbit() >= 0)  n = getbits(10) + 0x401;
 			else if(getbit() >= 0)  n = getbits(11) + 0x801;
 			else if(getbit() >= 0)  n = getbits(12) + 0x1001;
-			else                    n = 0x2001; // System.out.format("N: %4d %d - %d %d %d\n", f, n, f1, f2, f3);
+			else                    n = 0x2001; // System.out.format("D: %4d %d\n", f, n);
 			for(; --n >= 0; ++dstpos)
 				dst[dstpos] = dst[dstpos - f];}
 		}
