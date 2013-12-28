@@ -18,11 +18,11 @@ import org.h2.mvstore.type.StringDataType;
 public class StorageMVStore implements Storage
 {
 	private static final StorageMVStore _instance = new StorageMVStore();
-	protected MVStore                   _db;                             // MVStore的数据库对象(会多线程并发访问)
-	protected MVMap<String, String>     _keytype;                        // 表的key类型(不会被多线程同时写)<表名,Long/String/Octets/Bean/Object>
-	protected MVMap<String, Long>       _idcounter;                      // 自增长计数器表(不会被多线程同时写)<表名,已分配的最大ID>
-	protected File                      _dbfile;                         // 当前数据库的文件
-	protected int                       _modcount;                       // 统计一次提交的put数量(不会被多线程访问)
+	private MVStore                     _db;                             // MVStore的数据库对象(会多线程并发访问)
+	private MVMap<String, String>       _keytype;                        // 表的key类型(不会被多线程同时写)<表名,Long/String/Octets/Bean/Object>
+	private MVMap<String, Long>         _idcounter;                      // 自增长计数器表(不会被多线程同时写)<表名,已分配的最大ID>
+	private File                        _dbfile;                         // 当前数据库的文件
+	private int                         _modcount;                       // 统计一次提交的put数量(不会被多线程访问)
 
 	private final class Table<K, V extends Bean<V>> implements Storage.Table<K, V>
 	{

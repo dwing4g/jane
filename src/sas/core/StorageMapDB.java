@@ -28,11 +28,11 @@ import org.mapdb.Utils;
  */
 public class StorageMapDB implements Storage
 {
-	private static final StorageMapDB           _instance     = new StorageMapDB();
-	protected static final Map<String, Bean<?>> _table_stub_k = new HashMap<String, Bean<?>>(); // 保存的bean类型key的存根. 用于序列化
-	protected DB                                _db;                                           // MapDB的数据库对象(会多线程并发访问)
-	protected File                              _dbfile;                                       // 当前数据库的文件
-	protected int                               _modcount;                                     // 统计一次提交的put数量(不会被多线程访问)
+	private static final StorageMapDB  _instance     = new StorageMapDB();
+	private final Map<String, Bean<?>> _table_stub_k = new HashMap<String, Bean<?>>(); // 保存的bean类型key的存根. 用于序列化
+	private DB                         _db;                                           // MapDB的数据库对象(会多线程并发访问)
+	private File                       _dbfile;                                       // 当前数据库的文件
+	private int                        _modcount;                                     // 统计一次提交的put数量(不会被多线程访问)
 
 	private final class Table<K, V extends Bean<V>> implements Storage.Table<K, V>
 	{
@@ -246,7 +246,7 @@ public class StorageMapDB implements Storage
 		}
 	}
 
-	protected static final class MapDBKeyOctetsSerializer extends BTreeKeySerializer<Octets> implements Serializable
+	private static final class MapDBKeyOctetsSerializer extends BTreeKeySerializer<Octets> implements Serializable
 	{
 		private static final long                     serialVersionUID = 1259228541710028468L;
 		private static final MapDBKeyOctetsSerializer _inst            = new MapDBKeyOctetsSerializer();
@@ -288,7 +288,7 @@ public class StorageMapDB implements Storage
 		}
 	}
 
-	protected static final class MapDBKeyStringSerializer extends BTreeKeySerializer<String> implements Serializable
+	private static final class MapDBKeyStringSerializer extends BTreeKeySerializer<String> implements Serializable
 	{
 		private static final long                     serialVersionUID = -7289889134227462080L;
 		private static final MapDBKeyStringSerializer _inst            = new MapDBKeyStringSerializer();
@@ -321,7 +321,7 @@ public class StorageMapDB implements Storage
 		}
 	}
 
-	protected static final class MapDBKeyBeanSerializer extends BTreeKeySerializer<Bean<?>> implements Serializable
+	private static final class MapDBKeyBeanSerializer extends BTreeKeySerializer<Bean<?>> implements Serializable
 	{
 		private static final long         serialVersionUID = -3465230589722405630L;
 		private final String              _tablename;
@@ -338,7 +338,7 @@ public class StorageMapDB implements Storage
 		{
 			if(_serializer == null)
 			{
-				Bean<?> stub = _table_stub_k.get(_tablename);
+				Bean<?> stub = _instance._table_stub_k.get(_tablename);
 				if(stub == null) stub = new DynBean();
 				_serializer = new MapDBSerializer(_tablename, stub);
 			}
@@ -351,7 +351,7 @@ public class StorageMapDB implements Storage
 		{
 			if(_serializer == null)
 			{
-				Bean<?> stub = _table_stub_k.get(_tablename);
+				Bean<?> stub = _instance._table_stub_k.get(_tablename);
 				if(stub == null) stub = new DynBean();
 				_serializer = new MapDBSerializer(_tablename, stub);
 			}
@@ -373,12 +373,12 @@ public class StorageMapDB implements Storage
 		return _instance;
 	}
 
-	public static void registerKeyBean(Map<String, Bean<?>> stub_k_map)
+	public void registerKeyBean(Map<String, Bean<?>> stub_k_map)
 	{
 		_table_stub_k.putAll(stub_k_map);
 	}
 
-	protected static <K, V> boolean walk(BTreeMap<K, V> btm, WalkHandler<K> handler, K from, K to, boolean inclusive, boolean reverse)
+	private static <K, V> boolean walk(BTreeMap<K, V> btm, WalkHandler<K> handler, K from, K to, boolean inclusive, boolean reverse)
 	{
 		ConcurrentNavigableMap<K, V> map;
 		if(from == null)
@@ -390,7 +390,7 @@ public class StorageMapDB implements Storage
 		return true;
 	}
 
-	protected StorageMapDB()
+	private StorageMapDB()
 	{
 	}
 
@@ -408,7 +408,6 @@ public class StorageMapDB implements Storage
 		// 取消注释下面的syncOnCommitDisable可以加快一点commit的速度,写数据量大的时候可以避免同时读非cache数据卡住过长时间
 		// 但程序崩溃的话,有可能导致某些未刷新的数据丢失或影响后面的备份操作,建议平时都要注释
 		// 不过在commit后对StoreWAL调用phys和index的sync可以让数据丢失的可能性降到极低,而且sync操作可以和读操作并发,更不影响cache层的读写
-		// 当然更安全的做法是考虑换用StorageMapDB2或StorageMVStore,事务暂停时间都更短
 		// dbmaker = dbmaker.syncOnCommitDisable();
 		// dbmaker = dbmaker.snapshotEnable(); // 使用此行可以获取到数据库的只读快照,目前尚未使用此特性,建议注释
 		dbmaker = dbmaker.asyncWriteEnable(); // 如果注释此行,提交过程的性能会大幅降低,建议不注释
