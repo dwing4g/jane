@@ -19,7 +19,6 @@ import org.mapdb.DBMaker;
 import org.mapdb.DataInput2;
 import org.mapdb.DataOutput2;
 import org.mapdb.Serializer;
-import org.mapdb.Utils;
 
 /**
  * MapDB存储引擎的实现(单件)
@@ -217,6 +216,12 @@ public class StorageMapDB implements Storage
 			}
 			return bean;
 		}
+
+		@Override
+		public int fixedSize()
+		{
+			return -1;
+		}
 	}
 
 	private static final class MapDBOctetsSerializer implements Serializer<Octets>, Serializable
@@ -232,17 +237,23 @@ public class StorageMapDB implements Storage
 		@Override
 		public void serialize(DataOutput out, Octets o) throws IOException
 		{
-			Utils.packInt(out, o.size());
+			marshalUInt(out, o.size());
 			out.write(o.array(), 0, o.size());
 		}
 
 		@Override
 		public Octets deserialize(DataInput in, int available) throws IOException
 		{
-			int n = Utils.unpackInt(in);
+			int n = unmarshalUInt(in);
 			Octets o = Octets.createSpace(n);
 			in.readFully(o.array(), 0, n);
 			return o;
+		}
+
+		@Override
+		public int fixedSize()
+		{
+			return -1;
 		}
 	}
 
@@ -262,7 +273,7 @@ public class StorageMapDB implements Storage
 			for(int i = start; i < end; ++i)
 			{
 				Octets o = (Octets)keys[i];
-				Utils.packInt(out, o.size());
+				marshalUInt(out, o.size());
 				out.write(o.array(), 0, o.size());
 			}
 		}
@@ -273,7 +284,7 @@ public class StorageMapDB implements Storage
 			Object[] objs = new Object[size];
 			for(int i = start; i < end; ++i)
 			{
-				int n = Utils.unpackInt(in);
+				int n = unmarshalUInt(in);
 				Octets o = Octets.createSpace(n);
 				in.readFully(o.array(), 0, n);
 				objs[i] = o;
@@ -372,6 +383,30 @@ public class StorageMapDB implements Storage
 	{
 		return _instance;
 	}
+
+	//@formatter:off
+	private static void marshalUInt(DataOutput out, int x) throws IOException
+	{
+		     if(x < 0x80)      out.writeByte(x);             // 0xxx xxxx
+		else if(x < 0x4000)    out.writeShort(x + 0x8000);   // 10xx xxxx +1B
+		else if(x < 0x200000) {out.writeByte((x + 0xc00000) >> 16); out.writeShort(x);} // 110x xxxx +2B
+		else if(x < 0x1000000) out.writeInt(x + 0xe0000000); // 1110 xxxx +3B
+		else {out.writeByte(0xf0); out.writeInt(x);}         // 1111 0000 +4B
+	}
+
+	private static int unmarshalUInt(DataInput in) throws IOException
+	{
+		int b = in.readByte() & 0xff;
+		switch(b >> 4)
+		{
+		case  0: case  1: case  2: case  3: case 4: case 5: case 6: case 7: return b;
+		case  8: case  9: case 10: case 11: return ((b & 0x3f) <<  8) + (in.readByte() & 0xff);
+		case 12: case 13:                   return ((b & 0x1f) << 16) + (in.readShort() & 0xffff);
+		case 14:                            return ((b & 0x0f) << 24) + ((in.readByte() & 0xff) << 16) + (in.readShort() & 0xffff);
+		default: int r = in.readInt(); if(r < 0) throw new IOException("minus value: " + r); return r;
+		}
+	}
+	//@formatter:on
 
 	public void registerKeyBean(Map<String, Bean<?>> stub_k_map)
 	{

@@ -32,6 +32,12 @@ public final class TestMapDB
 			System.out.println("deserialize: " + in.getClass() + ": " + bean);
 			return bean;
 		}
+
+		@Override
+		public int fixedSize()
+		{
+			return 8;
+		}
 	}
 
 	public TestMapDB(long v)

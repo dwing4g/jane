@@ -19,8 +19,7 @@ package org.mapdb;
 import java.io.DataInput;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Comparator;
+import java.util.*;
 
 /**
  * Functional stuff. Tuples, function, callback methods etc..
@@ -52,6 +51,11 @@ public final class Fun {
             return -COMPARATOR.compare(o1,o2);
         }
     };
+
+
+    /** empty iterator (note: Collections.EMPTY_ITERATOR is Java 7 specific and should not be used)*/
+    public static final Iterator EMPTY_ITERATOR = new ArrayList(0).iterator();
+
 
     public static final Comparator<Tuple2> TUPLE2_COMPARATOR = new Tuple2Comparator(null,null);
     public static final Comparator<Tuple3> TUPLE3_COMPARATOR = new Tuple3Comparator(null,null,null);
@@ -584,10 +588,127 @@ public final class Fun {
         }
     }
 
-    protected static int intCompare(int x, int y) {
+    private static int intCompare(int x, int y) {
         return (x < y) ? -1 : ((x == y) ? 0 : 1);
     }
 
+
+    /**
+     * Find all Primary Keys associated with Secondary Key.
+     * This is useful companion to {@link Bind#mapInverse(org.mapdb.Bind.MapWithModificationListener, java.util.Set)}
+     * and {@link Bind#secondaryKey(org.mapdb.Bind.MapWithModificationListener, java.util.Set, org.mapdb.Fun.Function2)}
+     * It can by also used to find values from 'MultiMap'.
+     *
+     * @param secondaryKeys Secondary Set or 'MultiMap' to find values in
+     * @param secondaryKey key to look from
+     * @param <K2> Secondary Key type
+     * @param <K1> Primary Key type
+     * @return all keys where primary value equals to `secondaryKey`
+     */
+    public static <K2,K1> Iterable<K1> filter(final NavigableSet<Fun.Tuple2<K2, K1>> secondaryKeys, final K2 secondaryKey) {
+        return filter(secondaryKeys, secondaryKey, true, secondaryKey, true);
+    }
+    public static <K2,K1> Iterable<K1> filter(final NavigableSet<Fun.Tuple2<K2, K1>> secondaryKeys,
+                                              final K2 lo, final boolean loInc, final K2 hi, final boolean hiInc) {
+        return new Iterable<K1>(){
+            @Override
+            public Iterator<K1> iterator() {
+                //use range query to get all values
+                final Iterator<Fun.Tuple2<K2,K1>> iter =
+                        ((NavigableSet)secondaryKeys) //cast is workaround for generics
+                                .subSet(
+                                        Fun.t2(lo,null), loInc,//NULL represents lower bound, everything is larger than null
+                                        Fun.t2(hi,hiInc?Fun.HI:null),hiInc // HI is upper bound everything is smaller then HI
+                                ).iterator();
+
+                return new Iterator<K1>() {
+                    @Override
+                    public boolean hasNext() {
+                        return iter.hasNext();
+                    }
+
+                    @Override
+                    public K1 next() {
+                        return iter.next().b;
+                    }
+
+                    @Override
+                    public void remove() {
+                        iter.remove();
+                    }
+                };
+            }
+        };
+
+    }
+
+
+    public static <A,B,C> Iterable<C> filter(final NavigableSet<Fun.Tuple3<A, B, C>> secondaryKeys,
+                                             final A a, final B b) {
+        return new Iterable<C>(){
+            @Override
+            public Iterator<C> iterator() {
+                //use range query to get all values
+                final Iterator<Fun.Tuple3> iter =
+                        ((NavigableSet)secondaryKeys) //cast is workaround for generics
+                                .subSet(
+                                        Fun.t3(a, b, null), //NULL represents lower bound, everything is larger than null
+                                        Fun.t3(a,b==null?Fun.HI():b,Fun.HI()) // HI is upper bound everything is smaller then HI
+                                ).iterator();
+
+                return new Iterator<C>() {
+                    @Override
+                    public boolean hasNext() {
+                        return iter.hasNext();
+                    }
+
+                    @Override
+                    public C next() {
+                        return (C) iter.next().c;
+                    }
+
+                    @Override
+                    public void remove() {
+                        iter.remove();
+                    }
+                };
+            }
+        };
+
+    }
+
+    public static <A,B,C,D> Iterable<D> filter(final NavigableSet<Fun.Tuple4<A, B, C, D>> secondaryKeys, final A a, final B b, final C c) {
+        return new Iterable<D>(){
+            @Override
+            public Iterator<D> iterator() {
+                //use range query to get all values
+                final Iterator<Fun.Tuple4> iter =
+                        ((NavigableSet)secondaryKeys) //cast is workaround for generics
+                                .subSet(
+                                        Fun.t4(a,b,c, null), //NULL represents lower bound, everything is larger than null
+                                        Fun.t4(a,b==null?Fun.HI():b,c==null?Fun.HI():c,Fun.HI()) // HI is upper bound everything is smaller then HI
+                                ).iterator();
+
+                return new Iterator<D>() {
+                    @Override
+                    public boolean hasNext() {
+                        return iter.hasNext();
+                    }
+
+                    @Override
+                    public D next() {
+                        return (D) iter.next().d;
+                    }
+
+                    @Override
+                    public void remove() {
+                        iter.remove();
+                    }
+                };
+            }
+        };
+
+    }
 
 
 }
