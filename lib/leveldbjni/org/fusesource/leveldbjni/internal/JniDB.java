@@ -50,6 +50,10 @@ public class JniDB implements DB {
         this.logger = logger;
     }
 
+    public NativeDB getNativeDB() {
+        return db;
+    }
+
     public void close() {
         if( db!=null ) {
             db.delete();

@@ -250,11 +250,11 @@ public class NativeDB extends NativeObject {
         }
     }
 
-    private void put(NativeWriteOptions options, NativeBuffer keyBuffer, NativeBuffer valueBuffer) throws DBException {
+    public void put(NativeWriteOptions options, NativeBuffer keyBuffer, NativeBuffer valueBuffer) throws DBException {
         put(options, new NativeSlice(keyBuffer), new NativeSlice(valueBuffer));
     }
 
-    private void put(NativeWriteOptions options, NativeSlice keySlice, NativeSlice valueSlice) throws DBException {
+    public void put(NativeWriteOptions options, NativeSlice keySlice, NativeSlice valueSlice) throws DBException {
         assertAllocated();
         checkStatus(DBJNI.Put(self, options, keySlice, valueSlice));
     }
@@ -270,11 +270,11 @@ public class NativeDB extends NativeObject {
         }
     }
 
-    private void delete(NativeWriteOptions options, NativeBuffer keyBuffer) throws DBException {
+    public void delete(NativeWriteOptions options, NativeBuffer keyBuffer) throws DBException {
         delete(options, new NativeSlice(keyBuffer));
     }
 
-    private void delete(NativeWriteOptions options, NativeSlice keySlice) throws DBException {
+    public void delete(NativeWriteOptions options, NativeSlice keySlice) throws DBException {
         assertAllocated();
         checkStatus(DBJNI.Delete(self, options, keySlice));
     }
@@ -296,11 +296,11 @@ public class NativeDB extends NativeObject {
         }
     }
 
-    private byte[] get(NativeReadOptions options, NativeBuffer keyBuffer) throws DBException {
+    public byte[] get(NativeReadOptions options, NativeBuffer keyBuffer) throws DBException {
         return get(options, new NativeSlice(keyBuffer));
     }
 
-    private byte[] get(NativeReadOptions options, NativeSlice keySlice) throws DBException {
+    public byte[] get(NativeReadOptions options, NativeSlice keySlice) throws DBException {
         assertAllocated();
         NativeStdString result = new NativeStdString();
         try {
