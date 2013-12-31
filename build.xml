@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<project name="SmartAppServer" default="dist">
+<project name="jane" default="dist">
 	<!-- install jdk,ant first:
 		example: add this line in linux ~/.bash_profile:
 		export PATH=$PATH:$HOME/apache-ant-1.9.2/bin
@@ -11,8 +11,8 @@
 
 	<target name="clean">
 		<delete dir="${classes}"/>
-		<delete file="sas-core.jar"/>
-		<delete file="sas-test.jar"/>
+		<delete file="jane-core.jar"/>
+		<delete file="jane-test.jar"/>
 	</target>
 
 	<target name="compile">
@@ -36,7 +36,7 @@
 	</target>
 
 	<target name="dist" depends="clean, compile">
-		<jar jarfile="sas-core.jar" basedir="${classes}" excludes="**/sas/bean/**,**/sas/handler/**,**/sas/test/**"/>
-		<jar jarfile="sas-test.jar" basedir="${classes}" includes="**/sas/bean/**,**/sas/handler/**,**/sas/test/**"/>
+		<jar jarfile="jane-core.jar" basedir="${classes}" excludes="**/jane/bean/**,**/jane/handler/**,**/jane/test/**"/>
+		<jar jarfile="jane-test.jar" basedir="${classes}" includes="**/jane/bean/**,**/jane/handler/**,**/jane/test/**"/>
 	</target>
 </project>

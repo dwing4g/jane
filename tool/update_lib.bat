@@ -48,11 +48,11 @@ rem	copy /y %H2DB%\h2\src\main\org\h2\store\fs\FilePathDisk.java			..\lib\mvstor
 	copy /y %H2DB%\h2\src\main\org\h2\util\New.java							..\lib\mvstore\org\h2\util\
 
 rem	WriteBuffer.java:
-rem	//PATCH: sas begin
+rem	//PATCH: jane begin
 rem	public void setBuffer(ByteBuffer buf) {
 rem		buff = buf;
 rem	}
-rem	//PATCH: sas end
+rem	//PATCH: jane end
 rem	FilePathDisk.java: many unused comment for compilation
 
 pause

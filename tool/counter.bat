@@ -2,6 +2,6 @@
 setlocal
 pushd %~dp0
 
-luajit counter.lua ..\src\sas\core
+luajit counter.lua ..\src\jane\core
 
 pause

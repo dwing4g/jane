@@ -3,5 +3,5 @@
 /db/
 /log/
 /tmp/
-sas-core.jar
-sas-test.jar
+jane-core.jar
+jane-test.jar

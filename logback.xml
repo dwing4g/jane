@@ -5,9 +5,9 @@
 		<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
 			<level>TRACE</level>
 		</filter>
-		<file>log/sas.log</file>
+		<file>log/jane.log</file>
 		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-			<fileNamePattern>log/sas.%d{yyyy-MM-dd}.log</fileNamePattern>
+			<fileNamePattern>log/jane.%d{yyyy-MM-dd}.log</fileNamePattern>
 			<maxHistory>500</maxHistory>
 		</rollingPolicy>
 		<encoder>

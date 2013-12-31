@@ -6,8 +6,8 @@ local dbt     = dbt     or function() end
 
 handler
 {
-	{ name="TestServer", path="sas.handler.testserver" },
-	{ name="TestClient", path="sas.handler.testclient" },
+	{ name="TestServer", path="jane.handler.testserver" },
+	{ name="TestClient", path="jane.handler.testclient" },
 }
 
 bean{ name="TestBean", type=1, initsize=16, maxsize=16, comment="bean的注释",
