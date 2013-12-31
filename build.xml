@@ -32,6 +32,7 @@
 			<src path="${lib}/mapdb/"/>
 			<src path="${lib}/mvstore/"/>
 			<src path="${lib}/nanohttpd/"/>
+			<src path="${lib}/leveldbjni/"/>
 		</javac>
 	</target>
 

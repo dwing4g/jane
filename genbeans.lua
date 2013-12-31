@@ -685,7 +685,7 @@ local function bean_common(bean)
 	if bean.name:find("[^%w_]") or typedef[bean.name] or bean.name == "AllBeans" or bean.name == "AllTables" then error("ERROR: invalid bean.name: " .. bean.name) end
 	if name_code[bean.name] then error("ERROR: duplicated bean.name: " .. bean.name) end
 	if type_bean[bean.type] then error("ERROR: duplicated bean.type: " .. bean.type) end
-	if bean.type < 1 or bean.type > 0xffffffff then error("ERROR: invalid bean.type: " .. bean.type) end
+	if bean.type < 1 or bean.type > 0x7fffffff then error("ERROR: invalid bean.type: " .. bean.type) end
 	for name in (bean.handlers or ""):gmatch("([%w_]+)") do
 		if not handlers[name] then error("ERROR: not defined handle: " .. name) end
 		hdl_types[name] = hdl_types[name] or {}
@@ -877,6 +877,7 @@ checksave(outpath .. "jane/bean/AllTables.java", (code_conv(template_alltables:g
 	for _, table in ipairs(tables) do
 		if names[table.name] then error("ERROR: duplicated table.name: " .. table.name) end
 		if ids[table.id] then error("ERROR: duplicated table.id: " .. table.id) end
+		if table.id < 1 or table.id > 0x7fffffff then error("ERROR: invalid table.id: " .. table.id) end
 		names[table.name] = true
 		ids[table.id] = true
 		subcode[#subcode + 1] = code_conv(code_conv(body, "table", table), "table", table)
