@@ -415,12 +415,21 @@ public final class DBManager
 	 * sid即SessionID,一般表示网络连接的ID,事务运行时可以获取这个对象({@link Procedure#getSID})<br>
 	 * 当这个sid失效且不需要处理其任何未处理的事务时,应该调用clearSession清除这个sid的队列以避免少量的内存泄漏
 	 */
-	public boolean submit(final Object sid, Procedure p)
+	public boolean submit(Object sid, Procedure p)
+	{
+		return submit(_proc_threads, sid, p);
+	}
+
+	/**
+	 * 见{@link #submit(Object sid, Procedure p)}<br>
+	 * 可使用自定义的线程池
+	 */
+	public boolean submit(final ExecutorService es, final Object sid, Procedure p)
 	{
 		p.setSID(sid);
 		if(sid == null)
 		{
-			_proc_threads.submit(p);
+			es.submit(p);
 			return true;
 		}
 		ArrayDeque<Procedure> q;
@@ -450,7 +459,7 @@ public final class DBManager
 			}
 		}
 		final ArrayDeque<Procedure> _q = q;
-		_proc_threads.submit(new Runnable()
+		es.submit(new Runnable()
 		{
 			@Override
 			public void run()
@@ -474,7 +483,7 @@ public final class DBManager
 						}
 						if(--n <= 0)
 						{
-							_proc_threads.submit(this);
+							es.submit(this);
 							return;
 						}
 					}
