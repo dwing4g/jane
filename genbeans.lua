@@ -717,7 +717,7 @@ local function get_imports(import)
 	for k in pairs(import) do
 		imports[#imports + 1] = k
 	end
-	table.sort(imports)
+	table.sort(imports, function(a, b) return a:gsub("^java%.", ".") < b:gsub("^java%.", ".") end)
 	return concat(imports, ";\nimport ")
 end
 function bean(bean)
