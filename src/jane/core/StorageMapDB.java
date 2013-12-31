@@ -458,7 +458,7 @@ public class StorageMapDB implements Storage
 	}
 
 	@Override
-	public <K, V extends Bean<V>> Storage.Table<K, V> openTable(String tablename, Object stub_k, V stub_v)
+	public <K, V extends Bean<V>> Storage.Table<K, V> openTable(int tableid, String tablename, Object stub_k, V stub_v)
 	{
 		BTreeMapMaker btmm = _db.createTreeMap(tablename).valueSerializer(MapDBOctetsSerializer.instance());
 		if(stub_k instanceof Octets)
@@ -474,7 +474,7 @@ public class StorageMapDB implements Storage
 	}
 
 	@Override
-	public <V extends Bean<V>> Storage.TableLong<V> openTable(String tablename, V stub_v)
+	public <V extends Bean<V>> Storage.TableLong<V> openTable(int tableid, String tablename, V stub_v)
 	{
 		BTreeMapMaker btmm = _db.createTreeMap(tablename)
 		        .valueSerializer(MapDBOctetsSerializer.instance())

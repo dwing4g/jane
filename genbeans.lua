@@ -286,7 +286,7 @@ public final class AllTables
 	 */
 	public static void register() {#<# _dbm.startCommitThread(); #>#}#<#
 #>#
-#(#	#(table.comment)public static final #(table.table)<#(table.key)#(table.comma)#(table.value)> #(table.name) = _dbm.openTable("#(table.name)", "#(table.lock)", #(table.cachesize)#(table.comma)#(table.keys), #(table.values));
+#(#	#(table.comment)public static final #(table.table)<#(table.key)#(table.comma)#(table.value)> #(table.name) = _dbm.openTable(#(table.id), "#(table.name)", "#(table.lock)", #(table.cachesize)#(table.comma)#(table.keys), #(table.values));
 #)#
 	/**
 	 * 以下内部类可以单独使用,避免初始化前面的表对象,主要用于获取表的键值类型
@@ -872,7 +872,13 @@ if tables.count > 0 then tables.imports["jane.core.DBManager"] = true end
 tables.imports = get_imports(tables.imports)
 checksave(outpath .. "jane/bean/AllTables.java", (code_conv(template_alltables:gsub("#%(#(.-)#%)#", function(body)
 	local subcode = {}
+	local names = {}
+	local ids = {}
 	for _, table in ipairs(tables) do
+		if names[table.name] then error("ERROR: duplicated table.name: " .. table.name) end
+		if ids[table.id] then error("ERROR: duplicated table.id: " .. table.id) end
+		names[table.name] = true
+		ids[table.id] = true
 		subcode[#subcode + 1] = code_conv(code_conv(body, "table", table), "table", table)
 	end
 	return concat(subcode)

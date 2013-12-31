@@ -374,10 +374,10 @@ public final class DBManager
 	 * @param stub_v 记录value的存根对象,不要用于记录有用的数据. 如果为null则表示此表是内存表
 	 * @return Table
 	 */
-	public synchronized <K, V extends Bean<V>> Table<K, V> openTable(String tablename, String lockname, int cachesize, Object stub_k, V stub_v)
+	public synchronized <K, V extends Bean<V>> Table<K, V> openTable(int tableid, String tablename, String lockname, int cachesize, Object stub_k, V stub_v)
 	{
 		if(_storage == null) throw new IllegalArgumentException("call DBManager.startup before open any table");
-		Storage.Table<K, V> stotable = (stub_v != null ? _storage.<K, V>openTable(tablename, stub_k, stub_v) : null);
+		Storage.Table<K, V> stotable = (stub_v != null ? _storage.<K, V>openTable(tableid, tablename, stub_k, stub_v) : null);
 		return new Table<K, V>(tablename, stotable, lockname, cachesize, stub_v);
 	}
 
@@ -392,10 +392,10 @@ public final class DBManager
 	 * @param stub_v 记录value的存根对象,不要用于记录有用的数据. 如果为null则表示此表是内存表
 	 * @return TableLong
 	 */
-	public synchronized <V extends Bean<V>> TableLong<V> openTable(String tablename, String lockname, int cachesize, V stub_v)
+	public synchronized <V extends Bean<V>> TableLong<V> openTable(int tableid, String tablename, String lockname, int cachesize, V stub_v)
 	{
 		if(_storage == null) throw new IllegalArgumentException("call DBManager.startup before open any table");
-		Storage.TableLong<V> stotable = (stub_v != null ? _storage.openTable(tablename, stub_v) : null);
+		Storage.TableLong<V> stotable = (stub_v != null ? _storage.openTable(tableid, tablename, stub_v) : null);
 		return new TableLong<V>(tablename, stotable, lockname, cachesize, stub_v);
 	}
 

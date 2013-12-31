@@ -125,20 +125,22 @@ public interface Storage
 	/**
 	 * 打开数据库表
 	 * <p>
-	 * 如果数据库表没有创建过,会自动创建新的
+	 * 如果数据库表没有创建过,会自动创建新的<br>
+	 * 表id和name可只使用其中一个来作为标识
 	 * @param stub_k 记录key的存根对象
 	 * @param stub_v 记录value的存根对象
 	 */
-	<K, V extends Bean<V>> Table<K, V> openTable(String tablename, Object stub_k, V stub_v);
+	<K, V extends Bean<V>> Table<K, V> openTable(int tableid, String tablename, Object stub_k, V stub_v);
 
 	/**
 	 * 打开key为ID类型的数据库表
 	 * <p>
 	 * ID类型即只能是>=0的long类型,可以为此而优化数据库的访问<br>
-	 * 如果数据库表没有创建过,会自动创建新的
+	 * 如果数据库表没有创建过,会自动创建新的<br>
+	 * 表id和name可只使用其中一个来作为标识
 	 * @param stub_v 记录value的存根对象
 	 */
-	<V extends Bean<V>> TableLong<V> openTable(String tablename, V stub_v);
+	<V extends Bean<V>> TableLong<V> openTable(int tableid, String tablename, V stub_v);
 
 	/**
 	 * 准备批量写操作

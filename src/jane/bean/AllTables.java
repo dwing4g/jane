@@ -23,15 +23,15 @@ public final class AllTables
 	/**
 	 * 数据库表定义. key类型只能是32/64位整数/浮点数或字符串/binary类型或bean类型, id类型表示优化的非负数long类型
 	 */
-	public static final TableLong<TestType> TestTable = _dbm.openTable("TestTable", "test", 200000, new TestType());
+	public static final TableLong<TestType> TestTable = _dbm.openTable(1, "TestTable", "test", 200000, new TestType());
 	/**
 	 * value类型必须是bean定义的类型
 	 */
-	public static final Table<TestBean, TestBean> BeanTable = _dbm.openTable("BeanTable", "bean", 65536, new TestBean(), new TestBean());
+	public static final Table<TestBean, TestBean> BeanTable = _dbm.openTable(2, "BeanTable", "bean", 65536, new TestBean(), new TestBean());
 	/**
 	 * 注意表名和key类型的对应关系是不能改变的
 	 */
-	public static final Table<Octets, TestEmpty> OctetsTable = _dbm.openTable("OctetsTable", "bean", 1000, null, null);
+	public static final Table<Octets, TestEmpty> OctetsTable = _dbm.openTable(3, "OctetsTable", "bean", 1000, null, null);
 
 	/**
 	 * 以下内部类可以单独使用,避免初始化前面的表对象,主要用于获取表的键值类型

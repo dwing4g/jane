@@ -314,7 +314,7 @@ public class StorageMVStore implements Storage
 	}
 
 	@Override
-	public <K, V extends Bean<V>> Storage.Table<K, V> openTable(String tablename, final Object stub_k, final V stub_v)
+	public <K, V extends Bean<V>> Storage.Table<K, V> openTable(int tableid, String tablename, final Object stub_k, final V stub_v)
 	{
 		DataType dt_k;
 		String dt_name;
@@ -362,7 +362,7 @@ public class StorageMVStore implements Storage
 	}
 
 	@Override
-	public <V extends Bean<V>> Storage.TableLong<V> openTable(String tablename, final V stub_v)
+	public <V extends Bean<V>> Storage.TableLong<V> openTable(int tableid, String tablename, final V stub_v)
 	{
 		if(_db.hasMap(tablename))
 		{
