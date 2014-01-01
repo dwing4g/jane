@@ -5,6 +5,7 @@ import jane.bean.TestType;
 import jane.core.DBManager;
 import jane.core.Procedure;
 import jane.core.Storage;
+import jane.core.StorageLevelDB;
 import jane.core.StorageMVStore;
 import jane.core.StorageMapDB;
 import jane.core.Util;
@@ -20,6 +21,8 @@ public final class TestDBBenchmark
 		{
 			if("mv".equals(args[0]))
 				sto = StorageMVStore.instance();
+			else if("ld".equals(args[0]))
+				sto = StorageLevelDB.instance();
 			else
 				sto = StorageMapDB.instance(); // if("md".equals(args[0]))
 		}

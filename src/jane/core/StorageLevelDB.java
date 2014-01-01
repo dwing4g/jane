@@ -458,7 +458,7 @@ public class StorageLevelDB implements Storage
 		}
 		if(_db == null || _ndb == null)
 		{
-			Log.log.error("StorageLevelDB.commit: db is closed(db={},ndb={})", _db.toString(), _ndb.toString());
+			Log.log.error("StorageLevelDB.commit: db is closed(db={},ndb={})", _db, _ndb);
 			return;
 		}
 		NativeWriteBatch nwb = new NativeWriteBatch();
