@@ -252,7 +252,7 @@ public class Library {
          * libraries in the Macintosh use the extension .jnilib but the some
          * VMs map to .dylib.
          */
-        libName = System.mapLibraryName(libName);
+        libName = System.mapLibraryName(libName + System.getProperty("sun.arch.data.model"));
         String ext = ".dylib"; 
         if (libName.endsWith(ext)) {
             libName = libName.substring(0, libName.length() - ext.length()) + ".jnilib"; 
@@ -312,7 +312,7 @@ public class Library {
 
     private boolean load(ArrayList<String> errors, File lib) {
         try {
-            System.load(lib.getPath());
+            System.load(lib.getAbsolutePath());
             return true;
         } catch (UnsatisfiedLinkError e) {
             errors.add(e.getMessage());

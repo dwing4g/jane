@@ -36,6 +36,7 @@ public final class Const
 	public static final int         mapDBFileLevel;
 	public static final int         mapDBCacheCount;
 	public static final int         mvStoreCacheSize;
+	public static final int         levelDBWriteBufferSize;
 	public static final int         levelDBCacheSize;
 
 	static
@@ -74,6 +75,7 @@ public final class Const
 		mapDBFileLevel = getPropInt("mapDBFileLevel", 0, 0, 3);
 		mapDBCacheCount = getPropInt("mapDBCacheCount", 32768, 0);
 		mvStoreCacheSize = getPropInt("mvStoreCacheSize", 32, 0);
+		levelDBWriteBufferSize = getPropInt("levelDBWriteBufferSize", 32, 0);
 		levelDBCacheSize = getPropInt("levelDBCacheSize", 32, 0);
 	}
 

@@ -2,19 +2,19 @@ package jane.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 import org.fusesource.leveldbjni.JniDBFactory;
 import org.fusesource.leveldbjni.internal.JniDB;
-import org.fusesource.leveldbjni.internal.JniWriteBatch;
 import org.fusesource.leveldbjni.internal.NativeBuffer;
 import org.fusesource.leveldbjni.internal.NativeDB;
 import org.fusesource.leveldbjni.internal.NativeDB.DBException;
 import org.fusesource.leveldbjni.internal.NativeReadOptions;
+import org.fusesource.leveldbjni.internal.NativeWriteBatch;
 import org.fusesource.leveldbjni.internal.NativeWriteOptions;
 import org.iq80.leveldb.CompressionType;
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.Options;
-import org.iq80.leveldb.WriteBatch;
 
 /**
  * LevelDB存储引擎的实现(单件)
@@ -24,14 +24,14 @@ import org.iq80.leveldb.WriteBatch;
 public class StorageLevelDB implements Storage
 {
 	private static final StorageLevelDB               _instance = new StorageLevelDB();
+	private final NativeReadOptions                   _nro      = new NativeReadOptions();        // 读数据库选项
+	private final NativeWriteOptions                  _nwo      = new NativeWriteOptions();       // 写数据库选项
+	private final ConcurrentMap<Octets, OctetsStream> _writebuf = Util.newConcurrentHashMap();    // 提交过程中临时的写缓冲区
+	private final OctetsStream                        _deleted  = OctetsStream.wrap(Octets.EMPTY); // 表示已删除的值
 	private DB                                        _db;                                        // LevelDB的数据库对象(会多线程并发访问)
 	private NativeDB                                  _ndb;                                       // LevelDB的内部数据库对象(会多线程并发访问)
 	private File                                      _dbfile;                                    // 当前数据库的文件
-	private final NativeReadOptions                   _nro      = new NativeReadOptions();        // 读数据库选项
-	private final NativeWriteOptions                  _nwo      = new NativeWriteOptions();       // 写数据库选项
-	private WriteBatch                                _wb;                                        // 批量写对象
-	private final ConcurrentMap<Octets, OctetsStream> _writebuf = Util.newConcurrentHashMap();    // 提交过程中临时的写缓冲区
-	private final OctetsStream                        _deleted  = OctetsStream.wrap(Octets.EMPTY); // 表示已删除的值
+	private volatile boolean                          _writing;                                   // 是否正在执行写操作
 
 	private class TableLong<V extends Bean<V>> implements Storage.TableLong<V>
 	{
@@ -92,13 +92,13 @@ public class StorageLevelDB implements Storage
 		@Override
 		public void put(long k, V v)
 		{
-			dbput(getKey(k), v.marshal(new OctetsStream(_stub_v.initSize()).marshal1((byte)0))); // format
+			_writebuf.put(getKey(k), v.marshal(new OctetsStream(_stub_v.initSize()).marshal1((byte)0))); // format
 		}
 
 		@Override
 		public void remove(long k)
 		{
-			dbdel(getKey(k));
+			_writebuf.put(getKey(k), _deleted);
 		}
 
 		@Override
@@ -128,7 +128,7 @@ public class StorageLevelDB implements Storage
 		public void setIDCounter(long v)
 		{
 			if(v != getIDCounter())
-			    dbput(_tableidcounter, new OctetsStream(9).marshal(v));
+			    _writebuf.put(_tableidcounter, new OctetsStream(9).marshal(v));
 		}
 	}
 
@@ -188,13 +188,13 @@ public class StorageLevelDB implements Storage
 		@Override
 		public void put(Octets k, V v)
 		{
-			dbput(getKey(k), v.marshal(new OctetsStream(_stub_v.initSize()).marshal1((byte)0))); // format
+			_writebuf.put(getKey(k), v.marshal(new OctetsStream(_stub_v.initSize()).marshal1((byte)0))); // format
 		}
 
 		@Override
 		public void remove(Octets k)
 		{
-			dbdel(getKey(k));
+			_writebuf.put(getKey(k), _deleted);
 		}
 
 		@Override
@@ -262,13 +262,13 @@ public class StorageLevelDB implements Storage
 		@Override
 		public void put(String k, V v)
 		{
-			dbput(getKey(k), v.marshal(new OctetsStream(_stub_v.initSize()).marshal1((byte)0))); // format
+			_writebuf.put(getKey(k), v.marshal(new OctetsStream(_stub_v.initSize()).marshal1((byte)0))); // format
 		}
 
 		@Override
 		public void remove(String k)
 		{
-			dbdel(getKey(k));
+			_writebuf.put(getKey(k), _deleted);
 		}
 
 		@Override
@@ -334,13 +334,13 @@ public class StorageLevelDB implements Storage
 		@Override
 		public void put(K k, V v)
 		{
-			dbput(getKey(k), v.marshal(new OctetsStream(_stub_v.initSize()).marshal1((byte)0))); // format
+			_writebuf.put(getKey(k), v.marshal(new OctetsStream(_stub_v.initSize()).marshal1((byte)0))); // format
 		}
 
 		@Override
 		public void remove(K k)
 		{
-			dbdel(getKey(k));
+			_writebuf.put(getKey(k), _deleted);
 		}
 
 		@Override
@@ -375,7 +375,7 @@ public class StorageLevelDB implements Storage
 
 	private OctetsStream dbget(Octets k)
 	{
-		if(_wb != null)
+		if(_writing)
 		{
 			OctetsStream v = _writebuf.get(k);
 			if(v == _deleted) return null;
@@ -398,44 +398,6 @@ public class StorageLevelDB implements Storage
 		}
 	}
 
-	private void dbput(Octets k, OctetsStream v)
-	{
-		NativeBuffer keybuf = NativeBuffer.create(k.array(), 0, k.size());
-		NativeBuffer valbuf = NativeBuffer.create(v.array(), 0, v.size());
-		try
-		{
-			_writebuf.put(k, v);
-			_ndb.put(_nwo, keybuf, valbuf);
-		}
-		catch(DBException e)
-		{
-			Log.log.error("StorageLevelDB.dbput failed", e);
-		}
-		finally
-		{
-			keybuf.delete();
-			valbuf.delete();
-		}
-	}
-
-	private void dbdel(Octets k)
-	{
-		NativeBuffer buf = NativeBuffer.create(k.array(), 0, k.size());
-		try
-		{
-			_writebuf.put(k, _deleted);
-			_ndb.delete(_nwo, buf);
-		}
-		catch(DBException e)
-		{
-			Log.log.error("StorageLevelDB.dbdel failed", e);
-		}
-		finally
-		{
-			buf.delete();
-		}
-	}
-
 	@Override
 	public String getFileSuffix()
 	{
@@ -447,7 +409,8 @@ public class StorageLevelDB implements Storage
 	{
 		closeDB();
 		Options opt = new Options().createIfMissing(true).compressionType(CompressionType.NONE).verifyChecksums(false);
-		opt.writeBufferSize(Const.levelDBCacheSize << 20);
+		opt.writeBufferSize(Const.levelDBWriteBufferSize << 20);
+		opt.cacheSize(Const.levelDBCacheSize << 20);
 		_db = JniDBFactory.factory.open(file, opt);
 		_ndb = ((JniDB)_db).getNativeDB();
 		_dbfile = file;
@@ -477,8 +440,7 @@ public class StorageLevelDB implements Storage
 	@Override
 	public void putBegin()
 	{
-		_wb = _db.createWriteBatch();
-		_writebuf.clear();
+		_writing = true;
 	}
 
 	@Override
@@ -489,41 +451,68 @@ public class StorageLevelDB implements Storage
 	@Override
 	public void commit()
 	{
-		if(!_writebuf.isEmpty() && _wb != null)
+		if(_writebuf.isEmpty())
 		{
-			if(_db != null && _ndb != null)
+			_writing = false;
+			return;
+		}
+		if(_db == null || _ndb == null)
+		{
+			Log.log.error("StorageLevelDB.commit: db is closed(db={},ndb={})", _db.toString(), _ndb.toString());
+			return;
+		}
+		NativeWriteBatch nwb = new NativeWriteBatch();
+		try
+		{
+			for(Entry<Octets, OctetsStream> e : _writebuf.entrySet())
 			{
+				Octets k = e.getKey();
+				OctetsStream v = e.getValue();
+				NativeBuffer kb = NativeBuffer.create(k.array(), 0, k.size());
 				try
 				{
-					_ndb.write(_nwo, ((JniWriteBatch)_wb).writeBatch());
+					if(v == _deleted)
+						nwb.delete(kb);
+					else
+					{
+						NativeBuffer vb = NativeBuffer.create(v.array(), 0, v.size());
+						try
+						{
+							nwb.put(kb, vb);
+						}
+						finally
+						{
+							vb.delete();
+						}
+					}
 				}
-				catch(DBException e)
+				finally
 				{
-					Log.log.error("StorageLevelDB.commit write failed", e);
+					kb.delete();
 				}
 			}
-			try
-			{
-				_wb.close();
-			}
-			catch(IOException e)
-			{
-				Log.log.error("StorageLevelDB.commit close failed", e);
-			}
-			finally
-			{
-				_wb = null;
-			}
+			_ndb.write(_nwo, nwb);
+			_writebuf.clear();
+			_writing = false;
 		}
-		_writebuf.clear();
+		catch(DBException e)
+		{
+			Log.log.error("StorageLevelDB.commit failed", e);
+		}
+		finally
+		{
+			nwb.delete();
+		}
 	}
 
 	@Override
 	public void closeDB()
 	{
 		commit();
-		_ndb = null;
+		_writebuf.clear();
+		_writing = false;
 		_dbfile = null;
+		_ndb = null;
 		if(_db != null)
 		{
 			try

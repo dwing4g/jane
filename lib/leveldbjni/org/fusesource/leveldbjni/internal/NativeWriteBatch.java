@@ -105,11 +105,11 @@ public class NativeWriteBatch extends NativeObject {
         }
     }
 
-    private void put(NativeBuffer keyBuffer, NativeBuffer valueBuffer) {
+    public void put(NativeBuffer keyBuffer, NativeBuffer valueBuffer) {
         put(new NativeSlice(keyBuffer), new NativeSlice(valueBuffer));
     }
 
-    private void put(NativeSlice keySlice, NativeSlice valueSlice) {
+    public void put(NativeSlice keySlice, NativeSlice valueSlice) {
         assertAllocated();
         WriteBatchJNI.Put(self, keySlice, valueSlice);
     }
@@ -125,11 +125,11 @@ public class NativeWriteBatch extends NativeObject {
         }
     }
 
-    private void delete(NativeBuffer keyBuffer) {
+    public void delete(NativeBuffer keyBuffer) {
         delete(new NativeSlice(keyBuffer));
     }
 
-    private void delete(NativeSlice keySlice) {
+    public void delete(NativeSlice keySlice) {
         assertAllocated();
         WriteBatchJNI.Delete(self, keySlice);
     }
