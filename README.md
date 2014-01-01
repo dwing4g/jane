@@ -20,7 +20,7 @@ Todo:
 平台:
  * Oracle/Open JDK 6+ (需要ant作为构建环境)
  * Linux/Windows (运行环境, 推荐64位4核4GB内存以上, 开发可使用32位)
- * Eclipse 4.3+  (主要开发环境)
+ * Eclipse 4.3+ (主要开发环境)
 
 语言:
  * Java 6+ (框架和逻辑编写的主语言)
@@ -33,7 +33,7 @@ Todo:
 依赖库:
  * 日志库: slf4j-1.7.x (后端用logback-1.0.x, 以后考虑把后端换成log4j-2.x)
  * 网络库: mina-core-2.0.x nanohttpd-2.0.x (后者仅适用于连接数较少的http接口控制平台)
- * 数据库: mapdb-0.9.x (最好等待1.0稳定版再投入正式使用) mvstore-1.3.x (目前版本也不能保证稳定性)
+ * 数据库: mapdb-0.9.x (最好等待1.0稳定版再投入正式使用) mvstore-1.3.x leveldb-jni
  * 脚本库: luaj-jse-2.0.x
  * 基础库: com.googlecode.concurrentlinkedhashmap (高速并发hashmap/linkedhashmap)
 
@@ -50,9 +50,10 @@ Todo:
  * 数据库:
   * mapdb:          http://www.mapdb.org/
   * mvstore:        http://www.h2database.com/html/mvstore.html
-  * perst:          http://www.mcobject.com/perst/
+  * leveldb-jni:    https://github.com/fusesource/leveldbjni
   * leveldb-java:   https://github.com/dain/leveldb
-  * berkeleydb-je:  http://www.oracle.com/technetwork/products/berkeleydb/downloads/index.html
+  * berkeleydb/je:  http://www.oracle.com/technetwork/products/berkeleydb/downloads/index.html
+  * perst:          http://www.mcobject.com/perst/
  * 脚本库:
   * luaj:           http://luaj.org/luaj/README.html
  * 基础库:
