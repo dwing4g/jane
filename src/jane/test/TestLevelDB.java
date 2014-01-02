@@ -1,76 +1,28 @@
 package jane.test;
 
-import java.io.File;
-import java.io.IOException;
-import org.fusesource.leveldbjni.JniDBFactory;
-import org.fusesource.leveldbjni.internal.JniDB;
-import org.fusesource.leveldbjni.internal.NativeBuffer;
-import org.fusesource.leveldbjni.internal.NativeDB;
-import org.fusesource.leveldbjni.internal.NativeDB.DBException;
-import org.fusesource.leveldbjni.internal.NativeReadOptions;
-import org.fusesource.leveldbjni.internal.NativeWriteBatch;
-import org.fusesource.leveldbjni.internal.NativeWriteOptions;
-import org.iq80.leveldb.CompressionType;
-import org.iq80.leveldb.DB;
-import org.iq80.leveldb.Options;
+import java.util.Map;
 import jane.core.Octets;
 import jane.core.OctetsStream;
+import jane.core.StorageLevelDB;
+import jane.core.Util;
 
 public final class TestLevelDB
 {
-	private static final NativeReadOptions  _nro = new NativeReadOptions();
-	private static final NativeWriteOptions _nwo = new NativeWriteOptions();
-	private static DB                       _db;
-	private static NativeDB                 _ndb;
-	private static NativeWriteBatch         _nwb;
+	private static final Map<Octets, OctetsStream> _writebuf = Util.newConcurrentHashMap();    // 提交过程中临时的写缓冲区
+	private static final OctetsStream              _deleted  = OctetsStream.wrap(Octets.EMPTY); // 表示已删除的值
+	private static long                            _db;
 
-	private static OctetsStream dbget(Octets k) throws DBException
+	private static OctetsStream dbget(Octets k)
 	{
-		NativeBuffer buf = NativeBuffer.create(k.array(), 0, k.size());
-		try
-		{
-			byte[] v = _ndb.get(_nro, buf);
-			return v != null ? OctetsStream.wrap(v) : null;
-		}
-		finally
-		{
-			buf.delete();
-		}
+		byte[] v = StorageLevelDB.leveldb_get(_db, k.array(), k.size());
+		return v != null ? OctetsStream.wrap(v) : null;
 	}
 
-	private static void dbput(Octets k, Octets v)
+	private static void dbflush()
 	{
-		NativeBuffer kb = NativeBuffer.create(k.array(), 0, k.size());
-		NativeBuffer vb = NativeBuffer.create(v.array(), 0, v.size());
-		try
-		{
-			_nwb.put(kb, vb);
-		}
-		finally
-		{
-			kb.delete();
-			vb.delete();
-		}
-	}
-
-	private static void dbdel(Octets k)
-	{
-		NativeBuffer kb = NativeBuffer.create(k.array(), 0, k.size());
-		try
-		{
-			_nwb.delete(kb);
-		}
-		finally
-		{
-			kb.delete();
-		}
-	}
-
-	private static void dbflush() throws DBException
-	{
-		_ndb.write(_nwo, _nwb);
-		_nwb.delete();
-		_nwb = new NativeWriteBatch();
+		int r = StorageLevelDB.leveldb_write(_db, _writebuf.entrySet().iterator());
+		if(r != 0) System.err.println("ERROR: leveldb_write=" + r);
+		_writebuf.clear();
 	}
 
 	private static void dumpOctets(Octets o)
@@ -78,32 +30,28 @@ public final class TestLevelDB
 		System.out.println(o != null ? o.dump() : "null");
 	}
 
-	public static void main(String[] args) throws IOException
+	public static void main(String[] args)
 	{
 		System.out.println("begin");
-		Options opt = new Options().createIfMissing(true).compressionType(CompressionType.NONE).verifyChecksums(false);
-		opt.writeBufferSize(32 << 20);
-		opt.cacheSize(32 << 20);
-		_db = JniDBFactory.factory.open(new File("db/testleveldb"), opt);
-		_ndb = ((JniDB)_db).getNativeDB();
-		_nro.fillCache(false);
-		_nwo.sync(true);
-		_nwb = new NativeWriteBatch();
+		_db = StorageLevelDB.leveldb_open("db/testleveldb", 0, 0);
+		if(_db == 0)
+		{
+			System.err.println("ERROR: leveldb_open failed");
+			return;
+		}
 
 		System.out.println("start");
 		Octets k = Octets.wrap(new byte[] { 1, 2, 3 });
 		dumpOctets(dbget(k));
-		dbput(k, Octets.wrap(new byte[] { 4, 5, 6 }));
-		dumpOctets(dbget(k));
+		_writebuf.put(k, OctetsStream.wrap(new byte[] { 4, 5, 6 }));
 		dbflush();
 		dumpOctets(dbget(k));
-		dbdel(k);
-		dumpOctets(dbget(k));
+		_writebuf.put(k, _deleted);
 		dbflush();
 		dumpOctets(dbget(k));
 
 		System.out.println("close");
-		_db.close();
+		StorageLevelDB.leveldb_close(_db);
 		System.out.println("end");
 	}
 }

@@ -2,19 +2,9 @@ package jane.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentMap;
-import org.fusesource.leveldbjni.JniDBFactory;
-import org.fusesource.leveldbjni.internal.JniDB;
-import org.fusesource.leveldbjni.internal.NativeBuffer;
-import org.fusesource.leveldbjni.internal.NativeDB;
-import org.fusesource.leveldbjni.internal.NativeDB.DBException;
-import org.fusesource.leveldbjni.internal.NativeReadOptions;
-import org.fusesource.leveldbjni.internal.NativeWriteBatch;
-import org.fusesource.leveldbjni.internal.NativeWriteOptions;
-import org.iq80.leveldb.CompressionType;
-import org.iq80.leveldb.DB;
-import org.iq80.leveldb.Options;
 
 /**
  * LevelDB存储引擎的实现(单件)
@@ -23,15 +13,25 @@ import org.iq80.leveldb.Options;
  */
 public class StorageLevelDB implements Storage
 {
-	private static final StorageLevelDB               _instance = new StorageLevelDB();
-	private final NativeReadOptions                   _nro      = new NativeReadOptions();        // 读数据库选项
-	private final NativeWriteOptions                  _nwo      = new NativeWriteOptions();       // 写数据库选项
-	private final ConcurrentMap<Octets, OctetsStream> _writebuf = Util.newConcurrentHashMap();    // 提交过程中临时的写缓冲区
-	private final OctetsStream                        _deleted  = OctetsStream.wrap(Octets.EMPTY); // 表示已删除的值
-	private DB                                        _db;                                        // LevelDB的数据库对象(会多线程并发访问)
-	private NativeDB                                  _ndb;                                       // LevelDB的内部数据库对象(会多线程并发访问)
-	private File                                      _dbfile;                                    // 当前数据库的文件
-	private volatile boolean                          _writing;                                   // 是否正在执行写操作
+	private static final StorageLevelDB     _instance = new StorageLevelDB();
+	private final Map<Octets, OctetsStream> _writebuf = Util.newConcurrentHashMap();    // 提交过程中临时的写缓冲区
+	private final OctetsStream              _deleted  = OctetsStream.wrap(Octets.EMPTY); // 表示已删除的值
+	private long                            _db;                                        // LevelDB的数据库对象句柄
+	private File                            _dbfile;                                    // 当前数据库的文件
+	private volatile boolean                _writing;                                   // 是否正在执行写操作
+
+	static
+	{
+		System.load(new File(System.mapLibraryName("lib/leveldbjni" + System.getProperty("sun.arch.data.model"))).getAbsolutePath());
+	}
+
+	public native static long leveldb_open(String path, int write_bufsize, int cache_size);
+
+	public native static void leveldb_close(long handle);
+
+	public native static byte[] leveldb_get(long handle, byte[] key, int keylen);
+
+	public native static int leveldb_write(long handle, Iterator<Entry<Octets, OctetsStream>> buf);
 
 	private class TableLong<V extends Bean<V>> implements Storage.TableLong<V>
 	{
@@ -381,21 +381,9 @@ public class StorageLevelDB implements Storage
 			if(v == _deleted) return null;
 			if(v != null) return v;
 		}
-		NativeBuffer buf = NativeBuffer.create(k.array(), 0, k.size());
-		try
-		{
-			byte[] v = _ndb.get(_nro, buf);
-			return v != null ? OctetsStream.wrap(v) : null;
-		}
-		catch(DBException e)
-		{
-			Log.log.error("StorageLevelDB.dbget failed", e);
-			return null;
-		}
-		finally
-		{
-			buf.delete();
-		}
+		if(_db == 0) throw new RuntimeException("db closed. key=" + k.dump());
+		byte[] v = leveldb_get(_db, k.array(), k.size());
+		return v != null ? OctetsStream.wrap(v) : null;
 	}
 
 	@Override
@@ -408,14 +396,9 @@ public class StorageLevelDB implements Storage
 	public void openDB(File file) throws IOException
 	{
 		closeDB();
-		Options opt = new Options().createIfMissing(true).compressionType(CompressionType.NONE).verifyChecksums(false);
-		opt.writeBufferSize(Const.levelDBWriteBufferSize << 20);
-		opt.cacheSize(Const.levelDBCacheSize << 20);
-		_db = JniDBFactory.factory.open(file, opt);
-		_ndb = ((JniDB)_db).getNativeDB();
+		_db = leveldb_open(file.getAbsolutePath(), Const.levelDBWriteBufferSize << 20, Const.levelDBCacheSize << 20);
+		if(_db == 0) throw new IOException("StorageLevelDB.openDB: leveldb_open failed");
 		_dbfile = file;
-		_nro.fillCache(false);
-		_nwo.sync(true);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -456,53 +439,18 @@ public class StorageLevelDB implements Storage
 			_writing = false;
 			return;
 		}
-		if(_db == null || _ndb == null)
+		if(_db == 0)
 		{
-			Log.log.error("StorageLevelDB.commit: db is closed(db={},ndb={})", _db, _ndb);
+			Log.log.error("StorageLevelDB.commit: db is closed(db={})", _db);
 			return;
 		}
-		NativeWriteBatch nwb = new NativeWriteBatch();
-		try
+		int r = leveldb_write(_db, _writebuf.entrySet().iterator());
+		if(r != 0)
 		{
-			for(Entry<Octets, OctetsStream> e : _writebuf.entrySet())
-			{
-				Octets k = e.getKey();
-				OctetsStream v = e.getValue();
-				NativeBuffer kb = NativeBuffer.create(k.array(), 0, k.size());
-				try
-				{
-					if(v == _deleted)
-						nwb.delete(kb);
-					else
-					{
-						NativeBuffer vb = NativeBuffer.create(v.array(), 0, v.size());
-						try
-						{
-							nwb.put(kb, vb);
-						}
-						finally
-						{
-							vb.delete();
-						}
-					}
-				}
-				finally
-				{
-					kb.delete();
-				}
-			}
-			_ndb.write(_nwo, nwb);
-			_writebuf.clear();
-			_writing = false;
+			Log.log.error("StorageLevelDB.commit: leveldb_write failed({})", r);
 		}
-		catch(DBException e)
-		{
-			Log.log.error("StorageLevelDB.commit failed", e);
-		}
-		finally
-		{
-			nwb.delete();
-		}
+		_writebuf.clear();
+		_writing = false;
 	}
 
 	@Override
@@ -512,20 +460,10 @@ public class StorageLevelDB implements Storage
 		_writebuf.clear();
 		_writing = false;
 		_dbfile = null;
-		_ndb = null;
-		if(_db != null)
+		if(_db != 0)
 		{
-			try
-			{
-				_db.close();
-			}
-			catch(IOException e)
-			{
-			}
-			finally
-			{
-				_db = null;
-			}
+			leveldb_close(_db);
+			_db = 0;
 		}
 	}
 
