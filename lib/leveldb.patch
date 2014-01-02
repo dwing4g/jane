@@ -1,10 +1,10 @@
  .gitignore            |   3 +
- build_detect_platform |  10 +-
+ build_detect_platform |  14 +-
  port/port_posix.h     |  57 +++++++-
  util/env_posix.cc     |   4 +
  util/env_windows.cc   | 362 ++++++++++++++++++++++++++++++++++++++++++++++++++
- util/jni.cc           | 122 +++++++++++++++++
- 6 files changed, 556 insertions(+), 2 deletions(-)
+ util/jni.cc           | 126 ++++++++++++++++++
+ 6 files changed, 564 insertions(+), 2 deletions(-)
 
 diff --git a/.gitignore b/.gitignore
 index 0630251..0dba0c5 100644
@@ -21,29 +21,33 @@ index 0630251..0dba0c5 100644
  leveldbutil
 +/tmp/
 diff --git a/build_detect_platform b/build_detect_platform
-index 6e59c6f..223f302 100755
+index 6e59c6f..11baee5 100755
 --- a/build_detect_platform
 +++ b/build_detect_platform
-@@ -82,7 +82,7 @@ case "$TARGET_OS" in
+@@ -82,7 +82,8 @@ case "$TARGET_OS" in
          ;;
      Linux)
          PLATFORM=OS_LINUX
 -        COMMON_FLAGS="$MEMCMP_FLAG -pthread -DOS_LINUX"
-+        COMMON_FLAGS="$MEMCMP_FLAG -pthread -DOS_LINUX -I/usr/java/default/include -I/usr/java/default/include/linux"
++#       COMMON_FLAGS="$MEMCMP_FLAG -pthread -DOS_LINUX"
++        COMMON_FLAGS="$MEMCMP_FLAG -pthread -DOS_LINUX -DENABLE_JNI -I/usr/java/default/include -I/usr/java/default/include/linux"
          PLATFORM_LDFLAGS="-pthread"
          PORT_FILE=port/port_posix.cc
          ;;
-@@ -141,6 +141,14 @@ case "$TARGET_OS" in
+@@ -141,6 +142,17 @@ case "$TARGET_OS" in
          PLATFORM_SHARED_CFLAGS=
          PLATFORM_SHARED_VERSIONED=
          ;;
 +    MINGW*)
 +        PLATFORM=OS_LINUX
-+        COMMON_FLAGS="$MEMCMP_FLAG -pthread -DOS_LINUX -DOS_MINGW -I\"${JAVA_HOME}/include\" -I\"${JAVA_HOME}/include/win64\" -I\"${JAVA_HOME}/include/win32\""
++#       COMMON_FLAGS="$MEMCMP_FLAG -pthread -DOS_LINUX -DOS_MINGW"
++#       PLATFORM_LDFLAGS="-lpthread -static -s"
++        COMMON_FLAGS="$MEMCMP_FLAG -pthread -DOS_LINUX -DOS_MINGW -DENABLE_JNI -I\"${JAVA_HOME}/include\" -I\"${JAVA_HOME}/include/win64\" -I\"${JAVA_HOME}/include/win32\""
 +        PLATFORM_LDFLAGS="-lpthread -static -s -Wl,--kill-at"
 +        PORT_FILE=port/port_posix.cc
 +        PLATFORM_SHARED_EXT="dll"
 +        PLATFORM_SHARED_CFLAGS=
++        PLATFORM_SHARED_VERSIONED=
 +        ;;
      *)
          echo "Unknown platform!" >&2
@@ -512,10 +516,12 @@ index 0000000..8cc7760
 +#endif
 diff --git a/util/jni.cc b/util/jni.cc
 new file mode 100644
-index 0000000..3b935e5
+index 0000000..6ebb7e3
 --- /dev/null
 +++ b/util/jni.cc
-@@ -0,0 +1,122 @@
+@@ -0,0 +1,126 @@
++#ifdef ENABLE_JNI
++
 +#include <jni.h>
 +#include "leveldb/db.h"
 +#include "leveldb/options.h"
@@ -638,3 +644,5 @@ index 0000000..3b935e5
 +	g_wb.Clear();
 +	return s.ok() ? 0 : 6;
 +}
++
++#endif

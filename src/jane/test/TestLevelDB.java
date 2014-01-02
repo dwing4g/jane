@@ -18,6 +18,11 @@ public final class TestLevelDB
 		return v != null ? OctetsStream.wrap(v) : null;
 	}
 
+	private static void dbput(Octets k, OctetsStream v)
+	{
+		_writebuf.put(k, v);
+	}
+
 	private static void dbflush()
 	{
 		int r = StorageLevelDB.leveldb_write(_db, _writebuf.entrySet().iterator());
@@ -43,10 +48,10 @@ public final class TestLevelDB
 		System.out.println("start");
 		Octets k = Octets.wrap(new byte[] { 1, 2, 3 });
 		dumpOctets(dbget(k));
-		_writebuf.put(k, OctetsStream.wrap(new byte[] { 4, 5, 6 }));
+		dbput(k, OctetsStream.wrap(new byte[] { 4, 5, 6 }));
 		dbflush();
 		dumpOctets(dbget(k));
-		_writebuf.put(k, _deleted);
+		dbput(k, _deleted);
 		dbflush();
 		dumpOctets(dbget(k));
 

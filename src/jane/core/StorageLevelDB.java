@@ -22,7 +22,7 @@ public class StorageLevelDB implements Storage
 
 	static
 	{
-		System.load(new File(System.mapLibraryName("lib/leveldbjni" + System.getProperty("sun.arch.data.model"))).getAbsolutePath());
+		System.load(new File("lib", System.mapLibraryName("leveldbjni" + System.getProperty("sun.arch.data.model"))).getAbsolutePath());
 	}
 
 	public native static long leveldb_open(String path, int write_bufsize, int cache_size);
@@ -457,7 +457,6 @@ public class StorageLevelDB implements Storage
 	public void closeDB()
 	{
 		commit();
-		_writebuf.clear();
 		_writing = false;
 		_dbfile = null;
 		if(_db != 0)
@@ -465,6 +464,7 @@ public class StorageLevelDB implements Storage
 			leveldb_close(_db);
 			_db = 0;
 		}
+		_writebuf.clear();
 	}
 
 	@Override
