@@ -1,10 +1,10 @@
  .gitignore            |   3 +
  build_detect_platform |  14 +-
- port/port_posix.h     |  57 +++++++-
+ port/port_posix.h     |  58 ++++++++-
  util/env_posix.cc     |   4 +
- util/env_windows.cc   | 362 ++++++++++++++++++++++++++++++++++++++++++++++++++
- util/jni.cc           | 126 ++++++++++++++++++
- 6 files changed, 564 insertions(+), 2 deletions(-)
+ util/env_windows.cc   | 354 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ util/jni.cc           | 130 ++++++++++++++++++
+ 6 files changed, 561 insertions(+), 2 deletions(-)
 
 diff --git a/.gitignore b/.gitignore
 index 0630251..0dba0c5 100644
@@ -53,10 +53,10 @@ index 6e59c6f..11baee5 100755
          echo "Unknown platform!" >&2
          exit 1
 diff --git a/port/port_posix.h b/port/port_posix.h
-index f2b89bf..78c7843 100644
+index f2b89bf..5f2cac5 100644
 --- a/port/port_posix.h
 +++ b/port/port_posix.h
-@@ -37,6 +37,61 @@
+@@ -37,6 +37,62 @@
    // See http://code.google.com/p/android/issues/detail?id=39824
    #include <endian.h>
    #define PLATFORM_IS_LITTLE_ENDIAN  (_BYTE_ORDER == _LITTLE_ENDIAN)
@@ -74,6 +74,7 @@ index f2b89bf..78c7843 100644
 +      const char* q = strstr(p, "ll");
 +      if(!q)
 +      {
++        if(p == buf) return buf;
 +        strcpy(d, p);
 +        return s_buf;
 +      }
@@ -118,7 +119,7 @@ index f2b89bf..78c7843 100644
  #else
    #include <endian.h>
  #endif
-@@ -55,7 +110,7 @@
+@@ -55,7 +111,7 @@
  
  #if defined(OS_MACOSX) || defined(OS_SOLARIS) || defined(OS_FREEBSD) ||\
      defined(OS_NETBSD) || defined(OS_OPENBSD) || defined(OS_DRAGONFLYBSD) ||\
@@ -148,10 +149,10 @@ index e1cbebd..d706df7 100644
 +#endif
 diff --git a/util/env_windows.cc b/util/env_windows.cc
 new file mode 100644
-index 0000000..8cc7760
+index 0000000..db9ba47
 --- /dev/null
 +++ b/util/env_windows.cc
-@@ -0,0 +1,362 @@
+@@ -0,0 +1,354 @@
 +#ifdef WIN32
 +
 +#define _WIN32_WINNT 0x500
@@ -351,13 +352,12 @@ index 0000000..8cc7760
 +	// The returned file will only be accessed by one thread at a time.
 +	virtual Status NewWritableFile(const std::string& fname, WritableFile** result) {
 +		*result = 0;
-+		HANDLE file = CreateFileA(fname.c_str(), GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
++		HANDLE file = CreateFileA(fname.c_str(), GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, 0, 0);
 +		if(file == INVALID_HANDLE_VALUE) return Status::IOError(fname);
 +		*result = new WindowsWritableFile(fname, file);
 +		return Status::OK();
 +	}
 +
-+	// Returns true iff the named file exists.
 +	virtual bool FileExists(const std::string& fname) {
 +		DWORD attr = GetFileAttributesA(fname.c_str());
 +		return attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY);
@@ -382,17 +382,14 @@ index 0000000..8cc7760
 +		return Status::OK();
 +	}
 +
-+	// Delete the named file.
 +	virtual Status DeleteFile(const std::string& fname) {
 +		return DeleteFileA(fname.c_str()) ? Status::OK() : Status::IOError(fname);
 +	}
 +
-+	// Create the specified directory.
 +	virtual Status CreateDir(const std::string& dirname) {
 +		return CreateDirectoryA(dirname.c_str(), 0) ? Status::OK() : Status::IOError(dirname);
 +	}
 +
-+	// Delete the specified directory.
 +	virtual Status DeleteDir(const std::string& dirname) {
 +		std::string dirname2(dirname);
 +		dirname2.push_back('\0');
@@ -404,18 +401,15 @@ index 0000000..8cc7760
 +		return !nResult && !fileop.fAnyOperationsAborted ? Status::OK() : Status::IOError(dirname);
 +	}
 +
-+	// Store the size of fname in *file_size.
 +	virtual Status GetFileSize(const std::string& fname, uint64_t* file_size) {
 +		*file_size = 0;
-+		WIN32_FIND_DATAA fd;
-+		HANDLE h = FindFirstFileA(fname.c_str(), &fd);
-+		if(h == INVALID_HANDLE_VALUE) return Status::IOError(fname);
-+		*file_size = (static_cast<uint64_t>(fd.nFileSizeHigh) << 32) + fd.nFileSizeLow;
-+		FindClose(h);
++		WIN32_FILE_ATTRIBUTE_DATA fad;
++		if(!GetFileAttributesExA(fname.c_str(), GetFileExInfoStandard, &fad))
++			return Status::IOError(fname);
++		*file_size = (static_cast<uint64_t>(fad.nFileSizeHigh) << 32) + fad.nFileSizeLow;
 +		return Status::OK();
 +	}
 +
-+	// Rename file src to target.
 +	virtual Status RenameFile(const std::string& src, const std::string& target) {
 +		return MoveFileExA(src.c_str(), target.c_str(), MOVEFILE_REPLACE_EXISTING) ?
 +			Status::OK() : Status::IOError(src, target);
@@ -499,7 +493,6 @@ index 0000000..8cc7760
 +		return count.QuadPart * 1000000LL / freq_.QuadPart;
 +	}
 +
-+	// Sleep/delay the thread for the perscribed number of micro-seconds.
 +	virtual void SleepForMicroseconds(int micros) {
 +		// round up to the next millisecond
 +		Sleep((micros + 999) / 1000);
@@ -516,10 +509,10 @@ index 0000000..8cc7760
 +#endif
 diff --git a/util/jni.cc b/util/jni.cc
 new file mode 100644
-index 0000000..6ebb7e3
+index 0000000..b7f10db
 --- /dev/null
 +++ b/util/jni.cc
-@@ -0,0 +1,126 @@
+@@ -0,0 +1,130 @@
 +#ifdef ENABLE_JNI
 +
 +#include <jni.h>
@@ -534,6 +527,7 @@ index 0000000..6ebb7e3
 +static WriteOptions g_wo;
 +static WriteBatch g_wb; // optimized for single thread writing
 +
++// public native static long leveldb_open(String path, int write_bufsize, int cache_size);
 +extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open
 +	(JNIEnv* jenv, jclass jcls, jstring path, jint write_bufsize, jint cache_size)
 +{
@@ -552,12 +546,14 @@ index 0000000..6ebb7e3
 +	return s.ok() ? (jlong)db : 0;
 +}
 +
++// public native static void leveldb_close(long handle);
 +extern "C" JNIEXPORT void JNICALL Java_jane_core_StorageLevelDB_leveldb_1close
 +	(JNIEnv* jenv, jclass jcls, jlong handle)
 +{
 +	delete (DB*)handle;
 +}
 +
++// public native static byte[] leveldb_get(long handle, byte[] key, int keylen);
 +extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1get
 +	(JNIEnv* jenv, jclass jcls, jlong handle, jbyteArray key, jint keylen)
 +{
@@ -577,8 +573,9 @@ index 0000000..6ebb7e3
 +	return val;
 +}
 +
++// public native static int leveldb_write(long handle, Iterator<Entry<Octets, OctetsStream>> buf);
 +extern "C" JNIEXPORT jint JNICALL Java_jane_core_StorageLevelDB_leveldb_1write
-+	(JNIEnv* jenv, jclass jcls, jlong handle, jobject it) // java.util.Iterator<java.util.Map.Entry<jane.core.Octets, jane.core.OctetsStream>>
++	(JNIEnv* jenv, jclass jcls, jlong handle, jobject it)
 +{
 +	DB* db = (DB*)handle;
 +	if(!db || !it) return 1;
