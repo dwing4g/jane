@@ -14,7 +14,7 @@ import java.util.Map.Entry;
  */
 public class OctetsStream extends Octets
 {
-	protected int               pos;         // 当前的读写位置
+	protected transient int     pos;         // 当前的读写位置
 	protected transient boolean has_ex_info; // 是否需要详细的异常信息(默认不需要,可以加快unmarshal失败的性能)
 
 	public static OctetsStream wrap(byte[] data, int size)
@@ -124,30 +124,6 @@ public class OctetsStream extends Octets
 		os.pos = pos;
 		os.has_ex_info = has_ex_info;
 		return os;
-	}
-
-	@Override
-	public int hashCode()
-	{
-		return super.hashCode() ^ pos;
-	}
-
-	@Override
-	public int compareTo(Octets o)
-	{
-		OctetsStream os = (OctetsStream)o;
-		int c = super.compareTo(os);
-		if(c != 0) return c;
-		return pos - os.pos;
-	}
-
-	@Override
-	public boolean equals(Object o)
-	{
-		if(this == o) return true;
-		if(!(o instanceof OctetsStream)) return false;
-		OctetsStream os = (OctetsStream)o;
-		return pos == os.pos && super.equals(os);
 	}
 
 	@Override

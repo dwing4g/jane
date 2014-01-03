@@ -14,8 +14,8 @@ import java.util.Map.Entry;
 public class StorageLevelDB implements Storage
 {
 	private static final StorageLevelDB     _instance = new StorageLevelDB();
+	private static final OctetsStream       _deleted  = OctetsStream.wrap(Octets.EMPTY); // 表示已删除的值
 	private final Map<Octets, OctetsStream> _writebuf = Util.newConcurrentHashMap();    // 提交过程中临时的写缓冲区
-	private final OctetsStream              _deleted  = OctetsStream.wrap(Octets.EMPTY); // 表示已删除的值
 	private long                            _db;                                        // LevelDB的数据库对象句柄
 	private File                            _dbfile;                                    // 当前数据库的文件
 	private volatile boolean                _writing;                                   // 是否正在执行写操作
@@ -46,8 +46,7 @@ public class StorageLevelDB implements Storage
 		{
 			_tablename = tablename;
 			_tableid = tableid;
-			OctetsStream os = OctetsStream.wrap(_tableidbuf);
-			os.resize(0);
+			OctetsStream os = OctetsStream.wrap(_tableidbuf, 0);
 			_tableidlen = os.marshalUInt(tableid).size();
 			_tableidcounter.append((byte)0xf1); // 0xf1前缀用于idcounter
 			_tableidcounter.append(_tableidbuf, 0, _tableidlen);
@@ -132,25 +131,53 @@ public class StorageLevelDB implements Storage
 		}
 	}
 
-	private class TableOctets<V extends Bean<V>> implements Storage.Table<Octets, V>
+	private abstract class TableBase<K, V extends Bean<V>> implements Storage.Table<K, V>
 	{
-		private final String _tablename;
-		private final int    _tableid;
-		private final byte[] _tableidbuf = new byte[5];
-		private final int    _tableidlen;
-		private final V      _stub_v;
+		protected final String _tablename;
+		protected final int    _tableid;
+		protected final byte[] _tableidbuf = new byte[5];
+		protected final int    _tableidlen;
+		protected final V      _stub_v;
 
-		public TableOctets(int tableid, String tablename, V stub_v)
+		protected TableBase(int tableid, String tablename, V stub_v)
 		{
 			_tablename = tablename;
 			_tableid = tableid;
-			OctetsStream os = OctetsStream.wrap(_tableidbuf);
-			os.resize(0);
+			OctetsStream os = OctetsStream.wrap(_tableidbuf, 0);
 			_tableidlen = os.marshalUInt(tableid).size();
 			_stub_v = stub_v;
 		}
 
-		private OctetsStream getKey(Octets k)
+		protected abstract OctetsStream getKey(K k);
+
+		@Override
+		public void put(K k, V v)
+		{
+			_writebuf.put(getKey(k), v.marshal(new OctetsStream(_stub_v.initSize()).marshal1((byte)0))); // format
+		}
+
+		@Override
+		public void remove(K k)
+		{
+			_writebuf.put(getKey(k), _deleted);
+		}
+
+		@Override
+		public boolean walk(WalkHandler<K> handler, K from, K to, boolean inclusive, boolean reverse)
+		{
+			return dbwalk(handler, getKey(from), getKey(to), inclusive, reverse);
+		}
+	}
+
+	private class TableOctets<V extends Bean<V>> extends TableBase<Octets, V>
+	{
+		public TableOctets(int tableid, String tablename, V stub_v)
+		{
+			super(tableid, tablename, stub_v);
+		}
+
+		@Override
+		protected OctetsStream getKey(Octets k)
 		{
 			OctetsStream key = new OctetsStream(_tableidlen + k.size());
 			if(_tableidlen == 1)
@@ -184,45 +211,17 @@ public class StorageLevelDB implements Storage
 			}
 			return v;
 		}
-
-		@Override
-		public void put(Octets k, V v)
-		{
-			_writebuf.put(getKey(k), v.marshal(new OctetsStream(_stub_v.initSize()).marshal1((byte)0))); // format
-		}
-
-		@Override
-		public void remove(Octets k)
-		{
-			_writebuf.put(getKey(k), _deleted);
-		}
-
-		@Override
-		public boolean walk(WalkHandler<Octets> handler, Octets from, Octets to, boolean inclusive, boolean reverse)
-		{
-			return dbwalk(handler, getKey(from), getKey(to), inclusive, reverse);
-		}
 	}
 
-	private class TableString<V extends Bean<V>> implements Storage.Table<String, V>
+	private class TableString<V extends Bean<V>> extends TableBase<String, V>
 	{
-		private final String _tablename;
-		private final int    _tableid;
-		private final byte[] _tableidbuf = new byte[5];
-		private final int    _tableidlen;
-		private final V      _stub_v;
-
-		public TableString(int tableid, String tablename, V stub_v)
+		protected TableString(int tableid, String tablename, V stub_v)
 		{
-			_tablename = tablename;
-			_tableid = tableid;
-			OctetsStream os = OctetsStream.wrap(_tableidbuf);
-			os.resize(0);
-			_tableidlen = os.marshalUInt(tableid).size();
-			_stub_v = stub_v;
+			super(tableid, tablename, stub_v);
 		}
 
-		private OctetsStream getKey(String k)
+		@Override
+		protected OctetsStream getKey(String k)
 		{
 			int n = k.length();
 			OctetsStream key = new OctetsStream(_tableidlen + n * 3);
@@ -258,46 +257,18 @@ public class StorageLevelDB implements Storage
 			}
 			return v;
 		}
-
-		@Override
-		public void put(String k, V v)
-		{
-			_writebuf.put(getKey(k), v.marshal(new OctetsStream(_stub_v.initSize()).marshal1((byte)0))); // format
-		}
-
-		@Override
-		public void remove(String k)
-		{
-			_writebuf.put(getKey(k), _deleted);
-		}
-
-		@Override
-		public boolean walk(WalkHandler<String> handler, String from, String to, boolean inclusive, boolean reverse)
-		{
-			return dbwalk(handler, getKey(from), getKey(to), inclusive, reverse);
-		}
 	}
 
-	private class TableBean<K, V extends Bean<V>> implements Storage.Table<K, V>
+	private class TableBean<K, V extends Bean<V>> extends TableBase<K, V>
 	{
-		private final String _tablename;
-		private final int    _tableid;
-		private final byte[] _tableidbuf = new byte[5];
-		private final int    _tableidlen;
-		private final V      _stub_v;
-
-		public TableBean(int tableid, String tablename, V stub_v)
+		protected TableBean(int tableid, String tablename, V stub_v)
 		{
-			_tablename = tablename;
-			_tableid = tableid;
-			OctetsStream os = OctetsStream.wrap(_tableidbuf);
-			os.resize(0);
-			_tableidlen = os.marshalUInt(tableid).size();
-			_stub_v = stub_v;
+			super(tableid, tablename, stub_v);
 		}
 
 		@SuppressWarnings("unchecked")
-		private OctetsStream getKey(K k)
+		@Override
+		protected OctetsStream getKey(K k)
 		{
 			OctetsStream key = new OctetsStream(_tableidlen + ((Bean<V>)k).initSize());
 			if(_tableidlen == 1)
@@ -329,24 +300,6 @@ public class StorageLevelDB implements Storage
 				throw new RuntimeException(e);
 			}
 			return v;
-		}
-
-		@Override
-		public void put(K k, V v)
-		{
-			_writebuf.put(getKey(k), v.marshal(new OctetsStream(_stub_v.initSize()).marshal1((byte)0))); // format
-		}
-
-		@Override
-		public void remove(K k)
-		{
-			_writebuf.put(getKey(k), _deleted);
-		}
-
-		@Override
-		public boolean walk(WalkHandler<K> handler, K from, K to, boolean inclusive, boolean reverse)
-		{
-			return dbwalk(handler, getKey(from), getKey(to), inclusive, reverse);
 		}
 	}
 
@@ -445,10 +398,7 @@ public class StorageLevelDB implements Storage
 			return;
 		}
 		int r = leveldb_write(_db, _writebuf.entrySet().iterator());
-		if(r != 0)
-		{
-			Log.log.error("StorageLevelDB.commit: leveldb_write failed({})", r);
-		}
+		if(r != 0) Log.log.error("StorageLevelDB.commit: leveldb_write failed({})", r);
 		_writebuf.clear();
 		_writing = false;
 	}

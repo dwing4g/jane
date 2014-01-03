@@ -1,15 +1,15 @@
 package jane.test;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import jane.core.Octets;
 import jane.core.OctetsStream;
 import jane.core.StorageLevelDB;
-import jane.core.Util;
 
 public final class TestLevelDB
 {
-	private static final Map<Octets, OctetsStream> _writebuf = Util.newConcurrentHashMap();    // 提交过程中临时的写缓冲区
-	private static final OctetsStream              _deleted  = OctetsStream.wrap(Octets.EMPTY); // 表示已删除的值
+	private static final OctetsStream              _deleted  = OctetsStream.wrap(Octets.EMPTY);              // 表示已删除的值
+	private static final Map<Octets, OctetsStream> _writebuf = new ConcurrentHashMap<Octets, OctetsStream>(); // 提交过程中临时的写缓冲区
 	private static long                            _db;
 
 	private static OctetsStream dbget(Octets k)

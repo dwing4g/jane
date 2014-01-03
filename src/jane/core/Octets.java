@@ -359,7 +359,7 @@ public class Octets implements Cloneable, Comparable<Octets>
 	@Override
 	public int hashCode()
 	{
-		int result = 1;
+		int result = count;
 		if(count <= 32)
 		{
 			for(int i = 0; i < count; ++i)
@@ -367,7 +367,6 @@ public class Octets implements Cloneable, Comparable<Octets>
 		}
 		else
 		{
-			result += count;
 			for(int i = 0; i < 16; ++i)
 				result = 31 * result + buffer[i];
 			for(int i = count - 16; i < count; ++i)

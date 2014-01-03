@@ -16,6 +16,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Element;
@@ -37,13 +38,14 @@ public final class Util
 	}
 
 	/**
-	 * 使用更快的{@link ConcurrentHashMapV8}代替ConcurrentHashMap
+	 * 创建普通的ConcurrentHashMap
 	 * <p>
-	 * V8版本表示JDK8可能会自带的版本. 初始hash空间是16,负载因子是0.5,并发级别等于{@link Const#dbThreadCount}
+	 * 初始hash空间是16,负载因子是0.5,并发级别等于{@link Const#dbThreadCount}<br>
+	 * 这里没有考虑ConcurrentHashMapV8的主要原因是其rehash的效率太低,性能不稳定
 	 */
 	public static <K, V> ConcurrentMap<K, V> newConcurrentHashMap()
 	{
-		return new ConcurrentHashMapV8<K, V>(16, 0.5f, Const.dbThreadCount);
+		return new ConcurrentHashMap<K, V>(16, 0.5f, Const.dbThreadCount);
 	}
 
 	/**
@@ -57,7 +59,7 @@ public final class Util
 	}
 
 	/**
-	 * 使用更快的{@link ConcurrentLinkedHashMap}创建可并发带链表的HashMap
+	 * 使用{@link ConcurrentLinkedHashMap}创建可并发带链表的HashMap
 	 * <p>
 	 * 内部使用{@link ConcurrentHashMapV8},效率很高
 	 */
