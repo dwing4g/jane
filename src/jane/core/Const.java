@@ -38,6 +38,8 @@ public final class Const
 	public static final int         mvStoreCacheSize;
 	public static final int         levelDBWriteBufferSize;
 	public static final int         levelDBCacheSize;
+	public static final String      levelDBFullBackupBase;
+	public static final long        levelDBFullBackupPeriod;
 
 	static
 	{
@@ -77,6 +79,8 @@ public final class Const
 		mvStoreCacheSize = getPropInt("mvStoreCacheSize", 32, 0);
 		levelDBWriteBufferSize = getPropInt("levelDBWriteBufferSize", 32, 0);
 		levelDBCacheSize = getPropInt("levelDBCacheSize", 32, 0);
+		levelDBFullBackupBase = getPropStr("levelDBFullBackupBase", "2014-01-06 03:00:00");
+		levelDBFullBackupPeriod = getPropLong("levelDBFullBackupPeriod", 604800, 1, Long.MAX_VALUE / 1000);
 	}
 
 	public static String getPropStr(String key, String def)
@@ -149,6 +153,32 @@ public final class Const
 		try
 		{
 			return Long.parseLong(_property.getProperty(key));
+		}
+		catch(Exception e)
+		{
+			return def;
+		}
+	}
+
+	public static long getPropLong(String key, long def, long min)
+	{
+		try
+		{
+			long r = Long.parseLong(_property.getProperty(key));
+			return r < min ? min : r;
+		}
+		catch(Exception e)
+		{
+			return def;
+		}
+	}
+
+	public static long getPropLong(String key, long def, long min, long max)
+	{
+		try
+		{
+			long r = Long.parseLong(_property.getProperty(key));
+			return r < min ? min : (r > max ? max : r);
 		}
 		catch(Exception e)
 		{

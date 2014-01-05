@@ -2,6 +2,9 @@ package jane.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -13,12 +16,13 @@ import java.util.Map.Entry;
  */
 public class StorageLevelDB implements Storage
 {
-	private static final StorageLevelDB     _instance = new StorageLevelDB();
-	private static final OctetsStream       _deleted  = OctetsStream.wrap(Octets.EMPTY); // 表示已删除的值
-	private final Map<Octets, OctetsStream> _writebuf = Util.newConcurrentHashMap();    // 提交过程中临时的写缓冲区
-	private long                            _db;                                        // LevelDB的数据库对象句柄
-	private File                            _dbfile;                                    // 当前数据库的文件
-	private volatile boolean                _writing;                                   // 是否正在执行写操作
+	private static final StorageLevelDB     _instance        = new StorageLevelDB();
+	private static final OctetsStream       _deleted         = OctetsStream.wrap(Octets.EMPTY); // 表示已删除的值
+	private final Map<Octets, OctetsStream> _writebuf        = Util.newConcurrentHashMap();    // 提交过程中临时的写缓冲区
+	private long                            _db;                                               // LevelDB的数据库对象句柄
+	private File                            _dbfile;                                           // 当前数据库的文件
+	private long                            _backup_datebase = Long.MIN_VALUE;                 // 备份的基准时间点(UTC毫秒数)
+	private volatile boolean                _writing;                                          // 是否正在执行写操作
 
 	static
 	{
@@ -32,6 +36,8 @@ public class StorageLevelDB implements Storage
 	public native static byte[] leveldb_get(long handle, byte[] key, int keylen);
 
 	public native static int leveldb_write(long handle, Iterator<Entry<Octets, OctetsStream>> buf);
+
+	public native static long leveldb_backup(String srcpath, String dstpath, String datetime);
 
 	private class TableLong<V extends Bean<V>> implements Storage.TableLong<V>
 	{
@@ -420,9 +426,27 @@ public class StorageLevelDB implements Storage
 	@Override
 	public long backupDB(File fdst) throws IOException
 	{
-		if(_dbfile == null)
-		    throw new RuntimeException("current database is not opened");
-		// TODO
-		return 0;
+		if(_dbfile == null) throw new RuntimeException("current database is not opened");
+		long period = Const.levelDBFullBackupPeriod * 1000;
+		if(_backup_datebase == Long.MIN_VALUE)
+		{
+			try
+			{
+				Date date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(Const.levelDBFullBackupBase);
+				_backup_datebase = date.getTime() % period;
+			}
+			catch(ParseException e)
+			{
+				throw new RuntimeException("parse levelDBFullBackupBase(" + Const.levelDBFullBackupBase + ") failed", e);
+			}
+		}
+		long time = System.currentTimeMillis();
+		String srcpath = fdst.getAbsolutePath();
+		int pos = srcpath.lastIndexOf('.');
+		if(pos <= 0) throw new RuntimeException("invalid backup path: " + srcpath);
+		srcpath = srcpath.substring(0, pos);
+		SimpleDateFormat sdf = DBManager.instance().getBackupDateFormat();
+		Date backup_date = new Date(_backup_datebase + (time - _backup_datebase) / period * period);
+		return leveldb_backup(srcpath, srcpath + '.' + sdf.format(backup_date), sdf.format(new Date()));
 	}
 }

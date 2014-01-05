@@ -22,15 +22,16 @@ import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 public final class DBManager
 {
 	private static final DBManager                   _instance    = new DBManager();
-	private final ScheduledExecutorService           _commit_thread;                            // 处理数据提交和事务超时的线程
-	private final ExecutorService                    _proc_threads;                             // 事务线程池
-	private final Map<Object, ArrayDeque<Procedure>> _qmap        = Util.newConcurrentHashMap(); // 当前sid队列的数量
-	private final AtomicLong                         _proc_count  = new AtomicLong();           // 绑定过sid的在队列中未运行的事务数量
-	private final AtomicLong                         _mod_count   = new AtomicLong();           // 当前缓存修改的记录数
-	private final CommitTask                         _commit_task = new CommitTask();           // 数据提交的任务
-	private volatile Storage                         _storage;                                  // 存储引擎
-	private volatile ScheduledFuture<?>              _commit_future;                            // 数据提交的结果
-	private volatile boolean                         _exit;                                     // 是否在退出状态(已经执行了ShutdownHook)
+	private final SimpleDateFormat                   _sdf         = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss"); // 备份文件后缀名的时间格式
+	private final ScheduledExecutorService           _commit_thread;                                            // 处理数据提交和事务超时的线程
+	private final ExecutorService                    _proc_threads;                                             // 事务线程池
+	private final Map<Object, ArrayDeque<Procedure>> _qmap        = Util.newConcurrentHashMap();                // 当前sid队列的数量
+	private final AtomicLong                         _proc_count  = new AtomicLong();                           // 绑定过sid的在队列中未运行的事务数量
+	private final AtomicLong                         _mod_count   = new AtomicLong();                           // 当前缓存修改的记录数
+	private final CommitTask                         _commit_task = new CommitTask();                           // 数据提交的任务
+	private volatile Storage                         _storage;                                                  // 存储引擎
+	private volatile ScheduledFuture<?>              _commit_future;                                            // 数据提交的结果
+	private volatile boolean                         _exit;                                                     // 是否在退出状态(已经执行了ShutdownHook)
 
 	{
 		_commit_thread = Executors.newSingleThreadScheduledExecutor(new ThreadFactory()
@@ -66,14 +67,13 @@ public final class DBManager
 	 */
 	private final class CommitTask implements Runnable
 	{
-		private final long[]           _counts        = new long[2];                                 // 两个统计数量值,前者是原数量,后者是处理后的新数量
-		private final SimpleDateFormat _sdf           = new SimpleDateFormat(".yyyy-MM-dd-HH-mm-ss"); // 备份文件后缀名的时间格式
-		private final long             _mod_count_max = Const.dbCommitModCount;                      // 数据库记录的修改数量触发提交的阙值
-		private final long             _resave_count  = Const.dbCommitResaveCount;                   // 保存一轮记录后需要重试的记录数阙值
-		private final long             _commit_period = (long)Const.dbCommitPeriod * 1000;           // 提交数据库的周期
-		private final long             _backup_period = (long)Const.dbBackupPeriod * 1000;           // 备份数据库的周期
-		private volatile long          _commit_time   = System.currentTimeMillis();                  // 上次提交数据库的时间
-		private volatile long          _backup_time   = System.currentTimeMillis();                  // 上次备份数据库的时间
+		private final long[]  _counts        = new long[2];                      // 两个统计数量值,前者是原数量,后者是处理后的新数量
+		private final long    _mod_count_max = Const.dbCommitModCount;           // 数据库记录的修改数量触发提交的阙值
+		private final long    _resave_count  = Const.dbCommitResaveCount;        // 保存一轮记录后需要重试的记录数阙值
+		private final long    _commit_period = (long)Const.dbCommitPeriod * 1000; // 提交数据库的周期
+		private final long    _backup_period = (long)Const.dbBackupPeriod * 1000; // 备份数据库的周期
+		private volatile long _commit_time   = System.currentTimeMillis();       // 上次提交数据库的时间
+		private volatile long _backup_time   = System.currentTimeMillis();       // 上次备份数据库的时间
 
 		private void commitNext()
 		{
@@ -149,7 +149,7 @@ public final class DBManager
 						_backup_time += _backup_period;
 						Log.log.info("db-commit backup begin...");
 						long r = _storage.backupDB(new File(Const.dbBackupPath, new File(Const.dbFilename).getName() +
-						        '.' + _storage.getFileSuffix() + _sdf.format(new Date())));
+						        '.' + _storage.getFileSuffix() + '.' + _sdf.format(new Date())));
 						Log.log.info("db-commit backup end. ({} bytes) ({} ms)", r, System.currentTimeMillis() - t0);
 					}
 				}
@@ -168,6 +168,14 @@ public final class DBManager
 
 	private DBManager()
 	{
+	}
+
+	/**
+	 * 获取备份时间字符串的格式
+	 */
+	public SimpleDateFormat getBackupDateFormat()
+	{
+		return _sdf;
 	}
 
 	/**
