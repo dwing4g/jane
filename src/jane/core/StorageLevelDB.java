@@ -39,7 +39,7 @@ public class StorageLevelDB implements Storage
 
 	public native static long leveldb_backup(String srcpath, String dstpath, String datetime); // return byte-size of copied data
 
-	public native static long leveldb_iter_new(byte[] key, int keylen, int type); // type=0|1|2|3: <|<=|>=|>key
+	public native static long leveldb_iter_new(long handle, byte[] key, int keylen, int type); // type=0|1|2|3: <|<=|>=|>key
 
 	public native static void leveldb_iter_delete(long iter);
 
@@ -131,7 +131,7 @@ public class StorageLevelDB implements Storage
 			{
 				if(!reverse)
 				{
-					iter = leveldb_iter_new(key_from.array(), key_from.size(), inclusive ? 2 : 3);
+					iter = leveldb_iter_new(_db, key_from.array(), key_from.size(), inclusive ? 2 : 3);
 					for(;;)
 					{
 						byte[] key = leveldb_iter_next(iter);
@@ -149,7 +149,7 @@ public class StorageLevelDB implements Storage
 				}
 				else
 				{
-					iter = leveldb_iter_new(key_to.array(), key_to.size(), inclusive ? 1 : 0);
+					iter = leveldb_iter_new(_db, key_to.array(), key_to.size(), inclusive ? 1 : 0);
 					for(;;)
 					{
 						byte[] key = leveldb_iter_prev(iter);
@@ -254,7 +254,7 @@ public class StorageLevelDB implements Storage
 			{
 				if(!reverse)
 				{
-					iter = leveldb_iter_new(key_from.array(), key_from.size(), inclusive ? 2 : 3);
+					iter = leveldb_iter_new(_db, key_from.array(), key_from.size(), inclusive ? 2 : 3);
 					for(;;)
 					{
 						byte[] key = leveldb_iter_next(iter);
@@ -272,7 +272,7 @@ public class StorageLevelDB implements Storage
 				}
 				else
 				{
-					iter = leveldb_iter_new(key_to.array(), key_to.size(), inclusive ? 1 : 0);
+					iter = leveldb_iter_new(_db, key_to.array(), key_to.size(), inclusive ? 1 : 0);
 					for(;;)
 					{
 						byte[] key = leveldb_iter_prev(iter);
