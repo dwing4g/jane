@@ -100,8 +100,8 @@ public interface Storage
 		 * 按记录key的顺序遍历此表的所有记录
 		 * <p>
 		 * @param handler 遍历过程中返回false可中断遍历
-		 * @param from 需要遍历的最小key. null表示最小值
-		 * @param to 需要遍历的最大key. null表示最大值
+		 * @param from 需要遍历的最小key
+		 * @param to 需要遍历的最大key
 		 * @param inclusive 遍历是否包含from和to的key
 		 * @param reverse 是否按反序遍历
 		 * @return 返回true表示已完全遍历, 返回false表示被用户中断
