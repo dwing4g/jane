@@ -4,6 +4,7 @@ import java.io.File;
 import org.h2.mvstore.MVStore;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
+import jane.core.StorageLevelDB;
 
 public final class DBCompact
 {
@@ -11,14 +12,14 @@ public final class DBCompact
 	{
 		if(args.length < 1)
 		{
-			System.err.println("USAGE: java jane.tool.DBCompact <database_file.md1|md2|mv1>");
+			System.err.println("USAGE: java jane.tool.DBCompact <database_file.md|mv|ld>");
 			return;
 		}
 		String filename = args[0].trim();
 
 		long t = System.currentTimeMillis();
 		System.err.println("INFO: opening " + filename + " ...");
-		if(filename.endsWith(".md1") || filename.endsWith(".md2"))
+		if(filename.endsWith(".md"))
 		{
 			DB db = DBMaker.newFileDB(new File(filename)).closeOnJvmShutdown().make();
 			System.err.println("INFO: compacting db ...");
@@ -26,13 +27,26 @@ public final class DBCompact
 			System.err.println("INFO: closing db ...");
 			db.close();
 		}
-		else if(filename.endsWith(".mv1"))
+		else if(filename.endsWith(".mv"))
 		{
 			MVStore db = new MVStore.Builder().fileName("mvstore.db").autoCommitDisabled().cacheSize(32).open();
 			System.err.println("INFO: compacting db ...");
 			System.err.println("INFO: compact result=" + db.compactMoveChunks()); // maybe not work
 			System.err.println("INFO: closing db ...");
 			db.close();
+		}
+		else if(filename.endsWith(".ld"))
+		{
+			long db = StorageLevelDB.leveldb_open(filename, 0, 0);
+			if(db == 0)
+			{
+				System.err.println("ERROR: leveldb_open failed");
+				return;
+			}
+			System.err.println("INFO: compacting db ...");
+			StorageLevelDB.leveldb_compact(db, null, 0, null, 0);
+			System.err.println("INFO: closing db ...");
+			StorageLevelDB.leveldb_close(db);
 		}
 		else
 		{

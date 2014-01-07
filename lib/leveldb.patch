@@ -13,8 +13,8 @@
  snappy/snappy.h                 |  184 ++++++
  util/env_posix.cc               |   22 +-
  util/env_windows.cc             |  368 +++++++++++
- util/jni.cc                     |  307 +++++++++
- 16 files changed, 3303 insertions(+), 7 deletions(-)
+ util/jni.cc                     |  368 +++++++++++
+ 16 files changed, 3364 insertions(+), 7 deletions(-)
 
 diff --git a/.gitignore b/.gitignore
 index 0630251..0dba0c5 100644
@@ -3191,10 +3191,10 @@ index 0000000..e9dbe2c
 +#endif
 diff --git a/util/jni.cc b/util/jni.cc
 new file mode 100644
-index 0000000..985e914
+index 0000000..a48c6e1
 --- /dev/null
 +++ b/util/jni.cc
-@@ -0,0 +1,307 @@
+@@ -0,0 +1,368 @@
 +// Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file. See the AUTHORS file for names of contributors.
@@ -3254,7 +3254,8 @@ index 0000000..985e914
 +{
 +	DB* db = (DB*)handle;
 +	if(!db || !key) return 0;
-+	jsize m = jenv->GetArrayLength(key); if(keylen < m) keylen = m;
++	jsize m = jenv->GetArrayLength(key);
++	if(keylen > m) keylen = m;
 +	if(keylen <= 0) return 0;
 +	jbyte* keyptr = jenv->GetByteArrayElements(key, 0);
 +	if(!keyptr) return 0;
@@ -3312,23 +3313,29 @@ index 0000000..985e914
 +			if(keylen > 0)
 +			{
 +				jbyte* keyptr = jenv->GetByteArrayElements(keybuf, 0);
-+				jobject val = jenv->CallObjectMethod(entry, mid_getValue);
-+				if(val)
++				if(keyptr)
 +				{
-+					jbyteArray valbuf = (jbyteArray)jenv->GetObjectField(val, fid_buffer); // check cast and null?
-+					jint vallen = jenv->GetIntField(val, fid_count);
-+					if(vallen > 0)
++					jobject val = jenv->CallObjectMethod(entry, mid_getValue);
++					if(val)
 +					{
-+						jbyte* valptr = jenv->GetByteArrayElements(valbuf, 0);
-+						g_wb.Put(Slice((const char*)keyptr, (size_t)keylen), Slice((const char*)valptr, (size_t)vallen));
-+						jenv->ReleaseByteArrayElements(valbuf, valptr, JNI_ABORT);
++						jbyteArray valbuf = (jbyteArray)jenv->GetObjectField(val, fid_buffer); // check cast and null?
++						jint vallen = jenv->GetIntField(val, fid_count);
++						if(vallen > 0)
++						{
++							jbyte* valptr = jenv->GetByteArrayElements(valbuf, 0);
++							if(valptr)
++							{
++								g_wb.Put(Slice((const char*)keyptr, (size_t)keylen), Slice((const char*)valptr, (size_t)vallen));
++								jenv->ReleaseByteArrayElements(valbuf, valptr, JNI_ABORT);
++							}
++						}
++						else
++							g_wb.Delete(Slice((const char*)keyptr, (size_t)keylen));
 +					}
 +					else
 +						g_wb.Delete(Slice((const char*)keyptr, (size_t)keylen));
++					jenv->ReleaseByteArrayElements(keybuf, keyptr, JNI_ABORT);
 +				}
-+				else
-+					g_wb.Delete(Slice((const char*)keyptr, (size_t)keylen));
-+				jenv->ReleaseByteArrayElements(keybuf, keyptr, JNI_ABORT);
 +			}
 +		}
 +	}
@@ -3499,6 +3506,60 @@ index 0000000..985e914
 +	jenv->SetByteArrayRegion(key, 0, slice.size(), (const jbyte*)slice.data());
 +	it->Prev();
 +	return key;
++}
++
++// public native static byte[] leveldb_iter_value(long iter); // return cur-value(maybe null)
++extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1iter_1value
++	(JNIEnv* jenv, jclass jcls, jlong iter)
++{
++	Iterator* it = (Iterator*)iter;
++	if(!it || !it->Valid()) return 0;
++	const Slice& slice = it->value();
++	jbyteArray key = jenv->NewByteArray(slice.size());
++	jenv->SetByteArrayRegion(key, 0, slice.size(), (const jbyte*)slice.data());
++	return key;
++}
++
++// public native static boolean leveldb_compact(long handle, byte[] key_from, int key_from_len, byte[] key_to, int key_to_len);
++extern "C" JNIEXPORT jboolean JNICALL Java_jane_core_StorageLevelDB_leveldb_1compact
++	(JNIEnv* jenv, jclass jcls, jlong handle, jbyteArray key_from, jint key_from_len, jbyteArray key_to, jint key_to_len)
++{
++	DB* db = (DB*)handle;
++	if(!db) return JNI_FALSE;
++	std::string fromstr, tostr;
++	Slice from, to;
++	if(key_from)
++	{
++		jsize m = jenv->GetArrayLength(key_from);
++		if(key_from_len > m) key_from_len = m;
++		if(key_from_len > 0)
++		{
++			jbyte* keyptr = jenv->GetByteArrayElements(key_from, 0);
++			if(keyptr)
++			{
++				fromstr.assign((const char*)keyptr, key_from_len);
++				from = Slice(fromstr);
++				jenv->ReleaseByteArrayElements(key_from, keyptr, JNI_ABORT);
++			}
++		}
++	}
++	if(key_to)
++	{
++		jsize m = jenv->GetArrayLength(key_to);
++		if(key_to_len > m) key_to_len = m;
++		if(key_to_len > 0)
++		{
++			jbyte* keyptr = jenv->GetByteArrayElements(key_to, 0);
++			if(keyptr)
++			{
++				tostr.assign((const char*)keyptr, key_to_len);
++				from = Slice(tostr);
++				jenv->ReleaseByteArrayElements(key_to, keyptr, JNI_ABORT);
++			}
++		}
++	}
++	db->CompactRange((from.size() > 0 ? &from : 0), (to.size() > 0 ? &to : 0));
++	return JNI_TRUE;
 +}
 +
 +#endif

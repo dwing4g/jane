@@ -47,6 +47,10 @@ public class StorageLevelDB implements Storage
 
 	public native static byte[] leveldb_iter_prev(long iter); // return cur-key(maybe null) and do prev
 
+	public native static byte[] leveldb_iter_value(long iter); // return cur-value(maybe null)
+
+	public native static boolean leveldb_compact(long handle, byte[] key_from, int key_from_len, byte[] key_to, int key_to_len);
+
 	private class TableLong<V extends Bean<V>> implements Storage.TableLong<V>
 	{
 		private final String       _tablename;

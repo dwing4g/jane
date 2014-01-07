@@ -13,7 +13,7 @@ public final class MVStoreExport
 	{
 		if(args.length < 1)
 		{
-			System.err.println("USAGE: java jane.tool.MVStoreExport <database_file.mv1>");
+			System.err.println("USAGE: java jane.tool.MVStoreExport <database_file.mv>");
 			return;
 		}
 		String filename = args[0].trim();

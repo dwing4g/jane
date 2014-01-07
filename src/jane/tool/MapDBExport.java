@@ -20,7 +20,7 @@ public final class MapDBExport
 	{
 		if(args.length < 1)
 		{
-			System.err.println("USAGE: java jane.tool.MapDBExport <database_file.md1|md2>");
+			System.err.println("USAGE: java jane.tool.MapDBExport <database_file.md>");
 			return;
 		}
 		String filename = args[0].trim();
