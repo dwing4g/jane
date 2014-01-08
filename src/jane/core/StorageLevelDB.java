@@ -37,7 +37,7 @@ public class StorageLevelDB implements Storage
 
 	public native static int leveldb_write(long handle, Iterator<Entry<Octets, OctetsStream>> buf); // return 0 for ok
 
-	public native static long leveldb_backup(String srcpath, String dstpath, String datetime); // return byte-size of copied data
+	public native static long leveldb_backup(long handle, String srcpath, String dstpath, String datetime); // return byte-size of copied data
 
 	public native static long leveldb_iter_new(long handle, byte[] key, int keylen, int type); // type=0|1|2|3: <|<=|>=|>key
 
@@ -587,6 +587,6 @@ public class StorageLevelDB implements Storage
 		srcpath = srcpath.substring(0, pos);
 		SimpleDateFormat sdf = DBManager.instance().getBackupDateFormat();
 		Date backup_date = new Date(_backup_datebase + (time - _backup_datebase) / period * period);
-		return leveldb_backup(srcpath, srcpath + '.' + sdf.format(backup_date), sdf.format(new Date()));
+		return leveldb_backup(_db, srcpath, srcpath + '.' + sdf.format(backup_date), sdf.format(new Date()));
 	}
 }
