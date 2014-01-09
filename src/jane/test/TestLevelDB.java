@@ -38,7 +38,7 @@ public final class TestLevelDB
 	public static void main(String[] args)
 	{
 		System.out.println("begin");
-		_db = StorageLevelDB.leveldb_open("db/testleveldb", 0, 0);
+		_db = StorageLevelDB.leveldb_open("db/testleveldb", 0, 0, true);
 		if(_db == 0)
 		{
 			System.err.println("ERROR: leveldb_open failed");

@@ -37,7 +37,7 @@ public final class DBCompact
 		}
 		else if(filename.endsWith(".ld"))
 		{
-			long db = StorageLevelDB.leveldb_open(filename, 0, 0);
+			long db = StorageLevelDB.leveldb_open(filename, 0, 0, true);
 			if(db == 0)
 			{
 				System.err.println("ERROR: leveldb_open failed");

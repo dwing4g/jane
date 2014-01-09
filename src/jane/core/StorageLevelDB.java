@@ -29,7 +29,7 @@ public class StorageLevelDB implements Storage
 		System.load(new File("lib", System.mapLibraryName("leveldbjni" + System.getProperty("sun.arch.data.model"))).getAbsolutePath());
 	}
 
-	public native static long leveldb_open(String path, int write_bufsize, int cache_size);
+	public native static long leveldb_open(String path, int write_bufsize, int cache_size, boolean use_snappy);
 
 	public native static void leveldb_close(long handle);
 
@@ -495,7 +495,7 @@ public class StorageLevelDB implements Storage
 	public void openDB(File file) throws IOException
 	{
 		closeDB();
-		_db = leveldb_open(file.getAbsolutePath(), Const.levelDBWriteBufferSize << 20, Const.levelDBCacheSize << 20);
+		_db = leveldb_open(file.getAbsolutePath(), Const.levelDBWriteBufferSize << 20, Const.levelDBCacheSize << 20, true);
 		if(_db == 0) throw new IOException("StorageLevelDB.openDB: leveldb_open failed");
 		_dbfile = file;
 	}
