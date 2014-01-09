@@ -401,7 +401,7 @@ public class Octets implements Cloneable, Comparable<Octets>
 		byte[] data = oct.buffer;
 		for(int i = 0; i < count; ++i)
 			if(buf[i] != data[i]) return false;
-		return getClass() == o.getClass();
+		return true;
 	}
 
 	@Override

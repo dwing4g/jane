@@ -379,14 +379,14 @@ public class OctetsStream extends Octets
 		return this;
 	}
 
-	public OctetsStream marshal(Bean<?> m)
+	public OctetsStream marshal(Bean<?> b)
 	{
-		return m.marshal(this);
+		return b.marshal(this);
 	}
 
-	public OctetsStream marshalProtocol(Bean<?> m)
+	public OctetsStream marshalProtocol(Bean<?> b)
 	{
-		return m.marshalProtocol(this);
+		return b.marshalProtocol(this);
 	}
 
 	public static int getKVType(Object o)
@@ -858,7 +858,7 @@ public class OctetsStream extends Octets
 		case 0x0f:
 			switch(b & 7)
 			{
-			case 0: case 1: case 2: case 3: return ((long)(b - 0x78) << 32) | unmarshalInt4();
+			case 0: case 1: case 2: case 3: return ((long)(b - 0x78) << 32) + (unmarshalInt4() & 0xffffffffL);
 			case 4: case 5:                 return ((long)(b - 0x7c) << 40) + unmarshalLong5();
 			case 6:                         return unmarshalLong6();
 			default: long r = unmarshalLong7(); return r < 0x80000000000000L ?
@@ -867,7 +867,7 @@ public class OctetsStream extends Octets
 		default: // 0x10
 			switch(b & 7)
 			{
-			case 4: case 5: case 6: case 7: return ((long)(b + 0x78) << 32) | unmarshalInt4();
+			case 4: case 5: case 6: case 7: return ((long)(b + 0x78) << 32) + (unmarshalInt4() & 0xffffffffL);
 			case 2: case 3:                 return ((long)(b + 0x7c) << 40) + unmarshalLong5();
 			case 1:                         return 0xff00000000000000L + unmarshalLong6();
 			default: long r = unmarshalLong7(); return r >= 0x80000000000000L ?
@@ -1050,45 +1050,45 @@ public class OctetsStream extends Octets
 		return o;
 	}
 
-	public OctetsStream unmarshal(Bean<?> m) throws MarshalException
+	public OctetsStream unmarshal(Bean<?> b) throws MarshalException
 	{
-		return m.unmarshal(this);
+		return b.unmarshal(this);
 	}
 
-	public OctetsStream unmarshalProtocol(Bean<?> m) throws MarshalException
+	public OctetsStream unmarshalProtocol(Bean<?> b) throws MarshalException
 	{
-		return m.unmarshalProtocol(this);
+		return b.unmarshalProtocol(this);
 	}
 
-	public OctetsStream unmarshalBean(Bean<?> m, int type) throws MarshalException
+	public OctetsStream unmarshalBean(Bean<?> b, int type) throws MarshalException
 	{
-		if(type == 2) return m.unmarshal(this);
+		if(type == 2) return b.unmarshal(this);
 		unmarshalSkipVar(type);
 		return this;
 	}
 
-	public <K extends Bean<K>> K unmarshalBean(K m) throws MarshalException
+	public <B extends Bean<B>> B unmarshalBean(B b) throws MarshalException
 	{
-		m.unmarshal(this);
-		return m;
+		b.unmarshal(this);
+		return b;
 	}
 
-	public <K extends Bean<K>> K unmarshalProtocolBean(K m) throws MarshalException
+	public <B extends Bean<B>> B unmarshalProtocolBean(B b) throws MarshalException
 	{
-		m.unmarshalProtocol(this);
-		return m;
+		b.unmarshalProtocol(this);
+		return b;
 	}
 
-	public <K extends Bean<K>> K unmarshalBeanKV(K m, int type) throws MarshalException
+	public <B extends Bean<B>> B unmarshalBeanKV(B b, int type) throws MarshalException
 	{
 		if(type == 2)
-			m.unmarshal(this);
+			b.unmarshal(this);
 		else
 		{
 			unmarshalSkipKV(type);
-			m.reset();
+			b.reset();
 		}
-		return m;
+		return b;
 	}
 
 	public byte[] unmarshalBytes(int type) throws MarshalException
