@@ -23,7 +23,7 @@ public final class AllTables
 	/**
 	 * 数据库表定义. key类型只能是32/64位整数/浮点数或字符串/binary类型或bean类型, id类型表示优化的非负数long类型
 	 */
-	public static final TableLong<TestType> TestTable = _dbm.openTable(1, "TestTable", "test", 200000, new TestType());
+	public static final TableLong<TestType> TestTable = _dbm.openTable(1, "TestTable", "test", 65536, new TestType());
 	/**
 	 * value类型必须是bean定义的类型
 	 */
@@ -32,6 +32,10 @@ public final class AllTables
 	 * 注意表名和key类型的对应关系是不能改变的
 	 */
 	public static final Table<Octets, TestEmpty> OctetsTable = _dbm.openTable(3, "OctetsTable", "bean", 1000, null, null);
+	/**
+	 * 用于测试数据库的表
+	 */
+	public static final TableLong<TestBean> Benchmark = _dbm.openTable(4, "Benchmark", "bench", 200000, new TestBean());
 
 	/**
 	 * 以下内部类可以单独使用,避免初始化前面的表对象,主要用于获取表的键值类型
@@ -40,19 +44,21 @@ public final class AllTables
 	{
 		public static HashMap<String, Bean<?>> getKeyTypes()
 		{
-			HashMap<String, Bean<?>> r = new HashMap<String, Bean<?>>(3 * 2);
+			HashMap<String, Bean<?>> r = new HashMap<String, Bean<?>>(4 * 2);
 			r.put("TestTable", null);
 			r.put("BeanTable", new TestBean());
 			r.put("OctetsTable", null);
+			r.put("Benchmark", null);
 			return r;
 		}
 
 		public static HashMap<String, Bean<?>> getValueTypes()
 		{
-			HashMap<String, Bean<?>> r = new HashMap<String, Bean<?>>(3 * 2);
+			HashMap<String, Bean<?>> r = new HashMap<String, Bean<?>>(4 * 2);
 			r.put("TestTable", new TestType());
 			r.put("BeanTable", new TestBean());
 			r.put("OctetsTable", null);
+			r.put("Benchmark", new TestBean());
 			return r;
 		}
 	}

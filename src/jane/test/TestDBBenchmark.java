@@ -1,7 +1,8 @@
 package jane.test;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import jane.bean.AllTables;
-import jane.bean.TestType;
+import jane.bean.TestBean;
 import jane.core.DBManager;
 import jane.core.Procedure;
 import jane.core.Storage;
@@ -11,48 +12,40 @@ import jane.core.StorageMapDB;
 import jane.core.Util;
 
 // JVM: -Xms512M -Xmx512M
-// RUN: start.bat b md 8 0 150000
+// RUN: start.bat b ld 8 0 150000
 public final class TestDBBenchmark
 {
 	public static void main(String[] args) throws Throwable
 	{
-		Storage sto = StorageMapDB.instance();
+		Storage sto = null;
 		if(args.length > 0)
 		{
-			if("mv".equals(args[0]))
+			if("md".equals(args[0]))
+				sto = StorageMapDB.instance();
+			else if("mv".equals(args[0]))
 				sto = StorageMVStore.instance();
 			else if("ld".equals(args[0]))
-				sto = StorageLevelDB.instance();
-			else
-				sto = StorageMapDB.instance(); // if("md".equals(args[0]))
+			    sto = StorageLevelDB.instance();
 		}
-		int count = 8;
-		if(args.length > 1)
-		{
-			if("u".equals(args[1]))
-				count = Integer.MAX_VALUE;
-			else
-				count = Integer.parseInt(args[1]);
-		}
+		if(sto == null) sto = StorageLevelDB.instance();
+		final int count = (args.length > 1 ? ("u".equals(args[1]) ? Integer.MAX_VALUE : Integer.parseInt(args[1])) : 8);
 		final int from = (args.length > 2 ? Integer.parseInt(args[2]) : 0);
 		final int keys = (args.length > 3 ? Integer.parseInt(args[3]) : 150000);
 
-		System.out.println("begin --- " + sto.getClass().getName() + ' ' + count);
+		System.out.println("begin --- " + sto.getClass().getName() + ": " + count + " * " + from + "-[" + keys + ']');
 		DBManager.instance().startup(sto);
 		AllTables.register();
 		System.gc();
 		System.runFinalization();
 		System.out.println("start");
 
-		final int n = 150000;
-		long t = 0;
 		for(int j = 0; j < count; ++j)
 		{
-			t = System.currentTimeMillis();
-			for(int i = 0; i < n; ++i)
+			long t = System.currentTimeMillis();
+			final AtomicInteger checked = new AtomicInteger();
+			for(int i = 0; i < keys; ++i)
 			{
-				final long index1 = from + (Util.getRand().nextInt() & 0x7fffffff) % keys; // i;
-				final long index2 = from + (Util.getRand().nextInt() & 0x7fffffff) % keys; // n - i - 1;
+				final long id = from + Util.getRand().nextInt(keys);
 				final long t0 = System.currentTimeMillis();
 				new Procedure()
 				{
@@ -62,24 +55,22 @@ public final class TestDBBenchmark
 						long t1 = System.currentTimeMillis();
 						long tt = t1 - t0;
 						if(tt >= 250) System.out.println("--- proc delay=" + tt);
-						lock(AllTables.TestTable.lockid(index1),
-						        AllTables.TestTable.lockid(index2));
-						TestType a = AllTables.TestTable.get(index1);
-						TestType b = AllTables.TestTable.get(index2);
+						lock(AllTables.Benchmark.lockid(id));
+						TestBean a = AllTables.Benchmark.get(id);
 						if(a == null)
 						{
-							a = new TestType();
-							a.v4 = (int)index1;
-							AllTables.TestTable.put(index1, a);
+							a = new TestBean();
+							a.value2 = id;
+							AllTables.Benchmark.put(id, a);
 						}
-						if(b == null)
+						else
 						{
-							b = new TestType();
-							b.v4 = (int)index2;
-							AllTables.TestTable.put(index2, b);
+							if(a.value2 == id)
+								checked.incrementAndGet();
+							else
+								a.value2 = id;
+							AllTables.Benchmark.modify(id, a);
 						}
-						a.v4 += b.v4;
-						AllTables.TestTable.modify(index1, a);
 						tt = System.currentTimeMillis() - t1;
 						if(tt >= 250) System.out.println("--- proc timeout=" + tt);
 						return true;
@@ -87,7 +78,7 @@ public final class TestDBBenchmark
 				}.run();
 				if(count == Integer.MAX_VALUE && i % 512 == 0) Thread.sleep(1);
 			}
-			System.out.println(System.currentTimeMillis() - t);
+			System.out.println((System.currentTimeMillis() - t) + " checked=" + checked.get());
 		}
 
 		System.out.println("checkpoint");

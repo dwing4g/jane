@@ -56,7 +56,7 @@ public final class TestEmpty extends Bean<TestEmpty> implements Comparable<TestE
 	@Override
 	public OctetsStream unmarshal(OctetsStream s) throws MarshalException
 	{
-		for(;;) { int i = s.unmarshalByte() & 0xff, t = i & 3; switch(i >> 6)
+		for(;;) { int i = s.unmarshalByte() & 0xff, t = i & 3; switch(i >> 2)
 		{
 			case 0: return s;
 			default: s.unmarshalSkipVar(t);

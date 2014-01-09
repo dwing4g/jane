@@ -86,7 +86,7 @@ public final class #(bean.name) extends Bean<#(bean.name)> implements Comparable
 	@Override
 	public OctetsStream unmarshal(OctetsStream s) throws MarshalException
 	{
-		for(;;) { int i = s.unmarshalByte() & 0xff, t = i & 3; switch(i >> 6)
+		for(;;) { int i = s.unmarshalByte() & 0xff, t = i & 3; switch(i >> 2)
 		{
 			case 0: return s;
 #(#			#(var.unmarshal) break;

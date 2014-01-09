@@ -370,7 +370,7 @@ public final class TestType extends Bean<TestType> implements Comparable<TestTyp
 	@Override
 	public OctetsStream unmarshal(OctetsStream s) throws MarshalException
 	{
-		for(;;) { int i = s.unmarshalByte() & 0xff, t = i & 3; switch(i >> 6)
+		for(;;) { int i = s.unmarshalByte() & 0xff, t = i & 3; switch(i >> 2)
 		{
 			case 0: return s;
 			case 1: this.v1 = (s.unmarshalInt(t) != 0); break;
