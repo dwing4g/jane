@@ -124,7 +124,7 @@ namespace jane
 		/**
 		 * 把序列容器里的元素转成JSON字符串输出到StringBuilder中
 		 */
-		public static StringBuilder appendJson<T>(StringBuilder s, IList<T> list)
+		public static StringBuilder appendJson<T>(StringBuilder s, ICollection<T> list)
 		{
 			if(list.Count <= 0) return s.Append("[],");
 			s.Append('[');
@@ -170,7 +170,7 @@ namespace jane
 		/**
 		 * 把序列容器里的元素转成Lua字符串输出到StringBuilder中
 		 */
-		public static StringBuilder appendLua<T>(StringBuilder s, IList<T> list)
+		public static StringBuilder appendLua<T>(StringBuilder s, ICollection<T> list)
 		{
 			if(list.Count <= 0) return s.Append("{},");
 			s.Append('{');

@@ -25,7 +25,7 @@ namespace jane.bean
 		public  /*11*/ readonly LinkedList<byte> v11; // 链表容器(LinkedList)
 		public  /*12*/ readonly LinkedList<int> v12; // 队列容器(ArrayDeque)
 		public  /*13*/ readonly HashSet<long> v13; // 无序集合容器(HashSet)
-		public  /*14*/ readonly HashSet<float> v14; // 排序集合容器(TreeSet)
+		public  /*14*/ readonly SortedSet<float> v14; // 排序集合容器(TreeSet)
 		public  /*15*/ readonly HashSet<double> v15; // 有序集合容器(LinkedHashSet)
 		public  /*16*/ readonly Dictionary<long, string> v16; // 无序映射容器(HashMap)
 		public  /*17*/ readonly SortedDictionary<TestBean, bool> v17; // 排序映射容器(TreeMap)
@@ -40,7 +40,7 @@ namespace jane.bean
 			v11 = new LinkedList<byte>();
 			v12 = new LinkedList<int>();
 			v13 = new HashSet<long>();
-			v14 = new HashSet<float>();
+			v14 = new SortedSet<float>();
 			v15 = new HashSet<double>();
 			v16 = new Dictionary<long, string>(0);
 			v17 = new SortedDictionary<TestBean, bool>();
@@ -63,7 +63,7 @@ namespace jane.bean
 			this.v11 = new LinkedList<byte>(); if(v11 != null) Util.addAll(this.v11, v11);
 			this.v12 = new LinkedList<int>(); if(v12 != null) Util.addAll(this.v12, v12);
 			this.v13 = new HashSet<long>(); if(v13 != null) this.v13.UnionWith(v13);
-			this.v14 = new HashSet<float>(); if(v14 != null) this.v14.UnionWith(v14);
+			this.v14 = new SortedSet<float>(); if(v14 != null) this.v14.UnionWith(v14);
 			this.v15 = new HashSet<double>(); if(v15 != null) this.v15.UnionWith(v15);
 			this.v16 = new Dictionary<long, string>(0); if(v16 != null) Util.addAll(this.v16, v16);
 			this.v17 = new SortedDictionary<TestBean, bool>(); if(v17 != null) Util.addAll(this.v17, v17);
@@ -223,7 +223,7 @@ namespace jane.bean
 			return v13;
 		}
 
-		public HashSet<float> getV14()
+		public SortedSet<float> getV14()
 		{
 			return v14;
 		}

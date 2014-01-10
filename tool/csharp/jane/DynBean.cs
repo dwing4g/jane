@@ -120,10 +120,10 @@ namespace jane
 					s.Append((int)(char)o);
 				else if(o is Octets)
 					((Octets)o).dumpJStr(s);
-				else if(o is IList)
-					Util.appendJson(s, (IList)o);
 				else if(o is IDictionary)
 					Util.appendJson(s, (IDictionary)o);
+				else if(o is ICollection)
+					Util.appendJson(s, (ICollection)o);
 				else
 					Util.toJStr(s, o.ToString());
 			}
@@ -144,10 +144,10 @@ namespace jane
 					s.Append((int)(char)o);
 				else if(o is Octets)
 					((Octets)o).dumpJStr(s);
-				else if(o is IList)
-					Util.appendLua(s, (IList)o);
 				else if(o is IDictionary)
 					Util.appendLua(s, (IDictionary)o);
+				else if(o is ICollection)
+					Util.appendLua(s, (ICollection)o);
 				else
 					Util.toJStr(s, o.ToString());
 			}

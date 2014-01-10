@@ -422,9 +422,9 @@ typedef.hashset = merge(typedef.vector,
 })
 typedef.treeset = merge(typedef.hashset,
 {
-	type = function(var) return "HashSet<" .. subtypename(var, var.k) .. ">" end,
-	new = function(var) return "\t\t\t#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
-	init = function(var) return "this.#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).UnionWith(#(var.name))" end,
+	type = function(var) return "SortedSet<" .. subtypename(var, var.k) .. ">" end,
+	new = function(var) return "\t\t\t#(var.name) = new SortedSet<" .. subtypename_new(var, var.k) .. ">();\n" end,
+	init = function(var) return "this.#(var.name) = new SortedSet<" .. subtypename_new(var, var.k) .. ">(); if(#(var.name) != null) this.#(var.name).UnionWith(#(var.name))" end,
 })
 typedef.linkedhashset = merge(typedef.hashset,
 {

@@ -419,18 +419,6 @@ namespace jane
 				((Bean)o).marshal(marshal1((byte)((id << 2) + 2)));
 				if(count - n < 3) resize(n);
 			}
-			else if(o is IList)
-			{
-				IList list = (IList)o;
-				int n = list.Count;
-				if(n > 0)
-				{
-					int vtype = getKVType(list[0]);
-					marshal2((id << 10) + 0x300 + vtype).marshalUInt(n);
-					foreach(object v in list)
-						marshalKV(vtype, v);
-				}
-			}
 			else if(o is IDictionary)
 			{
 				IDictionary dic = (IDictionary)o;
@@ -444,6 +432,20 @@ namespace jane
 					marshal2((id << 10) + 0x340 + (ktype << 3) + vtype).marshalUInt(n);
 					foreach(DictionaryEntry e in dic)
 						marshalKV(ktype, e.Key).marshalKV(vtype, e.Value);
+				}
+			}
+			else if(o is ICollection)
+			{
+				ICollection list = (ICollection)o;
+				int n = list.Count;
+				if(n > 0)
+				{
+					IEnumerator e = list.GetEnumerator();
+					e.MoveNext();
+					int vtype = getKVType(e.Current);
+					marshal2((id << 10) + 0x300 + vtype).marshalUInt(n);
+					foreach(object v in list)
+						marshalKV(vtype, v);
 				}
 			}
 			return this;
@@ -732,7 +734,7 @@ namespace jane
 			{
 				subtype &= 7;
 				int n = unmarshalUInt();
-				IList<object> list = new List<object>(n < 0x10000 ? n : 0x10000);
+				List<object> list = new List<object>(n < 0x10000 ? n : 0x10000);
 				for(; n > 0; --n)
 					list.Add(unmarshalKV(subtype));
 				return list;
