@@ -157,20 +157,18 @@ using System.Collections.Generic;
 
 namespace ]=] .. namespace .. [=[.bean
 {
-	/** 全部beans的注册(自动生成的静态类) */
-	public sealed class AllBeans
+	/** 全部bean集合(自动生成的静态类) */
+	public static class AllBeans
 	{
-		private AllBeans() {}
-
-		/** 注册全部的beans到网络管理器. 必须在网络连接之前调用 */
+		/** 获取全部的bean实例 */
 		public static ICollection<Bean> getAllBeans()
 		{
-			ICollection<Bean> r = new List<Bean>(#(bean.count));
+			List<Bean> r = new List<Bean>(#(bean.count));
 #(#			r.Add(new #(bean.name)());
 #)#			return r;
 		}
 #[#
-		public static Dictionary<int, BeanHandler> get#(hdl.name)Handlers()
+		public static IDictionary<int, BeanHandler> get#(hdl.name)Handlers()
 		{
 			Dictionary<int, BeanHandler> r = new Dictionary<int, BeanHandler>(#(hdl.count) * 4);
 #(#			r.Add(#(bean.type), new #(hdl.path).#(bean.name)Handler());
@@ -539,13 +537,6 @@ end
 local function code_conv(code, prefix, t)
 	return code:gsub("#%(" .. prefix .. "%.([%w_]+)%)", function(name) return t[name] end)
 end
-local function gen_uid(s)
-	local h = 0
-	for i = 1, #s do
-		h = h % 0x10000000000 * 4093 + 1 + s:byte(i)
-	end
-	return string.format("0xbeac%04x%08xL", math.floor(h / 0x100000000) % 0x10000, h % 0x100000000)
-end
 
 local name_code = {}
 local type_bean = {}
@@ -600,7 +591,6 @@ function bean(bean)
 			vartypes[#vartypes + 1] = var.type
 		end
 	end
-	bean.uid = gen_uid(concat(vartypes))
 
 	local code = template_bean:gsub("#{#(.-)#}#", function(body)
 		local subcode = {}

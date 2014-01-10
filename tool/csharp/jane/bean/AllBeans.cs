@@ -3,15 +3,13 @@ using System.Collections.Generic;
 
 namespace jane.bean
 {
-	/** 全部beans的注册(自动生成的静态类) */
-	public sealed class AllBeans
+	/** 全部bean集合(自动生成的静态类) */
+	public static class AllBeans
 	{
-		private AllBeans() {}
-
-		/** 注册全部的beans到网络管理器. 必须在网络连接之前调用 */
+		/** 获取全部的bean实例 */
 		public static ICollection<Bean> getAllBeans()
 		{
-			ICollection<Bean> r = new List<Bean>(4);
+			List<Bean> r = new List<Bean>(4);
 			r.Add(new TestBean());
 			r.Add(new TestKeyBean());
 			r.Add(new TestType());
@@ -19,7 +17,7 @@ namespace jane.bean
 			return r;
 		}
 
-		public static Dictionary<int, BeanHandler> getTestServerHandlers()
+		public static IDictionary<int, BeanHandler> getTestServerHandlers()
 		{
 			Dictionary<int, BeanHandler> r = new Dictionary<int, BeanHandler>(3 * 4);
 			r.Add(1, new jane.handler.testserver.TestBeanHandler());
@@ -28,7 +26,7 @@ namespace jane.bean
 			return r;
 		}
 
-		public static Dictionary<int, BeanHandler> getTestClientHandlers()
+		public static IDictionary<int, BeanHandler> getTestClientHandlers()
 		{
 			Dictionary<int, BeanHandler> r = new Dictionary<int, BeanHandler>(3 * 4);
 			r.Add(1, new jane.handler.testclient.TestBeanHandler());
