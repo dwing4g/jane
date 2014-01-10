@@ -7,6 +7,7 @@ namespace jane
 	 * 用于存储可扩展字节序列的类型
 	 * 一个Octets及其子类的实例不能同时由多个线程同时访问
 	 */
+	[Serializable]
 	public class Octets : ICloneable, IComparable<Octets>
 	{
 		protected const int DEFAULT_SIZE = 16; // 默认的缓冲区

@@ -8,6 +8,7 @@ namespace jane.bean
 	/**
 	 * 作为key或配置的bean
 	 */
+	[Serializable]
 	public sealed class TestKeyBean : Bean, IComparable<TestKeyBean>
 	{
 		public const int BEAN_TYPE = 2;
@@ -104,6 +105,11 @@ namespace jane.bean
 			c = this.key1 - b.key1; if(c != 0) return c;
 			c = this.key2.CompareTo(b.key2); if(c != 0) return c;
 			return 0;
+		}
+
+		public override int CompareTo(Bean b)
+		{
+			return b is TestKeyBean ? CompareTo((TestKeyBean)b) : 1;
 		}
 
 		public override string ToString()

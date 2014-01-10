@@ -8,6 +8,7 @@ namespace jane.bean
 	/**
 	 * 测试生成所有支持的类型
 	 */
+	[Serializable]
 	public sealed class TestType : Bean, IComparable<TestType>
 	{
 		public const int BEAN_TYPE = 3;
@@ -542,6 +543,11 @@ namespace jane.bean
 			c = Util.compareTo(this.v18, b.v18); if(c != 0) return c;
 			c = this.v19.CompareTo(b.v19); if(c != 0) return c;
 			return 0;
+		}
+
+		public override int CompareTo(Bean b)
+		{
+			return b is TestType ? CompareTo((TestType)b) : 1;
 		}
 
 		public override string ToString()

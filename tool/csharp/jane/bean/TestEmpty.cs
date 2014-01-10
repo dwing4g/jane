@@ -8,6 +8,7 @@ namespace jane.bean
 	/**
 	 * 测试空bean
 	 */
+	[Serializable]
 	public sealed class TestEmpty : Bean, IComparable<TestEmpty>
 	{
 		public const int BEAN_TYPE = 4;
@@ -78,6 +79,11 @@ namespace jane.bean
 			if(b == this) return 0;
 			if(b == null) return 1;
 			return 0;
+		}
+
+		public override int CompareTo(Bean b)
+		{
+			return b is TestEmpty ? CompareTo((TestEmpty)b) : 1;
 		}
 
 		public override string ToString()

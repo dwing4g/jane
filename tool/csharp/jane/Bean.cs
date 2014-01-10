@@ -8,7 +8,7 @@ namespace jane
 	 * 模版类型B表示bean的实际类型
 	 * 一个Bean及其子类的实例不能同时由多个线程同时访问
 	 */
-	public abstract class Bean : ICloneable
+	public abstract class Bean : ICloneable, IComparable<Bean>, IComparable
 	{
 		/**
 		 * bean的初始预计序列化长度
@@ -59,6 +59,16 @@ namespace jane
 		public abstract OctetsStream unmarshal(OctetsStream os);
 
 		public abstract object Clone();
+
+		public virtual int CompareTo(Bean b)
+		{
+			throw new NotSupportedException();
+		}
+
+		public int CompareTo(object b)
+		{
+			return b is Bean ? CompareTo((Bean)b) : 1;
+		}
 
 		/**
 		 * 把bean的数据格式化成JSON格式返回

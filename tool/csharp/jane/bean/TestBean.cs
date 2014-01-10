@@ -8,6 +8,7 @@ namespace jane.bean
 	/**
 	 * bean的注释
 	 */
+	[Serializable]
 	public sealed class TestBean : Bean, IComparable<TestBean>
 	{
 		public const int BEAN_TYPE = 1;
@@ -129,6 +130,11 @@ namespace jane.bean
 			c = this.value1 - b.value1; if(c != 0) return c;
 			c = Math.Sign(this.value2 - b.value2); if(c != 0) return c;
 			return 0;
+		}
+
+		public override int CompareTo(Bean b)
+		{
+			return b is TestBean ? CompareTo((TestBean)b) : 1;
 		}
 
 		public override string ToString()

@@ -8,6 +8,7 @@ namespace jane
 	/**
 	 * 用于表示动态字段的bean
 	 */
+	[Serializable]
 	public sealed class DynBean : Bean
 	{
 		private int _type; // bean的类型(可用可不用,不影响序列化/反序列化)

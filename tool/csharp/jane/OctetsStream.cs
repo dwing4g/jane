@@ -9,6 +9,7 @@ namespace jane
 	 * 基于Octets的可扩展字节流的类型
 	 * 包括各种所需的序列化/反序列化
 	 */
+	[Serializable]
 	public class OctetsStream : Octets
 	{
 		protected int pos; // 当前的读写位置

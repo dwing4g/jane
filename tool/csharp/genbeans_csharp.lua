@@ -19,6 +19,7 @@ using System.Collections.Generic;
 
 namespace ]=] .. namespace .. [=[.bean
 {#(bean.comment)
+	[Serializable]
 	public sealed class #(bean.name) : Bean, IComparable<#(bean.name)>
 	{
 		public const int BEAN_TYPE = #(bean.type);
@@ -115,6 +116,11 @@ namespace ]=] .. namespace .. [=[.bean
 			int c;#>#
 #(#			c = #(var.compareto); if(c != 0) return c;
 #)#			return 0;
+		}
+
+		public override int CompareTo(Bean b)
+		{
+			return b is #(bean.name) ? CompareTo((#(bean.name))b) : 1;
 		}
 
 		public override string ToString()
