@@ -90,7 +90,7 @@ public final class RawBean extends Bean<RawBean> implements Comparable<RawBean>
 		if(this == o) return true;
 		if(!(o instanceof RawBean)) return false;
 		RawBean rb = (RawBean)o;
-		return _type == rb._type && _data.equals(rb._data) && getClass() == o.getClass();
+		return _type == rb._type && _data.equals(rb._data);
 	}
 
 	@Override

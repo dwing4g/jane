@@ -109,7 +109,7 @@ public final class DynBean extends Bean<DynBean>
 		if(this == o) return true;
 		if(!(o instanceof DynBean)) return false;
 		DynBean rb = (DynBean)o;
-		return _type == rb._type && _fields.equals(rb._fields) && getClass() == o.getClass();
+		return _type == rb._type && _fields.equals(rb._fields);
 	}
 
 	@Override

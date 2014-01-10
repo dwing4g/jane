@@ -81,7 +81,7 @@ public final class TestEmpty extends Bean<TestEmpty> implements Comparable<TestE
 	{
 		if(o == this) return true;
 		if(!(o instanceof TestEmpty)) return false;
-		return getClass() == o.getClass();
+		return true;
 	}
 
 	@Override
@@ -96,7 +96,7 @@ public final class TestEmpty extends Bean<TestEmpty> implements Comparable<TestE
 	public String toString()
 	{
 		StringBuilder s = new StringBuilder(16 + 0 * 2).append('{');
-		return s.append('}').toString();
+		return s.toString();
 	}
 
 	@Override
@@ -104,7 +104,7 @@ public final class TestEmpty extends Bean<TestEmpty> implements Comparable<TestE
 	{
 		if(s == null) s = new StringBuilder(1024);
 		s.append('{');
-		return s.append('}');
+		return s;
 	}
 
 	@Override
@@ -112,6 +112,6 @@ public final class TestEmpty extends Bean<TestEmpty> implements Comparable<TestE
 	{
 		if(s == null) s = new StringBuilder(1024);
 		s.append('{');
-		return s.append('}');
+		return s;
 	}
 }

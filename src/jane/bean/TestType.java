@@ -495,7 +495,7 @@ public final class TestType extends Bean<TestType> implements Comparable<TestTyp
 		h = h * 31 + 1 + this.v4;
 		h = h * 31 + 1 + (int)this.v5;
 		h = h * 31 + 1 + Float.floatToRawIntBits(this.v6);
-		h = h * 31 + 1 + (int)Double.doubleToRawLongBits(this.v7);
+		h = h * 31 + 1 + (int)((Double.doubleToRawLongBits(this.v7) * 0x100000001L) >> 32);
 		h = h * 31 + 1 + this.v8.hashCode();
 		h = h * 31 + 1 + this.v9.hashCode();
 		h = h * 31 + 1 + this.v10.hashCode();
@@ -536,7 +536,7 @@ public final class TestType extends Bean<TestType> implements Comparable<TestTyp
 		if(!this.v17.equals(b.v17)) return false;
 		if(!this.v18.equals(b.v18)) return false;
 		if(!this.v19.equals(b.v19)) return false;
-		return getClass() == o.getClass();
+		return true;
 	}
 
 	@Override
@@ -590,8 +590,8 @@ public final class TestType extends Bean<TestType> implements Comparable<TestTyp
 		Util.append(s, this.v17);
 		Util.append(s, this.v18);
 		s.append(this.v19).append(',');
-		s.setLength(s.length() - 1);
-		return s.append('}').toString();
+		s.setCharAt(s.length() - 1, '}');
+		return s.toString();
 	}
 
 	@Override
@@ -618,8 +618,8 @@ public final class TestType extends Bean<TestType> implements Comparable<TestTyp
 		Util.appendJson(s.append("\"v17\":"), this.v17);
 		Util.appendJson(s.append("\"v18\":"), this.v18);
 		this.v19.toJson(s.append("\"v19\":")).append(',');
-		s.setLength(s.length() - 1);
-		return s.append('}');
+		s.setCharAt(s.length() - 1, '}');
+		return s;
 	}
 
 	@Override
@@ -646,7 +646,7 @@ public final class TestType extends Bean<TestType> implements Comparable<TestTyp
 		Util.appendLua(s.append("v17="), this.v17);
 		Util.appendLua(s.append("v18="), this.v18);
 		this.v19.toLua(s.append("v19=")).append(',');
-		s.setLength(s.length() - 1);
-		return s.append('}');
+		s.setCharAt(s.length() - 1, '}');
+		return s;
 	}
 }

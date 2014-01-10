@@ -21,8 +21,8 @@ namespace ]=] .. namespace .. [=[.bean
 {#(bean.comment)
 	public sealed class #(bean.name) : Bean, IComparable<#(bean.name)>
 	{
-		public static const int BEAN_TYPE = #(bean.type);
-#{#		public static const #(var.type) #(var.name)#(var.value);#(var.comment)
+		public const int BEAN_TYPE = #(bean.type);
+#{#		public const #(var.type) #(var.name)#(var.value);#(var.comment)
 #}#
 #(#		#(var.public) /*#(var.id2)*/ #(var.final)#(var.type) #(var.name);#(var.comment)
 #)##<#
@@ -66,7 +66,7 @@ namespace ]=] .. namespace .. [=[.bean
 			return #(bean.maxsize);
 		}
 
-		public override #(bean.name) create()
+		public override Bean create()
 		{
 			return new #(bean.name)();
 		}
@@ -108,7 +108,7 @@ namespace ]=] .. namespace .. [=[.bean
 #)#			return true;
 		}
 
-		public override int CompareTo(#(bean.name) b)
+		public int CompareTo(#(bean.name) b)
 		{
 			if(b == this) return 0;
 			if(b == null) return 1;#<#
@@ -157,9 +157,9 @@ namespace ]=] .. namespace .. [=[.bean
 		private AllBeans() {}
 
 		/** 注册全部的beans到网络管理器. 必须在网络连接之前调用 */
-		public static IList<Bean> getAllBeans()
+		public static ICollection<Bean> getAllBeans()
 		{
-			IList<Bean> r = new List<Bean>(#(bean.count));
+			ICollection<Bean> r = new List<Bean>(#(bean.count));
 #(#			r.Add(new #(bean.name)());
 #)#			return r;
 		}
@@ -175,6 +175,8 @@ namespace ]=] .. namespace .. [=[.bean
 ]=]
 
 local template_bean_handler = [=[
+using ]=] .. namespace .. [=[.bean;
+
 namespace #(hdl.path)
 {
 	public class #(bean.name)Handler : BeanHandler<#(bean.name)>
@@ -185,7 +187,7 @@ namespace #(hdl.path)
 
 		public override void onProcess(object manager, object session, #(bean.name) arg)
 		{
-			Log.log.debug("{}.onProcess: arg={}", getClass().getName(), arg);
+			// Log.log.debug("{}.onProcess: arg={}", getClass().getName(), arg);
 		}
 	}
 }
@@ -234,7 +236,7 @@ end
 typedef.byte =
 {
 	name_u = function(var) return var.name:sub(1, 1):upper() .. var.name:sub(2) end,
-	type = "byte", type_i = "byte", type_o = "Byte",
+	type = "byte", type_i = "byte", type_o = "byte",
 	subtypeid = 0,
 	public = "public ",
 	final = "",
@@ -286,7 +288,7 @@ typedef.bool = merge(typedef.byte,
 	marshal = function(var) return string.format("if(this.#(var.name)) s.marshal1((byte)0x%02x).marshal1((byte)1);", var.id * 4) end,
 	unmarshal = "case #(var.id): this.#(var.name) = (s.unmarshalInt(t) != 0);",
 	unmarshal_kv = function(var, kv, t) if kv then return "(s.unmarshalIntKV(" .. t .. ") != 0)" end end,
-	hashcode = "(this.#(var.name) ? 0xcafebabe : 0xdeadbeef)",
+	hashcode = "(int)(this.#(var.name) ? 0xcafebabe : 0xdeadbeef)",
 	compareto = "(this.#(var.name) == b.#(var.name) ? 0 : (this.#(var.name) ? 1 : -1))",
 })
 typedef.float = merge(typedef.byte,
@@ -296,17 +298,16 @@ typedef.float = merge(typedef.byte,
 	marshal = function(var) return string.format("if(this.#(var.name) != 0) s.marshal2(0x%04x).marshal(this.#(var.name));", var.id * 0x400 + 0x308) end,
 	unmarshal = "case #(var.id): this.#(var.name) = s.unmarshalFloat(t);",
 	unmarshal_kv = function(var, kv, t) if kv then return "s.unmarshalFloatKV(" .. t .. ")" end end,
-	hashcode = "Float.floatToRawIntBits(this.#(var.name))",
+	hashcode = "(int)((BitConverter.DoubleToInt64Bits(this.#(var.name)) * 0x100000001L) >> 32)",
 	compareto = "Math.Sign(this.#(var.name) - b.#(var.name))",
 })
-typedef.double = merge(typedef.byte,
+typedef.double = merge(typedef.float,
 {
 	type = "double", type_i = "double", type_o = "double",
 	subtypeid = 5,
 	marshal = function(var) return string.format("if(this.#(var.name) != 0) s.marshal2(0x%04x).marshal(this.#(var.name));", var.id * 0x400 + 0x309) end,
 	unmarshal = "case #(var.id): this.#(var.name) = s.unmarshalDouble(t);",
 	unmarshal_kv = function(var, kv, t) if kv then return "s.unmarshalDoubleKV(" .. t .. ")" end end,
-	hashcode = "(int)Double.doubleToRawLongBits(this.#(var.name))",
 	compareto = "Math.Sign(this.#(var.name) - b.#(var.name))",
 })
 typedef.string = merge(typedef.byte,
@@ -325,7 +326,7 @@ typedef.string = merge(typedef.byte,
 			this.#(var.name) = (#(var.name) != null ? #(var.name) : "");
 		}
 ]],
-	marshal = function(var) return string.format("if(!this.#(var.name).isEmpty()) s.marshal1((byte)0x%02x).marshal(this.#(var.name));", var.id * 4 + 1) end,
+	marshal = function(var) return string.format("if(this.#(var.name).Length > 0) s.marshal1((byte)0x%02x).marshal(this.#(var.name));", var.id * 4 + 1) end,
 	unmarshal = "case #(var.id): this.#(var.name) = s.unmarshalString(t);",
 	unmarshal_kv = function(var, kv, t) if kv then return "s.unmarshalStringKV(" .. t .. ")" end end,
 	hashcode = "this.#(var.name).GetHashCode()",
@@ -353,15 +354,15 @@ typedef.octets = merge(typedef.string,
 typedef.vector = merge(typedef.octets,
 {
 	type = function(var) return "List<" .. subtypename(var, var.k) .. ">" end,
-	type_i = function(var) return "Collection<" .. subtypename(var, var.k) .. ">" end,
+	type_i = function(var) return "ICollection<" .. subtypename(var, var.k) .. ">" end,
 	new = function(var) return "\t\t\t#(var.name) = new List<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
-	init = function(var) return "this.#(var.name) = new List<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
+	init = function(var) return "this.#(var.name) = new List<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).AddRange(#(var.name))" end,
 	reset = "#(var.name).Clear()",
-	assign = "this.#(var.name).Clear(); if(b.#(var.name) != null) this.#(var.name).addAll(b.#(var.name))",
-	marshal = function(var) return string.format([[if(!this.#(var.name).isEmpty())
+	assign = "this.#(var.name).Clear(); if(b.#(var.name) != null) this.#(var.name).AddRange(b.#(var.name))",
+	marshal = function(var) return string.format([[if(this.#(var.name).Count > 0)
 			{
-				s.marshal2(0x%04x).marshalUInt(this.#(var.name).size());
-				for(%s v : this.#(var.name))
+				s.marshal2(0x%04x).marshalUInt(this.#(var.name).Count);
+				foreach(%s v in this.#(var.name))
 					s.marshal(v);
 			}]], var.id * 0x400 + 0x300 + subtypeid(var.k), subtypename(var, var.k)) end,
 	unmarshal = function(var) return string.format([[case #(var.id):
@@ -372,7 +373,7 @@ typedef.vector = merge(typedef.octets,
 					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 					t &= 7;
 					int n = s.unmarshalUInt();
-					this.#(var.name).ensureCapacity(n < 0x10000 ? n : 0x10000);
+					this.#(var.name).Capacity = (n < 0x10000 ? n : 0x10000);
 					for(; n > 0; --n)
 						this.#(var.name).Add(%s);
 				}]], get_unmarshal_kv(var, "k", "t")) end,
@@ -385,7 +386,8 @@ typedef.list = merge(typedef.vector,
 {
 	type = function(var) return "LinkedList<" .. subtypename(var, var.k) .. ">" end,
 	new = function(var) return "\t\t\t#(var.name) = new LinkedList<" .. subtypename_new(var, var.k) .. ">();\n" end,
-	init = function(var) return "this.#(var.name) = new LinkedList<" .. subtypename_new(var, var.k) .. ">(); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
+	init = function(var) return "this.#(var.name) = new LinkedList<" .. subtypename_new(var, var.k) .. ">(); if(#(var.name) != null) Util.addAll(this.#(var.name), #(var.name))" end,
+	assign = "this.#(var.name).Clear(); if(b.#(var.name) != null) Util.addAll(this.#(var.name), b.#(var.name))",
 	unmarshal = function(var) return string.format([[case #(var.id):
 				{
 					this.#(var.name).Clear();
@@ -394,44 +396,50 @@ typedef.list = merge(typedef.vector,
 					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 					t &= 7;
 					for(int n = s.unmarshalUInt(); n > 0; --n)
-						this.#(var.name).Add(%s);
+						this.#(var.name).AddLast(%s);
 				}]], get_unmarshal_kv(var, "k", "t")) end,
 })
 typedef.deque = merge(typedef.list,
 {
-	type = function(var) return "Queue<" .. subtypename(var, var.k) .. ">" end,
-	new = function(var) return "\t\t\t#(var.name) = new Queue<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
-	init = function(var) return "this.#(var.name) = new Queue<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
 })
-typedef.hashset = merge(typedef.list,
+typedef.hashset = merge(typedef.vector,
 {
 	type = function(var) return "HashSet<" .. subtypename(var, var.k) .. ">" end,
 	new = function(var) return "\t\t\t#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
-	init = function(var) return "this.#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
+	init = function(var) return "this.#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).UnionWith(#(var.name))" end,
+	assign = "this.#(var.name).Clear(); if(b.#(var.name) != null) this.#(var.name).UnionWith(#(var.name))",
+	unmarshal = function(var) return string.format([[case #(var.id):
+				{
+					this.#(var.name).Clear();
+					if(t != 3) { s.unmarshalSkipVar(t); break; }
+					t = s.unmarshalByte();
+					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
+					t &= 7;
+					int n = s.unmarshalUInt();
+					for(; n > 0; --n)
+						this.#(var.name).Add(%s);
+				}]], get_unmarshal_kv(var, "k", "t")) end,
 })
-typedef.treeset = merge(typedef.list,
-{
-	type = function(var) return "HashSet<" .. subtypename(var, var.k) .. ">" end,
-	new = function(var) return "\t\t\t#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">();\n" end,
-	init = function(var) return "this.#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
-})
-typedef.linkedhashset = merge(typedef.list,
+typedef.treeset = merge(typedef.hashset,
 {
 	type = function(var) return "HashSet<" .. subtypename(var, var.k) .. ">" end,
 	new = function(var) return "\t\t\t#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
-	init = function(var) return "this.#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
+	init = function(var) return "this.#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).UnionWith(#(var.name))" end,
 })
-typedef.hashmap = merge(typedef.list,
+typedef.linkedhashset = merge(typedef.hashset,
+{
+})
+typedef.hashmap = merge(typedef.hashset,
 {
 	type = function(var) return "Dictionary<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
-	type_i = function(var) return "Map<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
+	type_i = function(var) return "IDictionary<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	new = function(var) return "\t\t\t#(var.name) = new Dictionary<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap));\n" end,
-	init = function(var) return "this.#(var.name) = new Dictionary<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).putAll(#(var.name))" end,
-	marshal = function(var) return string.format([[if(!this.#(var.name).isEmpty())
+	init = function(var) return "this.#(var.name) = new Dictionary<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap)); if(#(var.name) != null) Util.addAll(this.#(var.name), #(var.name))" end,
+	marshal = function(var) return string.format([[if(this.#(var.name).Count > 0)
 			{
-				s.marshal2(0x%04x).marshalUInt(this.#(var.name).size());
-				for(Entry<%s, %s> e : this.#(var.name).entrySet())
-					s.marshal(e.getKey()).marshal(e.getValue());
+				s.marshal2(0x%04x).marshalUInt(this.#(var.name).Count);
+				foreach(KeyValuePair<%s, %s> p in this.#(var.name))
+					s.marshal(p.Key).marshal(p.Value);
 			}]], var.id * 0x400 + 0x340 + subtypeid(var.k) * 8 + subtypeid(var.v), subtypename(var, var.k), subtypename(var, var.v)) end,
 	unmarshal = function(var) return string.format([[case #(var.id):
 				{
@@ -443,23 +451,23 @@ typedef.hashmap = merge(typedef.list,
 					for(int n = s.unmarshalUInt(); n > 0; --n)
 						this.#(var.name).Add(%s, %s);
 				}]], get_unmarshal_kv(var, "k", "k"), get_unmarshal_kv(var, "v", "t")) end,
-	assign = "this.#(var.name).Clear(); if(b.#(var.name) != null) this.#(var.name).putAll(b.#(var.name))",
+	assign = "this.#(var.name).Clear(); if(b.#(var.name) != null) Util.addAll(this.#(var.name), b.#(var.name))",
 })
 typedef.treemap = merge(typedef.hashmap,
 {
 	type = function(var) return "SortedDictionary<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
-	type_i = function(var) return "Map<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
+	type_i = function(var) return "IDictionary<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	new = function(var) return "\t\t\t#(var.name) = new SortedDictionary<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">();\n" end,
-	init = function(var) return "this.#(var.name) = new SortedDictionary<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(); if(#(var.name) != null) this.#(var.name).putAll(#(var.name))" end,
-	assign = "this.#(var.name).Clear(); if(b.#(var.name) != null) this.#(var.name).putAll(b.#(var.name))",
+	init = function(var) return "this.#(var.name) = new SortedDictionary<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(); if(#(var.name) != null) Util.addAll(this.#(var.name), #(var.name))" end,
+	assign = "this.#(var.name).Clear(); if(b.#(var.name) != null) Util.addAll(this.#(var.name), b.#(var.name))",
 })
 typedef.linkedhashmap = merge(typedef.hashmap,
 {
 	type = function(var) return "Dictionary<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
-	type_i = function(var) return "Map<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
+	type_i = function(var) return "IDictionary<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	new = function(var) return "\t\t\t#(var.name) = new Dictionary<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap));\n" end,
-	init = function(var) return "this.#(var.name) = new Dictionary<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).putAll(#(var.name))" end,
-	assign = "this.#(var.name).Clear(); if(b.#(var.name) != null) this.#(var.name).putAll(b.#(var.name))",
+	init = function(var) return "this.#(var.name) = new Dictionary<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap)); if(#(var.name) != null) Util.addAll(this.#(var.name), #(var.name))" end,
+	assign = "this.#(var.name).Clear(); if(b.#(var.name) != null) Util.addAll(this.#(var.name), b.#(var.name))",
 })
 typedef.bean = merge(typedef.octets,
 {
@@ -468,7 +476,7 @@ typedef.bean = merge(typedef.octets,
 	type_o = function(var) return var.type end,
 	subtypeid = 2,
 	new = function(var) return "\t\t\t#(var.name) = new " .. var.type .. "();\n" end,
-	init = function(var) return "this.#(var.name) = (#(var.name) != null ? #(var.name).Clone() : new " .. var.type .. "())" end,
+	init = function(var) return "this.#(var.name) = (#(var.name) != null ? (" .. var.type .. ")#(var.name).Clone() : new " .. var.type .. "())" end,
 	reset = "#(var.name).reset()",
 	assign = "this.#(var.name).assign(b.#(var.name))",
 	marshal = function(var) return string.format([[{
@@ -477,7 +485,7 @@ typedef.bean = merge(typedef.octets,
 				if(s.size() - n < 3) s.resize(n);
 			}]], var.id * 4 + 2) end,
 	unmarshal = "case #(var.id): s.unmarshalBean(this.#(var.name), t);",
-	unmarshal_kv = function(var, kv, t) if kv then return "s.unmarshalBeanKV(new " .. typename(var, var[kv]) .. "(), " .. t .. ")" end end,
+	unmarshal_kv = function(var, kv, t) if kv then return "(" .. typename(var, var[kv]) .. ")s.unmarshalBeanKV(new " .. typename(var, var[kv]) .. "(), " .. t .. ")" end end,
 	compareto = "this.#(var.name).CompareTo(b.#(var.name))",
 	tojson = "this.#(var.name).toJson(s.Append(\"\\\"#(var.name)\\\":\")).Append(',')",
 	tolua = "this.#(var.name).toLua(s.Append(\"#(var.name)=\")).Append(',')",

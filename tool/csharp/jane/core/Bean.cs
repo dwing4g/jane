@@ -14,7 +14,7 @@ namespace jane
 		 * bean的初始预计序列化长度
 		 * 用于序列化此bean前预留的空间大小(字节). 子类应该实现这个方法返回合适的值,默认只有16字节
 		 */
-		public int initSize()
+		public virtual int initSize()
 		{
 			return 16;
 		}
@@ -23,7 +23,7 @@ namespace jane
 		 * bean的最大序列化长度
 		 * 用于限制网络接收bean时的限制,避免对方恶意夸大长度攻击服务器的内存分配. 子类应该实现这个方法返回合适的值,默认是最大值表示不受限
 		 */
-		public int maxSize()
+		public virtual int maxSize()
 		{
 			return int.MaxValue;
 		}

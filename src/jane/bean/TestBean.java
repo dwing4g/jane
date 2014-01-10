@@ -129,7 +129,7 @@ public final class TestBean extends Bean<TestBean> implements Comparable<TestBea
 		TestBean b = (TestBean)o;
 		if(this.value1 != b.value1) return false;
 		if(this.value2 != b.value2) return false;
-		return getClass() == o.getClass();
+		return true;
 	}
 
 	@Override
@@ -149,8 +149,8 @@ public final class TestBean extends Bean<TestBean> implements Comparable<TestBea
 		StringBuilder s = new StringBuilder(16 + 16 * 2).append('{');
 		s.append(this.value1).append(',');
 		s.append(this.value2).append(',');
-		s.setLength(s.length() - 1);
-		return s.append('}').toString();
+		s.setCharAt(s.length() - 1, '}');
+		return s.toString();
 	}
 
 	@Override
@@ -160,8 +160,8 @@ public final class TestBean extends Bean<TestBean> implements Comparable<TestBea
 		s.append('{');
 		s.append("\"value1\":").append(this.value1).append(',');
 		s.append("\"value2\":").append(this.value2).append(',');
-		s.setLength(s.length() - 1);
-		return s.append('}');
+		s.setCharAt(s.length() - 1, '}');
+		return s;
 	}
 
 	@Override
@@ -171,7 +171,7 @@ public final class TestBean extends Bean<TestBean> implements Comparable<TestBea
 		s.append('{');
 		s.append("value1=").append(this.value1).append(',');
 		s.append("value2=").append(this.value2).append(',');
-		s.setLength(s.length() - 1);
-		return s.append('}');
+		s.setCharAt(s.length() - 1, '}');
+		return s;
 	}
 }

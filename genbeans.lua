@@ -115,7 +115,7 @@ public final class #(bean.name) extends Bean<#(bean.name)> implements Comparable
 		if(!(o instanceof #(bean.name))) return false;#<#
 		#(bean.name) b = (#(bean.name))o;#>#
 #(#		if(#(var.equals)) return false;
-#)#		return getClass() == o.getClass();
+#)#		return true;
 	}
 
 	@Override
@@ -133,8 +133,8 @@ public final class #(bean.name) extends Bean<#(bean.name)> implements Comparable
 	{
 		StringBuilder s = new StringBuilder(16 + #(bean.initsize) * 2).append('{');#<#
 #(#		#(var.tostring);
-#)#		s.setLength(s.length() - 1);#>#
-		return s.append('}').toString();
+#)#		s.setCharAt(s.length() - 1, '}');#>#
+		return s.toString();
 	}
 
 	@Override
@@ -143,8 +143,8 @@ public final class #(bean.name) extends Bean<#(bean.name)> implements Comparable
 		if(s == null) s = new StringBuilder(1024);
 		s.append('{');#<#
 #(#		#(var.tojson);
-#)#		s.setLength(s.length() - 1);#>#
-		return s.append('}');
+#)#		s.setCharAt(s.length() - 1, '}');#>#
+		return s;
 	}
 
 	@Override
@@ -153,8 +153,8 @@ public final class #(bean.name) extends Bean<#(bean.name)> implements Comparable
 		if(s == null) s = new StringBuilder(1024);
 		s.append('{');#<#
 #(#		#(var.tolua);
-#)#		s.setLength(s.length() - 1);#>#
-		return s.append('}');
+#)#		s.setCharAt(s.length() - 1, '}');#>#
+		return s;
 	}
 }
 ]=]
@@ -430,7 +430,7 @@ typedef.double = merge(typedef.byte,
 	marshal = function(var) return string.format("if(this.#(var.name) != 0) s.marshal2(0x%04x).marshal(this.#(var.name));", var.id * 0x400 + 0x309) end,
 	unmarshal = "case #(var.id): this.#(var.name) = s.unmarshalDouble(t);",
 	unmarshal_kv = function(var, kv, t) if kv then return "s.unmarshalDoubleKV(" .. t .. ")" end end,
-	hashcode = "(int)Double.doubleToRawLongBits(this.#(var.name))",
+	hashcode = "(int)((Double.doubleToRawLongBits(this.#(var.name)) * 0x100000001L) >> 32)",
 	compareto = "Double.compare(this.#(var.name), b.#(var.name))",
 })
 typedef.string = merge(typedef.byte,

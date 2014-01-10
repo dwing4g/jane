@@ -105,7 +105,7 @@ public final class TestKeyBean extends Bean<TestKeyBean> implements Comparable<T
 		TestKeyBean b = (TestKeyBean)o;
 		if(this.key1 != b.key1) return false;
 		if(!this.key2.equals(b.key2)) return false;
-		return getClass() == o.getClass();
+		return true;
 	}
 
 	@Override
@@ -125,8 +125,8 @@ public final class TestKeyBean extends Bean<TestKeyBean> implements Comparable<T
 		StringBuilder s = new StringBuilder(16 + 16 * 2).append('{');
 		s.append(this.key1).append(',');
 		s.append(this.key2).append(',');
-		s.setLength(s.length() - 1);
-		return s.append('}').toString();
+		s.setCharAt(s.length() - 1, '}');
+		return s.toString();
 	}
 
 	@Override
@@ -136,8 +136,8 @@ public final class TestKeyBean extends Bean<TestKeyBean> implements Comparable<T
 		s.append('{');
 		s.append("\"key1\":").append(this.key1).append(',');
 		Util.toJStr(s.append("\"key2\":"), this.key2).append(',');
-		s.setLength(s.length() - 1);
-		return s.append('}');
+		s.setCharAt(s.length() - 1, '}');
+		return s;
 	}
 
 	@Override
@@ -147,7 +147,7 @@ public final class TestKeyBean extends Bean<TestKeyBean> implements Comparable<T
 		s.append('{');
 		s.append("key1=").append(this.key1).append(',');
 		Util.toJStr(s.append("key2="), this.key2).append(',');
-		s.setLength(s.length() - 1);
-		return s.append('}');
+		s.setCharAt(s.length() - 1, '}');
+		return s;
 	}
 }
