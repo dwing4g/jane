@@ -21,4 +21,24 @@ namespace jane
 		{
 		}
 	}
+
+	/**
+	 * 反序列化bean遇到数据不足的时候会抛出的异常类
+	 */
+	public class MarshalEOFException : MarshalException
+	{
+		public MarshalEOFException()
+		{
+		}
+
+		public MarshalEOFException(string message)
+			: base(message)
+		{
+		}
+
+		public MarshalEOFException(string message, Exception InnerException)
+			: base(message, InnerException)
+		{
+		}
+	}
 }

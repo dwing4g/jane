@@ -78,7 +78,7 @@ public final class TestDBBenchmark
 				}.run();
 				if(count == Integer.MAX_VALUE && i % 512 == 0) Thread.sleep(1);
 			}
-			System.out.println((System.currentTimeMillis() - t) + " checked=" + checked.get());
+			System.out.println((System.currentTimeMillis() - t) + " checked=" + checked.get() + '/' + keys);
 		}
 
 		System.out.println("checkpoint");

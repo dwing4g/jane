@@ -397,8 +397,8 @@ public class OctetsStream extends Octets
 			if(o instanceof Double) return 5;
 			return 0;
 		}
-		if(o instanceof Boolean || o instanceof Character) return 0;
 		if(o instanceof Bean) return 2;
+		if(o instanceof Boolean || o instanceof Character) return 0;
 		return 1;
 	}
 
@@ -452,10 +452,11 @@ public class OctetsStream extends Octets
 		else if(o instanceof Collection)
 		{
 			Collection<?> list = (Collection<?>)o;
-			if(!list.isEmpty())
+			int n = list.size();
+			if(n > 0)
 			{
 				int vtype = getKVType(list.iterator().next());
-				marshal2((id << 10) + 0x300 + vtype).marshalUInt(list.size());
+				marshal2((id << 10) + 0x300 + vtype).marshalUInt(n);
 				for(Object v : list)
 					marshalKV(vtype, v);
 			}
@@ -463,12 +464,13 @@ public class OctetsStream extends Octets
 		else if(o instanceof Map)
 		{
 			Map<?, ?> map = (Map<?, ?>)o;
-			if(!map.isEmpty())
+			int n = map.size();
+			if(n > 0)
 			{
 				Entry<?, ?> et = map.entrySet().iterator().next();
 				int ktype = getKVType(et.getKey());
 				int vtype = getKVType(et.getValue());
-				marshal2((id << 10) + 0x340 + (ktype << 3) + vtype).marshalUInt(map.size());
+				marshal2((id << 10) + 0x340 + (ktype << 3) + vtype).marshalUInt(n);
 				for(Entry<?, ?> e : map.entrySet())
 					marshalKV(ktype, e.getKey()).marshalKV(vtype, e.getValue());
 			}

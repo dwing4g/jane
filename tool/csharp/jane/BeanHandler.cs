@@ -10,6 +10,6 @@ namespace jane
 		/**
 		 * 处理回调的接口
 		 */
-		public abstract void onProcess(Object manager, Object session, A arg);
+		public abstract void onProcess(object manager, object session, A arg);
 	}
 }

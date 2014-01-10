@@ -12,7 +12,6 @@ namespace jane
 	public class OctetsStream : Octets
 	{
 		protected int pos; // 当前的读写位置
-		protected bool has_ex_info; // 是否需要详细的异常信息(默认不需要,可以加快unmarshal失败的性能)
 
 		public new static OctetsStream wrap(byte[] data, int size)
 		{
@@ -80,22 +79,12 @@ namespace jane
 			return count - pos;
 		}
 
-		public bool hasExceptionInfo()
-		{
-			return has_ex_info;
-		}
-
-		public void setExceptionInfo(bool enable)
-		{
-			has_ex_info = enable;
-		}
-
 		public void wraps(byte[] data, int size)
 		{
 			buffer = data;
-			if(size > data.Length)  count = data.Length;
-			else if(size < 0)       count = 0;
-			else                    count = size;
+			if(size > data.Length) count = data.Length;
+			else if(size < 0)      count = 0;
+			else                   count = size;
 		}
 
 		public void wraps(byte[] data)
@@ -114,7 +103,6 @@ namespace jane
 		{
 			OctetsStream os = new OctetsStream(this);
 			os.pos = pos;
-			os.has_ex_info = has_ex_info;
 			return os;
 		}
 
@@ -268,16 +256,6 @@ namespace jane
 			return this;
 		}
 
-		public OctetsStream marshal(byte x)
-		{
-			return marshal((int)x);
-		}
-
-		public OctetsStream marshal(short x)
-		{
-			return marshal((int)x);
-		}
-
 		public OctetsStream marshal(int x)
 		{
 			if(x >= 0)
@@ -383,45 +361,49 @@ namespace jane
 			return 0;
 		}
 
-		public OctetsStream marshalVar(int id, bool v)
-		{
-			if(id < 1 || id > 62) throw new ArgumentException("id must be in [1,62]: " + id);
-			if(v) marshal2((id << 10) + 1);
-			return this;
-		}
-
-		public OctetsStream marshalVar(int id, int v)
-		{
-			if(id < 1 || id > 62) throw new ArgumentException("id must be in [1,62]: " + id);
-			if(v != 0) marshal1((byte)(id << 2)).marshal(v);
-			return this;
-		}
-
-		public OctetsStream marshalVar(int id, long v)
-		{
-			if(id < 1 || id > 62) throw new ArgumentException("id must be in [1,62]: " + id);
-			if(v != 0) marshal1((byte)(id << 2)).marshal(v);
-			return this;
-		}
-
-		public OctetsStream marshalVar(int id, float v)
-		{
-			if(id < 1 || id > 62) throw new ArgumentException("id must be in [1,62]: " + id);
-			if(v != 0) marshal2((id << 10) + 0x308).marshal(v);
-			return this;
-		}
-
-		public OctetsStream marshalVar(int id, double v)
-		{
-			if(id < 1 || id > 62) throw new ArgumentException("id must be in [1,62]: " + id);
-			if(v != 0) marshal2((id << 10) + 0x309).marshal(v);
-			return this;
-		}
-
 		public OctetsStream marshalVar(int id, object o)
 		{
 			if(id < 1 || id > 62) throw new ArgumentException("id must be in [1,62]: " + id);
-			if(o is Octets)
+			if(o is byte)
+			{
+				int v = (byte)o;
+				if(v != 0) marshal1((byte)(id << 2)).marshal(v);
+			}
+			else if(o is short)
+			{
+				int v = (short)o;
+				if(v != 0) marshal1((byte)(id << 2)).marshal(v);
+			}
+			else if(o is int)
+			{
+				int v = (int)o;
+				if(v != 0) marshal1((byte)(id << 2)).marshal(v);
+			}
+			else if(o is long)
+			{
+				long v = (long)o;
+				if(v != 0) marshal1((byte)(id << 2)).marshal(v);
+			}
+			else if(o is bool)
+			{
+				if((bool)o) marshal2((id << 10) + 1);
+			}
+			else if(o is char)
+			{
+				int v = (char)o;
+				if(v != 0) marshal1((byte)(id << 2)).marshal(v);
+			}
+			else if(o is float)
+			{
+				float v = (float)o;
+				if(v != 0) marshal2((id << 10) + 0x308).marshal(v);
+			}
+			else if(o is double)
+			{
+				double v = (double)o;
+				if(v != 0) marshal2((id << 10) + 0x309).marshal(v);
+			}
+			else if(o is Octets)
 			{
 				Octets oct = (Octets)o;
 				if(!oct.empty()) marshal1((byte)((id << 2) + 1)).marshal(oct);
@@ -440,25 +422,27 @@ namespace jane
 			else if(o is IList)
 			{
 				IList list = (IList)o;
-				if(list.Count > 0)
+				int n = list.Count;
+				if(n > 0)
 				{
 					int vtype = getKVType(list[0]);
-					marshal2((id << 10) + 0x300 + vtype).marshalUInt(list.Count);
+					marshal2((id << 10) + 0x300 + vtype).marshalUInt(n);
 					foreach(object v in list)
 						marshalKV(vtype, v);
 				}
 			}
 			else if(o is IDictionary)
 			{
-				IDictionary map = (IDictionary)o;
-				if(map.Count > 0)
+				IDictionary dic = (IDictionary)o;
+				int n = dic.Count;
+				if(n > 0)
 				{
-					IDictionaryEnumerator de = map.GetEnumerator();
+					IDictionaryEnumerator de = dic.GetEnumerator();
 					de.MoveNext();
 					int ktype = getKVType(de.Key);
 					int vtype = getKVType(de.Value);
-					marshal2((id << 10) + 0x340 + (ktype << 3) + vtype).marshalUInt(map.Count);
-					foreach(DictionaryEntry e in map)
+					marshal2((id << 10) + 0x340 + (ktype << 3) + vtype).marshalUInt(n);
+					foreach(DictionaryEntry e in dic)
 						marshalKV(ktype, e.Key).marshalKV(vtype, e.Value);
 				}
 			}
@@ -470,9 +454,14 @@ namespace jane
 			switch(kvtype)
 			{
 			case 0:
-				if(o is byte || o is short || o is char || o is int) marshal((int)o);
-				else if(o is long || o is float || o is double) marshal((long)o);
+				if(o is int) marshal((int)o);
+				else if(o is long) marshal((long)o);
+				else if(o is byte) marshal((byte)o);
+				else if(o is short) marshal((short)o);
+				else if(o is char) marshal((char)o);
 				else if(o is bool) marshal1((bool)o ? (byte)1 : (byte)0);
+				else if(o is float) marshal((long)(float)o);
+				else if(o is double) marshal((long)(double)o);
 				else marshal1((byte)0);
 				break;
 			case 1:
@@ -484,10 +473,26 @@ namespace jane
 				else marshal1((byte)0);
 				break;
 			case 4:
-				marshal((o is float) ? (float)o : 0.0f);
+				if(o is float) marshal((float)o);
+				else if(o is double) marshal((float)(double)o);
+				else if(o is int) marshal((float)(int)o);
+				else if(o is long) marshal((float)(long)o);
+				else if(o is byte) marshal((float)(byte)o);
+				else if(o is short) marshal((float)(short)o);
+				else if(o is char) marshal((float)(char)o);
+				else if(o is bool) marshal((float)((bool)o ? 1 : 0));
+				else marshal((float)0);
 				break;
 			case 5:
-				marshal((o is double) ? (double)o : 0.0);
+				if(o is double) marshal((double)o);
+				else if(o is float) marshal((double)(float)o);
+				else if(o is int) marshal((double)(int)o);
+				else if(o is long) marshal((double)(long)o);
+				else if(o is byte) marshal((double)(byte)o);
+				else if(o is short) marshal((double)(short)o);
+				else if(o is char) marshal((double)(char)o);
+				else if(o is bool) marshal((double)((bool)o ? 1 : 0));
+				else marshal((double)0);
 				break;
 			default:
 				throw new ArgumentException("kvtype must be in {0,1,2,4,5}: " + kvtype);
@@ -497,20 +502,20 @@ namespace jane
 
 		public bool unmarshalBoolean()
 		{
-			if(pos >= count) throw new MarshalException();
+			if(pos >= count) throw new MarshalEOFException();
 			return buffer[pos++] != 0;
 		}
 
 		public byte unmarshalByte()
 		{
-			if(pos >= count) throw new MarshalException();
+			if(pos >= count) throw new MarshalEOFException();
 			return buffer[pos++];
 		}
 
 		public int unmarshalShort()
 		{
 			int pos_new = pos + 2;
-			if(pos_new > count) throw new MarshalException();
+			if(pos_new > count) throw new MarshalEOFException();
 			byte b0 = buffer[pos    ];
 			byte b1 = buffer[pos + 1];
 			pos = pos_new;
@@ -520,7 +525,7 @@ namespace jane
 		public char unmarshalChar()
 		{
 			int pos_new = pos + 2;
-			if(pos_new > count) throw new MarshalException();
+			if(pos_new > count) throw new MarshalEOFException();
 			byte b0 = buffer[pos    ];
 			byte b1 = buffer[pos + 1];
 			pos = pos_new;
@@ -530,7 +535,7 @@ namespace jane
 		public int unmarshalInt3()
 		{
 			int pos_new = pos + 3;
-			if(pos_new > count) throw new MarshalException();
+			if(pos_new > count) throw new MarshalEOFException();
 			byte b0 = buffer[pos    ];
 			byte b1 = buffer[pos + 1];
 			byte b2 = buffer[pos + 2];
@@ -543,7 +548,7 @@ namespace jane
 		public int unmarshalInt4()
 		{
 			int pos_new = pos + 4;
-			if(pos_new > count) new MarshalException();
+			if(pos_new > count) new MarshalEOFException();
 			byte b0 = buffer[pos    ];
 			byte b1 = buffer[pos + 1];
 			byte b2 = buffer[pos + 2];
@@ -558,7 +563,7 @@ namespace jane
 		public long unmarshalLong5()
 		{
 			int pos_new = pos + 5;
-			if(pos_new > count) new MarshalException();
+			if(pos_new > count) new MarshalEOFException();
 			byte b0 = buffer[pos    ];
 			byte b1 = buffer[pos + 1];
 			byte b2 = buffer[pos + 2];
@@ -575,7 +580,7 @@ namespace jane
 		public long unmarshalLong6()
 		{
 			int pos_new = pos + 6;
-			if(pos_new > count) new MarshalException();
+			if(pos_new > count) new MarshalEOFException();
 			byte b0 = buffer[pos    ];
 			byte b1 = buffer[pos + 1];
 			byte b2 = buffer[pos + 2];
@@ -594,7 +599,7 @@ namespace jane
 		public long unmarshalLong7()
 		{
 			int pos_new = pos + 7;
-			if(pos_new > count) new MarshalException();
+			if(pos_new > count) new MarshalEOFException();
 			byte b0 = buffer[pos    ];
 			byte b1 = buffer[pos + 1];
 			byte b2 = buffer[pos + 2];
@@ -615,7 +620,7 @@ namespace jane
 		public long unmarshalLong8()
 		{
 			int pos_new = pos + 8;
-			if(pos_new > count) new MarshalException();
+			if(pos_new > count) new MarshalEOFException();
 			byte b0 = buffer[pos    ];
 			byte b1 = buffer[pos + 1];
 			byte b2 = buffer[pos + 2];
@@ -649,7 +654,7 @@ namespace jane
 		{
 			if(n < 0) throw new MarshalException();
 			int pos_new = pos + n;
-			if(pos_new > count) throw new MarshalException();
+			if(pos_new > count) throw new MarshalEOFException();
 			pos = pos_new;
 			return this;
 		}
@@ -673,7 +678,7 @@ namespace jane
 		{
 			if(type == 0) // int/long: [1~9]
 				unmarshalSkipInt();
-			else if(type == 3) // float/double/collection/map: ...
+			else if(type == 3) // float/double/list/dictionary: ...
 				unmarshalSkipVarSub(unmarshalByte());
 			else if(type == 2) // bean: ... 00
 				unmarshalSkipBean();
@@ -701,13 +706,13 @@ namespace jane
 				unmarshalSkip(4);
 			else if(subtype == 9) // double: [8]
 				unmarshalSkip(8);
-			else if(subtype < 0x40) // collection: <n>[v*n]
+			else if(subtype < 0x40) // list: <n>[v*n]
 			{
 				subtype &= 7;
 				for(int n = unmarshalUInt(); n > 0; --n)
 					unmarshalSkipKV(subtype);
 			}
-			else // map: <n>[kv*n]
+			else // dictionary: <n>[kv*n]
 			{
 				int keytype = (subtype >> 3) & 7;
 				subtype &= 7;
@@ -986,7 +991,7 @@ namespace jane
 			int size = unmarshalUInt();
 			if(size <= 0) return EMPTY;
 			int pos_new = pos + size;
-			if(pos_new > count) new MarshalException();
+			if(pos_new > count) new MarshalEOFException();
 			if(pos_new < pos) new MarshalException();
 			byte[] r = new byte[size];
 			Array.Copy(buffer, pos, r, 0, size);
@@ -1015,7 +1020,7 @@ namespace jane
 				return this;
 			}
 			int pos_new = pos + size;
-			if(pos_new > count) new MarshalException();
+			if(pos_new > count) new MarshalEOFException();
 			if(pos_new < pos) new MarshalException();
 			o.replace(buffer, pos, size);
 			pos = pos_new;
@@ -1032,7 +1037,7 @@ namespace jane
 		public Octets unmarshalRaw(int size)
 		{
 			int pos_new = pos + size;
-			if(pos_new > count) new MarshalException();
+			if(pos_new > count) new MarshalEOFException();
 			if(pos_new < pos) new MarshalException();
 			Octets o = new Octets(buffer, pos, size);
 			pos = pos_new;
@@ -1088,7 +1093,7 @@ namespace jane
 			int size = unmarshalUInt();
 			if(size <= 0) return "";
 			int pos_new = pos + size;
-			if(pos_new > count) new MarshalException();
+			if(pos_new > count) new MarshalEOFException();
 			if(pos_new < pos) new MarshalException();
 			char[] tmp = new char[size];
 			int n = 0;

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace beantool
@@ -9,6 +8,7 @@ namespace beantool
 	{
 		static void Main(string[] args)
 		{
+			Console.ReadLine();
 		}
 	}
 }

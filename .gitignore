@@ -3,5 +3,8 @@
 /db/
 /log/
 /tmp/
+/tool/csharp/bin/
+/tool/csharp/obj/
+/tool/csharp/*.suo
 jane-core.jar
 jane-test.jar
