@@ -121,9 +121,9 @@ public final class ByteBufferStream extends OctetsStream
 		byte b1 = bb.get();
 		byte b2 = bb.get();
 		pos = pos_new;
-		return  ((b0 & 0xff) << 16) +
-		        ((b1 & 0xff) <<  8) +
-		         (b2 & 0xff);
+		return ((b0 & 0xff) << 16) +
+		       ((b1 & 0xff) <<  8) +
+		        (b2 & 0xff);
 	}
 
 	@Override
@@ -136,10 +136,10 @@ public final class ByteBufferStream extends OctetsStream
 		byte b2 = bb.get();
 		byte b3 = bb.get();
 		pos = pos_new;
-		return  ( b0         << 24) +
-		        ((b1 & 0xff) << 16) +
-		        ((b2 & 0xff) <<  8) +
-		         (b3 & 0xff);
+		return ( b0         << 24) +
+		       ((b1 & 0xff) << 16) +
+		       ((b2 & 0xff) <<  8) +
+		        (b3 & 0xff);
 	}
 
 	@Override
@@ -153,11 +153,11 @@ public final class ByteBufferStream extends OctetsStream
 		byte b3 = bb.get();
 		byte b4 = bb.get();
 		pos = pos_new;
-		return  ((b0 & 0xffL) << 32) +
-		        ((b1 & 0xffL) << 24) +
-		        ((b2 & 0xff ) << 16) +
-		        ((b3 & 0xff ) <<  8) +
-		         (b4 & 0xff );
+		return ((b0 & 0xffL) << 32) +
+		       ((b1 & 0xffL) << 24) +
+		       ((b2 & 0xff ) << 16) +
+		       ((b3 & 0xff ) <<  8) +
+		        (b4 & 0xff );
 	}
 
 	@Override
@@ -172,12 +172,12 @@ public final class ByteBufferStream extends OctetsStream
 		byte b4 = bb.get();
 		byte b5 = bb.get();
 		pos = pos_new;
-		return  ((b0 & 0xffL) << 40) +
-		        ((b1 & 0xffL) << 32) +
-		        ((b2 & 0xffL) << 24) +
-		        ((b3 & 0xff ) << 16) +
-		        ((b4 & 0xff ) <<  8) +
-		         (b5 & 0xff );
+		return ((b0 & 0xffL) << 40) +
+		       ((b1 & 0xffL) << 32) +
+		       ((b2 & 0xffL) << 24) +
+		       ((b3 & 0xff ) << 16) +
+		       ((b4 & 0xff ) <<  8) +
+		        (b5 & 0xff );
 	}
 
 	@Override
@@ -193,13 +193,13 @@ public final class ByteBufferStream extends OctetsStream
 		byte b5 = bb.get();
 		byte b6 = bb.get();
 		pos = pos_new;
-		return  ((b0 & 0xffL) << 48) +
-		        ((b1 & 0xffL) << 40) +
-		        ((b2 & 0xffL) << 32) +
-		        ((b3 & 0xffL) << 24) +
-		        ((b4 & 0xff ) << 16) +
-		        ((b5 & 0xff ) <<  8) +
-		         (b6 & 0xff );
+		return ((b0 & 0xffL) << 48) +
+		       ((b1 & 0xffL) << 40) +
+		       ((b2 & 0xffL) << 32) +
+		       ((b3 & 0xffL) << 24) +
+		       ((b4 & 0xff ) << 16) +
+		       ((b5 & 0xff ) <<  8) +
+		        (b6 & 0xff );
 	}
 
 	@Override
@@ -216,14 +216,14 @@ public final class ByteBufferStream extends OctetsStream
 		byte b6 = bb.get();
 		byte b7 = bb.get();
 		pos = pos_new;
-		return  ((long)b0     << 56) +
-		        ((b1 & 0xffL) << 48) +
-		        ((b2 & 0xffL) << 40) +
-		        ((b3 & 0xffL) << 32) +
-		        ((b4 & 0xffL) << 24) +
-		        ((b5 & 0xff ) << 16) +
-		        ((b6 & 0xff ) <<  8) +
-		         (b7 & 0xff );
+		return ((long)b0     << 56) +
+		       ((b1 & 0xffL) << 48) +
+		       ((b2 & 0xffL) << 40) +
+		       ((b3 & 0xffL) << 32) +
+		       ((b4 & 0xffL) << 24) +
+		       ((b5 & 0xff ) << 16) +
+		       ((b6 & 0xff ) <<  8) +
+		        (b7 & 0xff );
 	}
 
 	@Override
@@ -232,6 +232,7 @@ public final class ByteBufferStream extends OctetsStream
 		if(n < 0) throw MarshalException.create(has_ex_info);
 		int pos_new = pos + n;
 		if(pos_new > count) throw MarshalException.createEOF(has_ex_info);
+		if(pos_new < pos) throw MarshalException.create(has_ex_info);
 		bb.position(pos = pos_new);
 		return this;
 	}
@@ -272,6 +273,7 @@ public final class ByteBufferStream extends OctetsStream
 	@Override
 	public Octets unmarshalRaw(int size) throws MarshalException
 	{
+		if(size <= 0) return new Octets();
 		int pos_new = pos + size;
 		if(pos_new > count) throw MarshalException.createEOF(has_ex_info);
 		if(pos_new < pos) throw MarshalException.create(has_ex_info);
