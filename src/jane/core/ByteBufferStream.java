@@ -8,7 +8,7 @@ import java.nio.ByteBuffer;
  * 只支持只读数据的反序列化,目前仅内部使用,多用于包装{@link java.nio.DirectByteBuffer}
  * @formatter:off
  */
-final class ByteBufferStream extends OctetsStream
+public final class ByteBufferStream extends OctetsStream
 {
 	private ByteBuffer bb; // 包装的ByteBuffer对象
 

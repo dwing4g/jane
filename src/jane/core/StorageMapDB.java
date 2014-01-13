@@ -200,7 +200,14 @@ public class StorageMapDB implements Storage
 				os.setExceptionInfo(true);
 				os.setPosition(offset + di2.pos);
 				bean = _stub.create();
-				bean.unmarshal(os);
+				try
+				{
+					bean.unmarshal(os);
+				}
+				catch(MarshalException e)
+				{
+					throw new IOException(e);
+				}
 				di2.pos = (available >= 0 ? di2.pos + available : os.position() - offset);
 			}
 			else
@@ -210,7 +217,14 @@ public class StorageMapDB implements Storage
 				os.setExceptionInfo(true);
 				os.setPosition(di2.pos);
 				bean = _stub.create();
-				bean.unmarshal(os);
+				try
+				{
+					bean.unmarshal(os);
+				}
+				catch(MarshalException e)
+				{
+					throw new IOException(e);
+				}
 				di2.pos = (available >= 0 ? di2.pos + available : bb.position());
 				bb.position(pos);
 			}

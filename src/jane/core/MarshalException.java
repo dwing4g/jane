@@ -1,40 +1,15 @@
 package jane.core;
 
-import java.io.IOException;
-
 /**
  * 反序列化bean失败的时候会抛出的异常类
  * <p>
  * 考虑到性能,默认不带栈信息
  */
-public class MarshalException extends IOException
+public class MarshalException extends Exception
 {
 	private static final long             serialVersionUID = 139797375712050877L;
 	private static final MarshalException _instance        = new MarshalException();
 	private static final EOF              _instance_eof    = new EOF();
-
-	/**
-	 * 带栈信息的{@link MarshalException}异常
-	 */
-	public static class WithTrace extends MarshalException
-	{
-		private static final long serialVersionUID = 6043449942071245299L;
-
-		public WithTrace()
-		{
-		}
-
-		public WithTrace(Throwable e)
-		{
-			super(e);
-		}
-
-		@Override
-		public synchronized Throwable fillInStackTrace()
-		{
-			return super.fillInStackTrace();
-		}
-	}
 
 	/**
 	 * 读取超过数据结尾的异常
@@ -53,63 +28,55 @@ public class MarshalException extends IOException
 		{
 			super(e);
 		}
-	}
 
-	/**
-	 * 带栈信息的{@link EOF}异常
-	 */
-	public static class EOFWithTrace extends EOF
-	{
-		private static final long serialVersionUID = 6335355451615424453L;
-
-		public EOFWithTrace()
+		public EOF(boolean stacktrace)
 		{
+			super(stacktrace);
 		}
 
-		public EOFWithTrace(Throwable e)
+		public EOF(Throwable e, boolean stacktrace)
 		{
-			super(e);
-		}
-
-		@Override
-		public synchronized Throwable fillInStackTrace()
-		{
-			return super.fillInStackTrace();
+			super(e, stacktrace);
 		}
 	}
 
 	public static MarshalException create(boolean withtrace)
 	{
-		return withtrace ? new WithTrace() : _instance;
+		return withtrace ? new MarshalException(true) : _instance;
 	}
 
 	public static MarshalException create(Throwable e, boolean withtrace)
 	{
-		return withtrace ? new WithTrace(e) : new MarshalException(e);
+		return withtrace ? new MarshalException(e, true) : new MarshalException(e);
 	}
 
 	public static EOF createEOF(boolean withtrace)
 	{
-		return withtrace ? new EOFWithTrace() : _instance_eof;
+		return withtrace ? new EOF(true) : _instance_eof;
 	}
 
 	public static EOF createEOF(Throwable e, boolean withtrace)
 	{
-		return withtrace ? new EOFWithTrace(e) : new EOF(e);
+		return withtrace ? new EOF(e, true) : new EOF(e);
 	}
 
 	public MarshalException()
 	{
+		super(null, null, true, false);
 	}
 
 	public MarshalException(Throwable e)
 	{
-		super(e);
+		super(null, e, true, false);
 	}
 
-	@Override
-	public synchronized Throwable fillInStackTrace()
+	public MarshalException(boolean stacktrace)
 	{
-		return this;
+		super(null, null, true, stacktrace);
+	}
+
+	public MarshalException(Throwable e, boolean stacktrace)
+	{
+		super(null, e, true, stacktrace);
 	}
 }

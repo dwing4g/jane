@@ -8,13 +8,19 @@ namespace jane
 	 * 一个Octets及其子类的实例不能同时由多个线程同时访问
 	 */
 	[Serializable]
-	public class Octets : ICloneable, IComparable<Octets>
+	public class Octets : ICloneable, IComparable<Octets>, IComparable
 	{
-		protected const int DEFAULT_SIZE = 16; // 默认的缓冲区
 		protected static readonly char[] HEX = new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 		public static readonly byte[] EMPTY = new byte[0]; // 共享的空缓冲区
+		public const int DEFAULT_SIZE = 16; // 默认的缓冲区
+		protected static Encoding _default_charset = Encoding.UTF8;
 		internal byte[] buffer = EMPTY; // 数据缓冲区
 		internal int count; // 当前有效的数据缓冲区大小
+
+		public static void setDefaultEncoding(Encoding enc)
+		{
+			_default_charset = (enc != null ? enc : Encoding.UTF8);
+		}
 
 		public static Octets wrap(byte[] data, int size)
 		{
@@ -36,7 +42,7 @@ namespace jane
 
 		public static Octets wrap(string str)
 		{
-			return wrap(Encoding.UTF8.GetBytes(str));
+			return wrap(_default_charset.GetBytes(str));
 		}
 
 		public static Octets wrap(string str, Encoding encoding)
@@ -128,11 +134,14 @@ namespace jane
 		public byte[] getBytes()
 		{
 			if(count <= 0) return EMPTY;
-			byte[] tmp = new byte[count];
-			Array.Copy(buffer, 0, tmp, 0, count);
-			return tmp;
+			byte[] buf = new byte[count];
+			Array.Copy(buffer, 0, buf, 0, count);
+			return buf;
 		}
 
+		/**
+		 * @param size 期望缩小的空间. 如果比当前数据小,则缩小的当前数据大小
+		 */
 		public void shrink(int size)
 		{
 			if(count <= 0)
@@ -140,12 +149,16 @@ namespace jane
 				reset();
 				return;
 			}
-			int len = buffer.Length;
 			if(size < count) size = count;
-			if(size >= len) return;
-			byte[] tmp = new byte[size];
-			Array.Copy(buffer, 0, tmp, 0, count);
-			buffer = tmp;
+			if(size >= buffer.Length) return;
+			byte[] buf = new byte[size];
+			Array.Copy(buffer, 0, buf, 0, count);
+			buffer = buf;
+		}
+
+		public void shrink()
+		{
+			shrink(0);
 		}
 
 		public void reserve(int size)
@@ -154,12 +167,31 @@ namespace jane
 			{
 				int cap = DEFAULT_SIZE;
 				while(size > cap) cap <<= 1;
-				byte[] tmp = new byte[cap];
-				if(count > 0) Array.Copy(buffer, 0, tmp, 0, count);
-				buffer = tmp;
+				byte[] buf = new byte[cap];
+				if(count > 0) Array.Copy(buffer, 0, buf, 0, count);
+				buffer = buf;
 			}
 		}
 
+		public Octets wraps(byte[] data, int size)
+		{
+			buffer = data;
+			if(size > data.Length) count = data.Length;
+			else if(size < 0) count = 0;
+			else count = size;
+			return this;
+		}
+
+		public Octets wraps(byte[] data)
+		{
+			buffer = data;
+			count = data.Length;
+			return this;
+		}
+
+		/**
+		 * 类似reserve, 但不保证原数据的有效
+		 */
 		public void reserveSpace(int size)
 		{
 			if(size > buffer.Length)
@@ -180,11 +212,11 @@ namespace jane
 		public void replace(byte[] data, int pos, int size)
 		{
 			if(size <= 0) { count = 0; return; }
-			int length = data.Length;
+			int len = data.Length;
 			if(pos < 0) pos = 0;
-			if(pos >= length) { count = 0; return; }
-			length -= pos;
-			if(size > length) size = length;
+			if(pos >= len) { count = 0; return; }
+			len -= pos;
+			if(size > len) size = len;
 			reserveSpace(size);
 			Array.Copy(data, pos, buffer, 0, size);
 			count = size;
@@ -202,12 +234,8 @@ namespace jane
 
 		public void swap(Octets o)
 		{
-			int size = count;
-			count = o.count;
-			o.count = size;
-			byte[] temp = o.buffer;
-			o.buffer = buffer;
-			buffer = temp;
+			int size = count; count = o.count; o.count = size;
+			byte[] buf = o.buffer; o.buffer = buffer; buffer = buf;
 		}
 
 		public Octets append(byte b)
@@ -220,11 +248,11 @@ namespace jane
 		public Octets append(byte[] data, int pos, int size)
 		{
 			if(size <= 0) return this;
-			int length = data.Length;
+			int len = data.Length;
 			if(pos < 0) pos = 0;
-			if(pos >= length) return this;
-			length -= pos;
-			if(size > length) size = length;
+			if(pos >= len) return this;
+			len -= pos;
+			if(size > len) size = len;
 			reserve(count + size);
 			Array.Copy(data, pos, buffer, count, size);
 			count += size;
@@ -246,11 +274,11 @@ namespace jane
 			if(from < 0) from = 0;
 			if(from >= count) return append(data, pos, size);
 			if(size <= 0) return this;
-			int length = data.Length;
+			int len = data.Length;
 			if(pos < 0) pos = 0;
-			if(pos >= length) return this;
-			length -= pos;
-			if(size > length) size = length;
+			if(pos >= len) return this;
+			len -= pos;
+			if(size > len) size = len;
 			reserve(count + size);
 			Array.Copy(buffer, from, buffer, from + size, count - from);
 			Array.Copy(data, pos, buffer, from, size);
@@ -271,15 +299,13 @@ namespace jane
 		public Octets erase(int from, int to)
 		{
 			if(from < 0) from = 0;
-			if(from < count)
+			if(from >= count || from >= to) return this;
+			if(to >= count) count = from;
+			else
 			{
-				if(to >= count) count = from;
-				else if(to > from)
-				{
-					count -= to;
-					Array.Copy(buffer, to, buffer, from, count);
-					count += from;
-				}
+				count -= to;
+				Array.Copy(buffer, to, buffer, from, count);
+				count += from;
 			}
 			return this;
 		}
@@ -287,7 +313,7 @@ namespace jane
 		public Octets eraseFront(int size)
 		{
 			if(size >= count) count = 0;
-			else
+			else if(size > 0)
 			{
 				count -= size;
 				Array.Copy(buffer, size, buffer, 0, count);
@@ -297,7 +323,7 @@ namespace jane
 
 		public void setString(string str)
 		{
-			buffer = Encoding.UTF8.GetBytes(str);
+			buffer = _default_charset.GetBytes(str);
 			count = buffer.Length;
 		}
 
@@ -315,7 +341,7 @@ namespace jane
 
 		public string getString()
 		{
-			return Encoding.UTF8.GetString(buffer, 0, count);
+			return _default_charset.GetString(buffer, 0, count);
 		}
 
 		public string getString(Encoding encoding)
@@ -365,6 +391,12 @@ namespace jane
 			return count - o.count;
 		}
 
+		public int CompareTo(object o)
+		{
+			if(!(o is Octets)) return 1;
+			return CompareTo((Octets)o);
+		}
+
 		public override bool Equals(object o)
 		{
 			if(this == o) return true;
@@ -373,7 +405,7 @@ namespace jane
 			if(count != oct.count) return false;
 			byte[] buf = buffer;
 			byte[] data = oct.buffer;
-			for(int i = 0; i < count; ++i)
+			for(int i = 0, n = count; i < n; ++i)
 				if(buf[i] != data[i]) return false;
 			return true;
 		}
@@ -388,7 +420,7 @@ namespace jane
 			if(s == null) s = new StringBuilder(count * 3 + 4);
 			s.Append('[');
 			if(count <= 0) return s.Append(']');
-			for(int i = 0; ; )
+			for(int i = 0;;)
 			{
 				int b = buffer[i];
 				s.Append(HEX[(b >> 4) & 15]);
@@ -398,17 +430,17 @@ namespace jane
 			}
 		}
 
-		public virtual StringBuilder dump()
+		public StringBuilder dump()
 		{
 			return dump(null);
 		}
 
-		public virtual StringBuilder dumpJStr(StringBuilder s)
+		public StringBuilder dumpJStr(StringBuilder s)
 		{
 			if(s == null) s = new StringBuilder(count * 4 + 4);
 			s.Append('"');
 			if(count <= 0) return s.Append('"');
-			for(int i = 0; ; )
+			for(int i = 0;;)
 			{
 				int b = buffer[i];
 				s.Append('\\').Append('x');
@@ -418,7 +450,7 @@ namespace jane
 			}
 		}
 
-		public virtual StringBuilder dumpJStr()
+		public StringBuilder dumpJStr()
 		{
 			return dumpJStr(null);
 		}
