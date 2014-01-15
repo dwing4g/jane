@@ -31,8 +31,9 @@
 			<src path="${lib}/hashmap/"/>
 			<src path="${lib}/mapdb/"/>
 			<src path="${lib}/mvstore/"/>
-			<src path="${lib}/nanohttpd/"/>
+			<src path="${lib}/rupy/"/>
 		</javac>
+		<copy file="${lib}/rupy/mime.txt" todir="${classes}"/>
 	</target>
 
 	<target name="dist" depends="clean, compile">

@@ -2,11 +2,12 @@
 setlocal
 pushd %~dp0
 
-set NANOHTTPD=..\..\nanohttpd
+set RUPY=..\..\rupy
 set MAPDB=..\..\mapdb
 set H2DB=..\..\h2database
 
-	copy /y %NANOHTTPD%\core\src\main\java\fi\iki\elonen\NanoHTTPD.java		..\lib\nanohttpd\fi\iki\elonen\
+	copy /y %RUPY%\src\se\rupy\http\*.java									..\lib\rupy\se\rupy\http\
+	copy /y %RUPY%\mime.txt													..\lib\rupy\se\
 
 	copy /y %MAPDB%\src\main\java\org\mapdb\*.java							..\lib\mapdb\org\mapdb\
 
