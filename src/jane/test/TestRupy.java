@@ -22,8 +22,8 @@ public class TestRupy
 		{
 			event.hold();
 			Reply reply = event.reply();
-			reply.code("200");
-			reply.header("Content-Type", "text/html; charset=UTF-8");
+			reply.code("200 OK");
+			reply.type("text/html; charset=UTF-8");
 			reply.header("Cache-Control", "private");
 			reply.header("Pragma", "no-cache");
 			@SuppressWarnings("resource")
@@ -37,7 +37,10 @@ public class TestRupy
 					try
 					{
 						Thread.sleep(3000);
-						out.print("<http><body>TestRupy OK</body></http>");
+						out.print("<http><body>TestRupy<p>");
+						out.flush();
+						Thread.sleep(3000);
+						out.print("OK</body></http>");
 						out.flush();
 						out.finish();
 					}

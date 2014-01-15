@@ -6,7 +6,7 @@ set RUPY=..\..\rupy
 set MAPDB=..\..\mapdb
 set H2DB=..\..\h2database
 
-	copy /y %RUPY%\src\se\rupy\http\*.java									..\lib\rupy\se\rupy\http\
+rem	copy /y %RUPY%\src\se\rupy\http\*.java									..\lib\rupy\se\rupy\http\
 	copy /y %RUPY%\mime.txt													..\lib\rupy\se\
 
 	copy /y %MAPDB%\src\main\java\org\mapdb\*.java							..\lib\mapdb\org\mapdb\

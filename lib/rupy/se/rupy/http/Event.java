@@ -30,7 +30,8 @@ import java.nio.channels.*;
  */
 public class Event extends Throwable implements Chain.Link {
 	// waste of time it seems. hotspot does this optimisation for me! :)
-	protected final static boolean LOG = true;
+	protected final static boolean LOG = false; /// true;
+	@Override public synchronized Throwable fillInStackTrace() { return this; } /// stacktrace should be useless
 
 	static int READ = 1 << 0;
 	static int WRITE = 1 << 2;
