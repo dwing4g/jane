@@ -1,13 +1,13 @@
-package jane.handler.testclient;
+package jane.handler.testserver;
 
 import org.apache.mina.core.session.IoSession;
 import jane.bean.TestBean;
 import jane.bean.TestType;
 import jane.core.BeanManager;
 import jane.core.Log;
-import jane.core.RPCHandler;
+import jane.core.RpcHandler;
 
-public class TestRPCBeanHandler extends RPCHandler<TestBean, TestType>
+public class TestRpcBeanHandler extends RpcHandler<TestBean, TestType>
 {
 	/*\
 	|*| int TEST_CONST1 = 5; // 测试类静态常量
@@ -40,9 +40,19 @@ public class TestRPCBeanHandler extends RPCHandler<TestBean, TestType>
 	@Override
 	public boolean onServer(BeanManager manager, IoSession session, TestBean arg, TestType res)
 	{
-		Log.log.debug("{}: onServer: {}", getClass().getName(), toString());
-		res.setV4(arg.getValue1());
-		res.setV5(arg.getValue2());
+		Log.log.debug("{}: onServer: {}", getClass().getName(), arg);
 		return true;
+	}
+
+	@Override
+	public void onClient(BeanManager manager, IoSession session, TestBean arg, TestType res)
+	{
+		Log.log.debug("{}: onClient: arg={},res={}", getClass().getName(), arg, res);
+	}
+
+	@Override
+	public void onTimeout(BeanManager manager, IoSession session, TestBean arg)
+	{
+		Log.log.debug("{}: onTimeout: {}", getClass().getName(), arg);
 	}
 }

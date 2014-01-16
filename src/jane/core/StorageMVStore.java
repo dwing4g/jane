@@ -98,14 +98,14 @@ public class StorageMVStore implements Storage
 		}
 
 		@Override
-		public long getIDCounter()
+		public long getIdCounter()
 		{
 			Long id = _idcounter.get(_tablename);
 			return id != null ? id : 0;
 		}
 
 		@Override
-		public void setIDCounter(long v)
+		public void setIdCounter(long v)
 		{
 			_idcounter.put(_tablename, v);
 		}

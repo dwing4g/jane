@@ -8,14 +8,14 @@ import org.apache.mina.core.session.IoSession;
  * <p>
  * 包含请求和回复的两个bean
  */
-public abstract class RPCBean<A extends Bean<A>, R extends Bean<R>> extends Bean<RPCBean<A, R>>
+public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>> extends Bean<RpcBean<A, R>>
 {
 	private static final long          serialVersionUID = -1390859818193499717L;
 	private static final AtomicInteger RPCID            = new AtomicInteger();                 // RPC的ID分配器
 	private transient int              _rpcid           = RPCID.getAndIncrement() & 0x7fffffff; // RPC的ID. 用于匹配请求和回复的RPC
 	private transient int              _reqtime;                                               // 发送请求的时间戳(秒)
 	private transient IoSession        _session;                                               // 请求时绑定的session
-	private transient RPCHandler<A, R> _onclient;                                              // 回复的回调
+	private transient RpcHandler<A, R> _onclient;                                              // 回复的回调
 	protected A                        arg;                                                    // 请求bean
 	protected R                        res;                                                    // 回复bean
 
@@ -39,12 +39,12 @@ public abstract class RPCBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 		_session = session;
 	}
 
-	public RPCHandler<A, R> getOnClient()
+	public RpcHandler<A, R> getOnClient()
 	{
 		return _onclient;
 	}
 
-	public void setOnClient(RPCHandler<A, R> handler)
+	public void setOnClient(RpcHandler<A, R> handler)
 	{
 		_onclient = handler;
 	}
@@ -54,7 +54,7 @@ public abstract class RPCBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 	 * <p>
 	 * 用于标识当前唯一的RPC,并和RPC的回复相配
 	 */
-	public int getRPCID()
+	public int getRpcId()
 	{
 		return _rpcid & 0x7fffffff;
 	}
@@ -139,9 +139,9 @@ public abstract class RPCBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 	}
 
 	@Override
-	public RPCBean<A, R> clone()
+	public RpcBean<A, R> clone()
 	{
-		RPCBean<A, R> b = create();
+		RpcBean<A, R> b = create();
 		if(arg != null) b.arg = arg.clone();
 		if(res != null) b.res = res.clone();
 		return b;
@@ -183,8 +183,8 @@ public abstract class RPCBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 	public boolean equals(Object o)
 	{
 		if(o == this) return true;
-		if(!(o instanceof RPCBean)) return false;
-		RPCBean<?, ?> b = (RPCBean<?, ?>)o;
+		if(!(o instanceof RpcBean)) return false;
+		RpcBean<?, ?> b = (RpcBean<?, ?>)o;
 		return (arg == b.arg || arg != null && arg.equals(b.arg)) &&
 		        (res == b.res || res != null && res.equals(b.res)) &&
 		        getClass() == o.getClass();

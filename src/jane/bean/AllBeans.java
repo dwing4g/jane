@@ -21,8 +21,8 @@ public final class AllBeans
 		r.add(new TestKeyBean());
 		r.add(new TestType());
 		r.add(new TestEmpty());
-		r.add(new TestRPCBean());
-		r.add(new TestRPCBean2());
+		r.add(new TestRpcBean());
+		r.add(new TestRpcBean2());
 		BeanCodec.registerAllBeans(r);
 	}
 
@@ -32,7 +32,7 @@ public final class AllBeans
 		r.put(1, new jane.handler.testserver.TestBeanHandler());
 		r.put(3, new jane.handler.testserver.TestTypeHandler());
 		r.put(4, new jane.handler.testserver.TestEmptyHandler());
-		r.put(5, new jane.handler.testserver.TestRPCBeanHandler());
+		r.put(5, new jane.handler.testserver.TestRpcBeanHandler());
 		return r;
 	}
 
@@ -42,7 +42,7 @@ public final class AllBeans
 		r.put(1, new jane.handler.testclient.TestBeanHandler());
 		r.put(3, new jane.handler.testclient.TestTypeHandler());
 		r.put(4, new jane.handler.testclient.TestEmptyHandler());
-		r.put(5, new jane.handler.testclient.TestRPCBeanHandler());
+		r.put(5, new jane.handler.testclient.TestRpcBeanHandler());
 		return r;
 	}
 }

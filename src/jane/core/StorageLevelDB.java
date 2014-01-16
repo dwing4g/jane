@@ -182,7 +182,7 @@ public class StorageLevelDB implements Storage
 		}
 
 		@Override
-		public long getIDCounter()
+		public long getIdCounter()
 		{
 			OctetsStream val = dbget(_tableidcounter);
 			if(val == null) return 0;
@@ -199,9 +199,9 @@ public class StorageLevelDB implements Storage
 		}
 
 		@Override
-		public void setIDCounter(long v)
+		public void setIdCounter(long v)
 		{
-			if(v != getIDCounter())
+			if(v != getIdCounter())
 			    _writebuf.put(_tableidcounter, new OctetsStream(9).marshal(v));
 		}
 	}

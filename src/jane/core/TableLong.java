@@ -25,8 +25,8 @@ public final class TableLong<V extends Bean<V>>
 	private final V                         _deleted;                                           // 表示已删除的value. 同存根bean
 	private final AtomicLong                _idcounter       = new AtomicLong();                // 用于自增长ID的统计器, 当前值表示当前表已存在的最大ID值
 	private final int                       _lockid;                                            // 当前表的锁ID. 即锁名的hash值,一般和记录key的hash值计算得出记录的lockid
-	private int                             _auto_id_lowbits = Const.autoIDLowBits;             // 自增长ID的预留低位位数
-	private int                             _auto_id_offset  = Const.autoIDLowOffset;           // 自增长ID的低位偏移值
+	private int                             _auto_id_lowbits = Const.autoIdLowBits;             // 自增长ID的预留低位位数
+	private int                             _auto_id_offset  = Const.autoIdLowOffset;           // 自增长ID的低位偏移值
 
 	/**
 	 * 尝试依次加锁并保存全部表已修改的记录
@@ -94,7 +94,7 @@ public final class TableLong<V extends Bean<V>>
 		_deleted = stub_v;
 		if(stotable != null)
 		{
-			_idcounter.set(_stotable.getIDCounter());
+			_idcounter.set(_stotable.getIdCounter());
 			_tables.add(this);
 		}
 	}
@@ -115,7 +115,7 @@ public final class TableLong<V extends Bean<V>>
 	 * @param lowbits 自增长ID的预留低位位数. 范围:[0,32]
 	 * @param offset 自增长ID的低位偏移值. 范围:[0,2^lowbits)
 	 */
-	public void setAutoID(int lowbits, int offset)
+	public void setAutoId(int lowbits, int offset)
 	{
 		if(lowbits < 0)
 			lowbits = 0;
@@ -199,7 +199,7 @@ public final class TableLong<V extends Bean<V>>
 		}
 		int m = _cache_mod.size();
 		_cache_mod.clear();
-		_stotable.setIDCounter(_idcounter.get());
+		_stotable.setIdCounter(_idcounter.get());
 		return m;
 	}
 
@@ -308,7 +308,7 @@ public final class TableLong<V extends Bean<V>>
 	 * 使用自增长的新ID值作为key插入value
 	 * <p>
 	 * 必须在事务中调用此方法,调用此方法前不需给新记录加锁<br>
-	 * ID自增长的步长由配置的autoIDLowBits和autoIDLowOffset决定,也可以通过setAutoID方法来指定<br>
+	 * ID自增长的步长由配置的autoIdLowBits和autoIdLowOffset决定,也可以通过setAutoId方法来指定<br>
 	 * 如果此表的记录有不是使用此方法插入的,请谨慎使用此方法,可能因记录ID冲突而导致记录覆盖
 	 * @param v 插入的新value
 	 * @return 返回插入的自增长ID值

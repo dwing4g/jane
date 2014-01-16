@@ -420,7 +420,7 @@ public final class DBManager
 	 * <p>
 	 * 不同sid的事务会并发处理,但相同的sid会按照提交顺序排队处理<br>
 	 * 如果队列中的事务数量超过上限(Const.maxSessionProcedure),则会清除这个sid的整个队列并输出错误日志<br>
-	 * sid即SessionID,一般表示网络连接的ID,事务运行时可以获取这个对象({@link Procedure#getSID})<br>
+	 * sid即SessionId,一般表示网络连接的ID,事务运行时可以获取这个对象({@link Procedure#getSid})<br>
 	 * 当这个sid失效且不需要处理其任何未处理的事务时,应该调用clearSession清除这个sid的队列以避免少量的内存泄漏
 	 */
 	public boolean submit(Object sid, Procedure p)
@@ -434,7 +434,7 @@ public final class DBManager
 	 */
 	public boolean submit(final ExecutorService es, final Object sid, Procedure p)
 	{
-		p.setSID(sid);
+		p.setSid(sid);
 		if(sid == null)
 		{
 			es.submit(p);

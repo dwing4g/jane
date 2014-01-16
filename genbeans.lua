@@ -162,9 +162,9 @@ public final class #(bean.name) extends Bean<#(bean.name)> implements Comparable
 local template_rpcbean = template_hint .. [=[
 package ]=] .. namespace .. [=[.bean;
 
-import jane.core.RPCBean;
+import jane.core.RpcBean;
 #(bean.comment)
-public final class #(bean.name) extends RPCBean<#(bean.arg), #(bean.res)>
+public final class #(bean.name) extends RpcBean<#(bean.arg), #(bean.res)>
 {
 	private static final long serialVersionUID = #(bean.uid);
 	public #(bean.name)() {}
@@ -237,11 +237,11 @@ package #(hdl.path);
 import org.apache.mina.core.session.IoSession;
 import jane.core.BeanManager;
 import jane.core.Log;
-import jane.core.RPCHandler;
+import jane.core.RpcHandler;
 import ]=] .. namespace .. [=[.bean.#(bean_arg.name);#<#
 import ]=] .. namespace .. [=[.bean.#(bean_res.name);#>#
 
-public class #(bean.name)Handler extends RPCHandler<#(bean_arg.name), #(bean_res.name)>
+public class #(bean.name)Handler extends RpcHandler<#(bean_arg.name), #(bean_res.name)>
 {
 	/*\
 #(#	|*| #(var.type) #(var.name)#(var.value);#(var.comment)
@@ -853,7 +853,7 @@ checksave(outpath .. namespace .. "/bean/AllBeans.java", (template_allbeans:gsub
 						end
 						return concat(subcode3)
 					end), "hdl", hdl), "bean", bean), "bean_arg", bean_arg), "bean_res", bean_res):gsub(bean_arg ~= bean_res and "#[<>]#" or "#%<#(.-)#%>#", ""):
-						gsub("\r", ""), 2, "(%s+class%s+" .. bean.name .. "Handler%s+extends%s+RPCHandler%s*<)[%w_%s]+,[%w_%s]+>", "%1" .. bean_arg.name .. ", " .. bean_res.name .. ">")
+						gsub("\r", ""), 2, "(%s+class%s+" .. bean.name .. "Handler%s+extends%s+RpcHandler%s*<)[%w_%s]+,[%w_%s]+>", "%1" .. bean_arg.name .. ", " .. bean_res.name .. ">")
 				end
 			end
 			return concat(subcode2)

@@ -42,7 +42,7 @@ public final class Xlsx2Xml
 		str_xmlstr['"'] = "&quot;";
 	}
 
-	private static int getColumnID(String col) // 只支持A(0)~ZZ(26*26+25)
+	private static int getColumnId(String col) // 只支持A(0)~ZZ(26*26+25)
 	{
 		if(col == null) return -1;
 		col = col.trim().toUpperCase();
@@ -54,9 +54,9 @@ public final class Xlsx2Xml
 		return d * 26 + a - 'A' + 26;
 	}
 
-	private static int getColumnID(Element elem) // <c r="A1" s="1" t="s"><v>0</v></c>
+	private static int getColumnId(Element elem) // <c r="A1" s="1" t="s"><v>0</v></c>
 	{
-		return getColumnID(elem.getAttribute("r"));
+		return getColumnId(elem.getAttribute("r"));
 	}
 
 	private static String getColumnName(int id) // 只支持A(0)~ZZ(26*26+25)
@@ -157,7 +157,7 @@ public final class Xlsx2Xml
 		for(int i = 0;;)
 		{
 			elem = (Element)nl_column.item(i);
-			if(getColumnID(elem) != i)
+			if(getColumnId(elem) != i)
 			    throw new IllegalStateException("ERROR: empty table head field in column=" + i + '(' + elem.getAttribute("r") + ')');
 			String s = getCellStr(elem);
 			Matcher mat = pat1.matcher(s);
@@ -190,7 +190,7 @@ public final class Xlsx2Xml
 			pw.print("\" sheetid=\"");
 			pw.print(sheet_id);
 			pw.print("\" key=\"");
-			int key_column_id = getColumnID(key_column);
+			int key_column_id = getColumnId(key_column);
 			if(key_column_id >= 0 && key_column_id < str_column.length) pw.print(str_column[key_column_id]);
 			pw.print("\">\n");
 			// pw.print("\" time=\"");
@@ -202,7 +202,7 @@ public final class Xlsx2Xml
 				for(; j < m; ++j)
 				{
 					elem = (Element)nl_row.item(j);
-					int id = getColumnID(elem);
+					int id = getColumnId(elem);
 					if(j == 0 && id > 0) break;
 					if(id < n_column)
 					{

@@ -7,7 +7,7 @@ import org.apache.mina.core.session.IoSession;
  * <p>
  * 此类是BeanHandler的子类
  */
-public abstract class RPCHandler<A extends Bean<A>, R extends Bean<R>> extends BeanHandler<RPCBean<A, R>>
+public abstract class RpcHandler<A extends Bean<A>, R extends Bean<R>> extends BeanHandler<RpcBean<A, R>>
 {
 	/**
 	 * RPC请求的回调
@@ -58,7 +58,7 @@ public abstract class RPCHandler<A extends Bean<A>, R extends Bean<R>> extends B
 	}
 
 	@Override
-	public void onProcess(BeanManager manager, IoSession session, RPCBean<A, R> rpcbean) throws Exception
+	public void onProcess(BeanManager manager, IoSession session, RpcBean<A, R> rpcbean) throws Exception
 	{
 		if(rpcbean.isRequest())
 		{
@@ -75,11 +75,11 @@ public abstract class RPCHandler<A extends Bean<A>, R extends Bean<R>> extends B
 		else
 		{
 			@SuppressWarnings("unchecked")
-			RPCBean<A, R> rpcbean_old = (RPCBean<A, R>)BeanManager.removeRPC(rpcbean.getRPCID());
+			RpcBean<A, R> rpcbean_old = (RpcBean<A, R>)BeanManager.removeRpc(rpcbean.getRpcId());
 			if(rpcbean_old != null)
 			{
 				rpcbean_old.setSession(null); // 绑定期已过,清除对session的引用
-				RPCHandler<A, R> onClient = rpcbean_old.getOnClient();
+				RpcHandler<A, R> onClient = rpcbean_old.getOnClient();
 				if(onClient != null)
 					rpcbean_old.setOnClient(null);
 				else

@@ -147,13 +147,13 @@ public class StorageMapDB implements Storage
 		}
 
 		@Override
-		public long getIDCounter()
+		public long getIdCounter()
 		{
 			return _idcounter.get();
 		}
 
 		@Override
-		public void setIDCounter(long v)
+		public void setIdCounter(long v)
 		{
 			if(v != _idcounter.get())
 			    _idcounter.set(v);

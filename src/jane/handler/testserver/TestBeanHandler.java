@@ -2,12 +2,12 @@ package jane.handler.testserver;
 
 import org.apache.mina.core.session.IoSession;
 import jane.bean.TestBean;
-import jane.bean.TestRPCBean;
+import jane.bean.TestRpcBean;
 import jane.bean.TestType;
 import jane.core.BeanHandler;
 import jane.core.BeanManager;
 import jane.core.Log;
-import jane.core.RPCHandler;
+import jane.core.RpcHandler;
 
 public class TestBeanHandler extends BeanHandler<TestBean>
 {
@@ -22,7 +22,7 @@ public class TestBeanHandler extends BeanHandler<TestBean>
 	public void onProcess(BeanManager manager, IoSession session, TestBean arg)
 	{
 		Log.log.debug("{}: arg={}", getClass().getName(), arg);
-		manager.sendRPC(session, new TestRPCBean(arg), new RPCHandler<TestBean, TestType>()
+		manager.sendRpc(session, new TestRpcBean(arg), new RpcHandler<TestBean, TestType>()
 		{
 			@Override
 			public void onClient(BeanManager mgr, IoSession ses, TestBean a, TestType r)

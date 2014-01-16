@@ -50,11 +50,11 @@ bean{ name="TestEmpty", type=4, initsize=0, maxsize=0, comment="测试空bean",
 	handlers="TestServer,TestClient",
 }
 
-rpc { name="TestRPCBean", type=5, arg="TestBean", res="TestType", comment="RPC的注释",
+rpc { name="TestRpcBean", type=5, arg="TestBean", res="TestType", comment="RPC的注释",
 	handlers="TestServer,TestClient",
 }
 
-rpc { name="TestRPCBean2", type=6, arg="TestBean", res="TestBean",
+rpc { name="TestRpcBean2", type=6, arg="TestBean", res="TestBean",
 }
 
 dbt { name="TestTable", id=1, lock="test", key="id", value="TestType", cachesize=65536, comment="数据库表定义. key类型只能是32/64位整数/浮点数或字符串/binary类型或bean类型, id类型表示优化的非负数long类型" }

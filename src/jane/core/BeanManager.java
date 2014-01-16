@@ -33,7 +33,7 @@ import org.mapdb.LongMap.LongMapIterator;
  */
 public class BeanManager extends IoHandlerAdapter
 {
-	private static final LongMap<RPCBean<?, ?>>   _rpcs     = new LongConcurrentHashMap<RPCBean<?, ?>>(); // 当前管理器等待回复的RPC
+	private static final LongMap<RpcBean<?, ?>>   _rpcs     = new LongConcurrentHashMap<RpcBean<?, ?>>(); // 当前管理器等待回复的RPC
 	private static final ScheduledExecutorService _rpc_thread;                                           // 处理RPC超时和重连的线程
 	private final String                          _name     = getClass().getName();                      // 当前管理器的名字
 	private Class<? extends ProtocolCodecFactory> _pcf      = BeanCodec.class;                           // 协议编码器的类
@@ -48,7 +48,7 @@ public class BeanManager extends IoHandlerAdapter
 			@Override
 			public Thread newThread(Runnable r)
 			{
-				Thread t = new Thread(r, "RPCThread");
+				Thread t = new Thread(r, "RpcThread");
 				t.setDaemon(false);
 				t.setPriority(Thread.NORM_PRIORITY);
 				return t;
@@ -62,12 +62,12 @@ public class BeanManager extends IoHandlerAdapter
 				try
 				{
 					int now = (int)(System.currentTimeMillis() / 1000);
-					for(LongMapIterator<RPCBean<?, ?>> it = _rpcs.longMapIterator(); it.moveToNext();)
+					for(LongMapIterator<RpcBean<?, ?>> it = _rpcs.longMapIterator(); it.moveToNext();)
 					{
-						RPCBean<?, ?> rpcbean = it.value();
+						RpcBean<?, ?> rpcbean = it.value();
 						if(now - rpcbean.getReqTime() > rpcbean.getTimeout() && _rpcs.remove(it.key()) != null)
 						{
-							RPCHandler<?, ?> onclient = rpcbean.getOnClient();
+							RpcHandler<?, ?> onclient = rpcbean.getOnClient();
 							IoSession session = rpcbean.getSession();
 							rpcbean.setSession(null); // 绑定期已过,清除对session的引用
 							if(onclient != null)
@@ -102,7 +102,7 @@ public class BeanManager extends IoHandlerAdapter
 	 * <p>
 	 * 只在RPC得到回复时调用
 	 */
-	static RPCBean<?, ?> removeRPC(int rpcid)
+	static RpcBean<?, ?> removeRpc(int rpcid)
 	{
 		return _rpcs.remove(rpcid);
 	}
@@ -372,19 +372,19 @@ public class BeanManager extends IoHandlerAdapter
 	 * 向某个连接发送RPC
 	 * <p>
 	 * 此操作是异步的
-	 * @param handler 可设置一个回调对象,用于在RPC回复和超时时回调. null表示使用注册的处理器处理回复和超时(RPCHandler.onClient/onTimeout)
+	 * @param handler 可设置一个回调对象,用于在RPC回复和超时时回调. null表示使用注册的处理器处理回复和超时(RpcHandler.onClient/onTimeout)
 	 * @return 如果连接已经失效则返回false且不会有回复和超时的回调, 否则返回true
 	 */
 	@SuppressWarnings("unchecked")
-	public <A extends Bean<A>, R extends Bean<R>> boolean sendRPC(final IoSession session, final RPCBean<A, R> rpcbean, RPCHandler<A, R> handler)
+	public <A extends Bean<A>, R extends Bean<R>> boolean sendRpc(final IoSession session, final RpcBean<A, R> rpcbean, RpcHandler<A, R> handler)
 	{
 		if(session.isClosing()) return false;
 		rpcbean.setRequest();
 		if(!send(session, rpcbean)) return false;
 		rpcbean.setReqTime((int)(System.currentTimeMillis() / 1000));
 		rpcbean.setSession(session);
-		rpcbean.setOnClient(handler != null ? handler : (RPCHandler<A, R>)_handlers.get(rpcbean.type()));
-		_rpcs.put(rpcbean.getRPCID(), rpcbean);
+		rpcbean.setOnClient(handler != null ? handler : (RpcHandler<A, R>)_handlers.get(rpcbean.type()));
+		_rpcs.put(rpcbean.getRpcId(), rpcbean);
 		return true;
 	}
 

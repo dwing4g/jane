@@ -87,14 +87,14 @@ public interface Storage
 		 * <p>
 		 * 目前的引擎实现不会出现并发的getCounter和setCounter
 		 */
-		long getIDCounter();
+		long getIdCounter();
 
 		/**
 		 * 设置计数器当前值,用于保存自增长ID
 		 * <p>
 		 * 目前的引擎实现不会出现并发的getCounter和setCounter
 		 */
-		void setIDCounter(long v);
+		void setIdCounter(long v);
 
 		/**
 		 * 按记录key的顺序遍历此表的所有记录

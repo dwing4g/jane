@@ -33,8 +33,8 @@ public final class Const
 	public static final int         dbCommitPeriod;
 	public static final int         dbBackupPeriod;
 	public static final int         procedureTimeout;
-	public static final int         autoIDLowBits;
-	public static final int         autoIDLowOffset;
+	public static final int         autoIdLowBits;
+	public static final int         autoIdLowOffset;
 	public static final int         mapDBFileLevel;
 	public static final int         mapDBCacheCount;
 	public static final int         mvStoreCacheSize;
@@ -76,8 +76,8 @@ public final class Const
 		dbCommitPeriod = getPropInt("dbCommitPeriod", 60, 1);
 		dbBackupPeriod = getPropInt("dbBackupPeriod", 3600, 1);
 		procedureTimeout = getPropInt("procedureTimeout", 5, 1);
-		autoIDLowBits = getPropInt("autoIDLowBits", 0, 0, 32);
-		autoIDLowOffset = getPropInt("autoIDLowOffset", 0, 0, (1 << autoIDLowBits) - 1);
+		autoIdLowBits = getPropInt("autoIDLowBits", 0, 0, 32);
+		autoIdLowOffset = getPropInt("autoIDLowOffset", 0, 0, (1 << autoIdLowBits) - 1);
 		mapDBFileLevel = getPropInt("mapDBFileLevel", 0, 0, 3);
 		mapDBCacheCount = getPropInt("mapDBCacheCount", 32768, 0);
 		mvStoreCacheSize = getPropInt("mvStoreCacheSize", 32, 0);

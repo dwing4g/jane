@@ -42,7 +42,7 @@ public abstract class Procedure implements Runnable
 	private static final ReentrantReadWriteLock _rwl_commit   = new ReentrantReadWriteLock();         // 用于数据提交的读写锁
 	private static final Map<Thread, Context>   _proc_threads = Util.newProcThreadsMap();             // 当前运行的全部事务线程. 用于判断是否超时
 	private Context                             _ctx;                                                 // 事务所属的线程上下文. 只在事务运行中有效
-	private volatile Object                     _sid;                                                 // 事务所属的SessionID
+	private volatile Object                     _sid;                                                 // 事务所属的SessionId
 	private volatile long                       _begin_time;                                          // 事务运行的起始时间. 用于判断是否超时
 
 	static
@@ -110,7 +110,7 @@ public abstract class Procedure implements Runnable
 	 * <p>
 	 * 事务完成后会自动清掉此绑定
 	 */
-	public Object getSID()
+	public Object getSid()
 	{
 		return _sid;
 	}
@@ -120,7 +120,7 @@ public abstract class Procedure implements Runnable
 	 * <p>
 	 * 为了安全只能由内部类调用
 	 */
-	void setSID(Object sid)
+	void setSid(Object sid)
 	{
 		_sid = sid;
 	}
