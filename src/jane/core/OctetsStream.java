@@ -82,7 +82,8 @@ public class OctetsStream extends Octets
 		this.pos = pos;
 	}
 
-	public int remain()
+	@Override
+    public int remain()
 	{
 		return count - pos;
 	}

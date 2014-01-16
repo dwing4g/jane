@@ -18,6 +18,8 @@ public final class Const
 	public static final int         connectTimeout;
 	public static final int         rpcCheckInterval;
 	public static final int         maxRawBeanSize;
+	public static final int         maxHttpHeadSize;
+	public static final int         maxHttpBodySize;
 	public static final String      dbFilename;
 	public static final String      dbBackupPath;
 	public static final int         dbThreadCount;
@@ -59,6 +61,8 @@ public final class Const
 		connectTimeout = getPropInt("connectTimeout", 5, 1);
 		rpcCheckInterval = getPropInt("rpcCheckInterval", 3, 1);
 		maxRawBeanSize = getPropInt("maxRawBeanSize", 65536, 0);
+		maxHttpHeadSize = getPropInt("maxHttpHeadSize", 4096, 0);
+		maxHttpBodySize = getPropInt("maxHttpBodySize", 65536, 0);
 		dbFilename = getPropStr("dbFilename", "db/database");
 		dbBackupPath = getPropStr("dbBackupPath", "db");
 		dbThreadCount = getPropInt("dbThreadCount", 1, 1, 1000);
