@@ -110,6 +110,11 @@ namespace jane
 			return buffer.Length;
 		}
 
+		public virtual int remain()
+		{
+			return count;
+		}
+
 		public byte getByte(int p)
 		{
 			return buffer[p];
@@ -319,6 +324,74 @@ namespace jane
 				Array.Copy(buffer, size, buffer, 0, count);
 			}
 			return this;
+		}
+
+		public int find(int pos, int end, byte b)
+		{
+			if(pos < 0) pos = 0;
+			if(end > count) end = count;
+			byte[] buf = buffer;
+			for(; pos < end; ++pos)
+				if(buf[pos] == b) return pos;
+			return -1;
+		}
+
+		public int find(int pos, byte b)
+		{
+			return find(pos, count, b);
+		}
+
+		public int find(byte b)
+		{
+			return find(0, count, b);
+		}
+
+		public int find(int pos, int end, byte[] b, int p, int s)
+		{
+			if(p < 0) p = 0;
+			if(p + s > b.Length) s = b.Length - p;
+			if(s <= 0) return 0;
+			if(pos < 0) pos = 0;
+			if(end > count - s + 1) end = count - s + 1;
+			byte[] buf = buffer;
+			byte c = b[0];
+			for(; pos < end; ++pos)
+			{
+				if(buf[pos] == c)
+				{
+					for(int n = 1; ; ++n)
+					{
+						if(n == s) return pos;
+						if(buf[pos + n] != b[n]) break;
+					}
+				}
+			}
+			return -1;
+		}
+
+		public int find(int pos, byte[] b, int p, int s)
+		{
+			return find(pos, count, b, p, s);
+		}
+
+		public int find(byte[] b, int p, int s)
+		{
+			return find(0, count, b, p, s);
+		}
+
+		public int find(int pos, int end, byte[] b)
+		{
+			return find(pos, end, b, 0, b.Length);
+		}
+
+		public int find(int pos, byte[] b)
+		{
+			return find(pos, count, b, 0, b.Length);
+		}
+
+		public int find(byte[] b)
+		{
+			return find(0, count, b, 0, b.Length);
 		}
 
 		public void setString(string str)

@@ -75,7 +75,7 @@ namespace jane
 			this.pos = pos;
 		}
 
-		public int remain()
+		public override int remain()
 		{
 			return count - pos;
 		}
