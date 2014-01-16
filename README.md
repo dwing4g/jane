@@ -8,8 +8,8 @@ Feature:
  * simple, extensible and compact protocol on TCP
  * embedded database based on MapDB with extremely fast in-memory cache
  * single process with multi-thread concurrent network and database
- * optimized for high performance (1.5M+ TPS on one core of 3GHz PC)
- * simple implement but powerful (only 8K+ lines of core source code)
+ * optimized for high performance (1.5M TPS on one core of 3GHz PC)
+ * simple implement but powerful (only 9K+ lines of core source code)
  * easy to understand and use with code generation for Java bean code
 
 Todo:
@@ -37,7 +37,7 @@ License:
 
 依赖库:
  * 日志库: slf4j-1.7.x (后端用logback-1.0.x, 以后考虑把后端换成log4j-2.x)
- * 网络库: mina-core-2.0.x rupy-1.1
+ * 网络库: mina-core-2.0.x
  * 数据库: mapdb-0.9.x (最好等待1.0稳定版再投入正式使用) leveldb-jni mvstore-1.3.x
  * 脚本库: luaj-jse-2.0.x
  * 基础库: com.googlecode.concurrentlinkedhashmap (高速并发hashmap/linkedhashmap)
@@ -80,6 +80,8 @@ License:
  * 统一使用bean作为网络传输和数据库value的单位, 自动通过配置生成bean代码
  * bean的定义包括8种数值类型, 字符串、二进制数据, 以及9种容器类型, 还支持数值和字符串常量
  * 支持发送简单的bean, 连续发送bean, 广播bean, rpc统一处理/单独回调/超时处理
+ * 支持简易高效的HTTP协议响应及回复
+ * 内含简单实用的压缩和加密算法
  * 透明的基于文件和内存的面向对象数据库的操作、缓存、事务型持久化和热备份, 基于记录加锁，支持死锁超时打断
 
 TODO:
