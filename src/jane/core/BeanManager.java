@@ -80,9 +80,9 @@ public class BeanManager extends IoHandlerAdapter
 									{
 										onclient.timeout((BeanManager)manager, session, rpcbean.getArg());
 									}
-									catch(Throwable ex)
+									catch(Throwable e)
 									{
-										Log.log.error(manager.getClass().getName() + '(' + session.getId() + "): onTimeout exception:", ex);
+										Log.log.error(manager.getClass().getName() + '(' + session.getId() + "): onTimeout exception:", e);
 									}
 								}
 							}

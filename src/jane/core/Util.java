@@ -10,6 +10,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -264,6 +265,54 @@ public final class Util
 		finally
 		{
 			fis.close();
+		}
+	}
+
+	public static final class SundaySearch
+	{
+		private final byte[] _pat;
+		private final int    _patlen;
+		private final int[]  _skip = new int[256];
+
+		public SundaySearch(byte[] pat, int patlen)
+		{
+			_patlen = (patlen < 0 ? 0 : (patlen > pat.length ? pat.length : patlen));
+			_pat = Arrays.copyOf(pat, _patlen);
+			Arrays.fill(_skip, _patlen + 1);
+			for(int i = 0; i < _patlen; ++i)
+				_skip[_pat[i] & 0xff] = _patlen - i;
+		}
+
+		public SundaySearch(Octets pat)
+		{
+			this(pat.array(), pat.size());
+		}
+
+		public int find(byte[] src, int srcpos, int srclen)
+		{
+			if(_patlen <= 0) return 0;
+			if(srcpos < 0) srcpos = 0;
+			if(srcpos + srclen > src.length) srclen = src.length - srcpos;
+			if(srclen <= 0) return -1;
+			byte c = _pat[0];
+			for(int srcend = srclen - _patlen; srcpos <= srcend; srcpos += _skip[src[srcpos + _patlen] & 0xff])
+			{
+				if(src[srcpos] == c)
+				{
+					for(int k = 1;; ++k)
+					{
+						if(k >= _patlen) return srcpos;
+						if(src[srcpos + k] != _pat[k]) break;
+					}
+				}
+				if(srcpos == srcend) return -1;
+			}
+			return -1;
+		}
+
+		public int find(Octets src, int srcpos)
+		{
+			return find(src.array(), srcpos, src.size());
 		}
 	}
 
