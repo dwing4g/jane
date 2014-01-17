@@ -485,7 +485,7 @@ namespace jane
 
 		public override string ToString()
 		{
-			return "[" + count + ']';
+			return "[" + count + '/' + buffer.Length + ']';
 		}
 
 		public virtual StringBuilder dump(StringBuilder s)

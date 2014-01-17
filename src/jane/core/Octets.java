@@ -506,7 +506,7 @@ public class Octets implements Cloneable, Comparable<Octets>
 	@Override
 	public String toString()
 	{
-		return "[" + count + ']';
+		return "[" + count + '/' + buffer.length + ']';
 	}
 
 	public StringBuilder dump(StringBuilder s)

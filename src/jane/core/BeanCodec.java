@@ -71,14 +71,17 @@ public class BeanCodec extends ProtocolDecoderAdapter implements ProtocolEncoder
 			Octets rawdata = rawbean.getData();
 			OctetsStream os_head = new OctetsStream(10).marshalUInt(rawbean.getType()).marshalUInt(rawdata.size());
 			out.write(IoBuffer.wrap(os_head.array(), 0, os_head.size()));
-			out.write(IoBuffer.wrap(rawdata.array(), 0, rawdata.size()));
+			int n = rawdata.size();
+			if(n > 0) out.write(IoBuffer.wrap(rawdata.array(), 0, n));
 		}
 		else
 		{
-			OctetsStream os_body = bean.marshalProtocol(new OctetsStream(bean.initSize()));
-			OctetsStream os_head = new OctetsStream(10).marshalUInt(type).marshalUInt(os_body.size());
-			out.write(IoBuffer.wrap(os_head.array(), 0, os_head.size()));
-			out.write(IoBuffer.wrap(os_body.array(), 0, os_body.size()));
+			OctetsStream os = new OctetsStream(bean.initSize() + 10);
+			os.resize(10);
+			bean.marshal(os);
+			int p = os.marshalUIntBack(10, os.size() - 10);
+			p = 10 - (p + os.marshalUIntBack(10 - p, type));
+			out.write(IoBuffer.wrap(os.array(), p, os.size() - p));
 		}
 	}
 

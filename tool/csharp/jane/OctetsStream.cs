@@ -96,7 +96,7 @@ namespace jane
 
 		public override string ToString()
 		{
-			return "[" + pos + '/' + count + ']';
+			return "[" + pos + '/' + count + '/' + buffer.Length + ']';
 		}
 
 		public override StringBuilder dump(StringBuilder s)
@@ -286,6 +286,16 @@ namespace jane
 			if(x < 0x200000)  return marshal3(x + 0xc00000);                   // 110x xxxx +2B
 			if(x < 0x1000000) return marshal4(x + unchecked((int)0xe0000000)); // 1110 xxxx +3B
 			                  return marshal5((byte)0xf0, x);                  // 1111 0000 +4B
+		}
+
+		public int marshalUIntBack(int p, int x)
+		{
+			int t = count;
+			if(x < 0x80)      { count = p - 1; marshal1((byte)(x > 0 ? x : 0));          count = t; return 1; }
+			if(x < 0x4000)    { count = p - 2; marshal2(x + 0x8000);                     count = t; return 2; }
+			if(x < 0x200000)  { count = p - 3; marshal3(x + 0xc00000);                   count = t; return 3; }
+			if(x < 0x1000000) { count = p - 4; marshal4(x + unchecked((int)0xe0000000)); count = t; return 4; }
+							  { count = p - 5; marshal5((byte)0xf0, x);                  count = t; return 5; }
 		}
 
 		public OctetsStream marshalUTF8(char x)

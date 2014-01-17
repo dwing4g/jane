@@ -1,5 +1,6 @@
 package jane.core;
 
+import java.nio.ByteBuffer;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -223,61 +224,69 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 		return session.write(out).getException() == null;
 	}
 
+	public static boolean send(IoSession session, byte[] data)
+	{
+		return !session.isClosing() && session.write(data).getException() == null;
+	}
+
 	public static boolean send(IoSession session, Octets data)
 	{
 		return !session.isClosing() && session.write(data).getException() == null;
 	}
 
+	public static boolean sendChunk(IoSession session, byte[] chunk)
+	{
+		if(session.isClosing()) return false;
+		int n = chunk.length;
+		return n <= 0 || session.write(ByteBuffer.wrap(chunk, 0, n)).getException() == null;
+	}
+
 	public static boolean sendChunk(IoSession session, Octets chunk)
 	{
 		if(session.isClosing()) return false;
-		if(chunk == null)
-		{
-			if(session.write(CHUNK_END_MARK).getException() != null) return false;
-		}
-		else
-		{
-			if(session.write(String.format("%x\r\n", chunk.remain()).getBytes(Const.stringCharsetUTF8)).getException() != null) return false;
-			if(session.write(chunk).getException() != null) return false;
-			if(session.write(CHUNK_OVER_MARK).getException() != null) return false;
-		}
-		return true;
-	}
-
-	public static boolean sendChunk(IoSession session, byte[] chunk)
-	{
-		return sendChunk(session, chunk != null ? Octets.wrap(chunk) : null);
+		int n = chunk.remain();
+		if(n <= 0) return true;
+		ByteBuffer buf = (chunk instanceof OctetsStream ?
+		        ByteBuffer.wrap(chunk.array(), ((OctetsStream)chunk).position(), n) :
+		        ByteBuffer.wrap(chunk.array(), 0, n));
+		return session.write(buf).getException() == null;
 	}
 
 	public static boolean sendChunk(IoSession session, String chunk)
 	{
-		return sendChunk(session, chunk != null ? Octets.wrap(chunk.getBytes(Const.stringCharsetUTF8)) : null);
+		return sendChunk(session, Octets.wrap(chunk.getBytes(Const.stringCharsetUTF8)));
 	}
 
 	public static boolean sendChunkEnd(IoSession session)
 	{
-		return sendChunk(session, (Octets)null);
+		return !session.isClosing() && session.write(CHUNK_END_MARK).getException() == null;
 	}
 
 	@Override
 	public void encode(IoSession session, Object message, ProtocolEncoderOutput out) throws Exception
 	{
-		if(message instanceof OctetsStream)
+		if(message instanceof byte[])
+		{
+			byte[] bytes = (byte[])message;
+			if(bytes.length > 0) out.write(IoBuffer.wrap(bytes));
+		}
+		else if(message instanceof ByteBuffer)
+		{
+			out.write(IoBuffer.wrap(String.format("%x\r\n", ((ByteBuffer)message).remaining()).getBytes(Const.stringCharsetUTF8)));
+			out.write(IoBuffer.wrap((ByteBuffer)message));
+			out.write(IoBuffer.wrap(CHUNK_OVER_MARK));
+		}
+		else if(message instanceof OctetsStream)
 		{
 			OctetsStream os = (OctetsStream)message;
-			int remain = os.remain();
-			if(remain > 0) out.write(IoBuffer.wrap(os.array(), os.position(), remain));
+			int n = os.remain();
+			if(n > 0) out.write(IoBuffer.wrap(os.array(), os.position(), n));
 		}
 		else if(message instanceof Octets)
 		{
 			Octets oct = (Octets)message;
-			int size = oct.size();
-			if(size > 0) out.write(IoBuffer.wrap(oct.array(), 0, size));
-		}
-		else if(message instanceof byte[])
-		{
-			byte[] bytes = (byte[])message;
-			if(bytes.length > 0) out.write(IoBuffer.wrap(bytes));
+			int n = oct.size();
+			if(n > 0) out.write(IoBuffer.wrap(oct.array(), 0, n));
 		}
 	}
 
