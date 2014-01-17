@@ -293,65 +293,77 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 	@Override
 	public void decode(IoSession session, IoBuffer in, ProtocolDecoderOutput out) throws Exception
 	{
-		for(;;)
+		begin_: for(;;)
 		{
 			if(_bodysize <= 0)
 			{
 				int r = in.remaining();
-				int s = (r < 1024 ? r : 1024);
+				int s = (r < 1024 ? r : 1024); // 最多一次取1024字节来查找HTTP头
 				int p = _buf.size();
 				if(s > 0)
 				{
 					_buf.resize(p + s);
 					in.get(_buf.array(), p, s);
 				}
-				p = _buf.find(p - 3, HEAD_END_MARK);
-				if(p < 0)
+				for(;;)
 				{
-					if(_buf.size() > Const.maxHttpHeadSize)
-					    throw new Exception("http head size overflow: bufsize=" + _buf.size() + ",maxsize=" + Const.maxHttpHeadSize);
-					if(!in.hasRemaining()) return;
-					continue;
-				}
-				p += HEAD_END_MARK.length;
-				_buf.setPosition(p);
-				_bodysize = getHeadLong(_buf, CONT_LEN_MARK);
-				if(_bodysize <= 0)
-				{
-					OctetsStream os = new OctetsStream(_buf.array(), p, _buf.remain());
+					p = _buf.find(p - 3, HEAD_END_MARK);
+					if(p < 0)
+					{
+						if(_buf.size() > Const.maxHttpHeadSize)
+						    throw new Exception("http head size overflow: bufsize=" + _buf.size() + ",maxsize=" + Const.maxHttpHeadSize);
+						if(!in.hasRemaining()) return;
+						continue begin_;
+					}
+					p += HEAD_END_MARK.length;
+					if(p < 18) // 最小的可能是"GET / HTTP/1.1\r\n\r\n"
+					    throw new Exception("http head size too short: headsize=" + p);
+					_buf.setPosition(p);
+					_bodysize = getHeadLong(_buf, CONT_LEN_MARK); // 从HTTP头中找到内容长度
+					if(_bodysize > 0) break; // 有内容则跳到下半部分的处理
+					OctetsStream os = new OctetsStream(_buf.array(), p, _buf.remain()); // 切割出尾部当作下次缓存(不会超过1024字节)
 					_buf.resize(p);
 					out.write(_buf);
 					_buf = os;
-					continue;
+					p = 0;
 				}
 				if(_bodysize > Const.maxHttpBodySize)
 				    throw new Exception("http body size overflow: bodysize=" + _bodysize + ",maxsize=" + Const.maxHttpBodySize);
 			}
 			int r = in.remaining();
 			int s = (int)_bodysize - _buf.remain();
-			if(s > r) s = r;
 			int p = _buf.size();
-			if(s > 0)
+			OctetsStream os;
+			if(s > r) s = r; // 只取能取到的大小
+			if(s >= 0) // 缓存数据不足或正好
 			{
-				_buf.resize(p + s);
-				in.get(_buf.array(), p, s);
-				if(_buf.remain() < _bodysize) return;
+				if(s > 0) // 不足且有数据就尽量补足
+				{
+					_buf.resize(p + s);
+					in.get(_buf.array(), p, s);
+				}
+				if(_buf.remain() < _bodysize) return; // 再不足就等下次
+				os = new OctetsStream(1024); // 正好满足了,申请新的缓存
 			}
-			OctetsStream os = (s >= 0 ? new OctetsStream(1024) : new OctetsStream(_buf.array(), p + s, -s));
+			else
+			{
+				os = new OctetsStream(_buf.array(), p += s, -s); // 缓存数据过剩就切割出尾部当作下次缓存(不会超过1024字节)
+				_buf.resize(p);
+			}
 			out.write(_buf);
 			_buf = os;
-			_bodysize = 0;
+			_bodysize = 0; // 下次从HTTP头部开始匹配
 		}
 	}
 
 	@Override
-	public ProtocolEncoder getEncoder(IoSession session) throws Exception
+	public ProtocolEncoder getEncoder(IoSession session)
 	{
 		return this;
 	}
 
 	@Override
-	public ProtocolDecoder getDecoder(IoSession session) throws Exception
+	public ProtocolDecoder getDecoder(IoSession session)
 	{
 		return this;
 	}

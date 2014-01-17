@@ -172,13 +172,13 @@ public class BeanCodec extends ProtocolDecoderAdapter implements ProtocolEncoder
 	}
 
 	@Override
-	public ProtocolEncoder getEncoder(IoSession session) throws Exception
+	public ProtocolEncoder getEncoder(IoSession session)
 	{
 		return this;
 	}
 
 	@Override
-	public ProtocolDecoder getDecoder(IoSession session) throws Exception
+	public ProtocolDecoder getDecoder(IoSession session)
 	{
 		return this;
 	}
