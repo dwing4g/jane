@@ -32,7 +32,7 @@ public final class TestHttpServer extends BeanManager
 	}
 
 	@Override
-	public void messageReceived(IoSession session, Object message) throws Exception
+	public void messageReceived(IoSession session, Object message)
 	{
 		OctetsStream os = (OctetsStream)message;
 		System.out.println("messageReceived: " + os.position() + '/' + os.size());
@@ -52,7 +52,7 @@ public final class TestHttpServer extends BeanManager
 	}
 
 	@Override
-	public void messageSent(IoSession session, Object message) throws Exception
+	public void messageSent(IoSession session, Object message)
 	{
 //		System.out.println("messageSent");
 	}

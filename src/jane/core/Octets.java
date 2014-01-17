@@ -51,16 +51,9 @@ public class Octets implements Cloneable, Comparable<Octets>
 		return wrap(str.getBytes(charset));
 	}
 
-	public static Octets wrap(String str, String encoding)
+	public static Octets wrap(String str, String encoding) throws UnsupportedEncodingException
 	{
-		try
-		{
-			return wrap(str.getBytes(encoding));
-		}
-		catch(UnsupportedEncodingException e)
-		{
-			throw new RuntimeException(e);
-		}
+		return wrap(str.getBytes(encoding));
 	}
 
 	public static Octets createSpace(int size)
@@ -414,17 +407,10 @@ public class Octets implements Cloneable, Comparable<Octets>
 		count = buffer.length;
 	}
 
-	public void setString(String str, String encoding)
+	public void setString(String str, String encoding) throws UnsupportedEncodingException
 	{
-		try
-		{
-			buffer = str.getBytes(encoding);
-			count = buffer.length;
-		}
-		catch(UnsupportedEncodingException e)
-		{
-			throw new RuntimeException(e);
-		}
+		buffer = str.getBytes(encoding);
+		count = buffer.length;
 	}
 
 	public String getString()
@@ -437,16 +423,9 @@ public class Octets implements Cloneable, Comparable<Octets>
 		return new String(buffer, 0, count, charset);
 	}
 
-	public String getString(String encoding)
+	public String getString(String encoding) throws UnsupportedEncodingException
 	{
-		try
-		{
-			return new String(buffer, 0, count, encoding);
-		}
-		catch(UnsupportedEncodingException e)
-		{
-			throw new RuntimeException(e);
-		}
+		return new String(buffer, 0, count, encoding);
 	}
 
 	@Override

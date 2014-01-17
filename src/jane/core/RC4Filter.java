@@ -107,7 +107,7 @@ public class RC4Filter extends IoFilterAdapter
 	}
 
 	@Override
-	public void messageReceived(NextFilter nextFilter, IoSession session, Object message) throws Exception
+	public void messageReceived(NextFilter nextFilter, IoSession session, Object message)
 	{
 		if(message instanceof IoBuffer)
 		{
@@ -118,7 +118,7 @@ public class RC4Filter extends IoFilterAdapter
 	}
 
 	@Override
-	public void filterWrite(NextFilter nextFilter, IoSession session, WriteRequest writeRequest) throws Exception
+	public void filterWrite(NextFilter nextFilter, IoSession session, WriteRequest writeRequest)
 	{
 		Object message = writeRequest.getMessage();
 		if(message instanceof IoBuffer)

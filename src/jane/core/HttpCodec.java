@@ -263,7 +263,7 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 	}
 
 	@Override
-	public void encode(IoSession session, Object message, ProtocolEncoderOutput out) throws Exception
+	public void encode(IoSession session, Object message, ProtocolEncoderOutput out)
 	{
 		if(message instanceof byte[])
 		{

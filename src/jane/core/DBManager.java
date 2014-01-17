@@ -156,7 +156,7 @@ public final class DBManager
 			}
 			catch(Throwable e)
 			{
-				Log.log.error("db-commit exception:", e);
+				Log.log.error("db-commit fatal exception:", e);
 			}
 		}
 	}
@@ -217,7 +217,7 @@ public final class DBManager
 	 * 必须在注册数据库表和操作数据库之前启动
 	 * @param sto 数据库使用的存储引擎实例. 如: StorageMapDB.instance()
 	 */
-	public synchronized void startup(Storage sto) throws Throwable
+	public synchronized void startup(Storage sto) throws IOException
 	{
 		if(sto == null) throw new IllegalArgumentException("no Storage specified");
 		shutdown();
@@ -246,7 +246,7 @@ public final class DBManager
 				}
 				catch(Throwable e)
 				{
-					Log.log.error("DBManager.JVMShutDown: exception:", e);
+					Log.log.error("DBManager.JVMShutDown: fatal exception:", e);
 				}
 			}
 		});
@@ -258,7 +258,7 @@ public final class DBManager
 	 * 必须在注册数据库表和操作数据库之前启动<br>
 	 * 默认使用StorageMapDB.instance()作为存储引擎
 	 */
-	public void startup() throws Throwable
+	public void startup() throws IOException
 	{
 		startup(StorageMapDB.instance());
 	}
@@ -482,9 +482,17 @@ public final class DBManager
 							proc = _q.peek(); // 这里只能先peek而不能poll或remove,否则可能和下次commit并发
 						}
 						if(proc == null) return;
-						proc.run();
+						try
+						{
+							proc.run();
+						}
+						catch(Throwable e)
+						{
+							Log.log.error("procedure(sid=" + sid + ") exception:", e);
+						}
 						synchronized(sid)
 						{
+							if(_q.isEmpty()) return;
 							if(_q.remove() != proc) // 此时可能清除过这个队列,第一个对象已经不是proc了
 							    _proc_count.decrementAndGet();
 							if(_q.isEmpty()) return;
@@ -498,7 +506,7 @@ public final class DBManager
 				}
 				catch(Throwable e)
 				{
-					Log.log.error("procedure(sid=" + sid + ") exception:", e);
+					Log.log.error("procedure(sid=" + sid + ") fatal exception:", e);
 				}
 			}
 		});

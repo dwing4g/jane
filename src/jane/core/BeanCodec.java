@@ -61,7 +61,7 @@ public class BeanCodec extends ProtocolDecoderAdapter implements ProtocolEncoder
 	}
 
 	@Override
-	public void encode(IoSession session, Object message, ProtocolEncoderOutput out) throws Exception
+	public void encode(IoSession session, Object message, ProtocolEncoderOutput out)
 	{
 		Bean<?> bean = (Bean<?>)message;
 		int type = bean.type();

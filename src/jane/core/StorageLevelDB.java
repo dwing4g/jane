@@ -94,7 +94,7 @@ public class StorageLevelDB implements Storage
 				int format = val.unmarshalByte();
 				if(format != 0)
 				{
-					throw new RuntimeException("unknown record value format(" + format + ") in table("
+					throw new IllegalStateException("unknown record value format(" + format + ") in table("
 					        + _tablename + ',' + _tableid + "),key=(" + k + ')');
 				}
 				v.unmarshal(val);
@@ -318,7 +318,7 @@ public class StorageLevelDB implements Storage
 				int format = val.unmarshalByte();
 				if(format != 0)
 				{
-					throw new RuntimeException("unknown record value format(" + format + ") in table("
+					throw new IllegalStateException("unknown record value format(" + format + ") in table("
 					        + _tablename + ',' + _tableid + "),key=(" + k + ')');
 				}
 				v.unmarshal(val);
@@ -331,7 +331,7 @@ public class StorageLevelDB implements Storage
 		}
 
 		@Override
-		protected boolean onWalk(WalkHandler<Octets> handler, OctetsStream k) throws MarshalException
+		protected boolean onWalk(WalkHandler<Octets> handler, OctetsStream k)
 		{
 			return handler.onWalk(new Octets(k.array(), k.position(), k.remain()));
 		}
@@ -370,7 +370,7 @@ public class StorageLevelDB implements Storage
 				int format = val.unmarshalByte();
 				if(format != 0)
 				{
-					throw new RuntimeException("unknown record value format(" + format + ") in table("
+					throw new IllegalStateException("unknown record value format(" + format + ") in table("
 					        + _tablename + ',' + _tableid + "),key=(" + k + ')');
 				}
 				v.unmarshal(val);
@@ -383,7 +383,7 @@ public class StorageLevelDB implements Storage
 		}
 
 		@Override
-		protected boolean onWalk(WalkHandler<String> handler, OctetsStream k) throws MarshalException
+		protected boolean onWalk(WalkHandler<String> handler, OctetsStream k)
 		{
 			return handler.onWalk(new String(k.array(), k.position(), k.remain(), Const.stringCharsetUTF8));
 		}
@@ -423,7 +423,7 @@ public class StorageLevelDB implements Storage
 				int format = val.unmarshalByte();
 				if(format != 0)
 				{
-					throw new RuntimeException("unknown record value format(" + format + ") in table("
+					throw new IllegalStateException("unknown record value format(" + format + ") in table("
 					        + _tablename + ',' + _tableid + "),key=" + k);
 				}
 				v.unmarshal(val);
@@ -462,7 +462,7 @@ public class StorageLevelDB implements Storage
 			if(v == _deleted) return null;
 			if(v != null) return v;
 		}
-		if(_db == 0) throw new RuntimeException("db closed. key=" + k.dump());
+		if(_db == 0) throw new IllegalStateException("db closed. key=" + k.dump());
 		byte[] v = leveldb_get(_db, k.array(), k.size());
 		return v != null ? OctetsStream.wrap(v) : null;
 	}
@@ -548,7 +548,7 @@ public class StorageLevelDB implements Storage
 	@Override
 	public long backupDB(File fdst) throws IOException
 	{
-		if(_dbfile == null) throw new RuntimeException("current database is not opened");
+		if(_dbfile == null) throw new IllegalStateException("current database is not opened");
 		long period = Const.levelDBFullBackupPeriod * 1000;
 		if(_backup_datebase == Long.MIN_VALUE)
 		{
@@ -559,13 +559,13 @@ public class StorageLevelDB implements Storage
 			}
 			catch(ParseException e)
 			{
-				throw new RuntimeException("parse levelDBFullBackupBase(" + Const.levelDBFullBackupBase + ") failed", e);
+				throw new IllegalStateException("parse levelDBFullBackupBase(" + Const.levelDBFullBackupBase + ") failed", e);
 			}
 		}
 		long time = System.currentTimeMillis();
 		String srcpath = fdst.getAbsolutePath();
 		int pos = srcpath.lastIndexOf('.');
-		if(pos <= 0) throw new RuntimeException("invalid backup path: " + srcpath);
+		if(pos <= 0) throw new IOException("invalid backup path: " + srcpath);
 		srcpath = srcpath.substring(0, pos);
 		SimpleDateFormat sdf = DBManager.instance().getBackupDateFormat();
 		Date backup_date = new Date(_backup_datebase + (time - _backup_datebase) / period * period);

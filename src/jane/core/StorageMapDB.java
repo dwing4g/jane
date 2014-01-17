@@ -58,7 +58,7 @@ public class StorageMapDB implements Storage
 			{
 				int format = os.unmarshalByte();
 				if(format != 0)
-				    throw new RuntimeException("unknown record value format(" + format + ") in table(" + _tablename + "),key=(" + k + ')');
+				    throw new IllegalStateException("unknown record value format(" + format + ") in table(" + _tablename + "),key=(" + k + ')');
 				v.unmarshal(os);
 			}
 			catch(MarshalException e)
@@ -116,7 +116,7 @@ public class StorageMapDB implements Storage
 			{
 				int format = os.unmarshalByte();
 				if(format != 0)
-				    throw new RuntimeException("unknown record value format(" + format + ") in table(" + _tablename + "),key=(" + k + ')');
+				    throw new IllegalStateException("unknown record value format(" + format + ") in table(" + _tablename + "),key=(" + k + ')');
 				v.unmarshal(os);
 			}
 			catch(MarshalException e)
@@ -173,7 +173,7 @@ public class StorageMapDB implements Storage
 		}
 
 		@Override
-		public void serialize(DataOutput out, Bean<?> bean) throws IOException
+		public void serialize(DataOutput out, Bean<?> bean)
 		{
 			DataOutput2 do2 = (DataOutput2)out;
 			OctetsStream os = OctetsStream.wrap(do2.buf, do2.pos);
@@ -189,7 +189,7 @@ public class StorageMapDB implements Storage
 		{
 			int format = in.readByte();
 			if(format != 0)
-			    throw new RuntimeException("unknown record value format(" + format + ") in table(" + _tablename + ')');
+			    throw new IllegalStateException("unknown record value format(" + format + ") in table(" + _tablename + ')');
 			DataInput2 di2 = (DataInput2)in;
 			ByteBuffer bb = di2.buf;
 			Bean<?> bean;
@@ -359,7 +359,7 @@ public class StorageMapDB implements Storage
 		}
 
 		@Override
-		public void serialize(DataOutput out, int start, int end, Object[] keys) throws IOException
+		public void serialize(DataOutput out, int start, int end, Object[] keys)
 		{
 			if(_serializer == null)
 			{
@@ -450,7 +450,7 @@ public class StorageMapDB implements Storage
 	}
 
 	@Override
-	public void openDB(File file) throws IOException
+	public void openDB(File file)
 	{
 		closeDB();
 		DBMaker<?> dbmaker = DBMaker.newFileDB(file);
@@ -532,7 +532,7 @@ public class StorageMapDB implements Storage
 	public long backupDB(File fdst) throws IOException
 	{
 		if(_dbfile == null)
-		    throw new RuntimeException("current database is not opened");
+		    throw new IllegalStateException("current database is not opened");
 		File fsrc_p = new File(_dbfile.getAbsolutePath() + ".p");
 		File fdst_tmp = new File(fdst.getAbsolutePath() + ".tmp");
 		File fdst_p = new File(fdst.getAbsolutePath() + ".p");

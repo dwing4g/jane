@@ -18,6 +18,26 @@ public final class Log
 	public static final boolean hasWarn  = log.isWarnEnabled();
 	public static final boolean hasError = log.isErrorEnabled();
 
+	static
+	{
+		Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler()
+		{
+			@Override
+			public void uncaughtException(Thread t, Throwable e)
+			{
+				try
+				{
+					log.error("thread(" + t + "): uncaught fatal exception: ", e);
+				}
+				catch(Throwable ex)
+				{
+					ex.printStackTrace();
+				}
+				e.printStackTrace();
+			}
+		});
+	}
+
 	/**
 	 * 在日志中记录一些系统信息
 	 */

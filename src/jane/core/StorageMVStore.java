@@ -204,7 +204,7 @@ public class StorageMVStore implements Storage
 			{
 				int format = os.unmarshalByte();
 				if(format != 0)
-				    throw new RuntimeException("unknown record value format(" + format + ") in table(" + _tablename + ')');
+				    throw new IllegalStateException("unknown record value format(" + format + ") in table(" + _tablename + ')');
 				b.unmarshal(os);
 				buf.position(os.position() - offset);
 			}
@@ -304,7 +304,7 @@ public class StorageMVStore implements Storage
 	}
 
 	@Override
-	public void openDB(File file) throws IOException
+	public void openDB(File file)
 	{
 		closeDB();
 		_db = new MVStore.Builder().fileName(file.getPath()).autoCommitDisabled().cacheSize(Const.mvStoreCacheSize).open();
@@ -441,7 +441,7 @@ public class StorageMVStore implements Storage
 	public long backupDB(File fdst) throws IOException
 	{
 		if(_dbfile == null)
-		    throw new RuntimeException("current database is not opened");
+		    throw new IllegalStateException("current database is not opened");
 		File fdst_tmp = new File(fdst.getAbsolutePath() + ".tmp");
 		long r;
 		if(!_db.isClosed())

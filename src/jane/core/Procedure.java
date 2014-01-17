@@ -89,7 +89,7 @@ public abstract class Procedure implements Runnable
 				}
 				catch(Throwable e)
 				{
-					Log.log.error("procedure timeout thread exception:", e);
+					Log.log.error("procedure timeout thread fatal exception:", e);
 				}
 			}
 		}, 5);
@@ -142,7 +142,7 @@ public abstract class Procedure implements Runnable
 	 */
 	protected void unlock()
 	{
-		if(_ctx == null) throw new RuntimeException("invalid lock/unlock out of procedure");
+		if(_ctx == null) throw new IllegalStateException("invalid lock/unlock out of procedure");
 		if(_ctx.lockcount == 0) return;
 		for(int i = _ctx.lockcount - 1; i >= 0; --i)
 			_ctx.locks[i].unlock();
@@ -200,7 +200,7 @@ public abstract class Procedure implements Runnable
 		unlock();
 		int n = lockids.length;
 		if(n > Const.maxLockPerProcedure)
-		    throw new RuntimeException("lock exceed: " + n + '>' + Const.maxLockPerProcedure);
+		    throw new IllegalStateException("lock exceed: " + n + '>' + Const.maxLockPerProcedure);
 		Arrays.sort(lockids);
 		for(int i = 0; i < n;)
 		{
@@ -221,7 +221,7 @@ public abstract class Procedure implements Runnable
 		unlock();
 		int n = lockids.size();
 		if(n > Const.maxLockPerProcedure)
-		    throw new RuntimeException("lock exceed: " + n + '>' + Const.maxLockPerProcedure);
+		    throw new IllegalStateException("lock exceed: " + n + '>' + Const.maxLockPerProcedure);
 		int[] ids = new int[n];
 		int i = 0;
 		if(lockids instanceof RandomAccess)
@@ -254,7 +254,7 @@ public abstract class Procedure implements Runnable
 		unlock();
 		int n = lockids.size();
 		if(n > Const.maxLockPerProcedure)
-		    throw new RuntimeException("lock exceed: " + n + '>' + Const.maxLockPerProcedure);
+		    throw new IllegalStateException("lock exceed: " + n + '>' + Const.maxLockPerProcedure);
 		int i = 0;
 		for(int lockid : lockids)
 		{
@@ -273,7 +273,7 @@ public abstract class Procedure implements Runnable
 	{
 		int n = lockids.length;
 		if(n + 4 > Const.maxLockPerProcedure)
-		    throw new RuntimeException("lock exceed: " + (n + 4) + '>' + Const.maxLockPerProcedure);
+		    throw new IllegalStateException("lock exceed: " + (n + 4) + '>' + Const.maxLockPerProcedure);
 		lockids = Arrays.copyOf(lockids, n + 4);
 		lockids[n] = lockid0;
 		lockids[n + 1] = lockid1;
@@ -503,7 +503,7 @@ public abstract class Procedure implements Runnable
 		ReadLock rl = null;
 		try
 		{
-			if(_ctx != null) throw new RuntimeException("invalid running in procedure");
+			if(_ctx != null) throw new IllegalStateException("invalid running in procedure");
 			rl = _rwl_commit.readLock();
 			rl.lock();
 			if(DBManager.instance().isExit())
@@ -528,12 +528,12 @@ public abstract class Procedure implements Runnable
 			{
 				onException(e);
 			}
-			catch(Throwable e2)
+			catch(Throwable ex)
 			{
 				if(_sid != null)
-					Log.log.error("procedure.onException exception: sid=" + _sid, e2);
+					Log.log.error("procedure.onException exception: sid=" + _sid, ex);
 				else
-					Log.log.error("procedure.onException exception:", e2);
+					Log.log.error("procedure.onException exception:", ex);
 			}
 		}
 		finally
@@ -563,7 +563,7 @@ public abstract class Procedure implements Runnable
 	/**
 	 * 可由子类继承的事务异常处理
 	 */
-	protected void onException(Throwable e) throws Exception
+	protected void onException(Throwable e)
 	{
 		if(_sid != null)
 			Log.log.error("procedure exception: sid=" + _sid, e);

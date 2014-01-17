@@ -91,7 +91,7 @@ public class BeanManager extends IoHandlerAdapter
 				}
 				catch(Throwable e)
 				{
-					Log.log.error("BeanManager: RPC timeout thread exception:", e);
+					Log.log.error("BeanManager: RPC timeout thread fatal exception:", e);
 				}
 			}
 		}, Const.rpcCheckInterval, Const.rpcCheckInterval, TimeUnit.SECONDS);
@@ -255,40 +255,40 @@ public class BeanManager extends IoHandlerAdapter
 			{
 				if(!future.isConnected())
 				{
-					++_count;
-					Log.log.debug("{}: connect failed: addr={},count={}", _name, addr, _count);
-					int delay_sec = onConnectFailed(addr, _count, ctx);
-					if(delay_sec == 0)
+					try
 					{
-						try
+						++_count;
+						Log.log.debug("{}: connect failed: addr={},count={}", _name, addr, _count);
+						int delay_sec = onConnectFailed(addr, _count, ctx);
+						if(delay_sec == 0)
 						{
 							Log.log.debug("{}: reconnecting addr={},count={}", _name, addr, _count);
 							_connector.connect(addr).addListener(this);
 						}
-						catch(Throwable e)
+						else if(delay_sec > 0)
 						{
-							Log.log.error("BeanManager.startClient: startClient exception:", e);
+							final IoFutureListener<ConnectFuture> listener = this;
+							schedule(new Runnable()
+							{
+								@Override
+								public void run()
+								{
+									try
+									{
+										Log.log.debug("{}: reconnecting addr={},count={}", _name, addr, _count);
+										_connector.connect(addr).addListener(listener);
+									}
+									catch(Throwable e)
+									{
+										Log.log.error("BeanManager.startClient.operationComplete: scheduled exception:", e);
+									}
+								}
+							}, delay_sec);
 						}
 					}
-					else if(delay_sec > 0)
+					catch(Throwable e)
 					{
-						final IoFutureListener<ConnectFuture> listener = this;
-						schedule(new Runnable()
-						{
-							@Override
-							public void run()
-							{
-								try
-								{
-									Log.log.debug("{}: reconnecting addr={},count={}", _name, addr, _count);
-									_connector.connect(addr).addListener(listener);
-								}
-								catch(Throwable e)
-								{
-									Log.log.error("BeanManager.startClient: startClient exception:", e);
-								}
-							}
-						}, delay_sec);
+						Log.log.error("BeanManager.startClient.operationComplete: exception:", e);
 					}
 				}
 			}
@@ -467,14 +467,14 @@ public class BeanManager extends IoHandlerAdapter
 	}
 
 	@Override
-	public void sessionClosed(IoSession session) throws Exception
+	public void sessionClosed(IoSession session)
 	{
 		if(Log.hasDebug) Log.log.debug("{}({}): close: {}", _name, session.getId(), session.getRemoteAddress());
 		onDelSession(session);
 	}
 
 	@Override
-	public void messageReceived(IoSession session, Object message) throws Exception
+	public void messageReceived(IoSession session, Object message)
 	{
 		if(Log.hasTrace) Log.log.trace("{}({}): recv: {}:{}", _name, session.getId(), message.getClass().getSimpleName(), message);
 		Bean<?> bean = (Bean<?>)message;
@@ -495,7 +495,7 @@ public class BeanManager extends IoHandlerAdapter
 	}
 
 	@Override
-	public void messageSent(IoSession session, Object message) throws Exception
+	public void messageSent(IoSession session, Object message)
 	{
 		if(Log.hasTrace) Log.log.trace("{}({}): send: {}:{}", _name, session.getId(), message.getClass().getSimpleName(), message);
 		Bean<?> bean = (Bean<?>)message;
@@ -515,14 +515,14 @@ public class BeanManager extends IoHandlerAdapter
 	}
 
 	@Override
-	public void sessionIdle(IoSession session, IdleStatus status) throws Exception
+	public void sessionIdle(IoSession session, IdleStatus status)
 	{
 		if(Log.hasTrace) Log.log.trace("{}({}): idle: {}", _name, session.getId(), status);
 		onIdleSession(session);
 	}
 
 	@Override
-	public void exceptionCaught(IoSession session, Throwable cause) throws Exception
+	public void exceptionCaught(IoSession session, Throwable cause)
 	{
 		Log.log.error(_name + '(' + session.getId() + ',' + session.getRemoteAddress() + "): exception:", cause);
 		session.close(false);
