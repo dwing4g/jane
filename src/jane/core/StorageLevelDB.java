@@ -130,7 +130,6 @@ public class StorageLevelDB implements Storage
 			Octets key_from = getKey(from);
 			Octets key_to = getKey(to);
 			long iter = 0;
-			boolean r = true;
 			try
 			{
 				if(!reverse)
@@ -144,11 +143,7 @@ public class StorageLevelDB implements Storage
 						int comp = key_os.compareTo(key_to);
 						if(comp >= 0 && (comp > 0 || !inclusive)) break;
 						key_os.setPosition(_tableidlen);
-						if(!handler.onWalk(key_os.unmarshalLong()))
-						{
-							r = false;
-							break;
-						}
+						if(!handler.onWalk(key_os.unmarshalLong())) return false;
 					}
 				}
 				else
@@ -162,11 +157,7 @@ public class StorageLevelDB implements Storage
 						int comp = key_os.compareTo(key_from);
 						if(comp <= 0 && (comp < 0 || !inclusive)) break;
 						key_os.setPosition(_tableidlen);
-						if(!handler.onWalk(key_os.unmarshalLong()))
-						{
-							r = false;
-							break;
-						}
+						if(!handler.onWalk(key_os.unmarshalLong())) return false;
 					}
 				}
 			}
@@ -178,7 +169,7 @@ public class StorageLevelDB implements Storage
 			{
 				if(iter != 0) leveldb_iter_delete(iter);
 			}
-			return r;
+			return true;
 		}
 
 		@Override
@@ -253,7 +244,6 @@ public class StorageLevelDB implements Storage
 				key_to = t;
 			}
 			long iter = 0;
-			boolean r = true;
 			try
 			{
 				if(!reverse)
@@ -267,11 +257,7 @@ public class StorageLevelDB implements Storage
 						int comp = key_os.compareTo(key_to);
 						if(comp >= 0 && (comp > 0 || !inclusive)) break;
 						key_os.setPosition(_tableidlen);
-						if(!onWalk(handler, key_os))
-						{
-							r = false;
-							break;
-						}
+						if(!onWalk(handler, key_os)) return false;
 					}
 				}
 				else
@@ -285,11 +271,7 @@ public class StorageLevelDB implements Storage
 						int comp = key_os.compareTo(key_from);
 						if(comp <= 0 && (comp < 0 || !inclusive)) break;
 						key_os.setPosition(_tableidlen);
-						if(!onWalk(handler, key_os))
-						{
-							r = false;
-							break;
-						}
+						if(!onWalk(handler, key_os)) return false;
 					}
 				}
 			}
@@ -301,7 +283,7 @@ public class StorageLevelDB implements Storage
 			{
 				if(iter != 0) leveldb_iter_delete(iter);
 			}
-			return r;
+			return true;
 		}
 	}
 

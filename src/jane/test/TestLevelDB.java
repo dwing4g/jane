@@ -32,7 +32,14 @@ public final class TestLevelDB
 
 	private static void dumpOctets(Octets o)
 	{
+		System.out.print("=== ");
 		System.out.println(o != null ? o.dump() : "null");
+	}
+
+	private static void dumpBytes(byte[] b)
+	{
+		System.out.print("=== ");
+		System.out.println(b != null ? Octets.wrap(b).dump() : "null");
 	}
 
 	public static void main(String[] args)
@@ -44,16 +51,38 @@ public final class TestLevelDB
 			System.err.println("ERROR: leveldb_open failed");
 			return;
 		}
-
 		System.out.println("start");
-		Octets k = Octets.wrap(new byte[] { 1, 2, 3 });
-		dumpOctets(dbget(k));
-		dbput(k, OctetsStream.wrap(new byte[] { 4, 5, 6 }));
+
+		OctetsStream k = OctetsStream.wrap(new byte[] { 1, 2, 3 });
+		OctetsStream v = OctetsStream.wrap(new byte[] { 4, 5, 6 });
+		dumpOctets(dbget(k)); // null
+		dbput(k, v);
 		dbflush();
-		dumpOctets(dbget(k));
+		dumpOctets(dbget(k)); // [04 05 06]:0
 		dbput(k, _deleted);
 		dbflush();
-		dumpOctets(dbget(k));
+		dumpOctets(dbget(k)); // null
+
+		System.out.println("iter");
+		dbput(k, v);
+		dbput(v, k);
+		dbflush();
+		long it = StorageLevelDB.leveldb_iter_new(_db, k.array(), k.size(), 2);
+		dumpBytes(StorageLevelDB.leveldb_iter_value(it));// [04 05 06]
+		dumpBytes(StorageLevelDB.leveldb_iter_next(it)); // [01 02 03]
+		dumpBytes(StorageLevelDB.leveldb_iter_value(it));// [01 02 03]
+		dumpBytes(StorageLevelDB.leveldb_iter_next(it)); // [04 05 06]
+		dumpBytes(StorageLevelDB.leveldb_iter_value(it));// null
+		dumpBytes(StorageLevelDB.leveldb_iter_next(it)); // null
+		dumpBytes(StorageLevelDB.leveldb_iter_value(it));// null
+		dumpBytes(StorageLevelDB.leveldb_iter_next(it)); // null
+		StorageLevelDB.leveldb_iter_delete(it);
+		dbput(k, _deleted);
+		dbput(v, _deleted);
+		dbflush();
+
+		System.out.println("compact");
+		StorageLevelDB.leveldb_compact(_db, null, 0, null, 0);
 
 		System.out.println("close");
 		StorageLevelDB.leveldb_close(_db);
