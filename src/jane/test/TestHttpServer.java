@@ -46,9 +46,9 @@ public final class TestHttpServer extends BeanManager
 		param.add("Content-Type: text/html; charset=UTF-8");
 		param.add("Cache-Control: private");
 		param.add("Pragma: no-cache");
-		HttpCodec.sendHead(session, 200, -1, param);
-		HttpCodec.sendChunk(session, "<html><body>TestHttpServer OK</body></html>");
-		HttpCodec.sendChunkEnd(session);
+		HttpCodec.sendHead(this, session, 200, -1, param);
+		HttpCodec.sendChunk(this, session, "<html><body>TestHttpServer OK</body></html>");
+		HttpCodec.sendChunkEnd(this, session);
 	}
 
 	@Override

@@ -340,16 +340,36 @@ public class BeanManager extends IoHandlerAdapter
 	}
 
 	/**
+	 * 唯一的发送入口
+	 */
+	@SuppressWarnings("static-method")
+	protected boolean write(IoSession session, Object obj)
+	{
+		return session.write(obj).getException() == null;
+	}
+
+	/**
 	 * 向某个连接发送bean
 	 * <p>
 	 * 此操作是异步的
 	 * @param bean 如果是RawBean类型,考虑到性能问题,在发送完成前不能修改其中的data对象
 	 * @return 如果连接已经失效则返回false, 否则返回true
 	 */
-	@SuppressWarnings("static-method")
 	public boolean send(IoSession session, Bean<?> bean)
 	{
-		return !session.isClosing() && session.write(bean).getException() == null;
+		return !session.isClosing() && write(session, bean);
+	}
+
+	/**
+	 * 向某个连接发送数据
+	 * <p>
+	 * 小心使用此接口,一般情况不要使用<br>
+	 * 此操作是异步的
+	 * @return 如果连接已经失效则返回false, 否则返回true
+	 */
+	public boolean sendRaw(IoSession session, Object obj)
+	{
+		return !session.isClosing() && write(session, obj);
 	}
 
 	/**
@@ -360,12 +380,11 @@ public class BeanManager extends IoHandlerAdapter
 	 * @param callback 可设置一个回调对象,用于在发送成功后回调. null表示不回调
 	 * @return 如果连接已经失效则返回false, 否则返回true
 	 */
-	@SuppressWarnings("static-method")
 	public <A extends Bean<A>> boolean send(IoSession session, A bean, BeanHandler<A> callback)
 	{
 		if(session.isClosing()) return false;
 		bean.setSendCallBack(callback);
-		return session.write(bean).getException() == null;
+		return write(session, bean);
 	}
 
 	/**
@@ -396,7 +415,7 @@ public class BeanManager extends IoHandlerAdapter
 	public void clientBroadcast(Bean<?> bean)
 	{
 		for(IoSession session : getClientSessions().values())
-			if(!session.isClosing()) session.write(bean);
+			if(!session.isClosing()) write(session, bean);
 	}
 
 	/**
@@ -407,7 +426,7 @@ public class BeanManager extends IoHandlerAdapter
 	public void serverBroadcast(Bean<?> bean)
 	{
 		for(IoSession session : getServerSessions().values())
-			if(!session.isClosing()) session.write(bean);
+			if(!session.isClosing()) write(session, bean);
 	}
 
 	/**

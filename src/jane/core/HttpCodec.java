@@ -201,7 +201,7 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 	 * <li>len > 0: 后续使用{@link #send}发送固定长度的数据
 	 * @param heads 额外发送的HTTP头. 每个元素表示一行文字,没有做验证,所以小心使用,可传null表示无任何额外的头信息
 	 */
-	public static boolean sendHead(IoSession session, int code, int len, Iterable<String> heads)
+	public static boolean sendHead(BeanManager mgr, IoSession session, int code, int len, Iterable<String> heads)
 	{
 		if(session.isClosing()) return false;
 		StringBuilder sb = new StringBuilder(1024);
@@ -221,27 +221,27 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 		byte[] out = new byte[n];
 		for(int i = 0; i < n; ++i)
 			out[i] = (byte)sb.charAt(i);
-		return session.write(out).getException() == null;
+		return mgr.write(session, out);
 	}
 
-	public static boolean send(IoSession session, byte[] data)
+	public static boolean send(BeanManager mgr, IoSession session, byte[] data)
 	{
-		return !session.isClosing() && session.write(data).getException() == null;
+		return !session.isClosing() && mgr.write(session, data);
 	}
 
-	public static boolean send(IoSession session, Octets data)
+	public static boolean send(BeanManager mgr, IoSession session, Octets data)
 	{
-		return !session.isClosing() && session.write(data).getException() == null;
+		return !session.isClosing() && mgr.write(session, data);
 	}
 
-	public static boolean sendChunk(IoSession session, byte[] chunk)
+	public static boolean sendChunk(BeanManager mgr, IoSession session, byte[] chunk)
 	{
 		if(session.isClosing()) return false;
 		int n = chunk.length;
-		return n <= 0 || session.write(ByteBuffer.wrap(chunk, 0, n)).getException() == null;
+		return n <= 0 || mgr.write(session, ByteBuffer.wrap(chunk, 0, n));
 	}
 
-	public static boolean sendChunk(IoSession session, Octets chunk)
+	public static boolean sendChunk(BeanManager mgr, IoSession session, Octets chunk)
 	{
 		if(session.isClosing()) return false;
 		int n = chunk.remain();
@@ -249,17 +249,17 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 		ByteBuffer buf = (chunk instanceof OctetsStream ?
 		        ByteBuffer.wrap(chunk.array(), ((OctetsStream)chunk).position(), n) :
 		        ByteBuffer.wrap(chunk.array(), 0, n));
-		return session.write(buf).getException() == null;
+		return mgr.write(session, buf);
 	}
 
-	public static boolean sendChunk(IoSession session, String chunk)
+	public static boolean sendChunk(BeanManager mgr, IoSession session, String chunk)
 	{
-		return sendChunk(session, Octets.wrap(chunk.getBytes(Const.stringCharsetUTF8)));
+		return sendChunk(mgr, session, Octets.wrap(chunk.getBytes(Const.stringCharsetUTF8)));
 	}
 
-	public static boolean sendChunkEnd(IoSession session)
+	public static boolean sendChunkEnd(BeanManager mgr, IoSession session)
 	{
-		return !session.isClosing() && session.write(CHUNK_END_MARK).getException() == null;
+		return !session.isClosing() && mgr.write(session, CHUNK_END_MARK);
 	}
 
 	@Override
