@@ -25,7 +25,7 @@ import org.apache.mina.filter.codec.ProtocolEncoderOutput;
  * 输出(编码): OctetsStream(从position到结尾的数据),或Octets,或byte[]<br>
  * 输入处理: 获取HTTP头中的条目,method,url-path,url-param,content-charset,以及cookie条目,支持url编码的解码<br>
  * 输出处理: 固定长度输出,chunked方式输出<br>
- * 不直接支持: https, mime, Connection:close/timeout, Accept-Encoding, Set-Cookie, Multi-Part, encodeUrl, cookie value with "; "
+ * 不直接支持: https, mime, Connection:close/timeout, Accept-Encoding, Set-Cookie, Multi-Part, encodeUrl
  */
 public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolEncoder, ProtocolCodecFactory
 {
@@ -86,7 +86,7 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 		return new String(dst, 0, dstpos, Const.stringCharsetUTF8);
 	}
 
-	public static String getHeadMethod(OctetsStream head)
+	public static String getHeadVerb(OctetsStream head)
 	{
 		int p = head.find(0, head.position(), (byte)' ');
 		return p < 0 ? "" : new String(head.array(), 0, p, Const.stringCharsetUTF8);
@@ -102,7 +102,7 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 		if(q < 0) return "";
 		int r = head.find(p, q, (byte)'?');
 		if(r >= p && r < q) q = r;
-		return new String(head.array(), p, q - p, Const.stringCharsetUTF8);
+		return decodeUrl(head.array(), p, q - p);
 	}
 
 	/**
@@ -161,7 +161,7 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 	 * 获取HTTP请求头中的条目
 	 * @param key 格式示例: "\r\nReferer: ".getBytes()
 	 */
-	public static String getHeadProp(OctetsStream head, byte[] key)
+	public static String getHeadParam(OctetsStream head, byte[] key)
 	{
 		int p = head.find(0, head.position(), key);
 		if(p < 0) return "";
@@ -173,18 +173,21 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 
 	public static String getHeadCharset(OctetsStream head)
 	{
-		String conttype = getHeadProp(head, CONT_TYPE_MARK);
+		String conttype = getHeadParam(head, CONT_TYPE_MARK);
 		if(conttype.isEmpty()) return DEF_CONT_CHARSET; // default charset
 		Matcher mat = PATTERN_CHARSET.matcher(conttype);
 		return mat.find() ? mat.group(1) : DEF_CONT_CHARSET;
 	}
 
 	/**
+	 * 获取HTTP请求头中的所有cookie键值
+	 * <p>
+	 * 注意: 不支持cookie值中含有"; "
 	 * @return 获取的cookie数量
 	 */
 	public static int getHeadCookie(OctetsStream head, Map<String, String> cookies)
 	{
-		String cookie = getHeadProp(head, COOKIE_MARK);
+		String cookie = getHeadParam(head, COOKIE_MARK);
 		if(cookie.isEmpty()) return 0;
 		Matcher mat = PATTERN_COOKIE.matcher(cookie);
 		int n = 0;

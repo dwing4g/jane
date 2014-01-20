@@ -12,7 +12,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.service.IoHandler;
-import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.ProtocolCodecFactory;
@@ -31,7 +30,7 @@ import org.mapdb.LongMap.LongMapIterator;
  * <li>服务器监听: 用于监听端口,并管理连接到此的所有连接处理
  * <li>客户端连接: 用于连接到服务器的一条连接处理
  */
-public class BeanManager extends IoHandlerAdapter
+public class BeanManager implements IoHandler
 {
 	private static final LongMap<RpcBean<?, ?>>   _rpcs     = new LongConcurrentHashMap<RpcBean<?, ?>>(); // 当前管理器等待回复的RPC
 	private static final ScheduledExecutorService _rpc_thread;                                           // 处理RPC超时和重连的线程
@@ -474,6 +473,11 @@ public class BeanManager extends IoHandlerAdapter
 	 * @param session 指定的地址
 	 */
 	protected void onIdleSession(IoSession session)
+	{
+	}
+
+	@Override
+	public void sessionCreated(IoSession session) throws Exception
 	{
 	}
 
