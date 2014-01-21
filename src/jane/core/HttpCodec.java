@@ -205,13 +205,13 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 
 	/**
 	 * 发送HTTP的回复头
-	 * @param code 回复的HTTP状态码. 如200表示正常
+	 * @param code 回复的HTTP状态码字符串. 如"200 OK"表示正常
 	 * @param len
 	 * <li>len < 0: 使用chunked模式,后续发送若干个{@link #sendChunk},最后发送{@link #sendChunkEnd}
 	 * <li>len > 0: 后续使用{@link #send}发送固定长度的数据
 	 * @param heads 额外发送的HTTP头. 每个元素表示一行文字,没有做验证,所以小心使用,可传null表示无任何额外的头信息
 	 */
-	public static boolean sendHead(NetManager mgr, IoSession session, int code, int len, Iterable<String> heads)
+	public static boolean sendHead(NetManager mgr, IoSession session, String code, long len, Iterable<String> heads)
 	{
 		if(session.isClosing()) return false;
 		StringBuilder sb = new StringBuilder(1024);
