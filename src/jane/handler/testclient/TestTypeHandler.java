@@ -3,8 +3,8 @@ package jane.handler.testclient;
 import org.apache.mina.core.session.IoSession;
 import jane.bean.TestType;
 import jane.core.BeanHandler;
-import jane.core.BeanManager;
 import jane.core.Log;
+import jane.core.NetManager;
 
 public class TestTypeHandler extends BeanHandler<TestType>
 {
@@ -31,7 +31,7 @@ public class TestTypeHandler extends BeanHandler<TestType>
 	\*/
 
 	@Override
-	public void onProcess(BeanManager manager, IoSession session, TestType arg)
+	public void onProcess(NetManager manager, IoSession session, TestType arg)
 	{
 		Log.log.debug("{}.onProcess: arg={}", getClass().getName(), arg);
 	}

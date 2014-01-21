@@ -3,10 +3,10 @@ package jane.test;
 import java.net.InetSocketAddress;
 import org.apache.mina.core.session.IoSession;
 import jane.bean.AllBeans;
-import jane.core.BeanManager;
 import jane.core.Log;
+import jane.core.NetManager;
 
-public final class TestClient extends BeanManager
+public final class TestClient extends NetManager
 {
 	private static final int        MAX_CONNECT_DELAY_SEC = 60;
 	private static final TestClient _instance             = new TestClient();

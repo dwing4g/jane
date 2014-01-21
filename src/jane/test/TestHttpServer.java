@@ -8,11 +8,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import org.apache.mina.core.session.IoSession;
-import jane.core.BeanManager;
 import jane.core.HttpCodec;
+import jane.core.NetManager;
 import jane.core.OctetsStream;
 
-public final class TestHttpServer extends BeanManager
+public final class TestHttpServer extends NetManager
 {
 	public TestHttpServer()
 	{

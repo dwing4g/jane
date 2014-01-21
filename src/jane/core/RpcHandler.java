@@ -19,7 +19,7 @@ public abstract class RpcHandler<A extends Bean<A>, R extends Bean<R>> extends B
 	 * @param res
 	 * @return 返回true且res不为null时会立即自动发送回复, 否则不自动发送回复
 	 */
-	public boolean onServer(BeanManager manager, IoSession session, A arg, R res) throws Exception
+	public boolean onServer(NetManager manager, IoSession session, A arg, R res) throws Exception
 	{
 		return true;
 	}
@@ -33,7 +33,7 @@ public abstract class RpcHandler<A extends Bean<A>, R extends Bean<R>> extends B
 	 * @param arg
 	 * @param res
 	 */
-	public void onClient(BeanManager manager, IoSession session, A arg, R res) throws Exception
+	public void onClient(NetManager manager, IoSession session, A arg, R res) throws Exception
 	{
 	}
 
@@ -47,18 +47,18 @@ public abstract class RpcHandler<A extends Bean<A>, R extends Bean<R>> extends B
 	 * @param session
 	 * @param arg
 	 */
-	public void onTimeout(BeanManager manager, IoSession session, A arg) throws Exception
+	public void onTimeout(NetManager manager, IoSession session, A arg) throws Exception
 	{
 	}
 
 	@SuppressWarnings("unchecked")
-	final void timeout(BeanManager manager, IoSession session, Object arg) throws Exception
+	final void timeout(NetManager manager, IoSession session, Object arg) throws Exception
 	{
 		onTimeout(manager, session, (A)arg);
 	}
 
 	@Override
-	public void onProcess(BeanManager manager, IoSession session, RpcBean<A, R> rpcbean) throws Exception
+	public void onProcess(NetManager manager, IoSession session, RpcBean<A, R> rpcbean) throws Exception
 	{
 		if(rpcbean.isRequest())
 		{
@@ -75,7 +75,7 @@ public abstract class RpcHandler<A extends Bean<A>, R extends Bean<R>> extends B
 		else
 		{
 			@SuppressWarnings("unchecked")
-			RpcBean<A, R> rpcbean_old = (RpcBean<A, R>)BeanManager.removeRpc(rpcbean.getRpcId());
+			RpcBean<A, R> rpcbean_old = (RpcBean<A, R>)NetManager.removeRpc(rpcbean.getRpcId());
 			if(rpcbean_old != null)
 			{
 				rpcbean_old.setSession(null); // 绑定期已过,清除对session的引用

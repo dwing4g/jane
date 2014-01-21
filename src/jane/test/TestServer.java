@@ -3,10 +3,10 @@ package jane.test;
 import org.apache.mina.core.session.IoSession;
 import jane.bean.AllBeans;
 import jane.bean.TestBean;
-import jane.core.BeanManager;
+import jane.core.NetManager;
 import jane.core.RC4Filter;
 
-public final class TestServer extends BeanManager
+public final class TestServer extends NetManager
 {
 	private static final TestServer _instance = new TestServer();
 

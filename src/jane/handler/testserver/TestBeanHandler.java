@@ -5,8 +5,8 @@ import jane.bean.TestBean;
 import jane.bean.TestRpcBean;
 import jane.bean.TestType;
 import jane.core.BeanHandler;
-import jane.core.BeanManager;
 import jane.core.Log;
+import jane.core.NetManager;
 import jane.core.RpcHandler;
 
 public class TestBeanHandler extends BeanHandler<TestBean>
@@ -19,20 +19,20 @@ public class TestBeanHandler extends BeanHandler<TestBean>
 	\*/
 
 	@Override
-	public void onProcess(BeanManager manager, IoSession session, TestBean arg)
+	public void onProcess(NetManager manager, IoSession session, TestBean arg)
 	{
 		Log.log.debug("{}: arg={}", getClass().getName(), arg);
 		manager.sendRpc(session, new TestRpcBean(arg), new RpcHandler<TestBean, TestType>()
 		{
 			@Override
-			public void onClient(BeanManager mgr, IoSession ses, TestBean a, TestType r)
+			public void onClient(NetManager mgr, IoSession ses, TestBean a, TestType r)
 			{
 				Log.log.info("{}: onClient: a={},r={}", getClass().getName(), a, r);
 				ses.close(false);
 			}
 
 			@Override
-			public void onTimeout(BeanManager mgr, IoSession ses, TestBean a)
+			public void onTimeout(NetManager mgr, IoSession ses, TestBean a)
 			{
 				Log.log.info("{}: onTimeout: {}", getClass().getName(), a);
 				ses.close(false);

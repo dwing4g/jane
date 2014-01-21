@@ -204,7 +204,7 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 	 * <li>len > 0: 后续使用{@link #send}发送固定长度的数据
 	 * @param heads 额外发送的HTTP头. 每个元素表示一行文字,没有做验证,所以小心使用,可传null表示无任何额外的头信息
 	 */
-	public static boolean sendHead(BeanManager mgr, IoSession session, int code, int len, Iterable<String> heads)
+	public static boolean sendHead(NetManager mgr, IoSession session, int code, int len, Iterable<String> heads)
 	{
 		if(session.isClosing()) return false;
 		StringBuilder sb = new StringBuilder(1024);
@@ -227,24 +227,24 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 		return mgr.write(session, out);
 	}
 
-	public static boolean send(BeanManager mgr, IoSession session, byte[] data)
+	public static boolean send(NetManager mgr, IoSession session, byte[] data)
 	{
 		return !session.isClosing() && mgr.write(session, data);
 	}
 
-	public static boolean send(BeanManager mgr, IoSession session, Octets data)
+	public static boolean send(NetManager mgr, IoSession session, Octets data)
 	{
 		return !session.isClosing() && mgr.write(session, data);
 	}
 
-	public static boolean sendChunk(BeanManager mgr, IoSession session, byte[] chunk)
+	public static boolean sendChunk(NetManager mgr, IoSession session, byte[] chunk)
 	{
 		if(session.isClosing()) return false;
 		int n = chunk.length;
 		return n <= 0 || mgr.write(session, ByteBuffer.wrap(chunk, 0, n));
 	}
 
-	public static boolean sendChunk(BeanManager mgr, IoSession session, Octets chunk)
+	public static boolean sendChunk(NetManager mgr, IoSession session, Octets chunk)
 	{
 		if(session.isClosing()) return false;
 		int n = chunk.remain();
@@ -255,12 +255,12 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 		return mgr.write(session, buf);
 	}
 
-	public static boolean sendChunk(BeanManager mgr, IoSession session, String chunk)
+	public static boolean sendChunk(NetManager mgr, IoSession session, String chunk)
 	{
 		return sendChunk(mgr, session, Octets.wrap(chunk.getBytes(Const.stringCharsetUTF8)));
 	}
 
-	public static boolean sendChunkEnd(BeanManager mgr, IoSession session)
+	public static boolean sendChunkEnd(NetManager mgr, IoSession session)
 	{
 		return !session.isClosing() && mgr.write(session, CHUNK_END_MARK);
 	}

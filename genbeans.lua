@@ -213,8 +213,8 @@ package #(hdl.path);
 
 import org.apache.mina.core.session.IoSession;
 import jane.core.BeanHandler;
-import jane.core.BeanManager;
 import jane.core.Log;
+import jane.core.NetManager;
 import ]=] .. namespace .. [=[.bean.#(bean.name);
 
 public class #(bean.name)Handler extends BeanHandler<#(bean.name)>
@@ -224,7 +224,7 @@ public class #(bean.name)Handler extends BeanHandler<#(bean.name)>
 #)#	\*/
 
 	@Override
-	public void onProcess(BeanManager manager, IoSession session, #(bean.name) arg)
+	public void onProcess(NetManager manager, IoSession session, #(bean.name) arg)
 	{
 		Log.log.debug("{}.onProcess: arg={}", getClass().getName(), arg);
 	}
@@ -235,8 +235,8 @@ local template_rpc_handler = [=[
 package #(hdl.path);
 
 import org.apache.mina.core.session.IoSession;
-import jane.core.BeanManager;
 import jane.core.Log;
+import jane.core.NetManager;
 import jane.core.RpcHandler;
 import ]=] .. namespace .. [=[.bean.#(bean_arg.name);#<#
 import ]=] .. namespace .. [=[.bean.#(bean_res.name);#>#
@@ -251,20 +251,20 @@ public class #(bean.name)Handler extends RpcHandler<#(bean_arg.name), #(bean_res
 #)#	\*/
 
 	@Override
-	public boolean onServer(BeanManager manager, IoSession session, #(bean_arg.name) arg, #(bean_res.name) res)
+	public boolean onServer(NetManager manager, IoSession session, #(bean_arg.name) arg, #(bean_res.name) res)
 	{
 		Log.log.debug("{}: onServer: {}", getClass().getName(), arg);
 		return true;
 	}
 
 	@Override
-	public void onClient(BeanManager manager, IoSession session, #(bean_arg.name) arg, #(bean_res.name) res)
+	public void onClient(NetManager manager, IoSession session, #(bean_arg.name) arg, #(bean_res.name) res)
 	{
 		Log.log.debug("{}: onClient: arg={},res={}", getClass().getName(), arg, res);
 	}
 
 	@Override
-	public void onTimeout(BeanManager manager, IoSession session, #(bean_arg.name) arg)
+	public void onTimeout(NetManager manager, IoSession session, #(bean_arg.name) arg)
 	{
 		Log.log.debug("{}: onTimeout: {}", getClass().getName(), arg);
 	}
