@@ -41,6 +41,11 @@ public final class TestHttpServer extends NetManager
 		HttpCodec.getHeadParams(os, 0, os.position(), params);
 		for(Entry<String, String> e : params.entrySet())
 			System.out.println("param: " + e.getKey() + ": " + e.getValue());
+		System.out.println("charset: " + HttpCodec.getHeadCharset(os));
+		params.clear();
+		HttpCodec.getHeadCookie(os, params);
+		for(Entry<String, String> e : params.entrySet())
+			System.out.println("cookie: " + e.getKey() + ": " + e.getValue());
 		List<String> param = new ArrayList<String>();
 		param.add("Server: jane");
 		param.add("Content-Type: text/html; charset=UTF-8");

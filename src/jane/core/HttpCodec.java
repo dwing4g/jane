@@ -23,7 +23,7 @@ import org.apache.mina.filter.codec.ProtocolEncoderOutput;
  * <p>
  * 输入(解码): OctetsStream类型,包括一次完整请求原始的HTTP头和内容,position指向内容的起始,如果没有内容则指向结尾<br>
  * 输出(编码): OctetsStream(从position到结尾的数据),或Octets,或byte[]<br>
- * 输入处理: 获取HTTP头中的条目,method,url-path,url-param,content-charset,以及cookie条目,支持url编码的解码<br>
+ * 输入处理: 获取HTTP头中的fields,method,url-path,url-param,content-charset,以及cookie,支持url编码的解码<br>
  * 输出处理: 固定长度输出,chunked方式输出<br>
  * 不直接支持: https, mime, Connection:close/timeout, Accept-Encoding, Set-Cookie, Multi-Part, encodeUrl
  */
@@ -108,7 +108,7 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 	/**
 	 * @return 获取的参数数量
 	 */
-	public static int getHeadParams(Octets oct, int pos, int len, Map<String, String> param)
+	public static int getHeadParams(Octets oct, int pos, int len, Map<String, String> params)
 	{
 		byte[] buf = oct.array();
 		if(pos < 0) pos = 0;
@@ -131,17 +131,17 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 			{
 				String k = decodeUrl(buf, p, r - p);
 				String v = decodeUrl(buf, r + 1, e - r - 1);
-				param.put(k, v);
+				params.put(k, v);
 			}
 			else
-				param.put(decodeUrl(buf, p, e - p), "");
+				params.put(decodeUrl(buf, p, e - p), "");
 		}
 		return n;
 	}
 
-	public static int getHeadParams(OctetsStream os, Map<String, String> param)
+	public static int getHeadParams(OctetsStream os, Map<String, String> params)
 	{
-		return getHeadParams(os, 0, os.position(), param);
+		return getHeadParams(os, 0, os.position(), params);
 	}
 
 	public static long getHeadLong(OctetsStream head, byte[] key)
@@ -158,10 +158,12 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 	}
 
 	/**
-	 * 获取HTTP请求头中的条目
+	 * 获取HTTP请求头中的field
+	 * <p>
+	 * 注意: 重复的field-key只有第一个生效
 	 * @param key 格式示例: "\r\nReferer: ".getBytes()
 	 */
-	public static String getHeadParam(OctetsStream head, byte[] key)
+	public static String getHeadField(OctetsStream head, byte[] key)
 	{
 		int p = head.find(0, head.position(), key);
 		if(p < 0) return "";
@@ -171,9 +173,14 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 		return decodeUrl(head.array(), p, e - p);
 	}
 
+	public static String getHeadField(OctetsStream head, String key)
+	{
+		return getHeadField(head, ("\r\n" + key + ": ").getBytes(Const.stringCharsetUTF8));
+	}
+
 	public static String getHeadCharset(OctetsStream head)
 	{
-		String conttype = getHeadParam(head, CONT_TYPE_MARK);
+		String conttype = getHeadField(head, CONT_TYPE_MARK);
 		if(conttype.isEmpty()) return DEF_CONT_CHARSET; // default charset
 		Matcher mat = PATTERN_CHARSET.matcher(conttype);
 		return mat.find() ? mat.group(1) : DEF_CONT_CHARSET;
@@ -187,7 +194,7 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 	 */
 	public static int getHeadCookie(OctetsStream head, Map<String, String> cookies)
 	{
-		String cookie = getHeadParam(head, COOKIE_MARK);
+		String cookie = getHeadField(head, COOKIE_MARK);
 		if(cookie.isEmpty()) return 0;
 		Matcher mat = PATTERN_COOKIE.matcher(cookie);
 		int n = 0;
