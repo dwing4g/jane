@@ -2,9 +2,9 @@
 package jane.bean;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import jane.core.Bean;
-import jane.core.BeanCodec;
 import jane.core.BeanHandler;
 import jane.core.IntMap;
 
@@ -13,8 +13,8 @@ public final class AllBeans
 {
 	private AllBeans() {}
 
-	/** 注册全部的beans到网络管理器. 必须在网络连接之前调用 */
-	public static void register()
+	/** 获取全部的bean实例 */
+	public static Collection<Bean<?>> getAllBeans()
 	{
 		List<Bean<?>> r = new ArrayList<Bean<?>>(6);
 		r.add(new TestBean());
@@ -23,7 +23,7 @@ public final class AllBeans
 		r.add(new TestEmpty());
 		r.add(new TestRpcBean());
 		r.add(new TestRpcBean2());
-		BeanCodec.registerAllBeans(r);
+		return r;
 	}
 
 	public static IntMap<BeanHandler<?>> getTestServerHandlers()
