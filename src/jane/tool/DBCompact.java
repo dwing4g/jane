@@ -29,9 +29,9 @@ public final class DBCompact
 		}
 		else if(filename.endsWith(".mv"))
 		{
-			MVStore db = new MVStore.Builder().fileName("mvstore.db").autoCommitDisabled().cacheSize(32).open();
+			MVStore db = new MVStore.Builder().fileName(filename).autoCommitDisabled().cacheSize(32).open();
 			System.err.println("INFO: compacting db ...");
-			System.err.println("INFO: compact result=" + db.compactMoveChunks()); // maybe not work
+			System.err.println("INFO: compact result=" + db.compactMoveChunks()); // maybe doesn't work
 			System.err.println("INFO: closing db ...");
 			db.close();
 		}
