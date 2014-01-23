@@ -13,8 +13,8 @@
  snappy/snappy.h                 |  184 ++++++
  util/env_posix.cc               |   18 +-
  util/env_windows.cc             |  385 ++++++++++++
- util/jni.cc                     |  425 +++++++++++++
- 16 files changed, 3370 insertions(+), 6 deletions(-)
+ util/jni.cc                     |  426 +++++++++++++
+ 16 files changed, 3371 insertions(+), 6 deletions(-)
 
 diff --git a/.gitignore b/.gitignore
 index 0630251..0dba0c5 100644
@@ -48,7 +48,7 @@ index cfc9981..a3e2c8e 100644
    struct CompactionState;
 diff --git a/make_linux.sh b/make_linux.sh
 new file mode 100644
-index 0000000..33ebd6f
+index 0000000..a32287a
 --- /dev/null
 +++ b/make_linux.sh
 @@ -0,0 +1,26 @@
@@ -64,7 +64,7 @@ index 0000000..33ebd6f
 +
 +OBJ_FILES="builder.o c.o db_impl.o db_iter.o dbformat.o filename.o log_reader.o log_writer.o memtable.o repair.o table_cache.o version_edit.o version_set.o write_batch.o block.o block_builder.o filter_block.o format.o iterator.o merger.o table.o table_builder.o two_level_iterator.o arena.o bloom.o cache.o coding.o comparator.o crc32c.o env.o env_posix.o filter_policy.o hash.o histogram.o jni.o logging.o options.o status.o testutil.o testharness.o port_posix.o snappy.o snappy-sinksource.o snappy-stubs-internal.o"
 +
-+COMPILE="g++ -DOS_LINUX -DLEVELDB_PLATFORM_POSIX -DSNAPPY -DENABLE_JNI -DNDEBUG -I. -Iinclude -Isnappy -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -O3 -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -fPIC -pipe -pthread -s"
++COMPILE="g++ -DOS_LINUX -DLEVELDB_PLATFORM_POSIX -DSNAPPY -DENABLE_JNI -DNDEBUG -I. -Iinclude -Isnappy -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -O3 -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -fPIC -pipe -pthread"
 +
 +echo building libleveldbjni.so ...
 +$COMPILE -shared -Wl,-soname -Wl,libleveldbjni.so -o libleveldbjni.so $CORE_FILES
@@ -80,7 +80,7 @@ index 0000000..33ebd6f
 +$COMPILE -o leveldb_main db/leveldb_main.cc libleveldb.a
 diff --git a/make_mingw.bat b/make_mingw.bat
 new file mode 100644
-index 0000000..d10a87b
+index 0000000..ada4243
 --- /dev/null
 +++ b/make_mingw.bat
 @@ -0,0 +1,30 @@
@@ -98,7 +98,7 @@ index 0000000..d10a87b
 +
 +set OBJ_FILES=builder.o c.o db_impl.o db_iter.o dbformat.o filename.o log_reader.o log_writer.o memtable.o repair.o table_cache.o version_edit.o version_set.o write_batch.o block.o block_builder.o filter_block.o format.o iterator.o merger.o table.o table_builder.o two_level_iterator.o arena.o bloom.o cache.o coding.o comparator.o crc32c.o env.o env_windows.o filter_policy.o hash.o histogram.o jni.o logging.o options.o status.o testutil.o testharness.o port_posix.o snappy.o snappy-sinksource.o snappy-stubs-internal.o
 +
-+set COMPILE=g++ -DOS_LINUX -DLEVELDB_PLATFORM_POSIX -DSNAPPY -DENABLE_JNI -D_POSIX -D__USE_MINGW_ANSI_STDIO=1 -DNDEBUG -I. -Iinclude -Isnappy -Iport -I"%JAVA_HOME%/include" -I"%JAVA_HOME%/include/win64" -I"%JAVA_HOME%/include/win32" -Ofast -flto -fwhole-program -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -pipe -pthread -static -s -lpthread
++set COMPILE=g++ -DOS_LINUX -DLEVELDB_PLATFORM_POSIX -DSNAPPY -DENABLE_JNI -D_POSIX -D__USE_MINGW_ANSI_STDIO=1 -DNDEBUG -I. -Iinclude -Isnappy -Iport -I"%JAVA_HOME%/include" -I"%JAVA_HOME%/include/win64" -I"%JAVA_HOME%/include/win32" -Ofast -flto -fwhole-program -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -pipe -pthread -static -lpthread
 +
 +echo building leveldbjni.dll ...
 +%COMPILE% -shared -Wl,--image-base,0x10000000 -Wl,--kill-at -Wl,-soname -Wl,leveldbjni.dll -o leveldbjni.dll %CORE_FILES%
@@ -3102,10 +3102,10 @@ index 0000000..54f4b2f
 +#endif
 diff --git a/util/jni.cc b/util/jni.cc
 new file mode 100644
-index 0000000..5bea3cb
+index 0000000..9452c8c
 --- /dev/null
 +++ b/util/jni.cc
-@@ -0,0 +1,425 @@
+@@ -0,0 +1,426 @@
 +// Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file. See the AUTHORS file for names of contributors.
@@ -3287,37 +3287,38 @@ index 0000000..5bea3cb
 +		RandomAccessFile* raf = 0;
 +		if(!env.NewRandomAccessFile(srcfile, &raf).ok() || !raf) return -12;
 +		if(!raf->Read(srcsize - 8, 8, &slice, buf).ok() || slice.size() != 8) { delete raf; return -13; }
++		uint32_t magic_lo = DecodeFixed32(slice.data());
++		uint32_t magic_hi = DecodeFixed32(slice.data() + 4);
 +		delete raf;
-+		uint32_t magic_lo = DecodeFixed32(buf);
-+		uint32_t magic_hi = DecodeFixed32(buf + 4);
 +		if(((uint64_t)magic_hi << 32) + magic_lo != kTableMagicNumber) return -14;
 +	}
 +	if(srcsize < dstsize) dstsize = 0; // overwrite
 +	else if(dstsize > 0) // compare file head for more security
 +	{
 +		size_t checksize = (size_t)(dstsize < FILE_BUF_SIZE ? dstsize : FILE_BUF_SIZE);
++		Slice dstslice;
 +		char dstbuf[FILE_BUF_SIZE];
 +		if(!env.NewSequentialFile(srcfile, &sf).ok() || !sf) return -15;
 +		if(!sf->Read(checksize, &slice, buf).ok() || slice.size() != checksize) { delete sf; return -16; }
 +		delete sf; sf = 0;
 +		if(!env.NewSequentialFile(dstfile, &sf).ok() || !sf) return -17;
-+		if(!sf->Read(checksize, &slice, dstbuf).ok() || slice.size() != checksize) { delete sf; return -18; }
++		if(!sf->Read(checksize, &dstslice, dstbuf).ok() || dstslice.size() != checksize) { delete sf; return -18; }
 +		delete sf; sf = 0;
-+		if(memcmp(buf, dstbuf, checksize)) dstsize = 0; // overwrite
++		if(memcmp(slice.data(), dstslice.data(), checksize)) dstsize = 0; // overwrite
 +		else if(srcsize == dstsize) return 0;
 +	}
 +	if(!env.NewSequentialFile(srcfile, &sf).ok() || !sf) return -19;
 +	if(dstsize > 0 && !sf->Skip(dstsize).ok()) { delete sf; return -20; }
 +	FILE* fp = fopen(dstfile.c_str(), (dstsize == 0 ? "wb" : "wb+"));
 +	if(!fp) { delete sf; return -21; }
-+	fseek(fp, dstsize, SEEK_SET);
++	if(dstsize > 0) fseek(fp, dstsize, SEEK_SET);
 +	Status s; size_t size; int64_t res = 0;
 +	do
 +	{
 +		s = sf->Read(FILE_BUF_SIZE, &slice, buf);
 +		size = slice.size();
 +		if(size <= 0) break;
-+		if(fwrite(buf, 1, size, fp) != size) { fclose(fp); delete sf; return -22; }
++		if(fwrite(slice.data(), 1, size, fp) != size) { fclose(fp); delete sf; return -22; }
 +		res += size;
 +	}
 +	while(s.ok());
