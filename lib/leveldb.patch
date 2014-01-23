@@ -1,9 +1,8 @@
  .gitignore                      |    3 +
- build_detect_platform           |   14 +-
  db/db_impl.h                    |    5 +-
  make_linux.sh                   |   26 +
  make_mingw.bat                  |   30 +
- port/port_posix.h               |   64 +-
+ port/endian.h                   |    5 +
  snappy/snappy-internal.h        |  150 +++++
  snappy/snappy-sinksource.cc     |   71 +++
  snappy/snappy-sinksource.h      |  137 ++++
@@ -12,10 +11,10 @@
  snappy/snappy-stubs-public.h    |   98 +++
  snappy/snappy.cc                | 1306 +++++++++++++++++++++++++++++++++++++++
  snappy/snappy.h                 |  184 ++++++
- util/env_posix.cc               |   22 +-
+ util/env_posix.cc               |   18 +-
  util/env_windows.cc             |  385 ++++++++++++
- util/jni.cc                     |  423 +++++++++++++
- 17 files changed, 3443 insertions(+), 8 deletions(-)
+ util/jni.cc                     |  425 +++++++++++++
+ 16 files changed, 3370 insertions(+), 6 deletions(-)
 
 diff --git a/.gitignore b/.gitignore
 index 0630251..0dba0c5 100644
@@ -31,40 +30,8 @@ index 0630251..0dba0c5 100644
  db_bench
  leveldbutil
 +/tmp/
-diff --git a/build_detect_platform b/build_detect_platform
-index 6e59c6f..11baee5 100755
---- a/build_detect_platform
-+++ b/build_detect_platform
-@@ -82,7 +82,8 @@ case "$TARGET_OS" in
-         ;;
-     Linux)
-         PLATFORM=OS_LINUX
--        COMMON_FLAGS="$MEMCMP_FLAG -pthread -DOS_LINUX"
-+#       COMMON_FLAGS="$MEMCMP_FLAG -pthread -DOS_LINUX"
-+        COMMON_FLAGS="$MEMCMP_FLAG -pthread -DOS_LINUX -DENABLE_JNI -I/usr/java/default/include -I/usr/java/default/include/linux"
-         PLATFORM_LDFLAGS="-pthread"
-         PORT_FILE=port/port_posix.cc
-         ;;
-@@ -141,6 +142,17 @@ case "$TARGET_OS" in
-         PLATFORM_SHARED_CFLAGS=
-         PLATFORM_SHARED_VERSIONED=
-         ;;
-+    MINGW*)
-+        PLATFORM=OS_LINUX
-+#       COMMON_FLAGS="$MEMCMP_FLAG -pthread -DOS_LINUX -DOS_MINGW"
-+#       PLATFORM_LDFLAGS="-lpthread -static -s"
-+        COMMON_FLAGS="$MEMCMP_FLAG -pthread -DOS_LINUX -DOS_MINGW -DENABLE_JNI -I\"${JAVA_HOME}/include\" -I\"${JAVA_HOME}/include/win64\" -I\"${JAVA_HOME}/include/win32\""
-+        PLATFORM_LDFLAGS="-lpthread -static -s -Wl,--kill-at"
-+        PORT_FILE=port/port_posix.cc
-+        PLATFORM_SHARED_EXT="dll"
-+        PLATFORM_SHARED_CFLAGS=
-+        PLATFORM_SHARED_VERSIONED=
-+        ;;
-     *)
-         echo "Unknown platform!" >&2
-         exit 1
 diff --git a/db/db_impl.h b/db/db_impl.h
-index cfc9981..fa5d6d5 100644
+index cfc9981..a3e2c8e 100644
 --- a/db/db_impl.h
 +++ b/db/db_impl.h
 @@ -63,7 +63,10 @@ class DBImpl : public DB {
@@ -73,7 +40,7 @@ index cfc9981..fa5d6d5 100644
    void RecordReadSample(Slice key);
 -
 +
-+  VersionSet* GetVersionSet() { return versions_; }
++  // VersionSet* GetVersionSet() { return versions_; }
 +  const Options& GetOptions() { return options_; }
 +
   private:
@@ -81,7 +48,7 @@ index cfc9981..fa5d6d5 100644
    struct CompactionState;
 diff --git a/make_linux.sh b/make_linux.sh
 new file mode 100644
-index 0000000..61f85e2
+index 0000000..33ebd6f
 --- /dev/null
 +++ b/make_linux.sh
 @@ -0,0 +1,26 @@
@@ -91,11 +58,11 @@ index 0000000..61f85e2
 +
 +if [ "$JAVA_HOME" = "" ]; then JAVA_HOME=/usr/java/default; fi
 +
-+CORE_FILES="db/builder.cc db/c.cc db/db_impl.cc db/db_iter.cc db/dbformat.cc db/filename.cc db/log_reader.cc db/log_writer.cc db/memtable.cc db/repair.cc db/table_cache.cc db/version_edit.cc db/version_set.cc db/write_batch.cc table/block.cc table/block_builder.cc table/filter_block.cc table/format.cc table/iterator.cc table/merger.cc table/table.cc table/table_builder.cc table/two_level_iterator.cc util/arena.cc util/bloom.cc util/cache.cc util/coding.cc util/comparator.cc util/crc32c.cc util/env.cc util/env_posix.cc util/env_windows.cc util/filter_policy.cc util/hash.cc util/histogram.cc util/jni.cc util/logging.cc util/options.cc util/status.cc port/port_posix.cc snappy/snappy.cc snappy/snappy-sinksource.cc snappy/snappy-stubs-internal.cc"
++CORE_FILES="db/builder.cc db/c.cc db/db_impl.cc db/db_iter.cc db/dbformat.cc db/filename.cc db/log_reader.cc db/log_writer.cc db/memtable.cc db/repair.cc db/table_cache.cc db/version_edit.cc db/version_set.cc db/write_batch.cc table/block.cc table/block_builder.cc table/filter_block.cc table/format.cc table/iterator.cc table/merger.cc table/table.cc table/table_builder.cc table/two_level_iterator.cc util/arena.cc util/bloom.cc util/cache.cc util/coding.cc util/comparator.cc util/crc32c.cc util/env.cc util/env_posix.cc util/filter_policy.cc util/hash.cc util/histogram.cc util/jni.cc util/logging.cc util/options.cc util/status.cc port/port_posix.cc snappy/snappy.cc snappy/snappy-sinksource.cc snappy/snappy-stubs-internal.cc"
 +
 +TEST_FILES="util/testutil.cc util/testharness.cc"
 +
-+OBJ_FILES="builder.o c.o db_impl.o db_iter.o dbformat.o filename.o log_reader.o log_writer.o memtable.o repair.o table_cache.o version_edit.o version_set.o write_batch.o block.o block_builder.o filter_block.o format.o iterator.o merger.o table.o table_builder.o two_level_iterator.o arena.o bloom.o cache.o coding.o comparator.o crc32c.o env.o env_posix.o env_windows.o filter_policy.o hash.o histogram.o jni.o logging.o options.o status.o testutil.o testharness.o port_posix.o snappy.o snappy-sinksource.o snappy-stubs-internal.o"
++OBJ_FILES="builder.o c.o db_impl.o db_iter.o dbformat.o filename.o log_reader.o log_writer.o memtable.o repair.o table_cache.o version_edit.o version_set.o write_batch.o block.o block_builder.o filter_block.o format.o iterator.o merger.o table.o table_builder.o two_level_iterator.o arena.o bloom.o cache.o coding.o comparator.o crc32c.o env.o env_posix.o filter_policy.o hash.o histogram.o jni.o logging.o options.o status.o testutil.o testharness.o port_posix.o snappy.o snappy-sinksource.o snappy-stubs-internal.o"
 +
 +COMPILE="g++ -DOS_LINUX -DLEVELDB_PLATFORM_POSIX -DSNAPPY -DENABLE_JNI -DNDEBUG -I. -Iinclude -Isnappy -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -O3 -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -fPIC -pipe -pthread -s"
 +
@@ -113,7 +80,7 @@ index 0000000..61f85e2
 +$COMPILE -o leveldb_main db/leveldb_main.cc libleveldb.a
 diff --git a/make_mingw.bat b/make_mingw.bat
 new file mode 100644
-index 0000000..cb0c7d7
+index 0000000..d10a87b
 --- /dev/null
 +++ b/make_mingw.bat
 @@ -0,0 +1,30 @@
@@ -123,15 +90,15 @@ index 0000000..cb0c7d7
 +
 +rem install mingw-gcc 4.8+ and append PATH with mingw/bin
 +rem install jdk6+ and set JAVA_HOME
-+if "%JAVA_HOME%" equ "" set JAVA_HOME=C:/Program Files/Java/jdk1.7.0_21
++if "%JAVA_HOME%" equ "" set JAVA_HOME=C:/Program Files/Java/jdk1.7.0_51
 +
-+set CORE_FILES=db/builder.cc db/c.cc db/db_impl.cc db/db_iter.cc db/dbformat.cc db/filename.cc db/log_reader.cc db/log_writer.cc db/memtable.cc db/repair.cc db/table_cache.cc db/version_edit.cc db/version_set.cc db/write_batch.cc table/block.cc table/block_builder.cc table/filter_block.cc table/format.cc table/iterator.cc table/merger.cc table/table.cc table/table_builder.cc table/two_level_iterator.cc util/arena.cc util/bloom.cc util/cache.cc util/coding.cc util/comparator.cc util/crc32c.cc util/env.cc util/env_posix.cc util/env_windows.cc util/filter_policy.cc util/hash.cc util/histogram.cc util/jni.cc util/logging.cc util/options.cc util/status.cc port/port_posix.cc snappy/snappy.cc snappy/snappy-sinksource.cc snappy/snappy-stubs-internal.cc
++set CORE_FILES=db/builder.cc db/c.cc db/db_impl.cc db/db_iter.cc db/dbformat.cc db/filename.cc db/log_reader.cc db/log_writer.cc db/memtable.cc db/repair.cc db/table_cache.cc db/version_edit.cc db/version_set.cc db/write_batch.cc table/block.cc table/block_builder.cc table/filter_block.cc table/format.cc table/iterator.cc table/merger.cc table/table.cc table/table_builder.cc table/two_level_iterator.cc util/arena.cc util/bloom.cc util/cache.cc util/coding.cc util/comparator.cc util/crc32c.cc util/env.cc util/env_windows.cc util/filter_policy.cc util/hash.cc util/histogram.cc util/jni.cc util/logging.cc util/options.cc util/status.cc port/port_posix.cc snappy/snappy.cc snappy/snappy-sinksource.cc snappy/snappy-stubs-internal.cc
 +
 +set TEST_FILES=util/testutil.cc util/testharness.cc
 +
-+set OBJ_FILES=builder.o c.o db_impl.o db_iter.o dbformat.o filename.o log_reader.o log_writer.o memtable.o repair.o table_cache.o version_edit.o version_set.o write_batch.o block.o block_builder.o filter_block.o format.o iterator.o merger.o table.o table_builder.o two_level_iterator.o arena.o bloom.o cache.o coding.o comparator.o crc32c.o env.o env_posix.o env_windows.o filter_policy.o hash.o histogram.o jni.o logging.o options.o status.o testutil.o testharness.o port_posix.o snappy.o snappy-sinksource.o snappy-stubs-internal.o
++set OBJ_FILES=builder.o c.o db_impl.o db_iter.o dbformat.o filename.o log_reader.o log_writer.o memtable.o repair.o table_cache.o version_edit.o version_set.o write_batch.o block.o block_builder.o filter_block.o format.o iterator.o merger.o table.o table_builder.o two_level_iterator.o arena.o bloom.o cache.o coding.o comparator.o crc32c.o env.o env_windows.o filter_policy.o hash.o histogram.o jni.o logging.o options.o status.o testutil.o testharness.o port_posix.o snappy.o snappy-sinksource.o snappy-stubs-internal.o
 +
-+set COMPILE=g++ -DOS_LINUX -DOS_MINGW -DLEVELDB_PLATFORM_POSIX -DSNAPPY -DENABLE_JNI -D_POSIX -DNDEBUG -I. -Iinclude -Isnappy -I"%JAVA_HOME%/include" -I"%JAVA_HOME%/include/win64" -I"%JAVA_HOME%/include/win32" -Ofast -flto -fwhole-program -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -pipe -pthread -static -s -lpthread
++set COMPILE=g++ -DOS_LINUX -DLEVELDB_PLATFORM_POSIX -DSNAPPY -DENABLE_JNI -D_POSIX -D__USE_MINGW_ANSI_STDIO=1 -DNDEBUG -I. -Iinclude -Isnappy -Iport -I"%JAVA_HOME%/include" -I"%JAVA_HOME%/include/win64" -I"%JAVA_HOME%/include/win32" -Ofast -flto -fwhole-program -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -pipe -pthread -static -s -lpthread
 +
 +echo building leveldbjni.dll ...
 +%COMPILE% -shared -Wl,--image-base,0x10000000 -Wl,--kill-at -Wl,-soname -Wl,leveldbjni.dll -o leveldbjni.dll %CORE_FILES%
@@ -147,95 +114,17 @@ index 0000000..cb0c7d7
 +%COMPILE% -o leveldb_main.exe db/leveldb_main.cc leveldb.a
 +
 +pause
-diff --git a/port/port_posix.h b/port/port_posix.h
-index f2b89bf..6c29adc 100644
---- a/port/port_posix.h
-+++ b/port/port_posix.h
-@@ -37,6 +37,65 @@
-   // See http://code.google.com/p/android/issues/detail?id=39824
-   #include <endian.h>
-   #define PLATFORM_IS_LITTLE_ENDIAN  (_BYTE_ORDER == _LITTLE_ENDIAN)
-+#elif defined(OS_MINGW)
-+  #define PLATFORM_IS_LITTLE_ENDIAN true
-+  #include <stdarg.h>
-+  #include <string.h>
-+  #include <stdio.h>
-+  inline const char* cvt_fmt(const char* buf)
-+  {
-+    static char* s_buf = new char[65536]; // big enough
-+    char* d = s_buf;
-+    for(const char* p = buf;;)
-+    {
-+      const char* q = strstr(p, "ll");
-+      if(!q)
-+      {
-+        if(p == buf) return buf;
-+        strcpy(d, p);
-+        return s_buf;
-+      }
-+      if(q[2] == 'd' || q[2] == 'u' || q[2] == 'x')
-+      {
-+        int n = q - p;
-+        memcpy(d, p, n); d += n;
-+        memcpy(d, "I64", 3); d += 3;
-+      }
-+      else
-+      {
-+        int n = q - p + 2;
-+        memcpy(d, p, n); d += n;
-+      }
-+      p = q + 2;
-+    }
-+  }
-+  inline int printf_fix(const char* fmt, ...)
-+  {
-+    va_list vl;
-+    va_start(vl, fmt);
-+    int r = vprintf(cvt_fmt(fmt), vl);
-+    va_end(vl);
-+    return r;
-+  }
-+  inline int fprintf_fix(FILE* fp, const char* fmt, ...)
-+  {
-+    va_list vl;
-+    va_start(vl, fmt);
-+    int r = vfprintf(fp, cvt_fmt(fmt), vl);
-+    va_end(vl);
-+    return r;
-+  }
-+  inline int snprintf_fix(char* buf, size_t buflen, const char* fmt, ...)
-+  {
-+    va_list vl;
-+    va_start(vl, fmt);
-+    int r = _vsnprintf(buf, buflen, cvt_fmt(fmt), vl);
-+    va_end(vl);
-+    return r;
-+  }
-+  #define printf printf_fix
-+  #define fprintf fprintf_fix
-+  #define snprintf snprintf_fix
- #else
-   #include <endian.h>
- #endif
-@@ -55,7 +114,7 @@
- 
- #if defined(OS_MACOSX) || defined(OS_SOLARIS) || defined(OS_FREEBSD) ||\
-     defined(OS_NETBSD) || defined(OS_OPENBSD) || defined(OS_DRAGONFLYBSD) ||\
--    defined(OS_ANDROID) || defined(OS_HPUX)
-+    defined(OS_ANDROID) || defined(OS_HPUX) || defined(OS_MINGW)
- // Use fread/fwrite/fflush on platforms without _unlocked variants
- #define fread_unlocked fread
- #define fwrite_unlocked fwrite
-@@ -152,6 +211,9 @@ inline bool GetHeapProfile(void (*func)(void*, const char*, int), void* arg) {
- }
- 
- } // namespace port
+diff --git a/port/endian.h b/port/endian.h
+new file mode 100644
+index 0000000..7f808fb
+--- /dev/null
++++ b/port/endian.h
+@@ -0,0 +1,5 @@
++#pragma once
 +
-+extern port::Mutex g_mutex_backup;
-+
- } // namespace leveldb
- 
- #endif  // STORAGE_LEVELDB_PORT_PORT_POSIX_H_
++#ifdef WIN32
++#define PLATFORM_IS_LITTLE_ENDIAN true
++#endif
 diff --git a/snappy/snappy-internal.h b/snappy/snappy-internal.h
 new file mode 100644
 index 0000000..c99d331
@@ -2764,19 +2653,10 @@ index 0000000..e879e79
 +
 +#endif  // UTIL_SNAPPY_SNAPPY_H__
 diff --git a/util/env_posix.cc b/util/env_posix.cc
-index e1cbebd..d82d7ae 100644
+index e1cbebd..6ef8997 100644
 --- a/util/env_posix.cc
 +++ b/util/env_posix.cc
-@@ -2,6 +2,8 @@
- // Use of this source code is governed by a BSD-style license that can be
- // found in the LICENSE file. See the AUTHORS file for names of contributors.
- 
-+#ifndef OS_MINGW
-+
- #include <deque>
- #include <set>
- #include <dirent.h>
-@@ -28,6 +30,8 @@
+@@ -28,6 +28,8 @@
  #include "util/posix_logger.h"
  
  namespace leveldb {
@@ -2785,7 +2665,7 @@ index e1cbebd..d82d7ae 100644
  
  namespace {
  
-@@ -373,9 +377,11 @@ class PosixEnv : public Env {
+@@ -373,9 +375,11 @@ class PosixEnv : public Env {
  
    virtual Status DeleteFile(const std::string& fname) {
      Status result;
@@ -2798,7 +2678,7 @@ index e1cbebd..d82d7ae 100644
      return result;
    }
  
-@@ -388,10 +394,12 @@ class PosixEnv : public Env {
+@@ -388,10 +392,12 @@ class PosixEnv : public Env {
    }
  
    virtual Status DeleteDir(const std::string& name) {
@@ -2812,7 +2692,7 @@ index e1cbebd..d82d7ae 100644
      return result;
    }
  
-@@ -407,11 +415,13 @@ class PosixEnv : public Env {
+@@ -407,11 +413,13 @@ class PosixEnv : public Env {
      return s;
    }
  
@@ -2829,15 +2709,9 @@ index e1cbebd..d82d7ae 100644
      return result;
    }
  
-@@ -605,3 +615,5 @@ Env* Env::Default() {
- }
- 
- }  // namespace leveldb
-+
-+#endif
 diff --git a/util/env_windows.cc b/util/env_windows.cc
 new file mode 100644
-index 0000000..3c7d61f
+index 0000000..54f4b2f
 --- /dev/null
 +++ b/util/env_windows.cc
 @@ -0,0 +1,385 @@
@@ -2996,7 +2870,7 @@ index 0000000..3c7d61f
 +	virtual void Logv(const char* format, va_list ap) {
 +		const size_t kBufSize = 4096;
 +		char buffer[kBufSize];
-+		int written = _vsnprintf(buffer, kBufSize - 1, cvt_fmt(format), ap);
++		int written = vsnprintf(buffer, kBufSize - 1, format, ap);
 +		if(written < 0) written = kBufSize - 1;
 +		buffer[written++] = '\n';
 +		log_->Append(Slice(buffer, written));
@@ -3228,10 +3102,10 @@ index 0000000..3c7d61f
 +#endif
 diff --git a/util/jni.cc b/util/jni.cc
 new file mode 100644
-index 0000000..e7528d3
+index 0000000..5bea3cb
 --- /dev/null
 +++ b/util/jni.cc
-@@ -0,0 +1,423 @@
+@@ -0,0 +1,425 @@
 +// Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file. See the AUTHORS file for names of contributors.
@@ -3266,6 +3140,8 @@ index 0000000..e7528d3
 +static WriteOptions			g_wo;			// safe for global shared instance
 +static const FilterPolicy*	g_fp = 0;		// safe for global shared instance
 +static WriteBatch			g_wb;			// optimized for single thread writing, fix it if concurrent writing
++
++namespace leveldb { extern port::Mutex g_mutex_backup; }
 +
 +// public native static long leveldb_open(String path, int write_bufsize, int cache_size, boolean use_snappy);
 +extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open
