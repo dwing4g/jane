@@ -95,6 +95,11 @@ public abstract class Bean<B extends Bean<B>> implements Serializable, Cloneable
 	public abstract int type();
 
 	/**
+	 * 获取此bean类唯一的stub对象
+	 */
+	public abstract B stub();
+
+	/**
 	 * 创建一个新的bean实例
 	 * <p>
 	 * 子类的实现一般是new B(),返回对象的所有字段只有初始的默认值

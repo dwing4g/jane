@@ -9,9 +9,11 @@ import jane.core.RpcBean;
 public final class TestRpcBean extends RpcBean<TestBean, TestType>
 {
 	private static final long serialVersionUID = 0xbeac34fc308a6e36L;
+	public  static final TestRpcBean BEAN_STUB = new TestRpcBean();
 	public TestRpcBean() {}
 	public TestRpcBean(TestBean a) { arg = a; }
 	@Override public int type() { return 5; }
+	@Override public TestRpcBean stub() { return BEAN_STUB; }
 	@Override public TestRpcBean create() { return new TestRpcBean(); }
 	@Override public TestBean createArg() { return new TestBean(); }
 	@Override public TestType createRes() { return new TestType(); }

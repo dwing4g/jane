@@ -26,6 +26,7 @@ public final class TestType extends Bean<TestType> implements Comparable<TestTyp
 {
 	private static final long serialVersionUID = 0xbeacabe90777739dL;
 	public  static final int BEAN_TYPE = 3;
+	public  static final TestType BEAN_STUB = new TestType();
 
 	public  /* 1*/ boolean v1; // 1字节布尔,0表示假,1表示真,其它默认表示真
 	public  /* 2*/ byte v2; // 1字节整数
@@ -285,6 +286,12 @@ public final class TestType extends Bean<TestType> implements Comparable<TestTyp
 	public int maxSize()
 	{
 		return 65536;
+	}
+
+	@Override
+	public TestType stub()
+	{
+		return BEAN_STUB;
 	}
 
 	@Override

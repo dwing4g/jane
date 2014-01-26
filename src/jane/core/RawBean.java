@@ -7,9 +7,10 @@ package jane.core;
  */
 public final class RawBean extends Bean<RawBean> implements Comparable<RawBean>
 {
-	private static final long serialVersionUID = -5813606138942352066L;
-	private int               _type;                                   // 未知的bean类型
-	private Octets            _data;                                   // 未知的bean数据
+	private static final long   serialVersionUID = -5813606138942352066L;
+	public static final RawBean BEAN_STUB        = new RawBean();
+	private int                 _type;                                   // 未知的bean类型
+	private Octets              _data;                                   // 未知的bean数据
 
 	public RawBean()
 	{
@@ -35,6 +36,12 @@ public final class RawBean extends Bean<RawBean> implements Comparable<RawBean>
 	public int type()
 	{
 		return 0;
+	}
+
+	@Override
+	public RawBean stub()
+	{
+		return BEAN_STUB;
 	}
 
 	@Override

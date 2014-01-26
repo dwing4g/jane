@@ -13,7 +13,8 @@ public final class TestBean extends Bean<TestBean> implements Comparable<TestBea
 {
 	private static final long serialVersionUID = 0xbeacaa44540448ccL;
 	public  static final int BEAN_TYPE = 1;
-	public  static final BeanPool<TestBean> BEAN_POOL = new BeanPool<TestBean>(new TestBean(), 1000);
+	public  static final TestBean BEAN_STUB = new TestBean();
+	public  static final BeanPool<TestBean> BEAN_POOL = new BeanPool<TestBean>(BEAN_STUB, 1000);
 	public  static final int TEST_CONST1 = 5; // 测试类静态常量
 	public  static final String TEST_CONST2 = "test_const2";
 
@@ -80,6 +81,12 @@ public final class TestBean extends Bean<TestBean> implements Comparable<TestBea
 	public int maxSize()
 	{
 		return 16;
+	}
+
+	@Override
+	public TestBean stub()
+	{
+		return BEAN_STUB;
 	}
 
 	@Override
