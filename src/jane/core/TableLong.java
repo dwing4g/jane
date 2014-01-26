@@ -84,11 +84,11 @@ public final class TableLong<V extends Bean<V>>
 	 * @param cachesize 此表的读缓存记录数量上限. 如果是内存表则表示超过此上限则会自动丢弃
 	 * @param stub_v 记录value的存根对象,不要用于记录有用的数据. 这里只用于标记删除的字段,如果为null则表示此表是内存表
 	 */
-	TableLong(String tablename, Storage.TableLong<V> stotable, String lockname, int cachesize, V stub_v)
+	TableLong(int tableid, String tablename, Storage.TableLong<V> stotable, String lockname, int cachesize, V stub_v)
 	{
 		_tablename = tablename;
 		_stotable = stotable;
-		_lockid = lockname.hashCode();
+		_lockid = tableid ^ lockname.hashCode();
 		_cache = new LongConcurrentLRUMap<V>(cachesize + cachesize / 2, cachesize);
 		_cache_mod = (stotable != null ? new LongConcurrentHashMap<V>() : null);
 		_deleted = stub_v;
