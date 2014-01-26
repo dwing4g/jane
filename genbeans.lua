@@ -21,7 +21,7 @@ import #(bean.imports);
 public final class #(bean.name) extends Bean<#(bean.name)> implements Comparable<#(bean.name)>
 {
 	private static final long serialVersionUID = #(bean.uid);
-	public  static final int BEAN_TYPE = #(bean.type);
+	public  static final int BEAN_TYPE = #(bean.type);#(bean.pool_def)
 #{#	public  static final #(var.type) #(var.name)#(var.value);#(var.comment)
 #}#
 #(#	#(var.public) /*#(var.id2)*/ #(var.final)#(var.type) #(var.name);#(var.comment)
@@ -75,7 +75,7 @@ public final class #(bean.name) extends Bean<#(bean.name)> implements Comparable
 	{
 		return new #(bean.name)();
 	}
-
+#(bean.pool_func)
 	@Override
 	public OctetsStream marshal(OctetsStream s)
 	{
@@ -736,6 +736,28 @@ function bean(bean)
 			end
 		end
 	end
+	if bean.poolsize and bean.poolsize > 0 then
+		bean.import["jane.core.BeanPool"] = true
+		bean.pool_def = "\n\tpublic  static final BeanPool<" .. bean.name .. "> BEAN_POOL = new BeanPool<" .. (jdk7 and "" or bean.name) .. ">(new " .. bean.name .. "(), " .. bean.poolsize .. ");"
+		bean.pool_func = [[
+
+	@Override
+	public ]] .. bean.name .. [[ alloc()
+	{
+		return BEAN_POOL.alloc();
+	}
+
+	@Override
+	public void free()
+	{
+		BEAN_POOL.free(this);
+	}
+]]
+	else
+		bean.pool_def = ""
+		bean.pool_func = ""
+	end
+
 	bean.imports = get_imports(bean.import)
 	bean.uid = gen_uid(concat(vartypes))
 

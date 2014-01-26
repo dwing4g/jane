@@ -102,6 +102,21 @@ public abstract class Bean<B extends Bean<B>> implements Serializable, Cloneable
 	public abstract B create();
 
 	/**
+	 * 优先从空闲对象池中分配对象
+	 */
+	public B alloc()
+	{
+		return create();
+	}
+
+	/**
+	 * 指示此对象已不再使用,并回收到空闲对象池中
+	 */
+	public void free()
+	{
+	}
+
+	/**
 	 * 重置bean的所有字段为初始的默认值
 	 */
 	public abstract void reset();

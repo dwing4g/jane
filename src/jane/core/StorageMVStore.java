@@ -199,7 +199,7 @@ public class StorageMVStore implements Storage
 			OctetsStream os = OctetsStream.wrap(buf.array(), offset + buf.limit());
 			os.setExceptionInfo(true);
 			os.setPosition(offset + buf.position());
-			Bean<?> b = _stub.create();
+			Bean<?> b = _stub.alloc();
 			try
 			{
 				int format = os.unmarshalByte();

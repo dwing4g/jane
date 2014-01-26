@@ -53,7 +53,7 @@ public class StorageMapDB implements Storage
 			if(o == null) return null;
 			OctetsStream os = OctetsStream.wrap(o);
 			os.setExceptionInfo(true);
-			V v = _stub_v.create();
+			V v = _stub_v.alloc();
 			try
 			{
 				int format = os.unmarshalByte();
@@ -111,7 +111,7 @@ public class StorageMapDB implements Storage
 			if(o == null) return null;
 			OctetsStream os = OctetsStream.wrap(o);
 			os.setExceptionInfo(true);
-			V v = _stub_v.create();
+			V v = _stub_v.alloc();
 			try
 			{
 				int format = os.unmarshalByte();
@@ -199,7 +199,7 @@ public class StorageMapDB implements Storage
 				OctetsStream os = OctetsStream.wrap(bb.array(), offset + bb.limit());
 				os.setExceptionInfo(true);
 				os.setPosition(offset + di2.pos);
-				bean = _stub.create();
+				bean = _stub.alloc();
 				try
 				{
 					bean.unmarshal(os);
@@ -216,7 +216,7 @@ public class StorageMapDB implements Storage
 				OctetsStream os = ByteBufferStream.wrap(bb);
 				os.setExceptionInfo(true);
 				os.setPosition(di2.pos);
-				bean = _stub.create();
+				bean = _stub.alloc();
 				try
 				{
 					bean.unmarshal(os);

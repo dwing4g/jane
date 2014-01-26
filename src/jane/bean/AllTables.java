@@ -27,7 +27,7 @@ public final class AllTables
 	/**
 	 * value类型必须是bean定义的类型
 	 */
-	public static final Table<TestBean, TestBean> BeanTable = _dbm.openTable(2, "BeanTable", "bean", 65536, new TestBean(), new TestBean());
+	public static final Table<TestKeyBean, TestBean> BeanTable = _dbm.openTable(2, "BeanTable", "bean", 65536, new TestKeyBean(), new TestBean());
 	/**
 	 * 注意表名和key类型的对应关系是不能改变的
 	 */
@@ -46,7 +46,7 @@ public final class AllTables
 		{
 			HashMap<String, Bean<?>> r = new HashMap<String, Bean<?>>(4 * 2);
 			r.put("TestTable", null);
-			r.put("BeanTable", new TestBean());
+			r.put("BeanTable", new TestKeyBean());
 			r.put("OctetsTable", null);
 			r.put("Benchmark", null);
 			return r;

@@ -2,6 +2,7 @@
 package jane.bean;
 
 import jane.core.Bean;
+import jane.core.BeanPool;
 import jane.core.MarshalException;
 import jane.core.OctetsStream;
 
@@ -12,6 +13,7 @@ public final class TestBean extends Bean<TestBean> implements Comparable<TestBea
 {
 	private static final long serialVersionUID = 0xbeacaa44540448ccL;
 	public  static final int BEAN_TYPE = 1;
+	public  static final BeanPool<TestBean> BEAN_POOL = new BeanPool<TestBean>(new TestBean(), 1000);
 	public  static final int TEST_CONST1 = 5; // 测试类静态常量
 	public  static final String TEST_CONST2 = "test_const2";
 
@@ -84,6 +86,18 @@ public final class TestBean extends Bean<TestBean> implements Comparable<TestBea
 	public TestBean create()
 	{
 		return new TestBean();
+	}
+
+	@Override
+	public TestBean alloc()
+	{
+		return BEAN_POOL.alloc();
+	}
+
+	@Override
+	public void free()
+	{
+		BEAN_POOL.free(this);
 	}
 
 	@Override

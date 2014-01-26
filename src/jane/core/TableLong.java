@@ -333,9 +333,19 @@ public final class TableLong<V extends Bean<V>>
 	public void remove(long k)
 	{
 		V v_old = _cache.remove(k);
-		if(v_old != null) v_old.setSaveState(0);
-		if(_cache_mod != null && _cache_mod.put(k, _deleted) == null)
-		    DBManager.instance().incModCount();
+		if(v_old != null)
+		{
+			v_old.setSaveState(0);
+			v_old.free();
+		}
+		if(_cache_mod != null)
+		{
+			V v_mod = _cache_mod.put(k, _deleted);
+			if(v_mod == null)
+				DBManager.instance().incModCount();
+			else if(v_mod != v_old)
+			    v_mod.free();
+		}
 	}
 
 	/**

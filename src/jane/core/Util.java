@@ -66,6 +66,7 @@ public final class Util
 	 */
 	public static <K, V> Map<K, V> newLRUConcurrentHashMap(int maxcount)
 	{
+		if(maxcount <= 0) return newConcurrentHashMap();
 		return new ConcurrentLinkedHashMap.Builder<K, V>().concurrencyLevel(Const.dbThreadCount)
 		        .maximumWeightedCapacity(maxcount).initialCapacity(maxcount).build();
 	}

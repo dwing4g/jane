@@ -88,7 +88,7 @@ public class StorageLevelDB implements Storage
 			OctetsStream val = dbget(getKey(k));
 			if(val == null) return null;
 			val.setExceptionInfo(true);
-			V v = _stub_v.create();
+			V v = _stub_v.alloc();
 			try
 			{
 				int format = val.unmarshalByte();
@@ -312,7 +312,7 @@ public class StorageLevelDB implements Storage
 			OctetsStream val = dbget(getKey(k));
 			if(val == null) return null;
 			val.setExceptionInfo(true);
-			V v = _stub_v.create();
+			V v = _stub_v.alloc();
 			try
 			{
 				int format = val.unmarshalByte();
@@ -364,7 +364,7 @@ public class StorageLevelDB implements Storage
 			OctetsStream val = dbget(getKey(k));
 			if(val == null) return null;
 			val.setExceptionInfo(true);
-			V v = _stub_v.create();
+			V v = _stub_v.alloc();
 			try
 			{
 				int format = val.unmarshalByte();
@@ -417,7 +417,7 @@ public class StorageLevelDB implements Storage
 			OctetsStream val = dbget(getKey(k));
 			if(val == null) return null;
 			val.setExceptionInfo(true);
-			V v = _stub_v.create();
+			V v = _stub_v.alloc();
 			try
 			{
 				int format = val.unmarshalByte();
@@ -439,7 +439,7 @@ public class StorageLevelDB implements Storage
 		@Override
 		protected boolean onWalk(WalkHandler<K> handler, OctetsStream k) throws MarshalException
 		{
-			Bean<?> key = ((Bean<?>)_stub_k).create();
+			Bean<?> key = ((Bean<?>)_stub_k).alloc();
 			k.unmarshal(key);
 			return handler.onWalk((K)key);
 		}
