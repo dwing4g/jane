@@ -17,12 +17,12 @@ public final class AllBeans
 	public static Collection<Bean<?>> getAllBeans()
 	{
 		List<Bean<?>> r = new ArrayList<Bean<?>>(6);
-		r.add(new TestBean());
-		r.add(new TestKeyBean());
-		r.add(new TestType());
-		r.add(new TestEmpty());
-		r.add(new TestRpcBean());
-		r.add(new TestRpcBean2());
+		r.add(TestBean.BEAN_STUB);
+		r.add(TestKeyBean.BEAN_STUB);
+		r.add(TestType.BEAN_STUB);
+		r.add(TestEmpty.BEAN_STUB);
+		r.add(TestRpcBean.BEAN_STUB);
+		r.add(TestRpcBean2.BEAN_STUB);
 		return r;
 	}
 

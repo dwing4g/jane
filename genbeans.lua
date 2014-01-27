@@ -21,7 +21,8 @@ import #(bean.imports);
 public final class #(bean.name) extends Bean<#(bean.name)> implements Comparable<#(bean.name)>
 {
 	private static final long serialVersionUID = #(bean.uid);
-	public  static final int BEAN_TYPE = #(bean.type);#(bean.pool_def)
+	public  static final int BEAN_TYPE = #(bean.type);
+	public  static final #(bean.name) BEAN_STUB = new #(bean.name)();#(bean.pool_def)
 #{#	public  static final #(var.type) #(var.name)#(var.value);#(var.comment)
 #}#
 #(#	#(var.public) /*#(var.id2)*/ #(var.final)#(var.type) #(var.name);#(var.comment)
@@ -68,6 +69,12 @@ public final class #(bean.name) extends Bean<#(bean.name)> implements Comparable
 	public int maxSize()
 	{
 		return #(bean.maxsize);
+	}
+
+	@Override
+	public #(bean.name) stub()
+	{
+		return BEAN_STUB;
 	}
 
 	@Override
@@ -167,9 +174,11 @@ import jane.core.RpcBean;
 public final class #(bean.name) extends RpcBean<#(bean.arg), #(bean.res)>
 {
 	private static final long serialVersionUID = #(bean.uid);
+	public  static final #(bean.name) BEAN_STUB = new #(bean.name)();
 	public #(bean.name)() {}
 	public #(bean.name)(#(bean.arg) a) { arg = a; }
 	@Override public int type() { return #(bean.type); }
+	@Override public #(bean.name) stub() { return BEAN_STUB; }
 	@Override public #(bean.name) create() { return new #(bean.name)(); }
 	@Override public #(bean.arg) createArg() { return new #(bean.arg)(); }
 	@Override public #(bean.res) createRes() { return new #(bean.res)(); }
@@ -195,7 +204,7 @@ public final class AllBeans
 	public static Collection<Bean<?>> getAllBeans()
 	{
 		List<Bean<?>> r = new ArrayList<]=] .. (jdk7 and "" or "Bean<?>") .. [=[>(#(bean.count));
-#(#		r.add(new #(bean.name)());
+#(#		r.add(#(bean.name).BEAN_STUB);
 #)#		return r;
 	}
 #[#
@@ -738,7 +747,7 @@ function bean(bean)
 	end
 	if bean.poolsize and bean.poolsize > 0 then
 		bean.import["jane.core.BeanPool"] = true
-		bean.pool_def = "\n\tpublic  static final BeanPool<" .. bean.name .. "> BEAN_POOL = new BeanPool<" .. (jdk7 and "" or bean.name) .. ">(new " .. bean.name .. "(), " .. bean.poolsize .. ");"
+		bean.pool_def = "\n\tpublic  static final BeanPool<" .. bean.name .. "> BEAN_POOL = new BeanPool<" .. (jdk7 and "" or bean.name) .. ">(BEAN_STUB, " .. bean.poolsize .. ");"
 		bean.pool_func = [[
 
 	@Override
@@ -795,7 +804,7 @@ function dbt(table)
 		if key_type == "Octets" then tables.imports["jane.core.Octets"] = true end
 		table.table = "Table"
 		table.key = key_type
-		table.keys = not table.memory and key_type:find "%." and "new " .. key_type .. "()" or "null"
+		table.keys = not table.memory and key_type:find "%." and key_type .. ".BEAN_STUB" or "null"
 		table.keyg = table.keys
 		table.comma = ", "
 		tables.imports["jane.core.Table"] = true
@@ -808,12 +817,12 @@ function dbt(table)
 		tables.imports["jane.core.TableLong"] = true
 	else
 		table.table = "Table"
-		table.keys = not table.memory and "new #(table.key)()" or "null"
+		table.keys = not table.memory and "#(table.key).BEAN_STUB" or "null"
 		table.keyg = table.keys
 		table.comma = ", "
 		tables.imports["jane.core.Table"] = true
 	end
-	table.values = table.memory and "null" or "new #(table.value)()"
+	table.values = table.memory and "null" or "#(table.value).BEAN_STUB"
 	if table.comment and #table.comment > 0 then table.comment = "/**\n\t * " .. table.comment:gsub("\n", "<br>\n\t * ") .. "\n\t */\n\t" end
 	tables[#tables + 1] = table
 end

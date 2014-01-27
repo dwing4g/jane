@@ -364,7 +364,7 @@ public final class StorageMapDB implements Storage
 			if(_serializer == null)
 			{
 				Bean<?> stub = _instance._table_stub_k.get(_tablename);
-				if(stub == null) stub = new DynBean();
+				if(stub == null) stub = DynBean.BEAN_STUB;
 				_serializer = new MapDBSerializer(_tablename, stub);
 			}
 			for(int i = start; i < end; ++i)
@@ -377,7 +377,7 @@ public final class StorageMapDB implements Storage
 			if(_serializer == null)
 			{
 				Bean<?> stub = _instance._table_stub_k.get(_tablename);
-				if(stub == null) stub = new DynBean();
+				if(stub == null) stub = DynBean.BEAN_STUB;
 				_serializer = new MapDBSerializer(_tablename, stub);
 			}
 			Object[] objs = new Object[size];

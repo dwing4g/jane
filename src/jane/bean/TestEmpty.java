@@ -12,6 +12,7 @@ public final class TestEmpty extends Bean<TestEmpty> implements Comparable<TestE
 {
 	private static final long serialVersionUID = 0xbeac245da40b43f8L;
 	public  static final int BEAN_TYPE = 4;
+	public  static final TestEmpty BEAN_STUB = new TestEmpty();
 
 	@Override
 	public void reset()
@@ -39,6 +40,12 @@ public final class TestEmpty extends Bean<TestEmpty> implements Comparable<TestE
 	public int maxSize()
 	{
 		return 0;
+	}
+
+	@Override
+	public TestEmpty stub()
+	{
+		return BEAN_STUB;
 	}
 
 	@Override

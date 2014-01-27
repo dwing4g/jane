@@ -13,6 +13,7 @@ public final class TestKeyBean extends Bean<TestKeyBean> implements Comparable<T
 {
 	private static final long serialVersionUID = 0xbeac0364a4241981L;
 	public  static final int BEAN_TYPE = 2;
+	public  static final TestKeyBean BEAN_STUB = new TestKeyBean();
 
 	private /* 1*/ int key1; // KEY-1
 	private /* 2*/ String key2; // KEY-2
@@ -60,6 +61,12 @@ public final class TestKeyBean extends Bean<TestKeyBean> implements Comparable<T
 	public int maxSize()
 	{
 		return 16;
+	}
+
+	@Override
+	public TestKeyBean stub()
+	{
+		return BEAN_STUB;
 	}
 
 	@Override
