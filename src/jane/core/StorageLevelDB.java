@@ -14,7 +14,7 @@ import java.util.Map.Entry;
  * <p>
  * 此类也可非单件实例化使用
  */
-public class StorageLevelDB implements Storage
+public final class StorageLevelDB implements Storage
 {
 	private static final StorageLevelDB     _instance        = new StorageLevelDB();
 	private static final OctetsStream       _deleted         = OctetsStream.wrap(Octets.EMPTY); // 表示已删除的值

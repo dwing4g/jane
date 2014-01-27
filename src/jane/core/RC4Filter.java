@@ -17,7 +17,7 @@ import org.apache.mina.core.write.WriteRequest;
  * session.getFilterChain().addFirst("enc", filter);
  * </pre></code>
  */
-public class RC4Filter extends IoFilterAdapter
+public final class RC4Filter extends IoFilterAdapter
 {
 	private final byte[] _ctx_i = new byte[256];
 	private final byte[] _ctx_o = new byte[256];

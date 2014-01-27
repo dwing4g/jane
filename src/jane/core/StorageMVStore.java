@@ -15,7 +15,7 @@ import org.h2.mvstore.type.StringDataType;
  * <p>
  * 此类也可非单件实例化使用
  */
-public class StorageMVStore implements Storage
+public final class StorageMVStore implements Storage
 {
 	private static final StorageMVStore _instance = new StorageMVStore();
 	private MVStore                     _db;                             // MVStore的数据库对象(会多线程并发访问)

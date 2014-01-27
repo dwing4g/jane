@@ -3,7 +3,7 @@ package jane.core;
 import java.util.ArrayList;
 import java.util.List;
 
-public class BeanPool<B extends Bean<B>>
+public final class BeanPool<B extends Bean<B>>
 {
 	private final List<B> _free_list = new ArrayList<B>();
 	private final B       _stub;

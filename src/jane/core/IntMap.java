@@ -13,7 +13,7 @@ import java.util.Random;
  * the map will have to rehash to the next higher POT size.<br>
  * @author Nathan Sweet
  */
-public class IntMap<V>
+public final class IntMap<V>
 {
 	// private static final int PRIME1 = 0xbe1f14b1;
 	private static final int    PRIME2 = 0xb4b82e39;

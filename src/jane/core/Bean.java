@@ -170,7 +170,7 @@ public abstract class Bean<B extends Bean<B>> implements Serializable, Cloneable
 	/**
 	 * 把bean的数据格式化成JSON格式返回
 	 */
-	public StringBuilder toJson()
+	public final StringBuilder toJson()
 	{
 		return toJson(null);
 	}
@@ -184,7 +184,7 @@ public abstract class Bean<B extends Bean<B>> implements Serializable, Cloneable
 	/**
 	 * 把bean的数据格式化成Lua格式返回
 	 */
-	public StringBuilder toLua()
+	public final StringBuilder toLua()
 	{
 		return toLua(null);
 	}

@@ -25,7 +25,7 @@ import org.mapdb.Serializer;
  * <p>
  * 此实现由于依赖bean的类型,不能用于多个数据库实例使用
  */
-public class StorageMapDB implements Storage
+public final class StorageMapDB implements Storage
 {
 	private static final StorageMapDB  _instance     = new StorageMapDB();
 	private final Map<String, Bean<?>> _table_stub_k = new HashMap<String, Bean<?>>(); // 保存的bean类型key的存根. 用于序列化
