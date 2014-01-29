@@ -4,7 +4,7 @@ namespace jane
 {
 	public interface BeanHandler
 	{
-		void onProcess(object manager, object session, Bean arg);
+		void onProcess(NetManager mgr, Bean arg);
 	}
 
 	/**
@@ -15,11 +15,11 @@ namespace jane
 		/**
 		 * 处理回调的接口
 		 */
-		public abstract void onProcess(object manager, object session, A arg);
+		public abstract void onProcess(NetManager mgr, A arg);
 
-		public void onProcess(object manager, object session, Bean arg)
+		public void onProcess(NetManager mgr, Bean arg)
 		{
-			onProcess(manager, session, (A)arg);
+			onProcess(mgr, (A)arg);
 		}
 	}
 }

@@ -7,9 +7,9 @@ namespace jane.handler.testserver
 		/*\
 		\*/
 
-		public override void onProcess(object manager, object session, TestEmpty arg)
+		public override void onProcess(NetManager mgr, TestEmpty arg)
 		{
-			// Log.log.debug("{}.onProcess: arg={}", getClass().getName(), arg);
+			// System.Console.WriteLine("{0}.onProcess: arg={1}", GetType().Name, arg);
 		}
 	}
 }

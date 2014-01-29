@@ -189,9 +189,9 @@ namespace #(hdl.path)
 #(#		|*| #(var.type) #(var.name)#(var.value);#(var.comment)
 #)#		\*/
 
-		public override void onProcess(object manager, object session, #(bean.name) arg)
+		public override void onProcess(NetManager mgr, #(bean.name) arg)
 		{
-			// Log.log.debug("{}.onProcess: arg={}", getClass().getName(), arg);
+			// System.Console.WriteLine("{0}.onProcess: arg={1}", GetType().Name, arg);
 		}
 	}
 }

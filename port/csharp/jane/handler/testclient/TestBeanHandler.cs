@@ -11,9 +11,9 @@ namespace jane.handler.testclient
 		|*| long value2;
 		\*/
 
-		public override void onProcess(object manager, object session, TestBean arg)
+		public override void onProcess(NetManager mgr, TestBean arg)
 		{
-			// Log.log.debug("{}.onProcess: arg={}", getClass().getName(), arg);
+			System.Console.WriteLine("{0}.onProcess: arg={1}", GetType().Name, arg);
 		}
 	}
 }

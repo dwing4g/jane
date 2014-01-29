@@ -18,7 +18,7 @@ namespace jane.handler.testserver
 		|*| LinkedList<byte> v11; // 链表容器(LinkedList)
 		|*| LinkedList<int> v12; // 队列容器(ArrayDeque)
 		|*| HashSet<long> v13; // 无序集合容器(HashSet)
-		|*| HashSet<float> v14; // 排序集合容器(TreeSet)
+		|*| SortedSet<float> v14; // 排序集合容器(TreeSet)
 		|*| HashSet<double> v15; // 有序集合容器(LinkedHashSet)
 		|*| Dictionary<long, string> v16; // 无序映射容器(HashMap)
 		|*| SortedDictionary<TestBean, bool> v17; // 排序映射容器(TreeMap)
@@ -26,9 +26,9 @@ namespace jane.handler.testserver
 		|*| TestBean v19; // 嵌入其它bean
 		\*/
 
-		public override void onProcess(object manager, object session, TestType arg)
+		public override void onProcess(NetManager mgr, TestType arg)
 		{
-			// Log.log.debug("{}.onProcess: arg={}", getClass().getName(), arg);
+			// System.Console.WriteLine("{0}.onProcess: arg={1}", GetType().Name, arg);
 		}
 	}
 }

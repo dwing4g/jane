@@ -54,11 +54,13 @@
     <Compile Include="jane\bean\TestType.cs" />
     <Compile Include="jane\Bean.cs" />
     <Compile Include="jane\BeanHandler.cs" />
+    <Compile Include="jane\NetManager.cs" />
     <Compile Include="jane\DynBean.cs" />
     <Compile Include="jane\LZCompressor.cs" />
     <Compile Include="jane\MarshalException.cs" />
     <Compile Include="jane\Octets.cs" />
     <Compile Include="jane\OctetsStream.cs" />
+    <Compile Include="jane\RC4Filter.cs" />
     <Compile Include="jane\Util.cs" />
     <Compile Include="jane\handler\testclient\TestBeanHandler.cs" />
     <Compile Include="jane\handler\testclient\TestEmptyHandler.cs" />
