@@ -7,9 +7,10 @@ namespace jane
 	public class NetManager
 	{
 		public const int CLOSE_ACTIVE = 0;
-		public const int CLOSE_READ = 1;
-		public const int CLOSE_WRITE = 2;
-		public const int CLOSE_DECODE = 3;
+		public const int CLOSE_CONNECT = 1;
+		public const int CLOSE_READ = 2;
+		public const int CLOSE_WRITE = 3;
+		public const int CLOSE_DECODE = 4;
 		public const int RECV_BUFSIZE = 8192;
 
 		protected static readonly Dictionary<int, Bean> _stubmap = new Dictionary<int, Bean>(); // 所有注册beans的存根对象
@@ -37,7 +38,7 @@ namespace jane
 
 		protected virtual void onAddSession() { }
 		protected virtual void onDelSession(int code, Exception e) { }
-		protected virtual void onAbortSession() { }
+		protected virtual void onAbortSession(Exception e) { }
 
 		protected virtual void onRecvBean(Bean bean)
 		{
@@ -89,39 +90,57 @@ namespace jane
 
 		private void connectCallback(IAsyncResult res)
 		{
-			if(_tcpclient.Connected)
+			try
 			{
-				_tcpclient.EndConnect(res);
-				onAddSession();
-				lock(this)
+				try
 				{
-					_tcpstream = _tcpclient.GetStream();
-					_tcpstream.BeginRead(_bufin, 0, _bufin.Length, new AsyncCallback(readCallback), null);
+					_tcpclient.EndConnect(res);
 				}
+				catch(Exception e)
+				{
+					onAbortSession(e);
+					return;
+				}
+				if(_tcpclient.Connected)
+				{
+					onAddSession();
+					lock(this)
+					{
+						_tcpstream = _tcpclient.GetStream();
+						_tcpstream.BeginRead(_bufin, 0, _bufin.Length, readCallback, null);
+					}
+				}
+				else
+					onAbortSession(null);
 			}
-			else
-				onAbortSession();
+			catch(Exception e)
+			{
+				close(CLOSE_CONNECT, e);
+			}
 		}
 
 		private void readCallback(IAsyncResult res)
 		{
 			try
 			{
-				int buflen = _tcpstream.EndRead(res);
-				if(buflen > 0)
+				lock(this)
 				{
-					try
+					int buflen = _tcpstream.EndRead(res);
+					if(buflen > 0)
 					{
-						onDecode(buflen);
+						try
+						{
+							onDecode(buflen);
+						}
+						catch(Exception e)
+						{
+							close(CLOSE_DECODE, e);
+						}
+						_tcpstream.BeginRead(_bufin, 0, _bufin.Length, readCallback, null);
 					}
-					catch(Exception e)
-					{
-						close(CLOSE_DECODE, e);
-					}
-					_tcpstream.BeginRead(_bufin, 0, _bufin.Length, new AsyncCallback(readCallback), null);
+					else
+						close(CLOSE_READ);
 				}
-				else
-					close(CLOSE_READ);
 			}
 			catch(Exception e)
 			{
@@ -131,14 +150,23 @@ namespace jane
 
 		private void writeCallback(IAsyncResult res)
 		{
-			_tcpstream.EndWrite(res);
-			if(!res.IsCompleted)
-				close(CLOSE_WRITE);
+			try
+			{
+				lock(this)
+				{
+					_tcpstream.EndWrite(res);
+				}
+			}
+			catch(Exception e)
+			{
+				close(CLOSE_WRITE, e);
+			}
 		}
 
 		public void connect(string host, int port)
 		{
-			_tcpclient.BeginConnect(host, port, new AsyncCallback(connectCallback), null);
+			close();
+			_tcpclient.BeginConnect(host, port, connectCallback, null);
 		}
 
 		public void close(int code = CLOSE_ACTIVE, Exception e = null)
@@ -152,7 +180,6 @@ namespace jane
 					_tcpstream.Close();
 					_tcpstream = null;
 				}
-				_tcpclient.Close();
 			}
 			if(hasstream)
 				onDelSession(code, e);
@@ -165,7 +192,7 @@ namespace jane
 			lock(this)
 			{
 				if(_tcpstream != null)
-					_tcpstream.BeginWrite(os.array(), os.position(), os.remain(), new AsyncCallback(writeCallback), null);
+					_tcpstream.BeginWrite(os.array(), os.position(), os.remain(), writeCallback, null);
 			}
 			return true;
 		}

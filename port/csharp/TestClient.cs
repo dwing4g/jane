@@ -1,6 +1,7 @@
 ﻿using System;
 using jane;
 using jane.bean;
+using System.Threading;
 
 namespace jane
 {
@@ -23,9 +24,11 @@ namespace jane
 			Console.WriteLine("onDelSession: {0}: {1}", code, e);
 		}
 
-		protected override void onAbortSession()
+		protected override void onAbortSession(Exception e)
 		{
-			Console.WriteLine("onAbortSession");
+			Console.WriteLine("onAbortSession: {0}", e);
+			Thread.Sleep(3000);
+			connect("127.0.0.1", 9123);
 		}
 
 		protected override OctetsStream onEncode(Bean bean)
@@ -50,7 +53,7 @@ namespace jane
 			NetManager mgr = new TestClient();
 			Console.WriteLine("connecting ...");
 			mgr.connect("127.0.0.1", 9123);
-			Console.WriteLine("press any key to exit ...");
+			Console.WriteLine("press ENTER to exit ...");
 			Console.ReadLine();
 		}
 	}
