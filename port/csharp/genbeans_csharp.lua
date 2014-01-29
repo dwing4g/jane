@@ -189,7 +189,7 @@ namespace #(hdl.path)
 #(#		|*| #(var.type) #(var.name)#(var.value);#(var.comment)
 #)#		\*/
 
-		public override void onProcess(NetManager mgr, #(bean.name) arg)
+		public override void onProcess(NetManager manager, #(bean.name) arg)
 		{
 			// System.Console.WriteLine("{0}.onProcess: arg={1}", GetType().Name, arg);
 		}

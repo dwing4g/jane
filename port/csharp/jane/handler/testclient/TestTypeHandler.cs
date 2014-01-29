@@ -26,7 +26,7 @@ namespace jane.handler.testclient
 		|*| TestBean v19; // 嵌入其它bean
 		\*/
 
-		public override void onProcess(NetManager mgr, TestType arg)
+		public override void onProcess(NetManager manager, TestType arg)
 		{
 			System.Console.WriteLine("{0}.onProcess: arg={1}", GetType().Name, arg);
 		}

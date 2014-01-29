@@ -11,7 +11,7 @@ namespace jane.handler.testserver
 		|*| long value2;
 		\*/
 
-		public override void onProcess(NetManager mgr, TestBean arg)
+		public override void onProcess(NetManager manager, TestBean arg)
 		{
 			// System.Console.WriteLine("{0}.onProcess: arg={1}", GetType().Name, arg);
 		}

@@ -131,6 +131,7 @@ namespace jane
 
 		private void writeCallback(IAsyncResult res)
 		{
+			_tcpstream.EndWrite(res);
 			if(!res.IsCompleted)
 				close(CLOSE_WRITE);
 		}
