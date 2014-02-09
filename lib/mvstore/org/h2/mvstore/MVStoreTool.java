@@ -67,57 +67,51 @@ public class MVStoreTool {
             file = FilePath.get(fileName).open("r");
             long fileLength = file.size();
             pw.println("file " + fileName);
-            pw.println("    length " + fileLength);
+            pw.println("    length " + Long.toHexString(fileLength));
             ByteBuffer block = ByteBuffer.allocate(4096);
             for (long pos = 0; pos < fileLength;) {
                 block.rewind();
                 DataUtils.readFully(file, pos, block);
                 block.rewind();
-                int tag = block.get();
-                if (tag == 'H') {
-                    pw.println("    header at " + pos);
+                int headerType = block.get();
+                if (headerType == 'H') {
+                    pw.println("    store header at " + Long.toHexString(pos));
                     pw.println("    " + new String(block.array(), "UTF-8").trim());
                     pos += blockSize;
                     continue;
                 }
-                if (tag != 'c') {
+                if (headerType != 'c') {
                     pos += blockSize;
                     continue;
                 }
-                int chunkLength = block.getInt();
-                int chunkId = block.getInt();
-                int pageCount = block.getInt();
-                long metaRootPos = block.getLong();
-                long maxLength = block.getLong();
-                long maxLengthLive = block.getLong();
-                pw.println("    chunk " + chunkId +
-                        " at " + pos +
-                        " length " + chunkLength +
-                        " pageCount " + pageCount +
-                        " root " + getPosString(metaRootPos) +
-                        " maxLength " + maxLength +
-                        " maxLengthLive " + maxLengthLive);
-                ByteBuffer chunk = ByteBuffer.allocate(chunkLength);
+                block.position(0);
+                Chunk c = Chunk.readChunkHeader(block, pos);
+                int length = c.len * MVStore.BLOCK_SIZE;
+                pw.println("    " + c.toString());
+                ByteBuffer chunk = ByteBuffer.allocate(length);
                 DataUtils.readFully(file, pos, chunk);
                 int p = block.position();
-                pos = (pos + chunkLength + blockSize) / blockSize * blockSize;
-                chunkLength -= p;
-                while (chunkLength > 0) {
+                pos += length;
+                int remaining = c.pageCount;
+                while (remaining > 0) {
                     chunk.position(p);
                     int pageLength = chunk.getInt();
                     // check value (ignored)
                     chunk.getShort();
-                    long mapId = DataUtils.readVarInt(chunk);
+                    int mapId = DataUtils.readVarInt(chunk);
                     int len = DataUtils.readVarInt(chunk);
                     int type = chunk.get();
                     boolean compressed = (type & 2) != 0;
                     boolean node = (type & 1) != 0;
-                    pw.println("        map " + mapId + " at " + p + " " +
-                            (node ? "node" : "leaf") + " " +
-                            (compressed ? "compressed " : "") +
-                            "len: " + pageLength + " entries: " + len);
+                    pw.println(
+                            "        map " + Integer.toHexString(mapId) + 
+                            " at " + Long.toHexString(p) + " " +
+                            (node ? " node" : " leaf") + 
+                            (compressed ? " compressed" : "") +
+                            " len: " + Integer.toHexString(pageLength) + 
+                            " entries: " + Integer.toHexString(len));
                     p += pageLength;
-                    chunkLength -= pageLength;
+                    remaining--;
                     if (mapId == 0 && !compressed) {
                         String[] keys = new String[len];
                         for (int i = 0; i < len; i++) {
@@ -153,6 +147,9 @@ public class MVStoreTool {
                         }
                     }
                 }
+                chunk.position(chunk.limit() - Chunk.FOOTER_LENGTH);
+                pw.println("      chunk footer");
+                pw.println("      " + new String(chunk.array(), chunk.position(), Chunk.FOOTER_LENGTH, "UTF-8").trim());
             }
         } catch (IOException e) {
             pw.println("ERROR: " + e);
@@ -171,8 +168,9 @@ public class MVStoreTool {
     }
 
     private static String getPosString(long pos) {
-        return "pos " + pos + ", chunk " + DataUtils.getPageChunkId(pos) +
-                ", offset " + DataUtils.getPageOffset(pos);
+        return "pos " + Long.toHexString(pos) + 
+                ", chunk " + Integer.toHexString(DataUtils.getPageChunkId(pos)) +
+                ", offset " + Integer.toHexString(DataUtils.getPageOffset(pos));
 
     }
 

@@ -38,11 +38,27 @@ public final class TestMVStore
 		}
 
 		@Override
+		public void write(WriteBuffer buf, Object[] objs, int len, boolean key)
+		{
+			System.out.println("write: " + (objs[0] != null ? objs[0].getClass() : "?") + ": [" + len + "] key=" + key);
+			for(Object obj : objs)
+				buf.putVarLong(obj != null ? (Long)obj : 0);
+		}
+
+		@Override
 		public Object read(ByteBuffer buf)
 		{
 			long v = DataUtils.readVarLong(buf);
 			System.out.println("deserialize: " + v);
 			return v;
+		}
+
+		@Override
+		public void read(ByteBuffer buf, Object[] objs, int len, boolean key)
+		{
+			System.out.println("deserialize: [" + len + "] key=" + key);
+			for(int i = 0; i < len; ++i)
+				objs[i] = DataUtils.readVarLong(buf);
 		}
 	}
 
@@ -50,7 +66,8 @@ public final class TestMVStore
 	{
 		System.out.println("begin");
 		MVStore db = new MVStore.Builder().fileName("mvstore_test.mv1").autoCommitDisabled().cacheSize(32).open();
-		MVMap<Long, Long> map = db.openMap("test", new MVMap.Builder<Long, Long>().valueType(MVStoreLongType.instance()));
+		MVMap<Long, Long> map = db.openMap("test", new MVMap.Builder<Long, Long>()
+		        .keyType(MVStoreLongType.instance()).valueType(MVStoreLongType.instance()));
 
 		System.out.println("start");
 		Long v = map.get(1L);

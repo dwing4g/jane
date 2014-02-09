@@ -131,9 +131,14 @@ public class DataUtils {
     public static final int PAGE_MEMORY_CHILD = 16;
 
     /**
-     * Name of the character encoding format.
+     * The UTF-8 character encoding format.
      */
     public static final Charset UTF8 = Charset.forName("UTF-8");
+    
+    /**
+     * The ISO Latin character encoding format.
+     */
+    public static final Charset LATIN = Charset.forName("ISO-8859-1");
 
     /**
      * An 0-size byte array.
@@ -554,7 +559,7 @@ public class DataUtils {
         }
         return buff;
     }
-
+    
     /**
      * Append a key-value pair to the string builder. Keys may not contain a
      * colon. Values that contain a comma or a double quote are enclosed in
@@ -569,9 +574,16 @@ public class DataUtils {
             buff.append(',');
         }
         buff.append(key).append(':');
-        String v = value.toString();
+        String v;
+        if (value instanceof Long) {
+            v = Long.toHexString((Long) value);
+        } else if (value instanceof Integer) {
+            v = Integer.toHexString((Integer) value);
+        } else {
+            v = value.toString();
+        }
         if (v.indexOf(',') < 0 && v.indexOf('\"') < 0) {
-            buff.append(value);
+            buff.append(v);
         } else {
             buff.append('\"');
             for (int i = 0, size = v.length(); i < size; i++) {
@@ -641,7 +653,8 @@ public class DataUtils {
     public static int getFletcher32(byte[] bytes, int length) {
         int s1 = 0xffff, s2 = 0xffff;
         for (int i = 0; i < length;) {
-            for (int end = Math.min(i + 718, length); i < end;) {
+            // reduce after 360 words (each word is two bytes)
+            for (int end = Math.min(i + 720, length); i < end;) {
                 int x = ((bytes[i++] & 0xff) << 8) | (bytes[i++] & 0xff);
                 s2 += s1 += x;
             }
@@ -734,7 +747,11 @@ public class DataUtils {
         for (int i = 0; i < arguments.length; i++) {
             Object a = arguments[i];
             if (!(a instanceof Exception)) {
-                arguments[i] = a == null ? "null" : a.toString();
+                String s = a == null ? "null" : a.toString();
+                if (s.length() > 1000) {
+                    s = s.substring(0, 1000) + "...";
+                }
+                arguments[i] = s;
             }
         }
         return MessageFormat.format(message, arguments) +
@@ -817,41 +834,51 @@ public class DataUtils {
     }
 
     /**
-     * Parse a string as a number.
+     * Read a hex long value from a map.
      *
-     * @param x the number
-     * @param defaultValue if x is null
+     * @param map the map
+     * @param key the key
+     * @param defaultValue if the value is null
      * @return the parsed value
      * @throws IllegalStateException if parsing fails
      */
-    public static long parseLong(String x, long defaultValue) {
-        if (x == null) {
+    public static long readHexLong(HashMap<String, ? extends Object> map, String key, long defaultValue) {
+        Object v = map.get(key);
+        if (v == null) {
             return defaultValue;
+        } else if (v instanceof Long) {
+            return (Long) v;
         }
         try {
-            return Long.parseLong(x);
+            return Long.parseLong((String) v, 16);
         } catch (NumberFormatException e) {
             throw newIllegalStateException(ERROR_FILE_CORRUPT,
-                    "Error parsing the value {0} as a long", x, e);
+                    "Error parsing the value {0}", v, e);
         }
     }
-
+    
     /**
-     * Try to parse a string as a number.
+     * Read a hex int value from a map.
      *
-     * @param x the number
-     * @param defaultValue if x is null
-     * @param errorValue if parsing fails
-     * @return the parsed value if parsing is possible
+     * @param map the map
+     * @param key the key
+     * @param defaultValue if the value is null
+     * @return the parsed value
+     * @throws IllegalStateException if parsing fails
      */
-    public static long parseLong(String x, long defaultValue, long errorValue) {
-        if (x == null) {
+    public static int readHexInt(HashMap<String, ? extends Object> map, String key, int defaultValue) {
+        Object v = map.get(key);
+        if (v == null) {
             return defaultValue;
+        } else if (v instanceof Integer) {
+            return (Integer) v;
         }
         try {
-            return Long.parseLong(x);
+            // support unsigned hex value
+            return (int) Long.parseLong((String) v, 16);
         } catch (NumberFormatException e) {
-            return errorValue;
+            throw newIllegalStateException(ERROR_FILE_CORRUPT,
+                    "Error parsing the value {0}", v, e);
         }
     }
 

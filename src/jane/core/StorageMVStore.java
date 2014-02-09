@@ -139,9 +139,23 @@ public final class StorageMVStore implements Storage
 		}
 
 		@Override
+		public void write(WriteBuffer buf, Object[] objs, int len, boolean key)
+		{
+			for(Object obj : objs)
+				buf.putVarLong(obj != null ? (Long)obj : 0);
+		}
+
+		@Override
 		public Object read(ByteBuffer buf)
 		{
 			return DataUtils.readVarLong(buf);
+		}
+
+		@Override
+		public void read(ByteBuffer buf, Object[] objs, int len, boolean key)
+		{
+			for(int i = 0; i < len; ++i)
+				objs[i] = DataUtils.readVarLong(buf);
 		}
 	}
 
@@ -193,6 +207,42 @@ public final class StorageMVStore implements Storage
 		}
 
 		@Override
+		public void write(WriteBuffer buf, Object[] objs, int len, boolean key)
+		{
+			ByteBuffer bb = buf.getBuffer();
+			if(bb.arrayOffset() == 0)
+			{
+				byte[] array = bb.array();
+				OctetsStream os = OctetsStream.wrap(array, bb.position());
+				for(Object obj : objs)
+				{
+					os.marshal1((byte)0); // format
+					if(obj != null)
+						((Bean<?>)obj).marshal(os);
+					else
+						os.marshal1((byte)0);
+				}
+				if(os.array() == array)
+					bb.position(os.size());
+				else
+					buf.setBuffer(ByteBuffer.wrap(os.array(), os.size(), os.capacity() - os.size()));
+			}
+			else
+			{
+				OctetsStream os = new OctetsStream(((Bean<?>)objs[0]).initSize() * len);
+				for(Object obj : objs)
+				{
+					os.marshal1((byte)0); // format
+					if(obj != null)
+						((Bean<?>)obj).marshal(os);
+					else
+						os.marshal1((byte)0);
+				}
+				buf.put(os.array(), 0, os.size());
+			}
+		}
+
+		@Override
 		public Object read(ByteBuffer buf)
 		{
 			int offset = buf.arrayOffset();
@@ -213,6 +263,32 @@ public final class StorageMVStore implements Storage
 				throw new RuntimeException(e);
 			}
 			return b;
+		}
+
+		@Override
+		public void read(ByteBuffer buf, Object[] objs, int len, boolean key)
+		{
+			int offset = buf.arrayOffset();
+			OctetsStream os = OctetsStream.wrap(buf.array(), offset + buf.limit());
+			os.setExceptionInfo(true);
+			os.setPosition(offset + buf.position());
+			try
+			{
+				for(int i = 0; i < len; ++i)
+				{
+					int format = os.unmarshalByte();
+					if(format != 0)
+					    throw new IllegalStateException("unknown record value format(" + format + ") in table(" + _tablename + ')');
+					Bean<?> b = _stub.alloc();
+					b.unmarshal(os);
+					objs[i] = b;
+				}
+				buf.position(os.position() - offset);
+			}
+			catch(MarshalException e)
+			{
+				throw new RuntimeException(e);
+			}
 		}
 	}
 
@@ -246,12 +322,40 @@ public final class StorageMVStore implements Storage
 		}
 
 		@Override
+		public void write(WriteBuffer buf, Object[] objs, int len, boolean key)
+		{
+			for(Object obj : objs)
+			{
+				if(obj != null)
+				{
+					Octets o = (Octets)obj;
+					buf.putVarInt(o.size());
+					buf.put(o.array(), 0, o.size());
+				}
+				else
+					buf.putVarInt(0);
+			}
+		}
+
+		@Override
 		public Object read(ByteBuffer buf)
 		{
 			int n = DataUtils.readVarInt(buf);
 			Octets o = Octets.createSpace(n);
 			buf.get(o.array(), 0, n);
 			return o;
+		}
+
+		@Override
+		public void read(ByteBuffer buf, Object[] objs, int len, boolean key)
+		{
+			for(int i = 0; i < len; ++i)
+			{
+				int n = DataUtils.readVarInt(buf);
+				Octets o = Octets.createSpace(n);
+				buf.get(o.array(), 0, n);
+				objs[i] = o;
+			}
 		}
 	}
 

@@ -70,11 +70,10 @@ public class MVMap<K, V> extends AbstractMap<K, V>
      * @param store the store
      * @param config the configuration
      */
-    protected void init(MVStore store, HashMap<String, String> config) {
+    protected void init(MVStore store, HashMap<String, Object> config) {
         this.store = store;
-        this.id = Integer.parseInt(config.get("id"));
-        String x = config.get("createVersion");
-        this.createVersion = x == null ? 0 : Long.parseLong(x);
+        this.id = DataUtils.readHexInt(config, "id", 0);
+        this.createVersion = DataUtils.readHexLong(config, "createVersion", 0);
         this.writeVersion = store.getCurrentVersion();
     }
 
@@ -1037,9 +1036,9 @@ public class MVMap<K, V> extends AbstractMap<K, V>
     MVMap<K, V> openReadOnly() {
         MVMap<K, V> m = new MVMap<K, V>(keyType, valueType);
         m.readOnly = true;
-        HashMap<String, String> config = New.hashMap();
-        config.put("id", String.valueOf(id));
-        config.put("createVersion", String.valueOf(createVersion));
+        HashMap<String, Object> config = New.hashMap();
+        config.put("id", id);
+        config.put("createVersion", createVersion);
         m.init(store, config);
         m.root = root;
         return m;

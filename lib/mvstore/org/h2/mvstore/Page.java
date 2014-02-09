@@ -187,7 +187,7 @@ public class Page {
         int length = maxLength;
         if (length < 0) {
             throw DataUtils.newIllegalStateException(DataUtils.ERROR_FILE_CORRUPT,
-                    "Illegal page length {0} reading at {1}; file size {1} ", length, filePos, fileSize);
+                    "Illegal page length {0} reading at {1}; file size {2} ", length, filePos, fileSize);
         }
         buff = fileStore.readFully(filePos, length);
         Page p = new Page(map, 0);
@@ -260,13 +260,13 @@ public class Page {
     public String toString() {
         StringBuilder buff = new StringBuilder();
         buff.append("id: ").append(System.identityHashCode(this)).append('\n');
-        buff.append("pos: ").append(pos).append("\n");
+        buff.append("pos: ").append(Long.toHexString(pos)).append("\n");
         for (int i = 0; i <= keyCount; i++) {
             if (i > 0) {
                 buff.append(" ");
             }
             if (children != null) {
-                buff.append("[" + children[i] + "] ");
+                buff.append("[" + Long.toHexString(children[i]) + "] ");
             }
             if (i < keyCount) {
                 buff.append(keys[i]);
@@ -758,11 +758,7 @@ public class Page {
             buff = ByteBuffer.allocate(l);
             compressor.expand(comp, 0, compLen, buff.array(), buff.arrayOffset(), l);
         }
-        DataType keyType = map.getKeyType();
-        for (int i = 0; i < len; i++) {
-            Object k = keyType.read(buff);
-            keys[i] = k;
-        }
+        map.getKeyType().read(buff, keys, len, true);
         if (node) {
             childCount = len + 1;
             children = new long[len + 1];
@@ -780,11 +776,7 @@ public class Page {
             totalCount = total;
         } else {
             values = new Object[len];
-            DataType valueType = map.getValueType();
-            for (int i = 0; i < len; i++) {
-                Object v = valueType.read(buff);
-                values[i] = v;
-            }
+            map.getValueType().read(buff, values, len, false);
             totalCount = len;
         }
         recalculateMemory();
@@ -807,10 +799,7 @@ public class Page {
             putVarInt(len).
             put((byte) type);
         int compressStart = buff.position();
-        DataType keyType = map.getKeyType();
-        for (int i = 0; i < len; i++) {
-            keyType.write(buff, keys[i]);
-        }
+        map.getKeyType().write(buff, keys, len, true);
         if (type == DataUtils.PAGE_TYPE_NODE) {
             for (int i = 0; i <= len; i++) {
                 buff.putLong(children[i]);
@@ -819,10 +808,7 @@ public class Page {
                 buff.putVarLong(counts[i]);
             }
         } else {
-            DataType valueType = map.getValueType();
-            for (int i = 0; i < len; i++) {
-                valueType.write(buff, values[i]);
-            }
+            map.getValueType().write(buff, values, len, false);
         }
         MVStore store = map.getStore();
         if (store.getCompress()) {
@@ -855,7 +841,7 @@ public class Page {
         store.cachePage(pos, this, getMemory());
         long max = DataUtils.getPageMaxLength(pos);
         chunk.maxLength += max;
-        chunk.maxLengthLive += max;
+        chunk.maxLenLive += max;
         chunk.pageCount++;
         chunk.pageCountLive++;
     }

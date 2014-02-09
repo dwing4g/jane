@@ -2794,6 +2794,11 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
         engine.close();
     }
 
+    public Engine getEngine(){
+        return engine;
+    }
+
+
     public void printTreeStructure() {
         final long rootRecid = engine.get(rootRecidRef, Serializer.LONG);
         printRecur(this, rootRecid, "");
@@ -2861,10 +2866,11 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
     protected static void lock(LongConcurrentHashMap<Thread> locks, long recid){
         //feel free to rewrite, if you know better (more efficient) way
 
+        final Thread currentThread = Thread.currentThread();
         //check node is not already locked by this thread
-        assert(locks.get(recid)!=Thread.currentThread()):("node already locked by current thread: "+recid);
+        assert(locks.get(recid)!= currentThread):("node already locked by current thread: "+recid);
 
-        while(locks.putIfAbsent(recid, Thread.currentThread()) != null){
+        while(locks.putIfAbsent(recid, currentThread) != null){
             LockSupport.parkNanos(10);
         }
     }
