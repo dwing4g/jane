@@ -141,8 +141,11 @@ public final class StorageMVStore implements Storage
 		@Override
 		public void write(WriteBuffer buf, Object[] objs, int len, boolean key)
 		{
-			for(Object obj : objs)
-				buf.putVarLong(obj != null ? (Long)obj : 0);
+			for(int i = 0; i < len; ++i)
+			{
+				Long v = (Long)objs[i];
+				buf.putVarLong(v != null ? v : 0);
+			}
 		}
 
 		@Override
@@ -214,13 +217,13 @@ public final class StorageMVStore implements Storage
 			{
 				byte[] array = bb.array();
 				OctetsStream os = OctetsStream.wrap(array, bb.position());
-				for(Object obj : objs)
+				for(int i = 0; i < len; ++i)
 				{
-					os.marshal1((byte)0); // format
-					if(obj != null)
-						((Bean<?>)obj).marshal(os);
+					Bean<?> b = (Bean<?>)objs[i];
+					if(b != null)
+						b.marshal(os.marshal1((byte)0)); // format
 					else
-						os.marshal1((byte)0);
+						os.marshal2(0); // format
 				}
 				if(os.array() == array)
 					bb.position(os.size());
@@ -230,13 +233,13 @@ public final class StorageMVStore implements Storage
 			else
 			{
 				OctetsStream os = new OctetsStream(((Bean<?>)objs[0]).initSize() * len);
-				for(Object obj : objs)
+				for(int i = 0; i < len; ++i)
 				{
-					os.marshal1((byte)0); // format
-					if(obj != null)
-						((Bean<?>)obj).marshal(os);
+					Bean<?> b = (Bean<?>)objs[i];
+					if(b != null)
+						b.marshal(os.marshal1((byte)0)); // format
 					else
-						os.marshal1((byte)0);
+						os.marshal2(0); // format
 				}
 				buf.put(os.array(), 0, os.size());
 			}
@@ -324,11 +327,11 @@ public final class StorageMVStore implements Storage
 		@Override
 		public void write(WriteBuffer buf, Object[] objs, int len, boolean key)
 		{
-			for(Object obj : objs)
+			for(int i = 0; i < len; ++i)
 			{
-				if(obj != null)
+				Octets o = (Octets)objs[i];
+				if(o != null)
 				{
-					Octets o = (Octets)obj;
 					buf.putVarInt(o.size());
 					buf.put(o.array(), 0, o.size());
 				}

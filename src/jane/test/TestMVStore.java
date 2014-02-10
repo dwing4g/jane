@@ -41,8 +41,11 @@ public final class TestMVStore
 		public void write(WriteBuffer buf, Object[] objs, int len, boolean key)
 		{
 			System.out.println("write: " + (objs[0] != null ? objs[0].getClass() : "?") + ": [" + len + "] key=" + key);
-			for(Object obj : objs)
-				buf.putVarLong(obj != null ? (Long)obj : 0);
+			for(int i = 0; i < len; ++i)
+			{
+				Long v = (Long)objs[i];
+				buf.putVarLong(v != null ? v : 0);
+			}
 		}
 
 		@Override
