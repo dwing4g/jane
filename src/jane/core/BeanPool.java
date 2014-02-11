@@ -3,6 +3,11 @@ package jane.core;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * bean的对象池
+ * <p>
+ * 目前仅用于生命期可控的数据库的记录值
+ */
 public final class BeanPool<B extends Bean<B>>
 {
 	private final List<B> _free_list = new ArrayList<B>();

@@ -3,7 +3,7 @@ setlocal
 pushd %~dp0
 
 set JVM=-Xms512m -Xmx512m -server -XX:+UseConcMarkSweepGC -Xloggc:log/gc.log -XX:+PrintGCTimeStamps
-set LIB=lib/slf4j-api-1.7.5.jar;lib/logback-core-1.0.13.jar;lib/logback-classic-1.0.13.jar;lib/mina-core-2.0.7.jar;lib/luaj-jse-2.0.3.jar
+set LIB=lib/slf4j-api-1.7.5.jar;lib/logback-core-1.1.1.jar;lib/logback-classic-1.1.1.jar;lib/mina-core-2.0.7.jar;lib/luaj-jse-2.0.3.jar
 
 set MAIN=%1
 if "%MAIN%" equ "" set MAIN=jane.test.TestMain
