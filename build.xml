@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<project name="jane" default="dist">
+<project name="jane" default="jar">
 	<!-- install jdk,ant first:
 		example: add this line in linux ~/.bash_profile:
-		export PATH=$PATH:$HOME/apache-ant-1.9.2/bin
+		export PATH=$PATH:$HOME/apache-ant-1.9.3/bin
 	-->
 	<property name="root" value="."/>
 	<property name="classes" value="${root}/classes"/>
@@ -13,6 +13,7 @@
 		<delete dir="${classes}"/>
 		<delete file="jane-core.jar"/>
 		<delete file="jane-test.jar"/>
+		<delete file="jane-src.jar"/>
 	</target>
 
 	<target name="compile">
@@ -34,8 +35,14 @@
 		</javac>
 	</target>
 
-	<target name="dist" depends="clean, compile">
+	<target name="jar" depends="clean, compile">
 		<jar jarfile="jane-core.jar" basedir="${classes}" excludes="**/jane/bean/**,**/jane/handler/**,**/jane/test/**"/>
 		<jar jarfile="jane-test.jar" basedir="${classes}" includes="**/jane/bean/**,**/jane/handler/**,**/jane/test/**"/>
+		<jar jarfile="jane-src.jar">
+			<fileset dir="${src}/"/>
+			<fileset dir="${lib}/hashmap/"/>
+			<fileset dir="${lib}/mapdb/"/>
+			<fileset dir="${lib}/mvstore/"/>
+		</jar>
 	</target>
 </project>

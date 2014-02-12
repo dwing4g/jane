@@ -2,6 +2,6 @@
 setlocal
 pushd %~dp0
 
-call ant
+call ant jar
 
 pause
