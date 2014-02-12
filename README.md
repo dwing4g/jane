@@ -36,7 +36,7 @@ License:
  * 概念和实现简单清晰
 
 依赖库:
- * 日志库: slf4j-1.7.x (后端用logback-1.0.x, 以后考虑把后端换成log4j-2.x)
+ * 日志库: slf4j-1.7.x (后端用logback-1.1.x, 以后考虑把后端换成log4j-2.x)
  * 网络库: mina-core-2.0.x
  * 数据库: mapdb-0.9.x (最好等待1.0稳定版再投入正式使用) leveldb-jni mvstore-1.3.x
  * 脚本库: luaj-jse-2.0.x
