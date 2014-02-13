@@ -84,7 +84,7 @@ public abstract class RpcHandler<A extends Bean<A>, R extends Bean<R>> extends B
 					rpcbean_old.setOnClient(null);
 				else
 					onClient = this;
-				onClient.onClient(manager, session, rpcbean.getArg(), rpcbean.getRes());
+				onClient.onClient(manager, session, rpcbean_old.getArg(), rpcbean.getRes());
 			}
 		}
 	}

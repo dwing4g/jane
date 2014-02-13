@@ -150,7 +150,10 @@ public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 	@Override
 	public OctetsStream marshal(OctetsStream os)
 	{
-		return os.marshal(_rpcid).marshal(_rpcid >= 0 ? arg : res);
+		os.marshal(_rpcid);
+		return _rpcid >= 0 ?
+		        os.marshalProtocol(arg != null ? arg : (arg = createArg())) :
+		        os.marshalProtocol(res != null ? res : (res = createRes()));
 	}
 
 	@Override
@@ -160,12 +163,12 @@ public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 		if(_rpcid >= 0)
 		{
 			if(arg == null) arg = createArg();
-			os.unmarshal(arg);
+			os.unmarshalProtocol(arg);
 		}
 		else
 		{
 			if(res == null) res = createRes();
-			os.unmarshal(res);
+			os.unmarshalProtocol(res);
 		}
 		return os;
 	}

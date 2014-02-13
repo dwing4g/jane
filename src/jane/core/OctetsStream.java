@@ -411,7 +411,7 @@ public class OctetsStream extends Octets
 
 	public OctetsStream marshal(Bean<?> b)
 	{
-		return b.marshal(this);
+		return b != null ? b.marshal(this) : marshal1((byte)0);
 	}
 
 	public OctetsStream marshalProtocol(Bean<?> b)
