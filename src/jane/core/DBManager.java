@@ -11,6 +11,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -24,7 +25,7 @@ public final class DBManager
 	private static final DBManager                   _instance    = new DBManager();
 	private final SimpleDateFormat                   _sdf         = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss"); // 备份文件后缀名的时间格式
 	private final ScheduledExecutorService           _commit_thread;                                            // 处理数据提交和事务超时的线程
-	private final ExecutorService                    _proc_threads;                                             // 事务线程池
+	private final ThreadPoolExecutor                 _proc_threads;                                             // 事务线程池
 	private final Map<Object, ArrayDeque<Procedure>> _qmap        = Util.newConcurrentHashMap();                // 当前sid队列的数量
 	private final AtomicLong                         _proc_count  = new AtomicLong();                           // 绑定过sid的在队列中未运行的事务数量
 	private final AtomicLong                         _mod_count   = new AtomicLong();                           // 当前缓存修改的记录数
@@ -45,7 +46,7 @@ public final class DBManager
 				return t;
 			}
 		});
-		_proc_threads = Executors.newFixedThreadPool(Const.dbThreadCount, new ThreadFactory()
+		_proc_threads = (ThreadPoolExecutor)Executors.newFixedThreadPool(Const.dbThreadCount, new ThreadFactory()
 		{
 			private final AtomicInteger _num = new AtomicInteger(1);
 
@@ -336,9 +337,33 @@ public final class DBManager
 	/**
 	 * 获取绑定过sid的在队列中未运行的事务数量
 	 */
-	public long getProcedureCount()
+	public long getProcQueuedCount()
 	{
 		return _proc_count.get();
+	}
+
+	/**
+	 * 获取当前事务线程池待运行的事务数量
+	 */
+	public int getProcSubmittedCount()
+	{
+		return _proc_threads.getQueue().size();
+	}
+
+	/**
+	 * 获取当前事务线程池正在运行的事务数量
+	 */
+	public int getProcRunningCount()
+	{
+		return _proc_threads.getActiveCount();
+	}
+
+	/**
+	 * 获取当前事务线程池已经运行完成的事务数量
+	 */
+	public long getProcCompletedCount()
+	{
+		return _proc_threads.getCompletedTaskCount();
 	}
 
 	/**

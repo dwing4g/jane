@@ -1,15 +1,21 @@
 package jane.core;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -19,6 +25,8 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
@@ -31,7 +39,8 @@ import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
  */
 public final class Util
 {
-	private static final Random _rand = new Random();
+	private static final Random  _rand        = new Random();
+	private static final Pattern _pat_charset = Pattern.compile("charset=(\\S+)");
 
 	public static Random getRand()
 	{
@@ -431,6 +440,88 @@ public final class Util
 		{
 			is.close();
 		}
+	}
+
+	public static String doHttpGet(String url, Map<String, String> params)
+	{
+		String encoding = "UTF-8";
+
+		if(params != null && !params.isEmpty())
+		{
+			StringBuilder sb = new StringBuilder(url);
+			char c = '?';
+			for(Entry<String, String> entry : params.entrySet())
+			{
+				sb.append(c);
+				c = '&';
+				try
+				{
+					sb.append(URLEncoder.encode(entry.getKey(), encoding));
+					sb.append('=');
+					sb.append(URLEncoder.encode(entry.getValue(), encoding));
+				}
+				catch(UnsupportedEncodingException e)
+				{
+					Log.log.error("doHttpGet encode exception:", e);
+					return null;
+				}
+			}
+			url = sb.toString();
+		}
+
+		HttpURLConnection conn = null;
+		InputStream is = null;
+		try
+		{
+			conn = (HttpURLConnection)new URL(url).openConnection();
+			conn.setUseCaches(false);
+			conn.setRequestProperty("Accept-Charset", encoding);
+			conn.setConnectTimeout(15 * 1000);
+			conn.connect();
+
+			String ct = conn.getContentType();
+			if(ct != null)
+			{
+				Matcher mat = _pat_charset.matcher(ct);
+				if(mat.find())
+				{
+					String cs = mat.group(1);
+					if(Charset.isSupported(cs))
+					    encoding = cs;
+				}
+			}
+
+			is = conn.getInputStream();
+			byte[] buf = new byte[8 * 1024];
+			ByteArrayOutputStream bs = new ByteArrayOutputStream(buf.length);
+			for(;;)
+			{
+				int n = is.read(buf);
+				if(n < 0) break;
+				bs.write(buf, 0, n);
+			}
+			return bs.toString(encoding);
+		}
+		catch(IOException e)
+		{
+			Log.log.error("doHttpGet exception:", e);
+		}
+		finally
+		{
+			if(is != null)
+			{
+				try
+				{
+					is.close();
+				}
+				catch(IOException e)
+				{
+					Log.log.error("doHttpGet close exception:", e);
+				}
+			}
+			if(conn != null) conn.disconnect();
+		}
+		return null;
 	}
 
 	private Util()
