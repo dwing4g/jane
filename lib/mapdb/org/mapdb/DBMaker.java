@@ -558,7 +558,7 @@ public class DBMaker<DBMakerT extends DBMaker<DBMakerT>> {
 
 
     /**
-     * Adds Adler32 checksum at end of each record to check data integrity.
+     * Adds CRC32 checksum at end of each record to check data integrity.
      * It throws 'IOException("Checksum does not match, data broken")' on de-serialization if data are corrupted
      * <p/>
      * Make sure you enable this every time you reopen store, otherwise record de-serialization fails.
@@ -665,7 +665,18 @@ public class DBMaker<DBMakerT extends DBMaker<DBMakerT>> {
 
     /** constructs DB using current settings */
     public DB make(){
-        return new DB(makeEngine(), propsGetBool(Keys.strictDBGet));
+        boolean strictGet = propsGetBool(Keys.strictDBGet);
+        Engine engine = makeEngine();
+        boolean dbCreated = false;
+        try{
+            DB db =  new  DB(engine, strictGet);
+            dbCreated = true;
+            return db;
+        }finally {
+            //did db creation fail? in that case close engine to unlock files
+            if(!dbCreated)
+                engine.close();
+        }
     }
 
     
@@ -673,13 +684,10 @@ public class DBMaker<DBMakerT extends DBMaker<DBMakerT>> {
         props.setProperty(Keys.fullTx,TRUE);
         snapshotEnable();
         Engine e = makeEngine();
-        if(e instanceof EngineWrapper && !(e instanceof TxEngine))
-            e = ((EngineWrapper)e).getWrappedEngine();
-        if(!(e instanceof TxEngine)) throw new IllegalArgumentException("Snapshot must be enabled for TxMaker");
         //init catalog if needed
         DB db = new DB(e);
         db.commit();
-        return new TxMaker((TxEngine) e);
+        return new TxMaker(e, propsGetBool(Keys.strictDBGet), propsGetBool(Keys.snapshots));
     }
 
     /** constructs Engine using current settings */
