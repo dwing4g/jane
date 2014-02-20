@@ -1,13 +1,14 @@
 -- UTF-8 without BOM
-local handler = handler or function() end -- 可以单独运行此文件来检查词法和基本语法
-local bean    = bean    or function() end
-local rpc     = rpc     or function() end
-local dbt     = dbt     or function() end
+local handler   = handler or function() end -- 可以单独运行此文件来检查词法和基本语法
+local bean      = bean    or function() end
+local rpc       = rpc     or function() end
+local dbt       = dbt     or function() end
+local namespace = namespace or ""
 
 handler
 {
-	{ name="TestServer", path="jane.handler.testserver" },
-	{ name="TestClient", path="jane.handler.testclient" },
+	{ name="TestServer", path = namespace .. ".handler.testserver" },
+	{ name="TestClient", path = namespace .. ".handler.testclient" },
 }
 
 bean{ name="TestBean", type=1, initsize=16, maxsize=16, poolsize=1000, comment="bean的注释",
