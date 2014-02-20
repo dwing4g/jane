@@ -1,13 +1,18 @@
 ﻿using System;
+using System.Threading;
 using jane;
 using jane.bean;
-using System.Threading;
 
 namespace jane
 {
 	public class TestClient : NetManager
 	{
 		private RC4Filter _filter;
+
+		public TestClient()
+		{
+			setHandlers(AllBeans.getTestClientHandlers());
+		}
 
 		public void setFilter(RC4Filter filter)
 		{
@@ -49,7 +54,6 @@ namespace jane
 		static void Main(string[] args)
 		{
 			registerAllBeans(AllBeans.getAllBeans());
-			setHandlers(AllBeans.getTestClientHandlers());
 			NetManager mgr = new TestClient();
 			Console.WriteLine("connecting ...");
 			mgr.connect("127.0.0.1", 9123);
