@@ -19,7 +19,7 @@ namespace jane
 
 		public static void setDefaultEncoding(Encoding enc)
 		{
-			_default_charset = (enc != null ? enc : Encoding.UTF8);
+			_default_charset = enc ?? Encoding.UTF8;
 		}
 
 		public static Octets wrap(byte[] data, int size)

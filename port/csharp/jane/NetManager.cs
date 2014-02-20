@@ -14,7 +14,7 @@ namespace jane
 		public const int RECV_BUFSIZE = 8192;
 
 		protected static readonly Dictionary<int, Bean> _stubmap = new Dictionary<int, Bean>(); // 所有注册beans的存根对象
-		protected static IDictionary<int, BeanHandler> _handlers = new Dictionary<int, BeanHandler>(); // 所有注册beans的处理对象
+		protected IDictionary<int, BeanHandler> _handlers = new Dictionary<int, BeanHandler>(); // 所有注册beans的处理对象
 		private readonly TcpClient _tcpclient = new TcpClient();
 		private NetworkStream _tcpstream;
 		protected readonly byte[] _bufin = new byte[RECV_BUFSIZE];
@@ -31,7 +31,7 @@ namespace jane
 			}
 		}
 
-		public static void setHandlers(IDictionary<int, BeanHandler> handlers)
+		public void setHandlers(IDictionary<int, BeanHandler> handlers)
 		{
 			if(handlers != null) _handlers = handlers;
 		}

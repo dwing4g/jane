@@ -5,7 +5,8 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayDeque;
 import java.util.Date;
-import java.util.Map;
+import java.util.Iterator;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -22,17 +23,17 @@ import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
  */
 public final class DBManager
 {
-	private static final DBManager                   _instance    = new DBManager();
-	private final SimpleDateFormat                   _sdf         = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss"); // 备份文件后缀名的时间格式
-	private final ScheduledExecutorService           _commit_thread;                                            // 处理数据提交和事务超时的线程
-	private final ThreadPoolExecutor                 _proc_threads;                                             // 事务线程池
-	private final Map<Object, ArrayDeque<Procedure>> _qmap        = Util.newConcurrentHashMap();                // 当前sid队列的数量
-	private final AtomicLong                         _proc_count  = new AtomicLong();                           // 绑定过sid的在队列中未运行的事务数量
-	private final AtomicLong                         _mod_count   = new AtomicLong();                           // 当前缓存修改的记录数
-	private final CommitTask                         _commit_task = new CommitTask();                           // 数据提交的任务
-	private volatile Storage                         _storage;                                                  // 存储引擎
-	private volatile ScheduledFuture<?>              _commit_future;                                            // 数据提交的结果
-	private volatile boolean                         _exit;                                                     // 是否在退出状态(已经执行了ShutdownHook)
+	private static final DBManager                             _instance    = new DBManager();
+	private final SimpleDateFormat                             _sdf         = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss"); // 备份文件后缀名的时间格式
+	private final ScheduledExecutorService                     _commit_thread;                                            // 处理数据提交和事务超时的线程
+	private final ThreadPoolExecutor                           _proc_threads;                                             // 事务线程池
+	private final ConcurrentMap<Object, ArrayDeque<Procedure>> _qmap        = Util.newConcurrentHashMap();                // 当前sid队列的数量
+	private final AtomicLong                                   _proc_count  = new AtomicLong();                           // 绑定过sid的在队列中未运行的事务数量
+	private final AtomicLong                                   _mod_count   = new AtomicLong();                           // 当前缓存修改的记录数
+	private final CommitTask                                   _commit_task = new CommitTask();                           // 数据提交的任务
+	private volatile Storage                                   _storage;                                                  // 存储引擎
+	private volatile ScheduledFuture<?>                        _commit_future;                                            // 数据提交的结果
+	private volatile boolean                                   _exit;                                                     // 是否在退出状态(已经执行了ShutdownHook)
 
 	{
 		_commit_thread = Executors.newSingleThreadScheduledExecutor(new ThreadFactory()
@@ -91,9 +92,12 @@ public final class DBManager
 		{
 			if(_mod_count.get() < _mod_count_max && System.currentTimeMillis() - _commit_time < _commit_period) return;
 			_commit_time += _commit_period;
-			if(_storage == null) return;
 			try
 			{
+				// 0.提交前,先清理一遍事务队列
+				collectQueue(_counts);
+				Log.log.info("db-commit collect queue:{}=>{}", _counts[0], _counts[1]);
+				if(_storage == null) return;
 				synchronized(DBManager.this)
 				{
 					if(_storage == null || Thread.interrupted()) return;
@@ -271,7 +275,6 @@ public final class DBManager
 	 */
 	public synchronized void startCommitThread()
 	{
-		if(_storage == null) throw new IllegalArgumentException("no Storage specified");
 		if(_commit_future == null)
 		    _commit_future = _commit_thread.scheduleWithFixedDelay(_commit_task, 1, 1, TimeUnit.SECONDS);
 	}
@@ -367,33 +370,26 @@ public final class DBManager
 	}
 
 	/**
-	 * 清除sid相关的事务
+	 * 回收空的事务队列
 	 * <p>
-	 * 在当前队列中未运行的sid相关事务将不会再运行<br>
-	 * 警告: 此方法调用后如果立即调度相同sid的事务,有可能和清除前最后一个事务并发
+	 * 一般在定时任务中调用
+	 * @param counts 输出回收前后的两个队列数量值
 	 */
-	public void clearSession(Object sid)
+	private void collectQueue(long[] counts)
 	{
-		synchronized(sid)
+		counts[0] = _qmap.size();
+		for(Iterator<ArrayDeque<Procedure>> it = _qmap.values().iterator(); it.hasNext();)
 		{
-			ArrayDeque<Procedure> q = _qmap.get(sid);
-			if(q == null) return;
-			_proc_count.addAndGet(-q.size());
-			q.clear();
-			_qmap.remove(sid); // 这里一定要清除掉,避免和之前队列发生持续并发
+			ArrayDeque<Procedure> q = it.next();
+			if(q.isEmpty())
+			{
+				synchronized(q)
+				{
+					if(q.isEmpty()) it.remove();
+				}
+			}
 		}
-	}
-
-	/**
-	 * 清除当前所有绑定sid的事务
-	 * <p>
-	 * 在当前所有绑定sid队列中未运行的事务将不会再运行<br>
-	 * 警告: 此方法调用后如果立即调度某个sid,可能和之前未调度完成对应sid的事务并发
-	 */
-	public void clearAllSessions()
-	{
-		for(Object sid : _qmap.keySet())
-			clearSession(sid);
+		counts[1] = _qmap.size();
 	}
 
 	/**
@@ -448,48 +444,40 @@ public final class DBManager
 	 * sid即SessionId,一般表示网络连接的ID,事务运行时可以获取这个对象({@link Procedure#getSid})<br>
 	 * 当这个sid失效且不需要处理其任何未处理的事务时,应该调用clearSession清除这个sid的队列以避免少量的内存泄漏
 	 */
-	public boolean submit(Object sid, Procedure p)
+	public void submit(Object sid, Procedure p)
 	{
-		return submit(_proc_threads, sid, p);
+		submit(_proc_threads, sid, p);
 	}
 
 	/**
 	 * 见{@link #submit(Object sid, Procedure p)}<br>
 	 * 可使用自定义的线程池
 	 */
-	public boolean submit(final ExecutorService es, final Object sid, Procedure p)
+	public void submit(final ExecutorService es, final Object sid, Procedure p)
 	{
 		p.setSid(sid);
 		if(sid == null)
 		{
 			es.submit(p);
-			return true;
+			return;
 		}
 		ArrayDeque<Procedure> q;
-		synchronized(sid)
+		for(;;)
 		{
 			q = _qmap.get(sid);
-			if(q == null)
+			if(q == null) q = _qmap.putIfAbsent(sid, new ArrayDeque<Procedure>());
+			synchronized(q)
 			{
-				_qmap.put(sid, q = new ArrayDeque<Procedure>());
+				if(q != _qmap.get(sid)) continue;
+				int qs = q.size();
+				if(qs >= Const.maxSessionProcedure)
+				    throw new IllegalStateException("procedure overflow: procedure=" + p.getClass().getName() + ",sid=" + sid +
+				            ",size=" + q.size() + ",maxsize=" + Const.maxSessionProcedure);
 				q.add(p);
 				_proc_count.incrementAndGet();
+				if(qs > 0) return;
 			}
-			else
-			{
-				if(q.size() >= Const.maxSessionProcedure)
-				{
-					Log.log.error("{}: procedure overflow: sid={},size={},maxsize={}",
-					        getClass().getName(), sid, q.size(), Const.maxSessionProcedure);
-					_proc_count.addAndGet(-q.size());
-					q.clear();
-					_qmap.remove(sid); // 这里一定要清除掉,避免和之前队列发生持续并发
-					return false;
-				}
-				q.add(p);
-				_proc_count.incrementAndGet();
-				if(q.size() > 1) return true;
-			}
+			break;
 		}
 		final ArrayDeque<Procedure> _q = q;
 		es.submit(new Runnable()
@@ -502,7 +490,7 @@ public final class DBManager
 					for(int n = Const.maxBatchProceduer;;) // 一次调度可运行多个事务,避免切换调度导致的效率损失
 					{
 						Procedure proc;
-						synchronized(sid)
+						synchronized(_q)
 						{
 							proc = _q.peek(); // 这里只能先peek而不能poll或remove,否则可能和下次commit并发
 						}
@@ -515,11 +503,9 @@ public final class DBManager
 						{
 							Log.log.error("procedure(sid=" + sid + ") exception:", e);
 						}
-						synchronized(sid)
+						synchronized(_q)
 						{
-							if(_q.isEmpty()) return;
-							if(_q.remove() != proc) // 此时可能清除过这个队列,第一个对象已经不是proc了
-							    _proc_count.decrementAndGet();
+							_q.remove();
 							if(_q.isEmpty()) return;
 						}
 						if(--n <= 0)
@@ -535,6 +521,5 @@ public final class DBManager
 				}
 			}
 		});
-		return true;
 	}
 }

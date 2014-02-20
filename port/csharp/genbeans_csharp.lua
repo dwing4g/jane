@@ -320,15 +320,15 @@ typedef.string = merge(typedef.byte,
 	type = "string", type_i = "string", type_o = "string",
 	subtypeid = 1,
 	public = "private",
-	new = "\t\t\t#(var.name) = \"\";\n",
-	init = "this.#(var.name) = (#(var.name) != null ? #(var.name) : \"\")",
-	reset = "#(var.name) = \"\"",
-	assign = "this.#(var.name) = (b.#(var.name) != null ? b.#(var.name) : \"\")",
+	new = "\t\t\t#(var.name) = string.Empty;\n",
+	init = "this.#(var.name) = #(var.name) ?? string.Empty",
+	reset = "#(var.name) = string.Empty",
+	assign = "this.#(var.name) = b.#(var.name) ?? string.Empty",
 	set = [[
 
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			this.#(var.name) = (#(var.name) != null ? #(var.name) : "");
+			this.#(var.name) = #(var.name) ?? string.Empty;
 		}
 ]],
 	marshal = function(var) return string.format("if(this.#(var.name).Length > 0) s.marshal1((byte)0x%02x).marshal(this.#(var.name));", var.id * 4 + 1) end,

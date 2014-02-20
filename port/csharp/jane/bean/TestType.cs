@@ -36,7 +36,7 @@ namespace jane.bean
 		public TestType()
 		{
 			v8 = new Octets(5);
-			v9 = "";
+			v9 = string.Empty;
 			v10 = new List<bool>(10);
 			v11 = new LinkedList<byte>();
 			v12 = new LinkedList<int>();
@@ -59,7 +59,7 @@ namespace jane.bean
 			this.v6 = v6;
 			this.v7 = v7;
 			this.v8 = new Octets(5); if(v8 != null) this.v8.replace(v8);
-			this.v9 = (v9 != null ? v9 : "");
+			this.v9 = v9 ?? string.Empty;
 			this.v10 = new List<bool>(10); if(v10 != null) this.v10.AddRange(v10);
 			this.v11 = new LinkedList<byte>(); if(v11 != null) Util.addAll(this.v11, v11);
 			this.v12 = new LinkedList<int>(); if(v12 != null) Util.addAll(this.v12, v12);
@@ -82,7 +82,7 @@ namespace jane.bean
 			v6 = 0;
 			v7 = 0;
 			v8.clear();
-			v9 = "";
+			v9 = string.Empty;
 			v10.Clear();
 			v11.Clear();
 			v12.Clear();
@@ -106,7 +106,7 @@ namespace jane.bean
 			this.v6 = b.v6;
 			this.v7 = b.v7;
 			if(b.v8 != null) this.v8.replace(b.v8); else this.v8.clear();
-			this.v9 = (b.v9 != null ? b.v9 : "");
+			this.v9 = b.v9 ?? string.Empty;
 			this.v10.Clear(); if(b.v10 != null) this.v10.AddRange(b.v10);
 			this.v11.Clear(); if(b.v11 != null) Util.addAll(this.v11, b.v11);
 			this.v12.Clear(); if(b.v12 != null) Util.addAll(this.v12, b.v12);
@@ -201,7 +201,7 @@ namespace jane.bean
 
 		public void setV9(string v9)
 		{
-			this.v9 = (v9 != null ? v9 : "");
+			this.v9 = v9 ?? string.Empty;
 		}
 
 		public List<bool> getV10()

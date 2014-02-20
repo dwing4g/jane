@@ -296,7 +296,7 @@ public final class AllTables
 	 * 用于初始化和注册下面的全部静态成员(保持和AllBeans.register一致的用法), 并启动提交线程<br>
 	 * 调用前要先初始化数据库管理器: DBManager.instance().startup(...)
 	 */
-	public static void register() {#<# _dbm.startCommitThread(); #>#}#<#
+	public static void register() { _dbm.startCommitThread(); }#<#
 #>#
 #(#	#(table.comment)public static final #(table.table)<#(table.key)#(table.comma)#(table.value)> #(table.name) = _dbm.openTable(#(table.id), "#(table.name)", "#(table.lock)", #(table.cachesize)#(table.comma)#(table.keys), #(table.values));
 #)#

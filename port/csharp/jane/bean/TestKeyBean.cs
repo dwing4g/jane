@@ -18,13 +18,13 @@ namespace jane.bean
 
 		public TestKeyBean()
 		{
-			key2 = "";
+			key2 = string.Empty;
 		}
 
 		public TestKeyBean(int key1, string key2)
 		{
 			this.key1 = key1;
-			this.key2 = (key2 != null ? key2 : "");
+			this.key2 = key2 ?? string.Empty;
 		}
 
 		public override void reset()
