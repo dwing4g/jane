@@ -805,8 +805,11 @@ function dbt(table)
 		if key_type == "Octets" then tables.imports["jane.core.Octets"] = true end
 		table.table = "Table"
 		table.key = key_type
-		table.keys = not table.memory and key_type:find "%." and key_type .. ".BEAN_STUB" or "null"
-		table.keyg = table.keys
+		if table.memory then table.keys = "null"
+		elseif key_type == "String" then table.keys = "\"\""
+		elseif key_type == "Octets" then table.keys = "Octets.EMPTY"
+		else table.keys = key_type .. ".BEAN_STUB" end
+		table.keyg = table.keys:find("%.BEAN_STUB$") and table.keys or "null"
 		table.comma = ", "
 		tables.imports["jane.core.Table"] = true
 	elseif table.key == "id" then
