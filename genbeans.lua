@@ -234,7 +234,7 @@ public class #(bean.name)Handler extends BeanHandler<#(bean.name)>
 #)#	\*/
 
 	@Override
-	public void onProcess(NetManager manager, IoSession session, #(bean.name) arg)
+	public void onProcess(final NetManager manager, final IoSession session, final #(bean.name) arg)
 	{
 		Log.log.debug("{}.onProcess: arg={}", getClass().getName(), arg);
 	}
@@ -289,8 +289,8 @@ import #(tables.imports);
 /** 全部的数据库表的注册和使用类(自动生成的静态类) */
 public final class AllTables
 {
-	private AllTables() {}#<#
-	private static final DBManager _dbm = DBManager.instance();#>#
+	private AllTables() {}
+	private static final DBManager _dbm = DBManager.instance();
 	/**
 	 * 注册全部的数据库表<p>
 	 * 用于初始化和注册下面的全部静态成员(保持和AllBeans.register一致的用法), 并启动提交线程<br>
@@ -786,8 +786,8 @@ function bean(bean)
 		return code:sub(-2, -1) ~= ", " and code or code:sub(1, -3)
 	end)
 
-	bean.param_warning = (#bean > 0 and "" or "/** @param b unused */\n\t")
-	name_code[bean.name] = code_conv(code, "bean", bean):gsub(#bean > 0 and "#[<>]#" or "#<#(.-)#>#", ""):gsub("\r", "")
+	bean.param_warning = (#vartypes > 1 and "" or "/** @param b unused */\n\t")
+	name_code[bean.name] = code_conv(code, "bean", bean):gsub(#vartypes > 1 and "#[<>]#" or "#<#(.-)#>#", ""):gsub("\r", "")
 	bean_order[#bean_order + 1] = bean.name
 	if bean.const then name_code[bean.name] = bean_const(name_code[bean.name]) end
 end
@@ -904,7 +904,7 @@ end):gsub("#%(#(.-)#%)#", function(body)
 end)):gsub(#handlers > 0 and "#[<>]#" or "#%<#(.-)#%>#", ""):gsub("#%(bean.count%)", #bean_order):gsub("\r", ""), 0)
 
 tables.count = #tables
-if tables.count > 0 then tables.imports["jane.core.DBManager"] = true end
+tables.imports["jane.core.DBManager"] = true
 tables.imports = get_imports(tables.imports)
 checksave(outpath .. namespace .. "/bean/AllTables.java", (code_conv(template_alltables:gsub("#%(#(.-)#%)#", function(body)
 	local subcode = {}

@@ -608,8 +608,8 @@ function bean(bean)
 		return code:sub(-2, -1) ~= ", " and code or code:sub(1, -3)
 	end)
 
-	bean.param_warning = (#bean > 0 and "" or "/** @param b unused */\n\t\t")
-	name_code[bean.name] = code_conv(code, "bean", bean):gsub(#bean > 0 and "#[<>]#" or "#<#(.-)#>#", ""):gsub("\r", "")
+	bean.param_warning = (#vartypes > 1 and "" or "/** @param b unused */\n\t\t")
+	name_code[bean.name] = code_conv(code, "bean", bean):gsub(#vartypes > 1 and "#[<>]#" or "#<#(.-)#>#", ""):gsub("\r", "")
 	bean_order[#bean_order + 1] = bean.name
 	if bean.const then name_code[bean.name] = bean_const(name_code[bean.name]) end
 end
