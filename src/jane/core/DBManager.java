@@ -423,10 +423,9 @@ public final class DBManager
 				{
 					synchronized(q)
 					{
-						if(q != _qmap.get(sid)) return false;
 						q.clear();
-						q.add(this);
-						_qmap.remove(sid);
+						q.add(this); // 清除此队列所有的任务,只留当前任务待完成时会删除
+						_qmap.remove(sid); // _qmap删除队列的地方只有两处,另一处是collectQueue中队列判空的时候(有synchronized保护)
 					}
 				}
 				return true;
@@ -494,7 +493,7 @@ public final class DBManager
 		for(;;)
 		{
 			q = _qmap.get(sid);
-			if(q == null) q = _qmap.putIfAbsent(sid, new ArrayDeque<Procedure>());
+			if(q == null) q = _qmap.putIfAbsent(sid, new ArrayDeque<Procedure>()); // _qmap增加队列的地方只有这一处
 			synchronized(q)
 			{
 				if(q != _qmap.get(sid)) continue;
