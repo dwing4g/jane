@@ -94,69 +94,72 @@ public final class DBManager
 			_commit_time += _commit_period;
 			try
 			{
-				// 0.提交前,先清理一遍事务队列
-				collectQueue(_counts);
-				Log.log.info("db-commit collect queue:{}=>{}", _counts[0], _counts[1]);
-				if(_storage == null) return;
 				synchronized(DBManager.this)
 				{
-					if(_storage == null || Thread.interrupted()) return;
-					// 1.首先尝试遍历单个加锁的方式保存已修改的记录. 此时和其它事务可以并发
-					long t0 = System.currentTimeMillis(), t1 = 0;
-					Log.log.info("db-commit saving:{}...", _mod_count.get());
-					_counts[0] = _counts[1] = 0;
-					_storage.putBegin();
-					Table.trySaveModifiedAll(_counts);
-					TableLong.trySaveModifiedAll(_counts);
-					// 2.如果前一轮遍历之后仍然有过多的修改记录,则再试一轮
-					if(_counts[1] >= _resave_count)
+					if(Thread.interrupted()) return;
+					if(_storage != null)
 					{
-						Log.log.info("db-commit saved:{}=>{}, try again...", _counts[0], _counts[1]);
+						// 1.首先尝试遍历单个加锁的方式保存已修改的记录. 此时和其它事务可以并发
+						long t0 = System.currentTimeMillis(), t1 = 0;
+						Log.log.info("db-commit saving:{}...", _mod_count.get());
 						_counts[0] = _counts[1] = 0;
+						_storage.putBegin();
 						Table.trySaveModifiedAll(_counts);
 						TableLong.trySaveModifiedAll(_counts);
-					}
-					// 3.然后加全局事务锁,待其它事务都停止等待时,保存剩余已修改的记录. 只有此步骤不能和其它事务并发
-					if(_counts[0] != 0 || _counts[1] != 0)
-					{
-						WriteLock wl = Procedure.getWriteLock();
-						Log.log.info("db-commit saved:{}=>{}, flushing...", _counts[0], _counts[1]);
-						_storage.putFlush(false);
-						Log.log.info("db-commit procedure pausing...");
-						t1 = System.currentTimeMillis();
-						wl.lock();
-						try
+						// 2.如果前一轮遍历之后仍然有过多的修改记录,则再试一轮
+						if(_counts[1] >= _resave_count)
 						{
-							_mod_count.set(0);
-							Log.log.info("db-commit saving left...");
-							Log.log.info("db-commit saved:{}, flushing left...", Table.saveModifiedAll() + TableLong.saveModifiedAll());
-							_storage.putFlush(true);
+							Log.log.info("db-commit saved:{}=>{}, try again...", _counts[0], _counts[1]);
+							_counts[0] = _counts[1] = 0;
+							Table.trySaveModifiedAll(_counts);
+							TableLong.trySaveModifiedAll(_counts);
 						}
-						finally
+						// 3.然后加全局事务锁,待其它事务都停止等待时,保存剩余已修改的记录. 只有此步骤不能和其它事务并发
+						if(_counts[0] != 0 || _counts[1] != 0)
 						{
-							wl.unlock();
-							t1 = System.currentTimeMillis() - t1;
+							WriteLock wl = Procedure.getWriteLock();
+							Log.log.info("db-commit saved:{}=>{}, flushing...", _counts[0], _counts[1]);
+							_storage.putFlush(false);
+							Log.log.info("db-commit procedure pausing...");
+							t1 = System.currentTimeMillis();
+							wl.lock();
+							try
+							{
+								_mod_count.set(0);
+								Log.log.info("db-commit saving left...");
+								Log.log.info("db-commit saved:{}, flushing left...", Table.saveModifiedAll() + TableLong.saveModifiedAll());
+								_storage.putFlush(true);
+							}
+							finally
+							{
+								wl.unlock();
+								t1 = System.currentTimeMillis() - t1;
+							}
+							Log.log.info("db-commit procedure continued, committing...");
 						}
-						Log.log.info("db-commit procedure continued, committing...");
-					}
-					else
-						Log.log.info("db-commit found no modified record");
-					// 4.最后恢复其它事务的运行,并对数据库存储系统做提交操作,完成一整轮的事务性持久化
-					long t2 = System.currentTimeMillis();
-					_storage.commit();
-					long t3 = System.currentTimeMillis();
-					Log.log.info("db-commit completed. ({}/{}/{} ms)", t1, t3 - t2, t3 - t0);
+						else
+							Log.log.info("db-commit found no modified record");
+						// 4.最后恢复其它事务的运行,并对数据库存储系统做提交操作,完成一整轮的事务性持久化
+						long t2 = System.currentTimeMillis();
+						_storage.commit();
+						long t3 = System.currentTimeMillis();
+						Log.log.info("db-commit completed. ({}/{}/{} ms)", t1, t3 - t2, t3 - t0);
 
-					// 5.判断备份周期并启动备份
-					t0 = System.currentTimeMillis();
-					if(t0 - _backup_time >= _backup_period)
-					{
-						_backup_time += _backup_period;
-						Log.log.info("db-commit backup begin...");
-						long r = _storage.backupDB(new File(Const.dbBackupPath, new File(Const.dbFilename).getName() +
-						        '.' + _storage.getFileSuffix() + '.' + _sdf.format(new Date())));
-						Log.log.info("db-commit backup end. ({} bytes) ({} ms)", r, System.currentTimeMillis() - t0);
+						// 5.判断备份周期并启动备份
+						t0 = System.currentTimeMillis();
+						if(t0 - _backup_time >= _backup_period)
+						{
+							_backup_time += _backup_period;
+							Log.log.info("db-commit backup begin...");
+							long r = _storage.backupDB(new File(Const.dbBackupPath, new File(Const.dbFilename).getName() +
+							        '.' + _storage.getFileSuffix() + '.' + _sdf.format(new Date())));
+							Log.log.info("db-commit backup end. ({} bytes) ({} ms)", r, System.currentTimeMillis() - t0);
+						}
 					}
+
+					// 6.清理一遍事务队列
+					collectQueue(_counts);
+					Log.log.info("db-commit collect queue:{}=>{}", _counts[0], _counts[1]);
 				}
 			}
 			catch(Throwable e)
@@ -269,6 +272,42 @@ public final class DBManager
 	}
 
 	/**
+	 * 获取或创建一个数据库表
+	 * <p>
+	 * 必须先启动数据库系统(startup)后再调用此方法
+	 * @param tablename 表名
+	 * @param lockname 此表关联的锁名
+	 * @param cachesize 此表的读缓存记录数量上限. 如果是内存表则表示超过此上限则会自动丢弃
+	 * @param stub_k 记录key的存根对象,不要用于记录有用的数据
+	 * @param stub_v 记录value的存根对象,不要用于记录有用的数据. 如果为null则表示此表是内存表
+	 * @return Table
+	 */
+	public synchronized <K, V extends Bean<V>> Table<K, V> openTable(int tableid, String tablename, String lockname, int cachesize, Object stub_k, V stub_v)
+	{
+		if(_storage == null) throw new IllegalArgumentException("call DBManager.startup before open any table");
+		Storage.Table<K, V> stotable = (stub_v != null ? _storage.<K, V>openTable(tableid, tablename, stub_k, stub_v) : null);
+		return new Table<K, V>(tableid, tablename, stotable, lockname, cachesize, stub_v);
+	}
+
+	/**
+	 * 获取或创建一个以ID为key的数据库表
+	 * <p>
+	 * 此表的key只能是>=0的long值,一般用于id,比直接用Long类型作key效率高一些<br>
+	 * 必须先启动数据库系统(startup)后再调用此方法
+	 * @param tablename 表名
+	 * @param lockname 此表关联的锁名
+	 * @param cachesize 此表的读缓存记录数量上限. 如果是内存表则表示超过此上限则会自动丢弃
+	 * @param stub_v 记录value的存根对象,不要用于记录有用的数据. 如果为null则表示此表是内存表
+	 * @return TableLong
+	 */
+	public synchronized <V extends Bean<V>> TableLong<V> openTable(int tableid, String tablename, String lockname, int cachesize, V stub_v)
+	{
+		if(_storage == null) throw new IllegalArgumentException("call DBManager.startup before open any table");
+		Storage.TableLong<V> stotable = (stub_v != null ? _storage.openTable(tableid, tablename, stub_v) : null);
+		return new TableLong<V>(tableid, tablename, stotable, lockname, cachesize, stub_v);
+	}
+
+	/**
 	 * 启动数据库提交线程
 	 * <p>
 	 * 要在startup和注册所有表后执行
@@ -370,9 +409,35 @@ public final class DBManager
 	}
 
 	/**
+	 * 通知清理事务队列
+	 */
+	public void stopQueue(final Object sid)
+	{
+		submit(sid, new Procedure()
+		{
+			@Override
+			protected boolean onProcess()
+			{
+				ArrayDeque<Procedure> q = _qmap.get(sid);
+				if(q != null)
+				{
+					synchronized(q)
+					{
+						if(q != _qmap.get(sid)) return false;
+						q.clear();
+						q.add(this);
+						_qmap.remove(sid);
+					}
+				}
+				return true;
+			}
+		});
+	}
+
+	/**
 	 * 回收空的事务队列
 	 * <p>
-	 * 一般在定时任务中调用
+	 * 一般在长时间间隔(如备份周期)的定时任务中调用
 	 * @param counts 输出回收前后的两个队列数量值
 	 */
 	private void collectQueue(long[] counts)
@@ -390,42 +455,6 @@ public final class DBManager
 			}
 		}
 		counts[1] = _qmap.size();
-	}
-
-	/**
-	 * 获取或创建一个数据库表
-	 * <p>
-	 * 必须先启动数据库系统(startup)后再调用此方法
-	 * @param tablename 表名
-	 * @param lockname 此表关联的锁名
-	 * @param cachesize 此表的读缓存记录数量上限. 如果是内存表则表示超过此上限则会自动丢弃
-	 * @param stub_k 记录key的存根对象,不要用于记录有用的数据
-	 * @param stub_v 记录value的存根对象,不要用于记录有用的数据. 如果为null则表示此表是内存表
-	 * @return Table
-	 */
-	public synchronized <K, V extends Bean<V>> Table<K, V> openTable(int tableid, String tablename, String lockname, int cachesize, Object stub_k, V stub_v)
-	{
-		if(_storage == null) throw new IllegalArgumentException("call DBManager.startup before open any table");
-		Storage.Table<K, V> stotable = (stub_v != null ? _storage.<K, V>openTable(tableid, tablename, stub_k, stub_v) : null);
-		return new Table<K, V>(tableid, tablename, stotable, lockname, cachesize, stub_v);
-	}
-
-	/**
-	 * 获取或创建一个以ID为key的数据库表
-	 * <p>
-	 * 此表的key只能是>=0的long值,一般用于id,比直接用Long类型作key效率高一些<br>
-	 * 必须先启动数据库系统(startup)后再调用此方法
-	 * @param tablename 表名
-	 * @param lockname 此表关联的锁名
-	 * @param cachesize 此表的读缓存记录数量上限. 如果是内存表则表示超过此上限则会自动丢弃
-	 * @param stub_v 记录value的存根对象,不要用于记录有用的数据. 如果为null则表示此表是内存表
-	 * @return TableLong
-	 */
-	public synchronized <V extends Bean<V>> TableLong<V> openTable(int tableid, String tablename, String lockname, int cachesize, V stub_v)
-	{
-		if(_storage == null) throw new IllegalArgumentException("call DBManager.startup before open any table");
-		Storage.TableLong<V> stotable = (stub_v != null ? _storage.openTable(tableid, tablename, stub_v) : null);
-		return new TableLong<V>(tableid, tablename, stotable, lockname, cachesize, stub_v);
 	}
 
 	/**
