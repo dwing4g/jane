@@ -572,8 +572,8 @@ namespace jane.bean
 			Util.append(s, this.v17);
 			Util.append(s, this.v18);
 			s.Append(this.v19).Append(',');
-			s[s.Length - 1] = '}';
-			return s.ToString();
+			--s.Length;
+			return s.Append('}').ToString();
 		}
 
 		public override StringBuilder toJson(StringBuilder s)
@@ -599,8 +599,8 @@ namespace jane.bean
 			Util.appendJson(s.Append("\"v17\":"), this.v17);
 			Util.appendJson(s.Append("\"v18\":"), this.v18);
 			this.v19.toJson(s.Append("\"v19\":")).Append(',');
-			s[s.Length - 1] = '}';
-			return s;
+			--s.Length;
+			return s.Append('}');
 		}
 
 		public override StringBuilder toLua(StringBuilder s)
@@ -626,8 +626,8 @@ namespace jane.bean
 			Util.appendLua(s.Append("v17="), this.v17);
 			Util.appendLua(s.Append("v18="), this.v18);
 			this.v19.toLua(s.Append("v19=")).Append(',');
-			s[s.Length - 1] = '}';
-			return s;
+			--s.Length;
+			return s.Append('}');
 		}
 	}
 }

@@ -597,8 +597,8 @@ public final class TestType extends Bean<TestType> implements Comparable<TestTyp
 		Util.append(s, this.v17);
 		Util.append(s, this.v18);
 		s.append(this.v19).append(',');
-		s.setCharAt(s.length() - 1, '}');
-		return s.toString();
+		s.setLength(s.length() - 1);
+		return s.append('}').toString();
 	}
 
 	@Override
@@ -625,8 +625,8 @@ public final class TestType extends Bean<TestType> implements Comparable<TestTyp
 		Util.appendJson(s.append("\"v17\":"), this.v17);
 		Util.appendJson(s.append("\"v18\":"), this.v18);
 		this.v19.toJson(s.append("\"v19\":")).append(',');
-		s.setCharAt(s.length() - 1, '}');
-		return s;
+		s.setLength(s.length() - 1);
+		return s.append('}');
 	}
 
 	@Override
@@ -653,7 +653,7 @@ public final class TestType extends Bean<TestType> implements Comparable<TestTyp
 		Util.appendLua(s.append("v17="), this.v17);
 		Util.appendLua(s.append("v18="), this.v18);
 		this.v19.toLua(s.append("v19=")).append(',');
-		s.setCharAt(s.length() - 1, '}');
-		return s;
+		s.setLength(s.length() - 1);
+		return s.append('}');
 	}
 }

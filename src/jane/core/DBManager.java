@@ -49,12 +49,12 @@ public final class DBManager
 		});
 		_proc_threads = (ThreadPoolExecutor)Executors.newFixedThreadPool(Const.dbThreadCount, new ThreadFactory()
 		{
-			private final AtomicInteger _num = new AtomicInteger(1);
+			private final AtomicInteger _num = new AtomicInteger();
 
 			@Override
 			public Thread newThread(Runnable r)
 			{
-				Thread t = new Thread(r, "ProcThread-" + _num.getAndIncrement());
+				Thread t = new Thread(r, "ProcThread-" + _num.incrementAndGet());
 				t.setDaemon(false);
 				t.setPriority(Thread.NORM_PRIORITY);
 				return t;

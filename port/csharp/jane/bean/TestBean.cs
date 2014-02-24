@@ -142,8 +142,8 @@ namespace jane.bean
 			StringBuilder s = new StringBuilder(16 + 16 * 2).Append('{');
 			s.Append(this.value1).Append(',');
 			s.Append(this.value2).Append(',');
-			s[s.Length - 1] = '}';
-			return s.ToString();
+			--s.Length;
+			return s.Append('}').ToString();
 		}
 
 		public override StringBuilder toJson(StringBuilder s)
@@ -152,8 +152,8 @@ namespace jane.bean
 			s.Append('{');
 			s.Append("\"value1\":").Append(this.value1).Append(',');
 			s.Append("\"value2\":").Append(this.value2).Append(',');
-			s[s.Length - 1] = '}';
-			return s;
+			--s.Length;
+			return s.Append('}');
 		}
 
 		public override StringBuilder toLua(StringBuilder s)
@@ -162,8 +162,8 @@ namespace jane.bean
 			s.Append('{');
 			s.Append("value1=").Append(this.value1).Append(',');
 			s.Append("value2=").Append(this.value2).Append(',');
-			s[s.Length - 1] = '}';
-			return s;
+			--s.Length;
+			return s.Append('}');
 		}
 	}
 }

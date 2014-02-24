@@ -103,7 +103,7 @@ public final class TestEmpty extends Bean<TestEmpty> implements Comparable<TestE
 	public String toString()
 	{
 		StringBuilder s = new StringBuilder(16 + 0 * 2).append('{');
-		return s.toString();
+		return s.append('}').toString();
 	}
 
 	@Override
@@ -111,7 +111,7 @@ public final class TestEmpty extends Bean<TestEmpty> implements Comparable<TestE
 	{
 		if(s == null) s = new StringBuilder(1024);
 		s.append('{');
-		return s;
+		return s.append('}');
 	}
 
 	@Override
@@ -119,6 +119,6 @@ public final class TestEmpty extends Bean<TestEmpty> implements Comparable<TestE
 	{
 		if(s == null) s = new StringBuilder(1024);
 		s.append('{');
-		return s;
+		return s.append('}');
 	}
 }

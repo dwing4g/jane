@@ -89,21 +89,21 @@ namespace jane.bean
 		public override string ToString()
 		{
 			StringBuilder s = new StringBuilder(16 + 0 * 2).Append('{');
-			return s.ToString();
+			return s.Append('}').ToString();
 		}
 
 		public override StringBuilder toJson(StringBuilder s)
 		{
 			if(s == null) s = new StringBuilder(1024);
 			s.Append('{');
-			return s;
+			return s.Append('}');
 		}
 
 		public override StringBuilder toLua(StringBuilder s)
 		{
 			if(s == null) s = new StringBuilder(1024);
 			s.Append('{');
-			return s;
+			return s.Append('}');
 		}
 	}
 }

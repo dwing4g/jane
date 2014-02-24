@@ -170,8 +170,8 @@ public final class TestBean extends Bean<TestBean> implements Comparable<TestBea
 		StringBuilder s = new StringBuilder(16 + 16 * 2).append('{');
 		s.append(this.value1).append(',');
 		s.append(this.value2).append(',');
-		s.setCharAt(s.length() - 1, '}');
-		return s.toString();
+		s.setLength(s.length() - 1);
+		return s.append('}').toString();
 	}
 
 	@Override
@@ -181,8 +181,8 @@ public final class TestBean extends Bean<TestBean> implements Comparable<TestBea
 		s.append('{');
 		s.append("\"value1\":").append(this.value1).append(',');
 		s.append("\"value2\":").append(this.value2).append(',');
-		s.setCharAt(s.length() - 1, '}');
-		return s;
+		s.setLength(s.length() - 1);
+		return s.append('}');
 	}
 
 	@Override
@@ -192,7 +192,7 @@ public final class TestBean extends Bean<TestBean> implements Comparable<TestBea
 		s.append('{');
 		s.append("value1=").append(this.value1).append(',');
 		s.append("value2=").append(this.value2).append(',');
-		s.setCharAt(s.length() - 1, '}');
-		return s;
+		s.setLength(s.length() - 1);
+		return s.append('}');
 	}
 }

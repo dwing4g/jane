@@ -132,8 +132,8 @@ public final class TestKeyBean extends Bean<TestKeyBean> implements Comparable<T
 		StringBuilder s = new StringBuilder(16 + 16 * 2).append('{');
 		s.append(this.key1).append(',');
 		s.append(this.key2).append(',');
-		s.setCharAt(s.length() - 1, '}');
-		return s.toString();
+		s.setLength(s.length() - 1);
+		return s.append('}').toString();
 	}
 
 	@Override
@@ -143,8 +143,8 @@ public final class TestKeyBean extends Bean<TestKeyBean> implements Comparable<T
 		s.append('{');
 		s.append("\"key1\":").append(this.key1).append(',');
 		Util.toJStr(s.append("\"key2\":"), this.key2).append(',');
-		s.setCharAt(s.length() - 1, '}');
-		return s;
+		s.setLength(s.length() - 1);
+		return s.append('}');
 	}
 
 	@Override
@@ -154,7 +154,7 @@ public final class TestKeyBean extends Bean<TestKeyBean> implements Comparable<T
 		s.append('{');
 		s.append("key1=").append(this.key1).append(',');
 		Util.toJStr(s.append("key2="), this.key2).append(',');
-		s.setCharAt(s.length() - 1, '}');
-		return s;
+		s.setLength(s.length() - 1);
+		return s.append('}');
 	}
 }

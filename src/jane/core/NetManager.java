@@ -463,7 +463,7 @@ public class NetManager implements IoHandler
 	protected void onUnhandledBean(IoSession session, Bean<?> bean)
 	{
 		Log.log.warn("{}({}): unhandled bean: {}:{}", _name, session.getId(), bean.getClass().getSimpleName(), bean);
-		// session.close(false);
+		// session.close(true);
 	}
 
 	/**
@@ -548,6 +548,6 @@ public class NetManager implements IoHandler
 	public void exceptionCaught(IoSession session, Throwable cause)
 	{
 		Log.log.error(_name + '(' + session.getId() + ',' + session.getRemoteAddress() + "): exception:", cause);
-		session.close(false);
+		session.close(true);
 	}
 }

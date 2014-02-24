@@ -128,8 +128,8 @@ namespace ]=] .. namespace .. [=[.bean
 		{
 			StringBuilder s = new StringBuilder(16 + #(bean.initsize) * 2).Append('{');#<#
 #(#			#(var.tostring);
-#)#			s[s.Length - 1] = '}';#>#
-			return s.ToString();
+#)#			--s.Length;#>#
+			return s.Append('}').ToString();
 		}
 
 		public override StringBuilder toJson(StringBuilder s)
@@ -137,8 +137,8 @@ namespace ]=] .. namespace .. [=[.bean
 			if(s == null) s = new StringBuilder(1024);
 			s.Append('{');#<#
 #(#			#(var.tojson);
-#)#			s[s.Length - 1] = '}';#>#
-			return s;
+#)#			--s.Length;#>#
+			return s.Append('}');
 		}
 
 		public override StringBuilder toLua(StringBuilder s)
@@ -146,8 +146,8 @@ namespace ]=] .. namespace .. [=[.bean
 			if(s == null) s = new StringBuilder(1024);
 			s.Append('{');#<#
 #(#			#(var.tolua);
-#)#			s[s.Length - 1] = '}';#>#
-			return s;
+#)#			--s.Length;#>#
+			return s.Append('}');
 		}
 	}
 }
@@ -622,7 +622,7 @@ local function checksave(fn, d, change_count, pattern, typename)
 		local s = f:read "*a"
 		f:close()
 		if change_count > 0 then
-			d = s:gsub("\n\t/%*\\.-\n\t\\%*/", d:gmatch("\n\t/%*\\.-\n\t\\%*/"), change_count):gsub(pattern, typename, 1)
+			d = s:gsub("\n\t\t/%*\\.-\n\t\t\\%*/", d:gmatch("\n\t\t/%*\\.-\n\t\t\\%*/"), change_count):gsub(pattern, typename, 1)
 		end
 		if s == d then d = nil else print(" * " .. fn) end
 	else
