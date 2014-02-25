@@ -6,7 +6,7 @@ using System.Collections.Generic;
 namespace jane.bean
 {
 	/**
-	 * 测试空bean
+	 * 测试空bean;
 	 */
 	[Serializable]
 	public sealed class TestEmpty : Bean, IComparable<TestEmpty>

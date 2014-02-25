@@ -6,16 +6,16 @@ using System.Collections.Generic;
 namespace jane.bean
 {
 	/**
-	 * bean的注释
+	 * bean的注释;
 	 */
 	[Serializable]
 	public sealed class TestBean : Bean, IComparable<TestBean>
 	{
 		public const int BEAN_TYPE = 1;
-		public const int TEST_CONST1 = 5; // 测试类静态常量
+		public const int TEST_CONST1 = 5; // 测试类静态常量;
 		public const string TEST_CONST2 = "test_const2";
 
-		public  /* 1*/ int value1; // 字段的注释
+		public  /* 1*/ int value1; // 字段的注释;
 		public  /* 2*/ long value2;
 
 		public TestBean()

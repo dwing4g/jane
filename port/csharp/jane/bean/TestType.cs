@@ -6,32 +6,32 @@ using System.Collections.Generic;
 namespace jane.bean
 {
 	/**
-	 * 测试生成所有支持的类型
+	 * 测试生成所有支持的类型;
 	 */
 	[Serializable]
 	public sealed class TestType : Bean, IComparable<TestType>
 	{
 		public const int BEAN_TYPE = 3;
 
-		public  /* 1*/ bool v1; // 1字节布尔,0表示假,1表示真,其它默认表示真
-		public  /* 2*/ byte v2; // 1字节整数
-		public  /* 3*/ short v3; // 2字节整数
-		public  /* 4*/ int v4; // 4字节整数
-		public  /* 5*/ long v5; // 8字节整数
-		public  /* 6*/ float v6; // 4字节浮点数
-		public  /* 7*/ double v7; // 8字节浮点数
-		public  /* 8*/ readonly Octets v8; // 二进制数据(Octets)
-		private /* 9*/ string v9; // 字符串(String)
-		public  /*10*/ readonly List<bool> v10; // 数组容器(ArrayList)
-		public  /*11*/ readonly LinkedList<byte> v11; // 链表容器(LinkedList)
-		public  /*12*/ readonly LinkedList<int> v12; // 队列容器(ArrayDeque)
-		public  /*13*/ readonly HashSet<long> v13; // 无序集合容器(HashSet)
-		public  /*14*/ readonly SortedSet<float> v14; // 排序集合容器(TreeSet)
-		public  /*15*/ readonly HashSet<double> v15; // 有序集合容器(LinkedHashSet)
-		public  /*16*/ readonly Dictionary<long, string> v16; // 无序映射容器(HashMap)
-		public  /*17*/ readonly SortedDictionary<TestBean, bool> v17; // 排序映射容器(TreeMap)
-		public  /*18*/ readonly Dictionary<Octets, TestBean> v18; // 有序映射容器(LinkedHashMap)
-		public  /*19*/ readonly TestBean v19; // 嵌入其它bean
+		public  /* 1*/ bool v1; // 1字节布尔,0表示假,1表示真,其它默认表示真;
+		public  /* 2*/ byte v2; // 1字节整数;
+		public  /* 3*/ short v3; // 2字节整数;
+		public  /* 4*/ int v4; // 4字节整数;
+		public  /* 5*/ long v5; // 8字节整数;
+		public  /* 6*/ float v6; // 4字节浮点数;
+		public  /* 7*/ double v7; // 8字节浮点数;
+		public  /* 8*/ readonly Octets v8; // 二进制数据(Octets);
+		private /* 9*/ string v9; // 字符串(String);
+		public  /*10*/ readonly List<bool> v10; // 数组容器(ArrayList);
+		public  /*11*/ readonly LinkedList<byte> v11; // 链表容器(LinkedList);
+		public  /*12*/ readonly LinkedList<int> v12; // 队列容器(ArrayDeque);
+		public  /*13*/ readonly HashSet<long> v13; // 无序集合容器(HashSet);
+		public  /*14*/ readonly SortedSet<float> v14; // 排序集合容器(TreeSet);
+		public  /*15*/ readonly HashSet<double> v15; // 有序集合容器(LinkedHashSet);
+		public  /*16*/ readonly Dictionary<long, string> v16; // 无序映射容器(HashMap);
+		public  /*17*/ readonly SortedDictionary<TestBean, bool> v17; // 排序映射容器(TreeMap);
+		public  /*18*/ readonly Dictionary<Octets, TestBean> v18; // 有序映射容器(LinkedHashMap);
+		public  /*19*/ readonly TestBean v19; // 嵌入其它bean;
 
 		public TestType()
 		{

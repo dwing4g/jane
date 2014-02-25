@@ -3,7 +3,7 @@ using System;
 namespace jane
 {
 	/**
-	 * RC4加密算法的过滤器
+	 * RC4加密算法的过滤器;
 	 */
 	public sealed class RC4Filter
 	{
@@ -29,7 +29,7 @@ namespace jane
 		}
 
 		/**
-		 * 设置网络输入流的对称密钥
+		 * 设置网络输入流的对称密钥;
 		 */
 		public void setInputKey(byte[] key, int len)
 		{
@@ -38,7 +38,7 @@ namespace jane
 		}
 
 		/**
-		 * 设置网络输出流的对称密钥
+		 * 设置网络输出流的对称密钥;
 		 */
 		public void setOutputKey(byte[] key, int len)
 		{
@@ -61,7 +61,7 @@ namespace jane
 		}
 
 		/**
-		 * 加解密一段输入数据
+		 * 加解密一段输入数据;
 		 */
 		public void updateInput(byte[] buf, int pos, int len)
 		{
@@ -70,7 +70,7 @@ namespace jane
 		}
 
 		/**
-		 * 加解密一段输出数据
+		 * 加解密一段输出数据;
 		 */
 		public void updateOutput(byte[] buf, int pos, int len)
 		{

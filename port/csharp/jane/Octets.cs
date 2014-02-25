@@ -4,18 +4,18 @@ using System.Text;
 namespace jane
 {
 	/**
-	 * 用于存储可扩展字节序列的类型
-	 * 一个Octets及其子类的实例不能同时由多个线程同时访问
+	 * 用于存储可扩展字节序列的类型;
+	 * 一个Octets及其子类的实例不能同时由多个线程同时访问;
 	 */
 	[Serializable]
 	public class Octets : ICloneable, IComparable<Octets>, IComparable
 	{
 		protected static readonly char[] HEX = new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-		public static readonly byte[] EMPTY = new byte[0]; // 共享的空缓冲区
-		public const int DEFAULT_SIZE = 16; // 默认的缓冲区
+		public static readonly byte[] EMPTY = new byte[0]; // 共享的空缓冲区;
+		public const int DEFAULT_SIZE = 16; // 默认的缓冲区;
 		protected static Encoding _default_charset = Encoding.UTF8;
-		internal byte[] buffer = EMPTY; // 数据缓冲区
-		internal int count; // 当前有效的数据缓冲区大小
+		internal byte[] buffer = EMPTY; // 数据缓冲区;
+		internal int count; // 当前有效的数据缓冲区大小;
 
 		public static void setDefaultEncoding(Encoding enc)
 		{
@@ -145,7 +145,7 @@ namespace jane
 		}
 
 		/**
-		 * @param size 期望缩小的空间. 如果比当前数据小,则缩小的当前数据大小
+		 * @param size 期望缩小的空间. 如果比当前数据小,则缩小的当前数据大小;
 		 */
 		public void shrink(int size)
 		{
@@ -195,7 +195,7 @@ namespace jane
 		}
 
 		/**
-		 * 类似reserve, 但不保证原数据的有效
+		 * 类似reserve, 但不保证原数据的有效;
 		 */
 		public void reserveSpace(int size)
 		{
@@ -359,7 +359,7 @@ namespace jane
 			{
 				if(buf[pos] == c)
 				{
-					for(int n = 1; ; ++n)
+					for(int n = 1;; ++n)
 					{
 						if(n == s) return pos;
 						if(buf[pos + n] != b[n]) break;

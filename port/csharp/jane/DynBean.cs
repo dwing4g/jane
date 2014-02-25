@@ -6,13 +6,13 @@ using System.Text;
 namespace jane
 {
 	/**
-	 * 用于表示动态字段的bean
+	 * 用于表示动态字段的bean;
 	 */
 	[Serializable]
 	public sealed class DynBean : Bean
 	{
-		private int _type; // bean的类型(可用可不用,不影响序列化/反序列化)
-		private readonly IDictionary<int, object> _fields = new SortedDictionary<int, object>(); // key是字段ID. 为了方便格式化成字符串,使用有序的容器
+		private int _type; // bean的类型(可用可不用,不影响序列化/反序列化);
+		private readonly IDictionary<int, object> _fields = new SortedDictionary<int, object>(); // key是字段ID. 为了方便格式化成字符串,使用有序的容器;
 
 		public DynBean()
 		{
@@ -69,7 +69,7 @@ namespace jane
 
 		public override OctetsStream unmarshal(OctetsStream os)
 		{
-			for(_fields.Clear(); ; )
+			for(_fields.Clear();;)
 			{
 				int b = os.unmarshalByte() & 0xff;
 				if(b == 0) return os;

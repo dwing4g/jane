@@ -3,7 +3,7 @@ using System;
 namespace jane
 {
 	/**
-	 * 反序列化bean失败的时候会抛出的异常类
+	 * 反序列化bean失败的时候会抛出的异常类;
 	 */
 	public class MarshalException : Exception
 	{
@@ -23,7 +23,7 @@ namespace jane
 	}
 
 	/**
-	 * 反序列化bean遇到数据不足的时候会抛出的异常类
+	 * 反序列化bean遇到数据不足的时候会抛出的异常类;
 	 */
 	public class MarshalEOFException : MarshalException
 	{

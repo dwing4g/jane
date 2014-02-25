@@ -6,9 +6,9 @@ namespace jane.handler.testclient
 	public class TestBeanHandler : BeanHandler<TestBean>
 	{
 		/*\
-		|*| int TEST_CONST1 = 5; // 测试类静态常量
+		|*| int TEST_CONST1 = 5; // 测试类静态常量;
 		|*| string TEST_CONST2 = "test_const2";
-		|*| int value1; // 字段的注释
+		|*| int value1; // 字段的注释;
 		|*| long value2;
 		\*/
 

@@ -6,15 +6,15 @@ using System.Collections.Generic;
 namespace jane.bean
 {
 	/**
-	 * 作为key或配置的bean
+	 * 作为key或配置的bean;
 	 */
 	[Serializable]
 	public sealed class TestKeyBean : Bean, IComparable<TestKeyBean>
 	{
 		public const int BEAN_TYPE = 2;
 
-		private /* 1*/ int key1; // KEY-1
-		private /* 2*/ string key2; // KEY-2
+		private /* 1*/ int key1; // KEY-1;
+		private /* 2*/ string key2; // KEY-2;
 
 		public TestKeyBean()
 		{

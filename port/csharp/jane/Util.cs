@@ -5,7 +5,7 @@ using System.Text;
 namespace jane
 {
 	/**
-	 * 工具类(静态类)
+	 * 工具类(静态类);
 	 */
 	public static class Util
 	{
@@ -29,7 +29,7 @@ namespace jane
 		}
 
 		/**
-		 * 比较两个序列容器里的元素是否完全相同(包括顺序相同)
+		 * 比较两个序列容器里的元素是否完全相同(包括顺序相同);
 		 */
 		public static int compareTo<T>(ICollection<T> a, ICollection<T> b) where T : IComparable<T>
 		{
@@ -47,7 +47,7 @@ namespace jane
 		}
 
 		/**
-		 * 比较两个Map容器里的元素是否完全相同(包括顺序相同)
+		 * 比较两个Map容器里的元素是否完全相同(包括顺序相同);
 		 */
 		public static int compareTo<K, V>(IDictionary<K, V> a, IDictionary<K, V> b)
 			where K : IComparable<K>
@@ -71,7 +71,7 @@ namespace jane
 		}
 
 		/**
-		 * 把序列容器里的元素转成字符串输出到StringBuilder中
+		 * 把序列容器里的元素转成字符串输出到StringBuilder中;
 		 */
 		public static StringBuilder append<T>(StringBuilder s, ICollection<T> list)
 		{
@@ -84,7 +84,7 @@ namespace jane
 		}
 
 		/**
-		 * 把Map容器里的元素转成字符串输出到StringBuilder中
+		 * 把Map容器里的元素转成字符串输出到StringBuilder中;
 		 */
 		public static StringBuilder append<K, V>(StringBuilder s, IDictionary<K, V> dic)
 		{
@@ -97,7 +97,7 @@ namespace jane
 		}
 
 		/**
-		 * 把字符串转化成Java/JSON字符串输出到StringBuilder中
+		 * 把字符串转化成Java/JSON字符串输出到StringBuilder中;
 		 */
 		public static StringBuilder toJStr(StringBuilder s, String str)
 		{
@@ -105,7 +105,7 @@ namespace jane
 		}
 
 		/**
-		 * 把普通对象转成JSON字符串输出到StringBuilder中
+		 * 把普通对象转成JSON字符串输出到StringBuilder中;
 		 */
 		public static StringBuilder appendJson(StringBuilder s, object o)
 		{
@@ -122,7 +122,7 @@ namespace jane
 		}
 
 		/**
-		 * 把序列容器里的元素转成JSON字符串输出到StringBuilder中
+		 * 把序列容器里的元素转成JSON字符串输出到StringBuilder中;
 		 */
 		public static StringBuilder appendJson<T>(StringBuilder s, ICollection<T> list)
 		{
@@ -135,7 +135,7 @@ namespace jane
 		}
 
 		/**
-		 * 把Map容器里的元素转成JSON字符串输出到StringBuilder中
+		 * 把Map容器里的元素转成JSON字符串输出到StringBuilder中;
 		 */
 		public static StringBuilder appendJson<K, V>(StringBuilder s, IDictionary<K, V> dic)
 		{
@@ -151,7 +151,7 @@ namespace jane
 		}
 
 		/**
-		 * 把普通对象转成Lua字符串输出到StringBuilder中
+		 * 把普通对象转成Lua字符串输出到StringBuilder中;
 		 */
 		public static StringBuilder appendLua(StringBuilder s, object o)
 		{
@@ -168,7 +168,7 @@ namespace jane
 		}
 
 		/**
-		 * 把序列容器里的元素转成Lua字符串输出到StringBuilder中
+		 * 把序列容器里的元素转成Lua字符串输出到StringBuilder中;
 		 */
 		public static StringBuilder appendLua<T>(StringBuilder s, ICollection<T> list)
 		{
@@ -181,7 +181,7 @@ namespace jane
 		}
 
 		/**
-		 * 把Map容器里的元素转成Lua字符串输出到StringBuilder中
+		 * 把Map容器里的元素转成Lua字符串输出到StringBuilder中;
 		 */
 		public static StringBuilder appendLua<K, V>(StringBuilder s, IDictionary<K, V> dic)
 		{

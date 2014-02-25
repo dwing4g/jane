@@ -4,6 +4,10 @@ using System.Net.Sockets;
 
 namespace jane
 {
+	/**
+	 * 网络管理器;
+	 * 目前仅用于客户端,一般要继承此类使用;
+	 */
 	public class NetManager
 	{
 		public const int CLOSE_ACTIVE = 0;
@@ -13,8 +17,8 @@ namespace jane
 		public const int CLOSE_DECODE = 4;
 		public const int RECV_BUFSIZE = 8192;
 
-		protected static readonly Dictionary<int, Bean> _stubmap = new Dictionary<int, Bean>(); // 所有注册beans的存根对象
-		protected IDictionary<int, BeanHandler> _handlers = new Dictionary<int, BeanHandler>(); // 所有注册beans的处理对象
+		protected static readonly Dictionary<int, Bean> _stubmap = new Dictionary<int, Bean>(); // 所有注册beans的存根对象;
+		protected IDictionary<int, BeanHandler> _handlers = new Dictionary<int, BeanHandler>(); // 所有注册beans的处理对象;
 		private readonly TcpClient _tcpclient = new TcpClient();
 		private NetworkStream _tcpstream;
 		protected readonly byte[] _bufin = new byte[RECV_BUFSIZE];
@@ -36,9 +40,14 @@ namespace jane
 			if(handlers != null) _handlers = handlers;
 		}
 
-		protected virtual void onAddSession() { }
-		protected virtual void onDelSession(int code, Exception e) { }
-		protected virtual void onAbortSession(Exception e) { }
+		public bool Connected { get { return _tcpclient.Connected; } }
+
+		protected virtual void onAddSession() {}
+		protected virtual void onDelSession(int code, Exception e) {}
+		protected virtual void onAbortSession(Exception e) {}
+		protected virtual void onSentBean(Bean bean) {}
+		protected virtual OctetsStream onEncode(byte[] buf, int pos, int len) { return null; }
+		protected virtual OctetsStream onDecode(byte[] buf, int pos, int len) { return null; }
 
 		protected virtual void onRecvBean(Bean bean)
 		{
@@ -47,23 +56,17 @@ namespace jane
 				handler.onProcess(this, bean);
 		}
 
-		protected virtual OctetsStream onEncode(Bean bean)
+		private void decode(int buflen)
 		{
-			OctetsStream os = new OctetsStream(bean.initSize() + 10);
-			os.resize(10);
-			bean.marshal(os);
-			int p = os.marshalUIntBack(10, os.size() - 10);
-			os.setPosition(10 - (p + os.marshalUIntBack(10 - p, bean.type())));
-			return os;
-		}
-
-		protected virtual void onDecode(int buflen)
-		{
-			_bufos.append(_bufin, 0, buflen);
+			OctetsStream os = onDecode(_bufin, 0, buflen);
+			if(os != null)
+				_bufos.append(os.array(), os.position(), os.remain());
+			else
+				_bufos.append(_bufin, 0, buflen);
 			int pos = 0;
 			try
 			{
-				for(; ; )
+				for(;;)
 				{
 					int ptype = _bufos.unmarshalUInt();
 					int psize = _bufos.unmarshalUInt();
@@ -130,7 +133,7 @@ namespace jane
 					{
 						try
 						{
-							onDecode(buflen);
+							decode(buflen);
 						}
 						catch(Exception e)
 						{
@@ -154,7 +157,9 @@ namespace jane
 			{
 				lock(this)
 				{
+					Bean bean = (Bean)res.AsyncState;
 					_tcpstream.EndWrite(res);
+					onSentBean(bean);
 				}
 			}
 			catch(Exception e)
@@ -187,12 +192,18 @@ namespace jane
 
 		public bool send(Bean bean)
 		{
-			if(!_tcpclient.Connected) return false;
-			OctetsStream os = onEncode(bean);
+			if(!_tcpclient.Connected || _tcpstream == null) return false;
+			OctetsStream os = new OctetsStream(bean.initSize() + 10);
+			os.resize(10);
+			bean.marshal(os);
+			int p = os.marshalUIntBack(10, os.size() - 10);
+			os.setPosition(10 - (p + os.marshalUIntBack(10 - p, bean.type())));
+			OctetsStream o = onEncode(os.array(), os.position(), os.remain());
+			if(o != null) os = o;
 			lock(this)
 			{
-				if(_tcpstream != null)
-					_tcpstream.BeginWrite(os.array(), os.position(), os.remain(), writeCallback, null);
+				if(_tcpstream == null) return false;
+				_tcpstream.BeginWrite(os.array(), os.position(), os.remain(), writeCallback, bean);
 			}
 			return true;
 		}

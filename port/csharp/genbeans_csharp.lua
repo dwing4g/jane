@@ -518,7 +518,7 @@ local function do_var(var)
 	var.id2 = string.format("%2d", var.id)
 	var.name = trim(var.name)
 	var.type = trim(var.type)
-	if var.comment and #var.comment > 0 then var.comment = " // " .. var.comment:gsub("%c", " ") else var.comment = ""  end
+	if var.comment and #var.comment > 0 then var.comment = " // " .. var.comment:gsub("%c", " ") .. ";" else var.comment = ""  end
 	if type(var.value) == "string" then var.value = "\"" .. var.value .. "\"" end
 	var.value = var.value and " = " .. var.value or ""
 	local basetype
@@ -565,7 +565,7 @@ local function bean_common(bean)
 	end
 	type_bean[bean.type] = bean
 	name_bean[bean.name] = bean
-	bean.comment = bean.comment and #bean.comment > 0 and "\n\t/**\n\t * " .. bean.comment:gsub("\n", "<br>\n\t * ") .. "\n\t */" or ""
+	bean.comment = bean.comment and #bean.comment > 0 and "\n\t/**\n\t * " .. bean.comment:gsub("\n", "<br>\n\t * ") .. ";\n\t */" or ""
 end
 local function bean_const(code)
 	return code:gsub("public  /%*", "private /*"):

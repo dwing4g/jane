@@ -36,19 +36,18 @@ namespace jane
 			connect("127.0.0.1", 9123);
 		}
 
-		protected override OctetsStream onEncode(Bean bean)
+		protected override OctetsStream onEncode(byte[] buf, int pos, int len)
 		{
-			OctetsStream os = base.onEncode(bean);
 			if(_filter != null)
-				_filter.updateOutput(os.array(), os.position(), os.remain());
-			return os;
+				_filter.updateOutput(buf, pos, len);
+			return null;
 		}
 
-		protected override void onDecode(int buflen)
+		protected override OctetsStream onDecode(byte[] buf, int pos, int len)
 		{
 			if(_filter != null)
-				_filter.updateInput(_bufin, 0, buflen);
-			base.onDecode(buflen);
+				_filter.updateInput(buf, pos, len);
+			return null;
 		}
 
 		static void Main(string[] args)
