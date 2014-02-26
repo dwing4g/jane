@@ -8,7 +8,7 @@ namespace jane
 	 * 网络管理器;
 	 * 目前仅用于客户端,一般要继承此类使用;
 	 */
-	public class NetManager
+	public class NetManager : IDisposable
 	{
 		public const int CLOSE_ACTIVE = 0;
 		public const int CLOSE_CONNECT = 1;
@@ -206,6 +206,16 @@ namespace jane
 				_tcpstream.BeginWrite(os.array(), os.position(), os.remain(), writeCallback, bean);
 			}
 			return true;
+		}
+
+		protected virtual void Dispose(bool disposing)
+		{
+			_tcpclient.Close();
+		}
+
+		public void Dispose()
+		{
+			Dispose(true);
 		}
 	}
 }

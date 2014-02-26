@@ -5,6 +5,7 @@ namespace jane
 	/**
 	 * 反序列化bean失败的时候会抛出的异常类;
 	 */
+	[Serializable]
 	public class MarshalException : Exception
 	{
 		public MarshalException()
@@ -25,6 +26,7 @@ namespace jane
 	/**
 	 * 反序列化bean遇到数据不足的时候会抛出的异常类;
 	 */
+	[Serializable]
 	public class MarshalEOFException : MarshalException
 	{
 		public MarshalEOFException()
