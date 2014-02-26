@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading;
 using jane;
 using jane.bean;
@@ -53,11 +53,13 @@ namespace jane
 		static void Main(string[] args)
 		{
 			registerAllBeans(AllBeans.getAllBeans());
-			NetManager mgr = new TestClient();
-			Console.WriteLine("connecting ...");
-			mgr.connect("127.0.0.1", 9123);
-			Console.WriteLine("press ENTER to exit ...");
-			Console.ReadLine();
+			using(NetManager mgr = new TestClient())
+			{
+				Console.WriteLine("connecting ...");
+				mgr.connect("127.0.0.1", 9123);
+				Console.WriteLine("press ENTER to exit ...");
+				Console.ReadLine();
+			}
 		}
 	}
 }
