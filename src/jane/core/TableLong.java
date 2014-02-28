@@ -318,7 +318,10 @@ public final class TableLong<V extends Bean<V>>
 		if(v.stored())
 		    throw new IllegalStateException("insert shared record: t=" + _tablename + ",v=" + v);
 		v.setSaveState(2);
-		long k = (_idcounter.incrementAndGet() << _auto_id_lowbits) + _auto_id_offset;
+		long k;
+		do
+			k = (_idcounter.incrementAndGet() << _auto_id_lowbits) + _auto_id_offset;
+		while(getNoCache(k) != null);
 		_cache.put(k, v);
 		if(_cache_mod != null && _cache_mod.put(k, v) == null)
 		    DBManager.instance().incModCount();
