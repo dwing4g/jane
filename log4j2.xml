@@ -6,12 +6,13 @@
 			<ThresholdFilter level="TRACE" onMatch="ACCEPT" onMismatch="DENY"/>
 			<PatternLayout charset="UTF-8" pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%t] - %msg%n"/>
 		</Console>
-		<RollingRandomAccessFile name="FILE" fileName="log/jane.log" filePattern="log/jane.%d{yyyy-MM-dd}.%i.log" immediateFlush="false" ignoreExceptions="false">
+		<RollingRandomAccessFile name="FILE" fileName="log/jane.log" filePattern="log/jane.%d{yyyy-MM-dd}.log" immediateFlush="false" ignoreExceptions="false">
 			<ThresholdFilter level="TRACE" onMatch="ACCEPT" onMismatch="DENY"/>
 			<PatternLayout charset="UTF-8" pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%t] - %msg%n"/>
 			<Policies>
-				<TimeBasedTriggeringPolicy interval="24" modulate="true"/>
-				<!-- <SizeBasedTriggeringPolicy size="1GB"/> -->
+				<!-- <OnStartupTriggeringPolicy/> with %i in filePattern -->
+				<TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+				<!-- <SizeBasedTriggeringPolicy size="1GB"/> with %i in filePattern -->
 			</Policies>
 			<DefaultRolloverStrategy fileIndex="max" max="500" compressionLevel="0"/>
 	  	</RollingRandomAccessFile>
