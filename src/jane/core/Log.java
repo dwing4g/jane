@@ -1,7 +1,9 @@
 package jane.core;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configurator;
 
 /**
  * 日志相关(静态类)
@@ -11,7 +13,7 @@ public final class Log
 	/**
 	 * public给外面方便写日志
 	 */
-	public static final Logger  log      = LoggerFactory.getLogger("jane");
+	public static final Logger  log      = LogManager.getLogger("jane");
 	public static final boolean hasTrace = log.isTraceEnabled();
 	public static final boolean hasDebug = log.isDebugEnabled();
 	public static final boolean hasInfo  = log.isInfoEnabled();
@@ -48,6 +50,16 @@ public final class Log
 		log.info("java.class.path = {}", System.getProperty("java.class.path"));
 		log.info("user.name = {}", System.getProperty("user.name"));
 		log.info("user.dir = {}", System.getProperty("user.dir"));
+	}
+
+	/**
+	 * 关闭日志系统
+	 * <p>
+	 * 应在系统退出前(ShutdownHook)最后执行
+	 */
+	public static void shutdown()
+	{
+		Configurator.shutdown((LoggerContext)LogManager.getContext());
 	}
 
 	private Log()

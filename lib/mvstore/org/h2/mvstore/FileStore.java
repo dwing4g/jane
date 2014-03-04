@@ -39,7 +39,7 @@ public class FileStore {
      * The free spaces between the chunks. The first block to use is block 2
      * (the first two blocks are the store header).
      */
-    protected final FreeSpaceBitSet freeSpace = 
+    protected final FreeSpaceBitSet freeSpace =
             new FreeSpaceBitSet(2, MVStore.BLOCK_SIZE);
 
     /**
@@ -115,8 +115,8 @@ public class FileStore {
     public void open(String fileName, boolean readOnly, char[] encryptionKey) {
         if (fileName != null) {
             if (FilePath.get(fileName) instanceof FilePathDisk) {
-                // NIO is used, unless a different file system is specified
-                // the following line is to ensure the NIO file system is compiled
+                // NIO is used, unless a different file system is specified the
+                // following line is to ensure the NIO file system is compiled
                 FilePathNio.class.getName();
                 fileName = "nio:" + fileName;
             }
@@ -148,11 +148,13 @@ public class FileStore {
                 }
             } catch (OverlappingFileLockException e) {
                 throw DataUtils.newIllegalStateException(
-                        DataUtils.ERROR_FILE_LOCKED, "The file is locked: {0}", fileName, e);
+                        DataUtils.ERROR_FILE_LOCKED,
+                        "The file is locked: {0}", fileName, e);
             }
             if (fileLock == null) {
                 throw DataUtils.newIllegalStateException(
-                        DataUtils.ERROR_FILE_LOCKED, "The file is locked: {0}", fileName);
+                        DataUtils.ERROR_FILE_LOCKED,
+                        "The file is locked: {0}", fileName);
             }
             fileSize = file.size();
         } catch (IOException e) {

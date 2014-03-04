@@ -205,8 +205,8 @@ public class Constants {
     public static final int DEFAULT_LOCK_MODE = LOCK_MODE_READ_COMMITTED;
 
     /**
-     * The default maximum length of an LOB that is stored with the record itself,
-     * and not in a separate place.
+     * The default maximum length of an LOB that is stored with the record
+     * itself, and not in a separate place.
      */
     public static final int DEFAULT_MAX_LENGTH_INPLACE_LOB = 128;
 
@@ -239,7 +239,7 @@ public class Constants {
      * The default result set concurrency for statements created with
      * Connection.createStatement() or prepareStatement(String sql).
      */
-    public static final int DEFAULT_RESULT_SET_CONCURRENCY = 
+    public static final int DEFAULT_RESULT_SET_CONCURRENCY =
             ResultSet.CONCUR_READ_ONLY;
 
     /**
@@ -311,13 +311,13 @@ public class Constants {
     /**
      * The memory needed by an object of class PageBtree.
      */
-    public static final int MEMORY_PAGE_BTREE = 
+    public static final int MEMORY_PAGE_BTREE =
             112 + MEMORY_DATA + 2 * MEMORY_OBJECT;
 
     /**
      * The memory needed by an object of class PageData.
      */
-    public static final int MEMORY_PAGE_DATA = 
+    public static final int MEMORY_PAGE_DATA =
             144 + MEMORY_DATA + 3 * MEMORY_OBJECT;
 
     /**
@@ -384,7 +384,8 @@ public class Constants {
     public static final int SELECTIVITY_DISTINCT_COUNT = 10000;
 
     /**
-     * The default directory name of the server properties file for the H2 Console.
+     * The default directory name of the server properties file for the H2
+     * Console.
      */
     public static final String SERVER_PROPERTIES_DIR = "~";
 
@@ -460,7 +461,7 @@ public class Constants {
      * The database URL format in simplified Backus-Naur form.
      */
     public static final String URL_FORMAT = START_URL +
-            "{ {.|mem:}[name] | [file:]fileName | " + 
+            "{ {.|mem:}[name] | [file:]fileName | " +
             "{tcp|ssl}:[//]server[:port][,server2[:port]]/name }[;key=value...]";
 
     /**
@@ -490,8 +491,8 @@ public class Constants {
     }
 
     /**
-     * Get the version of this product, consisting of major version, minor version,
-     * and build id.
+     * Get the version of this product, consisting of major version, minor
+     * version, and build id.
      *
      * @return the version number
      */

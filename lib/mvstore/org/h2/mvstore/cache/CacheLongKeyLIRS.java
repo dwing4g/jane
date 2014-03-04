@@ -94,7 +94,8 @@ public class CacheLongKeyLIRS<V> {
         this.stackMoveDistance = stackMoveDistance;
         segments = new Segment[segmentCount];
         clear();
-        this.segmentShift = Integer.numberOfTrailingZeros(segments[0].entries.length);
+        this.segmentShift = Integer.numberOfTrailingZeros(
+                segments[0].entries.length);
     }
 
     /**
@@ -507,8 +508,8 @@ public class CacheLongKeyLIRS<V> {
         private int averageMemory;
 
         /**
-         * The bit mask that is applied to the key hash code to get the index in the
-         * map array. The mask is the length of the array minus one.
+         * The bit mask that is applied to the key hash code to get the index in
+         * the map array. The mask is the length of the array minus one.
          */
         private int mask;
 
@@ -518,8 +519,9 @@ public class CacheLongKeyLIRS<V> {
         private int stackSize;
 
         /**
-         * The stack of recently referenced elements. This includes all hot entries,
-         * the recently referenced cold entries, and all non-resident cold entries.
+         * The stack of recently referenced elements. This includes all hot
+         * entries, the recently referenced cold entries, and all non-resident
+         * cold entries.
          * <p>
          * There is always at least one entry: the head entry.
          */
@@ -627,7 +629,7 @@ public class CacheLongKeyLIRS<V> {
             }
             if (e.isHot()) {
                 if (e != stack.stackNext) {
-                    if (stackMoveDistance == 0 || 
+                    if (stackMoveDistance == 0 ||
                             stackMoveCounter - e.topMove > stackMoveDistance) {
                         access(key, hash);
                     }
@@ -639,8 +641,8 @@ public class CacheLongKeyLIRS<V> {
         }
 
         /**
-         * Access an item, moving the entry to the top of the stack or front of the
-         * queue if found.
+         * Access an item, moving the entry to the top of the stack or front of
+         * the queue if found.
          *
          * @param key the key
          */
@@ -651,7 +653,7 @@ public class CacheLongKeyLIRS<V> {
             }
             if (e.isHot()) {
                 if (e != stack.stackNext) {
-                    if (stackMoveDistance == 0 || 
+                    if (stackMoveDistance == 0 ||
                             stackMoveCounter - e.topMove > stackMoveDistance) {
                         // move a hot entry to the top of the stack
                         // unless it is already there
@@ -780,9 +782,9 @@ public class CacheLongKeyLIRS<V> {
         }
 
         /**
-         * Evict cold entries (resident and non-resident) until the memory limit is
-         * reached. The new entry is added as a cold entry, except if it is the only
-         * entry.
+         * Evict cold entries (resident and non-resident) until the memory limit
+         * is reached. The new entry is added as a cold entry, except if it is
+         * the only entry.
          *
          * @param newCold a new cold entry
          */
@@ -823,8 +825,8 @@ public class CacheLongKeyLIRS<V> {
                 // internal structure of the cache is corrupt)
                 throw new IllegalStateException();
             }
-            // remove from stack - which is done anyway in the stack pruning, but we
-            // can do it here as well
+            // remove from stack - which is done anyway in the stack pruning,
+            // but we can do it here as well
             removeFromStack(last);
             // adding an entry to the queue will make it cold
             addToQueue(queue, last);
@@ -917,8 +919,8 @@ public class CacheLongKeyLIRS<V> {
         }
 
         /**
-         * Get the list of keys. This method allows to read the internal state of
-         * the cache.
+         * Get the list of keys. This method allows to read the internal state
+         * of the cache.
          *
          * @param cold if true, only keys for the cold entries are returned
          * @param nonResident true for non-resident entries
@@ -928,11 +930,13 @@ public class CacheLongKeyLIRS<V> {
             ArrayList<Long> keys = new ArrayList<Long>();
             if (cold) {
                 Entry<V> start = nonResident ? queue2 : queue;
-                for (Entry<V> e = start.queueNext; e != start; e = e.queueNext) {
+                for (Entry<V> e = start.queueNext; e != start;
+                        e = e.queueNext) {
                     keys.add(e.key);
                 }
             } else {
-                for (Entry<V> e = stack.stackNext; e != stack; e = e.stackNext) {
+                for (Entry<V> e = stack.stackNext; e != stack;
+                        e = e.stackNext) {
                     keys.add(e.key);
                 }
             }

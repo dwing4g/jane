@@ -256,6 +256,10 @@ public final class DBManager
 				{
 					Log.log.error("DBManager.JVMShutDown: fatal exception:", e);
 				}
+				finally
+				{
+					Log.shutdown();
+				}
 			}
 		});
 	}
