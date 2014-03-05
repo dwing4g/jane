@@ -9,7 +9,7 @@ namespace jane.bean
 	 * 测试空bean;
 	 */
 	[Serializable]
-	public sealed class TestEmpty : Bean, IComparable<TestEmpty>
+	public sealed class TestEmpty : Bean, IEquatable<TestEmpty>, IComparable<TestEmpty>
 	{
 		public const int BEAN_TYPE = 4;
 
@@ -65,6 +65,11 @@ namespace jane.bean
 		{
 			int h = unchecked(4 * (int)0x9e3779b1);
 			return h;
+		}
+
+		public bool Equals(TestEmpty b)
+		{
+			return true;
 		}
 
 		public override bool Equals(object o)

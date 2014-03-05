@@ -21,7 +21,7 @@ using System.Collections.Generic;
 namespace ]=] .. namespace .. [=[.bean
 {#(bean.comment)
 	[Serializable]
-	public sealed class #(bean.name) : Bean, IComparable<#(bean.name)>
+	public sealed class #(bean.name) : Bean, IEquatable<#(bean.name)>, IComparable<#(bean.name)>
 	{
 		public const int BEAN_TYPE = #(bean.type);
 #{#		public const #(var.type) #(var.name)#(var.value);#(var.comment)
@@ -99,6 +99,12 @@ namespace ]=] .. namespace .. [=[.bean
 			int h = unchecked(#(bean.type) * (int)0x9e3779b1);
 #(#			h = h * 31 + 1 + #(var.hashcode);
 #)#			return h;
+		}
+
+		public bool Equals(#(bean.name) b)
+		{
+#(#			if(#(var.equals)) return false;
+#)#			return true;
 		}
 
 		public override bool Equals(object o)

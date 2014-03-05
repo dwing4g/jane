@@ -9,7 +9,7 @@ namespace jane.bean
 	 * 作为key或配置的bean;
 	 */
 	[Serializable]
-	public sealed class TestKeyBean : Bean, IComparable<TestKeyBean>
+	public sealed class TestKeyBean : Bean, IEquatable<TestKeyBean>, IComparable<TestKeyBean>
 	{
 		public const int BEAN_TYPE = 2;
 
@@ -85,6 +85,13 @@ namespace jane.bean
 			h = h * 31 + 1 + this.key1;
 			h = h * 31 + 1 + this.key2.GetHashCode();
 			return h;
+		}
+
+		public bool Equals(TestKeyBean b)
+		{
+			if(this.key1 != b.key1) return false;
+			if(!this.key2.Equals(b.key2)) return false;
+			return true;
 		}
 
 		public override bool Equals(object o)

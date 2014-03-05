@@ -9,7 +9,7 @@ namespace jane.bean
 	 * bean的注释;
 	 */
 	[Serializable]
-	public sealed class TestBean : Bean, IComparable<TestBean>
+	public sealed class TestBean : Bean, IEquatable<TestBean>, IComparable<TestBean>
 	{
 		public const int BEAN_TYPE = 1;
 		public const int TEST_CONST1 = 5; // 测试类静态常量;
@@ -110,6 +110,13 @@ namespace jane.bean
 			h = h * 31 + 1 + this.value1;
 			h = h * 31 + 1 + (int)this.value2;
 			return h;
+		}
+
+		public bool Equals(TestBean b)
+		{
+			if(this.value1 != b.value1) return false;
+			if(this.value2 != b.value2) return false;
+			return true;
 		}
 
 		public override bool Equals(object o)

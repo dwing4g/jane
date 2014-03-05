@@ -9,7 +9,7 @@ namespace jane.bean
 	 * 测试生成所有支持的类型;
 	 */
 	[Serializable]
-	public sealed class TestType : Bean, IComparable<TestType>
+	public sealed class TestType : Bean, IEquatable<TestType>, IComparable<TestType>
 	{
 		public const int BEAN_TYPE = 3;
 
@@ -489,6 +489,30 @@ namespace jane.bean
 			h = h * 31 + 1 + this.v18.GetHashCode();
 			h = h * 31 + 1 + this.v19.GetHashCode();
 			return h;
+		}
+
+		public bool Equals(TestType b)
+		{
+			if(this.v1 != b.v1) return false;
+			if(this.v2 != b.v2) return false;
+			if(this.v3 != b.v3) return false;
+			if(this.v4 != b.v4) return false;
+			if(this.v5 != b.v5) return false;
+			if(this.v6 != b.v6) return false;
+			if(this.v7 != b.v7) return false;
+			if(!this.v8.Equals(b.v8)) return false;
+			if(!this.v9.Equals(b.v9)) return false;
+			if(!this.v10.Equals(b.v10)) return false;
+			if(!this.v11.Equals(b.v11)) return false;
+			if(!this.v12.Equals(b.v12)) return false;
+			if(!this.v13.Equals(b.v13)) return false;
+			if(!this.v14.Equals(b.v14)) return false;
+			if(!this.v15.Equals(b.v15)) return false;
+			if(!this.v16.Equals(b.v16)) return false;
+			if(!this.v17.Equals(b.v17)) return false;
+			if(!this.v18.Equals(b.v18)) return false;
+			if(!this.v19.Equals(b.v19)) return false;
+			return true;
 		}
 
 		public override bool Equals(object o)
