@@ -85,8 +85,11 @@ public final class IntMap<V>
 		{
 			V oldValue = zeroValue;
 			zeroValue = value;
-			hasZeroValue = true;
-			size++;
+			if(!hasZeroValue)
+			{
+				hasZeroValue = true;
+				++size;
+			}
 			return oldValue;
 		}
 
@@ -123,7 +126,7 @@ public final class IntMap<V>
 		// Update key in the stash.
 		for(int i = capacity, n = i + stashSize; i < n; i++)
 		{
-			if(key == kt[i])
+			if(kt[i] == key)
 			{
 				V oldValue = valueTable[i];
 				valueTable[i] = value;
@@ -299,7 +302,7 @@ public final class IntMap<V>
 
 	public V get(int key)
 	{
-		if(key == 0) return zeroValue;
+		if(key == 0) return hasZeroValue ? zeroValue : null;
 		int index = key & mask;
 		if(keyTable[index] != key)
 		{
@@ -315,7 +318,7 @@ public final class IntMap<V>
 
 	public V get(int key, V defaultValue)
 	{
-		if(key == 0) return zeroValue;
+		if(key == 0) return hasZeroValue ? zeroValue : defaultValue;
 		int index = key & mask;
 		if(keyTable[index] != key)
 		{

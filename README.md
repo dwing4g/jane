@@ -6,7 +6,7 @@ Feature:
  * application server framework in Java (JDK6)
  * TCP server and client framework based on Apache Mina
  * simple, extensible and compact protocol on TCP
- * embedded database based on MapDB with extremely fast in-memory cache
+ * embedded database based on LevelDB with extremely fast in-memory cache
  * single process with multi-thread concurrent network and database
  * optimized for high performance (1.5M TPS on one core of 3GHz PC)
  * simple implement but powerful (only 9K+ lines of core source code)
@@ -36,9 +36,9 @@ License:
  * 概念和实现简单清晰
 
 依赖库:
- * 日志库: slf4j-1.7.x (后端用log4j-2.x)
+ * 日志库: slf4j-1.7.x log4j-2.x
  * 网络库: mina-core-2.0.x
- * 数据库: mapdb-0.9.x (最好等待1.0稳定版再投入正式使用) leveldb-jni mvstore-1.3.x
+ * 数据库: leveldb-jni mapdb-0.9.x mvstore-1.3.x (后两者最好等待稳定版再投入正式使用)
  * 脚本库: luaj-jse-2.0.x
  * 基础库: com.googlecode.concurrentlinkedhashmap (高速并发hashmap/linkedhashmap)
 
@@ -58,19 +58,20 @@ License:
   * rupy:           https://code.google.com/p/rupy/
   * tjws:           http://tjws.sourceforge.net/
  * 数据库:
-  * mapdb:          http://www.mapdb.org/
-  * mvstore:        http://www.h2database.com/html/mvstore.html
+  * leveldb:        https://code.google.com/p/leveldb/
   * leveldb-jni:    https://code.google.com/r/dwing4g-leveldbjni/
   * leveldb-jni:    https://code.google.com/r/bgrainger-leveldb/
   * leveldb-jni:    https://github.com/fusesource/leveldbjni
   * leveldb-java:   https://github.com/dain/leveldb
+  * mapdb:          http://www.mapdb.org/
+  * mvstore:        http://www.h2database.com/html/mvstore.html
   * berkeleydb/je:  http://www.oracle.com/technetwork/products/berkeleydb/downloads/index.html
   * perst:          http://www.mcobject.com/perst/
  * 脚本库:
   * luaj:           http://luaj.org/luaj/README.html
  * 基础库:
   * com.googlecode.concurrentlinkedhashmap: https://code.google.com/p/concurrentlinkedhashmap/
-  * kryo:           https://code.google.com/p/kryo/
+  * kryo:           https://github.com/EsotericSoftware/kryo
   * gnu.trove.map:  http://trove.starlight-systems.com/
   * org.cliffc.high_scale_lib: http://sourceforge.net/projects/high-scale-lib/
 
