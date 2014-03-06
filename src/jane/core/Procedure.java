@@ -37,7 +37,7 @@ public abstract class Procedure implements Runnable
 			                                                          return ctx;
 		                                                          }
 	                                                          };
-	private static final ReentrantLock[]        _lockpool     = new ReentrantLock[Const.lockPoolSize]; // 全局贡献的锁池
+	private static final ReentrantLock[]        _lockpool     = new ReentrantLock[Const.lockPoolSize]; // 全局共享的锁池
 	private static final int                    _lockmask     = Const.lockPoolSize - 1;               // 锁池下标的掩码
 	private static final ReentrantReadWriteLock _rwl_commit   = new ReentrantReadWriteLock();         // 用于数据提交的读写锁
 	private static final Map<Thread, Context>   _proc_threads = Util.newProcThreadsMap();             // 当前运行的全部事务线程. 用于判断是否超时

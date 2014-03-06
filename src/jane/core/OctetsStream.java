@@ -316,6 +316,23 @@ public class OctetsStream extends Octets
 		                      return marshal5((byte)0x87, x);  // 1000 0111 +4B
 	}
 
+	public static int marshalLen(int x)
+	{
+		if(x >= 0)
+		{
+		    if(x < 0x40)      return 1;
+		    if(x < 0x2000)    return 2;
+		    if(x < 0x100000)  return 3;
+		    if(x < 0x8000000) return 4;
+		                      return 5;
+		}
+		if(x >= -0x40)        return 1;
+		if(x >= -0x2000)      return 2;
+		if(x >= -0x100000)    return 3;
+		if(x >= -0x8000000)   return 4;
+		                      return 5;
+	}
+
 	public OctetsStream marshal(long x)
 	{
 		if(x < 0x8000000 && x >= -0x8000000) return marshal((int)x);
@@ -332,6 +349,24 @@ public class OctetsStream extends Octets
 		if(x >= -0x1000000000000L)    return marshal7(x - 0x7e000000000000L);   // 1000 0001 +6B
 		if(x >= -0x80000000000000L)   return marshal8(x - 0x7f00000000000000L); // 1000 0000 1+7B
 		                  return marshal9((byte)0x80, x - 0x8000000000000000L); // 1000 0000 0+8B
+	}
+
+	public static int marshalLen(long x)
+	{
+		if(x < 0x8000000 && x >= -0x8000000) return marshalLen((int)x);
+		if(x >= 0)
+		{
+		    if(x < 0x400000000L)      return 5;
+		    if(x < 0x20000000000L)    return 6;
+		    if(x < 0x1000000000000L)  return 7;
+		    if(x < 0x80000000000000L) return 8;
+		                              return 9;
+		}
+		if(x >= -0x400000000L)        return 5;
+		if(x >= -0x20000000000L)      return 6;
+		if(x >= -0x1000000000000L)    return 7;
+		if(x >= -0x80000000000000L)   return 8;
+		                              return 9;
 	}
 
 	public OctetsStream marshalUInt(int x)
@@ -351,6 +386,15 @@ public class OctetsStream extends Octets
 		if(x < 0x200000)  { count = p - 3; marshal3(x + 0xc00000);          count = t; return 3; }
 		if(x < 0x1000000) { count = p - 4; marshal4(x + 0xe0000000);        count = t; return 4; }
 		                  { count = p - 5; marshal5((byte)0xf0, x);         count = t; return 5; }
+	}
+
+	public static int marshalUIntLen(int x)
+	{
+		if(x < 0x80)      return 1;
+		if(x < 0x4000)    return 2;
+		if(x < 0x200000)  return 3;
+		if(x < 0x1000000) return 4;
+		                  return 5;
 	}
 
 	public OctetsStream marshalUTF8(char x)
