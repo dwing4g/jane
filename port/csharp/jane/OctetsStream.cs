@@ -280,15 +280,16 @@ namespace jane
 
 		public OctetsStream marshal(long x)
 		{
-			if(x < 0x8000000 && x >= -0x8000000) return marshal((int)x);
 			if(x >= 0)
 			{
+				if(x < 0x8000000)         return marshal((int)x);
 			    if(x < 0x400000000L)      return marshal5(x + 0x7800000000L);          // 0111 10xx +4B
 			    if(x < 0x20000000000L)    return marshal6(x + 0x7c0000000000L);        // 0111 110x +5B
 			    if(x < 0x1000000000000L)  return marshal7(x + 0x7e000000000000L);      // 0111 1110 +6B
 			    if(x < 0x80000000000000L) return marshal8(x + 0x7f00000000000000L);    // 0111 1111 0+7B
 			    return marshal9((byte)0x7f, x + unchecked((long)0x8000000000000000L)); // 0111 1111 1+8B
 			}
+			if(x >= -0x8000000)           return marshal((int)x);
 			if(x >= -0x400000000L)        return marshal5(x - 0x7800000000L);          // 1000 01xx +4B
 			if(x >= -0x20000000000L)      return marshal6(x - 0x7c0000000000L);        // 1000 001x +5B
 			if(x >= -0x1000000000000L)    return marshal7(x - 0x7e000000000000L);      // 1000 0001 +6B
@@ -298,15 +299,16 @@ namespace jane
 
 		public static int marshalLen(long x)
 		{
-			if(x < 0x8000000 && x >= -0x8000000) return marshalLen((int)x);
 			if(x >= 0)
 			{
+				if(x < 0x8000000)         return marshalLen((int)x);
 				if(x < 0x400000000L)      return 5;
 				if(x < 0x20000000000L)    return 6;
 				if(x < 0x1000000000000L)  return 7;
 				if(x < 0x80000000000000L) return 8;
 										  return 9;
 			}
+			if(x >= -0x8000000)           return marshalLen((int)x);
 			if(x >= -0x400000000L)        return 5;
 			if(x >= -0x20000000000L)      return 6;
 			if(x >= -0x1000000000000L)    return 7;
