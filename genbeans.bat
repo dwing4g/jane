@@ -8,6 +8,7 @@ md src\jane\bean 2>nul
 md src\jane\handler 2>nul
 rem md src\jane\handler\... 2>nul
 
-java -cp %LIB% lua genbeans.lua
+rem java -cp %LIB% lua genbeans.lua
+tool\luajit genbeans.lua
 
 pause

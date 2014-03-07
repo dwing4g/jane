@@ -63,7 +63,8 @@ public class FilePathDisk extends FilePath {
      * @return the native file name
      */
     public static String expandUserHomeDirectory(String fileName) {
-/*        if (fileName.startsWith("~") && (fileName.length() == 1 || fileName.startsWith("~/"))) {
+/*        if (fileName.startsWith("~") && (fileName.length() == 1 ||
+                  fileName.startsWith("~/"))) {
             String userDir = SysProperties.USER_HOME;
             fileName = userDir + fileName.substring(1);
         }
@@ -95,7 +96,8 @@ public class FilePathDisk extends FilePath {
             }
             wait(i);
         }
-        throw DbException.get(ErrorCode.FILE_RENAME_FAILED_2, new String[]{name, newName.name});
+        throw DbException.get(ErrorCode.FILE_RENAME_FAILED_2,
+                new String[]{name, newName.name});
 */    }
 
     private static void wait(int i) {
@@ -279,8 +281,9 @@ public class FilePathDisk extends FilePath {
     public InputStream newInputStream() throws IOException {
         int index = name.indexOf(':');
         if (index > 1 && index < 20) {
-            // if the ':' is in position 1, a windows file access is assumed: C:.. or D:
-            // if the ':' is not at the beginning, assume its a file name with a colon
+            // if the ':' is in position 1, a windows file access is assumed:
+            // C:.. or D:, and if the ':' is not at the beginning, assume its a
+            // file name with a colon
             if (name.startsWith(CLASSPATH_PREFIX)) {
                 String fileName = name.substring(CLASSPATH_PREFIX.length());
                 if (!fileName.startsWith("/")) {
@@ -288,7 +291,8 @@ public class FilePathDisk extends FilePath {
                 }
                 InputStream in = getClass().getResourceAsStream(fileName);
                 if (in == null) {
-                    in = Thread.currentThread().getContextClassLoader().getResourceAsStream(fileName);
+                    in = Thread.currentThread().getContextClassLoader().
+                            getResourceAsStream(fileName);
                 }
                 if (in == null) {
                     throw new FileNotFoundException("resource " + fileName);
@@ -306,8 +310,8 @@ public class FilePathDisk extends FilePath {
     }
 
     /**
-     * Call the garbage collection and run finalization. This close all files that
-     * were not closed, and are no longer referenced.
+     * Call the garbage collection and run finalization. This close all files
+     * that were not closed, and are no longer referenced.
      */
     static void freeMemoryAndFinalize() {
         /*IOUtils.trace("freeMemoryAndFinalize", null, null);*/
@@ -347,8 +351,8 @@ public class FilePathDisk extends FilePath {
     }
 
     @Override
-    public FilePath createTempFile(String suffix, boolean deleteOnExit, boolean inTempDir)
-            throws IOException {
+    public FilePath createTempFile(String suffix, boolean deleteOnExit,
+    	    boolean inTempDir) throws IOException {
     	throw new UnsupportedOperationException();
 /*        String fileName = name + ".";
         String prefix = new File(fileName).getName();
@@ -419,7 +423,8 @@ class FileDisk extends FileBase {
     }
 
     @Override
-    public synchronized FileLock tryLock(long position, long size, boolean shared) throws IOException {
+    public synchronized FileLock tryLock(long position, long size,
+            boolean shared) throws IOException {
         return file.getChannel().tryLock(position, size, shared);
     }
 
@@ -440,7 +445,8 @@ class FileDisk extends FileBase {
 
     @Override
     public int read(ByteBuffer dst) throws IOException {
-        int len = file.read(dst.array(), dst.arrayOffset() + dst.position(), dst.remaining());
+        int len = file.read(dst.array(), dst.arrayOffset() + dst.position(),
+                dst.remaining());
         if (len > 0) {
             dst.position(dst.position() + len);
         }
