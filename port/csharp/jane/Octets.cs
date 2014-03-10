@@ -140,7 +140,7 @@ namespace jane
 		{
 			if(count <= 0) return EMPTY;
 			byte[] buf = new byte[count];
-			Array.Copy(buffer, 0, buf, 0, count);
+			Buffer.BlockCopy(buffer, 0, buf, 0, count);
 			return buf;
 		}
 
@@ -157,7 +157,7 @@ namespace jane
 			if(size < count) size = count;
 			if(size >= buffer.Length) return;
 			byte[] buf = new byte[size];
-			Array.Copy(buffer, 0, buf, 0, count);
+			Buffer.BlockCopy(buffer, 0, buf, 0, count);
 			buffer = buf;
 		}
 
@@ -173,7 +173,7 @@ namespace jane
 				int cap = DEFAULT_SIZE;
 				while(size > cap) cap <<= 1;
 				byte[] buf = new byte[cap];
-				if(count > 0) Array.Copy(buffer, 0, buf, 0, count);
+				if(count > 0) Buffer.BlockCopy(buffer, 0, buf, 0, count);
 				buffer = buf;
 			}
 		}
@@ -223,7 +223,7 @@ namespace jane
 			len -= pos;
 			if(size > len) size = len;
 			reserveSpace(size);
-			Array.Copy(data, pos, buffer, 0, size);
+			Buffer.BlockCopy(data, pos, buffer, 0, size);
 			count = size;
 		}
 
@@ -259,7 +259,7 @@ namespace jane
 			len -= pos;
 			if(size > len) size = len;
 			reserve(count + size);
-			Array.Copy(data, pos, buffer, count, size);
+			Buffer.BlockCopy(data, pos, buffer, count, size);
 			count += size;
 			return this;
 		}
@@ -285,8 +285,8 @@ namespace jane
 			len -= pos;
 			if(size > len) size = len;
 			reserve(count + size);
-			Array.Copy(buffer, from, buffer, from + size, count - from);
-			Array.Copy(data, pos, buffer, from, size);
+			Buffer.BlockCopy(buffer, from, buffer, from + size, count - from);
+			Buffer.BlockCopy(data, pos, buffer, from, size);
 			count += size;
 			return this;
 		}
@@ -309,7 +309,7 @@ namespace jane
 			else
 			{
 				count -= to;
-				Array.Copy(buffer, to, buffer, from, count);
+				Buffer.BlockCopy(buffer, to, buffer, from, count);
 				count += from;
 			}
 			return this;
@@ -321,7 +321,7 @@ namespace jane
 			else if(size > 0)
 			{
 				count -= size;
-				Array.Copy(buffer, size, buffer, 0, count);
+				Buffer.BlockCopy(buffer, size, buffer, 0, count);
 			}
 			return this;
 		}

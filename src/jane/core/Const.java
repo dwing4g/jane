@@ -49,7 +49,8 @@ public final class Const
 		try
 		{
 			jane_prop = System.getProperty("jane.prop");
-			jane_prop = (jane_prop != null ? jane_prop.trim() : "jane.properties");
+			if(jane_prop == null || (jane_prop = jane_prop.trim()).isEmpty())
+			    jane_prop = "jane.properties";
 			Log.log.debug("{}: load {}", Const.class.getName(), jane_prop);
 			_property.load(new FileInputStream(jane_prop));
 		}

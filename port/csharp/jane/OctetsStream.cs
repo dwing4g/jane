@@ -1050,7 +1050,7 @@ namespace jane
 			if(pos_new > count) new MarshalEOFException();
 			if(pos_new < pos) new MarshalException();
 			byte[] r = new byte[size];
-			Array.Copy(buffer, pos, r, 0, size);
+			Buffer.BlockCopy(buffer, pos, r, 0, size);
 			pos = pos_new;
 			return r;
 		}
