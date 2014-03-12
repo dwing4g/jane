@@ -194,7 +194,7 @@ public final class Xlsx2Xml
 			if(key_column_id >= 0 && key_column_id < str_column.length) pw.print(str_column[key_column_id]);
 			pw.print("\">\n");
 			// pw.print("\" time=\"");
-			// pw.print(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss\">\n").format(new Date()));
+			// pw.print(new SimpleDateFormat("yy-MM-dd HH:mm:ss\">\n").format(new Date()));
 			for(int i = 1; i < n; ++i)
 			{
 				NodeList nl_row = ((Element)nl.item(i)).getElementsByTagName("c");

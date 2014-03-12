@@ -24,16 +24,16 @@ import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 public final class DBManager
 {
 	private static final DBManager                             _instance    = new DBManager();
-	private final SimpleDateFormat                             _sdf         = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss"); // 备份文件后缀名的时间格式
-	private final ScheduledExecutorService                     _commit_thread;                                            // 处理数据提交和事务超时的线程
-	private final ThreadPoolExecutor                           _proc_threads;                                             // 事务线程池
-	private final ConcurrentMap<Object, ArrayDeque<Procedure>> _qmap        = Util.newConcurrentHashMap();                // 当前sid队列的数量
-	private final AtomicLong                                   _proc_count  = new AtomicLong();                           // 绑定过sid的在队列中未运行的事务数量
-	private final AtomicLong                                   _mod_count   = new AtomicLong();                           // 当前缓存修改的记录数
-	private final CommitTask                                   _commit_task = new CommitTask();                           // 数据提交的任务
-	private volatile Storage                                   _storage;                                                  // 存储引擎
-	private volatile ScheduledFuture<?>                        _commit_future;                                            // 数据提交的结果
-	private volatile boolean                                   _exit;                                                     // 是否在退出状态(已经执行了ShutdownHook)
+	private final SimpleDateFormat                             _sdf         = new SimpleDateFormat("yy-MM-dd-HH-mm-ss"); // 备份文件后缀名的时间格式
+	private final ScheduledExecutorService                     _commit_thread;                                          // 处理数据提交和事务超时的线程
+	private final ThreadPoolExecutor                           _proc_threads;                                           // 事务线程池
+	private final ConcurrentMap<Object, ArrayDeque<Procedure>> _qmap        = Util.newConcurrentHashMap();              // 当前sid队列的数量
+	private final AtomicLong                                   _proc_count  = new AtomicLong();                         // 绑定过sid的在队列中未运行的事务数量
+	private final AtomicLong                                   _mod_count   = new AtomicLong();                         // 当前缓存修改的记录数
+	private final CommitTask                                   _commit_task = new CommitTask();                         // 数据提交的任务
+	private volatile Storage                                   _storage;                                                // 存储引擎
+	private volatile ScheduledFuture<?>                        _commit_future;                                          // 数据提交的结果
+	private volatile boolean                                   _exit;                                                   // 是否在退出状态(已经执行了ShutdownHook)
 
 	{
 		_commit_thread = Executors.newSingleThreadScheduledExecutor(new ThreadFactory()

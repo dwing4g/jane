@@ -39,7 +39,7 @@ jane并不是为了极度的轻量级而全部实现所需的功能，而是调�
 Mina：著名的Java网络底层库，apache基金会的子项目，高效易用。
 LevelDB：嵌入式key-value型NoSQL数据库，C++语言实现，Google公司开发，jane增加了自实现的jni接口来访问，目前已经编译好的有Windows平台的32位版本和Linux平台的64位版本，生产用途应使用64位的版本。
 MapDB和MVStore：其它的可替换的嵌入式key-value型NoSQL数据库，完全使用Java语言实现，目前版本的实现不够稳定，不适合在生产用途使用。
-SLF4J和Log4j：jane所使用的日志库，SLF4J接口的使用范围较广，Mina库依赖，适合内置并推荐上层开发者使用。Log4j 2.0作为后端，是SLF4J接口的具体实现，运行效率较高。
+SLF4J和Log4j：jane所使用的日志库，SLF4J接口的使用范围较广，Mina库依赖，适合内置并推荐上层开发者使用。Log4j 2作为后端，是SLF4J接口的具体实现，运行效率较高。
 LuaJ：Lua语言在JVM平台最好的一个实现，支持Java的脚本语言接口标准，运行效率也很高。
 ConcurrentLinkedHashMap：googlecode上开源的并发LinkedHashMap结构，主要用于高效cache的实现基础。
 以上依赖库以及jane包括源代码的jar和动态库文件大小共有5MB多，不包括源代码则只有3MB多。
@@ -83,3 +83,11 @@ jane框架考虑到效率和未来跨语言跨平台的问题，并没有使用�
 描述文件中包括Bean的定义，RPC的定义，数据库表的定义，Bean/RPC协议处理器的定义。
 配置文件使用Lua table的形式描述，本身也是一个符合Lua标准的代码，因此编写时具有很好的灵活性，但仍建议保持描述的整齐以便查看和编辑。代码生成器也使用Lua脚本来实现，支持只更新需要改动的Bean文件，另外还能生成Bean协议处理(Handler)的框架，并支持只更新字段注释的部分。
 目前的实现还包括C#语言的Bean及其协议处理框架的生成(RPC除外)。
+
+● 为什么叫jane
+
+在叫jane之前，初始开发的阶段曾经叫sas，意思是Smart App Server。由于软件业里叫sas的已经有了，基本开发完成后考虑更换一个正式的名字，决定叫jane的理由如下：
+jane = Just Another Network Engine
+jane的中文音译是“简”，表示了jane的简洁开发理念
+很多Java相关中间件的名字以J开头
+网上很难找到叫jane的软件名称，避免重名
