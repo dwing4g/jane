@@ -7,6 +7,7 @@ set H2DB=..\..\h2database
 
 	copy /y %MAPDB%\src\main\java\org\mapdb\*.java							..\lib\mapdb\org\mapdb\
 
+rem	copy /y %H2DB%\h2\src\main\org\h2\compress\CompressDeflate.java			..\lib\mvstore\org\h2\compress\
 	copy /y %H2DB%\h2\src\main\org\h2\compress\CompressLZF.java				..\lib\mvstore\org\h2\compress\
 	copy /y %H2DB%\h2\src\main\org\h2\compress\Compressor.java				..\lib\mvstore\org\h2\compress\
 	copy /y %H2DB%\h2\src\main\org\h2\engine\Constants.java					..\lib\mvstore\org\h2\engine\
@@ -51,5 +52,6 @@ rem		buff = buf;
 rem	}
 rem	//PATCH: jane end
 rem	FilePathDisk.java: many unused comment for compilation
+rem CompressDeflate.java: DBException to RuntimeException
 
 pause
