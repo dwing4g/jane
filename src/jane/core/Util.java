@@ -330,7 +330,7 @@ public final class Util
 	 * 把xml文件转换成bean的map结构
 	 * <p>
 	 * 此调用在发现错误时会抛出异常,注意检查
-	 * @param xmlfile 输入的xml文件名. 文件格式必须是{@link jane.tool.Xlsx2Xml}输出的结构
+	 * @param xmlfile 输入的xml文件名. 文件格式必须是{@link jane.tool.XlsxExport}输出的xml结构
 	 * @param beanmap 输出的map结构. 如果输入的xml文件没有指定key,则必须用Integer类型的key
 	 * @param keycls map的key类. 如果为null,则自动生成从1开始的Integer作为key,此时beanmap的key类型必须是Integer
 	 * @param beancls map的value类. 必须是继承bean类型的

@@ -143,7 +143,7 @@ public final class DBManager
 						long t2 = System.currentTimeMillis();
 						_storage.commit();
 						long t3 = System.currentTimeMillis();
-						Log.log.info("db-commit completed. ({}/{}/{} ms)", t1, t3 - t2, t3 - t0);
+						Log.log.info("db-commit done. ({}/{}/{} ms)", t1, t3 - t2, t3 - t0);
 
 						// 5.判断备份周期并启动备份
 						t0 = System.currentTimeMillis();

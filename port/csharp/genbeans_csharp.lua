@@ -681,4 +681,4 @@ end):gsub("#%(#(.-)#%)#", function(body)
 	return concat(subcode)
 end)):gsub(#handlers > 0 and "#[<>]#" or "#%<#(.-)#%>#", ""):gsub("#%(bean.count%)", #bean_order):gsub("\r", ""), 0)
 
-print "completed!"
+print "done!"

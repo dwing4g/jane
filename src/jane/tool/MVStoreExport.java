@@ -75,6 +75,6 @@ public final class MVStoreExport
 
 		System.err.println("INFO: closing db ...");
 		db.close();
-		System.err.println("INFO: completed! (" + (System.currentTimeMillis() - t) + " ms)");
+		System.err.println("INFO: done! (" + (System.currentTimeMillis() - t) + " ms)");
 	}
 }

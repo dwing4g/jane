@@ -924,4 +924,4 @@ checksave(outpath .. namespace .. "/bean/AllTables.java", (code_conv(template_al
 	return concat(subcode)
 end), "tables", tables):gsub(#tables > 0 and "#[<>]#" or "#<#(.-)#>#", ""):gsub("\r", "")), 0)
 
-print "completed!"
+print "done!"

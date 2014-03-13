@@ -53,6 +53,6 @@ public final class DBCompact
 			System.err.println("ERROR: unknown db format");
 			return;
 		}
-		System.err.println("INFO: completed! (" + (System.currentTimeMillis() - t) + " ms)");
+		System.err.println("INFO: done! (" + (System.currentTimeMillis() - t) + " ms)");
 	}
 }
