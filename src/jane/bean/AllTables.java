@@ -23,19 +23,19 @@ public final class AllTables
 	/**
 	 * 数据库表定义. key类型只能是32/64位整数/浮点数或字符串/binary类型或bean类型, id类型表示优化的非负数long类型
 	 */
-	public static final TableLong<TestType> TestTable = _dbm.openTable(1, "TestTable", "test", 65536, TestType.BEAN_STUB);
+	public static final TableLong<TestType> TestTable = _dbm.<TestType>openTable(1, "TestTable", "test", 65536, TestType.BEAN_STUB);
 	/**
 	 * value类型必须是bean定义的类型
 	 */
-	public static final Table<TestKeyBean, TestBean> BeanTable = _dbm.openTable(2, "BeanTable", "bean", 65536, TestKeyBean.BEAN_STUB, TestBean.BEAN_STUB);
+	public static final Table<TestKeyBean, TestBean> BeanTable = _dbm.<TestKeyBean, TestBean>openTable(2, "BeanTable", "bean", 65536, TestKeyBean.BEAN_STUB, TestBean.BEAN_STUB);
 	/**
 	 * 注意表名和key类型的对应关系是不能改变的
 	 */
-	public static final Table<Octets, TestEmpty> OctetsTable = _dbm.openTable(3, "OctetsTable", "bean", 1000, null, null);
+	public static final Table<Octets, TestEmpty> OctetsTable = _dbm.<Octets, TestEmpty>openTable(3, "OctetsTable", "bean", 1000, null, null);
 	/**
 	 * 用于测试数据库的表
 	 */
-	public static final TableLong<TestBean> Benchmark = _dbm.openTable(4, "Benchmark", "bench", 200000, TestBean.BEAN_STUB);
+	public static final TableLong<TestBean> Benchmark = _dbm.<TestBean>openTable(4, "Benchmark", "bench", 200000, TestBean.BEAN_STUB);
 
 	/**
 	 * 以下内部类可以单独使用,避免初始化前面的表对象,主要用于获取表的键值类型

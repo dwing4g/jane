@@ -298,7 +298,7 @@ public final class AllTables
 	 */
 	public static void register() { _dbm.startCommitThread(); }#<#
 #>#
-#(#	#(table.comment)public static final #(table.table)<#(table.key)#(table.comma)#(table.value)> #(table.name) = _dbm.openTable(#(table.id), "#(table.name)", "#(table.lock)", #(table.cachesize)#(table.comma)#(table.keys), #(table.values));
+#(#	#(table.comment)public static final #(table.table)<#(table.key)#(table.comma)#(table.value)> #(table.name) = _dbm.<#(table.key)#(table.comma)#(table.value)>openTable(#(table.id), "#(table.name)", "#(table.lock)", #(table.cachesize)#(table.comma)#(table.keys), #(table.values));
 #)#
 	/**
 	 * 以下内部类可以单独使用,避免初始化前面的表对象,主要用于获取表的键值类型
