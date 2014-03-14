@@ -130,6 +130,19 @@ public final class XlsxExport
 		return res;
 	}
 
+	public static Map<Integer, Map<Integer, String>> xlsx2Maps(String filename, int sheet_id) throws Exception
+	{
+		InputStream is = new FileInputStream(filename);
+		try
+		{
+			return xlsx2Maps(is, sheet_id);
+		}
+		finally
+		{
+			is.close();
+		}
+	}
+
 	/**
 	 * 把xlsx类型的excel文件中的某一页转换成xml格式
 	 * <p>

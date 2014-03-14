@@ -75,6 +75,12 @@ License:
   * gnu.trove.map:  http://trove.starlight-systems.com/
   * org.cliffc.high_scale_lib: http://sourceforge.net/projects/high-scale-lib/
 
+相关软件:
+ * JDK:             http://www.oracle.com/technetwork/java/javase/downloads/index.html
+ * Apache Ant:      http://ant.apache.org/bindownload.cgi
+ * Eclipse:         http://www.eclipse.org/downloads/
+ * LuaJIT:          http://luajit.org/download.html
+
 特性:
  * 高性能的网络/数据库IO, 单进程+多线程, 嵌入式数据库
  * 通用的框架和便利的逻辑实现, 以及异常安全保护
