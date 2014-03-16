@@ -1,7 +1,7 @@
 package jane.core;
 
 /**
- * 反序列化bean失败的时候会抛出的异常类
+ * 反序列化失败时会抛出的异常类
  * <p>
  * 考虑到性能,内部还包含不带栈信息(WithoutTrace)的子类
  */
@@ -11,13 +11,15 @@ public class MarshalException extends Exception
 	private static final WithoutTrace    _instance_wt     = new WithoutTrace();
 	private static final EOFWithoutTrace _instance_eof_wt = new EOFWithoutTrace();
 
+	/**
+	 * 不带栈信息的MarshalException
+	 */
 	public static class WithoutTrace extends MarshalException
 	{
 		private static final long serialVersionUID = 6894763062072780747L;
 
 		public WithoutTrace()
 		{
-			super();
 		}
 
 		public WithoutTrace(Throwable e)
@@ -34,9 +36,7 @@ public class MarshalException extends Exception
 	}
 
 	/**
-	 * 读取超过数据结尾的异常
-	 * <p>
-	 * 考虑到性能,默认不带栈信息
+	 * 反序列化超过数据结尾的异常类
 	 */
 	public static class EOF extends MarshalException
 	{
@@ -53,9 +53,7 @@ public class MarshalException extends Exception
 	}
 
 	/**
-	 * 读取超过数据结尾的异常
-	 * <p>
-	 * 考虑到性能,默认不带栈信息
+	 * 不带栈信息的EOF
 	 */
 	public static class EOFWithoutTrace extends EOF
 	{
@@ -100,7 +98,6 @@ public class MarshalException extends Exception
 
 	public MarshalException()
 	{
-		super();
 	}
 
 	public MarshalException(Throwable e)
