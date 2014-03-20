@@ -27,16 +27,7 @@ public abstract class Procedure implements Runnable
 		private volatile Procedure proc;                                                // 当前运行的事务
 	}
 
-	private static final ThreadLocal<Context>   _tl_proc      = new ThreadLocal<Context>()
-	                                                          {
-		                                                          @Override
-		                                                          protected Context initialValue()
-		                                                          {
-			                                                          Context ctx = new Context();
-			                                                          _proc_threads.put(Thread.currentThread(), ctx);
-			                                                          return ctx;
-		                                                          }
-	                                                          };
+	private static final ThreadLocal<Context>   _tl_proc;                                             // 每个事务线程绑定一个上下文
 	private static final ReentrantLock[]        _lockpool     = new ReentrantLock[Const.lockPoolSize]; // 全局共享的锁池
 	private static final int                    _lockmask     = Const.lockPoolSize - 1;               // 锁池下标的掩码
 	private static final ReentrantReadWriteLock _rwl_commit   = new ReentrantReadWriteLock();         // 用于数据提交的读写锁
@@ -47,6 +38,16 @@ public abstract class Procedure implements Runnable
 
 	static
 	{
+		_tl_proc = new ThreadLocal<Context>()
+		{
+			@Override
+			protected Context initialValue()
+			{
+				Context ctx = new Context();
+				_proc_threads.put(Thread.currentThread(), ctx);
+				return ctx;
+			}
+		};
 		DBManager.instance().scheduleWithFixedDelay(new Runnable()
 		{
 			@Override
