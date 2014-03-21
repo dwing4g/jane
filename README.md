@@ -9,7 +9,7 @@ Feature:
  * embedded database based on LevelDB with extremely fast in-memory cache
  * single process with multi-thread concurrent network and database
  * optimized for high performance (1.5M TPS on one core of 3GHz PC)
- * simple implement but powerful (only 9K+ lines of core source code)
+ * simple implement but powerful (only 10K+ lines of core source code)
  * easy to understand and use with code generation for Java bean code
 
 Todo:

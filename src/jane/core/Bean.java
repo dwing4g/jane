@@ -193,4 +193,9 @@ public abstract class Bean<B extends Bean<B>> implements Serializable, Cloneable
 	{
 		return toLua(null);
 	}
+
+	/**
+	 * 获取自身的安全封装(在事务中支持异常回滚)
+	 */
+	public abstract B toSafe();
 }

@@ -4,11 +4,13 @@ package jane.bean;
 import jane.core.Bean;
 import jane.core.MarshalException;
 import jane.core.OctetsStream;
+import jane.core.UndoList;
+import jane.core.UndoList.Undo;
 
 /**
  * 测试空bean
  */
-public final class TestEmpty extends Bean<TestEmpty> implements Comparable<TestEmpty>
+public class TestEmpty extends Bean<TestEmpty> implements Comparable<TestEmpty>
 {
 	private static final long serialVersionUID = 0xbeac245da40b43f8L;
 	public  static final int BEAN_TYPE = 4;
@@ -120,5 +122,61 @@ public final class TestEmpty extends Bean<TestEmpty> implements Comparable<TestE
 		if(s == null) s = new StringBuilder(1024);
 		s.append('{');
 		return s.append('}');
+	}
+
+	@Override
+	public TestEmpty toSafe()
+	{
+		return new Safe();
+	}
+
+	private class Safe extends TestEmpty implements UndoList.Safe
+	{
+		private static final long serialVersionUID = 0xbeac245da40b43f8L;
+		private UndoList _undolist;
+		private boolean _fullundo;
+
+		private void initUndoList()
+		{
+			if(!_fullundo && _undolist == null) _undolist = UndoList.current();
+		}
+
+		private void addFullUndo()
+		{
+			initUndoList();
+			if(_undolist == null) return;
+			_undolist.add(new Undo()
+			{
+				private final TestEmpty _saved = TestEmpty.this.clone();
+				@Override
+				public void rollback() throws Exception
+				{
+					TestEmpty.this.assign(_saved);
+				}
+			});
+			_undolist = null;
+			_fullundo = true;
+		}
+
+		@Override
+		public void reset()
+		{
+			addFullUndo();
+			TestEmpty.this.reset();
+		}
+
+		@Override
+		public void assign(TestEmpty b)
+		{
+			addFullUndo();
+			TestEmpty.this.assign(b);
+		}
+
+		@Override
+		public OctetsStream unmarshal(OctetsStream s) throws MarshalException
+		{
+			addFullUndo();
+			return TestEmpty.this.unmarshal(s);
+		}
 	}
 }

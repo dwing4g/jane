@@ -60,15 +60,15 @@ public final class TestDBBenchmark
 						if(a == null)
 						{
 							a = new TestBean();
-							a.value2 = id;
+							a.setValue2(id);
 							AllTables.Benchmark.put(id, a);
 						}
 						else
 						{
-							if(a.value2 == id)
+							if(a.getValue2() == id)
 								checked.incrementAndGet();
 							else
-								a.value2 = id;
+								a.setValue2(id);
 							AllTables.Benchmark.modify(id, a);
 						}
 						tt = System.currentTimeMillis() - t1;

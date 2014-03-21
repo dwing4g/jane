@@ -174,4 +174,10 @@ public final class DynBean extends Bean<DynBean>
 		}
 		return s.append('}');
 	}
+
+	@Override
+	public DynBean toSafe()
+	{
+		throw new UnsupportedOperationException();
+	}
 }

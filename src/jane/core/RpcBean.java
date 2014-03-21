@@ -230,4 +230,10 @@ public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 			s.append("nil");
 		return s.append('}');
 	}
+
+	@Override
+	public RpcBean<A, R> toSafe()
+	{
+		throw new UnsupportedOperationException();
+	}
 }

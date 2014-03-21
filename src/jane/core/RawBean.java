@@ -119,4 +119,10 @@ public final class RawBean extends Bean<RawBean> implements Comparable<RawBean>
 		if(s == null) s = new StringBuilder(_data.size() * 3 + 32);
 		return s.append("{type=").append(_type).append(",data=").append(_data.dumpJStr(s)).append('}');
 	}
+
+	@Override
+	public RawBean toSafe()
+	{
+		throw new UnsupportedOperationException();
+	}
 }
