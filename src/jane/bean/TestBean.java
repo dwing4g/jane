@@ -215,16 +215,51 @@ public class TestBean extends Bean<TestBean> implements Comparable<TestBean>
 	}
 
 	@Override
-	public TestBean toSafe()
+	public Safe toSafe(UndoList.Safe<?> parent)
 	{
-		return new Safe();
+		return new Safe(parent);
 	}
 
-	private class Safe extends TestBean implements UndoList.Safe
+	public final class Safe implements UndoList.Safe<TestBean>, Comparable<TestBean>
 	{
-		private static final long serialVersionUID = 0xbeacaa44540448ccL;
-		private UndoList _undolist;
-		private boolean _fullundo;
+		private transient final UndoList.Safe<?> _owner;
+		private transient UndoList _undolist;
+		private transient boolean _dirty;
+		private transient boolean _fullundo;
+
+		private Safe(UndoList.Safe<?> parent)
+		{
+			_owner = (parent != null ? parent.owner() : this);
+		}
+
+		@Override
+		public TestBean bean()
+		{
+			return TestBean.this;
+		}
+
+		@Override
+		public UndoList.Safe<?> owner()
+		{
+			return _owner;
+		}
+
+		@Override
+		public boolean isDirtyAndClear()
+		{
+			boolean r = _dirty;
+			_dirty = false;
+			return r;
+		}
+
+		@Override
+		public void setDirty()
+		{
+			if(_owner == this)
+				_dirty = true;
+			else
+				_owner.setDirty();
+		}
 
 		private void initUndoList()
 		{
@@ -246,43 +281,94 @@ public class TestBean extends Bean<TestBean> implements Comparable<TestBean>
 			});
 			_undolist = null;
 			_fullundo = true;
+			setDirty();
 		}
 
-		@Override
+		public int getValue1()
+		{
+			return value1;
+		}
+
 		public void setValue1(int value1)
 		{
 			initUndoList();
-			if(_undolist != null) _undolist.add(new UndoList.Integer(this, FIELD_value1, value1));
+			if(_undolist != null) _undolist.add(new UndoList.Integer(this, FIELD_value1, TestBean.this.value1));
 			TestBean.this.value1 = value1;
 		}
 
-		@Override
+		public long getValue2()
+		{
+			return value2;
+		}
+
 		public void setValue2(long value2)
 		{
 			initUndoList();
-			if(_undolist != null) _undolist.add(new UndoList.Long(this, FIELD_value2, value2));
+			if(_undolist != null) _undolist.add(new UndoList.Long(this, FIELD_value2, TestBean.this.value2));
 			TestBean.this.value2 = value2;
 		}
 
-		@Override
 		public void reset()
 		{
 			addFullUndo();
 			TestBean.this.reset();
 		}
 
-		@Override
 		public void assign(TestBean b)
 		{
 			addFullUndo();
 			TestBean.this.assign(b);
 		}
 
-		@Override
+		public OctetsStream marshal(OctetsStream s)
+		{
+			return TestBean.this.marshal(s);
+		}
+
 		public OctetsStream unmarshal(OctetsStream s) throws MarshalException
 		{
 			addFullUndo();
 			return TestBean.this.unmarshal(s);
+		}
+
+		@Override
+		public TestBean clone()
+		{
+			return TestBean.this.clone();
+		}
+
+		@Override
+		public int hashCode()
+		{
+			return TestBean.this.hashCode();
+		}
+
+		@Override
+		public boolean equals(Object o)
+		{
+			return TestBean.this.equals(o);
+		}
+
+		@Override
+		public int compareTo(TestBean b)
+		{
+			return TestBean.this.compareTo(b);
+		}
+
+		@Override
+		public String toString()
+		{
+			return TestBean.this.toString();
+		}
+
+		public StringBuilder toJson(StringBuilder s)
+		{
+			return TestBean.this.toJson(s);
+		}
+
+		public StringBuilder toLua(StringBuilder s)
+		{
+			return TestBean.this.toLua(s);
 		}
 	}
 }

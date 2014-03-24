@@ -125,16 +125,51 @@ public class TestEmpty extends Bean<TestEmpty> implements Comparable<TestEmpty>
 	}
 
 	@Override
-	public TestEmpty toSafe()
+	public Safe toSafe(UndoList.Safe<?> parent)
 	{
-		return new Safe();
+		return new Safe(parent);
 	}
 
-	private class Safe extends TestEmpty implements UndoList.Safe
+	public final class Safe implements UndoList.Safe<TestEmpty>, Comparable<TestEmpty>
 	{
-		private static final long serialVersionUID = 0xbeac245da40b43f8L;
-		private UndoList _undolist;
-		private boolean _fullundo;
+		private transient final UndoList.Safe<?> _owner;
+		private transient UndoList _undolist;
+		private transient boolean _dirty;
+		private transient boolean _fullundo;
+
+		private Safe(UndoList.Safe<?> parent)
+		{
+			_owner = (parent != null ? parent.owner() : this);
+		}
+
+		@Override
+		public TestEmpty bean()
+		{
+			return TestEmpty.this;
+		}
+
+		@Override
+		public UndoList.Safe<?> owner()
+		{
+			return _owner;
+		}
+
+		@Override
+		public boolean isDirtyAndClear()
+		{
+			boolean r = _dirty;
+			_dirty = false;
+			return r;
+		}
+
+		@Override
+		public void setDirty()
+		{
+			if(_owner == this)
+				_dirty = true;
+			else
+				_owner.setDirty();
+		}
 
 		private void initUndoList()
 		{
@@ -156,27 +191,70 @@ public class TestEmpty extends Bean<TestEmpty> implements Comparable<TestEmpty>
 			});
 			_undolist = null;
 			_fullundo = true;
+			setDirty();
 		}
 
-		@Override
 		public void reset()
 		{
 			addFullUndo();
 			TestEmpty.this.reset();
 		}
 
-		@Override
 		public void assign(TestEmpty b)
 		{
 			addFullUndo();
 			TestEmpty.this.assign(b);
 		}
 
-		@Override
+		public OctetsStream marshal(OctetsStream s)
+		{
+			return TestEmpty.this.marshal(s);
+		}
+
 		public OctetsStream unmarshal(OctetsStream s) throws MarshalException
 		{
 			addFullUndo();
 			return TestEmpty.this.unmarshal(s);
+		}
+
+		@Override
+		public TestEmpty clone()
+		{
+			return TestEmpty.this.clone();
+		}
+
+		@Override
+		public int hashCode()
+		{
+			return TestEmpty.this.hashCode();
+		}
+
+		@Override
+		public boolean equals(Object o)
+		{
+			return TestEmpty.this.equals(o);
+		}
+
+		@Override
+		public int compareTo(TestEmpty b)
+		{
+			return TestEmpty.this.compareTo(b);
+		}
+
+		@Override
+		public String toString()
+		{
+			return TestEmpty.this.toString();
+		}
+
+		public StringBuilder toJson(StringBuilder s)
+		{
+			return TestEmpty.this.toJson(s);
+		}
+
+		public StringBuilder toLua(StringBuilder s)
+		{
+			return TestEmpty.this.toLua(s);
 		}
 	}
 }

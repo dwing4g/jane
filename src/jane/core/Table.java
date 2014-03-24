@@ -173,7 +173,7 @@ public final class Table<K, V extends Bean<V>>
 	 * 会自动添加到读cache中<br>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 */
-	public V get(K k)
+	public V getDirect(K k)
 	{
 		V v = _cache.get(k);
 		if(v != null) return v;
@@ -194,13 +194,20 @@ public final class Table<K, V extends Bean<V>>
 		return v;
 	}
 
+	@SuppressWarnings("unchecked")
+	public <S extends UndoList.Safe<V>> S get(K k)
+	{
+		V v = getDirect(k);
+		return v != null ? (S)UndoList.current().addRecord(this, k, v) : null;
+	}
+
 	/**
 	 * 根据记录的key获取value
 	 * <p>
 	 * 不会自动添加到读cache中<br>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 */
-	public V getNoCache(K k)
+	public V getNoCacheDirect(K k)
 	{
 		V v = _cache.get(k);
 		if(v != null) return v;
@@ -214,13 +221,20 @@ public final class Table<K, V extends Bean<V>>
 		return _stotable.get(k);
 	}
 
+	@SuppressWarnings("unchecked")
+	public <S extends UndoList.Safe<V>> S getNoCache(K k)
+	{
+		V v = getNoCacheDirect(k);
+		return v != null ? (S)UndoList.current().addRecord(this, k, v) : null;
+	}
+
 	/**
 	 * 标记记录已修改的状态
 	 * <p>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 * @param v 必须是get获取到的对象引用. 如果不是,则应该调用put方法
 	 */
-	public void modify(K k, V v)
+	public void modifyDirect(K k, V v)
 	{
 		if(!v.modified())
 		{
@@ -246,11 +260,11 @@ public final class Table<K, V extends Bean<V>>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 * @param v 如果是get获取到的对象引用,可调用modify来提高性能
 	 */
-	public void put(K k, V v)
+	public void putDirect(K k, V v)
 	{
 		V v_old = _cache.put(k, v);
 		if(v_old == v)
-			modify(k, v);
+			modifyDirect(k, v);
 		else
 		{
 			if(!v.stored())
@@ -268,12 +282,30 @@ public final class Table<K, V extends Bean<V>>
 		}
 	}
 
+	public void put(final K k, V v)
+	{
+		final V v_old = getDirect(k);
+		if(v_old == v) return;
+		UndoList.current().add(new UndoList.Undo()
+		{
+			@Override
+			public void rollback() throws Exception
+			{
+				if(v_old != null)
+					putDirect(k, v_old);
+				else
+					removeDirect(k);
+			}
+		});
+		putDirect(k, v);
+	}
+
 	/**
 	 * 根据记录的key删除记录
 	 * <p>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 */
-	public void remove(K k)
+	public void removeDirect(K k)
 	{
 		V v_old = _cache.remove(k);
 		if(v_old != null)
@@ -289,6 +321,20 @@ public final class Table<K, V extends Bean<V>>
 			else if(v_mod != v_old)
 			    v_mod.free();
 		}
+	}
+
+	public void remove(final K k)
+	{
+		final V v_old = getDirect(k);
+		if(v_old == null) return;
+		UndoList.current().add(new UndoList.Undo()
+		{
+			@Override
+			public void rollback() throws Exception
+			{
+				putDirect(k, v_old);
+			}
+		});
 	}
 
 	/**

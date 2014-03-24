@@ -157,10 +157,4 @@ public final class TestKeyBean extends Bean<TestKeyBean> implements Comparable<T
 		s.setLength(s.length() - 1);
 		return s.append('}');
 	}
-
-	@Override
-	public TestKeyBean toSafe()
-	{
-		return this;
-	}
 }

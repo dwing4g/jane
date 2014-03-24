@@ -47,18 +47,18 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 	private /* 5*/ long v5; // 8字节整数
 	private /* 6*/ float v6; // 4字节浮点数
 	private /* 7*/ double v7; // 8字节浮点数
-	private /* 8*/ final Octets v8; // 二进制数据(Octets)
+	private /* 8*/ Octets v8; // 二进制数据(Octets)
 	private /* 9*/ String v9; // 字符串(String)
-	private /*10*/ final ArrayList<Boolean> v10; // 数组容器(ArrayList)
-	private /*11*/ final LinkedList<Byte> v11; // 链表容器(LinkedList)
-	private /*12*/ final ArrayDeque<Integer> v12; // 队列容器(ArrayDeque)
-	private /*13*/ final HashSet<Long> v13; // 无序集合容器(HashSet)
-	private /*14*/ final TreeSet<Float> v14; // 排序集合容器(TreeSet)
-	private /*15*/ final LinkedHashSet<Double> v15; // 有序集合容器(LinkedHashSet)
-	private /*16*/ final HashMap<Long, String> v16; // 无序映射容器(HashMap)
-	private /*17*/ final TreeMap<TestBean, Boolean> v17; // 排序映射容器(TreeMap)
-	private /*18*/ final LinkedHashMap<Octets, TestBean> v18; // 有序映射容器(LinkedHashMap)
-	private /*19*/ final TestBean v19; // 嵌入其它bean
+	private /*10*/ ArrayList<Boolean> v10; // 数组容器(ArrayList)
+	private /*11*/ LinkedList<Byte> v11; // 链表容器(LinkedList)
+	private /*12*/ ArrayDeque<Integer> v12; // 队列容器(ArrayDeque)
+	private /*13*/ HashSet<Long> v13; // 无序集合容器(HashSet)
+	private /*14*/ TreeSet<Float> v14; // 排序集合容器(TreeSet)
+	private /*15*/ LinkedHashSet<Double> v15; // 有序集合容器(LinkedHashSet)
+	private /*16*/ HashMap<Long, String> v16; // 无序映射容器(HashMap)
+	private /*17*/ TreeMap<TestBean, Boolean> v17; // 排序映射容器(TreeMap)
+	private /*18*/ LinkedHashMap<Octets, TestBean> v18; // 有序映射容器(LinkedHashMap)
+	private /*19*/ TestBean v19; // 嵌入其它bean
 
 	static
 	{
@@ -240,6 +240,11 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 	public Octets getV8()
 	{
 		return v8;
+	}
+
+	public void setV8(Octets v8)
+	{
+		this.v8 = (v8 != null ? v8 : new Octets());
 	}
 
 	public String getV9()
@@ -690,16 +695,51 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 	}
 
 	@Override
-	public TestType toSafe()
+	public Safe toSafe(UndoList.Safe<?> parent)
 	{
-		return new Safe();
+		return new Safe(parent);
 	}
 
-	private class Safe extends TestType implements UndoList.Safe
+	public final class Safe implements UndoList.Safe<TestType>, Comparable<TestType>
 	{
-		private static final long serialVersionUID = 0xbeacabe90777739dL;
-		private UndoList _undolist;
-		private boolean _fullundo;
+		private transient final UndoList.Safe<?> _owner;
+		private transient UndoList _undolist;
+		private transient boolean _dirty;
+		private transient boolean _fullundo;
+
+		private Safe(UndoList.Safe<?> parent)
+		{
+			_owner = (parent != null ? parent.owner() : this);
+		}
+
+		@Override
+		public TestType bean()
+		{
+			return TestType.this;
+		}
+
+		@Override
+		public UndoList.Safe<?> owner()
+		{
+			return _owner;
+		}
+
+		@Override
+		public boolean isDirtyAndClear()
+		{
+			boolean r = _dirty;
+			_dirty = false;
+			return r;
+		}
+
+		@Override
+		public void setDirty()
+		{
+			if(_owner == this)
+				_dirty = true;
+			else
+				_owner.setDirty();
+		}
 
 		private void initUndoList()
 		{
@@ -721,159 +761,228 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 			});
 			_undolist = null;
 			_fullundo = true;
+			setDirty();
 		}
 
-		@Override
+		public boolean getV1()
+		{
+			return v1;
+		}
+
 		public void setV1(boolean v1)
 		{
 			initUndoList();
-			if(_undolist != null) _undolist.add(new UndoList.Boolean(this, FIELD_v1, v1));
+			if(_undolist != null) _undolist.add(new UndoList.Boolean(this, FIELD_v1, TestType.this.v1));
 			TestType.this.v1 = v1;
 		}
 
-		@Override
+		public byte getV2()
+		{
+			return v2;
+		}
+
 		public void setV2(byte v2)
 		{
 			initUndoList();
-			if(_undolist != null) _undolist.add(new UndoList.Byte(this, FIELD_v2, v2));
+			if(_undolist != null) _undolist.add(new UndoList.Byte(this, FIELD_v2, TestType.this.v2));
 			TestType.this.v2 = v2;
 		}
 
-		@Override
+		public short getV3()
+		{
+			return v3;
+		}
+
 		public void setV3(short v3)
 		{
 			initUndoList();
-			if(_undolist != null) _undolist.add(new UndoList.Short(this, FIELD_v3, v3));
+			if(_undolist != null) _undolist.add(new UndoList.Short(this, FIELD_v3, TestType.this.v3));
 			TestType.this.v3 = v3;
 		}
 
-		@Override
+		public int getV4()
+		{
+			return v4;
+		}
+
 		public void setV4(int v4)
 		{
 			initUndoList();
-			if(_undolist != null) _undolist.add(new UndoList.Integer(this, FIELD_v4, v4));
+			if(_undolist != null) _undolist.add(new UndoList.Integer(this, FIELD_v4, TestType.this.v4));
 			TestType.this.v4 = v4;
 		}
 
-		@Override
+		public long getV5()
+		{
+			return v5;
+		}
+
 		public void setV5(long v5)
 		{
 			initUndoList();
-			if(_undolist != null) _undolist.add(new UndoList.Long(this, FIELD_v5, v5));
+			if(_undolist != null) _undolist.add(new UndoList.Long(this, FIELD_v5, TestType.this.v5));
 			TestType.this.v5 = v5;
 		}
 
-		@Override
+		public float getV6()
+		{
+			return v6;
+		}
+
 		public void setV6(float v6)
 		{
 			initUndoList();
-			if(_undolist != null) _undolist.add(new UndoList.Float(this, FIELD_v6, v6));
+			if(_undolist != null) _undolist.add(new UndoList.Float(this, FIELD_v6, TestType.this.v6));
 			TestType.this.v6 = v6;
 		}
 
-		@Override
+		public double getV7()
+		{
+			return v7;
+		}
+
 		public void setV7(double v7)
 		{
 			initUndoList();
-			if(_undolist != null) _undolist.add(new UndoList.Double(this, FIELD_v7, v7));
+			if(_undolist != null) _undolist.add(new UndoList.Double(this, FIELD_v7, TestType.this.v7));
 			TestType.this.v7 = v7;
 		}
 
-		@Override
 		public Octets getV8()
 		{
-			initUndoList();
-			if(_undolist != null) _undolist.add(new UndoList.Octets(this, FIELD_v8, v8));
-			return v8;
+			return v8.clone();
 		}
 
-		@Override
+		public void setV8(Octets v8)
+		{
+			initUndoList();
+			if(_undolist != null) _undolist.add(new UndoList.Octets(this, FIELD_v8, TestType.this.v8));
+			TestType.this.v8 = (v8 != null ? v8 : new Octets());
+		}
+
+		public String getV9()
+		{
+			return v9;
+		}
+
 		public void setV9(String v9)
 		{
 			initUndoList();
-			if(_undolist != null) _undolist.add(new UndoList.String(this, FIELD_v9, v9));
+			if(_undolist != null) _undolist.add(new UndoList.String(this, FIELD_v9, TestType.this.v9));
 			TestType.this.v9 = (v9 != null ? v9 : "");
 		}
 
-		@Override
 		public ArrayList<Boolean> getV10()
 		{
 			return new UndoList.UndoArrayList<Boolean>(v10);
 		}
 
-		@Override
 		public LinkedList<Byte> getV11()
 		{
 			return new UndoList.UndoLinkedList<Byte>(v11);
 		}
 
-		@Override
 		public ArrayDeque<Integer> getV12()
 		{
 			return new UndoList.UndoArrayDeque<Integer>(v12);
 		}
 
-		@Override
 		public HashSet<Long> getV13()
 		{
 			return new UndoList.UndoHashSet<Long>(v13);
 		}
 
-		@Override
 		public TreeSet<Float> getV14()
 		{
 			return new UndoList.UndoTreeSet<Float>(v14);
 		}
 
-		@Override
 		public LinkedHashSet<Double> getV15()
 		{
 			return new UndoList.UndoLinkedHashSet<Double>(v15);
 		}
 
-		@Override
 		public HashMap<Long, String> getV16()
 		{
 			return new UndoList.UndoHashMap<Long, String>(v16);
 		}
 
-		@Override
 		public TreeMap<TestBean, Boolean> getV17()
 		{
 			return new UndoList.UndoTreeMap<TestBean, Boolean>(v17);
 		}
 
-		@Override
 		public LinkedHashMap<Octets, TestBean> getV18()
 		{
 			return new UndoList.UndoLinkedHashMap<Octets, TestBean>(v18);
 		}
 
-		@Override
-		public TestBean getV19()
+		public TestBean.Safe getV19()
 		{
-			return v19.toSafe();
+			return v19.toSafe(this);
 		}
 
-		@Override
 		public void reset()
 		{
 			addFullUndo();
 			TestType.this.reset();
 		}
 
-		@Override
 		public void assign(TestType b)
 		{
 			addFullUndo();
 			TestType.this.assign(b);
 		}
 
-		@Override
+		public OctetsStream marshal(OctetsStream s)
+		{
+			return TestType.this.marshal(s);
+		}
+
 		public OctetsStream unmarshal(OctetsStream s) throws MarshalException
 		{
 			addFullUndo();
 			return TestType.this.unmarshal(s);
+		}
+
+		@Override
+		public TestType clone()
+		{
+			return TestType.this.clone();
+		}
+
+		@Override
+		public int hashCode()
+		{
+			return TestType.this.hashCode();
+		}
+
+		@Override
+		public boolean equals(Object o)
+		{
+			return TestType.this.equals(o);
+		}
+
+		@Override
+		public int compareTo(TestType b)
+		{
+			return TestType.this.compareTo(b);
+		}
+
+		@Override
+		public String toString()
+		{
+			return TestType.this.toString();
+		}
+
+		public StringBuilder toJson(StringBuilder s)
+		{
+			return TestType.this.toJson(s);
+		}
+
+		public StringBuilder toLua(StringBuilder s)
+		{
+			return TestType.this.toLua(s);
 		}
 	}
 }

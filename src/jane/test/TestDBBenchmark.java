@@ -56,12 +56,12 @@ public final class TestDBBenchmark
 						long tt = t1 - t0;
 						if(tt >= 250) System.out.println("--- proc delay=" + tt);
 						lock(AllTables.Benchmark.lockid(id));
-						TestBean a = AllTables.Benchmark.get(id);
+						TestBean.Safe a = AllTables.Benchmark.get(id);
 						if(a == null)
 						{
-							a = new TestBean();
-							a.setValue2(id);
-							AllTables.Benchmark.put(id, a);
+							TestBean aa = new TestBean();
+							aa.setValue2(id);
+							AllTables.Benchmark.put(id, aa);
 						}
 						else
 						{
@@ -69,7 +69,6 @@ public final class TestDBBenchmark
 								checked.incrementAndGet();
 							else
 								a.setValue2(id);
-							AllTables.Benchmark.modify(id, a);
 						}
 						tt = System.currentTimeMillis() - t1;
 						if(tt >= 250) System.out.println("--- proc timeout=" + tt);

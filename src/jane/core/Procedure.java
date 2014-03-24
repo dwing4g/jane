@@ -515,18 +515,20 @@ public abstract class Procedure implements Runnable
 			_begin_time = System.currentTimeMillis();
 			_ctx = _tl_proc.get();
 			_ctx.proc = this;
-			for(int n = Const.maxProceduerRedo; n > 0;)
+			for(int n = Const.maxProceduerRedo;;)
 			{
 				if(Thread.interrupted()) throw new InterruptedException();
-				if(onProcess()) return;
+				if(onProcess()) break;
 				unlock();
 				if(--n <= 0) throw new Exception("procedure redo too many times=" + Const.maxProceduerRedo);
 			}
+			UndoList.current().commit();
 		}
 		catch(Throwable e)
 		{
 			try
 			{
+				UndoList.current().rollback();
 				onException(e);
 			}
 			catch(Throwable ex)

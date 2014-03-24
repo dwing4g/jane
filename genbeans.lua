@@ -178,16 +178,51 @@ public class #(bean.name) extends Bean<#(bean.name)> implements Comparable<#(bea
 	}
 
 	@Override
-	public #(bean.name) toSafe()
+	public Safe toSafe(UndoList.Safe<?> parent)
 	{
-		return new Safe();
+		return new Safe(parent);
 	}
 
-	private class Safe extends #(bean.name) implements UndoList.Safe
+	public final class Safe implements UndoList.Safe<#(bean.name)>, Comparable<#(bean.name)>
 	{
-		private static final long serialVersionUID = #(bean.uid);
-		private UndoList _undolist;
-		private boolean _fullundo;
+		private transient final UndoList.Safe<?> _owner;
+		private transient UndoList _undolist;
+		private transient boolean _dirty;
+		private transient boolean _fullundo;
+
+		private Safe(UndoList.Safe<?> parent)
+		{
+			_owner = (parent != null ? parent.owner() : this);
+		}
+
+		@Override
+		public #(bean.name) bean()
+		{
+			return #(bean.name).this;
+		}
+
+		@Override
+		public UndoList.Safe<?> owner()
+		{
+			return _owner;
+		}
+
+		@Override
+		public boolean isDirtyAndClear()
+		{
+			boolean r = _dirty;
+			_dirty = false;
+			return r;
+		}
+
+		@Override
+		public void setDirty()
+		{
+			if(_owner == this)
+				_dirty = true;
+			else
+				_owner.setDirty();
+		}
 
 		private void initUndoList()
 		{
@@ -209,27 +244,70 @@ public class #(bean.name) extends Bean<#(bean.name)> implements Comparable<#(bea
 			});
 			_undolist = null;
 			_fullundo = true;
+			setDirty();
 		}
 #(##(var.getsafe)#(var.setsafe)#)#
-		@Override
 		public void reset()
 		{
 			addFullUndo();
 			#(bean.name).this.reset();
 		}
 
-		@Override
 		public void assign(#(bean.name) b)
 		{
 			addFullUndo();
 			#(bean.name).this.assign(b);
 		}
 
-		@Override
+		public OctetsStream marshal(OctetsStream s)
+		{
+			return #(bean.name).this.marshal(s);
+		}
+
 		public OctetsStream unmarshal(OctetsStream s) throws MarshalException
 		{
 			addFullUndo();
 			return #(bean.name).this.unmarshal(s);
+		}
+
+		@Override
+		public #(bean.name) clone()
+		{
+			return #(bean.name).this.clone();
+		}
+
+		@Override
+		public int hashCode()
+		{
+			return #(bean.name).this.hashCode();
+		}
+
+		@Override
+		public boolean equals(Object o)
+		{
+			return #(bean.name).this.equals(o);
+		}
+
+		@Override
+		public int compareTo(#(bean.name) b)
+		{
+			return #(bean.name).this.compareTo(b);
+		}
+
+		@Override
+		public String toString()
+		{
+			return #(bean.name).this.toString();
+		}
+
+		public StringBuilder toJson(StringBuilder s)
+		{
+			return #(bean.name).this.toJson(s);
+		}
+
+		public StringBuilder toLua(StringBuilder s)
+		{
+			return #(bean.name).this.toLua(s);
 		}
 	}
 }
@@ -452,14 +530,19 @@ typedef.byte =
 		this.#(var.name) = #(var.name);
 	}
 ]],
-	getsafe = "",
+	getsafe = [[
+
+		public #(var.type) get#(var.name_u)()
+		{
+			return #(var.name);
+		}
+]],
 	setsafe = [[
 
-		@Override
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
 			initUndoList();
-			if(_undolist != null) _undolist.add(new UndoList.#(var.type_o)(this, FIELD_#(var.name), #(var.name)));
+			if(_undolist != null) _undolist.add(new UndoList.#(var.type_o)(this, FIELD_#(var.name), #(bean.name).this.#(var.name)));
 			#(bean.name).this.#(var.name) = #(var.name);
 		}
 ]],
@@ -541,11 +624,10 @@ typedef.string = merge(typedef.byte,
 ]],
 	setsafe = [[
 
-		@Override
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
 			initUndoList();
-			if(_undolist != null) _undolist.add(new UndoList.#(var.type_o)(this, FIELD_#(var.name), #(var.name)));
+			if(_undolist != null) _undolist.add(new UndoList.#(var.type_o)(this, FIELD_#(var.name), #(bean.name).this.#(var.name)));
 			#(bean.name).this.#(var.name) = (#(var.name) != null ? #(var.name) : "");
 		}
 ]],
@@ -562,23 +644,33 @@ typedef.octets = merge(typedef.string,
 {
 	import = { "jane.core.Octets" },
 	type = "Octets", type_i = "Octets", type_o = "Octets",
-	final = "final ",
 	new = "\t\t#(var.name) = new Octets(#(var.cap));\n",
 	init = "this.#(var.name) = new Octets(#(var.cap)); if(#(var.name) != null) this.#(var.name).replace(#(var.name))",
 	reset = "#(var.name).clear()",
 	assign = "if(b.#(var.name) != null) this.#(var.name).replace(b.#(var.name)); else this.#(var.name).clear()",
-	set = "",
+	set = [[
+
+	public void set#(var.name_u)(#(var.type) #(var.name))
+	{
+		this.#(var.name) = (#(var.name) != null ? #(var.name) : new Octets());
+	}
+]],
 	getsafe = [[
 
-		@Override
 		public #(var.type) get#(var.name_u)()
 		{
-			initUndoList();
-			if(_undolist != null) _undolist.add(new UndoList.#(var.type_o)(this, FIELD_#(var.name), #(var.name)));
-			return #(var.name);
+			return #(var.name).clone();
 		}
 ]],
-	setsafe = "",
+	setsafe = [[
+
+		public void set#(var.name_u)(#(var.type) #(var.name))
+		{
+			initUndoList();
+			if(_undolist != null) _undolist.add(new UndoList.#(var.type_o)(this, FIELD_#(var.name), #(bean.name).this.#(var.name)));
+			#(bean.name).this.#(var.name) = (#(var.name) != null ? #(var.name) : new Octets());
+		}
+]],
 	marshal = function(var) return string.format("if(!this.#(var.name).empty()) s.marshal1((byte)0x%02x).marshal(this.#(var.name));", var.id * 4 + 1) end,
 	unmarshal = "case #(var.id): s.unmarshal(this.#(var.name), t);",
 	unmarshal_kv = function(var, kv, t) if kv then return "s.unmarshalOctetsKV(" .. t .. ")" end end,
@@ -595,14 +687,15 @@ typedef.vector = merge(typedef.octets,
 	new = function(var) return "\t\t#(var.name) = new ArrayList<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
 	init = function(var) return "this.#(var.name) = new ArrayList<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
 	assign = "this.#(var.name).clear(); if(b.#(var.name) != null) this.#(var.name).addAll(b.#(var.name))",
+	set = "",
 	getsafe = [[
 
-		@Override
 		public #(var.type) get#(var.name_u)()
 		{
 			return new UndoList.Undo#(var.type)(#(var.name));
 		}
 ]],
+	setsafe = "",
 	marshal = function(var) return string.format([[if(!this.#(var.name).isEmpty())
 		{
 			s.marshal2(0x%04x).marshalUInt(this.#(var.name).size());
@@ -727,14 +820,15 @@ typedef.bean = merge(typedef.octets,
 	init = function(var) return "this.#(var.name) = (#(var.name) != null ? #(var.name).clone() : new " .. var.type .. "())" end,
 	reset = "#(var.name).reset()",
 	assign = "this.#(var.name).assign(b.#(var.name))",
+	set = "",
 	getsafe = [[
 
-		@Override
-		public #(var.type) get#(var.name_u)()
+		public #(var.type).Safe get#(var.name_u)()
 		{
-			return #(var.name).toSafe();
+			return #(var.name).toSafe(this);
 		}
 ]],
+	setsafe = "",
 	marshal = function(var) return string.format([[{
 			int n = s.size();
 			this.#(var.name).marshal(s.marshal1((byte)0x%02x));
@@ -830,14 +924,14 @@ local function bean_const(code)
 	return code:gsub("public  /%*", "private /*"):
 		gsub("\tpublic void assign%(.-\n\t}\n\n", ""):
 		gsub("\tpublic void set.-\n\t}\n\n", ""):
-		gsub("\n\tprivate class Safe.-}\n\t}\n", ""):
+		gsub("\n\tpublic final class Safe.-}\n\t}\n", ""):
 		gsub("import java%.lang%.reflect%.Field;\n", ""):
 		gsub("import jane%.core%.UndoList;\n", ""):
 		gsub("import jane%.core%.UndoList%.Undo;\n", ""):
 		gsub("\tprivate static Field .-\n", ""):
 		gsub("\tstatic\n.-\n\t}\n\n", ""):
+		gsub("\n\t@Override\n\tpublic Safe toSafe.-\n\t}\n", ""):
 		gsub("public class", "public final class"):
-		gsub("new Safe%(%)", "this"):
 		gsub("\t@Override\n\tpublic void reset%(.-\n\t}", [[
 	@Override
 	public void reset()

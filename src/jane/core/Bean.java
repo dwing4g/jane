@@ -196,6 +196,10 @@ public abstract class Bean<B extends Bean<B>> implements Serializable, Cloneable
 
 	/**
 	 * 获取自身的安全封装(在事务中支持异常回滚)
+	 * @param parent
 	 */
-	public abstract B toSafe();
+	public UndoList.Safe<B> toSafe(UndoList.Safe<?> parent)
+	{
+		throw new UnsupportedOperationException();
+	}
 }

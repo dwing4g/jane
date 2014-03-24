@@ -17,8 +17,15 @@ import java.util.TreeSet;
 
 public class UndoList
 {
-	public interface Safe
+	public interface Safe<B extends Bean<B>>
 	{
+		B bean();
+
+		Safe<?> owner();
+
+		boolean isDirtyAndClear();
+
+		void setDirty();
 	}
 
 	public interface Undo
@@ -28,21 +35,22 @@ public class UndoList
 
 	public abstract static class Base implements Undo
 	{
-		protected final Object _obj;
-		protected final Field  _field;
+		protected final Safe<?> _obj;
+		protected final Field   _field;
 
-		public Base(Object obj, Field field)
+		public Base(Safe<?> obj, Field field)
 		{
 			_obj = obj;
 			_field = field;
+			obj.setDirty();
 		}
 	}
 
-	public static class Boolean extends Base
+	public static final class Boolean extends Base
 	{
-		protected final boolean _saved;
+		private final boolean _saved;
 
-		public Boolean(Object obj, Field field, boolean v)
+		public Boolean(Safe<?> obj, Field field, boolean v)
 		{
 			super(obj, field);
 			_saved = v;
@@ -55,11 +63,11 @@ public class UndoList
 		}
 	}
 
-	public static class Char extends Base
+	public static final class Char extends Base
 	{
-		protected final char _saved;
+		private final char _saved;
 
-		public Char(Object obj, Field field, char v)
+		public Char(Safe<?> obj, Field field, char v)
 		{
 			super(obj, field);
 			_saved = v;
@@ -72,11 +80,11 @@ public class UndoList
 		}
 	}
 
-	public static class Byte extends Base
+	public static final class Byte extends Base
 	{
-		protected final byte _saved;
+		private final byte _saved;
 
-		public Byte(Object obj, Field field, byte v)
+		public Byte(Safe<?> obj, Field field, byte v)
 		{
 			super(obj, field);
 			_saved = v;
@@ -89,11 +97,11 @@ public class UndoList
 		}
 	}
 
-	public static class Short extends Base
+	public static final class Short extends Base
 	{
-		protected final short _saved;
+		private final short _saved;
 
-		public Short(Object obj, Field field, short v)
+		public Short(Safe<?> obj, Field field, short v)
 		{
 			super(obj, field);
 			_saved = v;
@@ -106,11 +114,11 @@ public class UndoList
 		}
 	}
 
-	public static class Integer extends Base
+	public static final class Integer extends Base
 	{
-		protected final int _saved;
+		private final int _saved;
 
-		public Integer(Object obj, Field field, int v)
+		public Integer(Safe<?> obj, Field field, int v)
 		{
 			super(obj, field);
 			_saved = v;
@@ -123,11 +131,11 @@ public class UndoList
 		}
 	}
 
-	public static class Long extends Base
+	public static final class Long extends Base
 	{
-		protected final long _saved;
+		private final long _saved;
 
-		public Long(Object obj, Field field, long v)
+		public Long(Safe<?> obj, Field field, long v)
 		{
 			super(obj, field);
 			_saved = v;
@@ -140,11 +148,11 @@ public class UndoList
 		}
 	}
 
-	public static class Float extends Base
+	public static final class Float extends Base
 	{
-		protected final float _saved;
+		private final float _saved;
 
-		public Float(Object obj, Field field, float v)
+		public Float(Safe<?> obj, Field field, float v)
 		{
 			super(obj, field);
 			_saved = v;
@@ -157,11 +165,11 @@ public class UndoList
 		}
 	}
 
-	public static class Double extends Base
+	public static final class Double extends Base
 	{
-		protected final double _saved;
+		private final double _saved;
 
-		public Double(Object obj, Field field, double v)
+		public Double(Safe<?> obj, Field field, double v)
 		{
 			super(obj, field);
 			_saved = v;
@@ -174,11 +182,11 @@ public class UndoList
 		}
 	}
 
-	public static class String extends Base
+	public static final class String extends Base
 	{
-		protected final java.lang.String _saved;
+		private final java.lang.String _saved;
 
-		public String(Object obj, Field field, java.lang.String v)
+		public String(Safe<?> obj, Field field, java.lang.String v)
 		{
 			super(obj, field);
 			_saved = v;
@@ -191,14 +199,14 @@ public class UndoList
 		}
 	}
 
-	public static class Octets extends Base
+	public static final class Octets extends Base
 	{
-		protected final jane.core.Octets _saved;
+		private final jane.core.Octets _saved;
 
-		public Octets(Object obj, Field field, jane.core.Octets v)
+		public Octets(Safe<?> obj, Field field, jane.core.Octets v)
 		{
 			super(obj, field);
-			_saved = new jane.core.Octets(v);
+			_saved = v;
 		}
 
 		@Override
@@ -208,9 +216,9 @@ public class UndoList
 		}
 	}
 
-	public static class UndoArrayList<V> extends ArrayList<V>
+	public static final class UndoArrayList<V> extends ArrayList<V>
 	{
-		private static final long  serialVersionUID = 2026801074728946241L;
+		private static final long  serialVersionUID = -9161526094403034434L;
 		private final ArrayList<V> _list;
 		private UndoList           _undolist;
 
@@ -227,8 +235,9 @@ public class UndoList
 		//TODO
 	}
 
-	public static class UndoLinkedList<V> extends LinkedList<V>
+	public static final class UndoLinkedList<V> extends LinkedList<V>
 	{
+		private static final long   serialVersionUID = -7849849217089781165L;
 		private final LinkedList<V> _list;
 		private UndoList            _undolist;
 
@@ -245,8 +254,9 @@ public class UndoList
 		//TODO
 	}
 
-	public static class UndoArrayDeque<V> extends ArrayDeque<V>
+	public static final class UndoArrayDeque<V> extends ArrayDeque<V>
 	{
+		private static final long   serialVersionUID = 4623760144753078278L;
 		private final ArrayDeque<V> _queue;
 		private UndoList            _undolist;
 
@@ -263,10 +273,11 @@ public class UndoList
 		//TODO
 	}
 
-	public static class UndoHashSet<V> extends HashSet<V>
+	public static final class UndoHashSet<V> extends HashSet<V>
 	{
-		private final HashSet<V> _set;
-		private UndoList         _undolist;
+		private static final long serialVersionUID = -4424680394629456289L;
+		private final HashSet<V>  _set;
+		private UndoList          _undolist;
 
 		public UndoHashSet(HashSet<V> set)
 		{
@@ -281,10 +292,11 @@ public class UndoList
 		//TODO
 	}
 
-	public static class UndoTreeSet<V> extends TreeSet<V>
+	public static final class UndoTreeSet<V> extends TreeSet<V>
 	{
-		private final TreeSet<V> _set;
-		private UndoList         _undolist;
+		private static final long serialVersionUID = 5784605232133674305L;
+		private final TreeSet<V>  _set;
+		private UndoList          _undolist;
 
 		public UndoTreeSet(TreeSet<V> set)
 		{
@@ -299,8 +311,9 @@ public class UndoList
 		//TODO
 	}
 
-	public static class UndoLinkedHashSet<V> extends LinkedHashSet<V>
+	public static final class UndoLinkedHashSet<V> extends LinkedHashSet<V>
 	{
+		private static final long      serialVersionUID = 1673074897746062847L;
 		private final LinkedHashSet<V> _set;
 		private UndoList               _undolist;
 
@@ -317,9 +330,9 @@ public class UndoList
 		//TODO
 	}
 
-	public static class UndoHashMap<K, V> extends HashMap<K, V>
+	public static final class UndoHashMap<K, V> extends HashMap<K, V>
 	{
-		private static final long   serialVersionUID = -7687525197612192392L;
+		private static final long   serialVersionUID = -8155583121431832438L;
 		private final HashMap<K, V> _map;
 		private UndoList            _undolist;
 
@@ -426,8 +439,9 @@ public class UndoList
 		}
 	}
 
-	public static class UndoTreeMap<K, V> extends TreeMap<K, V>
+	public static final class UndoTreeMap<K, V> extends TreeMap<K, V>
 	{
+		private static final long   serialVersionUID = -8971209939534625752L;
 		private final TreeMap<K, V> _map;
 		private UndoList            _undolist;
 
@@ -444,8 +458,9 @@ public class UndoList
 		//TODO
 	}
 
-	public static class UndoLinkedHashMap<K, V> extends LinkedHashMap<K, V>
+	public static final class UndoLinkedHashMap<K, V> extends LinkedHashMap<K, V>
 	{
+		private static final long         serialVersionUID = 5321442163166277422L;
 		private final LinkedHashMap<K, V> _map;
 		private UndoList                  _undolist;
 
@@ -462,28 +477,115 @@ public class UndoList
 		//TODO
 	}
 
-	private static ThreadLocal<UndoList> _tl_list = new ThreadLocal<UndoList>();
-	private final List<Undo>             _list    = new ArrayList<Undo>();
+	private static final class Record<K, V extends Bean<V>, S extends Safe<V>>
+	{
+		private final Table<K, V> _table;
+		private final K           _key;
+		private final S           _value;
+
+		private Record(Table<K, V> table, K key, S value)
+		{
+			_table = table;
+			_key = key;
+			_value = value;
+		}
+	}
+
+	private static final class RecordLong<V extends Bean<V>, S extends Safe<V>>
+	{
+		private final TableLong<V> _table;
+		private final long         _key;
+		private final S            _value;
+
+		private RecordLong(TableLong<V> table, long key, S value)
+		{
+			_table = table;
+			_key = key;
+			_value = value;
+		}
+	}
+
+	private static ThreadLocal<UndoList> _tl_list;
+	private final List<Record<?, ?, ?>>  _records     = new ArrayList<Record<?, ?, ?>>();
+	private final List<RecordLong<?, ?>> _recordlongs = new ArrayList<RecordLong<?, ?>>();
+	private final List<Undo>             _undolist    = new ArrayList<Undo>();
+
+	static
+	{
+		_tl_list = new ThreadLocal<UndoList>()
+		{
+			@Override
+			protected UndoList initialValue()
+			{
+				return new UndoList();
+			}
+		};
+	}
 
 	public static UndoList current()
 	{
 		return _tl_list.get();
 	}
 
+	<K, V extends Bean<V>, S extends Safe<V>> S addRecord(Table<K, V> table, K key, V value)
+	{
+		@SuppressWarnings("unchecked")
+		S v_safe = (S)value.toSafe(null);
+		_records.add(new Record<K, V, S>(table, key, v_safe));
+		return v_safe;
+	}
+
+	<V extends Bean<V>, S extends Safe<V>> S addRecord(TableLong<V> table, long key, V value)
+	{
+		@SuppressWarnings("unchecked")
+		S v_safe = (S)value.toSafe(null);
+		_recordlongs.add(new RecordLong<V, S>(table, key, v_safe));
+		return v_safe;
+	}
+
 	public void add(Undo undo)
 	{
-		_list.add(undo);
+		_undolist.add(undo);
 	}
 
-	public void clear()
+	@SuppressWarnings("unchecked")
+	<K, V extends Bean<V>, S extends Safe<V>> void commit()
 	{
-		_list.clear();
+		_undolist.clear();
+
+		for(Record<?, ?, ?> record : _records)
+		{
+			Record<K, V, S> r = (Record<K, V, S>)record;
+			if(r._value.isDirtyAndClear())
+			    r._table.modifyDirect(r._key, r._value.bean());
+		}
+		_records.clear();
+
+		for(RecordLong<?, ?> record : _recordlongs)
+		{
+			RecordLong<V, S> r = (RecordLong<V, S>)record;
+			if(r._value.isDirtyAndClear())
+			    r._table.modifyDirect(r._key, r._value.bean());
+		}
+		_recordlongs.clear();
 	}
 
-	public void rollback() throws Exception
+	void rollback()
 	{
-		for(int i = _list.size(); --i >= 0;)
-			_list.get(i).rollback();
-		_list.clear();
+		_records.clear();
+		_recordlongs.clear();
+
+		for(int i = _undolist.size(); --i >= 0;)
+		{
+			try
+			{
+				_undolist.get(i).rollback();
+			}
+			catch(Exception e)
+			{
+				Log.log.error("rollback exception:", e);
+			}
+		}
+		_undolist.clear();
 	}
 }

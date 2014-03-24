@@ -208,7 +208,7 @@ public final class TableLong<V extends Bean<V>>
 	 * <p>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 */
-	public V get(long k)
+	public V getDirect(long k)
 	{
 		V v = _cache.get(k);
 		if(v != null) return v;
@@ -229,13 +229,20 @@ public final class TableLong<V extends Bean<V>>
 		return v;
 	}
 
+	@SuppressWarnings("unchecked")
+	public <S extends UndoList.Safe<V>> S get(long k)
+	{
+		V v = getDirect(k);
+		return v != null ? (S)UndoList.current().addRecord(this, k, v) : null;
+	}
+
 	/**
 	 * 根据记录的key获取value
 	 * <p>
 	 * 不会自动添加到读cache中<br>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 */
-	public V getNoCache(long k)
+	public V getNoCacheDirect(long k)
 	{
 		V v = _cache.get(k);
 		if(v != null) return v;
@@ -249,13 +256,20 @@ public final class TableLong<V extends Bean<V>>
 		return _stotable.get(k);
 	}
 
+	@SuppressWarnings("unchecked")
+	public <S extends UndoList.Safe<V>> S getNoCache(long k)
+	{
+		V v = getDirect(k);
+		return v != null ? (S)UndoList.current().addRecord(this, k, v) : null;
+	}
+
 	/**
 	 * 标记记录已修改的状态
 	 * <p>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 * @param v 必须是get获取到的对象引用. 如果不是,则应该调用put方法
 	 */
-	public void modify(long k, V v)
+	public void modifyDirect(long k, V v)
 	{
 		if(!v.modified())
 		{
@@ -282,11 +296,11 @@ public final class TableLong<V extends Bean<V>>
 	 * 如果使用自增长ID来插入记录的表,则不能用此方法来插入新的记录
 	 * @param v 如果是get获取到的对象引用,可调用modify来提高性能
 	 */
-	public void put(long k, V v)
+	public void putDirect(long k, V v)
 	{
 		V v_old = _cache.put(k, v);
 		if(v_old == v)
-			modify(k, v);
+			modifyDirect(k, v);
 		else
 		{
 			if(!v.stored())
@@ -304,6 +318,24 @@ public final class TableLong<V extends Bean<V>>
 		}
 	}
 
+	public void put(final long k, V v)
+	{
+		final V v_old = getDirect(k);
+		if(v_old == v) return;
+		UndoList.current().add(new UndoList.Undo()
+		{
+			@Override
+			public void rollback() throws Exception
+			{
+				if(v_old != null)
+					putDirect(k, v_old);
+				else
+					removeDirect(k);
+			}
+		});
+		putDirect(k, v);
+	}
+
 	/**
 	 * 使用自增长的新ID值作为key插入value
 	 * <p>
@@ -313,7 +345,7 @@ public final class TableLong<V extends Bean<V>>
 	 * @param v 插入的新value
 	 * @return 返回插入的自增长ID值
 	 */
-	public long insert(V v)
+	public long insertDirect(V v)
 	{
 		if(v.stored())
 		    throw new IllegalStateException("insert shared record: t=" + _tablename + ",v=" + v);
@@ -328,12 +360,26 @@ public final class TableLong<V extends Bean<V>>
 		return k;
 	}
 
+	public long insert(V v)
+	{
+		final long k = insertDirect(v);
+		UndoList.current().add(new UndoList.Undo()
+		{
+			@Override
+			public void rollback() throws Exception
+			{
+				removeDirect(k);
+			}
+		});
+		return k;
+	}
+
 	/**
 	 * 根据记录的key删除记录
 	 * <p>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 */
-	public void remove(long k)
+	public void removeDirect(long k)
 	{
 		V v_old = _cache.remove(k);
 		if(v_old != null)
@@ -349,6 +395,20 @@ public final class TableLong<V extends Bean<V>>
 			else if(v_mod != v_old)
 			    v_mod.free();
 		}
+	}
+
+	public void remove(final long k)
+	{
+		final V v_old = getDirect(k);
+		if(v_old == null) return;
+		UndoList.current().add(new UndoList.Undo()
+		{
+			@Override
+			public void rollback() throws Exception
+			{
+				putDirect(k, v_old);
+			}
+		});
 	}
 
 	/**
