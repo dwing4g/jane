@@ -522,13 +522,13 @@ public abstract class Procedure implements Runnable
 				unlock();
 				if(--n <= 0) throw new Exception("procedure redo too many times=" + Const.maxProceduerRedo);
 			}
-			UndoList.current().commit();
+			UndoContext.current().commit();
 		}
 		catch(Throwable e)
 		{
 			try
 			{
-				UndoList.current().rollback();
+				UndoContext.current().rollback();
 				onException(e);
 			}
 			catch(Throwable ex)

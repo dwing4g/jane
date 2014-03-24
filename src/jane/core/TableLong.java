@@ -208,7 +208,7 @@ public final class TableLong<V extends Bean<V>>
 	 * <p>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 */
-	public V getDirect(long k)
+	public V get(long k)
 	{
 		V v = _cache.get(k);
 		if(v != null) return v;
@@ -229,11 +229,14 @@ public final class TableLong<V extends Bean<V>>
 		return v;
 	}
 
+	/**
+	 * 同get,但增加的安全封装,可回滚修改
+	 */
 	@SuppressWarnings("unchecked")
-	public <S extends UndoList.Safe<V>> S get(long k)
+	public <S extends UndoContext.Safe<V>> S getSafe(long k)
 	{
-		V v = getDirect(k);
-		return v != null ? (S)UndoList.current().addRecord(this, k, v) : null;
+		V v = get(k);
+		return v != null ? (S)UndoContext.current().addRecord(this, k, v) : null;
 	}
 
 	/**
@@ -242,7 +245,7 @@ public final class TableLong<V extends Bean<V>>
 	 * 不会自动添加到读cache中<br>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 */
-	public V getNoCacheDirect(long k)
+	public V getNoCache(long k)
 	{
 		V v = _cache.get(k);
 		if(v != null) return v;
@@ -256,11 +259,14 @@ public final class TableLong<V extends Bean<V>>
 		return _stotable.get(k);
 	}
 
+	/**
+	 * 同getNoCache,但增加的安全封装,可回滚修改
+	 */
 	@SuppressWarnings("unchecked")
-	public <S extends UndoList.Safe<V>> S getNoCache(long k)
+	public <S extends UndoContext.Safe<V>> S getNoCacheSafe(long k)
 	{
-		V v = getDirect(k);
-		return v != null ? (S)UndoList.current().addRecord(this, k, v) : null;
+		V v = get(k);
+		return v != null ? (S)UndoContext.current().addRecord(this, k, v) : null;
 	}
 
 	/**
@@ -269,7 +275,7 @@ public final class TableLong<V extends Bean<V>>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 * @param v 必须是get获取到的对象引用. 如果不是,则应该调用put方法
 	 */
-	public void modifyDirect(long k, V v)
+	public void modify(long k, V v)
 	{
 		if(!v.modified())
 		{
@@ -296,11 +302,11 @@ public final class TableLong<V extends Bean<V>>
 	 * 如果使用自增长ID来插入记录的表,则不能用此方法来插入新的记录
 	 * @param v 如果是get获取到的对象引用,可调用modify来提高性能
 	 */
-	public void putDirect(long k, V v)
+	public void put(long k, V v)
 	{
 		V v_old = _cache.put(k, v);
 		if(v_old == v)
-			modifyDirect(k, v);
+			modify(k, v);
 		else
 		{
 			if(!v.stored())
@@ -318,22 +324,25 @@ public final class TableLong<V extends Bean<V>>
 		}
 	}
 
-	public void put(final long k, V v)
+	/**
+	 * 同put,但增加的安全封装,可回滚修改
+	 */
+	public void putSafe(final long k, V v)
 	{
-		final V v_old = getDirect(k);
+		final V v_old = get(k);
 		if(v_old == v) return;
-		UndoList.current().add(new UndoList.Undo()
+		UndoContext.current().add(new UndoContext.Undo()
 		{
 			@Override
 			public void rollback() throws Exception
 			{
 				if(v_old != null)
-					putDirect(k, v_old);
+					put(k, v_old);
 				else
-					removeDirect(k);
+					remove(k);
 			}
 		});
-		putDirect(k, v);
+		put(k, v);
 	}
 
 	/**
@@ -345,7 +354,7 @@ public final class TableLong<V extends Bean<V>>
 	 * @param v 插入的新value
 	 * @return 返回插入的自增长ID值
 	 */
-	public long insertDirect(V v)
+	public long insert(V v)
 	{
 		if(v.stored())
 		    throw new IllegalStateException("insert shared record: t=" + _tablename + ",v=" + v);
@@ -360,15 +369,18 @@ public final class TableLong<V extends Bean<V>>
 		return k;
 	}
 
-	public long insert(V v)
+	/**
+	 * 同insert,但增加的安全封装,可回滚修改(ID分配不支持回滚,回滚会产生无效ID)
+	 */
+	public long insertSafe(V v)
 	{
-		final long k = insertDirect(v);
-		UndoList.current().add(new UndoList.Undo()
+		final long k = insert(v);
+		UndoContext.current().add(new UndoContext.Undo()
 		{
 			@Override
 			public void rollback() throws Exception
 			{
-				removeDirect(k);
+				remove(k);
 			}
 		});
 		return k;
@@ -379,7 +391,7 @@ public final class TableLong<V extends Bean<V>>
 	 * <p>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 */
-	public void removeDirect(long k)
+	public void remove(long k)
 	{
 		V v_old = _cache.remove(k);
 		if(v_old != null)
@@ -397,16 +409,19 @@ public final class TableLong<V extends Bean<V>>
 		}
 	}
 
-	public void remove(final long k)
+	/**
+	 * 同remove,但增加的安全封装,可回滚修改
+	 */
+	public void removeSafe(final long k)
 	{
-		final V v_old = getDirect(k);
+		final V v_old = get(k);
 		if(v_old == null) return;
-		UndoList.current().add(new UndoList.Undo()
+		UndoContext.current().add(new UndoContext.Undo()
 		{
 			@Override
 			public void rollback() throws Exception
 			{
-				putDirect(k, v_old);
+				put(k, v_old);
 			}
 		});
 	}

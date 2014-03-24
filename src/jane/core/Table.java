@@ -173,7 +173,7 @@ public final class Table<K, V extends Bean<V>>
 	 * 会自动添加到读cache中<br>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 */
-	public V getDirect(K k)
+	public V get(K k)
 	{
 		V v = _cache.get(k);
 		if(v != null) return v;
@@ -194,11 +194,14 @@ public final class Table<K, V extends Bean<V>>
 		return v;
 	}
 
+	/**
+	 * 同get,但增加的安全封装,可回滚修改
+	 */
 	@SuppressWarnings("unchecked")
-	public <S extends UndoList.Safe<V>> S get(K k)
+	public <S extends UndoContext.Safe<V>> S getSafe(K k)
 	{
-		V v = getDirect(k);
-		return v != null ? (S)UndoList.current().addRecord(this, k, v) : null;
+		V v = get(k);
+		return v != null ? (S)UndoContext.current().addRecord(this, k, v) : null;
 	}
 
 	/**
@@ -207,7 +210,7 @@ public final class Table<K, V extends Bean<V>>
 	 * 不会自动添加到读cache中<br>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 */
-	public V getNoCacheDirect(K k)
+	public V getNoCache(K k)
 	{
 		V v = _cache.get(k);
 		if(v != null) return v;
@@ -221,11 +224,14 @@ public final class Table<K, V extends Bean<V>>
 		return _stotable.get(k);
 	}
 
+	/**
+	 * 同getNoCache,但增加的安全封装,可回滚修改
+	 */
 	@SuppressWarnings("unchecked")
-	public <S extends UndoList.Safe<V>> S getNoCache(K k)
+	public <S extends UndoContext.Safe<V>> S getNoCacheSafe(K k)
 	{
-		V v = getNoCacheDirect(k);
-		return v != null ? (S)UndoList.current().addRecord(this, k, v) : null;
+		V v = getNoCache(k);
+		return v != null ? (S)UndoContext.current().addRecord(this, k, v) : null;
 	}
 
 	/**
@@ -234,7 +240,7 @@ public final class Table<K, V extends Bean<V>>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 * @param v 必须是get获取到的对象引用. 如果不是,则应该调用put方法
 	 */
-	public void modifyDirect(K k, V v)
+	public void modify(K k, V v)
 	{
 		if(!v.modified())
 		{
@@ -260,11 +266,11 @@ public final class Table<K, V extends Bean<V>>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 * @param v 如果是get获取到的对象引用,可调用modify来提高性能
 	 */
-	public void putDirect(K k, V v)
+	public void put(K k, V v)
 	{
 		V v_old = _cache.put(k, v);
 		if(v_old == v)
-			modifyDirect(k, v);
+			modify(k, v);
 		else
 		{
 			if(!v.stored())
@@ -282,22 +288,25 @@ public final class Table<K, V extends Bean<V>>
 		}
 	}
 
-	public void put(final K k, V v)
+	/**
+	 * 同put,但增加的安全封装,可回滚修改
+	 */
+	public void putSafe(final K k, V v)
 	{
-		final V v_old = getDirect(k);
+		final V v_old = get(k);
 		if(v_old == v) return;
-		UndoList.current().add(new UndoList.Undo()
+		UndoContext.current().add(new UndoContext.Undo()
 		{
 			@Override
 			public void rollback() throws Exception
 			{
 				if(v_old != null)
-					putDirect(k, v_old);
+					put(k, v_old);
 				else
-					removeDirect(k);
+					remove(k);
 			}
 		});
-		putDirect(k, v);
+		put(k, v);
 	}
 
 	/**
@@ -305,7 +314,7 @@ public final class Table<K, V extends Bean<V>>
 	 * <p>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 */
-	public void removeDirect(K k)
+	public void remove(K k)
 	{
 		V v_old = _cache.remove(k);
 		if(v_old != null)
@@ -323,16 +332,19 @@ public final class Table<K, V extends Bean<V>>
 		}
 	}
 
-	public void remove(final K k)
+	/**
+	 * 同remove,但增加的安全封装,可回滚修改
+	 */
+	public void removeSafe(final K k)
 	{
-		final V v_old = getDirect(k);
+		final V v_old = get(k);
 		if(v_old == null) return;
-		UndoList.current().add(new UndoList.Undo()
+		UndoContext.current().add(new UndoContext.Undo()
 		{
 			@Override
 			public void rollback() throws Exception
 			{
-				putDirect(k, v_old);
+				put(k, v_old);
 			}
 		});
 	}

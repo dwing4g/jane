@@ -4,8 +4,8 @@ package jane.bean;
 import jane.core.Bean;
 import jane.core.MarshalException;
 import jane.core.OctetsStream;
-import jane.core.UndoList;
-import jane.core.UndoList.Undo;
+import jane.core.UndoContext;
+import jane.core.UndoContext.Undo;
 
 /**
  * 测试空bean
@@ -125,31 +125,31 @@ public class TestEmpty extends Bean<TestEmpty> implements Comparable<TestEmpty>
 	}
 
 	@Override
-	public Safe toSafe(UndoList.Safe<?> parent)
+	public Safe toSafe(UndoContext.Safe<?> parent)
 	{
 		return new Safe(parent);
 	}
 
-	public final class Safe implements UndoList.Safe<TestEmpty>, Comparable<TestEmpty>
+	public final class Safe implements UndoContext.Safe<TestEmpty>, Comparable<TestEmpty>
 	{
-		private transient final UndoList.Safe<?> _owner;
-		private transient UndoList _undolist;
+		private transient final UndoContext.Safe<?> _owner;
+		private transient UndoContext _undoctx;
 		private transient boolean _dirty;
 		private transient boolean _fullundo;
 
-		private Safe(UndoList.Safe<?> parent)
+		private Safe(UndoContext.Safe<?> parent)
 		{
 			_owner = (parent != null ? parent.owner() : this);
 		}
 
 		@Override
-		public TestEmpty bean()
+		public TestEmpty unsafe()
 		{
 			return TestEmpty.this;
 		}
 
 		@Override
-		public UndoList.Safe<?> owner()
+		public UndoContext.Safe<?> owner()
 		{
 			return _owner;
 		}
@@ -163,24 +163,24 @@ public class TestEmpty extends Bean<TestEmpty> implements Comparable<TestEmpty>
 		}
 
 		@Override
-		public void setDirty()
+		public void dirty()
 		{
 			if(_owner == this)
 				_dirty = true;
 			else
-				_owner.setDirty();
+				_owner.dirty();
 		}
 
-		private void initUndoList()
+		private void initUndoContext()
 		{
-			if(!_fullundo && _undolist == null) _undolist = UndoList.current();
+			if(!_fullundo && _undoctx == null) _undoctx = UndoContext.current();
 		}
 
 		private void addFullUndo()
 		{
-			initUndoList();
-			if(_undolist == null) return;
-			_undolist.add(new Undo()
+			initUndoContext();
+			if(_undoctx == null) return;
+			_undoctx.add(new Undo()
 			{
 				private final TestEmpty _saved = TestEmpty.this.clone();
 				@Override
@@ -189,9 +189,9 @@ public class TestEmpty extends Bean<TestEmpty> implements Comparable<TestEmpty>
 					TestEmpty.this.assign(_saved);
 				}
 			});
-			_undolist = null;
+			_undoctx = null;
 			_fullundo = true;
-			setDirty();
+			dirty();
 		}
 
 		public void reset()

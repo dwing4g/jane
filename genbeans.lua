@@ -178,31 +178,31 @@ public class #(bean.name) extends Bean<#(bean.name)> implements Comparable<#(bea
 	}
 
 	@Override
-	public Safe toSafe(UndoList.Safe<?> parent)
+	public Safe toSafe(UndoContext.Safe<?> parent)
 	{
 		return new Safe(parent);
 	}
 
-	public final class Safe implements UndoList.Safe<#(bean.name)>, Comparable<#(bean.name)>
+	public final class Safe implements UndoContext.Safe<#(bean.name)>, Comparable<#(bean.name)>
 	{
-		private transient final UndoList.Safe<?> _owner;
-		private transient UndoList _undolist;
+		private transient final UndoContext.Safe<?> _owner;
+		private transient UndoContext _undoctx;
 		private transient boolean _dirty;
 		private transient boolean _fullundo;
 
-		private Safe(UndoList.Safe<?> parent)
+		private Safe(UndoContext.Safe<?> parent)
 		{
 			_owner = (parent != null ? parent.owner() : this);
 		}
 
 		@Override
-		public #(bean.name) bean()
+		public #(bean.name) unsafe()
 		{
 			return #(bean.name).this;
 		}
 
 		@Override
-		public UndoList.Safe<?> owner()
+		public UndoContext.Safe<?> owner()
 		{
 			return _owner;
 		}
@@ -216,24 +216,24 @@ public class #(bean.name) extends Bean<#(bean.name)> implements Comparable<#(bea
 		}
 
 		@Override
-		public void setDirty()
+		public void dirty()
 		{
 			if(_owner == this)
 				_dirty = true;
 			else
-				_owner.setDirty();
+				_owner.dirty();
 		}
 
-		private void initUndoList()
+		private void initUndoContext()
 		{
-			if(!_fullundo && _undolist == null) _undolist = UndoList.current();
+			if(!_fullundo && _undoctx == null) _undoctx = UndoContext.current();
 		}
 
 		private void addFullUndo()
 		{
-			initUndoList();
-			if(_undolist == null) return;
-			_undolist.add(new Undo()
+			initUndoContext();
+			if(_undoctx == null) return;
+			_undoctx.add(new Undo()
 			{
 				private final #(bean.name) _saved = #(bean.name).this.clone();
 				@Override
@@ -242,9 +242,9 @@ public class #(bean.name) extends Bean<#(bean.name)> implements Comparable<#(bea
 					#(bean.name).this.assign(_saved);
 				}
 			});
-			_undolist = null;
+			_undoctx = null;
 			_fullundo = true;
-			setDirty();
+			dirty();
 		}
 #(##(var.getsafe)#(var.setsafe)#)#
 		public void reset()
@@ -541,8 +541,8 @@ typedef.byte =
 
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			initUndoList();
-			if(_undolist != null) _undolist.add(new UndoList.#(var.type_o)(this, FIELD_#(var.name), #(bean.name).this.#(var.name)));
+			initUndoContext();
+			if(_undoctx != null) _undoctx.add(new UndoContext.Undo#(var.type_o)(this, FIELD_#(var.name), #(bean.name).this.#(var.name)));
 			#(bean.name).this.#(var.name) = #(var.name);
 		}
 ]],
@@ -626,8 +626,8 @@ typedef.string = merge(typedef.byte,
 
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			initUndoList();
-			if(_undolist != null) _undolist.add(new UndoList.#(var.type_o)(this, FIELD_#(var.name), #(bean.name).this.#(var.name)));
+			initUndoContext();
+			if(_undoctx != null) _undoctx.add(new UndoContext.Undo#(var.type_o)(this, FIELD_#(var.name), #(bean.name).this.#(var.name)));
 			#(bean.name).this.#(var.name) = (#(var.name) != null ? #(var.name) : "");
 		}
 ]],
@@ -666,8 +666,8 @@ typedef.octets = merge(typedef.string,
 
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			initUndoList();
-			if(_undolist != null) _undolist.add(new UndoList.#(var.type_o)(this, FIELD_#(var.name), #(bean.name).this.#(var.name)));
+			initUndoContext();
+			if(_undoctx != null) _undoctx.add(new UndoContext.Undo#(var.type_o)(this, FIELD_#(var.name), #(bean.name).this.#(var.name)));
 			#(bean.name).this.#(var.name) = (#(var.name) != null ? #(var.name) : new Octets());
 		}
 ]],
@@ -679,9 +679,10 @@ typedef.octets = merge(typedef.string,
 })
 typedef.vector = merge(typedef.octets,
 {
-	import = { "java.util.ArrayList", "java.util.Collection", "jane.core.Util" },
+	import = { "java.util.ArrayList", "java.util.Collection", "java.util.List", "jane.core.Util" },
 	type = function(var) return "ArrayList<" .. subtypename(var, var.k) .. ">" end,
 	type_i = function(var) return "Collection<" .. subtypename(var, var.k) .. ">" end,
+	itype = function(var) return "List<" .. subtypename(var, var.k) .. ">" end,
 	field = "",
 	fieldget = "",
 	new = function(var) return "\t\t#(var.name) = new ArrayList<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
@@ -690,9 +691,9 @@ typedef.vector = merge(typedef.octets,
 	set = "",
 	getsafe = [[
 
-		public #(var.type) get#(var.name_u)()
+		public #(var.itype) get#(var.name_u)()
 		{
-			return new UndoList.Undo#(var.type)(#(var.name));
+			return new UndoContext.Undo#(var.itype)(_owner, #(var.name));
 		}
 ]],
 	setsafe = "",
@@ -721,7 +722,7 @@ typedef.vector = merge(typedef.octets,
 })
 typedef.list = merge(typedef.vector,
 {
-	import = { "java.util.LinkedList", "java.util.Collection", "jane.core.Util" },
+	import = { "java.util.LinkedList", "java.util.Collection", "java.util.List", "jane.core.Util" },
 	type = function(var) return "LinkedList<" .. subtypename(var, var.k) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new LinkedList<" .. subtypename_new(var, var.k) .. ">();\n" end,
 	init = function(var) return "this.#(var.name) = new LinkedList<" .. subtypename_new(var, var.k) .. ">(); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
@@ -738,28 +739,30 @@ typedef.list = merge(typedef.vector,
 })
 typedef.deque = merge(typedef.list,
 {
-	import = { "java.util.ArrayDeque", "java.util.Collection", "jane.core.Util" },
+	import = { "java.util.ArrayDeque", "java.util.Collection", "java.util.Deque", "jane.core.Util" },
 	type = function(var) return "ArrayDeque<" .. subtypename(var, var.k) .. ">" end,
+	itype = function(var) return "Deque<" .. subtypename(var, var.k) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new ArrayDeque<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
 	init = function(var) return "this.#(var.name) = new ArrayDeque<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
 })
 typedef.hashset = merge(typedef.list,
 {
-	import = { "java.util.HashSet", "java.util.Collection", "jane.core.Util" },
+	import = { "java.util.HashSet", "java.util.Collection", "java.util.Set", "jane.core.Util" },
 	type = function(var) return "HashSet<" .. subtypename(var, var.k) .. ">" end,
+	itype = function(var) return "Set<" .. subtypename(var, var.k) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
 	init = function(var) return "this.#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
 })
-typedef.treeset = merge(typedef.list,
+typedef.treeset = merge(typedef.hashset,
 {
-	import = { "java.util.TreeSet", "java.util.Collection", "jane.core.Util" },
+	import = { "java.util.TreeSet", "java.util.Collection", "java.util.Set", "jane.core.Util" },
 	type = function(var) return "TreeSet<" .. subtypename(var, var.k) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new TreeSet<" .. subtypename_new(var, var.k) .. ">();\n" end,
 	init = function(var) return "this.#(var.name) = new TreeSet<" .. subtypename_new(var, var.k) .. ">(); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
 })
-typedef.linkedhashset = merge(typedef.list,
+typedef.linkedhashset = merge(typedef.hashset,
 {
-	import = { "java.util.LinkedHashSet", "java.util.Collection", "jane.core.Util" },
+	import = { "java.util.LinkedHashSet", "java.util.Collection", "java.util.Set", "jane.core.Util" },
 	type = function(var) return "LinkedHashSet<" .. subtypename(var, var.k) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new LinkedHashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
 	init = function(var) return "this.#(var.name) = new LinkedHashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
@@ -769,6 +772,7 @@ typedef.hashmap = merge(typedef.list,
 	import = { "java.util.HashMap", "java.util.Map.Entry", "java.util.Map", "jane.core.Util" },
 	type = function(var) return "HashMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	type_i = function(var) return "Map<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
+	itype = function(var) return "Map<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new HashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap));\n" end,
 	init = function(var) return "this.#(var.name) = new HashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).putAll(#(var.name))" end,
 	marshal = function(var) return string.format([[if(!this.#(var.name).isEmpty())
@@ -793,7 +797,6 @@ typedef.treemap = merge(typedef.hashmap,
 {
 	import = { "java.util.TreeMap", "java.util.Map", "jane.core.Util" },
 	type = function(var) return "TreeMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
-	type_i = function(var) return "Map<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new TreeMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">();\n" end,
 	init = function(var) return "this.#(var.name) = new TreeMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(); if(#(var.name) != null) this.#(var.name).putAll(#(var.name))" end,
 	assign = "this.#(var.name).clear(); if(b.#(var.name) != null) this.#(var.name).putAll(b.#(var.name))",
@@ -802,7 +805,6 @@ typedef.linkedhashmap = merge(typedef.hashmap,
 {
 	import = { "java.util.LinkedHashMap", "java.util.Map", "jane.core.Util" },
 	type = function(var) return "LinkedHashMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
-	type_i = function(var) return "Map<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new LinkedHashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap));\n" end,
 	init = function(var) return "this.#(var.name) = new LinkedHashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).putAll(#(var.name))" end,
 	assign = "this.#(var.name).clear(); if(b.#(var.name) != null) this.#(var.name).putAll(b.#(var.name))",
@@ -926,8 +928,8 @@ local function bean_const(code)
 		gsub("\tpublic void set.-\n\t}\n\n", ""):
 		gsub("\n\tpublic final class Safe.-}\n\t}\n", ""):
 		gsub("import java%.lang%.reflect%.Field;\n", ""):
-		gsub("import jane%.core%.UndoList;\n", ""):
-		gsub("import jane%.core%.UndoList%.Undo;\n", ""):
+		gsub("import jane%.core%.UndoContext;\n", ""):
+		gsub("import jane%.core%.UndoContext%.Undo;\n", ""):
 		gsub("\tprivate static Field .-\n", ""):
 		gsub("\tstatic\n.-\n\t}\n\n", ""):
 		gsub("\n\t@Override\n\tpublic Safe toSafe.-\n\t}\n", ""):
@@ -956,7 +958,7 @@ end
 function bean(bean)
 	bean_common(bean)
 
-	bean.import = { ["jane.core.Bean"] = true, ["jane.core.MarshalException"] = true, ["jane.core.OctetsStream"] = true, ["jane.core.UndoList"] = true, ["jane.core.UndoList.Undo"] = true }
+	bean.import = { ["jane.core.Bean"] = true, ["jane.core.MarshalException"] = true, ["jane.core.OctetsStream"] = true, ["jane.core.UndoContext"] = true, ["jane.core.UndoContext.Undo"] = true }
 	local vartypes = { bean.name }
 	for _, var in ipairs(bean) do
 		do_var(var)

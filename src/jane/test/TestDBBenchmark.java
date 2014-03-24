@@ -56,7 +56,7 @@ public final class TestDBBenchmark
 						long tt = t1 - t0;
 						if(tt >= 250) System.out.println("--- proc delay=" + tt);
 						lock(AllTables.Benchmark.lockid(id));
-						TestBean.Safe a = AllTables.Benchmark.get(id);
+						TestBean.Safe a = AllTables.Benchmark.getSafe(id);
 						if(a == null)
 						{
 							TestBean aa = new TestBean();

@@ -5,21 +5,24 @@ import java.lang.reflect.Field;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import jane.core.Bean;
 import jane.core.MarshalException;
 import jane.core.Octets;
 import jane.core.OctetsStream;
-import jane.core.UndoList;
-import jane.core.UndoList.Undo;
+import jane.core.UndoContext;
+import jane.core.UndoContext.Undo;
 import jane.core.Util;
 
 /**
@@ -695,31 +698,31 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 	}
 
 	@Override
-	public Safe toSafe(UndoList.Safe<?> parent)
+	public Safe toSafe(UndoContext.Safe<?> parent)
 	{
 		return new Safe(parent);
 	}
 
-	public final class Safe implements UndoList.Safe<TestType>, Comparable<TestType>
+	public final class Safe implements UndoContext.Safe<TestType>, Comparable<TestType>
 	{
-		private transient final UndoList.Safe<?> _owner;
-		private transient UndoList _undolist;
+		private transient final UndoContext.Safe<?> _owner;
+		private transient UndoContext _undoctx;
 		private transient boolean _dirty;
 		private transient boolean _fullundo;
 
-		private Safe(UndoList.Safe<?> parent)
+		private Safe(UndoContext.Safe<?> parent)
 		{
 			_owner = (parent != null ? parent.owner() : this);
 		}
 
 		@Override
-		public TestType bean()
+		public TestType unsafe()
 		{
 			return TestType.this;
 		}
 
 		@Override
-		public UndoList.Safe<?> owner()
+		public UndoContext.Safe<?> owner()
 		{
 			return _owner;
 		}
@@ -733,24 +736,24 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 		}
 
 		@Override
-		public void setDirty()
+		public void dirty()
 		{
 			if(_owner == this)
 				_dirty = true;
 			else
-				_owner.setDirty();
+				_owner.dirty();
 		}
 
-		private void initUndoList()
+		private void initUndoContext()
 		{
-			if(!_fullundo && _undolist == null) _undolist = UndoList.current();
+			if(!_fullundo && _undoctx == null) _undoctx = UndoContext.current();
 		}
 
 		private void addFullUndo()
 		{
-			initUndoList();
-			if(_undolist == null) return;
-			_undolist.add(new Undo()
+			initUndoContext();
+			if(_undoctx == null) return;
+			_undoctx.add(new Undo()
 			{
 				private final TestType _saved = TestType.this.clone();
 				@Override
@@ -759,9 +762,9 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 					TestType.this.assign(_saved);
 				}
 			});
-			_undolist = null;
+			_undoctx = null;
 			_fullundo = true;
-			setDirty();
+			dirty();
 		}
 
 		public boolean getV1()
@@ -771,8 +774,8 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 
 		public void setV1(boolean v1)
 		{
-			initUndoList();
-			if(_undolist != null) _undolist.add(new UndoList.Boolean(this, FIELD_v1, TestType.this.v1));
+			initUndoContext();
+			if(_undoctx != null) _undoctx.add(new UndoContext.UndoBoolean(this, FIELD_v1, TestType.this.v1));
 			TestType.this.v1 = v1;
 		}
 
@@ -783,8 +786,8 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 
 		public void setV2(byte v2)
 		{
-			initUndoList();
-			if(_undolist != null) _undolist.add(new UndoList.Byte(this, FIELD_v2, TestType.this.v2));
+			initUndoContext();
+			if(_undoctx != null) _undoctx.add(new UndoContext.UndoByte(this, FIELD_v2, TestType.this.v2));
 			TestType.this.v2 = v2;
 		}
 
@@ -795,8 +798,8 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 
 		public void setV3(short v3)
 		{
-			initUndoList();
-			if(_undolist != null) _undolist.add(new UndoList.Short(this, FIELD_v3, TestType.this.v3));
+			initUndoContext();
+			if(_undoctx != null) _undoctx.add(new UndoContext.UndoShort(this, FIELD_v3, TestType.this.v3));
 			TestType.this.v3 = v3;
 		}
 
@@ -807,8 +810,8 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 
 		public void setV4(int v4)
 		{
-			initUndoList();
-			if(_undolist != null) _undolist.add(new UndoList.Integer(this, FIELD_v4, TestType.this.v4));
+			initUndoContext();
+			if(_undoctx != null) _undoctx.add(new UndoContext.UndoInteger(this, FIELD_v4, TestType.this.v4));
 			TestType.this.v4 = v4;
 		}
 
@@ -819,8 +822,8 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 
 		public void setV5(long v5)
 		{
-			initUndoList();
-			if(_undolist != null) _undolist.add(new UndoList.Long(this, FIELD_v5, TestType.this.v5));
+			initUndoContext();
+			if(_undoctx != null) _undoctx.add(new UndoContext.UndoLong(this, FIELD_v5, TestType.this.v5));
 			TestType.this.v5 = v5;
 		}
 
@@ -831,8 +834,8 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 
 		public void setV6(float v6)
 		{
-			initUndoList();
-			if(_undolist != null) _undolist.add(new UndoList.Float(this, FIELD_v6, TestType.this.v6));
+			initUndoContext();
+			if(_undoctx != null) _undoctx.add(new UndoContext.UndoFloat(this, FIELD_v6, TestType.this.v6));
 			TestType.this.v6 = v6;
 		}
 
@@ -843,8 +846,8 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 
 		public void setV7(double v7)
 		{
-			initUndoList();
-			if(_undolist != null) _undolist.add(new UndoList.Double(this, FIELD_v7, TestType.this.v7));
+			initUndoContext();
+			if(_undoctx != null) _undoctx.add(new UndoContext.UndoDouble(this, FIELD_v7, TestType.this.v7));
 			TestType.this.v7 = v7;
 		}
 
@@ -855,8 +858,8 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 
 		public void setV8(Octets v8)
 		{
-			initUndoList();
-			if(_undolist != null) _undolist.add(new UndoList.Octets(this, FIELD_v8, TestType.this.v8));
+			initUndoContext();
+			if(_undoctx != null) _undoctx.add(new UndoContext.UndoOctets(this, FIELD_v8, TestType.this.v8));
 			TestType.this.v8 = (v8 != null ? v8 : new Octets());
 		}
 
@@ -867,54 +870,54 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 
 		public void setV9(String v9)
 		{
-			initUndoList();
-			if(_undolist != null) _undolist.add(new UndoList.String(this, FIELD_v9, TestType.this.v9));
+			initUndoContext();
+			if(_undoctx != null) _undoctx.add(new UndoContext.UndoString(this, FIELD_v9, TestType.this.v9));
 			TestType.this.v9 = (v9 != null ? v9 : "");
 		}
 
-		public ArrayList<Boolean> getV10()
+		public List<Boolean> getV10()
 		{
-			return new UndoList.UndoArrayList<Boolean>(v10);
+			return new UndoContext.UndoList<Boolean>(_owner, v10);
 		}
 
-		public LinkedList<Byte> getV11()
+		public List<Byte> getV11()
 		{
-			return new UndoList.UndoLinkedList<Byte>(v11);
+			return new UndoContext.UndoList<Byte>(_owner, v11);
 		}
 
-		public ArrayDeque<Integer> getV12()
+		public Deque<Integer> getV12()
 		{
-			return new UndoList.UndoArrayDeque<Integer>(v12);
+			return new UndoContext.UndoDeque<Integer>(_owner, v12);
 		}
 
-		public HashSet<Long> getV13()
+		public Set<Long> getV13()
 		{
-			return new UndoList.UndoHashSet<Long>(v13);
+			return new UndoContext.UndoSet<Long>(_owner, v13);
 		}
 
-		public TreeSet<Float> getV14()
+		public Set<Float> getV14()
 		{
-			return new UndoList.UndoTreeSet<Float>(v14);
+			return new UndoContext.UndoSet<Float>(_owner, v14);
 		}
 
-		public LinkedHashSet<Double> getV15()
+		public Set<Double> getV15()
 		{
-			return new UndoList.UndoLinkedHashSet<Double>(v15);
+			return new UndoContext.UndoSet<Double>(_owner, v15);
 		}
 
-		public HashMap<Long, String> getV16()
+		public Map<Long, String> getV16()
 		{
-			return new UndoList.UndoHashMap<Long, String>(v16);
+			return new UndoContext.UndoMap<Long, String>(_owner, v16);
 		}
 
-		public TreeMap<TestBean, Boolean> getV17()
+		public Map<TestBean, Boolean> getV17()
 		{
-			return new UndoList.UndoTreeMap<TestBean, Boolean>(v17);
+			return new UndoContext.UndoMap<TestBean, Boolean>(_owner, v17);
 		}
 
-		public LinkedHashMap<Octets, TestBean> getV18()
+		public Map<Octets, TestBean> getV18()
 		{
-			return new UndoList.UndoLinkedHashMap<Octets, TestBean>(v18);
+			return new UndoContext.UndoMap<Octets, TestBean>(_owner, v18);
 		}
 
 		public TestBean.Safe getV19()

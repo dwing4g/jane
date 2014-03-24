@@ -21,7 +21,7 @@ public final class TestUndo
 			protected boolean onProcess() throws Exception
 			{
 				lock(AllTables.Benchmark.lockid(id));
-				TestBean.Safe a = AllTables.Benchmark.get(id);
+				TestBean.Safe a = AllTables.Benchmark.getSafe(id);
 				if(a == null)
 				{
 					TestBean aa = new TestBean();
