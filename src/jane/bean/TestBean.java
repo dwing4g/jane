@@ -7,7 +7,6 @@ import jane.core.BeanPool;
 import jane.core.MarshalException;
 import jane.core.OctetsStream;
 import jane.core.UndoContext;
-import jane.core.UndoContext.Undo;
 
 /**
  * bean的注释
@@ -215,7 +214,7 @@ public class TestBean extends Bean<TestBean> implements Comparable<TestBean>
 	}
 
 	@Override
-	public Safe toSafe(UndoContext.Safe<?> parent)
+	public Safe safe(UndoContext.Safe<?> parent)
 	{
 		return new Safe(parent);
 	}
@@ -263,14 +262,18 @@ public class TestBean extends Bean<TestBean> implements Comparable<TestBean>
 
 		private void initUndoContext()
 		{
-			if(!_fullundo && _undoctx == null) _undoctx = UndoContext.current();
+			if(!_fullundo && _undoctx == null)
+			{
+				_owner.dirty();
+				_undoctx = UndoContext.current();
+			}
 		}
 
 		private void addFullUndo()
 		{
 			initUndoContext();
 			if(_undoctx == null) return;
-			_undoctx.add(new Undo()
+			_undoctx.add(new UndoContext.Undo()
 			{
 				private final TestBean _saved = TestBean.this.clone();
 				@Override
@@ -281,7 +284,6 @@ public class TestBean extends Bean<TestBean> implements Comparable<TestBean>
 			});
 			_undoctx = null;
 			_fullundo = true;
-			dirty();
 		}
 
 		public int getValue1()
