@@ -294,7 +294,7 @@ public class TestBean extends Bean<TestBean> implements Comparable<TestBean>
 		public void setValue1(int value1)
 		{
 			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UndoContext.UndoInteger(this, FIELD_value1, TestBean.this.value1));
+			if(_undoctx != null) _undoctx.add(new UndoContext.UndoInteger(TestBean.this, FIELD_value1, TestBean.this.value1));
 			TestBean.this.value1 = value1;
 		}
 
@@ -306,7 +306,7 @@ public class TestBean extends Bean<TestBean> implements Comparable<TestBean>
 		public void setValue2(long value2)
 		{
 			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UndoContext.UndoLong(this, FIELD_value2, TestBean.this.value2));
+			if(_undoctx != null) _undoctx.add(new UndoContext.UndoLong(TestBean.this, FIELD_value2, TestBean.this.value2));
 			TestBean.this.value2 = value2;
 		}
 

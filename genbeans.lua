@@ -545,7 +545,7 @@ typedef.byte =
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
 			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UndoContext.Undo#(var.type_o)(this, FIELD_#(var.name), #(bean.name).this.#(var.name)));
+			if(_undoctx != null) _undoctx.add(new UndoContext.Undo#(var.type_o)(#(bean.name).this, FIELD_#(var.name), #(bean.name).this.#(var.name)));
 			#(bean.name).this.#(var.name) = #(var.name);
 		}
 ]],
@@ -630,7 +630,7 @@ typedef.string = merge(typedef.byte,
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
 			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UndoContext.Undo#(var.type_o)(this, FIELD_#(var.name), #(bean.name).this.#(var.name)));
+			if(_undoctx != null) _undoctx.add(new UndoContext.Undo#(var.type_o)(#(bean.name).this, FIELD_#(var.name), #(bean.name).this.#(var.name)));
 			#(bean.name).this.#(var.name) = (#(var.name) != null ? #(var.name) : "");
 		}
 ]],
@@ -671,7 +671,7 @@ typedef.octets = merge(typedef.string,
 		public #(var.type) get#(var.name_u)()
 		{
 			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UndoContext.UndoOctets(this, FIELD_#(var.name), #(var.name)));
+			if(_undoctx != null) _undoctx.add(new UndoContext.UndoOctets(#(bean.name).this, FIELD_#(var.name), #(var.name)));
 			return #(var.name);
 		}
 

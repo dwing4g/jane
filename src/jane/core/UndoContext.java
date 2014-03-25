@@ -24,10 +24,10 @@ public class UndoContext
 
 	public abstract static class UndoBase implements Undo
 	{
-		protected final Safe<?> _obj;
+		protected final Bean<?> _obj;
 		protected final Field   _field;
 
-		public UndoBase(Safe<?> obj, Field field)
+		public UndoBase(Bean<?> obj, Field field)
 		{
 			_obj = obj;
 			_field = field;
@@ -38,7 +38,7 @@ public class UndoContext
 	{
 		private final boolean _saved;
 
-		public UndoBoolean(Safe<?> obj, Field field, boolean v)
+		public UndoBoolean(Bean<?> obj, Field field, boolean v)
 		{
 			super(obj, field);
 			_saved = v;
@@ -55,7 +55,7 @@ public class UndoContext
 	{
 		private final char _saved;
 
-		public UndoChar(Safe<?> obj, Field field, char v)
+		public UndoChar(Bean<?> obj, Field field, char v)
 		{
 			super(obj, field);
 			_saved = v;
@@ -72,7 +72,7 @@ public class UndoContext
 	{
 		private final byte _saved;
 
-		public UndoByte(Safe<?> obj, Field field, byte v)
+		public UndoByte(Bean<?> obj, Field field, byte v)
 		{
 			super(obj, field);
 			_saved = v;
@@ -89,7 +89,7 @@ public class UndoContext
 	{
 		private final short _saved;
 
-		public UndoShort(Safe<?> obj, Field field, short v)
+		public UndoShort(Bean<?> obj, Field field, short v)
 		{
 			super(obj, field);
 			_saved = v;
@@ -106,7 +106,7 @@ public class UndoContext
 	{
 		private final int _saved;
 
-		public UndoInteger(Safe<?> obj, Field field, int v)
+		public UndoInteger(Bean<?> obj, Field field, int v)
 		{
 			super(obj, field);
 			_saved = v;
@@ -123,7 +123,7 @@ public class UndoContext
 	{
 		private final long _saved;
 
-		public UndoLong(Safe<?> obj, Field field, long v)
+		public UndoLong(Bean<?> obj, Field field, long v)
 		{
 			super(obj, field);
 			_saved = v;
@@ -140,7 +140,7 @@ public class UndoContext
 	{
 		private final float _saved;
 
-		public UndoFloat(Safe<?> obj, Field field, float v)
+		public UndoFloat(Bean<?> obj, Field field, float v)
 		{
 			super(obj, field);
 			_saved = v;
@@ -157,7 +157,7 @@ public class UndoContext
 	{
 		private final double _saved;
 
-		public UndoDouble(Safe<?> obj, Field field, double v)
+		public UndoDouble(Bean<?> obj, Field field, double v)
 		{
 			super(obj, field);
 			_saved = v;
@@ -174,7 +174,7 @@ public class UndoContext
 	{
 		private final Octets _saved;
 
-		public UndoOctets(Safe<?> obj, Field field, Octets v)
+		public UndoOctets(Bean<?> obj, Field field, Octets v)
 		{
 			super(obj, field);
 			_saved = v.clone();
@@ -191,7 +191,7 @@ public class UndoContext
 	{
 		private final String _saved;
 
-		public UndoString(Safe<?> obj, Field field, String v)
+		public UndoString(Bean<?> obj, Field field, String v)
 		{
 			super(obj, field);
 			_saved = v;

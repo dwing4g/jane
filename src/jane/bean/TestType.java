@@ -787,7 +787,7 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 		public void setV1(boolean v1)
 		{
 			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UndoContext.UndoBoolean(this, FIELD_v1, TestType.this.v1));
+			if(_undoctx != null) _undoctx.add(new UndoContext.UndoBoolean(TestType.this, FIELD_v1, TestType.this.v1));
 			TestType.this.v1 = v1;
 		}
 
@@ -799,7 +799,7 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 		public void setV2(byte v2)
 		{
 			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UndoContext.UndoByte(this, FIELD_v2, TestType.this.v2));
+			if(_undoctx != null) _undoctx.add(new UndoContext.UndoByte(TestType.this, FIELD_v2, TestType.this.v2));
 			TestType.this.v2 = v2;
 		}
 
@@ -811,7 +811,7 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 		public void setV3(short v3)
 		{
 			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UndoContext.UndoShort(this, FIELD_v3, TestType.this.v3));
+			if(_undoctx != null) _undoctx.add(new UndoContext.UndoShort(TestType.this, FIELD_v3, TestType.this.v3));
 			TestType.this.v3 = v3;
 		}
 
@@ -823,7 +823,7 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 		public void setV4(int v4)
 		{
 			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UndoContext.UndoInteger(this, FIELD_v4, TestType.this.v4));
+			if(_undoctx != null) _undoctx.add(new UndoContext.UndoInteger(TestType.this, FIELD_v4, TestType.this.v4));
 			TestType.this.v4 = v4;
 		}
 
@@ -835,7 +835,7 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 		public void setV5(long v5)
 		{
 			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UndoContext.UndoLong(this, FIELD_v5, TestType.this.v5));
+			if(_undoctx != null) _undoctx.add(new UndoContext.UndoLong(TestType.this, FIELD_v5, TestType.this.v5));
 			TestType.this.v5 = v5;
 		}
 
@@ -847,7 +847,7 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 		public void setV6(float v6)
 		{
 			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UndoContext.UndoFloat(this, FIELD_v6, TestType.this.v6));
+			if(_undoctx != null) _undoctx.add(new UndoContext.UndoFloat(TestType.this, FIELD_v6, TestType.this.v6));
 			TestType.this.v6 = v6;
 		}
 
@@ -859,14 +859,14 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 		public void setV7(double v7)
 		{
 			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UndoContext.UndoDouble(this, FIELD_v7, TestType.this.v7));
+			if(_undoctx != null) _undoctx.add(new UndoContext.UndoDouble(TestType.this, FIELD_v7, TestType.this.v7));
 			TestType.this.v7 = v7;
 		}
 
 		public Octets getV8()
 		{
 			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UndoContext.UndoOctets(this, FIELD_v8, v8));
+			if(_undoctx != null) _undoctx.add(new UndoContext.UndoOctets(TestType.this, FIELD_v8, v8));
 			return v8;
 		}
 
@@ -893,7 +893,7 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 		public void setV9(String v9)
 		{
 			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UndoContext.UndoString(this, FIELD_v9, TestType.this.v9));
+			if(_undoctx != null) _undoctx.add(new UndoContext.UndoString(TestType.this, FIELD_v9, TestType.this.v9));
 			TestType.this.v9 = (v9 != null ? v9 : "");
 		}
 

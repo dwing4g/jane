@@ -519,6 +519,7 @@ public abstract class Procedure implements Runnable
 			{
 				if(Thread.interrupted()) throw new InterruptedException();
 				if(onProcess()) break;
+				UndoContext.current().rollback();
 				unlock();
 				if(--n <= 0) throw new Exception("procedure redo too many times=" + Const.maxProceduerRedo);
 			}
@@ -528,7 +529,6 @@ public abstract class Procedure implements Runnable
 		{
 			try
 			{
-				UndoContext.current().rollback();
 				onException(e);
 			}
 			catch(Throwable ex)
@@ -537,6 +537,10 @@ public abstract class Procedure implements Runnable
 					Log.log.error("procedure.onException exception: sid=" + _sid, ex);
 				else
 					Log.log.error("procedure.onException exception:", ex);
+			}
+			finally
+			{
+				UndoContext.current().rollback();
 			}
 		}
 		finally
