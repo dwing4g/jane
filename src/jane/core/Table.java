@@ -6,19 +6,20 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
+import jane.core.UndoContext.Safe;
 
 /**
  * 通用key类型的数据库表类
  */
-public final class Table<K, V extends Bean<V>>
+public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 {
-	private static final List<Table<?, ?>> _tables = new ArrayList<Table<?, ?>>(16); // 所有的通用key类型的表列表
-	private final String                   _tablename;                              // 表名
-	private final Storage.Table<K, V>      _stotable;                               // 存储引擎的表对象
-	private final Map<K, V>                _cache;                                  // 读缓存. 有大小限制,溢出自动清理
-	private final ConcurrentMap<K, V>      _cache_mod;                              // 写缓存. 不会溢出,保存到数据库存储引擎后清理
-	private final V                        _deleted;                                // 表示已删除的value. 同存根bean
-	private final int                      _lockid;                                 // 当前表的锁ID. 即锁名的hash值,一般和记录key的hash值计算得出记录的lockid
+	private static final List<Table<?, ?, ?>> _tables = new ArrayList<Table<?, ?, ?>>(16); // 所有的通用key类型的表列表
+	private final String                      _tablename;                                 // 表名
+	private final Storage.Table<K, V>         _stotable;                                  // 存储引擎的表对象
+	private final Map<K, V>                   _cache;                                     // 读缓存. 有大小限制,溢出自动清理
+	private final ConcurrentMap<K, V>         _cache_mod;                                 // 写缓存. 不会溢出,保存到数据库存储引擎后清理
+	private final V                           _deleted;                                   // 表示已删除的value. 同存根bean
+	private final int                         _lockid;                                    // 当前表的锁ID. 即锁名的hash值,一般和记录key的hash值计算得出记录的lockid
 
 	/**
 	 * 尝试依次加锁并保存全部表已修改的记录
@@ -28,7 +29,7 @@ public final class Table<K, V extends Bean<V>>
 	static void trySaveModifiedAll(long[] counts)
 	{
 		long m = counts[0], n = counts[1];
-		for(Table<?, ?> table : _tables)
+		for(Table<?, ?, ?> table : _tables)
 		{
 			try
 			{
@@ -54,7 +55,7 @@ public final class Table<K, V extends Bean<V>>
 	static int saveModifiedAll()
 	{
 		int m = 0;
-		for(Table<?, ?> table : _tables)
+		for(Table<?, ?, ?> table : _tables)
 		{
 			try
 			{
@@ -197,11 +198,10 @@ public final class Table<K, V extends Bean<V>>
 	/**
 	 * 同get,但增加的安全封装,可回滚修改
 	 */
-	@SuppressWarnings("unchecked")
-	public <S extends UndoContext.Safe<V>> S getSafe(K k)
+	public S getSafe(K k)
 	{
 		V v = get(k);
-		return v != null ? (S)UndoContext.current().addRecord(this, k, v) : null;
+		return v != null ? UndoContext.current().addRecord(this, k, v) : null;
 	}
 
 	/**
@@ -227,11 +227,10 @@ public final class Table<K, V extends Bean<V>>
 	/**
 	 * 同getNoCache,但增加的安全封装,可回滚修改
 	 */
-	@SuppressWarnings("unchecked")
-	public <S extends UndoContext.Safe<V>> S getNoCacheSafe(K k)
+	public S getNoCacheSafe(K k)
 	{
 		V v = getNoCache(k);
-		return v != null ? (S)UndoContext.current().addRecord(this, k, v) : null;
+		return v != null ? UndoContext.current().addRecord(this, k, v) : null;
 	}
 
 	/**
@@ -298,7 +297,7 @@ public final class Table<K, V extends Bean<V>>
 		UndoContext.current().add(new UndoContext.Undo()
 		{
 			@Override
-			public void rollback() throws Exception
+			public void rollback()
 			{
 				if(v_old != null)
 					put(k, v_old);
@@ -342,7 +341,7 @@ public final class Table<K, V extends Bean<V>>
 		UndoContext.current().add(new UndoContext.Undo()
 		{
 			@Override
-			public void rollback() throws Exception
+			public void rollback()
 			{
 				put(k, v_old);
 			}

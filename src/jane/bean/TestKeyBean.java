@@ -52,18 +52,6 @@ public final class TestKeyBean extends Bean<TestKeyBean> implements Comparable<T
 	}
 
 	@Override
-	public int initSize()
-	{
-		return 16;
-	}
-
-	@Override
-	public int maxSize()
-	{
-		return 16;
-	}
-
-	@Override
 	public TestKeyBean stub()
 	{
 		return BEAN_STUB;
@@ -73,6 +61,18 @@ public final class TestKeyBean extends Bean<TestKeyBean> implements Comparable<T
 	public TestKeyBean create()
 	{
 		return new TestKeyBean();
+	}
+
+	@Override
+	public int initSize()
+	{
+		return 16;
+	}
+
+	@Override
+	public int maxSize()
+	{
+		return 16;
 	}
 
 	@Override

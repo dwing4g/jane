@@ -1,12 +1,11 @@
 package jane.core;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
 public class UndoContext
 {
-	public interface Safe<B extends Bean<B>>
+	public interface Safe<B>
 	{
 		B unsafe();
 
@@ -22,195 +21,13 @@ public class UndoContext
 		void rollback() throws Exception;
 	}
 
-	public abstract static class UndoBase implements Undo
-	{
-		protected final Bean<?> _obj;
-		protected final Field   _field;
-
-		public UndoBase(Bean<?> obj, Field field)
-		{
-			_obj = obj;
-			_field = field;
-		}
-	}
-
-	public static final class UndoBoolean extends UndoBase
-	{
-		private final boolean _saved;
-
-		public UndoBoolean(Bean<?> obj, Field field, boolean v)
-		{
-			super(obj, field);
-			_saved = v;
-		}
-
-		@Override
-		public void rollback() throws Exception
-		{
-			_field.setBoolean(_obj, _saved);
-		}
-	}
-
-	public static final class UndoChar extends UndoBase
-	{
-		private final char _saved;
-
-		public UndoChar(Bean<?> obj, Field field, char v)
-		{
-			super(obj, field);
-			_saved = v;
-		}
-
-		@Override
-		public void rollback() throws Exception
-		{
-			_field.setChar(_obj, _saved);
-		}
-	}
-
-	public static final class UndoByte extends UndoBase
-	{
-		private final byte _saved;
-
-		public UndoByte(Bean<?> obj, Field field, byte v)
-		{
-			super(obj, field);
-			_saved = v;
-		}
-
-		@Override
-		public void rollback() throws Exception
-		{
-			_field.setByte(_obj, _saved);
-		}
-	}
-
-	public static final class UndoShort extends UndoBase
-	{
-		private final short _saved;
-
-		public UndoShort(Bean<?> obj, Field field, short v)
-		{
-			super(obj, field);
-			_saved = v;
-		}
-
-		@Override
-		public void rollback() throws Exception
-		{
-			_field.setShort(_obj, _saved);
-		}
-	}
-
-	public static final class UndoInteger extends UndoBase
-	{
-		private final int _saved;
-
-		public UndoInteger(Bean<?> obj, Field field, int v)
-		{
-			super(obj, field);
-			_saved = v;
-		}
-
-		@Override
-		public void rollback() throws Exception
-		{
-			_field.setInt(_obj, _saved);
-		}
-	}
-
-	public static final class UndoLong extends UndoBase
-	{
-		private final long _saved;
-
-		public UndoLong(Bean<?> obj, Field field, long v)
-		{
-			super(obj, field);
-			_saved = v;
-		}
-
-		@Override
-		public void rollback() throws Exception
-		{
-			_field.setLong(_obj, _saved);
-		}
-	}
-
-	public static final class UndoFloat extends UndoBase
-	{
-		private final float _saved;
-
-		public UndoFloat(Bean<?> obj, Field field, float v)
-		{
-			super(obj, field);
-			_saved = v;
-		}
-
-		@Override
-		public void rollback() throws Exception
-		{
-			_field.setFloat(_obj, _saved);
-		}
-	}
-
-	public static final class UndoDouble extends UndoBase
-	{
-		private final double _saved;
-
-		public UndoDouble(Bean<?> obj, Field field, double v)
-		{
-			super(obj, field);
-			_saved = v;
-		}
-
-		@Override
-		public void rollback() throws Exception
-		{
-			_field.setDouble(_obj, _saved);
-		}
-	}
-
-	public static final class UndoOctets extends UndoBase
-	{
-		private final Octets _saved;
-
-		public UndoOctets(Bean<?> obj, Field field, Octets v)
-		{
-			super(obj, field);
-			_saved = v.clone();
-		}
-
-		@Override
-		public void rollback() throws Exception
-		{
-			_field.set(_obj, _saved);
-		}
-	}
-
-	public static final class UndoString extends UndoBase
-	{
-		private final String _saved;
-
-		public UndoString(Bean<?> obj, Field field, String v)
-		{
-			super(obj, field);
-			_saved = v;
-		}
-
-		@Override
-		public void rollback() throws Exception
-		{
-			_field.set(_obj, _saved);
-		}
-	}
-
 	private static final class Record<K, V extends Bean<V>, S extends Safe<V>>
 	{
-		private final Table<K, V> _table;
-		private final K           _key;
-		private final S           _value;
+		private final Table<K, V, S> _table;
+		private final K              _key;
+		private final S              _value;
 
-		private Record(Table<K, V> table, K key, S value)
+		private Record(Table<K, V, S> table, K key, S value)
 		{
 			_table = table;
 			_key = key;
@@ -220,11 +37,11 @@ public class UndoContext
 
 	private static final class RecordLong<V extends Bean<V>, S extends Safe<V>>
 	{
-		private final TableLong<V> _table;
-		private final long         _key;
-		private final S            _value;
+		private final TableLong<V, S> _table;
+		private final long            _key;
+		private final S               _value;
 
-		private RecordLong(TableLong<V> table, long key, S value)
+		private RecordLong(TableLong<V, S> table, long key, S value)
 		{
 			_table = table;
 			_key = key;
@@ -254,7 +71,7 @@ public class UndoContext
 		return _tl_list.get();
 	}
 
-	<K, V extends Bean<V>, S extends Safe<V>> S addRecord(Table<K, V> table, K key, V value)
+	<K, V extends Bean<V>, S extends Safe<V>> S addRecord(Table<K, V, S> table, K key, V value)
 	{
 		@SuppressWarnings("unchecked")
 		S v_safe = (S)value.safe(null);
@@ -262,7 +79,7 @@ public class UndoContext
 		return v_safe;
 	}
 
-	<V extends Bean<V>, S extends Safe<V>> S addRecord(TableLong<V> table, long key, V value)
+	<V extends Bean<V>, S extends Safe<V>> S addRecord(TableLong<V, S> table, long key, V value)
 	{
 		@SuppressWarnings("unchecked")
 		S v_safe = (S)value.safe(null);

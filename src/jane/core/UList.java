@@ -41,12 +41,7 @@ public final class UList<V> implements List<V>, Cloneable
 	@Override
 	public boolean contains(Object o)
 	{
-		return _list.contains(o);
-	}
-
-	public <S extends Safe<?>> boolean contains(S v)
-	{
-		return _list.contains(v.unsafe());
+		return _list.contains(o instanceof Safe ? ((Safe<?>)o).unsafe() : o);
 	}
 
 	@Override
@@ -58,13 +53,13 @@ public final class UList<V> implements List<V>, Cloneable
 	@Override
 	public int indexOf(Object o)
 	{
-		return _list.indexOf(o);
+		return _list.indexOf(o instanceof Safe ? ((Safe<?>)o).unsafe() : o);
 	}
 
 	@Override
 	public int lastIndexOf(Object o)
 	{
-		return _list.lastIndexOf(o);
+		return _list.lastIndexOf(o instanceof Safe ? ((Safe<?>)o).unsafe() : o);
 	}
 
 	@Override
@@ -86,7 +81,7 @@ public final class UList<V> implements List<V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<?>> S getSafe(int idx)
+	public <S extends Safe<V>> S getSafe(int idx)
 	{
 		V v = _list.get(idx);
 		return v != null ? (S)((Bean<?>)v).safe(_owner) : null;
@@ -107,10 +102,9 @@ public final class UList<V> implements List<V>, Cloneable
 		return true;
 	}
 
-	@SuppressWarnings("unchecked")
-	public <S extends Safe<?>> void add(S v)
+	public <S extends Safe<V>> void add(S v)
 	{
-		add((V)v.unsafe());
+		add(v.unsafe());
 	}
 
 	@Override
@@ -127,10 +121,9 @@ public final class UList<V> implements List<V>, Cloneable
 		});
 	}
 
-	@SuppressWarnings("unchecked")
-	public <S extends Safe<?>> void add(final int idx, S v)
+	public <S extends Safe<V>> void add(final int idx, S v)
 	{
-		add(idx, (V)v.unsafe());
+		add(idx, v.unsafe());
 	}
 
 	@Override
@@ -183,9 +176,9 @@ public final class UList<V> implements List<V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<?>> S set(final int idx, S v)
+	public <S extends Safe<V>> S set(final int idx, S v)
 	{
-		V v_old = set(idx, (V)v.unsafe());
+		V v_old = set(idx, v.unsafe());
 		return v_old != null ? (S)((Bean<?>)v_old).safe(_owner) : null;
 	}
 
@@ -205,7 +198,7 @@ public final class UList<V> implements List<V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<?>> S removeSafe(int idx)
+	public <S extends Safe<V>> S removeSafe(int idx)
 	{
 		V v_old = remove(idx);
 		return v_old != null ? (S)((Bean<?>)v_old).safe(_owner) : null;
@@ -214,15 +207,10 @@ public final class UList<V> implements List<V>, Cloneable
 	@Override
 	public boolean remove(Object o)
 	{
-		final int idx = _list.indexOf(o);
+		final int idx = indexOf(o);
 		if(idx < 0) return false;
 		remove(idx);
-		return false;
-	}
-
-	public <S extends Safe<?>> boolean removeSafe(S v)
-	{
-		return remove(v.unsafe());
+		return true;
 	}
 
 	@Override
@@ -305,7 +293,7 @@ public final class UList<V> implements List<V>, Cloneable
 		}
 
 		@SuppressWarnings("unchecked")
-		public <S extends Safe<?>> S nextSafe()
+		public <S extends Safe<V>> S nextSafe()
 		{
 			V v = next();
 			return v != null ? (S)((Bean<?>)v).safe(_owner) : null;
@@ -377,7 +365,7 @@ public final class UList<V> implements List<V>, Cloneable
 		}
 
 		@SuppressWarnings("unchecked")
-		public <S extends Safe<?>> S nextSafe()
+		public <S extends Safe<V>> S nextSafe()
 		{
 			V v = next();
 			return v != null ? (S)((Bean<?>)v).safe(_owner) : null;
@@ -393,7 +381,7 @@ public final class UList<V> implements List<V>, Cloneable
 		}
 
 		@SuppressWarnings("unchecked")
-		public <S extends Safe<?>> S previousSafe()
+		public <S extends Safe<V>> S previousSafe()
 		{
 			V v = previous();
 			return v != null ? (S)((Bean<?>)v).safe(_owner) : null;
@@ -434,10 +422,9 @@ public final class UList<V> implements List<V>, Cloneable
 			});
 		}
 
-		@SuppressWarnings("unchecked")
-		public <S extends Safe<?>> void set(S v)
+		public <S extends Safe<V>> void set(S v)
 		{
-			set((V)v.unsafe());
+			set(v.unsafe());
 		}
 
 		@Override
@@ -456,10 +443,9 @@ public final class UList<V> implements List<V>, Cloneable
 			});
 		}
 
-		@SuppressWarnings("unchecked")
-		public <S extends Safe<?>> void add(S v)
+		public <S extends Safe<V>> void add(S v)
 		{
-			add((V)v.unsafe());
+			add(v.unsafe());
 		}
 	}
 
@@ -488,21 +474,21 @@ public final class UList<V> implements List<V>, Cloneable
 	}
 
 	@Override
+	public Object clone()
+	{
+		return new UnsupportedOperationException();
+	}
+
+	@Override
 	public int hashCode()
 	{
 		return _list.hashCode();
 	}
 
 	@Override
-	public boolean equals(Object obj)
+	public boolean equals(Object o)
 	{
-		return _list.equals(obj);
-	}
-
-	@Override
-	public Object clone()
-	{
-		return new UnsupportedOperationException();
+		return this == o || _list.equals(o);
 	}
 
 	@Override

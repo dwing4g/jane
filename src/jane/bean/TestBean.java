@@ -6,6 +6,7 @@ import jane.core.Bean;
 import jane.core.BeanPool;
 import jane.core.MarshalException;
 import jane.core.OctetsStream;
+import jane.core.UBase;
 import jane.core.UndoContext;
 
 /**
@@ -57,6 +58,7 @@ public class TestBean extends Bean<TestBean> implements Comparable<TestBean>
 
 	public void assign(TestBean b)
 	{
+		if(b == this) return;
 		if(b == null) { reset(); return; }
 		this.value1 = b.value1;
 		this.value2 = b.value2;
@@ -89,18 +91,6 @@ public class TestBean extends Bean<TestBean> implements Comparable<TestBean>
 	}
 
 	@Override
-	public int initSize()
-	{
-		return 16;
-	}
-
-	@Override
-	public int maxSize()
-	{
-		return 16;
-	}
-
-	@Override
 	public TestBean stub()
 	{
 		return BEAN_STUB;
@@ -110,6 +100,18 @@ public class TestBean extends Bean<TestBean> implements Comparable<TestBean>
 	public TestBean create()
 	{
 		return new TestBean();
+	}
+
+	@Override
+	public int initSize()
+	{
+		return 16;
+	}
+
+	@Override
+	public int maxSize()
+	{
+		return 16;
 	}
 
 	@Override
@@ -269,7 +271,7 @@ public class TestBean extends Bean<TestBean> implements Comparable<TestBean>
 			}
 		}
 
-		private void addFullUndo()
+		public void addFullUndo()
 		{
 			initUndoContext();
 			if(_undoctx == null) return;
@@ -277,7 +279,7 @@ public class TestBean extends Bean<TestBean> implements Comparable<TestBean>
 			{
 				private final TestBean _saved = TestBean.this.clone();
 				@Override
-				public void rollback() throws Exception
+				public void rollback()
 				{
 					TestBean.this.assign(_saved);
 				}
@@ -294,7 +296,7 @@ public class TestBean extends Bean<TestBean> implements Comparable<TestBean>
 		public void setValue1(int value1)
 		{
 			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UndoContext.UndoInteger(TestBean.this, FIELD_value1, TestBean.this.value1));
+			if(_undoctx != null) _undoctx.add(new UBase.UInteger(TestBean.this, FIELD_value1, TestBean.this.value1));
 			TestBean.this.value1 = value1;
 		}
 
@@ -306,7 +308,7 @@ public class TestBean extends Bean<TestBean> implements Comparable<TestBean>
 		public void setValue2(long value2)
 		{
 			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UndoContext.UndoLong(TestBean.this, FIELD_value2, TestBean.this.value2));
+			if(_undoctx != null) _undoctx.add(new UBase.ULong(TestBean.this, FIELD_value2, TestBean.this.value2));
 			TestBean.this.value2 = value2;
 		}
 
@@ -318,6 +320,7 @@ public class TestBean extends Bean<TestBean> implements Comparable<TestBean>
 
 		public void assign(TestBean b)
 		{
+			if(b == TestBean.this) return;
 			addFullUndo();
 			TestBean.this.assign(b);
 		}

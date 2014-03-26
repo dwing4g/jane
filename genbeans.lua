@@ -57,6 +57,7 @@ public class #(bean.name) extends Bean<#(bean.name)> implements Comparable<#(bea
 
 	#(bean.param_warning)public void assign(#(bean.name) b)
 	{#<#
+		if(b == this) return;
 		if(b == null) { reset(); return; }#>#
 #(#		#(var.assign);
 #)#	}
@@ -73,18 +74,6 @@ public class #(bean.name) extends Bean<#(bean.name)> implements Comparable<#(bea
 	}
 
 	@Override
-	public int initSize()
-	{
-		return #(bean.initsize);
-	}
-
-	@Override
-	public int maxSize()
-	{
-		return #(bean.maxsize);
-	}
-
-	@Override
 	public #(bean.name) stub()
 	{
 		return BEAN_STUB;
@@ -94,6 +83,18 @@ public class #(bean.name) extends Bean<#(bean.name)> implements Comparable<#(bea
 	public #(bean.name) create()
 	{
 		return new #(bean.name)();
+	}
+
+	@Override
+	public int initSize()
+	{
+		return #(bean.initsize);
+	}
+
+	@Override
+	public int maxSize()
+	{
+		return #(bean.maxsize);
 	}
 #(bean.pool_func)
 	@Override
@@ -233,7 +234,7 @@ public class #(bean.name) extends Bean<#(bean.name)> implements Comparable<#(bea
 			}
 		}
 
-		private void addFullUndo()
+		public void addFullUndo()
 		{
 			initUndoContext();
 			if(_undoctx == null) return;
@@ -241,7 +242,7 @@ public class #(bean.name) extends Bean<#(bean.name)> implements Comparable<#(bea
 			{
 				private final #(bean.name) _saved = #(bean.name).this.clone();
 				@Override
-				public void rollback() throws Exception
+				public void rollback()
 				{
 					#(bean.name).this.assign(_saved);
 				}
@@ -258,6 +259,7 @@ public class #(bean.name) extends Bean<#(bean.name)> implements Comparable<#(bea
 
 		public void assign(#(bean.name) b)
 		{
+			if(b == #(bean.name).this) return;
 			addFullUndo();
 			#(bean.name).this.assign(b);
 		}
@@ -447,7 +449,7 @@ public final class AllTables
 	 */
 	public static void register() { _dbm.startCommitThread(); }#<#
 #>#
-#(#	#(table.comment)public static final #(table.table)<#(table.key)#(table.comma)#(table.value)> #(table.name) = _dbm.<#(table.key)#(table.comma)#(table.value)>openTable(#(table.id), "#(table.name)", "#(table.lock)", #(table.cachesize)#(table.comma)#(table.keys), #(table.values));
+#(#	#(table.comment)public static final #(table.table)<#(table.key)#(table.comma)#(table.value), #(table.value).Safe> #(table.name) = _dbm.<#(table.key)#(table.comma)#(table.value), #(table.value).Safe>openTable(#(table.id), "#(table.name)", "#(table.lock)", #(table.cachesize)#(table.comma)#(table.keys), #(table.values));
 #)#
 	/**
 	 * 以下内部类可以单独使用,避免初始化前面的表对象,主要用于获取表的键值类型
@@ -515,7 +517,7 @@ local function get_unmarshal_kv(var, kv, t)
 end
 typedef.byte =
 {
-	import = {},
+	import = { "jane.core.UBase" },
 	name_u = function(var) return var.name:sub(1, 1):upper() .. var.name:sub(2) end,
 	type = "byte", type_i = "byte", type_o = "Byte",
 	subtypeid = 0,
@@ -545,7 +547,7 @@ typedef.byte =
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
 			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UndoContext.Undo#(var.type_o)(#(bean.name).this, FIELD_#(var.name), #(bean.name).this.#(var.name)));
+			if(_undoctx != null) _undoctx.add(new UBase.U#(var.type_o)(#(bean.name).this, FIELD_#(var.name), #(bean.name).this.#(var.name)));
 			#(bean.name).this.#(var.name) = #(var.name);
 		}
 ]],
@@ -611,7 +613,7 @@ typedef.double = merge(typedef.byte,
 })
 typedef.string = merge(typedef.byte,
 {
-	import = { "jane.core.Util" },
+	import = { "jane.core.Util", "jane.core.UBase" },
 	type = "String", type_i = "String", type_o = "String",
 	subtypeid = 1,
 	new = "\t\t#(var.name) = \"\";\n",
@@ -630,7 +632,7 @@ typedef.string = merge(typedef.byte,
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
 			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UndoContext.Undo#(var.type_o)(#(bean.name).this, FIELD_#(var.name), #(bean.name).this.#(var.name)));
+			if(_undoctx != null) _undoctx.add(new UBase.U#(var.type_o)(#(bean.name).this, FIELD_#(var.name), #(bean.name).this.#(var.name)));
 			#(bean.name).this.#(var.name) = (#(var.name) != null ? #(var.name) : "");
 		}
 ]],
@@ -645,7 +647,7 @@ typedef.string = merge(typedef.byte,
 })
 typedef.octets = merge(typedef.string,
 {
-	import = { "jane.core.Octets", "jane.core.DynBean" },
+	import = { "jane.core.Octets", "jane.core.DynBean", "jane.core.UBase" },
 	type = "Octets", type_i = "Octets", type_o = "Octets",
 	new = "\t\t#(var.name) = new Octets(#(var.cap));\n",
 	init = "this.#(var.name) = new Octets(#(var.cap)); if(#(var.name) != null) this.#(var.name).replace(#(var.name))",
@@ -671,7 +673,7 @@ typedef.octets = merge(typedef.string,
 		public #(var.type) get#(var.name_u)()
 		{
 			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UndoContext.UndoOctets(#(bean.name).this, FIELD_#(var.name), #(var.name)));
+			if(_undoctx != null) _undoctx.add(new UBase.UOctets(#(bean.name).this, FIELD_#(var.name), #(var.name)));
 			return #(var.name);
 		}
 
@@ -688,6 +690,11 @@ typedef.octets = merge(typedef.string,
 		public DynBean unmarshal#(var.name_u)() throws MarshalException
 		{
 			return #(bean.name).this.unmarshal#(var.name_u)();
+		}
+
+		public #(var.type) unsafe#(var.name_u)()
+		{
+			return #(var.name);
 		}
 ]],
 	setsafe = "",
@@ -714,6 +721,11 @@ typedef.vector = merge(typedef.octets,
 		public U#(var.itype) get#(var.name_u)()
 		{
 			return new U#(var.itype)(_owner, #(var.name));
+		}
+
+		public #(var.type) unsafe#(var.name_u)()
+		{
+			return #(var.name);
 		}
 ]],
 	marshal = function(var) return string.format([[if(!this.#(var.name).isEmpty())
@@ -848,6 +860,11 @@ typedef.bean = merge(typedef.octets,
 		{
 			return #(var.name).safe(this);
 		}
+
+		public #(var.type) unsafe#(var.name_u)()
+		{
+			return #(var.name);
+		}
 ]],
 	setsafe = "",
 	marshal = function(var) return string.format([[{
@@ -947,6 +964,7 @@ local function bean_const(code)
 		gsub("\tpublic void set.-\n\t}\n\n", ""):
 		gsub("\n\tpublic final class Safe.-}\n\t}\n", ""):
 		gsub("import java%.lang%.reflect%.Field;\n", ""):
+		gsub("import jane%.core%.UBase;\n", ""):
 		gsub("import jane%.core%.UndoContext;\n", ""):
 		gsub("\tprivate static Field .-\n", ""):
 		gsub("\tstatic\n.-\n\t}\n\n", ""):

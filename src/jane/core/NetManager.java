@@ -382,8 +382,7 @@ public class NetManager implements IoHandler
 	public <A extends Bean<A>> boolean send(IoSession session, A bean, BeanHandler<A> callback)
 	{
 		if(session.isClosing()) return false;
-		bean.setSendCallBack(callback);
-		return write(session, bean);
+		return write(session, new CallBackBean<A>(bean, callback));
 	}
 
 	/**
@@ -521,18 +520,20 @@ public class NetManager implements IoHandler
 	public void messageSent(IoSession session, Object message)
 	{
 		if(Log.hasTrace) Log.log.trace("{}({}): send: {}:{}", _name, session.getId(), message.getClass().getSimpleName(), message);
-		Bean<?> bean = (Bean<?>)message;
-		BeanHandler<?> callback = bean.getSendCallback();
-		if(callback != null)
+		if(message instanceof CallBackBean)
 		{
-			bean.setSendCallBack(null);
-			try
+			CallBackBean<?> bean = (CallBackBean<?>)message;
+			BeanHandler<?> callback = bean.getSendCallback();
+			if(callback != null)
 			{
-				callback.process(this, session, bean);
-			}
-			catch(Throwable e)
-			{
-				Log.log.error(_name + '(' + session.getId() + "): callback exception: " + message.getClass().getSimpleName(), e);
+				try
+				{
+					callback.process(this, session, bean.getBean());
+				}
+				catch(Throwable e)
+				{
+					Log.log.error(_name + '(' + session.getId() + "): callback exception: " + message.getClass().getSimpleName(), e);
+				}
 			}
 		}
 	}

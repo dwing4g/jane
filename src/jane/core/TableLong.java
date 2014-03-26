@@ -8,6 +8,7 @@ import org.mapdb.LongConcurrentHashMap;
 import org.mapdb.LongConcurrentLRUMap;
 import org.mapdb.LongMap;
 import org.mapdb.LongMap.LongMapIterator;
+import jane.core.UndoContext.Safe;
 
 /**
  * 使用ID类型作为key的数据库表类
@@ -15,18 +16,18 @@ import org.mapdb.LongMap.LongMapIterator;
  * ID类型即>=0的long类型, 会比使用Long类型作为key的通用表效率高,且支持自增长ID(从1开始)<br>
  * <b>注意</b>: 一个表要事先确定插入记录是只使用自增长ID还是只指定ID插入,如果都使用则会导致ID冲突
  */
-public final class TableLong<V extends Bean<V>>
+public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 {
-	private static final List<TableLong<?>> _tables          = new ArrayList<TableLong<?>>(256); // 所有的表列表
-	private final String                    _tablename;                                         // 表名
-	private final Storage.TableLong<V>      _stotable;                                          // 存储引擎的表对象
-	private final LongMap<V>                _cache;                                             // 读缓存. 有大小限制,溢出自动清理
-	private final LongConcurrentHashMap<V>  _cache_mod;                                         // 写缓存. 不会溢出,保存到数据库存储引擎后清理
-	private final V                         _deleted;                                           // 表示已删除的value. 同存根bean
-	private final AtomicLong                _idcounter       = new AtomicLong();                // 用于自增长ID的统计器, 当前值表示当前表已存在的最大ID值
-	private final int                       _lockid;                                            // 当前表的锁ID. 即锁名的hash值,一般和记录key的hash值计算得出记录的lockid
-	private int                             _auto_id_lowbits = Const.autoIdLowBits;             // 自增长ID的预留低位位数
-	private int                             _auto_id_offset  = Const.autoIdLowOffset;           // 自增长ID的低位偏移值
+	private static final List<TableLong<?, ?>> _tables          = new ArrayList<TableLong<?, ?>>(256); // 所有的表列表
+	private final String                       _tablename;                                            // 表名
+	private final Storage.TableLong<V>         _stotable;                                             // 存储引擎的表对象
+	private final LongMap<V>                   _cache;                                                // 读缓存. 有大小限制,溢出自动清理
+	private final LongConcurrentHashMap<V>     _cache_mod;                                            // 写缓存. 不会溢出,保存到数据库存储引擎后清理
+	private final V                            _deleted;                                              // 表示已删除的value. 同存根bean
+	private final AtomicLong                   _idcounter       = new AtomicLong();                   // 用于自增长ID的统计器, 当前值表示当前表已存在的最大ID值
+	private final int                          _lockid;                                               // 当前表的锁ID. 即锁名的hash值,一般和记录key的hash值计算得出记录的lockid
+	private int                                _auto_id_lowbits = Const.autoIdLowBits;                // 自增长ID的预留低位位数
+	private int                                _auto_id_offset  = Const.autoIdLowOffset;              // 自增长ID的低位偏移值
 
 	/**
 	 * 尝试依次加锁并保存全部表已修改的记录
@@ -36,7 +37,7 @@ public final class TableLong<V extends Bean<V>>
 	static void trySaveModifiedAll(long[] counts)
 	{
 		long m = counts[0], n = counts[1];
-		for(TableLong<?> table : _tables)
+		for(TableLong<?, ?> table : _tables)
 		{
 			try
 			{
@@ -62,7 +63,7 @@ public final class TableLong<V extends Bean<V>>
 	static int saveModifiedAll()
 	{
 		int m = 0;
-		for(TableLong<?> table : _tables)
+		for(TableLong<?, ?> table : _tables)
 		{
 			try
 			{
@@ -232,11 +233,10 @@ public final class TableLong<V extends Bean<V>>
 	/**
 	 * 同get,但增加的安全封装,可回滚修改
 	 */
-	@SuppressWarnings("unchecked")
-	public <S extends UndoContext.Safe<V>> S getSafe(long k)
+	public S getSafe(long k)
 	{
 		V v = get(k);
-		return v != null ? (S)UndoContext.current().addRecord(this, k, v) : null;
+		return v != null ? UndoContext.current().addRecord(this, k, v) : null;
 	}
 
 	/**
@@ -262,11 +262,10 @@ public final class TableLong<V extends Bean<V>>
 	/**
 	 * 同getNoCache,但增加的安全封装,可回滚修改
 	 */
-	@SuppressWarnings("unchecked")
-	public <S extends UndoContext.Safe<V>> S getNoCacheSafe(long k)
+	public S getNoCacheSafe(long k)
 	{
 		V v = get(k);
-		return v != null ? (S)UndoContext.current().addRecord(this, k, v) : null;
+		return v != null ? UndoContext.current().addRecord(this, k, v) : null;
 	}
 
 	/**
@@ -334,7 +333,7 @@ public final class TableLong<V extends Bean<V>>
 		UndoContext.current().add(new UndoContext.Undo()
 		{
 			@Override
-			public void rollback() throws Exception
+			public void rollback()
 			{
 				if(v_old != null)
 					put(k, v_old);
@@ -378,7 +377,7 @@ public final class TableLong<V extends Bean<V>>
 		UndoContext.current().add(new UndoContext.Undo()
 		{
 			@Override
-			public void rollback() throws Exception
+			public void rollback()
 			{
 				remove(k);
 			}
@@ -419,7 +418,7 @@ public final class TableLong<V extends Bean<V>>
 		UndoContext.current().add(new UndoContext.Undo()
 		{
 			@Override
-			public void rollback() throws Exception
+			public void rollback()
 			{
 				put(k, v_old);
 			}

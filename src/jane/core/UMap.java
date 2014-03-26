@@ -51,12 +51,7 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 	@Override
 	public boolean containsValue(Object v)
 	{
-		return _map.containsValue(v);
-	}
-
-	public <S extends Safe<?>> boolean containsValue(S v)
-	{
-		return _map.containsValue(v.unsafe());
+		return _map.containsValue(v instanceof Safe ? ((Safe<?>)v).unsafe() : v);
 	}
 
 	@Override
@@ -66,7 +61,7 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<?>> S getSafe(Object k)
+	public <S extends Safe<V>> S getSafe(Object k)
 	{
 		V v = _map.get(k);
 		return v != null ? (S)((Bean<?>)v).safe(_owner) : null;
@@ -80,7 +75,7 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 		undoContext().add(new Undo()
 		{
 			@Override
-			public void rollback() throws Exception
+			public void rollback()
 			{
 				if(v_old == null)
 					_map.remove(k);
@@ -92,9 +87,9 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<?>> S put(final K k, S v)
+	public <S extends Safe<V>> S put(final K k, S v)
 	{
-		V v_old = put(k, (V)v.unsafe());
+		V v_old = put(k, v.unsafe());
 		return v_old != null ? (S)((Bean<?>)v_old).safe(_owner) : null;
 	}
 
@@ -129,7 +124,7 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<?>> S removeSafe(Object k)
+	public <S extends Safe<V>> S removeSafe(Object k)
 	{
 		V v_old = remove(k);
 		return v_old != null ? (S)((Bean<?>)v_old).safe(_owner) : null;
@@ -182,7 +177,7 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 		}
 
 		@SuppressWarnings("unchecked")
-		public <S extends Safe<?>> S getValueSafe()
+		public <S extends Safe<V>> S getValueSafe()
 		{
 			return (S)((Bean<?>)getValue()).safe(_owner);
 		}
@@ -197,7 +192,7 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 				private final K _k = _e.getKey();
 
 				@Override
-				public void rollback() throws Exception
+				public void rollback()
 				{
 					_map.put(_k, v_old);
 				}
@@ -205,10 +200,9 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 			return v_old;
 		}
 
-		@SuppressWarnings("unchecked")
-		public <S extends Safe<?>> V setValue(S v)
+		public <S extends Safe<V>> V setValue(S v)
 		{
-			return setValue((V)v.unsafe());
+			return setValue(v.unsafe());
 		}
 
 		@Override
@@ -218,9 +212,9 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 		}
 
 		@Override
-		public boolean equals(Object obj)
+		public boolean equals(Object o)
 		{
-			return _e.equals(obj);
+			return this == o || _e.equals(o);
 		}
 	}
 
@@ -281,12 +275,7 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 		@Override
 		public boolean contains(Object o)
 		{
-			return _it.contains(o);
-		}
-
-		public <S extends Safe<?>> boolean contains(S v)
-		{
-			return contains(v.unsafe());
+			return _it.contains(o instanceof Safe ? ((Safe<?>)o).unsafe() : o);
 		}
 
 		@Override
@@ -298,12 +287,7 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 		@Override
 		public boolean remove(Object o)
 		{
-			return UMap.this.remove(o) != null;
-		}
-
-		public <S extends Safe<?>> boolean remove(S v)
-		{
-			return remove(v.unsafe());
+			return UMap.this.remove(o instanceof Safe ? ((Safe<?>)o).unsafe() : o) != null;
 		}
 
 		@Override
@@ -337,12 +321,7 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 		@Override
 		public boolean contains(Object o)
 		{
-			return _it.contains(o);
-		}
-
-		public <S extends Safe<?>> boolean contains(S v)
-		{
-			return contains(v.unsafe());
+			return _it.contains(o instanceof Safe ? ((Safe<?>)o).unsafe() : o);
 		}
 
 		@Override
@@ -354,12 +333,7 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 		@Override
 		public boolean remove(Object o)
 		{
-			return UMap.this.remove(o) != null;
-		}
-
-		public <S extends Safe<?>> boolean remove(S v)
-		{
-			return remove(v.unsafe());
+			return UMap.this.remove(o instanceof Safe ? ((Safe<?>)o).unsafe() : o) != null;
 		}
 
 		@Override
@@ -397,12 +371,7 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 		@Override
 		public boolean contains(Object o)
 		{
-			return UMap.this.containsValue(o);
-		}
-
-		public <S extends Safe<?>> boolean contains(S v)
-		{
-			return contains(v.unsafe());
+			return UMap.this.containsValue(o instanceof Safe ? ((Safe<?>)o).unsafe() : o);
 		}
 
 		@Override
@@ -431,21 +400,21 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 	}
 
 	@Override
+	public Object clone()
+	{
+		return new UnsupportedOperationException();
+	}
+
+	@Override
 	public int hashCode()
 	{
 		return _map.hashCode();
 	}
 
 	@Override
-	public boolean equals(Object obj)
+	public boolean equals(Object o)
 	{
-		return _map.equals(obj);
-	}
-
-	@Override
-	public Object clone()
-	{
-		return new UnsupportedOperationException();
+		return this == o || _map.equals(o);
 	}
 
 	@Override

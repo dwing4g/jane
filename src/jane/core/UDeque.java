@@ -43,12 +43,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	@Override
 	public boolean contains(Object o)
 	{
-		return _deque.contains(o);
-	}
-
-	public <S extends Safe<?>> boolean contains(S v)
-	{
-		return _deque.contains(v.unsafe());
+		return _deque.contains(o instanceof Safe ? ((Safe<?>)o).unsafe() : o);
 	}
 
 	@Override
@@ -76,7 +71,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<?>> S elementSafe()
+	public <S extends Safe<V>> S elementSafe()
 	{
 		V v = _deque.element();
 		return v != null ? (S)(((Bean<?>)v).safe(_owner)) : null;
@@ -89,7 +84,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<?>> S peekSafe()
+	public <S extends Safe<V>> S peekSafe()
 	{
 		V v = _deque.peek();
 		return v != null ? (S)(((Bean<?>)v).safe(_owner)) : null;
@@ -102,7 +97,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<?>> S getFirstSafe()
+	public <S extends Safe<V>> S getFirstSafe()
 	{
 		V v = _deque.getFirst();
 		return v != null ? (S)(((Bean<?>)v).safe(_owner)) : null;
@@ -115,7 +110,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<?>> S getLastSafe()
+	public <S extends Safe<V>> S getLastSafe()
 	{
 		V v = _deque.getLast();
 		return v != null ? (S)(((Bean<?>)v).safe(_owner)) : null;
@@ -128,7 +123,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<?>> S peekFirstSafe()
+	public <S extends Safe<V>> S peekFirstSafe()
 	{
 		V v = _deque.peekFirst();
 		return v != null ? (S)(((Bean<?>)v).safe(_owner)) : null;
@@ -141,7 +136,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<?>> S peekLastSafe()
+	public <S extends Safe<V>> S peekLastSafe()
 	{
 		V v = _deque.peekLast();
 		return v != null ? (S)(((Bean<?>)v).safe(_owner)) : null;
@@ -162,10 +157,9 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 		return true;
 	}
 
-	@SuppressWarnings("unchecked")
-	public <S extends Safe<?>> void add(S v)
+	public <S extends Safe<V>> void add(S v)
 	{
-		add((V)v.unsafe());
+		add(v.unsafe());
 	}
 
 	@Override
@@ -182,10 +176,9 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 		});
 	}
 
-	@SuppressWarnings("unchecked")
-	public <S extends Safe<?>> void addFirst(S v)
+	public <S extends Safe<V>> void addFirst(S v)
 	{
-		addFirst((V)v.unsafe());
+		addFirst(v.unsafe());
 	}
 
 	@Override
@@ -194,7 +187,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 		add(v);
 	}
 
-	public <S extends Safe<?>> void addLast(S v)
+	public <S extends Safe<V>> void addLast(S v)
 	{
 		add(v);
 	}
@@ -205,7 +198,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 		return add(v);
 	}
 
-	public <S extends Safe<?>> void offer(S v)
+	public <S extends Safe<V>> void offer(S v)
 	{
 		add(v);
 	}
@@ -217,7 +210,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 		return true;
 	}
 
-	public <S extends Safe<?>> void offerFirst(S v)
+	public <S extends Safe<V>> void offerFirst(S v)
 	{
 		addFirst(v);
 	}
@@ -228,7 +221,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 		return add(v);
 	}
 
-	public <S extends Safe<?>> void offerLast(S v)
+	public <S extends Safe<V>> void offerLast(S v)
 	{
 		add(v);
 	}
@@ -239,7 +232,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 		addFirst(v);
 	}
 
-	public <S extends Safe<?>> void push(S v)
+	public <S extends Safe<V>> void push(S v)
 	{
 		addFirst(v);
 	}
@@ -277,7 +270,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<?>> S removeSafe()
+	public <S extends Safe<V>> S removeSafe()
 	{
 		V v_old = remove();
 		return v_old != null ? (S)((Bean<?>)v_old).safe(_owner) : null;
@@ -295,7 +288,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 		return remove();
 	}
 
-	public <S extends Safe<?>> S removeFirstSafe()
+	public <S extends Safe<V>> S removeFirstSafe()
 	{
 		return removeSafe();
 	}
@@ -316,7 +309,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<?>> S removeLastSafe()
+	public <S extends Safe<V>> S removeLastSafe()
 	{
 		V v_old = removeLast();
 		return v_old != null ? (S)((Bean<?>)v_old).safe(_owner) : null;
@@ -351,7 +344,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<?>> S pollSafe()
+	public <S extends Safe<V>> S pollSafe()
 	{
 		V v_old = poll();
 		return v_old != null ? (S)((Bean<?>)v_old).safe(_owner) : null;
@@ -363,7 +356,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 		return poll();
 	}
 
-	public <S extends Safe<?>> S pollFirstSafe()
+	public <S extends Safe<V>> S pollFirstSafe()
 	{
 		return pollSafe();
 	}
@@ -385,7 +378,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<?>> S pollLastSafe()
+	public <S extends Safe<V>> S pollLastSafe()
 	{
 		V v_old = pollLast();
 		return v_old != null ? (S)((Bean<?>)v_old).safe(_owner) : null;
@@ -397,7 +390,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 		return remove();
 	}
 
-	public <S extends Safe<?>> S popSafe()
+	public <S extends Safe<V>> S popSafe()
 	{
 		return removeSafe();
 	}
@@ -461,7 +454,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 		}
 
 		@SuppressWarnings("unchecked")
-		public <S extends Safe<?>> S nextSafe()
+		public <S extends Safe<V>> S nextSafe()
 		{
 			V v = _it.next();
 			return v != null ? (S)((Bean<?>)v).safe(_owner) : null;
@@ -487,21 +480,21 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	}
 
 	@Override
+	public Object clone()
+	{
+		return new UnsupportedOperationException();
+	}
+
+	@Override
 	public int hashCode()
 	{
 		return _deque.hashCode();
 	}
 
 	@Override
-	public boolean equals(Object obj)
+	public boolean equals(Object o)
 	{
-		return _deque.equals(obj);
-	}
-
-	@Override
-	public Object clone()
-	{
-		return new UnsupportedOperationException();
+		return this == o || _deque.equals(o);
 	}
 
 	@Override

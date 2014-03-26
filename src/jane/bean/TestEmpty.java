@@ -32,18 +32,6 @@ public class TestEmpty extends Bean<TestEmpty> implements Comparable<TestEmpty>
 	}
 
 	@Override
-	public int initSize()
-	{
-		return 0;
-	}
-
-	@Override
-	public int maxSize()
-	{
-		return 0;
-	}
-
-	@Override
 	public TestEmpty stub()
 	{
 		return BEAN_STUB;
@@ -53,6 +41,18 @@ public class TestEmpty extends Bean<TestEmpty> implements Comparable<TestEmpty>
 	public TestEmpty create()
 	{
 		return new TestEmpty();
+	}
+
+	@Override
+	public int initSize()
+	{
+		return 0;
+	}
+
+	@Override
+	public int maxSize()
+	{
+		return 0;
 	}
 
 	@Override
@@ -179,7 +179,7 @@ public class TestEmpty extends Bean<TestEmpty> implements Comparable<TestEmpty>
 			}
 		}
 
-		private void addFullUndo()
+		public void addFullUndo()
 		{
 			initUndoContext();
 			if(_undoctx == null) return;
@@ -187,7 +187,7 @@ public class TestEmpty extends Bean<TestEmpty> implements Comparable<TestEmpty>
 			{
 				private final TestEmpty _saved = TestEmpty.this.clone();
 				@Override
-				public void rollback() throws Exception
+				public void rollback()
 				{
 					TestEmpty.this.assign(_saved);
 				}
@@ -204,6 +204,7 @@ public class TestEmpty extends Bean<TestEmpty> implements Comparable<TestEmpty>
 
 		public void assign(TestEmpty b)
 		{
+			if(b == TestEmpty.this) return;
 			addFullUndo();
 			TestEmpty.this.assign(b);
 		}

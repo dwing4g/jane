@@ -10,29 +10,8 @@ import java.io.Serializable;
  */
 public abstract class Bean<B extends Bean<B>> implements Serializable, Cloneable
 {
-	private static final long        serialVersionUID = 28942740885777620L;
-	private transient BeanHandler<B> _send_callback;                       // 发送成功的回调处理
-	private transient int            _save_state;                          // 存储状态: 0:未存储,1:已存储但未修改,2:已存储且已修改
-
-	/**
-	 * 获取回调处理
-	 * <p>
-	 * 仅用于网络发送此bean成功时的回调
-	 */
-	public final BeanHandler<B> getSendCallback()
-	{
-		return _send_callback;
-	}
-
-	/**
-	 * 设置回调处理
-	 * <p>
-	 * 仅用于网络发送此bean成功时的回调
-	 */
-	public final void setSendCallBack(BeanHandler<B> callback)
-	{
-		_send_callback = callback;
-	}
+	private static final long serialVersionUID = 28942740885777620L;
+	private transient int     _save_state;                          // 存储状态: 0:未存储,1:已存储但未修改,2:已存储且已修改
 
 	/**
 	 * 获取存储标记
@@ -66,6 +45,25 @@ public abstract class Bean<B extends Bean<B>> implements Serializable, Cloneable
 	}
 
 	/**
+	 * bean的类型值
+	 * <p>
+	 * 用于区别于其它bean的类型值. 标准的bean子类必须大于0且不能重复, 0仅用于RawBean等特定类型
+	 */
+	public abstract int type();
+
+	/**
+	 * 获取此bean类唯一的stub对象
+	 */
+	public abstract B stub();
+
+	/**
+	 * 创建一个新的bean实例
+	 * <p>
+	 * 子类的实现一般是new B(),返回对象的所有字段只有初始的默认值
+	 */
+	public abstract B create();
+
+	/**
 	 * bean的初始预计序列化长度
 	 * <p>
 	 * 用于序列化此bean前预留的空间大小(字节). 子类应该实现这个方法返回合适的值,默认只有16字节
@@ -86,25 +84,6 @@ public abstract class Bean<B extends Bean<B>> implements Serializable, Cloneable
 	{
 		return Integer.MAX_VALUE;
 	}
-
-	/**
-	 * bean的类型值
-	 * <p>
-	 * 用于区别于其它bean的类型值. 标准的bean子类必须大于0且不能重复, 0仅用于RawBean等特定类型
-	 */
-	public abstract int type();
-
-	/**
-	 * 获取此bean类唯一的stub对象
-	 */
-	public abstract B stub();
-
-	/**
-	 * 创建一个新的bean实例
-	 * <p>
-	 * 子类的实现一般是new B(),返回对象的所有字段只有初始的默认值
-	 */
-	public abstract B create();
 
 	/**
 	 * 优先从空闲对象池中分配对象

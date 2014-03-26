@@ -43,12 +43,7 @@ public final class USet<V> implements Set<V>, Cloneable
 	@Override
 	public boolean contains(Object o)
 	{
-		return _set.contains(o);
-	}
-
-	public <S extends Safe<?>> boolean contains(S v)
-	{
-		return _set.contains(v.unsafe());
+		return _set.contains(o instanceof Safe ? ((Safe<?>)o).unsafe() : o);
 	}
 
 	@Override
@@ -85,10 +80,9 @@ public final class USet<V> implements Set<V>, Cloneable
 		return true;
 	}
 
-	@SuppressWarnings("unchecked")
-	public <S extends Safe<?>> void add(S v)
+	public <S extends Safe<V>> void add(S v)
 	{
-		add((V)v.unsafe());
+		add(v.unsafe());
 	}
 
 	@Override
@@ -101,22 +95,23 @@ public final class USet<V> implements Set<V>, Cloneable
 	}
 
 	@Override
-	public boolean remove(final Object o)
+	public boolean remove(Object o)
 	{
-		if(!_set.remove(o)) return false;
+		final Object obj = (o instanceof Safe ? ((Safe<?>)o).unsafe() : o);
+		if(!_set.remove(obj)) return false;
 		undoContext().add(new Undo()
 		{
 			@SuppressWarnings("unchecked")
 			@Override
 			public void rollback()
 			{
-				_set.add((V)o);
+				_set.add((V)obj);
 			}
 		});
 		return true;
 	}
 
-	public <S extends Safe<?>> boolean removeSafe(S v)
+	public <S extends Safe<V>> boolean removeSafe(S v)
 	{
 		return remove(v.unsafe());
 	}
@@ -199,7 +194,7 @@ public final class USet<V> implements Set<V>, Cloneable
 		}
 
 		@SuppressWarnings("unchecked")
-		public <S extends Safe<?>> S nextSafe()
+		public <S extends Safe<V>> S nextSafe()
 		{
 			return (S)((Bean<?>)next()).safe(_owner);
 		}
@@ -228,21 +223,21 @@ public final class USet<V> implements Set<V>, Cloneable
 	}
 
 	@Override
+	public Object clone()
+	{
+		return new UnsupportedOperationException();
+	}
+
+	@Override
 	public int hashCode()
 	{
 		return _set.hashCode();
 	}
 
 	@Override
-	public boolean equals(Object obj)
+	public boolean equals(Object o)
 	{
-		return _set.equals(obj);
-	}
-
-	@Override
-	public Object clone()
-	{
-		return new UnsupportedOperationException();
+		return this == o || _set.equals(o);
 	}
 
 	@Override
