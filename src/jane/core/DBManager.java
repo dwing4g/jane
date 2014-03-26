@@ -499,7 +499,12 @@ public final class DBManager
 		for(;;)
 		{
 			q = _qmap.get(sid);
-			if(q == null) q = _qmap.putIfAbsent(sid, new ArrayDeque<Procedure>()); // _qmap增加队列的地方只有这一处
+			if(q == null)
+			{
+				ArrayDeque<Procedure> t = new ArrayDeque<Procedure>();
+				q = _qmap.putIfAbsent(sid, t); // _qmap增加队列的地方只有这一处
+				if(q == null) q = t;
+			}
 			synchronized(q)
 			{
 				if(q != _qmap.get(sid)) continue;
