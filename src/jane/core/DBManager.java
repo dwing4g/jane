@@ -428,6 +428,7 @@ public final class DBManager
 				{
 					synchronized(q)
 					{
+						_proc_count.addAndGet(1 - q.size());
 						q.clear();
 						q.add(this); // 清除此队列所有的任务,只留当前任务待完成时会删除
 						_qmap.remove(sid); // _qmap删除队列的地方只有两处,另一处是collectQueue中队列判空的时候(有synchronized保护)
@@ -528,6 +529,7 @@ public final class DBManager
 							proc = _q.peek(); // 这里只能先peek而不能poll或remove,否则可能和下次commit并发
 						}
 						if(proc == null) return;
+						_proc_count.decrementAndGet();
 						try
 						{
 							proc.run();

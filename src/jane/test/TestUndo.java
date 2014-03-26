@@ -27,7 +27,7 @@ public final class TestUndo
 					TestBean aa = new TestBean();
 					aa.setValue2(id);
 					System.out.println("new: " + aa.getValue2());
-					AllTables.Benchmark.put(id, aa);
+					AllTables.Benchmark.putSafe(id, aa);
 				}
 				else
 				{
