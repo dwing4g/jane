@@ -180,14 +180,14 @@ public class #(bean.name) extends Bean<#(bean.name)>
 	}
 
 	@Override
-	public Safe safe(UndoContext.Safe<?> parent)
+	public Safe safe(Wrap<?> parent)
 	{
 		return new Safe(this, parent);
 	}
 
 	public static final class Safe extends UndoContext.Safe<#(bean.name)>
 	{
-		private Safe(#(bean.name) bean, UndoContext.Safe<?> parent)
+		private Safe(#(bean.name) bean, Wrap<?> parent)
 		{
 			super(bean, parent);
 		}
@@ -400,7 +400,7 @@ typedef.byte =
 	subtypeid = 0,
 	final = "",
 	field = "\tprivate static Field FIELD_#(var.name);\n",
-	fieldget = "\t\t\tFIELD_#(var.name) = c.getDeclaredField(\"#(var.name)\");\n";
+	fieldget = "\t\t\tFIELD_#(var.name) = c.getDeclaredField(\"#(var.name)\"); FIELD_#(var.name).setAccessible(true);\n";
 	new = "",
 	init = "this.#(var.name) = #(var.name)",
 	reset = "#(var.name) = 0",
@@ -423,7 +423,7 @@ typedef.byte =
 
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			if(initUndoContext()) _undoctx.add(new UBase.U#(var.type_o)(_bean, FIELD_#(var.name), _bean.#(var.name)));
+			if(initUndoContext()) _undoctx.addOnRollback(new UBase.U#(var.type_o)(_bean, FIELD_#(var.name), _bean.#(var.name)));
 			_bean.#(var.name) = #(var.name);
 		}
 ]],
@@ -507,7 +507,7 @@ typedef.string = merge(typedef.byte,
 
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			if(initUndoContext()) _undoctx.add(new UBase.U#(var.type_o)(_bean, FIELD_#(var.name), _bean.#(var.name)));
+			if(initUndoContext()) _undoctx.addOnRollback(new UBase.U#(var.type_o)(_bean, FIELD_#(var.name), _bean.#(var.name)));
 			_bean.#(var.name) = (#(var.name) != null ? #(var.name) : "");
 		}
 ]],
@@ -556,7 +556,7 @@ typedef.octets = merge(typedef.string,
 
 		public #(var.type) get#(var.name_u)()
 		{
-			if(initUndoContext()) _undoctx.add(new UBase.UOctets(_bean, FIELD_#(var.name), _bean.#(var.name), true));
+			if(initUndoContext()) _undoctx.addOnRollback(new UBase.UOctets(_bean, FIELD_#(var.name), _bean.#(var.name), true));
 			return _bean.#(var.name);
 		}
 
@@ -567,7 +567,7 @@ typedef.octets = merge(typedef.string,
 
 		public <B extends Bean<B>> void marshal#(var.name_u)(Bean<B> b)
 		{
-			if(initUndoContext()) _undoctx.add(new UBase.UOctets(_bean, FIELD_#(var.name), _bean.#(var.name), false));
+			if(initUndoContext()) _undoctx.addOnRollback(new UBase.UOctets(_bean, FIELD_#(var.name), _bean.#(var.name), false));
 			_bean.#(var.name) = b.marshal(new OctetsStream(b.initSize()));
 		}
 
@@ -855,6 +855,7 @@ local function bean_const(code)
 		gsub("import java%.lang%.reflect%.Field;\n", ""):
 		gsub("import jane%.core%.UBase;\n", ""):
 		gsub("import jane%.core%.UndoContext;\n", ""):
+		gsub("import jane%.core%.UndoContext%.Wrap;\n", ""):
 		gsub("\tprivate static Field .-\n", ""):
 		gsub("\tstatic\n.-\n\t}\n\n", ""):
 		gsub("\n\t@Override\n\tpublic Safe safe.-\n\t}\n", ""):
@@ -883,7 +884,7 @@ end
 function bean(bean)
 	bean_common(bean)
 
-	bean.import = { ["jane.core.Bean"] = true, ["jane.core.MarshalException"] = true, ["jane.core.OctetsStream"] = true, ["jane.core.UndoContext"] = true }
+	bean.import = { ["jane.core.Bean"] = true, ["jane.core.MarshalException"] = true, ["jane.core.OctetsStream"] = true, ["jane.core.UndoContext"] = true, ["jane.core.UndoContext.Wrap"] = true }
 	local vartypes = { bean.name }
 	for _, var in ipairs(bean) do
 		do_var(var)

@@ -8,6 +8,7 @@ import jane.core.MarshalException;
 import jane.core.OctetsStream;
 import jane.core.UBase;
 import jane.core.UndoContext;
+import jane.core.UndoContext.Wrap;
 
 /**
  * bean的注释
@@ -31,8 +32,8 @@ public class TestBean extends Bean<TestBean>
 		try
 		{
 			Class<TestBean> c = TestBean.class;
-			FIELD_value1 = c.getDeclaredField("value1");
-			FIELD_value2 = c.getDeclaredField("value2");
+			FIELD_value1 = c.getDeclaredField("value1"); FIELD_value1.setAccessible(true);
+			FIELD_value2 = c.getDeclaredField("value2"); FIELD_value2.setAccessible(true);
 		}
 		catch(Exception e)
 		{
@@ -217,14 +218,14 @@ public class TestBean extends Bean<TestBean>
 	}
 
 	@Override
-	public Safe safe(UndoContext.Safe<?> parent)
+	public Safe safe(Wrap<?> parent)
 	{
 		return new Safe(this, parent);
 	}
 
 	public static final class Safe extends UndoContext.Safe<TestBean>
 	{
-		private Safe(TestBean bean, UndoContext.Safe<?> parent)
+		private Safe(TestBean bean, Wrap<?> parent)
 		{
 			super(bean, parent);
 		}
@@ -236,7 +237,7 @@ public class TestBean extends Bean<TestBean>
 
 		public void setValue1(int value1)
 		{
-			if(initUndoContext()) _undoctx.add(new UBase.UInteger(_bean, FIELD_value1, _bean.value1));
+			if(initUndoContext()) _undoctx.addOnRollback(new UBase.UInteger(_bean, FIELD_value1, _bean.value1));
 			_bean.value1 = value1;
 		}
 
@@ -247,7 +248,7 @@ public class TestBean extends Bean<TestBean>
 
 		public void setValue2(long value2)
 		{
-			if(initUndoContext()) _undoctx.add(new UBase.ULong(_bean, FIELD_value2, _bean.value2));
+			if(initUndoContext()) _undoctx.addOnRollback(new UBase.ULong(_bean, FIELD_value2, _bean.value2));
 			_bean.value2 = value2;
 		}
 	}

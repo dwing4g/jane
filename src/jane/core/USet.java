@@ -3,20 +3,18 @@ package jane.core;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
-import jane.core.UndoContext.Safe;
-import jane.core.UndoContext.Undo;
 import jane.core.UndoContext.Wrap;
 
 /**
- * 不支持value为null
+ * Set类型的回滚处理类
  */
 public final class USet<V> implements Set<V>, Cloneable
 {
-	private final Safe<?> _owner;
+	private final Wrap<?> _owner;
 	private Set<V>        _set;
 	private UndoContext   _undoctx;
 
-	public USet(Safe<?> owner, Set<V> set)
+	public USet(Wrap<?> owner, Set<V> set)
 	{
 		_owner = owner;
 		_set = set;
@@ -44,7 +42,7 @@ public final class USet<V> implements Set<V>, Cloneable
 	@Override
 	public boolean contains(Object o)
 	{
-		return _set.contains(o instanceof Safe ? ((Safe<?>)o).unsafe() : o);
+		return _set.contains(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o);
 	}
 
 	@Override
@@ -68,12 +66,11 @@ public final class USet<V> implements Set<V>, Cloneable
 	@Override
 	public boolean add(final V v)
 	{
-		if(v == null) throw new NullPointerException();
 		if(!_set.add(v)) return false;
-		undoContext().add(new Undo()
+		undoContext().addOnRollback(new Runnable()
 		{
 			@Override
-			public void rollback()
+			public void run()
 			{
 				_set.remove(v);
 			}
@@ -91,20 +88,20 @@ public final class USet<V> implements Set<V>, Cloneable
 	{
 		boolean r = false;
 		for(V v : c)
-			if(v != null && add(v)) r = true;
+			if(add(v)) r = true;
 		return r;
 	}
 
 	@Override
 	public boolean remove(Object o)
 	{
-		final Object obj = (o instanceof Safe ? ((Safe<?>)o).unsafe() : o);
+		final Object obj = (o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o);
 		if(!_set.remove(obj)) return false;
-		undoContext().add(new Undo()
+		undoContext().addOnRollback(new Runnable()
 		{
 			@SuppressWarnings("unchecked")
 			@Override
-			public void rollback()
+			public void run()
 			{
 				_set.add((V)obj);
 			}
@@ -153,12 +150,12 @@ public final class USet<V> implements Set<V>, Cloneable
 	public void clear()
 	{
 		if(_set.isEmpty()) return;
-		undoContext().add(new Undo()
+		undoContext().addOnRollback(new Runnable()
 		{
 			private final USet<V> _saved = USet.this;
 
 			@Override
-			public void rollback()
+			public void run()
 			{
 				_set = _saved;
 			}
@@ -204,12 +201,12 @@ public final class USet<V> implements Set<V>, Cloneable
 		public void remove()
 		{
 			_it.remove();
-			undoContext().add(new Undo()
+			undoContext().addOnRollback(new Runnable()
 			{
 				private final V _v = _cur;
 
 				@Override
-				public void rollback()
+				public void run()
 				{
 					_set.add(_v);
 				}

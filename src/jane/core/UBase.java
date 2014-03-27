@@ -1,9 +1,11 @@
 package jane.core;
 
 import java.lang.reflect.Field;
-import jane.core.UndoContext.Undo;
 
-public abstract class UBase implements Undo
+/**
+ * 各种基础类型的回滚处理类
+ */
+public abstract class UBase implements Runnable
 {
 	protected final Bean<?> _bean;
 	protected final Field   _field;
@@ -25,9 +27,16 @@ public abstract class UBase implements Undo
 		}
 
 		@Override
-		public void rollback() throws Exception
+		public void run()
 		{
-			_field.setBoolean(_bean, _saved);
+			try
+			{
+				_field.setBoolean(_bean, _saved);
+			}
+			catch(Exception e)
+			{
+				throw new RuntimeException(e);
+			}
 		}
 	}
 
@@ -42,9 +51,16 @@ public abstract class UBase implements Undo
 		}
 
 		@Override
-		public void rollback() throws Exception
+		public void run()
 		{
-			_field.setChar(_bean, _saved);
+			try
+			{
+				_field.setChar(_bean, _saved);
+			}
+			catch(Exception e)
+			{
+				throw new RuntimeException(e);
+			}
 		}
 	}
 
@@ -59,9 +75,16 @@ public abstract class UBase implements Undo
 		}
 
 		@Override
-		public void rollback() throws Exception
+		public void run()
 		{
-			_field.setByte(_bean, _saved);
+			try
+			{
+				_field.setByte(_bean, _saved);
+			}
+			catch(Exception e)
+			{
+				throw new RuntimeException(e);
+			}
 		}
 	}
 
@@ -76,9 +99,16 @@ public abstract class UBase implements Undo
 		}
 
 		@Override
-		public void rollback() throws Exception
+		public void run()
 		{
-			_field.setShort(_bean, _saved);
+			try
+			{
+				_field.setShort(_bean, _saved);
+			}
+			catch(Exception e)
+			{
+				throw new RuntimeException(e);
+			}
 		}
 	}
 
@@ -93,9 +123,16 @@ public abstract class UBase implements Undo
 		}
 
 		@Override
-		public void rollback() throws Exception
+		public void run()
 		{
-			_field.setInt(_bean, _saved);
+			try
+			{
+				_field.setInt(_bean, _saved);
+			}
+			catch(Exception e)
+			{
+				throw new RuntimeException(e);
+			}
 		}
 	}
 
@@ -110,9 +147,16 @@ public abstract class UBase implements Undo
 		}
 
 		@Override
-		public void rollback() throws Exception
+		public void run()
 		{
-			_field.setLong(_bean, _saved);
+			try
+			{
+				_field.setLong(_bean, _saved);
+			}
+			catch(Exception e)
+			{
+				throw new RuntimeException(e);
+			}
 		}
 	}
 
@@ -127,9 +171,16 @@ public abstract class UBase implements Undo
 		}
 
 		@Override
-		public void rollback() throws Exception
+		public void run()
 		{
-			_field.setFloat(_bean, _saved);
+			try
+			{
+				_field.setFloat(_bean, _saved);
+			}
+			catch(Exception e)
+			{
+				throw new RuntimeException(e);
+			}
 		}
 	}
 
@@ -144,9 +195,16 @@ public abstract class UBase implements Undo
 		}
 
 		@Override
-		public void rollback() throws Exception
+		public void run()
 		{
-			_field.setDouble(_bean, _saved);
+			try
+			{
+				_field.setDouble(_bean, _saved);
+			}
+			catch(Exception e)
+			{
+				throw new RuntimeException(e);
+			}
 		}
 	}
 
@@ -161,9 +219,16 @@ public abstract class UBase implements Undo
 		}
 
 		@Override
-		public void rollback() throws Exception
+		public void run()
 		{
-			_field.set(_bean, _saved);
+			try
+			{
+				_field.set(_bean, _saved);
+			}
+			catch(Exception e)
+			{
+				throw new RuntimeException(e);
+			}
 		}
 	}
 
@@ -178,9 +243,16 @@ public abstract class UBase implements Undo
 		}
 
 		@Override
-		public void rollback() throws Exception
+		public void run()
 		{
-			_field.set(_bean, _saved);
+			try
+			{
+				_field.set(_bean, _saved);
+			}
+			catch(Exception e)
+			{
+				throw new RuntimeException(e);
+			}
 		}
 	}
 }

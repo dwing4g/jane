@@ -5,20 +5,20 @@ import java.util.AbstractSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import jane.core.UndoContext.Safe;
-import jane.core.UndoContext.Undo;
 import jane.core.UndoContext.Wrap;
 
 /**
- * 不支持key和value为null
+ * Map类型的回滚处理类
+ * <p>
+ * 不支持value为null
  */
 public final class UMap<K, V> implements Map<K, V>, Cloneable
 {
-	private final Safe<?> _owner;
+	private final Wrap<?> _owner;
 	private Map<K, V>     _map;
 	private UndoContext   _undoctx;
 
-	public UMap(Safe<?> owner, Map<K, V> map)
+	public UMap(Wrap<?> owner, Map<K, V> map)
 	{
 		_owner = owner;
 		_map = map;
@@ -52,7 +52,7 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 	@Override
 	public boolean containsValue(Object v)
 	{
-		return _map.containsValue(v instanceof Safe ? ((Safe<?>)v).unsafe() : v);
+		return _map.containsValue(v instanceof Wrap ? ((Wrap<?>)v).unsafe() : v);
 	}
 
 	@Override
@@ -71,12 +71,12 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 	@Override
 	public V put(final K k, V v)
 	{
-		if(k == null || v == null) throw new NullPointerException();
+		if(v == null) throw new NullPointerException();
 		final V v_old = _map.put(k, v);
-		undoContext().add(new Undo()
+		undoContext().addOnRollback(new Runnable()
 		{
 			@Override
-			public void rollback()
+			public void run()
 			{
 				if(v_old == null)
 					_map.remove(k);
@@ -100,10 +100,8 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 		if(_map == m || this == m) return;
 		for(Entry<? extends K, ? extends V> e : m.entrySet())
 		{
-			K k = e.getKey();
 			V v = e.getValue();
-			if(k != null || v != null)
-			    put(k, v);
+			if(v != null) put(e.getKey(), v);
 		}
 	}
 
@@ -112,11 +110,11 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 	{
 		final V v_old = _map.remove(k);
 		if(v_old == null) return null;
-		undoContext().add(new Undo()
+		undoContext().addOnRollback(new Runnable()
 		{
 			@SuppressWarnings("unchecked")
 			@Override
-			public void rollback()
+			public void run()
 			{
 				_map.put((K)k, v_old);
 			}
@@ -136,12 +134,12 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 	public void clear()
 	{
 		if(_map.isEmpty()) return;
-		undoContext().add(new Undo()
+		undoContext().addOnRollback(new Runnable()
 		{
 			private final UMap<K, V> _saved = UMap.this;
 
 			@Override
-			public void rollback()
+			public void run()
 			{
 				_map = _saved;
 			}
@@ -188,12 +186,12 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 		{
 			if(v == null) throw new NullPointerException();
 			final V v_old = _e.setValue(v);
-			undoContext().add(new Undo()
+			undoContext().addOnRollback(new Runnable()
 			{
 				private final K _k = _e.getKey();
 
 				@Override
-				public void rollback()
+				public void run()
 				{
 					_map.put(_k, v_old);
 				}
@@ -239,12 +237,12 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 		public void remove()
 		{
 			_it.remove();
-			undoContext().add(new Undo()
+			undoContext().addOnRollback(new Runnable()
 			{
 				private final UEntry _v = _cur;
 
 				@Override
-				public void rollback()
+				public void run()
 				{
 					_map.put(_v.getKey(), _v.getValue());
 				}
@@ -276,7 +274,7 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 		@Override
 		public boolean contains(Object o)
 		{
-			return _it.contains(o instanceof Safe ? ((Safe<?>)o).unsafe() : o);
+			return _it.contains(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o);
 		}
 
 		@Override
@@ -288,7 +286,7 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 		@Override
 		public boolean remove(Object o)
 		{
-			return UMap.this.remove(o instanceof Safe ? ((Safe<?>)o).unsafe() : o) != null;
+			return UMap.this.remove(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o) != null;
 		}
 
 		@Override
@@ -322,7 +320,7 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 		@Override
 		public boolean contains(Object o)
 		{
-			return _it.contains(o instanceof Safe ? ((Safe<?>)o).unsafe() : o);
+			return _it.contains(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o);
 		}
 
 		@Override
@@ -334,7 +332,7 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 		@Override
 		public boolean remove(Object o)
 		{
-			return UMap.this.remove(o instanceof Safe ? ((Safe<?>)o).unsafe() : o) != null;
+			return UMap.this.remove(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o) != null;
 		}
 
 		@Override
@@ -372,7 +370,7 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 		@Override
 		public boolean contains(Object o)
 		{
-			return UMap.this.containsValue(o instanceof Safe ? ((Safe<?>)o).unsafe() : o);
+			return UMap.this.containsValue(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o);
 		}
 
 		@Override

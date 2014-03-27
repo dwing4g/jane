@@ -467,7 +467,7 @@ public final class DBManager
 	 */
 	public void submit(Procedure p)
 	{
-		_proc_threads.submit(p);
+		_proc_threads.execute(p);
 	}
 
 	/**
@@ -492,7 +492,7 @@ public final class DBManager
 		p.setSid(sid);
 		if(sid == null)
 		{
-			es.submit(p);
+			es.execute(p);
 			return;
 		}
 		ArrayDeque<Procedure> q;
@@ -519,7 +519,7 @@ public final class DBManager
 			break;
 		}
 		final ArrayDeque<Procedure> _q = q;
-		es.submit(new Runnable()
+		es.execute(new Runnable()
 		{
 			@Override
 			public void run()
@@ -550,7 +550,7 @@ public final class DBManager
 						}
 						if(--n <= 0)
 						{
-							es.submit(this);
+							es.execute(this);
 							return;
 						}
 					}

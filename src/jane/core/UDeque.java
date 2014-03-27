@@ -3,20 +3,20 @@ package jane.core;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.Iterator;
-import jane.core.UndoContext.Safe;
-import jane.core.UndoContext.Undo;
 import jane.core.UndoContext.Wrap;
 
 /**
+ * Deque类型的回滚处理类
+ * <p>
  * 只支持无容量限制的ArrayDeque,且不支持删除中间元素
  */
 public final class UDeque<V> implements Deque<V>, Cloneable
 {
-	private final Safe<?> _owner;
+	private final Wrap<?> _owner;
 	private Deque<V>      _deque;
 	private UndoContext   _undoctx;
 
-	public UDeque(Safe<?> owner, Deque<V> queue)
+	public UDeque(Wrap<?> owner, Deque<V> queue)
 	{
 		_owner = owner;
 		_deque = queue;
@@ -44,7 +44,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	@Override
 	public boolean contains(Object o)
 	{
-		return _deque.contains(o instanceof Safe ? ((Safe<?>)o).unsafe() : o);
+		return _deque.contains(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o);
 	}
 
 	@Override
@@ -147,10 +147,10 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	public boolean add(V v)
 	{
 		if(!_deque.add(v)) return false;
-		undoContext().add(new Undo()
+		undoContext().addOnRollback(new Runnable()
 		{
 			@Override
-			public void rollback()
+			public void run()
 			{
 				_deque.removeLast();
 			}
@@ -167,10 +167,10 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	public void addFirst(V v)
 	{
 		_deque.addFirst(v);
-		undoContext().add(new Undo()
+		undoContext().addOnRollback(new Runnable()
 		{
 			@Override
-			public void rollback()
+			public void run()
 			{
 				_deque.removeFirst();
 			}
@@ -243,10 +243,10 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	{
 		final int n = c.size();
 		if(!_deque.addAll(c)) return false;
-		undoContext().add(new Undo()
+		undoContext().addOnRollback(new Runnable()
 		{
 			@Override
-			public void rollback()
+			public void run()
 			{
 				for(int i = 0; i < n; ++i)
 					_deque.removeLast();
@@ -259,10 +259,10 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	public V remove()
 	{
 		final V v_old = _deque.remove();
-		undoContext().add(new Undo()
+		undoContext().addOnRollback(new Runnable()
 		{
 			@Override
-			public void rollback()
+			public void run()
 			{
 				_deque.addFirst(v_old);
 			}
@@ -298,10 +298,10 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	public V removeLast()
 	{
 		final V v_old = _deque.removeLast();
-		undoContext().add(new Undo()
+		undoContext().addOnRollback(new Runnable()
 		{
 			@Override
-			public void rollback()
+			public void run()
 			{
 				_deque.addLast(v_old);
 			}
@@ -333,10 +333,10 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	{
 		final V v_old = _deque.poll();
 		if(v_old == null) return null;
-		undoContext().add(new Undo()
+		undoContext().addOnRollback(new Runnable()
 		{
 			@Override
-			public void rollback()
+			public void run()
 			{
 				_deque.addFirst(v_old);
 			}
@@ -367,10 +367,10 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	{
 		final V v_old = _deque.pollLast();
 		if(v_old == null) return null;
-		undoContext().add(new Undo()
+		undoContext().addOnRollback(new Runnable()
 		{
 			@Override
-			public void rollback()
+			public void run()
 			{
 				_deque.addLast(v_old);
 			}
@@ -413,12 +413,12 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	public void clear()
 	{
 		if(_deque.isEmpty()) return;
-		undoContext().add(new Undo()
+		undoContext().addOnRollback(new Runnable()
 		{
 			private final UDeque<V> _saved = UDeque.this;
 
 			@Override
-			public void rollback()
+			public void run()
 			{
 				_deque = _saved;
 			}

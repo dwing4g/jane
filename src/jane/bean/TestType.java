@@ -25,6 +25,7 @@ import jane.core.UList;
 import jane.core.UMap;
 import jane.core.USet;
 import jane.core.UndoContext;
+import jane.core.UndoContext.Wrap;
 import jane.core.Util;
 
 /**
@@ -70,15 +71,15 @@ public class TestType extends Bean<TestType>
 		try
 		{
 			Class<TestType> c = TestType.class;
-			FIELD_v1 = c.getDeclaredField("v1");
-			FIELD_v2 = c.getDeclaredField("v2");
-			FIELD_v3 = c.getDeclaredField("v3");
-			FIELD_v4 = c.getDeclaredField("v4");
-			FIELD_v5 = c.getDeclaredField("v5");
-			FIELD_v6 = c.getDeclaredField("v6");
-			FIELD_v7 = c.getDeclaredField("v7");
-			FIELD_v8 = c.getDeclaredField("v8");
-			FIELD_v9 = c.getDeclaredField("v9");
+			FIELD_v1 = c.getDeclaredField("v1"); FIELD_v1.setAccessible(true);
+			FIELD_v2 = c.getDeclaredField("v2"); FIELD_v2.setAccessible(true);
+			FIELD_v3 = c.getDeclaredField("v3"); FIELD_v3.setAccessible(true);
+			FIELD_v4 = c.getDeclaredField("v4"); FIELD_v4.setAccessible(true);
+			FIELD_v5 = c.getDeclaredField("v5"); FIELD_v5.setAccessible(true);
+			FIELD_v6 = c.getDeclaredField("v6"); FIELD_v6.setAccessible(true);
+			FIELD_v7 = c.getDeclaredField("v7"); FIELD_v7.setAccessible(true);
+			FIELD_v8 = c.getDeclaredField("v8"); FIELD_v8.setAccessible(true);
+			FIELD_v9 = c.getDeclaredField("v9"); FIELD_v9.setAccessible(true);
 		}
 		catch(Exception e)
 		{
@@ -719,14 +720,14 @@ public class TestType extends Bean<TestType>
 	}
 
 	@Override
-	public Safe safe(UndoContext.Safe<?> parent)
+	public Safe safe(Wrap<?> parent)
 	{
 		return new Safe(this, parent);
 	}
 
 	public static final class Safe extends UndoContext.Safe<TestType>
 	{
-		private Safe(TestType bean, UndoContext.Safe<?> parent)
+		private Safe(TestType bean, Wrap<?> parent)
 		{
 			super(bean, parent);
 		}
@@ -738,7 +739,7 @@ public class TestType extends Bean<TestType>
 
 		public void setV1(boolean v1)
 		{
-			if(initUndoContext()) _undoctx.add(new UBase.UBoolean(_bean, FIELD_v1, _bean.v1));
+			if(initUndoContext()) _undoctx.addOnRollback(new UBase.UBoolean(_bean, FIELD_v1, _bean.v1));
 			_bean.v1 = v1;
 		}
 
@@ -749,7 +750,7 @@ public class TestType extends Bean<TestType>
 
 		public void setV2(byte v2)
 		{
-			if(initUndoContext()) _undoctx.add(new UBase.UByte(_bean, FIELD_v2, _bean.v2));
+			if(initUndoContext()) _undoctx.addOnRollback(new UBase.UByte(_bean, FIELD_v2, _bean.v2));
 			_bean.v2 = v2;
 		}
 
@@ -760,7 +761,7 @@ public class TestType extends Bean<TestType>
 
 		public void setV3(short v3)
 		{
-			if(initUndoContext()) _undoctx.add(new UBase.UShort(_bean, FIELD_v3, _bean.v3));
+			if(initUndoContext()) _undoctx.addOnRollback(new UBase.UShort(_bean, FIELD_v3, _bean.v3));
 			_bean.v3 = v3;
 		}
 
@@ -771,7 +772,7 @@ public class TestType extends Bean<TestType>
 
 		public void setV4(int v4)
 		{
-			if(initUndoContext()) _undoctx.add(new UBase.UInteger(_bean, FIELD_v4, _bean.v4));
+			if(initUndoContext()) _undoctx.addOnRollback(new UBase.UInteger(_bean, FIELD_v4, _bean.v4));
 			_bean.v4 = v4;
 		}
 
@@ -782,7 +783,7 @@ public class TestType extends Bean<TestType>
 
 		public void setV5(long v5)
 		{
-			if(initUndoContext()) _undoctx.add(new UBase.ULong(_bean, FIELD_v5, _bean.v5));
+			if(initUndoContext()) _undoctx.addOnRollback(new UBase.ULong(_bean, FIELD_v5, _bean.v5));
 			_bean.v5 = v5;
 		}
 
@@ -793,7 +794,7 @@ public class TestType extends Bean<TestType>
 
 		public void setV6(float v6)
 		{
-			if(initUndoContext()) _undoctx.add(new UBase.UFloat(_bean, FIELD_v6, _bean.v6));
+			if(initUndoContext()) _undoctx.addOnRollback(new UBase.UFloat(_bean, FIELD_v6, _bean.v6));
 			_bean.v6 = v6;
 		}
 
@@ -804,13 +805,13 @@ public class TestType extends Bean<TestType>
 
 		public void setV7(double v7)
 		{
-			if(initUndoContext()) _undoctx.add(new UBase.UDouble(_bean, FIELD_v7, _bean.v7));
+			if(initUndoContext()) _undoctx.addOnRollback(new UBase.UDouble(_bean, FIELD_v7, _bean.v7));
 			_bean.v7 = v7;
 		}
 
 		public Octets getV8()
 		{
-			if(initUndoContext()) _undoctx.add(new UBase.UOctets(_bean, FIELD_v8, _bean.v8, true));
+			if(initUndoContext()) _undoctx.addOnRollback(new UBase.UOctets(_bean, FIELD_v8, _bean.v8, true));
 			return _bean.v8;
 		}
 
@@ -821,7 +822,7 @@ public class TestType extends Bean<TestType>
 
 		public <B extends Bean<B>> void marshalV8(Bean<B> b)
 		{
-			if(initUndoContext()) _undoctx.add(new UBase.UOctets(_bean, FIELD_v8, _bean.v8, false));
+			if(initUndoContext()) _undoctx.addOnRollback(new UBase.UOctets(_bean, FIELD_v8, _bean.v8, false));
 			_bean.v8 = b.marshal(new OctetsStream(b.initSize()));
 		}
 
@@ -847,7 +848,7 @@ public class TestType extends Bean<TestType>
 
 		public void setV9(String v9)
 		{
-			if(initUndoContext()) _undoctx.add(new UBase.UString(_bean, FIELD_v9, _bean.v9));
+			if(initUndoContext()) _undoctx.addOnRollback(new UBase.UString(_bean, FIELD_v9, _bean.v9));
 			_bean.v9 = (v9 != null ? v9 : "");
 		}
 

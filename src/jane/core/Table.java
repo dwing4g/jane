@@ -300,10 +300,10 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	{
 		final V v_old = get(k);
 		if(v_old == v) return;
-		UndoContext.current().add(new UndoContext.Undo()
+		UndoContext.current().addOnRollback(new Runnable()
 		{
 			@Override
-			public void rollback()
+			public void run()
 			{
 				if(v_old != null)
 					put(k, v_old);
@@ -344,10 +344,10 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	{
 		final V v_old = get(k);
 		if(v_old == null) return;
-		UndoContext.current().add(new UndoContext.Undo()
+		UndoContext.current().addOnRollback(new Runnable()
 		{
 			@Override
-			public void rollback()
+			public void run()
 			{
 				put(k, v_old);
 			}

@@ -4,17 +4,18 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import jane.core.UndoContext.Safe;
-import jane.core.UndoContext.Undo;
 import jane.core.UndoContext.Wrap;
 
+/**
+ * List类型的回滚处理类
+ */
 public final class UList<V> implements List<V>, Cloneable
 {
-	private final Safe<?> _owner;
+	private final Wrap<?> _owner;
 	private List<V>       _list;
 	private UndoContext   _undoctx;
 
-	public UList(Safe<?> owner, List<V> list)
+	public UList(Wrap<?> owner, List<V> list)
 	{
 		_owner = owner;
 		_list = list;
@@ -42,7 +43,7 @@ public final class UList<V> implements List<V>, Cloneable
 	@Override
 	public boolean contains(Object o)
 	{
-		return _list.contains(o instanceof Safe ? ((Safe<?>)o).unsafe() : o);
+		return _list.contains(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o);
 	}
 
 	@Override
@@ -54,13 +55,13 @@ public final class UList<V> implements List<V>, Cloneable
 	@Override
 	public int indexOf(Object o)
 	{
-		return _list.indexOf(o instanceof Safe ? ((Safe<?>)o).unsafe() : o);
+		return _list.indexOf(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o);
 	}
 
 	@Override
 	public int lastIndexOf(Object o)
 	{
-		return _list.lastIndexOf(o instanceof Safe ? ((Safe<?>)o).unsafe() : o);
+		return _list.lastIndexOf(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o);
 	}
 
 	@Override
@@ -92,10 +93,10 @@ public final class UList<V> implements List<V>, Cloneable
 	public boolean add(V v)
 	{
 		if(!_list.add(v)) return false;
-		undoContext().add(new Undo()
+		undoContext().addOnRollback(new Runnable()
 		{
 			@Override
-			public void rollback()
+			public void run()
 			{
 				_list.remove(_list.size() - 1);
 			}
@@ -112,10 +113,10 @@ public final class UList<V> implements List<V>, Cloneable
 	public void add(final int idx, V v)
 	{
 		_list.add(idx, v);
-		undoContext().add(new Undo()
+		undoContext().addOnRollback(new Runnable()
 		{
 			@Override
-			public void rollback()
+			public void run()
 			{
 				_list.remove(idx);
 			}
@@ -132,10 +133,10 @@ public final class UList<V> implements List<V>, Cloneable
 	{
 		final int n = c.size();
 		if(!_list.addAll(c)) return false;
-		undoContext().add(new Undo()
+		undoContext().addOnRollback(new Runnable()
 		{
 			@Override
-			public void rollback()
+			public void run()
 			{
 				for(int i = _list.size() - 1, e = i - n; i > e; --i)
 					_list.remove(i);
@@ -149,10 +150,10 @@ public final class UList<V> implements List<V>, Cloneable
 	{
 		final int n = c.size();
 		if(!_list.addAll(idx, c)) return false;
-		undoContext().add(new Undo()
+		undoContext().addOnRollback(new Runnable()
 		{
 			@Override
-			public void rollback()
+			public void run()
 			{
 				for(int i = idx + n - 1, e = i - n; i > e; --i)
 					_list.remove(i);
@@ -165,10 +166,10 @@ public final class UList<V> implements List<V>, Cloneable
 	public V set(final int idx, V v)
 	{
 		final V v_old = _list.set(idx, v);
-		undoContext().add(new Undo()
+		undoContext().addOnRollback(new Runnable()
 		{
 			@Override
-			public void rollback()
+			public void run()
 			{
 				_list.set(idx, v_old);
 			}
@@ -187,10 +188,10 @@ public final class UList<V> implements List<V>, Cloneable
 	public V remove(final int idx)
 	{
 		final V v_old = _list.remove(idx);
-		undoContext().add(new Undo()
+		undoContext().addOnRollback(new Runnable()
 		{
 			@Override
-			public void rollback()
+			public void run()
 			{
 				_list.add(idx, v_old);
 			}
@@ -249,12 +250,12 @@ public final class UList<V> implements List<V>, Cloneable
 	public void clear()
 	{
 		if(_list.isEmpty()) return;
-		undoContext().add(new Undo()
+		undoContext().addOnRollback(new Runnable()
 		{
 			private final UList<V> _saved = UList.this;
 
 			@Override
-			public void rollback()
+			public void run()
 			{
 				_list = _saved;
 			}
@@ -304,13 +305,13 @@ public final class UList<V> implements List<V>, Cloneable
 		public void remove()
 		{
 			_it.remove();
-			undoContext().add(new Undo()
+			undoContext().addOnRollback(new Runnable()
 			{
 				private final V   _v = _cur;
 				private final int _i = _idx;
 
 				@Override
-				public void rollback()
+				public void run()
 				{
 					_list.add(_i, _v);
 				}
@@ -392,13 +393,13 @@ public final class UList<V> implements List<V>, Cloneable
 		public void remove()
 		{
 			_it.remove();
-			undoContext().add(new Undo()
+			undoContext().addOnRollback(new Runnable()
 			{
 				private final V   _v = _cur;
 				private final int _i = _idx + _idx_off;
 
 				@Override
-				public void rollback()
+				public void run()
 				{
 					_list.add(_i, _v);
 				}
@@ -410,13 +411,13 @@ public final class UList<V> implements List<V>, Cloneable
 		public void set(V v)
 		{
 			_it.set(v);
-			undoContext().add(new Undo()
+			undoContext().addOnRollback(new Runnable()
 			{
 				private final V   _v = _cur;
 				private final int _i = _idx + _idx_off;
 
 				@Override
-				public void rollback()
+				public void run()
 				{
 					_list.set(_i, _v);
 				}
@@ -432,12 +433,12 @@ public final class UList<V> implements List<V>, Cloneable
 		public void add(V v)
 		{
 			_it.add(v);
-			undoContext().add(new Undo()
+			undoContext().addOnRollback(new Runnable()
 			{
 				private final int _i = _idx + _idx_off;
 
 				@Override
-				public void rollback()
+				public void run()
 				{
 					_list.remove(_i);
 				}

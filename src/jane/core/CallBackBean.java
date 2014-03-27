@@ -1,12 +1,13 @@
 package jane.core;
 
 import jane.core.UndoContext.Safe;
+import jane.core.UndoContext.Wrap;
 
 public final class CallBackBean<B extends Bean<B>> extends Bean<B>
 {
-	private static final long    serialVersionUID = 5530380784493521299L;
-	private final B              _bean;
-	private final BeanHandler<B> _callback;
+	private static final long              serialVersionUID = 5530380784493521299L;
+	private final B                        _bean;
+	private final transient BeanHandler<B> _callback;
 
 	public CallBackBean(B bean, BeanHandler<B> callback)
 	{
@@ -126,7 +127,7 @@ public final class CallBackBean<B extends Bean<B>> extends Bean<B>
 	}
 
 	@Override
-	public Safe<B> safe(Safe<?> parent)
+	public Safe<B> safe(Wrap<?> parent)
 	{
 		return _bean.safe(parent);
 	}

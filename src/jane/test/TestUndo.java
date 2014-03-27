@@ -13,8 +13,9 @@ public final class TestUndo
 		DBManager.instance().startup(StorageLevelDB.instance());
 		AllTables.register();
 		System.out.println("start");
-
 		final long id = 1;
+		final int v = 1;
+
 		new Procedure()
 		{
 			@Override
@@ -25,21 +26,63 @@ public final class TestUndo
 				if(a == null)
 				{
 					TestBean aa = new TestBean();
-					aa.setValue2(id);
-					System.out.println("new: " + aa.getValue2());
+					aa.setValue1(v);
+					System.out.println("new: " + aa.getValue1());
 					AllTables.Benchmark.putSafe(id, aa);
 				}
 				else
 				{
-					System.out.println("get: " + a.getValue2());
-					if(a.getValue2() == id + 1)
-						System.out.println("checked");
-					else
+					System.out.println("get: " + a.getValue1());
+					if(a.getValue1() != v)
 					{
-						System.out.println("set: " + id + 1);
-						a.setValue2(id + 1);
+						a.setValue1(v);
+						System.out.println("set: " + a.getValue1());
 					}
 				}
+				System.out.println("===");
+				return true;
+			}
+		}.run();
+
+		new Procedure()
+		{
+			@Override
+			protected boolean onProcess() throws Exception
+			{
+				lock(AllTables.Benchmark.lockid(id));
+				TestBean.Safe a = AllTables.Benchmark.getSafe(id);
+				System.out.println("get: " + a.getValue1());
+				a.setValue1(v + 1);
+				System.out.println("set: " + a.getValue1());
+				System.out.println("===");
+				throw new Exception("only-for-test-rollback");
+			}
+		}.run();
+
+		new Procedure()
+		{
+			@Override
+			protected boolean onProcess() throws Exception
+			{
+				lock(AllTables.Benchmark.lockid(id));
+				TestBean.Safe a = AllTables.Benchmark.getSafe(id);
+				System.out.println("get: " + a.getValue1());
+				a.setValue1(v + 2);
+				System.out.println("set: " + a.getValue1());
+				System.out.println("===");
+				return true;
+			}
+		}.run();
+
+		new Procedure()
+		{
+			@Override
+			protected boolean onProcess() throws Exception
+			{
+				lock(AllTables.Benchmark.lockid(id));
+				TestBean.Safe a = AllTables.Benchmark.getSafe(id);
+				System.out.println("get: " + a.getValue1());
+				System.out.println("===");
 				return true;
 			}
 		}.run();

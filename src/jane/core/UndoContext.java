@@ -3,42 +3,34 @@ package jane.core;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 回滚上下文类
+ * <p>
+ * 管理当前线程的回滚和提交事件<br>
+ * 由ThreadLocal管理全部的的上下文
+ */
 public final class UndoContext
 {
-	public interface Undo
-	{
-		void rollback() throws Exception;
-	}
-
 	public static abstract class Wrap<B>
 	{
-		protected final B _bean;
+		protected final B       _bean;
+		protected final Wrap<?> _owner;
+		protected UndoContext   _undoctx;
+		protected boolean       _fullundo;
+		private boolean         _dirty;
 
-		protected Wrap(B bean)
+		protected Wrap(B bean, Wrap<?> parent)
 		{
 			_bean = bean;
+			_owner = (parent != null ? parent.owner() : this);
 		}
 
 		public B unsafe()
 		{
 			return _bean;
 		}
-	}
 
-	public static abstract class Safe<B extends Bean<B>> extends Wrap<B> implements Comparable<B>, Cloneable
-	{
-		protected final Safe<?> _owner;
-		protected UndoContext   _undoctx;
-		private boolean         _dirty;
-		protected boolean       _fullundo;
-
-		protected Safe(B bean, UndoContext.Safe<?> parent)
-		{
-			super(bean);
-			_owner = (parent != null ? parent.owner() : this);
-		}
-
-		public Safe<?> owner()
+		public Wrap<?> owner()
 		{
 			return _owner;
 		}
@@ -64,20 +56,28 @@ public final class UndoContext
 			if(_undoctx == null)
 			{
 				_owner.dirty();
-				_undoctx = UndoContext.current();
+				_undoctx = current();
 			}
 			return true;
+		}
+	}
+
+	public static abstract class Safe<B extends Bean<B>> extends Wrap<B> implements Comparable<B>, Cloneable
+	{
+		protected Safe(B bean, Wrap<?> parent)
+		{
+			super(bean, parent);
 		}
 
 		public void addFullUndo()
 		{
 			if(!initUndoContext()) return;
-			_undoctx.add(new UndoContext.Undo()
+			_undoctx.addOnRollback(new Runnable()
 			{
 				private final B _saved = _bean.clone();
 
 				@Override
-				public void rollback()
+				public void run()
 				{
 					_bean.assign(_saved);
 				}
@@ -181,7 +181,7 @@ public final class UndoContext
 	private static ThreadLocal<UndoContext> _tl_list;
 	private final List<Record<?, ?, ?>>     _records     = new ArrayList<Record<?, ?, ?>>();
 	private final List<RecordLong<?, ?>>    _recordlongs = new ArrayList<RecordLong<?, ?>>();
-	private final List<Undo>                _undos       = new ArrayList<Undo>();
+	private final List<Runnable>            _onrollbacks = new ArrayList<Runnable>();
 	private final List<Runnable>            _oncommits   = new ArrayList<Runnable>();
 
 	static
@@ -217,19 +217,19 @@ public final class UndoContext
 		return v_safe;
 	}
 
-	public void add(Undo undo)
-	{
-		_undos.add(undo);
-	}
-
 	public void addOnCommit(Runnable r)
 	{
 		_oncommits.add(r);
 	}
 
-	void commit()
+	public void addOnRollback(Runnable r)
 	{
-		_undos.clear();
+		_onrollbacks.add(r);
+	}
+
+	public void commit()
+	{
+		_onrollbacks.clear();
 
 		for(Record<?, ?, ?> r : _records)
 		{
@@ -259,23 +259,23 @@ public final class UndoContext
 		_oncommits.clear();
 	}
 
-	void rollback()
+	public void rollback()
 	{
 		_records.clear();
 		_recordlongs.clear();
 		_oncommits.clear();
 
-		for(int i = _undos.size(); --i >= 0;)
+		for(int i = _onrollbacks.size(); --i >= 0;)
 		{
 			try
 			{
-				_undos.get(i).rollback();
+				_onrollbacks.get(i).run();
 			}
-			catch(Exception e)
+			catch(Throwable e)
 			{
 				Log.log.error("rollback exception:", e);
 			}
 		}
-		_undos.clear();
+		_onrollbacks.clear();
 	}
 }
