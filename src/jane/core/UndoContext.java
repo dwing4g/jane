@@ -53,6 +53,7 @@ public class UndoContext
 	private final List<Record<?, ?, ?>>     _records     = new ArrayList<Record<?, ?, ?>>();
 	private final List<RecordLong<?, ?>>    _recordlongs = new ArrayList<RecordLong<?, ?>>();
 	private final List<Undo>                _undos       = new ArrayList<Undo>();
+	private final List<Runnable>            _oncommits   = new ArrayList<Runnable>();
 
 	static
 	{
@@ -92,6 +93,11 @@ public class UndoContext
 		_undos.add(undo);
 	}
 
+	public void addOnCommit(Runnable r)
+	{
+		_oncommits.add(r);
+	}
+
 	@SuppressWarnings("unchecked")
 	<K, V extends Bean<V>, S extends Safe<V>> void commit()
 	{
@@ -112,12 +118,26 @@ public class UndoContext
 			    r._table.modify(r._key, r._value.unsafe());
 		}
 		_recordlongs.clear();
+
+		for(Runnable r : _oncommits)
+		{
+			try
+			{
+				r.run();
+			}
+			catch(Throwable e)
+			{
+				Log.log.error("oncommit exception:", e);
+			}
+		}
+		_oncommits.clear();
 	}
 
 	void rollback()
 	{
 		_records.clear();
 		_recordlongs.clear();
+		_oncommits.clear();
 
 		for(int i = _undos.size(); --i >= 0;)
 		{

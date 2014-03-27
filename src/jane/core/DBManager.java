@@ -501,9 +501,9 @@ public final class DBManager
 			q = _qmap.get(sid);
 			if(q == null)
 			{
-				ArrayDeque<Procedure> t = new ArrayDeque<Procedure>();
-				q = _qmap.putIfAbsent(sid, t); // _qmap增加队列的地方只有这一处
-				if(q == null) q = t;
+				q = new ArrayDeque<Procedure>();
+				ArrayDeque<Procedure> t = _qmap.putIfAbsent(sid, q); // _qmap增加队列的地方只有这一处
+				if(t != null) q = t;
 			}
 			synchronized(q)
 			{

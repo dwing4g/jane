@@ -284,9 +284,29 @@ public class OctetsStream extends Octets
 		return this;
 	}
 
+	public OctetsStream marshal(Boolean b)
+	{
+		return b != null ? marshal(b.booleanValue()) : marshal1((byte)0);
+	}
+
+	public OctetsStream marshal(char x)
+	{
+		return marshal((int)x);
+	}
+
+	public OctetsStream marshal(Character x)
+	{
+		return x != null ? marshal((int)x.charValue()) : marshal1((byte)0);
+	}
+
 	public OctetsStream marshal(byte x)
 	{
 		return marshal((int)x);
+	}
+
+	public OctetsStream marshal(Byte x)
+	{
+		return x != null ? marshal(x.intValue()) : marshal1((byte)0);
 	}
 
 	public OctetsStream marshal(short x)
@@ -294,9 +314,9 @@ public class OctetsStream extends Octets
 		return marshal((int)x);
 	}
 
-	public OctetsStream marshal(char x)
+	public OctetsStream marshal(Short x)
 	{
-		return marshal((int)x);
+		return x != null ? marshal(x.intValue()) : marshal1((byte)0);
 	}
 
 	public OctetsStream marshal(int x)
@@ -314,6 +334,11 @@ public class OctetsStream extends Octets
 		if(x >= -0x100000)    return marshal3(x - 0x600000);   // 1001 xxxx +2B
 		if(x >= -0x8000000)   return marshal4(x - 0x70000000); // 1000 1xxx +3B
 		                      return marshal5((byte)0x87, x);  // 1000 0111 +4B
+	}
+
+	public OctetsStream marshal(Integer x)
+	{
+		return x != null ? marshal(x.intValue()) : marshal1((byte)0);
 	}
 
 	public static int marshalLen(int x)
@@ -350,6 +375,11 @@ public class OctetsStream extends Octets
 		if(x >= -0x1000000000000L)    return marshal7(x - 0x7e000000000000L);   // 1000 0001 +6B
 		if(x >= -0x80000000000000L)   return marshal8(x - 0x7f00000000000000L); // 1000 0000 1+7B
 		                  return marshal9((byte)0x80, x - 0x8000000000000000L); // 1000 0000 0+8B
+	}
+
+	public OctetsStream marshal(Long x)
+	{
+		return x != null ? marshal(x.longValue()) : marshal1((byte)0);
 	}
 
 	public static int marshalLen(long x)
@@ -411,9 +441,19 @@ public class OctetsStream extends Octets
 		return marshal4(Float.floatToRawIntBits(x));
 	}
 
+	public OctetsStream marshal(Float x)
+	{
+		return marshal4(Float.floatToRawIntBits(x != null ? x : 0));
+	}
+
 	public OctetsStream marshal(double x)
 	{
 		return marshal8(Double.doubleToRawLongBits(x));
+	}
+
+	public OctetsStream marshal(Double x)
+	{
+		return marshal8(Double.doubleToRawLongBits(x != null ? x : 0));
 	}
 
 	public OctetsStream marshal(byte[] bytes)
@@ -425,6 +465,11 @@ public class OctetsStream extends Octets
 
 	public OctetsStream marshal(Octets o)
 	{
+		if(o == null)
+		{
+			marshal1((byte)0);
+			return this;
+		}
 		marshalUInt(o.count);
 		append(o.buffer, 0, o.count);
 		return this;
@@ -432,7 +477,12 @@ public class OctetsStream extends Octets
 
 	public OctetsStream marshal(String str)
 	{
-		int cn = str.length();
+		int cn;
+		if(str == null || (cn = str.length()) <= 0)
+		{
+			marshal1((byte)0);
+			return this;
+		}
 		int bn = 0;
 		for(int i = 0; i < cn; ++i)
 		{

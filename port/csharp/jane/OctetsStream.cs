@@ -370,6 +370,11 @@ namespace jane
 
 		public OctetsStream marshal(Octets o)
 		{
+			if(o == null)
+			{
+				marshal1((byte)0);
+				return this;
+			}
 			marshalUInt(o.count);
 			append(o.buffer, 0, o.count);
 			return this;
@@ -377,7 +382,12 @@ namespace jane
 
 		public OctetsStream marshal(string str)
 		{
-			int cn = str.Length;
+			int cn;
+			if(str == null || (cn = str.Length) <= 0)
+			{
+				marshal1((byte)0);
+				return this;
+			}
 			int bn = 0;
 			for(int i = 0; i < cn; ++i)
 			{
