@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.Set;
 import jane.core.UndoContext.Safe;
 import jane.core.UndoContext.Undo;
+import jane.core.UndoContext.Wrap;
 
 /**
  * 不支持value为null
@@ -80,7 +81,7 @@ public final class USet<V> implements Set<V>, Cloneable
 		return true;
 	}
 
-	public <S extends Safe<V>> void add(S v)
+	public <S extends Wrap<V>> void add(S v)
 	{
 		add(v.unsafe());
 	}
@@ -111,7 +112,7 @@ public final class USet<V> implements Set<V>, Cloneable
 		return true;
 	}
 
-	public <S extends Safe<V>> boolean removeSafe(S v)
+	public <S extends Wrap<V>> boolean removeSafe(S v)
 	{
 		return remove(v.unsafe());
 	}
@@ -194,7 +195,7 @@ public final class USet<V> implements Set<V>, Cloneable
 		}
 
 		@SuppressWarnings("unchecked")
-		public <S extends Safe<V>> S nextSafe()
+		public <S extends Wrap<V>> S nextSafe()
 		{
 			return (S)((Bean<?>)next()).safe(_owner);
 		}

@@ -20,7 +20,7 @@ package ]=] .. namespace .. [=[.bean;
 import java.lang.reflect.Field;#>#
 import #(bean.imports);
 #(bean.comment)
-public class #(bean.name) extends Bean<#(bean.name)> implements Comparable<#(bean.name)>
+public class #(bean.name) extends Bean<#(bean.name)>
 {
 	private static final long serialVersionUID = #(bean.uid);
 	public  static final int BEAN_TYPE = #(bean.type);
@@ -55,7 +55,8 @@ public class #(bean.name) extends Bean<#(bean.name)> implements Comparable<#(bea
 #(#		#(var.reset);
 #)#	}
 
-	#(bean.param_warning)public void assign(#(bean.name) b)
+	#(bean.param_warning)@Override
+	public void assign(#(bean.name) b)
 	{#<#
 		if(b == this) return;
 		if(b == null) { reset(); return; }#>#
@@ -181,140 +182,16 @@ public class #(bean.name) extends Bean<#(bean.name)> implements Comparable<#(bea
 	@Override
 	public Safe safe(UndoContext.Safe<?> parent)
 	{
-		return new Safe(parent);
+		return new Safe(this, parent);
 	}
 
-	public final class Safe implements UndoContext.Safe<#(bean.name)>, Comparable<#(bean.name)>
+	public static final class Safe extends UndoContext.Safe<#(bean.name)>
 	{
-		private transient final UndoContext.Safe<?> _owner;
-		private transient UndoContext _undoctx;
-		private transient boolean _dirty;
-		private transient boolean _fullundo;
-
-		private Safe(UndoContext.Safe<?> parent)
+		private Safe(#(bean.name) bean, UndoContext.Safe<?> parent)
 		{
-			_owner = (parent != null ? parent.owner() : this);
+			super(bean, parent);
 		}
-
-		@Override
-		public #(bean.name) unsafe()
-		{
-			return #(bean.name).this;
-		}
-
-		@Override
-		public UndoContext.Safe<?> owner()
-		{
-			return _owner;
-		}
-
-		@Override
-		public boolean isDirtyAndClear()
-		{
-			boolean r = _dirty;
-			_dirty = false;
-			return r;
-		}
-
-		@Override
-		public void dirty()
-		{
-			if(_owner == this)
-				_dirty = true;
-			else
-				_owner.dirty();
-		}
-
-		private void initUndoContext()
-		{
-			if(!_fullundo && _undoctx == null)
-			{
-				_owner.dirty();
-				_undoctx = UndoContext.current();
-			}
-		}
-
-		public void addFullUndo()
-		{
-			initUndoContext();
-			if(_undoctx == null) return;
-			_undoctx.add(new UndoContext.Undo()
-			{
-				private final #(bean.name) _saved = #(bean.name).this.clone();
-				@Override
-				public void rollback()
-				{
-					#(bean.name).this.assign(_saved);
-				}
-			});
-			_undoctx = null;
-			_fullundo = true;
-		}
-#(##(var.getsafe)#(var.setsafe)#)#
-		public void reset()
-		{
-			addFullUndo();
-			#(bean.name).this.reset();
-		}
-
-		public void assign(#(bean.name) b)
-		{
-			if(b == #(bean.name).this) return;
-			addFullUndo();
-			#(bean.name).this.assign(b);
-		}
-
-		public OctetsStream marshal(OctetsStream s)
-		{
-			return #(bean.name).this.marshal(s);
-		}
-
-		public OctetsStream unmarshal(OctetsStream s) throws MarshalException
-		{
-			addFullUndo();
-			return #(bean.name).this.unmarshal(s);
-		}
-
-		@Override
-		public #(bean.name) clone()
-		{
-			return #(bean.name).this.clone();
-		}
-
-		@Override
-		public int hashCode()
-		{
-			return #(bean.name).this.hashCode();
-		}
-
-		@Override
-		public boolean equals(Object o)
-		{
-			return #(bean.name).this.equals(o);
-		}
-
-		@Override
-		public int compareTo(#(bean.name) b)
-		{
-			return #(bean.name).this.compareTo(b);
-		}
-
-		@Override
-		public String toString()
-		{
-			return #(bean.name).this.toString();
-		}
-
-		public StringBuilder toJson(StringBuilder s)
-		{
-			return #(bean.name).this.toJson(s);
-		}
-
-		public StringBuilder toLua(StringBuilder s)
-		{
-			return #(bean.name).this.toLua(s);
-		}
-	}
+#(##(var.getsafe)#(var.setsafe)#)#	}
 }
 ]=]
 
@@ -539,16 +416,15 @@ typedef.byte =
 
 		public #(var.type) get#(var.name_u)()
 		{
-			return #(var.name);
+			return _bean.#(var.name);
 		}
 ]],
 	setsafe = [[
 
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UBase.U#(var.type_o)(#(bean.name).this, FIELD_#(var.name), #(bean.name).this.#(var.name)));
-			#(bean.name).this.#(var.name) = #(var.name);
+			if(initUndoContext()) _undoctx.add(new UBase.U#(var.type_o)(_bean, FIELD_#(var.name), _bean.#(var.name)));
+			_bean.#(var.name) = #(var.name);
 		}
 ]],
 	marshal = function(var) return string.format("if(this.#(var.name) != 0) s.marshal1((byte)0x%02x).marshal(this.#(var.name));", var.id * 4) end,
@@ -631,9 +507,8 @@ typedef.string = merge(typedef.byte,
 
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UBase.U#(var.type_o)(#(bean.name).this, FIELD_#(var.name), #(bean.name).this.#(var.name)));
-			#(bean.name).this.#(var.name) = (#(var.name) != null ? #(var.name) : "");
+			if(initUndoContext()) _undoctx.add(new UBase.U#(var.type_o)(_bean, FIELD_#(var.name), _bean.#(var.name)));
+			_bean.#(var.name) = (#(var.name) != null ? #(var.name) : "");
 		}
 ]],
 	marshal = function(var) return string.format("if(!this.#(var.name).isEmpty()) s.marshal1((byte)0x%02x).marshal(this.#(var.name));", var.id * 4 + 1) end,
@@ -655,6 +530,15 @@ typedef.octets = merge(typedef.string,
 	assign = "if(b.#(var.name) != null) this.#(var.name).replace(b.#(var.name)); else this.#(var.name).clear()",
 	set = [[
 
+	public <B extends Bean<B>> void marshal#(var.name_u)(Bean<B> b)
+	{
+		OctetsStream os = OctetsStream.wrap(this.#(var.name));
+		os.resize(0);
+		os.reserve(b.initSize());
+		this.#(var.name) = os;
+		b.marshal(os);
+	}
+
 	public <B extends Bean<B>> Bean<B> unmarshal#(var.name_u)(Bean<B> b) throws MarshalException
 	{
 		b.unmarshal(OctetsStream.wrap(this.#(var.name)));
@@ -672,29 +556,34 @@ typedef.octets = merge(typedef.string,
 
 		public #(var.type) get#(var.name_u)()
 		{
-			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UBase.UOctets(#(bean.name).this, FIELD_#(var.name), #(var.name)));
-			return #(var.name);
+			if(initUndoContext()) _undoctx.add(new UBase.UOctets(_bean, FIELD_#(var.name), _bean.#(var.name), true));
+			return _bean.#(var.name);
 		}
 
 		public byte[] copyOf#(var.name_u)()
 		{
-			return #(var.name).getBytes();
+			return _bean.#(var.name).getBytes();
+		}
+
+		public <B extends Bean<B>> void marshal#(var.name_u)(Bean<B> b)
+		{
+			if(initUndoContext()) _undoctx.add(new UBase.UOctets(_bean, FIELD_#(var.name), _bean.#(var.name), false));
+			_bean.#(var.name) = b.marshal(new OctetsStream(b.initSize()));
 		}
 
 		public <B extends Bean<B>> Bean<B> unmarshal#(var.name_u)(Bean<B> b) throws MarshalException
 		{
-			return #(bean.name).this.unmarshal#(var.name_u)(b);
+			return _bean.unmarshal#(var.name_u)(b);
 		}
 
 		public DynBean unmarshal#(var.name_u)() throws MarshalException
 		{
-			return #(bean.name).this.unmarshal#(var.name_u)();
+			return _bean.unmarshal#(var.name_u)();
 		}
 
 		public #(var.type) unsafe#(var.name_u)()
 		{
-			return #(var.name);
+			return _bean.#(var.name);
 		}
 ]],
 	setsafe = "",
@@ -720,12 +609,12 @@ typedef.vector = merge(typedef.octets,
 
 		public U#(var.itype) get#(var.name_u)()
 		{
-			return new U#(var.itype)(_owner, #(var.name));
+			return new U#(var.itype)(_owner, _bean.#(var.name));
 		}
 
 		public #(var.type) unsafe#(var.name_u)()
 		{
-			return #(var.name);
+			return _bean.#(var.name);
 		}
 ]],
 	marshal = function(var) return string.format([[if(!this.#(var.name).isEmpty())
@@ -858,12 +747,12 @@ typedef.bean = merge(typedef.octets,
 
 		public #(var.type).Safe get#(var.name_u)()
 		{
-			return #(var.name).safe(this);
+			return _bean.#(var.name).safe(this);
 		}
 
 		public #(var.type) unsafe#(var.name_u)()
 		{
-			return #(var.name);
+			return _bean.#(var.name);
 		}
 ]],
 	setsafe = "",
@@ -960,9 +849,9 @@ local function bean_common(bean)
 end
 local function bean_const(code)
 	return code:gsub("public  /%*", "private /*"):
-		gsub("\tpublic void assign%(.-\n\t}\n\n", ""):
+		gsub("\t@Override\n\tpublic void assign%(.-\n\t}\n\n", ""):
 		gsub("\tpublic void set.-\n\t}\n\n", ""):
-		gsub("\n\tpublic final class Safe.-}\n\t}\n", ""):
+		gsub("\n\tpublic static final class Safe.-}\n\t}\n", ""):
 		gsub("import java%.lang%.reflect%.Field;\n", ""):
 		gsub("import jane%.core%.UBase;\n", ""):
 		gsub("import jane%.core%.UndoContext;\n", ""):

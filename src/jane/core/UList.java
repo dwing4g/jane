@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.ListIterator;
 import jane.core.UndoContext.Safe;
 import jane.core.UndoContext.Undo;
+import jane.core.UndoContext.Wrap;
 
 public final class UList<V> implements List<V>, Cloneable
 {
@@ -81,7 +82,7 @@ public final class UList<V> implements List<V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<V>> S getSafe(int idx)
+	public <S extends Wrap<V>> S getSafe(int idx)
 	{
 		V v = _list.get(idx);
 		return v != null ? (S)((Bean<?>)v).safe(_owner) : null;
@@ -102,7 +103,7 @@ public final class UList<V> implements List<V>, Cloneable
 		return true;
 	}
 
-	public <S extends Safe<V>> void add(S v)
+	public <S extends Wrap<V>> void add(S v)
 	{
 		add(v.unsafe());
 	}
@@ -121,7 +122,7 @@ public final class UList<V> implements List<V>, Cloneable
 		});
 	}
 
-	public <S extends Safe<V>> void add(final int idx, S v)
+	public <S extends Wrap<V>> void add(final int idx, S v)
 	{
 		add(idx, v.unsafe());
 	}
@@ -176,7 +177,7 @@ public final class UList<V> implements List<V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<V>> S set(final int idx, S v)
+	public <S extends Wrap<V>> S set(final int idx, S v)
 	{
 		V v_old = set(idx, v.unsafe());
 		return v_old != null ? (S)((Bean<?>)v_old).safe(_owner) : null;
@@ -198,7 +199,7 @@ public final class UList<V> implements List<V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<V>> S removeSafe(int idx)
+	public <S extends Wrap<V>> S removeSafe(int idx)
 	{
 		V v_old = remove(idx);
 		return v_old != null ? (S)((Bean<?>)v_old).safe(_owner) : null;
@@ -293,7 +294,7 @@ public final class UList<V> implements List<V>, Cloneable
 		}
 
 		@SuppressWarnings("unchecked")
-		public <S extends Safe<V>> S nextSafe()
+		public <S extends Wrap<V>> S nextSafe()
 		{
 			V v = next();
 			return v != null ? (S)((Bean<?>)v).safe(_owner) : null;
@@ -365,7 +366,7 @@ public final class UList<V> implements List<V>, Cloneable
 		}
 
 		@SuppressWarnings("unchecked")
-		public <S extends Safe<V>> S nextSafe()
+		public <S extends Wrap<V>> S nextSafe()
 		{
 			V v = next();
 			return v != null ? (S)((Bean<?>)v).safe(_owner) : null;
@@ -381,7 +382,7 @@ public final class UList<V> implements List<V>, Cloneable
 		}
 
 		@SuppressWarnings("unchecked")
-		public <S extends Safe<V>> S previousSafe()
+		public <S extends Wrap<V>> S previousSafe()
 		{
 			V v = previous();
 			return v != null ? (S)((Bean<?>)v).safe(_owner) : null;
@@ -422,7 +423,7 @@ public final class UList<V> implements List<V>, Cloneable
 			});
 		}
 
-		public <S extends Safe<V>> void set(S v)
+		public <S extends Wrap<V>> void set(S v)
 		{
 			set(v.unsafe());
 		}
@@ -443,7 +444,7 @@ public final class UList<V> implements List<V>, Cloneable
 			});
 		}
 
-		public <S extends Safe<V>> void add(S v)
+		public <S extends Wrap<V>> void add(S v)
 		{
 			add(v.unsafe());
 		}

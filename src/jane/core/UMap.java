@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import jane.core.UndoContext.Safe;
 import jane.core.UndoContext.Undo;
+import jane.core.UndoContext.Wrap;
 
 /**
  * 不支持key和value为null
@@ -61,7 +62,7 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<V>> S getSafe(Object k)
+	public <S extends Wrap<V>> S getSafe(Object k)
 	{
 		V v = _map.get(k);
 		return v != null ? (S)((Bean<?>)v).safe(_owner) : null;
@@ -87,7 +88,7 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<V>> S put(final K k, S v)
+	public <S extends Wrap<V>> S put(final K k, S v)
 	{
 		V v_old = put(k, v.unsafe());
 		return v_old != null ? (S)((Bean<?>)v_old).safe(_owner) : null;
@@ -124,7 +125,7 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<V>> S removeSafe(Object k)
+	public <S extends Wrap<V>> S removeSafe(Object k)
 	{
 		V v_old = remove(k);
 		return v_old != null ? (S)((Bean<?>)v_old).safe(_owner) : null;
@@ -177,7 +178,7 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 		}
 
 		@SuppressWarnings("unchecked")
-		public <S extends Safe<V>> S getValueSafe()
+		public <S extends Wrap<V>> S getValueSafe()
 		{
 			return (S)((Bean<?>)getValue()).safe(_owner);
 		}
@@ -200,7 +201,7 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 			return v_old;
 		}
 
-		public <S extends Safe<V>> V setValue(S v)
+		public <S extends Wrap<V>> V setValue(S v)
 		{
 			return setValue(v.unsafe());
 		}

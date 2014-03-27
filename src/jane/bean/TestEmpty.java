@@ -9,7 +9,7 @@ import jane.core.UndoContext;
 /**
  * 测试空bean
  */
-public class TestEmpty extends Bean<TestEmpty> implements Comparable<TestEmpty>
+public class TestEmpty extends Bean<TestEmpty>
 {
 	private static final long serialVersionUID = 0xbeac245da40b43f8L;
 	public  static final int BEAN_TYPE = 4;
@@ -21,6 +21,7 @@ public class TestEmpty extends Bean<TestEmpty> implements Comparable<TestEmpty>
 	}
 
 	/** @param b unused */
+	@Override
 	public void assign(TestEmpty b)
 	{
 	}
@@ -126,138 +127,14 @@ public class TestEmpty extends Bean<TestEmpty> implements Comparable<TestEmpty>
 	@Override
 	public Safe safe(UndoContext.Safe<?> parent)
 	{
-		return new Safe(parent);
+		return new Safe(this, parent);
 	}
 
-	public final class Safe implements UndoContext.Safe<TestEmpty>, Comparable<TestEmpty>
+	public static final class Safe extends UndoContext.Safe<TestEmpty>
 	{
-		private transient final UndoContext.Safe<?> _owner;
-		private transient UndoContext _undoctx;
-		private transient boolean _dirty;
-		private transient boolean _fullundo;
-
-		private Safe(UndoContext.Safe<?> parent)
+		private Safe(TestEmpty bean, UndoContext.Safe<?> parent)
 		{
-			_owner = (parent != null ? parent.owner() : this);
-		}
-
-		@Override
-		public TestEmpty unsafe()
-		{
-			return TestEmpty.this;
-		}
-
-		@Override
-		public UndoContext.Safe<?> owner()
-		{
-			return _owner;
-		}
-
-		@Override
-		public boolean isDirtyAndClear()
-		{
-			boolean r = _dirty;
-			_dirty = false;
-			return r;
-		}
-
-		@Override
-		public void dirty()
-		{
-			if(_owner == this)
-				_dirty = true;
-			else
-				_owner.dirty();
-		}
-
-		private void initUndoContext()
-		{
-			if(!_fullundo && _undoctx == null)
-			{
-				_owner.dirty();
-				_undoctx = UndoContext.current();
-			}
-		}
-
-		public void addFullUndo()
-		{
-			initUndoContext();
-			if(_undoctx == null) return;
-			_undoctx.add(new UndoContext.Undo()
-			{
-				private final TestEmpty _saved = TestEmpty.this.clone();
-				@Override
-				public void rollback()
-				{
-					TestEmpty.this.assign(_saved);
-				}
-			});
-			_undoctx = null;
-			_fullundo = true;
-		}
-
-		public void reset()
-		{
-			addFullUndo();
-			TestEmpty.this.reset();
-		}
-
-		public void assign(TestEmpty b)
-		{
-			if(b == TestEmpty.this) return;
-			addFullUndo();
-			TestEmpty.this.assign(b);
-		}
-
-		public OctetsStream marshal(OctetsStream s)
-		{
-			return TestEmpty.this.marshal(s);
-		}
-
-		public OctetsStream unmarshal(OctetsStream s) throws MarshalException
-		{
-			addFullUndo();
-			return TestEmpty.this.unmarshal(s);
-		}
-
-		@Override
-		public TestEmpty clone()
-		{
-			return TestEmpty.this.clone();
-		}
-
-		@Override
-		public int hashCode()
-		{
-			return TestEmpty.this.hashCode();
-		}
-
-		@Override
-		public boolean equals(Object o)
-		{
-			return TestEmpty.this.equals(o);
-		}
-
-		@Override
-		public int compareTo(TestEmpty b)
-		{
-			return TestEmpty.this.compareTo(b);
-		}
-
-		@Override
-		public String toString()
-		{
-			return TestEmpty.this.toString();
-		}
-
-		public StringBuilder toJson(StringBuilder s)
-		{
-			return TestEmpty.this.toJson(s);
-		}
-
-		public StringBuilder toLua(StringBuilder s)
-		{
-			return TestEmpty.this.toLua(s);
+			super(bean, parent);
 		}
 	}
 }

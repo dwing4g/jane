@@ -12,7 +12,7 @@ import jane.core.UndoContext;
 /**
  * bean的注释
  */
-public class TestBean extends Bean<TestBean> implements Comparable<TestBean>
+public class TestBean extends Bean<TestBean>
 {
 	private static final long serialVersionUID = 0xbeacaa44540448ccL;
 	public  static final int BEAN_TYPE = 1;
@@ -56,6 +56,7 @@ public class TestBean extends Bean<TestBean> implements Comparable<TestBean>
 		value2 = 0;
 	}
 
+	@Override
 	public void assign(TestBean b)
 	{
 		if(b == this) return;
@@ -218,162 +219,36 @@ public class TestBean extends Bean<TestBean> implements Comparable<TestBean>
 	@Override
 	public Safe safe(UndoContext.Safe<?> parent)
 	{
-		return new Safe(parent);
+		return new Safe(this, parent);
 	}
 
-	public final class Safe implements UndoContext.Safe<TestBean>, Comparable<TestBean>
+	public static final class Safe extends UndoContext.Safe<TestBean>
 	{
-		private transient final UndoContext.Safe<?> _owner;
-		private transient UndoContext _undoctx;
-		private transient boolean _dirty;
-		private transient boolean _fullundo;
-
-		private Safe(UndoContext.Safe<?> parent)
+		private Safe(TestBean bean, UndoContext.Safe<?> parent)
 		{
-			_owner = (parent != null ? parent.owner() : this);
-		}
-
-		@Override
-		public TestBean unsafe()
-		{
-			return TestBean.this;
-		}
-
-		@Override
-		public UndoContext.Safe<?> owner()
-		{
-			return _owner;
-		}
-
-		@Override
-		public boolean isDirtyAndClear()
-		{
-			boolean r = _dirty;
-			_dirty = false;
-			return r;
-		}
-
-		@Override
-		public void dirty()
-		{
-			if(_owner == this)
-				_dirty = true;
-			else
-				_owner.dirty();
-		}
-
-		private void initUndoContext()
-		{
-			if(!_fullundo && _undoctx == null)
-			{
-				_owner.dirty();
-				_undoctx = UndoContext.current();
-			}
-		}
-
-		public void addFullUndo()
-		{
-			initUndoContext();
-			if(_undoctx == null) return;
-			_undoctx.add(new UndoContext.Undo()
-			{
-				private final TestBean _saved = TestBean.this.clone();
-				@Override
-				public void rollback()
-				{
-					TestBean.this.assign(_saved);
-				}
-			});
-			_undoctx = null;
-			_fullundo = true;
+			super(bean, parent);
 		}
 
 		public int getValue1()
 		{
-			return value1;
+			return _bean.value1;
 		}
 
 		public void setValue1(int value1)
 		{
-			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UBase.UInteger(TestBean.this, FIELD_value1, TestBean.this.value1));
-			TestBean.this.value1 = value1;
+			if(initUndoContext()) _undoctx.add(new UBase.UInteger(_bean, FIELD_value1, _bean.value1));
+			_bean.value1 = value1;
 		}
 
 		public long getValue2()
 		{
-			return value2;
+			return _bean.value2;
 		}
 
 		public void setValue2(long value2)
 		{
-			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UBase.ULong(TestBean.this, FIELD_value2, TestBean.this.value2));
-			TestBean.this.value2 = value2;
-		}
-
-		public void reset()
-		{
-			addFullUndo();
-			TestBean.this.reset();
-		}
-
-		public void assign(TestBean b)
-		{
-			if(b == TestBean.this) return;
-			addFullUndo();
-			TestBean.this.assign(b);
-		}
-
-		public OctetsStream marshal(OctetsStream s)
-		{
-			return TestBean.this.marshal(s);
-		}
-
-		public OctetsStream unmarshal(OctetsStream s) throws MarshalException
-		{
-			addFullUndo();
-			return TestBean.this.unmarshal(s);
-		}
-
-		@Override
-		public TestBean clone()
-		{
-			return TestBean.this.clone();
-		}
-
-		@Override
-		public int hashCode()
-		{
-			return TestBean.this.hashCode();
-		}
-
-		@Override
-		public boolean equals(Object o)
-		{
-			return TestBean.this.equals(o);
-		}
-
-		@Override
-		public int compareTo(TestBean b)
-		{
-			return TestBean.this.compareTo(b);
-		}
-
-		@Override
-		public String toString()
-		{
-			return TestBean.this.toString();
-		}
-
-		public StringBuilder toJson(StringBuilder s)
-		{
-			return TestBean.this.toJson(s);
-		}
-
-		public StringBuilder toLua(StringBuilder s)
-		{
-			return TestBean.this.toLua(s);
+			if(initUndoContext()) _undoctx.add(new UBase.ULong(_bean, FIELD_value2, _bean.value2));
+			_bean.value2 = value2;
 		}
 	}
 }

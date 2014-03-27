@@ -8,7 +8,7 @@ import java.io.Serializable;
  * 模版类型B表示bean的实际类型<br>
  * 一个Bean及其子类的实例不能同时由多个线程同时访问
  */
-public abstract class Bean<B extends Bean<B>> implements Serializable, Cloneable
+public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneable, Serializable
 {
 	private static final long serialVersionUID = 28942740885777620L;
 	private transient int     _save_state;                          // 存储状态: 0:未存储,1:已存储但未修改,2:已存储且已修改
@@ -62,6 +62,15 @@ public abstract class Bean<B extends Bean<B>> implements Serializable, Cloneable
 	 * 子类的实现一般是new B(),返回对象的所有字段只有初始的默认值
 	 */
 	public abstract B create();
+
+	/**
+	 * 从另一个bean赋值到自身
+	 * @param b
+	 */
+	public void assign(B b)
+	{
+		throw new UnsupportedOperationException();
+	}
 
 	/**
 	 * bean的初始预计序列化长度
@@ -144,6 +153,12 @@ public abstract class Bean<B extends Bean<B>> implements Serializable, Cloneable
 
 	@Override
 	public abstract B clone();
+
+	@Override
+	public int compareTo(B b)
+	{
+		throw new UnsupportedOperationException();
+	}
 
 	/**
 	 * 把bean的数据格式化成JSON格式返回

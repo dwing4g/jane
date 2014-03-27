@@ -259,6 +259,12 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 		}
 	}
 
+	@SuppressWarnings("unchecked")
+	void modifySafe(Object k, Object v)
+	{
+		modify((K)k, (V)v);
+	}
+
 	/**
 	 * 根据记录的key保存value
 	 * <p>

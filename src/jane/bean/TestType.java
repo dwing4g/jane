@@ -30,7 +30,7 @@ import jane.core.Util;
 /**
  * 测试生成所有支持的类型
  */
-public class TestType extends Bean<TestType> implements Comparable<TestType>
+public class TestType extends Bean<TestType>
 {
 	private static final long serialVersionUID = 0xbeacabe90777739dL;
 	public  static final int BEAN_TYPE = 3;
@@ -148,6 +148,7 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 		v19.reset();
 	}
 
+	@Override
 	public void assign(TestType b)
 	{
 		if(b == this) return;
@@ -246,6 +247,15 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 	public Octets getV8()
 	{
 		return v8;
+	}
+
+	public <B extends Bean<B>> void marshalV8(Bean<B> b)
+	{
+		OctetsStream os = OctetsStream.wrap(this.v8);
+		os.resize(0);
+		os.reserve(b.initSize());
+		this.v8 = os;
+		b.marshal(os);
 	}
 
 	public <B extends Bean<B>> Bean<B> unmarshalV8(Bean<B> b) throws MarshalException
@@ -711,361 +721,234 @@ public class TestType extends Bean<TestType> implements Comparable<TestType>
 	@Override
 	public Safe safe(UndoContext.Safe<?> parent)
 	{
-		return new Safe(parent);
+		return new Safe(this, parent);
 	}
 
-	public final class Safe implements UndoContext.Safe<TestType>, Comparable<TestType>
+	public static final class Safe extends UndoContext.Safe<TestType>
 	{
-		private transient final UndoContext.Safe<?> _owner;
-		private transient UndoContext _undoctx;
-		private transient boolean _dirty;
-		private transient boolean _fullundo;
-
-		private Safe(UndoContext.Safe<?> parent)
+		private Safe(TestType bean, UndoContext.Safe<?> parent)
 		{
-			_owner = (parent != null ? parent.owner() : this);
-		}
-
-		@Override
-		public TestType unsafe()
-		{
-			return TestType.this;
-		}
-
-		@Override
-		public UndoContext.Safe<?> owner()
-		{
-			return _owner;
-		}
-
-		@Override
-		public boolean isDirtyAndClear()
-		{
-			boolean r = _dirty;
-			_dirty = false;
-			return r;
-		}
-
-		@Override
-		public void dirty()
-		{
-			if(_owner == this)
-				_dirty = true;
-			else
-				_owner.dirty();
-		}
-
-		private void initUndoContext()
-		{
-			if(!_fullundo && _undoctx == null)
-			{
-				_owner.dirty();
-				_undoctx = UndoContext.current();
-			}
-		}
-
-		public void addFullUndo()
-		{
-			initUndoContext();
-			if(_undoctx == null) return;
-			_undoctx.add(new UndoContext.Undo()
-			{
-				private final TestType _saved = TestType.this.clone();
-				@Override
-				public void rollback()
-				{
-					TestType.this.assign(_saved);
-				}
-			});
-			_undoctx = null;
-			_fullundo = true;
+			super(bean, parent);
 		}
 
 		public boolean getV1()
 		{
-			return v1;
+			return _bean.v1;
 		}
 
 		public void setV1(boolean v1)
 		{
-			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UBase.UBoolean(TestType.this, FIELD_v1, TestType.this.v1));
-			TestType.this.v1 = v1;
+			if(initUndoContext()) _undoctx.add(new UBase.UBoolean(_bean, FIELD_v1, _bean.v1));
+			_bean.v1 = v1;
 		}
 
 		public byte getV2()
 		{
-			return v2;
+			return _bean.v2;
 		}
 
 		public void setV2(byte v2)
 		{
-			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UBase.UByte(TestType.this, FIELD_v2, TestType.this.v2));
-			TestType.this.v2 = v2;
+			if(initUndoContext()) _undoctx.add(new UBase.UByte(_bean, FIELD_v2, _bean.v2));
+			_bean.v2 = v2;
 		}
 
 		public short getV3()
 		{
-			return v3;
+			return _bean.v3;
 		}
 
 		public void setV3(short v3)
 		{
-			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UBase.UShort(TestType.this, FIELD_v3, TestType.this.v3));
-			TestType.this.v3 = v3;
+			if(initUndoContext()) _undoctx.add(new UBase.UShort(_bean, FIELD_v3, _bean.v3));
+			_bean.v3 = v3;
 		}
 
 		public int getV4()
 		{
-			return v4;
+			return _bean.v4;
 		}
 
 		public void setV4(int v4)
 		{
-			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UBase.UInteger(TestType.this, FIELD_v4, TestType.this.v4));
-			TestType.this.v4 = v4;
+			if(initUndoContext()) _undoctx.add(new UBase.UInteger(_bean, FIELD_v4, _bean.v4));
+			_bean.v4 = v4;
 		}
 
 		public long getV5()
 		{
-			return v5;
+			return _bean.v5;
 		}
 
 		public void setV5(long v5)
 		{
-			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UBase.ULong(TestType.this, FIELD_v5, TestType.this.v5));
-			TestType.this.v5 = v5;
+			if(initUndoContext()) _undoctx.add(new UBase.ULong(_bean, FIELD_v5, _bean.v5));
+			_bean.v5 = v5;
 		}
 
 		public float getV6()
 		{
-			return v6;
+			return _bean.v6;
 		}
 
 		public void setV6(float v6)
 		{
-			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UBase.UFloat(TestType.this, FIELD_v6, TestType.this.v6));
-			TestType.this.v6 = v6;
+			if(initUndoContext()) _undoctx.add(new UBase.UFloat(_bean, FIELD_v6, _bean.v6));
+			_bean.v6 = v6;
 		}
 
 		public double getV7()
 		{
-			return v7;
+			return _bean.v7;
 		}
 
 		public void setV7(double v7)
 		{
-			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UBase.UDouble(TestType.this, FIELD_v7, TestType.this.v7));
-			TestType.this.v7 = v7;
+			if(initUndoContext()) _undoctx.add(new UBase.UDouble(_bean, FIELD_v7, _bean.v7));
+			_bean.v7 = v7;
 		}
 
 		public Octets getV8()
 		{
-			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UBase.UOctets(TestType.this, FIELD_v8, v8));
-			return v8;
+			if(initUndoContext()) _undoctx.add(new UBase.UOctets(_bean, FIELD_v8, _bean.v8, true));
+			return _bean.v8;
 		}
 
 		public byte[] copyOfV8()
 		{
-			return v8.getBytes();
+			return _bean.v8.getBytes();
+		}
+
+		public <B extends Bean<B>> void marshalV8(Bean<B> b)
+		{
+			if(initUndoContext()) _undoctx.add(new UBase.UOctets(_bean, FIELD_v8, _bean.v8, false));
+			_bean.v8 = b.marshal(new OctetsStream(b.initSize()));
 		}
 
 		public <B extends Bean<B>> Bean<B> unmarshalV8(Bean<B> b) throws MarshalException
 		{
-			return TestType.this.unmarshalV8(b);
+			return _bean.unmarshalV8(b);
 		}
 
 		public DynBean unmarshalV8() throws MarshalException
 		{
-			return TestType.this.unmarshalV8();
+			return _bean.unmarshalV8();
 		}
 
 		public Octets unsafeV8()
 		{
-			return v8;
+			return _bean.v8;
 		}
 
 		public String getV9()
 		{
-			return v9;
+			return _bean.v9;
 		}
 
 		public void setV9(String v9)
 		{
-			initUndoContext();
-			if(_undoctx != null) _undoctx.add(new UBase.UString(TestType.this, FIELD_v9, TestType.this.v9));
-			TestType.this.v9 = (v9 != null ? v9 : "");
+			if(initUndoContext()) _undoctx.add(new UBase.UString(_bean, FIELD_v9, _bean.v9));
+			_bean.v9 = (v9 != null ? v9 : "");
 		}
 
 		public UList<Boolean> getV10()
 		{
-			return new UList<Boolean>(_owner, v10);
+			return new UList<Boolean>(_owner, _bean.v10);
 		}
 
 		public ArrayList<Boolean> unsafeV10()
 		{
-			return v10;
+			return _bean.v10;
 		}
 
 		public UList<Byte> getV11()
 		{
-			return new UList<Byte>(_owner, v11);
+			return new UList<Byte>(_owner, _bean.v11);
 		}
 
 		public LinkedList<Byte> unsafeV11()
 		{
-			return v11;
+			return _bean.v11;
 		}
 
 		public UDeque<Integer> getV12()
 		{
-			return new UDeque<Integer>(_owner, v12);
+			return new UDeque<Integer>(_owner, _bean.v12);
 		}
 
 		public ArrayDeque<Integer> unsafeV12()
 		{
-			return v12;
+			return _bean.v12;
 		}
 
 		public USet<Long> getV13()
 		{
-			return new USet<Long>(_owner, v13);
+			return new USet<Long>(_owner, _bean.v13);
 		}
 
 		public HashSet<Long> unsafeV13()
 		{
-			return v13;
+			return _bean.v13;
 		}
 
 		public USet<Float> getV14()
 		{
-			return new USet<Float>(_owner, v14);
+			return new USet<Float>(_owner, _bean.v14);
 		}
 
 		public TreeSet<Float> unsafeV14()
 		{
-			return v14;
+			return _bean.v14;
 		}
 
 		public USet<Double> getV15()
 		{
-			return new USet<Double>(_owner, v15);
+			return new USet<Double>(_owner, _bean.v15);
 		}
 
 		public LinkedHashSet<Double> unsafeV15()
 		{
-			return v15;
+			return _bean.v15;
 		}
 
 		public UMap<Long, String> getV16()
 		{
-			return new UMap<Long, String>(_owner, v16);
+			return new UMap<Long, String>(_owner, _bean.v16);
 		}
 
 		public HashMap<Long, String> unsafeV16()
 		{
-			return v16;
+			return _bean.v16;
 		}
 
 		public UMap<TestBean, Boolean> getV17()
 		{
-			return new UMap<TestBean, Boolean>(_owner, v17);
+			return new UMap<TestBean, Boolean>(_owner, _bean.v17);
 		}
 
 		public TreeMap<TestBean, Boolean> unsafeV17()
 		{
-			return v17;
+			return _bean.v17;
 		}
 
 		public UMap<Octets, TestBean> getV18()
 		{
-			return new UMap<Octets, TestBean>(_owner, v18);
+			return new UMap<Octets, TestBean>(_owner, _bean.v18);
 		}
 
 		public LinkedHashMap<Octets, TestBean> unsafeV18()
 		{
-			return v18;
+			return _bean.v18;
 		}
 
 		public TestBean.Safe getV19()
 		{
-			return v19.safe(this);
+			return _bean.v19.safe(this);
 		}
 
 		public TestBean unsafeV19()
 		{
-			return v19;
-		}
-
-		public void reset()
-		{
-			addFullUndo();
-			TestType.this.reset();
-		}
-
-		public void assign(TestType b)
-		{
-			if(b == TestType.this) return;
-			addFullUndo();
-			TestType.this.assign(b);
-		}
-
-		public OctetsStream marshal(OctetsStream s)
-		{
-			return TestType.this.marshal(s);
-		}
-
-		public OctetsStream unmarshal(OctetsStream s) throws MarshalException
-		{
-			addFullUndo();
-			return TestType.this.unmarshal(s);
-		}
-
-		@Override
-		public TestType clone()
-		{
-			return TestType.this.clone();
-		}
-
-		@Override
-		public int hashCode()
-		{
-			return TestType.this.hashCode();
-		}
-
-		@Override
-		public boolean equals(Object o)
-		{
-			return TestType.this.equals(o);
-		}
-
-		@Override
-		public int compareTo(TestType b)
-		{
-			return TestType.this.compareTo(b);
-		}
-
-		@Override
-		public String toString()
-		{
-			return TestType.this.toString();
-		}
-
-		public StringBuilder toJson(StringBuilder s)
-		{
-			return TestType.this.toJson(s);
-		}
-
-		public StringBuilder toLua(StringBuilder s)
-		{
-			return TestType.this.toLua(s);
+			return _bean.v19;
 		}
 	}
 }

@@ -5,7 +5,7 @@ package jane.core;
  * <p>
  * 保存未知的bean类型和bean数据
  */
-public final class RawBean extends Bean<RawBean> implements Comparable<RawBean>
+public final class RawBean extends Bean<RawBean>
 {
 	private static final long   serialVersionUID = -5813606138942352066L;
 	public static final RawBean BEAN_STUB        = new RawBean();

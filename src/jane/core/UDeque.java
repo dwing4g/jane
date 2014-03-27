@@ -5,6 +5,7 @@ import java.util.Deque;
 import java.util.Iterator;
 import jane.core.UndoContext.Safe;
 import jane.core.UndoContext.Undo;
+import jane.core.UndoContext.Wrap;
 
 /**
  * 只支持无容量限制的ArrayDeque,且不支持删除中间元素
@@ -71,7 +72,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<V>> S elementSafe()
+	public <S extends Wrap<V>> S elementSafe()
 	{
 		V v = _deque.element();
 		return v != null ? (S)(((Bean<?>)v).safe(_owner)) : null;
@@ -84,7 +85,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<V>> S peekSafe()
+	public <S extends Wrap<V>> S peekSafe()
 	{
 		V v = _deque.peek();
 		return v != null ? (S)(((Bean<?>)v).safe(_owner)) : null;
@@ -97,7 +98,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<V>> S getFirstSafe()
+	public <S extends Wrap<V>> S getFirstSafe()
 	{
 		V v = _deque.getFirst();
 		return v != null ? (S)(((Bean<?>)v).safe(_owner)) : null;
@@ -110,7 +111,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<V>> S getLastSafe()
+	public <S extends Wrap<V>> S getLastSafe()
 	{
 		V v = _deque.getLast();
 		return v != null ? (S)(((Bean<?>)v).safe(_owner)) : null;
@@ -123,7 +124,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<V>> S peekFirstSafe()
+	public <S extends Wrap<V>> S peekFirstSafe()
 	{
 		V v = _deque.peekFirst();
 		return v != null ? (S)(((Bean<?>)v).safe(_owner)) : null;
@@ -136,7 +137,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<V>> S peekLastSafe()
+	public <S extends Wrap<V>> S peekLastSafe()
 	{
 		V v = _deque.peekLast();
 		return v != null ? (S)(((Bean<?>)v).safe(_owner)) : null;
@@ -157,7 +158,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 		return true;
 	}
 
-	public <S extends Safe<V>> void add(S v)
+	public <S extends Wrap<V>> void add(S v)
 	{
 		add(v.unsafe());
 	}
@@ -176,7 +177,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 		});
 	}
 
-	public <S extends Safe<V>> void addFirst(S v)
+	public <S extends Wrap<V>> void addFirst(S v)
 	{
 		addFirst(v.unsafe());
 	}
@@ -187,7 +188,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 		add(v);
 	}
 
-	public <S extends Safe<V>> void addLast(S v)
+	public <S extends Wrap<V>> void addLast(S v)
 	{
 		add(v);
 	}
@@ -198,7 +199,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 		return add(v);
 	}
 
-	public <S extends Safe<V>> void offer(S v)
+	public <S extends Wrap<V>> void offer(S v)
 	{
 		add(v);
 	}
@@ -210,7 +211,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 		return true;
 	}
 
-	public <S extends Safe<V>> void offerFirst(S v)
+	public <S extends Wrap<V>> void offerFirst(S v)
 	{
 		addFirst(v);
 	}
@@ -221,7 +222,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 		return add(v);
 	}
 
-	public <S extends Safe<V>> void offerLast(S v)
+	public <S extends Wrap<V>> void offerLast(S v)
 	{
 		add(v);
 	}
@@ -232,7 +233,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 		addFirst(v);
 	}
 
-	public <S extends Safe<V>> void push(S v)
+	public <S extends Wrap<V>> void push(S v)
 	{
 		addFirst(v);
 	}
@@ -270,7 +271,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<V>> S removeSafe()
+	public <S extends Wrap<V>> S removeSafe()
 	{
 		V v_old = remove();
 		return v_old != null ? (S)((Bean<?>)v_old).safe(_owner) : null;
@@ -288,7 +289,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 		return remove();
 	}
 
-	public <S extends Safe<V>> S removeFirstSafe()
+	public <S extends Wrap<V>> S removeFirstSafe()
 	{
 		return removeSafe();
 	}
@@ -309,7 +310,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<V>> S removeLastSafe()
+	public <S extends Wrap<V>> S removeLastSafe()
 	{
 		V v_old = removeLast();
 		return v_old != null ? (S)((Bean<?>)v_old).safe(_owner) : null;
@@ -344,7 +345,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<V>> S pollSafe()
+	public <S extends Wrap<V>> S pollSafe()
 	{
 		V v_old = poll();
 		return v_old != null ? (S)((Bean<?>)v_old).safe(_owner) : null;
@@ -356,7 +357,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 		return poll();
 	}
 
-	public <S extends Safe<V>> S pollFirstSafe()
+	public <S extends Wrap<V>> S pollFirstSafe()
 	{
 		return pollSafe();
 	}
@@ -378,7 +379,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	public <S extends Safe<V>> S pollLastSafe()
+	public <S extends Wrap<V>> S pollLastSafe()
 	{
 		V v_old = pollLast();
 		return v_old != null ? (S)((Bean<?>)v_old).safe(_owner) : null;
@@ -390,7 +391,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 		return remove();
 	}
 
-	public <S extends Safe<V>> S popSafe()
+	public <S extends Wrap<V>> S popSafe()
 	{
 		return removeSafe();
 	}
@@ -454,7 +455,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 		}
 
 		@SuppressWarnings("unchecked")
-		public <S extends Safe<V>> S nextSafe()
+		public <S extends Wrap<V>> S nextSafe()
 		{
 			V v = _it.next();
 			return v != null ? (S)((Bean<?>)v).safe(_owner) : null;

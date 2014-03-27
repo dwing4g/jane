@@ -154,10 +154,10 @@ public abstract class UBase implements Undo
 	{
 		private final Octets _saved;
 
-		public UOctets(Bean<?> b, Field f, Octets v)
+		public UOctets(Bean<?> b, Field f, Octets v, boolean clone)
 		{
 			super(b, f);
-			_saved = v.clone();
+			_saved = (clone ? v.clone() : v);
 		}
 
 		@Override

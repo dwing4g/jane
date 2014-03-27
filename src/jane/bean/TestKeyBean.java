@@ -9,7 +9,7 @@ import jane.core.Util;
 /**
  * 作为key或配置的bean
  */
-public final class TestKeyBean extends Bean<TestKeyBean> implements Comparable<TestKeyBean>
+public final class TestKeyBean extends Bean<TestKeyBean>
 {
 	private static final long serialVersionUID = 0xbeac0364a4241981L;
 	public  static final int BEAN_TYPE = 2;

@@ -3,22 +3,151 @@ package jane.core;
 import java.util.ArrayList;
 import java.util.List;
 
-public class UndoContext
+public final class UndoContext
 {
-	public interface Safe<B>
-	{
-		B unsafe();
-
-		Safe<?> owner();
-
-		boolean isDirtyAndClear();
-
-		void dirty();
-	}
-
 	public interface Undo
 	{
 		void rollback() throws Exception;
+	}
+
+	public static abstract class Wrap<B>
+	{
+		protected final B _bean;
+
+		protected Wrap(B bean)
+		{
+			_bean = bean;
+		}
+
+		public B unsafe()
+		{
+			return _bean;
+		}
+	}
+
+	public static abstract class Safe<B extends Bean<B>> extends Wrap<B> implements Comparable<B>, Cloneable
+	{
+		protected final Safe<?> _owner;
+		protected UndoContext   _undoctx;
+		private boolean         _dirty;
+		protected boolean       _fullundo;
+
+		protected Safe(B bean, UndoContext.Safe<?> parent)
+		{
+			super(bean);
+			_owner = (parent != null ? parent.owner() : this);
+		}
+
+		public Safe<?> owner()
+		{
+			return _owner;
+		}
+
+		public boolean isDirtyAndClear()
+		{
+			boolean r = _dirty;
+			_dirty = false;
+			return r;
+		}
+
+		public void dirty()
+		{
+			if(_owner == this)
+				_dirty = true;
+			else
+				_owner.dirty();
+		}
+
+		protected boolean initUndoContext()
+		{
+			if(_fullundo) return false;
+			if(_undoctx == null)
+			{
+				_owner.dirty();
+				_undoctx = UndoContext.current();
+			}
+			return true;
+		}
+
+		public void addFullUndo()
+		{
+			if(!initUndoContext()) return;
+			_undoctx.add(new UndoContext.Undo()
+			{
+				private final B _saved = _bean.clone();
+
+				@Override
+				public void rollback()
+				{
+					_bean.assign(_saved);
+				}
+			});
+			_fullundo = true;
+		}
+
+		public void reset()
+		{
+			addFullUndo();
+			_bean.reset();
+		}
+
+		public void assign(B b)
+		{
+			if(b == _bean) return;
+			addFullUndo();
+			_bean.assign(b);
+		}
+
+		public OctetsStream marshal(OctetsStream s)
+		{
+			return _bean.marshal(s);
+		}
+
+		public OctetsStream unmarshal(OctetsStream s) throws MarshalException
+		{
+			addFullUndo();
+			return _bean.unmarshal(s);
+		}
+
+		@Override
+		public B clone()
+		{
+			return _bean.clone();
+		}
+
+		@Override
+		public int hashCode()
+		{
+			return _bean.hashCode();
+		}
+
+		@Override
+		public boolean equals(Object o)
+		{
+			return _bean.equals(o);
+		}
+
+		@Override
+		public int compareTo(B b)
+		{
+			return _bean.compareTo(b);
+		}
+
+		@Override
+		public String toString()
+		{
+			return _bean.toString();
+		}
+
+		public StringBuilder toJson(StringBuilder s)
+		{
+			return _bean.toJson(s);
+		}
+
+		public StringBuilder toLua(StringBuilder s)
+		{
+			return _bean.toLua(s);
+		}
 	}
 
 	private static final class Record<K, V extends Bean<V>, S extends Safe<V>>
@@ -98,24 +227,21 @@ public class UndoContext
 		_oncommits.add(r);
 	}
 
-	@SuppressWarnings("unchecked")
-	<K, V extends Bean<V>, S extends Safe<V>> void commit()
+	void commit()
 	{
 		_undos.clear();
 
-		for(Record<?, ?, ?> record : _records)
+		for(Record<?, ?, ?> r : _records)
 		{
-			Record<K, V, S> r = (Record<K, V, S>)record;
 			if(r._value.isDirtyAndClear())
-			    r._table.modify(r._key, r._value.unsafe());
+			    r._table.modifySafe(r._key, r._value.unsafe());
 		}
 		_records.clear();
 
-		for(RecordLong<?, ?> record : _recordlongs)
+		for(RecordLong<?, ?> r : _recordlongs)
 		{
-			RecordLong<V, S> r = (RecordLong<V, S>)record;
 			if(r._value.isDirtyAndClear())
-			    r._table.modify(r._key, r._value.unsafe());
+			    r._table.modifySafe(r._key, r._value.unsafe());
 		}
 		_recordlongs.clear();
 
