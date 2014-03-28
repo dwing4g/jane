@@ -15,13 +15,14 @@ public final class Log
 	 */
 	static
 	{
-		String log4j2_prop = System.getProperty("log4j2.prop");
-		if(log4j2_prop == null || (log4j2_prop = log4j2_prop.trim()).isEmpty())
-		    log4j2_prop = "log4j2.xml";
-		Configurator.initialize("jane", log4j2_prop);
+		String prop = System.getProperty("log4j2.prop");
+		if(prop == null || (prop = prop.trim()).isEmpty())
+		    prop = "log4j2.xml";
+		Configurator.initialize("jane", log4j2_prop = prop);
 	}
 
 	public static final Logger  log      = LogManager.getRootLogger();
+	public static final String  log4j2_prop;
 	public static final boolean hasTrace = log.isTraceEnabled();
 	public static final boolean hasDebug = log.isDebugEnabled();
 	public static final boolean hasInfo  = log.isInfoEnabled();
@@ -58,6 +59,8 @@ public final class Log
 		log.info("java.class.path = {}", System.getProperty("java.class.path"));
 		log.info("user.name = {}", System.getProperty("user.name"));
 		log.info("user.dir = {}", System.getProperty("user.dir"));
+		log.info("log4j2.prop = {}", log4j2_prop);
+		log.info("debug = {}, charset = {}, file.encoding = {}", Const.debug, Const.stringCharset, System.getProperty("file.encoding"));
 	}
 
 	/**

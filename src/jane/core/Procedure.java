@@ -54,52 +54,55 @@ public abstract class Procedure implements Runnable
 				return ctx;
 			}
 		};
-		DBManager.instance().scheduleWithFixedDelay(new Runnable()
+		if(!Const.debug)
 		{
-			@Override
-			public void run()
+			DBManager.instance().scheduleWithFixedDelay(new Runnable()
 			{
-				try
+				@Override
+				public void run()
 				{
-					long now = System.currentTimeMillis();
-					for(Entry<Thread, Context> e : _proc_threads.entrySet())
+					try
 					{
-						Thread t = e.getKey();
-						if(t.isAlive())
+						long now = System.currentTimeMillis();
+						for(Entry<Thread, Context> e : _proc_threads.entrySet())
 						{
-							Procedure p = e.getValue().proc;
-							if(p != null && now - p._begin_time > 5000)
+							Thread t = e.getKey();
+							if(t.isAlive())
 							{
-								synchronized(p)
+								Procedure p = e.getValue().proc;
+								if(p != null && now - p._begin_time > 5000)
 								{
-									long timeout = now - p._begin_time;
-									if(timeout > 5000 && e.getValue().proc != null)
+									synchronized(p)
 									{
-										if(p._sid != null)
+										long timeout = now - p._begin_time;
+										if(timeout > 5000 && e.getValue().proc != null)
 										{
-											Log.log.warn("procedure({}) in {} interrupted for timeout({} ms): sid={}",
-											        p.getClass().getName(), t, timeout, p._sid);
+											if(p._sid != null)
+											{
+												Log.log.warn("procedure({}) in {} interrupted for timeout({} ms): sid={}",
+												        p.getClass().getName(), t, timeout, p._sid);
+											}
+											else
+											{
+												Log.log.warn("procedure({}) in {} interrupted for timeout({} ms)",
+												        p.getClass().getName(), t, timeout);
+											}
+											t.interrupt();
 										}
-										else
-										{
-											Log.log.warn("procedure({}) in {} interrupted for timeout({} ms)",
-											        p.getClass().getName(), t, timeout);
-										}
-										t.interrupt();
 									}
 								}
 							}
+							else
+								_proc_threads.remove(t);
 						}
-						else
-							_proc_threads.remove(t);
+					}
+					catch(Throwable e)
+					{
+						Log.log.error("procedure timeout thread fatal exception:", e);
 					}
 				}
-				catch(Throwable e)
-				{
-					Log.log.error("procedure timeout thread fatal exception:", e);
-				}
-			}
-		}, 5);
+			}, 5);
+		}
 	}
 
 	/**

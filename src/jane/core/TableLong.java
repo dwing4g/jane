@@ -392,6 +392,14 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	}
 
 	/**
+	 * 同insert,自动插入默认初始化的value
+	 */
+	public long insert()
+	{
+		return insert(_deleted.create());
+	}
+
+	/**
 	 * 根据记录的key删除记录
 	 * <p>
 	 * 必须在事务中已加锁的状态下调用此方法

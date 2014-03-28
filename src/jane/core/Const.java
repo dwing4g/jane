@@ -12,6 +12,7 @@ import java.util.Properties;
 public final class Const
 {
 	private static final Properties _property         = new Properties();
+	public static final boolean     debug;
 	public static final Charset     stringCharsetUTF8 = Charset.forName("UTF-8");
 	public static final Charset     stringCharsetGBK  = Charset.forName("GBK");
 	public static final Charset     stringCharset;
@@ -58,6 +59,8 @@ public final class Const
 		{
 			Log.log.warn("{}: load {} failed, use all default properties", Const.class.getName(), jane_prop);
 		}
+		String str = System.getProperty("debug");
+		debug = (str != null && str.trim().equalsIgnoreCase("true") || getPropBoolean("debug"));
 		stringCharset = Charset.forName(getPropStr("stringCharset", "UTF-8"));
 		connectTimeout = getPropInt("connectTimeout", 5, 1);
 		rpcCheckInterval = getPropInt("rpcCheckInterval", 3, 1);
@@ -102,7 +105,7 @@ public final class Const
 	{
 		String value = _property.getProperty(key);
 		if(value == null) return def;
-		return Boolean.parseBoolean(value);
+		return Boolean.parseBoolean(value.trim());
 	}
 
 	public static boolean getPropBoolean(String key)
@@ -114,7 +117,7 @@ public final class Const
 	{
 		try
 		{
-			return Integer.parseInt(_property.getProperty(key));
+			return Integer.parseInt(_property.getProperty(key).trim());
 		}
 		catch(Exception e)
 		{
@@ -126,7 +129,7 @@ public final class Const
 	{
 		try
 		{
-			int r = Integer.parseInt(_property.getProperty(key));
+			int r = Integer.parseInt(_property.getProperty(key).trim());
 			return r < min ? min : r;
 		}
 		catch(Exception e)
@@ -139,7 +142,7 @@ public final class Const
 	{
 		try
 		{
-			int r = Integer.parseInt(_property.getProperty(key));
+			int r = Integer.parseInt(_property.getProperty(key).trim());
 			return r < min ? min : (r > max ? max : r);
 		}
 		catch(Exception e)
@@ -157,7 +160,7 @@ public final class Const
 	{
 		try
 		{
-			return Long.parseLong(_property.getProperty(key));
+			return Long.parseLong(_property.getProperty(key).trim());
 		}
 		catch(Exception e)
 		{
@@ -169,7 +172,7 @@ public final class Const
 	{
 		try
 		{
-			long r = Long.parseLong(_property.getProperty(key));
+			long r = Long.parseLong(_property.getProperty(key).trim());
 			return r < min ? min : r;
 		}
 		catch(Exception e)
@@ -182,7 +185,7 @@ public final class Const
 	{
 		try
 		{
-			long r = Long.parseLong(_property.getProperty(key));
+			long r = Long.parseLong(_property.getProperty(key).trim());
 			return r < min ? min : (r > max ? max : r);
 		}
 		catch(Exception e)
