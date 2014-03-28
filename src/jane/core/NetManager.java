@@ -111,7 +111,7 @@ public class NetManager implements IoHandler
 	 * <p>
 	 * 目前仅仅是完整类名
 	 */
-	public String getName()
+	public final String getName()
 	{
 		return _name;
 	}
@@ -119,7 +119,7 @@ public class NetManager implements IoHandler
 	/**
 	 * 判断某个session是否在连接状态
 	 */
-	public boolean hasSession(IoSession session)
+	public final boolean hasSession(IoSession session)
 	{
 		long sid = session.getId();
 		if(_acceptor != null && _acceptor.getManagedSessions().containsKey(sid)) return true;
@@ -132,7 +132,7 @@ public class NetManager implements IoHandler
 	 * @return 返回不可修改的map容器
 	 */
 	@SuppressWarnings("unchecked")
-	public Map<Long, IoSession> getServerSessions()
+	public final Map<Long, IoSession> getServerSessions()
 	{
 		return _acceptor != null ? _acceptor.getManagedSessions() : Collections.EMPTY_MAP;
 	}
@@ -142,7 +142,7 @@ public class NetManager implements IoHandler
 	 * @return 返回不可修改的map容器
 	 */
 	@SuppressWarnings("unchecked")
-	public Map<Long, IoSession> getClientSessions()
+	public final Map<Long, IoSession> getClientSessions()
 	{
 		return _connector != null ? _connector.getManagedSessions() : Collections.EMPTY_MAP;
 	}
@@ -152,7 +152,7 @@ public class NetManager implements IoHandler
 	 * <p>
 	 * 必须在连接或监听之前设置
 	 */
-	public void setCodec(Class<? extends ProtocolCodecFactory> pcf)
+	public final void setCodec(Class<? extends ProtocolCodecFactory> pcf)
 	{
 		_pcf = (pcf != null ? pcf : BeanCodec.class);
 	}
@@ -163,7 +163,7 @@ public class NetManager implements IoHandler
 	 * 设置后,参数的容器不能再做修改<br>
 	 * 最好在网络连接前设置
 	 */
-	public void setHandlers(IntMap<BeanHandler<?>> handlers)
+	public final void setHandlers(IntMap<BeanHandler<?>> handlers)
 	{
 		if(handlers != null) _handlers = handlers;
 	}
@@ -171,7 +171,7 @@ public class NetManager implements IoHandler
 	/**
 	 * 获取监听器
 	 */
-	public NioSocketAcceptor getAcceptor()
+	public final NioSocketAcceptor getAcceptor()
 	{
 		if(_acceptor == null || _acceptor.isDisposed())
 		{
@@ -190,7 +190,7 @@ public class NetManager implements IoHandler
 	/**
 	 * 获取连接器
 	 */
-	public NioSocketConnector getConnector()
+	public final NioSocketConnector getConnector()
 	{
 		if(_connector == null || _connector.isDisposed())
 		{
@@ -210,7 +210,7 @@ public class NetManager implements IoHandler
 	/**
 	 * 获取用于服务器端的mina网络配置并可以修改
 	 */
-	public SocketSessionConfig getServerConfig()
+	public final SocketSessionConfig getServerConfig()
 	{
 		return getAcceptor().getSessionConfig();
 	}
@@ -218,7 +218,7 @@ public class NetManager implements IoHandler
 	/**
 	 * 获取用于客户端的mina网络配置并可以修改
 	 */
-	public SocketSessionConfig getClientConfig()
+	public final SocketSessionConfig getClientConfig()
 	{
 		return getConnector().getSessionConfig();
 	}

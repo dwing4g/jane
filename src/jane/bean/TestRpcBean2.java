@@ -3,7 +3,7 @@ package jane.bean;
 
 import jane.core.RpcBean;
 
-public class TestRpcBean2 extends RpcBean<TestBean, TestBean>
+public final class TestRpcBean2 extends RpcBean<TestBean, TestBean>
 {
 	private static final long serialVersionUID = 0xbeac3a46ee8864faL;
 	public  static final TestRpcBean2 BEAN_STUB = new TestRpcBean2();

@@ -6,7 +6,7 @@ import jane.core.BeanHandler;
 import jane.core.Log;
 import jane.core.NetManager;
 
-public class TestEmptyHandler extends BeanHandler<TestEmpty>
+public final class TestEmptyHandler extends BeanHandler<TestEmpty>
 {
 	/*\
 	\*/

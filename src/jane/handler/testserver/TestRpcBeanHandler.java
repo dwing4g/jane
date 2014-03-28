@@ -7,7 +7,7 @@ import jane.core.Log;
 import jane.core.NetManager;
 import jane.core.RpcHandler;
 
-public class TestRpcBeanHandler extends RpcHandler<TestBean, TestType>
+public final class TestRpcBeanHandler extends RpcHandler<TestBean, TestType>
 {
 	/*\
 	|*| int TEST_CONST1 = 5; // 测试类静态常量

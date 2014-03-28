@@ -7,7 +7,7 @@ import jane.core.Log;
 import jane.core.NetManager;
 import jane.core.RC4Filter;
 
-public class TestBeanHandler extends BeanHandler<TestBean>
+public final class TestBeanHandler extends BeanHandler<TestBean>
 {
 	/*\
 	|*| int TEST_CONST1 = 5; // 测试类静态常量

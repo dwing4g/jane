@@ -17,6 +17,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
  */
 public abstract class Procedure implements Runnable
 {
+	public interface ExceptionHandler
+	{
+		void onException(Throwable e);
+	}
+
 	/**
 	 * 工作线程绑定的上下文对象
 	 */
@@ -32,6 +37,7 @@ public abstract class Procedure implements Runnable
 	private static final int                    _lockmask     = Const.lockPoolSize - 1;               // 锁池下标的掩码
 	private static final ReentrantReadWriteLock _rwl_commit   = new ReentrantReadWriteLock();         // 用于数据提交的读写锁
 	private static final Map<Thread, Context>   _proc_threads = Util.newProcThreadsMap();             // 当前运行的全部事务线程. 用于判断是否超时
+	private static ExceptionHandler             _default_eh;                                          // 默认的全局异常处理
 	private volatile Context                    _ctx;                                                 // 事务所属的线程上下文. 只在事务运行中有效
 	private volatile Object                     _sid;                                                 // 事务所属的SessionId
 	private volatile long                       _begin_time;                                          // 事务运行的起始时间. 用于判断是否超时
@@ -106,12 +112,17 @@ public abstract class Procedure implements Runnable
 		return _rwl_commit.writeLock();
 	}
 
+	public static void setDefaultOnException(ExceptionHandler eh)
+	{
+		_default_eh = eh;
+	}
+
 	/**
 	 * 获取当前事务绑定的sid
 	 * <p>
 	 * 事务完成后会自动清掉此绑定
 	 */
-	public Object getSid()
+	public final Object getSid()
 	{
 		return _sid;
 	}
@@ -121,9 +132,19 @@ public abstract class Procedure implements Runnable
 	 * <p>
 	 * 为了安全只能由内部类调用
 	 */
-	void setSid(Object sid)
+	final void setSid(Object sid)
 	{
 		_sid = sid;
+	}
+
+	protected static void addOnCommit(Runnable r)
+	{
+		UndoContext.current().addOnCommit(r);
+	}
+
+	protected static void addOnRollback(Runnable r)
+	{
+		UndoContext.current().addOnRollback(r);
 	}
 
 	/**
@@ -131,7 +152,7 @@ public abstract class Procedure implements Runnable
 	 * <p>
 	 * 可以避免事务超时时被打断,一般用于事务可能会运行较久的情况,但一般不推荐这样做
 	 */
-	protected void setUnintterrupted()
+	protected final void setUnintterrupted()
 	{
 		if(_ctx != null) _ctx.proc = null;
 	}
@@ -141,7 +162,7 @@ public abstract class Procedure implements Runnable
 	 * <p>
 	 * 只能在事务中调用
 	 */
-	protected void unlock()
+	protected final void unlock()
 	{
 		if(_ctx == null) throw new IllegalStateException("invalid lock/unlock out of procedure");
 		if(_ctx.lockcount == 0) return;
@@ -182,7 +203,7 @@ public abstract class Procedure implements Runnable
 	 * lockid通过{@link Table}/{@link TableLong}的lockid方法获取<br>
 	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁
 	 */
-	protected void lock(int lockid) throws InterruptedException
+	protected final void lock(int lockid) throws InterruptedException
 	{
 		unlock();
 		(_ctx.locks[0] = getLock(lockid)).lockInterruptibly();
@@ -196,7 +217,7 @@ public abstract class Procedure implements Runnable
 	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁
 	 * @param lockids 注意此数组内的元素会被排序
 	 */
-	protected void lock(int[] lockids) throws InterruptedException
+	protected final void lock(int[] lockids) throws InterruptedException
 	{
 		unlock();
 		int n = lockids.length;
@@ -217,7 +238,7 @@ public abstract class Procedure implements Runnable
 	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁
 	 * @param lockids 此容器内的元素不会改动
 	 */
-	protected void lock(List<Integer> lockids) throws InterruptedException
+	protected final void lock(List<Integer> lockids) throws InterruptedException
 	{
 		unlock();
 		int n = lockids.size();
@@ -250,7 +271,7 @@ public abstract class Procedure implements Runnable
 	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁 这个方法比加锁一组未排序的lockid的效率高
 	 * @param lockids 此容器内的元素不会改动
 	 */
-	protected void lock(SortedSet<Integer> lockids) throws InterruptedException
+	protected final void lock(SortedSet<Integer> lockids) throws InterruptedException
 	{
 		unlock();
 		int n = lockids.size();
@@ -270,7 +291,7 @@ public abstract class Procedure implements Runnable
 	 * lockid通过{@link Table}/{@link TableLong}的lockid方法获取<br>
 	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁
 	 */
-	protected void lock(int lockid0, int lockid1, int lockid2, int lockid3, int... lockids) throws InterruptedException
+	protected final void lock(int lockid0, int lockid1, int lockid2, int lockid3, int... lockids) throws InterruptedException
 	{
 		int n = lockids.length;
 		if(n + 4 > Const.maxLockPerProcedure)
@@ -358,7 +379,7 @@ public abstract class Procedure implements Runnable
 	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁<br>
 	 * 这个方法比加锁一组lockid的效率高
 	 */
-	protected void lock(int lockid0, int lockid1) throws InterruptedException
+	protected final void lock(int lockid0, int lockid1) throws InterruptedException
 	{
 		unlock();
 		lock2(lockid0, lockid1);
@@ -371,7 +392,7 @@ public abstract class Procedure implements Runnable
 	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁<br>
 	 * 这个方法比加锁一组lockid的效率高
 	 */
-	protected void lock(int lockid0, int lockid1, int lockid2) throws InterruptedException
+	protected final void lock(int lockid0, int lockid1, int lockid2) throws InterruptedException
 	{
 		unlock();
 		lock3(lockid0, lockid1, lockid2);
@@ -384,7 +405,7 @@ public abstract class Procedure implements Runnable
 	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁<br>
 	 * 这个方法比加锁一组lockid的效率高
 	 */
-	protected void lock(int lockid0, int lockid1, int lockid2, int lockid3) throws InterruptedException
+	protected final void lock(int lockid0, int lockid1, int lockid2, int lockid3) throws InterruptedException
 	{
 		unlock();
 		int i = 0;
@@ -572,9 +593,14 @@ public abstract class Procedure implements Runnable
 	 */
 	protected void onException(Throwable e)
 	{
-		if(_sid != null)
-			Log.log.error("procedure exception: sid=" + _sid, e);
+		if(_default_eh != null)
+			_default_eh.onException(e);
 		else
-			Log.log.error("procedure exception:", e);
+		{
+			if(_sid != null)
+				Log.log.error("procedure exception: sid=" + _sid, e);
+			else
+				Log.log.error("procedure exception:", e);
+		}
 	}
 }

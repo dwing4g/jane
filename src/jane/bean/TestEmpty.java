@@ -10,7 +10,7 @@ import jane.core.UndoContext.Wrap;
 /**
  * 测试空bean
  */
-public class TestEmpty extends Bean<TestEmpty>
+public final class TestEmpty extends Bean<TestEmpty>
 {
 	private static final long serialVersionUID = 0xbeac245da40b43f8L;
 	public  static final int BEAN_TYPE = 4;

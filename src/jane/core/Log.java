@@ -21,7 +21,7 @@ public final class Log
 		Configurator.initialize("jane", log4j2_prop);
 	}
 
-	public static final Logger  log      = LogManager.getLogger("jane");
+	public static final Logger  log      = LogManager.getRootLogger();
 	public static final boolean hasTrace = log.isTraceEnabled();
 	public static final boolean hasDebug = log.isDebugEnabled();
 	public static final boolean hasInfo  = log.isInfoEnabled();

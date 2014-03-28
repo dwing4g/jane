@@ -13,7 +13,7 @@ import jane.core.UndoContext.Wrap;
 /**
  * bean的注释
  */
-public class TestBean extends Bean<TestBean>
+public final class TestBean extends Bean<TestBean>
 {
 	private static final long serialVersionUID = 0xbeacaa44540448ccL;
 	public  static final int BEAN_TYPE = 1;

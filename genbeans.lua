@@ -20,7 +20,7 @@ package ]=] .. namespace .. [=[.bean;
 import java.lang.reflect.Field;#>#
 import #(bean.imports);
 #(bean.comment)
-public class #(bean.name) extends Bean<#(bean.name)>
+public final class #(bean.name) extends Bean<#(bean.name)>
 {
 	private static final long serialVersionUID = #(bean.uid);
 	public  static final int BEAN_TYPE = #(bean.type);
@@ -200,7 +200,7 @@ package ]=] .. namespace .. [=[.bean;
 
 import jane.core.RpcBean;
 #(bean.comment)
-public class #(bean.name) extends RpcBean<#(bean.arg), #(bean.res)>
+public final class #(bean.name) extends RpcBean<#(bean.arg), #(bean.res)>
 {
 	private static final long serialVersionUID = #(bean.uid);
 	public  static final #(bean.name) BEAN_STUB = new #(bean.name)();
@@ -255,7 +255,7 @@ import jane.core.Log;
 import jane.core.NetManager;
 import ]=] .. namespace .. [=[.bean.#(bean.name);
 
-public class #(bean.name)Handler extends BeanHandler<#(bean.name)>
+public final class #(bean.name)Handler extends BeanHandler<#(bean.name)>
 {
 	/*\
 #(#	|*| #(var.type) #(var.name)#(var.value);#(var.comment)
@@ -279,7 +279,7 @@ import jane.core.RpcHandler;
 import ]=] .. namespace .. [=[.bean.#(bean_arg.name);#<#
 import ]=] .. namespace .. [=[.bean.#(bean_res.name);#>#
 
-public class #(bean.name)Handler extends RpcHandler<#(bean_arg.name), #(bean_res.name)>
+public final class #(bean.name)Handler extends RpcHandler<#(bean_arg.name), #(bean_res.name)>
 {
 	/*\
 #(#	|*| #(var.type) #(var.name)#(var.value);#(var.comment)
@@ -859,7 +859,6 @@ local function bean_const(code)
 		gsub("\tprivate static Field .-\n", ""):
 		gsub("\tstatic\n.-\n\t}\n\n", ""):
 		gsub("\n\t@Override\n\tpublic Safe safe.-\n\t}\n", ""):
-		gsub("public class", "public final class"):
 		gsub("\t@Override\n\tpublic void reset%(.-\n\t}", [[
 	@Override
 	public void reset()
