@@ -40,7 +40,7 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 	private static final Pattern    PATTERN_CHARSET  = Pattern.compile("charset=([\\w-]+)");
 	private static final DateFormat _sdf             = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
 	private static String           _datestr;
-	private static long             _lastsec;
+	private static volatile long    _lastsec;
 	private OctetsStream            _buf             = new OctetsStream(1024);                                        // 用于解码器的数据缓存
 	private long                    _bodysize;                                                                        // 当前请求所需的内容大小
 
@@ -59,8 +59,8 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 			{
 				if(sec != _lastsec)
 				{
-					_lastsec = sec;
 					_datestr = _sdf.format(new Date(t));
+					_lastsec = sec;
 				}
 			}
 		}

@@ -37,8 +37,8 @@ public class NetManager implements IoHandler
 	private final String                          _name     = getClass().getName();                      // 当前管理器的名字
 	private Class<? extends ProtocolCodecFactory> _pcf      = BeanCodec.class;                           // 协议编码器的类
 	private IntMap<BeanHandler<?>>                _handlers = new IntMap<BeanHandler<?>>(0);             // bean的处理器
-	private NioSocketAcceptor                     _acceptor;                                             // mina的网络监听器
-	private NioSocketConnector                    _connector;                                            // mina的网络连接器
+	private volatile NioSocketAcceptor            _acceptor;                                             // mina的网络监听器
+	private volatile NioSocketConnector           _connector;                                            // mina的网络连接器
 
 	static
 	{
@@ -179,8 +179,9 @@ public class NetManager implements IoHandler
 			{
 				if(_acceptor == null || _acceptor.isDisposed())
 				{
-					_acceptor = new NioSocketAcceptor();
-					_acceptor.setHandler(this);
+					NioSocketAcceptor t = new NioSocketAcceptor();
+					t.setHandler(this);
+					_acceptor = t;
 				}
 			}
 		}
@@ -198,9 +199,10 @@ public class NetManager implements IoHandler
 			{
 				if(_connector == null || _connector.isDisposed())
 				{
-					_connector = new NioSocketConnector();
-					_connector.setHandler(this);
-					_connector.setConnectTimeoutMillis(Const.connectTimeout * 1000);
+					NioSocketConnector t = new NioSocketConnector();
+					t.setHandler(this);
+					t.setConnectTimeoutMillis(Const.connectTimeout * 1000);
+					_connector = t;
 				}
 			}
 		}
@@ -323,8 +325,11 @@ public class NetManager implements IoHandler
 	 */
 	public void stopAllClients(boolean immediately)
 	{
-		for(IoSession session : _connector.getManagedSessions().values())
-			session.close(immediately);
+		if(_connector != null)
+		{
+			for(IoSession session : _connector.getManagedSessions().values())
+				session.close(immediately);
+		}
 	}
 
 	/**

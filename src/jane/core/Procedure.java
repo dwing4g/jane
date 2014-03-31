@@ -33,7 +33,7 @@ public abstract class Procedure implements Runnable
 	}
 
 	private static final ThreadLocal<Context>   _tl_proc;                                             // 每个事务线程绑定一个上下文
-	private static final ReentrantLock[]        _lockpool     = new ReentrantLock[Const.lockPoolSize]; // 全局共享的锁池
+	private static final Lock[]                 _lockpool     = new ReentrantLock[Const.lockPoolSize]; // 全局共享的锁池
 	private static final int                    _lockmask     = Const.lockPoolSize - 1;               // 锁池下标的掩码
 	private static final ReentrantReadWriteLock _rwl_commit   = new ReentrantReadWriteLock();         // 用于数据提交的读写锁
 	private static final Map<Thread, Context>   _proc_threads = Util.newProcThreadsMap();             // 当前运行的全部事务线程. 用于判断是否超时
@@ -185,7 +185,15 @@ public abstract class Procedure implements Runnable
 		synchronized(_lockpool)
 		{
 			lock = _lockpool[lockid];
-			return lock != null ? lock : (_lockpool[lockid] = new ReentrantLock());
+			if(lock == null)
+			{
+				lock = new ReentrantLock();
+				synchronized(lock) // for double check problem
+				{
+					_lockpool[lockid] = lock;
+				}
+			}
+			return lock;
 		}
 	}
 
