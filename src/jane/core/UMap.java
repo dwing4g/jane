@@ -178,7 +178,7 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 		@SuppressWarnings("unchecked")
 		public <S extends Wrap<V>> S getValueSafe()
 		{
-			return (S)((Bean<?>)getValue()).safe(_owner);
+			return (S)((Bean<?>)_e.getValue()).safe(_owner);
 		}
 
 		@Override
@@ -239,12 +239,12 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 			_it.remove();
 			undoContext().addOnRollback(new Runnable()
 			{
-				private final UEntry _v = _cur;
+				private final UEntry _e = _cur;
 
 				@Override
 				public void run()
 				{
-					_map.put(_v.getKey(), _v.getValue());
+					_map.put(_e.getKey(), _e.getValue());
 				}
 			});
 		}
@@ -252,7 +252,7 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 
 	public final class UEntrySet extends AbstractSet<Entry<K, V>>
 	{
-		private final Set<Entry<K, V>> _it = _map.entrySet();
+		private Set<Entry<K, V>> _it;
 
 		private UEntrySet()
 		{
@@ -272,15 +272,16 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 		}
 
 		@Override
-		public boolean contains(Object o)
+		public int size()
 		{
-			return _it.contains(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o);
+			return UMap.this.size();
 		}
 
 		@Override
-		public int size()
+		public boolean contains(Object o)
 		{
-			return _it.size();
+			if(_it == null) _it = _map.entrySet();
+			return _it.contains(o);
 		}
 
 		@Override
@@ -298,8 +299,6 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 
 	public final class UKeySet extends AbstractSet<K>
 	{
-		private final Set<K> _it = _map.keySet();
-
 		private UKeySet()
 		{
 		}
@@ -318,15 +317,15 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 		}
 
 		@Override
-		public boolean contains(Object o)
+		public int size()
 		{
-			return _it.contains(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o);
+			return UMap.this.size();
 		}
 
 		@Override
-		public int size()
+		public boolean contains(Object o)
 		{
-			return _it.size();
+			return UMap.this.containsKey(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o);
 		}
 
 		@Override

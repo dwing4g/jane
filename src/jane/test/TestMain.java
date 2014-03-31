@@ -14,7 +14,8 @@ public final class TestMain
 		try
 		{
 			Log.log.info("main: begin");
-			Log.logSystemProperties();
+			Log.logSystemProperties(args);
+			Log.removeAppender(args);
 			DBManager.instance().startup();
 			AllTables.register();
 			BeanCodec.registerAllBeans(AllBeans.getAllBeans());

@@ -14,4 +14,4 @@ mkdir -p log 2> /dev/null
 mkdir -p db  2> /dev/null
 
 if [ "$NOHUP" == "" ]; then java $JVM -cp $LIB:jane-core.jar:jane-test.jar:. $MAIN ${@:2:9}
-else                  nohup java $JVM -cp $LIB:jane-core.jar:jane-test.jar:. $MAIN ${@:3:9} 1>> log/stdout.log 2>> log/stderr.log & fi
+else                  nohup java $JVM -cp $LIB:jane-core.jar:jane-test.jar:. $MAIN removeAppender=STDOUT ${@:3:9} 1>> log/stdout.log 2>> log/stderr.log & fi

@@ -2,7 +2,11 @@
 <!-- put this file in java classpath that must not contain "!" and ensure the filename: log4j2.xml -->
 <Configuration status="WARN" shutdownHook="disable">
 	<Appenders>
-		<Console name="STDOUT" target="SYSTEM_OUT" ignoreExceptions="false"><!-- SYSTEM_ERR -->
+		<Console name="STDOUT" target="SYSTEM_OUT" ignoreExceptions="false">
+			<ThresholdFilter level="TRACE" onMatch="ACCEPT" onMismatch="DENY"/>
+			<PatternLayout charset="UTF-8" pattern="%d{yy-MM-dd HH:mm:ss.SSS} %-5level [%t] %msg%n"/>
+		</Console>
+		<Console name="STDERR" target="SYSTEM_ERR" ignoreExceptions="false">
 			<ThresholdFilter level="TRACE" onMatch="ACCEPT" onMismatch="DENY"/>
 			<PatternLayout charset="UTF-8" pattern="%d{yy-MM-dd HH:mm:ss.SSS} %-5level [%t] %msg%n"/>
 		</Console>
@@ -18,10 +22,10 @@
 	  	</RollingRandomAccessFile>
 		<Failover name="FAIL" primary="FILE">
 			<Failovers>
-				<AppenderRef ref="STDOUT"/>
+				<AppenderRef ref="STDERR"/>
 			</Failovers>
 		</Failover>
-		<Async name="ASYNC" bufferSize="65536" errorRef="STDOUT">
+		<Async name="ASYNC" bufferSize="65536" errorRef="STDERR">
 			<AppenderRef ref="FAIL"/>
 		</Async>
 	</Appenders>
