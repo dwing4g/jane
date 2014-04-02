@@ -82,7 +82,7 @@ public final class Log
 	/**
 	 * 从命令行参数关闭日志中的某些appenders
 	 */
-	public static void removeAppender(String[] args)
+	public static void removeAppendersFromArgs(String[] args)
 	{
 		for(String s : args)
 		{
