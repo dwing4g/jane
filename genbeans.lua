@@ -598,7 +598,7 @@ typedef.vector = merge(typedef.octets,
 	import = { "java.util.ArrayList", "java.util.Collection", "jane.core.Util", "jane.core.UList" },
 	type = function(var) return "ArrayList<" .. subtypename(var, var.k) .. ">" end,
 	type_i = function(var) return "Collection<" .. subtypename(var, var.k) .. ">" end,
-	itype = function(var) return "List<" .. subtypename(var, var.k) .. ">" end,
+	utype = function(var) return "UList<" .. subtypename(var, var.k) .. ">" end,
 	field = "",
 	fieldget = "",
 	new = function(var) return "\t\t#(var.name) = new ArrayList<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
@@ -607,9 +607,9 @@ typedef.vector = merge(typedef.octets,
 	set = "",
 	getsafe = [[
 
-		public U#(var.itype) get#(var.name_u)()
+		public #(var.utype) get#(var.name_u)()
 		{
-			return new U#(var.itype)(_owner, _bean.#(var.name));
+			return new #(var.utype)(_owner, _bean.#(var.name));
 		}
 
 		public #(var.type) unsafe#(var.name_u)()
@@ -661,7 +661,7 @@ typedef.deque = merge(typedef.list,
 {
 	import = { "java.util.ArrayDeque", "java.util.Collection", "jane.core.Util", "jane.core.UDeque" },
 	type = function(var) return "ArrayDeque<" .. subtypename(var, var.k) .. ">" end,
-	itype = function(var) return "Deque<" .. subtypename(var, var.k) .. ">" end,
+	utype = function(var) return "UDeque<" .. subtypename(var, var.k) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new ArrayDeque<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
 	init = function(var) return "this.#(var.name) = new ArrayDeque<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
 })
@@ -669,14 +669,15 @@ typedef.hashset = merge(typedef.list,
 {
 	import = { "java.util.HashSet", "java.util.Collection", "jane.core.Util", "jane.core.USet" },
 	type = function(var) return "HashSet<" .. subtypename(var, var.k) .. ">" end,
-	itype = function(var) return "Set<" .. subtypename(var, var.k) .. ">" end,
+	utype = function(var) return "USet<" .. subtypename(var, var.k) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
 	init = function(var) return "this.#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
 })
 typedef.treeset = merge(typedef.hashset,
 {
-	import = { "java.util.TreeSet", "java.util.Collection", "jane.core.Util", "jane.core.USet" },
+	import = { "java.util.TreeSet", "java.util.Collection", "jane.core.Util", "jane.core.USSet" },
 	type = function(var) return "TreeSet<" .. subtypename(var, var.k) .. ">" end,
+	utype = function(var) return "USSet<" .. subtypename(var, var.k) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new TreeSet<" .. subtypename_new(var, var.k) .. ">();\n" end,
 	init = function(var) return "this.#(var.name) = new TreeSet<" .. subtypename_new(var, var.k) .. ">(); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
 })
@@ -692,7 +693,7 @@ typedef.hashmap = merge(typedef.list,
 	import = { "java.util.HashMap", "java.util.Map.Entry", "java.util.Map", "jane.core.Util", "jane.core.UMap" },
 	type = function(var) return "HashMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	type_i = function(var) return "Map<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
-	itype = function(var) return "Map<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
+	utype = function(var) return "UMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new HashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap));\n" end,
 	init = function(var) return "this.#(var.name) = new HashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).putAll(#(var.name))" end,
 	marshal = function(var) return string.format([[if(!this.#(var.name).isEmpty())
@@ -715,8 +716,9 @@ typedef.hashmap = merge(typedef.list,
 })
 typedef.treemap = merge(typedef.hashmap,
 {
-	import = { "java.util.TreeMap", "java.util.Map", "jane.core.Util", "jane.core.UMap" },
+	import = { "java.util.TreeMap", "java.util.Map", "jane.core.Util", "jane.core.USMap" },
 	type = function(var) return "TreeMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
+	utype = function(var) return "USMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new TreeMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">();\n" end,
 	init = function(var) return "this.#(var.name) = new TreeMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(); if(#(var.name) != null) this.#(var.name).putAll(#(var.name))" end,
 	assign = "this.#(var.name).clear(); if(b.#(var.name) != null) this.#(var.name).putAll(b.#(var.name))",

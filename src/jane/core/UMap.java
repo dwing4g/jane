@@ -12,11 +12,11 @@ import jane.core.UndoContext.Wrap;
  * <p>
  * 不支持value为null
  */
-public final class UMap<K, V> implements Map<K, V>, Cloneable
+public class UMap<K, V> implements Map<K, V>, Cloneable
 {
-	private final Wrap<?> _owner;
-	private Map<K, V>     _map;
-	private UndoContext   _undoctx;
+	protected final Wrap<?> _owner;
+	protected Map<K, V>     _map;
+	private UndoContext     _undoctx;
 
 	public UMap(Wrap<?> owner, Map<K, V> map)
 	{
@@ -24,11 +24,44 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 		_map = map;
 	}
 
+	@SuppressWarnings("unchecked")
+	protected <S extends Wrap<V>> S safe(V v)
+	{
+		return v != null ? (S)((Bean<?>)v).safe(_owner) : null;
+	}
+
 	private UndoContext undoContext()
 	{
 		if(_undoctx != null) return _undoctx;
 		_owner.dirty();
 		return _undoctx = UndoContext.current();
+	}
+
+	protected void addUndoPut(final K k, final V v_old)
+	{
+		undoContext().addOnRollback(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				if(v_old != null)
+					_map.put(k, v_old);
+				else
+					_map.remove(k);
+			}
+		});
+	}
+
+	protected void addUndoRemove(final K k, final V v_old)
+	{
+		undoContext().addOnRollback(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				_map.put(k, v_old);
+			}
+		});
 	}
 
 	@Override
@@ -61,37 +94,23 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 		return _map.get(k);
 	}
 
-	@SuppressWarnings("unchecked")
 	public <S extends Wrap<V>> S getSafe(Object k)
 	{
-		V v = _map.get(k);
-		return v != null ? (S)((Bean<?>)v).safe(_owner) : null;
+		return safe(_map.get(k));
 	}
 
 	@Override
-	public V put(final K k, V v)
+	public V put(K k, V v)
 	{
 		if(v == null) throw new NullPointerException();
-		final V v_old = _map.put(k, v);
-		undoContext().addOnRollback(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				if(v_old == null)
-					_map.remove(k);
-				else
-					_map.put(k, v_old);
-			}
-		});
-		return v_old;
+		v = _map.put(k, v);
+		addUndoPut(k, v);
+		return v;
 	}
 
-	@SuppressWarnings("unchecked")
-	public <S extends Wrap<V>> S put(final K k, S v)
+	public <S extends Wrap<V>> S put(K k, S v)
 	{
-		V v_old = put(k, v.unsafe());
-		return v_old != null ? (S)((Bean<?>)v_old).safe(_owner) : null;
+		return safe(put(k, v.unsafe()));
 	}
 
 	@Override
@@ -105,28 +124,19 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public V remove(final Object k)
+	public V remove(Object k)
 	{
 		final V v_old = _map.remove(k);
 		if(v_old == null) return null;
-		undoContext().addOnRollback(new Runnable()
-		{
-			@SuppressWarnings("unchecked")
-			@Override
-			public void run()
-			{
-				_map.put((K)k, v_old);
-			}
-		});
+		addUndoRemove((K)k, v_old);
 		return v_old;
 	}
 
-	@SuppressWarnings("unchecked")
 	public <S extends Wrap<V>> S removeSafe(Object k)
 	{
-		V v_old = remove(k);
-		return v_old != null ? (S)((Bean<?>)v_old).safe(_owner) : null;
+		return safe(remove(k));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -158,7 +168,7 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 	{
 		private final Entry<K, V> _e;
 
-		private UEntry(Entry<K, V> e)
+		protected UEntry(Entry<K, V> e)
 		{
 			_e = e;
 		}
@@ -175,28 +185,18 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 			return _e.getValue();
 		}
 
-		@SuppressWarnings("unchecked")
 		public <S extends Wrap<V>> S getValueSafe()
 		{
-			return (S)((Bean<?>)_e.getValue()).safe(_owner);
+			return safe(_e.getValue());
 		}
 
 		@Override
 		public V setValue(V v)
 		{
 			if(v == null) throw new NullPointerException();
-			final V v_old = _e.setValue(v);
-			undoContext().addOnRollback(new Runnable()
-			{
-				private final K _k = _e.getKey();
-
-				@Override
-				public void run()
-				{
-					_map.put(_k, v_old);
-				}
-			});
-			return v_old;
+			v = _e.setValue(v);
+			addUndoPut(_e.getKey(), v);
+			return v;
 		}
 
 		public <S extends Wrap<V>> V setValue(S v)
@@ -236,17 +236,10 @@ public final class UMap<K, V> implements Map<K, V>, Cloneable
 		@Override
 		public void remove()
 		{
+			K k = _cur.getKey();
+			V v = _cur.getValue();
 			_it.remove();
-			undoContext().addOnRollback(new Runnable()
-			{
-				private final UEntry _e = _cur;
-
-				@Override
-				public void run()
-				{
-					_map.put(_e.getKey(), _e.getValue());
-				}
-			});
+			addUndoRemove(k, v);
 		}
 	}
 

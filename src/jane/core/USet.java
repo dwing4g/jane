@@ -8,11 +8,11 @@ import jane.core.UndoContext.Wrap;
 /**
  * Set类型的回滚处理类
  */
-public final class USet<V> implements Set<V>, Cloneable
+public class USet<V> implements Set<V>, Cloneable
 {
-	private final Wrap<?> _owner;
-	private Set<V>        _set;
-	private UndoContext   _undoctx;
+	protected final Wrap<?> _owner;
+	protected Set<V>        _set;
+	private UndoContext     _undoctx;
 
 	public USet(Wrap<?> owner, Set<V> set)
 	{
@@ -20,11 +20,41 @@ public final class USet<V> implements Set<V>, Cloneable
 		_set = set;
 	}
 
-	private UndoContext undoContext()
+	@SuppressWarnings("unchecked")
+	protected <S extends Wrap<V>> S safe(V v)
+	{
+		return v != null ? (S)((Bean<?>)v).safe(_owner) : null;
+	}
+
+	protected UndoContext undoContext()
 	{
 		if(_undoctx != null) return _undoctx;
 		_owner.dirty();
 		return _undoctx = UndoContext.current();
+	}
+
+	protected void addUndoAdd(final V v)
+	{
+		undoContext().addOnRollback(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				_set.remove(v);
+			}
+		});
+	}
+
+	protected void addUndoRemove(final V v)
+	{
+		undoContext().addOnRollback(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				_set.add(v);
+			}
+		});
 	}
 
 	@Override
@@ -64,17 +94,10 @@ public final class USet<V> implements Set<V>, Cloneable
 	}
 
 	@Override
-	public boolean add(final V v)
+	public boolean add(V v)
 	{
 		if(!_set.add(v)) return false;
-		undoContext().addOnRollback(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				_set.remove(v);
-			}
-		});
+		addUndoAdd(v);
 		return true;
 	}
 
@@ -92,20 +115,13 @@ public final class USet<V> implements Set<V>, Cloneable
 		return r;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public boolean remove(Object o)
 	{
-		final Object obj = (o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o);
+		Object obj = (o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o);
 		if(!_set.remove(obj)) return false;
-		undoContext().addOnRollback(new Runnable()
-		{
-			@SuppressWarnings("unchecked")
-			@Override
-			public void run()
-			{
-				_set.add((V)obj);
-			}
-		});
+		addUndoRemove((V)obj);
 		return true;
 	}
 
@@ -172,11 +188,12 @@ public final class USet<V> implements Set<V>, Cloneable
 
 	public final class UIterator implements Iterator<V>
 	{
-		private final Iterator<V> _it = _set.iterator();
+		private final Iterator<V> _it;
 		private V                 _cur;
 
-		private UIterator()
+		protected UIterator(Iterator<V> it)
 		{
+			_it = it;
 		}
 
 		@Override
@@ -191,33 +208,23 @@ public final class USet<V> implements Set<V>, Cloneable
 			return _cur = _it.next();
 		}
 
-		@SuppressWarnings("unchecked")
 		public <S extends Wrap<V>> S nextSafe()
 		{
-			return (S)((Bean<?>)next()).safe(_owner);
+			return safe(next());
 		}
 
 		@Override
 		public void remove()
 		{
 			_it.remove();
-			undoContext().addOnRollback(new Runnable()
-			{
-				private final V _v = _cur;
-
-				@Override
-				public void run()
-				{
-					_set.add(_v);
-				}
-			});
+			addUndoRemove(_cur);
 		}
 	}
 
 	@Override
 	public UIterator iterator()
 	{
-		return new UIterator();
+		return new UIterator(_set.iterator());
 	}
 
 	@Override

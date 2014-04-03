@@ -23,6 +23,8 @@ import jane.core.UBase;
 import jane.core.UDeque;
 import jane.core.UList;
 import jane.core.UMap;
+import jane.core.USMap;
+import jane.core.USSet;
 import jane.core.USet;
 import jane.core.UndoContext;
 import jane.core.UndoContext.Wrap;
@@ -892,9 +894,9 @@ public final class TestType extends Bean<TestType>
 			return _bean.v13;
 		}
 
-		public USet<Float> getV14()
+		public USSet<Float> getV14()
 		{
-			return new USet<Float>(_owner, _bean.v14);
+			return new USSet<Float>(_owner, _bean.v14);
 		}
 
 		public TreeSet<Float> unsafeV14()
@@ -922,9 +924,9 @@ public final class TestType extends Bean<TestType>
 			return _bean.v16;
 		}
 
-		public UMap<TestBean, Boolean> getV17()
+		public USMap<TestBean, Boolean> getV17()
 		{
-			return new UMap<TestBean, Boolean>(_owner, _bean.v17);
+			return new USMap<TestBean, Boolean>(_owner, _bean.v17);
 		}
 
 		public TreeMap<TestBean, Boolean> unsafeV17()
