@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
-import jane.core.UndoContext.Safe;
+import jane.core.SContext.Safe;
 
 /**
  * 通用key类型的数据库表类
@@ -201,7 +201,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	public S getSafe(K k)
 	{
 		V v = get(k);
-		return v != null ? UndoContext.current().addRecord(this, k, v) : null;
+		return v != null ? SContext.current().addRecord(this, k, v) : null;
 	}
 
 	/**
@@ -230,7 +230,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	public S getNoCacheSafe(K k)
 	{
 		V v = getNoCache(k);
-		return v != null ? UndoContext.current().addRecord(this, k, v) : null;
+		return v != null ? SContext.current().addRecord(this, k, v) : null;
 	}
 
 	/**
@@ -300,7 +300,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	{
 		final V v_old = get(k);
 		if(v_old == v) return;
-		UndoContext.current().addOnRollback(new Runnable()
+		SContext.current().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -344,7 +344,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	{
 		final V v_old = get(k);
 		if(v_old == null) return;
-		UndoContext.current().addOnRollback(new Runnable()
+		SContext.current().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()

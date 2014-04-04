@@ -4,8 +4,8 @@ package jane.bean;
 import jane.core.Bean;
 import jane.core.MarshalException;
 import jane.core.OctetsStream;
-import jane.core.UndoContext;
-import jane.core.UndoContext.Wrap;
+import jane.core.SContext;
+import jane.core.SContext.Wrap;
 
 /**
  * 测试空bean
@@ -131,7 +131,7 @@ public final class TestEmpty extends Bean<TestEmpty>
 		return new Safe(this, parent);
 	}
 
-	public static final class Safe extends UndoContext.Safe<TestEmpty>
+	public static final class Safe extends SContext.Safe<TestEmpty>
 	{
 		private Safe(TestEmpty bean, Wrap<?> parent)
 		{

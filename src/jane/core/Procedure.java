@@ -142,12 +142,12 @@ public abstract class Procedure implements Runnable
 
 	protected static void addOnCommit(Runnable r)
 	{
-		UndoContext.current().addOnCommit(r);
+		SContext.current().addOnCommit(r);
 	}
 
 	protected static void addOnRollback(Runnable r)
 	{
-		UndoContext.current().addOnRollback(r);
+		SContext.current().addOnRollback(r);
 	}
 
 	/**
@@ -551,11 +551,11 @@ public abstract class Procedure implements Runnable
 			{
 				if(Thread.interrupted()) throw new InterruptedException();
 				if(onProcess()) break;
-				UndoContext.current().rollback();
+				SContext.current().rollback();
 				unlock();
 				if(--n <= 0) throw new Exception("procedure redo too many times=" + Const.maxProceduerRedo);
 			}
-			UndoContext.current().commit();
+			SContext.current().commit();
 		}
 		catch(Throwable e)
 		{
@@ -572,7 +572,7 @@ public abstract class Procedure implements Runnable
 			}
 			finally
 			{
-				UndoContext.current().rollback();
+				SContext.current().rollback();
 			}
 		}
 		finally

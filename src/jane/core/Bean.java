@@ -1,8 +1,8 @@
 package jane.core;
 
 import java.io.Serializable;
-import jane.core.UndoContext.Safe;
-import jane.core.UndoContext.Wrap;
+import jane.core.SContext.Safe;
+import jane.core.SContext.Wrap;
 
 /**
  * bean的基类(抽象类)

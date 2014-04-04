@@ -8,7 +8,7 @@ import org.mapdb.LongConcurrentHashMap;
 import org.mapdb.LongConcurrentLRUMap;
 import org.mapdb.LongMap;
 import org.mapdb.LongMap.LongMapIterator;
-import jane.core.UndoContext.Safe;
+import jane.core.SContext.Safe;
 
 /**
  * 使用ID类型作为key的数据库表类
@@ -236,7 +236,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	public S getSafe(long k)
 	{
 		V v = get(k);
-		return v != null ? UndoContext.current().addRecord(this, k, v) : null;
+		return v != null ? SContext.current().addRecord(this, k, v) : null;
 	}
 
 	/**
@@ -265,7 +265,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	public S getNoCacheSafe(long k)
 	{
 		V v = get(k);
-		return v != null ? UndoContext.current().addRecord(this, k, v) : null;
+		return v != null ? SContext.current().addRecord(this, k, v) : null;
 	}
 
 	/**
@@ -336,7 +336,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	{
 		final V v_old = get(k);
 		if(v_old == v) return;
-		UndoContext.current().addOnRollback(new Runnable()
+		SContext.current().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -380,7 +380,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	public long insertSafe(V v)
 	{
 		final long k = insert(v);
-		UndoContext.current().addOnRollback(new Runnable()
+		SContext.current().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -429,7 +429,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	{
 		final V v_old = get(k);
 		if(v_old == null) return;
-		UndoContext.current().addOnRollback(new Runnable()
+		SContext.current().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()

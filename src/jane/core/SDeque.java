@@ -3,30 +3,30 @@ package jane.core;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.Iterator;
-import jane.core.UndoContext.Wrap;
+import jane.core.SContext.Wrap;
 
 /**
- * Deque类型的回滚处理类
+ * Deque类型的安全修改类
  * <p>
  * 只支持无容量限制的ArrayDeque,且不支持删除中间元素
  */
-public final class UDeque<V> implements Deque<V>, Cloneable
+public final class SDeque<V> implements Deque<V>, Cloneable
 {
 	private final Wrap<?> _owner;
 	private Deque<V>      _deque;
-	private UndoContext   _undoctx;
+	private SContext      _sctx;
 
-	public UDeque(Wrap<?> owner, Deque<V> queue)
+	public SDeque(Wrap<?> owner, Deque<V> queue)
 	{
 		_owner = owner;
 		_deque = queue;
 	}
 
-	private UndoContext undoContext()
+	private SContext sContext()
 	{
-		if(_undoctx != null) return _undoctx;
+		if(_sctx != null) return _sctx;
 		_owner.dirty();
-		return _undoctx = UndoContext.current();
+		return _sctx = SContext.current();
 	}
 
 	@Override
@@ -147,7 +147,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	public boolean add(V v)
 	{
 		if(!_deque.add(v)) return false;
-		undoContext().addOnRollback(new Runnable()
+		sContext().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -167,7 +167,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	public void addFirst(V v)
 	{
 		_deque.addFirst(v);
-		undoContext().addOnRollback(new Runnable()
+		sContext().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -243,7 +243,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	{
 		final int n = c.size();
 		if(!_deque.addAll(c)) return false;
-		undoContext().addOnRollback(new Runnable()
+		sContext().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -259,7 +259,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	public V remove()
 	{
 		final V v_old = _deque.remove();
-		undoContext().addOnRollback(new Runnable()
+		sContext().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -298,7 +298,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	public V removeLast()
 	{
 		final V v_old = _deque.removeLast();
-		undoContext().addOnRollback(new Runnable()
+		sContext().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -333,7 +333,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	{
 		final V v_old = _deque.poll();
 		if(v_old == null) return null;
-		undoContext().addOnRollback(new Runnable()
+		sContext().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -367,7 +367,7 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	{
 		final V v_old = _deque.pollLast();
 		if(v_old == null) return null;
-		undoContext().addOnRollback(new Runnable()
+		sContext().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -413,9 +413,9 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	public void clear()
 	{
 		if(_deque.isEmpty()) return;
-		undoContext().addOnRollback(new Runnable()
+		sContext().addOnRollback(new Runnable()
 		{
-			private final UDeque<V> _saved = UDeque.this;
+			private final SDeque<V> _saved = SDeque.this;
 
 			@Override
 			public void run()
@@ -433,11 +433,11 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 		}
 	}
 
-	public final class UIterator implements Iterator<V>
+	public final class SIterator implements Iterator<V>
 	{
 		private final Iterator<V> _it;
 
-		private UIterator(boolean descend)
+		private SIterator(boolean descend)
 		{
 			_it = (descend ? _deque.descendingIterator() : _deque.iterator());
 		}
@@ -469,15 +469,15 @@ public final class UDeque<V> implements Deque<V>, Cloneable
 	}
 
 	@Override
-	public UIterator iterator()
+	public SIterator iterator()
 	{
-		return new UIterator(false);
+		return new SIterator(false);
 	}
 
 	@Override
 	public Iterator<V> descendingIterator()
 	{
-		return new UIterator(true);
+		return new SIterator(true);
 	}
 
 	@Override

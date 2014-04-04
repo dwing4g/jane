@@ -19,15 +19,15 @@ import jane.core.DynBean;
 import jane.core.MarshalException;
 import jane.core.Octets;
 import jane.core.OctetsStream;
-import jane.core.UBase;
-import jane.core.UDeque;
-import jane.core.UList;
-import jane.core.UMap;
-import jane.core.USMap;
-import jane.core.USSet;
-import jane.core.USet;
-import jane.core.UndoContext;
-import jane.core.UndoContext.Wrap;
+import jane.core.SBase;
+import jane.core.SContext;
+import jane.core.SContext.Wrap;
+import jane.core.SDeque;
+import jane.core.SList;
+import jane.core.SMap;
+import jane.core.SSMap;
+import jane.core.SSSet;
+import jane.core.SSet;
 import jane.core.Util;
 
 /**
@@ -727,7 +727,7 @@ public final class TestType extends Bean<TestType>
 		return new Safe(this, parent);
 	}
 
-	public static final class Safe extends UndoContext.Safe<TestType>
+	public static final class Safe extends SContext.Safe<TestType>
 	{
 		private Safe(TestType bean, Wrap<?> parent)
 		{
@@ -741,7 +741,7 @@ public final class TestType extends Bean<TestType>
 
 		public void setV1(boolean v1)
 		{
-			if(initUndoContext()) _undoctx.addOnRollback(new UBase.UBoolean(_bean, FIELD_v1, _bean.v1));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SBoolean(_bean, FIELD_v1, _bean.v1));
 			_bean.v1 = v1;
 		}
 
@@ -752,7 +752,7 @@ public final class TestType extends Bean<TestType>
 
 		public void setV2(byte v2)
 		{
-			if(initUndoContext()) _undoctx.addOnRollback(new UBase.UByte(_bean, FIELD_v2, _bean.v2));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SByte(_bean, FIELD_v2, _bean.v2));
 			_bean.v2 = v2;
 		}
 
@@ -763,7 +763,7 @@ public final class TestType extends Bean<TestType>
 
 		public void setV3(short v3)
 		{
-			if(initUndoContext()) _undoctx.addOnRollback(new UBase.UShort(_bean, FIELD_v3, _bean.v3));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SShort(_bean, FIELD_v3, _bean.v3));
 			_bean.v3 = v3;
 		}
 
@@ -774,7 +774,7 @@ public final class TestType extends Bean<TestType>
 
 		public void setV4(int v4)
 		{
-			if(initUndoContext()) _undoctx.addOnRollback(new UBase.UInteger(_bean, FIELD_v4, _bean.v4));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SInteger(_bean, FIELD_v4, _bean.v4));
 			_bean.v4 = v4;
 		}
 
@@ -785,7 +785,7 @@ public final class TestType extends Bean<TestType>
 
 		public void setV5(long v5)
 		{
-			if(initUndoContext()) _undoctx.addOnRollback(new UBase.ULong(_bean, FIELD_v5, _bean.v5));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SLong(_bean, FIELD_v5, _bean.v5));
 			_bean.v5 = v5;
 		}
 
@@ -796,7 +796,7 @@ public final class TestType extends Bean<TestType>
 
 		public void setV6(float v6)
 		{
-			if(initUndoContext()) _undoctx.addOnRollback(new UBase.UFloat(_bean, FIELD_v6, _bean.v6));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SFloat(_bean, FIELD_v6, _bean.v6));
 			_bean.v6 = v6;
 		}
 
@@ -807,13 +807,13 @@ public final class TestType extends Bean<TestType>
 
 		public void setV7(double v7)
 		{
-			if(initUndoContext()) _undoctx.addOnRollback(new UBase.UDouble(_bean, FIELD_v7, _bean.v7));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SDouble(_bean, FIELD_v7, _bean.v7));
 			_bean.v7 = v7;
 		}
 
 		public Octets getV8()
 		{
-			if(initUndoContext()) _undoctx.addOnRollback(new UBase.UOctets(_bean, FIELD_v8, _bean.v8, true));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_v8, _bean.v8, true));
 			return _bean.v8;
 		}
 
@@ -824,7 +824,7 @@ public final class TestType extends Bean<TestType>
 
 		public <B extends Bean<B>> void marshalV8(Bean<B> b)
 		{
-			if(initUndoContext()) _undoctx.addOnRollback(new UBase.UOctets(_bean, FIELD_v8, _bean.v8, false));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_v8, _bean.v8, false));
 			_bean.v8 = b.marshal(new OctetsStream(b.initSize()));
 		}
 
@@ -850,13 +850,13 @@ public final class TestType extends Bean<TestType>
 
 		public void setV9(String v9)
 		{
-			if(initUndoContext()) _undoctx.addOnRollback(new UBase.UString(_bean, FIELD_v9, _bean.v9));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SString(_bean, FIELD_v9, _bean.v9));
 			_bean.v9 = (v9 != null ? v9 : "");
 		}
 
-		public UList<Boolean> getV10()
+		public SList<Boolean> getV10()
 		{
-			return new UList<Boolean>(_owner, _bean.v10);
+			return new SList<Boolean>(_owner, _bean.v10);
 		}
 
 		public ArrayList<Boolean> unsafeV10()
@@ -864,9 +864,9 @@ public final class TestType extends Bean<TestType>
 			return _bean.v10;
 		}
 
-		public UList<Byte> getV11()
+		public SList<Byte> getV11()
 		{
-			return new UList<Byte>(_owner, _bean.v11);
+			return new SList<Byte>(_owner, _bean.v11);
 		}
 
 		public LinkedList<Byte> unsafeV11()
@@ -874,9 +874,9 @@ public final class TestType extends Bean<TestType>
 			return _bean.v11;
 		}
 
-		public UDeque<Integer> getV12()
+		public SDeque<Integer> getV12()
 		{
-			return new UDeque<Integer>(_owner, _bean.v12);
+			return new SDeque<Integer>(_owner, _bean.v12);
 		}
 
 		public ArrayDeque<Integer> unsafeV12()
@@ -884,9 +884,9 @@ public final class TestType extends Bean<TestType>
 			return _bean.v12;
 		}
 
-		public USet<Long> getV13()
+		public SSet<Long> getV13()
 		{
-			return new USet<Long>(_owner, _bean.v13);
+			return new SSet<Long>(_owner, _bean.v13);
 		}
 
 		public HashSet<Long> unsafeV13()
@@ -894,9 +894,9 @@ public final class TestType extends Bean<TestType>
 			return _bean.v13;
 		}
 
-		public USSet<Float> getV14()
+		public SSSet<Float> getV14()
 		{
-			return new USSet<Float>(_owner, _bean.v14);
+			return new SSSet<Float>(_owner, _bean.v14);
 		}
 
 		public TreeSet<Float> unsafeV14()
@@ -904,9 +904,9 @@ public final class TestType extends Bean<TestType>
 			return _bean.v14;
 		}
 
-		public USet<Double> getV15()
+		public SSet<Double> getV15()
 		{
-			return new USet<Double>(_owner, _bean.v15);
+			return new SSet<Double>(_owner, _bean.v15);
 		}
 
 		public LinkedHashSet<Double> unsafeV15()
@@ -914,9 +914,9 @@ public final class TestType extends Bean<TestType>
 			return _bean.v15;
 		}
 
-		public UMap<Long, String> getV16()
+		public SMap<Long, String> getV16()
 		{
-			return new UMap<Long, String>(_owner, _bean.v16);
+			return new SMap<Long, String>(_owner, _bean.v16);
 		}
 
 		public HashMap<Long, String> unsafeV16()
@@ -924,9 +924,9 @@ public final class TestType extends Bean<TestType>
 			return _bean.v16;
 		}
 
-		public USMap<TestBean, Boolean> getV17()
+		public SSMap<TestBean, Boolean> getV17()
 		{
-			return new USMap<TestBean, Boolean>(_owner, _bean.v17);
+			return new SSMap<TestBean, Boolean>(_owner, _bean.v17);
 		}
 
 		public TreeMap<TestBean, Boolean> unsafeV17()
@@ -934,9 +934,9 @@ public final class TestType extends Bean<TestType>
 			return _bean.v17;
 		}
 
-		public UMap<Octets, TestBean> getV18()
+		public SMap<Octets, TestBean> getV18()
 		{
-			return new UMap<Octets, TestBean>(_owner, _bean.v18);
+			return new SMap<Octets, TestBean>(_owner, _bean.v18);
 		}
 
 		public LinkedHashMap<Octets, TestBean> unsafeV18()

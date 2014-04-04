@@ -4,28 +4,28 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import jane.core.UndoContext.Wrap;
+import jane.core.SContext.Wrap;
 
 /**
- * List类型的回滚处理类
+ * List类型的安全修改类
  */
-public final class UList<V> implements List<V>, Cloneable
+public final class SList<V> implements List<V>, Cloneable
 {
 	private final Wrap<?> _owner;
 	private List<V>       _list;
-	private UndoContext   _undoctx;
+	private SContext      _sctx;
 
-	public UList(Wrap<?> owner, List<V> list)
+	public SList(Wrap<?> owner, List<V> list)
 	{
 		_owner = owner;
 		_list = list;
 	}
 
-	private UndoContext undoContext()
+	private SContext sContext()
 	{
-		if(_undoctx != null) return _undoctx;
+		if(_sctx != null) return _sctx;
 		_owner.dirty();
-		return _undoctx = UndoContext.current();
+		return _sctx = SContext.current();
 	}
 
 	@Override
@@ -93,7 +93,7 @@ public final class UList<V> implements List<V>, Cloneable
 	public boolean add(V v)
 	{
 		if(!_list.add(v)) return false;
-		undoContext().addOnRollback(new Runnable()
+		sContext().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -113,7 +113,7 @@ public final class UList<V> implements List<V>, Cloneable
 	public void add(final int idx, V v)
 	{
 		_list.add(idx, v);
-		undoContext().addOnRollback(new Runnable()
+		sContext().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -133,7 +133,7 @@ public final class UList<V> implements List<V>, Cloneable
 	{
 		final int n = c.size();
 		if(!_list.addAll(c)) return false;
-		undoContext().addOnRollback(new Runnable()
+		sContext().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -150,7 +150,7 @@ public final class UList<V> implements List<V>, Cloneable
 	{
 		final int n = c.size();
 		if(!_list.addAll(idx, c)) return false;
-		undoContext().addOnRollback(new Runnable()
+		sContext().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -166,7 +166,7 @@ public final class UList<V> implements List<V>, Cloneable
 	public V set(final int idx, V v)
 	{
 		final V v_old = _list.set(idx, v);
-		undoContext().addOnRollback(new Runnable()
+		sContext().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -188,7 +188,7 @@ public final class UList<V> implements List<V>, Cloneable
 	public V remove(final int idx)
 	{
 		final V v_old = _list.remove(idx);
-		undoContext().addOnRollback(new Runnable()
+		sContext().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -250,9 +250,9 @@ public final class UList<V> implements List<V>, Cloneable
 	public void clear()
 	{
 		if(_list.isEmpty()) return;
-		undoContext().addOnRollback(new Runnable()
+		sContext().addOnRollback(new Runnable()
 		{
-			private final UList<V> _saved = UList.this;
+			private final SList<V> _saved = SList.this;
 
 			@Override
 			public void run()
@@ -270,13 +270,13 @@ public final class UList<V> implements List<V>, Cloneable
 		}
 	}
 
-	public final class UIterator implements Iterator<V>
+	public final class SIterator implements Iterator<V>
 	{
 		private final Iterator<V> _it  = _list.iterator();
 		private V                 _cur;
 		private int               _idx = -1;
 
-		private UIterator()
+		private SIterator()
 		{
 		}
 
@@ -305,7 +305,7 @@ public final class UList<V> implements List<V>, Cloneable
 		public void remove()
 		{
 			_it.remove();
-			undoContext().addOnRollback(new Runnable()
+			sContext().addOnRollback(new Runnable()
 			{
 				private final V   _v = _cur;
 				private final int _i = _idx;
@@ -320,14 +320,14 @@ public final class UList<V> implements List<V>, Cloneable
 		}
 	}
 
-	public final class UListIterator implements ListIterator<V>
+	public final class SListIterator implements ListIterator<V>
 	{
 		private final ListIterator<V> _it;
 		private V                     _cur;
 		private int                   _idx;
 		private int                   _idx_off;
 
-		private UListIterator(int idx)
+		private SListIterator(int idx)
 		{
 			_it = _list.listIterator(idx);
 			_idx = idx - 1;
@@ -393,7 +393,7 @@ public final class UList<V> implements List<V>, Cloneable
 		public void remove()
 		{
 			_it.remove();
-			undoContext().addOnRollback(new Runnable()
+			sContext().addOnRollback(new Runnable()
 			{
 				private final V   _v = _cur;
 				private final int _i = _idx + _idx_off;
@@ -411,7 +411,7 @@ public final class UList<V> implements List<V>, Cloneable
 		public void set(V v)
 		{
 			_it.set(v);
-			undoContext().addOnRollback(new Runnable()
+			sContext().addOnRollback(new Runnable()
 			{
 				private final V   _v = _cur;
 				private final int _i = _idx + _idx_off;
@@ -433,7 +433,7 @@ public final class UList<V> implements List<V>, Cloneable
 		public void add(V v)
 		{
 			_it.add(v);
-			undoContext().addOnRollback(new Runnable()
+			sContext().addOnRollback(new Runnable()
 			{
 				private final int _i = _idx + _idx_off;
 
@@ -452,27 +452,27 @@ public final class UList<V> implements List<V>, Cloneable
 	}
 
 	@Override
-	public UIterator iterator()
+	public SIterator iterator()
 	{
-		return new UIterator();
+		return new SIterator();
 	}
 
 	@Override
-	public UListIterator listIterator()
+	public SListIterator listIterator()
 	{
-		return new UListIterator(0);
+		return new SListIterator(0);
 	}
 
 	@Override
-	public UListIterator listIterator(int idx)
+	public SListIterator listIterator(int idx)
 	{
-		return new UListIterator(idx);
+		return new SListIterator(idx);
 	}
 
 	@Override
-	public UList<V> subList(int idx_from, int idx_to)
+	public SList<V> subList(int idx_from, int idx_to)
 	{
-		return new UList<V>(_owner, _list.subList(idx_from, idx_to));
+		return new SList<V>(_owner, _list.subList(idx_from, idx_to));
 	}
 
 	@Override

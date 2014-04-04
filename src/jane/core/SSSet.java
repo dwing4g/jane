@@ -2,14 +2,14 @@ package jane.core;
 
 import java.util.Comparator;
 import java.util.NavigableSet;
-import jane.core.UndoContext.Wrap;
+import jane.core.SContext.Wrap;
 
 /**
- * NavigableSet类型的回滚处理类
+ * NavigableSet类型的安全修改类
  */
-public final class USSet<V> extends USet<V> implements NavigableSet<V>
+public final class SSSet<V> extends SSet<V> implements NavigableSet<V>
 {
-	public USSet(Wrap<?> owner, NavigableSet<V> set)
+	public SSSet(Wrap<?> owner, NavigableSet<V> set)
 	{
 		super(owner, set);
 	}
@@ -113,79 +113,79 @@ public final class USSet<V> extends USet<V> implements NavigableSet<V>
 	}
 
 	@Override
-	public USSet<V> descendingSet()
+	public SSSet<V> descendingSet()
 	{
-		return new USSet<V>(_owner, ((NavigableSet<V>)_set).descendingSet());
+		return new SSSet<V>(_owner, ((NavigableSet<V>)_set).descendingSet());
 	}
 
 	@Override
-	public UIterator descendingIterator()
+	public SIterator descendingIterator()
 	{
-		return new UIterator(((NavigableSet<V>)_set).descendingIterator());
+		return new SIterator(((NavigableSet<V>)_set).descendingIterator());
 	}
 
 	@Override
-	public USSet<V> subSet(V from, boolean fromInclusive, V to, boolean toInclusive)
+	public SSSet<V> subSet(V from, boolean fromInclusive, V to, boolean toInclusive)
 	{
-		return new USSet<V>(_owner, ((NavigableSet<V>)_set).subSet(from, fromInclusive, to, toInclusive));
+		return new SSSet<V>(_owner, ((NavigableSet<V>)_set).subSet(from, fromInclusive, to, toInclusive));
 	}
 
-	public <S extends Wrap<V>> USSet<V> subSetSafe(S from, boolean fromInclusive, S to, boolean toInclusive)
+	public <S extends Wrap<V>> SSSet<V> subSetSafe(S from, boolean fromInclusive, S to, boolean toInclusive)
 	{
 		return subSet(from.unsafe(), fromInclusive, to.unsafe(), toInclusive);
 	}
 
 	@Override
-	public USSet<V> headSet(V to, boolean inclusive)
+	public SSSet<V> headSet(V to, boolean inclusive)
 	{
-		return new USSet<V>(_owner, ((NavigableSet<V>)_set).headSet(to, inclusive));
+		return new SSSet<V>(_owner, ((NavigableSet<V>)_set).headSet(to, inclusive));
 	}
 
-	public <S extends Wrap<V>> USSet<V> headSetSafe(S to, boolean toInclusive)
+	public <S extends Wrap<V>> SSSet<V> headSetSafe(S to, boolean toInclusive)
 	{
 		return headSet(to.unsafe(), toInclusive);
 	}
 
 	@Override
-	public USSet<V> tailSet(V from, boolean inclusive)
+	public SSSet<V> tailSet(V from, boolean inclusive)
 	{
-		return new USSet<V>(_owner, ((NavigableSet<V>)_set).tailSet(from, inclusive));
+		return new SSSet<V>(_owner, ((NavigableSet<V>)_set).tailSet(from, inclusive));
 	}
 
-	public <S extends Wrap<V>> USSet<V> tailSetSafe(S from, boolean fromInclusive)
+	public <S extends Wrap<V>> SSSet<V> tailSetSafe(S from, boolean fromInclusive)
 	{
 		return tailSet(from.unsafe(), fromInclusive);
 	}
 
 	@Override
-	public USSet<V> subSet(V from, V to)
+	public SSSet<V> subSet(V from, V to)
 	{
 		return subSet(from, true, to, false);
 	}
 
-	public <S extends Wrap<V>> USSet<V> subSetSafe(S from, S to)
+	public <S extends Wrap<V>> SSSet<V> subSetSafe(S from, S to)
 	{
 		return subSet(from.unsafe(), true, to.unsafe(), false);
 	}
 
 	@Override
-	public USSet<V> headSet(V to)
+	public SSSet<V> headSet(V to)
 	{
 		return headSet(to, false);
 	}
 
-	public <S extends Wrap<V>> USSet<V> headSetSafe(S to)
+	public <S extends Wrap<V>> SSSet<V> headSetSafe(S to)
 	{
 		return headSet(to.unsafe(), false);
 	}
 
 	@Override
-	public USSet<V> tailSet(V from)
+	public SSSet<V> tailSet(V from)
 	{
 		return tailSet(from, true);
 	}
 
-	public <S extends Wrap<V>> USSet<V> tailSetSafe(S from)
+	public <S extends Wrap<V>> SSSet<V> tailSetSafe(S from)
 	{
 		return tailSet(from.unsafe(), true);
 	}

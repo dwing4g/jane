@@ -6,9 +6,9 @@ import jane.core.Bean;
 import jane.core.BeanPool;
 import jane.core.MarshalException;
 import jane.core.OctetsStream;
-import jane.core.UBase;
-import jane.core.UndoContext;
-import jane.core.UndoContext.Wrap;
+import jane.core.SBase;
+import jane.core.SContext;
+import jane.core.SContext.Wrap;
 
 /**
  * bean的注释
@@ -223,7 +223,7 @@ public final class TestBean extends Bean<TestBean>
 		return new Safe(this, parent);
 	}
 
-	public static final class Safe extends UndoContext.Safe<TestBean>
+	public static final class Safe extends SContext.Safe<TestBean>
 	{
 		private Safe(TestBean bean, Wrap<?> parent)
 		{
@@ -237,7 +237,7 @@ public final class TestBean extends Bean<TestBean>
 
 		public void setValue1(int value1)
 		{
-			if(initUndoContext()) _undoctx.addOnRollback(new UBase.UInteger(_bean, FIELD_value1, _bean.value1));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SInteger(_bean, FIELD_value1, _bean.value1));
 			_bean.value1 = value1;
 		}
 
@@ -248,7 +248,7 @@ public final class TestBean extends Bean<TestBean>
 
 		public void setValue2(long value2)
 		{
-			if(initUndoContext()) _undoctx.addOnRollback(new UBase.ULong(_bean, FIELD_value2, _bean.value2));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SLong(_bean, FIELD_value2, _bean.value2));
 			_bean.value2 = value2;
 		}
 	}

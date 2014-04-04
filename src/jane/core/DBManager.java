@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
-import jane.core.UndoContext.Safe;
+import jane.core.SContext.Safe;
 
 /**
  * 数据库管理器(单件)

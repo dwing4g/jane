@@ -1,7 +1,7 @@
 package jane.core;
 
-import jane.core.UndoContext.Safe;
-import jane.core.UndoContext.Wrap;
+import jane.core.SContext.Safe;
+import jane.core.SContext.Wrap;
 
 public final class CallBackBean<B extends Bean<B>> extends Bean<B>
 {

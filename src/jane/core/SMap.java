@@ -5,20 +5,20 @@ import java.util.AbstractSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import jane.core.UndoContext.Wrap;
+import jane.core.SContext.Wrap;
 
 /**
- * Map类型的回滚处理类
+ * Map类型的安全修改类
  * <p>
  * 不支持value为null
  */
-public class UMap<K, V> implements Map<K, V>, Cloneable
+public class SMap<K, V> implements Map<K, V>, Cloneable
 {
 	protected final Wrap<?> _owner;
 	protected Map<K, V>     _map;
-	private UndoContext     _undoctx;
+	private SContext        _sctx;
 
-	public UMap(Wrap<?> owner, Map<K, V> map)
+	public SMap(Wrap<?> owner, Map<K, V> map)
 	{
 		_owner = owner;
 		_map = map;
@@ -30,16 +30,16 @@ public class UMap<K, V> implements Map<K, V>, Cloneable
 		return v != null ? (S)((Bean<?>)v).safe(_owner) : null;
 	}
 
-	private UndoContext undoContext()
+	private SContext sContext()
 	{
-		if(_undoctx != null) return _undoctx;
+		if(_sctx != null) return _sctx;
 		_owner.dirty();
-		return _undoctx = UndoContext.current();
+		return _sctx = SContext.current();
 	}
 
 	protected void addUndoPut(final K k, final V v_old)
 	{
-		undoContext().addOnRollback(new Runnable()
+		sContext().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -54,7 +54,7 @@ public class UMap<K, V> implements Map<K, V>, Cloneable
 
 	protected void addUndoRemove(final K k, final V v_old)
 	{
-		undoContext().addOnRollback(new Runnable()
+		sContext().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -144,9 +144,9 @@ public class UMap<K, V> implements Map<K, V>, Cloneable
 	public void clear()
 	{
 		if(_map.isEmpty()) return;
-		undoContext().addOnRollback(new Runnable()
+		sContext().addOnRollback(new Runnable()
 		{
-			private final UMap<K, V> _saved = UMap.this;
+			private final SMap<K, V> _saved = SMap.this;
 
 			@Override
 			public void run()
@@ -164,11 +164,11 @@ public class UMap<K, V> implements Map<K, V>, Cloneable
 		}
 	}
 
-	public final class UEntry implements Entry<K, V>
+	public final class SEntry implements Entry<K, V>
 	{
 		private final Entry<K, V> _e;
 
-		protected UEntry(Entry<K, V> e)
+		protected SEntry(Entry<K, V> e)
 		{
 			_e = e;
 		}
@@ -217,10 +217,10 @@ public class UMap<K, V> implements Map<K, V>, Cloneable
 		}
 	}
 
-	public abstract class UIterator<E> implements Iterator<E>
+	public abstract class SIterator<E> implements Iterator<E>
 	{
 		private final Iterator<Entry<K, V>> _it = _map.entrySet().iterator();
-		private UEntry                      _cur;
+		private SEntry                      _cur;
 
 		@Override
 		public boolean hasNext()
@@ -228,9 +228,9 @@ public class UMap<K, V> implements Map<K, V>, Cloneable
 			return _it.hasNext();
 		}
 
-		public UEntry nextEntry()
+		public SEntry nextEntry()
 		{
-			return _cur = new UEntry(_it.next());
+			return _cur = new SEntry(_it.next());
 		}
 
 		@Override
@@ -243,21 +243,21 @@ public class UMap<K, V> implements Map<K, V>, Cloneable
 		}
 	}
 
-	public final class UEntrySet extends AbstractSet<Entry<K, V>>
+	public final class SEntrySet extends AbstractSet<Entry<K, V>>
 	{
 		private Set<Entry<K, V>> _it;
 
-		private UEntrySet()
+		private SEntrySet()
 		{
 		}
 
 		@Override
-		public UIterator<Entry<K, V>> iterator()
+		public SIterator<Entry<K, V>> iterator()
 		{
-			return new UIterator<Entry<K, V>>()
+			return new SIterator<Entry<K, V>>()
 			{
 				@Override
-				public UEntry next()
+				public SEntry next()
 				{
 					return nextEntry();
 				}
@@ -267,7 +267,7 @@ public class UMap<K, V> implements Map<K, V>, Cloneable
 		@Override
 		public int size()
 		{
-			return UMap.this.size();
+			return SMap.this.size();
 		}
 
 		@Override
@@ -280,26 +280,26 @@ public class UMap<K, V> implements Map<K, V>, Cloneable
 		@Override
 		public boolean remove(Object o)
 		{
-			return UMap.this.remove(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o) != null;
+			return SMap.this.remove(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o) != null;
 		}
 
 		@Override
 		public void clear()
 		{
-			UMap.this.clear();
+			SMap.this.clear();
 		}
 	}
 
-	public final class UKeySet extends AbstractSet<K>
+	public final class SKeySet extends AbstractSet<K>
 	{
-		private UKeySet()
+		private SKeySet()
 		{
 		}
 
 		@Override
-		public UIterator<K> iterator()
+		public SIterator<K> iterator()
 		{
-			return new UIterator<K>()
+			return new SIterator<K>()
 			{
 				@Override
 				public K next()
@@ -312,38 +312,38 @@ public class UMap<K, V> implements Map<K, V>, Cloneable
 		@Override
 		public int size()
 		{
-			return UMap.this.size();
+			return SMap.this.size();
 		}
 
 		@Override
 		public boolean contains(Object o)
 		{
-			return UMap.this.containsKey(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o);
+			return SMap.this.containsKey(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o);
 		}
 
 		@Override
 		public boolean remove(Object o)
 		{
-			return UMap.this.remove(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o) != null;
+			return SMap.this.remove(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o) != null;
 		}
 
 		@Override
 		public void clear()
 		{
-			UMap.this.clear();
+			SMap.this.clear();
 		}
 	}
 
-	public final class UValues extends AbstractCollection<V>
+	public final class SValues extends AbstractCollection<V>
 	{
-		private UValues()
+		private SValues()
 		{
 		}
 
 		@Override
-		public UIterator<V> iterator()
+		public SIterator<V> iterator()
 		{
-			return new UIterator<V>()
+			return new SIterator<V>()
 			{
 				@Override
 				public V next()
@@ -356,38 +356,38 @@ public class UMap<K, V> implements Map<K, V>, Cloneable
 		@Override
 		public int size()
 		{
-			return UMap.this.size();
+			return SMap.this.size();
 		}
 
 		@Override
 		public boolean contains(Object o)
 		{
-			return UMap.this.containsValue(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o);
+			return SMap.this.containsValue(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o);
 		}
 
 		@Override
 		public void clear()
 		{
-			UMap.this.clear();
+			SMap.this.clear();
 		}
 	}
 
 	@Override
-	public UEntrySet entrySet()
+	public SEntrySet entrySet()
 	{
-		return new UEntrySet();
+		return new SEntrySet();
 	}
 
 	@Override
-	public UKeySet keySet()
+	public SKeySet keySet()
 	{
-		return new UKeySet();
+		return new SKeySet();
 	}
 
 	@Override
-	public UValues values()
+	public SValues values()
 	{
-		return new UValues();
+		return new SValues();
 	}
 
 	@Override

@@ -185,7 +185,7 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 		return new Safe(this, parent);
 	}
 
-	public static final class Safe extends UndoContext.Safe<#(bean.name)>
+	public static final class Safe extends SContext.Safe<#(bean.name)>
 	{
 		private Safe(#(bean.name) bean, Wrap<?> parent)
 		{
@@ -394,7 +394,7 @@ local function get_unmarshal_kv(var, kv, t)
 end
 typedef.byte =
 {
-	import = { "jane.core.UBase" },
+	import = { "jane.core.SBase" },
 	name_u = function(var) return var.name:sub(1, 1):upper() .. var.name:sub(2) end,
 	type = "byte", type_i = "byte", type_o = "Byte",
 	subtypeid = 0,
@@ -423,7 +423,7 @@ typedef.byte =
 
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			if(initUndoContext()) _undoctx.addOnRollback(new UBase.U#(var.type_o)(_bean, FIELD_#(var.name), _bean.#(var.name)));
+			if(initSContext()) _sctx.addOnRollback(new SBase.S#(var.type_o)(_bean, FIELD_#(var.name), _bean.#(var.name)));
 			_bean.#(var.name) = #(var.name);
 		}
 ]],
@@ -489,7 +489,7 @@ typedef.double = merge(typedef.byte,
 })
 typedef.string = merge(typedef.byte,
 {
-	import = { "jane.core.Util", "jane.core.UBase" },
+	import = { "jane.core.Util", "jane.core.SBase" },
 	type = "String", type_i = "String", type_o = "String",
 	subtypeid = 1,
 	new = "\t\t#(var.name) = \"\";\n",
@@ -507,7 +507,7 @@ typedef.string = merge(typedef.byte,
 
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			if(initUndoContext()) _undoctx.addOnRollback(new UBase.U#(var.type_o)(_bean, FIELD_#(var.name), _bean.#(var.name)));
+			if(initSContext()) _sctx.addOnRollback(new SBase.S#(var.type_o)(_bean, FIELD_#(var.name), _bean.#(var.name)));
 			_bean.#(var.name) = (#(var.name) != null ? #(var.name) : "");
 		}
 ]],
@@ -522,7 +522,7 @@ typedef.string = merge(typedef.byte,
 })
 typedef.octets = merge(typedef.string,
 {
-	import = { "jane.core.Octets", "jane.core.DynBean", "jane.core.UBase" },
+	import = { "jane.core.Octets", "jane.core.DynBean", "jane.core.SBase" },
 	type = "Octets", type_i = "Octets", type_o = "Octets",
 	new = "\t\t#(var.name) = new Octets(#(var.cap));\n",
 	init = "this.#(var.name) = new Octets(#(var.cap)); if(#(var.name) != null) this.#(var.name).replace(#(var.name))",
@@ -556,7 +556,7 @@ typedef.octets = merge(typedef.string,
 
 		public #(var.type) get#(var.name_u)()
 		{
-			if(initUndoContext()) _undoctx.addOnRollback(new UBase.UOctets(_bean, FIELD_#(var.name), _bean.#(var.name), true));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.#(var.name), true));
 			return _bean.#(var.name);
 		}
 
@@ -567,7 +567,7 @@ typedef.octets = merge(typedef.string,
 
 		public <B extends Bean<B>> void marshal#(var.name_u)(Bean<B> b)
 		{
-			if(initUndoContext()) _undoctx.addOnRollback(new UBase.UOctets(_bean, FIELD_#(var.name), _bean.#(var.name), false));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.#(var.name), false));
 			_bean.#(var.name) = b.marshal(new OctetsStream(b.initSize()));
 		}
 
@@ -595,10 +595,10 @@ typedef.octets = merge(typedef.string,
 })
 typedef.vector = merge(typedef.octets,
 {
-	import = { "java.util.ArrayList", "java.util.Collection", "jane.core.Util", "jane.core.UList" },
+	import = { "java.util.ArrayList", "java.util.Collection", "jane.core.Util", "jane.core.SList" },
 	type = function(var) return "ArrayList<" .. subtypename(var, var.k) .. ">" end,
 	type_i = function(var) return "Collection<" .. subtypename(var, var.k) .. ">" end,
-	utype = function(var) return "UList<" .. subtypename(var, var.k) .. ">" end,
+	stype = function(var) return "SList<" .. subtypename(var, var.k) .. ">" end,
 	field = "",
 	fieldget = "",
 	new = function(var) return "\t\t#(var.name) = new ArrayList<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
@@ -607,9 +607,9 @@ typedef.vector = merge(typedef.octets,
 	set = "",
 	getsafe = [[
 
-		public #(var.utype) get#(var.name_u)()
+		public #(var.stype) get#(var.name_u)()
 		{
-			return new #(var.utype)(_owner, _bean.#(var.name));
+			return new #(var.stype)(_owner, _bean.#(var.name));
 		}
 
 		public #(var.type) unsafe#(var.name_u)()
@@ -642,7 +642,7 @@ typedef.vector = merge(typedef.octets,
 })
 typedef.list = merge(typedef.vector,
 {
-	import = { "java.util.LinkedList", "java.util.Collection", "jane.core.Util", "jane.core.UList" },
+	import = { "java.util.LinkedList", "java.util.Collection", "jane.core.Util", "jane.core.SList" },
 	type = function(var) return "LinkedList<" .. subtypename(var, var.k) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new LinkedList<" .. subtypename_new(var, var.k) .. ">();\n" end,
 	init = function(var) return "this.#(var.name) = new LinkedList<" .. subtypename_new(var, var.k) .. ">(); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
@@ -659,41 +659,41 @@ typedef.list = merge(typedef.vector,
 })
 typedef.deque = merge(typedef.list,
 {
-	import = { "java.util.ArrayDeque", "java.util.Collection", "jane.core.Util", "jane.core.UDeque" },
+	import = { "java.util.ArrayDeque", "java.util.Collection", "jane.core.Util", "jane.core.SDeque" },
 	type = function(var) return "ArrayDeque<" .. subtypename(var, var.k) .. ">" end,
-	utype = function(var) return "UDeque<" .. subtypename(var, var.k) .. ">" end,
+	stype = function(var) return "SDeque<" .. subtypename(var, var.k) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new ArrayDeque<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
 	init = function(var) return "this.#(var.name) = new ArrayDeque<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
 })
 typedef.hashset = merge(typedef.list,
 {
-	import = { "java.util.HashSet", "java.util.Collection", "jane.core.Util", "jane.core.USet" },
+	import = { "java.util.HashSet", "java.util.Collection", "jane.core.Util", "jane.core.SSet" },
 	type = function(var) return "HashSet<" .. subtypename(var, var.k) .. ">" end,
-	utype = function(var) return "USet<" .. subtypename(var, var.k) .. ">" end,
+	stype = function(var) return "SSet<" .. subtypename(var, var.k) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
 	init = function(var) return "this.#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
 })
 typedef.treeset = merge(typedef.hashset,
 {
-	import = { "java.util.TreeSet", "java.util.Collection", "jane.core.Util", "jane.core.USSet" },
+	import = { "java.util.TreeSet", "java.util.Collection", "jane.core.Util", "jane.core.SSSet" },
 	type = function(var) return "TreeSet<" .. subtypename(var, var.k) .. ">" end,
-	utype = function(var) return "USSet<" .. subtypename(var, var.k) .. ">" end,
+	stype = function(var) return "SSSet<" .. subtypename(var, var.k) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new TreeSet<" .. subtypename_new(var, var.k) .. ">();\n" end,
 	init = function(var) return "this.#(var.name) = new TreeSet<" .. subtypename_new(var, var.k) .. ">(); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
 })
 typedef.linkedhashset = merge(typedef.hashset,
 {
-	import = { "java.util.LinkedHashSet", "java.util.Collection", "jane.core.Util", "jane.core.USet" },
+	import = { "java.util.LinkedHashSet", "java.util.Collection", "jane.core.Util", "jane.core.SSet" },
 	type = function(var) return "LinkedHashSet<" .. subtypename(var, var.k) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new LinkedHashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
 	init = function(var) return "this.#(var.name) = new LinkedHashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
 })
 typedef.hashmap = merge(typedef.list,
 {
-	import = { "java.util.HashMap", "java.util.Map.Entry", "java.util.Map", "jane.core.Util", "jane.core.UMap" },
+	import = { "java.util.HashMap", "java.util.Map.Entry", "java.util.Map", "jane.core.Util", "jane.core.SMap" },
 	type = function(var) return "HashMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	type_i = function(var) return "Map<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
-	utype = function(var) return "UMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
+	stype = function(var) return "SMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new HashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap));\n" end,
 	init = function(var) return "this.#(var.name) = new HashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).putAll(#(var.name))" end,
 	marshal = function(var) return string.format([[if(!this.#(var.name).isEmpty())
@@ -716,16 +716,16 @@ typedef.hashmap = merge(typedef.list,
 })
 typedef.treemap = merge(typedef.hashmap,
 {
-	import = { "java.util.TreeMap", "java.util.Map", "jane.core.Util", "jane.core.USMap" },
+	import = { "java.util.TreeMap", "java.util.Map", "jane.core.Util", "jane.core.SSMap" },
 	type = function(var) return "TreeMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
-	utype = function(var) return "USMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
+	stype = function(var) return "SSMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new TreeMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">();\n" end,
 	init = function(var) return "this.#(var.name) = new TreeMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(); if(#(var.name) != null) this.#(var.name).putAll(#(var.name))" end,
 	assign = "this.#(var.name).clear(); if(b.#(var.name) != null) this.#(var.name).putAll(b.#(var.name))",
 })
 typedef.linkedhashmap = merge(typedef.hashmap,
 {
-	import = { "java.util.LinkedHashMap", "java.util.Map", "jane.core.Util", "jane.core.UMap" },
+	import = { "java.util.LinkedHashMap", "java.util.Map", "jane.core.Util", "jane.core.SMap" },
 	type = function(var) return "LinkedHashMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new LinkedHashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap));\n" end,
 	init = function(var) return "this.#(var.name) = new LinkedHashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).putAll(#(var.name))" end,
@@ -855,9 +855,9 @@ local function bean_const(code)
 		gsub("\tpublic void set.-\n\t}\n\n", ""):
 		gsub("\n\tpublic static final class Safe.-}\n\t}\n", ""):
 		gsub("import java%.lang%.reflect%.Field;\n", ""):
-		gsub("import jane%.core%.UBase;\n", ""):
-		gsub("import jane%.core%.UndoContext;\n", ""):
-		gsub("import jane%.core%.UndoContext%.Wrap;\n", ""):
+		gsub("import jane%.core%.SBase;\n", ""):
+		gsub("import jane%.core%.SContext;\n", ""):
+		gsub("import jane%.core%.SContext%.Wrap;\n", ""):
 		gsub("\tprivate static Field .-\n", ""):
 		gsub("\tstatic\n.-\n\t}\n\n", ""):
 		gsub("\n\t@Override\n\tpublic Safe safe.-\n\t}\n", ""):
@@ -885,7 +885,7 @@ end
 function bean(bean)
 	bean_common(bean)
 
-	bean.import = { ["jane.core.Bean"] = true, ["jane.core.MarshalException"] = true, ["jane.core.OctetsStream"] = true, ["jane.core.UndoContext"] = true, ["jane.core.UndoContext.Wrap"] = true }
+	bean.import = { ["jane.core.Bean"] = true, ["jane.core.MarshalException"] = true, ["jane.core.OctetsStream"] = true, ["jane.core.SContext"] = true, ["jane.core.SContext.Wrap"] = true }
 	local vartypes = { bean.name }
 	for _, var in ipairs(bean) do
 		do_var(var)

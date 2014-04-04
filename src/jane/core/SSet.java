@@ -3,18 +3,18 @@ package jane.core;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
-import jane.core.UndoContext.Wrap;
+import jane.core.SContext.Wrap;
 
 /**
- * Set类型的回滚处理类
+ * Set类型的安全修改类
  */
-public class USet<V> implements Set<V>, Cloneable
+public class SSet<V> implements Set<V>, Cloneable
 {
 	protected final Wrap<?> _owner;
 	protected Set<V>        _set;
-	private UndoContext     _undoctx;
+	private SContext        _sctx;
 
-	public USet(Wrap<?> owner, Set<V> set)
+	public SSet(Wrap<?> owner, Set<V> set)
 	{
 		_owner = owner;
 		_set = set;
@@ -26,16 +26,16 @@ public class USet<V> implements Set<V>, Cloneable
 		return v != null ? (S)((Bean<?>)v).safe(_owner) : null;
 	}
 
-	protected UndoContext undoContext()
+	protected SContext sContext()
 	{
-		if(_undoctx != null) return _undoctx;
+		if(_sctx != null) return _sctx;
 		_owner.dirty();
-		return _undoctx = UndoContext.current();
+		return _sctx = SContext.current();
 	}
 
 	protected void addUndoAdd(final V v)
 	{
-		undoContext().addOnRollback(new Runnable()
+		sContext().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -47,7 +47,7 @@ public class USet<V> implements Set<V>, Cloneable
 
 	protected void addUndoRemove(final V v)
 	{
-		undoContext().addOnRollback(new Runnable()
+		sContext().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -166,9 +166,9 @@ public class USet<V> implements Set<V>, Cloneable
 	public void clear()
 	{
 		if(_set.isEmpty()) return;
-		undoContext().addOnRollback(new Runnable()
+		sContext().addOnRollback(new Runnable()
 		{
-			private final USet<V> _saved = USet.this;
+			private final SSet<V> _saved = SSet.this;
 
 			@Override
 			public void run()
@@ -186,12 +186,12 @@ public class USet<V> implements Set<V>, Cloneable
 		}
 	}
 
-	public final class UIterator implements Iterator<V>
+	public final class SIterator implements Iterator<V>
 	{
 		private final Iterator<V> _it;
 		private V                 _cur;
 
-		protected UIterator(Iterator<V> it)
+		protected SIterator(Iterator<V> it)
 		{
 			_it = it;
 		}
@@ -222,9 +222,9 @@ public class USet<V> implements Set<V>, Cloneable
 	}
 
 	@Override
-	public UIterator iterator()
+	public SIterator iterator()
 	{
-		return new UIterator(_set.iterator());
+		return new SIterator(_set.iterator());
 	}
 
 	@Override

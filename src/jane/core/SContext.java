@@ -4,18 +4,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 回滚上下文类
+ * 安全修改的上下文类
  * <p>
- * 管理当前线程的回滚和提交事件<br>
+ * 管理当前线程的回滚和提交<br>
  * 由ThreadLocal管理全部的的上下文
  */
-public final class UndoContext
+public final class SContext
 {
 	public static abstract class Wrap<B>
 	{
 		protected final B       _bean;
 		protected final Wrap<?> _owner;
-		protected UndoContext   _undoctx;
+		protected SContext      _sctx;
 		protected boolean       _fullundo;
 		private boolean         _dirty;
 
@@ -50,13 +50,13 @@ public final class UndoContext
 				_owner.dirty();
 		}
 
-		protected boolean initUndoContext()
+		protected boolean initSContext()
 		{
 			if(_fullundo) return false;
-			if(_undoctx == null)
+			if(_sctx == null)
 			{
 				_owner.dirty();
-				_undoctx = current();
+				_sctx = current();
 			}
 			return true;
 		}
@@ -71,8 +71,8 @@ public final class UndoContext
 
 		public void addFullUndo()
 		{
-			if(!initUndoContext()) return;
-			_undoctx.addOnRollback(new Runnable()
+			if(!initSContext()) return;
+			_sctx.addOnRollback(new Runnable()
 			{
 				private final B _saved = _bean.clone();
 
@@ -178,25 +178,25 @@ public final class UndoContext
 		}
 	}
 
-	private static ThreadLocal<UndoContext> _tl_list;
-	private final List<Record<?, ?, ?>>     _records     = new ArrayList<Record<?, ?, ?>>();
-	private final List<RecordLong<?, ?>>    _recordlongs = new ArrayList<RecordLong<?, ?>>();
-	private final List<Runnable>            _onrollbacks = new ArrayList<Runnable>();
-	private final List<Runnable>            _oncommits   = new ArrayList<Runnable>();
+	private static ThreadLocal<SContext> _tl_list;
+	private final List<Record<?, ?, ?>>  _records     = new ArrayList<Record<?, ?, ?>>();
+	private final List<RecordLong<?, ?>> _recordlongs = new ArrayList<RecordLong<?, ?>>();
+	private final List<Runnable>         _onrollbacks = new ArrayList<Runnable>();
+	private final List<Runnable>         _oncommits   = new ArrayList<Runnable>();
 
 	static
 	{
-		_tl_list = new ThreadLocal<UndoContext>()
+		_tl_list = new ThreadLocal<SContext>()
 		{
 			@Override
-			protected UndoContext initialValue()
+			protected SContext initialValue()
 			{
-				return new UndoContext();
+				return new SContext();
 			}
 		};
 	}
 
-	public static UndoContext current()
+	public static SContext current()
 	{
 		return _tl_list.get();
 	}
