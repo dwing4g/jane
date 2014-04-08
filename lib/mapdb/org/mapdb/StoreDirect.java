@@ -123,7 +123,7 @@ public class StoreDirect extends Store{
     protected static final long MASK_ARCHIVE = 0x2L;
 
     /** 4 byte file header */
-    protected static final int HEADER = 234222482;
+    protected static final int HEADER = 234243482;
 
     /** 2 byte store version*/
     protected static final short STORE_VERSION = 10000;
@@ -690,12 +690,14 @@ public class StoreDirect extends Store{
         for(Runnable closeListener:closeListeners)
             closeListener.run();
 
-        //TODO for POJO serializer there is a race condition, metadata should be modified before shutdown. This rc is at many similar places
 
         lockAllWrite();
         try{
 
             if(!readOnly){
+                if(serializerPojo!=null && serializerPojo.hasUnsavedChanges()){
+                    serializerPojo.save(this);
+                }
 
                 index.putLong(IO_PHYS_SIZE,physSize);
                 index.putLong(IO_INDEX_SIZE,indexSize);
@@ -732,8 +734,9 @@ public class StoreDirect extends Store{
     public void commit() {
         if(!readOnly){
 
-            for(Runnable c:commitListeners)
-                c.run();
+            if(serializerPojo!=null && serializerPojo.hasUnsavedChanges()){
+                serializerPojo.save(this);
+            }
 
             index.putLong(IO_PHYS_SIZE,physSize);
             index.putLong(IO_INDEX_SIZE,indexSize);
@@ -787,7 +790,7 @@ public class StoreDirect extends Store{
         lockAllWrite();
         try{
             final File compactedFile = new File((indexFile!=null?indexFile:File.createTempFile("mapdb","compact"))+".compact");
-            Volume.Factory fab = Volume.fileFactory(false, rafMode,compactedFile,sizeLimit);
+            Volume.Factory fab = Volume.fileFactory(false, rafMode,compactedFile,sizeLimit,  CC.VOLUME_CHUNK_SHIFT);
             StoreDirect store2 = new StoreDirect(fab,false,false,5,false,0L, checksum,compress,password);
 
             compactPreUnderLock();
@@ -852,7 +855,7 @@ public class StoreDirect extends Store{
                 if(!physFile2.renameTo(physFile))
                     throw new AssertionError("could not rename file");
 
-                final Volume.Factory fac2 = Volume.fileFactory(false, rafMode, indexFile,sizeLimit);
+                final Volume.Factory fac2 = Volume.fileFactory(false, rafMode, indexFile,sizeLimit, CC.VOLUME_CHUNK_SHIFT);
                 index = fac2.createIndexVolume();
                 phys = fac2.createPhysVolume();
 
@@ -860,9 +863,9 @@ public class StoreDirect extends Store{
                 physFile_.delete();
             }else{
                 //in memory, so copy files into memory
-                Volume indexVol2 = new Volume.MemoryVol(useDirectBuffer,sizeLimit);
+                Volume indexVol2 = new Volume.MemoryVol(useDirectBuffer,sizeLimit, CC.VOLUME_CHUNK_SHIFT);
                 Volume.volumeTransfer(indexSize, store2.index, indexVol2);
-                Volume physVol2 = new Volume.MemoryVol(useDirectBuffer,sizeLimit);
+                Volume physVol2 = new Volume.MemoryVol(useDirectBuffer,sizeLimit, CC.VOLUME_CHUNK_SHIFT);
                 Volume.volumeTransfer(store2.physSize, store2.phys, physVol2);
 
                 store2.close();
@@ -1075,8 +1078,8 @@ public class StoreDirect extends Store{
         }
 
         //not available, increase file size
-        if((physSize&Volume.CHUNK_SIZE_MOD_MASK)+size>Volume.CHUNK_SIZE)
-            physSize += Volume.CHUNK_SIZE - (physSize&Volume.CHUNK_SIZE_MOD_MASK);
+        if((physSize&CHUNK_SIZE_MOD_MASK)+size>CHUNK_SIZE)
+            physSize += CHUNK_SIZE - (physSize&CHUNK_SIZE_MOD_MASK);
         long physSize2 = physSize;
         physSize = roundTo16(physSize+size);
         if(ensureAvail)

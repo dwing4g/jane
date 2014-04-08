@@ -102,7 +102,7 @@ public final class SSSet<V> extends SSet<V> implements NavigableSet<V>
 	@Override
 	public V pollLast()
 	{
-		V v = ((NavigableSet<V>)_set).pollFirst();
+		V v = ((NavigableSet<V>)_set).pollLast();
 		if(v != null) addUndoRemove(v);
 		return v;
 	}
@@ -141,9 +141,9 @@ public final class SSSet<V> extends SSet<V> implements NavigableSet<V>
 		return new SSSet<V>(_owner, ((NavigableSet<V>)_set).headSet(to, inclusive));
 	}
 
-	public <S extends Wrap<V>> SSSet<V> headSetSafe(S to, boolean toInclusive)
+	public <S extends Wrap<V>> SSSet<V> headSetSafe(S to, boolean inclusive)
 	{
-		return headSet(to.unsafe(), toInclusive);
+		return headSet(to.unsafe(), inclusive);
 	}
 
 	@Override
@@ -152,9 +152,9 @@ public final class SSSet<V> extends SSet<V> implements NavigableSet<V>
 		return new SSSet<V>(_owner, ((NavigableSet<V>)_set).tailSet(from, inclusive));
 	}
 
-	public <S extends Wrap<V>> SSSet<V> tailSetSafe(S from, boolean fromInclusive)
+	public <S extends Wrap<V>> SSSet<V> tailSetSafe(S from, boolean inclusive)
 	{
-		return tailSet(from.unsafe(), fromInclusive);
+		return tailSet(from.unsafe(), inclusive);
 	}
 
 	@Override

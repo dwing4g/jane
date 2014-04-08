@@ -318,10 +318,10 @@ public class StoreWAL extends StoreDirect {
 
     protected void checkLogRounding() {
         assert(structuralLock.isHeldByCurrentThread());
-        if((logSize&Volume.CHUNK_SIZE_MOD_MASK)+MAX_REC_SIZE*2>Volume.CHUNK_SIZE){
+        if((logSize&CHUNK_SIZE_MOD_MASK)+MAX_REC_SIZE*2>CHUNK_SIZE){
             log.ensureAvailable(logSize+1);
             log.putByte(logSize, WAL_SKIP_REST_OF_BLOCK);
-            logSize += Volume.CHUNK_SIZE - (logSize&Volume.CHUNK_SIZE_MOD_MASK);
+            logSize += CHUNK_SIZE - (logSize&CHUNK_SIZE_MOD_MASK);
         }
     }
 
@@ -548,12 +548,11 @@ public class StoreWAL extends StoreDirect {
 
     @Override
     public void commit() {
-
-        for(Runnable c:commitListeners)
-            c.run();
-
         lockAllWrite();
         try{
+            if(serializerPojo!=null && serializerPojo.hasUnsavedChanges()){
+                serializerPojo.save(this);
+            }
 
             if(!logDirty()){
                 return;
@@ -753,7 +752,7 @@ public class StoreWAL extends StoreDirect {
 
                 log.getDataInput(logSize, size).readFully(b);
             }else if(ins == WAL_SKIP_REST_OF_BLOCK){
-                logSize += Volume.CHUNK_SIZE -(logSize&Volume.CHUNK_SIZE_MOD_MASK);
+                logSize += CHUNK_SIZE -(logSize&CHUNK_SIZE_MOD_MASK);
             }else{
                 throw new AssertionError("unknown trans log instruction '"+ins +"' at log offset: "+(logSize-1));
             }
@@ -836,7 +835,7 @@ public class StoreWAL extends StoreDirect {
 
                 logSize+=size;
             }else if(ins == WAL_SKIP_REST_OF_BLOCK){
-                logSize += Volume.CHUNK_SIZE -(logSize&Volume.CHUNK_SIZE_MOD_MASK);
+                logSize += CHUNK_SIZE -(logSize&CHUNK_SIZE_MOD_MASK);
             }else{
                 throw new AssertionError("unknown trans log instruction '"+ins +"' at log offset: "+(logSize-1));
             }
@@ -1077,6 +1076,10 @@ public class StoreWAL extends StoreDirect {
     public void close() {
         for(Runnable closeListener:closeListeners)
             closeListener.run();
+
+        if(serializerPojo!=null && serializerPojo.hasUnsavedChanges()){
+            serializerPojo.save(this);
+        }
 
         lockAllWrite();
         try{
