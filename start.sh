@@ -7,7 +7,7 @@ LIB="lib/slf4j-api-1.7.6.jar:lib/log4j-core-2.0-rc1.jar:lib/log4j-api-2.0-rc1.ja
 
 MAIN=$1
 if [ "$MAIN" == "nohup" ]; then NOHUP=nohup; MAIN=$2; fi
-if [ -z $MAIN ]; then MAIN=jane.test.TestMain; fi
+MAIN=${MAIN:-jane.test.TestMain}
 if [ "$MAIN" == "b" ]; then MAIN=jane.test.TestDBBenchmark; fi
 
 mkdir -p log 2> /dev/null

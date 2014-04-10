@@ -3,7 +3,7 @@
 cd `dirname $0`
 
 if [[ $1 == -* ]]; then SIG=$1; shift; else SIG=-15; fi
-if [ -z $1 ]; then MAIN=jane.test.TestMain; else MAIN=$1; fi
+MAIN=${1:-jane.test.TestMain}
 
 # PID=`jps -l | grep $MAIN | awk '{print $1}'`
 PID=`ps x | grep java | grep $MAIN | grep -v grep | awk '{print $1}'`
