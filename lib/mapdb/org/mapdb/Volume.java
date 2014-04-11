@@ -69,7 +69,7 @@ public abstract class Volume {
 
 
 
-    abstract public DataInput2 getDataInput(final long offset, final int size);
+    abstract public DataInput getDataInput(final long offset, final int size);
 
     abstract public void close();
 
@@ -82,12 +82,12 @@ public abstract class Volume {
     public abstract boolean isSliced();
 
 
-    public final void putUnsignedShort(final long offset, final int value){
+    public void putUnsignedShort(final long offset, final int value){
         putByte(offset, (byte) (value>>8));
         putByte(offset+1, (byte) (value));
     }
 
-    public final int getUnsignedShort(long offset) {
+    public int getUnsignedShort(long offset) {
         return (( (getByte(offset) & 0xff) << 8) |
                 ( (getByte(offset+1) & 0xff)));
     }
@@ -420,7 +420,7 @@ public abstract class Volume {
                 final long fileSize = fileChannel.size();
                 if(fileSize>0){
                     //map existing data
-                    chunks = new ByteBuffer[(int) (1+(fileSize>>> chunkShift))];
+                    chunks = new ByteBuffer[(int) ((fileSize>>> chunkShift))];
                     for(int i=0;i<chunks.length;i++){
                         chunks[i] = makeNewBuffer(i*chunkSize);
                     }
@@ -481,6 +481,7 @@ public abstract class Volume {
         protected ByteBuffer makeNewBuffer(long offset) {
             try {
                 assert((offset&chunkSizeModMask)==0);
+                assert(offset>=0);
                 ByteBuffer ret = fileChannel.map(mapMode,offset,chunkSize);
                 if(mapMode == FileChannel.MapMode.READ_ONLY) {
                     ret = ret.asReadOnlyBuffer();
@@ -898,7 +899,7 @@ public abstract class Volume {
 
         for(long offset=0;offset<size;offset+=bufSize){
             int bb = (int) Math.min(bufSize, size-offset);
-            DataInput2 input = from.getDataInput(offset, bb);
+            DataInput2 input = (DataInput2) from.getDataInput(offset, bb);
             ByteBuffer buf = input.buf.duplicate();
             buf.position(input.pos);
             buf.limit(input.pos+bb);

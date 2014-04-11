@@ -1,5 +1,6 @@
 package org.mapdb;
 
+import java.io.DataInput;
 import java.io.IOError;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -222,7 +223,8 @@ public abstract class Store implements Engine{
     }
 
 
-    protected <A> A deserialize(Serializer<A> serializer, int size, DataInput2 di) throws IOException {
+    protected <A> A deserialize(Serializer<A> serializer, int size, DataInput input) throws IOException {
+        DataInput2 di = (DataInput2) input;
         if(size>0){
             if(checksum){
                 //last two digits is checksum
@@ -329,12 +331,12 @@ public abstract class Store implements Engine{
     List<Runnable> closeListeners = new CopyOnWriteArrayList<Runnable>();
 
     @Override
-    public void registerCloseListener(Runnable closeListener) {
+    public void closeListenerRegister(Runnable closeListener) {
         closeListeners.add(closeListener);
     }
 
     @Override
-    public void unregisterCloseListener(Runnable closeListener) {
+    public void closeListenerUnregister(Runnable closeListener) {
         closeListeners.remove(closeListener);
     }
 
