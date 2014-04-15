@@ -8,8 +8,6 @@ import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Store which keeps all instances on heap. It does not use serialization.
@@ -19,6 +17,7 @@ public class StoreHeap extends Store implements Serializable{
     protected final static Fun.Tuple2 TOMBSTONE = Fun.t2(null,null);
 
     protected final static Object NULL = new Object();
+    private static final long serialVersionUID = 150060834534309445L;
 
     /** All commited records in store */
     protected final ConcurrentNavigableMap<Long,Fun.Tuple2> records
@@ -36,7 +35,7 @@ public class StoreHeap extends Store implements Serializable{
     protected final AtomicLong maxRecid = new AtomicLong(LAST_RESERVED_RECID);
 
     public StoreHeap(){
-        super(false,false,null);
+        super(false,false,null,false);
         for(long recid=1;recid<=LAST_RESERVED_RECID;recid++){
             records.put(recid, Fun.t2(null, (Serializer)null));
         }

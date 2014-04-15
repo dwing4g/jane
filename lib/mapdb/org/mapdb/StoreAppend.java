@@ -4,7 +4,10 @@ import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.Iterator;
+import java.util.Random;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.locks.Lock;
 
 /**
@@ -12,6 +15,7 @@ import java.util.concurrent.locks.Lock;
  *
  * TODO StoreAppend is buggy and will not be part of 1.0 release.
  */
+@Deprecated
 class StoreAppend extends Store{
 
     /** header at beginning of each file */
@@ -78,8 +82,8 @@ class StoreAppend extends Store{
 
     public StoreAppend(final File file, final boolean useRandomAccessFile, final boolean readOnly,
                        final boolean transactionDisabled, final boolean deleteFilesAfterClose,  final boolean syncOnCommitDisabled,
-                       boolean checksum, boolean compress, byte[] password) {
-        super(checksum, compress, password);
+                       boolean checksum, boolean compress, byte[] password, boolean disableLocks) {
+        super(checksum, compress, password,disableLocks);
         this.file = file;
         this.useRandomAccessFile = useRandomAccessFile;
         this.readOnly = readOnly;
@@ -106,7 +110,7 @@ class StoreAppend extends Store{
 
         if(sortedFiles.isEmpty()){
             //no files, create empty store
-            Volume zero = Volume.volumeForFile(getFileFromNum(0),useRandomAccessFile, readOnly,0L,MAX_FILE_SIZE_SHIFT);
+            Volume zero = Volume.volumeForFile(getFileFromNum(0),useRandomAccessFile, readOnly,0L,MAX_FILE_SIZE_SHIFT,0);
             zero.ensureAvailable(Engine.LAST_RESERVED_RECID*8+8);
             zero.putLong(0, HEADER);
             long pos = 8;
@@ -135,7 +139,7 @@ class StoreAppend extends Store{
             for(Fun.Tuple2<Long,File> t:sortedFiles){
                 Long num = t.a;
                 File f = t.b;
-                Volume vol = Volume.volumeForFile(f,useRandomAccessFile,readOnly, 0L, MAX_FILE_SIZE_SHIFT);
+                Volume vol = Volume.volumeForFile(f,useRandomAccessFile,readOnly, 0L, MAX_FILE_SIZE_SHIFT,0);
                 if(vol.isEmpty()||vol.getLong(0)!=HEADER){
                     vol.sync();
                     vol.close();
@@ -208,7 +212,7 @@ class StoreAppend extends Store{
     }
 
     public StoreAppend(File file) {
-        this(file,false,false,false,false,false,false,false,null);
+        this(file,false,false,false,false,false,false,false,null,false);
     }
 
 
@@ -222,7 +226,7 @@ class StoreAppend extends Store{
         //beyond usual file size, so create new file
         currVolume.sync();
         currFileNum++;
-        currVolume = Volume.volumeForFile(getFileFromNum(currFileNum),useRandomAccessFile, readOnly,0L, MAX_FILE_SIZE_SHIFT);
+        currVolume = Volume.volumeForFile(getFileFromNum(currFileNum),useRandomAccessFile, readOnly,0L, MAX_FILE_SIZE_SHIFT,0);
         currVolume.ensureAvailable(8);
         currVolume.putLong(0,HEADER);
         currPos = 8;

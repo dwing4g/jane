@@ -16,7 +16,10 @@
 
 package org.mapdb;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
 /**
@@ -86,14 +89,14 @@ public final class Bind {
          * Add new modification listener notified when Map has been updated
          * @param listener callback interface notified when map changes
          */
-        public void addModificationListener(MapListener<K,V> listener);
+        public void modificationListenerAdd(MapListener<K, V> listener);
 
         /**
          * Remove registered notification listener
          *
          * @param listener  callback interface notified when map changes
          */
-        public void removeModificationListener(MapListener<K,V> listener);
+        public void modificationListenerRemove(MapListener<K, V> listener);
 
 
         /**
@@ -122,7 +125,7 @@ public final class Bind {
      * @param map primary map whose size needs to be tracked
      * @param sizeCounter number updated when Map Entry is added or removed.
      */
-    public static void size(MapWithModificationListener map, final Atomic.Long sizeCounter){
+    public static <K,V> void  size(MapWithModificationListener<K,V> map, final Atomic.Long sizeCounter){
         //set initial value first if necessary
         if(sizeCounter.get() == 0){
             long size = map.sizeLong();
@@ -130,12 +133,12 @@ public final class Bind {
                 sizeCounter.set(size);
         }
 
-        map.addModificationListener(new MapListener() {
+        map.modificationListenerAdd(new MapListener<K, V>() {
             @Override
-            public void update(Object key, Object oldVal, Object newVal) {
-                if(oldVal == null && newVal!=null){
+            public void update(K key, V oldVal, V newVal) {
+                if (oldVal == null && newVal != null) {
                     sizeCounter.incrementAndGet();
-                }else if(oldVal!=null && newVal == null){
+                } else if (oldVal != null && newVal == null) {
                     sizeCounter.decrementAndGet();
                 }
 
@@ -151,12 +154,15 @@ public final class Bind {
      * If Secondary Map is empty its content will be recreated from Primary Map.
      * This binding is not persistent. You need to restore it every time store is reopened.
      *
+     * Type params:
+     *
+     *  * `<K>` - key type in primary and Secondary Map
+     *  * `<V>` - value type in Primary Map
+     *  * `<V2>` - value type in Secondary Map
+     *  .
      * @param map Primary Map
      * @param secondary Secondary Map with custom
      * @param fun function which calculates secondary value from primary key and value
-     * @param <K> key type in primary and Secondary Map
-     * @param <V> value type in Primary Map
-     * @param <V2> value type in Secondary Map.
      */
     public static <K,V, V2> void secondaryValue(MapWithModificationListener<K, V> map,
                                               final Map<K, V2> secondary,
@@ -167,14 +173,14 @@ public final class Bind {
                 secondary.put(e.getKey(), fun.run(e.getKey(),e.getValue()));
         }
         //hook listener
-        map.addModificationListener(new MapListener<K, V>() {
+        map.modificationListenerAdd(new MapListener<K, V>() {
             @Override
             public void update(K key, V oldVal, V newVal) {
-                if(newVal == null){
+                if (newVal == null) {
                     //removal
                     secondary.remove(key);
-                }else{
-                    secondary.put(key, fun.run(key,newVal));
+                } else {
+                    secondary.put(key, fun.run(key, newVal));
                 }
             }
         });
@@ -187,12 +193,15 @@ public final class Bind {
      * If Secondary Map is empty its content will be recreated from Primary Map.
      * This binding is not persistent. You need to restore it every time store is reopened.
      *
+     * Type params:
+     *
+     *  * `<K>` - key type in primary and Secondary Map
+     *  * `<V>` - value type in Primary Map
+     *  * `<V2>` - value type in Secondary Map
+     * .
      * @param map Primary Map
      * @param secondary Secondary Map with custom
      * @param fun function which calculates secondary values from primary key and value
-     * @param <K> key type in primary and Secondary Map
-     * @param <V> value type in Primary Map
-     * @param <V2> value type in Secondary Map.
      */
     public static <K,V, V2> void secondaryValues(MapWithModificationListener<K, V> map,
                                                 final Set<Fun.Tuple2<K, V2>> secondary,
@@ -207,55 +216,54 @@ public final class Bind {
             }
         }
         //hook listener
-        map.addModificationListener(new MapListener<K, V>() {
+        map.modificationListenerAdd(new MapListener<K, V>() {
             @Override
             public void update(K key, V oldVal, V newVal) {
-                if(newVal == null){
+                if (newVal == null) {
                     //removal
-                    V2[] v = fun.run(key,oldVal);
-                    if(v != null)
-                        for(V2 v2 :v)
-                            secondary.remove(Fun.t2(key,v2));
-                }else if(oldVal==null){
+                    V2[] v = fun.run(key, oldVal);
+                    if (v != null)
+                        for (V2 v2 : v)
+                            secondary.remove(Fun.t2(key, v2));
+                } else if (oldVal == null) {
                     //insert
-                    V2[] v = fun.run(key,newVal);
-                    if(v != null)
-                        for(V2 v2 :v)
-                            secondary.add(Fun.t2(key,v2));
-                }else{
+                    V2[] v = fun.run(key, newVal);
+                    if (v != null)
+                        for (V2 v2 : v)
+                            secondary.add(Fun.t2(key, v2));
+                } else {
                     //update, must remove old key and insert new
                     V2[] oldv = fun.run(key, oldVal);
                     V2[] newv = fun.run(key, newVal);
-                    if(oldv==null){
+                    if (oldv == null) {
                         //insert new
-                        if(newv!=null)
-                            for(V2 v :newv)
-                                secondary.add(Fun.t2(key,v));
+                        if (newv != null)
+                            for (V2 v : newv)
+                                secondary.add(Fun.t2(key, v));
                         return;
                     }
-                    if(newv==null){
+                    if (newv == null) {
                         //remove old
-                        for(V2 v :oldv)
-                            secondary.remove(Fun.t2(key,v));
+                        for (V2 v : oldv)
+                            secondary.remove(Fun.t2(key, v));
                         return;
                     }
 
                     Set<V2> hashes = new HashSet<V2>();
-                    for(V2 v:oldv)
-                        hashes.add(v);
+                    Collections.addAll(hashes, oldv);
 
                     //add new non existing items
-                    for(V2 v:newv){
-                        if(!hashes.contains(v)){
-                            secondary.add(Fun.t2(key,v));
+                    for (V2 v : newv) {
+                        if (!hashes.contains(v)) {
+                            secondary.add(Fun.t2(key, v));
                         }
                     }
                     //remove items which are in old, but not in new
-                    for(V2 v:newv){
+                    for (V2 v : newv) {
                         hashes.remove(v);
                     }
-                    for(V2 v:hashes){
-                        secondary.remove(Fun.t2(key,v));
+                    for (V2 v : hashes) {
+                        secondary.remove(Fun.t2(key, v));
                     }
                 }
             }
@@ -267,18 +275,20 @@ public final class Bind {
      * Binds Secondary Set so it contains Secondary Key (Index). Usefull if you need
      * to lookup Keys from Primary Map by custom criteria. Other use is for reverse lookup
      *
-     * To lookup keys in Secondary Set use {@link Bind#findSecondaryKeys(java.util.NavigableSet, Object)}
-     *
+     * To lookup keys in Secondary Set use {@link Fun#filter(java.util.NavigableSet, Object)}
      *
      * If Secondary Set is empty its content will be recreated from Primary Map.
      * This binding is not persistent. You need to restore it every time store is reopened.
      *
+     * Type params:
+     *
+     *  * `<K>` - Key in Primary Map
+     *  * `<V>` - Value in Primary Map
+     *  * `<K2>` - Secondary
+     *
      * @param map primary map
      * @param secondary secondary set
      * @param fun function which calculates Secondary Key from Primary Key and Value
-     * @param <K> Key in Primary Map
-     * @param <V> Value in Primary Map
-     * @param <K2> Secondary
      */
     public static <K,V, K2> void secondaryKey(MapWithModificationListener<K, V> map,
                                                 final Set<Fun.Tuple2<K2, K>> secondary,
@@ -290,22 +300,22 @@ public final class Bind {
             }
         }
         //hook listener
-        map.addModificationListener(new MapListener<K, V>() {
+        map.modificationListenerAdd(new MapListener<K, V>() {
             @Override
             public void update(K key, V oldVal, V newVal) {
-                if(newVal == null){
+                if (newVal == null) {
                     //removal
                     secondary.remove(Fun.t2(fun.run(key, oldVal), key));
-                }else if(oldVal==null){
+                } else if (oldVal == null) {
                     //insert
-                    secondary.add(Fun.t2(fun.run(key,newVal), key));
-                }else{
+                    secondary.add(Fun.t2(fun.run(key, newVal), key));
+                } else {
                     //update, must remove old key and insert new
                     K2 oldKey = fun.run(key, oldVal);
                     K2 newKey = fun.run(key, newVal);
-                    if(oldKey == newKey || oldKey.equals(newKey)) return;
+                    if (oldKey == newKey || oldKey.equals(newKey)) return;
                     secondary.remove(Fun.t2(oldKey, key));
-                    secondary.add(Fun.t2(newKey,key));
+                    secondary.add(Fun.t2(newKey, key));
                 }
             }
         });
@@ -315,18 +325,18 @@ public final class Bind {
      * Binds Secondary Set so it contains Secondary Key (Index). Usefull if you need
      * to lookup Keys from Primary Map by custom criteria. Other use is for reverse lookup
      *
-     * To lookup keys in Secondary Set use {@link Bind#findSecondaryKeys(java.util.NavigableSet, Object)}
-     *
-     *
      * If Secondary Set is empty its content will be recreated from Primary Map.
      * This binding is not persistent. You need to restore it every time store is reopened.
+     *
+     * Type params:
+     *
+     *  * `<K>` - Key in Primary Map
+     *  * `<V>` - Value in Primary Map
+     *  * `<K2>` - Secondary
      *
      * @param map primary map
      * @param secondary secondary set
      * @param fun function which calculates Secondary Key from Primary Key and Value
-     * @param <K> Key in Primary Map
-     * @param <V> Value in Primary Map
-     * @param <K2> Secondary
      */
     public static <K,V, K2> void secondaryKey(MapWithModificationListener<K, V> map,
                                               final Map<K2, K> secondary,
@@ -338,22 +348,22 @@ public final class Bind {
             }
         }
         //hook listener
-        map.addModificationListener(new MapListener<K, V>() {
+        map.modificationListenerAdd(new MapListener<K, V>() {
             @Override
             public void update(K key, V oldVal, V newVal) {
-                if(newVal == null){
+                if (newVal == null) {
                     //removal
                     secondary.remove(fun.run(key, oldVal));
-                }else if(oldVal==null){
+                } else if (oldVal == null) {
                     //insert
-                    secondary.put(fun.run(key,newVal), key);
-                }else{
+                    secondary.put(fun.run(key, newVal), key);
+                } else {
                     //update, must remove old key and insert new
                     K2 oldKey = fun.run(key, oldVal);
                     K2 newKey = fun.run(key, newVal);
-                    if(oldKey == newKey || oldKey.equals(newKey)) return;
+                    if (oldKey == newKey || oldKey.equals(newKey)) return;
                     secondary.remove(oldKey);
-                    secondary.put(newKey,key);
+                    secondary.put(newKey, key);
                 }
             }
         });
@@ -362,18 +372,21 @@ public final class Bind {
      * Binds Secondary Set so it contains Secondary Key (Index). Useful if you need
      * to lookup Keys from Primary Map by custom criteria. Other use is for reverse lookup
      *
-     * To lookup keys in Secondary Set use {@link Bind#findSecondaryKeys(java.util.NavigableSet, Object)}
+     * To lookup keys in Secondary Set use {@link Fun#filter(java.util.NavigableSet, Object)}}
      *
      *
      * If Secondary Set is empty its content will be recreated from Primary Map.
      * This binding is not persistent. You need to restore it every time store is reopened.
      *
+     * Type params:
+     *
+     *  * `<K>` - Key in Primary Map
+     *  * `<V>` - Value in Primary Map
+     *  * `<K2>` - Secondary
+     *
      * @param map primary map
      * @param secondary secondary set
      * @param fun function which calculates Secondary Keys from Primary Key and Value
-     * @param <K> Key in Primary Map
-     * @param <V> Value in Primary Map
-     * @param <K2> Secondary
      */
     public static <K,V, K2> void secondaryKeys(MapWithModificationListener<K, V> map,
                                               final Set<Fun.Tuple2<K2, K>> secondary,
@@ -388,54 +401,53 @@ public final class Bind {
             }
         }
         //hook listener
-        map.addModificationListener(new MapListener<K, V>() {
+        map.modificationListenerAdd(new MapListener<K, V>() {
             @Override
             public void update(K key, V oldVal, V newVal) {
-                if(newVal == null){
+                if (newVal == null) {
                     //removal
-                    K2[] k2 = fun.run(key,oldVal);
-                    if(k2 != null)
-                        for(K2 k22 :k2)
+                    K2[] k2 = fun.run(key, oldVal);
+                    if (k2 != null)
+                        for (K2 k22 : k2)
                             secondary.remove(Fun.t2(k22, key));
-                }else if(oldVal==null){
+                } else if (oldVal == null) {
                     //insert
-                    K2[] k2 = fun.run(key,newVal);
-                    if(k2 != null)
-                        for(K2 k22 :k2)
+                    K2[] k2 = fun.run(key, newVal);
+                    if (k2 != null)
+                        for (K2 k22 : k2)
                             secondary.add(Fun.t2(k22, key));
-                }else{
+                } else {
                     //update, must remove old key and insert new
                     K2[] oldk = fun.run(key, oldVal);
                     K2[] newk = fun.run(key, newVal);
-                    if(oldk==null){
+                    if (oldk == null) {
                         //insert new
-                        if(newk!=null)
-                            for(K2 k22 :newk)
+                        if (newk != null)
+                            for (K2 k22 : newk)
                                 secondary.add(Fun.t2(k22, key));
                         return;
                     }
-                    if(newk==null){
+                    if (newk == null) {
                         //remove old
-                        for(K2 k22 :oldk)
+                        for (K2 k22 : oldk)
                             secondary.remove(Fun.t2(k22, key));
                         return;
                     }
 
                     Set<K2> hashes = new HashSet<K2>();
-                    for(K2 k:oldk)
-                        hashes.add(k);
+                    Collections.addAll(hashes, oldk);
 
                     //add new non existing items
-                    for(K2 k2:newk){
-                        if(!hashes.contains(k2)){
+                    for (K2 k2 : newk) {
+                        if (!hashes.contains(k2)) {
                             secondary.add(Fun.t2(k2, key));
                         }
                     }
                     //remove items which are in old, but not in new
-                    for(K2 k2:newk){
+                    for (K2 k2 : newk) {
                         hashes.remove(k2);
                     }
-                    for(K2 k2:hashes){
+                    for (K2 k2 : hashes) {
                         secondary.remove(Fun.t2(k2, key));
                     }
                 }
@@ -447,15 +459,18 @@ public final class Bind {
      * Binds Secondary Set so it contains inverse mapping to Primary Map: Primary Value will become Secondary Key.
      * This is useful for creating bi-directional Maps.
      *
-     * To lookup keys in Secondary Set use {@link Bind#findSecondaryKeys(java.util.NavigableSet, Object)}
+     * To lookup keys in Secondary Set use {@link Fun#filter(java.util.NavigableSet, Object)}
      *
      * If Secondary Set is empty its content will be recreated from Primary Map.
      * This binding is not persistent. You need to restore it every time store is reopened.
      *
+     * Type params:
+     *
+     *  * `<K>` - Key in Primary Map and Second Value in Secondary Set
+     *  * `<V>` - Value in Primary Map and Primary Value in Secondary Set
+     *
      * @param primary Primary Map for which inverse mapping will be created
      * @param inverse Secondary Set which will contain inverse mapping
-     * @param <K> Key in Primary Map and Second Value in Secondary Set
-     * @param <V> Value in Primary Map and Primary Value in Secondary Set
      */
     public static <K,V> void mapInverse(MapWithModificationListener<K,V> primary,
                                         Set<Fun.Tuple2<V, K>> inverse) {
@@ -470,15 +485,20 @@ public final class Bind {
      * Binds Secondary Set so it contains inverse mapping to Primary Map: Primary Value will become Secondary Key.
      * This is useful for creating bi-directional Maps.
      *
-     * To lookup keys in Secondary Set use {@link Bind#findSecondaryKeys(java.util.NavigableSet, Object)}
+     * In this case some data may be lost, if there are duplicated primary values.
+     * It is recommended to use multimap: `NavigableSet<Fun.Tuple2<V,K>>` which
+     * handles value duplicities. Use @{link Bind.mapInverse(MapWithModificationListener<K,V>Set<Fun.Tuple2<V, K>>}
      *
      * If Secondary Set is empty its content will be recreated from Primary Map.
      * This binding is not persistent. You need to restore it every time store is reopened.
      *
+     * Type params:
+     *
+     *  * `<K>` - Key in Primary Map and Second Value in Secondary Set
+     *  * `<V>` - Value in Primary Map and Primary Value in Secondary Set
+     *
      * @param primary Primary Map for which inverse mapping will be created
      * @param inverse Secondary Set which will contain inverse mapping
-     * @param <K> Key in Primary Map and Second Value in Secondary Set
-     * @param <V> Value in Primary Map and Primary Value in Secondary Set
      */
     public static <K,V> void mapInverse(MapWithModificationListener<K,V> primary,
                                         Map<V, K> inverse) {
@@ -504,12 +524,15 @@ public final class Bind {
      * If Secondary Map is empty its content will be recreated from Primary Map.
      * This binding is not persistent. You need to restore it every time store is reopened.
      *
-     * @param primary Primary Map to create histrogram for
+     * Type params:
+     *
+     *  * `<K>` - Key type in primary map
+     *  * `<V>` - Value type in primary map
+     *  * `<C>` - Category type
+     *
+     * @param primary Primary Map to create histogram for
      * @param histogram Secondary Map to create histogram for, key is Category, value is number of items in category
      * @param entryToCategory returns Category in which entry from Primary Map belongs to.
-     * @param <K> Key type in primary map
-     * @param <V> Value type in primary map
-     * @param <C> Category type
      */
     public static <K,V,C> void histogram(MapWithModificationListener<K,V> primary, final ConcurrentMap<C,Long> histogram,
                                   final Fun.Function2<C, K, V> entryToCategory){
@@ -553,7 +576,7 @@ public final class Bind {
             }
         };
 
-        primary.addModificationListener(listener);
+        primary.modificationListenerAdd(listener);
     }
 
 

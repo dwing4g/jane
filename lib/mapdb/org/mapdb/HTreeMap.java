@@ -136,7 +136,7 @@ public class HTreeMap<K,V>   extends AbstractMap<K,V> implements ConcurrentMap<K
                     DataInput2.unpackLong(in),
                     expireFlag?DataInput2.unpackLong(in):0L,
                     keySerializer.deserialize(in,-1),
-                    hasValues? (V) valueSerializer.deserialize(in,-1) : (V) BTreeMap.EMPTY
+                    hasValues? valueSerializer.deserialize(in,-1) : (V) BTreeMap.EMPTY
             );
         }
 
@@ -225,7 +225,7 @@ public class HTreeMap<K,V>   extends AbstractMap<K,V> implements ConcurrentMap<K
                     Serializer<K> keySerializer, Serializer<V> valueSerializer,
                     long expireTimeStart, long expire, long expireAccess, long expireMaxSize, long expireStoreSize,
                     long[] expireHeads, long[] expireTails, Fun.Function1<V, K> valueCreator,
-                    Hasher hasher) {
+                    Hasher hasher, boolean disableLocks) {
         if(counterRecid<0) throw new IllegalArgumentException();
         if(engine==null) throw new NullPointerException();
         if(segmentRecids==null) throw new NullPointerException();
@@ -841,9 +841,8 @@ public class HTreeMap<K,V>   extends AbstractMap<K,V> implements ConcurrentMap<K
         @Override
         public int hashCode() {
             int result = 0;
-            Iterator<K> it = iterator();
-            while (it.hasNext()) {
-                result += hasher.hashCode(it.next());
+            for (K k : this) {
+                result += hasher.hashCode(k);
             }
             return result;
 
@@ -890,7 +889,7 @@ public class HTreeMap<K,V>   extends AbstractMap<K,V> implements ConcurrentMap<K
         return _values;
     }
 
-    private Set<Entry<K,V>> _entrySet = new AbstractSet<Entry<K,V>>(){
+    private final Set<Entry<K,V>> _entrySet = new AbstractSet<Entry<K,V>>(){
 
         @Override
         public int size() {
@@ -1260,7 +1259,7 @@ public class HTreeMap<K,V>   extends AbstractMap<K,V> implements ConcurrentMap<K
 
     protected static final class ExpireLinkNode{
 
-        public static ExpireLinkNode EMPTY = new ExpireLinkNode(0,0,0,0,0);
+        public final static ExpireLinkNode EMPTY = new ExpireLinkNode(0,0,0,0,0);
 
         public static final Serializer<ExpireLinkNode> SERIALIZER = new Serializer<ExpireLinkNode>() {
             @Override
@@ -1599,7 +1598,6 @@ public class HTreeMap<K,V>   extends AbstractMap<K,V> implements ConcurrentMap<K
             // patch linked list
             if(last ==null ){
                 //no items removed
-                return;
             }else if(recid == 0){
                 //all items were taken, so zero items
                 engine.update(expireTails[seg],0L, Serializer.LONG);
@@ -1651,7 +1649,7 @@ public class HTreeMap<K,V>   extends AbstractMap<K,V> implements ConcurrentMap<K
     public Map<K,V> snapshot(){
         Engine snapshot = TxEngine.createSnapshotFor(engine);
         return new HTreeMap<K, V>(snapshot, counter==null?0:counter.recid,
-                hashSalt, segmentRecids, keySerializer, valueSerializer,0L,0L,0L,0L,0L,null,null, null, null);
+                hashSalt, segmentRecids, keySerializer, valueSerializer,0L,0L,0L,0L,0L,null,null, null, null, false);
     }
 
 
@@ -1659,7 +1657,7 @@ public class HTreeMap<K,V>   extends AbstractMap<K,V> implements ConcurrentMap<K
     protected Bind.MapListener<K,V>[] modListeners = new Bind.MapListener[0];
 
     @Override
-    public void addModificationListener(Bind.MapListener<K,V> listener) {
+    public void modificationListenerAdd(Bind.MapListener<K, V> listener) {
         synchronized (modListenersLock){
             Bind.MapListener<K,V>[] modListeners2 =
                     Arrays.copyOf(modListeners,modListeners.length+1);
@@ -1670,7 +1668,7 @@ public class HTreeMap<K,V>   extends AbstractMap<K,V> implements ConcurrentMap<K
     }
 
     @Override
-    public void removeModificationListener(Bind.MapListener<K,V> listener) {
+    public void modificationListenerRemove(Bind.MapListener<K, V> listener) {
         synchronized (modListenersLock){
             for(int i=0;i<modListeners.length;i++){
                 if(modListeners[i]==listener) modListeners[i]=null;

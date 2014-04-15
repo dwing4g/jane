@@ -18,7 +18,7 @@ package org.mapdb;
 
 import java.io.*;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.UUID;
 
 /**
  * Provides serialization and deserialization
@@ -498,6 +498,7 @@ public interface Serializer<A> {
     /** wraps another serializer and (de)compresses its output/input*/
     public final static class CompressionWrapper<E> implements Serializer<E>, Serializable {
 
+        private static final long serialVersionUID = 4440826457939614346L;
         protected final Serializer<E> serializer;
         protected final ThreadLocal<CompressLZF> LZF = new ThreadLocal<CompressLZF>() {
                 @Override protected CompressLZF initialValue() {

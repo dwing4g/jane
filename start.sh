@@ -6,9 +6,17 @@ JVM="-Xms512m -Xmx512m -server -XX:+UseConcMarkSweepGC -Xloggc:log/gc.log -XX:+P
 LIB="lib/slf4j-api-1.7.6.jar:lib/log4j-core-2.0-rc1.jar:lib/log4j-api-2.0-rc1.jar:lib/log4j-slf4j-impl-2.0-rc1.jar:lib/mina-core-2.0.7.jar:lib/luaj-jse-2.0.3.jar"
 
 MAIN=$1
-if [ "$MAIN" == "nohup" ]; then NOHUP=nohup; MAIN=$2; fi
+if [ "$MAIN" == "nohup" ]; then NOHUP=nohup; MAIN=$2; else NOHUP=""; fi
 MAIN=${MAIN:-jane.test.TestMain}
 if [ "$MAIN" == "b" ]; then MAIN=jane.test.TestDBBenchmark; fi
+
+# PID=`jps -l | grep $MAIN | awk '{print $1}'`
+PID=`ps x | grep java | grep $MAIN | grep -v grep | awk '{print $1}'`
+
+if [ $PID ]; then
+	echo 'server is running already'
+	exit 1
+fi
 
 mkdir -p log 2> /dev/null
 mkdir -p db  2> /dev/null

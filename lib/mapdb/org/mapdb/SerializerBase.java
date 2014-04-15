@@ -28,7 +28,7 @@ import java.util.*;
  * @author Jan Kotek
  */
 @SuppressWarnings({ "unchecked", "rawtypes" })
-public class SerializerBase implements Serializer{
+public class SerializerBase implements Serializer<Object>{
 
 
     protected static final String EMPTY_STRING = "";
@@ -151,7 +151,7 @@ public class SerializerBase implements Serializer{
 
     }
 
-    private void serialize2(DataOutput out, Object obj, FastArrayList<Object> objectStack, Class clazz) throws IOException {
+    private void serialize2(DataOutput out, Object obj, FastArrayList<Object> objectStack, Class<?> clazz) throws IOException {
         if (obj instanceof byte[]) {
             byte[] b = (byte[]) obj;
             serializeByteArray(out, b);
@@ -261,7 +261,7 @@ public class SerializerBase implements Serializer{
         }
 
 
-        /** classes bellow need object stack, so initialize it if not alredy initialized*/
+        /** classes bellow need object stack, so initialize it if not already initialized*/
         if (objectStack == null) {
             objectStack = new FastArrayList();
             objectStack.add(obj);
@@ -546,11 +546,10 @@ public class SerializerBase implements Serializer{
             for (int i = 0; i < len; i++)
                 DataOutput2.packInt(out,(int)((String) obj).charAt(i));
         }
-        return;
     }
 
-    private void serializeLongArray(DataOutput out, long[] obj) throws IOException {
-        long[] val = (long[]) obj;
+    private void serializeLongArray(DataOutput out, final long[] val) throws IOException {
+
         long max = Long.MIN_VALUE;
         long min = Long.MAX_VALUE;
         for (long i : val) {
@@ -578,11 +577,9 @@ public class SerializerBase implements Serializer{
             DataOutput2.packInt(out, val.length);
             for (long i : val) out.writeLong(i);
         }
-        return;
     }
 
-    private void serializeIntArray(DataOutput out, int[] obj) throws IOException {
-        int[] val = (int[]) obj;
+    private void serializeIntArray(DataOutput out, final int[] val) throws IOException {
         int max = Integer.MIN_VALUE;
         int min = Integer.MAX_VALUE;
         for (int i : val) {
@@ -606,7 +603,6 @@ public class SerializerBase implements Serializer{
             DataOutput2.packInt(out, val.length);
             for (int i : val) out.writeInt(i);
         }
-        return;
     }
 
     private void serializeDouble(DataOutput out, Object obj) throws IOException {
@@ -630,7 +626,6 @@ public class SerializerBase implements Serializer{
             out.write(Header.DOUBLE);
             out.writeDouble(v);
         }
-        return;
     }
 
     private void serializeFloat(DataOutput out, Object obj) throws IOException {
@@ -651,7 +646,6 @@ public class SerializerBase implements Serializer{
             out.write(Header.FLOAT);
             out.writeFloat(v);
         }
-        return;
     }
 
     private void serializeShort(DataOutput out, Object obj) throws IOException {
@@ -672,7 +666,6 @@ public class SerializerBase implements Serializer{
             out.write(Header.SHORT);
             out.writeShort(val);
         }
-        return;
     }
 
     private void serializerChar(DataOutput out, Object obj) throws IOException {
@@ -688,7 +681,6 @@ public class SerializerBase implements Serializer{
             out.write(Header.CHAR);
             out.writeChar((Character) obj);
         }
-        return;
     }
 
     private void serializeByte(DataOutput out, Object obj) throws IOException {
@@ -703,7 +695,6 @@ public class SerializerBase implements Serializer{
             out.write(Header.BYTE);
             out.writeByte(val);
         }
-        return;
     }
 
     private void serializeLong(DataOutput out, Object obj) throws IOException {
@@ -1418,6 +1409,7 @@ public class SerializerBase implements Serializer{
         int TUPLE6_COMPARATOR_STATIC = 54;
         int SERIALIZER_KEY_TUPLE5 = 55;
         int SERIALIZER_KEY_TUPLE6 = 56;
+        int HASHER_ARRAY = 57;
 
     }
 
@@ -1464,6 +1456,7 @@ public class SerializerBase implements Serializer{
             all.put(Hasher.INT_ARRAY,HeaderMapDB.HASHER_INT_ARRAY);
             all.put(Hasher.LONG_ARRAY,HeaderMapDB.HASHER_LONG_ARRAY);
             all.put(Hasher.DOUBLE_ARRAY,HeaderMapDB.HASHER_DOUBLE_ARRAY);
+            all.put(Hasher.ARRAY,HeaderMapDB.HASHER_ARRAY);
 
             all.put(Fun.BYTE_ARRAY_COMPARATOR,HeaderMapDB.COMPARATOR_BYTE_ARRAY);
             all.put(Fun.CHAR_ARRAY_COMPARATOR,HeaderMapDB.COMPARATOR_CHAR_ARRAY);
@@ -1471,6 +1464,7 @@ public class SerializerBase implements Serializer{
             all.put(Fun.LONG_ARRAY_COMPARATOR,HeaderMapDB.COMPARATOR_LONG_ARRAY);
             all.put(Fun.DOUBLE_ARRAY_COMPARATOR,HeaderMapDB.COMPARATOR_DOUBLE_ARRAY);
             all.put(Fun.COMPARABLE_ARRAY_COMPARATOR,HeaderMapDB.COMPARATOR_COMPARABLE_ARRAY);
+
 
             //important for assertSerializable
             all.put(Fun.HI,Integer.MIN_VALUE);
@@ -1584,8 +1578,7 @@ public class SerializerBase implements Serializer{
     private Object[] deserializeArrayObjectAllNull(DataInput is) throws IOException {
         int size = DataInput2.unpackInt(is);
         Class clazz = deserializeClass(is);
-        Object[] s = (Object[]) Array.newInstance(clazz, size);
-        return s;
+        return (Object[]) Array.newInstance(clazz, size);
     }
 
 
@@ -1877,9 +1870,9 @@ public class SerializerBase implements Serializer{
         boolean[] tmp = new boolean[boolBytes.length*8];
         int len = boolBytes.length;
         int boolIndex = 0;
-        for (int x=0; x<len; x++) {
-            for (int y=0; y<8; y++) {
-                tmp[boolIndex++] = (boolBytes[x] & (0x01 << y)) != 0x00;
+        for (byte boolByte : boolBytes) {
+            for (int y = 0; y < 8; y++) {
+                tmp[boolIndex++] = (boolByte & (0x01 << y)) != 0x00;
             }
         }
 

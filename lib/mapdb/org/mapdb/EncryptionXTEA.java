@@ -32,7 +32,7 @@ public final class EncryptionXTEA{
 
 
     public EncryptionXTEA(byte[] password) {
-        byte[] b = getHash(password, false);
+        byte[] b = getHash(password);
         int[] key = new int[4];
         for (int i = 0; i < 16;) {
             key[i / 4] = (b[i++] << 24) + ((b[i++] & 255) << 16) + ((b[i++] & 255) << 8) + (b[i++] & 255);
@@ -136,17 +136,14 @@ public final class EncryptionXTEA{
      * Calculate the hash code for the given data.
      *
      * @param data the data to hash
-     * @param nullData if the data should be filled with zeros after calculating the hash code
      * @return the hash code
      */
-    public static byte[] getHash(byte[] data, boolean nullData) {
+    public static byte[] getHash(byte[] data) {
         int byteLen = data.length;
         int intLen = ((byteLen + 9 + 63) / 64) * 16;
         byte[] bytes = new byte[intLen * 4];
         System.arraycopy(data, 0, bytes, 0, byteLen);
-        if (nullData) {
-            Arrays.fill(data, (byte) 0);
-        }
+
         bytes[byteLen] = (byte) 0x80;
         int[] buff = new int[intLen];
         for (int i = 0, j = 0; j < intLen; i += 4, j++) {
@@ -158,9 +155,7 @@ public final class EncryptionXTEA{
         int[] hh = { 0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
                 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19 };
         for (int block = 0; block < intLen; block += 16) {
-            for (int i = 0; i < 16; i++) {
-                w[i] = buff[block + i];
-            }
+            System.arraycopy(buff, block + 0, w, 0, 16);
             for (int i = 16; i < 64; i++) {
                 int x = w[i - 2];
                 int theta1 = rot(x, 17) ^ rot(x, 19) ^ (x >>> 10);

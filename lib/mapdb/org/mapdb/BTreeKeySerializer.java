@@ -5,7 +5,6 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.Charset;
-import java.util.Arrays;
 import java.util.Comparator;
 
 /**
@@ -61,6 +60,8 @@ public abstract class BTreeKeySerializer<K>{
      * Is used by default if no other Key Serializer is specified.
      */
     public static final class BasicKeySerializer extends BTreeKeySerializer<Object> implements Serializable {
+
+        private static final long serialVersionUID = 1654710710946309279L;
 
         protected final Serializer defaultSerializer;
 
@@ -210,7 +211,7 @@ public abstract class BTreeKeySerializer<K>{
     /**
      * Read previously written data from {@code leadingValuePackWrite()} method.
      *
-     * @author Kevin Day
+     * author: Kevin Day
      */
     public static byte[] leadingValuePackRead(DataInput in, byte[] previous, int ignoreLeadingCount) throws IOException {
         int len = DataInput2.unpackInt(in) - 1;  // 0 indicates null
@@ -239,7 +240,7 @@ public abstract class BTreeKeySerializer<K>{
      * Writes the contents of buf to the DataOutput out, with special encoding if
      * there are common leading bytes in the previous group stored by this compressor.
      *
-     * @author Kevin Day
+     * author: Kevin Day
      */
     public static void leadingValuePackWrite(DataOutput out, byte[] buf, byte[] previous, int ignoreLeadingCount) throws IOException {
         if (buf == null) {
@@ -292,6 +293,7 @@ public abstract class BTreeKeySerializer<K>{
      */
     public final  static class Tuple2KeySerializer<A,B> extends  BTreeKeySerializer<Fun.Tuple2<A,B>> implements Serializable {
 
+        private static final long serialVersionUID = 2183804367032891772L;
         protected final Comparator<A> aComparator;
         protected final Serializer<A> aSerializer;
         protected final Serializer<B> bSerializer;
@@ -304,7 +306,7 @@ public abstract class BTreeKeySerializer<K>{
          * @param aSerializer serializer used for first tuple value
          * @param bSerializer serializer used for second tuple value
          */
-        public Tuple2KeySerializer(Comparator<A> aComparator,Serializer aSerializer, Serializer bSerializer){
+        public Tuple2KeySerializer(Comparator<A> aComparator,Serializer<A> aSerializer, Serializer<B> bSerializer){
             this.aComparator = aComparator;
             this.aSerializer = aSerializer;
             this.bSerializer = bSerializer;
@@ -370,13 +372,12 @@ public abstract class BTreeKeySerializer<K>{
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            Tuple2KeySerializer that = (Tuple2KeySerializer) o;
+            Tuple2KeySerializer t = (Tuple2KeySerializer) o;
 
-            if (aComparator != null ? !aComparator.equals(that.aComparator) : that.aComparator != null) return false;
-            if (aSerializer != null ? !aSerializer.equals(that.aSerializer) : that.aSerializer != null) return false;
-            if (bSerializer != null ? !bSerializer.equals(that.bSerializer) : that.bSerializer != null) return false;
-
-            return true;
+            return
+                    Fun.eq(aComparator, t.aComparator) &&
+                    Fun.eq(aSerializer, t.aSerializer) &&
+                    Fun.eq(bSerializer, t.bSerializer);
         }
 
         @Override
@@ -412,6 +413,7 @@ public abstract class BTreeKeySerializer<K>{
      */
     public static class Tuple3KeySerializer<A,B,C> extends  BTreeKeySerializer<Fun.Tuple3<A,B,C>> implements Serializable {
 
+        private static final long serialVersionUID = 2932442956138713885L;
         protected final Comparator<A> aComparator;
         protected final Comparator<B> bComparator;
         protected final Serializer<A> aSerializer;
@@ -428,8 +430,8 @@ public abstract class BTreeKeySerializer<K>{
          * @param bSerializer serializer used for second tuple value
          * @param cSerializer serializer used for third tuple value
          */
-        public Tuple3KeySerializer(Comparator<A> aComparator, Comparator<B> bComparator,  Serializer aSerializer,
-                                   Serializer bSerializer, Serializer cSerializer){
+        public Tuple3KeySerializer(Comparator<A> aComparator, Comparator<B> bComparator,  Serializer<A> aSerializer,
+                                   Serializer<B> bSerializer, Serializer<C> cSerializer){
             this.aComparator = aComparator;
             this.bComparator = bComparator;
             this.aSerializer = aSerializer;
@@ -526,15 +528,14 @@ public abstract class BTreeKeySerializer<K>{
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            Tuple3KeySerializer that = (Tuple3KeySerializer) o;
+            Tuple3KeySerializer t = (Tuple3KeySerializer) o;
 
-            if (aComparator != null ? !aComparator.equals(that.aComparator) : that.aComparator != null) return false;
-            if (aSerializer != null ? !aSerializer.equals(that.aSerializer) : that.aSerializer != null) return false;
-            if (bComparator != null ? !bComparator.equals(that.bComparator) : that.bComparator != null) return false;
-            if (bSerializer != null ? !bSerializer.equals(that.bSerializer) : that.bSerializer != null) return false;
-            if (cSerializer != null ? !cSerializer.equals(that.cSerializer) : that.cSerializer != null) return false;
-
-            return true;
+            return
+                    Fun.eq(aComparator, t.aComparator) &&
+                    Fun.eq(bComparator, t.bComparator) &&
+                    Fun.eq(aSerializer, t.aSerializer) &&
+                    Fun.eq(bSerializer, t.bSerializer) &&
+                    Fun.eq(cSerializer, t.cSerializer);
         }
 
         @Override
@@ -573,6 +574,7 @@ public abstract class BTreeKeySerializer<K>{
      */
     public static class Tuple4KeySerializer<A,B,C,D> extends  BTreeKeySerializer<Fun.Tuple4<A,B,C,D>> implements Serializable {
 
+        private static final long serialVersionUID = -1835761249723528530L;
         protected final Comparator<A> aComparator;
         protected final Comparator<B> bComparator;
         protected final Comparator<C> cComparator;
@@ -594,7 +596,7 @@ public abstract class BTreeKeySerializer<K>{
          * @param dSerializer serializer used for fourth tuple value
          */
         public Tuple4KeySerializer(Comparator<A> aComparator, Comparator<B> bComparator, Comparator<C> cComparator,
-                                   Serializer aSerializer, Serializer bSerializer, Serializer cSerializer, Serializer dSerializer){
+                                   Serializer<A> aSerializer, Serializer<B> bSerializer, Serializer<C> cSerializer, Serializer<D> dSerializer){
             this.aComparator = aComparator;
             this.bComparator = bComparator;
             this.cComparator = cComparator;
@@ -716,18 +718,18 @@ public abstract class BTreeKeySerializer<K>{
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            Tuple4KeySerializer that = (Tuple4KeySerializer) o;
+            Tuple4KeySerializer t = (Tuple4KeySerializer) o;
 
-            if (aComparator != null ? !aComparator.equals(that.aComparator) : that.aComparator != null) return false;
-            if (aSerializer != null ? !aSerializer.equals(that.aSerializer) : that.aSerializer != null) return false;
-            if (bComparator != null ? !bComparator.equals(that.bComparator) : that.bComparator != null) return false;
-            if (bSerializer != null ? !bSerializer.equals(that.bSerializer) : that.bSerializer != null) return false;
-            if (cComparator != null ? !cComparator.equals(that.cComparator) : that.cComparator != null) return false;
-            if (cSerializer != null ? !cSerializer.equals(that.cSerializer) : that.cSerializer != null) return false;
-            if (dSerializer != null ? !dSerializer.equals(that.dSerializer) : that.dSerializer != null) return false;
-
-            return true;
+            return
+                    Fun.eq(aComparator, t.aComparator) &&
+                    Fun.eq(bComparator, t.bComparator) &&
+                    Fun.eq(cComparator, t.cComparator) &&
+                    Fun.eq(aSerializer, t.aSerializer) &&
+                    Fun.eq(bSerializer, t.bSerializer) &&
+                    Fun.eq(cSerializer, t.cSerializer) &&
+                    Fun.eq(dSerializer, t.dSerializer);
         }
+
 
         @Override
         public int hashCode() {
@@ -762,6 +764,7 @@ public abstract class BTreeKeySerializer<K>{
      */
     public static class Tuple5KeySerializer<A,B,C,D,E> extends  BTreeKeySerializer<Fun.Tuple5<A,B,C,D,E>> implements Serializable {
 
+        private static final long serialVersionUID = 8607477718850453705L;
         protected final Comparator<A> aComparator;
         protected final Comparator<B> bComparator;
         protected final Comparator<C> cComparator;
@@ -778,7 +781,7 @@ public abstract class BTreeKeySerializer<K>{
          *
          */
         public Tuple5KeySerializer(Comparator<A> aComparator, Comparator<B> bComparator, Comparator<C> cComparator, Comparator<D> dComparator,
-                                   Serializer aSerializer, Serializer bSerializer, Serializer cSerializer, Serializer dSerializer, Serializer eSerializer){
+                                   Serializer<A> aSerializer, Serializer<B> bSerializer, Serializer<C> cSerializer, Serializer<D> dSerializer, Serializer<E> eSerializer){
             this.aComparator = aComparator;
             this.bComparator = bComparator;
             this.cComparator = cComparator;
@@ -796,7 +799,7 @@ public abstract class BTreeKeySerializer<K>{
             aComparator = (Comparator<A>) serializerBase.deserialize(is,objectStack);
             bComparator = (Comparator<B>) serializerBase.deserialize(is,objectStack);
             cComparator = (Comparator<C>) serializerBase.deserialize(is,objectStack);
-            dComparator = (Comparator<D>) serializerBase.deserialize(is,objectStack);
+            dComparator = (Comparator<D>) serializerBase.deserialize(is, objectStack);
             aSerializer = (Serializer<A>) serializerBase.deserialize(is,objectStack);
             bSerializer = (Serializer<B>) serializerBase.deserialize(is,objectStack);
             cSerializer = (Serializer<C>) serializerBase.deserialize(is,objectStack);
@@ -926,19 +929,18 @@ public abstract class BTreeKeySerializer<K>{
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            Tuple5KeySerializer that = (Tuple5KeySerializer) o;
+            Tuple5KeySerializer t = (Tuple5KeySerializer) o;
 
-            if (aComparator != null ? !aComparator.equals(that.aComparator) : that.aComparator != null) return false;
-            if (aSerializer != null ? !aSerializer.equals(that.aSerializer) : that.aSerializer != null) return false;
-            if (bComparator != null ? !bComparator.equals(that.bComparator) : that.bComparator != null) return false;
-            if (bSerializer != null ? !bSerializer.equals(that.bSerializer) : that.bSerializer != null) return false;
-            if (cComparator != null ? !cComparator.equals(that.cComparator) : that.cComparator != null) return false;
-            if (cSerializer != null ? !cSerializer.equals(that.cSerializer) : that.cSerializer != null) return false;
-            if (dComparator != null ? !dComparator.equals(that.dComparator) : that.dComparator != null) return false;
-            if (dSerializer != null ? !dSerializer.equals(that.dSerializer) : that.dSerializer != null) return false;
-            if (eSerializer != null ? !eSerializer.equals(that.eSerializer) : that.eSerializer != null) return false;
-
-            return true;
+            return
+                    Fun.eq(aComparator, t.aComparator) &&
+                    Fun.eq(bComparator, t.bComparator) &&
+                    Fun.eq(cComparator, t.cComparator) &&
+                    Fun.eq(dComparator, t.dComparator) &&
+                    Fun.eq(aSerializer, t.aSerializer) &&
+                    Fun.eq(bSerializer, t.bSerializer) &&
+                    Fun.eq(cSerializer, t.cSerializer) &&
+                    Fun.eq(dSerializer, t.dSerializer) &&
+                    Fun.eq(eSerializer, t.eSerializer);
         }
 
         @Override
@@ -975,6 +977,7 @@ public abstract class BTreeKeySerializer<K>{
      */
     public static class Tuple6KeySerializer<A,B,C,D,E,F> extends  BTreeKeySerializer<Fun.Tuple6<A,B,C,D,E,F>> implements Serializable {
 
+        private static final long serialVersionUID = 3666600849149868404L;
         protected final Comparator<A> aComparator;
         protected final Comparator<B> bComparator;
         protected final Comparator<C> cComparator;
@@ -993,7 +996,7 @@ public abstract class BTreeKeySerializer<K>{
          *
          */
         public Tuple6KeySerializer(Comparator<A> aComparator, Comparator<B> bComparator, Comparator<C> cComparator, Comparator<D> dComparator,Comparator<E> eComparator,
-                                   Serializer aSerializer, Serializer bSerializer, Serializer cSerializer, Serializer dSerializer, Serializer eSerializer,Serializer fSerializer){
+                                   Serializer<A> aSerializer, Serializer<B> bSerializer, Serializer<C> cSerializer, Serializer<D> dSerializer, Serializer<E> eSerializer,Serializer<F> fSerializer){
             this.aComparator = aComparator;
             this.bComparator = bComparator;
             this.cComparator = cComparator;
@@ -1169,22 +1172,21 @@ public abstract class BTreeKeySerializer<K>{
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            Tuple6KeySerializer that = (Tuple6KeySerializer) o;
+            Tuple6KeySerializer t = (Tuple6KeySerializer) o;
 
-            if (aComparator != null ? !aComparator.equals(that.aComparator) : that.aComparator != null) return false;
-            if (aSerializer != null ? !aSerializer.equals(that.aSerializer) : that.aSerializer != null) return false;
-            if (bComparator != null ? !bComparator.equals(that.bComparator) : that.bComparator != null) return false;
-            if (bSerializer != null ? !bSerializer.equals(that.bSerializer) : that.bSerializer != null) return false;
-            if (cComparator != null ? !cComparator.equals(that.cComparator) : that.cComparator != null) return false;
-            if (cSerializer != null ? !cSerializer.equals(that.cSerializer) : that.cSerializer != null) return false;
-            if (dComparator != null ? !dComparator.equals(that.dComparator) : that.dComparator != null) return false;
-            if (dSerializer != null ? !dSerializer.equals(that.dSerializer) : that.dSerializer != null) return false;
-            if (eSerializer != null ? !eSerializer.equals(that.eSerializer) : that.eSerializer != null) return false;
-            if (eComparator != null ? !eComparator.equals(that.eComparator) : that.eComparator != null) return false;
-            if (fSerializer != null ? !fSerializer.equals(that.fSerializer) : that.fSerializer != null) return false;
+            return
+                    Fun.eq(aComparator, t.aComparator) &&
+                    Fun.eq(bComparator, t.bComparator) &&
+                    Fun.eq(cComparator, t.cComparator) &&
+                    Fun.eq(dComparator, t.dComparator) &&
+                    Fun.eq(eComparator, t.eComparator) &&
+                    Fun.eq(aSerializer, t.aSerializer) &&
+                    Fun.eq(bSerializer, t.bSerializer) &&
+                    Fun.eq(cSerializer, t.cSerializer) &&
+                    Fun.eq(dSerializer, t.dSerializer) &&
+                    Fun.eq(eSerializer, t.eSerializer) &&
+                    Fun.eq(fSerializer, t.fSerializer);
 
-
-            return true;
         }
 
         @Override

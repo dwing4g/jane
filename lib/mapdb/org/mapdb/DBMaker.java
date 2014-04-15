@@ -81,7 +81,7 @@ public class DBMaker<DBMakerT extends DBMaker<DBMakerT>> {
         String checksum = "checksum";
 
         String freeSpaceReclaimQ = "freeSpaceReclaimQ";
-        String syncOnCommitDisable = "syncOnCommitDisable";
+        String commitFileSyncDisable = "commitFileSyncDisable";
 
         String snapshots = "snapshots";
 
@@ -241,8 +241,6 @@ public class DBMaker<DBMakerT extends DBMaker<DBMakerT>> {
      * This method uses off-heap direct ByteBuffers. See {@link java.nio.ByteBuffer#allocateDirect(int)}
      *
      * @param size maximal size of off-heap store in gigabytes.
-     * @param <K>
-     * @param <V>
      * @return map
      */
     public static <K,V> HTreeMap<K,V> newCacheDirect(double size){
@@ -264,8 +262,6 @@ public class DBMaker<DBMakerT extends DBMaker<DBMakerT>> {
      * This method uses  ByteBuffers backed by on-heap byte[]. See {@link java.nio.ByteBuffer#allocate(int)}
      *
      * @param size maximal size of off-heap store in gigabytes.
-     * @param <K>
-     * @param <V>
      * @return map
      */
     public static <K,V> HTreeMap<K,V> newCache(double size){
@@ -289,7 +285,6 @@ public class DBMaker<DBMakerT extends DBMaker<DBMakerT>> {
         props.setProperty(Keys.file, file.getPath());
         return getThis();
     }
-
 
 
     protected DBMakerT getThis(){
@@ -639,8 +634,8 @@ public class DBMaker<DBMakerT extends DBMaker<DBMakerT>> {
      *
      * @return this builder
      */
-    public DBMakerT syncOnCommitDisable(){
-        props.setProperty(Keys.syncOnCommitDisable,TRUE);
+    public DBMakerT commitFileSyncDisable(){
+        props.setProperty(Keys.commitFileSyncDisable,TRUE);
         return getThis();
     }
 
@@ -669,7 +664,7 @@ public class DBMaker<DBMakerT extends DBMaker<DBMakerT>> {
         Engine engine = makeEngine();
         boolean dbCreated = false;
         try{
-            DB db =  new  DB(engine, strictGet);
+            DB db =  new  DB(engine, strictGet,false);
             dbCreated = true;
             return db;
         }finally {
@@ -774,7 +769,7 @@ public class DBMaker<DBMakerT extends DBMaker<DBMakerT>> {
         try{
             check = (Fun.Tuple2<Integer, byte[]>) engine.get(Engine.CHECK_RECORD, Serializer.BASIC);
             if(check!=null){
-                if(check.a.intValue()!= Arrays.hashCode(check.b))
+                if(check.a != Arrays.hashCode(check.b))
                     throw new RuntimeException("invalid checksum");
             }
         }catch(Throwable e){
@@ -854,27 +849,27 @@ public class DBMaker<DBMakerT extends DBMaker<DBMakerT>> {
 
     protected Engine extendCacheLRU(Engine engine) {
         int cacheSize = propsGetInt(Keys.cacheSize, CC.DEFAULT_CACHE_SIZE);
-        return new Caches.LRU(engine, cacheSize);
+        return new Caches.LRU(engine, cacheSize,false);
     }
 
     protected Engine extendCacheWeakRef(Engine engine) {
-        return new Caches.WeakSoftRef(engine,true);
+        return new Caches.WeakSoftRef(engine,true,false);
     }
 
     protected Engine extendCacheSoftRef(Engine engine) {
-        return new Caches.WeakSoftRef(engine,false);
+        return new Caches.WeakSoftRef(engine,false,false);
     }
 
 
 
     protected Engine extendCacheHardRef(Engine engine) {
         int cacheSize = propsGetInt(Keys.cacheSize, CC.DEFAULT_CACHE_SIZE);
-        return new Caches.HardRef(engine,cacheSize);
+        return new Caches.HardRef(engine,cacheSize,false);
     }
 
     protected Engine extendCacheHashTable(Engine engine) {
         int cacheSize = propsGetInt(Keys.cacheSize, CC.DEFAULT_CACHE_SIZE);
-        return new Caches.HashTable(engine, cacheSize);
+        return new Caches.HashTable(engine, cacheSize,false);
     }
 
     protected Engine extendAsyncWriteEngine(Engine engine) {
@@ -912,8 +907,9 @@ public class DBMaker<DBMakerT extends DBMaker<DBMakerT>> {
         return new StoreAppend(file, propsGetRafMode()>0, propsGetBool(Keys.readOnly),
                 propsGetBool(Keys.transactionDisable),
                 propsGetBool(Keys.deleteFilesAfterClose),
-                propsGetBool(Keys.syncOnCommitDisable),
-                propsGetBool(Keys.checksum),compressionEnabled,propsGetXteaEncKey());
+                propsGetBool(Keys.commitFileSyncDisable),
+                propsGetBool(Keys.checksum),compressionEnabled,propsGetXteaEncKey(),
+                false);
     }
 
     protected Engine extendStoreDirect(Volume.Factory folFac) {
@@ -921,16 +917,18 @@ public class DBMaker<DBMakerT extends DBMaker<DBMakerT>> {
         return new StoreDirect(folFac,  propsGetBool(Keys.readOnly),
                 propsGetBool(Keys.deleteFilesAfterClose),
                 propsGetInt(Keys.freeSpaceReclaimQ,CC.DEFAULT_FREE_SPACE_RECLAIM_Q),
-                propsGetBool(Keys.syncOnCommitDisable),propsGetLong(Keys.sizeLimit,0),
-                propsGetBool(Keys.checksum),compressionEnabled,propsGetXteaEncKey());
+                propsGetBool(Keys.commitFileSyncDisable),propsGetLong(Keys.sizeLimit,0),
+                propsGetBool(Keys.checksum),compressionEnabled,propsGetXteaEncKey(),
+                false,0);
     }
 
     protected Engine extendStoreWAL(Volume.Factory folFac) {
         boolean compressionEnabled = Keys.compression_lzf.equals(props.getProperty(Keys.compression));
         return new StoreWAL(folFac,  propsGetBool(Keys.readOnly),propsGetBool(Keys.deleteFilesAfterClose),
                 propsGetInt(Keys.freeSpaceReclaimQ,CC.DEFAULT_FREE_SPACE_RECLAIM_Q),
-                propsGetBool(Keys.syncOnCommitDisable),propsGetLong(Keys.sizeLimit,-1),
-                propsGetBool(Keys.checksum),compressionEnabled,propsGetXteaEncKey());
+                propsGetBool(Keys.commitFileSyncDisable),propsGetLong(Keys.sizeLimit,-1),
+                propsGetBool(Keys.checksum),compressionEnabled,propsGetXteaEncKey(),
+                false,0);
     }
 
 
@@ -944,8 +942,10 @@ public class DBMaker<DBMakerT extends DBMaker<DBMakerT>> {
 
         File file = new File(props.getProperty(Keys.file));
 
-        return Volume.fileFactory(propsGetBool(Keys.readOnly), propsGetRafMode(), file,
-                            sizeLimit,CC.VOLUME_CHUNK_SHIFT);
+        return Volume.fileFactory(
+                file,
+                propsGetRafMode(), propsGetBool(Keys.readOnly),
+                sizeLimit,CC.VOLUME_CHUNK_SHIFT,0);
     }
 
 

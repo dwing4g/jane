@@ -180,7 +180,7 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable {
 
         @Override
         public V value() {
-            return (V) currentEntry.value;
+            return currentEntry.value;
         }
     }
 
@@ -235,7 +235,7 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable {
      *            number of elements
      * @return storage size
      */
-    private static final int calculateCapacity(int x) {
+    private static int calculateCapacity(int x) {
         if(x >= 1 << 30){
             return 1 << 30;
         }

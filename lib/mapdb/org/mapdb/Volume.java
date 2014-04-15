@@ -21,7 +21,7 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.*;
+import java.util.Arrays;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -172,40 +172,45 @@ public abstract class Volume {
         Volume createTransLogVolume();
     }
 
-    public static Volume volumeForFile(File f, boolean useRandomAccessFile, boolean readOnly, long sizeLimit, int chunkShift) {
+    public static Volume volumeForFile(File f, boolean useRandomAccessFile, boolean readOnly, long sizeLimit, int chunkShift, int sizeIncrement) {
         return useRandomAccessFile ?
-                new FileChannelVol(f, readOnly,sizeLimit, chunkShift):
-                new MappedFileVol(f, readOnly,sizeLimit,chunkShift);
+                new FileChannelVol(f, readOnly,sizeLimit, chunkShift, sizeIncrement):
+                new MappedFileVol(f, readOnly,sizeLimit,chunkShift, sizeIncrement);
     }
 
 
-    public static Factory fileFactory(final boolean readOnly, final int rafMode, final File indexFile, final long sizeLimit, final int chunkShift){
-        return fileFactory(readOnly, rafMode, sizeLimit, chunkShift,indexFile,
+    public static Factory fileFactory(final File indexFile, final int rafMode, final boolean readOnly, final long sizeLimit,
+                                      final int chunkShift, final int sizeIncrement){
+        return fileFactory(
+                indexFile,
+                rafMode, readOnly, sizeLimit, chunkShift, sizeIncrement,
                 new File(indexFile.getPath() + StoreDirect.DATA_FILE_EXT),
                 new File(indexFile.getPath() + StoreWAL.TRANS_LOG_FILE_EXT));
     }
 
-    public static Factory fileFactory(final boolean readOnly,
+    public static Factory fileFactory(final File indexFile,
                                       final int rafMode,
+                                      final boolean readOnly,
                                       final long sizeLimit,
                                       final int chunkShift,
-                                      final File indexFile,
+                                      final int sizeIncrement,
+
                                       final File physFile,
                                       final File transLogFile) {
         return new Factory() {
             @Override
             public Volume createIndexVolume() {
-                return volumeForFile(indexFile, rafMode>1, readOnly, sizeLimit, chunkShift);
+                return volumeForFile(indexFile, rafMode>1, readOnly, sizeLimit, chunkShift, sizeIncrement);
             }
 
             @Override
             public Volume createPhysVolume() {
-                return volumeForFile(physFile, rafMode>0, readOnly, sizeLimit, chunkShift);
+                return volumeForFile(physFile, rafMode>0, readOnly, sizeLimit, chunkShift, sizeIncrement);
             }
 
             @Override
             public Volume createTransLogVolume() {
-                return volumeForFile(transLogFile, rafMode>0, readOnly, sizeLimit,chunkShift);
+                return volumeForFile(transLogFile, rafMode>0, readOnly, sizeLimit,chunkShift, sizeIncrement);
             }
         };
     }
@@ -282,7 +287,7 @@ public abstract class Volume {
                 chunks2 = Arrays.copyOf(chunks2, Math.max(chunkPos+1, chunks2.length * 2));
 
                 for(int pos=oldSize;pos<chunks2.length;pos++) {
-                    chunks2[pos]=makeNewBuffer(chunkSize*pos);
+                    chunks2[pos]=makeNewBuffer(1L*chunkSize*pos);
                 }
 
 
@@ -372,11 +377,11 @@ public abstract class Volume {
                     Method cleanerMethod = b.getClass().getMethod("cleaner", new Class[0]);
                     if(cleanerMethod!=null){
                         cleanerMethod.setAccessible(true);
-                        Object cleaner = cleanerMethod.invoke(b, new Object[0]);
+                        Object cleaner = cleanerMethod.invoke(b);
                         if(cleaner!=null){
                             Method clearMethod = cleaner.getClass().getMethod("clean", new Class[0]);
-                            if(cleanerMethod!=null)
-                                clearMethod.invoke(cleaner, new Object[0]);
+                            if(clearMethod!=null)
+                                clearMethod.invoke(cleaner);
                         }
                     }
                 }
@@ -408,7 +413,7 @@ public abstract class Volume {
         protected final java.io.RandomAccessFile raf;
 
 
-        public MappedFileVol(File file, boolean readOnly, long sizeLimit, int chunkShift) {
+        public MappedFileVol(File file, boolean readOnly, long sizeLimit, int chunkShift, int sizeIncrement) {
             super(readOnly, sizeLimit, chunkShift);
             this.file = file;
             this.mapMode = readOnly? FileChannel.MapMode.READ_ONLY: FileChannel.MapMode.READ_WRITE;
@@ -627,9 +632,9 @@ public abstract class Volume {
         protected final boolean hasLimit;
 
         protected volatile long size;
-        protected Object growLock = new Object();
+        protected final Object growLock = new Object();
 
-        public FileChannelVol(File file, boolean readOnly, long sizeLimit, int chunkShift){
+        public FileChannelVol(File file, boolean readOnly, long sizeLimit, int chunkShift, int sizeIncrement){
             this.file = file;
             this.readOnly = readOnly;
             this.sizeLimit = sizeLimit;

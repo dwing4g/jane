@@ -454,10 +454,10 @@ public final class StorageMapDB implements Storage
 	{
 		closeDB();
 		DBMaker<?> dbmaker = DBMaker.newFileDB(file);
-		// 取消注释下面的syncOnCommitDisable可以加快一点commit的速度,写数据量大的时候可以避免同时读非cache数据卡住过长时间
+		// 取消注释下面的commitFileSyncDisable可以加快一点commit的速度,写数据量大的时候可以避免同时读非cache数据卡住过长时间
 		// 但程序崩溃的话,有可能导致某些未刷新的数据丢失或影响后面的备份操作,建议平时都要注释
 		// 不过在commit后对StoreWAL调用phys和index的sync可以让数据丢失的可能性降到极低,而且sync操作可以和读操作并发,更不影响cache层的读写
-		// dbmaker = dbmaker.syncOnCommitDisable();
+		// dbmaker = dbmaker.commitFileSyncDisable();
 		// dbmaker = dbmaker.snapshotEnable(); // 使用此行可以获取到数据库的只读快照,目前尚未使用此特性,建议注释
 		dbmaker = dbmaker.asyncWriteEnable(); // 如果注释此行,提交过程的性能会大幅降低,建议不注释
 		dbmaker = (Const.mapDBCacheCount > 0 ? dbmaker.cacheSize(Const.mapDBCacheCount) : dbmaker.cacheDisable());
