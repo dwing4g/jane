@@ -14,7 +14,7 @@ namespace jane.bean
 		public const int BEAN_TYPE = 3;
 
 		public  /* 1*/ bool v1; // 1字节布尔,0表示假,1表示真,其它默认表示真;
-		public  /* 2*/ byte v2; // 1字节整数;
+		public  /* 2*/ sbyte v2; // 1字节整数;
 		public  /* 3*/ short v3; // 2字节整数;
 		public  /* 4*/ int v4; // 4字节整数;
 		public  /* 5*/ long v5; // 8字节整数;
@@ -23,7 +23,7 @@ namespace jane.bean
 		public  /* 8*/ readonly Octets v8; // 二进制数据(Octets);
 		private /* 9*/ string v9; // 字符串(String);
 		public  /*10*/ readonly List<bool> v10; // 数组容器(ArrayList);
-		public  /*11*/ readonly LinkedList<byte> v11; // 链表容器(LinkedList);
+		public  /*11*/ readonly LinkedList<sbyte> v11; // 链表容器(LinkedList);
 		public  /*12*/ readonly LinkedList<int> v12; // 队列容器(ArrayDeque);
 		public  /*13*/ readonly HashSet<long> v13; // 无序集合容器(HashSet);
 		public  /*14*/ readonly SortedSet<float> v14; // 排序集合容器(TreeSet);
@@ -38,7 +38,7 @@ namespace jane.bean
 			v8 = new Octets(5);
 			v9 = string.Empty;
 			v10 = new List<bool>(10);
-			v11 = new LinkedList<byte>();
+			v11 = new LinkedList<sbyte>();
 			v12 = new LinkedList<int>();
 			v13 = new HashSet<long>();
 			v14 = new SortedSet<float>();
@@ -49,7 +49,7 @@ namespace jane.bean
 			v19 = new TestBean();
 		}
 
-		public TestType(bool v1, byte v2, short v3, int v4, long v5, float v6, double v7, Octets v8, string v9, ICollection<bool> v10, ICollection<byte> v11, ICollection<int> v12, ICollection<long> v13, ICollection<float> v14, ICollection<double> v15, IDictionary<long, string> v16, IDictionary<TestBean, bool> v17, IDictionary<Octets, TestBean> v18, TestBean v19)
+		public TestType(bool v1, sbyte v2, short v3, int v4, long v5, float v6, double v7, Octets v8, string v9, ICollection<bool> v10, ICollection<sbyte> v11, ICollection<int> v12, ICollection<long> v13, ICollection<float> v14, ICollection<double> v15, IDictionary<long, string> v16, IDictionary<TestBean, bool> v17, IDictionary<Octets, TestBean> v18, TestBean v19)
 		{
 			this.v1 = v1;
 			this.v2 = v2;
@@ -61,7 +61,7 @@ namespace jane.bean
 			this.v8 = new Octets(5); if(v8 != null) this.v8.replace(v8);
 			this.v9 = v9 ?? string.Empty;
 			this.v10 = new List<bool>(10); if(v10 != null) this.v10.AddRange(v10);
-			this.v11 = new LinkedList<byte>(); if(v11 != null) Util.addAll(this.v11, v11);
+			this.v11 = new LinkedList<sbyte>(); if(v11 != null) Util.addAll(this.v11, v11);
 			this.v12 = new LinkedList<int>(); if(v12 != null) Util.addAll(this.v12, v12);
 			this.v13 = new HashSet<long>(); if(v13 != null) this.v13.UnionWith(v13);
 			this.v14 = new SortedSet<float>(); if(v14 != null) this.v14.UnionWith(v14);
@@ -129,12 +129,12 @@ namespace jane.bean
 			this.v1 = v1;
 		}
 
-		public byte getV2()
+		public sbyte getV2()
 		{
 			return v2;
 		}
 
-		public void setV2(byte v2)
+		public void setV2(sbyte v2)
 		{
 			this.v2 = v2;
 		}
@@ -209,7 +209,7 @@ namespace jane.bean
 			return v10;
 		}
 
-		public LinkedList<byte> getV11()
+		public LinkedList<sbyte> getV11()
 		{
 			return v11;
 		}
@@ -294,7 +294,7 @@ namespace jane.bean
 			if(this.v11.Count > 0)
 			{
 				s.marshal2(0x2f00).marshalUInt(this.v11.Count);
-				foreach(byte v in this.v11)
+				foreach(sbyte v in this.v11)
 					s.marshal(v);
 			}
 			if(this.v12.Count > 0)
@@ -349,11 +349,11 @@ namespace jane.bean
 
 		public override OctetsStream unmarshal(OctetsStream s)
 		{
-			for(;;) { int i = s.unmarshalByte() & 0xff, t = i & 3; switch(i >> 2)
+			for(;;) { int i = s.unmarshalUByte(), t = i & 3; switch(i >> 2)
 			{
 				case 0: return s;
 				case 1: this.v1 = (s.unmarshalInt(t) != 0); break;
-				case 2: this.v2 = (byte)s.unmarshalInt(t); break;
+				case 2: this.v2 = (sbyte)s.unmarshalInt(t); break;
 				case 3: this.v3 = (short)s.unmarshalInt(t); break;
 				case 4: this.v4 = s.unmarshalInt(t); break;
 				case 5: this.v5 = s.unmarshalLong(t); break;
@@ -365,7 +365,7 @@ namespace jane.bean
 				{
 					this.v10.Clear();
 					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalByte();
+					t = s.unmarshalUByte();
 					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 					t &= 7;
 					int n = s.unmarshalUInt();
@@ -377,17 +377,17 @@ namespace jane.bean
 				{
 					this.v11.Clear();
 					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalByte();
+					t = s.unmarshalUByte();
 					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 					t &= 7;
 					for(int n = s.unmarshalUInt(); n > 0; --n)
-						this.v11.AddLast((byte)s.unmarshalIntKV(t));
+						this.v11.AddLast((sbyte)s.unmarshalIntKV(t));
 				} break;
 				case 12:
 				{
 					this.v12.Clear();
 					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalByte();
+					t = s.unmarshalUByte();
 					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 					t &= 7;
 					for(int n = s.unmarshalUInt(); n > 0; --n)
@@ -397,7 +397,7 @@ namespace jane.bean
 				{
 					this.v13.Clear();
 					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalByte();
+					t = s.unmarshalUByte();
 					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 					t &= 7;
 					int n = s.unmarshalUInt();
@@ -408,7 +408,7 @@ namespace jane.bean
 				{
 					this.v14.Clear();
 					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalByte();
+					t = s.unmarshalUByte();
 					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 					t &= 7;
 					int n = s.unmarshalUInt();
@@ -419,7 +419,7 @@ namespace jane.bean
 				{
 					this.v15.Clear();
 					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalByte();
+					t = s.unmarshalUByte();
 					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 					t &= 7;
 					int n = s.unmarshalUInt();
@@ -430,7 +430,7 @@ namespace jane.bean
 				{
 					this.v16.Clear();
 					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalByte();
+					t = s.unmarshalUByte();
 					if((t >> 6) != 1) { s.unmarshalSkipVarSub(t); break; }
 					int k = (t >> 3) & 7; t &= 7;
 					for(int n = s.unmarshalUInt(); n > 0; --n)
@@ -440,7 +440,7 @@ namespace jane.bean
 				{
 					this.v17.Clear();
 					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalByte();
+					t = s.unmarshalUByte();
 					if((t >> 6) != 1) { s.unmarshalSkipVarSub(t); break; }
 					int k = (t >> 3) & 7; t &= 7;
 					for(int n = s.unmarshalUInt(); n > 0; --n)
@@ -450,7 +450,7 @@ namespace jane.bean
 				{
 					this.v18.Clear();
 					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalByte();
+					t = s.unmarshalUByte();
 					if((t >> 6) != 1) { s.unmarshalSkipVarSub(t); break; }
 					int k = (t >> 3) & 7; t &= 7;
 					for(int n = s.unmarshalUInt(); n > 0; --n)

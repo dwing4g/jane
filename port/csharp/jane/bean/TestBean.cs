@@ -90,7 +90,7 @@ namespace jane.bean
 
 		public override OctetsStream unmarshal(OctetsStream s)
 		{
-			for(;;) { int i = s.unmarshalByte() & 0xff, t = i & 3; switch(i >> 2)
+			for(;;) { int i = s.unmarshalUByte(), t = i & 3; switch(i >> 2)
 			{
 				case 0: return s;
 				case 1: this.value1 = s.unmarshalInt(t); break;

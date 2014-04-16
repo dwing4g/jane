@@ -81,7 +81,7 @@ namespace ]=] .. namespace .. [=[.bean
 
 		public override OctetsStream unmarshal(OctetsStream s)
 		{
-			for(;;) { int i = s.unmarshalByte() & 0xff, t = i & 3; switch(i >> 2)
+			for(;;) { int i = s.unmarshalUByte(), t = i & 3; switch(i >> 2)
 			{
 				case 0: return s;
 #(#				#(var.unmarshal) break;
@@ -247,7 +247,7 @@ end
 typedef.byte =
 {
 	name_u = function(var) return var.name:sub(1, 1):upper() .. var.name:sub(2) end,
-	type = "byte", type_i = "byte", type_o = "byte",
+	type = "sbyte", type_i = "sbyte", type_o = "sbyte",
 	subtypeid = 0,
 	public = "public ",
 	final = "",
@@ -380,7 +380,7 @@ typedef.vector = merge(typedef.octets,
 				{
 					this.#(var.name).Clear();
 					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalByte();
+					t = s.unmarshalUByte();
 					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 					t &= 7;
 					int n = s.unmarshalUInt();
@@ -403,7 +403,7 @@ typedef.list = merge(typedef.vector,
 				{
 					this.#(var.name).Clear();
 					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalByte();
+					t = s.unmarshalUByte();
 					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 					t &= 7;
 					for(int n = s.unmarshalUInt(); n > 0; --n)
@@ -423,7 +423,7 @@ typedef.hashset = merge(typedef.vector,
 				{
 					this.#(var.name).Clear();
 					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalByte();
+					t = s.unmarshalUByte();
 					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 					t &= 7;
 					int n = s.unmarshalUInt();
@@ -456,7 +456,7 @@ typedef.hashmap = merge(typedef.hashset,
 				{
 					this.#(var.name).Clear();
 					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalByte();
+					t = s.unmarshalUByte();
 					if((t >> 6) != 1) { s.unmarshalSkipVarSub(t); break; }
 					int k = (t >> 3) & 7; t &= 7;
 					for(int n = s.unmarshalUInt(); n > 0; --n)

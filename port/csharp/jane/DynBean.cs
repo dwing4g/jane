@@ -71,7 +71,7 @@ namespace jane
 		{
 			for(_fields.Clear();;)
 			{
-				int b = os.unmarshalByte() & 0xff;
+				int b = os.unmarshalUByte();
 				if(b == 0) return os;
 				_fields.Add(b & 0x3f, os.unmarshalVar(b >> 6));
 			}

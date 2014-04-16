@@ -97,15 +97,15 @@ namespace jane
 			{
 				byte[] s = com;
 				int p = compos;
-				c += (s[p++] & 0xff) << (24 - b);
+				c += s[p++] << (24 - b);
 				b += 8;
 				if(b < n)
 				{
-					c += (s[p++] & 0xff) << (24 - b);
+					c += s[p++] << (24 - b);
 					b += 8;
 					if(b < n)
 					{
-						c += (s[p++] & 0xff) << (24 - b);
+						c += s[p++] << (24 - b);
 						b += 8;
 					}
 				}
@@ -118,7 +118,7 @@ namespace jane
 
 		private void putbyte(byte c)
 		{
-			if(c >= 0) putbits(c & 0xff, 8);           // 0xxx xxxx
+			if(c >= 0) putbits(c, 8);                  // 0xxx xxxx
 			else       putbits((c & 0x7f) + 0x100, 9); // 1 0xxx xxxx
 		}
 

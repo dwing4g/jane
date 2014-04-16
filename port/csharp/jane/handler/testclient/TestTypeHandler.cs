@@ -6,7 +6,7 @@ namespace jane.handler.testclient
 	{
 		/*\
 		|*| bool v1; // 1字节布尔,0表示假,1表示真,其它默认表示真;
-		|*| byte v2; // 1字节整数;
+		|*| sbyte v2; // 1字节整数;
 		|*| short v3; // 2字节整数;
 		|*| int v4; // 4字节整数;
 		|*| long v5; // 8字节整数;
@@ -15,7 +15,7 @@ namespace jane.handler.testclient
 		|*| Octets v8; // 二进制数据(Octets);
 		|*| string v9; // 字符串(String);
 		|*| List<bool> v10; // 数组容器(ArrayList);
-		|*| LinkedList<byte> v11; // 链表容器(LinkedList);
+		|*| LinkedList<sbyte> v11; // 链表容器(LinkedList);
 		|*| LinkedList<int> v12; // 队列容器(ArrayDeque);
 		|*| HashSet<long> v13; // 无序集合容器(HashSet);
 		|*| SortedSet<float> v14; // 排序集合容器(TreeSet);
