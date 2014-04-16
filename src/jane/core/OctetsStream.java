@@ -362,7 +362,7 @@ public class OctetsStream extends Octets
 	{
 		if(x >= 0)
 		{
-			if(x < 0x8000000)         return marshal((int)x);
+		    if(x < 0x8000000)         return marshal((int)x);
 		    if(x < 0x400000000L)      return marshal5(x + 0x7800000000L);       // 0111 10xx +4B
 		    if(x < 0x20000000000L)    return marshal6(x + 0x7c0000000000L);     // 0111 110x +5B
 		    if(x < 0x1000000000000L)  return marshal7(x + 0x7e000000000000L);   // 0111 1110 +6B
@@ -386,7 +386,7 @@ public class OctetsStream extends Octets
 	{
 		if(x >= 0)
 		{
-			if(x < 0x8000000)         return marshalLen((int)x);
+		    if(x < 0x8000000)         return marshalLen((int)x);
 		    if(x < 0x400000000L)      return 5;
 		    if(x < 0x20000000000L)    return 6;
 		    if(x < 0x1000000000000L)  return 7;
@@ -432,7 +432,7 @@ public class OctetsStream extends Octets
 	public OctetsStream marshalUTF8(char x)
 	{
 		if(x < 0x80)  return marshal1((byte)x);                                              // 0xxx xxxx
-		if(x < 0x800) return marshal2(((x << 2) & 0x1f00) + (x & 0x3f) + 0xc8);              // 110x xxxx  10xx xxxx
+		if(x < 0x800) return marshal2(((x << 2) & 0x1f00) + (x & 0x3f) + 0xc080);            // 110x xxxx  10xx xxxx
 		return marshal3(((x << 4) & 0xf0000) + ((x << 2) & 0x3f00) + (x & 0x3f) + 0xe08080); // 1110 xxxx  10xx xxxx  10xx xxxx
 	}
 
@@ -840,11 +840,11 @@ public class OctetsStream extends Octets
 		}
 	}
 
-	public OctetsStream unmarshalSkipVarSub(int subtype) throws MarshalException // [ttkkkvvv] [4] / [8] / <n>[kv*n]
+	public OctetsStream unmarshalSkipVarSub(int subtype) throws MarshalException // [tkkkvvv] [4]/[8]/<n>[kv*n]
 	{
 		if(subtype == 8) return unmarshalSkip(4); // float: [4]
 		if(subtype == 9) return unmarshalSkip(8); // double: [8]
-		if(subtype < 0x40) // collection: <n>[v*n]
+		if(subtype < 8) // collection: <n>[v*n]
 		{
 			subtype &= 7;
 			for(int n = unmarshalUInt(); n > 0; --n)
@@ -867,7 +867,7 @@ public class OctetsStream extends Octets
 	{
 		if(subtype == 8) return unmarshalFloat();
 		if(subtype == 9) return unmarshalDouble();
-		if(subtype < 0x40)
+		if(subtype < 8)
 		{
 			subtype &= 7;
 			int n = unmarshalUInt();
@@ -1014,7 +1014,7 @@ public class OctetsStream extends Octets
 		switch(b >> 4)
 		{
 		case  0: case  1: case  2: case  3: case 4: case 5: case 6: case 7: return b;
-		case  8: case  9: case 10: case 11: return ((b & 0x3f) <<  8) + (unmarshalByte() & 0xff);
+		case  8: case  9: case 10: case 11: return ((b & 0x3f) <<  8) + (unmarshalByte()  & 0xff);
 		case 12: case 13:                   return ((b & 0x1f) << 16) + (unmarshalShort() & 0xffff);
 		case 14:                            return ((b & 0x0f) << 24) +  unmarshalInt3();
 		default: int r = unmarshalInt4(); if(r < 0) throw MarshalException.create(has_ex_info); return r;

@@ -14,8 +14,8 @@ namespace jane
 		public static readonly byte[] EMPTY = new byte[0]; // 共享的空缓冲区;
 		public const int DEFAULT_SIZE = 16; // 默认的缓冲区;
 		protected static Encoding _default_charset = Encoding.UTF8;
-		internal byte[] buffer = EMPTY; // 数据缓冲区;
-		internal int count; // 当前有效的数据缓冲区大小;
+		protected byte[] buffer = EMPTY; // 数据缓冲区;
+		protected int count; // 当前有效的数据缓冲区大小;
 
 		public static void setDefaultEncoding(Encoding enc)
 		{

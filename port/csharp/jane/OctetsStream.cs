@@ -35,8 +35,8 @@ namespace jane
 		public static OctetsStream wrap(Octets o)
 		{
 			OctetsStream os = new OctetsStream();
-			os.buffer = o.buffer;
-			os.count = o.count;
+			os.buffer = o.array();
+			os.count = o.size();
 			return os;
 		}
 
@@ -82,8 +82,8 @@ namespace jane
 
 		public OctetsStream wraps(Octets o)
 		{
-			buffer = o.buffer;
-			count = o.count;
+			buffer = o.array();
+			count = o.size();
 			return this;
 		}
 
@@ -265,24 +265,24 @@ namespace jane
 		{
 			if(x >= 0)
 			{
-				if(x < 0x40)      return 1;
-				if(x < 0x2000)    return 2;
-				if(x < 0x100000)  return 3;
-				if(x < 0x8000000) return 4;
-								  return 5;
+			    if(x < 0x40)      return 1;
+			    if(x < 0x2000)    return 2;
+			    if(x < 0x100000)  return 3;
+			    if(x < 0x8000000) return 4;
+			                      return 5;
 			}
 			if(x >= -0x40)        return 1;
 			if(x >= -0x2000)      return 2;
 			if(x >= -0x100000)    return 3;
 			if(x >= -0x8000000)   return 4;
-								  return 5;
+			                      return 5;
 		}
 
 		public OctetsStream marshal(long x)
 		{
 			if(x >= 0)
 			{
-				if(x < 0x8000000)         return marshal((int)x);
+			    if(x < 0x8000000)         return marshal((int)x);
 			    if(x < 0x400000000L)      return marshal5(x + 0x7800000000L);          // 0111 10xx +4B
 			    if(x < 0x20000000000L)    return marshal6(x + 0x7c0000000000L);        // 0111 110x +5B
 			    if(x < 0x1000000000000L)  return marshal7(x + 0x7e000000000000L);      // 0111 1110 +6B
@@ -301,19 +301,19 @@ namespace jane
 		{
 			if(x >= 0)
 			{
-				if(x < 0x8000000)         return marshalLen((int)x);
-				if(x < 0x400000000L)      return 5;
-				if(x < 0x20000000000L)    return 6;
-				if(x < 0x1000000000000L)  return 7;
-				if(x < 0x80000000000000L) return 8;
-										  return 9;
+			    if(x < 0x8000000)         return marshalLen((int)x);
+			    if(x < 0x400000000L)      return 5;
+			    if(x < 0x20000000000L)    return 6;
+			    if(x < 0x1000000000000L)  return 7;
+			    if(x < 0x80000000000000L) return 8;
+			                              return 9;
 			}
 			if(x >= -0x8000000)           return marshalLen((int)x);
 			if(x >= -0x400000000L)        return 5;
 			if(x >= -0x20000000000L)      return 6;
 			if(x >= -0x1000000000000L)    return 7;
 			if(x >= -0x80000000000000L)   return 8;
-										  return 9;
+			                              return 9;
 		}
 
 		public OctetsStream marshalUInt(int x)
@@ -332,7 +332,7 @@ namespace jane
 			if(x < 0x4000)    { count = p - 2; marshal2(x + 0x8000);                     count = t; return 2; }
 			if(x < 0x200000)  { count = p - 3; marshal3(x + 0xc00000);                   count = t; return 3; }
 			if(x < 0x1000000) { count = p - 4; marshal4(x + unchecked((int)0xe0000000)); count = t; return 4; }
-							  { count = p - 5; marshal5((byte)0xf0, x);                  count = t; return 5; }
+			                  { count = p - 5; marshal5((byte)0xf0, x);                  count = t; return 5; }
 		}
 
 		public static int marshalUIntLen(int x)
@@ -341,13 +341,13 @@ namespace jane
 			if(x < 0x4000)    return 2;
 			if(x < 0x200000)  return 3;
 			if(x < 0x1000000) return 4;
-							  return 5;
+			                  return 5;
 		}
 
 		public OctetsStream marshalUTF8(char x)
 		{
 			if(x < 0x80)  return marshal1((byte)x);                                              // 0xxx xxxx
-			if(x < 0x800) return marshal2(((x << 2) & 0x1f00) + (x & 0x3f) + 0xc8);              // 110x xxxx  10xx xxxx
+			if(x < 0x800) return marshal2(((x << 2) & 0x1f00) + (x & 0x3f) + 0xc080);            // 110x xxxx  10xx xxxx
 			return marshal3(((x << 4) & 0xf0000) + ((x << 2) & 0x3f00) + (x & 0x3f) + 0xe08080); // 1110 xxxx  10xx xxxx  10xx xxxx
 		}
 
@@ -375,8 +375,8 @@ namespace jane
 				marshal1((byte)0);
 				return this;
 			}
-			marshalUInt(o.count);
-			append(o.buffer, 0, o.count);
+			marshalUInt(o.size());
+			append(o.array(), 0, o.size());
 			return this;
 		}
 
@@ -598,7 +598,7 @@ namespace jane
 		{
 			int pos_new = pos + 2;
 			if(pos_new > count) throw new MarshalEOFException();
-			byte b0 = buffer[pos];
+			byte b0 = buffer[pos    ];
 			byte b1 = buffer[pos + 1];
 			pos = pos_new;
 			return (b0 << 8) + b1;
@@ -781,11 +781,11 @@ namespace jane
 			}
 		}
 
-		public OctetsStream unmarshalSkipVarSub(int subtype) // [tkkkvvv] [4] / [8] / <n>[kv*n]
+		public OctetsStream unmarshalSkipVarSub(int subtype) // [tkkkvvv] [4]/[8]/<n>[kv*n]
 		{
 			if(subtype == 8) return unmarshalSkip(4); // float: [4]
 			if(subtype == 9) return unmarshalSkip(8); // double: [8]
-			if(subtype < 0x40) // list: <n>[v*n]
+			if(subtype < 8) // list: <n>[v*n]
 			{
 				subtype &= 7;
 				for(int n = unmarshalUInt(); n > 0; --n)
@@ -808,7 +808,7 @@ namespace jane
 		{
 			if(subtype == 8) return unmarshalFloat();
 			if(subtype == 9) return unmarshalDouble();
-			if(subtype < 0x40)
+			if(subtype < 8)
 			{
 				subtype &= 7;
 				int n = unmarshalUInt();
@@ -868,7 +868,7 @@ namespace jane
 				case 0: case 1: case 2: case 3: unmarshalSkip(4); break;
 				case 4: case 5:                 unmarshalSkip(5); break;
 				case 6:                         unmarshalSkip(6); break;
-				default: unmarshalSkip(6 - (unmarshalByte() >> 7)); break;
+				default: unmarshalSkip(6 + (unmarshalUByte() >> 7)); break;
 				}
 				break;
 			default: // 0x10
@@ -877,7 +877,7 @@ namespace jane
 				case 4: case 5: case 6: case 7: unmarshalSkip(4); break;
 				case 2: case 3:                 unmarshalSkip(5); break;
 				case 1:                         unmarshalSkip(6); break;
-				default: unmarshalSkip(7 + (unmarshalByte() >> 7)); break;
+				default: unmarshalSkip(7 - (unmarshalUByte() >> 7)); break;
 				}
 				break;
 			}
@@ -903,7 +903,7 @@ namespace jane
 				case 0: case 1: case 2: case 3: return unmarshalInt4();
 				case 4: case 5:                 return unmarshalSkip(1).unmarshalInt4();
 				case 6:                         return unmarshalSkip(2).unmarshalInt4();
-				default: return unmarshalSkip(2 - (unmarshalByte() >> 7)).unmarshalInt4();
+				default: return unmarshalSkip(2 + (unmarshalUByte() >> 7)).unmarshalInt4();
 				}
 			default: // 0x10
 				switch(b & 7)
@@ -911,7 +911,7 @@ namespace jane
 				case 4: case 5: case 6: case 7: return unmarshalInt4();
 				case 2: case 3:                 return unmarshalSkip(1).unmarshalInt4();
 				case 1:                         return unmarshalSkip(2).unmarshalInt4();
-				default: return unmarshalSkip(3 + (unmarshalByte() >> 7)).unmarshalInt4();
+				default: return unmarshalSkip(3 - (unmarshalUByte() >> 7)).unmarshalInt4();
 				}
 			}
 		}

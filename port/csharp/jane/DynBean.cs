@@ -98,7 +98,7 @@ namespace jane
 			return _type == rb._type && _fields.Equals(rb._fields);
 		}
 
-		public override String ToString()
+		public override string ToString()
 		{
 			StringBuilder s = new StringBuilder(_fields.Count * 16 + 16);
 			s.Append("{t:").Append(_type);

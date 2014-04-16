@@ -99,7 +99,7 @@ namespace jane
 		/**
 		 * 把字符串转化成Java/JSON字符串输出到StringBuilder中;
 		 */
-		public static StringBuilder toJStr(StringBuilder s, String str)
+		public static StringBuilder toJStr(StringBuilder s, string str)
 		{
 			return s.Append('"').Append(str.Replace("\\", "\\\\").Replace("\"", "\\\"")).Append('"');
 		}
