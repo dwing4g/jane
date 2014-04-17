@@ -50,7 +50,7 @@ public final class TestDBBenchmark
 				new Procedure()
 				{
 					@Override
-					protected boolean onProcess() throws Exception
+					protected void onProcess() throws Exception
 					{
 						long t1 = System.currentTimeMillis();
 						long tt = t1 - t0;
@@ -72,7 +72,6 @@ public final class TestDBBenchmark
 						}
 						tt = System.currentTimeMillis() - t1;
 						if(tt >= 250) System.out.println("--- proc timeout=" + tt);
-						return true;
 					}
 				}.run();
 				if(count == Integer.MAX_VALUE && i % 512 == 0) Thread.sleep(1);

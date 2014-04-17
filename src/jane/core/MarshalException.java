@@ -5,9 +5,9 @@ package jane.core;
  * <p>
  * 考虑到性能,内部还包含不带栈信息(WithoutTrace)的子类
  */
+@SuppressWarnings("serial")
 public class MarshalException extends Exception
 {
-	private static final long            serialVersionUID = -4805157781631605085L;
 	private static final WithoutTrace    _instance_wt     = new WithoutTrace();
 	private static final EOFWithoutTrace _instance_eof_wt = new EOFWithoutTrace();
 
@@ -16,8 +16,6 @@ public class MarshalException extends Exception
 	 */
 	public static class WithoutTrace extends MarshalException
 	{
-		private static final long serialVersionUID = 6894763062072780747L;
-
 		public WithoutTrace()
 		{
 		}
@@ -40,8 +38,6 @@ public class MarshalException extends Exception
 	 */
 	public static class EOF extends MarshalException
 	{
-		private static final long serialVersionUID = -5557251108500769824L;
-
 		public EOF()
 		{
 		}
@@ -57,8 +53,6 @@ public class MarshalException extends Exception
 	 */
 	public static class EOFWithoutTrace extends EOF
 	{
-		private static final long serialVersionUID = 1291623060295201095L;
-
 		public EOFWithoutTrace()
 		{
 		}

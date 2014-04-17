@@ -19,7 +19,7 @@ public final class TestUndo
 		new Procedure()
 		{
 			@Override
-			protected boolean onProcess() throws Exception
+			protected void onProcess() throws Exception
 			{
 				lock(AllTables.Benchmark.lockid(id));
 				TestBean.Safe a = AllTables.Benchmark.getSafe(id);
@@ -40,14 +40,13 @@ public final class TestUndo
 					}
 				}
 				System.out.println("===");
-				return true;
 			}
 		}.run();
 
 		new Procedure()
 		{
 			@Override
-			protected boolean onProcess() throws Exception
+			protected void onProcess() throws Exception
 			{
 				lock(AllTables.Benchmark.lockid(id));
 				TestBean.Safe a = AllTables.Benchmark.getSafe(id);
@@ -62,7 +61,7 @@ public final class TestUndo
 		new Procedure()
 		{
 			@Override
-			protected boolean onProcess() throws Exception
+			protected void onProcess() throws Exception
 			{
 				lock(AllTables.Benchmark.lockid(id));
 				TestBean.Safe a = AllTables.Benchmark.getSafe(id);
@@ -70,20 +69,18 @@ public final class TestUndo
 				a.setValue1(v + 2);
 				System.out.println("set: " + a.getValue1());
 				System.out.println("===");
-				return true;
 			}
 		}.run();
 
 		new Procedure()
 		{
 			@Override
-			protected boolean onProcess() throws Exception
+			protected void onProcess() throws Exception
 			{
 				lock(AllTables.Benchmark.lockid(id));
 				TestBean.Safe a = AllTables.Benchmark.getSafe(id);
 				System.out.println("get: " + a.getValue1());
 				System.out.println("===");
-				return true;
 			}
 		}.run();
 

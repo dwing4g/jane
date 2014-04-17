@@ -421,7 +421,7 @@ public final class DBManager
 		submit(sid, new Procedure()
 		{
 			@Override
-			protected boolean onProcess()
+			protected void onProcess()
 			{
 				ArrayDeque<Procedure> q = _qmap.get(sid);
 				if(q != null)
@@ -434,7 +434,6 @@ public final class DBManager
 						_qmap.remove(sid); // _qmap删除队列的地方只有两处,另一处是collectQueue中队列判空的时候(有synchronized保护)
 					}
 				}
-				return true;
 			}
 		});
 	}

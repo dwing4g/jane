@@ -160,6 +160,24 @@ public abstract class Procedure implements Runnable
 		if(_ctx != null) _ctx.proc = null;
 	}
 
+	@SuppressWarnings("serial")
+	private static class Redo extends RuntimeException
+	{
+		private static Redo _instance = new Redo();
+
+		@SuppressWarnings("sync-override")
+		@Override
+		public Throwable fillInStackTrace()
+		{
+			return this;
+		}
+	}
+
+	public static RuntimeException redo()
+	{
+		return Redo._instance;
+	}
+
 	/**
 	 * 解锁当前事务所加的全部锁
 	 * <p>
@@ -550,7 +568,14 @@ public abstract class Procedure implements Runnable
 			for(int n = Const.maxProceduerRedo;;)
 			{
 				if(Thread.interrupted()) throw new InterruptedException();
-				if(onProcess()) break;
+				try
+				{
+					onProcess();
+					break;
+				}
+				catch(Redo e)
+				{
+				}
 				SContext.current().rollback();
 				unlock();
 				if(--n <= 0) throw new Exception("procedure redo too many times=" + Const.maxProceduerRedo);
@@ -594,10 +619,8 @@ public abstract class Procedure implements Runnable
 
 	/**
 	 * 由子类实现的事务
-	 * <p>
-	 * @return 返回true表示运行正常, 返回false表示需要重做此事务
 	 */
-	protected abstract boolean onProcess() throws Exception;
+	protected abstract void onProcess() throws Exception;
 
 	/**
 	 * 可由子类继承的事务异常处理
