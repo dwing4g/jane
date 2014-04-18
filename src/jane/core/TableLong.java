@@ -350,6 +350,11 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 		put(k, v);
 	}
 
+	public void putSafe(long k, S s)
+	{
+		putSafe(k, s.unsafe());
+	}
+
 	/**
 	 * 使用自增长的新ID值作为key插入value
 	 * <p>

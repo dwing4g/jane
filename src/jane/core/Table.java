@@ -314,6 +314,11 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 		put(k, v);
 	}
 
+	public void putSafe(K k, S s)
+	{
+		putSafe(k, s.unsafe());
+	}
+
 	/**
 	 * 根据记录的key删除记录
 	 * <p>
