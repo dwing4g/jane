@@ -1,0 +1,218 @@
+======================
+■ jane框架使用基础 ■
+======================
+
+● 架构设计
+
+1.单物理机单进程(接入网络+逻辑+数据库)
+适用: 手游, 协议量不太大的页游和端游, 以及相应规模的应用服务器
+规模: 50Mbps, 0.5kbps * 10W, 1kbps * 5W, 5kbps * 1W
+说明: 只使用jane框架纯Java编写逻辑
+
+2.双物理机双进程(接入网络+逻辑+数据库) + (纯逻辑)
+适用: 在架构1基础上, 某些逻辑需要消耗大量CPU
+规模: 同架构1
+说明: 纯逻辑进程可用C/C++/Java/C#
+
+3.双物理机三进程(接入网络) + (逻辑+数据库) + (纯逻辑)
+适用: 在架构2基础上, 网络协议量比较大
+规模: 100Mbps, 1kbps * 10W, 5kbps * 2W, 10kbps * 1W
+说明: 接入网络使用C/C++优化网络IO, 纯逻辑进程可用C/C++/Java/C#
+
+4.多物理机多进程(接入网络) * m + (逻辑+数据库) * n
+适用: 单服连接超过以上规模
+规模: 单个物理机单进程受规模3限制, 总体无上限
+说明: 根据不同职能划分模块, 每个模块在一个或多个进程内处理逻辑和数据存储,
+      跨模块需要异步通信, 强事务性需要考虑一些特殊设计的措施
+
+5.还有其它很多特殊方案, 需要根据具体问题具体设计
+
+● 定义数据模型
+
+1.只读配置数据结构(定义bean)
+xlsx => xml => bean
+xlsx => xml: 根据少量规定设计Excel表格, 包括表头字段名和唯一ID列, 或者编写脚本匹配特殊格式xlsx文件导出成符合标准的xml文件
+xml => bean: xml文件即为服务器启动时所需加载的文件, 可临时手动修改, 服务器启动时加载到已定义的bean结构中, 创建出只读的Map<ID,Bean>配置结构, 供逻辑处理时读取
+有些只有程序定义的常量值, 可以在bean定义里定义常量
+
+2.可变临时数据结构(定义bean)
+只在内存中存储指定结构的数据, 一般有容量限制, 超出后可手动或自动清理无用数据
+
+3.可变持久数据结构(定义bean,table)
+需要持久化存储指定结构的数据, 一般要指定读cache的限制, 超出后读cache会被自动清理, 写cache会在定时持久化时事务性批量存储到数据库中并清空写cache
+需要定义bean结构作为数据库表的值, table定义数据库表的主键和引用的值bean
+
+4.协议/RPC结构(定义bean,rpc,handler)
+bean即为协议, RPC的定义需要引用两个bean作为请求/回应, 还需要定义handler指定哪些NetManager子类会处理
+
+● 逻辑处理
+
+1.生成框架代码
+定义的bean,rpc,table会生成代码到项目的根命名空间下的bean命名空间中, 这个空间只用于放生成代码, 不能修改和存放其它代码, 不用提交到版本管理中
+定义的handler会生成处理框架代码到定义handler指定的命名空间中, 如果文件已存在, 则只修改其中的字段注释部分
+目前jane框架只能生成Java和C#的代码
+
+2.协议/RPC处理
+在生成的handler框架中编写逻辑, 简单的逻辑可直接在其中onProcess()中编写, 一般都需要编写存储过程并提交到DBManager内置的事务线程池去执行, 特殊情况可使用自定义的线程池
+RPC的处理框架一般用于编写接收请求的部分onServer(), 而onClient()由于很多时候缺少上下文信息, 建议在发送请求RPC的时候附带回调匿名类来处理onClient和onTimeout
+
+3.定时逻辑
+可使用框架自带的定时调度线程池, 如NetManager自带的RPC检测用的单线程定时调度器, DBManager的存储提交用的单线程定时调度器
+如果定时事务逻辑复杂或执行繁忙, 推荐使用自定义的定时调度线程池
+
+4.其它触发逻辑
+如连接建立, 连接断开, 连接沉默(无心跳), 异常处理等, 均可在NetManager子类中继承处理
+
+● 简单示例
+
+1.需求
+客户端发送协议, 使其账号的某个属性值增加
+
+2.定义数据模型
+此逻辑不需要定义"只读配置数据结构"和"可变临时数据结构", 只需要定义"可变持久数据结构"和"协议结构"
+所有的数据模型定义都是标准的Lua脚本语法
+
+3.定义数据表
+bean{ name="DBUserProp", type=10000, initsize=16, maxsize=16, const=false, comment="账号属性",
+    { name="PROP_INIT", type="long", value=1, comment="属性初始值常量" },
+    { id=1, name="prop", type="long", comment="属性" },
+}
+dbt { name="UserProp", id=1, lock="user", key="id", value="DBUserProp", cachesize=100000, memory=false, comment="账号属性表" }
+
+依次解释:
+结构名(name): 即生成的类名, 按Java类名规则, 可自行加些前缀提示不同类别, 如数据库表加前缀"DB", 邮件类协议加前缀"Mail"
+结构ID(type): 大于1的int类型整数, 较小的数值更推荐常用的结构, 最好根据不同类别的结构分配不同的范围, 如Mail类规定ID在600到699之间, 可写成: type = 600 + 11
+初始大小(initsize): 用于序列化时初始分配的空间, 字节大小, 不建议使用较大的值
+最大大小(maxsize): 用于接收协议/RPC时最大的允许空间, 字节大小, 建议使用较为宽松的值, 较大的值要谨慎考虑设计是否恰当
+是否常量(const): 此Bean在构造后是否不变(不可修改), 此项可不写, 默认为false
+结构注释(comment): 解释此结构的用途和注意事项, 会生成到类名上面的注释中, 也可以使用Lua的注释, 但不会生成到代码中
+
+字段ID(id): 每个字段都要有不同的ID, 可取值范围是1到63, 存储和传输时带有ID, 因此可以重命名字段和修改有限的字段类型而不影响协议兼容性, 字段尽量不要删除而只在注释中标记已无用, 如果ID不够用说明字段太多, 应该使用嵌入其它bean的方法来设计
+字段名(name): 即生成的成员变量名, 按Java变量名规则, 不建议使用下划线开头避免可能的名字冲突, 建议使用小写字母开头
+字段类型(type): 即变量类型, 支持Java的所有基本类型, 取值范围相同, 还支持以下类型: string,octets,Bean结构名和各种容器类型: vector,list,deque,set,map,treeset,treemap,linkedset,linkedmap, 其中octets和容器类型可加初始容量值, 如: type="map<int,long>(20)"
+常量值(value): 定义常量时使用, 此时不能定义id, 一般常量定义在可变字段之前, 支持的常量类型有Java的基本类型和string
+字段注释(comment): 解释此字段的用途和注意事项, 会生成到变量名声明后面的注释中, 也可以使用Lua的注释, 但不会生成到代码中
+处理器(handlers): 定义能够响应并处理此协议的
+
+表名(name): 表名对应生成的AllTable类中的静态变量名
+表ID(id): 真正用于标识数据库表, 数据库中只以此ID查找表内容, 所以ID不能随意修改, 而修改表名不影响数据库
+记录锁前缀(lock): 每个记录锁都由这个前缀和主键值决定, 相同意义的主键可使用相同的前缀, 也可以用表名或表ID表示不使用共享的前缀
+表主键类型(key): 主键类型可使用Java的基本类型, 但一般仅使用int,long,string,octets, 大多数表示ID主键建议使用"id"而不是int和long, 这样可以支持自增长ID, 而且数据库访问性能会更高, 取值范围同非负的long类型
+表值结构(value): 引用的Bean结构名
+记录的缓存量(cachesize): 缓存大小对高负载的性能影响很大, 太小对读取性能影响很大, 太大会导致内存占用过多, 要根据经验使用恰当的值, 一般以user或role为单位的记录缓存建议比最大在线值多一些
+是否内存表(memory): 是否只保存在内存中而不持久化到数据库中, 如果是内存表则cachesize即为最大容量, 此项可不写, 默认为false
+表注释(comment): 解释此表的用途和注意事项, 会生成到变量名声明前面的注释中, 也可以使用Lua的注释, 但不会生成到代码中
+
+4.定义协议
+handler
+{
+    { name="GameServer", path = "jane.handler.gameserver" }, -- 服务器对客户端的协议处理
+}
+
+bean{ name="PropAdd", type=1, initsize=16, maxsize=16, const=false, comment="增加属性",
+    { id=1, name="userid", type="long", comment="账号ID" },
+    { id=2, name="prop_delta", type="int", comment="增加的属性值" },
+    handlers="GameServer",
+}
+
+解释:
+处理器(handler): 定义协议处理器, 在整个定义文件的最前面定义, 其中只需定义处理器的名称和生成代码所在的路径(包)名, 服务器有几个NetManager子类, 就应该定义几个handler
+引用处理器(handlers): 定义协议时要引用处理器名, 可以写多个, 用逗号分隔
+
+如果要定义RPC, 则定义如下:
+rpc { name="PropRpc", type=2, arg="PropAdd", res="PropAdd", comment="RPC的注释",
+    handlers="GameServer,GameClient",
+}
+
+解释:
+请求Bean(arg): 引用用于请求的Bean结构名
+回复Bean(res): 引用用于回复的Bean结构名
+引用处理器(handlers): 定义RPC时要引用处理器名, 请求方和回复方都要写
+
+5.生成代码
+使用genbeans.lua脚本, 就可以生成代码和框架了
+其中除了各Bean的完整代码, 各Handler的框架代码, 还在生成Bean的目录下生成了AllBeans.java和AllTables.java
+前者包括获取所有Bean的集合, 后者是所有表对象的定义
+
+6.编写逻辑
+根据handler的定义, 在jane/handler/gameserver中生成了PropAddHandler类, 在其中生成的onProcess框架中编写如下逻辑代码:
+// 第一种直接写法(性能最高, 如果抛出异常可能导致事务修改不完整)
+DBManager.instance().submit(new Procedure()
+{
+    @Override
+    protected void onProcess() throws Exception
+    {
+        lock(AllTables.user.lockid(arg.getUserid())); // 先给此表的userid加记录锁
+        DBUserProp userprop = AllTables.user.get(arg.getUserid()); // 取记录
+        if(userprop == null) // 如果记录不存在
+        {
+            userprop = new DBUserProp(DBUserProp.PROP_INIT); // 创建新记录
+            AllTables.user.put(arg.getUserid(), userprop); // 插入记录
+        }
+        userprop.setProp(userprop.getProp() + arg.getProp_delta()); // 修改记录
+        AllTables.user.modify(arg.getUserid(), userprop); // 标记记录已修改(直接写法必须有此行, 而安全写法无需此行)
+    }
+});
+
+// 另一种安全写法(性能略低, 如果抛出异常会回滚所有修改)
+DBManager.instance().submit(new Procedure()
+{
+    @Override
+    protected void onProcess() throws Exception
+    {
+        lock(AllTables.user.lockid(arg.getUserid())); // 先给此表的userid加记录锁
+        DBUserProp.Safe userprop = AllTables.user.getSafe(arg.getUserid()); // 取记录(安全方式)
+        if(userprop == null) // 如果记录不存在
+        {
+            userprop = new DBUserProp(DBUserProp.PROP_INIT).safe(); // 创建新记录(安全方式)
+            AllTables.user.putSafe(arg.getUserid(), userprop); // 插入记录(安全方式)
+        }
+        userprop.setProp(userprop.getProp() + arg.getProp_delta()); // 修改记录
+    }
+});
+
+7.编写NetManager的子类GameServer
+一个NetManager对象能管理若干连接, 对于服务器而言, 可以管理到服务器某个端口的全部连接, 对客户端而言, 可管理若干逻辑相似的连接
+NetManager虽然不是抽象类, 但一般不建议直接使用, 而要自行继承出一个单件的子类来使用, 大部分功能都在NetManager中封装好了, 只需在子类中添加少量代码即可:
+public final class GameServer extends NetManager
+{
+    private static final GameServer _instance = new GameServer(); // 单件
+
+    public static GameServer instance()
+    {
+        return _instance;
+    }
+
+    private GameServer()
+    {
+        setHandlers(AllBeans.getGameServerHandlers()); // 设置GameServer响应的handlers集合
+    }
+
+    @Override
+    protected void onAddSession(IoSession session)
+    {
+        // 有一个客户端刚刚TCP成功连接后的响应
+    }
+
+    @Override
+    protected void onDelSession(IoSession session)
+    {
+        // 有一个已连接的客户端断开连接后的响应
+    }
+
+    // 还有其它一些可继承的方法, 具体见NetManager
+}
+
+8.编写主函数
+主函数的写法比较固定, 基本写法如下:
+public final class Main
+{
+    public static void main(String[] args) throws Throwable
+    {
+        DBManager.instance().startup(StorageLevelDB.instance()); // 使用LevelDB引擎启动数据库
+        AllTables.register(); // 注册所有的数据库表
+        BeanCodec.registerAllBeans(AllBeans.getAllBeans()); // 注册所有的Bean
+        GameServer.instance().startServer(new InetSocketAddress(29000)); // 启动服务器, GameServer监听29000端口
+        // 启动成功后虽然会退出main函数, 但由于创建了其它非后台线程, 所以并不会退出服务器进程
+    }
+}
