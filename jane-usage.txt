@@ -216,3 +216,23 @@ public final class Main
         // 启动成功后虽然会退出main函数, 但由于创建了其它非后台线程, 所以并不会退出服务器进程
     }
 }
+
+9.构建和启动
+构建:
+ant (Linux平台构建, 需要安装Apache Ant)
+build_jar.bat (Windows平台构建, 需要安装Apache Ant)
+部署服务器时的相关文件:
+start.sh (仅Linux平台需要)
+start.bat (仅Windows平台需要)
+stop.sh (仅Linux平台需要)
+jane.properties (jane框架配置)
+log4j2.xml (Log4J的配置)
+gameserver.jar (构建的结果)
+lib/*.jar,*.dll,*.so (不包含带源码的*.jar)
+启动命令:
+./start.sh (Linux前台启动)
+./start.sh nohup (Linux后台启动)
+start.bat (Windows前台启动)
+停止命令:
+./stop.sh (正常停止服务器)
+./stop.sh -9 (强制停止服务器)

@@ -493,8 +493,9 @@ namespace jane
 					int ktype = getKVType(de.Key);
 					int vtype = getKVType(de.Value);
 					marshal2((id << 10) + 0x340 + (ktype << 3) + vtype).marshalUInt(n);
-					foreach(DictionaryEntry e in dic)
-						marshalKV(ktype, e.Key).marshalKV(vtype, e.Value);
+					do
+						marshalKV(ktype, de.Key).marshalKV(vtype, de.Value);
+					while(de.MoveNext());
 				}
 			}
 			else if(o is ICollection)
@@ -507,8 +508,9 @@ namespace jane
 					e.MoveNext();
 					int vtype = getKVType(e.Current);
 					marshal2((id << 10) + 0x300 + vtype).marshalUInt(n);
-					foreach(object v in list)
-						marshalKV(vtype, v);
+					do
+						marshalKV(vtype, e.Current);
+					while(e.MoveNext());
 				}
 			}
 			return this;

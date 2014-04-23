@@ -178,11 +178,11 @@ public final class SContext
 		}
 	}
 
-	private static ThreadLocal<SContext> _tl_list;
-	private final List<Record<?, ?, ?>>  _records     = new ArrayList<Record<?, ?, ?>>();
-	private final List<RecordLong<?, ?>> _recordlongs = new ArrayList<RecordLong<?, ?>>();
-	private final List<Runnable>         _onrollbacks = new ArrayList<Runnable>();
-	private final List<Runnable>         _oncommits   = new ArrayList<Runnable>();
+	private static final ThreadLocal<SContext> _tl_list;
+	private final List<Record<?, ?, ?>>        _records     = new ArrayList<Record<?, ?, ?>>();
+	private final List<RecordLong<?, ?>>       _recordlongs = new ArrayList<RecordLong<?, ?>>();
+	private final List<Runnable>               _onrollbacks = new ArrayList<Runnable>();
+	private final List<Runnable>               _oncommits   = new ArrayList<Runnable>();
 
 	static
 	{

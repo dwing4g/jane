@@ -11,12 +11,12 @@ import java.nio.charset.Charset;
  */
 public class Octets implements Cloneable, Comparable<Octets>
 {
-	protected static final char[] HEX = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-	public static final byte[]    EMPTY            = new byte[0];         // 共享的空缓冲区
-	public static final int       DEFAULT_SIZE     = 16;                  // 默认的缓冲区
-	protected static Charset      _default_charset = Const.stringCharset; // 本类的默认字符集
-	protected byte[]              buffer           = EMPTY;               // 数据缓冲区
-	protected int                 count;                                  // 当前有效的数据缓冲区大小
+	private static final char[] HEX = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+	public static final byte[]  EMPTY            = new byte[0];         // 共享的空缓冲区
+	public static final int     DEFAULT_SIZE     = 16;                  // 默认的缓冲区
+	private static Charset      _default_charset = Const.stringCharset; // 本类的默认字符集
+	protected byte[]            buffer           = EMPTY;               // 数据缓冲区
+	protected int               count;                                  // 当前有效的数据缓冲区大小
 
 	public static void setDefaultEncoding(Charset charset)
 	{

@@ -163,7 +163,7 @@ public abstract class Procedure implements Runnable
 	@SuppressWarnings("serial")
 	private static class Redo extends RuntimeException
 	{
-		private static Redo _instance = new Redo();
+		private static final Redo _instance = new Redo();
 
 		@SuppressWarnings("sync-override")
 		@Override

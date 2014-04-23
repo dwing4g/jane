@@ -35,13 +35,14 @@ namespace jane
 		{
 			int c = a.Count - b.Count;
 			if(c != 0) return c;
-			IEnumerator<T> ia = a.GetEnumerator();
-			IEnumerator<T> ib = b.GetEnumerator();
-			while(ia.MoveNext())
+			using(IEnumerator<T> ia = a.GetEnumerator(), ib = b.GetEnumerator())
 			{
-				ib.MoveNext();
-				c = ia.Current.CompareTo(ib.Current);
-				if(c != 0) return c;
+				while(ia.MoveNext())
+				{
+					ib.MoveNext();
+					c = ia.Current.CompareTo(ib.Current);
+					if(c != 0) return c;
+				}
 			}
 			return 0;
 		}
@@ -55,17 +56,18 @@ namespace jane
 		{
 			int c = a.Count - b.Count;
 			if(c != 0) return c;
-			IEnumerator<KeyValuePair<K, V>> ea = a.GetEnumerator();
-			IEnumerator<KeyValuePair<K, V>> eb = b.GetEnumerator();
-			while(ea.MoveNext())
+			using(IEnumerator<KeyValuePair<K, V>> ea = a.GetEnumerator(), eb = b.GetEnumerator())
 			{
-				eb.MoveNext();
-				KeyValuePair<K, V> pa = ea.Current;
-				KeyValuePair<K, V> pb = eb.Current;
-				c = pa.Key.CompareTo(pb.Key);
-				if(c != 0) return c;
-				c = pa.Value.CompareTo(pb.Value);
-				if(c != 0) return c;
+				while(ea.MoveNext())
+				{
+					eb.MoveNext();
+					KeyValuePair<K, V> pa = ea.Current;
+					KeyValuePair<K, V> pb = eb.Current;
+					c = pa.Key.CompareTo(pb.Key);
+					if(c != 0) return c;
+					c = pa.Value.CompareTo(pb.Value);
+					if(c != 0) return c;
+				}
 			}
 			return 0;
 		}

@@ -10,20 +10,20 @@ import java.nio.ByteBuffer;
  */
 public final class ByteBufferStream extends OctetsStream
 {
-	private ByteBuffer bb; // 包装的ByteBuffer对象
+	private final ByteBuffer bb; // 包装的ByteBuffer对象
 
 	public static ByteBufferStream wrap(ByteBuffer bbuf)
 	{
-		ByteBufferStream os = new ByteBufferStream();
+		ByteBufferStream os = new ByteBufferStream(bbuf);
 		os.count = bbuf.limit();
 		os.pos = bbuf.position();
-		os.bb = bbuf;
 		return os;
 	}
 
-	private ByteBufferStream()
+	private ByteBufferStream(ByteBuffer bbuf)
 	{
 		buffer = null; // 不使用内部的缓冲区,所以不支持调用某些接口,会导致空指针异常
+		bb = bbuf;
 	}
 
 	@Override
@@ -41,11 +41,10 @@ public final class ByteBufferStream extends OctetsStream
 	@Override
 	public ByteBufferStream clone()
 	{
-		ByteBufferStream os = new ByteBufferStream();
+		ByteBufferStream os = new ByteBufferStream(bb.duplicate());
 		os.count = count;
 		os.pos = pos;
 		os.has_ex_info = has_ex_info;
-		os.bb = bb.duplicate();
 		return os;
 	}
 
