@@ -599,6 +599,7 @@ typedef.vector = merge(typedef.octets,
 	type = function(var) return "ArrayList<" .. subtypename(var, var.k) .. ">" end,
 	type_i = function(var) return "Collection<" .. subtypename(var, var.k) .. ">" end,
 	stype = function(var) return "SList<" .. subtypename(var, var.k) .. ">" end,
+	final = "final ",
 	field = "",
 	fieldget = "",
 	new = function(var) return "\t\t#(var.name) = new ArrayList<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
@@ -738,6 +739,7 @@ typedef.bean = merge(typedef.octets,
 	type_i = function(var) return var.type end,
 	type_o = function(var) return var.type end,
 	subtypeid = 2,
+	final = "final ",
 	field = "",
 	fieldget = "",
 	new = function(var) return "\t\t#(var.name) = new " .. var.type .. "();\n" end,
@@ -860,6 +862,7 @@ local function bean_const(code)
 		gsub("import jane%.core%.SContext%.Wrap;\n", ""):
 		gsub("\tprivate static Field .-\n", ""):
 		gsub("\tstatic\n.-\n\t}\n\n", ""):
+		gsub("%*/ String ", "*/ final String "):
 		gsub("\n\t@Override\n\tpublic Safe safe.-\n\t}\n", ""):
 		gsub("\t@Override\n\tpublic void reset%(.-\n\t}", [[
 	@Override
@@ -937,7 +940,7 @@ function bean(bean)
 	end)
 
 	bean.param_warning = (#vartypes > 1 and "" or "/** @param b unused */\n\t")
-	name_code[bean.name] = code_conv(code, "bean", bean):gsub(#vartypes > 1 and "#[<>]#" or "#<#(.-)#>#", ""):gsub("\r", "")
+	name_code[bean.name] = code_conv(code, "bean", bean):gsub(#vartypes > 1 and "#[<>]#" or "#<#(.-)#>#", ""):gsub("int h = (%d+ %* 0x9e3779b1;)\n\t\treturn h;", "return %1"):gsub("\r", "")
 	bean_order[#bean_order + 1] = bean.name
 	if bean.const then name_code[bean.name] = bean_const(name_code[bean.name]) end
 end

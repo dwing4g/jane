@@ -417,70 +417,53 @@ namespace jane
 
 		public static int getKVType(object o)
 		{
-			if(o is int || o is long || o is sbyte || o is short || o is char || o is bool) return 0;
+			if(o is IConvertible)
+			{
+				if(o is float) return 4;
+				if(o is double) return 5;
+				if(o is string) return 1;
+				return 0;
+			}
 			if(o is Bean) return 2;
-			if(o is float) return 4;
-			if(o is double) return 5;
 			return 1;
 		}
 
 		public OctetsStream marshalVar(int id, object o)
 		{
 			if(id < 1 || id > 62) throw new ArgumentException("id must be in [1,62]: " + id);
-			if(o is sbyte)
+			if(o is IConvertible)
 			{
-				int v = (sbyte)o;
-				if(v != 0) marshal1((byte)(id << 2)).marshal(v);
-			}
-			else if(o is short)
-			{
-				int v = (short)o;
-				if(v != 0) marshal1((byte)(id << 2)).marshal(v);
-			}
-			else if(o is int)
-			{
-				int v = (int)o;
-				if(v != 0) marshal1((byte)(id << 2)).marshal(v);
-			}
-			else if(o is long)
-			{
-				long v = (long)o;
-				if(v != 0) marshal1((byte)(id << 2)).marshal(v);
-			}
-			else if(o is bool)
-			{
-				if((bool)o) marshal2((id << 10) + 1);
-			}
-			else if(o is char)
-			{
-				int v = (char)o;
-				if(v != 0) marshal1((byte)(id << 2)).marshal(v);
-			}
-			else if(o is float)
-			{
-				float v = (float)o;
-				if(v != 0) marshal2((id << 10) + 0x308).marshal(v);
-			}
-			else if(o is double)
-			{
-				double v = (double)o;
-				if(v != 0) marshal2((id << 10) + 0x309).marshal(v);
-			}
-			else if(o is Octets)
-			{
-				Octets oct = (Octets)o;
-				if(!oct.empty()) marshal1((byte)((id << 2) + 1)).marshal(oct);
-			}
-			else if(o is string)
-			{
-				string str = (string)o;
-				if(str.Length > 0) marshal1((byte)((id << 2) + 1)).marshal(str);
+				if(o is float)
+				{
+					float v = (float)o;
+					if(v != 0) marshal2((id << 10) + 0x308).marshal(v);
+				}
+				else if(o is double)
+				{
+					double v = (double)o;
+					if(v != 0) marshal2((id << 10) + 0x309).marshal(v);
+				}
+				else if(o is string)
+				{
+					string str = (string)o;
+					if(str.Length > 0) marshal1((byte)((id << 2) + 1)).marshal(str);
+				}
+				else
+				{
+					long v = ((IConvertible)o).ToInt64(null);
+					if(v != 0) marshal1((byte)(id << 2)).marshal(v);
+				}
 			}
 			else if(o is Bean)
 			{
 				int n = count;
 				((Bean)o).marshal(marshal1((byte)((id << 2) + 2)));
 				if(count - n < 3) resize(n);
+			}
+			else if(o is Octets)
+			{
+				Octets oct = (Octets)o;
+				if(!oct.empty()) marshal1((byte)((id << 2) + 1)).marshal(oct);
 			}
 			else if(o is IDictionary)
 			{

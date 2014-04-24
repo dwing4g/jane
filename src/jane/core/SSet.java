@@ -11,7 +11,7 @@ import jane.core.SContext.Wrap;
 public class SSet<V> implements Set<V>, Cloneable
 {
 	protected final Wrap<?> _owner;
-	protected Set<V>        _set;
+	protected final Set<V>  _set;
 	private SContext        _sctx;
 
 	public SSet(Wrap<?> owner, Set<V> set)
@@ -168,22 +168,28 @@ public class SSet<V> implements Set<V>, Cloneable
 		if(_set.isEmpty()) return;
 		sContext().addOnRollback(new Runnable()
 		{
-			private final SSet<V> _saved = SSet.this;
+			private final Set<V> _saved;
+
+			{
+				try
+				{
+					_saved = _set.getClass().newInstance();
+					_saved.addAll(_set);
+				}
+				catch(Exception e)
+				{
+					throw new RuntimeException(e);
+				}
+			}
 
 			@Override
 			public void run()
 			{
-				_set = _saved;
+				_set.addAll(_saved);
+				_saved.clear();
 			}
 		});
-		try
-		{
-			_set = _set.getClass().newInstance();
-		}
-		catch(Exception e)
-		{
-			throw new RuntimeException(e);
-		}
+		_set.clear();
 	}
 
 	public final class SIterator implements Iterator<V>

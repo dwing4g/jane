@@ -549,15 +549,11 @@ public class OctetsStream extends Octets
 				if(v != 0) marshal1((byte)(id << 2)).marshal(v);
 			}
 		}
-		else if(o instanceof Boolean)
+		else if(o instanceof Bean)
 		{
-			boolean v = (Boolean)o;
-			if(v) marshal2((id << 10) + 1);
-		}
-		else if(o instanceof Character)
-		{
-			char v = (Character)o;
-			if(v != 0) marshal1((byte)(id << 2)).marshal(v);
+			int n = count;
+			((Bean<?>)o).marshal(marshal1((byte)((id << 2) + 2)));
+			if(count - n < 3) resize(n);
 		}
 		else if(o instanceof Octets)
 		{
@@ -569,11 +565,15 @@ public class OctetsStream extends Octets
 			String str = (String)o;
 			if(!str.isEmpty()) marshal1((byte)((id << 2) + 1)).marshal(str);
 		}
-		else if(o instanceof Bean)
+		else if(o instanceof Boolean)
 		{
-			int n = count;
-			((Bean<?>)o).marshal(marshal1((byte)((id << 2) + 2)));
-			if(count - n < 3) resize(n);
+			boolean v = (Boolean)o;
+			if(v) marshal2((id << 10) + 1);
+		}
+		else if(o instanceof Character)
+		{
+			char v = (Character)o;
+			if(v != 0) marshal1((byte)(id << 2)).marshal(v);
 		}
 		else if(o instanceof Collection)
 		{

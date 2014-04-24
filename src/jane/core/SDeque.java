@@ -12,9 +12,9 @@ import jane.core.SContext.Wrap;
  */
 public final class SDeque<V> implements Deque<V>, Cloneable
 {
-	private final Wrap<?> _owner;
-	private Deque<V>      _deque;
-	private SContext      _sctx;
+	private final Wrap<?>  _owner;
+	private final Deque<V> _deque;
+	private SContext       _sctx;
 
 	public SDeque(Wrap<?> owner, Deque<V> queue)
 	{
@@ -415,22 +415,28 @@ public final class SDeque<V> implements Deque<V>, Cloneable
 		if(_deque.isEmpty()) return;
 		sContext().addOnRollback(new Runnable()
 		{
-			private final SDeque<V> _saved = SDeque.this;
+			private final Deque<V> _saved;
+
+			{
+				try
+				{
+					_saved = _deque.getClass().newInstance();
+					_saved.addAll(_deque);
+				}
+				catch(Exception e)
+				{
+					throw new RuntimeException(e);
+				}
+			}
 
 			@Override
 			public void run()
 			{
-				_deque = _saved;
+				_deque.addAll(_saved);
+				_saved.clear();
 			}
 		});
-		try
-		{
-			_deque = _deque.getClass().newInstance();
-		}
-		catch(Exception e)
-		{
-			throw new RuntimeException(e);
-		}
+		_deque.clear();
 	}
 
 	public final class SIterator implements Iterator<V>

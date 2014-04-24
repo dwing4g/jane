@@ -12,7 +12,7 @@ import jane.core.SContext.Wrap;
 public final class SList<V> implements List<V>, Cloneable
 {
 	private final Wrap<?> _owner;
-	private List<V>       _list;
+	private final List<V> _list;
 	private SContext      _sctx;
 
 	public SList(Wrap<?> owner, List<V> list)
@@ -252,22 +252,28 @@ public final class SList<V> implements List<V>, Cloneable
 		if(_list.isEmpty()) return;
 		sContext().addOnRollback(new Runnable()
 		{
-			private final SList<V> _saved = SList.this;
+			private final List<V> _saved;
+
+			{
+				try
+				{
+					_saved = _list.getClass().newInstance();
+					_saved.addAll(_list);
+				}
+				catch(Exception e)
+				{
+					throw new RuntimeException(e);
+				}
+			}
 
 			@Override
 			public void run()
 			{
-				_list = _saved;
+				_list.addAll(_saved);
+				_saved.clear();
 			}
 		});
-		try
-		{
-			_list = _list.getClass().newInstance();
-		}
-		catch(Exception e)
-		{
-			throw new RuntimeException(e);
-		}
+		_list.clear();
 	}
 
 	public final class SIterator implements Iterator<V>

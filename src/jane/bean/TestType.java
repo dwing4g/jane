@@ -57,16 +57,16 @@ public final class TestType extends Bean<TestType>
 	private /* 7*/ double v7; // 8字节浮点数
 	private /* 8*/ Octets v8; // 二进制数据(Octets)
 	private /* 9*/ String v9; // 字符串(String)
-	private /*10*/ ArrayList<Boolean> v10; // 数组容器(ArrayList)
-	private /*11*/ LinkedList<Byte> v11; // 链表容器(LinkedList)
-	private /*12*/ ArrayDeque<Integer> v12; // 队列容器(ArrayDeque)
-	private /*13*/ HashSet<Long> v13; // 无序集合容器(HashSet)
-	private /*14*/ TreeSet<Float> v14; // 排序集合容器(TreeSet)
-	private /*15*/ LinkedHashSet<Double> v15; // 有序集合容器(LinkedHashSet)
-	private /*16*/ HashMap<Long, String> v16; // 无序映射容器(HashMap)
-	private /*17*/ TreeMap<TestBean, Boolean> v17; // 排序映射容器(TreeMap)
-	private /*18*/ LinkedHashMap<Octets, TestBean> v18; // 有序映射容器(LinkedHashMap)
-	private /*19*/ TestBean v19; // 嵌入其它bean
+	private /*10*/ final ArrayList<Boolean> v10; // 数组容器(ArrayList)
+	private /*11*/ final LinkedList<Byte> v11; // 链表容器(LinkedList)
+	private /*12*/ final ArrayDeque<Integer> v12; // 队列容器(ArrayDeque)
+	private /*13*/ final HashSet<Long> v13; // 无序集合容器(HashSet)
+	private /*14*/ final TreeSet<Float> v14; // 排序集合容器(TreeSet)
+	private /*15*/ final LinkedHashSet<Double> v15; // 有序集合容器(LinkedHashSet)
+	private /*16*/ final HashMap<Long, String> v16; // 无序映射容器(HashMap)
+	private /*17*/ final TreeMap<TestBean, Boolean> v17; // 排序映射容器(TreeMap)
+	private /*18*/ final LinkedHashMap<Octets, TestBean> v18; // 有序映射容器(LinkedHashMap)
+	private /*19*/ final TestBean v19; // 嵌入其它bean
 
 	static
 	{

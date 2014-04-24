@@ -14,9 +14,9 @@ import jane.core.SContext.Wrap;
  */
 public class SMap<K, V> implements Map<K, V>, Cloneable
 {
-	protected final Wrap<?> _owner;
-	protected Map<K, V>     _map;
-	private SContext        _sctx;
+	protected final Wrap<?>   _owner;
+	protected final Map<K, V> _map;
+	private SContext          _sctx;
 
 	public SMap(Wrap<?> owner, Map<K, V> map)
 	{
@@ -146,22 +146,28 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 		if(_map.isEmpty()) return;
 		sContext().addOnRollback(new Runnable()
 		{
-			private final SMap<K, V> _saved = SMap.this;
+			private final Map<K, V> _saved;
+
+			{
+				try
+				{
+					_saved = _map.getClass().newInstance();
+					_saved.putAll(_map);
+				}
+				catch(Exception e)
+				{
+					throw new RuntimeException(e);
+				}
+			}
 
 			@Override
 			public void run()
 			{
-				_map = _saved;
+				_map.putAll(_saved);
+				_saved.clear();
 			}
 		});
-		try
-		{
-			_map = _map.getClass().newInstance();
-		}
-		catch(Exception e)
-		{
-			throw new RuntimeException(e);
-		}
+		_map.clear();
 	}
 
 	public final class SEntry implements Entry<K, V>

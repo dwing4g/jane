@@ -82,8 +82,7 @@ public final class TestEmpty extends Bean<TestEmpty>
 	@Override
 	public int hashCode()
 	{
-		int h = 4 * 0x9e3779b1;
-		return h;
+		return 4 * 0x9e3779b1;
 	}
 
 	@Override
