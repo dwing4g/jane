@@ -857,12 +857,17 @@ local function bean_const(code)
 		gsub("\tpublic void set.-\n\t}\n\n", ""):
 		gsub("\n\tpublic static final class Safe.-}\n\t}\n", ""):
 		gsub("import java%.lang%.reflect%.Field;\n", ""):
+		gsub("import jane%.core%.DynBean;\n", ""):
 		gsub("import jane%.core%.SBase;\n", ""):
 		gsub("import jane%.core%.SContext;\n", ""):
 		gsub("import jane%.core%.SContext%.Wrap;\n", ""):
 		gsub("\tprivate static Field .-\n", ""):
 		gsub("\tstatic\n.-\n\t}\n\n", ""):
 		gsub("%*/ String ", "*/ final String "):
+		gsub("%*/ Octets ", "*/ final Octets "):
+		gsub("\tpublic <B extends Bean<B>> void marshal.-\n\t}\n\n", ""):
+		gsub("\tpublic <B extends Bean<B>> Bean<B> unmarshal.-\n\t}\n\n", ""):
+		gsub("\tpublic DynBean unmarshal.-\n\t}\n\n", ""):
 		gsub("\n\t@Override\n\tpublic Safe safe.-\n\t}\n", ""):
 		gsub("\t@Override\n\tpublic void reset%(.-\n\t}", [[
 	@Override
