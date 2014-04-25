@@ -38,7 +38,7 @@ License:
 依赖库:
  * 日志库: slf4j-1.7.x log4j-2.x
  * 网络库: mina-core-2.0.x
- * 数据库: leveldb-jni mapdb-0.9.x mvstore-1.3.x (后两者最好等待稳定版再投入正式使用)
+ * 数据库: leveldb-jni mapdb-1.0.x mvstore-1.4.x (推荐使用LevelDB)
  * 脚本库: luaj-jse-2.0.x
  * 基础库: com.googlecode.concurrentlinkedhashmap (高速并发hashmap/linkedhashmap)
 
