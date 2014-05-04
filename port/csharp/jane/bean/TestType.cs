@@ -400,8 +400,7 @@ namespace jane.bean
 					t = s.unmarshalUByte();
 					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 					t &= 7;
-					int n = s.unmarshalUInt();
-					for(; n > 0; --n)
+					for(int n = s.unmarshalUInt(); n > 0; --n)
 						this.v13.Add(s.unmarshalLongKV(t));
 				} break;
 				case 14:
@@ -411,8 +410,7 @@ namespace jane.bean
 					t = s.unmarshalUByte();
 					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 					t &= 7;
-					int n = s.unmarshalUInt();
-					for(; n > 0; --n)
+					for(int n = s.unmarshalUInt(); n > 0; --n)
 						this.v14.Add(s.unmarshalFloatKV(t));
 				} break;
 				case 15:
@@ -422,8 +420,7 @@ namespace jane.bean
 					t = s.unmarshalUByte();
 					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 					t &= 7;
-					int n = s.unmarshalUInt();
-					for(; n > 0; --n)
+					for(int n = s.unmarshalUInt(); n > 0; --n)
 						this.v15.Add(s.unmarshalDoubleKV(t));
 				} break;
 				case 16:

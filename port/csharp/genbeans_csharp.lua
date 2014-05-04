@@ -426,8 +426,7 @@ typedef.hashset = merge(typedef.vector,
 					t = s.unmarshalUByte();
 					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 					t &= 7;
-					int n = s.unmarshalUInt();
-					for(; n > 0; --n)
+					for(int n = s.unmarshalUInt(); n > 0; --n)
 						this.#(var.name).Add(%s);
 				}]], get_unmarshal_kv(var, "k", "t")) end,
 })

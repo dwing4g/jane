@@ -7,7 +7,7 @@ set H2DB=..\..\h2database
 
 	copy /y %MAPDB%\src\main\java\org\mapdb\*.java							..\lib\mapdb\org\mapdb\
 
-rem	copy /y %H2DB%\h2\src\main\org\h2\compress\CompressDeflate.java			..\lib\mvstore\org\h2\compress\
+	copy /y %H2DB%\h2\src\main\org\h2\compress\CompressDeflate.java			..\lib\mvstore\org\h2\compress\
 	copy /y %H2DB%\h2\src\main\org\h2\compress\CompressLZF.java				..\lib\mvstore\org\h2\compress\
 	copy /y %H2DB%\h2\src\main\org\h2\compress\Compressor.java				..\lib\mvstore\org\h2\compress\
 	copy /y %H2DB%\h2\src\main\org\h2\engine\Constants.java					..\lib\mvstore\org\h2\engine\
@@ -24,7 +24,7 @@ rem	copy /y %H2DB%\h2\src\main\org\h2\compress\CompressDeflate.java			..\lib\mvs
 	copy /y %H2DB%\h2\src\main\org\h2\mvstore\OffHeapStore.java				..\lib\mvstore\org\h2\mvstore\
 	copy /y %H2DB%\h2\src\main\org\h2\mvstore\Page.java						..\lib\mvstore\org\h2\mvstore\
 	copy /y %H2DB%\h2\src\main\org\h2\mvstore\StreamStore.java				..\lib\mvstore\org\h2\mvstore\
-rem	copy /y %H2DB%\h2\src\main\org\h2\mvstore\WriteBuffer.java				..\lib\mvstore\org\h2\mvstore\
+	copy /y %H2DB%\h2\src\main\org\h2\mvstore\WriteBuffer.java				..\lib\mvstore\org\h2\mvstore\
 	copy /y %H2DB%\h2\src\main\org\h2\mvstore\cache\CacheLongKeyLIRS.java	..\lib\mvstore\org\h2\mvstore\cache\
 	copy /y %H2DB%\h2\src\main\org\h2\mvstore\cache\FilePathCache.java		..\lib\mvstore\org\h2\mvstore\cache\
 	copy /y %H2DB%\h2\src\main\org\h2\mvstore\type\DataType.java			..\lib\mvstore\org\h2\mvstore\type\
@@ -37,7 +37,7 @@ rem	copy /y %H2DB%\h2\src\main\org\h2\mvstore\WriteBuffer.java				..\lib\mvstore
 	copy /y %H2DB%\h2\src\main\org\h2\store\fs\FileChannelInputStream.java	..\lib\mvstore\org\h2\store\fs\
 	copy /y %H2DB%\h2\src\main\org\h2\store\fs\FileChannelOutputStream.java	..\lib\mvstore\org\h2\store\fs\
 	copy /y %H2DB%\h2\src\main\org\h2\store\fs\FilePath.java				..\lib\mvstore\org\h2\store\fs\
-rem	copy /y %H2DB%\h2\src\main\org\h2\store\fs\FilePathDisk.java			..\lib\mvstore\org\h2\store\fs\
+	copy /y %H2DB%\h2\src\main\org\h2\store\fs\FilePathDisk.java			..\lib\mvstore\org\h2\store\fs\
 	copy /y %H2DB%\h2\src\main\org\h2\store\fs\FilePathEncrypt.java			..\lib\mvstore\org\h2\store\fs\
 	copy /y %H2DB%\h2\src\main\org\h2\store\fs\FilePathNio.java				..\lib\mvstore\org\h2\store\fs\
 	copy /y %H2DB%\h2\src\main\org\h2\store\fs\FilePathWrapper.java			..\lib\mvstore\org\h2\store\fs\
@@ -52,6 +52,6 @@ rem		buff = buf;
 rem	}
 rem	//PATCH: jane end
 rem	FilePathDisk.java: many unused comment for compilation
-rem CompressDeflate.java: DBException to RuntimeException
+rem	CompressDeflate.java: DBException to RuntimeException
 
 pause
