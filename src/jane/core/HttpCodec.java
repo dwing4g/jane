@@ -164,7 +164,7 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 		int p = head.find(0, head.position(), key);
 		if(p < 0) return -1;
 		p += key.length;
-		int e = head.find(p + key.length, (byte)'\r');
+		int e = head.find(p, (byte)'\r');
 		if(e < 0) return -1;
 		long r = 0;
 		for(byte[] buf = head.array(); p < e; ++p)

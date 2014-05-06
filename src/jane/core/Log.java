@@ -1,10 +1,15 @@
 package jane.core;
 
+import java.lang.reflect.Field;
+import java.nio.charset.Charset;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.apache.logging.log4j.core.layout.AbstractStringLayout;
 
 /**
  * 日志相关(静态类)
@@ -20,6 +25,7 @@ public final class Log
 		if(prop == null || (prop = prop.trim()).isEmpty())
 		    prop = "log4j2.xml";
 		logctx = Configurator.initialize("jane", log4j2_prop = prop);
+		setAppenderCharset("STDOUT", Charset.defaultCharset());
 	}
 
 	public static final LoggerContext logctx;
@@ -77,6 +83,33 @@ public final class Log
 	{
 		for(LoggerConfig lc : logctx.getConfiguration().getLoggers().values())
 			lc.removeAppender(name);
+	}
+
+	/**
+	 * 修改日志中的某个appender的字符集
+	 */
+	public static void setAppenderCharset(String name, Charset charset)
+	{
+		for(LoggerConfig lc : logctx.getConfiguration().getLoggers().values())
+		{
+			Appender app = lc.getAppenders().get(name);
+			if(app != null)
+			{
+				Layout<?> layout = app.getLayout();
+				if(layout instanceof AbstractStringLayout)
+				{
+					try
+					{
+						Field field = AbstractStringLayout.class.getDeclaredField("charset");
+						field.setAccessible(true);
+						field.set(layout, charset);
+					}
+					catch(Exception e)
+					{
+					}
+				}
+			}
+		}
 	}
 
 	/**
