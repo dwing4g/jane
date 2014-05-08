@@ -237,7 +237,12 @@ start.bat (Windows前台启动)
 ./stop.sh (正常停止服务器)
 ./stop.sh -9 (强制停止服务器)
 
-PS: 在Eclipse中省略写AllTables.前缀的方法:
+PS1: 在Eclipse中省略写AllTables.前缀的方法:
 1.在菜单 Window -> Preferences -> Java -> Editor -> Content Assist -> Favorites 里点按钮 New Type 并添加 jane.bean.AllTables
 2.在菜单 Window -> Preferences -> Java -> Editor -> Content Assist -> Advanced 里上下两个列表框中都选中 Java Non-Type Proposals
 3.在菜单 Window -> Preferences -> Java -> Editor -> Content Assist 里选中 Use static imports
+
+PS2: SSL证书生成
+keytool -genkey -v -alias server -keyalg RSA -keysize 2048 -validity 36500 -dname "CN=www.domain.com,OU=Department,O=Company,L=Hangzhou,S=Zhejiang,C=CN" -keypass 123456 -storepass 123456 -keystore d:/server.keystore
+keytool -export -v -alias server -storepass 123456 -keystore d:/server.keystore -file d:/server.cer (导出公钥证书server.cer)
+keytool -import -v -alias client -storepass 123456 -keystore d:/server.keystore -file d:/client.cer -keypass 123456 (导入受信公钥证书client.cer)

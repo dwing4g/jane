@@ -9,3 +9,4 @@
 jane-core.jar
 jane-test.jar
 jane-src.jar
+*.keystore

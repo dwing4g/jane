@@ -17,6 +17,9 @@ import org.apache.mina.filter.codec.ProtocolDecoderAdapter;
 import org.apache.mina.filter.codec.ProtocolDecoderOutput;
 import org.apache.mina.filter.codec.ProtocolEncoder;
 import org.apache.mina.filter.codec.ProtocolEncoderOutput;
+import org.apache.mina.filter.ssl.KeyStoreFactory;
+import org.apache.mina.filter.ssl.SslContextFactory;
+import org.apache.mina.filter.ssl.SslFilter;
 
 /**
  * HTTP的mina协议编解码过滤器
@@ -25,7 +28,7 @@ import org.apache.mina.filter.codec.ProtocolEncoderOutput;
  * 输出(编码): OctetsStream(从position到结尾的数据),或Octets,或byte[]<br>
  * 输入处理: 获取HTTP头中的fields,method,url-path,url-param,content-charset,以及cookie,支持url编码的解码<br>
  * 输出处理: 固定长度输出,chunked方式输出<br>
- * 不直接支持: https, mime, Connection:close/timeout, Accept-Encoding, Set-Cookie, Multi-Part, encodeUrl
+ * 不直接支持: mime, Connection:close/timeout, Accept-Encoding, Set-Cookie, Multi-Part, encodeUrl
  */
 public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolEncoder, ProtocolCodecFactory
 {
@@ -65,6 +68,28 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 			}
 		}
 		return _datestr;
+	}
+
+	public static SslFilter getSslFilter(byte[] key_data, String key_pw, byte[] trust_data, String trust_pw) throws Exception
+	{
+		KeyStoreFactory ksf = new KeyStoreFactory();
+		ksf.setData(key_data);
+		ksf.setPassword(key_pw);
+
+		KeyStoreFactory tsf = new KeyStoreFactory();
+		tsf.setData(trust_data);
+		tsf.setPassword(trust_pw);
+
+		SslContextFactory scf = new SslContextFactory();
+		scf.setKeyManagerFactoryKeyStore(ksf.newInstance());
+		scf.setTrustManagerFactoryKeyStore(tsf.newInstance());
+		scf.setKeyManagerFactoryKeyStorePassword(key_pw);
+		return new SslFilter(scf.newInstance());
+	}
+
+	public static SslFilter getSslFilter(String key_file, String key_pw, String trust_file, String trust_pw) throws Exception
+	{
+		return getSslFilter(Util.readFile(key_file), key_pw, Util.readFile(trust_file), trust_pw);
 	}
 
 	public static String decodeUrl(byte[] src, int srcpos, int srclen)

@@ -1,5 +1,6 @@
 package jane.test;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -12,6 +13,7 @@ import java.util.Map.Entry;
 import org.apache.mina.core.file.DefaultFileRegion;
 import org.apache.mina.core.file.FileRegion;
 import org.apache.mina.core.session.IoSession;
+import org.apache.mina.filter.ssl.SslFilter;
 import jane.core.HttpCodec;
 import jane.core.Log;
 import jane.core.NetManager;
@@ -19,8 +21,14 @@ import jane.core.OctetsStream;
 
 public final class TestHttpServer extends NetManager
 {
-	public TestHttpServer()
+	public TestHttpServer(String key_file, String key_pw) throws Exception
 	{
+		if(key_file != null && key_pw != null)
+		{
+			SslFilter sf = HttpCodec.getSslFilter(key_file, key_pw, key_file, key_pw);
+			sf.setUseClientMode(false);
+			getAcceptor().getFilterChain().addFirst("ssl", sf);
+		}
 		setCodec(HttpCodec.class);
 	}
 
@@ -111,8 +119,10 @@ public final class TestHttpServer extends NetManager
 		session.close(true);
 	}
 
-	public static void main(String[] args) throws IOException
+	public static void main(String[] args) throws Exception
 	{
-		new TestHttpServer().startServer(new InetSocketAddress("0.0.0.0", 8080));
+		new TestHttpServer(null, null).startServer(new InetSocketAddress("0.0.0.0", 80));
+		if(new File("server.keystore").exists())
+		    new TestHttpServer("server.keystore", "123456").startServer(new InetSocketAddress("0.0.0.0", 443));
 	}
 }

@@ -6,7 +6,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
+import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -39,8 +39,10 @@ import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
  */
 public final class Util
 {
-	private static final Random  _rand        = new Random();
-	private static final Pattern _pat_charset = Pattern.compile("charset=(\\S+)");
+	private static final Random  _rand              = new Random();
+	private static final Pattern _pat_charset       = Pattern.compile("charset=(\\S+)");
+	private static final int     CONNECTION_TIMEOUT = 15 * 1000;
+	private static final int     BUFFER_SIZE        = 8 * 1024;
 
 	public static Random getRand()
 	{
@@ -235,6 +237,27 @@ public final class Util
 		}
 		s.setCharAt(s.length() - 1, '}');
 		return s.append(',');
+	}
+
+	/**
+	 * 读取整个文件内容
+	 * @param filename 文件名
+	 * @return 返回完整的文件内容
+	 */
+	public static byte[] readFile(String filename) throws IOException
+	{
+		InputStream is = new FileInputStream(filename);
+		try
+		{
+			int n = is.available();
+			byte[] data = new byte[n];
+			is.read(data);
+			return data;
+		}
+		finally
+		{
+			is.close();
+		}
 	}
 
 	/**
@@ -442,9 +465,9 @@ public final class Util
 		}
 	}
 
-	public static String doHttpGet(String url, Map<String, String> params)
+	public static String doHttpReq(String url, Map<String, String> params, String post) throws Exception
 	{
-		String encoding = "UTF-8";
+		String encoding = "utf-8";
 
 		if(params != null && !params.isEmpty())
 		{
@@ -454,30 +477,41 @@ public final class Util
 			{
 				sb.append(c);
 				c = '&';
-				try
-				{
-					sb.append(URLEncoder.encode(entry.getKey(), encoding));
-					sb.append('=');
-					sb.append(URLEncoder.encode(entry.getValue(), encoding));
-				}
-				catch(UnsupportedEncodingException e)
-				{
-					Log.log.error("doHttpGet encode exception:", e);
-					return null;
-				}
+				sb.append(URLEncoder.encode(entry.getKey(), encoding));
+				sb.append('=');
+				sb.append(URLEncoder.encode(entry.getValue(), encoding));
 			}
 			url = sb.toString();
 		}
 
 		HttpURLConnection conn = null;
 		InputStream is = null;
+		byte[] body = (post != null ? post.getBytes(Const.stringCharsetUTF8) : null);
 		try
 		{
 			conn = (HttpURLConnection)new URL(url).openConnection();
 			conn.setUseCaches(false);
 			conn.setRequestProperty("Accept-Charset", encoding);
-			conn.setConnectTimeout(15 * 1000);
-			conn.connect();
+			conn.setRequestProperty("User-Agent", "jane");
+			conn.setConnectTimeout(CONNECTION_TIMEOUT);
+			conn.setReadTimeout(CONNECTION_TIMEOUT);
+			if(body != null)
+			{
+				conn.setRequestMethod("POST");
+				conn.setDoOutput(true);
+				conn.setRequestProperty("Content-Type", "text/plain; charset=utf-8");
+				conn.setFixedLengthStreamingMode(body.length);
+				OutputStream os = conn.getOutputStream();
+				try
+				{
+					os.write(body);
+					os.flush();
+				}
+				finally
+				{
+					if(os != null) os.close();
+				}
+			}
 
 			String ct = conn.getContentType();
 			if(ct != null)
@@ -492,8 +526,8 @@ public final class Util
 			}
 
 			is = conn.getInputStream();
-			byte[] buf = new byte[8 * 1024];
-			ByteArrayOutputStream bs = new ByteArrayOutputStream(buf.length);
+			byte[] buf = new byte[BUFFER_SIZE];
+			ByteArrayOutputStream bs = new ByteArrayOutputStream(BUFFER_SIZE);
 			for(;;)
 			{
 				int n = is.read(buf);
@@ -501,10 +535,6 @@ public final class Util
 				bs.write(buf, 0, n);
 			}
 			return bs.toString(encoding);
-		}
-		catch(IOException e)
-		{
-			Log.log.error("doHttpGet exception:", e);
 		}
 		finally
 		{
@@ -516,12 +546,10 @@ public final class Util
 				}
 				catch(IOException e)
 				{
-					Log.log.error("doHttpGet close exception:", e);
 				}
 			}
 			if(conn != null) conn.disconnect();
 		}
-		return null;
 	}
 
 	private Util()

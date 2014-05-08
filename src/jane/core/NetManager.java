@@ -180,6 +180,7 @@ public class NetManager implements IoHandler
 				if(_acceptor == null || _acceptor.isDisposed())
 				{
 					NioSocketAcceptor t = new NioSocketAcceptor();
+					t.setReuseAddress(true);
 					t.setHandler(this);
 					_acceptor = t;
 				}

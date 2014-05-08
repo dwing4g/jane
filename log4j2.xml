@@ -4,7 +4,7 @@
 	<Appenders>
 		<Console name="STDOUT" target="SYSTEM_OUT" ignoreExceptions="false">
 			<ThresholdFilter level="TRACE" onMatch="ACCEPT" onMismatch="DENY"/>
-			<PatternLayout charset="UTF-8" pattern="%d{yy-MM-dd HH:mm:ss.SSS} %-5level [%t] %msg%n"/>
+			<PatternLayout charset="${sys:CONSOLE_CHARSET}" pattern="%d{yy-MM-dd HH:mm:ss.SSS} %-5level [%t] %msg%n"/>
 		</Console>
 		<Console name="STDERR" target="SYSTEM_ERR" ignoreExceptions="false">
 			<ThresholdFilter level="TRACE" onMatch="ACCEPT" onMismatch="DENY"/>
