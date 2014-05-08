@@ -1,5 +1,6 @@
 package jane.test;
 
+import static jane.bean.AllTables.Benchmark;
 import jane.bean.AllTables;
 import jane.bean.TestBean;
 import jane.core.DBManager;
@@ -21,14 +22,14 @@ public final class TestUndo
 			@Override
 			protected void onProcess() throws Exception
 			{
-				lock(AllTables.Benchmark.lockid(id));
-				TestBean.Safe a = AllTables.Benchmark.getSafe(id);
+				lock(Benchmark.lockid(id));
+				TestBean.Safe a = Benchmark.getSafe(id);
 				if(a == null)
 				{
 					TestBean aa = new TestBean();
 					aa.setValue1(v);
 					System.out.println("new: " + aa.getValue1());
-					AllTables.Benchmark.putSafe(id, aa);
+					Benchmark.putSafe(id, aa);
 				}
 				else
 				{
@@ -48,8 +49,8 @@ public final class TestUndo
 			@Override
 			protected void onProcess() throws Exception
 			{
-				lock(AllTables.Benchmark.lockid(id));
-				TestBean.Safe a = AllTables.Benchmark.getSafe(id);
+				lock(Benchmark.lockid(id));
+				TestBean.Safe a = Benchmark.getSafe(id);
 				System.out.println("get: " + a.getValue1());
 				a.setValue1(v + 1);
 				System.out.println("set: " + a.getValue1());
@@ -63,8 +64,8 @@ public final class TestUndo
 			@Override
 			protected void onProcess() throws Exception
 			{
-				lock(AllTables.Benchmark.lockid(id));
-				TestBean.Safe a = AllTables.Benchmark.getSafe(id);
+				lock(Benchmark.lockid(id));
+				TestBean.Safe a = Benchmark.getSafe(id);
 				System.out.println("get: " + a.getValue1());
 				a.setValue1(v + 2);
 				System.out.println("set: " + a.getValue1());
@@ -77,8 +78,8 @@ public final class TestUndo
 			@Override
 			protected void onProcess() throws Exception
 			{
-				lock(AllTables.Benchmark.lockid(id));
-				TestBean.Safe a = AllTables.Benchmark.getSafe(id);
+				lock(Benchmark.lockid(id));
+				TestBean.Safe a = Benchmark.getSafe(id);
 				System.out.println("get: " + a.getValue1());
 				System.out.println("===");
 			}

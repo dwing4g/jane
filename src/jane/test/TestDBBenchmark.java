@@ -1,5 +1,6 @@
 package jane.test;
 
+import static jane.bean.AllTables.Benchmark;
 import java.util.concurrent.atomic.AtomicInteger;
 import jane.bean.AllTables;
 import jane.bean.TestBean;
@@ -55,13 +56,13 @@ public final class TestDBBenchmark
 						long t1 = System.currentTimeMillis();
 						long tt = t1 - t0;
 						if(tt >= 250) System.out.println("--- proc delay=" + tt);
-						lock(AllTables.Benchmark.lockid(id));
-						TestBean.Safe a = AllTables.Benchmark.getSafe(id);
+						lock(Benchmark.lockid(id));
+						TestBean.Safe a = Benchmark.getSafe(id);
 						if(a == null)
 						{
 							TestBean aa = new TestBean();
 							aa.setValue2(id);
-							AllTables.Benchmark.put(id, aa);
+							Benchmark.put(id, aa);
 						}
 						else
 						{
