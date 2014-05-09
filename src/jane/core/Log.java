@@ -16,10 +16,7 @@ public final class Log
 	 */
 	static
 	{
-		String prop = System.getProperty("CONSOLE_CHARSET");
-		if(prop == null || (prop = prop.trim()).isEmpty())
-		    System.setProperty("CONSOLE_CHARSET", "UTF-8");
-		prop = System.getProperty("log4j2.prop");
+		String prop = System.getProperty("log4j2.prop");
 		if(prop == null || (prop = prop.trim()).isEmpty())
 		    prop = "log4j2.xml";
 		logctx = Configurator.initialize("jane", log4j2_prop = prop);

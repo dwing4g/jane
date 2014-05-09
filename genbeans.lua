@@ -985,6 +985,7 @@ function dbt(table)
 		tables.imports["jane.core.Table"] = true
 	end
 	table.values = table.memory and "null" or "#(table.value).BEAN_STUB"
+	table.lock = table.lock or ""
 	if table.comment and #table.comment > 0 then table.comment = "/**\n\t * " .. table.comment:gsub("\n", "<br>\n\t * ") .. "\n\t */\n\t" end
 	tables[#tables + 1] = table
 end

@@ -1,6 +1,8 @@
 package jane.core;
 
+import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
+import java.security.KeyStore;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -9,6 +11,9 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.ProtocolCodecFactory;
@@ -17,8 +22,6 @@ import org.apache.mina.filter.codec.ProtocolDecoderAdapter;
 import org.apache.mina.filter.codec.ProtocolDecoderOutput;
 import org.apache.mina.filter.codec.ProtocolEncoder;
 import org.apache.mina.filter.codec.ProtocolEncoderOutput;
-import org.apache.mina.filter.ssl.KeyStoreFactory;
-import org.apache.mina.filter.ssl.SslContextFactory;
 import org.apache.mina.filter.ssl.SslFilter;
 
 /**
@@ -70,26 +73,26 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 		return _datestr;
 	}
 
-	public static SslFilter getSslFilter(byte[] key_data, String key_pw, byte[] trust_data, String trust_pw) throws Exception
+	public static SslFilter getSslFilter(byte[] key_data, char[] key_pw, byte[] trust_data, char[] trust_pw) throws Exception
 	{
-		KeyStoreFactory ksf = new KeyStoreFactory();
-		ksf.setData(key_data);
-		ksf.setPassword(key_pw);
+		KeyStore ks = KeyStore.getInstance("JKS");
+		ks.load(new ByteArrayInputStream(key_data), key_pw);
+		KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+		kmf.init(ks, key_pw);
 
-		KeyStoreFactory tsf = new KeyStoreFactory();
-		tsf.setData(trust_data);
-		tsf.setPassword(trust_pw);
+		KeyStore ts = KeyStore.getInstance("JKS");
+		ts.load(new ByteArrayInputStream(trust_data), trust_pw);
+		TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+		tmf.init(ts);
 
-		SslContextFactory scf = new SslContextFactory();
-		scf.setKeyManagerFactoryKeyStore(ksf.newInstance());
-		scf.setTrustManagerFactoryKeyStore(tsf.newInstance());
-		scf.setKeyManagerFactoryKeyStorePassword(key_pw);
-		return new SslFilter(scf.newInstance());
+		SSLContext ctx = SSLContext.getInstance("TLS");
+		ctx.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+		return new SslFilter(ctx);
 	}
 
 	public static SslFilter getSslFilter(String key_file, String key_pw, String trust_file, String trust_pw) throws Exception
 	{
-		return getSslFilter(Util.readFile(key_file), key_pw, Util.readFile(trust_file), trust_pw);
+		return getSslFilter(Util.readAllFile(key_file), key_pw.toCharArray(), Util.readAllFile(trust_file), trust_pw.toCharArray());
 	}
 
 	public static String decodeUrl(byte[] src, int srcpos, int srclen)

@@ -4,7 +4,7 @@
 	<Appenders>
 		<Console name="STDOUT" target="SYSTEM_OUT" ignoreExceptions="false">
 			<ThresholdFilter level="TRACE" onMatch="ACCEPT" onMismatch="DENY"/>
-			<PatternLayout charset="${sys:CONSOLE_CHARSET}" pattern="%d{yy-MM-dd HH:mm:ss.SSS} %-5level [%t] %msg%n"/>
+			<PatternLayout charset="${sys:file.encoding}" pattern="%d{yy-MM-dd HH:mm:ss.SSS} %-5level [%t] %msg%n"/>
 		</Console>
 		<Console name="STDERR" target="SYSTEM_ERR" ignoreExceptions="false">
 			<ThresholdFilter level="TRACE" onMatch="ACCEPT" onMismatch="DENY"/>
@@ -30,6 +30,15 @@
 		</Async>
 	</Appenders>
 	<Loggers>
+		<Logger name="org.apache.mina.filter.codec.ProtocolCodecFilter" level="DEBUG" additivity="true">
+			<ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
+		</Logger>
+		<Logger name="org.apache.mina.filter.ssl.SslFilter" level="DEBUG" additivity="true">
+			<ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
+		</Logger>
+		<Logger name="org.apache.mina.filter.ssl.SslHandler" level="DEBUG" additivity="true">
+			<ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
+		</Logger>
 		<Root level="TRACE"><!-- level: ALL <= TRACE < DEBUG < INFO < WARN < ERROR < FATAL < OFF -->
 			<AppenderRef ref="ASYNC"/>
 			<AppenderRef ref="STDOUT"/>

@@ -79,11 +79,12 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	 */
 	Table(int tableid, String tablename, Storage.Table<K, V> stotable, String lockname, int cachesize, V stub_v)
 	{
-		_tablename = tablename;
+		_tablename = (tablename != null && !(tablename = tablename.trim()).isEmpty() ? tablename : '[' + String.valueOf(tableid) + ']');
 		_stotable = stotable;
-		_lockid = tableid ^ lockname.hashCode();
+		_lockid = (lockname != null && !(lockname = lockname.trim()).isEmpty() ? lockname.hashCode() : tableid) * 0x9e3779b1;
 		_cache = Util.newLRUConcurrentHashMap(cachesize);
 		_cache_mod = (stotable != null ? Util.<K, V>newConcurrentHashMap() : null);
+		if(stub_v == null) throw new IllegalArgumentException("null stub_v of table: " + _tablename);
 		_deleted = stub_v;
 		if(stotable != null) _tables.add(this);
 	}

@@ -206,7 +206,7 @@ public abstract class Procedure implements Runnable
 			if(lock == null)
 			{
 				lock = new ReentrantLock();
-				synchronized(Procedure.class) // for out of order problem
+				synchronized(Procedure.class) // memory barrier for out of order problem
 				{
 					_lockpool[lockid] = lock;
 				}
