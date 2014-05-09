@@ -6,7 +6,7 @@ import java.util.List;
 /**
  * bean的对象池
  * <p>
- * 目前仅用于生命期可控的数据库的记录值
+ * 目前仅用于实验
  */
 public final class BeanPool<B extends Bean<B>>
 {

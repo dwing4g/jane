@@ -290,6 +290,7 @@ public final class DBManager
 	public synchronized <K, V extends Bean<V>, S extends Safe<V>> Table<K, V, S> openTable(int tableid, String tablename, String lockname, int cachesize, Object stub_k, V stub_v)
 	{
 		if(_storage == null) throw new IllegalArgumentException("call DBManager.startup before open any table");
+		tablename = (tablename != null && !(tablename = tablename.trim()).isEmpty() ? tablename : '[' + String.valueOf(tableid) + ']');
 		Storage.Table<K, V> stotable = (stub_v != null ? _storage.<K, V>openTable(tableid, tablename, stub_k, stub_v) : null);
 		return new Table<K, V, S>(tableid, tablename, stotable, lockname, cachesize, stub_v);
 	}
@@ -308,6 +309,7 @@ public final class DBManager
 	public synchronized <V extends Bean<V>, S extends Safe<V>> TableLong<V, S> openTable(int tableid, String tablename, String lockname, int cachesize, V stub_v)
 	{
 		if(_storage == null) throw new IllegalArgumentException("call DBManager.startup before open any table");
+		tablename = (tablename != null && !(tablename = tablename.trim()).isEmpty() ? tablename : '[' + String.valueOf(tableid) + ']');
 		Storage.TableLong<V> stotable = (stub_v != null ? _storage.openTable(tableid, tablename, stub_v) : null);
 		return new TableLong<V, S>(tableid, tablename, stotable, lockname, cachesize, stub_v);
 	}

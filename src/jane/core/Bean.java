@@ -18,7 +18,7 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	/**
 	 * 获取存储标记
 	 * <p>
-	 * 如果已保存在数据库cache中,则有此标记,直到被删除为止,新建的对象没有此标记<br>
+	 * 如果已保存在数据库cache中,则一直持有此标记,只有用户新建的对象没有此标记<br>
 	 * 有此标记的bean不能被其它的记录共享保存,以免出现意外的修改
 	 */
 	public final boolean stored()
@@ -33,7 +33,7 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	 */
 	public final boolean modified()
 	{
-		return _save_state > 1;
+		return _save_state == 2;
 	}
 
 	/**

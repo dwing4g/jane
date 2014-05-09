@@ -87,12 +87,11 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	 */
 	TableLong(int tableid, String tablename, Storage.TableLong<V> stotable, String lockname, int cachesize, V stub_v)
 	{
-		_tablename = (tablename != null && !(tablename = tablename.trim()).isEmpty() ? tablename : '[' + String.valueOf(tableid) + ']');
+		_tablename = tablename;
 		_stotable = stotable;
 		_lockid = (lockname != null && !(lockname = lockname.trim()).isEmpty() ? lockname.hashCode() : tableid) * 0x9e3779b1;
 		_cache = new LongConcurrentLRUMap<V>(cachesize + cachesize / 2, cachesize);
 		_cache_mod = (stotable != null ? new LongConcurrentHashMap<V>() : null);
-		if(stub_v == null) throw new IllegalArgumentException("null stub_v of table: " + _tablename);
 		_deleted = stub_v;
 		if(stotable != null)
 		{
@@ -208,6 +207,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	/**
 	 * 根据记录的key获取value
 	 * <p>
+	 * 会自动添加到读cache中<br>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 */
 	public V get(long k)
@@ -265,7 +265,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	 */
 	public S getNoCacheSafe(long k)
 	{
-		V v = get(k);
+		V v = getNoCache(k);
 		return v != null ? SContext.current().addRecord(this, k, v) : null;
 	}
 
@@ -317,13 +317,20 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 		{
 			if(!v.stored())
 			{
+				if(_cache_mod != null)
+				{
+					v_old = _cache_mod.put(k, v);
+					if(v_old == null)
+					    DBManager.instance().incModCount();
+				}
 				v.setSaveState(2);
-				if(_cache_mod != null && _cache_mod.put(k, v) == null)
-				    DBManager.instance().incModCount();
 			}
 			else
 			{
-				_cache.put(k, v_old);
+				if(v_old != null)
+					_cache.put(k, v_old);
+				else
+					_cache.remove(k);
 				throw new IllegalStateException("put shared record: t=" + _tablename +
 				        ",k=" + k + ",v_old=" + v_old + ",v=" + v);
 			}
@@ -335,6 +342,9 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	 */
 	public void putSafe(final long k, V v)
 	{
+		if(v == null) throw new NullPointerException();
+		if(v.stored())
+		    throw new IllegalStateException("put shared record: t=" + _tablename + ",k=" + k + ",v=" + v);
 		final V v_old = get(k);
 		if(v_old == v) return;
 		SContext.current().addOnRollback(new Runnable()
@@ -343,7 +353,10 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 			public void run()
 			{
 				if(v_old != null)
+				{
+					v_old.setSaveState(0);
 					put(k, v_old);
+				}
 				else
 					remove(k);
 			}
@@ -369,14 +382,18 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	{
 		if(v.stored())
 		    throw new IllegalStateException("insert shared record: t=" + _tablename + ",v=" + v);
-		v.setSaveState(2);
 		long k;
 		do
 			k = (_idcounter.incrementAndGet() << _auto_id_lowbits) + _auto_id_offset;
 		while(getNoCache(k) != null);
+		v.setSaveState(2);
 		_cache.put(k, v);
-		if(_cache_mod != null && _cache_mod.put(k, v) == null)
-		    DBManager.instance().incModCount();
+		if(_cache_mod != null)
+		{
+			V v_old = _cache_mod.put(k, v);
+			if(v_old == null)
+			    DBManager.instance().incModCount();
+		}
 		return k;
 	}
 
@@ -413,18 +430,11 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	public void remove(long k)
 	{
 		V v_old = _cache.remove(k);
-		if(v_old != null)
-		{
-			v_old.setSaveState(0);
-			v_old.free();
-		}
 		if(_cache_mod != null)
 		{
-			V v_mod = _cache_mod.put(k, _deleted);
-			if(v_mod == null)
-				DBManager.instance().incModCount();
-			else if(v_mod != v_old)
-			    v_mod.free();
+			v_old = _cache_mod.put(k, _deleted);
+			if(v_old == null)
+			    DBManager.instance().incModCount();
 		}
 	}
 
@@ -440,15 +450,17 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 			@Override
 			public void run()
 			{
+				v_old.setSaveState(0);
 				put(k, v_old);
 			}
 		});
+		remove(k);
 	}
 
 	/**
 	 * 只在读cache中遍历此表的所有记录
 	 * <p>
-	 * 遍历时注意先根据记录的key获取锁再调用get获得其value<br>
+	 * 遍历时注意先根据记录的key获取锁再调用get获得其value, 必须在事务中调用此方法<br>
 	 * 注意此遍历方法是无序的
 	 * @param handler 遍历过程中返回false可中断遍历
 	 */
@@ -462,7 +474,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	/**
 	 * 按记录key的顺序遍历此表的所有记录
 	 * <p>
-	 * 遍历时注意先根据记录的key获取锁再调用get获得其value
+	 * 遍历时注意先根据记录的key获取锁再调用get获得其value, 必须在事务中调用此方法
 	 * @param handler 遍历过程中返回false可中断遍历
 	 * @param from 需要遍历的最小key. null表示最小值
 	 * @param to 需要遍历的最大key. null表示最大值
