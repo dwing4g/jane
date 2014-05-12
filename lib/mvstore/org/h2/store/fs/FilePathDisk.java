@@ -18,6 +18,7 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.NonWritableChannelException;
 import java.util.List;
 
 /**
@@ -63,18 +64,21 @@ public class FilePathDisk extends FilePath {
      * @return the native file name
      */
     public static String expandUserHomeDirectory(String fileName) {
-/*        if (fileName.startsWith("~") && (fileName.length() == 1 ||
-                  fileName.startsWith("~/"))) {
+/*
+        if (fileName.startsWith("~") && (fileName.length() == 1 ||
+                fileName.startsWith("~/"))) {
             String userDir = SysProperties.USER_HOME;
             fileName = userDir + fileName.substring(1);
         }
-*/        return fileName;
+*/
+        return fileName;
     }
 
     @Override
     public void moveTo(FilePath newName) {
-    	throw new UnsupportedOperationException();
-/*        File oldFile = new File(name);
+        throw new UnsupportedOperationException();
+/*
+        File oldFile = new File(name);
         File newFile = new File(newName.name);
         if (oldFile.getAbsolutePath().equals(newFile.getAbsolutePath())) {
             return;
@@ -98,7 +102,8 @@ public class FilePathDisk extends FilePath {
         }
         throw DbException.get(ErrorCode.FILE_RENAME_FAILED_2,
                 new String[]{name, newName.name});
-*/    }
+*/
+    }
 
     private static void wait(int i) {
         if (i == 8) {
@@ -134,8 +139,9 @@ public class FilePathDisk extends FilePath {
 
     @Override
     public void delete() {
-    	throw new UnsupportedOperationException();
-/*        File file = new File(name);
+        throw new UnsupportedOperationException();
+/*
+        File file = new File(name);
         for (int i = 0; i < SysProperties.MAX_FILE_RETRY; i++) {
             IOUtils.trace("delete", name, null);
             boolean ok = file.delete();
@@ -145,12 +151,14 @@ public class FilePathDisk extends FilePath {
             wait(i);
         }
         throw DbException.get(ErrorCode.FILE_DELETE_FAILED_1, name);
-*/    }
+*/
+    }
 
     @Override
     public List<FilePath> newDirectoryStream() {
-    	throw new UnsupportedOperationException();
-/*        ArrayList<FilePath> list = New.arrayList();
+        throw new UnsupportedOperationException();
+/*
+        ArrayList<FilePath> list = New.arrayList();
         File f = new File(name);
         try {
             String[] files = f.list();
@@ -167,7 +175,8 @@ public class FilePathDisk extends FilePath {
         } catch (IOException e) {
             throw DbException.convertIOException(e, name);
         }
-*/    }
+*/
+    }
 
     @Override
     public boolean canWrite() {
@@ -243,8 +252,9 @@ public class FilePathDisk extends FilePath {
 
     @Override
     public void createDirectory() {
-    	throw new UnsupportedOperationException();
-/*      File dir = new File(name);
+        throw new UnsupportedOperationException();
+/*
+        File dir = new File(name);
         for (int i = 0; i < SysProperties.MAX_FILE_RETRY; i++) {
             if (dir.exists()) {
                 if (dir.isDirectory()) {
@@ -258,7 +268,8 @@ public class FilePathDisk extends FilePath {
             wait(i);
         }
         throw DbException.get(ErrorCode.FILE_CREATION_FAILED_1, name);
-*/  }
+*/
+    }
 
     @Override
     public OutputStream newOutputStream(boolean append) throws IOException {
@@ -352,9 +363,10 @@ public class FilePathDisk extends FilePath {
 
     @Override
     public FilePath createTempFile(String suffix, boolean deleteOnExit,
-    	    boolean inTempDir) throws IOException {
-    	throw new UnsupportedOperationException();
-/*        String fileName = name + ".";
+            boolean inTempDir) throws IOException {
+        throw new UnsupportedOperationException();
+/*
+        String fileName = name + ".";
         String prefix = new File(fileName).getName();
         File dir;
         if (inTempDir) {
@@ -381,7 +393,8 @@ public class FilePathDisk extends FilePath {
             }
             return get(f.getCanonicalPath());
         }
-*/    }
+*/
+    }
 
 }
 
@@ -392,10 +405,12 @@ class FileDisk extends FileBase {
 
     private final RandomAccessFile file;
     private final String name;
+    private final boolean readOnly;
 
     FileDisk(String fileName, String mode) throws FileNotFoundException {
         this.file = new RandomAccessFile(fileName, mode);
         this.name = fileName;
+        this.readOnly = mode.equals("r");
     }
 
     @Override
@@ -416,6 +431,10 @@ class FileDisk extends FileBase {
 
     @Override
     public FileChannel truncate(long newLength) throws IOException {
+    	// compatibility with JDK FileChannel#truncate
+    	if (readOnly) {
+    		throw new NonWritableChannelException();
+    	}
         if (newLength < file.length()) {
             file.setLength(newLength);
         }

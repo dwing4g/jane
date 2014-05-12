@@ -305,11 +305,9 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	 */
 	public void putSafe(final K k, V v)
 	{
-		if(v == null) throw new NullPointerException();
 		if(v.stored())
 		    throw new IllegalStateException("put shared record: t=" + _tablename + ",k=" + k + ",v=" + v);
 		final V v_old = get(k);
-		if(v_old == v) return;
 		SContext.current().addOnRollback(new Runnable()
 		{
 			@Override
@@ -339,13 +337,9 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	 */
 	public void remove(K k)
 	{
-		V v_old = _cache.remove(k);
-		if(_cache_mod != null)
-		{
-			v_old = _cache_mod.put(k, _deleted);
-			if(v_old == null)
-			    DBManager.instance().incModCount();
-		}
+		_cache.remove(k);
+		if(_cache_mod != null && _cache_mod.put(k, _deleted) == null)
+		    DBManager.instance().incModCount();
 	}
 
 	/**

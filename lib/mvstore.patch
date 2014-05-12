@@ -1,6 +1,6 @@
 Index: compress/CompressDeflate.java
 ===================================================================
---- compress/CompressDeflate.java	(revision 5650)
+--- compress/CompressDeflate.java	(revision 5659)
 +++ compress/CompressDeflate.java	(working copy)
 @@ -11,9 +11,6 @@
  import java.util.zip.Deflater;
@@ -32,7 +32,7 @@ Index: compress/CompressDeflate.java
      }
 Index: mvstore/WriteBuffer.java
 ===================================================================
---- mvstore/WriteBuffer.java	(revision 5650)
+--- mvstore/WriteBuffer.java	(revision 5659)
 +++ mvstore/WriteBuffer.java	(working copy)
 @@ -291,6 +291,12 @@
          return buff;
@@ -49,7 +49,7 @@ Index: mvstore/WriteBuffer.java
              grow(len);
 Index: store/fs/FilePathDisk.java
 ===================================================================
---- store/fs/FilePathDisk.java	(revision 5650)
+--- store/fs/FilePathDisk.java	(revision 5659)
 +++ store/fs/FilePathDisk.java	(working copy)
 @@ -1,4 +1,4 @@
 -/*
@@ -57,10 +57,10 @@ Index: store/fs/FilePathDisk.java
   * Copyright 2004-2013 H2 Group. Multiple-Licensed under the H2 License,
   * Version 1.0, and under the Eclipse Public License, Version 1.0
   * (http://h2database.com/html/license.html).
-@@ -18,16 +18,8 @@
- import java.nio.ByteBuffer;
+@@ -19,16 +19,8 @@
  import java.nio.channels.FileChannel;
  import java.nio.channels.FileLock;
+ import java.nio.channels.NonWritableChannelException;
 -import java.util.ArrayList;
  import java.util.List;
  
@@ -74,39 +74,36 @@ Index: store/fs/FilePathDisk.java
  /**
   * This file system stores files on disk.
   * This is the most common file system.
-@@ -71,17 +63,18 @@
+@@ -72,16 +64,20 @@
       * @return the native file name
       */
      public static String expandUserHomeDirectory(String fileName) {
--        if (fileName.startsWith("~") && (fileName.length() == 1 ||
--                fileName.startsWith("~/"))) {
-+/*        if (fileName.startsWith("~") && (fileName.length() == 1 ||
-+                  fileName.startsWith("~/"))) {
++/*
+         if (fileName.startsWith("~") && (fileName.length() == 1 ||
+                 fileName.startsWith("~/"))) {
              String userDir = SysProperties.USER_HOME;
              fileName = userDir + fileName.substring(1);
          }
--        return fileName;
-+*/        return fileName;
++*/
+         return fileName;
      }
  
      @Override
      public void moveTo(FilePath newName) {
--        File oldFile = new File(name);
-+    	throw new UnsupportedOperationException();
-+/*        File oldFile = new File(name);
++        throw new UnsupportedOperationException();
++/*
+         File oldFile = new File(name);
          File newFile = new File(newName.name);
          if (oldFile.getAbsolutePath().equals(newFile.getAbsolutePath())) {
-             return;
-@@ -105,7 +98,7 @@
+@@ -106,6 +102,7 @@
          }
          throw DbException.get(ErrorCode.FILE_RENAME_FAILED_2,
                  new String[]{name, newName.name});
--    }
-+*/    }
++*/
+     }
  
      private static void wait(int i) {
-         if (i == 8) {
-@@ -123,7 +116,7 @@
+@@ -124,7 +121,7 @@
      @Override
      public boolean createFile() {
          File file = new File(name);
@@ -115,41 +112,38 @@ Index: store/fs/FilePathDisk.java
              try {
                  return file.createNewFile();
              } catch (IOException e) {
-@@ -141,7 +134,8 @@
+@@ -142,6 +139,8 @@
  
      @Override
      public void delete() {
--        File file = new File(name);
-+    	throw new UnsupportedOperationException();
-+/*        File file = new File(name);
++        throw new UnsupportedOperationException();
++/*
+         File file = new File(name);
          for (int i = 0; i < SysProperties.MAX_FILE_RETRY; i++) {
              IOUtils.trace("delete", name, null);
-             boolean ok = file.delete();
-@@ -151,11 +145,12 @@
+@@ -152,10 +151,13 @@
              wait(i);
          }
          throw DbException.get(ErrorCode.FILE_DELETE_FAILED_1, name);
--    }
-+*/    }
++*/
+     }
  
      @Override
      public List<FilePath> newDirectoryStream() {
--        ArrayList<FilePath> list = New.arrayList();
-+    	throw new UnsupportedOperationException();
-+/*        ArrayList<FilePath> list = New.arrayList();
++        throw new UnsupportedOperationException();
++/*
+         ArrayList<FilePath> list = New.arrayList();
          File f = new File(name);
          try {
-             String[] files = f.list();
-@@ -172,7 +167,7 @@
+@@ -173,6 +175,7 @@
          } catch (IOException e) {
              throw DbException.convertIOException(e, name);
          }
--    }
-+*/    }
++*/
+     }
  
      @Override
-     public boolean canWrite() {
-@@ -191,7 +186,7 @@
+@@ -192,7 +195,7 @@
              String fileName = new File(name).getCanonicalPath();
              return getPath(fileName);
          } catch (IOException e) {
@@ -158,26 +152,24 @@ Index: store/fs/FilePathDisk.java
          }
      }
  
-@@ -248,7 +243,8 @@
+@@ -249,6 +252,8 @@
  
      @Override
      public void createDirectory() {
--        File dir = new File(name);
-+    	throw new UnsupportedOperationException();
-+/*      File dir = new File(name);
++        throw new UnsupportedOperationException();
++/*
+         File dir = new File(name);
          for (int i = 0; i < SysProperties.MAX_FILE_RETRY; i++) {
              if (dir.exists()) {
-                 if (dir.isDirectory()) {
-@@ -262,7 +258,7 @@
+@@ -263,6 +268,7 @@
              wait(i);
          }
          throw DbException.get(ErrorCode.FILE_CREATION_FAILED_1, name);
--    }
-+*/  }
++*/
+     }
  
      @Override
-     public OutputStream newOutputStream(boolean append) throws IOException {
-@@ -273,7 +269,7 @@
+@@ -274,7 +280,7 @@
                  FileUtils.createDirectories(parent.getAbsolutePath());
              }
              FileOutputStream out = new FileOutputStream(name, append);
@@ -186,7 +178,7 @@ Index: store/fs/FilePathDisk.java
              return out;
          } catch (IOException e) {
              freeMemoryAndFinalize();
-@@ -309,7 +305,7 @@
+@@ -310,7 +316,7 @@
              return in;
          }
          FileInputStream in = new FileInputStream(name);
@@ -195,7 +187,7 @@ Index: store/fs/FilePathDisk.java
          return in;
      }
  
-@@ -318,7 +314,7 @@
+@@ -319,7 +325,7 @@
       * that were not closed, and are no longer referenced.
       */
      static void freeMemoryAndFinalize() {
@@ -204,7 +196,7 @@ Index: store/fs/FilePathDisk.java
          Runtime rt = Runtime.getRuntime();
          long mem = rt.freeMemory();
          for (int i = 0; i < 16; i++) {
-@@ -337,7 +333,7 @@
+@@ -338,7 +344,7 @@
          FileDisk f;
          try {
              f = new FileDisk(name, mode);
@@ -213,28 +205,24 @@ Index: store/fs/FilePathDisk.java
          } catch (IOException e) {
              freeMemoryAndFinalize();
              try {
-@@ -356,8 +352,9 @@
- 
+@@ -358,6 +364,8 @@
      @Override
      public FilePath createTempFile(String suffix, boolean deleteOnExit,
--            boolean inTempDir) throws IOException {
--        String fileName = name + ".";
-+    	    boolean inTempDir) throws IOException {
-+    	throw new UnsupportedOperationException();
-+/*        String fileName = name + ".";
+             boolean inTempDir) throws IOException {
++        throw new UnsupportedOperationException();
++/*
+         String fileName = name + ".";
          String prefix = new File(fileName).getName();
          File dir;
-         if (inTempDir) {
-@@ -384,7 +381,7 @@
+@@ -385,6 +393,7 @@
              }
              return get(f.getCanonicalPath());
          }
--    }
-+*/    }
++*/
+     }
  
  }
- 
-@@ -403,7 +400,7 @@
+@@ -406,7 +415,7 @@
  
      @Override
      public void force(boolean metaData) throws IOException {
