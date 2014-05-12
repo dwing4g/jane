@@ -9,7 +9,8 @@
 	<property name="src" value="${root}/mina-core/src/main/java"/>
 	<property name="lib" value="${root}/lib"/>
 	<tstamp>
-		<format property="time" pattern="yyyyMMdd"/>
+		<format property="date" pattern="yyyyMMdd"/>
+		<format property="time" pattern="yyyy-MM-dd HH:mm:ss:SSS Z"/>
 	</tstamp>
 
 	<target name="clean">
@@ -29,8 +30,15 @@
 	</target>
 
 	<target name="jar" depends="clean, compile">
-		<jar jarfile="mina-core-2.0-head-${time}.jar" basedir="${classes}" level="9"/>
-		<jar jarfile="mina-core-2.0-head-${time}-src.jar" level="9">
+		<jar jarfile="mina-core-2.0-head-${date}.jar" basedir="${classes}" level="9">
+			<manifest>
+				<attribute name="Created-Time" value="${time}"/>
+			</manifest>
+		</jar>
+		<jar jarfile="mina-core-2.0-head-${date}-src.jar" level="9">
+			<manifest>
+				<attribute name="Created-Time" value="${time}"/>
+			</manifest>
 			<fileset dir="${src}/"/>
 		</jar>
 	</target>

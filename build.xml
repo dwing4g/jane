@@ -9,7 +9,7 @@
 	<property name="src" value="${root}/src"/>
 	<property name="lib" value="${root}/lib"/>
 	<tstamp>
-		<format property="time" pattern="yyyy-MM-dd HH:mm:ss:sss zzz"/>
+		<format property="time" pattern="yyyy-MM-dd HH:mm:ss:SSS Z"/>
 	</tstamp>
 
 	<target name="clean">
