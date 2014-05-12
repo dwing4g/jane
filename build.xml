@@ -2,12 +2,15 @@
 <project name="jane" default="jar">
 	<!-- install jdk,ant first:
 		example: add this line in linux ~/.bash_profile:
-		export PATH=$PATH:$HOME/apache-ant-1.9.3/bin
+		export PATH=$PATH:$HOME/apache-ant-1.9.4/bin
 	-->
 	<property name="root" value="."/>
 	<property name="classes" value="${root}/classes"/>
 	<property name="src" value="${root}/src"/>
 	<property name="lib" value="${root}/lib"/>
+	<tstamp>
+		<format property="time" pattern="yyyy-MM-dd HH:mm:ss:sss zzz"/>
+	</tstamp>
 
 	<target name="clean">
 		<delete dir="${classes}"/>
@@ -36,9 +39,20 @@
 	</target>
 
 	<target name="jar" depends="clean, compile">
-		<jar jarfile="jane-core.jar" basedir="${classes}" excludes="**/jane/bean/**,**/jane/handler/**,**/jane/test/**"/>
-		<jar jarfile="jane-test.jar" basedir="${classes}" includes="**/jane/bean/**,**/jane/handler/**,**/jane/test/**"/>
-		<jar jarfile="jane-src.jar">
+		<jar jarfile="jane-core.jar" basedir="${classes}" excludes="**/jane/bean/**,**/jane/handler/**,**/jane/test/**" level="9">
+			<manifest>
+				<attribute name="Created-Time" value="${time}"/>
+			</manifest>
+		</jar>
+		<jar jarfile="jane-test.jar" basedir="${classes}" includes="**/jane/bean/**,**/jane/handler/**,**/jane/test/**" level="9">
+			<manifest>
+				<attribute name="Created-Time" value="${time}"/>
+			</manifest>
+		</jar>
+		<jar jarfile="jane-src.jar" level="9">
+			<manifest>
+				<attribute name="Created-Time" value="${time}"/>
+			</manifest>
 			<fileset dir="${src}/"/>
 			<fileset dir="${lib}/hashmap/"/>
 			<fileset dir="${lib}/mapdb/"/>
