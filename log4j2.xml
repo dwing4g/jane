@@ -8,7 +8,7 @@
 		</Console>
 		<Console name="STDERR" target="SYSTEM_ERR" ignoreExceptions="false">
 			<ThresholdFilter level="TRACE" onMatch="ACCEPT" onMismatch="DENY"/>
-			<PatternLayout charset="UTF-8" pattern="%d{yy-MM-dd HH:mm:ss.SSS} %-5level [%t] %msg%n"/>
+			<PatternLayout charset="${sys:file.encoding}" pattern="%d{yy-MM-dd HH:mm:ss.SSS} %-5level [%t] %msg%n"/>
 		</Console>
 		<RollingRandomAccessFile name="FILE" fileName="log/jane.log" filePattern="log/jane.%d{yy-MM-dd}.log" immediateFlush="false" ignoreExceptions="false">
 			<ThresholdFilter level="TRACE" onMatch="ACCEPT" onMismatch="DENY"/>

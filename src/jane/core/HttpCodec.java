@@ -1,6 +1,7 @@
 package jane.core;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.security.KeyStore;
 import java.text.DateFormat;
@@ -73,15 +74,15 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 		return _datestr;
 	}
 
-	public static SslFilter getSslFilter(byte[] key_data, char[] key_pw, byte[] trust_data, char[] trust_pw) throws Exception
+	public static SslFilter getSslFilter(InputStream key_is, char[] key_pw, InputStream trust_is, char[] trust_pw) throws Exception
 	{
 		KeyStore ks = KeyStore.getInstance("JKS");
-		ks.load(new ByteArrayInputStream(key_data), key_pw);
+		ks.load(key_is, key_pw);
 		KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
 		kmf.init(ks, key_pw);
 
 		KeyStore ts = KeyStore.getInstance("JKS");
-		ts.load(new ByteArrayInputStream(trust_data), trust_pw);
+		ts.load(trust_is, trust_pw);
 		TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 		tmf.init(ts);
 
@@ -90,9 +91,11 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 		return new SslFilter(ctx);
 	}
 
-	public static SslFilter getSslFilter(String key_file, String key_pw, String trust_file, String trust_pw) throws Exception
+	public static SslFilter getSslFilter(String key_file, String key_pw) throws Exception
 	{
-		return getSslFilter(Util.readAllFile(key_file), key_pw.toCharArray(), Util.readAllFile(trust_file), trust_pw.toCharArray());
+		byte[] key = Util.readAllFile(key_file);
+		char[] pw = key_pw.toCharArray();
+		return getSslFilter(new ByteArrayInputStream(key), pw, new ByteArrayInputStream(key), pw);
 	}
 
 	public static String decodeUrl(byte[] src, int srcpos, int srclen)

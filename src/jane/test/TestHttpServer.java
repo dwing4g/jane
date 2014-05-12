@@ -25,7 +25,7 @@ public final class TestHttpServer extends NetManager
 	{
 		if(key_file != null && key_pw != null)
 		{
-			SslFilter sf = HttpCodec.getSslFilter(key_file, key_pw, key_file, key_pw);
+			SslFilter sf = HttpCodec.getSslFilter(key_file, key_pw);
 			sf.setUseClientMode(false);
 			getAcceptor().getFilterChain().addFirst("ssl", sf);
 		}
