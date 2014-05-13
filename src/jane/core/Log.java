@@ -1,5 +1,10 @@
 package jane.core;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.Enumeration;
+import java.util.jar.Manifest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -67,6 +72,29 @@ public final class Log
 		{
 			for(int i = 0, n = args.length; i < n; ++i)
 				log.info("arg{} = {}", i, args[i]);
+		}
+	}
+
+	/**
+	 * 在日志中记录一些jar文件的创建时间
+	 */
+	public static void logJarCreateTime() throws IOException
+	{
+		final String TAG = "Created-Time";
+		Enumeration<URL> urls = Log.class.getClassLoader().getResources("META-INF/MANIFEST.MF");
+		while(urls.hasMoreElements())
+		{
+			URL url = urls.nextElement();
+			InputStream is = url.openStream();
+			try
+			{
+				String time = new Manifest(is).getMainAttributes().getValue(TAG);
+				if(time != null) Log.log.info("{}#{} = {}", url.getPath(), TAG, time);
+			}
+			finally
+			{
+				is.close();
+			}
 		}
 	}
 

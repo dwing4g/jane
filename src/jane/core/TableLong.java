@@ -344,7 +344,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	{
 		if(v.stored())
 		    throw new IllegalStateException("put shared record: t=" + _tablename + ",k=" + k + ",v=" + v);
-		final V v_old = get(k);
+		final V v_old = getNoCache(k);
 		SContext.current().addOnRollback(new Runnable()
 		{
 			@Override
@@ -436,7 +436,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	 */
 	public void removeSafe(final long k)
 	{
-		final V v_old = get(k);
+		final V v_old = getNoCache(k);
 		if(v_old == null) return;
 		SContext.current().addOnRollback(new Runnable()
 		{

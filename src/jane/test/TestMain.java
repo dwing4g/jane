@@ -14,8 +14,9 @@ public final class TestMain
 		try
 		{
 			Log.removeAppendersFromArgs(args);
-			Log.log.info("main: begin");
+			Log.log.info("================================ main: begin");
 			Log.logSystemProperties(args);
+			Log.logJarCreateTime();
 			DBManager.instance().startup();
 			AllTables.register();
 			BeanCodec.registerAllBeans(AllBeans.getAllBeans());
@@ -28,7 +29,7 @@ public final class TestMain
 		}
 		finally
 		{
-			Log.log.info("main: end");
+			Log.log.info("================================ main: end");
 		}
 	}
 }

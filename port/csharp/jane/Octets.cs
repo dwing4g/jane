@@ -144,6 +144,22 @@ namespace jane
 			return buf;
 		}
 
+		public Octets wraps(byte[] data, int size)
+		{
+			buffer = data;
+			if(size > data.Length) count = data.Length;
+			else if(size < 0) count = 0;
+			else count = size;
+			return this;
+		}
+
+		public Octets wraps(byte[] data)
+		{
+			buffer = data;
+			count = data.Length;
+			return this;
+		}
+
 		/**
 		 * @param size 期望缩小的空间. 如果比当前数据小,则缩小的当前数据大小;
 		 */
@@ -176,22 +192,6 @@ namespace jane
 				if(count > 0) Buffer.BlockCopy(buffer, 0, buf, 0, count);
 				buffer = buf;
 			}
-		}
-
-		public Octets wraps(byte[] data, int size)
-		{
-			buffer = data;
-			if(size > data.Length) count = data.Length;
-			else if(size < 0) count = 0;
-			else count = size;
-			return this;
-		}
-
-		public Octets wraps(byte[] data)
-		{
-			buffer = data;
-			count = data.Length;
-			return this;
 		}
 
 		/**
