@@ -14,7 +14,7 @@ public final class TestMain
 		try
 		{
 			Log.removeAppendersFromArgs(args);
-			Log.log.info("================================ main: begin");
+			Log.log.info("================================ startup: begin");
 			Log.logSystemProperties(args);
 			Log.logJarCreateTime();
 			DBManager.instance().startup();
@@ -25,11 +25,12 @@ public final class TestMain
 		}
 		catch(Throwable e)
 		{
-			Log.log.error("main: exception:", e);
+			Log.log.error("startup exception:", e);
+			e.printStackTrace(System.err);
 		}
 		finally
 		{
-			Log.log.info("================================ main: end");
+			Log.log.info("================================ startup: end");
 		}
 	}
 }

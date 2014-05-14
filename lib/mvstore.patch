@@ -1,6 +1,6 @@
 Index: compress/CompressDeflate.java
 ===================================================================
---- compress/CompressDeflate.java	(revision 5659)
+--- compress/CompressDeflate.java	(revision 5668)
 +++ compress/CompressDeflate.java	(working copy)
 @@ -11,9 +11,6 @@
  import java.util.zip.Deflater;
@@ -32,7 +32,7 @@ Index: compress/CompressDeflate.java
      }
 Index: mvstore/WriteBuffer.java
 ===================================================================
---- mvstore/WriteBuffer.java	(revision 5659)
+--- mvstore/WriteBuffer.java	(revision 5668)
 +++ mvstore/WriteBuffer.java	(working copy)
 @@ -291,6 +291,12 @@
          return buff;
@@ -49,7 +49,7 @@ Index: mvstore/WriteBuffer.java
              grow(len);
 Index: store/fs/FilePathDisk.java
 ===================================================================
---- store/fs/FilePathDisk.java	(revision 5659)
+--- store/fs/FilePathDisk.java	(revision 5668)
 +++ store/fs/FilePathDisk.java	(working copy)
 @@ -1,4 +1,4 @@
 -/*

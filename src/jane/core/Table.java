@@ -234,6 +234,30 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	}
 
 	/**
+	 * 根据记录的key获取value
+	 * <p>
+	 * 只在读和写cache中获取<br>
+	 * 必须在事务中已加锁的状态下调用此方法
+	 */
+	public V getCache(K k)
+	{
+		V v = _cache.get(k);
+		if(v != null) return v;
+		if(_cache_mod == null) return null;
+		v = _cache_mod.get(k);
+		return v != null && v != _deleted ? v : null;
+	}
+
+	/**
+	 * 同getCache,但增加的安全封装,可回滚修改
+	 */
+	public S getCacheSafe(K k)
+	{
+		V v = getCache(k);
+		return v != null ? SContext.current().addRecord(this, k, v) : null;
+	}
+
+	/**
 	 * 标记记录已修改的状态
 	 * <p>
 	 * 必须在事务中已加锁的状态下调用此方法
