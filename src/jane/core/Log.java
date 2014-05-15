@@ -16,17 +16,18 @@ import org.apache.logging.log4j.core.config.LoggerConfig;
  */
 public final class Log
 {
-	/**
-	 * public给外面方便写日志
-	 */
 	static
 	{
+		System.setProperty("line.separator", "\n");
 		String prop = System.getProperty("log4j2.prop");
 		if(prop == null || (prop = prop.trim()).isEmpty())
 		    prop = "log4j2.xml";
 		logctx = Configurator.initialize("jane", log4j2_prop = prop);
 	}
 
+	/**
+	 * public给外面方便写日志
+	 */
 	public static final LoggerContext logctx;
 	public static final Logger        log      = LogManager.getRootLogger();
 	public static final String        log4j2_prop;

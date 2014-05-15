@@ -87,7 +87,7 @@ public final class Const
 		mvStoreCacheSize = getPropInt("mvStoreCacheSize", 32, 0);
 		levelDBWriteBufferSize = getPropInt("levelDBWriteBufferSize", 32, 0);
 		levelDBCacheSize = getPropInt("levelDBCacheSize", 32, 0);
-		levelDBFullBackupBase = getPropStr("levelDBFullBackupBase", "2014-01-06 03:00:00");
+		levelDBFullBackupBase = getPropStr("levelDBFullBackupBase", "2014-01-06 04:00:00");
 		levelDBFullBackupPeriod = getPropLong("levelDBFullBackupPeriod", 604800, 1, Long.MAX_VALUE / 1000);
 	}
 
