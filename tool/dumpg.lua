@@ -41,6 +41,8 @@ local function list(op)
 	end
 end
 
+print(arg[1])
+print "----------------"
 list "GGET"
 print "----------------"
 list "GSET"
