@@ -3,12 +3,10 @@
 /db/
 /log/
 /tmp/
-/port/cpp/jane.sdf
-/port/cpp/jane.suo
-/port/cpp/jane.vcxproj.user
+/port/jane.sdf
+/port/jane.suo
 /port/csharp/bin/
 /port/csharp/obj/
-/port/csharp/jane.suo
 jane-core.jar
 jane-test.jar
 jane-src.jar
