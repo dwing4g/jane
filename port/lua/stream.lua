@@ -4,6 +4,7 @@ local string = string
 local byte = string.byte
 local char = string.char
 local str_sub = string.sub
+local format = string.format
 local concat = table.concat
 local type = type
 local pairs = pairs
@@ -15,13 +16,18 @@ local error = error
 local require = require
 local bean = require "bean"
 
+--[[ 注意:
+* 不支持float和double类型, 不会marshal成浮点类型, unmarshal时会忽略浮点字段
+* long类型只支持低52(二进制)位, 高12位必须保证为0, 否则结果未定义
+* 由于使用lua table表示map容器, 当key是bean类型时, 无法索引, 只能遍历访问
+* marshal容器字段时,容器里的key和value类型必须一致, 否则会marshal出错误的结果
+--]]
+
 local stream
 
-local function wrap(data)
-	data = tostring(data) or ""
-	local o = { buffer = data, pos = 0, limit = #data }
-	setmetatable(o, stream)
-	return o
+local function new(data)
+	data = data and tostring(data) or ""
+	return setmetatable({ buffer = data, pos = 0, limit = #data }, stream)
 end
 
 local function clear(self)
@@ -60,7 +66,7 @@ local function limit(self, limit)
 end
 
 local function sub(data, pos, size)
-	if data.__metatable == stream then
+	if type(data) == "table" then
 		return sub(data.buffer, pos, size)
 	end
 	data = tostring(data) or ""
@@ -71,7 +77,7 @@ local function sub(data, pos, size)
 end
 
 local function append(self, data, pos, size)
-	if data.__metatable == stream then
+	if type(data) == "table" then
 		return append(self, data.buffer, pos, size)
 	end
 	local t = self.buf
@@ -84,8 +90,9 @@ local function pop(self, n)
 	n = n or 1
 	local t = self.buf
 	if t then
-		for i = 1, n do
-			t[#t] = nil
+		local s = #t
+		for i = s - n + 1, s do
+			t[i] = nil
 		end
 	end
 end
@@ -93,10 +100,24 @@ end
 local function flush(self)
 	local t = self.buf
 	if t then
-		self.buffer = concat(t)
+		local buf = concat(t)
 		self.buf = nil
+		self.buffer = buf
+		self.limit = #buf
 	end
 	return self
+end
+
+local function tostr(self)
+	local buf = self.buffer
+	local n = #buf
+	local o = { "(pos=", self.pos, ",limit=", self.limit, ",size=", n, ")\n" }
+	local m = 7
+	for i = 1, n do
+		o[m + i] = format("%02X%s", byte(buf, i), i % 16 > 0 and " " or "\n")
+	end
+	if n % 16 > 0 then o[m + n + 1] = "\n" end
+	return concat(o)
 end
 
 local function marshal_num(self, v)
@@ -146,7 +167,7 @@ local function vartype(v)
 	if t == "table" then return 2 end
 end
 
-local function marshal(self, v, tag, vt)
+local function marshal(self, v, tag)
 	local t = type(v)
 	if t == "boolean" then v = v and 1 or 0; t = "number" end
 	if t == "number" then
@@ -164,15 +185,16 @@ local function marshal(self, v, tag, vt)
 	elseif t == "table" then
 		if v.__type then -- bean
 			if tag then append(self, char(tag * 4 + 2)) end
-			local def = v.__def
-			local pos = self.pos
+			local vars = v.__class.__vars
+			local buf = self.buf
+			local n = buf and #buf
 			for n, vv in pairs(v) do
-				local var = def[n]
+				local var = vars[n]
 				if var then
 					marshal(self, vv, var.id)
 				end
 			end
-			if pos == self.pos and tag then
+			if tag and n == #buf then
 				pop(self)
 			else
 				append(self, "\0")
@@ -206,32 +228,38 @@ local function marshal(self, v, tag, vt)
 end
 
 local function skip(self, n)
-	if pos + n > limit then error "unmarshal overflow" end
-	pos = pos + n
+	local pos = self.pos
+	if pos + n > self.limit then error "unmarshal overflow" end
+	self.pos = pos + n
 	return self
 end
 
 local function unmarshal_byte(self)
-	if pos >= limit then error "unmarshal overflow" end
+	local pos = self.pos
+	if pos >= self.limit then error "unmarshal overflow" end
 	pos = pos + 1
+	self.pos = pos
 	return byte(self.buffer, pos)
 end
 
 local function unmarshal_bytes(self, n)
-	if pos + n > limit then error "unmarshal overflow" end
-	local v = 0
+	local pos = self.pos
+	if pos + n > self.limit then error "unmarshal overflow" end
 	local buf = self.buffer
+	local v = 0
 	for i = 1, n do
 		v = v * 0x100 + byte(buf, pos + i)
 	end
-	pos = pos + n
+	self.pos = pos + n
 	return v
 end
 
 local function unmarshal_str(self, n)
+	local pos = self.pos
 	if pos + n > limit then error "unmarshal overflow" end
-	pos = pos + n
-	return str_sub(self.buffer, pos - n + 1, pos)
+	local p = pos + n
+	self.pos = p
+	return str_sub(self.buffer, pos + 1, p)
 end
 
 local function unmarshal_uint(self)
@@ -264,96 +292,74 @@ local function unmarshal_int(self)
 	return v
 end
 
-local function initbean(b, def)
-	for n, v in pairs(def) do
-		if type(n) == "string" and b[n] == nil then
-			local t = v.type
-			if t == "boolean" then
-				b[n] = false
-			elseif t == "number" then
-				b[n] = 0
-			else
-				t = bean[t]
-				b[n] = t and t() or {}
-			end
-		end
-	end
-	return b
-end
-
 local unmarshal
 
-local function unmarshal_bean(self, type)
-	local def = type and type.__def
-	local v = {}
-	while true do
-		local id, vv = unmarshal(self, def)
-		if not id then break end
-		local var = def and def[id]
-		if var then
-			v[var.name] = vv
-		else
-			v[id] = vv
-		end
-	end
-	if def then type(initbean(v, def)) end
-	return v
+local function unmarshal_subvar(self, cls)
+	if cls == 0 then return unmarshal_int(self) end
+	if cls == 1 then return unmarshal_str(self, unmarshal_uint(self)) end
+	return unmarshal(self, cls)
 end
 
-local function unmarshal_var(self, type)
-	if type == 0 then return unmarshal_int(self)
-	elseif type == 1 then return unmarshal_str(self, unmarshal_uint(self))
-	else return unmarshal_bean(self, type) end
-end
-
-unmarshal = function(self, def)
+local function unmarshal_var(self, vars)
 	local tag = unmarshal_byte(self)
 	local v = tag % 4
 	tag = (tag - v) / 4
-	def = def and def[tag]
-	local type = def and def.type
+	if tag == 0 then return end
+	vars = vars and vars[tag]
+	local t = vars and vars.type
 	if v == 0 then
 		v = unmarshal_int(self)
-		if type == "boolean" then v = v ~= 0 end
+		if t == "boolean" then v = v ~= 0 end
 	elseif v == 1 then
 		v = unmarshal_str(self, unmarshal_uint(self))
 	elseif v == 2 then
-		v = unmarshal_bean(self, type and bean[type])
+		v = unmarshal(self, t and bean[t])
 	else
 		v = unmarshal_byte(self)
 		if v < 0x80 then
 			if v < 8 then -- list
 				local n = unmarshal_uint(self)
-				type = v < 2 and v or (type and bean[type])
+				t = vars and vars.value
+				t = v < 2 and v or t and bean[t]
 				v = {}
 				for i = 1, n do
-					v[#v + 1] = unmarshal_var(self, type)
+					v[i] = unmarshal_subvar(self, t)
 				end
 			else
 				skip(self, 4 * (v - 7)) -- ignore float/double
 			end
 		else -- map
-			v = v - 0x80
-			local k = floor(v / 8)
-			v = v % 8
-			local n = unmarshal_uint(self)
-			local key = def and def.key
-			key = k < 2 and k or (key and bean[key])
-			local val = def and def.value
-			val = v < 2 and v or (val and bean[val])
+			local n = v % 8
+			local k = (v - 0x80 - n) / 8
+			v, n = n, unmarshal_uint(self)
+			local kt = vars and vars.key
+			kt = k < 2 and k or kt and bean[kt]
+			t = vars and vars.value
+			t = v < 2 and v or t and bean[t]
+			v = {}
 			for i = 1, n do
-				k = unmarshal_var(self, key)
-				v[k] = unmarshal_var(self, val)
+				k = unmarshal_subvar(self, kt)
+				v[k] = unmarshal_subvar(self, t)
 			end
 		end
 	end
 	return tag, v
 end
 
+local function unmarshal(self, cls)
+	local vars = cls and cls.__vars
+	local obj = cls and cls() or {}
+	while true do
+		local id, vv = unmarshal_var(self, vars)
+		if not id then return obj end
+		local var = vars and vars[id]
+		obj[var and var.name or id] = vv
+	end
+end
+
 stream =
 {
-	__index = stream,
-	wrap = wrap,
+	new = new,
 	clear = clear,
 	swap = swap,
 	remain = remain,
@@ -363,11 +369,13 @@ stream =
 	append = append,
 	pop = pop,
 	flush = flush,
+	tostr = tostr,
 	marshal_uint = marshal_uint,
 	marshal = marshal,
 	skip = skip,
 	unmarshal_uint = unmarshal_uint,
 	unmarshal = unmarshal,
 }
+stream.__index = stream
 
 return stream
