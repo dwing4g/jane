@@ -15,7 +15,7 @@ local concat = table.concat
 local function clear(t)
 	local keys = {}
 	local i = 0
-	for k, v in pairs(t) do
+	for k in pairs(t) do
 		i = i + 1
 		keys[i] = k
 	end

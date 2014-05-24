@@ -7,7 +7,6 @@ local util = require "util"
 local bean = require "bean"
 local stream = require "stream"
 local class = util.class
-local cloneto = util.cloneto
 
 do
 	local ClassA = class -- 定义类ClassA

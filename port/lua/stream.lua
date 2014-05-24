@@ -188,8 +188,8 @@ local function marshal(self, v, tag)
 			local vars = v.__class.__vars
 			local buf = self.buf
 			local n = buf and #buf
-			for n, vv in pairs(v) do
-				local var = vars[n]
+			for nn, vv in pairs(v) do
+				local var = vars[nn]
 				if var then
 					marshal(self, vv, var.id)
 				end
@@ -203,7 +203,7 @@ local function marshal(self, v, tag)
 			append(self, char(tag * 4 + 3))
 			append(self, char(vartype(v[1])))
 			marshal_uint(self, #v)
-			for i, vv in ipairs(v) do
+			for _, vv in ipairs(v) do
 				marshal(self, vv)
 			end
 		else -- map
@@ -227,7 +227,7 @@ local function marshal(self, v, tag)
 	return self
 end
 
-local function skip(self, n)
+local function unmarshal_skip(self, n)
 	local pos = self.pos
 	if pos + n > self.limit then error "unmarshal overflow" end
 	self.pos = pos + n
@@ -297,7 +297,7 @@ local unmarshal
 local function unmarshal_subvar(self, cls)
 	if cls == 0 then return unmarshal_int(self) end
 	if cls == 1 then return unmarshal_str(self, unmarshal_uint(self)) end
-	if cls >= 4 then skip(self, (cls - 3) * 4) return 0 end
+	if cls >= 4 then return unmarshal_bytes(self, (cls - 3) * 4) end -- ignore float/double
 	return unmarshal(self, cls)
 end
 
@@ -327,7 +327,7 @@ local function unmarshal_var(self, vars)
 					v[i] = unmarshal_subvar(self, t)
 				end
 			else
-				skip(self, 4 * (v - 7)) -- ignore float/double
+				v = unmarshal_bytes(self, (v - 7) * 4) -- ignore float/double
 			end
 		else -- map
 			local n = v % 8
@@ -338,7 +338,7 @@ local function unmarshal_var(self, vars)
 			t = vars and vars.value
 			t = v ~= 2 and v or t and bean[t]
 			v = {}
-			for i = 1, n do
+			for _ = 1, n do
 				k = unmarshal_subvar(self, kt)
 				v[k] = unmarshal_subvar(self, t)
 			end
@@ -347,7 +347,7 @@ local function unmarshal_var(self, vars)
 	return tag, v
 end
 
-local function unmarshal(self, cls)
+unmarshal = function(self, cls)
 	local vars = cls and cls.__vars
 	local obj = cls and cls() or {}
 	while true do
@@ -373,7 +373,7 @@ stream =
 	__tostring = __tostring,
 	marshal_uint = marshal_uint,
 	marshal = marshal,
-	skip = skip,
+	unmarshal_skip = unmarshal_skip,
 	unmarshal_uint = unmarshal_uint,
 	unmarshal = unmarshal,
 }

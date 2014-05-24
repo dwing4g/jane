@@ -550,7 +550,6 @@ local name_bean = {}
 local handlers = {}
 local hdl_types = {}
 local bean_order = {}
-local tables = {}
 function handler(hdls)
 	handlers = hdls
 	for _, v in ipairs(hdls) do
