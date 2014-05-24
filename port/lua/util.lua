@@ -1,12 +1,15 @@
 -- UTF-8 without BOM
 local type = type
+local error = error
 local pairs = pairs
 local ipairs = ipairs
 local rawget = rawget
 local tostring = tostring
 local getmetatable = getmetatable
 local setmetatable = setmetatable
+local string = string
 local byte = string.byte
+local format = string.format
 local concat = table.concat
 
 local function clear(t)
@@ -146,16 +149,23 @@ local function initbeans(c)
 		end
 		b.__name = n
 		s[b.__type] = class(b)
-		b.__tostr = tostr
+		b.__tostring = tostr
 	end
-	local m = { number = 0, boolean = false, string = "", table = {} }
+	local m = { [0] = 0, "", false, {} }
 	for i, b in pairs(s) do
 		c[i] = b
 		for n, v in pairs(b.__vars) do
 			if type(n) == "string" then
 				local t = v.type
 				v = m[t]
-				b[n] = v == nil and c[t]() or v
+				if v == nil then
+					v = c[t]
+					if not v then
+						error(format("unknown type '%s' in '%s.%s'", t, b.__name, n))
+					end
+					v = v()
+				end
+				b[n] = v
 			end
 		end
 	end

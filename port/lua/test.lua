@@ -1,6 +1,6 @@
 -- UTF-8 without BOM
-local require = require
 local print = print
+local require = require
 local getmetatable = getmetatable
 local setmetatable = setmetatable
 local util = require "util"
@@ -75,10 +75,10 @@ do
 	local b = bean.TestType { v1 = true, v2 = 2 }
 	s:marshal(b)
 	s:flush()
-	print(s:tostr())
+	print(s)
 	s:unmarshal(b.__class)
-	print(s:tostr())
-	print(b:__tostr())
+	print(s)
+	print(b)
 end
 
 print "========================================"

@@ -1,19 +1,19 @@
 -- UTF-8 without BOM
-local floor = math.floor
+local type = type
+local error = error
+local pairs = pairs
+local ipairs = ipairs
+local require = require
+local tonumber = tonumber
+local tostring = tostring
+local setmetatable = setmetatable
 local string = string
 local byte = string.byte
 local char = string.char
 local str_sub = string.sub
 local format = string.format
 local concat = table.concat
-local type = type
-local pairs = pairs
-local ipairs = ipairs
-local tonumber = tonumber
-local tostring = tostring
-local setmetatable = setmetatable
-local error = error
-local require = require
+local floor = math.floor
 local bean = require "bean"
 
 --[[ 注意:
@@ -108,7 +108,7 @@ local function flush(self)
 	return self
 end
 
-local function tostr(self)
+local function __tostring(self)
 	local buf = self.buffer
 	local n = #buf
 	local o = { "(pos=", self.pos, ",limit=", self.limit, ",size=", n, ")\n" }
@@ -297,6 +297,7 @@ local unmarshal
 local function unmarshal_subvar(self, cls)
 	if cls == 0 then return unmarshal_int(self) end
 	if cls == 1 then return unmarshal_str(self, unmarshal_uint(self)) end
+	if cls >= 4 then skip(self, (cls - 3) * 4) return 0 end
 	return unmarshal(self, cls)
 end
 
@@ -309,7 +310,7 @@ local function unmarshal_var(self, vars)
 	local t = vars and vars.type
 	if v == 0 then
 		v = unmarshal_int(self)
-		if t == "boolean" then v = v ~= 0 end
+		if t == 2 then v = v ~= 0 end -- boolean
 	elseif v == 1 then
 		v = unmarshal_str(self, unmarshal_uint(self))
 	elseif v == 2 then
@@ -320,7 +321,7 @@ local function unmarshal_var(self, vars)
 			if v < 8 then -- list
 				local n = unmarshal_uint(self)
 				t = vars and vars.value
-				t = v < 2 and v or t and bean[t]
+				t = v ~= 2 and v or t and bean[t]
 				v = {}
 				for i = 1, n do
 					v[i] = unmarshal_subvar(self, t)
@@ -333,9 +334,9 @@ local function unmarshal_var(self, vars)
 			local k = (v - 0x80 - n) / 8
 			v, n = n, unmarshal_uint(self)
 			local kt = vars and vars.key
-			kt = k < 2 and k or kt and bean[kt]
+			kt = k ~= 2 and k or kt and bean[kt]
 			t = vars and vars.value
-			t = v < 2 and v or t and bean[t]
+			t = v ~= 2 and v or t and bean[t]
 			v = {}
 			for i = 1, n do
 				k = unmarshal_subvar(self, kt)
@@ -369,7 +370,7 @@ stream =
 	append = append,
 	pop = pop,
 	flush = flush,
-	tostr = tostr,
+	__tostring = __tostring,
 	marshal_uint = marshal_uint,
 	marshal = marshal,
 	skip = skip,
