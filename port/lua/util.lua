@@ -90,14 +90,15 @@ local function tostr(t, out, m, name)
 	local o = out or {}
 	local n = #o
 	if type(t) ~= "table" then
-		o[n + 1] = str(t)
+		n = n + 1
+		o[n] = str(t)
 	else
 		if m then
 			if m[t] then
 				o[n + 1] = "<"
 				o[n + 2] = name
 				o[n + 3] = ">"
-				return
+				return n + 3
 			end
 			m[t] = true
 		else
@@ -114,25 +115,24 @@ local function tostr(t, out, m, name)
 					if v ~= nil then
 						o[n + 2] = name
 						o[n + 3] = "="
-						tostr(v, o, m, name)
-						n = #o
+						n = tostr(v, o, m, name)
 						o[n + 1] = ","
 					end
 				end
 			end
 		else
 			for k, v in pairs(t) do
-				tostr(k, o, m, k)
-				o[n + 2] = name
-				o[n + 3] = "="
-				tostr(v, o, m, k)
-				n = #o
+				n = tostr(k, o, m, k)
+				o[n + 1] = name
+				o[n + 2] = "="
+				n = tostr(v, o, m, k)
 				o[n + 1] = ","
 			end
 		end
-		o[n + (nn < n and 1 or 2)] = "}"
+		n = n + (nn < n and 1 or 2)
+		o[n] = "}"
 	end
-	if not out then return concat(o) end
+	return out and n or concat(o)
 end
 
 local function initbeans(c)
