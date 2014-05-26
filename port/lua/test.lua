@@ -6,7 +6,7 @@ local util = require "util"
 local bean = require "bean"
 local stream = require "stream"
 local class = util.class
-local cloneto = util.cloneto
+local clone = util.clone
 
 do
 	local ClassA = class -- 定义类ClassA
@@ -27,8 +27,7 @@ do
 		__new = function(self, t) -- 定义构造函数
 			ClassA.__new(self) -- 基类构造函数参数不确定,所以只能手动调用,也可以写成self.__base.__new(self)
 			print("new ClassB", self)
-			local cls = self.__class -- 为配合下面cloneto后重新设置metatable成自身的类
-			setmetatable(cloneto(self, t), cls) -- 从表t完全深拷贝到self中,包括metatable,复制前会清空self,以保证内容相同
+			return setmetatable(clone(t), self.__class) -- 使用t表的克隆代替当前的self作为对象
 		end,
 	}
 

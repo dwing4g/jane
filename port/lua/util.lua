@@ -49,28 +49,31 @@ local function cloneto(t, s)
 	return setmetatable(t, getmetatable(s))
 end
 
-local call_mt = { __call = function(c, t, ...)
-	local new = c.__new
-	if new then
-		local obj = setmetatable({}, c)
-		new(obj, t, ...)
-		return obj
-	end
-	return setmetatable(t or {}, c)
-end }
+local class_mt = {
+	__index = function(c, k)
+		local b = rawget(c, "__base")
+		return b and b[k]
+	end,
+	__call = function(c, t, ...)
+		local new = c.__new
+		if new then
+			local obj = setmetatable({}, c)
+			return new(obj, t, ...) or obj
+		end
+		return setmetatable(t or {}, c)
+	end,
+}
 
 local function class(c)
 	c = c or {}
-	local b = c.__base
 	c.__index = function(t, k)
-		local v = c[k]
-		if v == nil and b then v = b[k] end
 		if k == "__class" then return c end
-		local vv = clone(v)
-		if vv ~= v then t[k] = vv end
-		return vv
+		local v = c[k]
+		local r = clone(v)
+		if r ~= v then t[k] = r end
+		return r
 	end
-	return setmetatable(c, call_mt)
+	return setmetatable(c, class_mt)
 end
 
 local function str(s)
