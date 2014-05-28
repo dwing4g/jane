@@ -1,7 +1,10 @@
 -- UTF-8 without BOM
 local print = print
+local error = error
 local require = require
 local setmetatable = setmetatable
+local floor = math.floor
+local format = string.format
 local util = require "util"
 local bean = require "bean"
 local stream = require "stream"
@@ -69,7 +72,7 @@ end
 print "----------------------------------------"
 
 do
-	local s = stream.new()
+	local s = stream()
 	local b = bean.TestType { v1 = true, v2 = 2 }
 	s:marshal(b)
 	s:flush()
@@ -77,6 +80,47 @@ do
 	s:unmarshal(b.__class)
 	print(s)
 	print(b)
+end
+
+print "========================================"
+
+do
+	local function testInt(x)
+		local s = stream()
+		s:marshal_int(x)
+		s:flush()
+		local y = s:unmarshal_int()
+		if x ~= y then error(format("unmarshal wrong value: %.0f -> %.0f dump: %s", x, y, s)) end
+		if s.pos ~= s.limit then error(format("unmarshal wrong position: %.0f dump: %s", x, s)) end
+	end
+	local function testUInt(x)
+		local s = stream()
+		s:marshal_uint(x)
+		s:flush()
+		local y = s:unmarshal_uint()
+		if x ~= y then error(format("unmarshal wrong value: %.0f -> %.0f dump: %s", x, y, s)) end
+		if s.pos ~= s.limit then error(format("unmarshal wrong position: %.0f dump: %s", x, s)) end
+	end
+	local function testAll(x)
+		if x > 0xfffffffffffff then x = 0xfffffffffffff end
+		testInt(x)
+		testInt(-x)
+		testUInt((x > 0 and x or -x) % 0x100000000)
+	end
+	local x = 1
+	for _ = 0, 52 do
+		testAll(x)
+		testAll(x - 2)
+		testAll(x - 1)
+		testAll(x + 1)
+		testAll(x + 2)
+		testAll(x + floor(x / 2) + 1)
+		testAll(x + floor(x / 4) + 2)
+		testAll(x + floor(x / 4) + 3)
+		testAll(x + x - 1)
+		x = x + x
+	end
+	print "testInt OK!"
 end
 
 print "========================================"

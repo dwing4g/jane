@@ -120,8 +120,12 @@ local function __tostring(self)
 	return concat(o)
 end
 
-local function marshal_num(self, v)
-	if v > 0 then
+local function __call(_, data)
+	return new(data)
+end
+
+local function marshal_int(self, v)
+	if v >= 0 then
 			if v < 0x40             then append(self, char(v))
 		elseif v < 0x2000           then append(self, char(      floor(v / 0x100          ) + 0x40,       v % 0x100))
 		elseif v < 0x100000         then append(self, char(      floor(v / 0x10000        ) + 0x60, floor(v / 0x100        ) % 0x100,       v % 0x100))
@@ -129,7 +133,7 @@ local function marshal_num(self, v)
 		elseif v < 0x400000000      then append(self, char(      floor(v / 0x100000000    ) + 0x78, floor(v / 0x1000000    ) % 0x100, floor(v / 0x10000    ) % 0x100, floor(v / 0x100    ) % 0x100,       v % 0x100))
 		elseif v < 0x20000000000    then append(self, char(      floor(v / 0x10000000000  ) + 0x7c, floor(v / 0x100000000  ) % 0x100, floor(v / 0x1000000  ) % 0x100, floor(v / 0x10000  ) % 0x100, floor(v / 0x100  ) % 0x100,       v % 0x100))
 		elseif v < 0x1000000000000  then append(self, char(0x7e, floor(v / 0x10000000000  )       , floor(v / 0x100000000  ) % 0x100, floor(v / 0x1000000  ) % 0x100, floor(v / 0x10000  ) % 0x100, floor(v / 0x100  ) % 0x100,       v % 0x100))
-		elseif v < 0x10000000000000 then append(self, char(0x7f, floor(v / 0x1000000000000)       , floor(v / 0x10000000000) % 0x100, floor(v / 0x100000000) % 0x100, floor(v / 0x1000000) % 0x100, floor(v / 0x10000) % 0x100, floor(v / 0x100) % 0x100 - 0.5, v % 0x100))
+		elseif v < 0x10000000000000 then append(self, char(0x7f, floor(v / 0x1000000000000)       , floor(v / 0x10000000000) % 0x100, floor(v / 0x100000000) % 0x100, floor(v / 0x1000000) % 0x100, floor(v / 0x10000) % 0x100, floor(v / 0x100) % 0x100, v % 0x100))
 		else                             append(self, char(0x7f, 0x0f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff)) end -- max = +(52-bit)
 	else
 			if v >= -0x40             then v = v + 0x100            append(self, char(v))
@@ -137,9 +141,9 @@ local function marshal_num(self, v)
 		elseif v >= -0x100000         then v = v + 0xa00000         append(self, char(      floor(v / 0x10000        )       , floor(v / 0x100        ) % 0x100,       v % 0x100))
 		elseif v >= -0x8000000        then v = v + 0x90000000       append(self, char(      floor(v / 0x1000000      )       , floor(v / 0x10000      ) % 0x100, floor(v / 0x100      ) % 0x100,       v % 0x100))
 		elseif v >= -0x400000000      then v = v + 0x8800000000     append(self, char(      floor(v / 0x100000000    )       , floor(v / 0x1000000    ) % 0x100, floor(v / 0x10000    ) % 0x100, floor(v / 0x100    ) % 0x100,       v % 0x100))
-		elseif v >= -0x20000000000    then v = v + 0x840000000000   append(self, char(      floor(v / 0x10000000000  )       , floor(v / 0x100000000  ) % 0x100, floor(v / 0x1000000  ) % 0x100, floor(v / 0x10000  ) % 0x100, floor(v / 0x100  ) % 0x100 - 0.5,       v % 0x100))
-		elseif v >= -0x1000000000000  then v = v + 0x1000000000000  append(self, char(0x81, floor(v / 0x10000000000  )       , floor(v / 0x100000000  ) % 0x100, floor(v / 0x1000000  ) % 0x100, floor(v / 0x10000  ) % 0x100, floor(v / 0x100  ) % 0x100 - 0.5,       v % 0x100))
-		elseif v >  -0x10000000000000 then v = v + 0x10000000000000 append(self, char(0x80, floor(v / 0x1000000000000) + 0xf0, floor(v / 0x10000000000) % 0x100, floor(v / 0x100000000) % 0x100, floor(v / 0x1000000) % 0x100, floor(v / 0x10000) % 0x100 - 0.5, floor(v / 0x100) % 0x100, v % 0x100))
+		elseif v >= -0x20000000000    then v = v + 0x840000000000   append(self, char(      floor(v / 0x10000000000  )       , floor(v / 0x100000000  ) % 0x100, floor(v / 0x1000000  ) % 0x100, floor(v / 0x10000  ) % 0x100, floor(v / 0x100  ) % 0x100,       v % 0x100))
+		elseif v >= -0x1000000000000  then v = v + 0x1000000000000  append(self, char(0x81, floor(v / 0x10000000000  )       , floor(v / 0x100000000  ) % 0x100, floor(v / 0x1000000  ) % 0x100, floor(v / 0x10000  ) % 0x100, floor(v / 0x100  ) % 0x100,       v % 0x100))
+		elseif v >  -0x10000000000000 then v = v + 0x10000000000000 append(self, char(0x80, floor(v / 0x1000000000000) + 0xf0, floor(v / 0x10000000000) % 0x100, floor(v / 0x100000000) % 0x100, floor(v / 0x1000000) % 0x100, floor(v / 0x10000) % 0x100, floor(v / 0x100) % 0x100, v % 0x100))
 		else                                                        append(self, char(0x80, 0xf0, 0, 0, 0, 0, 0, 1)) end -- min = -(52-bit)
 	end
 	return self
@@ -175,7 +179,7 @@ local function marshal(self, v, tag)
 			if v == 0 then return end
 			append(self, char(tag * 4))
 		end
-		marshal_num(self, v)
+		marshal_int(self, v)
 	elseif t == "string" then
 		if tag then
 			if v == "" then return end
@@ -274,7 +278,7 @@ end
 
 local function unmarshal_int(self)
 	local v = unmarshal_byte(self)
-		if v <  0x40 or v >= 0xc0 then
+		if v <  0x40 or v >= 0xc0 then v = v < 0x80 and v or v - 0x100
 	elseif v <= 0x5f then v = (v - 0x40) * 0x100         + unmarshal_byte (self   )
 	elseif v >= 0xa0 then v = (v + 0x40) * 0x100         + unmarshal_byte (self   ) - 0x10000
 	elseif v <= 0x6f then v = (v - 0x60) * 0x10000       + unmarshal_bytes(self, 2)
@@ -288,7 +292,7 @@ local function unmarshal_int(self)
 	elseif v == 0x7e then v = unmarshal_bytes(self, 6)
 	elseif v == 0x81 then v = unmarshal_bytes(self, 6) - 0x1000000000000
 	elseif v == 0x7f then v = unmarshal_byte(self); v = v <  0x80 and v * 0x1000000000000 + unmarshal_bytes(self, 6) or (v - 0x80) * 0x100000000000000 + unmarshal_bytes(self, 7)
-	else                  v = unmarshal_byte(self); v = v >= 0x80 and v * 0x1000000000000 + unmarshal_bytes(self, 6) - 0x100000000000000 or (v + 0x80) * 0x100000000000000 + unmarshal_bytes(self, 7) - 0x10000000000000000 end
+	else                  v = unmarshal_byte(self); v = v >= 0x80 and (v - 0xf0) * 0x1000000000000 + unmarshal_bytes(self, 6) - 0x10000000000000 or unmarshal_bytes(self, 7) and -0xfffffffffffff end
 	return v
 end
 
@@ -372,11 +376,14 @@ stream =
 	flush = flush,
 	__tostring = __tostring,
 	marshal_uint = marshal_uint,
+	marshal_int = marshal_int,
 	marshal = marshal,
 	unmarshal_skip = unmarshal_skip,
 	unmarshal_uint = unmarshal_uint,
+	unmarshal_int = unmarshal_int,
 	unmarshal = unmarshal,
 }
 stream.__index = stream
+setmetatable(stream, { __call = __call })
 
 return stream
