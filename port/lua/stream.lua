@@ -3,7 +3,6 @@ local type = type
 local error = error
 local pairs = pairs
 local ipairs = ipairs
-local require = require
 local tonumber = tonumber
 local tostring = tostring
 local setmetatable = setmetatable
@@ -34,6 +33,7 @@ local function clear(self)
 	self.buffer = ""
 	self.pos = 0
 	self.limit = 0
+	self.buf = nil
 	return self
 end
 
@@ -41,6 +41,7 @@ local function swap(self, oct)
 	self.buffer, oct.buffer = oct.buffer, self.buffer
 	self.pos, oct.pos = oct.pos, self.pos
 	self.limit, oct.limit = oct.limit, self.limit
+	self.buf, oct.buf = oct.buf, self.buf
 	return self
 end
 
@@ -51,7 +52,11 @@ end
 local function pos(self, pos)
 	if not pos then return self.pos end
 	pos = tonumber(pos) or 0
-	self.pos = pos > 0 and pos or 0
+	if pos < 0 then
+		pos = #self.buffer + pos
+		if pos < 0 then pos = 0 end
+	end
+	self.pos = pos
 	return self
 end
 
@@ -59,7 +64,9 @@ local function limit(self, limit)
 	if not limit then return self.limit end
 	local n = #self.buffer
 	limit = tonumber(limit) or n
-	if limit < 0 then limit = 0
+	if limit < 0 then
+		limit = n + limit
+		if limit < 0 then limit = 0 end
 	elseif limit > n then limit = n end
 	self.limit = limit
 	return self
@@ -67,34 +74,49 @@ end
 
 local function sub(data, pos, size)
 	if type(data) == "table" then
-		return sub(data.buffer, pos, size)
+		data = data.buffer
 	end
 	data = tostring(data) or ""
 	local n = #data
 	pos = tonumber(pos) or 0
 	size = tonumber(size) or n
-	return str_sub(data, pos > 0 and pos + 1 or 1, size > 0 and size or 0)
+	if pos < 0 then
+		pos = n + pos
+		if pos < 0 then pos = 0 end
+	end
+	return str_sub(data, pos + 1, pos + (size > 0 and size or 0))
 end
 
 local function append(self, data, pos, size)
 	if type(data) == "table" then
-		return append(self, data.buffer, pos, size)
+		data = data.buffer
 	end
 	local t = self.buf
-	if not t then t = { self.buffer }; self.buf = t end
-	t[#t + 1] = pos and size and sub(data, pos, size) or data
+	if not t then
+		t = { self.buffer }
+		self.buf = t
+	end
+	t[#t + 1] = (pos or size) and sub(data, pos, size) or data
+	return self
+end
+
+local function popall(self)
+	self.buf = nil
 	return self
 end
 
 local function pop(self, n)
-	n = n or 1
+	n = tonumber(n) or 1
 	local t = self.buf
 	if t then
 		local s = #t
-		for i = s - n + 1, s do
+		local i = s - n + 1
+		if i <= 1 then return popall(self) end
+		for i = i, s do
 			t[i] = nil
 		end
 	end
+	return self
 end
 
 local function flush(self)
@@ -173,7 +195,10 @@ end
 
 local function marshal(self, v, tag)
 	local t = type(v)
-	if t == "boolean" then v = v and 1 or 0; t = "number" end
+	if t == "boolean" then
+		v = v and 1 or 0
+		t = "number"
+	end
 	if t == "number" then
 		if tag then
 			if v == 0 then return end
@@ -372,6 +397,7 @@ stream =
 	limit = limit,
 	sub = sub,
 	append = append,
+	popall = popall,
 	pop = pop,
 	flush = flush,
 	__tostring = __tostring,
