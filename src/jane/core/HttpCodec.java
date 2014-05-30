@@ -16,13 +16,10 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 import org.apache.mina.core.buffer.IoBuffer;
+import org.apache.mina.core.filterchain.IoFilterAdapter;
 import org.apache.mina.core.session.IoSession;
-import org.apache.mina.filter.codec.ProtocolCodecFactory;
-import org.apache.mina.filter.codec.ProtocolDecoder;
-import org.apache.mina.filter.codec.ProtocolDecoderAdapter;
-import org.apache.mina.filter.codec.ProtocolDecoderOutput;
-import org.apache.mina.filter.codec.ProtocolEncoder;
-import org.apache.mina.filter.codec.ProtocolEncoderOutput;
+import org.apache.mina.core.write.DefaultWriteRequest;
+import org.apache.mina.core.write.WriteRequest;
 import org.apache.mina.filter.ssl.SslFilter;
 
 /**
@@ -34,7 +31,7 @@ import org.apache.mina.filter.ssl.SslFilter;
  * 输出处理: 固定长度输出,chunked方式输出<br>
  * 不直接支持: mime, Connection:close/timeout, Accept-Encoding, Set-Cookie, Multi-Part, encodeUrl
  */
-public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolEncoder, ProtocolCodecFactory
+public final class HttpCodec extends IoFilterAdapter
 {
 	private static final byte[]     HEAD_END_MARK    = "\r\n\r\n".getBytes(Const.stringCharsetUTF8);
 	private static final byte[]     CONT_LEN_MARK    = "\r\nContent-Length: ".getBytes(Const.stringCharsetUTF8);
@@ -277,24 +274,24 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 		byte[] out = new byte[n];
 		for(int i = 0; i < n; ++i)
 			out[i] = (byte)sb.charAt(i);
-		return mgr.write(session, out);
+		return mgr.write(session, out) != null;
 	}
 
 	public static boolean send(NetManager mgr, IoSession session, byte[] data)
 	{
-		return !session.isClosing() && mgr.write(session, data);
+		return !session.isClosing() && mgr.write(session, data) != null;
 	}
 
 	public static boolean send(NetManager mgr, IoSession session, Octets data)
 	{
-		return !session.isClosing() && mgr.write(session, data);
+		return !session.isClosing() && mgr.write(session, data) != null;
 	}
 
 	public static boolean sendChunk(NetManager mgr, IoSession session, byte[] chunk)
 	{
 		if(session.isClosing()) return false;
 		int n = chunk.length;
-		return n <= 0 || mgr.write(session, ByteBuffer.wrap(chunk, 0, n));
+		return n <= 0 || mgr.write(session, ByteBuffer.wrap(chunk, 0, n)) != null;
 	}
 
 	public static boolean sendChunk(NetManager mgr, IoSession session, Octets chunk)
@@ -305,7 +302,7 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 		ByteBuffer buf = (chunk instanceof OctetsStream ?
 		        ByteBuffer.wrap(chunk.array(), ((OctetsStream)chunk).position(), n) :
 		        ByteBuffer.wrap(chunk.array(), 0, n));
-		return mgr.write(session, buf);
+		return mgr.write(session, buf) != null;
 	}
 
 	public static boolean sendChunk(NetManager mgr, IoSession session, String chunk)
@@ -315,40 +312,43 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 
 	public static boolean sendChunkEnd(NetManager mgr, IoSession session)
 	{
-		return !session.isClosing() && mgr.write(session, CHUNK_END_MARK);
+		return !session.isClosing() && mgr.write(session, CHUNK_END_MARK) != null;
 	}
 
 	@Override
-	public void encode(IoSession session, Object message, ProtocolEncoderOutput out)
+	public void filterWrite(NextFilter next, IoSession session, WriteRequest writeRequest)
 	{
+		Object message = writeRequest.getMessage();
 		if(message instanceof byte[])
 		{
 			byte[] bytes = (byte[])message;
-			if(bytes.length > 0) out.write(IoBuffer.wrap(bytes));
+			if(bytes.length > 0) next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(bytes)));
 		}
 		else if(message instanceof ByteBuffer)
 		{
-			out.write(IoBuffer.wrap(String.format("%x\r\n", ((ByteBuffer)message).remaining()).getBytes(Const.stringCharsetUTF8)));
-			out.write(IoBuffer.wrap((ByteBuffer)message));
-			out.write(IoBuffer.wrap(CHUNK_OVER_MARK));
+			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(String.format("%x\r\n",
+			        ((ByteBuffer)message).remaining()).getBytes(Const.stringCharsetUTF8))));
+			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap((ByteBuffer)message)));
+			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(CHUNK_OVER_MARK)));
 		}
 		else if(message instanceof OctetsStream)
 		{
 			OctetsStream os = (OctetsStream)message;
 			int n = os.remain();
-			if(n > 0) out.write(IoBuffer.wrap(os.array(), os.position(), n));
+			if(n > 0) next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(os.array(), os.position(), n)));
 		}
 		else if(message instanceof Octets)
 		{
 			Octets oct = (Octets)message;
 			int n = oct.size();
-			if(n > 0) out.write(IoBuffer.wrap(oct.array(), 0, n));
+			if(n > 0) next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(oct.array(), 0, n)));
 		}
 	}
 
 	@Override
-	public void decode(IoSession session, IoBuffer in, ProtocolDecoderOutput out) throws Exception
+	public void messageReceived(NextFilter next, IoSession session, Object message) throws Exception
 	{
+		IoBuffer in = (IoBuffer)message;
 		begin_: for(;;)
 		{
 			if(_bodysize <= 0)
@@ -379,7 +379,7 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 					if(_bodysize > 0) break; // 有内容则跳到下半部分的处理
 					OctetsStream os = new OctetsStream(_buf.array(), p, _buf.remain()); // 切割出尾部当作下次缓存(不会超过1024字节)
 					_buf.resize(p);
-					out.write(_buf);
+					next.messageReceived(session, _buf);
 					_buf = os;
 					p = 0;
 				}
@@ -406,21 +406,9 @@ public final class HttpCodec extends ProtocolDecoderAdapter implements ProtocolE
 				os = new OctetsStream(_buf.array(), p += s, -s); // 缓存数据过剩就切割出尾部当作下次缓存(不会超过1024字节)
 				_buf.resize(p);
 			}
-			out.write(_buf);
+			next.messageReceived(session, _buf);
 			_buf = os;
 			_bodysize = 0; // 下次从HTTP头部开始匹配
 		}
-	}
-
-	@Override
-	public ProtocolEncoder getEncoder(IoSession session)
-	{
-		return this;
-	}
-
-	@Override
-	public ProtocolDecoder getDecoder(IoSession session)
-	{
-		return this;
 	}
 }

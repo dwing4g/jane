@@ -9,13 +9,14 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import org.apache.mina.core.filterchain.IoFilter;
 import org.apache.mina.core.future.ConnectFuture;
+import org.apache.mina.core.future.IoFuture;
 import org.apache.mina.core.future.IoFutureListener;
+import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
-import org.apache.mina.filter.codec.ProtocolCodecFactory;
-import org.apache.mina.filter.codec.ProtocolCodecFilter;
 import org.apache.mina.transport.socket.SocketSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
@@ -35,7 +36,7 @@ public class NetManager implements IoHandler
 	private static final LongMap<RpcBean<?, ?>>   _rpcs     = new LongConcurrentHashMap<RpcBean<?, ?>>(); // 当前管理器等待回复的RPC
 	private static final ScheduledExecutorService _rpc_thread;                                           // 处理RPC超时和重连的线程
 	private final String                          _name     = getClass().getName();                      // 当前管理器的名字
-	private Class<? extends ProtocolCodecFactory> _pcf      = BeanCodec.class;                           // 协议编码器的类
+	private Class<? extends IoFilter>             _pcf      = BeanCodec.class;                           // 协议编码器的类
 	private IntMap<BeanHandler<?>>                _handlers = new IntMap<BeanHandler<?>>(0);             // bean的处理器
 	private volatile NioSocketAcceptor            _acceptor;                                             // mina的网络监听器
 	private volatile NioSocketConnector           _connector;                                            // mina的网络连接器
@@ -152,7 +153,7 @@ public class NetManager implements IoHandler
 	 * <p>
 	 * 必须在连接或监听之前设置
 	 */
-	public final void setCodec(Class<? extends ProtocolCodecFactory> pcf)
+	public final void setCodec(Class<? extends IoFilter> pcf)
 	{
 		_pcf = (pcf != null ? pcf : BeanCodec.class);
 	}
@@ -347,22 +348,10 @@ public class NetManager implements IoHandler
 	/**
 	 * 唯一的发送入口
 	 */
-	@SuppressWarnings("static-method")
-	protected boolean write(IoSession session, Object obj)
+	protected static WriteFuture write(IoSession session, Object obj)
 	{
-		return session.write(obj).getException() == null;
-	}
-
-	/**
-	 * 向某个连接发送bean
-	 * <p>
-	 * 此操作是异步的
-	 * @param bean 如果是RawBean类型,考虑到性能问题,在发送完成前不能修改其中的data对象
-	 * @return 如果连接已经失效则返回false, 否则返回true
-	 */
-	public boolean send(IoSession session, Bean<?> bean)
-	{
-		return !session.isClosing() && write(session, bean);
+		WriteFuture wf = session.write(obj);
+		return wf.getException() == null ? wf : null;
 	}
 
 	/**
@@ -374,7 +363,23 @@ public class NetManager implements IoHandler
 	 */
 	public boolean sendRaw(IoSession session, Object obj)
 	{
-		return !session.isClosing() && write(session, obj);
+		if(session.isClosing() || write(session, obj) == null) return false;
+		if(Log.hasTrace) Log.log.trace("{}({}): send: raw: {}", _name, session.getId(), obj);
+		return true;
+	}
+
+	/**
+	 * 向某个连接发送bean
+	 * <p>
+	 * 此操作是异步的
+	 * @param bean 如果是RawBean类型,考虑到性能问题,在发送完成前不能修改其中的data对象
+	 * @return 如果连接已经失效则返回false, 否则返回true
+	 */
+	public boolean send(IoSession session, Bean<?> bean)
+	{
+		if(session.isClosing() || write(session, bean) == null) return false;
+		if(Log.hasTrace) Log.log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.getClass().getSimpleName(), bean);
+		return true;
 	}
 
 	/**
@@ -385,10 +390,31 @@ public class NetManager implements IoHandler
 	 * @param callback 可设置一个回调对象,用于在发送成功后回调. null表示不回调
 	 * @return 如果连接已经失效则返回false, 否则返回true
 	 */
-	public <A extends Bean<A>> boolean send(IoSession session, A bean, BeanHandler<A> callback)
+	public <A extends Bean<A>> boolean send(final IoSession session, final A bean, final BeanHandler<A> callback)
 	{
 		if(session.isClosing()) return false;
-		return write(session, new CallBackBean<A>(bean, callback));
+		WriteFuture wf = write(session, bean);
+		if(wf == null) return false;
+		if(Log.hasTrace) Log.log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.getClass().getSimpleName(), bean);
+		if(callback != null)
+		{
+			wf.addListener(new IoFutureListener<IoFuture>()
+			{
+				@Override
+				public void operationComplete(IoFuture future)
+				{
+					try
+					{
+						callback.process(NetManager.this, session, bean);
+					}
+					catch(Throwable e)
+					{
+						Log.log.error(_name + '(' + session.getId() + "): callback exception: " + bean.getClass().getSimpleName(), e);
+					}
+				}
+			});
+		}
+		return true;
 	}
 
 	/**
@@ -490,7 +516,7 @@ public class NetManager implements IoHandler
 	public void sessionOpened(IoSession session) throws Exception
 	{
 		if(Log.hasDebug) Log.log.debug("{}({}): open: {}", _name, session.getId(), session.getRemoteAddress());
-		session.getFilterChain().addLast("codec", new ProtocolCodecFilter(_pcf.newInstance()));
+		session.getFilterChain().addLast("codec", _pcf.newInstance());
 		onAddSession(session);
 	}
 
@@ -525,23 +551,6 @@ public class NetManager implements IoHandler
 	@Override
 	public void messageSent(IoSession session, Object message)
 	{
-		if(Log.hasTrace) Log.log.trace("{}({}): send: {}:{}", _name, session.getId(), message.getClass().getSimpleName(), message);
-		if(message instanceof CallBackBean)
-		{
-			CallBackBean<?> bean = (CallBackBean<?>)message;
-			BeanHandler<?> callback = bean.getSendCallback();
-			if(callback != null)
-			{
-				try
-				{
-					callback.process(this, session, bean.getBean());
-				}
-				catch(Throwable e)
-				{
-					Log.log.error(_name + '(' + session.getId() + "): callback exception: " + message.getClass().getSimpleName(), e);
-				}
-			}
-		}
 	}
 
 	@Override

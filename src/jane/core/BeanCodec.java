@@ -2,18 +2,15 @@ package jane.core;
 
 import java.util.Collection;
 import org.apache.mina.core.buffer.IoBuffer;
+import org.apache.mina.core.filterchain.IoFilterAdapter;
 import org.apache.mina.core.session.IoSession;
-import org.apache.mina.filter.codec.ProtocolCodecFactory;
-import org.apache.mina.filter.codec.ProtocolDecoder;
-import org.apache.mina.filter.codec.ProtocolDecoderAdapter;
-import org.apache.mina.filter.codec.ProtocolDecoderOutput;
-import org.apache.mina.filter.codec.ProtocolEncoder;
-import org.apache.mina.filter.codec.ProtocolEncoderOutput;
+import org.apache.mina.core.write.DefaultWriteRequest;
+import org.apache.mina.core.write.WriteRequest;
 
 /**
  * bean的mina协议编解码过滤器
  */
-public class BeanCodec extends ProtocolDecoderAdapter implements ProtocolEncoder, ProtocolCodecFactory
+public class BeanCodec extends IoFilterAdapter
 {
 	protected static final IntMap<Integer> _maxsize = new IntMap<Integer>(65536, 0.5f); // 所有注册beans的最大空间限制
 	protected static final IntMap<Bean<?>> _stubmap = new IntMap<Bean<?>>(65536, 0.5f); // 所有注册beans的存根对象
@@ -61,18 +58,18 @@ public class BeanCodec extends ProtocolDecoderAdapter implements ProtocolEncoder
 	}
 
 	@Override
-	public void encode(IoSession session, Object message, ProtocolEncoderOutput out)
+	public void filterWrite(NextFilter next, IoSession session, WriteRequest writeRequest)
 	{
-		Bean<?> bean = (Bean<?>)message;
+		Bean<?> bean = (Bean<?>)writeRequest.getMessage();
 		int type = bean.type();
 		if(type == 0)
 		{
 			RawBean rawbean = (RawBean)bean;
 			Octets rawdata = rawbean.getData();
 			OctetsStream os_head = new OctetsStream(10).marshalUInt(rawbean.getType()).marshalUInt(rawdata.size());
-			out.write(IoBuffer.wrap(os_head.array(), 0, os_head.size()));
+			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(os_head.array(), 0, os_head.size())));
 			int n = rawdata.size();
-			if(n > 0) out.write(IoBuffer.wrap(rawdata.array(), 0, n));
+			if(n > 0) next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(rawdata.array(), 0, n)));
 		}
 		else
 		{
@@ -81,11 +78,11 @@ public class BeanCodec extends ProtocolDecoderAdapter implements ProtocolEncoder
 			bean.marshalProtocol(os);
 			int p = os.marshalUIntBack(10, os.size() - 10);
 			p = 10 - (p + os.marshalUIntBack(10 - p, type));
-			out.write(IoBuffer.wrap(os.array(), p, os.size() - p));
+			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(os.array(), p, os.size() - p)));
 		}
 	}
 
-	protected boolean decodeProtocol(OctetsStream os, ProtocolDecoderOutput out) throws Exception
+	protected boolean decodeProtocol(OctetsStream os, NextFilter next, IoSession session) throws Exception
 	{
 		if(_psize < 0)
 		{
@@ -115,17 +112,18 @@ public class BeanCodec extends ProtocolDecoderAdapter implements ProtocolEncoder
 			if(realsize > _psize)
 			    throw new Exception("bean realsize overflow: type=" + _ptype + ",size=" + _psize + ",realsize=" + realsize);
 			os.setPosition(pos + _psize);
-			out.write(bean);
+			next.messageReceived(session, bean);
 		}
 		else
-			out.write(new RawBean(_ptype, os.unmarshalRaw(_psize)));
+			next.messageReceived(session, new RawBean(_ptype, os.unmarshalRaw(_psize)));
 		_psize = -1;
 		return true;
 	}
 
 	@Override
-	public void decode(IoSession session, IoBuffer in, ProtocolDecoderOutput out) throws Exception
+	public void messageReceived(NextFilter next, IoSession session, Object message) throws Exception
 	{
+		IoBuffer in = (IoBuffer)message;
 		if(!_os.empty())
 		{
 			int r = in.remaining();
@@ -135,7 +133,7 @@ public class BeanCodec extends ProtocolDecoderAdapter implements ProtocolEncoder
 			in.get(_os.array(), s, n);
 			r -= n;
 			s += n;
-			if(!decodeProtocol(_os, out)) // 能正好解出一个协议,或者因之前无法解出头部或者in的数据还不够导致失败
+			if(!decodeProtocol(_os, next, session)) // 能正好解出一个协议,或者因之前无法解出头部或者in的数据还不够导致失败
 			{
 				if(r <= 0) return; // 如果in已经无数据可取就直接等下次,之前无法解出头部的话,in也肯定无数据了
 				n = _psize - _os.remain();
@@ -147,7 +145,7 @@ public class BeanCodec extends ProtocolDecoderAdapter implements ProtocolEncoder
 				}
 				_os.resize(s + n);
 				in.get(_os.array(), s, n);
-				decodeProtocol(_os, out); // 应该能正好解出一个协议
+				decodeProtocol(_os, next, session); // 应该能正好解出一个协议
 				_os.clear();
 				if(r <= n) return;
 			}
@@ -164,22 +162,10 @@ public class BeanCodec extends ProtocolDecoderAdapter implements ProtocolEncoder
 		OctetsStream os = OctetsStream.wrap(in.array(), n);
 		os.setPosition(in.position());
 		in.position(n);
-		while(decodeProtocol(os, out))
+		while(decodeProtocol(os, next, session))
 			if(os.remain() <= 0) return;
 		if(os.remain() <= 0) return;
 		_os.replace(os.array(), os.position(), os.remain());
 		_os.setPosition(0);
-	}
-
-	@Override
-	public ProtocolEncoder getEncoder(IoSession session)
-	{
-		return this;
-	}
-
-	@Override
-	public ProtocolDecoder getDecoder(IoSession session)
-	{
-		return this;
 	}
 }
