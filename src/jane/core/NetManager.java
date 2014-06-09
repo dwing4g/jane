@@ -271,7 +271,7 @@ public class NetManager implements IoHandler
 						else if(delay_sec > 0)
 						{
 							final IoFutureListener<ConnectFuture> listener = this;
-							schedule(new Runnable()
+							schedule(delay_sec, new Runnable()
 							{
 								@Override
 								public void run()
@@ -286,7 +286,7 @@ public class NetManager implements IoHandler
 										Log.log.error("BeanManager.startClient.operationComplete: scheduled exception:", e);
 									}
 								}
-							}, delay_sec);
+							});
 						}
 					}
 					catch(Throwable e)
@@ -340,7 +340,7 @@ public class NetManager implements IoHandler
 	 * 所有的网络管理器共用一个工作线程,同时运行RPC超时处理,因此只适合简单的处理,运行时间不要过长
 	 * @param delay_sec 延迟调度的秒数
 	 */
-	public static ScheduledFuture<?> schedule(Runnable runnable, long delay_sec)
+	public static ScheduledFuture<?> schedule(long delay_sec, Runnable runnable)
 	{
 		return _rpc_thread.schedule(runnable, delay_sec, TimeUnit.SECONDS);
 	}
@@ -382,6 +382,21 @@ public class NetManager implements IoHandler
 		return true;
 	}
 
+	public boolean sendSafe(final IoSession session, final Bean<?> bean)
+	{
+		if(session.isClosing()) return false;
+		final RawBean rawbean = new RawBean(bean);
+		SContext.current().addOnCommit(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				send(session, rawbean);
+			}
+		});
+		return true;
+	}
+
 	/**
 	 * 向某个连接发送bean
 	 * <p>
@@ -417,6 +432,20 @@ public class NetManager implements IoHandler
 		return true;
 	}
 
+	public <A extends Bean<A>> boolean sendSafe(final IoSession session, final A bean, final BeanHandler<A> callback)
+	{
+		if(session.isClosing()) return false;
+		SContext.current().addOnCommit(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				send(session, bean, callback);
+			}
+		});
+		return true;
+	}
+
 	/**
 	 * 向某个连接发送RPC
 	 * <p>
@@ -434,6 +463,20 @@ public class NetManager implements IoHandler
 		rpcbean.setSession(session);
 		rpcbean.setOnClient(handler != null ? handler : (RpcHandler<A, R>)_handlers.get(rpcbean.type()));
 		_rpcs.put(rpcbean.getRpcId(), rpcbean);
+		return true;
+	}
+
+	public <A extends Bean<A>, R extends Bean<R>> boolean sendRpcSafe(final IoSession session, final RpcBean<A, R> rpcbean, final RpcHandler<A, R> handler)
+	{
+		if(session.isClosing()) return false;
+		SContext.current().addOnCommit(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				sendRpc(session, rpcbean, handler);
+			}
+		});
 		return true;
 	}
 

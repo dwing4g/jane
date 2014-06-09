@@ -1,3 +1,18 @@
+/*
+ *  Copyright (c) 2012 Jan Kotek
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 package org.mapdb;
 
 import java.io.*;
@@ -47,11 +62,13 @@ public final class Pump {
      * @param serializer used to store data in temporary files
      * @return iterator over sorted data set
      */
-    public static <E> Iterator<E> sort(final Iterator<E> source, boolean mergeDuplicates, final int batchSize,
+    public static <E> Iterator<E> sort(Iterator<E> source, boolean mergeDuplicates, final int batchSize,
             Comparator comparator, final Serializer serializer){
         if(batchSize<=0) throw new IllegalArgumentException();
         if(comparator==null)
             comparator=BTreeMap.COMPARABLE_COMPARATOR;
+        if(source==null)
+            source = Fun.EMPTY_ITERATOR;
 
         int counter = 0;
         final Object[] presort = new Object[batchSize];

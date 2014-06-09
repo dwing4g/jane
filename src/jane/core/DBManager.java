@@ -215,7 +215,7 @@ public final class DBManager
 	 * 向提交线程调度一个延迟任务
 	 * @param period_sec 延迟运行的时间(秒)
 	 */
-	void scheduleWithFixedDelay(Runnable runnable, int period_sec)
+	void scheduleWithFixedDelay(int period_sec, Runnable runnable)
 	{
 		_commit_thread.scheduleWithFixedDelay(runnable, period_sec, period_sec, TimeUnit.SECONDS);
 	}

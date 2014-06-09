@@ -254,7 +254,7 @@ public final class HttpCodec extends IoFilterAdapter
 	 * <li>len > 0: 后续使用{@link #send}发送固定长度的数据
 	 * @param heads 额外发送的HTTP头. 每个元素表示一行文字,没有做验证,所以小心使用,可传null表示无任何额外的头信息
 	 */
-	public static boolean sendHead(NetManager mgr, IoSession session, String code, long len, Iterable<String> heads)
+	public static boolean sendHead(IoSession session, String code, long len, Iterable<String> heads)
 	{
 		if(session.isClosing()) return false;
 		StringBuilder sb = new StringBuilder(1024);
@@ -274,27 +274,27 @@ public final class HttpCodec extends IoFilterAdapter
 		byte[] out = new byte[n];
 		for(int i = 0; i < n; ++i)
 			out[i] = (byte)sb.charAt(i);
-		return mgr.write(session, out) != null;
+		return NetManager.write(session, out) != null;
 	}
 
-	public static boolean send(NetManager mgr, IoSession session, byte[] data)
+	public static boolean send(IoSession session, byte[] data)
 	{
-		return !session.isClosing() && mgr.write(session, data) != null;
+		return !session.isClosing() && NetManager.write(session, data) != null;
 	}
 
-	public static boolean send(NetManager mgr, IoSession session, Octets data)
+	public static boolean send(IoSession session, Octets data)
 	{
-		return !session.isClosing() && mgr.write(session, data) != null;
+		return !session.isClosing() && NetManager.write(session, data) != null;
 	}
 
-	public static boolean sendChunk(NetManager mgr, IoSession session, byte[] chunk)
+	public static boolean sendChunk(IoSession session, byte[] chunk)
 	{
 		if(session.isClosing()) return false;
 		int n = chunk.length;
-		return n <= 0 || mgr.write(session, ByteBuffer.wrap(chunk, 0, n)) != null;
+		return n <= 0 || NetManager.write(session, ByteBuffer.wrap(chunk, 0, n)) != null;
 	}
 
-	public static boolean sendChunk(NetManager mgr, IoSession session, Octets chunk)
+	public static boolean sendChunk(IoSession session, Octets chunk)
 	{
 		if(session.isClosing()) return false;
 		int n = chunk.remain();
@@ -302,17 +302,17 @@ public final class HttpCodec extends IoFilterAdapter
 		ByteBuffer buf = (chunk instanceof OctetsStream ?
 		        ByteBuffer.wrap(chunk.array(), ((OctetsStream)chunk).position(), n) :
 		        ByteBuffer.wrap(chunk.array(), 0, n));
-		return mgr.write(session, buf) != null;
+		return NetManager.write(session, buf) != null;
 	}
 
-	public static boolean sendChunk(NetManager mgr, IoSession session, String chunk)
+	public static boolean sendChunk(IoSession session, String chunk)
 	{
-		return sendChunk(mgr, session, Octets.wrap(chunk.getBytes(Const.stringCharsetUTF8)));
+		return sendChunk(session, Octets.wrap(chunk.getBytes(Const.stringCharsetUTF8)));
 	}
 
-	public static boolean sendChunkEnd(NetManager mgr, IoSession session)
+	public static boolean sendChunkEnd(IoSession session)
 	{
-		return !session.isClosing() && mgr.write(session, CHUNK_END_MARK) != null;
+		return !session.isClosing() && NetManager.write(session, CHUNK_END_MARK) != null;
 	}
 
 	@Override

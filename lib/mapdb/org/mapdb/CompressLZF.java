@@ -1,5 +1,25 @@
 /*
+ * This code comes from H2 database project and was modified for MapDB a bit.
  * Re-licensed under Apache 2 license with Thomas Mueller permission
+ *
+ *  Copyright (c) 2004-2011 H2 Group
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+
+/*
+ * Original H2 license
  *
  * Copyright 2004-2011 H2 Group. Multiple-Licensed under the H2 License,
  * Version 1.0, and under the Eclipse Public License, Version 1.0
@@ -270,57 +290,18 @@ public final class CompressLZF{
                 // copy the back-reference bytes from the given
                 // location in output to current position
                 ctrl += outPos;
-                System.arraycopy(out,ctrl,out,outPos,len);
-                outPos+=len;
-                ctrl+=len;
+                if (outPos + len >= out.length) {
+                    // reduce array bounds checking
+                    throw new ArrayIndexOutOfBoundsException();
+                }
+                for (int i = 0; i < len; i++) {
+                    out[outPos++] = out[ctrl++];
+                }
             }
         } while (outPos < outLen);
     }
 
-//
-//    public void expand(byte[] in, int inPos, byte[] out, int outPos, int outLen) {
-//        // if ((inPos | outPos | outLen) < 0) {
-//        if (inPos < 0 || outPos < 0 || outLen < 0) {
-//            throw new IllegalArgumentException();
-//        }
-//        do {
-//            int ctrl = in[inPos++] & 255;
-//            if (ctrl < MAX_LITERAL) {
-//                // literal run of length = ctrl + 1,
-//                ctrl++;
-//                // copy to output and move forward this many bytes
-//                System.arraycopy(in, inPos, out, outPos, ctrl);
-//                outPos += ctrl;
-//                inPos += ctrl;
-//            } else {
-//                // back reference
-//                // the highest 3 bits are the match length
-//                int len = ctrl >> 5;
-//                // if the length is maxed, add the next byte to the length
-//                if (len == 7) {
-//                    len += in[inPos++] & 255;
-//                }
-//                // minimum back-reference is 3 bytes,
-//                // so 2 was subtracted before storing size
-//                len += 2;
-//
-//                // ctrl is now the offset for a back-reference...
-//                // the logical AND operation removes the length bits
-//                ctrl = -((ctrl & 0x1f) << 8) - 1;
-//
-//                // the next byte augments/increases the offset
-//                ctrl -= in[inPos++] & 255;
-//
-//                // copy the back-reference bytes from the given
-//                // location in output to current position
-//                ctrl += outPos;
-//                System.arraycopy(out,ctrl,out,outPos,len);
-//                outPos+=len;
-//                ctrl+=len;
-//            }
-//        } while (outPos < outLen);
-//    }
-//
+
     public void expand(ByteBuffer in, int inPos, byte[] out, int outPos, int outLen) {
         ByteBuffer in2=null;
         assert(outLen>=0);

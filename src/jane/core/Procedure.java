@@ -56,7 +56,7 @@ public abstract class Procedure implements Runnable
 		};
 		if(!Const.debug)
 		{
-			DBManager.instance().scheduleWithFixedDelay(new Runnable()
+			DBManager.instance().scheduleWithFixedDelay(5, new Runnable()
 			{
 				@Override
 				public void run()
@@ -101,7 +101,7 @@ public abstract class Procedure implements Runnable
 						Log.log.error("procedure timeout thread fatal exception:", e);
 					}
 				}
-			}, 5);
+			});
 		}
 	}
 
