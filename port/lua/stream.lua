@@ -19,7 +19,7 @@ local bean = require "bean"
 local platform = require "platform"
 local readf32 = platform.readf32
 local readf64 = platform.readf64
-local ftype = 4 -- change it to 4/5 for marshaling float/double by default
+local ftype = 4 -- 可修改成4/5来区分全局使用float/double类型来序列化
 local writef = (ftype == 4 and platform.writef32 or platform.writef64)
 
 --[[ 注意:
@@ -32,11 +32,13 @@ local writef = (ftype == 4 and platform.writef32 or platform.writef64)
 
 local stream
 
+-- 构造1个stream对象,可选使用字符串类型的data来初始化内容
 local function new(data)
 	data = data and tostring(data) or ""
 	return setmetatable({ buffer = data, pos = 0, limit = #data }, stream)
 end
 
+-- 清空,重置
 local function clear(self)
 	self.buffer = ""
 	self.pos = 0
@@ -45,6 +47,7 @@ local function clear(self)
 	return self
 end
 
+-- 交换两个stream对象中的内容
 local function swap(self, oct)
 	self.buffer, oct.buffer = oct.buffer, self.buffer
 	self.pos, oct.pos = oct.pos, self.pos
@@ -53,10 +56,12 @@ local function swap(self, oct)
 	return self
 end
 
+-- 当前可反序列化的长度,即pos到limit的长度
 local function remain(self)
 	return self.limit - self.pos
 end
 
+-- 获取或设置当前的pos,只用于反序列化,基于0
 local function pos(self, pos)
 	if not pos then return self.pos end
 	pos = tonumber(pos) or 0
@@ -68,6 +73,7 @@ local function pos(self, pos)
 	return self
 end
 
+-- 获取或设置当前的limit,只用于反序列化,基于0
 local function limit(self, limit)
 	if not limit then return self.limit end
 	local n = #self.buffer
@@ -80,6 +86,7 @@ local function limit(self, limit)
 	return self
 end
 
+-- 获取stream中的部分数据
 local function sub(data, pos, size)
 	if type(data) == "table" then
 		data = data.buffer
@@ -95,6 +102,7 @@ local function sub(data, pos, size)
 	return str_sub(data, pos + 1, pos + (size > 0 and size or 0))
 end
 
+-- 临时追加data(pos,size)到当前的stream结尾,可连续追加若干次,最后调用flush来真正实现追加合并
 local function append(self, data, pos, size)
 	if type(data) == "table" then
 		data = data.buffer
@@ -108,11 +116,13 @@ local function append(self, data, pos, size)
 	return self
 end
 
+-- 取消之前所有临时追加的内容
 local function popall(self)
 	self.buf = nil
 	return self
 end
 
+-- 取消之前n次(默认为1)临时追加的内容
 local function pop(self, n)
 	n = tonumber(n) or 1
 	local t = self.buf
@@ -127,6 +137,7 @@ local function pop(self, n)
 	return self
 end
 
+-- 合并之前追加的内容
 local function flush(self)
 	local t = self.buf
 	if t then
@@ -138,6 +149,7 @@ local function flush(self)
 	return self
 end
 
+-- 转换成字符串返回,用于显示及日志输出
 local function __tostring(self)
 	local buf = self.buffer
 	local n = #buf
@@ -150,10 +162,12 @@ local function __tostring(self)
 	return concat(o)
 end
 
+-- 调用stream(...)即调用new
 local function __call(_, data)
 	return new(data)
 end
 
+-- 序列化1个整数(支持范围:-(52-bit)到+(52-bit))
 local function marshal_int(self, v)
 	if v >= 0 then
 			if v < 0x40             then append(self, char(v))
@@ -179,6 +193,7 @@ local function marshal_int(self, v)
 	return self
 end
 
+-- 序列化1个无符号整数(支持范围:0到+(32-bit))
 local function marshal_uint(self, v)
 		if v < 0x80      then append(self, char(v))
 	elseif v < 0x4000    then append(self, char(floor(v / 0x100    ) + 0x80,       v % 0x100))
@@ -188,12 +203,14 @@ local function marshal_uint(self, v)
 	return self
 end
 
+-- 序列化字符串
 local function marshal_str(self, v)
 	marshal_uint(self, #v)
 	append(self, v)
 	return self
 end
 
+-- 判断table中是否有key含有小数部分,p可传入pairs或ipairs
 local function hasfloatkey(t, p)
 	for k in p(t) do
 		k = tonumber(k) or 0
@@ -201,6 +218,7 @@ local function hasfloatkey(t, p)
 	end
 end
 
+-- 判断table中是否有value含有小数部分,p可传入pairs或ipairs
 local function hasfloatval(t, p)
 	for _, v in p(t) do
 		v = tonumber(v) or 0
@@ -208,6 +226,7 @@ local function hasfloatval(t, p)
 	end
 end
 
+-- 获取序列容器中的值类型,只以第1个元素的类型为准,其中整数和浮点数类型能自动根据全部数据来判断
 local function vecvartype(t)
 	local v = type(t[1])
 	if v == "number" then return hasfloatval(t, ipairs) and ftype or 0 end
@@ -216,6 +235,7 @@ local function vecvartype(t)
 	if v == "boolean" then return 0 end
 end
 
+-- 获取关联容器中的键值类型,只以第1个元素的类型为准,其中整数和浮点数类型能自动根据全部数据来判断
 local function mapvartype(t)
 	local k, v = next(t)
 	k, v = type(k), type(v)
@@ -232,6 +252,7 @@ local function mapvartype(t)
 	return k, v
 end
 
+-- 序列化v值,类型自动判断,可选前置序列化tag,subtype仅用于内部序列化容器元素的类型提示
 local function marshal(self, v, tag, subtype)
 	local t = type(v)
 	if t == "boolean" then
@@ -255,7 +276,7 @@ local function marshal(self, v, tag, subtype)
 			end
 		end
 		if ft then
-			marshal_str(writef(v))
+			marshal_str(self, writef(v))
 		else
 			marshal_int(self, v)
 		end
@@ -310,6 +331,7 @@ local function marshal(self, v, tag, subtype)
 	return self
 end
 
+-- 跳过反序列化n字节
 local function unmarshal_skip(self, n)
 	local pos = self.pos
 	if pos + n > self.limit then error "unmarshal overflow" end
@@ -317,6 +339,7 @@ local function unmarshal_skip(self, n)
 	return self
 end
 
+-- 反序列化1个字节
 local function unmarshal_byte(self)
 	local pos = self.pos
 	if pos >= self.limit then error "unmarshal overflow" end
@@ -325,6 +348,7 @@ local function unmarshal_byte(self)
 	return byte(self.buffer, pos)
 end
 
+-- 反序列化n个字节
 local function unmarshal_bytes(self, n)
 	local pos = self.pos
 	if pos + n > self.limit then error "unmarshal overflow" end
@@ -337,14 +361,16 @@ local function unmarshal_bytes(self, n)
 	return v
 end
 
+-- 反序列化1个字符串
 local function unmarshal_str(self, n)
 	local pos = self.pos
-	if pos + n > limit then error "unmarshal overflow" end
+	if pos + n > self.limit then error "unmarshal overflow" end
 	local p = pos + n
 	self.pos = p
 	return str_sub(self.buffer, pos + 1, p)
 end
 
+-- 反序列化1个无符号整数(支持范围:0到+(32-bit))
 local function unmarshal_uint(self)
 	local v = unmarshal_byte(self)
 		if v < 0x80 then
@@ -355,6 +381,7 @@ local function unmarshal_uint(self)
 	return v
 end
 
+-- 反序列化1个整数(支持范围:-(52-bit)到+(52-bit))
 local function unmarshal_int(self)
 	local v = unmarshal_byte(self)
 		if v <  0x40 or v >= 0xc0 then v = v < 0x80 and v or v - 0x100
@@ -377,14 +404,16 @@ end
 
 local unmarshal
 
-local function unmarshal_subvar(self, cls)
-	if cls == 0 then return unmarshal_int(self) end
-	if cls == 1 then return unmarshal_str(self, unmarshal_uint(self)) end
-	if cls == 2 then return unmarshal(self, cls) end
-	if cls == 4 then return readf32(unmarshal_bytes(self, 4)) end
-	if cls == 5 then return readf64(unmarshal_bytes(self, 8)) end
+-- 反序列化1个容器元素,subtype表示类型
+local function unmarshal_subvar(self, subtype)
+	if subtype == 0 then return unmarshal_int(self) end
+	if subtype == 1 then return unmarshal_str(self, unmarshal_uint(self)) end
+	if subtype == 4 then return readf32(unmarshal_bytes(self, 4)) end
+	if subtype == 5 then return readf64(unmarshal_bytes(self, 8)) end
+	return unmarshal(self, subtype)
 end
 
+-- 反序列化1个值,可选vars用于提示类型
 local function unmarshal_var(self, vars)
 	local tag = unmarshal_byte(self)
 	local v = tag % 4
@@ -435,6 +464,7 @@ local function unmarshal_var(self, vars)
 	return tag, v
 end
 
+-- 根据类来反序列化1个bean
 unmarshal = function(self, cls)
 	local vars = cls and cls.__vars
 	local obj = cls and cls() or {}

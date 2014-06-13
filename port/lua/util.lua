@@ -64,8 +64,8 @@ local class_mt = {
 }
 
 -- 创建类,c可以传入表或空,返回类对象:
--- ClassA = class { ... } -- 也可以使用class()并动态构造类字段,类字段即为默认的实例字段
--- InstanceA = ClassA() -- 构造实例,如果类字段有__new函数则自动调用,否则可以传入一个表作为初始实例内容
+-- ClassA = class { ... } -- 也可以使用class()并动态构造类字段,类字段即为默认的实例字段,__base字段可指定基类
+-- InstanceA = ClassA() -- 构造实例,如果类字段有__new函数则自动调用,否则可以传入1个表作为初始实例内容
 -- ClassA == InstanceA.__class -- 特殊的__class字段可以获取类
 local function class(c)
 	c = c or {}
@@ -131,8 +131,7 @@ local function tostr(t, out, m, name)
 		else
 			for k, v in pairs(t) do
 				n = tostr(k, o, m, k)
-				o[n + 1] = name
-				o[n + 2] = "="
+				o[n + 1] = "="
 				n = tostr(v, o, m, k)
 				o[n + 1] = ","
 			end
@@ -160,7 +159,7 @@ local function initbeans(c)
 		s[b.__type] = class(b) -- 创建类并放入临时表中
 		b.__tostring = tostr
 	end
-	local m = { [0] = 0, "", false, {}, { __map = true } }
+	local m = { [0] = 0, "", false, {}, setmetatable({}, { __index = { __map = true }}) }
 	for i, b in pairs(s) do
 		c[i] = b
 		for n, v in pairs(b.__vars) do

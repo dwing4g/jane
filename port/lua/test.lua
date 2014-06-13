@@ -73,14 +73,35 @@ print "----------------------------------------"
 
 do
 	local s = stream()
-	local b = bean.TestType { v1 = true, v2 = 2 }
+	local b = bean.TestType()
+	print(b.v16.__map)
+	b.v1 = 1
+	b.v2 = 2
+	b.v3 = 3
+	b.v4 = 4
+	b.v5 = 5
+	b.v6 = 6
+	b.v7 = 7
+	b.v8 = "abc"
+	b.v9 = "def"
+	b.v10[1] = true
+	b.v11[1] = 11
+	b.v12[1] = 12
+	b.v13[1] = 13
+	b.v14[1] = 14
+	b.v15[1] = 15
+	b.v16[3] = "xyz"
+	b.v17[bean.TestBean{value1=1,value2=2}] = true
+	b.v18.name = bean.TestBean{value1=3,value2=4}
+	b.v19.value1 = 5
+	print(b)
+	s:clear()
 	s:marshal(b)
 	s:flush()
 	print(s)
 	s:unmarshal(b.__class)
 	print(s)
 	print(b)
-	print(b.v16.__map)
 end
 
 print "========================================"
