@@ -1,5 +1,6 @@
 -- UTF-8 without BOM
 local type = type
+local next = next
 local error = error
 local pairs = pairs
 local ipairs = ipairs
@@ -13,13 +14,20 @@ local str_sub = string.sub
 local format = string.format
 local concat = table.concat
 local floor = math.floor
+local require = require
 local bean = require "bean"
+local platform = require "platform"
+local readf32 = platform.readf32
+local readf64 = platform.readf64
+local ftype = 4 -- change it to 4/5 for marshaling float/double by default
+local writef = (ftype == 4 and platform.writef32 or platform.writef64)
 
 --[[ 注意:
-* 不支持float和double类型, 不会marshal成浮点类型, unmarshal时会忽略浮点字段
 * long类型只支持低52(二进制)位, 高12位必须保证为0, 否则结果未定义
-* 由于使用lua table表示map容器, 当key是bean类型时, 无法索引, 只能遍历访问
+* 序列化浮点数只能指定固定的32位或64位
+* 字符串类型是原生数据格式, 一般建议使用UTF-8, 否则不利于显示及日志输出
 * marshal容器字段时,容器里的key和value类型必须一致, 否则会marshal出错误的结果
+* 由于使用lua table表示map容器, 当key是bean类型时, 无法索引, 只能遍历访问
 --]]
 
 local stream
@@ -186,25 +194,71 @@ local function marshal_str(self, v)
 	return self
 end
 
-local function vartype(v)
-	local t = type(v)
-	if t == "number" or t == "boolean" then return 0 end
-	if t == "string" then return 1 end
-	if t == "table" then return 2 end
+local function hasfloatkey(t, p)
+	for k in p(t) do
+		k = tonumber(k) or 0
+		if k ~= floor(k) then return true end
+	end
 end
 
-local function marshal(self, v, tag)
+local function hasfloatval(t, p)
+	for _, v in p(t) do
+		v = tonumber(v) or 0
+		if v ~= floor(v) then return true end
+	end
+end
+
+local function vecvartype(t)
+	local v = type(t[1])
+	if v == "number" then return hasfloatval(t, ipairs) and ftype or 0 end
+	if v == "table" then return 2 end
+	if v == "string" then return 1 end
+	if v == "boolean" then return 0 end
+end
+
+local function mapvartype(t)
+	local k, v = next(t)
+	k, v = type(k), type(v)
+	if k == "number" then k = hasfloatkey(t, pairs) and ftype or 0
+	elseif k == "table" then k = 2
+	elseif k == "string" then k = 1
+	elseif k == "boolean" then k = 0
+	else k = nil end
+	if v == "number" then v = hasfloatval(t, pairs) and ftype or 0
+	elseif v == "table" then v = 2
+	elseif v == "string" then v = 1
+	elseif v == "boolean" then v = 0
+	else v = nil end
+	return k, v
+end
+
+local function marshal(self, v, tag, subtype)
 	local t = type(v)
 	if t == "boolean" then
 		v = v and 1 or 0
 		t = "number"
 	end
 	if t == "number" then
+		local ft
+		if subtype == nil then
+			ft = v ~= floor(v)
+		else
+			ft = subtype > 0
+		end
 		if tag then
 			if v == 0 then return end
-			append(self, char(tag * 4))
+			if ft then
+				append(self, char(tag * 4 + 3))
+				append(self, char(ftype + 4))
+			else
+				append(self, char(tag * 4))
+			end
 		end
-		marshal_int(self, v)
+		if ft then
+			marshal_str(writef(v))
+		else
+			marshal_int(self, v)
+		end
 	elseif t == "string" then
 		if tag then
 			if v == "" then return end
@@ -228,27 +282,27 @@ local function marshal(self, v, tag)
 			else
 				append(self, "\0")
 			end
-		elseif #v > 0 then -- list
+		elseif not v.__map then -- vec
+			subtype = vecvartype(v)
 			append(self, char(tag * 4 + 3))
-			append(self, char(vartype(v[1])))
+			append(self, char(subtype))
 			marshal_uint(self, #v)
 			for _, vv in ipairs(v) do
-				marshal(self, vv)
+				marshal(self, vv, nil, subtype)
 			end
 		else -- map
 			local n = 0
-			local tt
-			for k, vv in pairs(v) do
-				if n == 0 then tt = 0x80 + vartype(k) * 8 + vartype(vv) end
+			for _ in pairs(v) do
 				n = n + 1
 			end
-			if tt then
+			if n > 0 then
+				local kt, vt = mapvartype(v)
 				append(self, char(tag * 4 + 3))
-				append(self, char(tt))
+				append(self, char(0x80 + kt * 8 + vt))
 				marshal_uint(self, n)
 				for k, vv in pairs(v) do
-					marshal(self, k)
-					marshal(self, vv)
+					marshal(self, k, nil, kt)
+					marshal(self, vv, nil, vt)
 				end
 			end
 		end
@@ -326,8 +380,9 @@ local unmarshal
 local function unmarshal_subvar(self, cls)
 	if cls == 0 then return unmarshal_int(self) end
 	if cls == 1 then return unmarshal_str(self, unmarshal_uint(self)) end
-	if cls >= 4 then return unmarshal_bytes(self, (cls - 3) * 4) end -- ignore float/double
-	return unmarshal(self, cls)
+	if cls == 2 then return unmarshal(self, cls) end
+	if cls == 4 then return readf32(unmarshal_bytes(self, 4)) end
+	if cls == 5 then return readf64(unmarshal_bytes(self, 8)) end
 end
 
 local function unmarshal_var(self, vars)
@@ -355,8 +410,12 @@ local function unmarshal_var(self, vars)
 				for i = 1, n do
 					v[i] = unmarshal_subvar(self, t)
 				end
+			elseif v == 8 then
+				v = readf32(unmarshal_bytes(self, 4))
+			elseif v == 9 then
+				v = readf64(unmarshal_bytes(self, 8))
 			else
-				v = unmarshal_bytes(self, (v - 7) * 4) -- ignore float/double
+				v = nil
 			end
 		else -- map
 			local n = v % 8

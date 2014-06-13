@@ -1,8 +1,8 @@
 -- UTF-8 without BOM
 local type = type
+local next = next
 local error = error
 local pairs = pairs
-local ipairs = ipairs
 local rawget = rawget
 local tostring = tostring
 local getmetatable = getmetatable
@@ -12,19 +12,16 @@ local byte = string.byte
 local format = string.format
 local concat = table.concat
 
+-- 清除整个表中的全部内容
 local function clear(t)
-	local keys = {}
-	local i = 0
-	for k in pairs(t) do
-		i = i + 1
-		keys[i] = k
-	end
-	for _, k in ipairs(keys) do
+	while true do
+		local k = next(t)
+		if k == nil then return end
 		t[k] = nil
 	end
-	return t
 end
 
+-- 复制t,如果t不是表则直接返回,否则进行深拷贝,包括元表及相同引用,参数m仅内部使用
 local function clone(t, m)
 	if type(t) ~= "table" then return t end
 	if m then
@@ -41,6 +38,7 @@ local function clone(t, m)
 	return setmetatable(r, getmetatable(t))
 end
 
+-- 表t清空并从表s中复制全部内容(规则同上)
 local function cloneto(t, s)
 	clear(t)
 	for k, v in pairs(s) do
@@ -49,6 +47,7 @@ local function cloneto(t, s)
 	return setmetatable(t, getmetatable(s))
 end
 
+-- 类的元表,定义默认字段值的获取,包括基类,定义调用类即为构造实例
 local class_mt = {
 	__index = function(c, k)
 		local b = rawget(c, "__base")
@@ -64,6 +63,10 @@ local class_mt = {
 	end,
 }
 
+-- 创建类,c可以传入表或空,返回类对象:
+-- ClassA = class { ... } -- 也可以使用class()并动态构造类字段,类字段即为默认的实例字段
+-- InstanceA = ClassA() -- 构造实例,如果类字段有__new函数则自动调用,否则可以传入一个表作为初始实例内容
+-- ClassA == InstanceA.__class -- 特殊的__class字段可以获取类
 local function class(c)
 	c = c or {}
 	c.__index = function(t, k)
@@ -76,6 +79,7 @@ local function class(c)
 	return setmetatable(c, class_mt)
 end
 
+-- 获取s变量的字符串,可见字符串或[数量]
 local function str(s)
 	if type(s) == "string" then
 		local n = #s
@@ -89,6 +93,7 @@ local function str(s)
 	end
 end
 
+-- 获取bean的详细字符串,后三个参数仅内部使用
 local function tostr(t, out, m, name)
 	local o = out or {}
 	local n = #o
@@ -113,7 +118,7 @@ local function tostr(t, out, m, name)
 		if cls then
 			for i, v in pairs(cls.__vars) do
 				if type(i) == "number" then
-					local name = v.name
+					name = v.name
 					v = rawget(t, name)
 					if v ~= nil then
 						o[n + 2] = name
@@ -138,23 +143,24 @@ local function tostr(t, out, m, name)
 	return out and n or concat(o)
 end
 
+-- 根据bean描述表初始化所有的bean类
 local function initbeans(c)
 	local s = {}
 	for n, b in pairs(c) do
 		local vars = b.__vars
 		local r = {}
 		for i, v in pairs(vars) do
-			v.id = i
-			r[v.name] = v
+			v.id = i -- vars中加入id字段
+			r[v.name] = v -- 在临时表中加入var名索引
 		end
 		for n, v in pairs(r) do
-			vars[n] = v
+			vars[n] = v -- 把临时表归并到vars中,使vars加入var名索引
 		end
-		b.__name = n
-		s[b.__type] = class(b)
+		b.__name = n -- bean中加入__name字段
+		s[b.__type] = class(b) -- 创建类并放入临时表中
 		b.__tostring = tostr
 	end
-	local m = { [0] = 0, "", false, {} }
+	local m = { [0] = 0, "", false, {}, { __map = true } }
 	for i, b in pairs(s) do
 		c[i] = b
 		for n, v in pairs(b.__vars) do
@@ -166,9 +172,9 @@ local function initbeans(c)
 					if not v then
 						error(format("unknown type '%s' in '%s.%s'", t, b.__name, n))
 					end
-					v = v()
+					v = v() -- bean stub实例
 				end
-				b[n] = v
+				b[n] = v -- stub值
 			end
 		end
 	end

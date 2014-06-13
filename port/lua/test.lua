@@ -80,6 +80,7 @@ do
 	s:unmarshal(b.__class)
 	print(s)
 	print(b)
+	print(b.v16.__map)
 end
 
 print "========================================"
