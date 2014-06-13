@@ -553,13 +553,13 @@ public class NetManager implements IoHandler
 	@Override
 	public void sessionCreated(IoSession session) throws Exception
 	{
+		session.getFilterChain().addLast("codec", _pcf.newInstance());
 	}
 
 	@Override
 	public void sessionOpened(IoSession session) throws Exception
 	{
 		if(Log.hasDebug) Log.log.debug("{}({}): open: {}", _name, session.getId(), session.getRemoteAddress());
-		session.getFilterChain().addLast("codec", _pcf.newInstance());
 		onAddSession(session);
 	}
 
