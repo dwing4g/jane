@@ -97,10 +97,10 @@ public class BeanCodec extends IoFilterAdapter
 				os.setPosition(pos);
 				return false;
 			}
-			int maxsize = beanMaxSize(_ptype);
-			if(maxsize < 0) maxsize = Const.maxRawBeanSize;
-			if(_psize < 0 || _psize > maxsize)
-			    throw new Exception("bean maxsize overflow: type=" + _ptype + ",size=" + _psize + ",maxsize=" + maxsize);
+			int maxSize = beanMaxSize(_ptype);
+			if(maxSize < 0) maxSize = Const.maxRawBeanSize;
+			if(_psize < 0 || _psize > maxSize)
+			    throw new Exception("bean maxSize overflow: type=" + _ptype + ",size=" + _psize + ",maxSize=" + maxSize);
 		}
 		if(_psize > os.remain()) return false;
 		Bean<?> bean = createBean(_ptype);
@@ -108,9 +108,9 @@ public class BeanCodec extends IoFilterAdapter
 		{
 			int pos = os.position();
 			bean.unmarshalProtocol(os);
-			int realsize = os.position() - pos;
-			if(realsize > _psize)
-			    throw new Exception("bean realsize overflow: type=" + _ptype + ",size=" + _psize + ",realsize=" + realsize);
+			int realSize = os.position() - pos;
+			if(realSize > _psize)
+			    throw new Exception("bean realSize overflow: type=" + _ptype + ",size=" + _psize + ",realSize=" + realSize);
 			os.setPosition(pos + _psize);
 			next.messageReceived(session, bean);
 		}

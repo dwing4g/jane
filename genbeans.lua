@@ -205,7 +205,7 @@ public final class #(bean.name) extends RpcBean<#(bean.arg), #(bean.res)>
 	private static final long serialVersionUID = #(bean.uid);
 	public  static final #(bean.name) BEAN_STUB = new #(bean.name)();
 	public #(bean.name)() {}
-	public #(bean.name)(#(bean.arg) a) { arg = a; }
+	public #(bean.name)(#(bean.arg) a) { _arg = a; }
 	@Override public int type() { return #(bean.type); }
 	@Override public #(bean.name) stub() { return BEAN_STUB; }
 	@Override public #(bean.name) create() { return new #(bean.name)(); }

@@ -10,13 +10,13 @@ public final class LevelDBExport
 	{
 		if(args.length < 1)
 		{
-			System.err.println("USAGE: java jane.tool.LevelDBExport <database_path.ld> [tableid]");
+			System.err.println("USAGE: java jane.tool.LevelDBExport <databasePath.ld> [tableId]");
 			return;
 		}
 		String pathname = args[0].trim();
-		int tableid = (args.length == 2 ? Integer.parseInt(args[1]) : -1);
-		OctetsStream tableid_os = new OctetsStream(5);
-		if(tableid >= 0) tableid_os.marshalUInt(tableid);
+		int tableId = (args.length == 2 ? Integer.parseInt(args[1]) : -1);
+		OctetsStream tableIdOs = new OctetsStream(5);
+		if(tableId >= 0) tableIdOs.marshalUInt(tableId);
 
 		long t = System.currentTimeMillis();
 		System.err.println("INFO: opening " + pathname + " ...");
@@ -26,7 +26,7 @@ public final class LevelDBExport
 			System.err.println("ERROR: leveldb_open failed");
 			return;
 		}
-		long iter = StorageLevelDB.leveldb_iter_new(db, tableid_os.array(), tableid_os.size(), 2);
+		long iter = StorageLevelDB.leveldb_iter_new(db, tableIdOs.array(), tableIdOs.size(), 2);
 		if(iter == 0)
 		{
 			System.err.println("ERROR: leveldb_iter_new failed");
@@ -45,14 +45,14 @@ public final class LevelDBExport
 			if(key == null) break;
 			sb.setLength(0);
 			sb.append('[');
-			Octets key_o = Octets.wrap(key);
-			if(tableid >= 0)
+			Octets keyO = Octets.wrap(key);
+			if(tableId >= 0)
 			{
-				key_o.resize(tableid_os.size());
-				if(!key_o.equals(tableid_os)) break;
-				key_o.resize(key.length);
+				keyO.resize(tableIdOs.size());
+				if(!keyO.equals(tableIdOs)) break;
+				keyO.resize(key.length);
 			}
-			key_o.dumpJStr(sb);
+			keyO.dumpJStr(sb);
 			sb.append(']').append('=');
 			Octets.wrap(val).dumpJStr(sb);
 			System.out.println(sb.append(','));

@@ -111,8 +111,8 @@ public final class RC4Filter extends IoFilterAdapter
 	{
 		if(message instanceof IoBuffer)
 		{
-			IoBuffer iobuf = (IoBuffer)message;
-			updateInput(iobuf.array(), iobuf.position(), iobuf.remaining());
+			IoBuffer ioBuf = (IoBuffer)message;
+			updateInput(ioBuf.array(), ioBuf.position(), ioBuf.remaining());
 		}
 		nextFilter.messageReceived(session, message);
 	}
@@ -123,8 +123,8 @@ public final class RC4Filter extends IoFilterAdapter
 		Object message = writeRequest.getMessage();
 		if(message instanceof IoBuffer)
 		{
-			IoBuffer iobuf = (IoBuffer)message;
-			updateOutput(iobuf.array(), iobuf.position(), iobuf.remaining());
+			IoBuffer ioBuf = (IoBuffer)message;
+			updateOutput(ioBuf.array(), ioBuf.position(), ioBuf.remaining());
 		}
 		nextFilter.filterWrite(session, writeRequest);
 	}

@@ -16,8 +16,8 @@ public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 	private transient int              _reqTime;                                               // 发送请求的时间戳(秒)
 	private transient IoSession        _session;                                               // 请求时绑定的session
 	private transient RpcHandler<A, R> _onClient;                                              // 回复的回调
-	protected A                        arg;                                                    // 请求bean
-	protected R                        res;                                                    // 回复bean
+	protected A                        _arg;                                                   // 请求bean
+	protected R                        _res;                                                   // 回复bean
 
 	int getReqTime()
 	{
@@ -87,22 +87,22 @@ public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 
 	public A getArg()
 	{
-		return arg;
+		return _arg;
 	}
 
 	public void setArg(A a)
 	{
-		arg = a;
+		_arg = a;
 	}
 
 	public R getRes()
 	{
-		return res;
+		return _res;
 	}
 
 	public void setRes(R r)
 	{
-		res = r;
+		_res = r;
 	}
 
 	/**
@@ -134,16 +134,16 @@ public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 	@Override
 	public void reset()
 	{
-		if(arg != null) arg.reset();
-		if(res != null) res.reset();
+		if(_arg != null) _arg.reset();
+		if(_res != null) _res.reset();
 	}
 
 	@Override
 	public RpcBean<A, R> clone()
 	{
 		RpcBean<A, R> b = create();
-		if(arg != null) b.arg = arg.clone();
-		if(res != null) b.res = res.clone();
+		if(_arg != null) b._arg = _arg.clone();
+		if(_res != null) b._res = _res.clone();
 		return b;
 	}
 
@@ -152,8 +152,8 @@ public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 	{
 		os.marshal(_rpcId);
 		return _rpcId >= 0 ?
-		        os.marshalProtocol(arg != null ? arg : (arg = createArg())) :
-		        os.marshalProtocol(res != null ? res : (res = createRes()));
+		        os.marshalProtocol(_arg != null ? _arg : (_arg = createArg())) :
+		        os.marshalProtocol(_res != null ? _res : (_res = createRes()));
 	}
 
 	@Override
@@ -162,13 +162,13 @@ public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 		_rpcId = os.unmarshalInt();
 		if(_rpcId >= 0)
 		{
-			if(arg == null) arg = createArg();
-			os.unmarshalProtocol(arg);
+			if(_arg == null) _arg = createArg();
+			os.unmarshalProtocol(_arg);
 		}
 		else
 		{
-			if(res == null) res = createRes();
-			os.unmarshalProtocol(res);
+			if(_res == null) _res = createRes();
+			os.unmarshalProtocol(_res);
 		}
 		return os;
 	}
@@ -177,8 +177,8 @@ public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 	public int hashCode()
 	{
 		int h = 0;
-		if(arg != null) h += arg.hashCode();
-		if(res != null) h += res.hashCode();
+		if(_arg != null) h += _arg.hashCode();
+		if(_res != null) h += _res.hashCode();
 		return h;
 	}
 
@@ -188,28 +188,28 @@ public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 		if(o == this) return true;
 		if(!(o instanceof RpcBean)) return false;
 		RpcBean<?, ?> b = (RpcBean<?, ?>)o;
-		return (arg == b.arg || arg != null && arg.equals(b.arg)) &&
-		        (res == b.res || res != null && res.equals(b.res)) &&
+		return (_arg == b._arg || _arg != null && _arg.equals(b._arg)) &&
+		        (_res == b._res || _res != null && _res.equals(b._res)) &&
 		        getClass() == o.getClass();
 	}
 
 	@Override
 	public String toString()
 	{
-		return "{arg=" + arg + ",res=" + res + "}";
+		return "{arg=" + _arg + ",res=" + _res + "}";
 	}
 
 	@Override
 	public StringBuilder toJson(StringBuilder s)
 	{
 		s.append("{\"arg\":");
-		if(arg != null)
-			arg.toJson(s);
+		if(_arg != null)
+			_arg.toJson(s);
 		else
 			s.append("null");
 		s.append(",\"res\":");
-		if(arg != null)
-			arg.toJson(s);
+		if(_arg != null)
+			_arg.toJson(s);
 		else
 			s.append("null");
 		return s.append('}');
@@ -219,13 +219,13 @@ public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 	public StringBuilder toLua(StringBuilder s)
 	{
 		s.append("{arg=");
-		if(arg != null)
-			arg.toLua(s);
+		if(_arg != null)
+			_arg.toLua(s);
 		else
 			s.append("nil");
 		s.append(",res=");
-		if(arg != null)
-			arg.toLua(s);
+		if(_arg != null)
+			_arg.toLua(s);
 		else
 			s.append("nil");
 		return s.append('}');

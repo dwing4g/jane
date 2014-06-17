@@ -15,21 +15,21 @@ public final class ByteBufferStream extends OctetsStream
 	public static ByteBufferStream wrap(ByteBuffer bbuf)
 	{
 		ByteBufferStream os = new ByteBufferStream(bbuf);
-		os.count = bbuf.limit();
-		os.pos = bbuf.position();
+		os._count = bbuf.limit();
+		os._pos = bbuf.position();
 		return os;
 	}
 
 	private ByteBufferStream(ByteBuffer bbuf)
 	{
-		buffer = null; // 不使用内部的缓冲区,所以不支持调用某些接口,会导致空指针异常
+		_buffer = null; // 不使用内部的缓冲区,所以不支持调用某些接口,会导致空指针异常
 		bb = bbuf;
 	}
 
 	@Override
 	public void setPosition(int p)
 	{
-		bb.position(pos = p);
+		bb.position(_pos = p);
 	}
 
 	@Override
@@ -42,16 +42,16 @@ public final class ByteBufferStream extends OctetsStream
 	public ByteBufferStream clone()
 	{
 		ByteBufferStream os = new ByteBufferStream(bb.duplicate());
-		os.count = count;
-		os.pos = pos;
-		os.hasExInfo = hasExInfo;
+		os._count = _count;
+		os._pos = _pos;
+		os._hasExInfo = _hasExInfo;
 		return os;
 	}
 
 	@Override
 	public int hashCode()
 	{
-		return bb.hashCode() ^ pos;
+		return bb.hashCode() ^ _pos;
 	}
 
 	@Override
@@ -59,7 +59,7 @@ public final class ByteBufferStream extends OctetsStream
 	{
 		ByteBufferStream os = (ByteBufferStream)o;
 		int c = bb.compareTo(os.bb);
-		return c != 0 ? c : pos - os.pos;
+		return c != 0 ? c : _pos - os._pos;
 	}
 
 	@Override
@@ -68,58 +68,58 @@ public final class ByteBufferStream extends OctetsStream
 		if(this == o) return true;
 		if(!(o instanceof ByteBufferStream)) return false;
 		ByteBufferStream os = (ByteBufferStream)o;
-		return pos == os.pos && bb.equals(os.bb);
+		return _pos == os._pos && bb.equals(os.bb);
 	}
 
 	@Override
 	public boolean unmarshalBoolean() throws MarshalException
 	{
-		if(pos >= count) throw MarshalException.createEOF(hasExInfo);
+		if(_pos >= _count) throw MarshalException.createEOF(_hasExInfo);
 		boolean r = (bb.get() != 0);
-		++pos;
+		++_pos;
 		return r;
 	}
 
 	@Override
 	public byte unmarshalByte() throws MarshalException
 	{
-		if(pos >= count) throw MarshalException.createEOF(hasExInfo);
+		if(_pos >= _count) throw MarshalException.createEOF(_hasExInfo);
 		byte r = bb.get();
-		++pos;
+		++_pos;
 		return r;
 	}
 
 	@Override
 	public int unmarshalShort() throws MarshalException
 	{
-		int posNew = pos + 2;
-		if(posNew > count) throw MarshalException.createEOF(hasExInfo);
+		int posNew = _pos + 2;
+		if(posNew > _count) throw MarshalException.createEOF(_hasExInfo);
 		byte b0 = bb.get();
 		byte b1 = bb.get();
-		pos = posNew;
+		_pos = posNew;
 		return (b0 << 8) + (b1 & 0xff);
 	}
 
 	@Override
 	public char unmarshalChar() throws MarshalException
 	{
-		int posNew = pos + 2;
-		if(posNew > count) throw MarshalException.createEOF(hasExInfo);
+		int posNew = _pos + 2;
+		if(posNew > _count) throw MarshalException.createEOF(_hasExInfo);
 		byte b0 = bb.get();
 		byte b1 = bb.get();
-		pos = posNew;
+		_pos = posNew;
 		return (char)((b0 << 8) + (b1 & 0xff));
 	}
 
 	@Override
 	public int unmarshalInt3() throws MarshalException
 	{
-		int posNew = pos + 3;
-		if(posNew > count) throw MarshalException.createEOF(hasExInfo);
+		int posNew = _pos + 3;
+		if(posNew > _count) throw MarshalException.createEOF(_hasExInfo);
 		byte b0 = bb.get();
 		byte b1 = bb.get();
 		byte b2 = bb.get();
-		pos = posNew;
+		_pos = posNew;
 		return ((b0 & 0xff) << 16) +
 		       ((b1 & 0xff) <<  8) +
 		        (b2 & 0xff);
@@ -128,13 +128,13 @@ public final class ByteBufferStream extends OctetsStream
 	@Override
 	public int unmarshalInt4() throws MarshalException
 	{
-		int posNew = pos + 4;
-		if(posNew > count) throw MarshalException.createEOF(hasExInfo);
+		int posNew = _pos + 4;
+		if(posNew > _count) throw MarshalException.createEOF(_hasExInfo);
 		byte b0 = bb.get();
 		byte b1 = bb.get();
 		byte b2 = bb.get();
 		byte b3 = bb.get();
-		pos = posNew;
+		_pos = posNew;
 		return ( b0         << 24) +
 		       ((b1 & 0xff) << 16) +
 		       ((b2 & 0xff) <<  8) +
@@ -144,14 +144,14 @@ public final class ByteBufferStream extends OctetsStream
 	@Override
 	public long unmarshalLong5() throws MarshalException
 	{
-		int posNew = pos + 5;
-		if(posNew > count) throw MarshalException.createEOF(hasExInfo);
+		int posNew = _pos + 5;
+		if(posNew > _count) throw MarshalException.createEOF(_hasExInfo);
 		byte b0 = bb.get();
 		byte b1 = bb.get();
 		byte b2 = bb.get();
 		byte b3 = bb.get();
 		byte b4 = bb.get();
-		pos = posNew;
+		_pos = posNew;
 		return ((b0 & 0xffL) << 32) +
 		       ((b1 & 0xffL) << 24) +
 		       ((b2 & 0xff ) << 16) +
@@ -162,15 +162,15 @@ public final class ByteBufferStream extends OctetsStream
 	@Override
 	public long unmarshalLong6() throws MarshalException
 	{
-		int posNew = pos + 6;
-		if(posNew > count) throw MarshalException.createEOF(hasExInfo);
+		int posNew = _pos + 6;
+		if(posNew > _count) throw MarshalException.createEOF(_hasExInfo);
 		byte b0 = bb.get();
 		byte b1 = bb.get();
 		byte b2 = bb.get();
 		byte b3 = bb.get();
 		byte b4 = bb.get();
 		byte b5 = bb.get();
-		pos = posNew;
+		_pos = posNew;
 		return ((b0 & 0xffL) << 40) +
 		       ((b1 & 0xffL) << 32) +
 		       ((b2 & 0xffL) << 24) +
@@ -182,8 +182,8 @@ public final class ByteBufferStream extends OctetsStream
 	@Override
 	public long unmarshalLong7() throws MarshalException
 	{
-		int posNew = pos + 7;
-		if(posNew > count) throw MarshalException.createEOF(hasExInfo);
+		int posNew = _pos + 7;
+		if(posNew > _count) throw MarshalException.createEOF(_hasExInfo);
 		byte b0 = bb.get();
 		byte b1 = bb.get();
 		byte b2 = bb.get();
@@ -191,7 +191,7 @@ public final class ByteBufferStream extends OctetsStream
 		byte b4 = bb.get();
 		byte b5 = bb.get();
 		byte b6 = bb.get();
-		pos = posNew;
+		_pos = posNew;
 		return ((b0 & 0xffL) << 48) +
 		       ((b1 & 0xffL) << 40) +
 		       ((b2 & 0xffL) << 32) +
@@ -204,8 +204,8 @@ public final class ByteBufferStream extends OctetsStream
 	@Override
 	public long unmarshalLong8() throws MarshalException
 	{
-		int posNew = pos + 8;
-		if(posNew > count) throw MarshalException.createEOF(hasExInfo);
+		int posNew = _pos + 8;
+		if(posNew > _count) throw MarshalException.createEOF(_hasExInfo);
 		byte b0 = bb.get();
 		byte b1 = bb.get();
 		byte b2 = bb.get();
@@ -214,7 +214,7 @@ public final class ByteBufferStream extends OctetsStream
 		byte b5 = bb.get();
 		byte b6 = bb.get();
 		byte b7 = bb.get();
-		pos = posNew;
+		_pos = posNew;
 		return ((long)b0     << 56) +
 		       ((b1 & 0xffL) << 48) +
 		       ((b2 & 0xffL) << 40) +
@@ -228,11 +228,11 @@ public final class ByteBufferStream extends OctetsStream
 	@Override
 	public ByteBufferStream unmarshalSkip(int n) throws MarshalException
 	{
-		if(n < 0) throw MarshalException.create(hasExInfo);
-		int posNew = pos + n;
-		if(posNew > count) throw MarshalException.createEOF(hasExInfo);
-		if(posNew < pos) throw MarshalException.create(hasExInfo);
-		bb.position(pos = posNew);
+		if(n < 0) throw MarshalException.create(_hasExInfo);
+		int posNew = _pos + n;
+		if(posNew > _count) throw MarshalException.createEOF(_hasExInfo);
+		if(posNew < _pos) throw MarshalException.create(_hasExInfo);
+		bb.position(_pos = posNew);
 		return this;
 	}
 
@@ -241,12 +241,12 @@ public final class ByteBufferStream extends OctetsStream
 	{
 		int size = unmarshalUInt();
 		if(size <= 0) return EMPTY;
-		int posNew = pos + size;
-		if(posNew > count) throw MarshalException.createEOF(hasExInfo);
-		if(posNew < pos) throw MarshalException.create(hasExInfo);
+		int posNew = _pos + size;
+		if(posNew > _count) throw MarshalException.createEOF(_hasExInfo);
+		if(posNew < _pos) throw MarshalException.create(_hasExInfo);
 		byte[] r = new byte[size];
 		bb.get(r);
-		pos = posNew;
+		_pos = posNew;
 		return r;
 	}
 
@@ -259,13 +259,13 @@ public final class ByteBufferStream extends OctetsStream
 			o.clear();
 			return this;
 		}
-		int posNew = pos + size;
-		if(posNew > count) throw MarshalException.createEOF(hasExInfo);
-		if(posNew < pos) throw MarshalException.create(hasExInfo);
+		int posNew = _pos + size;
+		if(posNew > _count) throw MarshalException.createEOF(_hasExInfo);
+		if(posNew < _pos) throw MarshalException.create(_hasExInfo);
 		o.clear();
 		o.resize(size);
 		bb.get(o.array(), 0, size);
-		pos = posNew;
+		_pos = posNew;
 		return this;
 	}
 
@@ -273,12 +273,12 @@ public final class ByteBufferStream extends OctetsStream
 	public Octets unmarshalRaw(int size) throws MarshalException
 	{
 		if(size <= 0) return new Octets();
-		int posNew = pos + size;
-		if(posNew > count) throw MarshalException.createEOF(hasExInfo);
-		if(posNew < pos) throw MarshalException.create(hasExInfo);
+		int posNew = _pos + size;
+		if(posNew > _count) throw MarshalException.createEOF(_hasExInfo);
+		if(posNew < _pos) throw MarshalException.create(_hasExInfo);
 		byte[] r = new byte[size];
 		bb.get(r);
-		pos = posNew;
+		_pos = posNew;
 		return Octets.wrap(r);
 	}
 
@@ -286,7 +286,7 @@ public final class ByteBufferStream extends OctetsStream
 	public String unmarshalString() throws MarshalException
 	{
 		String s = super.unmarshalString();
-		bb.position(pos);
+		bb.position(_pos);
 		return s;
 	}
 }
