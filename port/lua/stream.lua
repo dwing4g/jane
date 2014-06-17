@@ -10,17 +10,17 @@ local setmetatable = setmetatable
 local string = string
 local byte = string.byte
 local char = string.char
-local str_sub = string.sub
+local strSub = string.sub
 local format = string.format
 local concat = table.concat
 local floor = math.floor
 local require = require
 local bean = require "bean"
-local platform = require "platform"
-local readf32 = platform.readf32
-local readf64 = platform.readf64
+local Platform = require "platform"
+local readf32 = Platform.readf32
+local readf64 = Platform.readf64
 local ftype = 4 -- 可修改成4/5来区分全局使用float/double类型来序列化
-local writef = (ftype == 4 and platform.writef32 or platform.writef64)
+local writef = (ftype == 4 and Platform.writef32 or Platform.writef64)
 
 --[[ 注意:
 * long类型只支持低52(二进制)位, 高12位必须保证为0, 否则结果未定义
@@ -30,16 +30,16 @@ local writef = (ftype == 4 and platform.writef32 or platform.writef64)
 * 由于使用lua table表示map容器, 当key是bean类型时, 无法索引, 只能遍历访问
 --]]
 
-local stream
+local Stream = {}
 
--- 构造1个stream对象,可选使用字符串类型的data来初始化内容
-local function new(data)
+-- 构造1个Stream对象,可选使用字符串类型的data来初始化内容
+function Stream.new(data)
 	data = data and tostring(data) or ""
-	return setmetatable({ buffer = data, pos = 0, limit = #data }, stream)
+	return setmetatable({ buffer = data, pos = 0, limit = #data }, Stream)
 end
 
 -- 清空,重置
-local function clear(self)
+function Stream:clear()
 	self.buffer = ""
 	self.pos = 0
 	self.limit = 0
@@ -47,8 +47,8 @@ local function clear(self)
 	return self
 end
 
--- 交换两个stream对象中的内容
-local function swap(self, oct)
+-- 交换两个Stream对象中的内容
+function Stream:swap(oct)
 	self.buffer, oct.buffer = oct.buffer, self.buffer
 	self.pos, oct.pos = oct.pos, self.pos
 	self.limit, oct.limit = oct.limit, self.limit
@@ -57,12 +57,12 @@ local function swap(self, oct)
 end
 
 -- 当前可反序列化的长度,即pos到limit的长度
-local function remain(self)
+function Stream:remain()
 	return self.limit - self.pos
 end
 
 -- 获取或设置当前的pos,只用于反序列化,基于0
-local function pos(self, pos)
+function Stream:pos(pos)
 	if not pos then return self.pos end
 	pos = tonumber(pos) or 0
 	if pos < 0 then
@@ -74,7 +74,7 @@ local function pos(self, pos)
 end
 
 -- 获取或设置当前的limit,只用于反序列化,基于0
-local function limit(self, limit)
+function Stream:limit(limit)
 	if not limit then return self.limit end
 	local n = #self.buffer
 	limit = tonumber(limit) or n
@@ -86,8 +86,8 @@ local function limit(self, limit)
 	return self
 end
 
--- 获取stream中的部分数据
-local function sub(data, pos, size)
+-- 获取Stream中的部分数据
+function Stream.sub(data, pos, size)
 	if type(data) == "table" then
 		data = data.buffer
 	end
@@ -99,10 +99,10 @@ local function sub(data, pos, size)
 		pos = n + pos
 		if pos < 0 then pos = 0 end
 	end
-	return str_sub(data, pos + 1, pos + (size > 0 and size or 0))
+	return strSub(data, pos + 1, pos + (size > 0 and size or 0))
 end
 
--- 临时追加data(pos,size)到当前的stream结尾,可连续追加若干次,最后调用flush来真正实现追加合并
+-- 临时追加data(pos,size)到当前的Stream结尾,可连续追加若干次,最后调用flush来真正实现追加合并
 local function append(self, data, pos, size)
 	if type(data) == "table" then
 		data = data.buffer
@@ -112,24 +112,27 @@ local function append(self, data, pos, size)
 		t = { self.buffer }
 		self.buf = t
 	end
-	t[#t + 1] = (pos or size) and sub(data, pos, size) or data
+	t[#t + 1] = (pos or size) and Stream.sub(data, pos, size) or data
 	return self
+end
+function Stream:append(data, pos, size)
+	return append(self, data, pos, size)
 end
 
 -- 取消之前所有临时追加的内容
-local function popall(self)
+function Stream:popAll()
 	self.buf = nil
 	return self
 end
 
 -- 取消之前n次(默认为1)临时追加的内容
-local function pop(self, n)
+function Stream:pop(n)
 	n = tonumber(n) or 1
 	local t = self.buf
 	if t then
 		local s = #t
 		local i = s - n + 1
-		if i <= 1 then return popall(self) end
+		if i <= 1 then return self:popAll() end
 		for i = i, s do
 			t[i] = nil
 		end
@@ -138,7 +141,7 @@ local function pop(self, n)
 end
 
 -- 合并之前追加的内容
-local function flush(self)
+function Stream:flush()
 	local t = self.buf
 	if t then
 		local buf = concat(t)
@@ -162,13 +165,13 @@ local function __tostring(self)
 	return concat(o)
 end
 
--- 调用stream(...)即调用new
+-- 调用Stream(...)即调用Stream.new
 local function __call(_, data)
-	return new(data)
+	return Stream.new(data)
 end
 
 -- 序列化1个整数(支持范围:-(52-bit)到+(52-bit))
-local function marshal_int(self, v)
+function Stream:marshalInt(v)
 	if v >= 0 then
 			if v < 0x40             then append(self, char(v))
 		elseif v < 0x2000           then append(self, char(      floor(v / 0x100          ) + 0x40,       v % 0x100))
@@ -194,7 +197,7 @@ local function marshal_int(self, v)
 end
 
 -- 序列化1个无符号整数(支持范围:0到+(32-bit))
-local function marshal_uint(self, v)
+function Stream:marshalUInt(v)
 		if v < 0x80      then append(self, char(v))
 	elseif v < 0x4000    then append(self, char(floor(v / 0x100    ) + 0x80,       v % 0x100))
 	elseif v < 0x200000  then append(self, char(floor(v / 0x10000  ) + 0xc0, floor(v / 0x100  ) % 0x100,       v % 0x100))
@@ -204,14 +207,14 @@ local function marshal_uint(self, v)
 end
 
 -- 序列化字符串
-local function marshal_str(self, v)
-	marshal_uint(self, #v)
+local function marshalStr(self, v)
+	self:marshalUInt(#v)
 	append(self, v)
 	return self
 end
 
 -- 判断table中是否有key含有小数部分,p可传入pairs或ipairs
-local function hasfloatkey(t, p)
+local function hasFloatKey(t, p)
 	for k in p(t) do
 		k = tonumber(k) or 0
 		if k ~= floor(k) then return true end
@@ -219,7 +222,7 @@ local function hasfloatkey(t, p)
 end
 
 -- 判断table中是否有value含有小数部分,p可传入pairs或ipairs
-local function hasfloatval(t, p)
+local function hasFloatVal(t, p)
 	for _, v in p(t) do
 		v = tonumber(v) or 0
 		if v ~= floor(v) then return true end
@@ -227,24 +230,24 @@ local function hasfloatval(t, p)
 end
 
 -- 获取序列容器中的值类型,只以第1个元素的类型为准,其中整数和浮点数类型能自动根据全部数据来判断
-local function vecvartype(t)
+local function vecVarType(t)
 	local v = type(t[1])
-	if v == "number" then return hasfloatval(t, ipairs) and ftype or 0 end
+	if v == "number" then return hasFloatVal(t, ipairs) and ftype or 0 end
 	if v == "table" then return 2 end
 	if v == "string" then return 1 end
 	if v == "boolean" then return 0 end
 end
 
 -- 获取关联容器中的键值类型,只以第1个元素的类型为准,其中整数和浮点数类型能自动根据全部数据来判断
-local function mapvartype(t)
+local function mapVarType(t)
 	local k, v = next(t)
 	k, v = type(k), type(v)
-	if k == "number" then k = hasfloatkey(t, pairs) and ftype or 0
+	if k == "number" then k = hasFloatKey(t, pairs) and ftype or 0
 	elseif k == "table" then k = 2
 	elseif k == "string" then k = 1
 	elseif k == "boolean" then k = 0
 	else k = nil end
-	if v == "number" then v = hasfloatval(t, pairs) and ftype or 0
+	if v == "number" then v = hasFloatVal(t, pairs) and ftype or 0
 	elseif v == "table" then v = 2
 	elseif v == "string" then v = 1
 	elseif v == "boolean" then v = 0
@@ -253,7 +256,7 @@ local function mapvartype(t)
 end
 
 -- 序列化v值,类型自动判断,可选前置序列化tag,subtype仅用于内部序列化容器元素的类型提示
-local function marshal(self, v, tag, subtype)
+function Stream:marshal(v, tag, subtype)
 	local t = type(v)
 	if t == "boolean" then
 		v = v and 1 or 0
@@ -276,16 +279,16 @@ local function marshal(self, v, tag, subtype)
 			end
 		end
 		if ft then
-			marshal_str(self, writef(v))
+			marshalStr(self, writef(v))
 		else
-			marshal_int(self, v)
+			self:marshalInt(v)
 		end
 	elseif t == "string" then
 		if tag then
 			if v == "" then return end
 			append(self, char(tag * 4 + 1))
 		end
-		marshal_str(self, v)
+		marshalStr(self, v)
 	elseif t == "table" then
 		if v.__type then -- bean
 			if tag then append(self, char(tag * 4 + 2)) end
@@ -295,21 +298,21 @@ local function marshal(self, v, tag, subtype)
 			for nn, vv in pairs(v) do
 				local var = vars[nn]
 				if var then
-					marshal(self, vv, var.id)
+					self:marshal(vv, var.id)
 				end
 			end
 			if tag and n == #buf then
-				pop(self)
+				self:pop()
 			else
 				append(self, "\0")
 			end
 		elseif not v.__map then -- vec
-			subtype = vecvartype(v)
+			subtype = vecVarType(v)
 			append(self, char(tag * 4 + 3))
 			append(self, char(subtype))
-			marshal_uint(self, #v)
+			self:marshalUInt(#v)
 			for _, vv in ipairs(v) do
-				marshal(self, vv, nil, subtype)
+				self:marshal(vv, nil, subtype)
 			end
 		else -- map
 			local n = 0
@@ -317,13 +320,13 @@ local function marshal(self, v, tag, subtype)
 				n = n + 1
 			end
 			if n > 0 then
-				local kt, vt = mapvartype(v)
+				local kt, vt = mapVarType(v)
 				append(self, char(tag * 4 + 3))
 				append(self, char(0x80 + kt * 8 + vt))
-				marshal_uint(self, n)
+				self:marshalUInt(n)
 				for k, vv in pairs(v) do
-					marshal(self, k, nil, kt)
-					marshal(self, vv, nil, vt)
+					self:marshal(k, nil, kt)
+					self:marshal(vv, nil, vt)
 				end
 			end
 		end
@@ -332,7 +335,7 @@ local function marshal(self, v, tag, subtype)
 end
 
 -- 跳过反序列化n字节
-local function unmarshal_skip(self, n)
+function Stream:unmarshalSkip(n)
 	local pos = self.pos
 	if pos + n > self.limit then error "unmarshal overflow" end
 	self.pos = pos + n
@@ -340,7 +343,7 @@ local function unmarshal_skip(self, n)
 end
 
 -- 反序列化1个字节
-local function unmarshal_byte(self)
+local function unmarshalByte(self)
 	local pos = self.pos
 	if pos >= self.limit then error "unmarshal overflow" end
 	pos = pos + 1
@@ -349,7 +352,7 @@ local function unmarshal_byte(self)
 end
 
 -- 反序列化n个字节
-local function unmarshal_bytes(self, n)
+local function unmarshalBytes(self, n)
 	local pos = self.pos
 	if pos + n > self.limit then error "unmarshal overflow" end
 	local buf = self.buffer
@@ -362,102 +365,100 @@ local function unmarshal_bytes(self, n)
 end
 
 -- 反序列化1个字符串
-local function unmarshal_str(self, n)
+local function unmarshalStr(self, n)
 	local pos = self.pos
 	if pos + n > self.limit then error "unmarshal overflow" end
 	local p = pos + n
 	self.pos = p
-	return str_sub(self.buffer, pos + 1, p)
+	return strSub(self.buffer, pos + 1, p)
 end
 
 -- 反序列化1个无符号整数(支持范围:0到+(32-bit))
-local function unmarshal_uint(self)
-	local v = unmarshal_byte(self)
+function Stream:unmarshalUInt()
+	local v = unmarshalByte(self)
 		if v < 0x80 then
-	elseif v < 0xc0 then v = v % 0x40 * 0x100     + unmarshal_byte (self   )
-	elseif v < 0xe0 then v = v % 0x20 * 0x10000   + unmarshal_bytes(self, 2)
-	elseif v < 0xf0 then v = v % 0x10 * 0x1000000 + unmarshal_bytes(self, 3)
-	else                 v = unmarshal_bytes(self, 4) end
+	elseif v < 0xc0 then v = v % 0x40 * 0x100     + unmarshalByte (self   )
+	elseif v < 0xe0 then v = v % 0x20 * 0x10000   + unmarshalBytes(self, 2)
+	elseif v < 0xf0 then v = v % 0x10 * 0x1000000 + unmarshalBytes(self, 3)
+	else                 v = unmarshalBytes(self, 4) end
 	return v
 end
 
 -- 反序列化1个整数(支持范围:-(52-bit)到+(52-bit))
-local function unmarshal_int(self)
-	local v = unmarshal_byte(self)
+function Stream:unmarshalInt()
+	local v = unmarshalByte(self)
 		if v <  0x40 or v >= 0xc0 then v = v < 0x80 and v or v - 0x100
-	elseif v <= 0x5f then v = (v - 0x40) * 0x100         + unmarshal_byte (self   )
-	elseif v >= 0xa0 then v = (v + 0x40) * 0x100         + unmarshal_byte (self   ) - 0x10000
-	elseif v <= 0x6f then v = (v - 0x60) * 0x10000       + unmarshal_bytes(self, 2)
-	elseif v >= 0x90 then v = (v + 0x60) * 0x10000       + unmarshal_bytes(self, 2) - 0x1000000
-	elseif v <= 0x77 then v = (v - 0x70) * 0x1000000     + unmarshal_bytes(self, 3)
-	elseif v >= 0x88 then v = (v + 0x70) * 0x1000000     + unmarshal_bytes(self, 3) - 0x100000000
-	elseif v <= 0x7b then v = (v - 0x78) * 0x100000000   + unmarshal_bytes(self, 4)
-	elseif v >= 0x84 then v = (v + 0x78) * 0x100000000   + unmarshal_bytes(self, 4) - 0x10000000000
-	elseif v <= 0x7d then v = (v - 0x7c) * 0x10000000000 + unmarshal_bytes(self, 5)
-	elseif v >= 0x82 then v = (v + 0x7c) * 0x10000000000 + unmarshal_bytes(self, 5) - 0x1000000000000
-	elseif v == 0x7e then v = unmarshal_bytes(self, 6)
-	elseif v == 0x81 then v = unmarshal_bytes(self, 6) - 0x1000000000000
-	elseif v == 0x7f then v = unmarshal_byte(self); v = v <  0x80 and v * 0x1000000000000 + unmarshal_bytes(self, 6) or (v - 0x80) * 0x100000000000000 + unmarshal_bytes(self, 7)
-	else                  v = unmarshal_byte(self); v = v >= 0x80 and (v - 0xf0) * 0x1000000000000 + unmarshal_bytes(self, 6) - 0x10000000000000 or unmarshal_bytes(self, 7) and -0xfffffffffffff end
+	elseif v <= 0x5f then v = (v - 0x40) * 0x100         + unmarshalByte (self   )
+	elseif v >= 0xa0 then v = (v + 0x40) * 0x100         + unmarshalByte (self   ) - 0x10000
+	elseif v <= 0x6f then v = (v - 0x60) * 0x10000       + unmarshalBytes(self, 2)
+	elseif v >= 0x90 then v = (v + 0x60) * 0x10000       + unmarshalBytes(self, 2) - 0x1000000
+	elseif v <= 0x77 then v = (v - 0x70) * 0x1000000     + unmarshalBytes(self, 3)
+	elseif v >= 0x88 then v = (v + 0x70) * 0x1000000     + unmarshalBytes(self, 3) - 0x100000000
+	elseif v <= 0x7b then v = (v - 0x78) * 0x100000000   + unmarshalBytes(self, 4)
+	elseif v >= 0x84 then v = (v + 0x78) * 0x100000000   + unmarshalBytes(self, 4) - 0x10000000000
+	elseif v <= 0x7d then v = (v - 0x7c) * 0x10000000000 + unmarshalBytes(self, 5)
+	elseif v >= 0x82 then v = (v + 0x7c) * 0x10000000000 + unmarshalBytes(self, 5) - 0x1000000000000
+	elseif v == 0x7e then v = unmarshalBytes(self, 6)
+	elseif v == 0x81 then v = unmarshalBytes(self, 6) - 0x1000000000000
+	elseif v == 0x7f then v = unmarshalByte(self); v = v <  0x80 and v * 0x1000000000000 + unmarshalBytes(self, 6) or (v - 0x80) * 0x100000000000000 + unmarshalBytes(self, 7)
+	else                  v = unmarshalByte(self); v = v >= 0x80 and (v - 0xf0) * 0x1000000000000 + unmarshalBytes(self, 6) - 0x10000000000000 or unmarshalBytes(self, 7) and -0xfffffffffffff end
 	return v
 end
 
-local unmarshal
-
 -- 反序列化1个容器元素,subtype表示类型
-local function unmarshal_subvar(self, subtype)
-	if subtype == 0 then return unmarshal_int(self) end
-	if subtype == 1 then return unmarshal_str(self, unmarshal_uint(self)) end
-	if subtype == 4 then return readf32(unmarshal_bytes(self, 4)) end
-	if subtype == 5 then return readf64(unmarshal_bytes(self, 8)) end
-	return unmarshal(self, subtype)
+local function unmarshalSubVar(self, subtype)
+	if subtype == 0 then return self:unmarshalInt() end
+	if subtype == 1 then return unmarshalStr(self, self:unmarshalUInt()) end
+	if subtype == 4 then return readf32(unmarshalBytes(self, 4)) end
+	if subtype == 5 then return readf64(unmarshalBytes(self, 8)) end
+	return self:unmarshal(subtype)
 end
 
 -- 反序列化1个值,可选vars用于提示类型
-local function unmarshal_var(self, vars)
-	local tag = unmarshal_byte(self)
+local function unmarshalVar(self, vars)
+	local tag = unmarshalByte(self)
 	local v = tag % 4
 	tag = (tag - v) / 4
 	if tag == 0 then return end
 	vars = vars and vars[tag]
 	local t = vars and vars.type
 	if v == 0 then
-		v = unmarshal_int(self)
+		v = self:unmarshalInt()
 		if t == 2 then v = v ~= 0 end -- boolean
 	elseif v == 1 then
-		v = unmarshal_str(self, unmarshal_uint(self))
+		v = unmarshalStr(self, self:unmarshalUInt())
 	elseif v == 2 then
-		v = unmarshal(self, t and bean[t])
+		v = self:unmarshal(t and bean[t])
 	else
-		v = unmarshal_byte(self)
+		v = unmarshalByte(self)
 		if v < 0x80 then
 			if v < 8 then -- list
-				local n = unmarshal_uint(self)
+				local n = self:unmarshalUInt()
 				t = vars and vars.value
 				t = v ~= 2 and v or t and bean[t]
 				v = {}
 				for i = 1, n do
-					v[i] = unmarshal_subvar(self, t)
+					v[i] = unmarshalSubVar(self, t)
 				end
 			elseif v == 8 then
-				v = readf32(unmarshal_bytes(self, 4))
+				v = readf32(unmarshalBytes(self, 4))
 			elseif v == 9 then
-				v = readf64(unmarshal_bytes(self, 8))
+				v = readf64(unmarshalBytes(self, 8))
 			else
 				v = nil
 			end
 		else -- map
 			local n = v % 8
 			local k = (v - 0x80 - n) / 8
-			v, n = n, unmarshal_uint(self)
+			v, n = n, self:unmarshalUInt()
 			local kt = vars and vars.key
 			kt = k ~= 2 and k or kt and bean[kt]
 			t = vars and vars.value
 			t = v ~= 2 and v or t and bean[t]
 			v = {}
 			for _ = 1, n do
-				k = unmarshal_subvar(self, kt)
-				v[k] = unmarshal_subvar(self, t)
+				k = unmarshalSubVar(self, kt)
+				v[k] = unmarshalSubVar(self, t)
 			end
 		end
 	end
@@ -465,40 +466,19 @@ local function unmarshal_var(self, vars)
 end
 
 -- 根据类来反序列化1个bean
-unmarshal = function(self, cls)
+function Stream:unmarshal(cls)
 	local vars = cls and cls.__vars
 	local obj = cls and cls() or {}
 	while true do
-		local id, vv = unmarshal_var(self, vars)
+		local id, vv = unmarshalVar(self, vars)
 		if not id then return obj end
 		local var = vars and vars[id]
 		obj[var and var.name or id] = vv
 	end
 end
 
-stream =
-{
-	new = new,
-	clear = clear,
-	swap = swap,
-	remain = remain,
-	pos = pos,
-	limit = limit,
-	sub = sub,
-	append = append,
-	popall = popall,
-	pop = pop,
-	flush = flush,
-	__tostring = __tostring,
-	marshal_uint = marshal_uint,
-	marshal_int = marshal_int,
-	marshal = marshal,
-	unmarshal_skip = unmarshal_skip,
-	unmarshal_uint = unmarshal_uint,
-	unmarshal_int = unmarshal_int,
-	unmarshal = unmarshal,
-}
-stream.__index = stream
-setmetatable(stream, { __call = __call })
+Stream.__index = Stream
+Stream.__tostring = __tostring
+setmetatable(Stream, { __call = __call })
 
-return stream
+return Stream

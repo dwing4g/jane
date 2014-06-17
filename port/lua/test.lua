@@ -5,11 +5,11 @@ local require = require
 local setmetatable = setmetatable
 local floor = math.floor
 local format = string.format
-local util = require "util"
+local Util = require "util"
 local bean = require "bean"
-local stream = require "stream"
-local class = util.class
-local clone = util.clone
+local Stream = require "stream"
+local class = Util.class
+local clone = Util.clone
 
 do
 	local ClassA = class -- 定义类ClassA
@@ -72,7 +72,7 @@ end
 print "----------------------------------------"
 
 do
-	local s = stream()
+	local s = Stream()
 	local b = bean.TestType()
 	print(b.v16.__map)
 	b.v1 = 1
@@ -108,18 +108,18 @@ print "========================================"
 
 do
 	local function testInt(x)
-		local s = stream()
-		s:marshal_int(x)
+		local s = Stream()
+		s:marshalInt(x)
 		s:flush()
-		local y = s:unmarshal_int()
+		local y = s:unmarshalInt()
 		if x ~= y then error(format("unmarshal wrong value: %.0f -> %.0f dump: %s", x, y, s)) end
 		if s.pos ~= s.limit then error(format("unmarshal wrong position: %.0f dump: %s", x, s)) end
 	end
 	local function testUInt(x)
-		local s = stream()
-		s:marshal_uint(x)
+		local s = Stream()
+		s:marshalUInt(x)
 		s:flush()
-		local y = s:unmarshal_uint()
+		local y = s:unmarshalUInt()
 		if x ~= y then error(format("unmarshal wrong value: %.0f -> %.0f dump: %s", x, y, s)) end
 		if s.pos ~= s.limit then error(format("unmarshal wrong position: %.0f dump: %s", x, s)) end
 	end

@@ -12,8 +12,10 @@ local byte = string.byte
 local format = string.format
 local concat = table.concat
 
+local Util = {}
+
 -- 清除整个表中的全部内容
-local function clear(t)
+function Util.clear(t)
 	while true do
 		local k = next(t)
 		if k == nil then return end
@@ -22,7 +24,7 @@ local function clear(t)
 end
 
 -- 复制t,如果t不是表则直接返回,否则进行深拷贝,包括元表及相同引用,参数m仅内部使用
-local function clone(t, m)
+function Util.clone(t, m)
 	if type(t) ~= "table" then return t end
 	if m then
 		local v = m[t]
@@ -33,22 +35,22 @@ local function clone(t, m)
 	local r = {}
 	m[t] = r
 	for k, v in pairs(t) do
-		r[k] = clone(v, m)
+		r[k] = Util.clone(v, m)
 	end
 	return setmetatable(r, getmetatable(t))
 end
 
 -- 表t清空并从表s中复制全部内容(规则同上)
-local function cloneto(t, s)
-	clear(t)
+function Util.cloneTo(t, s)
+	Util.clear(t)
 	for k, v in pairs(s) do
-		t[k] = clone(v)
+		t[k] = Util.clone(v)
 	end
 	return setmetatable(t, getmetatable(s))
 end
 
 -- 类的元表,定义默认字段值的获取,包括基类,定义调用类即为构造实例
-local class_mt = {
+local classMt = {
 	__index = function(c, k)
 		local b = rawget(c, "__base")
 		return b and b[k]
@@ -67,20 +69,20 @@ local class_mt = {
 -- ClassA = class { ... } -- 也可以使用class()并动态构造类字段,类字段即为默认的实例字段,__base字段可指定基类
 -- InstanceA = ClassA() -- 构造实例,如果类字段有__new函数则自动调用,否则可以传入1个表作为初始实例内容
 -- ClassA == InstanceA.__class -- 特殊的__class字段可以获取类
-local function class(c)
+function Util.class(c)
 	c = c or {}
 	c.__index = function(t, k)
 		if k == "__class" then return c end
 		local v = c[k]
-		local r = clone(v)
+		local r = Util.clone(v)
 		if r ~= v then t[k] = r end
 		return r
 	end
-	return setmetatable(c, class_mt)
+	return setmetatable(c, classMt)
 end
 
 -- 获取s变量的字符串,可见字符串或[数量]
-local function str(s)
+function Util.str(s)
 	if type(s) == "string" then
 		local n = #s
 		for i = 1, n do
@@ -94,12 +96,12 @@ local function str(s)
 end
 
 -- 获取bean的详细字符串,后三个参数仅内部使用
-local function tostr(t, out, m, name)
+function Util.toStr(t, out, m, name)
 	local o = out or {}
 	local n = #o
 	if type(t) ~= "table" then
 		n = n + 1
-		o[n] = str(t)
+		o[n] = Util.str(t)
 	else
 		if m then
 			if m[t] then
@@ -123,16 +125,16 @@ local function tostr(t, out, m, name)
 					if v ~= nil then
 						o[n + 2] = name
 						o[n + 3] = "="
-						n = tostr(v, o, m, name)
+						n = Util.toStr(v, o, m, name)
 						o[n + 1] = ","
 					end
 				end
 			end
 		else
 			for k, v in pairs(t) do
-				n = tostr(k, o, m, k)
+				n = Util.toStr(k, o, m, k)
 				o[n + 1] = "="
-				n = tostr(v, o, m, k)
+				n = Util.toStr(v, o, m, k)
 				o[n + 1] = ","
 			end
 		end
@@ -143,7 +145,7 @@ local function tostr(t, out, m, name)
 end
 
 -- 根据bean描述表初始化所有的bean类
-local function initbeans(c)
+function Util.initBeans(c)
 	local s = {}
 	for n, b in pairs(c) do
 		local vars = b.__vars
@@ -156,8 +158,8 @@ local function initbeans(c)
 			vars[n] = v -- 把临时表归并到vars中,使vars加入var名索引
 		end
 		b.__name = n -- bean中加入__name字段
-		s[b.__type] = class(b) -- 创建类并放入临时表中
-		b.__tostring = tostr
+		s[b.__type] = Util.class(b) -- 创建类并放入临时表中
+		b.__tostring = Util.toStr
 	end
 	local m = { [0] = 0, "", false, {}, setmetatable({}, { __index = { __map = true }}) }
 	for i, b in pairs(s) do
@@ -180,13 +182,4 @@ local function initbeans(c)
 	return c
 end
 
-return
-{
-	clear = clear,
-	clone = clone,
-	cloneto = cloneto,
-	class = class,
-	str = str,
-	tostr = tostr,
-	initbeans = initbeans,
-}
+return Util
