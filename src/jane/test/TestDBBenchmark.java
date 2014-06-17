@@ -56,7 +56,7 @@ public final class TestDBBenchmark
 						long t1 = System.currentTimeMillis();
 						long tt = t1 - t0;
 						if(tt >= 250) System.out.println("--- proc delay=" + tt);
-						lock(Benchmark.lockid(id));
+						lock(Benchmark.lockId(id));
 						TestBean.Safe a = Benchmark.getSafe(id);
 						if(a == null)
 						{

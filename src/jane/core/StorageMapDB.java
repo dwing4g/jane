@@ -27,23 +27,23 @@ import org.mapdb.Serializer;
  */
 public final class StorageMapDB implements Storage
 {
-	private static final StorageMapDB  _instance     = new StorageMapDB();
-	private final Map<String, Bean<?>> _table_stub_k = new HashMap<String, Bean<?>>(); // 保存的bean类型key的存根. 用于序列化
-	private DB                         _db;                                           // MapDB的数据库对象(会多线程并发访问)
-	private File                       _dbfile;                                       // 当前数据库的文件
-	private int                        _modcount;                                     // 统计一次提交的put数量(不会被多线程访问)
+	private static final StorageMapDB  _instance   = new StorageMapDB();
+	private final Map<String, Bean<?>> _tableStubK = new HashMap<String, Bean<?>>(); // 保存的bean类型key的存根. 用于序列化
+	private DB                         _db;                                         // MapDB的数据库对象(会多线程并发访问)
+	private File                       _dbFile;                                     // 当前数据库的文件
+	private int                        _modCount;                                   // 统计一次提交的put数量(不会被多线程访问)
 
 	private final class Table<K, V extends Bean<V>> implements Storage.Table<K, V>
 	{
 		private final BTreeMap<K, Octets> _map;
-		private final String              _tablename;
-		private final V                   _stub_v;
+		private final String              _tableName;
+		private final V                   _stubV;
 
-		public Table(BTreeMap<K, Octets> map, String tablename, V stub_v)
+		public Table(BTreeMap<K, Octets> map, String tableName, V stubV)
 		{
 			_map = map;
-			_tablename = tablename;
-			_stub_v = stub_v;
+			_tableName = tableName;
+			_stubV = stubV;
 		}
 
 		@Override
@@ -53,12 +53,12 @@ public final class StorageMapDB implements Storage
 			if(o == null) return null;
 			OctetsStream os = OctetsStream.wrap(o);
 			os.setExceptionInfo(true);
-			V v = _stub_v.alloc();
+			V v = _stubV.alloc();
 			try
 			{
 				int format = os.unmarshalByte();
 				if(format != 0)
-				    throw new IllegalStateException("unknown record value format(" + format + ") in table(" + _tablename + "),key=(" + k + ')');
+				    throw new IllegalStateException("unknown record value format(" + format + ") in table(" + _tableName + "),key=(" + k + ')');
 				v.unmarshal(os);
 			}
 			catch(MarshalException e)
@@ -71,15 +71,15 @@ public final class StorageMapDB implements Storage
 		@Override
 		public void put(K k, V v)
 		{
-			_map.put(k, v.marshal(new OctetsStream(_stub_v.initSize()).marshal1((byte)0))); // format
-			++_modcount;
+			_map.put(k, v.marshal(new OctetsStream(_stubV.initSize()).marshal1((byte)0))); // format
+			++_modCount;
 		}
 
 		@Override
 		public void remove(K k)
 		{
 			_map.remove(k);
-			++_modcount;
+			++_modCount;
 		}
 
 		@Override
@@ -92,16 +92,16 @@ public final class StorageMapDB implements Storage
 	private final class TableLong<V extends Bean<V>> implements Storage.TableLong<V>
 	{
 		private final BTreeMap<Long, Octets> _map;
-		private final String                 _tablename;
-		private final Atomic.Long            _idcounter;
-		private final V                      _stub_v;
+		private final String                 _tableName;
+		private final Atomic.Long            _idCounter;
+		private final V                      _stubV;
 
-		public TableLong(BTreeMap<Long, Octets> map, String tablename, V stub_v)
+		public TableLong(BTreeMap<Long, Octets> map, String tableName, V stubV)
 		{
 			_map = map;
-			_tablename = tablename;
-			_idcounter = _db.getAtomicLong(tablename + ".idcounter");
-			_stub_v = stub_v;
+			_tableName = tableName;
+			_idCounter = _db.getAtomicLong(tableName + ".idcounter");
+			_stubV = stubV;
 		}
 
 		@Override
@@ -111,12 +111,12 @@ public final class StorageMapDB implements Storage
 			if(o == null) return null;
 			OctetsStream os = OctetsStream.wrap(o);
 			os.setExceptionInfo(true);
-			V v = _stub_v.alloc();
+			V v = _stubV.alloc();
 			try
 			{
 				int format = os.unmarshalByte();
 				if(format != 0)
-				    throw new IllegalStateException("unknown record value format(" + format + ") in table(" + _tablename + "),key=(" + k + ')');
+				    throw new IllegalStateException("unknown record value format(" + format + ") in table(" + _tableName + "),key=(" + k + ')');
 				v.unmarshal(os);
 			}
 			catch(MarshalException e)
@@ -129,15 +129,15 @@ public final class StorageMapDB implements Storage
 		@Override
 		public void put(long k, V v)
 		{
-			_map.put(k, v.marshal(new OctetsStream(_stub_v.initSize()).marshal1((byte)0))); // format
-			++_modcount;
+			_map.put(k, v.marshal(new OctetsStream(_stubV.initSize()).marshal1((byte)0))); // format
+			++_modCount;
 		}
 
 		@Override
 		public void remove(long k)
 		{
 			_map.remove(k);
-			++_modcount;
+			++_modCount;
 		}
 
 		@Override
@@ -149,26 +149,26 @@ public final class StorageMapDB implements Storage
 		@Override
 		public long getIdCounter()
 		{
-			return _idcounter.get();
+			return _idCounter.get();
 		}
 
 		@Override
 		public void setIdCounter(long v)
 		{
-			if(v != _idcounter.get())
-			    _idcounter.set(v);
+			if(v != _idCounter.get())
+			    _idCounter.set(v);
 		}
 	}
 
 	private static final class MapDBSerializer implements Serializer<Bean<?>>, Serializable
 	{
 		private static final long       serialVersionUID = 2524574473300271970L;
-		private final String            _tablename;
+		private final String            _tableName;
 		private final transient Bean<?> _stub;
 
-		public MapDBSerializer(String tablename, Bean<?> stub)
+		public MapDBSerializer(String tableName, Bean<?> stub)
 		{
-			_tablename = tablename;
+			_tableName = tableName;
 			_stub = stub;
 		}
 
@@ -189,7 +189,7 @@ public final class StorageMapDB implements Storage
 		{
 			int format = in.readByte();
 			if(format != 0)
-			    throw new IllegalStateException("unknown record value format(" + format + ") in table(" + _tablename + ')');
+			    throw new IllegalStateException("unknown record value format(" + format + ") in table(" + _tableName + ')');
 			DataInput2 di2 = (DataInput2)in;
 			ByteBuffer bb = di2.buf;
 			Bean<?> bean;
@@ -349,13 +349,13 @@ public final class StorageMapDB implements Storage
 	private static final class MapDBKeyBeanSerializer extends BTreeKeySerializer<Bean<?>> implements Serializable
 	{
 		private static final long         serialVersionUID = -3465230589722405630L;
-		private final String              _tablename;
+		private final String              _tableName;
 		private transient MapDBSerializer _serializer;
 
-		public MapDBKeyBeanSerializer(String tablename, Bean<?> stub)
+		public MapDBKeyBeanSerializer(String tableName, Bean<?> stub)
 		{
-			_tablename = tablename;
-			_serializer = new MapDBSerializer(tablename, stub);
+			_tableName = tableName;
+			_serializer = new MapDBSerializer(tableName, stub);
 		}
 
 		@Override
@@ -363,9 +363,9 @@ public final class StorageMapDB implements Storage
 		{
 			if(_serializer == null)
 			{
-				Bean<?> stub = _instance._table_stub_k.get(_tablename);
+				Bean<?> stub = _instance._tableStubK.get(_tableName);
 				if(stub == null) stub = DynBean.BEAN_STUB;
-				_serializer = new MapDBSerializer(_tablename, stub);
+				_serializer = new MapDBSerializer(_tableName, stub);
 			}
 			for(int i = start; i < end; ++i)
 				_serializer.serialize(out, (Bean<?>)keys[i]);
@@ -376,9 +376,9 @@ public final class StorageMapDB implements Storage
 		{
 			if(_serializer == null)
 			{
-				Bean<?> stub = _instance._table_stub_k.get(_tablename);
+				Bean<?> stub = _instance._tableStubK.get(_tableName);
 				if(stub == null) stub = DynBean.BEAN_STUB;
-				_serializer = new MapDBSerializer(_tablename, stub);
+				_serializer = new MapDBSerializer(_tableName, stub);
 			}
 			Object[] objs = new Object[size];
 			for(int i = start; i < end; ++i)
@@ -422,9 +422,9 @@ public final class StorageMapDB implements Storage
 	}
 	//@formatter:on
 
-	public void registerKeyBean(Map<String, Bean<?>> stub_k_map)
+	public void registerKeyBean(Map<String, Bean<?>> stubKMap)
 	{
-		_table_stub_k.putAll(stub_k_map);
+		_tableStubK.putAll(stubKMap);
 	}
 
 	private static <K, V> boolean walk(BTreeMap<K, V> btm, WalkHandler<K> handler, K from, K to, boolean inclusive, boolean reverse)
@@ -453,57 +453,57 @@ public final class StorageMapDB implements Storage
 	public void openDB(File file)
 	{
 		closeDB();
-		DBMaker<?> dbmaker = DBMaker.newFileDB(file);
+		DBMaker<?> dbMaker = DBMaker.newFileDB(file);
 		// 取消注释下面的commitFileSyncDisable可以加快一点commit的速度,写数据量大的时候可以避免同时读非cache数据卡住过长时间
 		// 但程序崩溃的话,有可能导致某些未刷新的数据丢失或影响后面的备份操作,建议平时都要注释
 		// 不过在commit后对StoreWAL调用phys和index的sync可以让数据丢失的可能性降到极低,而且sync操作可以和读操作并发,更不影响cache层的读写
 		// dbmaker = dbmaker.commitFileSyncDisable();
 		// dbmaker = dbmaker.snapshotEnable(); // 使用此行可以获取到数据库的只读快照,目前尚未使用此特性,建议注释
-		dbmaker = dbmaker.asyncWriteEnable(); // 如果注释此行,提交过程的性能会大幅降低,建议不注释
-		dbmaker = (Const.mapDBCacheCount > 0 ? dbmaker.cacheSize(Const.mapDBCacheCount) : dbmaker.cacheDisable());
+		dbMaker = dbMaker.asyncWriteEnable(); // 如果注释此行,提交过程的性能会大幅降低,建议不注释
+		dbMaker = (Const.mapDBCacheCount > 0 ? dbMaker.cacheSize(Const.mapDBCacheCount) : dbMaker.cacheDisable());
 		if(Const.mapDBFileLevel == 2)
-			dbmaker = dbmaker.mmapFileEnablePartial(); // 不使用任何文件映射(比完全内存映射慢2~3倍)
+			dbMaker = dbMaker.mmapFileEnablePartial(); // 不使用任何文件映射(比完全内存映射慢2~3倍)
 		else if(Const.mapDBFileLevel == 3)
-			dbmaker = dbmaker.mmapFileEnable(); // 仅索引文件映射(比不使用任何文件映射好的不明显)
+			dbMaker = dbMaker.mmapFileEnable(); // 仅索引文件映射(比不使用任何文件映射好的不明显)
 		else if(Const.mapDBFileLevel != 1)
-		    dbmaker = dbmaker.mmapFileEnableIfSupported(); // 根据系统32/64位来决定文件使用完全不映射和完全映射(建议使用)
-		_db = dbmaker.make();
-		_dbfile = file;
+		    dbMaker = dbMaker.mmapFileEnableIfSupported(); // 根据系统32/64位来决定文件使用完全不映射和完全映射(建议使用)
+		_db = dbMaker.make();
+		_dbFile = file;
 	}
 
 	@Override
-	public <K, V extends Bean<V>> Storage.Table<K, V> openTable(int tableid, String tablename, Object stub_k, V stub_v)
+	public <K, V extends Bean<V>> Storage.Table<K, V> openTable(int tableId, String tableName, Object stubK, V stubV)
 	{
-		BTreeMapMaker btmm = _db.createTreeMap(tablename).valueSerializer(MapDBOctetsSerializer.instance());
-		if(stub_k instanceof Octets)
+		BTreeMapMaker btmm = _db.createTreeMap(tableName).valueSerializer(MapDBOctetsSerializer.instance());
+		if(stubK instanceof Octets)
 			btmm.keySerializer(MapDBKeyOctetsSerializer.instance());
-		else if(stub_k instanceof String)
+		else if(stubK instanceof String)
 			btmm.keySerializer(MapDBKeyStringSerializer.instance());
-		else if(stub_k instanceof Bean)
+		else if(stubK instanceof Bean)
 		{
-			_table_stub_k.put(tablename, (Bean<?>)stub_k);
-			btmm.keySerializer(new MapDBKeyBeanSerializer(tablename, (Bean<?>)stub_k));
+			_tableStubK.put(tableName, (Bean<?>)stubK);
+			btmm.keySerializer(new MapDBKeyBeanSerializer(tableName, (Bean<?>)stubK));
 		}
-		return new Table<K, V>(btmm.<K, Octets>makeOrGet(), tablename, stub_v);
+		return new Table<K, V>(btmm.<K, Octets>makeOrGet(), tableName, stubV);
 	}
 
 	@Override
-	public <V extends Bean<V>> Storage.TableLong<V> openTable(int tableid, String tablename, V stub_v)
+	public <V extends Bean<V>> Storage.TableLong<V> openTable(int tableId, String tableName, V stubV)
 	{
-		BTreeMapMaker btmm = _db.createTreeMap(tablename)
+		BTreeMapMaker btmm = _db.createTreeMap(tableName)
 		        .valueSerializer(MapDBOctetsSerializer.instance())
 		        .keySerializer(BTreeKeySerializer.ZERO_OR_POSITIVE_LONG);
-		return new TableLong<V>(btmm.<Long, Octets>makeOrGet(), tablename, stub_v);
+		return new TableLong<V>(btmm.<Long, Octets>makeOrGet(), tableName, stubV);
 	}
 
 	@Override
 	public void putBegin()
 	{
-		_modcount = 0;
+		_modCount = 0;
 	}
 
 	@Override
-	public void putFlush(boolean islast)
+	public void putFlush(boolean isLast)
 	{
 		// _db.getEngine().clearCache(); // 此存储引擎的实现不需要在这里调用这个方法
 	}
@@ -511,9 +511,9 @@ public final class StorageMapDB implements Storage
 	@Override
 	public void commit()
 	{
-		if(_modcount != 0 && _db != null && !_db.isClosed())
+		if(_modCount != 0 && _db != null && !_db.isClosed())
 		    _db.commit(); // MapDB的commit时间和之前put的数量成正比,所以可以限制commit前put的数量来保证不会提交太久
-		_modcount = 0;
+		_modCount = 0;
 	}
 
 	@Override
@@ -524,25 +524,25 @@ public final class StorageMapDB implements Storage
 			_db.close();
 			_db = null;
 		}
-		_dbfile = null;
-		_modcount = 0;
+		_dbFile = null;
+		_modCount = 0;
 	}
 
 	@Override
 	public long backupDB(File fdst) throws IOException
 	{
-		if(_dbfile == null)
+		if(_dbFile == null)
 		    throw new IllegalStateException("current database is not opened");
-		File fsrc_p = new File(_dbfile.getAbsolutePath() + ".p");
-		File fdst_tmp = new File(fdst.getAbsolutePath() + ".tmp");
-		File fdst_p = new File(fdst.getAbsolutePath() + ".p");
-		File fdst_p_tmp = new File(fdst.getAbsolutePath() + ".p.tmp");
-		long r = Util.copyFile(_dbfile, fdst_tmp);
-		r += Util.copyFile(fsrc_p, fdst_p_tmp);
-		if(!fdst_tmp.renameTo(fdst))
-		    throw new IOException("backup database file can not rename: " + fdst_tmp.getPath() + " => " + fdst.getPath());
-		if(!fdst_p_tmp.renameTo(fdst_p))
-		    throw new IOException("backup database file can not rename: " + fdst_tmp.getPath() + " => " + fdst.getPath());
+		File fsrcP = new File(_dbFile.getAbsolutePath() + ".p");
+		File fdstTmp = new File(fdst.getAbsolutePath() + ".tmp");
+		File fdstP = new File(fdst.getAbsolutePath() + ".p");
+		File fdstPTmp = new File(fdst.getAbsolutePath() + ".p.tmp");
+		long r = Util.copyFile(_dbFile, fdstTmp);
+		r += Util.copyFile(fsrcP, fdstPTmp);
+		if(!fdstTmp.renameTo(fdst))
+		    throw new IOException("backup database file can not rename: " + fdstTmp.getPath() + " => " + fdst.getPath());
+		if(!fdstPTmp.renameTo(fdstP))
+		    throw new IOException("backup database file can not rename: " + fdstTmp.getPath() + " => " + fdst.getPath());
 		return r;
 	}
 }

@@ -10,32 +10,32 @@ import java.util.List;
  */
 public final class BeanPool<B extends Bean<B>>
 {
-	private final List<B> _free_list = new ArrayList<B>();
+	private final List<B> _freeList = new ArrayList<B>();
 	private final B       _stub;
-	private final int     _max_free_count;
+	private final int     _maxFreeCount;
 
-	public BeanPool(B stub, int max_free_count)
+	public BeanPool(B stub, int maxFreeCount)
 	{
 		_stub = stub;
-		_max_free_count = max_free_count;
+		_maxFreeCount = maxFreeCount;
 	}
 
 	public B alloc()
 	{
 		synchronized(this)
 		{
-			int n = _free_list.size();
-			if(n > 0) return _free_list.remove(n - 1);
+			int n = _freeList.size();
+			if(n > 0) return _freeList.remove(n - 1);
 		}
 		return _stub.create();
 	}
 
 	public synchronized void free(B b)
 	{
-		if(_free_list.size() < _max_free_count)
+		if(_freeList.size() < _maxFreeCount)
 		{
 			b.reset();
-			_free_list.add(b);
+			_freeList.add(b);
 		}
 	}
 }

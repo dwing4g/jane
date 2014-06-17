@@ -15,8 +15,8 @@ public final class SContext
 	{
 		protected final B       _bean;
 		protected final Wrap<?> _owner;
-		protected SContext      _sctx;
-		protected boolean       _fullundo;
+		protected SContext      _sCtx;
+		protected boolean       _fullUndo;
 		private boolean         _dirty;
 
 		protected Wrap(B bean, Wrap<?> parent)
@@ -52,11 +52,11 @@ public final class SContext
 
 		protected boolean initSContext()
 		{
-			if(_fullundo) return false;
-			if(_sctx == null)
+			if(_fullUndo) return false;
+			if(_sCtx == null)
 			{
 				_owner.dirty();
-				_sctx = current();
+				_sCtx = current();
 			}
 			return true;
 		}
@@ -72,7 +72,7 @@ public final class SContext
 		public void addFullUndo()
 		{
 			if(!initSContext()) return;
-			_sctx.addOnRollback(new Runnable()
+			_sCtx.addOnRollback(new Runnable()
 			{
 				private final B _saved = _bean.clone();
 
@@ -82,7 +82,7 @@ public final class SContext
 					_bean.assign(_saved);
 				}
 			});
-			_fullundo = true;
+			_fullUndo = true;
 		}
 
 		public void reset()
@@ -178,15 +178,15 @@ public final class SContext
 		}
 	}
 
-	private static final ThreadLocal<SContext> _tl_list;
+	private static final ThreadLocal<SContext> _tlList;
 	private final List<Record<?, ?, ?>>        _records     = new ArrayList<Record<?, ?, ?>>();
-	private final List<RecordLong<?, ?>>       _recordlongs = new ArrayList<RecordLong<?, ?>>();
-	private final List<Runnable>               _onrollbacks = new ArrayList<Runnable>();
-	private final List<Runnable>               _oncommits   = new ArrayList<Runnable>();
+	private final List<RecordLong<?, ?>>       _recordLongs = new ArrayList<RecordLong<?, ?>>();
+	private final List<Runnable>               _onRollbacks = new ArrayList<Runnable>();
+	private final List<Runnable>               _onCommits   = new ArrayList<Runnable>();
 
 	static
 	{
-		_tl_list = new ThreadLocal<SContext>()
+		_tlList = new ThreadLocal<SContext>()
 		{
 			@Override
 			protected SContext initialValue()
@@ -198,38 +198,38 @@ public final class SContext
 
 	public static SContext current()
 	{
-		return _tl_list.get();
+		return _tlList.get();
 	}
 
 	<K, V extends Bean<V>, S extends Safe<V>> S addRecord(Table<K, V, S> table, K key, V value)
 	{
 		@SuppressWarnings("unchecked")
-		S v_safe = (S)value.safe(null);
-		_records.add(new Record<K, V, S>(table, key, v_safe));
-		return v_safe;
+		S vSafe = (S)value.safe(null);
+		_records.add(new Record<K, V, S>(table, key, vSafe));
+		return vSafe;
 	}
 
 	<V extends Bean<V>, S extends Safe<V>> S addRecord(TableLong<V, S> table, long key, V value)
 	{
 		@SuppressWarnings("unchecked")
-		S v_safe = (S)value.safe(null);
-		_recordlongs.add(new RecordLong<V, S>(table, key, v_safe));
-		return v_safe;
+		S vSafe = (S)value.safe(null);
+		_recordLongs.add(new RecordLong<V, S>(table, key, vSafe));
+		return vSafe;
 	}
 
 	public void addOnCommit(Runnable r)
 	{
-		_oncommits.add(r);
+		_onCommits.add(r);
 	}
 
 	public void addOnRollback(Runnable r)
 	{
-		_onrollbacks.add(r);
+		_onRollbacks.add(r);
 	}
 
 	public void commit()
 	{
-		_onrollbacks.clear();
+		_onRollbacks.clear();
 
 		for(Record<?, ?, ?> r : _records)
 		{
@@ -238,14 +238,14 @@ public final class SContext
 		}
 		_records.clear();
 
-		for(RecordLong<?, ?> r : _recordlongs)
+		for(RecordLong<?, ?> r : _recordLongs)
 		{
 			if(r._value.isDirtyAndClear())
 			    r._table.modifySafe(r._key, r._value.unsafe());
 		}
-		_recordlongs.clear();
+		_recordLongs.clear();
 
-		for(Runnable r : _oncommits)
+		for(Runnable r : _onCommits)
 		{
 			try
 			{
@@ -256,26 +256,26 @@ public final class SContext
 				Log.log.error("oncommit exception:", e);
 			}
 		}
-		_oncommits.clear();
+		_onCommits.clear();
 	}
 
 	public void rollback()
 	{
 		_records.clear();
-		_recordlongs.clear();
-		_oncommits.clear();
+		_recordLongs.clear();
+		_onCommits.clear();
 
-		for(int i = _onrollbacks.size(); --i >= 0;)
+		for(int i = _onRollbacks.size(); --i >= 0;)
 		{
 			try
 			{
-				_onrollbacks.get(i).run();
+				_onRollbacks.get(i).run();
 			}
 			catch(Throwable e)
 			{
 				Log.log.error("rollback exception:", e);
 			}
 		}
-		_onrollbacks.clear();
+		_onRollbacks.clear();
 	}
 }

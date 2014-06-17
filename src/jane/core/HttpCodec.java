@@ -43,10 +43,10 @@ public final class HttpCodec extends IoFilterAdapter
 	private static final Pattern    PATTERN_COOKIE   = Pattern.compile("(\\w+)=(.*?)(; |$)");
 	private static final Pattern    PATTERN_CHARSET  = Pattern.compile("charset=([\\w-]+)");
 	private static final DateFormat _sdf             = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
-	private static volatile String  _datestr;
-	private static volatile long    _lastsec;
+	private static volatile String  _dateStr;
+	private static volatile long    _lastSec;
 	private OctetsStream            _buf             = new OctetsStream(1024);                                        // 用于解码器的数据缓存
-	private long                    _bodysize;                                                                        // 当前请求所需的内容大小
+	private long                    _bodySize;                                                                        // 当前请求所需的内容大小
 
 	static
 	{
@@ -57,29 +57,29 @@ public final class HttpCodec extends IoFilterAdapter
 	{
 		long t = System.currentTimeMillis();
 		long sec = t / 1000;
-		if(sec != _lastsec)
+		if(sec != _lastSec)
 		{
 			synchronized(_sdf)
 			{
-				if(sec != _lastsec)
+				if(sec != _lastSec)
 				{
-					_datestr = _sdf.format(new Date(t));
-					_lastsec = sec;
+					_dateStr = _sdf.format(new Date(t));
+					_lastSec = sec;
 				}
 			}
 		}
-		return _datestr;
+		return _dateStr;
 	}
 
-	public static SslFilter getSslFilter(InputStream key_is, char[] key_pw, InputStream trust_is, char[] trust_pw) throws Exception
+	public static SslFilter getSslFilter(InputStream keyIs, char[] keyPw, InputStream trustIs, char[] trustPw) throws Exception
 	{
 		KeyStore ks = KeyStore.getInstance("JKS");
-		ks.load(key_is, key_pw);
+		ks.load(keyIs, keyPw);
 		KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-		kmf.init(ks, key_pw);
+		kmf.init(ks, keyPw);
 
 		KeyStore ts = KeyStore.getInstance("JKS");
-		ts.load(trust_is, trust_pw);
+		ts.load(trustIs, trustPw);
 		TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 		tmf.init(ts);
 
@@ -88,45 +88,45 @@ public final class HttpCodec extends IoFilterAdapter
 		return new SslFilter(ctx);
 	}
 
-	public static SslFilter getSslFilter(String key_file, String key_pw) throws Exception
+	public static SslFilter getSslFilter(String keyFile, String keyPw) throws Exception
 	{
-		byte[] key = Util.readAllFile(key_file);
-		char[] pw = key_pw.toCharArray();
+		byte[] key = Util.readAllFile(keyFile);
+		char[] pw = keyPw.toCharArray();
 		return getSslFilter(new ByteArrayInputStream(key), pw, new ByteArrayInputStream(key), pw);
 	}
 
-	public static String decodeUrl(byte[] src, int srcpos, int srclen)
+	public static String decodeUrl(byte[] src, int srcPos, int srcLen)
 	{
-		if(srcpos < 0) srcpos = 0;
-		if(srcpos + srclen > src.length) srclen = src.length - srcpos;
-		if(srclen <= 0) return "";
-		byte[] dst = new byte[srclen];
-		int dstpos = 0;
-		for(int srcend = srcpos + srclen; srcpos < srcend;)
+		if(srcPos < 0) srcPos = 0;
+		if(srcPos + srcLen > src.length) srcLen = src.length - srcPos;
+		if(srcLen <= 0) return "";
+		byte[] dst = new byte[srcLen];
+		int dstPos = 0;
+		for(int srcEnd = srcPos + srcLen; srcPos < srcEnd;)
 		{
-			int c = src[srcpos++];
+			int c = src[srcPos++];
 			switch(c)
 			{
 				case '+':
-					dst[dstpos++] = (byte)' ';
+					dst[dstPos++] = (byte)' ';
 					break;
 				case '%':
-					if(srcpos + 1 < srcend)
+					if(srcPos + 1 < srcEnd)
 					{
-						c = src[srcpos++];
+						c = src[srcPos++];
 						int v = (c < 'A' ? c - '0' : c - 'A' + 10) << 4;
-						c = src[srcpos++];
+						c = src[srcPos++];
 						v += (c < 'A' ? c - '0' : c - 'A' + 10);
-						dst[dstpos++] = (byte)v;
+						dst[dstPos++] = (byte)v;
 						break;
 					}
 					//$FALL-THROUGH$
 				default:
-					dst[dstpos++] = (byte)c;
+					dst[dstPos++] = (byte)c;
 					break;
 			}
 		}
-		return new String(dst, 0, dstpos, Const.stringCharsetUTF8);
+		return new String(dst, 0, dstPos, Const.stringCharsetUTF8);
 	}
 
 	public static String getHeadVerb(OctetsStream head)
@@ -351,7 +351,7 @@ public final class HttpCodec extends IoFilterAdapter
 		IoBuffer in = (IoBuffer)message;
 		begin_: for(;;)
 		{
-			if(_bodysize <= 0)
+			if(_bodySize <= 0)
 			{
 				int r = in.remaining();
 				int s = (r < 1024 ? r : 1024); // 最多一次取1024字节来查找HTTP头
@@ -375,19 +375,19 @@ public final class HttpCodec extends IoFilterAdapter
 					if(p < 18) // 最小的可能是"GET / HTTP/1.1\r\n\r\n"
 					    throw new Exception("http head size too short: headsize=" + p);
 					_buf.setPosition(p);
-					_bodysize = getHeadLong(_buf, CONT_LEN_MARK); // 从HTTP头中找到内容长度
-					if(_bodysize > 0) break; // 有内容则跳到下半部分的处理
+					_bodySize = getHeadLong(_buf, CONT_LEN_MARK); // 从HTTP头中找到内容长度
+					if(_bodySize > 0) break; // 有内容则跳到下半部分的处理
 					OctetsStream os = new OctetsStream(_buf.array(), p, _buf.remain()); // 切割出尾部当作下次缓存(不会超过1024字节)
 					_buf.resize(p);
 					next.messageReceived(session, _buf);
 					_buf = os;
 					p = 0;
 				}
-				if(_bodysize > Const.maxHttpBodySize)
-				    throw new Exception("http body size overflow: bodysize=" + _bodysize + ",maxsize=" + Const.maxHttpBodySize);
+				if(_bodySize > Const.maxHttpBodySize)
+				    throw new Exception("http body size overflow: bodysize=" + _bodySize + ",maxsize=" + Const.maxHttpBodySize);
 			}
 			int r = in.remaining();
-			int s = (int)_bodysize - _buf.remain();
+			int s = (int)_bodySize - _buf.remain();
 			int p = _buf.size();
 			OctetsStream os;
 			if(s > r) s = r; // 只取能取到的大小
@@ -398,7 +398,7 @@ public final class HttpCodec extends IoFilterAdapter
 					_buf.resize(p + s);
 					in.get(_buf.array(), p, s);
 				}
-				if(_buf.remain() < _bodysize) return; // 再不足就等下次
+				if(_buf.remain() < _bodySize) return; // 再不足就等下次
 				os = new OctetsStream(1024); // 正好满足了,申请新的缓存
 			}
 			else
@@ -408,7 +408,7 @@ public final class HttpCodec extends IoFilterAdapter
 			}
 			next.messageReceived(session, _buf);
 			_buf = os;
-			_bodysize = 0; // 下次从HTTP头部开始匹配
+			_bodySize = 0; // 下次从HTTP头部开始匹配
 		}
 	}
 }

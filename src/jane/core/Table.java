@@ -14,12 +14,12 @@ import jane.core.SContext.Safe;
 public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 {
 	private static final List<Table<?, ?, ?>> _tables = new ArrayList<Table<?, ?, ?>>(16); // 所有的通用key类型的表列表
-	private final String                      _tablename;                                 // 表名
-	private final Storage.Table<K, V>         _stotable;                                  // 存储引擎的表对象
+	private final String                      _tableName;                                 // 表名
+	private final Storage.Table<K, V>         _stoTable;                                  // 存储引擎的表对象
 	private final Map<K, V>                   _cache;                                     // 读缓存. 有大小限制,溢出自动清理
-	private final ConcurrentMap<K, V>         _cache_mod;                                 // 写缓存. 不会溢出,保存到数据库存储引擎后清理
+	private final ConcurrentMap<K, V>         _cacheMod;                                  // 写缓存. 不会溢出,保存到数据库存储引擎后清理
 	private final V                           _deleted;                                   // 表示已删除的value. 同存根bean
-	private final int                         _lockid;                                    // 当前表的锁ID. 即锁名的hash值,一般和记录key的hash值计算得出记录的lockid
+	private final int                         _lockId;                                    // 当前表的锁ID. 即锁名的hash值,一般和记录key的hash值计算得出记录的lockId
 
 	/**
 	 * 尝试依次加锁并保存全部表已修改的记录
@@ -71,21 +71,21 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 
 	/**
 	 * 创建一个数据库表
-	 * @param tablename 表名
-	 * @param stotable 存储引擎的表对象. null表示此表是内存表
-	 * @param lockname 此表关联的锁名
-	 * @param cachesize 此表的读缓存记录数量上限. 如果是内存表则表示超过此上限则会自动丢弃
-	 * @param stub_v 记录value的存根对象,不要用于记录有用的数据. 这里只用于标记删除的字段,如果为null则表示此表是内存表
+	 * @param tableName 表名
+	 * @param stoTable 存储引擎的表对象. null表示此表是内存表
+	 * @param lockName 此表关联的锁名
+	 * @param cacheSize 此表的读缓存记录数量上限. 如果是内存表则表示超过此上限则会自动丢弃
+	 * @param stubV 记录value的存根对象,不要用于记录有用的数据. 这里只用于标记删除的字段,如果为null则表示此表是内存表
 	 */
-	Table(int tableid, String tablename, Storage.Table<K, V> stotable, String lockname, int cachesize, V stub_v)
+	Table(int tableId, String tableName, Storage.Table<K, V> stoTable, String lockName, int cacheSize, V stubV)
 	{
-		_tablename = tablename;
-		_stotable = stotable;
-		_lockid = (lockname != null && !(lockname = lockname.trim()).isEmpty() ? lockname.hashCode() : tableid) * 0x9e3779b1;
-		_cache = Util.newLRUConcurrentHashMap(cachesize);
-		_cache_mod = (stotable != null ? Util.<K, V>newConcurrentHashMap() : null);
-		_deleted = stub_v;
-		if(stotable != null) _tables.add(this);
+		_tableName = tableName;
+		_stoTable = stoTable;
+		_lockId = (lockName != null && !(lockName = lockName.trim()).isEmpty() ? lockName.hashCode() : tableId) * 0x9e3779b1;
+		_cache = Util.newLRUConcurrentHashMap(cacheSize);
+		_cacheMod = (stoTable != null ? Util.<K, V>newConcurrentHashMap() : null);
+		_deleted = stubV;
+		if(stoTable != null) _tables.add(this);
 	}
 
 	/**
@@ -93,17 +93,17 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	 */
 	public String getTableName()
 	{
-		return _tablename;
+		return _tableName;
 	}
 
 	/**
-	 * 根据记录的key获取锁的ID(lockid)
+	 * 根据记录的key获取锁的ID(lockId)
 	 * <p>
 	 * 用于事务的加锁({@link Procedure#lock})
 	 */
-	public int lockid(K k)
+	public int lockId(K k)
 	{
-		return _lockid ^ k.hashCode();
+		return _lockId ^ k.hashCode();
 	}
 
 	/**
@@ -113,25 +113,25 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	 */
 	private void trySaveModified(long[] counts)
 	{
-		counts[0] = _cache_mod.size();
+		counts[0] = _cacheMod.size();
 		try
 		{
-			for(K k : _cache_mod.keySet())
+			for(K k : _cacheMod.keySet())
 			{
-				Lock lock = Procedure.tryLock(lockid(k));
+				Lock lock = Procedure.tryLock(lockId(k));
 				if(lock != null)
 				{
 					try
 					{
-						V v = _cache_mod.get(k);
+						V v = _cacheMod.get(k);
 						if(v == _deleted)
-							_stotable.remove(k);
+							_stoTable.remove(k);
 						else
 						{
 							v.setSaveState(1);
-							_stotable.put(k, v);
+							_stoTable.put(k, v);
 						}
-						_cache_mod.remove(k, v);
+						_cacheMod.remove(k, v);
 					}
 					finally
 					{
@@ -142,7 +142,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 		}
 		finally
 		{
-			counts[1] = _cache_mod.size();
+			counts[1] = _cacheMod.size();
 		}
 	}
 
@@ -151,20 +151,20 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	 */
 	private int saveModified()
 	{
-		for(Entry<K, V> e : _cache_mod.entrySet())
+		for(Entry<K, V> e : _cacheMod.entrySet())
 		{
 			K k = e.getKey();
 			V v = e.getValue();
 			if(v == _deleted)
-				_stotable.remove(k);
+				_stoTable.remove(k);
 			else
 			{
 				v.setSaveState(1);
-				_stotable.put(k, v);
+				_stoTable.put(k, v);
 			}
 		}
-		int m = _cache_mod.size();
-		_cache_mod.clear();
+		int m = _cacheMod.size();
+		_cacheMod.clear();
 		return m;
 	}
 
@@ -178,15 +178,15 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	{
 		V v = _cache.get(k);
 		if(v != null) return v;
-		if(_cache_mod == null) return null;
-		v = _cache_mod.get(k);
+		if(_cacheMod == null) return null;
+		v = _cacheMod.get(k);
 		if(v != null)
 		{
 			if(v == _deleted) return null;
 			_cache.put(k, v);
 			return v;
 		}
-		v = _stotable.get(k);
+		v = _stoTable.get(k);
 		if(v != null)
 		{
 			v.setSaveState(1);
@@ -214,14 +214,14 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	{
 		V v = _cache.get(k);
 		if(v != null) return v;
-		if(_cache_mod == null) return null;
-		v = _cache_mod.get(k);
+		if(_cacheMod == null) return null;
+		v = _cacheMod.get(k);
 		if(v != null)
 		{
 			if(v == _deleted) return null;
 			return v;
 		}
-		return _stotable.get(k);
+		return _stoTable.get(k);
 	}
 
 	/**
@@ -243,8 +243,8 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	{
 		V v = _cache.get(k);
 		if(v != null) return v;
-		if(_cache_mod == null) return null;
-		v = _cache_mod.get(k);
+		if(_cacheMod == null) return null;
+		v = _cacheMod.get(k);
 		return v != null && v != _deleted ? v : null;
 	}
 
@@ -267,16 +267,16 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	{
 		if(!v.modified())
 		{
-			if(_cache_mod != null)
+			if(_cacheMod != null)
 			{
-				V v_old = _cache_mod.put(k, v);
-				if(v_old == null)
+				V vOld = _cacheMod.put(k, v);
+				if(vOld == null)
 					DBManager.instance().incModCount();
-				else if(v_old != v)
+				else if(vOld != v)
 				{
-					_cache_mod.put(k, v_old);
-					throw new IllegalStateException("modify unmatched record: t=" + _tablename +
-					        ",k=" + k + ",v_old=" + v_old + ",v=" + v);
+					_cacheMod.put(k, vOld);
+					throw new IllegalStateException("modify unmatched record: t=" + _tableName +
+					        ",k=" + k + ",vOld=" + vOld + ",v=" + v);
 				}
 			}
 			v.setSaveState(2);
@@ -297,29 +297,29 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	 */
 	public void put(K k, V v)
 	{
-		V v_old = _cache.put(k, v);
-		if(v_old == v)
+		V vOld = _cache.put(k, v);
+		if(vOld == v)
 			modify(k, v);
 		else
 		{
 			if(!v.stored())
 			{
-				if(_cache_mod != null)
+				if(_cacheMod != null)
 				{
-					v_old = _cache_mod.put(k, v);
-					if(v_old == null)
+					vOld = _cacheMod.put(k, v);
+					if(vOld == null)
 					    DBManager.instance().incModCount();
 				}
 				v.setSaveState(2);
 			}
 			else
 			{
-				if(v_old != null)
-					_cache.put(k, v_old);
+				if(vOld != null)
+					_cache.put(k, vOld);
 				else
 					_cache.remove(k);
-				throw new IllegalStateException("put shared record: t=" + _tablename +
-				        ",k=" + k + ",v_old=" + v_old + ",v=" + v);
+				throw new IllegalStateException("put shared record: t=" + _tableName +
+				        ",k=" + k + ",vOld=" + vOld + ",v=" + v);
 			}
 		}
 	}
@@ -330,17 +330,17 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	public void putSafe(final K k, V v)
 	{
 		if(v.stored())
-		    throw new IllegalStateException("put shared record: t=" + _tablename + ",k=" + k + ",v=" + v);
-		final V v_old = getNoCache(k);
+		    throw new IllegalStateException("put shared record: t=" + _tableName + ",k=" + k + ",v=" + v);
+		final V vOld = getNoCache(k);
 		SContext.current().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
 			{
-				if(v_old != null)
+				if(vOld != null)
 				{
-					v_old.setSaveState(0);
-					put(k, v_old);
+					vOld.setSaveState(0);
+					put(k, vOld);
 				}
 				else
 					remove(k);
@@ -362,7 +362,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	public void remove(K k)
 	{
 		_cache.remove(k);
-		if(_cache_mod != null && _cache_mod.put(k, _deleted) == null)
+		if(_cacheMod != null && _cacheMod.put(k, _deleted) == null)
 		    DBManager.instance().incModCount();
 	}
 
@@ -371,15 +371,15 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	 */
 	public void removeSafe(final K k)
 	{
-		final V v_old = getNoCache(k);
-		if(v_old == null) return;
+		final V vOld = getNoCache(k);
+		if(vOld == null) return;
 		SContext.current().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
 			{
-				v_old.setSaveState(0);
-				put(k, v_old);
+				vOld.setSaveState(0);
+				put(k, vOld);
 			}
 		});
 		remove(k);
@@ -411,8 +411,8 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	 */
 	public boolean walk(Storage.WalkHandler<K> handler, K from, K to, boolean inclusive, boolean reverse)
 	{
-		if(_stotable != null)
-		    return _stotable.walk(handler, from, to, inclusive, reverse);
+		if(_stoTable != null)
+		    return _stoTable.walk(handler, from, to, inclusive, reverse);
 		return walkCache(handler);
 	}
 }

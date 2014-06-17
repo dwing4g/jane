@@ -7,10 +7,10 @@ namespace jane
 	 */
 	public sealed class RC4Filter
 	{
-		private readonly byte[] _ctx_i = new byte[256];
-		private readonly byte[] _ctx_o = new byte[256];
-		private int _idx1_i, _idx2_i;
-		private int _idx1_o, _idx2_o;
+		private readonly byte[] _ctxI = new byte[256];
+		private readonly byte[] _ctxO = new byte[256];
+		private int _idx1I, _idx2I;
+		private int _idx1O, _idx2O;
 
 		private static void setKey(byte[] ctx, byte[] key, int len)
 		{
@@ -33,8 +33,8 @@ namespace jane
 		 */
 		public void setInputKey(byte[] key, int len)
 		{
-			setKey(_ctx_i, key, len);
-			_idx1_i = _idx2_i = 0;
+			setKey(_ctxI, key, len);
+			_idx1I = _idx2I = 0;
 		}
 
 		/**
@@ -42,8 +42,8 @@ namespace jane
 		 */
 		public void setOutputKey(byte[] key, int len)
 		{
-			setKey(_ctx_o, key, len);
-			_idx1_o = _idx2_o = 0;
+			setKey(_ctxO, key, len);
+			_idx1O = _idx2O = 0;
 		}
 
 		private static int update(byte[] ctx, int idx1, int idx2, byte[] buf, int pos, int len)
@@ -65,8 +65,8 @@ namespace jane
 		 */
 		public void updateInput(byte[] buf, int pos, int len)
 		{
-			_idx2_i = update(_ctx_i, _idx1_i, _idx2_i, buf, pos, len);
-			_idx1_i = (_idx1_i + len) & 0xff;
+			_idx2I = update(_ctxI, _idx1I, _idx2I, buf, pos, len);
+			_idx1I = (_idx1I + len) & 0xff;
 		}
 
 		/**
@@ -74,8 +74,8 @@ namespace jane
 		 */
 		public void updateOutput(byte[] buf, int pos, int len)
 		{
-			_idx2_o = update(_ctx_o, _idx1_o, _idx2_o, buf, pos, len);
-			_idx1_o = (_idx1_o + len) & 0xff;
+			_idx2O = update(_ctxO, _idx1O, _idx2O, buf, pos, len);
+			_idx1O = (_idx1O + len) & 0xff;
 		}
 	}
 }

@@ -13,13 +13,13 @@ namespace jane
 		protected static readonly char[] HEX = new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 		public static readonly byte[] EMPTY = new byte[0]; // 共享的空缓冲区;
 		public const int DEFAULT_SIZE = 16; // 默认的缓冲区;
-		protected static Encoding _default_charset = Encoding.UTF8;
+		protected static Encoding _defaultCharset = Encoding.UTF8;
 		protected byte[] buffer = EMPTY; // 数据缓冲区;
 		protected int count; // 当前有效的数据缓冲区大小;
 
 		public static void setDefaultEncoding(Encoding enc)
 		{
-			_default_charset = enc ?? Encoding.UTF8;
+			_defaultCharset = enc ?? Encoding.UTF8;
 		}
 
 		public static Octets wrap(byte[] data, int size)
@@ -42,7 +42,7 @@ namespace jane
 
 		public static Octets wrap(string str)
 		{
-			return wrap(_default_charset.GetBytes(str));
+			return wrap(_defaultCharset.GetBytes(str));
 		}
 
 		public static Octets wrap(string str, Encoding encoding)
@@ -396,7 +396,7 @@ namespace jane
 
 		public void setString(string str)
 		{
-			buffer = _default_charset.GetBytes(str);
+			buffer = _defaultCharset.GetBytes(str);
 			count = buffer.Length;
 		}
 
@@ -414,7 +414,7 @@ namespace jane
 
 		public string getString()
 		{
-			return _default_charset.GetString(buffer, 0, count);
+			return _defaultCharset.GetString(buffer, 0, count);
 		}
 
 		public string getString(Encoding encoding)

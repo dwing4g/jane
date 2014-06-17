@@ -17,21 +17,21 @@ namespace jane
 		public const int CLOSE_DECODE = 4;
 		public const int RECV_BUFSIZE = 8192;
 
-		protected static readonly Dictionary<int, Bean> _stubmap = new Dictionary<int, Bean>(); // 所有注册beans的存根对象;
+		protected static readonly Dictionary<int, Bean> _stubMap = new Dictionary<int, Bean>(); // 所有注册beans的存根对象;
 		protected IDictionary<int, BeanHandler> _handlers = new Dictionary<int, BeanHandler>(); // 所有注册beans的处理对象;
-		private readonly TcpClient _tcpclient = new TcpClient();
-		private NetworkStream _tcpstream;
+		private readonly TcpClient _tcpClient = new TcpClient();
+		private NetworkStream _tcpStream;
 		protected readonly byte[] _bufin = new byte[RECV_BUFSIZE];
 		protected readonly OctetsStream _bufos = new OctetsStream();
 
 		public static void registerAllBeans(ICollection<Bean> beans)
 		{
-			_stubmap.Clear();
+			_stubMap.Clear();
 			foreach(Bean bean in beans)
 			{
 				int type = bean.type();
 				if(type > 0)
-					_stubmap.Add(type, bean);
+					_stubMap.Add(type, bean);
 			}
 		}
 
@@ -40,7 +40,7 @@ namespace jane
 			if(handlers != null) _handlers = handlers;
 		}
 
-		public bool Connected { get { return _tcpclient.Connected; } }
+		public bool Connected { get { return _tcpClient.Connected; } }
 
 		protected virtual void onAddSession() {}
 		protected virtual void onDelSession(int code, Exception e) {}
@@ -49,11 +49,12 @@ namespace jane
 		protected virtual OctetsStream onEncode(byte[] buf, int pos, int len) { return null; }
 		protected virtual OctetsStream onDecode(byte[] buf, int pos, int len) { return null; }
 
-		protected virtual void onRecvBean(Bean bean)
+		protected virtual bool onRecvBean(Bean bean)
 		{
 			BeanHandler handler;
-			if(_handlers.TryGetValue(bean.type(), out handler))
-				handler.onProcess(this, bean);
+			if(!_handlers.TryGetValue(bean.type(), out handler)) return false;
+			handler.onProcess(this, bean);
+			return true;
 		}
 
 		private void decode(int buflen)
@@ -72,7 +73,7 @@ namespace jane
 					int psize = _bufos.unmarshalUInt();
 					if(psize > _bufos.remain()) break;
 					Bean bean;
-					if(!_stubmap.TryGetValue(ptype, out bean))
+					if(!_stubMap.TryGetValue(ptype, out bean))
 						throw new Exception("unknown bean: type=" + ptype + ",size=" + psize);
 					bean = bean.create();
 					int p = _bufos.position();
@@ -97,20 +98,20 @@ namespace jane
 			{
 				try
 				{
-					_tcpclient.EndConnect(res);
+					_tcpClient.EndConnect(res);
 				}
 				catch(Exception e)
 				{
 					onAbortSession(e);
 					return;
 				}
-				if(_tcpclient.Connected)
+				if(_tcpClient.Connected)
 				{
 					onAddSession();
 					lock(this)
 					{
-						_tcpstream = _tcpclient.GetStream();
-						_tcpstream.BeginRead(_bufin, 0, _bufin.Length, readCallback, null);
+						_tcpStream = _tcpClient.GetStream();
+						_tcpStream.BeginRead(_bufin, 0, _bufin.Length, readCallback, null);
 					}
 				}
 				else
@@ -128,7 +129,7 @@ namespace jane
 			{
 				lock(this)
 				{
-					int buflen = _tcpstream.EndRead(res);
+					int buflen = _tcpStream.EndRead(res);
 					if(buflen > 0)
 					{
 						try
@@ -139,7 +140,7 @@ namespace jane
 						{
 							close(CLOSE_DECODE, e);
 						}
-						_tcpstream.BeginRead(_bufin, 0, _bufin.Length, readCallback, null);
+						_tcpStream.BeginRead(_bufin, 0, _bufin.Length, readCallback, null);
 					}
 					else
 						close(CLOSE_READ);
@@ -158,7 +159,7 @@ namespace jane
 				lock(this)
 				{
 					Bean bean = (Bean)res.AsyncState;
-					_tcpstream.EndWrite(res);
+					_tcpStream.EndWrite(res);
 					onSentBean(bean);
 				}
 			}
@@ -171,7 +172,7 @@ namespace jane
 		public void connect(string host, int port)
 		{
 			close();
-			_tcpclient.BeginConnect(host, port, connectCallback, null);
+			_tcpClient.BeginConnect(host, port, connectCallback, null);
 		}
 
 		public void close(int code = CLOSE_ACTIVE, Exception e = null)
@@ -179,11 +180,11 @@ namespace jane
 			bool hasstream;
 			lock(this)
 			{
-				hasstream = (_tcpstream != null);
+				hasstream = (_tcpStream != null);
 				if(hasstream)
 				{
-					_tcpstream.Close();
-					_tcpstream = null;
+					_tcpStream.Close();
+					_tcpStream = null;
 				}
 			}
 			if(hasstream)
@@ -192,7 +193,7 @@ namespace jane
 
 		public bool send(Bean bean)
 		{
-			if(!_tcpclient.Connected || _tcpstream == null) return false;
+			if(!_tcpClient.Connected || _tcpStream == null) return false;
 			OctetsStream os = new OctetsStream(bean.initSize() + 10);
 			os.resize(10);
 			bean.marshal(os);
@@ -202,15 +203,15 @@ namespace jane
 			if(o != null) os = o;
 			lock(this)
 			{
-				if(_tcpstream == null) return false;
-				_tcpstream.BeginWrite(os.array(), os.position(), os.remain(), writeCallback, bean);
+				if(_tcpStream == null) return false;
+				_tcpStream.BeginWrite(os.array(), os.position(), os.remain(), writeCallback, bean);
 			}
 			return true;
 		}
 
 		protected virtual void Dispose(bool disposing)
 		{
-			_tcpclient.Close();
+			_tcpClient.Close();
 		}
 
 		public void Dispose()

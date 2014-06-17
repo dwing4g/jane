@@ -13,7 +13,7 @@ import jane.core.SContext.Wrap;
 public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneable, Serializable
 {
 	private static final long serialVersionUID = 28942740885777620L;
-	private transient int     _save_state;                          // 存储状态: 0:未存储,1:已存储但未修改,2:已存储且已修改
+	private transient int     _saveState;                           // 存储状态: 0:未存储,1:已存储但未修改,2:已存储且已修改
 
 	/**
 	 * 获取存储标记
@@ -23,7 +23,7 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	 */
 	public final boolean stored()
 	{
-		return _save_state > 0;
+		return _saveState > 0;
 	}
 
 	/**
@@ -33,17 +33,17 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	 */
 	public final boolean modified()
 	{
-		return _save_state == 2;
+		return _saveState == 2;
 	}
 
 	/**
 	 * 设置存储状态
 	 * <p>
-	 * @param save_state 当此记录在事务内有修改时,会设置为2以提示数据库缓存系统在合适的时机提交到数据库存储系统
+	 * @param saveState 当此记录在事务内有修改时,会设置为2以提示数据库缓存系统在合适的时机提交到数据库存储系统
 	 */
-	final void setSaveState(int save_state)
+	final void setSaveState(int saveState)
 	{
-		_save_state = save_state;
+		_saveState = saveState;
 	}
 
 	/**

@@ -10,11 +10,11 @@ namespace jane
 	 */
 	public sealed class LZCompressor
 	{
-		private int[]  hash;
-		private byte[] com;
-		private int    compos;
-		private int    bits;
-		private int    cache;
+		private int[]  _hash;
+		private byte[] _com;
+		private int    _comPos;
+		private int    _bits;
+		private int    _cache;
 
 		/**
 		 * 重置当前对象;
@@ -22,9 +22,9 @@ namespace jane
 		 */
 		public void reset()
 		{
-			if(hash != null) Array.Clear(hash, 0, hash.Length);
-			com = null;
-			compos = bits = cache = 0;
+			if(_hash != null) Array.Clear(_hash, 0, _hash.Length);
+			_com = null;
+			_comPos = _bits = _cache = 0;
 		}
 
 		/**
@@ -37,66 +37,66 @@ namespace jane
 
 		private void putbits(int v, int n) // n = 2~24
 		{
-			int b = bits + n, c = cache + (v << (32 - b));
+			int b = _bits + n, c = _cache + (v << (32 - b));
 			if(b < 8)
 			{
-				bits = b;
-				cache = c;
+				_bits = b;
+				_cache = c;
 			}
 			else
 			{
-				bits = b & 7;
-				byte[] d = com;
-				int p = compos;
+				_bits = b & 7;
+				byte[] d = _com;
+				int p = _comPos;
 				d[p++] = (byte)(c >> 24);
 				if(b < 16)
-					cache = c << 8;
+					_cache = c << 8;
 				else
 				{
 					d[p++] = (byte)(c >> 16);
 					if(b < 24)
-						cache = c << 16;
+						_cache = c << 16;
 					else
 					{
 						d[p++] = (byte)(c >> 8);
-						cache = c << 24;
+						_cache = c << 24;
 					}
 				}
-				compos = p;
+				_comPos = p;
 			}
 		}
 
 		private void putflush()
 		{
-			if(bits > 0)
+			if(_bits > 0)
 			{
-				com[compos++] = (byte)(cache >> 24);
-				bits = 0;
-				cache = 0;
+				_com[_comPos++] = (byte)(_cache >> 24);
+				_bits = 0;
+				_cache = 0;
 			}
 		}
 
 		private int getbit() // the highest bit
 		{
-			if(--bits >= 0)
+			if(--_bits >= 0)
 			{
-				int d = cache;
-				cache = d << 1;
+				int d = _cache;
+				_cache = d << 1;
 				return d;
 			}
-			bits = 7;
-			int c = com[compos++];
-			cache = c << 25;
+			_bits = 7;
+			int c = _com[_comPos++];
+			_cache = c << 25;
 			return c;
 		}
 
 		private int getbits(int n) // n = 2~19
 		{
-			int b = bits, c = cache;
+			int b = _bits, c = _cache;
 			if(b < n)
 			{
-				byte[] s = com;
-				int p = compos;
+				byte[] s = _com;
+				int p = _comPos;
 				c += s[p++] << (24 - b);
 				b += 8;
 				if(b < n)
@@ -109,10 +109,10 @@ namespace jane
 						b += 8;
 					}
 				}
-				compos = p;
+				_comPos = p;
 			}
-			bits = b - n;
-			cache = c << n;
+			_bits = b - n;
+			_cache = c << n;
 			return (int)((uint)c >> (32 - n));
 		}
 
@@ -125,18 +125,18 @@ namespace jane
 		public int compress(byte[] src, int srcpos, int srclen, byte[] dst, int dstpos)
 		{
 			if(srclen <= 0) return 0;
-			if(hash == null) hash = new int[0x10000];
-			com = dst;
-			compos = dstpos;
-			bits = cache = 0;
+			if(_hash == null) _hash = new int[0x10000];
+			_com = dst;
+			_comPos = dstpos;
+			_bits = _cache = 0;
 			int h, p, n, f, f1 = 1, f2 = 2, f3 = 3, f4 = 4;
 			byte a, b = src[0];
 			for(srclen += srcpos - 2; srcpos < srclen;)
 			{
 				a = b; b = src[srcpos + 1];
 				h = ((a << 8) + b) & 0xffff;
-				p = hash[h];
-				hash[h] = srcpos;
+				p = _hash[h];
+				_hash[h] = srcpos;
 				f = srcpos - p;
 				if(f > 0x82080 || f <= 0 || src[p] != a || src[p + 2] != src[srcpos + 2] || src[p + 1] != b)
 				    { putbyte(a); ++srcpos; continue; }
@@ -169,15 +169,15 @@ namespace jane
 			}
 			while(srcpos < srclen + 2) putbyte(src[srcpos++]);
 			putflush();
-			com = null;
-			return compos - dstpos;
+			_com = null;
+			return _comPos - dstpos;
 		}
 
 		public void decompress(byte[] src, int srcpos, byte[] dst, int dstpos, int dstlen)
 		{
-			com = src;
-			compos = srcpos;
-			bits = cache = 0;
+			_com = src;
+			_comPos = srcpos;
+			_bits = _cache = 0;
 			int n, f = 1, f2 = 2, f3 = 3, f4 = 4;
 			for(dstlen += dstpos; dstpos < dstlen;)
 			{
@@ -208,7 +208,7 @@ namespace jane
 				for(; --n >= 0; ++dstpos)
 					dst[dstpos] = dst[dstpos - f];}
 			}
-			com = null;
+			_com = null;
 		}
 	}
 }

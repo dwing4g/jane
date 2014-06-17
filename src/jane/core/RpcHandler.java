@@ -58,33 +58,33 @@ public abstract class RpcHandler<A extends Bean<A>, R extends Bean<R>> extends B
 	}
 
 	@Override
-	public void onProcess(NetManager manager, IoSession session, RpcBean<A, R> rpcbean) throws Exception
+	public void onProcess(NetManager manager, IoSession session, RpcBean<A, R> rpcBean) throws Exception
 	{
-		if(rpcbean.isRequest())
+		if(rpcBean.isRequest())
 		{
-			R res = rpcbean.getRes();
-			if(res == null) res = rpcbean.createRes();
-			if(onServer(manager, session, rpcbean.getArg(), res))
+			R res = rpcBean.getRes();
+			if(res == null) res = rpcBean.createRes();
+			if(onServer(manager, session, rpcBean.getArg(), res))
 			{
-				rpcbean.setArg(null);
-				rpcbean.setRes(res);
-				rpcbean.setResponse();
-				manager.send(session, rpcbean);
+				rpcBean.setArg(null);
+				rpcBean.setRes(res);
+				rpcBean.setResponse();
+				manager.send(session, rpcBean);
 			}
 		}
 		else
 		{
 			@SuppressWarnings("unchecked")
-			RpcBean<A, R> rpcbean_old = (RpcBean<A, R>)NetManager.removeRpc(rpcbean.getRpcId());
-			if(rpcbean_old != null)
+			RpcBean<A, R> rpcbeanOld = (RpcBean<A, R>)NetManager.removeRpc(rpcBean.getRpcId());
+			if(rpcbeanOld != null)
 			{
-				rpcbean_old.setSession(null); // 绑定期已过,清除对session的引用
-				RpcHandler<A, R> onClient = rpcbean_old.getOnClient();
+				rpcbeanOld.setSession(null); // 绑定期已过,清除对session的引用
+				RpcHandler<A, R> onClient = rpcbeanOld.getOnClient();
 				if(onClient != null)
-					rpcbean_old.setOnClient(null);
+					rpcbeanOld.setOnClient(null);
 				else
 					onClient = this;
-				onClient.onClient(manager, session, rpcbean_old.getArg(), rpcbean.getRes());
+				onClient.onClient(manager, session, rpcbeanOld.getArg(), rpcBean.getRes());
 			}
 		}
 	}

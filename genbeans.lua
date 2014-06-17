@@ -423,7 +423,7 @@ typedef.byte =
 
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.S#(var.type_o)(_bean, FIELD_#(var.name), _bean.#(var.name)));
+			if(initSContext()) _sCtx.addOnRollback(new SBase.S#(var.type_o)(_bean, FIELD_#(var.name), _bean.#(var.name)));
 			_bean.#(var.name) = #(var.name);
 		}
 ]],
@@ -507,7 +507,7 @@ typedef.string = merge(typedef.byte,
 
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.S#(var.type_o)(_bean, FIELD_#(var.name), _bean.#(var.name)));
+			if(initSContext()) _sCtx.addOnRollback(new SBase.S#(var.type_o)(_bean, FIELD_#(var.name), _bean.#(var.name)));
 			_bean.#(var.name) = (#(var.name) != null ? #(var.name) : "");
 		}
 ]],
@@ -556,7 +556,7 @@ typedef.octets = merge(typedef.string,
 
 		public #(var.type) get#(var.name_u)()
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.#(var.name), true));
+			if(initSContext()) _sCtx.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.#(var.name), true));
 			return _bean.#(var.name);
 		}
 
@@ -567,7 +567,7 @@ typedef.octets = merge(typedef.string,
 
 		public <B extends Bean<B>> void marshal#(var.name_u)(Bean<B> b)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.#(var.name), false));
+			if(initSContext()) _sCtx.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.#(var.name), false));
 			_bean.#(var.name) = b.marshal(new OctetsStream(b.initSize()));
 		}
 

@@ -12,21 +12,21 @@ public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 {
 	private static final long          serialVersionUID = -1390859818193499717L;
 	private static final AtomicInteger RPCID            = new AtomicInteger();                 // RPC的ID分配器
-	private transient int              _rpcid           = RPCID.getAndIncrement() & 0x7fffffff; // RPC的ID. 用于匹配请求和回复的RPC
-	private transient int              _reqtime;                                               // 发送请求的时间戳(秒)
+	private transient int              _rpcId           = RPCID.getAndIncrement() & 0x7fffffff; // RPC的ID. 用于匹配请求和回复的RPC
+	private transient int              _reqTime;                                               // 发送请求的时间戳(秒)
 	private transient IoSession        _session;                                               // 请求时绑定的session
-	private transient RpcHandler<A, R> _onclient;                                              // 回复的回调
+	private transient RpcHandler<A, R> _onClient;                                              // 回复的回调
 	protected A                        arg;                                                    // 请求bean
 	protected R                        res;                                                    // 回复bean
 
 	int getReqTime()
 	{
-		return _reqtime;
+		return _reqTime;
 	}
 
 	void setReqTime(int time)
 	{
-		_reqtime = time;
+		_reqTime = time;
 	}
 
 	IoSession getSession()
@@ -41,12 +41,12 @@ public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 
 	public RpcHandler<A, R> getOnClient()
 	{
-		return _onclient;
+		return _onClient;
 	}
 
 	public void setOnClient(RpcHandler<A, R> handler)
 	{
-		_onclient = handler;
+		_onClient = handler;
 	}
 
 	/**
@@ -56,7 +56,7 @@ public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 	 */
 	public int getRpcId()
 	{
-		return _rpcid & 0x7fffffff;
+		return _rpcId & 0x7fffffff;
 	}
 
 	/**
@@ -66,7 +66,7 @@ public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 	 */
 	public boolean isRequest()
 	{
-		return _rpcid >= 0;
+		return _rpcId >= 0;
 	}
 
 	/**
@@ -74,7 +74,7 @@ public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 	 */
 	public void setRequest()
 	{
-		_rpcid &= 0x7fffffff;
+		_rpcId &= 0x7fffffff;
 	}
 
 	/**
@@ -82,7 +82,7 @@ public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 	 */
 	public void setResponse()
 	{
-		_rpcid |= 0x80000000;
+		_rpcId |= 0x80000000;
 	}
 
 	public A getArg()
@@ -150,8 +150,8 @@ public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 	@Override
 	public OctetsStream marshal(OctetsStream os)
 	{
-		os.marshal(_rpcid);
-		return _rpcid >= 0 ?
+		os.marshal(_rpcId);
+		return _rpcId >= 0 ?
 		        os.marshalProtocol(arg != null ? arg : (arg = createArg())) :
 		        os.marshalProtocol(res != null ? res : (res = createRes()));
 	}
@@ -159,8 +159,8 @@ public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 	@Override
 	public OctetsStream unmarshal(OctetsStream os) throws MarshalException
 	{
-		_rpcid = os.unmarshalInt();
-		if(_rpcid >= 0)
+		_rpcId = os.unmarshalInt();
+		if(_rpcId >= 0)
 		{
 			if(arg == null) arg = createArg();
 			os.unmarshalProtocol(arg);

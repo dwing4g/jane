@@ -12,7 +12,7 @@ public class SSet<V> implements Set<V>, Cloneable
 {
 	protected final Wrap<?> _owner;
 	protected final Set<V>  _set;
-	private SContext        _sctx;
+	private SContext        _sCtx;
 
 	public SSet(Wrap<?> owner, Set<V> set)
 	{
@@ -28,9 +28,9 @@ public class SSet<V> implements Set<V>, Cloneable
 
 	protected SContext sContext()
 	{
-		if(_sctx != null) return _sctx;
+		if(_sCtx != null) return _sCtx;
 		_owner.dirty();
-		return _sctx = SContext.current();
+		return _sCtx = SContext.current();
 	}
 
 	protected void addUndoAdd(final V v)

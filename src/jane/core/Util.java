@@ -40,7 +40,7 @@ import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
 public final class Util
 {
 	private static final Random  _rand              = new Random();
-	private static final Pattern _pat_charset       = Pattern.compile("charset=(\\S+)");
+	private static final Pattern _patCharset        = Pattern.compile("charset=(\\S+)");
 	private static final int     CONNECTION_TIMEOUT = 15 * 1000;
 	private static final int     BUFFER_SIZE        = 8 * 1024;
 
@@ -75,11 +75,11 @@ public final class Util
 	 * <p>
 	 * 内部使用{@link ConcurrentHashMapV8},效率很高
 	 */
-	public static <K, V> Map<K, V> newLRUConcurrentHashMap(int maxcount)
+	public static <K, V> Map<K, V> newLRUConcurrentHashMap(int maxCount)
 	{
-		if(maxcount <= 0) return newConcurrentHashMap();
+		if(maxCount <= 0) return newConcurrentHashMap();
 		return new ConcurrentLinkedHashMap.Builder<K, V>().concurrencyLevel(Const.dbThreadCount)
-		        .maximumWeightedCapacity(maxcount).initialCapacity(maxcount).build();
+		        .maximumWeightedCapacity(maxCount).initialCapacity(maxCount).build();
 	}
 
 	/**
@@ -241,12 +241,12 @@ public final class Util
 
 	/**
 	 * 读取整个文件内容
-	 * @param filename 文件名
+	 * @param fileName 文件名
 	 * @return 返回完整的文件内容
 	 */
-	public static byte[] readAllFile(String filename) throws IOException
+	public static byte[] readAllFile(String fileName) throws IOException
 	{
-		InputStream is = new FileInputStream(filename);
+		InputStream is = new FileInputStream(fileName);
 		try
 		{
 			int n = is.available();
@@ -263,17 +263,17 @@ public final class Util
 	/**
 	 * 复制文件
 	 * @param srcfile 源文件
-	 * @param dstfile 目标文件
+	 * @param dstFile 目标文件
 	 * @return 返回复制的字节数量
 	 */
-	public static long copyFile(FileChannel srcfc, File dstfile) throws IOException
+	public static long copyFile(FileChannel srcFc, File dstFile) throws IOException
 	{
 		long r = 0;
-		FileOutputStream fos = new FileOutputStream(dstfile);
+		FileOutputStream fos = new FileOutputStream(dstFile);
 		try
 		{
 			ByteBuffer bb = ByteBuffer.allocate(32768);
-			for(int n; (n = srcfc.read(bb)) != -1;)
+			for(int n; (n = srcFc.read(bb)) != -1;)
 			{
 				bb.flip();
 				fos.write(bb.array(), 0, bb.limit());
@@ -288,12 +288,12 @@ public final class Util
 		return r;
 	}
 
-	public static long copyFile(File srcfile, File dstfile) throws IOException
+	public static long copyFile(File srcFile, File dstFile) throws IOException
 	{
-		FileInputStream fis = new FileInputStream(srcfile);
+		FileInputStream fis = new FileInputStream(srcFile);
 		try
 		{
-			return copyFile(fis.getChannel(), dstfile);
+			return copyFile(fis.getChannel(), dstFile);
 		}
 		finally
 		{
@@ -304,16 +304,16 @@ public final class Util
 	public static final class SundaySearch
 	{
 		private final byte[] _pat;
-		private final int    _patlen;
+		private final int    _patLen;
 		private final int[]  _skip = new int[256];
 
-		public SundaySearch(byte[] pat, int patlen)
+		public SundaySearch(byte[] pat, int patLen)
 		{
-			_patlen = (patlen < 0 ? 0 : (patlen > pat.length ? pat.length : patlen));
-			_pat = Arrays.copyOf(pat, _patlen);
-			Arrays.fill(_skip, _patlen + 1);
-			for(int i = 0; i < _patlen; ++i)
-				_skip[_pat[i] & 0xff] = _patlen - i;
+			_patLen = (patLen < 0 ? 0 : (patLen > pat.length ? pat.length : patLen));
+			_pat = Arrays.copyOf(pat, _patLen);
+			Arrays.fill(_skip, _patLen + 1);
+			for(int i = 0; i < _patLen; ++i)
+				_skip[_pat[i] & 0xff] = _patLen - i;
 		}
 
 		public SundaySearch(Octets pat)
@@ -321,31 +321,31 @@ public final class Util
 			this(pat.array(), pat.size());
 		}
 
-		public int find(byte[] src, int srcpos, int srclen)
+		public int find(byte[] src, int srcPos, int srcLen)
 		{
-			if(_patlen <= 0) return 0;
-			if(srcpos < 0) srcpos = 0;
-			if(srcpos + srclen > src.length) srclen = src.length - srcpos;
-			if(srclen <= 0) return -1;
+			if(_patLen <= 0) return 0;
+			if(srcPos < 0) srcPos = 0;
+			if(srcPos + srcLen > src.length) srcLen = src.length - srcPos;
+			if(srcLen <= 0) return -1;
 			byte c = _pat[0];
-			for(int srcend = srclen - _patlen; srcpos <= srcend; srcpos += _skip[src[srcpos + _patlen] & 0xff])
+			for(int srcEnd = srcLen - _patLen; srcPos <= srcEnd; srcPos += _skip[src[srcPos + _patLen] & 0xff])
 			{
-				if(src[srcpos] == c)
+				if(src[srcPos] == c)
 				{
 					for(int k = 1;; ++k)
 					{
-						if(k >= _patlen) return srcpos;
-						if(src[srcpos + k] != _pat[k]) break;
+						if(k >= _patLen) return srcPos;
+						if(src[srcPos + k] != _pat[k]) break;
 					}
 				}
-				if(srcpos == srcend) return -1;
+				if(srcPos == srcEnd) return -1;
 			}
 			return -1;
 		}
 
-		public int find(Octets src, int srcpos)
+		public int find(Octets src, int srcPos)
 		{
-			return find(src.array(), srcpos, src.size());
+			return find(src.array(), srcPos, src.size());
 		}
 	}
 
@@ -353,110 +353,110 @@ public final class Util
 	 * 把xml文件转换成bean的map结构
 	 * <p>
 	 * 此调用在发现错误时会抛出异常,注意检查
-	 * @param xmlfile 输入的xml文件名. 文件格式必须是{@link jane.tool.XlsxExport}输出的xml结构
-	 * @param beanmap 输出的map结构. 如果输入的xml文件没有指定key,则必须用Integer类型的key
-	 * @param keycls map的key类. 如果为null,则自动生成从1开始的Integer作为key,此时beanmap的key类型必须是Integer
-	 * @param beancls map的value类. 必须是继承bean类型的
-	 * @param enummap 常量枚举表. 可以为null
+	 * @param xmlFile 输入的xml文件名. 文件格式必须是{@link jane.tool.XlsxExport}输出的xml结构
+	 * @param beanMap 输出的map结构. 如果输入的xml文件没有指定key,则必须用Integer类型的key
+	 * @param keyCls map的key类. 如果为null,则自动生成从1开始的Integer作为key,此时beanmap的key类型必须是Integer
+	 * @param beanCls map的value类. 必须是继承bean类型的
+	 * @param enumMap 常量枚举表. 可以为null
 	 */
 	@SuppressWarnings("unchecked")
-	public static <K, B> void xml2BeanMap(String xmlfile, Map<K, B> beanmap, Class<K> keycls, Class<B> beancls, Map<String, ?> enummap) throws Exception
+	public static <K, B> void xml2BeanMap(String xmlFile, Map<K, B> beanMap, Class<K> keyCls, Class<B> beanCls, Map<String, ?> enumMap) throws Exception
 	{
-		beanmap.clear();
-		InputStream is = new FileInputStream(xmlfile);
+		beanMap.clear();
+		InputStream is = new FileInputStream(xmlFile);
 		try
 		{
 			Element elem = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(is).getDocumentElement();
-			String keystr = elem.getAttribute("key").trim();
-			Constructor<K> con_key = (keycls != null ? keycls.getConstructor(String.class) : null);
-			Field[] fields = beancls.getDeclaredFields();
-			int n_field = fields.length;
-			Constructor<?>[] con_field = new Constructor<?>[n_field];
-			HashMap<Class<?>, Class<?>> clsmap = new HashMap<Class<?>, Class<?>>();
-			clsmap.put(byte.class, Byte.class);
-			clsmap.put(short.class, Short.class);
-			clsmap.put(int.class, Integer.class);
-			clsmap.put(long.class, Long.class);
-			clsmap.put(float.class, Float.class);
-			clsmap.put(double.class, Double.class);
-			for(int i = 0, n = n_field; i < n; ++i)
+			String keyStr = elem.getAttribute("key").trim();
+			Constructor<K> conKey = (keyCls != null ? keyCls.getConstructor(String.class) : null);
+			Field[] fields = beanCls.getDeclaredFields();
+			int nField = fields.length;
+			Constructor<?>[] conField = new Constructor<?>[nField];
+			HashMap<Class<?>, Class<?>> clsMap = new HashMap<Class<?>, Class<?>>();
+			clsMap.put(byte.class, Byte.class);
+			clsMap.put(short.class, Short.class);
+			clsMap.put(int.class, Integer.class);
+			clsMap.put(long.class, Long.class);
+			clsMap.put(float.class, Float.class);
+			clsMap.put(double.class, Double.class);
+			for(int i = 0, n = nField; i < n; ++i)
 			{
 				Field field = fields[i];
 				if((field.getModifiers() & (Modifier.STATIC | Modifier.FINAL)) == 0)
 				{
 					fields[i].setAccessible(true);
-					Class<?> cls = clsmap.get(fields[i].getType());
-					if(cls != null) con_field[i] = cls.getConstructor(String.class);
+					Class<?> cls = clsMap.get(fields[i].getType());
+					if(cls != null) conField[i] = cls.getConstructor(String.class);
 				}
 			}
 			NodeList nl = elem.getElementsByTagName("record");
 			for(int i = 0, n = nl.getLength(); i < n; ++i)
 			{
 				elem = (Element)nl.item(i);
-				String str = (keystr.isEmpty() ? null : elem.getAttribute(keystr).trim());
+				String str = (keyStr.isEmpty() ? null : elem.getAttribute(keyStr).trim());
 				K key = null;
 				try
 				{
-					key = (con_key != null && str != null ? con_key.newInstance(str) : (K)Integer.valueOf(i + 1));
+					key = (conKey != null && str != null ? conKey.newInstance(str) : (K)Integer.valueOf(i + 1));
 				}
 				catch(Exception e)
 				{
 					throw new IllegalStateException("invalid key in record=" + i + ", str=\"" + str +
-					        "\" in " + xmlfile, e);
+					        "\" in " + xmlFile, e);
 				}
-				B bean = beancls.newInstance();
-				for(int j = 0; j < n_field; ++j)
+				B bean = beanCls.newInstance();
+				for(int j = 0; j < nField; ++j)
 				{
 					Field field = fields[j];
-					String fieldname = field.getName();
-					String fieldvalue = elem.getAttribute(fieldname).trim();
-					if(!fieldvalue.isEmpty())
+					String fieldName = field.getName();
+					String fieldValue = elem.getAttribute(fieldName).trim();
+					if(!fieldValue.isEmpty())
 					{
-						elem.removeAttribute(fieldname);
+						elem.removeAttribute(fieldName);
 						try
 						{
-							if(enummap != null && ((fieldvalue.charAt(0) - 'A') & 0xff) < 26) // A-Z开头的先查枚举常量表
+							if(enumMap != null && ((fieldValue.charAt(0) - 'A') & 0xff) < 26) // A-Z开头的先查枚举常量表
 							{
-								Object v = enummap.get(fieldvalue);
-								if(v != null) fieldvalue = v.toString();
+								Object v = enumMap.get(fieldValue);
+								if(v != null) fieldValue = v.toString();
 							}
 							if(field.getType() == boolean.class)
-								field.setBoolean(bean, fieldvalue.equals("1") || fieldvalue.equalsIgnoreCase("true"));
+								field.setBoolean(bean, fieldValue.equals("1") || fieldValue.equalsIgnoreCase("true"));
 							else if(field.getType() == String.class)
-								field.set(bean, fieldvalue.intern()); // 字段是字符串类型的话,优化到字符串池里
+								field.set(bean, fieldValue.intern()); // 字段是字符串类型的话,优化到字符串池里
 							else
 							{
-								Constructor<?> con = con_field[j];
+								Constructor<?> con = conField[j];
 								if(con == null) throw new IllegalStateException("unsupported field type");
-								field.set(bean, con.newInstance(fieldvalue));
+								field.set(bean, con.newInstance(fieldValue));
 							}
 						}
 						catch(Exception e)
 						{
-							throw new IllegalStateException("invalid data in key:" + keystr + "=\"" + key +
-							        "\", field=\"" + fieldname + "\", str=\"" + fieldvalue + "\", type=\"" +
-							        field.getType().getName() + "\" in " + xmlfile, e);
+							throw new IllegalStateException("invalid data in key:" + keyStr + "=\"" + key +
+							        "\", field=\"" + fieldName + "\", str=\"" + fieldValue + "\", type=\"" +
+							        field.getType().getName() + "\" in " + xmlFile, e);
 						}
 					}
 				}
-				if(!keystr.isEmpty()) elem.removeAttribute(keystr);
+				if(!keyStr.isEmpty()) elem.removeAttribute(keyStr);
 				NamedNodeMap nnm = elem.getAttributes();
-				int n_attr = nnm.getLength();
-				if(n_attr > 0)
+				int nAttr = nnm.getLength();
+				if(nAttr > 0)
 				{
 					StringBuilder sb = new StringBuilder("unknown field name(s) \"");
 					for(int j = 0;;)
 					{
 						sb.append(nnm.item(j).getNodeName());
-						if(++j < n_attr)
+						if(++j < nAttr)
 							sb.append(',');
 						else
 							throw new IllegalStateException(sb.append("\" in key=\"").append(key).
-							        append("\" in ").append(xmlfile).toString());
+							        append("\" in ").append(xmlFile).toString());
 					}
 				}
-				if(beanmap.put(key, bean) != null)
-				    throw new IllegalStateException("duplicate key:" + keystr + "=\"" + key + "\" in " + xmlfile);
+				if(beanMap.put(key, bean) != null)
+				    throw new IllegalStateException("duplicate key:" + keyStr + "=\"" + key + "\" in " + xmlFile);
 			}
 		}
 		finally
@@ -516,7 +516,7 @@ public final class Util
 			String ct = conn.getContentType();
 			if(ct != null)
 			{
-				Matcher mat = _pat_charset.matcher(ct);
+				Matcher mat = _patCharset.matcher(ct);
 				if(mat.find())
 				{
 					String cs = mat.group(1);

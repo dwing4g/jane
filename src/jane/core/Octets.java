@@ -12,15 +12,15 @@ import java.nio.charset.Charset;
 public class Octets implements Cloneable, Comparable<Octets>
 {
 	private static final char[] HEX = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-	public static final byte[]  EMPTY            = new byte[0];         // 共享的空缓冲区
-	public static final int     DEFAULT_SIZE     = 16;                  // 默认的缓冲区
-	private static Charset      _default_charset = Const.stringCharset; // 本类的默认字符集
-	protected byte[]            buffer           = EMPTY;               // 数据缓冲区
-	protected int               count;                                  // 当前有效的数据缓冲区大小
+	public static final byte[]  EMPTY           = new byte[0];         // 共享的空缓冲区
+	public static final int     DEFAULT_SIZE    = 16;                  // 默认的缓冲区
+	private static Charset      _defaultCharset = Const.stringCharset; // 本类的默认字符集
+	protected byte[]            buffer          = EMPTY;               // 数据缓冲区
+	protected int               count;                                 // 当前有效的数据缓冲区大小
 
 	public static void setDefaultEncoding(Charset charset)
 	{
-		_default_charset = (charset != null ? charset : Const.stringCharset);
+		_defaultCharset = (charset != null ? charset : Const.stringCharset);
 	}
 
 	public static Octets wrap(byte[] data, int size)
@@ -43,7 +43,7 @@ public class Octets implements Cloneable, Comparable<Octets>
 
 	public static Octets wrap(String str)
 	{
-		return wrap(str.getBytes(_default_charset));
+		return wrap(str.getBytes(_defaultCharset));
 	}
 
 	public static Octets wrap(String str, Charset charset)
@@ -397,7 +397,7 @@ public class Octets implements Cloneable, Comparable<Octets>
 
 	public void setString(String str)
 	{
-		buffer = str.getBytes(_default_charset);
+		buffer = str.getBytes(_defaultCharset);
 		count = buffer.length;
 	}
 
@@ -415,7 +415,7 @@ public class Octets implements Cloneable, Comparable<Octets>
 
 	public String getString()
 	{
-		return new String(buffer, 0, count, _default_charset);
+		return new String(buffer, 0, count, _defaultCharset);
 	}
 
 	public String getString(Charset charset)

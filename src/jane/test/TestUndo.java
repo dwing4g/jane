@@ -22,7 +22,7 @@ public final class TestUndo
 			@Override
 			protected void onProcess() throws Exception
 			{
-				lock(Benchmark.lockid(id));
+				lock(Benchmark.lockId(id));
 				TestBean.Safe a = Benchmark.getSafe(id);
 				if(a == null)
 				{
@@ -49,7 +49,7 @@ public final class TestUndo
 			@Override
 			protected void onProcess() throws Exception
 			{
-				lock(Benchmark.lockid(id));
+				lock(Benchmark.lockId(id));
 				TestBean.Safe a = Benchmark.getSafe(id);
 				System.out.println("get: " + a.getValue1());
 				a.setValue1(v + 1);
@@ -64,7 +64,7 @@ public final class TestUndo
 			@Override
 			protected void onProcess() throws Exception
 			{
-				lock(Benchmark.lockid(id));
+				lock(Benchmark.lockId(id));
 				TestBean.Safe a = Benchmark.getSafe(id);
 				System.out.println("get: " + a.getValue1());
 				a.setValue1(v + 2);
@@ -78,7 +78,7 @@ public final class TestUndo
 			@Override
 			protected void onProcess() throws Exception
 			{
-				lock(Benchmark.lockid(id));
+				lock(Benchmark.lockId(id));
 				TestBean.Safe a = Benchmark.getSafe(id);
 				System.out.println("get: " + a.getValue1());
 				System.out.println("===");

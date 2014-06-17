@@ -741,7 +741,7 @@ public final class TestType extends Bean<TestType>
 
 		public void setV1(boolean v1)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SBoolean(_bean, FIELD_v1, _bean.v1));
+			if(initSContext()) _sCtx.addOnRollback(new SBase.SBoolean(_bean, FIELD_v1, _bean.v1));
 			_bean.v1 = v1;
 		}
 
@@ -752,7 +752,7 @@ public final class TestType extends Bean<TestType>
 
 		public void setV2(byte v2)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SByte(_bean, FIELD_v2, _bean.v2));
+			if(initSContext()) _sCtx.addOnRollback(new SBase.SByte(_bean, FIELD_v2, _bean.v2));
 			_bean.v2 = v2;
 		}
 
@@ -763,7 +763,7 @@ public final class TestType extends Bean<TestType>
 
 		public void setV3(short v3)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SShort(_bean, FIELD_v3, _bean.v3));
+			if(initSContext()) _sCtx.addOnRollback(new SBase.SShort(_bean, FIELD_v3, _bean.v3));
 			_bean.v3 = v3;
 		}
 
@@ -774,7 +774,7 @@ public final class TestType extends Bean<TestType>
 
 		public void setV4(int v4)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SInteger(_bean, FIELD_v4, _bean.v4));
+			if(initSContext()) _sCtx.addOnRollback(new SBase.SInteger(_bean, FIELD_v4, _bean.v4));
 			_bean.v4 = v4;
 		}
 
@@ -785,7 +785,7 @@ public final class TestType extends Bean<TestType>
 
 		public void setV5(long v5)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SLong(_bean, FIELD_v5, _bean.v5));
+			if(initSContext()) _sCtx.addOnRollback(new SBase.SLong(_bean, FIELD_v5, _bean.v5));
 			_bean.v5 = v5;
 		}
 
@@ -796,7 +796,7 @@ public final class TestType extends Bean<TestType>
 
 		public void setV6(float v6)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SFloat(_bean, FIELD_v6, _bean.v6));
+			if(initSContext()) _sCtx.addOnRollback(new SBase.SFloat(_bean, FIELD_v6, _bean.v6));
 			_bean.v6 = v6;
 		}
 
@@ -807,13 +807,13 @@ public final class TestType extends Bean<TestType>
 
 		public void setV7(double v7)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SDouble(_bean, FIELD_v7, _bean.v7));
+			if(initSContext()) _sCtx.addOnRollback(new SBase.SDouble(_bean, FIELD_v7, _bean.v7));
 			_bean.v7 = v7;
 		}
 
 		public Octets getV8()
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_v8, _bean.v8, true));
+			if(initSContext()) _sCtx.addOnRollback(new SBase.SOctets(_bean, FIELD_v8, _bean.v8, true));
 			return _bean.v8;
 		}
 
@@ -824,7 +824,7 @@ public final class TestType extends Bean<TestType>
 
 		public <B extends Bean<B>> void marshalV8(Bean<B> b)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_v8, _bean.v8, false));
+			if(initSContext()) _sCtx.addOnRollback(new SBase.SOctets(_bean, FIELD_v8, _bean.v8, false));
 			_bean.v8 = b.marshal(new OctetsStream(b.initSize()));
 		}
 
@@ -850,7 +850,7 @@ public final class TestType extends Bean<TestType>
 
 		public void setV9(String v9)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SString(_bean, FIELD_v9, _bean.v9));
+			if(initSContext()) _sCtx.addOnRollback(new SBase.SString(_bean, FIELD_v9, _bean.v9));
 			_bean.v9 = (v9 != null ? v9 : "");
 		}
 

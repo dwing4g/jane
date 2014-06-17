@@ -34,7 +34,7 @@ import org.mapdb.LongMap.LongMapIterator;
 public class NetManager implements IoHandler
 {
 	private static final LongMap<RpcBean<?, ?>>   _rpcs     = new LongConcurrentHashMap<RpcBean<?, ?>>(); // 当前管理器等待回复的RPC
-	private static final ScheduledExecutorService _rpc_thread;                                           // 处理RPC超时和重连的线程
+	private static final ScheduledExecutorService _rpcThread;                                            // 处理RPC超时和重连的线程
 	private final String                          _name     = getClass().getName();                      // 当前管理器的名字
 	private Class<? extends IoFilter>             _pcf      = BeanCodec.class;                           // 协议编码器的类
 	private IntMap<BeanHandler<?>>                _handlers = new IntMap<BeanHandler<?>>(0);             // bean的处理器
@@ -43,7 +43,7 @@ public class NetManager implements IoHandler
 
 	static
 	{
-		_rpc_thread = Executors.newSingleThreadScheduledExecutor(new ThreadFactory()
+		_rpcThread = Executors.newSingleThreadScheduledExecutor(new ThreadFactory()
 		{
 			@Override
 			public Thread newThread(Runnable r)
@@ -54,7 +54,7 @@ public class NetManager implements IoHandler
 				return t;
 			}
 		});
-		_rpc_thread.scheduleWithFixedDelay(new Runnable()
+		_rpcThread.scheduleWithFixedDelay(new Runnable()
 		{
 			@Override
 			public void run()
@@ -102,9 +102,9 @@ public class NetManager implements IoHandler
 	 * <p>
 	 * 只在RPC得到回复时调用
 	 */
-	static RpcBean<?, ?> removeRpc(int rpcid)
+	static RpcBean<?, ?> removeRpc(int rpcId)
 	{
-		return _rpcs.remove(rpcid);
+		return _rpcs.remove(rpcId);
 	}
 
 	/**
@@ -262,16 +262,16 @@ public class NetManager implements IoHandler
 					{
 						++_count;
 						Log.log.debug("{}: connect failed: addr={},count={}", _name, addr, _count);
-						int delay_sec = onConnectFailed(addr, _count, ctx);
-						if(delay_sec == 0)
+						int delaySec = onConnectFailed(addr, _count, ctx);
+						if(delaySec == 0)
 						{
 							Log.log.debug("{}: reconnecting addr={},count={}", _name, addr, _count);
 							_connector.connect(addr).addListener(this);
 						}
-						else if(delay_sec > 0)
+						else if(delaySec > 0)
 						{
 							final IoFutureListener<ConnectFuture> listener = this;
-							schedule(delay_sec, new Runnable()
+							schedule(delaySec, new Runnable()
 							{
 								@Override
 								public void run()
@@ -338,11 +338,11 @@ public class NetManager implements IoHandler
 	 * 使用网络工作线程调度一个延迟处理
 	 * <p>
 	 * 所有的网络管理器共用一个工作线程,同时运行RPC超时处理,因此只适合简单的处理,运行时间不要过长
-	 * @param delay_sec 延迟调度的秒数
+	 * @param delaySec 延迟调度的秒数
 	 */
-	public static ScheduledFuture<?> schedule(long delay_sec, Runnable runnable)
+	public static ScheduledFuture<?> schedule(long delaySec, Runnable runnable)
 	{
-		return _rpc_thread.schedule(runnable, delay_sec, TimeUnit.SECONDS);
+		return _rpcThread.schedule(runnable, delaySec, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -454,19 +454,19 @@ public class NetManager implements IoHandler
 	 * @return 如果连接已经失效则返回false且不会有回复和超时的回调, 否则返回true
 	 */
 	@SuppressWarnings("unchecked")
-	public <A extends Bean<A>, R extends Bean<R>> boolean sendRpc(final IoSession session, final RpcBean<A, R> rpcbean, RpcHandler<A, R> handler)
+	public <A extends Bean<A>, R extends Bean<R>> boolean sendRpc(final IoSession session, final RpcBean<A, R> rpcBean, RpcHandler<A, R> handler)
 	{
 		if(session.isClosing()) return false;
-		rpcbean.setRequest();
-		if(!send(session, rpcbean)) return false;
-		rpcbean.setReqTime((int)(System.currentTimeMillis() / 1000));
-		rpcbean.setSession(session);
-		rpcbean.setOnClient(handler != null ? handler : (RpcHandler<A, R>)_handlers.get(rpcbean.type()));
-		_rpcs.put(rpcbean.getRpcId(), rpcbean);
+		rpcBean.setRequest();
+		if(!send(session, rpcBean)) return false;
+		rpcBean.setReqTime((int)(System.currentTimeMillis() / 1000));
+		rpcBean.setSession(session);
+		rpcBean.setOnClient(handler != null ? handler : (RpcHandler<A, R>)_handlers.get(rpcBean.type()));
+		_rpcs.put(rpcBean.getRpcId(), rpcBean);
 		return true;
 	}
 
-	public <A extends Bean<A>, R extends Bean<R>> boolean sendRpcSafe(final IoSession session, final RpcBean<A, R> rpcbean, final RpcHandler<A, R> handler)
+	public <A extends Bean<A>, R extends Bean<R>> boolean sendRpcSafe(final IoSession session, final RpcBean<A, R> rpcBean, final RpcHandler<A, R> handler)
 	{
 		if(session.isClosing()) return false;
 		SContext.current().addOnCommit(new Runnable()
@@ -474,7 +474,7 @@ public class NetManager implements IoHandler
 			@Override
 			public void run()
 			{
-				sendRpc(session, rpcbean, handler);
+				sendRpc(session, rpcBean, handler);
 			}
 		});
 		return true;
@@ -520,13 +520,13 @@ public class NetManager implements IoHandler
 
 	/**
 	 * 作为客户端连接失败后的回调
-	 * @param address 连接失败的地址
+	 * @param addr 连接失败的地址
 	 * @param count 重试次数(从1开始)
 	 * @param ctx startClient时传入的用户对象. 没有则为null
 	 * @return 返回下次重连的时间间隔(秒)
 	 */
 	@SuppressWarnings("static-method")
-	protected int onConnectFailed(InetSocketAddress address, int count, Object ctx)
+	protected int onConnectFailed(InetSocketAddress addr, int count, Object ctx)
 	{
 		return -1;
 	}

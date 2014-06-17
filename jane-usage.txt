@@ -142,7 +142,7 @@ DBManager.instance().submit(new Procedure()
     @Override
     protected void onProcess() throws Exception
     {
-        lock(AllTables.user.lockid(arg.getUserid())); // 先给此表的userid加记录锁
+        lock(AllTables.user.lockId(arg.getUserid())); // 先给此表的userid加记录锁
         DBUserProp userprop = AllTables.user.get(arg.getUserid()); // 取记录
         if(userprop == null) // 如果记录不存在
         {
@@ -160,7 +160,7 @@ DBManager.instance().submit(new Procedure()
     @Override
     protected void onProcess() throws Exception
     {
-        lock(AllTables.user.lockid(arg.getUserid())); // 先给此表的userid加记录锁
+        lock(AllTables.user.lockId(arg.getUserid())); // 先给此表的userid加记录锁
         DBUserProp.Safe userprop = AllTables.user.getSafe(arg.getUserid()); // 取记录(安全方式)
         if(userprop == null) // 如果记录不存在
         {

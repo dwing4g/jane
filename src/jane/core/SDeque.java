@@ -14,7 +14,7 @@ public final class SDeque<V> implements Deque<V>, Cloneable
 {
 	private final Wrap<?>  _owner;
 	private final Deque<V> _deque;
-	private SContext       _sctx;
+	private SContext       _sCtx;
 
 	public SDeque(Wrap<?> owner, Deque<V> queue)
 	{
@@ -24,9 +24,9 @@ public final class SDeque<V> implements Deque<V>, Cloneable
 
 	private SContext sContext()
 	{
-		if(_sctx != null) return _sctx;
+		if(_sCtx != null) return _sCtx;
 		_owner.dirty();
-		return _sctx = SContext.current();
+		return _sCtx = SContext.current();
 	}
 
 	@Override
@@ -258,23 +258,23 @@ public final class SDeque<V> implements Deque<V>, Cloneable
 	@Override
 	public V remove()
 	{
-		final V v_old = _deque.remove();
+		final V vOld = _deque.remove();
 		sContext().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
 			{
-				_deque.addFirst(v_old);
+				_deque.addFirst(vOld);
 			}
 		});
-		return v_old;
+		return vOld;
 	}
 
 	@SuppressWarnings("unchecked")
 	public <S extends Wrap<V>> S removeSafe()
 	{
-		V v_old = remove();
-		return v_old != null ? (S)((Bean<?>)v_old).safe(_owner) : null;
+		V vOld = remove();
+		return vOld != null ? (S)((Bean<?>)vOld).safe(_owner) : null;
 	}
 
 	@Override
@@ -297,23 +297,23 @@ public final class SDeque<V> implements Deque<V>, Cloneable
 	@Override
 	public V removeLast()
 	{
-		final V v_old = _deque.removeLast();
+		final V vOld = _deque.removeLast();
 		sContext().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
 			{
-				_deque.addLast(v_old);
+				_deque.addLast(vOld);
 			}
 		});
-		return v_old;
+		return vOld;
 	}
 
 	@SuppressWarnings("unchecked")
 	public <S extends Wrap<V>> S removeLastSafe()
 	{
-		V v_old = removeLast();
-		return v_old != null ? (S)((Bean<?>)v_old).safe(_owner) : null;
+		V vOld = removeLast();
+		return vOld != null ? (S)((Bean<?>)vOld).safe(_owner) : null;
 	}
 
 	@Override
@@ -331,24 +331,24 @@ public final class SDeque<V> implements Deque<V>, Cloneable
 	@Override
 	public V poll()
 	{
-		final V v_old = _deque.poll();
-		if(v_old == null) return null;
+		final V vOld = _deque.poll();
+		if(vOld == null) return null;
 		sContext().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
 			{
-				_deque.addFirst(v_old);
+				_deque.addFirst(vOld);
 			}
 		});
-		return v_old;
+		return vOld;
 	}
 
 	@SuppressWarnings("unchecked")
 	public <S extends Wrap<V>> S pollSafe()
 	{
-		V v_old = poll();
-		return v_old != null ? (S)((Bean<?>)v_old).safe(_owner) : null;
+		V vOld = poll();
+		return vOld != null ? (S)((Bean<?>)vOld).safe(_owner) : null;
 	}
 
 	@Override
@@ -365,24 +365,24 @@ public final class SDeque<V> implements Deque<V>, Cloneable
 	@Override
 	public V pollLast()
 	{
-		final V v_old = _deque.pollLast();
-		if(v_old == null) return null;
+		final V vOld = _deque.pollLast();
+		if(vOld == null) return null;
 		sContext().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
 			{
-				_deque.addLast(v_old);
+				_deque.addLast(vOld);
 			}
 		});
-		return v_old;
+		return vOld;
 	}
 
 	@SuppressWarnings("unchecked")
 	public <S extends Wrap<V>> S pollLastSafe()
 	{
-		V v_old = pollLast();
-		return v_old != null ? (S)((Bean<?>)v_old).safe(_owner) : null;
+		V vOld = pollLast();
+		return vOld != null ? (S)((Bean<?>)vOld).safe(_owner) : null;
 	}
 
 	@Override

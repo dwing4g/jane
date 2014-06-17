@@ -28,29 +28,29 @@ public abstract class Procedure implements Runnable
 	private static final class Context
 	{
 		private final Lock[]       locks = new ReentrantLock[Const.maxLockPerProcedure]; // 当前线程已经加过的锁
-		private volatile int       lockcount;                                           // 当前进程已经加过锁的数量
+		private volatile int       lockCount;                                           // 当前进程已经加过锁的数量
 		private volatile Procedure proc;                                                // 当前运行的事务
 	}
 
-	private static final ThreadLocal<Context>   _tl_proc;                                             // 每个事务线程绑定一个上下文
-	private static final Lock[]                 _lockpool     = new ReentrantLock[Const.lockPoolSize]; // 全局共享的锁池
-	private static final int                    _lockmask     = Const.lockPoolSize - 1;               // 锁池下标的掩码
-	private static final ReentrantReadWriteLock _rwl_commit   = new ReentrantReadWriteLock();         // 用于数据提交的读写锁
-	private static final Map<Thread, Context>   _proc_threads = Util.newProcThreadsMap();             // 当前运行的全部事务线程. 用于判断是否超时
-	private static ExceptionHandler             _default_eh;                                          // 默认的全局异常处理
-	private volatile Context                    _ctx;                                                 // 事务所属的线程上下文. 只在事务运行中有效
-	private volatile Object                     _sid;                                                 // 事务所属的SessionId
-	private volatile long                       _begin_time;                                          // 事务运行的起始时间. 用于判断是否超时
+	private static final ThreadLocal<Context>   _tlProc;                                             // 每个事务线程绑定一个上下文
+	private static final Lock[]                 _lockPool    = new ReentrantLock[Const.lockPoolSize]; // 全局共享的锁池
+	private static final int                    _lockMask    = Const.lockPoolSize - 1;               // 锁池下标的掩码
+	private static final ReentrantReadWriteLock _rwlCommit   = new ReentrantReadWriteLock();         // 用于数据提交的读写锁
+	private static final Map<Thread, Context>   _procThreads = Util.newProcThreadsMap();             // 当前运行的全部事务线程. 用于判断是否超时
+	private static ExceptionHandler             _defaultEh;                                          // 默认的全局异常处理
+	private volatile Context                    _ctx;                                                // 事务所属的线程上下文. 只在事务运行中有效
+	private volatile Object                     _sid;                                                // 事务所属的SessionId
+	private volatile long                       _beginTime;                                          // 事务运行的起始时间. 用于判断是否超时
 
 	static
 	{
-		_tl_proc = new ThreadLocal<Context>()
+		_tlProc = new ThreadLocal<Context>()
 		{
 			@Override
 			protected Context initialValue()
 			{
 				Context ctx = new Context();
-				_proc_threads.put(Thread.currentThread(), ctx);
+				_procThreads.put(Thread.currentThread(), ctx);
 				return ctx;
 			}
 		};
@@ -64,17 +64,17 @@ public abstract class Procedure implements Runnable
 					try
 					{
 						long now = System.currentTimeMillis();
-						for(Entry<Thread, Context> e : _proc_threads.entrySet())
+						for(Entry<Thread, Context> e : _procThreads.entrySet())
 						{
 							Thread t = e.getKey();
 							if(t.isAlive())
 							{
 								Procedure p = e.getValue().proc;
-								if(p != null && now - p._begin_time > 5000)
+								if(p != null && now - p._beginTime > 5000)
 								{
 									synchronized(p)
 									{
-										long timeout = now - p._begin_time;
+										long timeout = now - p._beginTime;
 										if(timeout > 5000 && e.getValue().proc != null)
 										{
 											if(p._sid != null)
@@ -93,7 +93,7 @@ public abstract class Procedure implements Runnable
 								}
 							}
 							else
-								_proc_threads.remove(t);
+								_procThreads.remove(t);
 						}
 					}
 					catch(Throwable e)
@@ -112,12 +112,12 @@ public abstract class Procedure implements Runnable
 	 */
 	static WriteLock getWriteLock()
 	{
-		return _rwl_commit.writeLock();
+		return _rwlCommit.writeLock();
 	}
 
 	public static void setDefaultOnException(ExceptionHandler eh)
 	{
-		_default_eh = eh;
+		_defaultEh = eh;
 	}
 
 	/**
@@ -186,29 +186,29 @@ public abstract class Procedure implements Runnable
 	protected final void unlock()
 	{
 		if(_ctx == null) throw new IllegalStateException("invalid lock/unlock out of procedure");
-		if(_ctx.lockcount == 0) return;
-		for(int i = _ctx.lockcount - 1; i >= 0; --i)
+		if(_ctx.lockCount == 0) return;
+		for(int i = _ctx.lockCount - 1; i >= 0; --i)
 			_ctx.locks[i].unlock();
-		_ctx.lockcount = 0;
+		_ctx.lockCount = 0;
 	}
 
 	/**
-	 * 根据lockid获取实际的锁对象
+	 * 根据lockId获取实际的锁对象
 	 */
-	private static Lock getLock(int lockid)
+	private static Lock getLock(int lockId)
 	{
-		lockid &= _lockmask;
-		Lock lock = _lockpool[lockid];
+		lockId &= _lockMask;
+		Lock lock = _lockPool[lockId];
 		if(lock != null) return lock;
-		synchronized(_lockpool)
+		synchronized(_lockPool)
 		{
-			lock = _lockpool[lockid];
+			lock = _lockPool[lockId];
 			if(lock == null)
 			{
 				lock = new ReentrantLock();
 				synchronized(Procedure.class) // memory barrier for out of order problem
 				{
-					_lockpool[lockid] = lock;
+					_lockPool[lockId] = lock;
 				}
 			}
 			return lock;
@@ -216,328 +216,328 @@ public abstract class Procedure implements Runnable
 	}
 
 	/**
-	 * 尝试加锁一个lockid
+	 * 尝试加锁一个lockId
 	 * <p>
 	 * 只用于内部提交数据
 	 */
-	static Lock tryLock(int lockid)
+	static Lock tryLock(int lockId)
 	{
-		Lock lock = getLock(lockid);
+		Lock lock = getLock(lockId);
 		return lock.tryLock() ? lock : null;
 	}
 
 	/**
-	 * 加锁一个lockid
+	 * 加锁一个lockId
 	 * <p>
-	 * lockid通过{@link Table}/{@link TableLong}的lockid方法获取<br>
+	 * lockId通过{@link Table}/{@link TableLong}的lockId方法获取<br>
 	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁
 	 */
-	protected final void lock(int lockid) throws InterruptedException
+	protected final void lock(int lockId) throws InterruptedException
 	{
 		unlock();
-		(_ctx.locks[0] = getLock(lockid)).lockInterruptibly();
-		_ctx.lockcount = 1;
+		(_ctx.locks[0] = getLock(lockId)).lockInterruptibly();
+		_ctx.lockCount = 1;
 	}
 
 	/**
-	 * 加锁一组lockid
+	 * 加锁一组lockId
 	 * <p>
-	 * lockid通过{@link Table}/{@link TableLong}的lockid方法获取<br>
+	 * lockId通过{@link Table}/{@link TableLong}的lockId方法获取<br>
 	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁
-	 * @param lockids 注意此数组内的元素会被排序
+	 * @param lockIds 注意此数组内的元素会被排序
 	 */
-	protected final void lock(int[] lockids) throws InterruptedException
+	protected final void lock(int[] lockIds) throws InterruptedException
 	{
 		unlock();
-		int n = lockids.length;
+		int n = lockIds.length;
 		if(n > Const.maxLockPerProcedure)
 		    throw new IllegalStateException("lock exceed: " + n + '>' + Const.maxLockPerProcedure);
-		Arrays.sort(lockids);
+		Arrays.sort(lockIds);
 		for(int i = 0; i < n;)
 		{
-			(_ctx.locks[i] = getLock(lockids[i])).lockInterruptibly();
-			_ctx.lockcount = ++i;
+			(_ctx.locks[i] = getLock(lockIds[i])).lockInterruptibly();
+			_ctx.lockCount = ++i;
 		}
 	}
 
 	/**
-	 * 加锁一组lockid
+	 * 加锁一组lockId
 	 * <p>
-	 * lockid通过{@link Table}/{@link TableLong}的lockid方法获取<br>
+	 * lockId通过{@link Table}/{@link TableLong}的lockId方法获取<br>
 	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁
-	 * @param lockids 此容器内的元素不会改动
+	 * @param lockIds 此容器内的元素不会改动
 	 */
-	protected final void lock(List<Integer> lockids) throws InterruptedException
+	protected final void lock(List<Integer> lockIds) throws InterruptedException
 	{
 		unlock();
-		int n = lockids.size();
+		int n = lockIds.size();
 		if(n > Const.maxLockPerProcedure)
 		    throw new IllegalStateException("lock exceed: " + n + '>' + Const.maxLockPerProcedure);
 		int[] ids = new int[n];
 		int i = 0;
-		if(lockids instanceof RandomAccess)
+		if(lockIds instanceof RandomAccess)
 		{
 			for(; i < n; ++i)
-				ids[i] = lockids.get(i);
+				ids[i] = lockIds.get(i);
 		}
 		else
 		{
-			for(int lockid : lockids)
-				ids[i++] = lockid;
+			for(int lockId : lockIds)
+				ids[i++] = lockId;
 		}
 		Arrays.sort(ids);
 		for(i = 0; i < n;)
 		{
 			(_ctx.locks[i] = getLock(ids[i])).lockInterruptibly();
-			_ctx.lockcount = ++i;
+			_ctx.lockCount = ++i;
 		}
 	}
 
 	/**
-	 * 加锁一组排序过的lockid
+	 * 加锁一组排序过的lockId
 	 * <p>
-	 * lockid通过{@link Table}/{@link TableLong}的lockid方法获取<br>
-	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁 这个方法比加锁一组未排序的lockid的效率高
-	 * @param lockids 此容器内的元素不会改动
+	 * lockId通过{@link Table}/{@link TableLong}的lockId方法获取<br>
+	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁 这个方法比加锁一组未排序的lockId的效率高
+	 * @param lockIds 此容器内的元素不会改动
 	 */
-	protected final void lock(SortedSet<Integer> lockids) throws InterruptedException
+	protected final void lock(SortedSet<Integer> lockIds) throws InterruptedException
 	{
 		unlock();
-		int n = lockids.size();
+		int n = lockIds.size();
 		if(n > Const.maxLockPerProcedure)
 		    throw new IllegalStateException("lock exceed: " + n + '>' + Const.maxLockPerProcedure);
 		int i = 0;
-		for(int lockid : lockids)
+		for(int lockId : lockIds)
 		{
-			(_ctx.locks[i] = getLock(lockid)).lockInterruptibly();
-			_ctx.lockcount = ++i;
+			(_ctx.locks[i] = getLock(lockId)).lockInterruptibly();
+			_ctx.lockCount = ++i;
 		}
 	}
 
 	/**
-	 * 加锁一组lockid
+	 * 加锁一组lockId
 	 * <p>
-	 * lockid通过{@link Table}/{@link TableLong}的lockid方法获取<br>
+	 * lockId通过{@link Table}/{@link TableLong}的lockId方法获取<br>
 	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁
 	 */
-	protected final void lock(int lockid0, int lockid1, int lockid2, int lockid3, int... lockids) throws InterruptedException
+	protected final void lock(int lockId0, int lockId1, int lockId2, int lockId3, int... lockIds) throws InterruptedException
 	{
-		int n = lockids.length;
+		int n = lockIds.length;
 		if(n + 4 > Const.maxLockPerProcedure)
 		    throw new IllegalStateException("lock exceed: " + (n + 4) + '>' + Const.maxLockPerProcedure);
-		lockids = Arrays.copyOf(lockids, n + 4);
-		lockids[n] = lockid0;
-		lockids[n + 1] = lockid1;
-		lockids[n + 2] = lockid2;
-		lockids[n + 3] = lockid3;
-		lock(lockids);
+		lockIds = Arrays.copyOf(lockIds, n + 4);
+		lockIds[n] = lockId0;
+		lockIds[n + 1] = lockId1;
+		lockIds[n + 2] = lockId2;
+		lockIds[n + 3] = lockId3;
+		lock(lockIds);
 	}
 
 	/**
-	 * 内部用于排序加锁2个lockid
+	 * 内部用于排序加锁2个lockId
 	 * <p>
 	 */
-	private void lock2(int lockid0, int lockid1) throws InterruptedException
+	private void lock2(int lockId0, int lockId1) throws InterruptedException
 	{
-		int i = _ctx.lockcount;
-		if(lockid0 < lockid1)
+		int i = _ctx.lockCount;
+		if(lockId0 < lockId1)
 		{
-			(_ctx.locks[i] = getLock(lockid0)).lockInterruptibly();
-			_ctx.lockcount = ++i;
-			(_ctx.locks[i] = getLock(lockid1)).lockInterruptibly();
-			_ctx.lockcount = ++i;
+			(_ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+			_ctx.lockCount = ++i;
+			(_ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+			_ctx.lockCount = ++i;
 		}
 		else
 		{
-			(_ctx.locks[i] = getLock(lockid1)).lockInterruptibly();
-			_ctx.lockcount = ++i;
-			(_ctx.locks[i] = getLock(lockid0)).lockInterruptibly();
-			_ctx.lockcount = ++i;
+			(_ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+			_ctx.lockCount = ++i;
+			(_ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+			_ctx.lockCount = ++i;
 		}
 	}
 
 	/**
-	 * 内部用于排序加锁3个lockid
+	 * 内部用于排序加锁3个lockId
 	 * <p>
 	 */
-	private void lock3(int lockid0, int lockid1, int lockid2) throws InterruptedException
+	private void lock3(int lockId0, int lockId1, int lockId2) throws InterruptedException
 	{
-		int i = _ctx.lockcount;
-		if(lockid0 <= lockid1)
+		int i = _ctx.lockCount;
+		if(lockId0 <= lockId1)
 		{
-			if(lockid0 < lockid2)
+			if(lockId0 < lockId2)
 			{
-				(_ctx.locks[i] = getLock(lockid0)).lockInterruptibly();
-				_ctx.lockcount = ++i;
-				lock2(lockid1, lockid2);
+				(_ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+				_ctx.lockCount = ++i;
+				lock2(lockId1, lockId2);
 			}
 			else
 			{
-				(_ctx.locks[i] = getLock(lockid2)).lockInterruptibly();
-				_ctx.lockcount = ++i;
-				(_ctx.locks[i] = getLock(lockid0)).lockInterruptibly();
-				_ctx.lockcount = ++i;
-				(_ctx.locks[i] = getLock(lockid1)).lockInterruptibly();
-				_ctx.lockcount = ++i;
+				(_ctx.locks[i] = getLock(lockId2)).lockInterruptibly();
+				_ctx.lockCount = ++i;
+				(_ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+				_ctx.lockCount = ++i;
+				(_ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+				_ctx.lockCount = ++i;
 			}
 		}
 		else
 		{
-			if(lockid1 < lockid2)
+			if(lockId1 < lockId2)
 			{
-				(_ctx.locks[i] = getLock(lockid1)).lockInterruptibly();
-				_ctx.lockcount = ++i;
-				lock2(lockid0, lockid2);
+				(_ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+				_ctx.lockCount = ++i;
+				lock2(lockId0, lockId2);
 			}
 			else
 			{
-				(_ctx.locks[i] = getLock(lockid2)).lockInterruptibly();
-				_ctx.lockcount = ++i;
-				(_ctx.locks[i] = getLock(lockid1)).lockInterruptibly();
-				_ctx.lockcount = ++i;
-				(_ctx.locks[i] = getLock(lockid0)).lockInterruptibly();
-				_ctx.lockcount = ++i;
+				(_ctx.locks[i] = getLock(lockId2)).lockInterruptibly();
+				_ctx.lockCount = ++i;
+				(_ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+				_ctx.lockCount = ++i;
+				(_ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+				_ctx.lockCount = ++i;
 			}
 		}
 	}
 
 	/**
-	 * 加锁2个lockid
+	 * 加锁2个lockId
 	 * <p>
-	 * lockid通过{@link Table}/{@link TableLong}的lockid方法获取<br>
+	 * lockId通过{@link Table}/{@link TableLong}的lockId方法获取<br>
 	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁<br>
-	 * 这个方法比加锁一组lockid的效率高
+	 * 这个方法比加锁一组lockId的效率高
 	 */
-	protected final void lock(int lockid0, int lockid1) throws InterruptedException
+	protected final void lock(int lockId0, int lockId1) throws InterruptedException
 	{
 		unlock();
-		lock2(lockid0, lockid1);
+		lock2(lockId0, lockId1);
 	}
 
 	/**
-	 * 加锁3个lockid
+	 * 加锁3个lockId
 	 * <p>
-	 * lockid通过{@link Table}/{@link TableLong}的lockid方法获取<br>
+	 * lockId通过{@link Table}/{@link TableLong}的lockId方法获取<br>
 	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁<br>
-	 * 这个方法比加锁一组lockid的效率高
+	 * 这个方法比加锁一组lockId的效率高
 	 */
-	protected final void lock(int lockid0, int lockid1, int lockid2) throws InterruptedException
+	protected final void lock(int lockId0, int lockId1, int lockId2) throws InterruptedException
 	{
 		unlock();
-		lock3(lockid0, lockid1, lockid2);
+		lock3(lockId0, lockId1, lockId2);
 	}
 
 	/**
-	 * 加锁4个lockid
+	 * 加锁4个lockId
 	 * <p>
-	 * lockid通过{@link Table}/{@link TableLong}的lockid方法获取<br>
+	 * lockId通过{@link Table}/{@link TableLong}的lockId方法获取<br>
 	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁<br>
-	 * 这个方法比加锁一组lockid的效率高
+	 * 这个方法比加锁一组lockId的效率高
 	 */
-	protected final void lock(int lockid0, int lockid1, int lockid2, int lockid3) throws InterruptedException
+	protected final void lock(int lockId0, int lockId1, int lockId2, int lockId3) throws InterruptedException
 	{
 		unlock();
 		int i = 0;
-		if(lockid0 <= lockid1)
+		if(lockId0 <= lockId1)
 		{
-			if(lockid0 < lockid2)
+			if(lockId0 < lockId2)
 			{
-				if(lockid0 < lockid3)
+				if(lockId0 < lockId3)
 				{
-					(_ctx.locks[i] = getLock(lockid0)).lockInterruptibly();
-					_ctx.lockcount = ++i;
-					lock3(lockid0, lockid1, lockid2);
+					(_ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+					_ctx.lockCount = ++i;
+					lock3(lockId0, lockId1, lockId2);
 				}
 				else
 				{
-					(_ctx.locks[i] = getLock(lockid3)).lockInterruptibly();
-					_ctx.lockcount = ++i;
-					(_ctx.locks[i] = getLock(lockid0)).lockInterruptibly();
-					_ctx.lockcount = ++i;
-					lock2(lockid1, lockid2);
+					(_ctx.locks[i] = getLock(lockId3)).lockInterruptibly();
+					_ctx.lockCount = ++i;
+					(_ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+					_ctx.lockCount = ++i;
+					lock2(lockId1, lockId2);
 				}
 			}
-			else if(lockid2 < lockid3)
+			else if(lockId2 < lockId3)
 			{
-				(_ctx.locks[i] = getLock(lockid2)).lockInterruptibly();
-				_ctx.lockcount = ++i;
-				if(lockid0 < lockid3)
+				(_ctx.locks[i] = getLock(lockId2)).lockInterruptibly();
+				_ctx.lockCount = ++i;
+				if(lockId0 < lockId3)
 				{
-					(_ctx.locks[i] = getLock(lockid0)).lockInterruptibly();
-					_ctx.lockcount = ++i;
-					lock2(lockid1, lockid3);
+					(_ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+					_ctx.lockCount = ++i;
+					lock2(lockId1, lockId3);
 				}
 				else
 				{
-					(_ctx.locks[i] = getLock(lockid3)).lockInterruptibly();
-					_ctx.lockcount = ++i;
-					(_ctx.locks[i] = getLock(lockid0)).lockInterruptibly();
-					_ctx.lockcount = ++i;
-					(_ctx.locks[i] = getLock(lockid1)).lockInterruptibly();
-					_ctx.lockcount = ++i;
+					(_ctx.locks[i] = getLock(lockId3)).lockInterruptibly();
+					_ctx.lockCount = ++i;
+					(_ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+					_ctx.lockCount = ++i;
+					(_ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+					_ctx.lockCount = ++i;
 				}
 			}
 			else
 			{
-				(_ctx.locks[i] = getLock(lockid3)).lockInterruptibly();
-				_ctx.lockcount = ++i;
-				(_ctx.locks[i] = getLock(lockid2)).lockInterruptibly();
-				_ctx.lockcount = ++i;
-				(_ctx.locks[i] = getLock(lockid0)).lockInterruptibly();
-				_ctx.lockcount = ++i;
-				(_ctx.locks[i] = getLock(lockid1)).lockInterruptibly();
-				_ctx.lockcount = ++i;
+				(_ctx.locks[i] = getLock(lockId3)).lockInterruptibly();
+				_ctx.lockCount = ++i;
+				(_ctx.locks[i] = getLock(lockId2)).lockInterruptibly();
+				_ctx.lockCount = ++i;
+				(_ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+				_ctx.lockCount = ++i;
+				(_ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+				_ctx.lockCount = ++i;
 			}
 		}
 		else
 		{
-			if(lockid1 < lockid2)
+			if(lockId1 < lockId2)
 			{
-				if(lockid1 < lockid3)
+				if(lockId1 < lockId3)
 				{
-					(_ctx.locks[i] = getLock(lockid1)).lockInterruptibly();
-					_ctx.lockcount = ++i;
-					lock3(lockid0, lockid2, lockid3);
+					(_ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+					_ctx.lockCount = ++i;
+					lock3(lockId0, lockId2, lockId3);
 				}
 				else
 				{
-					(_ctx.locks[i] = getLock(lockid3)).lockInterruptibly();
-					_ctx.lockcount = ++i;
-					(_ctx.locks[i] = getLock(lockid1)).lockInterruptibly();
-					_ctx.lockcount = ++i;
-					lock2(lockid0, lockid2);
+					(_ctx.locks[i] = getLock(lockId3)).lockInterruptibly();
+					_ctx.lockCount = ++i;
+					(_ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+					_ctx.lockCount = ++i;
+					lock2(lockId0, lockId2);
 				}
 			}
-			else if(lockid2 < lockid3)
+			else if(lockId2 < lockId3)
 			{
-				(_ctx.locks[i] = getLock(lockid2)).lockInterruptibly();
-				_ctx.lockcount = ++i;
-				if(lockid1 < lockid3)
+				(_ctx.locks[i] = getLock(lockId2)).lockInterruptibly();
+				_ctx.lockCount = ++i;
+				if(lockId1 < lockId3)
 				{
-					(_ctx.locks[i] = getLock(lockid1)).lockInterruptibly();
-					_ctx.lockcount = ++i;
-					lock2(lockid0, lockid3);
+					(_ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+					_ctx.lockCount = ++i;
+					lock2(lockId0, lockId3);
 				}
 				else
 				{
-					(_ctx.locks[i] = getLock(lockid3)).lockInterruptibly();
-					_ctx.lockcount = ++i;
-					(_ctx.locks[i] = getLock(lockid1)).lockInterruptibly();
-					_ctx.lockcount = ++i;
-					(_ctx.locks[i] = getLock(lockid0)).lockInterruptibly();
-					_ctx.lockcount = ++i;
+					(_ctx.locks[i] = getLock(lockId3)).lockInterruptibly();
+					_ctx.lockCount = ++i;
+					(_ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+					_ctx.lockCount = ++i;
+					(_ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+					_ctx.lockCount = ++i;
 				}
 			}
 			else
 			{
-				(_ctx.locks[i] = getLock(lockid3)).lockInterruptibly();
-				_ctx.lockcount = ++i;
-				(_ctx.locks[i] = getLock(lockid2)).lockInterruptibly();
-				_ctx.lockcount = ++i;
-				(_ctx.locks[i] = getLock(lockid1)).lockInterruptibly();
-				_ctx.lockcount = ++i;
-				(_ctx.locks[i] = getLock(lockid0)).lockInterruptibly();
-				_ctx.lockcount = ++i;
+				(_ctx.locks[i] = getLock(lockId3)).lockInterruptibly();
+				_ctx.lockCount = ++i;
+				(_ctx.locks[i] = getLock(lockId2)).lockInterruptibly();
+				_ctx.lockCount = ++i;
+				(_ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+				_ctx.lockCount = ++i;
+				(_ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+				_ctx.lockCount = ++i;
 			}
 		}
 	}
@@ -555,15 +555,15 @@ public abstract class Procedure implements Runnable
 		try
 		{
 			if(_ctx != null) throw new IllegalStateException("invalid running in procedure");
-			rl = _rwl_commit.readLock();
+			rl = _rwlCommit.readLock();
 			rl.lock();
 			if(DBManager.instance().isExit())
 			{
 				rl.unlock();
 				Thread.sleep(Long.MAX_VALUE); // 如果有退出信号则线程睡死等待终结
 			}
-			_begin_time = System.currentTimeMillis();
-			_ctx = _tl_proc.get();
+			_beginTime = System.currentTimeMillis();
+			_ctx = _tlProc.get();
 			_ctx.proc = this;
 			for(int n = Const.maxProceduerRedo;;)
 			{
@@ -627,8 +627,8 @@ public abstract class Procedure implements Runnable
 	 */
 	protected void onException(Throwable e)
 	{
-		if(_default_eh != null)
-			_default_eh.onException(e);
+		if(_defaultEh != null)
+			_defaultEh.onException(e);
 		else
 		{
 			if(_sid != null)

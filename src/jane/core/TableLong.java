@@ -18,16 +18,16 @@ import jane.core.SContext.Safe;
  */
 public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 {
-	private static final List<TableLong<?, ?>> _tables          = new ArrayList<TableLong<?, ?>>(256); // 所有的表列表
-	private final String                       _tablename;                                            // 表名
-	private final Storage.TableLong<V>         _stotable;                                             // 存储引擎的表对象
-	private final LongMap<V>                   _cache;                                                // 读缓存. 有大小限制,溢出自动清理
-	private final LongConcurrentHashMap<V>     _cache_mod;                                            // 写缓存. 不会溢出,保存到数据库存储引擎后清理
-	private final V                            _deleted;                                              // 表示已删除的value. 同存根bean
-	private final AtomicLong                   _idcounter       = new AtomicLong();                   // 用于自增长ID的统计器, 当前值表示当前表已存在的最大ID值
-	private final int                          _lockid;                                               // 当前表的锁ID. 即锁名的hash值,一般和记录key的hash值计算得出记录的lockid
-	private int                                _auto_id_lowbits = Const.autoIdLowBits;                // 自增长ID的预留低位位数
-	private int                                _auto_id_offset  = Const.autoIdLowOffset;              // 自增长ID的低位偏移值
+	private static final List<TableLong<?, ?>> _tables        = new ArrayList<TableLong<?, ?>>(256); // 所有的表列表
+	private final String                       _tableName;                                          // 表名
+	private final Storage.TableLong<V>         _stoTable;                                           // 存储引擎的表对象
+	private final LongMap<V>                   _cache;                                              // 读缓存. 有大小限制,溢出自动清理
+	private final LongConcurrentHashMap<V>     _cacheMod;                                           // 写缓存. 不会溢出,保存到数据库存储引擎后清理
+	private final V                            _deleted;                                            // 表示已删除的value. 同存根bean
+	private final AtomicLong                   _idCounter     = new AtomicLong();                   // 用于自增长ID的统计器, 当前值表示当前表已存在的最大ID值
+	private final int                          _lockId;                                             // 当前表的锁ID. 即锁名的hash值,一般和记录key的hash值计算得出记录的lockId
+	private int                                _autoIdLowBits = Const.autoIdLowBits;                // 自增长ID的预留低位位数
+	private int                                _autoIdOffset  = Const.autoIdLowOffset;              // 自增长ID的低位偏移值
 
 	/**
 	 * 尝试依次加锁并保存全部表已修改的记录
@@ -79,23 +79,23 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 
 	/**
 	 * 创建一个数据库表
-	 * @param tablename 表名
-	 * @param stotable 存储引擎的表对象. null表示此表是内存表
-	 * @param lockname 此表关联的锁名
-	 * @param cachesize 此表的读缓存记录数量上限. 如果是内存表则表示超过此上限则会自动丢弃
-	 * @param stub_v 记录value的存根对象,不要用于记录有用的数据. 这里只用于标记删除的字段,如果为null则表示此表是内存表
+	 * @param tableName 表名
+	 * @param stoTable 存储引擎的表对象. null表示此表是内存表
+	 * @param lockName 此表关联的锁名
+	 * @param cacheSize 此表的读缓存记录数量上限. 如果是内存表则表示超过此上限则会自动丢弃
+	 * @param stubV 记录value的存根对象,不要用于记录有用的数据. 这里只用于标记删除的字段,如果为null则表示此表是内存表
 	 */
-	TableLong(int tableid, String tablename, Storage.TableLong<V> stotable, String lockname, int cachesize, V stub_v)
+	TableLong(int tableId, String tableName, Storage.TableLong<V> stoTable, String lockName, int cacheSize, V stubV)
 	{
-		_tablename = tablename;
-		_stotable = stotable;
-		_lockid = (lockname != null && !(lockname = lockname.trim()).isEmpty() ? lockname.hashCode() : tableid) * 0x9e3779b1;
-		_cache = new LongConcurrentLRUMap<V>(cachesize + cachesize / 2, cachesize);
-		_cache_mod = (stotable != null ? new LongConcurrentHashMap<V>() : null);
-		_deleted = stub_v;
-		if(stotable != null)
+		_tableName = tableName;
+		_stoTable = stoTable;
+		_lockId = (lockName != null && !(lockName = lockName.trim()).isEmpty() ? lockName.hashCode() : tableId) * 0x9e3779b1;
+		_cache = new LongConcurrentLRUMap<V>(cacheSize + cacheSize / 2, cacheSize);
+		_cacheMod = (stoTable != null ? new LongConcurrentHashMap<V>() : null);
+		_deleted = stubV;
+		if(stoTable != null)
 		{
-			_idcounter.set(_stotable.getIdCounter());
+			_idCounter.set(_stoTable.getIdCounter());
 			_tables.add(this);
 		}
 	}
@@ -105,7 +105,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	 */
 	public String getTableName()
 	{
-		return _tablename;
+		return _tableName;
 	}
 
 	/**
@@ -113,31 +113,31 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	 * <p>
 	 * 表的自增长参数默认由配置决定<br>
 	 * 每个表的自增长参数必须保证始终不变,否则可能因记录ID冲突而导致记录覆盖,所以此方法只适合在初始化表后立即调用一次
-	 * @param lowbits 自增长ID的预留低位位数. 范围:[0,32]
+	 * @param lowBits 自增长ID的预留低位位数. 范围:[0,32]
 	 * @param offset 自增长ID的低位偏移值. 范围:[0,2^lowbits)
 	 */
-	public void setAutoId(int lowbits, int offset)
+	public void setAutoId(int lowBits, int offset)
 	{
-		if(lowbits < 0)
-			lowbits = 0;
-		else if(lowbits > 32)
-		    lowbits = 32;
+		if(lowBits < 0)
+			lowBits = 0;
+		else if(lowBits > 32)
+		    lowBits = 32;
 		if(offset < 0)
 			offset = 0;
-		else if(offset > 1 << lowbits)
-		    offset = (1 << lowbits) - 1;
-		_auto_id_lowbits = lowbits;
-		_auto_id_offset = offset;
+		else if(offset > 1 << lowBits)
+		    offset = (1 << lowBits) - 1;
+		_autoIdLowBits = lowBits;
+		_autoIdOffset = offset;
 	}
 
 	/**
-	 * 根据记录的key获取锁的ID(lockid)
+	 * 根据记录的key获取锁的ID(lockId)
 	 * <p>
 	 * 用于事务的加锁({@link Procedure#lock})
 	 */
-	public int lockid(long k)
+	public int lockId(long k)
 	{
-		return _lockid ^ ((int)k ^ (int)(k >> 32));
+		return _lockId ^ ((int)k ^ (int)(k >> 32));
 	}
 
 	/**
@@ -147,26 +147,26 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	 */
 	private void trySaveModified(long[] counts)
 	{
-		counts[0] = _cache_mod.size();
+		counts[0] = _cacheMod.size();
 		try
 		{
-			for(LongMapIterator<V> it = _cache_mod.longMapIterator(); it.moveToNext();)
+			for(LongMapIterator<V> it = _cacheMod.longMapIterator(); it.moveToNext();)
 			{
 				long k = it.key();
-				Lock lock = Procedure.tryLock(lockid(k));
+				Lock lock = Procedure.tryLock(lockId(k));
 				if(lock != null)
 				{
 					try
 					{
-						V v = _cache_mod.get(k);
+						V v = _cacheMod.get(k);
 						if(v == _deleted)
-							_stotable.remove(k);
+							_stoTable.remove(k);
 						else
 						{
 							v.setSaveState(1);
-							_stotable.put(k, v);
+							_stoTable.put(k, v);
 						}
-						_cache_mod.remove(k, v);
+						_cacheMod.remove(k, v);
 					}
 					finally
 					{
@@ -177,7 +177,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 		}
 		finally
 		{
-			counts[1] = _cache_mod.size();
+			counts[1] = _cacheMod.size();
 		}
 	}
 
@@ -186,21 +186,21 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	 */
 	private int saveModified()
 	{
-		for(LongMapIterator<V> it = _cache_mod.longMapIterator(); it.moveToNext();)
+		for(LongMapIterator<V> it = _cacheMod.longMapIterator(); it.moveToNext();)
 		{
 			long k = it.key();
 			V v = it.value();
 			if(v == _deleted)
-				_stotable.remove(k);
+				_stoTable.remove(k);
 			else
 			{
 				v.setSaveState(1);
-				_stotable.put(k, v);
+				_stoTable.put(k, v);
 			}
 		}
-		int m = _cache_mod.size();
-		_cache_mod.clear();
-		_stotable.setIdCounter(_idcounter.get());
+		int m = _cacheMod.size();
+		_cacheMod.clear();
+		_stoTable.setIdCounter(_idCounter.get());
 		return m;
 	}
 
@@ -214,15 +214,15 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	{
 		V v = _cache.get(k);
 		if(v != null) return v;
-		if(_cache_mod == null) return null;
-		v = _cache_mod.get(k);
+		if(_cacheMod == null) return null;
+		v = _cacheMod.get(k);
 		if(v != null)
 		{
 			if(v == _deleted) return null;
 			_cache.put(k, v);
 			return v;
 		}
-		v = _stotable.get(k);
+		v = _stoTable.get(k);
 		if(v != null)
 		{
 			v.setSaveState(1);
@@ -250,14 +250,14 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	{
 		V v = _cache.get(k);
 		if(v != null) return v;
-		if(_cache_mod == null) return null;
-		v = _cache_mod.get(k);
+		if(_cacheMod == null) return null;
+		v = _cacheMod.get(k);
 		if(v != null)
 		{
 			if(v == _deleted) return null;
 			return v;
 		}
-		return _stotable.get(k);
+		return _stoTable.get(k);
 	}
 
 	/**
@@ -279,8 +279,8 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	{
 		V v = _cache.get(k);
 		if(v != null) return v;
-		if(_cache_mod == null) return null;
-		v = _cache_mod.get(k);
+		if(_cacheMod == null) return null;
+		v = _cacheMod.get(k);
 		return v != null && v != _deleted ? v : null;
 	}
 
@@ -303,16 +303,16 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	{
 		if(!v.modified())
 		{
-			if(_cache_mod != null)
+			if(_cacheMod != null)
 			{
-				V v_old = _cache_mod.put(k, v);
-				if(v_old == null)
+				V vOld = _cacheMod.put(k, v);
+				if(vOld == null)
 					DBManager.instance().incModCount();
-				else if(v_old != v)
+				else if(vOld != v)
 				{
-					_cache_mod.put(k, v_old);
-					throw new IllegalStateException("modify unmatched record: t=" + _tablename +
-					        ",k=" + k + ",v_old=" + v_old + ",v=" + v);
+					_cacheMod.put(k, vOld);
+					throw new IllegalStateException("modify unmatched record: t=" + _tableName +
+					        ",k=" + k + ",vOld=" + vOld + ",v=" + v);
 				}
 			}
 			v.setSaveState(2);
@@ -334,29 +334,29 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	 */
 	public void put(long k, V v)
 	{
-		V v_old = _cache.put(k, v);
-		if(v_old == v)
+		V vOld = _cache.put(k, v);
+		if(vOld == v)
 			modify(k, v);
 		else
 		{
 			if(!v.stored())
 			{
-				if(_cache_mod != null)
+				if(_cacheMod != null)
 				{
-					v_old = _cache_mod.put(k, v);
-					if(v_old == null)
+					vOld = _cacheMod.put(k, v);
+					if(vOld == null)
 					    DBManager.instance().incModCount();
 				}
 				v.setSaveState(2);
 			}
 			else
 			{
-				if(v_old != null)
-					_cache.put(k, v_old);
+				if(vOld != null)
+					_cache.put(k, vOld);
 				else
 					_cache.remove(k);
-				throw new IllegalStateException("put shared record: t=" + _tablename +
-				        ",k=" + k + ",v_old=" + v_old + ",v=" + v);
+				throw new IllegalStateException("put shared record: t=" + _tableName +
+				        ",k=" + k + ",vOld=" + vOld + ",v=" + v);
 			}
 		}
 	}
@@ -367,17 +367,17 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	public void putSafe(final long k, V v)
 	{
 		if(v.stored())
-		    throw new IllegalStateException("put shared record: t=" + _tablename + ",k=" + k + ",v=" + v);
-		final V v_old = getNoCache(k);
+		    throw new IllegalStateException("put shared record: t=" + _tableName + ",k=" + k + ",v=" + v);
+		final V vOld = getNoCache(k);
 		SContext.current().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
 			{
-				if(v_old != null)
+				if(vOld != null)
 				{
-					v_old.setSaveState(0);
-					put(k, v_old);
+					vOld.setSaveState(0);
+					put(k, vOld);
 				}
 				else
 					remove(k);
@@ -403,16 +403,16 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	public long insert(V v)
 	{
 		if(v.stored())
-		    throw new IllegalStateException("insert shared record: t=" + _tablename + ",v=" + v);
+		    throw new IllegalStateException("insert shared record: t=" + _tableName + ",v=" + v);
 		long k;
 		do
-			k = (_idcounter.incrementAndGet() << _auto_id_lowbits) + _auto_id_offset;
+			k = (_idCounter.incrementAndGet() << _autoIdLowBits) + _autoIdOffset;
 		while(getNoCache(k) != null);
 		v.setSaveState(2);
 		_cache.put(k, v);
-		if(_cache_mod != null)
+		if(_cacheMod != null)
 		{
-			_cache_mod.put(k, v);
+			_cacheMod.put(k, v);
 			DBManager.instance().incModCount();
 		}
 		return k;
@@ -451,7 +451,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	public void remove(long k)
 	{
 		_cache.remove(k);
-		if(_cache_mod != null && _cache_mod.put(k, _deleted) == null)
+		if(_cacheMod != null && _cacheMod.put(k, _deleted) == null)
 		    DBManager.instance().incModCount();
 	}
 
@@ -460,15 +460,15 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	 */
 	public void removeSafe(final long k)
 	{
-		final V v_old = getNoCache(k);
-		if(v_old == null) return;
+		final V vOld = getNoCache(k);
+		if(vOld == null) return;
 		SContext.current().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
 			{
-				v_old.setSaveState(0);
-				put(k, v_old);
+				vOld.setSaveState(0);
+				put(k, vOld);
 			}
 		});
 		remove(k);
@@ -500,8 +500,8 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	 */
 	public boolean walk(Storage.WalkHandler<Long> handler, long from, long to, boolean inclusive, boolean reverse)
 	{
-		if(_stotable != null)
-		    return _stotable.walk(handler, from, to, inclusive, reverse);
+		if(_stoTable != null)
+		    return _stoTable.walk(handler, from, to, inclusive, reverse);
 		return walkCache(handler);
 	}
 }

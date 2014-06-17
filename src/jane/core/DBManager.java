@@ -24,20 +24,20 @@ import jane.core.SContext.Safe;
  */
 public final class DBManager
 {
-	private static final DBManager                             _instance    = new DBManager();
-	private final SimpleDateFormat                             _sdf         = new SimpleDateFormat("yy-MM-dd-HH-mm-ss"); // 备份文件后缀名的时间格式
-	private final ScheduledExecutorService                     _commit_thread;                                          // 处理数据提交和事务超时的线程
-	private final ThreadPoolExecutor                           _proc_threads;                                           // 事务线程池
-	private final ConcurrentMap<Object, ArrayDeque<Procedure>> _qmap        = Util.newConcurrentHashMap();              // 当前sid队列的数量
-	private final AtomicLong                                   _proc_count  = new AtomicLong();                         // 绑定过sid的在队列中未运行的事务数量
-	private final AtomicLong                                   _mod_count   = new AtomicLong();                         // 当前缓存修改的记录数
-	private final CommitTask                                   _commit_task = new CommitTask();                         // 数据提交的任务
-	private volatile Storage                                   _storage;                                                // 存储引擎
-	private volatile ScheduledFuture<?>                        _commit_future;                                          // 数据提交的结果
-	private volatile boolean                                   _exit;                                                   // 是否在退出状态(已经执行了ShutdownHook)
+	private static final DBManager                             _instance   = new DBManager();
+	private final SimpleDateFormat                             _sdf        = new SimpleDateFormat("yy-MM-dd-HH-mm-ss"); // 备份文件后缀名的时间格式
+	private final ScheduledExecutorService                     _commitThread;                                          // 处理数据提交和事务超时的线程
+	private final ThreadPoolExecutor                           _procThreads;                                           // 事务线程池
+	private final ConcurrentMap<Object, ArrayDeque<Procedure>> _qmap       = Util.newConcurrentHashMap();              // 当前sid队列的数量
+	private final AtomicLong                                   _procCount  = new AtomicLong();                         // 绑定过sid的在队列中未运行的事务数量
+	private final AtomicLong                                   _modCount   = new AtomicLong();                         // 当前缓存修改的记录数
+	private final CommitTask                                   _commitTask = new CommitTask();                         // 数据提交的任务
+	private volatile Storage                                   _storage;                                               // 存储引擎
+	private volatile ScheduledFuture<?>                        _commitFuture;                                          // 数据提交的结果
+	private volatile boolean                                   _exit;                                                  // 是否在退出状态(已经执行了ShutdownHook)
 
 	{
-		_commit_thread = Executors.newSingleThreadScheduledExecutor(new ThreadFactory()
+		_commitThread = Executors.newSingleThreadScheduledExecutor(new ThreadFactory()
 		{
 			@Override
 			public Thread newThread(Runnable r)
@@ -48,7 +48,7 @@ public final class DBManager
 				return t;
 			}
 		});
-		_proc_threads = (ThreadPoolExecutor)Executors.newFixedThreadPool(Const.dbThreadCount, new ThreadFactory()
+		_procThreads = (ThreadPoolExecutor)Executors.newFixedThreadPool(Const.dbThreadCount, new ThreadFactory()
 		{
 			private final AtomicInteger _num = new AtomicInteger();
 
@@ -70,29 +70,29 @@ public final class DBManager
 	 */
 	private final class CommitTask implements Runnable
 	{
-		private final long[]  _counts        = new long[2];                      // 两个统计数量值,前者是原数量,后者是处理后的新数量
-		private final long    _mod_count_max = Const.dbCommitModCount;           // 数据库记录的修改数量触发提交的阙值
-		private final long    _resave_count  = Const.dbCommitResaveCount;        // 保存一轮记录后需要重试的记录数阙值
-		private final long    _commit_period = (long)Const.dbCommitPeriod * 1000; // 提交数据库的周期
-		private final long    _backup_period = (long)Const.dbBackupPeriod * 1000; // 备份数据库的周期
-		private volatile long _commit_time   = System.currentTimeMillis();       // 上次提交数据库的时间
-		private volatile long _backup_time   = System.currentTimeMillis();       // 上次备份数据库的时间
+		private final long[]  _counts       = new long[2];                      // 两个统计数量值,前者是原数量,后者是处理后的新数量
+		private final long    _modCountMax  = Const.dbCommitModCount;           // 数据库记录的修改数量触发提交的阙值
+		private final long    _resaveCount  = Const.dbCommitResaveCount;        // 保存一轮记录后需要重试的记录数阙值
+		private final long    _commitPeriod = (long)Const.dbCommitPeriod * 1000; // 提交数据库的周期
+		private final long    _backupPeriod = (long)Const.dbBackupPeriod * 1000; // 备份数据库的周期
+		private volatile long _commitTime   = System.currentTimeMillis();       // 上次提交数据库的时间
+		private volatile long _backupTime   = System.currentTimeMillis();       // 上次备份数据库的时间
 
 		private void commitNext()
 		{
-			_commit_time = System.currentTimeMillis() - _commit_period;
+			_commitTime = System.currentTimeMillis() - _commitPeriod;
 		}
 
 		private void backupNextCommit()
 		{
-			_backup_time = System.currentTimeMillis() - _backup_period;
+			_backupTime = System.currentTimeMillis() - _backupPeriod;
 		}
 
 		@Override
 		public void run()
 		{
-			if(_mod_count.get() < _mod_count_max && System.currentTimeMillis() - _commit_time < _commit_period) return;
-			_commit_time += _commit_period;
+			if(_modCount.get() < _modCountMax && System.currentTimeMillis() - _commitTime < _commitPeriod) return;
+			_commitTime += _commitPeriod;
 			try
 			{
 				synchronized(DBManager.this)
@@ -102,13 +102,13 @@ public final class DBManager
 					{
 						// 1.首先尝试遍历单个加锁的方式保存已修改的记录. 此时和其它事务可以并发
 						long t0 = System.currentTimeMillis(), t1 = 0;
-						Log.log.info("db-commit saving:{}...", _mod_count.get());
+						Log.log.info("db-commit saving:{}...", _modCount.get());
 						_counts[0] = _counts[1] = 0;
 						_storage.putBegin();
 						Table.trySaveModifiedAll(_counts);
 						TableLong.trySaveModifiedAll(_counts);
 						// 2.如果前一轮遍历之后仍然有过多的修改记录,则再试一轮
-						if(_counts[1] >= _resave_count)
+						if(_counts[1] >= _resaveCount)
 						{
 							Log.log.info("db-commit saved:{}=>{}, try again...", _counts[0], _counts[1]);
 							_counts[0] = _counts[1] = 0;
@@ -126,7 +126,7 @@ public final class DBManager
 							wl.lock();
 							try
 							{
-								_mod_count.set(0);
+								_modCount.set(0);
 								Log.log.info("db-commit saving left...");
 								Log.log.info("db-commit saved:{}, flushing left...", Table.saveModifiedAll() + TableLong.saveModifiedAll());
 								_storage.putFlush(true);
@@ -148,9 +148,9 @@ public final class DBManager
 
 						// 5.判断备份周期并启动备份
 						t0 = System.currentTimeMillis();
-						if(t0 - _backup_time >= _backup_period)
+						if(t0 - _backupTime >= _backupPeriod)
 						{
-							_backup_time += _backup_period;
+							_backupTime += _backupPeriod;
 							Log.log.info("db-commit backup begin...");
 							long r = _storage.backupDB(new File(Const.dbBackupPath, new File(Const.dbFilename).getName() +
 							        '.' + _storage.getFileSuffix() + '.' + _sdf.format(new Date())));
@@ -200,7 +200,7 @@ public final class DBManager
 	 */
 	void incModCount()
 	{
-		_mod_count.incrementAndGet();
+		_modCount.incrementAndGet();
 	}
 
 	/**
@@ -213,11 +213,11 @@ public final class DBManager
 
 	/**
 	 * 向提交线程调度一个延迟任务
-	 * @param period_sec 延迟运行的时间(秒)
+	 * @param periodSec 延迟运行的时间(秒)
 	 */
-	void scheduleWithFixedDelay(int period_sec, Runnable runnable)
+	void scheduleWithFixedDelay(int periodSec, Runnable runnable)
 	{
-		_commit_thread.scheduleWithFixedDelay(runnable, period_sec, period_sec, TimeUnit.SECONDS);
+		_commitThread.scheduleWithFixedDelay(runnable, periodSec, periodSec, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -247,8 +247,8 @@ public final class DBManager
 					synchronized(DBManager.this)
 					{
 						_exit = true;
-						_proc_threads.shutdownNow();
-						_commit_thread.shutdownNow();
+						_procThreads.shutdownNow();
+						_commitThread.shutdownNow();
 						shutdown();
 					}
 					Log.log.info("DBManager.JVMShutDown: db closed");
@@ -280,19 +280,19 @@ public final class DBManager
 	 * 获取或创建一个数据库表
 	 * <p>
 	 * 必须先启动数据库系统(startup)后再调用此方法
-	 * @param tablename 表名
-	 * @param lockname 此表关联的锁名
-	 * @param cachesize 此表的读缓存记录数量上限. 如果是内存表则表示超过此上限则会自动丢弃
-	 * @param stub_k 记录key的存根对象,不要用于记录有用的数据
-	 * @param stub_v 记录value的存根对象,不要用于记录有用的数据. 如果为null则表示此表是内存表
+	 * @param tableName 表名
+	 * @param lockName 此表关联的锁名
+	 * @param cacheSize 此表的读缓存记录数量上限. 如果是内存表则表示超过此上限则会自动丢弃
+	 * @param stubK 记录key的存根对象,不要用于记录有用的数据
+	 * @param stubV 记录value的存根对象,不要用于记录有用的数据. 如果为null则表示此表是内存表
 	 * @return Table
 	 */
-	public synchronized <K, V extends Bean<V>, S extends Safe<V>> Table<K, V, S> openTable(int tableid, String tablename, String lockname, int cachesize, Object stub_k, V stub_v)
+	public synchronized <K, V extends Bean<V>, S extends Safe<V>> Table<K, V, S> openTable(int tableId, String tableName, String lockName, int cacheSize, Object stubK, V stubV)
 	{
 		if(_storage == null) throw new IllegalArgumentException("call DBManager.startup before open any table");
-		tablename = (tablename != null && !(tablename = tablename.trim()).isEmpty() ? tablename : '[' + String.valueOf(tableid) + ']');
-		Storage.Table<K, V> stotable = (stub_v != null ? _storage.<K, V>openTable(tableid, tablename, stub_k, stub_v) : null);
-		return new Table<K, V, S>(tableid, tablename, stotable, lockname, cachesize, stub_v);
+		tableName = (tableName != null && !(tableName = tableName.trim()).isEmpty() ? tableName : '[' + String.valueOf(tableId) + ']');
+		Storage.Table<K, V> stoTable = (stubV != null ? _storage.<K, V>openTable(tableId, tableName, stubK, stubV) : null);
+		return new Table<K, V, S>(tableId, tableName, stoTable, lockName, cacheSize, stubV);
 	}
 
 	/**
@@ -300,18 +300,18 @@ public final class DBManager
 	 * <p>
 	 * 此表的key只能是>=0的long值,一般用于id,比直接用Long类型作key效率高一些<br>
 	 * 必须先启动数据库系统(startup)后再调用此方法
-	 * @param tablename 表名
-	 * @param lockname 此表关联的锁名
-	 * @param cachesize 此表的读缓存记录数量上限. 如果是内存表则表示超过此上限则会自动丢弃
-	 * @param stub_v 记录value的存根对象,不要用于记录有用的数据. 如果为null则表示此表是内存表
+	 * @param tableName 表名
+	 * @param lockName 此表关联的锁名
+	 * @param cacheSize 此表的读缓存记录数量上限. 如果是内存表则表示超过此上限则会自动丢弃
+	 * @param stubV 记录value的存根对象,不要用于记录有用的数据. 如果为null则表示此表是内存表
 	 * @return TableLong
 	 */
-	public synchronized <V extends Bean<V>, S extends Safe<V>> TableLong<V, S> openTable(int tableid, String tablename, String lockname, int cachesize, V stub_v)
+	public synchronized <V extends Bean<V>, S extends Safe<V>> TableLong<V, S> openTable(int tableId, String tableName, String lockName, int cacheSize, V stubV)
 	{
 		if(_storage == null) throw new IllegalArgumentException("call DBManager.startup before open any table");
-		tablename = (tablename != null && !(tablename = tablename.trim()).isEmpty() ? tablename : '[' + String.valueOf(tableid) + ']');
-		Storage.TableLong<V> stotable = (stub_v != null ? _storage.openTable(tableid, tablename, stub_v) : null);
-		return new TableLong<V, S>(tableid, tablename, stotable, lockname, cachesize, stub_v);
+		tableName = (tableName != null && !(tableName = tableName.trim()).isEmpty() ? tableName : '[' + String.valueOf(tableId) + ']');
+		Storage.TableLong<V> stoTable = (stubV != null ? _storage.openTable(tableId, tableName, stubV) : null);
+		return new TableLong<V, S>(tableId, tableName, stoTable, lockName, cacheSize, stubV);
 	}
 
 	/**
@@ -321,8 +321,8 @@ public final class DBManager
 	 */
 	public synchronized void startCommitThread()
 	{
-		if(_commit_future == null)
-		    _commit_future = _commit_thread.scheduleWithFixedDelay(_commit_task, 1, 1, TimeUnit.SECONDS);
+		if(_commitFuture == null)
+		    _commitFuture = _commitThread.scheduleWithFixedDelay(_commitTask, 1, 1, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -330,18 +330,18 @@ public final class DBManager
 	 */
 	public void checkpoint()
 	{
-		_commit_task.commitNext();
-		_commit_task.run();
+		_commitTask.commitNext();
+		_commitTask.run();
 	}
 
 	/**
 	 * 手动执行异步数据提交({@link CommitTask#run})
 	 * <p>
-	 * 可能会延迟1秒(见_commit_task的调度频繁度)
+	 * 可能会延迟1秒(见_commitTask的调度频繁度)
 	 */
 	public void checkpointAsync()
 	{
-		_commit_task.commitNext();
+		_commitTask.commitNext();
 	}
 
 	/**
@@ -349,7 +349,7 @@ public final class DBManager
 	 */
 	public void backupNextCheckpoint()
 	{
-		_commit_task.backupNextCommit();
+		_commitTask.backupNextCommit();
 	}
 
 	/**
@@ -360,10 +360,10 @@ public final class DBManager
 	 */
 	public synchronized void shutdown()
 	{
-		if(_commit_future != null)
+		if(_commitFuture != null)
 		{
-			_commit_future.cancel(false);
-			_commit_future = null;
+			_commitFuture.cancel(false);
+			_commitFuture = null;
 		}
 		if(_storage != null)
 		{
@@ -388,7 +388,7 @@ public final class DBManager
 	 */
 	public long getProcQueuedCount()
 	{
-		return _proc_count.get();
+		return _procCount.get();
 	}
 
 	/**
@@ -396,7 +396,7 @@ public final class DBManager
 	 */
 	public int getProcSubmittedCount()
 	{
-		return _proc_threads.getQueue().size();
+		return _procThreads.getQueue().size();
 	}
 
 	/**
@@ -404,7 +404,7 @@ public final class DBManager
 	 */
 	public int getProcRunningCount()
 	{
-		return _proc_threads.getActiveCount();
+		return _procThreads.getActiveCount();
 	}
 
 	/**
@@ -412,7 +412,7 @@ public final class DBManager
 	 */
 	public long getProcCompletedCount()
 	{
-		return _proc_threads.getCompletedTaskCount();
+		return _procThreads.getCompletedTaskCount();
 	}
 
 	/**
@@ -430,7 +430,7 @@ public final class DBManager
 				{
 					synchronized(q)
 					{
-						_proc_count.addAndGet(1 - q.size());
+						_procCount.addAndGet(1 - q.size());
 						q.clear();
 						q.add(this); // 清除此队列所有的任务,只留当前任务待完成时会删除
 						_qmap.remove(sid); // _qmap删除队列的地方只有两处,另一处是collectQueue中队列判空的时候(有synchronized保护)
@@ -468,7 +468,7 @@ public final class DBManager
 	 */
 	public void submit(Procedure p)
 	{
-		_proc_threads.execute(p);
+		_procThreads.execute(p);
 	}
 
 	/**
@@ -481,7 +481,7 @@ public final class DBManager
 	 */
 	public void submit(Object sid, Procedure p)
 	{
-		submit(_proc_threads, sid, p);
+		submit(_procThreads, sid, p);
 	}
 
 	/**
@@ -514,7 +514,7 @@ public final class DBManager
 				    throw new IllegalStateException("procedure overflow: procedure=" + p.getClass().getName() + ",sid=" + sid +
 				            ",size=" + q.size() + ",maxsize=" + Const.maxSessionProcedure);
 				q.add(p);
-				_proc_count.incrementAndGet();
+				_procCount.incrementAndGet();
 				if(qs > 0) return;
 			}
 			break;
@@ -535,7 +535,7 @@ public final class DBManager
 							proc = _q.peek(); // 这里只能先peek而不能poll或remove,否则可能和下次commit并发
 						}
 						if(proc == null) return;
-						_proc_count.decrementAndGet();
+						_procCount.decrementAndGet();
 						try
 						{
 							proc.run();

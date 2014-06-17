@@ -46,18 +46,18 @@ public final class Const
 
 	static
 	{
-		String jane_prop = null;
+		String janeProp = null;
 		try
 		{
-			jane_prop = System.getProperty("jane.prop");
-			if(jane_prop == null || (jane_prop = jane_prop.trim()).isEmpty())
-			    jane_prop = "jane.properties";
-			Log.log.debug("{}: load {}", Const.class.getName(), jane_prop);
-			_property.load(new FileInputStream(jane_prop));
+			janeProp = System.getProperty("jane.prop");
+			if(janeProp == null || (janeProp = janeProp.trim()).isEmpty())
+			    janeProp = "jane.properties";
+			Log.log.debug("{}: load {}", Const.class.getName(), janeProp);
+			_property.load(new FileInputStream(janeProp));
 		}
 		catch(Exception e)
 		{
-			Log.log.warn("{}: load {} failed, use all default properties", Const.class.getName(), jane_prop);
+			Log.log.warn("{}: load {} failed, use all default properties", Const.class.getName(), janeProp);
 		}
 		String str = System.getProperty("debug");
 		debug = (str != null && str.trim().equalsIgnoreCase("true") || getPropBoolean("debug"));

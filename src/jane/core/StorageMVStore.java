@@ -19,10 +19,10 @@ public final class StorageMVStore implements Storage
 {
 	private static final StorageMVStore _instance = new StorageMVStore();
 	private MVStore                     _db;                             // MVStore的数据库对象(会多线程并发访问)
-	private MVMap<String, String>       _keytype;                        // 表的key类型(不会被多线程同时写)<表名,Long/String/Octets/Bean/Object>
-	private MVMap<String, Long>         _idcounter;                      // 自增长计数器表(不会被多线程同时写)<表名,已分配的最大ID>
-	private File                        _dbfile;                         // 当前数据库的文件
-	private int                         _modcount;                       // 统计一次提交的put数量(不会被多线程访问)
+	private MVMap<String, String>       _keyType;                        // 表的key类型(不会被多线程同时写)<表名,Long/String/Octets/Bean/Object>
+	private MVMap<String, Long>         _idCounter;                      // 自增长计数器表(不会被多线程同时写)<表名,已分配的最大ID>
+	private File                        _dbFile;                         // 当前数据库的文件
+	private int                         _modCount;                       // 统计一次提交的put数量(不会被多线程访问)
 
 	private final class Table<K, V extends Bean<V>> implements Storage.Table<K, V>
 	{
@@ -43,14 +43,14 @@ public final class StorageMVStore implements Storage
 		public void put(K k, V v)
 		{
 			_map.put(k, v);
-			++_modcount;
+			++_modCount;
 		}
 
 		@Override
 		public void remove(K k)
 		{
 			_map.remove(k);
-			++_modcount;
+			++_modCount;
 		}
 
 		@Override
@@ -63,12 +63,12 @@ public final class StorageMVStore implements Storage
 	private final class TableLong<V extends Bean<V>> implements Storage.TableLong<V>
 	{
 		private final MVMap<Long, V> _map;
-		private final String         _tablename;
+		private final String         _tableName;
 
-		public TableLong(MVMap<Long, V> map, String tablename)
+		public TableLong(MVMap<Long, V> map, String tableName)
 		{
 			_map = map;
-			_tablename = tablename;
+			_tableName = tableName;
 		}
 
 		@Override
@@ -81,14 +81,14 @@ public final class StorageMVStore implements Storage
 		public void put(long k, V v)
 		{
 			_map.put(k, v);
-			++_modcount;
+			++_modCount;
 		}
 
 		@Override
 		public void remove(long k)
 		{
 			_map.remove(k);
-			++_modcount;
+			++_modCount;
 		}
 
 		@Override
@@ -100,14 +100,14 @@ public final class StorageMVStore implements Storage
 		@Override
 		public long getIdCounter()
 		{
-			Long id = _idcounter.get(_tablename);
+			Long id = _idCounter.get(_tableName);
 			return id != null ? id : 0;
 		}
 
 		@Override
 		public void setIdCounter(long v)
 		{
-			_idcounter.put(_tablename, v);
+			_idCounter.put(_tableName, v);
 		}
 	}
 
@@ -164,12 +164,12 @@ public final class StorageMVStore implements Storage
 
 	private static final class MVStoreBeanType implements DataType
 	{
-		private final String  _tablename;
+		private final String  _tableName;
 		private final Bean<?> _stub;
 
-		public MVStoreBeanType(String tablename, Bean<?> stub)
+		public MVStoreBeanType(String tableName, Bean<?> stub)
 		{
-			_tablename = tablename;
+			_tableName = tableName;
 			_stub = stub;
 		}
 
@@ -257,7 +257,7 @@ public final class StorageMVStore implements Storage
 			{
 				int format = os.unmarshalByte();
 				if(format != 0)
-				    throw new IllegalStateException("unknown record value format(" + format + ") in table(" + _tablename + ')');
+				    throw new IllegalStateException("unknown record value format(" + format + ") in table(" + _tableName + ')');
 				b.unmarshal(os);
 				buf.position(os.position() - offset);
 			}
@@ -281,7 +281,7 @@ public final class StorageMVStore implements Storage
 				{
 					int format = os.unmarshalByte();
 					if(format != 0)
-					    throw new IllegalStateException("unknown record value format(" + format + ") in table(" + _tablename + ')');
+					    throw new IllegalStateException("unknown record value format(" + format + ") in table(" + _tableName + ')');
 					Bean<?> b = _stub.alloc();
 					b.unmarshal(os);
 					objs[i] = b;
@@ -371,28 +371,28 @@ public final class StorageMVStore implements Storage
 			from = to;
 			to = temp;
 		}
-		K k_from, k_to;
+		K kFrom, kTo;
 		if(reverse)
 		{
-			k_from = mvm.lowerKey(from);
-			k_to = mvm.higherKey(to);
+			kFrom = mvm.lowerKey(from);
+			kTo = mvm.higherKey(to);
 		}
 		else
 		{
-			k_from = mvm.higherKey(from);
-			k_to = mvm.lowerKey(to);
+			kFrom = mvm.higherKey(from);
+			kTo = mvm.lowerKey(to);
 		}
 		if(inclusive && mvm.containsKey(from) && !handler.onWalk(from)) return false;
-		if(k_from != null && k_to != null)
+		if(kFrom != null && kTo != null)
 		{
 			if(reverse)
 			{
-				for(long i = mvm.getKeyIndex(k_from), j = mvm.getKeyIndex(k_to); i >= j; --i)
+				for(long i = mvm.getKeyIndex(kFrom), j = mvm.getKeyIndex(kTo); i >= j; --i)
 					if(!handler.onWalk(mvm.getKey(i))) return false;
 			}
 			else
 			{
-				for(long i = mvm.getKeyIndex(k_from), j = mvm.getKeyIndex(k_to); i <= j; ++i)
+				for(long i = mvm.getKeyIndex(kFrom), j = mvm.getKeyIndex(kTo); i <= j; ++i)
 					if(!handler.onWalk(mvm.getKey(i))) return false;
 			}
 		}
@@ -415,111 +415,111 @@ public final class StorageMVStore implements Storage
 	{
 		closeDB();
 		_db = new MVStore.Builder().fileName(file.getPath()).autoCommitDisabled().cacheSize(Const.mvStoreCacheSize).open();
-		_dbfile = file;
-		_keytype = _db.openMap(".keytype");
-		_idcounter = _db.openMap(".idcounter");
+		_dbFile = file;
+		_keyType = _db.openMap(".keytype");
+		_idCounter = _db.openMap(".idcounter");
 	}
 
 	@Override
-	public <K, V extends Bean<V>> Storage.Table<K, V> openTable(int tableid, String tablename, final Object stub_k, final V stub_v)
+	public <K, V extends Bean<V>> Storage.Table<K, V> openTable(int tableId, String tableName, final Object stubK, final V stubV)
 	{
-		DataType dt_k;
-		String dt_name;
-		if(stub_k instanceof Long)
+		DataType dtK;
+		String dtName;
+		if(stubK instanceof Long)
 		{
-			dt_k = MVStoreLongType.instance();
-			dt_name = "Long";
+			dtK = MVStoreLongType.instance();
+			dtName = "Long";
 		}
-		else if(stub_k instanceof Octets)
+		else if(stubK instanceof Octets)
 		{
-			dt_k = MVStoreOctetsType.instance();
-			dt_name = "Octets";
+			dtK = MVStoreOctetsType.instance();
+			dtName = "Octets";
 		}
-		else if(stub_k instanceof String)
+		else if(stubK instanceof String)
 		{
-			dt_k = StringDataType.INSTANCE;
-			dt_name = "String";
+			dtK = StringDataType.INSTANCE;
+			dtName = "String";
 		}
-		else if(stub_k instanceof Bean)
+		else if(stubK instanceof Bean)
 		{
-			dt_k = new MVStoreBeanType(tablename, (Bean<?>)stub_k);
-			dt_name = "Bean";
+			dtK = new MVStoreBeanType(tableName, (Bean<?>)stubK);
+			dtName = "Bean";
 		}
 		else
 		{
-			dt_k = null;
-			dt_name = "Object";
+			dtK = null;
+			dtName = "Object";
 		}
-		if(_db.hasMap(tablename))
+		if(_db.hasMap(tableName))
 		{
-			String dt_name_old = _keytype.get(tablename);
-			if(dt_name_old != null)
+			String dtNameOld = _keyType.get(tableName);
+			if(dtNameOld != null)
 			{
-				if(!dt_name_old.equals(dt_name))
-				    throw new IllegalStateException("table key type unmatched: table=" + tablename +
-				            ", key_old=" + dt_name_old + " key_new=" + dt_name);
+				if(!dtNameOld.equals(dtName))
+				    throw new IllegalStateException("table key type unmatched: table=" + tableName +
+				            ", keyOld=" + dtNameOld + " keyNew=" + dtName);
 			}
 			else
-				_keytype.put(tablename, dt_name);
+				_keyType.put(tableName, dtName);
 		}
 		else
-			_keytype.put(tablename, dt_name);
-		return new Table<K, V>(_db.openMap(tablename, new MVMap.Builder<K, V>().keyType(dt_k).
-		        valueType(new MVStoreBeanType(tablename, stub_v))));
+			_keyType.put(tableName, dtName);
+		return new Table<K, V>(_db.openMap(tableName, new MVMap.Builder<K, V>().keyType(dtK).
+		        valueType(new MVStoreBeanType(tableName, stubV))));
 	}
 
 	@Override
-	public <V extends Bean<V>> Storage.TableLong<V> openTable(int tableid, String tablename, final V stub_v)
+	public <V extends Bean<V>> Storage.TableLong<V> openTable(int tableId, String tableName, final V stubV)
 	{
-		if(_db.hasMap(tablename))
+		if(_db.hasMap(tableName))
 		{
-			String dt_name_old = _keytype.get(tablename);
-			if(dt_name_old != null)
+			String dtNameOld = _keyType.get(tableName);
+			if(dtNameOld != null)
 			{
-				if(!dt_name_old.equals("Long"))
-				    throw new IllegalStateException("table key type unmatched: table=" + tablename +
-				            ", key_old=" + dt_name_old + " key_new=Long");
+				if(!dtNameOld.equals("Long"))
+				    throw new IllegalStateException("table key type unmatched: table=" + tableName +
+				            ", keyOld=" + dtNameOld + " keyNew=Long");
 			}
 			else
-				_keytype.put(tablename, "Long");
+				_keyType.put(tableName, "Long");
 		}
 		else
-			_keytype.put(tablename, "Long");
-		return new TableLong<V>(_db.openMap(tablename, new MVMap.Builder<Long, V>().keyType(MVStoreLongType.instance()).
-		        valueType(new MVStoreBeanType(tablename, stub_v))), tablename);
+			_keyType.put(tableName, "Long");
+		return new TableLong<V>(_db.openMap(tableName, new MVMap.Builder<Long, V>().keyType(MVStoreLongType.instance()).
+		        valueType(new MVStoreBeanType(tableName, stubV))), tableName);
 	}
 
-	public static <K, V> MVMap<K, V> openTable(MVStore sto, String tablename, MVMap<String, String> keytype)
+	public static <K, V> MVMap<K, V> openTable(MVStore sto, String tableName, MVMap<String, String> keyType)
 	{
-		String dt_name = keytype.get(tablename);
-		DataType dt_k, dt_v;
-		if("Long".equals(dt_name))
-			dt_k = MVStoreLongType.instance();
-		else if("Octets".equals(dt_name))
-			dt_k = MVStoreOctetsType.instance();
-		else if("String".equals(dt_name))
-			dt_k = StringDataType.INSTANCE;
-		else if("Bean".equals(dt_name))
-			dt_k = new MVStoreBeanType(tablename, new DynBean());
+		String dtName = keyType.get(tableName);
+		DataType dtK, dtV;
+		if("Long".equals(dtName))
+			dtK = MVStoreLongType.instance();
+		else if("Octets".equals(dtName))
+			dtK = MVStoreOctetsType.instance();
+		else if("String".equals(dtName))
+			dtK = StringDataType.INSTANCE;
+		else if("Bean".equals(dtName))
+			dtK = new MVStoreBeanType(tableName, new DynBean());
 		else
-			dt_k = null;
-		if(!tablename.startsWith("."))
-			dt_v = new MVStoreBeanType(tablename, new DynBean());
+			dtK = null;
+		if(!tableName.startsWith("."))
+			dtV = new MVStoreBeanType(tableName, new DynBean());
 		else
-			dt_v = null;
-		return sto.openMap(tablename, new MVMap.Builder<K, V>().keyType(dt_k).valueType(dt_v));
+			dtV = null;
+		return sto.openMap(tableName, new MVMap.Builder<K, V>().keyType(dtK).valueType(dtV));
 	}
 
 	@Override
 	public void putBegin()
 	{
-		_modcount = 0;
+		_modCount = 0;
 	}
 
 	@Override
-	public void putFlush(boolean islast)
+	public void putFlush(boolean isLast)
 	{
-		if(islast && _modcount != 0 && _db != null && !_db.isClosed())
+		if(isLast && _modCount != 0 && _db != null && !_db.isClosed())
 		    _db.commit();
 	}
 
@@ -527,7 +527,7 @@ public final class StorageMVStore implements Storage
 	public void commit()
 	{
 		// if(_db != null && !_db.isClosed()) _db.getFileStore().sync();
-		_modcount = 0;
+		_modCount = 0;
 	}
 
 	@Override
@@ -538,29 +538,29 @@ public final class StorageMVStore implements Storage
 			_db.close();
 			_db = null;
 		}
-		_keytype = null;
-		_idcounter = null;
-		_dbfile = null;
-		_modcount = 0;
+		_keyType = null;
+		_idCounter = null;
+		_dbFile = null;
+		_modCount = 0;
 	}
 
 	@Override
 	public long backupDB(File fdst) throws IOException
 	{
-		if(_dbfile == null)
+		if(_dbFile == null)
 		    throw new IllegalStateException("current database is not opened");
-		File fdst_tmp = new File(fdst.getAbsolutePath() + ".tmp");
+		File fdstTmp = new File(fdst.getAbsolutePath() + ".tmp");
 		long r;
 		if(!_db.isClosed())
 		{
 			_db.setReuseSpace(false);
-			r = Util.copyFile(_db.getFileStore().getFile(), fdst_tmp);
+			r = Util.copyFile(_db.getFileStore().getFile(), fdstTmp);
 			_db.setReuseSpace(true);
 		}
 		else
-			r = Util.copyFile(_dbfile, fdst_tmp);
-		if(!fdst_tmp.renameTo(fdst))
-		    throw new IOException("backup database file can not rename: " + fdst_tmp.getPath() + " => " + fdst.getPath());
+			r = Util.copyFile(_dbFile, fdstTmp);
+		if(!fdstTmp.renameTo(fdst))
+		    throw new IOException("backup database file can not rename: " + fdstTmp.getPath() + " => " + fdst.getPath());
 		return r;
 	}
 }

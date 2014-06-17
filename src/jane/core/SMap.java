@@ -16,7 +16,7 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 {
 	protected final Wrap<?>   _owner;
 	protected final Map<K, V> _map;
-	private SContext          _sctx;
+	private SContext          _sCtx;
 
 	public SMap(Wrap<?> owner, Map<K, V> map)
 	{
@@ -32,34 +32,34 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 
 	private SContext sContext()
 	{
-		if(_sctx != null) return _sctx;
+		if(_sCtx != null) return _sCtx;
 		_owner.dirty();
-		return _sctx = SContext.current();
+		return _sCtx = SContext.current();
 	}
 
-	protected void addUndoPut(final K k, final V v_old)
+	protected void addUndoPut(final K k, final V vOld)
 	{
 		sContext().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
 			{
-				if(v_old != null)
-					_map.put(k, v_old);
+				if(vOld != null)
+					_map.put(k, vOld);
 				else
 					_map.remove(k);
 			}
 		});
 	}
 
-	protected void addUndoRemove(final K k, final V v_old)
+	protected void addUndoRemove(final K k, final V vOld)
 	{
 		sContext().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
 			{
-				_map.put(k, v_old);
+				_map.put(k, vOld);
 			}
 		});
 	}
@@ -128,10 +128,10 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 	@Override
 	public V remove(Object k)
 	{
-		final V v_old = _map.remove(k);
-		if(v_old == null) return null;
-		addUndoRemove((K)k, v_old);
-		return v_old;
+		final V vOld = _map.remove(k);
+		if(vOld == null) return null;
+		addUndoRemove((K)k, vOld);
+		return vOld;
 	}
 
 	public <S extends Wrap<V>> S removeSafe(Object k)
