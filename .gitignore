@@ -7,6 +7,7 @@
 /port/jane.suo
 /port/csharp/bin/
 /port/csharp/obj/
+/port/lua/bin/
 jane-core.jar
 jane-test.jar
 jane-src.jar

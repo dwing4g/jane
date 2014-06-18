@@ -6,10 +6,11 @@ luajit inspect.lua ..\genbeans.lua
 
 luajit inspect.lua ..\port\csharp\genbeans_csharp.lua
 
-luajit inspect.lua ..\port\lua\genbeans_lua.lua
-luajit inspect.lua ..\port\lua\util.lua
-luajit inspect.lua ..\port\lua\stream.lua
-luajit inspect.lua ..\port\lua\bean.lua
-luajit inspect.lua ..\port\lua\test.lua
+luajit inspect.lua ..\port\lua\src\genbeans_lua.lua
+luajit inspect.lua ..\port\lua\src\platform.lua
+luajit inspect.lua ..\port\lua\src\util.lua
+luajit inspect.lua ..\port\lua\src\stream.lua
+luajit inspect.lua ..\port\lua\src\bean.lua
+luajit inspect.lua ..\port\lua\src\test.lua
 
 pause

@@ -16,19 +16,34 @@ return require "util".initBeans {
 #(#		[#(var.id2)] = { name = "#(var.name)", type = #(var.btype)#(var.keyval) },
 #)#	}},
 #]#}
-]=]
+
+---@module bean
+#[#
+---#(bean.comment)
+-- @field [parent=#bean] ##(bean.name) #(bean.name)
+
+---@callof ##(bean.name)
+-- @return ##(bean.name)#(#
+
+---#(var.comment)
+-- @field [parent=##(bean.name)] ##(var.ltype) #(var.name)#)#
+#]#]=]
 
 local n, s, b, v, m = "num", "str", "bool", "vec", "map"
 local typemap = { byte = n, char = n, short = n, int = n, long = n, float = n, double = n, integer = n,
 	bool = b, boolean = b, string = s, octets = s, data = s, bytes = s, binary = s, bean = "\"#(var.name)\"",
 	vector = v, list = v, deque = v, hashset = v, treeset = v, linkedhashset = v, array = v, arraydeque = v,
 	arraylist = v, linkedlist = v, set = v, linkedset = v, hashmap = m, treemap = m, linkedhashmap = m, map = m, linkedmap = m, }
+local ltypemap = { num = "number", str = "string", bool = "boolean", vec = "list", map = "map" }
 
 local function trim(s)
 	return s:gsub("[%c ]+", "")
 end
 local function code_conv(code, prefix, t)
 	return code:gsub("#%(" .. prefix .. "%.([%w_]+)%)", function(name) return t[name] end)
+end
+local function to_ltype(btype)
+	return ltypemap[btype] or btype:gsub('"', '')
 end
 
 local name_used = {}
@@ -58,6 +73,9 @@ function bean(bean)
 		if var.key == '""' then var.key = nil end
 		if var.val == '""' then var.val = nil end
 		if not var.val then var.val = var.key; var.key = nil end
+		var.ltype = to_ltype(var.btype)
+		if var.ltype == "list" then var.ltype = var.ltype .. "<#" .. to_ltype(var.val) .. ">" end
+		if var.ltype == "map"  then var.ltype = var.ltype .. "<#" .. to_ltype(var.key) .. ",#" .. to_ltype(var.val) .. ">" end
 		var.keyval = (var.key and ", key = #(var.key)" or "") .. (var.val and ", value = #(var.val)" or "")
 		if not var.type then
 			error("ERROR: unknown type: " .. var.type .. " => " .. basetype)
@@ -93,7 +111,7 @@ end
 local outpath = (arg[1] or "."):gsub("\\", "/")
 if outpath:sub(-1, -1) ~= "/" then outpath = outpath .. "/" end
 
-checksave(outpath .. "bean.lua", (template_bean:gsub("#%[#(.-)#%]#", function(body)
+checksave(outpath .. "src/bean.lua", (template_bean:gsub("#%[#(.-)#%]#", function(body)
 	local subcode = {}
 	for _, name in ipairs(bean_order) do
 		local bean = name_bean[name]

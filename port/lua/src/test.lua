@@ -5,11 +5,11 @@ local require = require
 local setmetatable = setmetatable
 local floor = math.floor
 local format = string.format
-local Util = require "util"
+local util = require "util"
 local bean = require "bean"
 local Stream = require "stream"
-local class = Util.class
-local clone = Util.clone
+local class = util.class
+local clone = util.clone
 
 do
 	local ClassA = class -- 定义类ClassA

@@ -16,11 +16,11 @@ local concat = table.concat
 local floor = math.floor
 local require = require
 local bean = require "bean"
-local Platform = require "platform"
-local readf32 = Platform.readf32
-local readf64 = Platform.readf64
+local platform = require "platform"
+local readf32 = platform.readf32
+local readf64 = platform.readf64
 local ftype = 4 -- 可修改成4/5来区分全局使用float/double类型来序列化
-local writef = (ftype == 4 and Platform.writef32 or Platform.writef64)
+local writef = (ftype == 4 and platform.writef32 or platform.writef64)
 
 --[[ 注意:
 * long类型只支持低52(二进制)位, 高12位必须保证为0, 否则结果未定义
@@ -30,9 +30,12 @@ local writef = (ftype == 4 and Platform.writef32 or Platform.writef64)
 * 由于使用lua table表示map容器, 当key是bean类型时, 无法索引, 只能遍历访问
 --]]
 
+---@module Stream
 local Stream = {}
 
--- 构造1个Stream对象,可选使用字符串类型的data来初始化内容
+---构造1个Stream对象,可选使用字符串类型的data来初始化内容
+-- @callof #Stream
+-- @return #Stream
 function Stream.new(data)
 	data = data and tostring(data) or ""
 	return setmetatable({ buffer = data, pos = 0, limit = #data }, Stream)
