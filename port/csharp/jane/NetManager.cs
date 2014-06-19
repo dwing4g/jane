@@ -38,14 +38,14 @@ namespace Jane
 
 		public bool Connected { get { return _tcpClient.Connected; } }
 
-		protected virtual void onAddSession() {}
-		protected virtual void onDelSession(int code, Exception e) {}
-		protected virtual void onAbortSession(Exception e) {}
-		protected virtual void onSentBean(IBean bean) {}
+		protected virtual void onAddSession() {} // 异步IO线程执行;
+		protected virtual void onDelSession(int code, Exception e) {} // 异步IO线程执行;
+		protected virtual void onAbortSession(Exception e) {} // 异步IO线程执行;
+		protected virtual void onSentBean(IBean bean) {} // 异步IO线程执行;
 		protected virtual OctetsStream onEncode(byte[] buf, int pos, int len) { return null; }
-		protected virtual OctetsStream onDecode(byte[] buf, int pos, int len) { return null; }
+		protected virtual OctetsStream onDecode(byte[] buf, int pos, int len) { return null; } // 异步IO线程执行;
 
-		protected virtual bool onRecvBean(IBean bean)
+		protected virtual bool onRecvBean(IBean bean) // 异步IO线程执行;
 		{
 			HandlerDelegate handler;
 			if(!_handlerMap.TryGetValue(bean.type(), out handler)) return false;
@@ -53,7 +53,7 @@ namespace Jane
 			return true;
 		}
 
-		private void decode(int buflen)
+		private void decode(int buflen) // 异步IO线程执行;
 		{
 			OctetsStream os = onDecode(_bufin, 0, buflen);
 			if(os != null)
@@ -88,7 +88,7 @@ namespace Jane
 			_bufos.setPosition(0);
 		}
 
-		private void connectCallback(IAsyncResult res)
+		private void connectCallback(IAsyncResult res) // 异步IO线程执行;
 		{
 			try
 			{
@@ -119,7 +119,7 @@ namespace Jane
 			}
 		}
 
-		private void readCallback(IAsyncResult res)
+		private void readCallback(IAsyncResult res) // 异步IO线程执行;
 		{
 			try
 			{
@@ -148,7 +148,7 @@ namespace Jane
 			}
 		}
 
-		private void writeCallback(IAsyncResult res)
+		private void writeCallback(IAsyncResult res) // 异步IO线程执行;
 		{
 			try
 			{
@@ -187,7 +187,7 @@ namespace Jane
 				onDelSession(code, e);
 		}
 
-		public virtual bool send(IBean bean)
+		public bool send(IBean bean)
 		{
 			if(!_tcpClient.Connected || _tcpStream == null) return false;
 			OctetsStream os = new OctetsStream(bean.initSize() + 10);

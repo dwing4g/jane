@@ -1,6 +1,6 @@
 using Jane.Bean;
 
-namespace Jane.handler.testclient
+namespace Jane.Handler
 {
 	public class TestBeanHandler
 	{

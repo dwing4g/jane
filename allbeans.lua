@@ -17,6 +17,11 @@ handler
 		TestClient = namespace .. ".handler.testclient", -- 客户端需要处理的beans及输出目录/命名空间
 		TestServer = true, -- 客户端引用的beans
 	},
+	ClientCS =
+	{
+		TestClient = namespace .. ".Handler", -- C#客户端需要处理的beans及输出目录/命名空间
+		TestServer = true, -- C#客户端引用的beans
+	},
 }
 
 bean{ name="TestBean", type=1, initsize=16, maxsize=16, poolsize=1000, comment="bean的注释",

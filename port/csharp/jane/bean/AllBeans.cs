@@ -19,8 +19,8 @@ namespace Jane.Bean
 		public static IDictionary<int, NetManager.HandlerDelegate> getTestClientHandlers()
 		{
 			IDictionary<int, NetManager.HandlerDelegate> r = new Dictionary<int, NetManager.HandlerDelegate>(2 * 4);
-			r.Add(1, Jane.handler.testclient.TestBeanHandler.onProcess);
-			r.Add(3, Jane.handler.testclient.TestTypeHandler.onProcess);
+			r.Add(1, Jane.Handler.TestBeanHandler.onProcess);
+			r.Add(3, Jane.Handler.TestTypeHandler.onProcess);
 			return r;
 		}
 	}
