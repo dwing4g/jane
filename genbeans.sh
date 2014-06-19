@@ -8,5 +8,5 @@ mkdir -p src/jane/bean 2> /dev/null
 mkdir -p src/jane/handler 2> /dev/null
 # mkdir -p src/jane/handler/... 2> /dev/null
 
-# java -cp $LIB lua genbeans.lua
-tool/luajit genbeans.lua
+# java -cp $LIB lua genbeans.lua Server,Client
+tool/luajit genbeans.lua Server,Client
