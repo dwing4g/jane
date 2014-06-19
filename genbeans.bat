@@ -8,7 +8,7 @@ md src\jane\bean 2>nul
 md src\jane\handler 2>nul
 rem md src\jane\handler\... 2>nul
 
-rem java -cp %LIB% lua genbeans.lua Server,Client
-tool\luajit genbeans.lua Server,Client
+rem java -cp %LIB% lua genbeans.lua jane Server,Client allbeans.lua src
+tool\luajit genbeans.lua jane Server,Client allbeans.lua src
 
 pause

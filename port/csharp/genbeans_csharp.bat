@@ -8,7 +8,7 @@ md jane\bean 2>nul
 md jane\handler 2>nul
 rem md jane\handler\... 2>nul
 
-rem java -cp %LIB% lua genbeans_csharp.lua ClientCS
-..\..\tool\luajit genbeans_csharp.lua ClientCS
+rem java -cp %LIB% lua genbeans_csharp.lua Jane ClientCS ../../allbeans.lua
+..\..\tool\luajit genbeans_csharp.lua Jane ClientCS ../../allbeans.lua
 
 pause
