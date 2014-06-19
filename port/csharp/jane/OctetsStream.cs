@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 
-namespace jane
+namespace Jane
 {
 	/**
 	 * 基于Octets的可扩展字节流的类型;
@@ -244,6 +244,21 @@ namespace jane
 			return this;
 		}
 
+		public OctetsStream marshal(sbyte x)
+		{
+			return marshal((int)x);
+		}
+
+		public OctetsStream marshal(short x)
+		{
+			return marshal((int)x);
+		}
+
+		public OctetsStream marshal(char x)
+		{
+			return marshal((int)x);
+		}
+
 		public OctetsStream marshal(int x)
 		{
 			if(x >= 0)
@@ -410,7 +425,12 @@ namespace jane
 			return this;
 		}
 
-		public OctetsStream marshal(Bean b)
+		public OctetsStream marshal<T>(T b) where T : IBean
+		{
+			return b != null ? b.marshal(this) : marshal1((byte)0);
+		}
+
+		public OctetsStream marshal<T>(ref T b) where T : IBean
 		{
 			return b != null ? b.marshal(this) : marshal1((byte)0);
 		}
@@ -424,7 +444,7 @@ namespace jane
 				if(o is string) return 1;
 				return 0;
 			}
-			if(o is Bean) return 2;
+			if(o is IBean) return 2;
 			return 1;
 		}
 
@@ -454,10 +474,10 @@ namespace jane
 					if(v != 0) marshal1((byte)(id << 2)).marshal(v);
 				}
 			}
-			else if(o is Bean)
+			else if(o is IBean)
 			{
 				int n = count;
-				((Bean)o).marshal(marshal1((byte)((id << 2) + 2)));
+				((IBean)o).marshal(marshal1((byte)((id << 2) + 2)));
 				if(count - n < 3) resize(n);
 			}
 			else if(o is Octets)
@@ -506,9 +526,9 @@ namespace jane
 			case 0:
 				if(o is int) marshal((int)o);
 				else if(o is long) marshal((long)o);
-				else if(o is sbyte) marshal((sbyte)o);
-				else if(o is short) marshal((short)o);
-				else if(o is char) marshal((char)o);
+				else if(o is sbyte) marshal((int)(sbyte)o);
+				else if(o is short) marshal((int)(short)o);
+				else if(o is char) marshal((int)(char)o);
 				else if(o is bool) marshal1((byte)((bool)o ? 1 : 0));
 				else if(o is float) marshal((long)(float)o);
 				else if(o is double) marshal((long)(double)o);
@@ -520,7 +540,7 @@ namespace jane
 				else marshal1((byte)0);
 				break;
 			case 2:
-				if(o is Bean) marshal((Bean)o);
+				if(o is IBean) marshal((IBean)o);
 				else marshal1((byte)0);
 				break;
 			case 4:
@@ -1112,25 +1132,25 @@ namespace jane
 			return o;
 		}
 
-		public OctetsStream unmarshal(Bean b)
+		public OctetsStream unmarshal<T>(ref T b) where T : IBean
 		{
 			return b.unmarshal(this);
 		}
 
-		public OctetsStream unmarshalBean(Bean b, int type)
+		public OctetsStream unmarshalBean<T>(ref T b, int type) where T : IBean
 		{
 			if(type == 2) return b.unmarshal(this);
 			unmarshalSkipVar(type);
 			return this;
 		}
 
-		public Bean unmarshalBean(Bean b)
+		public T unmarshalBean<T>(T b) where T : IBean
 		{
 			b.unmarshal(this);
 			return b;
 		}
 
-		public Bean unmarshalBeanKV(Bean b, int type)
+		public T unmarshalBeanKV<T>(T b, int type) where T : IBean
 		{
 			if(type == 2)
 				b.unmarshal(this);

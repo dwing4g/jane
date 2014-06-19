@@ -1,8 +1,8 @@
-using jane.bean;
+using Jane.Bean;
 
-namespace jane.handler.testclient
+namespace Jane.handler.testclient
 {
-	public class TestTypeHandler : BeanHandler<TestType>
+	public class TestTypeHandler
 	{
 		/*\
 		|*| bool v1; // 1字节布尔,0表示假,1表示真,其它默认表示真;
@@ -26,9 +26,10 @@ namespace jane.handler.testclient
 		|*| TestBean v19; // 嵌入其它bean;
 		\*/
 
-		public override void onProcess(NetManager manager, TestType arg)
+		public static void onProcess(NetManager manager, IBean _arg_)
 		{
-			System.Console.WriteLine("{0}.onProcess: arg={1}", GetType().Name, arg);
+			TestType arg = (TestType)_arg_;
+			System.Console.WriteLine("{0}.onProcess: arg={1}", arg.GetType().Name, arg);
 		}
 	}
 }

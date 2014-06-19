@@ -1,4 +1,5 @@
 -- UTF-8 without BOM
+local arg = arg
 local type = type
 local string = string
 local error = error
@@ -823,17 +824,31 @@ local function gen_uid(s)
 	return string.format("0xbeac%04x%08xL", math.floor(h / 0x100000000) % 0x10000, h % 0x100000000)
 end
 
-local name_code = {}
-local type_bean = {}
-local name_bean = {}
-local handlers = {}
-local hdl_types = {}
-local bean_order = {}
+local name_code = {} -- bean name => bean code
+local type_bean = {} -- bean type => bean
+local name_bean = {} -- bean name => bean
+local handlers = {} -- selected handler name => handler path
+local has_handler -- any selected handler?
+local all_handlers = {} -- all handlers name => true
+local hdl_types = {} -- handler name => {bean types}
+local bean_order = {} -- defined order => bean name
 local tables = { imports = { ["java.util.HashMap"] = true, ["jane.core.Bean"] = true } }
 function handler(hdls)
-	handlers = hdls
-	for _, v in ipairs(hdls) do
-		handlers[v.name] = v
+	if not arg[1] then error("ERROR: arg[1] must be handler name(s)") end
+	for hdlname in arg[1]:gmatch("([%w_]+)") do
+		local hdl = hdls[hdlname]
+		if not hdl then error("ERROR: not found or unknown handler name: " .. hdlname) end
+		for hdlname, hdlpath in pairs(hdl) do
+			if type(handlers[hdlname]) ~= "string" then
+				handlers[hdlname] = hdlpath
+				has_handler = true
+			end
+		end
+	end
+	for _, v in pairs(hdls) do
+		for k in pairs(v) do
+			all_handlers[k] = true
+		end
 	end
 end
 local function bean_common(bean)
@@ -843,13 +858,14 @@ local function bean_common(bean)
 	if type_bean[bean.type] then error("ERROR: duplicated bean.type: " .. bean.type) end
 	if bean.type < 1 or bean.type > 0x7fffffff then error("ERROR: invalid bean.type: " .. bean.type) end
 	for name in (bean.handlers or ""):gmatch("([%w_]+)") do
-		if not handlers[name] then error("ERROR: not defined handle: " .. name) end
+		if not all_handlers[name] then error("ERROR: not defined handle: " .. name) end
 		hdl_types[name] = hdl_types[name] or {}
 		hdl_types[name][#hdl_types[name] + 1] = bean.type
 	end
 	type_bean[bean.type] = bean
 	name_bean[bean.name] = bean
 	bean.comment = bean.comment and #bean.comment > 0 and "\n/**\n * " .. bean.comment:gsub("\n", "<br>\n * ") .. "\n */" or ""
+	bean_order[#bean_order + 1] = bean.name
 end
 local function bean_const(code)
 	return code:gsub("public  /%*", "private /*"):
@@ -946,15 +962,36 @@ function bean(bean)
 
 	bean.param_warning = (#vartypes > 1 and "" or "/** @param b unused */\n\t")
 	name_code[bean.name] = code_conv(code, "bean", bean):gsub(#vartypes > 1 and "#[<>]#" or "#<#(.-)#>#", ""):gsub("int h = (%d+ %* 0x9e3779b1;)\n\t\treturn h;", "return %1"):gsub("\r", "")
-	bean_order[#bean_order + 1] = bean.name
 	if bean.const then name_code[bean.name] = bean_const(name_code[bean.name]) end
 end
 function rpc(bean)
 	bean_common(bean)
 	bean.uid = gen_uid(name_bean[bean.arg].uid .. name_bean[bean.res].uid)
 	name_code[bean.name] = code_conv(template_rpcbean, "bean", bean):gsub("\r", "")
-	bean_order[#bean_order + 1] = bean.name
 end
+
+local outpath = (arg[2] or "src"):gsub("\\", "/")
+if outpath:sub(-1, -1) ~= "/" then outpath = outpath .. "/" end
+local function checksave(fn, d, change_count, pattern, typename)
+	local f = open(fn, "rb")
+	if f then
+		local s = f:read "*a"
+		f:close()
+		if change_count > 0 then
+			d = s:gsub("\n\t/%*\\.-\n\t\\%*/", d:gmatch("\n\t/%*\\.-\n\t\\%*/"), change_count):gsub(pattern, typename, 1)
+		end
+		if s == d then d = nil else print(" * " .. fn) end
+	else
+		print("+  " .. fn)
+	end
+	if d then
+		f = open(fn, "wb")
+		if not f then error("ERROR: can not create file: " .. fn) end
+		f:write(d)
+		f:close()
+	end
+end
+
 local key_conv = { int = "Integer", integer = "Integer", Integer = "Integer", long = "Long", Long = "Long", float = "Float", Float = "Float", double = "Double", Double = "Double",
 					string = "String", String = "String", binary = "Octets", bytes = "Octets", data = "Octets", octets = "Octets", Octets = "Octets" }
 function dbt(table)
@@ -983,54 +1020,36 @@ function dbt(table)
 		table.keyg = table.keys
 		table.comma = ", "
 		tables.imports["jane.core.Table"] = true
+		if not name_code[table.key] then error("ERROR: unknown bean: " .. table.key) end
+		checksave(outpath .. namespace .. "/bean/" .. table.key .. ".java", name_code[table.key], 0)
+		bean_order[table.key] = true
 	end
 	table.values = table.memory and "null" or "#(table.value).BEAN_STUB"
 	table.lock = table.lock or ""
 	if table.comment and #table.comment > 0 then table.comment = "/**\n\t * " .. table.comment:gsub("\n", "<br>\n\t * ") .. "\n\t */\n\t" end
 	tables[#tables + 1] = table
+	if not name_code[table.value] then error("ERROR: unknown bean: " .. table.value) end
+	checksave(outpath .. namespace .. "/bean/" .. table.value .. ".java", name_code[table.value], 0)
+	bean_order[table.value] = true
 end
 
 dofile "allbeans.lua"
 
-local function checksave(fn, d, change_count, pattern, typename)
-	local f = open(fn, "rb")
-	if f then
-		local s = f:read "*a"
-		f:close()
-		if change_count > 0 then
-			d = s:gsub("\n\t/%*\\.-\n\t\\%*/", d:gmatch("\n\t/%*\\.-\n\t\\%*/"), change_count):gsub(pattern, typename, 1)
-		end
-		if s == d then d = nil else print(" * " .. fn) end
-	else
-		print("+  " .. fn)
-	end
-	if d then
-		f = open(fn, "wb")
-		if not f then error("ERROR: can not create file: " .. fn) end
-		f:write(d)
-		f:close()
-	end
-end
-
-local outpath = (arg[1] or "src"):gsub("\\", "/")
-if outpath:sub(-1, -1) ~= "/" then outpath = outpath .. "/" end
-for name, code in pairs(name_code) do
-	checksave(outpath .. namespace .. "/bean/" .. name .. ".java", code, 0)
-end
-
 checksave(outpath .. namespace .. "/bean/AllBeans.java", (template_allbeans:gsub("#%[#(.-)#%]#", function(body)
 	local subcode = {}
-	for _, hdl in ipairs(handlers) do
-		if hdl.path then
-			local types = hdl_types[hdl.name] or {}
-			hdl.count = #types
-			subcode[#subcode + 1] = code_conv(body:gsub("#%(#(.-)#%)#", function(body)
-				local subcode2 = {}
-				for _, type in ipairs(types) do
-					local bean = type_bean[type]
-					subcode2[#subcode2 + 1] = code_conv(body, "bean", bean)
+	for hdlname, hdlpath in pairs(handlers) do
+		local types = hdl_types[hdlname] or {}
+		local hdl = { name = hdlname, path = tostring(hdlpath), count = #types }
+		subcode[#subcode + 1] = code_conv(body:gsub("#%(#(.-)#%)#", function(body)
+			local subcode2 = {}
+			for _, t in ipairs(types) do
+				local bean = type_bean[t]
+				checksave(outpath .. namespace .. "/bean/" .. bean.name .. ".java", name_code[bean.name], 0)
+				bean_order[bean.name] = true
+				subcode2[#subcode2 + 1] = code_conv(body, "bean", bean)
+				if type(hdlpath) == "string" then
 					if not bean.arg then
-						checksave(outpath .. hdl.path:gsub("%.", "/") .. "/" .. bean.name .. "Handler.java", code_conv(code_conv(template_bean_handler:gsub("#%(#(.-)#%)#", function(body)
+						checksave(outpath .. hdlpath:gsub("%.", "/") .. "/" .. bean.name .. "Handler.java", code_conv(code_conv(template_bean_handler:gsub("#%(#(.-)#%)#", function(body)
 							local subcode3 = {}
 							for _, var in ipairs(bean) do
 								subcode3[#subcode3 + 1] = code_conv(body, "var", var)
@@ -1040,7 +1059,7 @@ checksave(outpath .. namespace .. "/bean/AllBeans.java", (template_allbeans:gsub
 					else
 						local bean_sub
 						local bean_arg, bean_res = name_bean[bean.arg], name_bean[bean.res]
-						checksave(outpath .. hdl.path:gsub("%.", "/") .. "/" .. bean.name .. "Handler.java", code_conv(code_conv(code_conv(code_conv(template_rpc_handler:gsub("#%(#(.-)#%)#", function(body)
+						checksave(outpath .. hdlpath:gsub("%.", "/") .. "/" .. bean.name .. "Handler.java", code_conv(code_conv(code_conv(code_conv(template_rpc_handler:gsub("#%(#(.-)#%)#", function(body)
 							bean_sub = bean_sub and bean_res or bean_arg
 							local subcode3 = {}
 							for _, var in ipairs(bean_sub) do
@@ -1051,19 +1070,22 @@ checksave(outpath .. namespace .. "/bean/AllBeans.java", (template_allbeans:gsub
 							gsub("\r", ""), 2, "(%s+class%s+" .. bean.name .. "Handler%s+extends%s+RpcHandler%s*<)[%w_%s]+,[%w_%s]+>", "%1" .. bean_arg.name .. ", " .. bean_res.name .. ">")
 					end
 				end
-				return concat(subcode2)
-			end), "hdl", hdl)
-		end
+			end
+			return concat(subcode2)
+		end), "hdl", hdl)
+		if type(hdlpath) ~= "string" then subcode[#subcode] = "" end
 	end
 	return concat(subcode)
 end):gsub("#%(#(.-)#%)#", function(body)
 	local subcode = {}
 	for _, beanname in ipairs(bean_order) do
-		local bean = name_bean[beanname]
-		subcode[#subcode + 1] = code_conv(body, "bean", bean)
+		if bean_order[beanname] then
+			local bean = name_bean[beanname]
+			subcode[#subcode + 1] = code_conv(body, "bean", bean)
+		end
 	end
 	return concat(subcode)
-end)):gsub(#handlers > 0 and "#[<>]#" or "#%<#(.-)#%>#", ""):gsub("#%(bean.count%)", #bean_order):gsub("\r", ""), 0)
+end)):gsub(has_handler and "#[<>]#" or "#%<#(.-)#%>#", ""):gsub("#%(bean.count%)", #bean_order):gsub("\r", ""), 0)
 
 tables.count = #tables
 tables.imports["jane.core.DBManager"] = true

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace jane
+namespace Jane
 {
 	/**
 	 * 工具类(静态类);
@@ -16,16 +16,178 @@ namespace jane
 			return _rand;
 		}
 
+		public struct ListEnumerator<T>
+		{
+			private List<T>.Enumerator _enum;
+
+			public ListEnumerator(List<T> list)
+			{
+				_enum = list.GetEnumerator();
+			}
+
+			public ListEnumerator<T> GetEnumerator()
+			{
+				return this;
+			}
+
+			public bool MoveNext()
+			{
+				return _enum.MoveNext();
+			}
+
+			public T Current { get { return _enum.Current; } }
+		}
+
+		public struct LinkedListEnumerator<T>
+		{
+			private LinkedList<T>.Enumerator _enum;
+
+			public LinkedListEnumerator(LinkedList<T> list)
+			{
+				_enum = list.GetEnumerator();
+			}
+
+			public LinkedListEnumerator<T> GetEnumerator()
+			{
+				return this;
+			}
+
+			public bool MoveNext()
+			{
+				return _enum.MoveNext();
+			}
+
+			public T Current { get { return _enum.Current; } }
+		}
+
+		public struct HashSetEnumerator<T>
+		{
+			private HashSet<T>.Enumerator _enum;
+
+			public HashSetEnumerator(HashSet<T> hset)
+			{
+				_enum = hset.GetEnumerator();
+			}
+
+			public HashSetEnumerator<T> GetEnumerator()
+			{
+				return this;
+			}
+
+			public bool MoveNext()
+			{
+				return _enum.MoveNext();
+			}
+
+			public T Current { get { return _enum.Current; } }
+		}
+
+		public struct SortedSetEnumerator<T>
+		{
+			private SortedSet<T>.Enumerator _enum;
+
+			public SortedSetEnumerator(SortedSet<T> sset)
+			{
+				_enum = sset.GetEnumerator();
+			}
+
+			public SortedSetEnumerator<T> GetEnumerator()
+			{
+				return this;
+			}
+
+			public bool MoveNext()
+			{
+				return _enum.MoveNext();
+			}
+
+			public T Current { get { return _enum.Current; } }
+		}
+
+		public struct DictEnumerator<K, V>
+		{
+			private Dictionary<K, V>.Enumerator _enum;
+
+			public DictEnumerator(Dictionary<K, V> dic)
+			{
+				_enum = dic.GetEnumerator();
+			}
+
+			public DictEnumerator<K, V> GetEnumerator()
+			{
+				return this;
+			}
+
+			public bool MoveNext()
+			{
+				return _enum.MoveNext();
+			}
+
+			public KeyValuePair<K, V> Current { get { return _enum.Current; } }
+		}
+
+		public struct SortedDictEnumerator<K, V>
+		{
+			private SortedDictionary<K, V>.Enumerator _enum;
+
+			public SortedDictEnumerator(SortedDictionary<K, V> sdic)
+			{
+				_enum = sdic.GetEnumerator();
+			}
+
+			public SortedDictEnumerator<K, V> GetEnumerator()
+			{
+				return this;
+			}
+
+			public bool MoveNext()
+			{
+				return _enum.MoveNext();
+			}
+
+			public KeyValuePair<K, V> Current { get { return _enum.Current; } }
+		}
+
+		public static ListEnumerator<T> Enum<T>(List<T> list)
+		{
+			return new ListEnumerator<T>(list);
+		}
+
+		public static LinkedListEnumerator<T> Enum<T>(LinkedList<T> list)
+		{
+			return new LinkedListEnumerator<T>(list);
+		}
+
+		public static HashSetEnumerator<T> Enum<T>(HashSet<T> list)
+		{
+			return new HashSetEnumerator<T>(list);
+		}
+
+		public static SortedSetEnumerator<T> Enum<T>(SortedSet<T> list)
+		{
+			return new SortedSetEnumerator<T>(list);
+		}
+
+		public static DictEnumerator<K, V> Enum<K, V>(Dictionary<K, V> dic)
+		{
+			return new DictEnumerator<K, V>(dic);
+		}
+
+		public static SortedDictEnumerator<K, V> Enum<K, V>(SortedDictionary<K, V> sdic)
+		{
+			return new SortedDictEnumerator<K, V>(sdic);
+		}
+
 		public static void addAll<T>(ICollection<T> a, ICollection<T> b)
 		{
-			foreach(T o in b)
-				a.Add(o);
+			foreach(T e in b)
+				a.Add(e);
 		}
 
 		public static void addAll<K, V>(IDictionary<K, V> a, IDictionary<K, V> b)
 		{
 			foreach(KeyValuePair<K, V> p in b)
-				a.Add(p.Key, p.Value);
+				a.Add(p);
 		}
 
 		/**
@@ -50,9 +212,7 @@ namespace jane
 		/**
 		 * 比较两个Map容器里的元素是否完全相同(包括顺序相同);
 		 */
-		public static int compareTo<K, V>(IDictionary<K, V> a, IDictionary<K, V> b)
-			where K : IComparable<K>
-			where V : IComparable<V>
+		public static int compareTo<K, V>(IDictionary<K, V> a, IDictionary<K, V> b) where K : IComparable<K> where V : IComparable<V>
 		{
 			int c = a.Count - b.Count;
 			if(c != 0) return c;
@@ -79,8 +239,8 @@ namespace jane
 		{
 			if(list.Count <= 0) return s.Append("{},");
 			s.Append('{');
-			foreach(T o in list)
-				s.Append(o).Append(',');
+			foreach(T e in list)
+				s.Append(e).Append(',');
 			s[s.Length - 1] = '}';
 			return s.Append(',');
 		}
@@ -117,8 +277,8 @@ namespace jane
 				return s.Append((int)(char)o);
 			else if(o is Octets)
 				return ((Octets)o).dumpJStr(s);
-			else if(o is Bean)
-				return ((Bean)o).toJson(s);
+			else if(o is IBean)
+				return ((IBean)o).toJson(s);
 			else
 				return toJStr(s, o.ToString());
 		}
@@ -163,8 +323,8 @@ namespace jane
 				return s.Append((int)(char)o);
 			else if(o is Octets)
 				return ((Octets)o).dumpJStr(s);
-			else if(o is Bean)
-				return ((Bean)o).toLua(s);
+			else if(o is IBean)
+				return ((IBean)o).toLua(s);
 			else
 				return toJStr(s, o.ToString());
 		}

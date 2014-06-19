@@ -1,8 +1,8 @@
-using jane.bean;
+using Jane.Bean;
 
-namespace jane.handler.testserver
+namespace Jane.handler.testserver
 {
-	public class TestBeanHandler : BeanHandler<TestBean>
+	public class TestBeanHandler
 	{
 		/*\
 		|*| int TEST_CONST1 = 5; // 测试类静态常量;
@@ -11,9 +11,11 @@ namespace jane.handler.testserver
 		|*| long value2;
 		\*/
 
-		public override void onProcess(NetManager manager, TestBean arg)
+		public static void onProcess(NetManager manager, IBean _arg_)
 		{
+			TestBean arg = (TestBean)_arg_;
 			// System.Console.WriteLine("{0}.onProcess: arg={1}", GetType().Name, arg);
+
 		}
 	}
 }

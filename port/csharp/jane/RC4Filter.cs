@@ -1,6 +1,6 @@
 using System;
 
-namespace jane
+namespace Jane
 {
 	/**
 	 * RC4加密算法的过滤器;

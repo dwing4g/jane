@@ -1,15 +1,16 @@
-using jane.bean;
+using Jane.Bean;
 
-namespace jane.handler.testclient
+namespace Jane.handler.testclient
 {
-	public class TestEmptyHandler : BeanHandler<TestEmpty>
+	public class TestEmptyHandler
 	{
 		/*\
 		\*/
 
-		public override void onProcess(NetManager manager, TestEmpty arg)
+		public static void onProcess(NetManager manager, IBean _arg_)
 		{
-			System.Console.WriteLine("{0}.onProcess: arg={1}", GetType().Name, arg);
+			TestEmpty arg = (TestEmpty)_arg_;
+			System.Console.WriteLine("{0}.onProcess: arg={1}", arg.GetType().Name, arg);
 		}
 	}
 }

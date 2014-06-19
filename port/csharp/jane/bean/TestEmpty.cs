@@ -3,51 +3,57 @@ using System;
 using System.Text;
 using System.Collections.Generic;
 
-namespace jane.bean
+namespace Jane.Bean
 {
 	/**
 	 * 测试空bean;
 	 */
 	[Serializable]
-	public sealed class TestEmpty : Bean, IEquatable<TestEmpty>, IComparable<TestEmpty>
+	public struct TestEmpty : IBean, IEquatable<TestEmpty>, IComparable<TestEmpty>
 	{
 		public const int BEAN_TYPE = 4;
 
-		public override void reset()
+		public void reset()
 		{
 		}
 
 		/** @param b unused */
-		public void assign(TestEmpty b)
+		public void assign(ref TestEmpty b)
 		{
 		}
 
-		public override int type()
+		public int type()
 		{
 			return 4;
 		}
 
-		public override int initSize()
+		public int initSize()
 		{
 			return 0;
 		}
 
-		public override int maxSize()
+		public int maxSize()
 		{
 			return 0;
 		}
 
-		public override Bean create()
+		public void init()
 		{
-			return new TestEmpty();
 		}
 
-		public override OctetsStream marshal(OctetsStream s)
+		public static IBean create()
+		{
+			IBean b = new TestEmpty();
+			b.init();
+			return b;
+		}
+
+		public OctetsStream marshal(OctetsStream s)
 		{
 			return s.marshal1((byte)0);
 		}
 
-		public override OctetsStream unmarshal(OctetsStream s)
+		public OctetsStream unmarshal(OctetsStream s)
 		{
 			for(;;) { int i = s.unmarshalUByte(), t = i & 3; switch(i >> 2)
 			{
@@ -56,7 +62,7 @@ namespace jane.bean
 			}}
 		}
 
-		public override object Clone()
+		public object Clone()
 		{
 			return new TestEmpty();
 		}
@@ -74,21 +80,23 @@ namespace jane.bean
 
 		public override bool Equals(object o)
 		{
-			if(o == this) return true;
 			if(!(o is TestEmpty)) return false;
 			return true;
 		}
 
 		public int CompareTo(TestEmpty b)
 		{
-			if(b == this) return 0;
-			if(b == null) return 1;
 			return 0;
 		}
 
-		public override int CompareTo(Bean b)
+		public int CompareTo(IBean b)
 		{
 			return b is TestEmpty ? CompareTo((TestEmpty)b) : 1;
+		}
+
+		public int CompareTo(object b)
+		{
+			return b is IBean ? CompareTo((IBean)b) : 1;
 		}
 
 		public override string ToString()
@@ -97,18 +105,28 @@ namespace jane.bean
 			return s.Append('}').ToString();
 		}
 
-		public override StringBuilder toJson(StringBuilder s)
+		public StringBuilder toJson(StringBuilder s)
 		{
 			if(s == null) s = new StringBuilder(1024);
 			s.Append('{');
 			return s.Append('}');
 		}
 
-		public override StringBuilder toLua(StringBuilder s)
+		public StringBuilder toJson()
+		{
+			return toJson(null);
+		}
+
+		public StringBuilder toLua(StringBuilder s)
 		{
 			if(s == null) s = new StringBuilder(1024);
 			s.Append('{');
 			return s.Append('}');
+		}
+
+		public StringBuilder toLua()
+		{
+			return toLua(null);
 		}
 	}
 }

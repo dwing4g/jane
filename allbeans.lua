@@ -7,8 +7,16 @@ local namespace = namespace or ""
 
 handler
 {
-	{ name="TestServer", path = namespace .. ".handler.testserver" },
-	{ name="TestClient", path = namespace .. ".handler.testclient" },
+	Server =
+	{
+		TestServer = namespace .. ".handler.testserver", -- 服务器需要处理的beans及输出目录/命名空间
+		TestClient = true, -- 服务器引用的beans
+	},
+	Client =
+	{
+		TestClient = namespace .. ".handler.testclient", -- 客户端需要处理的beans及输出目录/命名空间
+		TestServer = true, -- 客户端引用的beans
+	},
 }
 
 bean{ name="TestBean", type=1, initsize=16, maxsize=16, poolsize=1000, comment="bean的注释",
@@ -48,7 +56,7 @@ bean{ name="TestType", type=3, initsize=256, maxsize=65536, comment="测试生�
 }
 
 bean{ name="TestEmpty", type=4, initsize=0, maxsize=0, comment="测试空bean",
-	handlers="TestServer,TestClient",
+	handlers="TestServer",
 }
 
 rpc { name="TestRpcBean", type=5, arg="TestBean", res="TestType", comment="RPC的注释",

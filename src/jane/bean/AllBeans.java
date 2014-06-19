@@ -22,7 +22,6 @@ public final class AllBeans
 		r.add(TestType.BEAN_STUB);
 		r.add(TestEmpty.BEAN_STUB);
 		r.add(TestRpcBean.BEAN_STUB);
-		r.add(TestRpcBean2.BEAN_STUB);
 		return r;
 	}
 
@@ -38,10 +37,9 @@ public final class AllBeans
 
 	public static IntMap<BeanHandler<?>> getTestClientHandlers()
 	{
-		IntMap<BeanHandler<?>> r = new IntMap<BeanHandler<?>>(4 * 4);
+		IntMap<BeanHandler<?>> r = new IntMap<BeanHandler<?>>(3 * 4);
 		r.put(1, new jane.handler.testclient.TestBeanHandler());
 		r.put(3, new jane.handler.testclient.TestTypeHandler());
-		r.put(4, new jane.handler.testclient.TestEmptyHandler());
 		r.put(5, new jane.handler.testclient.TestRpcBeanHandler());
 		return r;
 	}

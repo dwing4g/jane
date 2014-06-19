@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
 
-namespace jane
+namespace Jane
 {
 	/**
 	 * 网络管理器;
@@ -17,27 +17,23 @@ namespace jane
 		public const int CLOSE_DECODE = 4;
 		public const int RECV_BUFSIZE = 8192;
 
-		protected static readonly Dictionary<int, Bean> _stubMap = new Dictionary<int, Bean>(); // 所有注册beans的存根对象;
-		protected IDictionary<int, BeanHandler> _handlers = new Dictionary<int, BeanHandler>(); // 所有注册beans的处理对象;
+		public delegate IBean BeanDelegate();
+		public delegate void HandlerDelegate(NetManager mgr, IBean arg);
+		protected IDictionary<int, BeanDelegate> _beanMap = new Dictionary<int, BeanDelegate>(); // 所有注册beans的创建代理;
+		protected IDictionary<int, HandlerDelegate> _handlerMap = new Dictionary<int, HandlerDelegate>(); // 所有注册beans的处理代理;
 		private readonly TcpClient _tcpClient = new TcpClient();
 		private NetworkStream _tcpStream;
 		protected readonly byte[] _bufin = new byte[RECV_BUFSIZE];
 		protected readonly OctetsStream _bufos = new OctetsStream();
 
-		public static void registerAllBeans(ICollection<Bean> beans)
+		public void setBeanDelegates(IDictionary<int, BeanDelegate> bean_map)
 		{
-			_stubMap.Clear();
-			foreach(Bean bean in beans)
-			{
-				int type = bean.type();
-				if(type > 0)
-					_stubMap.Add(type, bean);
-			}
+			_beanMap = bean_map ?? _beanMap;
 		}
 
-		public void setHandlers(IDictionary<int, BeanHandler> handlers)
+		public void setHandlerDelegates(IDictionary<int, HandlerDelegate> handler_map)
 		{
-			if(handlers != null) _handlers = handlers;
+			_handlerMap = handler_map ?? _handlerMap;
 		}
 
 		public bool Connected { get { return _tcpClient.Connected; } }
@@ -45,15 +41,15 @@ namespace jane
 		protected virtual void onAddSession() {}
 		protected virtual void onDelSession(int code, Exception e) {}
 		protected virtual void onAbortSession(Exception e) {}
-		protected virtual void onSentBean(Bean bean) {}
+		protected virtual void onSentBean(IBean bean) {}
 		protected virtual OctetsStream onEncode(byte[] buf, int pos, int len) { return null; }
 		protected virtual OctetsStream onDecode(byte[] buf, int pos, int len) { return null; }
 
-		protected virtual bool onRecvBean(Bean bean)
+		protected virtual bool onRecvBean(IBean bean)
 		{
-			BeanHandler handler;
-			if(!_handlers.TryGetValue(bean.type(), out handler)) return false;
-			handler.onProcess(this, bean);
+			HandlerDelegate handler;
+			if(!_handlerMap.TryGetValue(bean.type(), out handler)) return false;
+			handler(this, bean);
 			return true;
 		}
 
@@ -72,10 +68,10 @@ namespace jane
 					int ptype = _bufos.unmarshalUInt();
 					int psize = _bufos.unmarshalUInt();
 					if(psize > _bufos.remain()) break;
-					Bean bean;
-					if(!_stubMap.TryGetValue(ptype, out bean))
+					BeanDelegate create;
+					if(!_beanMap.TryGetValue(ptype, out create))
 						throw new Exception("unknown bean: type=" + ptype + ",size=" + psize);
-					bean = bean.create();
+					IBean bean = create();
 					int p = _bufos.position();
 					bean.unmarshal(_bufos);
 					int realsize = _bufos.position() - p;
@@ -158,7 +154,7 @@ namespace jane
 			{
 				lock(this)
 				{
-					Bean bean = (Bean)res.AsyncState;
+					IBean bean = (IBean)res.AsyncState;
 					_tcpStream.EndWrite(res);
 					onSentBean(bean);
 				}
@@ -191,7 +187,7 @@ namespace jane
 				onDelSession(code, e);
 		}
 
-		public bool send(Bean bean)
+		public virtual bool send(IBean bean)
 		{
 			if(!_tcpClient.Connected || _tcpStream == null) return false;
 			OctetsStream os = new OctetsStream(bean.initSize() + 10);

@@ -1,7 +1,7 @@
 using System;
 using System.Text;
 
-namespace jane
+namespace Jane
 {
 	/**
 	 * 用于存储可扩展字节序列的类型;

@@ -1,6 +1,6 @@
 using System;
 
-namespace jane
+namespace Jane
 {
 	/**
 	 * 反序列化bean失败的时候会抛出的异常类;
@@ -12,13 +12,11 @@ namespace jane
 		{
 		}
 
-		public MarshalException(string message)
-			: base(message)
+		public MarshalException(string message) : base(message)
 		{
 		}
 
-		public MarshalException(string message, Exception InnerException)
-			: base(message, InnerException)
+		public MarshalException(string message, Exception InnerException) : base(message, InnerException)
 		{
 		}
 	}
@@ -33,13 +31,11 @@ namespace jane
 		{
 		}
 
-		public MarshalEOFException(string message)
-			: base(message)
+		public MarshalEOFException(string message) : base(message)
 		{
 		}
 
-		public MarshalEOFException(string message, Exception InnerException)
-			: base(message, InnerException)
+		public MarshalEOFException(string message, Exception InnerException) : base(message, InnerException)
 		{
 		}
 	}

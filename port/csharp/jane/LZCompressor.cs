@@ -1,6 +1,6 @@
 using System;
 
-namespace jane
+namespace Jane
 {
 	/**
 	 * 基于LZ77的无损压缩算法(实验中);

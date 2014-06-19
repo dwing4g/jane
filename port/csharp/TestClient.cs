@@ -1,9 +1,9 @@
 using System;
 using System.Threading;
-using jane;
-using jane.bean;
+using Jane;
+using Jane.Bean;
 
-namespace jane
+namespace Jane
 {
 	public class TestClient : NetManager
 	{
@@ -11,7 +11,8 @@ namespace jane
 
 		public TestClient()
 		{
-			setHandlers(AllBeans.getTestClientHandlers());
+			setBeanDelegates(AllBeans.getAllBeans());
+			setHandlerDelegates(AllBeans.getTestClientHandlers());
 		}
 
 		public void setFilter(RC4Filter filter)
@@ -52,7 +53,6 @@ namespace jane
 
 		static void Main(string[] args)
 		{
-			registerAllBeans(AllBeans.getAllBeans());
 			using(NetManager mgr = new TestClient())
 			{
 				Console.WriteLine("connecting ...");

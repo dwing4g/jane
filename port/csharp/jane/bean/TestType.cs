@@ -3,13 +3,13 @@ using System;
 using System.Text;
 using System.Collections.Generic;
 
-namespace jane.bean
+namespace Jane.Bean
 {
 	/**
 	 * 测试生成所有支持的类型;
 	 */
 	[Serializable]
-	public sealed class TestType : Bean, IEquatable<TestType>, IComparable<TestType>
+	public struct TestType : IBean, IEquatable<TestType>, IComparable<TestType>
 	{
 		public const int BEAN_TYPE = 3;
 
@@ -20,34 +20,18 @@ namespace jane.bean
 		public  /* 5*/ long v5; // 8字节整数;
 		public  /* 6*/ float v6; // 4字节浮点数;
 		public  /* 7*/ double v7; // 8字节浮点数;
-		public  /* 8*/ readonly Octets v8; // 二进制数据(Octets);
-		private /* 9*/ string v9; // 字符串(String);
-		public  /*10*/ readonly List<bool> v10; // 数组容器(ArrayList);
-		public  /*11*/ readonly LinkedList<sbyte> v11; // 链表容器(LinkedList);
-		public  /*12*/ readonly LinkedList<int> v12; // 队列容器(ArrayDeque);
-		public  /*13*/ readonly HashSet<long> v13; // 无序集合容器(HashSet);
-		public  /*14*/ readonly SortedSet<float> v14; // 排序集合容器(TreeSet);
-		public  /*15*/ readonly HashSet<double> v15; // 有序集合容器(LinkedHashSet);
-		public  /*16*/ readonly Dictionary<long, string> v16; // 无序映射容器(HashMap);
-		public  /*17*/ readonly SortedDictionary<TestBean, bool> v17; // 排序映射容器(TreeMap);
-		public  /*18*/ readonly Dictionary<Octets, TestBean> v18; // 有序映射容器(LinkedHashMap);
-		public  /*19*/ readonly TestBean v19; // 嵌入其它bean;
-
-		public TestType()
-		{
-			v8 = new Octets(5);
-			v9 = string.Empty;
-			v10 = new List<bool>(10);
-			v11 = new LinkedList<sbyte>();
-			v12 = new LinkedList<int>();
-			v13 = new HashSet<long>();
-			v14 = new SortedSet<float>();
-			v15 = new HashSet<double>();
-			v16 = new Dictionary<long, string>(0);
-			v17 = new SortedDictionary<TestBean, bool>();
-			v18 = new Dictionary<Octets, TestBean>();
-			v19 = new TestBean();
-		}
+		public  /* 8*/ Octets v8; // 二进制数据(Octets);
+		public  /* 9*/ string v9; // 字符串(String);
+		public  /*10*/ List<bool> v10; // 数组容器(ArrayList);
+		public  /*11*/ LinkedList<sbyte> v11; // 链表容器(LinkedList);
+		public  /*12*/ LinkedList<int> v12; // 队列容器(ArrayDeque);
+		public  /*13*/ HashSet<long> v13; // 无序集合容器(HashSet);
+		public  /*14*/ SortedSet<float> v14; // 排序集合容器(TreeSet);
+		public  /*15*/ HashSet<double> v15; // 有序集合容器(LinkedHashSet);
+		public  /*16*/ Dictionary<long, string> v16; // 无序映射容器(HashMap);
+		public  /*17*/ SortedDictionary<TestBean, bool> v17; // 排序映射容器(TreeMap);
+		public  /*18*/ Dictionary<Octets, TestBean> v18; // 有序映射容器(LinkedHashMap);
+		public  /*19*/ TestBean v19; // 嵌入其它bean;
 
 		public TestType(bool v1, sbyte v2, short v3, int v4, long v5, float v6, double v7, Octets v8, string v9, ICollection<bool> v10, ICollection<sbyte> v11, ICollection<int> v12, ICollection<long> v13, ICollection<float> v14, ICollection<double> v15, IDictionary<long, string> v16, IDictionary<TestBean, bool> v17, IDictionary<Octets, TestBean> v18, TestBean v19)
 		{
@@ -69,10 +53,10 @@ namespace jane.bean
 			this.v16 = new Dictionary<long, string>(0); if(v16 != null) Util.addAll(this.v16, v16);
 			this.v17 = new SortedDictionary<TestBean, bool>(); if(v17 != null) Util.addAll(this.v17, v17);
 			this.v18 = new Dictionary<Octets, TestBean>(); if(v18 != null) Util.addAll(this.v18, v18);
-			this.v19 = (v19 != null ? (TestBean)v19.Clone() : new TestBean());
+			this.v19 = new TestBean();
 		}
 
-		public override void reset()
+		public void reset()
 		{
 			v1 = false;
 			v2 = 0;
@@ -95,9 +79,8 @@ namespace jane.bean
 			v19.reset();
 		}
 
-		public void assign(TestType b)
+		public void assign(ref TestType b)
 		{
-			if(b == null) { reset(); return; }
 			this.v1 = b.v1;
 			this.v2 = b.v2;
 			this.v3 = b.v3;
@@ -116,7 +99,7 @@ namespace jane.bean
 			this.v16.Clear(); if(b.v16 != null) Util.addAll(this.v16, b.v16);
 			this.v17.Clear(); if(b.v17 != null) Util.addAll(this.v17, b.v17);
 			this.v18.Clear(); if(b.v18 != null) Util.addAll(this.v18, b.v18);
-			this.v19.assign(b.v19);
+			this.v19.assign(ref b.v19);
 		}
 
 		public bool getV1()
@@ -254,27 +237,45 @@ namespace jane.bean
 			return v19;
 		}
 
-		public override int type()
+		public int type()
 		{
 			return 3;
 		}
 
-		public override int initSize()
+		public int initSize()
 		{
 			return 256;
 		}
 
-		public override int maxSize()
+		public int maxSize()
 		{
 			return 65536;
 		}
 
-		public override Bean create()
+		public void init()
 		{
-			return new TestType();
+			v8 = new Octets(5);
+			v9 = string.Empty;
+			v10 = new List<bool>(10);
+			v11 = new LinkedList<sbyte>();
+			v12 = new LinkedList<int>();
+			v13 = new HashSet<long>();
+			v14 = new SortedSet<float>();
+			v15 = new HashSet<double>();
+			v16 = new Dictionary<long, string>(0);
+			v17 = new SortedDictionary<TestBean, bool>();
+			v18 = new Dictionary<Octets, TestBean>();
+			v19 = new TestBean();
 		}
 
-		public override OctetsStream marshal(OctetsStream s)
+		public static IBean create()
+		{
+			IBean b = new TestType();
+			b.init();
+			return b;
+		}
+
+		public OctetsStream marshal(OctetsStream s)
 		{
 			if(this.v1) s.marshal1((byte)0x04).marshal1((byte)1);
 			if(this.v2 != 0) s.marshal1((byte)0x08).marshal(this.v2);
@@ -288,55 +289,55 @@ namespace jane.bean
 			if(this.v10.Count > 0)
 			{
 				s.marshal2(0x2b00).marshalUInt(this.v10.Count);
-				foreach(bool v in this.v10)
-					s.marshal(v);
+				foreach(bool e in Util.Enum(this.v10))
+					s.marshal(e);
 			}
 			if(this.v11.Count > 0)
 			{
 				s.marshal2(0x2f00).marshalUInt(this.v11.Count);
-				foreach(sbyte v in this.v11)
-					s.marshal(v);
+				foreach(sbyte e in Util.Enum(this.v11))
+					s.marshal(e);
 			}
 			if(this.v12.Count > 0)
 			{
 				s.marshal2(0x3300).marshalUInt(this.v12.Count);
-				foreach(int v in this.v12)
-					s.marshal(v);
+				foreach(int e in Util.Enum(this.v12))
+					s.marshal(e);
 			}
 			if(this.v13.Count > 0)
 			{
 				s.marshal2(0x3700).marshalUInt(this.v13.Count);
-				foreach(long v in this.v13)
-					s.marshal(v);
+				foreach(long e in Util.Enum(this.v13))
+					s.marshal(e);
 			}
 			if(this.v14.Count > 0)
 			{
 				s.marshal2(0x3b04).marshalUInt(this.v14.Count);
-				foreach(float v in this.v14)
-					s.marshal(v);
+				foreach(float e in Util.Enum(this.v14))
+					s.marshal(e);
 			}
 			if(this.v15.Count > 0)
 			{
 				s.marshal2(0x3f05).marshalUInt(this.v15.Count);
-				foreach(double v in this.v15)
-					s.marshal(v);
+				foreach(double e in Util.Enum(this.v15))
+					s.marshal(e);
 			}
 			if(this.v16.Count > 0)
 			{
 				s.marshal2(0x4341).marshalUInt(this.v16.Count);
-				foreach(KeyValuePair<long, string> p in this.v16)
+				foreach(KeyValuePair<long, string> p in Util.Enum(this.v16))
 					s.marshal(p.Key).marshal(p.Value);
 			}
 			if(this.v17.Count > 0)
 			{
 				s.marshal2(0x4750).marshalUInt(this.v17.Count);
-				foreach(KeyValuePair<TestBean, bool> p in this.v17)
+				foreach(KeyValuePair<TestBean, bool> p in Util.Enum(this.v17))
 					s.marshal(p.Key).marshal(p.Value);
 			}
 			if(this.v18.Count > 0)
 			{
 				s.marshal2(0x4b4a).marshalUInt(this.v18.Count);
-				foreach(KeyValuePair<Octets, TestBean> p in this.v18)
+				foreach(KeyValuePair<Octets, TestBean> p in Util.Enum(this.v18))
 					s.marshal(p.Key).marshal(p.Value);
 			}
 			{
@@ -347,7 +348,7 @@ namespace jane.bean
 			return s.marshal1((byte)0);
 		}
 
-		public override OctetsStream unmarshal(OctetsStream s)
+		public OctetsStream unmarshal(OctetsStream s)
 		{
 			for(;;) { int i = s.unmarshalUByte(), t = i & 3; switch(i >> 2)
 			{
@@ -453,12 +454,12 @@ namespace jane.bean
 					for(int n = s.unmarshalUInt(); n > 0; --n)
 						this.v18.Add(s.unmarshalOctetsKV(k), (TestBean)s.unmarshalBeanKV(new TestBean(), t));
 				} break;
-				case 19: s.unmarshalBean(this.v19, t); break;
+				case 19: s.unmarshalBean(ref this.v19, t); break;
 				default: s.unmarshalSkipVar(t); break;
 			}}
 		}
 
-		public override object Clone()
+		public object Clone()
 		{
 			return new TestType(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19);
 		}
@@ -514,7 +515,6 @@ namespace jane.bean
 
 		public override bool Equals(object o)
 		{
-			if(o == this) return true;
 			if(!(o is TestType)) return false;
 			TestType b = (TestType)o;
 			if(this.v1 != b.v1) return false;
@@ -541,8 +541,6 @@ namespace jane.bean
 
 		public int CompareTo(TestType b)
 		{
-			if(b == this) return 0;
-			if(b == null) return 1;
 			int c;
 			c = (this.v1 == b.v1 ? 0 : (this.v1 ? 1 : -1)); if(c != 0) return c;
 			c = this.v2 - b.v2; if(c != 0) return c;
@@ -566,9 +564,14 @@ namespace jane.bean
 			return 0;
 		}
 
-		public override int CompareTo(Bean b)
+		public int CompareTo(IBean b)
 		{
 			return b is TestType ? CompareTo((TestType)b) : 1;
+		}
+
+		public int CompareTo(object b)
+		{
+			return b is IBean ? CompareTo((IBean)b) : 1;
 		}
 
 		public override string ToString()
@@ -597,7 +600,7 @@ namespace jane.bean
 			return s.Append('}').ToString();
 		}
 
-		public override StringBuilder toJson(StringBuilder s)
+		public StringBuilder toJson(StringBuilder s)
 		{
 			if(s == null) s = new StringBuilder(1024);
 			s.Append('{');
@@ -624,7 +627,12 @@ namespace jane.bean
 			return s.Append('}');
 		}
 
-		public override StringBuilder toLua(StringBuilder s)
+		public StringBuilder toJson()
+		{
+			return toJson(null);
+		}
+
+		public StringBuilder toLua(StringBuilder s)
 		{
 			if(s == null) s = new StringBuilder(1024);
 			s.Append('{');
@@ -649,6 +657,11 @@ namespace jane.bean
 			this.v19.toLua(s.Append("v19=")).Append(',');
 			--s.Length;
 			return s.Append('}');
+		}
+
+		public StringBuilder toLua()
+		{
+			return toLua(null);
 		}
 	}
 }
