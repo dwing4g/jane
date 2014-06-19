@@ -8,6 +8,7 @@ local format = string.format
 local util = require "util"
 local bean = require "bean"
 local Stream = require "stream"
+local Queue = require "queue"
 local class = util.class
 local clone = util.clone
 
@@ -104,7 +105,7 @@ do
 	print(b)
 end
 
-print "========================================"
+print "----------------------------------------"
 
 do
 	local function testInt(x)
@@ -143,6 +144,16 @@ do
 		x = x + x
 	end
 	print "testInt OK!"
+end
+
+print "----------------------------------------"
+
+do
+	local q = Queue()
+	q:push(1)
+	print(q)
+	print(q:pop())
+	print(q)
 end
 
 print "========================================"
