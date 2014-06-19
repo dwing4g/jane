@@ -652,6 +652,8 @@ end
 
 dofile(beanfile)
 
+local outpath = (arg[2] or "."):gsub("\\", "/")
+if outpath:sub(-1, -1) ~= "/" then outpath = outpath .. "/" end
 local function checksave(fn, d, change_count, pattern, typename)
 	local f = open(fn, "rb")
 	if f then
@@ -672,9 +674,16 @@ local function checksave(fn, d, change_count, pattern, typename)
 	end
 end
 
+local saved = {}
+local function savebean(beanname)
+	if saved[beanname] then return end
+	saved[beanname] = true
+	if not name_code[beanname] then error("ERROR: unknown bean: " .. beanname) end
+	checksave(outpath .. namespace .. "/Bean/" .. beanname .. ".cs", name_code[beanname], 0)
+	bean_order[beanname] = true
+end
+
 local bean_count = 0
-local outpath = (arg[2] or "."):gsub("\\", "/")
-if outpath:sub(-1, -1) ~= "/" then outpath = outpath .. "/" end
 checksave(outpath .. namespace .. "/Bean/AllBeans.cs", (template_allbeans:gsub("#%[#(.-)#%]#", function(body)
 	local subcode = {}
 	for hdlname, hdlpath in pairs(handlers) do
@@ -684,8 +693,7 @@ checksave(outpath .. namespace .. "/Bean/AllBeans.cs", (template_allbeans:gsub("
 			local subcode2 = {}
 			for _, t in ipairs(types) do
 				local bean = type_bean[t]
-				checksave(outpath .. namespace .. "/bean/" .. bean.name .. ".cs", name_code[bean.name], 0)
-				bean_order[bean.name] = true
+				savebean(bean.name)
 				subcode2[#subcode2 + 1] = code_conv(body, "bean", bean)
 				if type(hdlpath) == "string" then
 					if not bean.arg then

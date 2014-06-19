@@ -965,11 +965,6 @@ function bean(bean)
 	name_code[bean.name] = code_conv(code, "bean", bean):gsub(#vartypes > 1 and "#[<>]#" or "#<#(.-)#>#", ""):gsub("int h = (%d+ %* 0x9e3779b1;)\n\t\treturn h;", "return %1"):gsub("\r", "")
 	if bean.const then name_code[bean.name] = bean_const(name_code[bean.name]) end
 end
-function rpc(bean)
-	bean_common(bean)
-	bean.uid = gen_uid(name_bean[bean.arg].uid .. name_bean[bean.res].uid)
-	name_code[bean.name] = code_conv(template_rpcbean, "bean", bean):gsub("\r", "")
-end
 
 local outpath = (arg[2] or "src"):gsub("\\", "/")
 if outpath:sub(-1, -1) ~= "/" then outpath = outpath .. "/" end
@@ -991,6 +986,22 @@ local function checksave(fn, d, change_count, pattern, typename)
 		f:write(d)
 		f:close()
 	end
+end
+
+local saved = {}
+local function savebean(beanname)
+	if saved[beanname] then return end
+	saved[beanname] = true
+	if not name_code[beanname] then error("ERROR: unknown bean: " .. beanname) end
+	checksave(outpath .. namespace .. "/bean/" .. beanname .. ".java", name_code[beanname], 0)
+	bean_order[beanname] = true
+end
+function rpc(bean)
+	bean_common(bean)
+	bean.uid = gen_uid(name_bean[bean.arg].uid .. name_bean[bean.res].uid)
+	name_code[bean.name] = code_conv(template_rpcbean, "bean", bean):gsub("\r", "")
+	savebean(bean.arg)
+	savebean(bean.res)
 end
 
 local key_conv = { int = "Integer", integer = "Integer", Integer = "Integer", long = "Long", Long = "Long", float = "Float", Float = "Float", double = "Double", Double = "Double",
@@ -1021,17 +1032,13 @@ function dbt(table)
 		table.keyg = table.keys
 		table.comma = ", "
 		tables.imports["jane.core.Table"] = true
-		if not name_code[table.key] then error("ERROR: unknown bean: " .. table.key) end
-		checksave(outpath .. namespace .. "/bean/" .. table.key .. ".java", name_code[table.key], 0)
-		bean_order[table.key] = true
+		savebean(table.key)
 	end
 	table.values = table.memory and "null" or "#(table.value).BEAN_STUB"
 	table.lock = table.lock or ""
 	if table.comment and #table.comment > 0 then table.comment = "/**\n\t * " .. table.comment:gsub("\n", "<br>\n\t * ") .. "\n\t */\n\t" end
 	tables[#tables + 1] = table
-	if not name_code[table.value] then error("ERROR: unknown bean: " .. table.value) end
-	checksave(outpath .. namespace .. "/bean/" .. table.value .. ".java", name_code[table.value], 0)
-	bean_order[table.value] = true
+	savebean(table.value)
 end
 
 dofile(beanfile)
@@ -1045,8 +1052,7 @@ checksave(outpath .. namespace .. "/bean/AllBeans.java", (template_allbeans:gsub
 			local subcode2 = {}
 			for _, t in ipairs(types) do
 				local bean = type_bean[t]
-				checksave(outpath .. namespace .. "/bean/" .. bean.name .. ".java", name_code[bean.name], 0)
-				bean_order[bean.name] = true
+				savebean(bean.name)
 				subcode2[#subcode2 + 1] = code_conv(body, "bean", bean)
 				if type(hdlpath) == "string" then
 					if not bean.arg then
