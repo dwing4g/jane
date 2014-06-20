@@ -185,7 +185,7 @@ namespace ]=] .. namespace .. [=[.Bean
 		/** 获取全部bean的创建代理 */
 		public static IDictionary<int, NetManager.BeanDelegate> getAllBeans()
 		{
-			IDictionary<int, NetManager.BeanDelegate> r = new Dictionary<int, NetManager.BeanDelegate>(#(bean.count));
+			IDictionary<int, NetManager.BeanDelegate> r = new Dictionary<int, NetManager.BeanDelegate>(#(bean.count) * 4);
 #(#			r.Add(#(bean.type), #(bean.name).create);
 #)#			return r;
 		}

@@ -16,7 +16,7 @@ public final class AllBeans
 	/** 获取全部的bean实例 */
 	public static Collection<Bean<?>> getAllBeans()
 	{
-		List<Bean<?>> r = new ArrayList<Bean<?>>(6);
+		List<Bean<?>> r = new ArrayList<Bean<?>>(5);
 		r.add(TestBean.BEAN_STUB);
 		r.add(TestKeyBean.BEAN_STUB);
 		r.add(TestType.BEAN_STUB);

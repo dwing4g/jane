@@ -9,7 +9,7 @@ namespace Jane.Bean
 		/** 获取全部bean的创建代理 */
 		public static IDictionary<int, NetManager.BeanDelegate> getAllBeans()
 		{
-			IDictionary<int, NetManager.BeanDelegate> r = new Dictionary<int, NetManager.BeanDelegate>(3);
+			IDictionary<int, NetManager.BeanDelegate> r = new Dictionary<int, NetManager.BeanDelegate>(3 * 4);
 			r.Add(1, TestBean.create);
 			r.Add(3, TestType.create);
 			r.Add(4, TestEmpty.create);

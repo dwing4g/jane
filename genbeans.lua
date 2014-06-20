@@ -1049,6 +1049,7 @@ end
 if not arg[3] then error("ERROR: arg[3] must be input allbeans.lua") end
 dofile(arg[3])
 
+local bean_count = 0
 checksave(outpath .. namespace .. "/bean/AllBeans.java", (template_allbeans:gsub("#%[#(.-)#%]#", function(body)
 	local subcode = {}
 	for hdlname, hdlpath in pairs(handlers) do
@@ -1095,10 +1096,11 @@ end):gsub("#%(#(.-)#%)#", function(body)
 		if bean_order[beanname] then
 			local bean = name_bean[beanname]
 			subcode[#subcode + 1] = code_conv(body, "bean", bean)
+			bean_count = bean_count + 1
 		end
 	end
 	return concat(subcode)
-end)):gsub(has_handler and "#[<>]#" or "#%<#(.-)#%>#", ""):gsub("#%(bean.count%)", #bean_order):gsub("\r", ""), 0)
+end)):gsub(has_handler and "#[<>]#" or "#%<#(.-)#%>#", ""):gsub("#%(bean.count%)", bean_count):gsub("\r", ""), 0)
 
 tables.count = #tables
 tables.imports["jane.core.DBManager"] = true
