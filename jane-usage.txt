@@ -106,17 +106,21 @@ dbt { name="UserProp", id=1, lock="user", key="id", value="DBUserProp", cachesiz
 4.定义协议
 handler
 {
-    { name="GameServer", path = "jane.handler.gameserver" }, -- 服务器对客户端的协议处理
+    Server = -- 定义handler组,在生成脚本的命令参数中指定组名即生成该组中manangers引用的beans和handlers
+    {
+        GameServer = "jane.handler.gameserver", -- 服务器需要处理的beans及输出目录/命名空间
+        GameClient = true, -- 服务器引用的beans,只生成beans,不生成handler框架
+    },
 }
 
 bean{ name="PropAdd", type=1, initsize=16, maxsize=16, const=false, comment="增加属性",
     { id=1, name="userid", type="long", comment="账号ID" },
     { id=2, name="prop_delta", type="int", comment="增加的属性值" },
-    handlers="GameServer",
+    handlers="GameServer", -- 列出哪些handlers需要引用这个bean
 }
 
 解释:
-处理器(handler): 定义协议处理器, 在整个定义文件的最前面定义, 其中只需定义处理器的名称和生成代码所在的路径(包)名, 服务器有几个NetManager子类, 就应该定义几个handler
+处理器(handler): 定义协议处理器, 在整个定义文件的最前面定义, 其中只需定义处理器的名称和生成代码所在的路径(包)名, 服务器有几个NetManager子类, 就应该定义几个handler(仅用于引用的除外)
 引用处理器(handlers): 定义协议时要引用处理器名, 可以写多个, 用逗号分隔
 
 如果要定义RPC, 则定义如下:
