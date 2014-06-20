@@ -1,3 +1,4 @@
+-- UTF-8 without BOM
 local ffi = require "ffi"
 local ffistr = ffi.string
 ffi.cdef [[typedef union{float f;double d;char c[8];}UF;]]

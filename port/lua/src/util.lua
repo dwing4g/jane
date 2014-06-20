@@ -118,6 +118,9 @@ function util.toStr(t, out, m, name)
 		local cls = t.__class
 		local nn = n
 		if cls then
+			o[n + 2] = cls.__name
+			o[n + 3] = ":"
+			n = n + 2
 			for i, v in pairs(cls.__vars) do
 				if type(i) == "number" then
 					name = v.name

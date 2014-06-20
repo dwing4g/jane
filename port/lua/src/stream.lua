@@ -38,61 +38,61 @@ local Stream = {}
 -- @return #Stream
 function Stream.new(data)
 	data = data and tostring(data) or ""
-	return setmetatable({ buffer = data, pos = 0, limit = #data }, Stream)
+	return setmetatable({ _buf = data, _pos = 0, _lim = #data }, Stream)
 end
 
 -- 清空,重置
 function Stream:clear()
-	self.buffer = ""
-	self.pos = 0
-	self.limit = 0
+	self._buf = ""
+	self._pos = 0
+	self._lim = 0
 	self.buf = nil
 	return self
 end
 
 -- 交换两个Stream对象中的内容
 function Stream:swap(oct)
-	self.buffer, oct.buffer = oct.buffer, self.buffer
-	self.pos, oct.pos = oct.pos, self.pos
-	self.limit, oct.limit = oct.limit, self.limit
+	self._buf, oct._buf = oct._buf, self._buf
+	self._pos, oct._pos = oct._pos, self._pos
+	self._lim, oct._lim = oct._lim, self._lim
 	self.buf, oct.buf = oct.buf, self.buf
 	return self
 end
 
 -- 当前可反序列化的长度,即pos到limit的长度
 function Stream:remain()
-	return self.limit - self.pos
+	return self._lim - self._pos
 end
 
 -- 获取或设置当前的pos,只用于反序列化,基于0
 function Stream:pos(pos)
-	if not pos then return self.pos end
+	if not pos then return self._pos end
 	pos = tonumber(pos) or 0
 	if pos < 0 then
-		pos = #self.buffer + pos
+		pos = #self._buf + pos
 		if pos < 0 then pos = 0 end
 	end
-	self.pos = pos
+	self._pos = pos
 	return self
 end
 
 -- 获取或设置当前的limit,只用于反序列化,基于0
 function Stream:limit(limit)
-	if not limit then return self.limit end
-	local n = #self.buffer
+	if not limit then return self._lim end
+	local n = #self._buf
 	limit = tonumber(limit) or n
 	if limit < 0 then
 		limit = n + limit
 		if limit < 0 then limit = 0 end
 	elseif limit > n then limit = n end
-	self.limit = limit
+	self._lim = limit
 	return self
 end
 
 -- 获取Stream中的部分数据
 function Stream.sub(data, pos, size)
 	if type(data) == "table" then
-		data = data.buffer
+		data = data._buf
 	end
 	data = tostring(data) or ""
 	local n = #data
@@ -108,11 +108,11 @@ end
 -- 临时追加data(pos,size)到当前的Stream结尾,可连续追加若干次,最后调用flush来真正实现追加合并
 local function append(self, data, pos, size)
 	if type(data) == "table" then
-		data = data.buffer
+		data = data._buf
 	end
 	local t = self.buf
 	if not t then
-		t = { self.buffer }
+		t = { self._buf }
 		self.buf = t
 	end
 	t[#t + 1] = (pos or size) and Stream.sub(data, pos, size) or data
@@ -149,17 +149,17 @@ function Stream:flush()
 	if t then
 		local buf = concat(t)
 		self.buf = nil
-		self.buffer = buf
-		self.limit = #buf
+		self._buf = buf
+		self._lim = #buf
 	end
 	return self
 end
 
 -- 转换成字符串返回,用于显示及日志输出
 local function __tostring(self)
-	local buf = self.buffer
+	local buf = self._buf
 	local n = #buf
-	local o = { "(pos=", self.pos, ",limit=", self.limit, ",size=", n, ")\n" }
+	local o = { "{pos=", self._pos, ",limit=", self._lim, ",size=", n, "}:\n" }
 	local m = 7
 	for i = 1, n do
 		o[m + i] = format("%02X%s", byte(buf, i), i % 16 > 0 and " " or "\n")
@@ -339,41 +339,41 @@ end
 
 -- 跳过反序列化n字节
 function Stream:unmarshalSkip(n)
-	local pos = self.pos
-	if pos + n > self.limit then error "unmarshal overflow" end
-	self.pos = pos + n
+	local pos = self._pos
+	if pos + n > self._lim then error "unmarshal overflow" end
+	self._pos = pos + n
 	return self
 end
 
 -- 反序列化1个字节
 local function unmarshalByte(self)
-	local pos = self.pos
-	if pos >= self.limit then error "unmarshal overflow" end
+	local pos = self._pos
+	if pos >= self._lim then error "unmarshal overflow" end
 	pos = pos + 1
-	self.pos = pos
-	return byte(self.buffer, pos)
+	self._pos = pos
+	return byte(self._buf, pos)
 end
 
 -- 反序列化n个字节
 local function unmarshalBytes(self, n)
-	local pos = self.pos
-	if pos + n > self.limit then error "unmarshal overflow" end
-	local buf = self.buffer
+	local pos = self._pos
+	if pos + n > self._lim then error "unmarshal overflow" end
+	local buf = self._buf
 	local v = 0
 	for i = 1, n do
 		v = v * 0x100 + byte(buf, pos + i)
 	end
-	self.pos = pos + n
+	self._pos = pos + n
 	return v
 end
 
 -- 反序列化1个字符串
 local function unmarshalStr(self, n)
-	local pos = self.pos
-	if pos + n > self.limit then error "unmarshal overflow" end
+	local pos = self._pos
+	if pos + n > self._lim then error "unmarshal overflow" end
 	local p = pos + n
-	self.pos = p
-	return strSub(self.buffer, pos + 1, p)
+	self._pos = p
+	return strSub(self._buf, pos + 1, p)
 end
 
 -- 反序列化1个无符号整数(支持范围:0到+(32-bit))

@@ -114,7 +114,7 @@ do
 		s:flush()
 		local y = s:unmarshalInt()
 		if x ~= y then error(format("unmarshal wrong value: %.0f -> %.0f dump: %s", x, y, s)) end
-		if s.pos ~= s.limit then error(format("unmarshal wrong position: %.0f dump: %s", x, s)) end
+		if s:pos() ~= s:limit() then error(format("unmarshal wrong position: %.0f dump: %s", x, s)) end
 	end
 	local function testUInt(x)
 		local s = Stream()
@@ -122,7 +122,7 @@ do
 		s:flush()
 		local y = s:unmarshalUInt()
 		if x ~= y then error(format("unmarshal wrong value: %.0f -> %.0f dump: %s", x, y, s)) end
-		if s.pos ~= s.limit then error(format("unmarshal wrong position: %.0f dump: %s", x, s)) end
+		if s:pos() ~= s:limit() then error(format("unmarshal wrong position: %.0f dump: %s", x, s)) end
 	end
 	local function testAll(x)
 		if x > 0xfffffffffffff then x = 0xfffffffffffff end

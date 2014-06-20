@@ -9,7 +9,7 @@ local queue_mt = {
 	__index = Queue,
 	__tostring = function(self)
 		local head, tail = self.head, self.tail
-		return format("(size=%d,head=%d,tail=%d)", tail - head + 1, head, tail)
+		return format("{size=%d,head=%d,tail=%d}", tail - head + 1, head, tail)
 	end,
 }
 
