@@ -1,11 +1,11 @@
 package jane.handler.testclient;
 
 import org.apache.mina.core.session.IoSession;
-import jane.bean.TestBean;
 import jane.core.BeanHandler;
 import jane.core.Log;
 import jane.core.NetManager;
 import jane.core.RC4Filter;
+import jane.bean.TestBean;
 
 public final class TestBeanHandler extends BeanHandler<TestBean>
 {

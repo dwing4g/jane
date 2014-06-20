@@ -27,6 +27,10 @@ function Queue:pos()
 	return self.head, self.tail
 end
 
+function Queue:get(p)
+	return self[p]
+end
+
 function Queue:push(e)
 	local tail = self.tail + 1
 	self.tail = tail
@@ -39,6 +43,22 @@ function Queue:pushFront(e)
 	self.head = head
 	self[head] = e
 	return self
+end
+
+function Queue:peek()
+	local head = self.head
+	if head <= self.tail then
+		local e = self[head]
+		return e
+	end
+end
+
+function Queue:peekLast()
+	local tail = self.tail
+	if self.head <= tail then
+		local e = self[tail]
+		return e
+	end
 end
 
 function Queue:pop()

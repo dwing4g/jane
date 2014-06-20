@@ -1,10 +1,10 @@
 package jane.test;
 
 import org.apache.mina.core.session.IoSession;
-import jane.bean.AllBeans;
-import jane.bean.TestBean;
 import jane.core.NetManager;
 import jane.core.RC4Filter;
+import jane.bean.AllBeans;
+import jane.bean.TestBean;
 
 public final class TestServer extends NetManager
 {

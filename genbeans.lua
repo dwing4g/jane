@@ -291,20 +291,20 @@ public final class #(bean.name)Handler extends RpcHandler<#(bean_arg.name), #(be
 #)#	\*/
 
 	@Override
-	public boolean onServer(NetManager manager, IoSession session, #(bean_arg.name) arg, #(bean_res.name) res)
+	public boolean onServer(final NetManager manager, final IoSession session, final #(bean_arg.name) arg, final #(bean_res.name) res)
 	{
 		Log.log.debug("{}: onServer: {}", getClass().getName(), arg);
 		return true;
 	}
 
 	@Override
-	public void onClient(NetManager manager, IoSession session, #(bean_arg.name) arg, #(bean_res.name) res)
+	public void onClient(final NetManager manager, final IoSession session, final #(bean_arg.name) arg, final #(bean_res.name) res)
 	{
 		Log.log.debug("{}: onClient: arg={},res={}", getClass().getName(), arg, res);
 	}
 
 	@Override
-	public void onTimeout(NetManager manager, IoSession session, #(bean_arg.name) arg)
+	public void onTimeout(final NetManager manager, final IoSession session, final #(bean_arg.name) arg)
 	{
 		Log.log.debug("{}: onTimeout: {}", getClass().getName(), arg);
 	}

@@ -1,11 +1,11 @@
 package jane.test;
 
 import java.net.InetSocketAddress;
-import jane.bean.AllBeans;
-import jane.bean.AllTables;
 import jane.core.BeanCodec;
 import jane.core.DBManager;
 import jane.core.Log;
+import jane.bean.AllBeans;
+import jane.bean.AllTables;
 
 public final class TestMain
 {

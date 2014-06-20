@@ -2,8 +2,6 @@ package jane.test;
 
 import static jane.bean.AllTables.Benchmark;
 import java.util.concurrent.atomic.AtomicInteger;
-import jane.bean.AllTables;
-import jane.bean.TestBean;
 import jane.core.DBManager;
 import jane.core.Procedure;
 import jane.core.Storage;
@@ -11,6 +9,8 @@ import jane.core.StorageLevelDB;
 import jane.core.StorageMVStore;
 import jane.core.StorageMapDB;
 import jane.core.Util;
+import jane.bean.AllTables;
+import jane.bean.TestBean;
 
 // JVM: -Xms512M -Xmx512M
 // RUN: start.bat b ld 8 0 150000

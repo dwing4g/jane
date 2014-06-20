@@ -1,11 +1,11 @@
 package jane.handler.testclient;
 
 import org.apache.mina.core.session.IoSession;
-import jane.bean.TestBean;
-import jane.bean.TestType;
 import jane.core.Log;
 import jane.core.NetManager;
 import jane.core.RpcHandler;
+import jane.bean.TestBean;
+import jane.bean.TestType;
 
 public final class TestRpcBeanHandler extends RpcHandler<TestBean, TestType>
 {

@@ -682,6 +682,11 @@ local function savebean(beanname)
 	if not name_code[beanname] then error("ERROR: unknown bean: " .. beanname) end
 	checksave(outpath .. namespace .. "/Bean/" .. beanname .. ".cs", name_code[beanname], 0)
 	bean_order[beanname] = true
+	for _, var in ipairs(name_bean[beanname]) do
+		if name_bean[var.type] then savebean(var.type) end
+		if name_bean[var.k] then savebean(var.k) end
+		if name_bean[var.v] then savebean(var.v) end
+	end
 end
 
 local bean_count = 0

@@ -1,11 +1,11 @@
 package jane.test;
 
 import static jane.bean.AllTables.Benchmark;
-import jane.bean.AllTables;
-import jane.bean.TestBean;
 import jane.core.DBManager;
 import jane.core.Procedure;
 import jane.core.StorageLevelDB;
+import jane.bean.AllTables;
+import jane.bean.TestBean;
 
 public final class TestUndo
 {
