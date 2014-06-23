@@ -4,6 +4,7 @@ local require = require
 local tostring = tostring
 local setmetatable = setmetatable
 local format = string.format
+local clock = os.clock
 local socket = require "socket.core"
 local Stream = require "stream"
 local bean = require "bean"
@@ -34,7 +35,11 @@ end
 function Network:onClose(code, err)
 end
 
-function Network:onRecv(bean)
+function Network:onRecv(b)
+	if b then
+		local f = b.onProcess
+		if f then f(b) end
+	end
 end
 
 function Network:onEncode(s)
@@ -51,7 +56,8 @@ function Network:close(code, err)
 		log("close:", tcp:close())
 		self.tcp = nil
 		self.tcps = nil
-		if self.rbuf then
+		if self.rbuf or self.ctime then
+			self.ctime = nil
 			self.rbuf = nil
 			self.wbuf = nil
 			self:onClose(code or 0, err or "")
@@ -64,27 +70,29 @@ function Network:connect(addr, port)
 	local tcp = socket.tcp()
 	self.tcp = tcp
 	self.tcps = { tcp }
+	self.ctime = clock()
 	tcp:settimeout(0)
 	local res, err = tcp:connect(addr, port)
 	log("connect:", res, err)
 	if not res and err ~= "timeout" then
-		self:close(-2, "connect failed")
+		self:close(-2, err)
 		return false
 	end
 	return true
 end
 
-function Network:send(bean)
+function Network:send(b)
 	local wbuf = self.wbuf
 	if not wbuf then return false end
-	local buf, b = Stream(), Stream():marshal(bean):flush()
-	buf:marshalUInt(bean.__type):marshalUInt(b:limit()):append(b):flush()
+	local buf, bbuf = Stream(), Stream():marshal(b):flush()
+	buf:marshalUInt(b.__type):marshalUInt(bbuf:limit()):append(bbuf):flush()
 	wbuf:append(self:onEncode(buf))
 	return true
 end
 
 local function checkOpen(self)
 	if not self.rbuf then
+		self.ctime = nil
 		self.rbuf = Stream()
 		self.wbuf = Stream()
 		self:onOpen()
@@ -126,8 +134,8 @@ function Network:doTick(time)
 				until not s or not r
 				self.rbuf = Stream(rbuf:sub(pos))
 				log("recv_left:", pos, self.rbuf:limit())
-				if err ~= "timeout" then self:close(-3, err)
-				elseif #pbuf == 0 then self:close(-4, err) end
+				if err ~= "timeout" then self:close(-4, err)
+				elseif #pbuf == 0 then self:close(-5, err) end
 				break
 			end
 		end
@@ -141,13 +149,18 @@ function Network:doTick(time)
 			if pos then wbuf:pos(pos - 1)
 			else
 				if ppos then wbuf:pos(ppos - 1) end
-				if err ~= "timeout" then self:close(-5, err) end
+				if err ~= "timeout" then self:close(-6, err) end
 				break
 			end
 		end
 		local pos = wbuf:pos()
 		if pos > 0 then self.wbuf = Stream(wbuf:sub(pos)) end
+	elseif self.ctime then
+		if clock() - self.ctime >= (self.ctimeout or 5) then
+			self:close(-3, "connect failed")
+		end
 	end
+	return true
 end
 
 setmetatable(Network, { __call = Network.new })

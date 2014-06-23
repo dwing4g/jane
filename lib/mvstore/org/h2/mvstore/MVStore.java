@@ -1,7 +1,6 @@
 /*
- * Copyright 2004-2013 H2 Group. Multiple-Licensed under the H2 License,
- * Version 1.0, and under the Eclipse Public License, Version 1.0
- * (http://h2database.com/html/license.html).
+ * Copyright 2004-2014 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
 package org.h2.mvstore;
@@ -1308,7 +1307,7 @@ public class MVStore {
         ByteBuffer buff = fileStore.readFully(p, Chunk.MAX_HEADER_LENGTH);
         return Chunk.readChunkHeader(buff, p);
     }
-    
+
     /**
      * Compact the store by moving all live pages to new chunks.
      *
@@ -1320,7 +1319,6 @@ public class MVStore {
             // nothing to do
             return false;
         }
-        ; // TODO write tests
         for (MVMap<?, ?> m : maps.values()) {
             @SuppressWarnings("unchecked")
             MVMap<Object, Object> map = (MVMap<Object, Object>) m;
@@ -1341,23 +1339,85 @@ public class MVStore {
         commitAndSave();
         return true;
     }
-    
+
+    /**
+     * Compact by moving all chunks next to each other.
+     *
+     * @return if anything was written
+     */
+    public synchronized boolean compactMoveChunks() {
+        return compactMoveChunks(Long.MAX_VALUE);
+    }
+
     /**
      * Compact the store by moving all chunks next to each other, if there is
      * free space between chunks. This might temporarily double the file size.
      * Chunks are overwritten irrespective of the current retention time. Before
      * overwriting chunks and before resizing the file, syncFile() is called.
      *
+     * @param moveSize the number of bytes to move
      * @return if anything was written
      */
-    public synchronized boolean compactMoveChunks() {
+    public synchronized boolean compactMoveChunks(long moveSize) {
         checkOpen();
         if (lastChunk == null) {
             // nothing to do
             return false;
         }
         int oldRetentionTime = retentionTime;
-        retentionTime = 0;
+        boolean oldReuse = reuseSpace;
+        try {
+            retentionTime = 0;
+            compactFreeUnusedChunks();
+            if (fileStore.getFillRate() == 100) {
+                return false;
+            }
+            ArrayList<Chunk> move;
+            long start = fileStore.getFirstFree() / BLOCK_SIZE;
+            move = compactGetMoveBlocks(start, moveSize);
+            compactMoveChunks(move);
+        } finally {
+            reuseSpace = oldReuse;
+            retentionTime = oldRetentionTime;
+        }
+        return true;
+    }
+
+    private ArrayList<Chunk> compactGetMoveBlocks(long startBlock, long moveSize) {
+        ArrayList<Chunk> move = New.arrayList();
+        for (Chunk c : chunks.values()) {
+            if (c.block > startBlock) {
+                move.add(c);
+            }
+        }
+        // sort by block
+        Collections.sort(move, new Comparator<Chunk>() {
+            @Override
+            public int compare(Chunk o1, Chunk o2) {
+                return Long.signum(o1.block - o2.block);
+            }
+        });
+        // find which is the last block to keep
+        int count = 0;
+        long size = 0;
+        for (Chunk c : move) {
+            long chunkSize = c.len * (long) BLOCK_SIZE;
+            if (size + chunkSize > moveSize) {
+                break;
+            }
+            size += chunkSize;
+            count++;
+        }
+        // move the first block (so the first gap is moved),
+        // and the one at the end (so the file shrinks)
+        while (move.size() > count && move.size() > 1) {
+            move.remove(1);
+        }
+
+        return move;
+    }
+
+    private void compactFreeUnusedChunks() {
         long time = getTime();
         ArrayList<Chunk> free = New.arrayList();
         for (Chunk c : chunks.values()) {
@@ -1375,16 +1435,9 @@ public class MVStore {
             int length = c.len * BLOCK_SIZE;
             fileStore.free(start, length);
         }
-        if (fileStore.getFillRate() == 100) {
-            return false;
-        }
-        long firstFree = fileStore.getFirstFree() / BLOCK_SIZE;
-        ArrayList<Chunk> move = New.arrayList();
-        for (Chunk c : chunks.values()) {
-            if (c.block > firstFree) {
-                move.add(c);
-            }
-        }
+    }
+
+    private void compactMoveChunks(ArrayList<Chunk> move) {
         for (Chunk c : move) {
             WriteBuffer buff = getWriteBuffer();
             long start = c.block * BLOCK_SIZE;
@@ -1410,7 +1463,6 @@ public class MVStore {
             markMetaChanged();
             meta.put(Chunk.getMetaKey(c.id), c.asString());
         }
-        boolean oldReuse = reuseSpace;
 
         // update the metadata (store at the end of the file)
         reuseSpace = false;
@@ -1453,11 +1505,6 @@ public class MVStore {
         commitAndSave();
         sync();
         shrinkFileIfPossible(0);
-
-        reuseSpace = oldReuse;
-        retentionTime = oldRetentionTime;
-
-        return true;
     }
 
     /**
@@ -1467,7 +1514,7 @@ public class MVStore {
     public void sync() {
         fileStore.sync();
     }
-    
+
     /**
      * Try to increase the fill rate by re-writing partially full chunks. Chunks
      * with a low number of live items are re-written.
@@ -1519,7 +1566,7 @@ public class MVStore {
         for (Chunk c : chunks.values()) {
             if (canOverwriteChunk(c, time)) {
                 long age = last.version - c.version + 1;
-                c.collectPriority = (int) (c.getFillRate() / age);
+                c.collectPriority = (int) (c.getFillRate() * 1000 / age);
                 old.add(c);
             }
         }
@@ -1547,7 +1594,7 @@ public class MVStore {
         for (Chunk c : old) {
             long size = c.maxLen - c.maxLenLive;
             if (move != null) {
-                if (saved > saving) {
+                if (c.collectPriority > 0 && saved > saving) {
                     break;
                 }
             }
@@ -1575,7 +1622,6 @@ public class MVStore {
         for (MVMap<?, ?> m : maps.values()) {
             @SuppressWarnings("unchecked")
             MVMap<Object, Object> map = (MVMap<Object, Object>) m;
-            ; // TODO write more tests
             map.rewrite(set);
         }
         commitAndSave();
@@ -1750,7 +1796,9 @@ public class MVStore {
             }
             buff.position(offset);
             Page page = new Page(map, 0);
+            int limit = buff.limit();
             page.read(buff, chunk.id, buff.position(), length);
+            buff.limit(limit);
             int type = page.isLeaf() ? 0 : 1;
             long pos = DataUtils.getPagePos(chunk.id, offset, pageLength, type);
             page.setPos(pos);
@@ -2415,7 +2463,7 @@ public class MVStore {
     /**
      * Get the maximum memory (in bytes) used for unsaved pages. If this number
      * is exceeded, unsaved changes are stored to disk.
-     * 
+     *
      * @return the memory in bytes
      */
     public int getAutoCommitMemory() {
@@ -2423,8 +2471,8 @@ public class MVStore {
     }
 
     /**
-     * Get the estimated memory (in bytes) of unsaved data. If the value exceeds the
-     * auto-commit memory, the changes are committed.
+     * Get the estimated memory (in bytes) of unsaved data. If the value exceeds
+     * the auto-commit memory, the changes are committed.
      * <p>
      * The returned value is an estimation only.
      *
@@ -2553,7 +2601,7 @@ public class MVStore {
          * <p>
          * When the value is set to 0 or lower, data is not automatically
          * stored.
-         * 
+         *
          * @param kb the write buffer size, in kilobytes
          * @return this
          */

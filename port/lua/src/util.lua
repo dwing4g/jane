@@ -14,7 +14,7 @@ local concat = table.concat
 
 local util = {}
 
--- 清除整个表中的全部内容
+-- 清除整个表中的全部内容(不修改元表)
 function util.clear(t)
 	while true do
 		local k = next(t)
@@ -24,7 +24,7 @@ function util.clear(t)
 end
 
 -- 复制t,如果t不是表则直接返回,否则进行深拷贝,包括元表及相同引用,参数m仅内部使用
-function util.clone(t, m)
+local function clone(t, m)
 	if type(t) ~= "table" then return t end
 	if m then
 		local v = m[t]
@@ -35,23 +35,39 @@ function util.clone(t, m)
 	local r = {}
 	m[t] = r
 	for k, v in pairs(t) do
-		r[k] = util.clone(v, m)
+		r[k] = clone(v, m)
 	end
 	return setmetatable(r, getmetatable(t))
 end
+util.clone = clone
 
 -- 表t清空并从表s中复制全部内容(规则同上)
 function util.cloneTo(t, s)
 	util.clear(t)
 	for k, v in pairs(s) do
-		t[k] = util.clone(v)
+		t[k] = clone(v)
 	end
 	return setmetatable(t, getmetatable(s))
 end
 
+-- 表的Copy On Write处理,原型对应关系表统一存到弱表proto里
+local proto = setmetatable({}, { __mode = "kv" })
+local cowMt
+cowMt = {
+	__index = function(t, k)
+		local v = proto[t][k]
+		if type(v) ~= "table" then return v end
+		local vv = setmetatable({}, cowMt)
+		proto[vv] = v
+		t[k] = vv
+		return vv
+	end,
+}
+
 -- 类的元表,定义默认字段值的获取,包括基类,定义调用类即为构造实例
 local classMt = {
 	__index = function(c, k)
+		if k == "__class" then return c end
 		local b = rawget(c, "__base")
 		return b and b[k]
 	end,
@@ -72,11 +88,12 @@ local classMt = {
 function util.class(c)
 	c = c or {}
 	c.__index = function(t, k)
-		if k == "__class" then return c end
 		local v = c[k]
-		local r = util.clone(v)
-		if r ~= v then t[k] = r end
-		return r
+		if type(v) ~= "table" or v == c then return v end
+		local vv = setmetatable({}, cowMt)
+		proto[vv] = v
+		t[k] = vv
+		return vv
 	end
 	return setmetatable(c, classMt)
 end
@@ -148,6 +165,15 @@ function util.toStr(t, out, m, name)
 end
 
 -- 根据bean描述表初始化所有的bean类
+-- bean类的字段:
+-- __name: bean的名字
+-- __type: bean的类型ID
+-- __vars: bean的字段表,key是字段ID或字段名,value是{id=字段ID,name=字段名,type/key/value=类型ID或bean名}
+-- __tostring: 指向util.toStr函数
+-- bean对象的特殊字段:
+-- __class: 对应的bean类
+-- 关联容器表的特殊字段:
+-- __map: true
 function util.initBeans(c)
 	local s = {}
 	for n, b in pairs(c) do

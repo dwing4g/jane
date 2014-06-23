@@ -1,10 +1,18 @@
 -- UTF-8 without BOM
+local require = require
+local bit = require "bit"
 local ffi = require "ffi"
-local ffistr = ffi.string
+local bxor = bit.bxor
+local fstr = ffi.string
+
 ffi.cdef [[typedef union{float f;double d;char c[8];}UF;]]
 local uf = ffi.new "UF"
 
 local platform = {}
+
+function platform.bxor(a, b)
+	return bxor(a, b)
+end
 
 function platform.readf32(str, pos)
 	ffi.copy(uf.c, pos and str:sub(pos + 1, pos + 4) or str, 4)
@@ -18,12 +26,12 @@ end
 
 function platform.writef32(v)
 	uf.f = v
-	return ffistr(uf.c, 4)
+	return fstr(uf.c, 4)
 end
 
 function platform.writef64(v)
 	uf.d = v
-	return ffistr(uf.c, 8)
+	return fstr(uf.c, 8)
 end
 
 return platform

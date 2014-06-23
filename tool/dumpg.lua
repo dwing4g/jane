@@ -37,7 +37,7 @@ local function list(op)
 		return na > nb or (na == nb and a < b)
 	end)
 	for _,name in ipairs(vindex) do
-		print(format("%7d %s", vname[name], name))
+		print(format("%s%4d %s", op == "GSET" and "***" or "   ", vname[name], name))
 	end
 end
 

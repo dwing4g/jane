@@ -11,6 +11,7 @@ luajit inspect.lua ..\port\lua\src\platform.lua
 luajit inspect.lua ..\port\lua\src\util.lua
 luajit inspect.lua ..\port\lua\src\queue.lua
 luajit inspect.lua ..\port\lua\src\stream.lua
+luajit inspect.lua ..\port\lua\src\rc4.lua
 luajit inspect.lua ..\port\lua\src\bean.lua
 luajit inspect.lua ..\port\lua\src\network.lua
 luajit inspect.lua ..\port\lua\src\network_test.lua

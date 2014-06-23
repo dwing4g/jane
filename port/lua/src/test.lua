@@ -9,6 +9,7 @@ local util = require "util"
 local bean = require "bean"
 local Stream = require "stream"
 local Queue = require "queue"
+local Rc4 = require "rc4"
 local class = util.class
 local clone = util.clone
 
@@ -38,21 +39,21 @@ do
 	local a = ClassA() -- 创建ClassA的实例
 	local b = ClassB { c = 333 } -- 创建ClassB的实例,{c=333}会被传到构造函数,如果没有构造函数,则成为对象初始值
 
-	print(a.a) -- 访问成员变量,如不存在,则自动取类中定义的默认值,如果是表类型,则会自动从类中默认值深拷贝一个,并赋值成员变量
-	print(a.c)
+	print(a.a, 1) -- 访问成员变量,如不存在,则自动取类中定义的默认值,如果是表类型,则会自动从类中默认值深拷贝一个,并赋值成员变量
+	print(a.c, nil)
 	a.a = 11 -- 设置成员变量,下次读取则因为有此变量而不会再从类中取默认值
 	a.c = 33
-	print(a.a)
-	print(a.b)
-	print(a.c)
+	print(a.a, 11)
+	print(a.b, 2)
+	print(a.c, 33)
 
-	print(b.a)
-	print(b.c)
+	print(b.a, 1)
+	print(b.c, 333)
 	b.a = 11
 	b.c = 33
-	print(b.a)
-	print(b.b)
-	print(b.c)
+	print(b.a, 11)
+	print(b.b, 2)
+	print(b.c, 33)
 end
 
 print "----------------------------------------"
@@ -152,8 +153,19 @@ do
 	local q = Queue()
 	q:push(1)
 	print(q)
-	print(q:pop())
+	print(q:pop(), 1)
 	print(q)
+end
+
+print "----------------------------------------"
+
+do
+	local r = Rc4()
+	r:setOutputKey "abc"
+	local m = r:updateOutput "qwer"
+	r = Rc4()
+	r:setInputKey "abc"
+	print(r:updateInput(m), "qwer")
 end
 
 print "========================================"

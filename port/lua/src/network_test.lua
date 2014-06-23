@@ -12,14 +12,14 @@ end
 
 function net:onClose(code, err)
 	print("onClose:", code, err)
+	net:connect("127.0.0.1", 9123)
 end
 
-function net:onRecv(bean)
-	print("onRecv:", bean)
+function net:onRecv(b)
+	print("onRecv:", b)
+	Network.onRecv(self, b)
 end
 
 net:connect("127.0.0.1", 9123)
 
-while true do
-	net:doTick(1)
-end
+while net:doTick(0.1) do end
