@@ -2,7 +2,7 @@
 setlocal
 pushd %~dp0
 
-set JVM=-Xms64m -Xmx512m -server -XX:+UseConcMarkSweepGC -Xloggc:log/gc.log -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -verbose:gc
+set JVM=-Xms64m -Xmx512m -server -XX:+UseConcMarkSweepGC -Xloggc:log/gc.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps -verbose:gc
 set LIB=lib/slf4j-api-1.7.7.jar;lib/log4j-core-2.0-rc1.jar;lib/log4j-api-2.0-rc1.jar;lib/log4j-slf4j-impl-2.0-rc1.jar;lib/mina-core-2.0-head-20140512.jar;lib/luaj-jse-2.0.3.jar
 
 set MAIN=%1

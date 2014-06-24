@@ -51,7 +51,7 @@ function util.cloneTo(t, s)
 end
 
 -- 表的Copy On Write处理,原型对应关系表统一存到弱表proto里
-local proto = setmetatable({}, { __mode = "kv" })
+local proto = setmetatable({}, { __mode = "k" })
 local cowMt
 cowMt = {
 	__index = function(t, k)
@@ -133,9 +133,10 @@ function util.toStr(t, out, m, name)
 		end
 		o[n + 1] = "{"
 		local cls = t.__class
+		local name = cls and cls.__name
 		local nn = n
-		if cls then
-			o[n + 2] = cls.__name
+		if name then
+			o[n + 2] = name
 			o[n + 3] = ":"
 			n = n + 2
 			for i, v in pairs(cls.__vars) do
