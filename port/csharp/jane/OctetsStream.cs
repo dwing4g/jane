@@ -571,25 +571,19 @@ namespace Jane
 			return this;
 		}
 
-		public bool unmarshalBoolean()
-		{
-			if(pos >= count) throw new MarshalEOFException();
-			return buffer[pos++] != 0;
-		}
-
-		public sbyte unmarshalByte()
+		public sbyte unmarshalInt1()
 		{
 			if(pos >= count) throw new MarshalEOFException();
 			return (sbyte)buffer[pos++];
 		}
 
-		public byte unmarshalUByte()
+		public byte unmarshalUInt1()
 		{
 			if(pos >= count) throw new MarshalEOFException();
 			return buffer[pos++];
 		}
 
-		public int unmarshalShort()
+		public int unmarshalInt2()
 		{
 			int pos_new = pos + 2;
 			if(pos_new > count) throw new MarshalEOFException();
@@ -599,7 +593,7 @@ namespace Jane
 			return ((sbyte)b0 << 8) + b1;
 		}
 
-		public int unmarshalUShort()
+		public int unmarshalUInt2()
 		{
 			int pos_new = pos + 2;
 			if(pos_new > count) throw new MarshalEOFException();
@@ -607,16 +601,6 @@ namespace Jane
 			byte b1 = buffer[pos + 1];
 			pos = pos_new;
 			return (b0 << 8) + b1;
-		}
-
-		public char unmarshalChar()
-		{
-			int pos_new = pos + 2;
-			if(pos_new > count) throw new MarshalEOFException();
-			byte b0 = buffer[pos    ];
-			byte b1 = buffer[pos + 1];
-			pos = pos_new;
-			return (char)((b0 << 8) + b1);
 		}
 
 		public int unmarshalInt3()
@@ -756,7 +740,7 @@ namespace Jane
 		{
 			for(;;)
 			{
-				int tag = unmarshalUByte();
+				int tag = unmarshalUInt1();
 				if(tag == 0) return this;
 				unmarshalSkipVar(tag & 3);
 			}
@@ -769,7 +753,7 @@ namespace Jane
 				case 0: return unmarshalSkipInt(); // int/long: [1~9]
 				case 1: return unmarshalSkipOctets(); // octets: n [n]
 				case 2: return unmarshalSkipBean(); // bean: ... 00
-				case 3: return unmarshalSkipVarSub(unmarshalUByte()); // float/double/list/dictionary: ...
+				case 3: return unmarshalSkipVarSub(unmarshalUInt1()); // float/double/list/dictionary: ...
 				default: throw new MarshalException();
 			}
 		}
@@ -781,7 +765,7 @@ namespace Jane
 				case 0: return unmarshalLong();
 				case 1: return unmarshalOctets();
 				case 2: { DynBean db = new DynBean(); db.unmarshal(this); return db; }
-				case 3: return unmarshalVarSub(unmarshalUByte());
+				case 3: return unmarshalVarSub(unmarshalUInt1());
 				default: throw new MarshalException();
 			}
 		}
@@ -859,7 +843,7 @@ namespace Jane
 
 		public OctetsStream unmarshalSkipInt()
 		{
-			int b = unmarshalUByte();
+			int b = unmarshalUInt1();
 			switch(b >> 3)
 			{
 			case 0x00: case 0x01: case 0x02: case 0x03: case 0x04: case 0x05: case 0x06: case 0x07:
@@ -873,7 +857,7 @@ namespace Jane
 				case 0: case 1: case 2: case 3: unmarshalSkip(4); break;
 				case 4: case 5:                 unmarshalSkip(5); break;
 				case 6:                         unmarshalSkip(6); break;
-				default: unmarshalSkip(6 + (unmarshalUByte() >> 7)); break;
+				default: unmarshalSkip(6 + (unmarshalUInt1() >> 7)); break;
 				}
 				break;
 			default: // 0x10
@@ -882,7 +866,7 @@ namespace Jane
 				case 4: case 5: case 6: case 7: unmarshalSkip(4); break;
 				case 2: case 3:                 unmarshalSkip(5); break;
 				case 1:                         unmarshalSkip(6); break;
-				default: unmarshalSkip(7 - (unmarshalUByte() >> 7)); break;
+				default: unmarshalSkip(7 - (unmarshalUInt1() >> 7)); break;
 				}
 				break;
 			}
@@ -891,15 +875,15 @@ namespace Jane
 
 		public int unmarshalInt()
 		{
-			int b = unmarshalByte();
+			int b = unmarshalInt1();
 			switch((b >> 3) & 0x1f)
 			{
 			case 0x00: case 0x01: case 0x02: case 0x03: case 0x04: case 0x05: case 0x06: case 0x07:
 			case 0x18: case 0x19: case 0x1a: case 0x1b: case 0x1c: case 0x1d: case 0x1e: case 0x1f: return b;
-			case 0x08: case 0x09: case 0x0a: case 0x0b: return ((b - 0x40) <<  8) + unmarshalUByte();
-			case 0x14: case 0x15: case 0x16: case 0x17: return ((b + 0x40) <<  8) + unmarshalUByte();
-			case 0x0c: case 0x0d:                       return ((b - 0x60) << 16) + unmarshalUShort();
-			case 0x12: case 0x13:                       return ((b + 0x60) << 16) + unmarshalUShort();
+			case 0x08: case 0x09: case 0x0a: case 0x0b: return ((b - 0x40) <<  8) + unmarshalUInt1();
+			case 0x14: case 0x15: case 0x16: case 0x17: return ((b + 0x40) <<  8) + unmarshalUInt1();
+			case 0x0c: case 0x0d:                       return ((b - 0x60) << 16) + unmarshalUInt2();
+			case 0x12: case 0x13:                       return ((b + 0x60) << 16) + unmarshalUInt2();
 			case 0x0e:                                  return ((b - 0x70) << 24) + unmarshalInt3();
 			case 0x11:                                  return ((b + 0x70) << 24) + unmarshalInt3();
 			case 0x0f:
@@ -908,7 +892,7 @@ namespace Jane
 				case 0: case 1: case 2: case 3: return unmarshalInt4();
 				case 4: case 5:                 return unmarshalSkip(1).unmarshalInt4();
 				case 6:                         return unmarshalSkip(2).unmarshalInt4();
-				default: return unmarshalSkip(2 + (unmarshalUByte() >> 7)).unmarshalInt4();
+				default: return unmarshalSkip(2 + (unmarshalUInt1() >> 7)).unmarshalInt4();
 				}
 			default: // 0x10
 				switch(b & 7)
@@ -916,22 +900,22 @@ namespace Jane
 				case 4: case 5: case 6: case 7: return unmarshalInt4();
 				case 2: case 3:                 return unmarshalSkip(1).unmarshalInt4();
 				case 1:                         return unmarshalSkip(2).unmarshalInt4();
-				default: return unmarshalSkip(3 - (unmarshalUByte() >> 7)).unmarshalInt4();
+				default: return unmarshalSkip(3 - (unmarshalUInt1() >> 7)).unmarshalInt4();
 				}
 			}
 		}
 
 		public long unmarshalLong()
 		{
-			int b = unmarshalByte();
+			int b = unmarshalInt1();
 			switch((b >> 3) & 0x1f)
 			{
 			case 0x00: case 0x01: case 0x02: case 0x03: case 0x04: case 0x05: case 0x06: case 0x07:
 			case 0x18: case 0x19: case 0x1a: case 0x1b: case 0x1c: case 0x1d: case 0x1e: case 0x1f: return b;
-			case 0x08: case 0x09: case 0x0a: case 0x0b: return ((b - 0x40) <<  8) + unmarshalUByte();
-			case 0x14: case 0x15: case 0x16: case 0x17: return ((b + 0x40) <<  8) + unmarshalUByte();
-			case 0x0c: case 0x0d:                       return ((b - 0x60) << 16) + unmarshalUShort();
-			case 0x12: case 0x13:                       return ((b + 0x60) << 16) + unmarshalUShort();
+			case 0x08: case 0x09: case 0x0a: case 0x0b: return ((b - 0x40) <<  8) + unmarshalUInt1();
+			case 0x14: case 0x15: case 0x16: case 0x17: return ((b + 0x40) <<  8) + unmarshalUInt1();
+			case 0x0c: case 0x0d:                       return ((b - 0x60) << 16) + unmarshalUInt2();
+			case 0x12: case 0x13:                       return ((b + 0x60) << 16) + unmarshalUInt2();
 			case 0x0e:                                  return ((b - 0x70) << 24) + unmarshalInt3();
 			case 0x11:                                  return ((b + 0x70) << 24) + unmarshalInt3();
 			case 0x0f:
@@ -941,7 +925,7 @@ namespace Jane
 				case 4: case 5:                 return ((long)(b - 0x7c) << 40) + unmarshalLong5();
 				case 6:                         return unmarshalLong6();
 				default: long r = unmarshalLong7(); return r < 0x80000000000000L ?
-						r : ((r - 0x80000000000000L) << 8) + unmarshalUByte();
+						r : ((r - 0x80000000000000L) << 8) + unmarshalUInt1();
 				}
 			default: // 0x10
 				switch(b & 7)
@@ -950,19 +934,19 @@ namespace Jane
 				case 2: case 3:                 return ((long)(b + 0x7c) << 40) + unmarshalLong5();
 				case 1:                         return unchecked((long)0xffff000000000000L) + unmarshalLong6();
 				default: long r = unmarshalLong7(); return r >= 0x80000000000000L ?
-						unchecked((long)0xff00000000000000L) + r : ((r + 0x80000000000000L) << 8) + unmarshalUByte();
+						unchecked((long)0xff00000000000000L) + r : ((r + 0x80000000000000L) << 8) + unmarshalUInt1();
 				}
 			}
 		}
 
 		public int unmarshalUInt()
 		{
-			int b = unmarshalUByte();
+			int b = unmarshalUInt1();
 			switch(b >> 4)
 			{
 			case  0: case  1: case  2: case  3: case 4: case 5: case 6: case 7: return b;
-			case  8: case  9: case 10: case 11: return ((b & 0x3f) <<  8) + unmarshalUByte();
-			case 12: case 13:                   return ((b & 0x1f) << 16) + unmarshalUShort();
+			case  8: case  9: case 10: case 11: return ((b & 0x3f) <<  8) + unmarshalUInt1();
+			case 12: case 13:                   return ((b & 0x1f) << 16) + unmarshalUInt2();
 			case 14:                            return ((b & 0x0f) << 24) + unmarshalInt3();
 			default: int r = unmarshalInt4(); if(r < 0) throw new MarshalException(); return r;
 			}
@@ -970,11 +954,11 @@ namespace Jane
 
 		public char unmarshalUTF8()
 		{
-			int b = unmarshalUByte();
+			int b = unmarshalUInt1();
 			if(b < 0x80) return (char)b;
-			if(b < 0xe0) return (char)(((b & 0x1f) << 6) + (unmarshalUByte() & 0x3f));
-			int c = unmarshalUByte();
-			return (char)(((b & 0xf) << 12) + ((c & 0x3f) << 6) + (unmarshalUByte() & 0x3f));
+			if(b < 0xe0) return (char)(((b & 0x1f) << 6) + (unmarshalUInt1() & 0x3f));
+			int c = unmarshalUInt1();
+			return (char)(((b & 0xf) << 12) + ((c & 0x3f) << 6) + (unmarshalUInt1() & 0x3f));
 		}
 
 		public int unmarshalInt(int type)
@@ -982,7 +966,7 @@ namespace Jane
 			if(type == 0) return unmarshalInt();
 			if(type == 3)
 			{
-				type = unmarshalUByte();
+				type = unmarshalUInt1();
 				if(type == 8) return (int)unmarshalFloat();
 				if(type == 9) return (int)unmarshalDouble();
 				unmarshalSkipVarSub(type);
@@ -997,7 +981,7 @@ namespace Jane
 			if(type == 0) return unmarshalLong();
 			if(type == 3)
 			{
-				type = unmarshalUByte();
+				type = unmarshalUInt1();
 				if(type == 8) return (long)unmarshalFloat();
 				if(type == 9) return (long)unmarshalDouble();
 				unmarshalSkipVarSub(type);
@@ -1011,7 +995,7 @@ namespace Jane
 		{
 			if(type == 3)
 			{
-				type = unmarshalUByte();
+				type = unmarshalUInt1();
 				if(type == 8) return unmarshalFloat();
 				if(type == 9) return (float)unmarshalDouble();
 				unmarshalSkipVarSub(type);
@@ -1026,7 +1010,7 @@ namespace Jane
 		{
 			if(type == 3)
 			{
-				type = unmarshalUByte();
+				type = unmarshalUInt1();
 				if(type == 9) return unmarshalDouble();
 				if(type == 8) return unmarshalFloat();
 				unmarshalSkipVarSub(type);
@@ -1194,7 +1178,7 @@ namespace Jane
 			if(type == 0) return unmarshalLong().ToString();
 			if(type == 3)
 			{
-				type = unmarshalUByte();
+				type = unmarshalUInt1();
 				if(type == 8) return unmarshalFloat().ToString();
 				if(type == 9) return unmarshalDouble().ToString();
 				unmarshalSkipVarSub(type);

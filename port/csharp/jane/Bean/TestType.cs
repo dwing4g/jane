@@ -350,7 +350,7 @@ namespace Jane.Bean
 
 		public OctetsStream unmarshal(OctetsStream s)
 		{
-			for(;;) { int i = s.unmarshalUByte(), t = i & 3; switch(i >> 2)
+			for(;;) { int i = s.unmarshalUInt1(), t = i & 3; switch(i >> 2)
 			{
 				case 0: return s;
 				case 1: this.v1 = (s.unmarshalInt(t) != 0); break;
@@ -366,7 +366,7 @@ namespace Jane.Bean
 				{
 					this.v10.Clear();
 					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalUByte();
+					t = s.unmarshalUInt1();
 					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 					t &= 7;
 					int n = s.unmarshalUInt();
@@ -378,7 +378,7 @@ namespace Jane.Bean
 				{
 					this.v11.Clear();
 					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalUByte();
+					t = s.unmarshalUInt1();
 					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 					t &= 7;
 					for(int n = s.unmarshalUInt(); n > 0; --n)
@@ -388,7 +388,7 @@ namespace Jane.Bean
 				{
 					this.v12.Clear();
 					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalUByte();
+					t = s.unmarshalUInt1();
 					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 					t &= 7;
 					for(int n = s.unmarshalUInt(); n > 0; --n)
@@ -398,7 +398,7 @@ namespace Jane.Bean
 				{
 					this.v13.Clear();
 					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalUByte();
+					t = s.unmarshalUInt1();
 					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 					t &= 7;
 					for(int n = s.unmarshalUInt(); n > 0; --n)
@@ -408,7 +408,7 @@ namespace Jane.Bean
 				{
 					this.v14.Clear();
 					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalUByte();
+					t = s.unmarshalUInt1();
 					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 					t &= 7;
 					for(int n = s.unmarshalUInt(); n > 0; --n)
@@ -418,7 +418,7 @@ namespace Jane.Bean
 				{
 					this.v15.Clear();
 					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalUByte();
+					t = s.unmarshalUInt1();
 					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 					t &= 7;
 					for(int n = s.unmarshalUInt(); n > 0; --n)
@@ -428,7 +428,7 @@ namespace Jane.Bean
 				{
 					this.v16.Clear();
 					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalUByte();
+					t = s.unmarshalUInt1();
 					if((t >> 6) != 1) { s.unmarshalSkipVarSub(t); break; }
 					int k = (t >> 3) & 7; t &= 7;
 					for(int n = s.unmarshalUInt(); n > 0; --n)
@@ -438,7 +438,7 @@ namespace Jane.Bean
 				{
 					this.v17.Clear();
 					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalUByte();
+					t = s.unmarshalUInt1();
 					if((t >> 6) != 1) { s.unmarshalSkipVarSub(t); break; }
 					int k = (t >> 3) & 7; t &= 7;
 					for(int n = s.unmarshalUInt(); n > 0; --n)
@@ -448,7 +448,7 @@ namespace Jane.Bean
 				{
 					this.v18.Clear();
 					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalUByte();
+					t = s.unmarshalUInt1();
 					if((t >> 6) != 1) { s.unmarshalSkipVarSub(t); break; }
 					int k = (t >> 3) & 7; t &= 7;
 					for(int n = s.unmarshalUInt(); n > 0; --n)

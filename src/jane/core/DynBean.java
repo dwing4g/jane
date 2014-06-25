@@ -90,7 +90,7 @@ public final class DynBean extends Bean<DynBean>
 	{
 		for(_fields.clear();;)
 		{
-			int b = os.unmarshalByte() & 0xff;
+			int b = os.unmarshalInt1() & 0xff;
 			if(b == 0) return os;
 			_fields.put(b & 0x3f, os.unmarshalVar(b >> 6));
 		}

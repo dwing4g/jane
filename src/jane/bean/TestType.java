@@ -441,7 +441,7 @@ public final class TestType extends Bean<TestType>
 	@Override
 	public OctetsStream unmarshal(OctetsStream s) throws MarshalException
 	{
-		for(;;) { int i = s.unmarshalByte() & 0xff, t = i & 3; switch(i >> 2)
+		for(;;) { int i = s.unmarshalInt1() & 0xff, t = i & 3; switch(i >> 2)
 		{
 			case 0: return s;
 			case 1: this.v1 = (s.unmarshalInt(t) != 0); break;
@@ -457,7 +457,7 @@ public final class TestType extends Bean<TestType>
 			{
 				this.v10.clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
-				t = s.unmarshalByte();
+				t = s.unmarshalInt1();
 				if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 				t &= 7;
 				int n = s.unmarshalUInt();
@@ -469,7 +469,7 @@ public final class TestType extends Bean<TestType>
 			{
 				this.v11.clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
-				t = s.unmarshalByte();
+				t = s.unmarshalInt1();
 				if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 				t &= 7;
 				for(int n = s.unmarshalUInt(); n > 0; --n)
@@ -479,7 +479,7 @@ public final class TestType extends Bean<TestType>
 			{
 				this.v12.clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
-				t = s.unmarshalByte();
+				t = s.unmarshalInt1();
 				if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 				t &= 7;
 				for(int n = s.unmarshalUInt(); n > 0; --n)
@@ -489,7 +489,7 @@ public final class TestType extends Bean<TestType>
 			{
 				this.v13.clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
-				t = s.unmarshalByte();
+				t = s.unmarshalInt1();
 				if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 				t &= 7;
 				for(int n = s.unmarshalUInt(); n > 0; --n)
@@ -499,7 +499,7 @@ public final class TestType extends Bean<TestType>
 			{
 				this.v14.clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
-				t = s.unmarshalByte();
+				t = s.unmarshalInt1();
 				if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 				t &= 7;
 				for(int n = s.unmarshalUInt(); n > 0; --n)
@@ -509,7 +509,7 @@ public final class TestType extends Bean<TestType>
 			{
 				this.v15.clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
-				t = s.unmarshalByte();
+				t = s.unmarshalInt1();
 				if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 				t &= 7;
 				for(int n = s.unmarshalUInt(); n > 0; --n)
@@ -519,7 +519,7 @@ public final class TestType extends Bean<TestType>
 			{
 				this.v16.clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
-				t = s.unmarshalByte();
+				t = s.unmarshalInt1();
 				if((t >> 6) != 1) { s.unmarshalSkipVarSub(t); break; }
 				int k = (t >> 3) & 7; t &= 7;
 				for(int n = s.unmarshalUInt(); n > 0; --n)
@@ -529,7 +529,7 @@ public final class TestType extends Bean<TestType>
 			{
 				this.v17.clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
-				t = s.unmarshalByte();
+				t = s.unmarshalInt1();
 				if((t >> 6) != 1) { s.unmarshalSkipVarSub(t); break; }
 				int k = (t >> 3) & 7; t &= 7;
 				for(int n = s.unmarshalUInt(); n > 0; --n)
@@ -539,7 +539,7 @@ public final class TestType extends Bean<TestType>
 			{
 				this.v18.clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
-				t = s.unmarshalByte();
+				t = s.unmarshalInt1();
 				if((t >> 6) != 1) { s.unmarshalSkipVarSub(t); break; }
 				int k = (t >> 3) & 7; t &= 7;
 				for(int n = s.unmarshalUInt(); n > 0; --n)

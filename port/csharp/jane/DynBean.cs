@@ -85,7 +85,7 @@ namespace Jane
 		{
 			for(_fields.Clear();;)
 			{
-				int b = os.unmarshalUByte();
+				int b = os.unmarshalUInt1();
 				if(b == 0) return os;
 				_fields.Add(b & 0x3f, os.unmarshalVar(b >> 6));
 			}

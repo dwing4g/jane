@@ -56,7 +56,7 @@ public final class StorageMapDB implements Storage
 			V v = _stubV.alloc();
 			try
 			{
-				int format = os.unmarshalByte();
+				int format = os.unmarshalInt1();
 				if(format != 0)
 				    throw new IllegalStateException("unknown record value format(" + format + ") in table(" + _tableName + "),key=(" + k + ')');
 				v.unmarshal(os);
@@ -114,7 +114,7 @@ public final class StorageMapDB implements Storage
 			V v = _stubV.alloc();
 			try
 			{
-				int format = os.unmarshalByte();
+				int format = os.unmarshalInt1();
 				if(format != 0)
 				    throw new IllegalStateException("unknown record value format(" + format + ") in table(" + _tableName + "),key=(" + k + ')');
 				v.unmarshal(os);

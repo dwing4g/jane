@@ -110,7 +110,7 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 	@Override
 	public OctetsStream unmarshal(OctetsStream s) throws MarshalException
 	{
-		for(;;) { int i = s.unmarshalByte() & 0xff, t = i & 3; switch(i >> 2)
+		for(;;) { int i = s.unmarshalInt1() & 0xff, t = i & 3; switch(i >> 2)
 		{
 			case 0: return s;
 #(#			#(var.unmarshal) break;
@@ -630,7 +630,7 @@ typedef.vector = merge(typedef.octets,
 			{
 				this.#(var.name).clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
-				t = s.unmarshalByte();
+				t = s.unmarshalInt1();
 				if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 				t &= 7;
 				int n = s.unmarshalUInt();
@@ -653,7 +653,7 @@ typedef.list = merge(typedef.vector,
 			{
 				this.#(var.name).clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
-				t = s.unmarshalByte();
+				t = s.unmarshalInt1();
 				if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 				t &= 7;
 				for(int n = s.unmarshalUInt(); n > 0; --n)
@@ -709,7 +709,7 @@ typedef.hashmap = merge(typedef.list,
 			{
 				this.#(var.name).clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
-				t = s.unmarshalByte();
+				t = s.unmarshalInt1();
 				if((t >> 6) != 1) { s.unmarshalSkipVarSub(t); break; }
 				int k = (t >> 3) & 7; t &= 7;
 				for(int n = s.unmarshalUInt(); n > 0; --n)

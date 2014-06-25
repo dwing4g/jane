@@ -91,7 +91,7 @@ public final class StorageLevelDB implements Storage
 			V v = _stubV.alloc();
 			try
 			{
-				int format = val.unmarshalByte();
+				int format = val.unmarshalInt1();
 				if(format != 0)
 				{
 					throw new IllegalStateException("unknown record value format(" + format + ") in table("
@@ -315,7 +315,7 @@ public final class StorageLevelDB implements Storage
 			V v = _stubV.alloc();
 			try
 			{
-				int format = val.unmarshalByte();
+				int format = val.unmarshalInt1();
 				if(format != 0)
 				{
 					throw new IllegalStateException("unknown record value format(" + format + ") in table("
@@ -367,7 +367,7 @@ public final class StorageLevelDB implements Storage
 			V v = _stubV.alloc();
 			try
 			{
-				int format = val.unmarshalByte();
+				int format = val.unmarshalInt1();
 				if(format != 0)
 				{
 					throw new IllegalStateException("unknown record value format(" + format + ") in table("
@@ -420,7 +420,7 @@ public final class StorageLevelDB implements Storage
 			V v = _stubV.alloc();
 			try
 			{
-				int format = val.unmarshalByte();
+				int format = val.unmarshalInt1();
 				if(format != 0)
 				{
 					throw new IllegalStateException("unknown record value format(" + format + ") in table("

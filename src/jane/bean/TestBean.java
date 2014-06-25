@@ -139,7 +139,7 @@ public final class TestBean extends Bean<TestBean>
 	@Override
 	public OctetsStream unmarshal(OctetsStream s) throws MarshalException
 	{
-		for(;;) { int i = s.unmarshalByte() & 0xff, t = i & 3; switch(i >> 2)
+		for(;;) { int i = s.unmarshalInt1() & 0xff, t = i & 3; switch(i >> 2)
 		{
 			case 0: return s;
 			case 1: this.value1 = s.unmarshalInt(t); break;

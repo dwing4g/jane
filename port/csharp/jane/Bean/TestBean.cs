@@ -91,7 +91,7 @@ namespace Jane.Bean
 
 		public OctetsStream unmarshal(OctetsStream s)
 		{
-			for(;;) { int i = s.unmarshalUByte(), t = i & 3; switch(i >> 2)
+			for(;;) { int i = s.unmarshalUInt1(), t = i & 3; switch(i >> 2)
 			{
 				case 0: return s;
 				case 1: this.value1 = s.unmarshalInt(t); break;

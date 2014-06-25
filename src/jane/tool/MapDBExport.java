@@ -71,7 +71,7 @@ public final class MapDBExport
 					{
 						bean.reset();
 						OctetsStream os = OctetsStream.wrap((Octets)v2);
-						int format = os.unmarshalByte();
+						int format = os.unmarshalInt1();
 						if(format != 0)
 							sb.append("\"format=").append(format).append(",size=").append(((Octets)v2).size());
 						else

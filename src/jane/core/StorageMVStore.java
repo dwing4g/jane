@@ -255,7 +255,7 @@ public final class StorageMVStore implements Storage
 			Bean<?> b = _stub.alloc();
 			try
 			{
-				int format = os.unmarshalByte();
+				int format = os.unmarshalInt1();
 				if(format != 0)
 				    throw new IllegalStateException("unknown record value format(" + format + ") in table(" + _tableName + ')');
 				b.unmarshal(os);
@@ -279,7 +279,7 @@ public final class StorageMVStore implements Storage
 			{
 				for(int i = 0; i < len; ++i)
 				{
-					int format = os.unmarshalByte();
+					int format = os.unmarshalInt1();
 					if(format != 0)
 					    throw new IllegalStateException("unknown record value format(" + format + ") in table(" + _tableName + ')');
 					Bean<?> b = _stub.alloc();
