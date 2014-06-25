@@ -16,6 +16,8 @@ public final class SContext
 		protected final B       _bean;
 		protected final Wrap<?> _owner;
 		protected SContext      _sCtx;
+		private Object          _key;
+		private Runnable        _onDirty;
 		protected boolean       _fullUndo;
 		private boolean         _dirty;
 
@@ -35,11 +37,26 @@ public final class SContext
 			return _owner;
 		}
 
+		public Object key()
+		{
+			return _key;
+		}
+
+		void key(Object key)
+		{
+			_key = key;
+		}
+
 		public boolean isDirtyAndClear()
 		{
 			boolean r = _dirty;
 			_dirty = false;
 			return r;
+		}
+
+		public void onDirty(Runnable onDirty)
+		{
+			_onDirty = onDirty;
 		}
 
 		public void dirty()
@@ -48,6 +65,11 @@ public final class SContext
 				_dirty = true;
 			else
 				_owner.dirty();
+			if(_onDirty != null)
+			{
+				_onDirty.run();
+				_onDirty = null;
+			}
 		}
 
 		protected boolean initSContext()
@@ -55,6 +77,11 @@ public final class SContext
 			if(_fullUndo) return false;
 			if(_sCtx == null)
 			{
+				if(_onDirty != null)
+				{
+					_onDirty.run();
+					_onDirty = null;
+				}
 				_owner.dirty();
 				_sCtx = current();
 			}
@@ -205,6 +232,7 @@ public final class SContext
 	{
 		@SuppressWarnings("unchecked")
 		S vSafe = (S)value.safe(null);
+		vSafe.key(key);
 		_records.add(new Record<K, V, S>(table, key, vSafe));
 		return vSafe;
 	}
@@ -213,6 +241,7 @@ public final class SContext
 	{
 		@SuppressWarnings("unchecked")
 		S vSafe = (S)value.safe(null);
+		vSafe.key(key);
 		_recordLongs.add(new RecordLong<V, S>(table, key, vSafe));
 		return vSafe;
 	}

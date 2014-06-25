@@ -25,6 +25,7 @@ import jane.core.SContext.Wrap;
 import jane.core.SDeque;
 import jane.core.SList;
 import jane.core.SMap;
+import jane.core.SMap.SMapListener;
 import jane.core.SSMap;
 import jane.core.SSSet;
 import jane.core.SSet;
@@ -47,6 +48,12 @@ public final class TestType extends Bean<TestType>
 	private static Field FIELD_v7;
 	private static Field FIELD_v8;
 	private static Field FIELD_v9;
+	private static Field FIELD_v16;
+	private static SMapListener LISTENER_v16;
+	private static Field FIELD_v17;
+	private static SMapListener LISTENER_v17;
+	private static Field FIELD_v18;
+	private static SMapListener LISTENER_v18;
 
 	private /* 1*/ boolean v1; // 1字节布尔,0表示假,1表示真,其它默认表示真
 	private /* 2*/ byte v2; // 1字节整数
@@ -82,6 +89,9 @@ public final class TestType extends Bean<TestType>
 			FIELD_v7 = c.getDeclaredField("v7"); FIELD_v7.setAccessible(true);
 			FIELD_v8 = c.getDeclaredField("v8"); FIELD_v8.setAccessible(true);
 			FIELD_v9 = c.getDeclaredField("v9"); FIELD_v9.setAccessible(true);
+			FIELD_v16 = c.getDeclaredField("v16"); FIELD_v16.setAccessible(true);
+			FIELD_v17 = c.getDeclaredField("v17"); FIELD_v17.setAccessible(true);
+			FIELD_v18 = c.getDeclaredField("v18"); FIELD_v18.setAccessible(true);
 		}
 		catch(Exception e)
 		{
@@ -856,7 +866,7 @@ public final class TestType extends Bean<TestType>
 
 		public SList<Boolean> getV10()
 		{
-			return new SList<Boolean>(_owner, _bean.v10);
+			return new SList<Boolean>(this, _bean.v10);
 		}
 
 		public ArrayList<Boolean> unsafeV10()
@@ -866,7 +876,7 @@ public final class TestType extends Bean<TestType>
 
 		public SList<Byte> getV11()
 		{
-			return new SList<Byte>(_owner, _bean.v11);
+			return new SList<Byte>(this, _bean.v11);
 		}
 
 		public LinkedList<Byte> unsafeV11()
@@ -876,7 +886,7 @@ public final class TestType extends Bean<TestType>
 
 		public SDeque<Integer> getV12()
 		{
-			return new SDeque<Integer>(_owner, _bean.v12);
+			return new SDeque<Integer>(this, _bean.v12);
 		}
 
 		public ArrayDeque<Integer> unsafeV12()
@@ -886,7 +896,7 @@ public final class TestType extends Bean<TestType>
 
 		public SSet<Long> getV13()
 		{
-			return new SSet<Long>(_owner, _bean.v13);
+			return new SSet<Long>(this, _bean.v13);
 		}
 
 		public HashSet<Long> unsafeV13()
@@ -896,7 +906,7 @@ public final class TestType extends Bean<TestType>
 
 		public SSSet<Float> getV14()
 		{
-			return new SSSet<Float>(_owner, _bean.v14);
+			return new SSSet<Float>(this, _bean.v14);
 		}
 
 		public TreeSet<Float> unsafeV14()
@@ -906,7 +916,7 @@ public final class TestType extends Bean<TestType>
 
 		public SSet<Double> getV15()
 		{
-			return new SSet<Double>(_owner, _bean.v15);
+			return new SSet<Double>(this, _bean.v15);
 		}
 
 		public LinkedHashSet<Double> unsafeV15()
@@ -914,9 +924,14 @@ public final class TestType extends Bean<TestType>
 			return _bean.v15;
 		}
 
+		public static void onListenerV16(SMapListener listener)
+		{
+			LISTENER_v16 = listener;
+		}
+
 		public SMap<Long, String> getV16()
 		{
-			return new SMap<Long, String>(_owner, _bean.v16);
+			return new SMap<Long, String>(this, _bean.v16, LISTENER_v16);
 		}
 
 		public HashMap<Long, String> unsafeV16()
@@ -924,9 +939,14 @@ public final class TestType extends Bean<TestType>
 			return _bean.v16;
 		}
 
+		public static void onListenerV17(SMapListener listener)
+		{
+			LISTENER_v17 = listener;
+		}
+
 		public SSMap<TestBean, Boolean> getV17()
 		{
-			return new SSMap<TestBean, Boolean>(_owner, _bean.v17);
+			return new SSMap<TestBean, Boolean>(this, _bean.v17, LISTENER_v17);
 		}
 
 		public TreeMap<TestBean, Boolean> unsafeV17()
@@ -934,9 +954,14 @@ public final class TestType extends Bean<TestType>
 			return _bean.v17;
 		}
 
+		public static void onListenerV18(SMapListener listener)
+		{
+			LISTENER_v18 = listener;
+		}
+
 		public SMap<Octets, TestBean> getV18()
 		{
-			return new SMap<Octets, TestBean>(_owner, _bean.v18);
+			return new SMap<Octets, TestBean>(this, _bean.v18, LISTENER_v18);
 		}
 
 		public LinkedHashMap<Octets, TestBean> unsafeV18()

@@ -1,7 +1,9 @@
 package jane.core;
 
+import java.lang.reflect.Field;
 import java.util.AbstractCollection;
 import java.util.AbstractSet;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -14,20 +16,79 @@ import jane.core.SContext.Wrap;
  */
 public class SMap<K, V> implements Map<K, V>, Cloneable
 {
-	protected final Wrap<?>   _owner;
-	protected final Map<K, V> _map;
-	private SContext          _sCtx;
+	public interface SMapListener
+	{
+		/**
+		 * 增删改统一一个调用接口
+		 * @param changed 所有改动的kv对. 其中value为null的key表示被删除
+		 */
+		public void onChanged(Object key, Map<?, ?> changed);
+	}
 
-	public SMap(Wrap<?> owner, Map<K, V> map)
+	private static HashMap<Field, SMapListener> _listeners = new HashMap<Field, SMapListener>();
+
+	protected final Wrap<?>                     _owner;
+	protected final Map<K, V>                   _map;
+	private SContext                            _sCtx;
+	protected Map<K, V>                         _changed;
+
+	/**
+	 * 添加某个bean字段的SMap改动监听器
+	 * <p>
+	 * 注意暂只支持添加且不能并发添加,一般仅在启动初始化时注册好所需的监听器,不再改动
+	 */
+	public static void setListener(Field field, SMapListener listener)
+	{
+		_listeners.put(field, listener);
+	}
+
+	public SMap(Wrap<?> owner, Map<K, V> map, final SMapListener listener)
 	{
 		_owner = owner;
 		_map = map;
+		if(listener != null)
+		{
+			final Object key = owner.key();
+			if(key != null)
+			{
+				_changed = new HashMap<K, V>();
+				SContext.current().addOnCommit(new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						if(!_changed.isEmpty())
+						    listener.onChanged(key, _changed);
+					}
+				});
+			}
+		}
+	}
+
+	protected SMap(Wrap<?> owner, Map<K, V> map, Map<K, V> changed)
+	{
+		_owner = owner;
+		_map = map;
+		_changed = changed;
 	}
 
 	@SuppressWarnings("unchecked")
-	protected <S extends Wrap<V>> S safe(V v)
+	protected <S extends Wrap<V>> S safe(final Object k, final V v)
 	{
-		return v != null ? (S)((Bean<?>)v).safe(_owner) : null;
+		if(v == null) return null;
+		S s = (S)((Bean<?>)v).safe(_owner);
+		if(_changed != null)
+		{
+			s.onDirty(new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					_changed.put((K)k, v);
+				}
+			});
+		}
+		return s;
 	}
 
 	private SContext sContext()
@@ -54,6 +115,7 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 
 	protected void addUndoRemove(final K k, final V vOld)
 	{
+		if(_changed != null) _changed.put(k, null);
 		sContext().addOnRollback(new Runnable()
 		{
 			@Override
@@ -96,13 +158,14 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 
 	public <S extends Wrap<V>> S getSafe(Object k)
 	{
-		return safe(_map.get(k));
+		return safe(k, _map.get(k));
 	}
 
 	@Override
 	public V put(K k, V v)
 	{
 		if(v == null) throw new NullPointerException();
+		if(_changed != null) _changed.put(k, v);
 		v = _map.put(k, v);
 		addUndoPut(k, v);
 		return v;
@@ -110,7 +173,7 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 
 	public <S extends Wrap<V>> S put(K k, S v)
 	{
-		return safe(put(k, v.unsafe()));
+		return safe(k, put(k, v.unsafe()));
 	}
 
 	@Override
@@ -136,7 +199,7 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 
 	public <S extends Wrap<V>> S removeSafe(Object k)
 	{
-		return safe(remove(k));
+		return safe(k, remove(k));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -167,6 +230,11 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 				_saved.clear();
 			}
 		});
+		if(_changed != null)
+		{
+			for(K k : _map.keySet())
+				_changed.put(k, null);
+		}
 		_map.clear();
 	}
 
@@ -193,15 +261,17 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 
 		public <S extends Wrap<V>> S getValueSafe()
 		{
-			return safe(_e.getValue());
+			return safe(_e.getKey(), _e.getValue());
 		}
 
 		@Override
 		public V setValue(V v)
 		{
 			if(v == null) throw new NullPointerException();
+			K k = _e.getKey();
+			if(_changed != null) _changed.put(k, v);
 			v = _e.setValue(v);
-			addUndoPut(_e.getKey(), v);
+			addUndoPut(k, v);
 			return v;
 		}
 

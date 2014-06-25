@@ -612,7 +612,7 @@ typedef.vector = merge(typedef.octets,
 
 		public #(var.stype) get#(var.name_u)()
 		{
-			return new #(var.stype)(_owner, _bean.#(var.name));
+			return new #(var.stype)(this, _bean.#(var.name));
 		}
 
 		public #(var.type) unsafe#(var.name_u)()
@@ -693,12 +693,34 @@ typedef.linkedhashset = merge(typedef.hashset,
 })
 typedef.hashmap = merge(typedef.list,
 {
-	import = { "java.util.HashMap", "java.util.Map.Entry", "java.util.Map", "jane.core.Util", "jane.core.SMap" },
+	import = { "java.util.HashMap", "java.util.Map.Entry", "java.util.Map", "jane.core.Util", "jane.core.SMap", "jane.core.SMap.SMapListener" },
 	type = function(var) return "HashMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	type_i = function(var) return "Map<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	stype = function(var) return "SMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
+	field = [[
+	private static Field FIELD_#(var.name);
+	private static SMapListener LISTENER_#(var.name);
+]],
+	fieldget = "\t\t\tFIELD_#(var.name) = c.getDeclaredField(\"#(var.name)\"); FIELD_#(var.name).setAccessible(true);\n";
 	new = function(var) return "\t\t#(var.name) = new HashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap));\n" end,
 	init = function(var) return "this.#(var.name) = new HashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).putAll(#(var.name))" end,
+	getsafe = [[
+
+		public static void onListener#(var.name_u)(SMapListener listener)
+		{
+			LISTENER_#(var.name) = listener;
+		}
+
+		public #(var.stype) get#(var.name_u)()
+		{
+			return new #(var.stype)(this, _bean.#(var.name), LISTENER_#(var.name));
+		}
+
+		public #(var.type) unsafe#(var.name_u)()
+		{
+			return _bean.#(var.name);
+		}
+]],
 	marshal = function(var) return string.format([[if(!this.#(var.name).isEmpty())
 		{
 			s.marshal2(0x%04x).marshalUInt(this.#(var.name).size());

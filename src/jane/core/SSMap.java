@@ -1,6 +1,7 @@
 package jane.core;
 
 import java.util.Comparator;
+import java.util.Map;
 import java.util.NavigableMap;
 import jane.core.SContext.Wrap;
 
@@ -11,9 +12,14 @@ import jane.core.SContext.Wrap;
  */
 public final class SSMap<K, V> extends SMap<K, V> implements NavigableMap<K, V>
 {
-	public SSMap(Wrap<?> owner, NavigableMap<K, V> map)
+	public SSMap(Wrap<?> owner, NavigableMap<K, V> map, SMapListener listener)
 	{
-		super(owner, map);
+		super(owner, map, listener);
+	}
+
+	protected SSMap(Wrap<?> owner, NavigableMap<K, V> map, Map<K, V> changed)
+	{
+		super(owner, map, changed);
 	}
 
 	@Override
@@ -113,7 +119,7 @@ public final class SSMap<K, V> extends SMap<K, V> implements NavigableMap<K, V>
 	@Override
 	public SSMap<K, V> descendingMap()
 	{
-		return new SSMap<K, V>(_owner, ((NavigableMap<K, V>)_map).descendingMap());
+		return new SSMap<K, V>(_owner, ((NavigableMap<K, V>)_map).descendingMap(), _changed);
 	}
 
 	@Override
@@ -131,19 +137,19 @@ public final class SSMap<K, V> extends SMap<K, V> implements NavigableMap<K, V>
 	@Override
 	public SSMap<K, V> subMap(K from, boolean fromInclusive, K to, boolean toInclusive)
 	{
-		return new SSMap<K, V>(_owner, ((NavigableMap<K, V>)_map).subMap(from, fromInclusive, to, toInclusive));
+		return new SSMap<K, V>(_owner, ((NavigableMap<K, V>)_map).subMap(from, fromInclusive, to, toInclusive), _changed);
 	}
 
 	@Override
 	public SSMap<K, V> headMap(K to, boolean inclusive)
 	{
-		return new SSMap<K, V>(_owner, ((NavigableMap<K, V>)_map).headMap(to, inclusive));
+		return new SSMap<K, V>(_owner, ((NavigableMap<K, V>)_map).headMap(to, inclusive), _changed);
 	}
 
 	@Override
 	public SSMap<K, V> tailMap(K from, boolean inclusive)
 	{
-		return new SSMap<K, V>(_owner, ((NavigableMap<K, V>)_map).tailMap(from, inclusive));
+		return new SSMap<K, V>(_owner, ((NavigableMap<K, V>)_map).tailMap(from, inclusive), _changed);
 	}
 
 	@Override

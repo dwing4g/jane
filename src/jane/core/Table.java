@@ -352,6 +352,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	public void putSafe(K k, S s)
 	{
 		putSafe(k, s.unsafe());
+		s.key(k);
 	}
 
 	/**
