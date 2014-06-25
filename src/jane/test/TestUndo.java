@@ -7,6 +7,7 @@ import java.util.Map.Entry;
 import jane.core.DBManager;
 import jane.core.Octets;
 import jane.core.Procedure;
+import jane.core.SContext.Rec;
 import jane.core.SMap;
 import jane.core.SMap.SMapListener;
 import jane.core.StorageLevelDB;
@@ -96,9 +97,9 @@ public final class TestUndo
 		TestType.Safe.onListenerV18(new SMapListener()
 		{
 			@Override
-			public void onChanged(Object key, Map<?, ?> changed)
+			public void onChanged(Rec rec, Map<?, ?> changed)
 			{
-				System.out.println("changed key: " + key);
+				System.out.println("changed key: " + rec.getKey());
 				System.out.println("changed value:");
 				for(Entry<?, ?> e : changed.entrySet())
 					System.out.println(((Octets)e.getKey()).dump() + ": " + e.getValue());

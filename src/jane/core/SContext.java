@@ -16,7 +16,7 @@ public final class SContext
 		protected final B       _bean;
 		protected final Wrap<?> _owner;
 		protected SContext      _sCtx;
-		private Object          _key;
+		private Rec             _rec;
 		private Runnable        _onDirty;
 		protected boolean       _fullUndo;
 		private boolean         _dirty;
@@ -37,14 +37,14 @@ public final class SContext
 			return _owner;
 		}
 
-		public Object key()
+		public Rec record()
 		{
-			return _key;
+			return _rec;
 		}
 
-		void key(Object key)
+		void record(Rec rec)
 		{
-			_key = key;
+			_rec = rec;
 		}
 
 		public boolean isDirtyAndClear()
@@ -151,7 +151,7 @@ public final class SContext
 		@Override
 		public boolean equals(Object o)
 		{
-			return _bean.equals(o);
+			return _bean.equals(o instanceof Safe<?> ? ((Safe<?>)o)._bean : o);
 		}
 
 		@Override
@@ -177,31 +177,76 @@ public final class SContext
 		}
 	}
 
-	private static final class Record<K, V extends Bean<V>, S extends Safe<V>>
+	public interface Rec
+	{
+		Object getTable();
+
+		Object getKey();
+
+		Object getValue();
+	}
+
+	static final class Record<K, V extends Bean<V>, S extends Safe<V>> implements Rec
 	{
 		private final Table<K, V, S> _table;
 		private final K              _key;
 		private final S              _value;
 
-		private Record(Table<K, V, S> table, K key, S value)
+		Record(Table<K, V, S> table, K key, S value)
 		{
 			_table = table;
 			_key = key;
 			_value = value;
 		}
+
+		@Override
+		public Object getTable()
+		{
+			return _table;
+		}
+
+		@Override
+		public Object getKey()
+		{
+			return _key;
+		}
+
+		@Override
+		public Object getValue()
+		{
+			return _value.unsafe();
+		}
 	}
 
-	private static final class RecordLong<V extends Bean<V>, S extends Safe<V>>
+	static final class RecordLong<V extends Bean<V>, S extends Safe<V>> implements Rec
 	{
 		private final TableLong<V, S> _table;
 		private final long            _key;
 		private final S               _value;
 
-		private RecordLong(TableLong<V, S> table, long key, S value)
+		RecordLong(TableLong<V, S> table, long key, S value)
 		{
 			_table = table;
 			_key = key;
 			_value = value;
+		}
+
+		@Override
+		public Object getTable()
+		{
+			return _table;
+		}
+
+		@Override
+		public Object getKey()
+		{
+			return _key;
+		}
+
+		@Override
+		public Object getValue()
+		{
+			return _value.unsafe();
 		}
 	}
 
@@ -232,8 +277,9 @@ public final class SContext
 	{
 		@SuppressWarnings("unchecked")
 		S vSafe = (S)value.safe(null);
-		vSafe.key(key);
-		_records.add(new Record<K, V, S>(table, key, vSafe));
+		Record<K, V, S> rec = new Record<K, V, S>(table, key, vSafe);
+		vSafe.record(rec);
+		_records.add(rec);
 		return vSafe;
 	}
 
@@ -241,8 +287,9 @@ public final class SContext
 	{
 		@SuppressWarnings("unchecked")
 		S vSafe = (S)value.safe(null);
-		vSafe.key(key);
-		_recordLongs.add(new RecordLong<V, S>(table, key, vSafe));
+		RecordLong<V, S> rec = new RecordLong<V, S>(table, key, vSafe);
+		vSafe.record(rec);
+		_recordLongs.add(rec);
 		return vSafe;
 	}
 

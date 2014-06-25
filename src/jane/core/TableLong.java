@@ -8,6 +8,7 @@ import org.mapdb.LongConcurrentHashMap;
 import org.mapdb.LongConcurrentLRUMap;
 import org.mapdb.LongMap;
 import org.mapdb.LongMap.LongMapIterator;
+import jane.core.SContext.RecordLong;
 import jane.core.SContext.Safe;
 
 /**
@@ -389,7 +390,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	public void putSafe(long k, S s)
 	{
 		putSafe(k, s.unsafe());
-		s.key(k);
+		s.record(new RecordLong<V, S>(this, k, s));
 	}
 
 	/**

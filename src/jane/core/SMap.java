@@ -1,12 +1,12 @@
 package jane.core;
 
-import java.lang.reflect.Field;
 import java.util.AbstractCollection;
 import java.util.AbstractSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import jane.core.SContext.Rec;
 import jane.core.SContext.Wrap;
 
 /**
@@ -19,28 +19,18 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 	public interface SMapListener
 	{
 		/**
-		 * 增删改统一一个调用接口
+		 * 增删改统一一个回调接口
+		 * @param table 对应的记录所在的table
+		 * @param key 对应的记录key
 		 * @param changed 所有改动的kv对. 其中value为null的key表示被删除
 		 */
-		public void onChanged(Object key, Map<?, ?> changed);
+		void onChanged(Rec rec, Map<?, ?> changed);
 	}
 
-	private static HashMap<Field, SMapListener> _listeners = new HashMap<Field, SMapListener>();
-
-	protected final Wrap<?>                     _owner;
-	protected final Map<K, V>                   _map;
-	private SContext                            _sCtx;
-	protected Map<K, V>                         _changed;
-
-	/**
-	 * 添加某个bean字段的SMap改动监听器
-	 * <p>
-	 * 注意暂只支持添加且不能并发添加,一般仅在启动初始化时注册好所需的监听器,不再改动
-	 */
-	public static void setListener(Field field, SMapListener listener)
-	{
-		_listeners.put(field, listener);
-	}
+	protected final Wrap<?>   _owner;
+	protected final Map<K, V> _map;
+	private SContext          _sCtx;
+	protected Map<K, V>       _changed;
 
 	public SMap(Wrap<?> owner, Map<K, V> map, final SMapListener listener)
 	{
@@ -48,8 +38,8 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 		_map = map;
 		if(listener != null)
 		{
-			final Object key = owner.key();
-			if(key != null)
+			final Rec rec = owner.record();
+			if(rec != null)
 			{
 				_changed = new HashMap<K, V>();
 				SContext.current().addOnCommit(new Runnable()
@@ -58,7 +48,7 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 					public void run()
 					{
 						if(!_changed.isEmpty())
-						    listener.onChanged(key, _changed);
+						    listener.onChanged(rec, _changed);
 					}
 				});
 			}

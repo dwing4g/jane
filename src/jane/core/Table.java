@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
+import jane.core.SContext.Record;
 import jane.core.SContext.Safe;
 
 /**
@@ -352,7 +353,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	public void putSafe(K k, S s)
 	{
 		putSafe(k, s.unsafe());
-		s.key(k);
+		s.record(new Record<K, V, S>(this, k, s));
 	}
 
 	/**
