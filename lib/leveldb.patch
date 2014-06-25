@@ -1,7 +1,7 @@
  .gitignore                      |    3 +
  db/db_impl.h                    |    5 +-
  make_linux.sh                   |   26 +
- make_mingw.bat                  |   30 +
+ make_mingw.bat                  |   25 +
  port/endian.h                   |    5 +
  snappy/snappy-internal.h        |  150 +++++
  snappy/snappy-sinksource.cc     |   71 +++
@@ -14,7 +14,7 @@
  util/env_posix.cc               |   18 +-
  util/env_windows.cc             |  385 ++++++++++++
  util/jni.cc                     |  429 +++++++++++++
- 16 files changed, 3374 insertions(+), 6 deletions(-)
+ 16 files changed, 3369 insertions(+), 6 deletions(-)
 
 diff --git a/.gitignore b/.gitignore
 index 0630251..0dba0c5 100644
@@ -80,10 +80,10 @@ index 0000000..a32287a
 +$COMPILE -o leveldb_main db/leveldb_main.cc libleveldb.a
 diff --git a/make_mingw.bat b/make_mingw.bat
 new file mode 100644
-index 0000000..ada4243
+index 0000000..2c1a623
 --- /dev/null
 +++ b/make_mingw.bat
-@@ -0,0 +1,30 @@
+@@ -0,0 +1,25 @@
 +@echo off
 +setlocal
 +pushd %~dp0
@@ -103,15 +103,10 @@ index 0000000..ada4243
 +echo building leveldbjni.dll ...
 +%COMPILE% -shared -Wl,--image-base,0x10000000 -Wl,--kill-at -Wl,-soname -Wl,leveldbjni.dll -o leveldbjni.dll %CORE_FILES%
 +
-+echo building leveldb.a ...
-+%COMPILE% -c %CORE_FILES% %TEST_FILES%
-+ar -rs leveldb.a %OBJ_FILES%
-+del *.o 2>nul
-+
 +echo building db-tools ...
-+%COMPILE% -o db_bench.exe     db/db_bench.cc     leveldb.a
-+%COMPILE% -o db_test.exe      db/db_test.cc      leveldb.a
-+%COMPILE% -o leveldb_main.exe db/leveldb_main.cc leveldb.a
++%COMPILE% -o db_bench.exe     db/db_bench.cc     %CORE_FILES% %TEST_FILES%
++%COMPILE% -o db_test.exe      db/db_test.cc      %CORE_FILES% %TEST_FILES%
++%COMPILE% -o leveldb_main.exe db/leveldb_main.cc %CORE_FILES% %TEST_FILES%
 +
 +pause
 diff --git a/port/endian.h b/port/endian.h
@@ -3102,7 +3097,7 @@ index 0000000..54f4b2f
 +#endif
 diff --git a/util/jni.cc b/util/jni.cc
 new file mode 100644
-index 0000000..0135eee
+index 0000000..be0a94e
 --- /dev/null
 +++ b/util/jni.cc
 @@ -0,0 +1,429 @@
@@ -3228,8 +3223,8 @@ index 0000000..0135eee
 +		mid_next = jenv->GetMethodID(cls_it, "next", "()Ljava/lang/Object;");
 +		mid_getKey = jenv->GetMethodID(cls_entry, "getKey", "()Ljava/lang/Object;");
 +		mid_getValue = jenv->GetMethodID(cls_entry, "getValue", "()Ljava/lang/Object;");
-+		fid_buffer = jenv->GetFieldID(cls_octets, "buffer", "[B");
-+		fid_count = jenv->GetFieldID(cls_octets, "count", "I");
++		fid_buffer = jenv->GetFieldID(cls_octets, "_buffer", "[B");
++		fid_count = jenv->GetFieldID(cls_octets, "_count", "I");
 +		if(!mid_hasNext || !mid_next || !mid_getKey || !mid_getValue || !fid_buffer || !fid_count) return s_err = 3;
 +		s_err = 0;
 +	}
