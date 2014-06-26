@@ -23,7 +23,7 @@ License:
 平台:
  * Oracle/Open JDK 6+ (需要ant作为构建环境)
  * Linux 2.6+/Windows 2000+ (运行环境, 推荐64位4核4GB内存以上, 开发可使用32位)
- * Eclipse 4.3+ (主要的Java开发环境,以及LDT的Lua开发插件)
+ * Eclipse 4.4+ (主要的Java开发环境,以及LDT的Lua开发插件)
  * Visual Studio 2010+ (C#的开发环境)
 
 语言:
