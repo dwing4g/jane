@@ -20,8 +20,7 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 	{
 		/**
 		 * 增删改统一一个回调接口
-		 * @param table 对应的记录所在的table
-		 * @param key 对应的记录key
+		 * @param rec 对应table及记录键值的封装
 		 * @param changed 所有改动的kv对. 其中value为null的key表示被删除
 		 */
 		void onChanged(Rec rec, Map<?, ?> changed);

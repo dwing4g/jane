@@ -15,8 +15,8 @@ public class Octets implements Cloneable, Comparable<Octets>
 	public static final byte[]  EMPTY           = new byte[0];         // 共享的空缓冲区
 	public static final int     DEFAULT_SIZE    = 16;                  // 默认的缓冲区
 	private static Charset      _defaultCharset = Const.stringCharset; // 本类的默认字符集
-	protected byte[]            _buffer         = EMPTY;               // 数据缓冲区
-	protected int               _count;                                // 当前有效的数据缓冲区大小
+	protected byte[]            _buffer         = EMPTY;               // 数据缓冲区. 注意此变量名字和类型的改变要和leveldb中的jni.cc对应
+	protected int               _count;                                // 当前有效的数据缓冲区大小. 注意此变量名字和类型的改变要和leveldb中的jni.cc对应
 
 	public static void setDefaultEncoding(Charset charset)
 	{
