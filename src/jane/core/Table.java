@@ -197,6 +197,16 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	}
 
 	/**
+	 * 同get,但同时设置修改标记
+	 */
+	public V getModified(K k)
+	{
+		V v = get(k);
+		if(v != null) modify(k, v);
+		return v;
+	}
+
+	/**
 	 * 同get,但增加的安全封装,可回滚修改
 	 */
 	public S getSafe(K k)

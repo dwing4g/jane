@@ -2,7 +2,6 @@ package jane.core;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Iterator;
@@ -16,13 +15,12 @@ import java.util.Map.Entry;
  */
 public final class StorageLevelDB implements Storage
 {
-	private static final StorageLevelDB     _instance       = new StorageLevelDB();
-	private static final OctetsStream       _deleted        = OctetsStream.wrap(Octets.EMPTY); // 表示已删除的值
-	private final Map<Octets, OctetsStream> _writeBuf       = Util.newConcurrentHashMap();    // 提交过程中临时的写缓冲区
-	private long                            _db;                                              // LevelDB的数据库对象句柄
-	private File                            _dbFile;                                          // 当前数据库的文件
-	private long                            _backupDatebase = Long.MIN_VALUE;                 // 备份的基准时间点(UTC毫秒数)
-	private volatile boolean                _writing;                                         // 是否正在执行写操作
+	private static final StorageLevelDB     _instance = new StorageLevelDB();
+	private static final OctetsStream       _deleted  = OctetsStream.wrap(Octets.EMPTY); // 表示已删除的值
+	private final Map<Octets, OctetsStream> _writeBuf = Util.newConcurrentHashMap();    // 提交过程中临时的写缓冲区
+	private long                            _db;                                        // LevelDB的数据库对象句柄
+	private File                            _dbFile;                                    // 当前数据库的文件
+	private volatile boolean                _writing;                                   // 是否正在执行写操作
 
 	static
 	{
@@ -549,26 +547,15 @@ public final class StorageLevelDB implements Storage
 	public long backupDB(File fdst) throws IOException
 	{
 		if(_dbFile == null) throw new IllegalStateException("current database is not opened");
-		long period = Const.levelDBFullBackupPeriod * 1000;
-		if(_backupDatebase == Long.MIN_VALUE)
-		{
-			try
-			{
-				Date date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(Const.levelDBFullBackupBase);
-				_backupDatebase = date.getTime() % period;
-			}
-			catch(ParseException e)
-			{
-				throw new IllegalStateException("parse levelDBFullBackupBase(" + Const.levelDBFullBackupBase + ") failed", e);
-			}
-		}
-		long time = System.currentTimeMillis();
 		String srcPath = fdst.getAbsolutePath();
 		int pos = srcPath.lastIndexOf('.');
 		if(pos <= 0) throw new IOException("invalid backup path: " + srcPath);
 		srcPath = srcPath.substring(0, pos);
+		long period = Const.levelDBFullBackupPeriod * 1000;
+		long basetime = DBManager.instance().getBackupBaseTime();
+		long time = System.currentTimeMillis();
+		Date backupDate = new Date(basetime + (time - basetime) / period * period);
 		SimpleDateFormat sdf = DBManager.instance().getBackupDateFormat();
-		Date backupDate = new Date(_backupDatebase + (time - _backupDatebase) / period * period);
-		return leveldb_backup(_db, srcPath, srcPath + '.' + sdf.format(backupDate), sdf.format(new Date()));
+		return leveldb_backup(_db, srcPath, srcPath + '.' + sdf.format(backupDate), sdf.format(new Date(time)));
 	}
 }

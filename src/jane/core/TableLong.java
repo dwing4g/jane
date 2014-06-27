@@ -233,6 +233,16 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	}
 
 	/**
+	 * 同get,但同时设置修改标记
+	 */
+	public V getModified(long k)
+	{
+		V v = get(k);
+		if(v != null) modify(k, v);
+		return v;
+	}
+
+	/**
 	 * 同get,但增加的安全封装,可回滚修改
 	 */
 	public S getSafe(long k)
@@ -505,5 +515,15 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 		if(_stoTable != null)
 		    return _stoTable.walk(handler, from, to, inclusive, reverse);
 		return walkCache(handler);
+	}
+
+	public boolean walk(Storage.WalkHandler<Long> handler, boolean reverse)
+	{
+		return walk(handler, 0, Long.MAX_VALUE, true, reverse);
+	}
+
+	public boolean walk(Storage.WalkHandler<Long> handler)
+	{
+		return walk(handler, 0, Long.MAX_VALUE, true, false);
 	}
 }

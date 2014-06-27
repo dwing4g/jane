@@ -31,8 +31,9 @@ public final class Const
 	public static final int         maxLockPerProcedure;
 	public static final int         dbCommitResaveCount;
 	public static final int         dbCommitModCount;
-	public static final int         dbCommitPeriod;
-	public static final int         dbBackupPeriod;
+	public static final long        dbCommitPeriod;
+	public static final String      dbBackupBase;
+	public static final long        dbBackupPeriod;
 	public static final int         procedureTimeout;
 	public static final int         autoIdLowBits;
 	public static final int         autoIdLowOffset;
@@ -41,7 +42,6 @@ public final class Const
 	public static final int         mvStoreCacheSize;
 	public static final int         levelDBWriteBufferSize;
 	public static final int         levelDBCacheSize;
-	public static final String      levelDBFullBackupBase;
 	public static final long        levelDBFullBackupPeriod;
 
 	static
@@ -77,8 +77,9 @@ public final class Const
 		maxLockPerProcedure = getPropInt("maxLockPerProcedure", 16, 4, 256);
 		dbCommitResaveCount = getPropInt("dbCommitResaveCount", 200000, 1);
 		dbCommitModCount = getPropInt("dbCommitModCount", 200000, 1);
-		dbCommitPeriod = getPropInt("dbCommitPeriod", 60, 1);
-		dbBackupPeriod = getPropInt("dbBackupPeriod", 3600, 1);
+		dbCommitPeriod = getPropLong("dbCommitPeriod", 60, 1, Long.MAX_VALUE / 1000);
+		dbBackupBase = getPropStr("dbBackupBase", "2014-01-06 04:00:00");
+		dbBackupPeriod = getPropLong("dbBackupPeriod", 3600, 1, Long.MAX_VALUE / 1000);
 		procedureTimeout = getPropInt("procedureTimeout", 5, 1);
 		autoIdLowBits = getPropInt("autoIDLowBits", 0, 0, 32);
 		autoIdLowOffset = getPropInt("autoIDLowOffset", 0, 0, (1 << autoIdLowBits) - 1);
@@ -87,7 +88,6 @@ public final class Const
 		mvStoreCacheSize = getPropInt("mvStoreCacheSize", 32, 0);
 		levelDBWriteBufferSize = getPropInt("levelDBWriteBufferSize", 32, 0);
 		levelDBCacheSize = getPropInt("levelDBCacheSize", 32, 0);
-		levelDBFullBackupBase = getPropStr("levelDBFullBackupBase", "2014-01-06 04:00:00");
 		levelDBFullBackupPeriod = getPropLong("levelDBFullBackupPeriod", 604800, 1, Long.MAX_VALUE / 1000);
 	}
 

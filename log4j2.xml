@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- put this file in java classpath that must not contain "!" and ensure the filename: log4j2.xml -->
-<Configuration status="WARN" shutdownHook="disable">
+<!-- put this file in java classpath and ensure the filename: log4j2.xml -->
+<!-- set status below to FATAL to suppress a bug in log4j2: "ERROR appender Failover has no parameter that matches element Failovers" -->
+<Configuration status="FATAL" shutdownHook="disable">
 	<Appenders>
 		<Console name="STDOUT" target="SYSTEM_OUT" ignoreExceptions="false">
 			<ThresholdFilter level="TRACE" onMatch="ACCEPT" onMismatch="DENY"/>

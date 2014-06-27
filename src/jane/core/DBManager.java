@@ -2,6 +2,7 @@ package jane.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayDeque;
 import java.util.Date;
@@ -70,29 +71,52 @@ public final class DBManager
 	 */
 	private final class CommitTask implements Runnable
 	{
-		private final long[]  _counts       = new long[2];                      // 两个统计数量值,前者是原数量,后者是处理后的新数量
-		private final long    _modCountMax  = Const.dbCommitModCount;           // 数据库记录的修改数量触发提交的阙值
-		private final long    _resaveCount  = Const.dbCommitResaveCount;        // 保存一轮记录后需要重试的记录数阙值
-		private final long    _commitPeriod = (long)Const.dbCommitPeriod * 1000; // 提交数据库的周期
-		private final long    _backupPeriod = (long)Const.dbBackupPeriod * 1000; // 备份数据库的周期
-		private volatile long _commitTime   = System.currentTimeMillis();       // 上次提交数据库的时间
-		private volatile long _backupTime   = System.currentTimeMillis();       // 上次备份数据库的时间
+		private final long[]  _counts       = new long[2];                               // 两个统计数量值,前者是原数量,后者是处理后的新数量
+		private final long    _modCountMax  = Const.dbCommitModCount;                    // 数据库记录的修改数量触发提交的阙值
+		private final long    _resaveCount  = Const.dbCommitResaveCount;                 // 保存一轮记录后需要重试的记录数阙值
+		private final long    _backupBase;                                               // 备份数据的基准时间
+		private final long    _commitPeriod = Const.dbCommitPeriod * 1000;               // 提交数据库的周期
+		private final long    _backupPeriod = Const.dbBackupPeriod * 1000;               // 备份数据库的周期
+		private volatile long _commitTime   = System.currentTimeMillis() + _commitPeriod; // 下次提交数据库的时间
+		private volatile long _backupTime;                                               // 下次备份数据库的时间
+
+		private CommitTask()
+		{
+			long now = System.currentTimeMillis();
+			long base = now;
+			try
+			{
+				base = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(Const.dbBackupBase).getTime();
+			}
+			catch(ParseException e)
+			{
+				throw new IllegalStateException("parse dbBackupBase(" + Const.dbBackupBase + ") failed", e);
+			}
+			finally
+			{
+				if(base > now) base -= ((base - now) / _backupPeriod + 1) * _backupPeriod;
+				_backupTime = base + ((now - base) / _backupPeriod + 1) * _backupPeriod;
+				_backupBase = base;
+			}
+		}
 
 		private void commitNext()
 		{
-			_commitTime = System.currentTimeMillis() - _commitPeriod;
+			_commitTime = System.currentTimeMillis();
 		}
 
 		private void backupNextCommit()
 		{
-			_backupTime = System.currentTimeMillis() - _backupPeriod;
+			_backupTime = System.currentTimeMillis();
 		}
 
 		@Override
 		public void run()
 		{
-			if(_modCount.get() < _modCountMax && System.currentTimeMillis() - _commitTime < _commitPeriod) return;
+			long t = System.currentTimeMillis();
+			if(_modCount.get() < _modCountMax && t < _commitTime) return;
 			_commitTime += _commitPeriod;
+			if(_commitTime <= t) _commitTime += ((t - _commitTime) / _commitPeriod + 1) * _commitPeriod;
 			try
 			{
 				synchronized(DBManager.this)
@@ -147,14 +171,15 @@ public final class DBManager
 						Log.log.info("db-commit done. ({}/{}/{} ms)", t1, t3 - t2, t3 - t0);
 
 						// 5.判断备份周期并启动备份
-						t0 = System.currentTimeMillis();
-						if(t0 - _backupTime >= _backupPeriod)
+						t = System.currentTimeMillis();
+						if(_backupTime <= t)
 						{
 							_backupTime += _backupPeriod;
+							if(_backupTime <= t) _backupTime += ((t - _backupTime) / _backupPeriod + 1) * _backupPeriod;
 							Log.log.info("db-commit backup begin...");
 							long r = _storage.backupDB(new File(Const.dbBackupPath, new File(Const.dbFilename).getName() +
 							        '.' + _storage.getFileSuffix() + '.' + _sdf.format(new Date())));
-							Log.log.info("db-commit backup end. ({} bytes) ({} ms)", r, System.currentTimeMillis() - t0);
+							Log.log.info("db-commit backup end. ({} bytes) ({} ms)", r, System.currentTimeMillis() - t);
 						}
 					}
 
@@ -185,6 +210,14 @@ public final class DBManager
 	public SimpleDateFormat getBackupDateFormat()
 	{
 		return _sdf;
+	}
+
+	/**
+	 * 获取备份数据库的基准时间
+	 */
+	public long getBackupBaseTime()
+	{
+		return _commitTask._backupBase;
 	}
 
 	/**
