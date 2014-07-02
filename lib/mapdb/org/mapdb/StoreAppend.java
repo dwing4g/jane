@@ -16,6 +16,7 @@
 
 package org.mapdb;
 
+import java.io.DataInput;
 import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
@@ -41,7 +42,7 @@ public class StoreAppend extends Store{
     /** mask used to get file offset from index val*/
     protected static final long FILE_MASK = 0xFFFFFF;
 
-    protected static final int MAX_FILE_SIZE_SHIFT = CC.VOLUME_CHUNK_SHIFT + 6; //TODO shift + 6 !!
+    protected static final int MAX_FILE_SIZE_SHIFT = CC.VOLUME_SLICE_SHIFT + 6; //TODO shift + 6 !!
 
     /** add to size before writing it to file */
     protected static final long SIZEP = 2;
@@ -417,8 +418,8 @@ public class StoreAppend extends Store{
         fileOffset+= packedLongSize(size);
         size-=SIZEP;
         if(size<0) return null;
-        if(size==0) return serializer.deserialize(new DataInput2(new byte[0]),0);
-        DataInput2 in = (DataInput2) vol.getDataInput(fileOffset, (int) size);
+        if(size==0) return serializer.deserialize(new DataIO.DataInputByteArray(new byte[0]),0);
+        DataInput in =  vol.getDataInput(fileOffset, (int) size);
 
         return deserialize(serializer, (int) size,in);
     }

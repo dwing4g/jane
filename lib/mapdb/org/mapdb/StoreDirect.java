@@ -15,6 +15,7 @@
  */
 package org.mapdb;
 
+import java.io.DataInput;
 import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
@@ -493,11 +494,11 @@ public class StoreDirect extends Store{
         if(indexVal == MASK_DISCARD) return null; //preallocated record
 
         int size = (int) (indexVal>>>48);
-        DataInput2 di;
+        DataInput di;
         long offset = indexVal&MASK_OFFSET;
         if((indexVal& MASK_LINKED)==0){
             //read single record
-            di = (DataInput2) phys.getDataInput(offset, size);
+            di = phys.getDataInput(offset, size);
 
         }else{
             //is linked, first construct buffer we will read data to
@@ -507,7 +508,7 @@ public class StoreDirect extends Store{
             byte[] buf = new byte[64];
             //read parts into segment
             for(;;){
-                DataInput2 in = (DataInput2) phys.getDataInput(offset + c, size-c);
+                DataInput in =  phys.getDataInput(offset + c, size-c);
 
                 if(buf.length<pos+size-c)
                     buf = Arrays.copyOf(buf,Math.max(pos+size-c,buf.length*2)); //buf to small, grow
@@ -521,7 +522,7 @@ public class StoreDirect extends Store{
                 //is the next part last?
                 c =  ((next& MASK_LINKED)==0)? 0 : 8;
             }
-            di = new DataInput2(buf);
+            di = new DataIO.DataInputByteArray(buf);
             size = pos;
         }
         return deserialize(serializer, size, di);
@@ -880,7 +881,7 @@ public class StoreDirect extends Store{
         lockAllWrite();
         try{
             final File compactedFile = new File((indexFile!=null?indexFile:File.createTempFile("mapdb","compact"))+".compact");
-            Volume.Factory fab = Volume.fileFactory(compactedFile,rafMode,false,sizeLimit,  CC.VOLUME_CHUNK_SHIFT,0);
+            Volume.Factory fab = Volume.fileFactory(compactedFile,rafMode,false,sizeLimit,  CC.VOLUME_SLICE_SHIFT,0);
             StoreDirect store2 = new StoreDirect(fab,false,false,5,false,0L, checksum,compress,password,false,0);
 
             compactPreUnderLock();
@@ -945,7 +946,7 @@ public class StoreDirect extends Store{
                 if(!physFile2.renameTo(physFile))
                     throw new AssertionError("could not rename file");
 
-                final Volume.Factory fac2 = Volume.fileFactory(indexFile,rafMode, false, sizeLimit, CC.VOLUME_CHUNK_SHIFT,0);
+                final Volume.Factory fac2 = Volume.fileFactory(indexFile,rafMode, false, sizeLimit, CC.VOLUME_SLICE_SHIFT,0);
                 index = fac2.createIndexVolume();
                 phys = fac2.createPhysVolume();
 
@@ -953,9 +954,9 @@ public class StoreDirect extends Store{
                 physFile_.delete();
             }else{
                 //in memory, so copy files into memory
-                Volume indexVol2 = new Volume.MemoryVol(useDirectBuffer,sizeLimit, CC.VOLUME_CHUNK_SHIFT);
+                Volume indexVol2 = new Volume.MemoryVol(useDirectBuffer,sizeLimit, CC.VOLUME_SLICE_SHIFT);
                 Volume.volumeTransfer(indexSize, store2.index, indexVol2);
-                Volume physVol2 = new Volume.MemoryVol(useDirectBuffer,sizeLimit, CC.VOLUME_CHUNK_SHIFT);
+                Volume physVol2 = new Volume.MemoryVol(useDirectBuffer,sizeLimit, CC.VOLUME_SLICE_SHIFT);
                 Volume.volumeTransfer(store2.physSize, store2.phys, physVol2);
 
                 store2.close();
@@ -1154,7 +1155,7 @@ public class StoreDirect extends Store{
                 if(ioList>maxUsedIoList) break;
                 long ret = longStackTake(ioList,recursive);
                 if(ret!=0){
-                    //found larger record, split in two chunks, take first, mark second free
+                    //found larger record, split in two slices, take first, mark second free
                     final long offset = ret & MASK_OFFSET;
 
                     long remaining = s - roundTo16(size);
@@ -1168,8 +1169,8 @@ public class StoreDirect extends Store{
         }
 
         //not available, increase file size
-        if((physSize&CHUNK_SIZE_MOD_MASK)+size>CHUNK_SIZE)
-            physSize += CHUNK_SIZE - (physSize&CHUNK_SIZE_MOD_MASK);
+        if((physSize& SLICE_SIZE_MOD_MASK)+size> SLICE_SIZE)
+            physSize += SLICE_SIZE - (physSize& SLICE_SIZE_MOD_MASK);
         long physSize2 = physSize;
         physSize = roundTo16(physSize+size);
         if(ensureAvail)
