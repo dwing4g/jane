@@ -413,7 +413,7 @@ public final class StorageMVStore implements Storage
 	@Override
 	public void openDB(File file)
 	{
-		closeDB();
+		close();
 		_db = new MVStore.Builder().fileName(file.getPath()).autoCommitDisabled().cacheSize(Const.mvStoreCacheSize).open();
 		_dbFile = file;
 		_keyType = _db.openMap(".keytype");
@@ -531,7 +531,7 @@ public final class StorageMVStore implements Storage
 	}
 
 	@Override
-	public void closeDB()
+	public void close()
 	{
 		if(_db != null && !_db.isClosed())
 		{
@@ -545,7 +545,7 @@ public final class StorageMVStore implements Storage
 	}
 
 	@Override
-	public long backupDB(File fdst) throws IOException
+	public long backup(File fdst) throws IOException
 	{
 		if(_dbFile == null)
 		    throw new IllegalStateException("current database is not opened");

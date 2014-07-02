@@ -177,7 +177,7 @@ public final class DBManager
 							_backupTime += _backupPeriod;
 							if(_backupTime <= t) _backupTime += ((t - _backupTime) / _backupPeriod + 1) * _backupPeriod;
 							Log.log.info("db-commit backup begin...");
-							long r = _storage.backupDB(new File(Const.dbBackupPath, new File(Const.dbFilename).getName() +
+							long r = _storage.backup(new File(Const.dbBackupPath, new File(Const.dbFilename).getName() +
 							        '.' + _storage.getFileSuffix() + '.' + _sdf.format(new Date())));
 							Log.log.info("db-commit backup end. ({} bytes) ({} ms)", r, System.currentTimeMillis() - t);
 						}
@@ -401,7 +401,7 @@ public final class DBManager
 		if(_storage != null)
 		{
 			checkpoint();
-			_storage.closeDB();
+			_storage.close();
 			_storage = null;
 		}
 	}

@@ -474,7 +474,7 @@ public final class StorageLevelDB implements Storage
 	@Override
 	public void openDB(File file) throws IOException
 	{
-		closeDB();
+		close();
 		_db = leveldb_open(file.getAbsolutePath(), Const.levelDBWriteBufferSize << 20, Const.levelDBCacheSize << 20, true);
 		if(_db == 0) throw new IOException("StorageLevelDB.openDB: leveldb_open failed");
 		_dbFile = file;
@@ -530,7 +530,7 @@ public final class StorageLevelDB implements Storage
 	}
 
 	@Override
-	public void closeDB()
+	public void close()
 	{
 		commit();
 		_writing = false;
@@ -544,7 +544,7 @@ public final class StorageLevelDB implements Storage
 	}
 
 	@Override
-	public long backupDB(File fdst) throws IOException
+	public long backup(File fdst) throws IOException
 	{
 		if(_dbFile == null) throw new IllegalStateException("current database is not opened");
 		String srcPath = fdst.getAbsolutePath();

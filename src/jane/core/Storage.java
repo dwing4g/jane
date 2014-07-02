@@ -1,5 +1,6 @@
 package jane.core;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 
@@ -8,7 +9,7 @@ import java.io.IOException;
  * <p>
  * 存储引擎的实现要保证一定的线程安全
  */
-public interface Storage
+public interface Storage extends Closeable
 {
 	/**
 	 * 遍历数据库表的用户接口
@@ -171,7 +172,8 @@ public interface Storage
 	 * 要保证内存中的数据完整地刷新到磁盘上<br>
 	 * 关闭后除了再执行openDB打开之外不会做任何其它操作
 	 */
-	void closeDB();
+	@Override
+	void close();
 
 	/**
 	 * 热备份数据库
@@ -181,5 +183,5 @@ public interface Storage
 	 * @param file 备份目标的数据库文件名. 所在目录必须已经存在,文件已存在时会自动删除再执行备份
 	 * @return 返回备份操作写入磁盘的字节数量
 	 */
-	long backupDB(File file) throws IOException;
+	long backup(File file) throws IOException;
 }

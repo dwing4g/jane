@@ -452,7 +452,7 @@ public final class StorageMapDB implements Storage
 	@Override
 	public void openDB(File file)
 	{
-		closeDB();
+		close();
 		DBMaker<?> dbMaker = DBMaker.newFileDB(file);
 		// 取消注释下面的commitFileSyncDisable可以加快一点commit的速度,写数据量大的时候可以避免同时读非cache数据卡住过长时间
 		// 但程序崩溃的话,有可能导致某些未刷新的数据丢失或影响后面的备份操作,建议平时都要注释
@@ -517,7 +517,7 @@ public final class StorageMapDB implements Storage
 	}
 
 	@Override
-	public void closeDB()
+	public void close()
 	{
 		if(_db != null && !_db.isClosed())
 		{
@@ -529,7 +529,7 @@ public final class StorageMapDB implements Storage
 	}
 
 	@Override
-	public long backupDB(File fdst) throws IOException
+	public long backup(File fdst) throws IOException
 	{
 		if(_dbFile == null)
 		    throw new IllegalStateException("current database is not opened");
