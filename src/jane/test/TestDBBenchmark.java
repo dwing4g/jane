@@ -16,6 +16,7 @@ import jane.bean.TestBean;
 // RUN: start.bat b ld 8 0 150000
 public final class TestDBBenchmark
 {
+	@SuppressWarnings("resource")
 	public static void main(String[] args) throws Throwable
 	{
 		Storage sto = null;
