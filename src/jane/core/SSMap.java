@@ -12,7 +12,7 @@ import jane.core.SContext.Wrap;
  */
 public final class SSMap<K, V> extends SMap<K, V> implements NavigableMap<K, V>
 {
-	public SSMap(Wrap<?> owner, NavigableMap<K, V> map, SMapListener listener)
+	public SSMap(Wrap<?> owner, NavigableMap<K, V> map, SMapListener<K, V> listener)
 	{
 		super(owner, map, listener);
 	}

@@ -697,16 +697,16 @@ typedef.hashmap = merge(typedef.list,
 	type = function(var) return "HashMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	type_i = function(var) return "Map<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	stype = function(var) return "SMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
-	field = [[
+	field = function(var) return [[
 	private static Field FIELD_#(var.name);
-	private static SMapListener LISTENER_#(var.name);
-]],
+	private static SMapListener<]] .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. [[> LISTENER_#(var.name);
+]] end,
 	fieldget = "\t\t\tFIELD_#(var.name) = c.getDeclaredField(\"#(var.name)\"); FIELD_#(var.name).setAccessible(true);\n";
 	new = function(var) return "\t\t#(var.name) = new HashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap));\n" end,
 	init = function(var) return "this.#(var.name) = new HashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).putAll(#(var.name))" end,
-	getsafe = [[
+	getsafe = function(var) return [[
 
-		public static void onListener#(var.name_u)(SMapListener listener)
+		public static void onListener#(var.name_u)(SMapListener<]] .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. [[> listener)
 		{
 			LISTENER_#(var.name) = listener;
 		}
@@ -720,7 +720,7 @@ typedef.hashmap = merge(typedef.list,
 		{
 			return _bean.#(var.name);
 		}
-]],
+]] end,
 	marshal = function(var) return string.format([[if(!this.#(var.name).isEmpty())
 		{
 			s.marshal2(0x%04x).marshalUInt(this.#(var.name).size());

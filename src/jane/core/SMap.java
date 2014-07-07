@@ -16,14 +16,14 @@ import jane.core.SContext.Wrap;
  */
 public class SMap<K, V> implements Map<K, V>, Cloneable
 {
-	public interface SMapListener
+	public interface SMapListener<K, V>
 	{
 		/**
 		 * 增删改统一一个回调接口
 		 * @param rec 对应table及记录键值的封装
 		 * @param changed 所有改动的kv对. 其中value为null的key表示被删除
 		 */
-		void onChanged(Rec rec, Map<?, ?> changed);
+		void onChanged(Rec rec, Map<K, V> changed);
 	}
 
 	protected final Wrap<?>   _owner;
@@ -31,7 +31,7 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 	private SContext          _sCtx;
 	protected Map<K, V>       _changed;
 
-	public SMap(Wrap<?> owner, Map<K, V> map, final SMapListener listener)
+	public SMap(Wrap<?> owner, Map<K, V> map, final SMapListener<K, V> listener)
 	{
 		_owner = owner;
 		_map = map;

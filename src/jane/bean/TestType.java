@@ -49,11 +49,11 @@ public final class TestType extends Bean<TestType>
 	private static Field FIELD_v8;
 	private static Field FIELD_v9;
 	private static Field FIELD_v16;
-	private static SMapListener LISTENER_v16;
+	private static SMapListener<Long, String> LISTENER_v16;
 	private static Field FIELD_v17;
-	private static SMapListener LISTENER_v17;
+	private static SMapListener<TestBean, Boolean> LISTENER_v17;
 	private static Field FIELD_v18;
-	private static SMapListener LISTENER_v18;
+	private static SMapListener<Octets, TestBean> LISTENER_v18;
 
 	private /* 1*/ boolean v1; // 1字节布尔,0表示假,1表示真,其它默认表示真
 	private /* 2*/ byte v2; // 1字节整数
@@ -924,7 +924,7 @@ public final class TestType extends Bean<TestType>
 			return _bean.v15;
 		}
 
-		public static void onListenerV16(SMapListener listener)
+		public static void onListenerV16(SMapListener<Long, String> listener)
 		{
 			LISTENER_v16 = listener;
 		}
@@ -939,7 +939,7 @@ public final class TestType extends Bean<TestType>
 			return _bean.v16;
 		}
 
-		public static void onListenerV17(SMapListener listener)
+		public static void onListenerV17(SMapListener<TestBean, Boolean> listener)
 		{
 			LISTENER_v17 = listener;
 		}
@@ -954,7 +954,7 @@ public final class TestType extends Bean<TestType>
 			return _bean.v17;
 		}
 
-		public static void onListenerV18(SMapListener listener)
+		public static void onListenerV18(SMapListener<Octets, TestBean> listener)
 		{
 			LISTENER_v18 = listener;
 		}
