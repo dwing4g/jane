@@ -2,120 +2,120 @@ package jane.core;
 
 import java.util.Comparator;
 import java.util.NavigableSet;
-import jane.core.SContext.Wrap;
+import jane.core.SContext.Safe;
 
 /**
  * NavigableSet类型的安全修改类
  */
-public final class SSSet<V> extends SSet<V> implements NavigableSet<V>
+public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 {
-	public SSSet(Wrap<?> owner, NavigableSet<V> set)
+	public SSSet(Safe<?> owner, NavigableSet<V> set)
 	{
 		super(owner, set);
 	}
 
 	@Override
-	public Comparator<? super V> comparator()
+	public Comparator<? super S> comparator()
 	{
-		return ((NavigableSet<V>)_set).comparator();
+		return null;
 	}
 
-	@Override
-	public V first()
+	public V firstUnsafe()
 	{
 		return ((NavigableSet<V>)_set).first();
 	}
 
-	public <S extends Wrap<V>> S firstSafe()
+	@Override
+	public S first()
 	{
-		return safe(first());
+		return safe(firstUnsafe());
 	}
 
-	@Override
-	public V last()
+	public V lastUnsafe()
 	{
 		return ((NavigableSet<V>)_set).last();
 	}
 
-	public <S extends Wrap<V>> S lastSafe()
+	@Override
+	public S last()
 	{
-		return safe(last());
+		return safe(lastUnsafe());
 	}
 
-	@Override
-	public V lower(V e)
+	public V lowerUnsafe(V e)
 	{
 		return ((NavigableSet<V>)_set).lower(e);
 	}
 
-	public <S extends Wrap<V>> S lowerSafe(S s)
+	@Override
+	public S lower(S s)
 	{
-		return safe(lower(s.unsafe()));
+		return safe(lowerUnsafe(unsafe(s)));
 	}
 
-	@Override
-	public V floor(V e)
+	public V floorUnsafe(V e)
 	{
 		return ((NavigableSet<V>)_set).floor(e);
 	}
 
-	public <S extends Wrap<V>> S floorSafe(S s)
+	@Override
+	public S floor(S s)
 	{
-		return safe(floor(s.unsafe()));
+		return safe(floorUnsafe(unsafe(s)));
 	}
 
-	@Override
-	public V ceiling(V e)
+	public V ceilingUnsafe(V e)
 	{
 		return ((NavigableSet<V>)_set).ceiling(e);
 	}
 
-	public <S extends Wrap<V>> S ceilingSafe(S s)
+	@Override
+	public S ceiling(S s)
 	{
-		return safe(ceiling(s.unsafe()));
+		return safe(ceilingUnsafe(unsafe(s)));
 	}
 
-	@Override
-	public V higher(V e)
+	public V higherUnsafe(V e)
 	{
 		return ((NavigableSet<V>)_set).higher(e);
 	}
 
-	public <S extends Wrap<V>> S higherSafe(S s)
+	@Override
+	public S higher(S s)
 	{
-		return safe(higher(s.unsafe()));
+		return safe(higherUnsafe(unsafe(s)));
 	}
 
-	@Override
-	public V pollFirst()
+	public V pollFirstDirect()
 	{
 		V v = ((NavigableSet<V>)_set).pollFirst();
 		if(v != null) addUndoRemove(v);
 		return v;
 	}
 
-	public <S extends Wrap<V>> S pollFirstSafe()
+	@Override
+	public S pollFirst()
 	{
-		return safe(pollFirst());
+		return safeAlone(pollFirstDirect());
 	}
 
-	@Override
-	public V pollLast()
+	public V pollLastDirect()
 	{
 		V v = ((NavigableSet<V>)_set).pollLast();
 		if(v != null) addUndoRemove(v);
 		return v;
 	}
 
-	public <S extends Wrap<V>> S pollLastSafe()
+	@Override
+	public S pollLast()
 	{
-		return safe(pollLast());
+		return safeAlone(pollLastDirect());
 	}
 
 	@Override
-	public SSSet<V> descendingSet()
+	public SSSet<V, S> descendingSet()
 	{
-		return new SSSet<V>(_owner, ((NavigableSet<V>)_set).descendingSet());
+		return new SSSet<V, S>(_owner, ((NavigableSet<V>)_set).descendingSet());
 	}
 
 	@Override
@@ -124,69 +124,69 @@ public final class SSSet<V> extends SSet<V> implements NavigableSet<V>
 		return new SIterator(((NavigableSet<V>)_set).descendingIterator());
 	}
 
-	@Override
-	public SSSet<V> subSet(V from, boolean fromInclusive, V to, boolean toInclusive)
+	public SSSet<V, S> subSetDirect(V from, boolean fromInclusive, V to, boolean toInclusive)
 	{
-		return new SSSet<V>(_owner, ((NavigableSet<V>)_set).subSet(from, fromInclusive, to, toInclusive));
-	}
-
-	public <S extends Wrap<V>> SSSet<V> subSetSafe(S from, boolean fromInclusive, S to, boolean toInclusive)
-	{
-		return subSet(from.unsafe(), fromInclusive, to.unsafe(), toInclusive);
+		return new SSSet<V, S>(_owner, ((NavigableSet<V>)_set).subSet(from, fromInclusive, to, toInclusive));
 	}
 
 	@Override
-	public SSSet<V> headSet(V to, boolean inclusive)
+	public SSSet<V, S> subSet(S from, boolean fromInclusive, S to, boolean toInclusive)
 	{
-		return new SSSet<V>(_owner, ((NavigableSet<V>)_set).headSet(to, inclusive));
+		return subSetDirect(unsafe(from), fromInclusive, unsafe(to), toInclusive);
 	}
 
-	public <S extends Wrap<V>> SSSet<V> headSetSafe(S to, boolean inclusive)
+	public SSSet<V, S> headSetDirect(V to, boolean inclusive)
 	{
-		return headSet(to.unsafe(), inclusive);
-	}
-
-	@Override
-	public SSSet<V> tailSet(V from, boolean inclusive)
-	{
-		return new SSSet<V>(_owner, ((NavigableSet<V>)_set).tailSet(from, inclusive));
-	}
-
-	public <S extends Wrap<V>> SSSet<V> tailSetSafe(S from, boolean inclusive)
-	{
-		return tailSet(from.unsafe(), inclusive);
+		return new SSSet<V, S>(_owner, ((NavigableSet<V>)_set).headSet(to, inclusive));
 	}
 
 	@Override
-	public SSSet<V> subSet(V from, V to)
+	public SSSet<V, S> headSet(S to, boolean inclusive)
 	{
-		return subSet(from, true, to, false);
+		return headSetDirect(unsafe(to), inclusive);
 	}
 
-	public <S extends Wrap<V>> SSSet<V> subSetSafe(S from, S to)
+	public SSSet<V, S> tailSetDirect(V from, boolean inclusive)
 	{
-		return subSet(from.unsafe(), true, to.unsafe(), false);
-	}
-
-	@Override
-	public SSSet<V> headSet(V to)
-	{
-		return headSet(to, false);
-	}
-
-	public <S extends Wrap<V>> SSSet<V> headSetSafe(S to)
-	{
-		return headSet(to.unsafe(), false);
+		return new SSSet<V, S>(_owner, ((NavigableSet<V>)_set).tailSet(from, inclusive));
 	}
 
 	@Override
-	public SSSet<V> tailSet(V from)
+	public SSSet<V, S> tailSet(S from, boolean inclusive)
 	{
-		return tailSet(from, true);
+		return tailSetDirect(unsafe(from), inclusive);
 	}
 
-	public <S extends Wrap<V>> SSSet<V> tailSetSafe(S from)
+	public SSSet<V, S> subSetDirect(V from, V to)
 	{
-		return tailSet(from.unsafe(), true);
+		return subSetDirect(from, true, to, false);
+	}
+
+	@Override
+	public SSSet<V, S> subSet(S from, S to)
+	{
+		return subSetDirect(unsafe(from), true, unsafe(to), false);
+	}
+
+	public SSSet<V, S> headSetDirect(V to)
+	{
+		return headSetDirect(to, false);
+	}
+
+	@Override
+	public SSSet<V, S> headSet(S to)
+	{
+		return headSetDirect(unsafe(to), false);
+	}
+
+	public SSSet<V, S> tailSetDirect(V from)
+	{
+		return tailSetDirect(from, true);
+	}
+
+	@Override
+	public SSSet<V, S> tailSet(S from)
+	{
+		return tailSetDirect(unsafe(from), true);
 	}
 }

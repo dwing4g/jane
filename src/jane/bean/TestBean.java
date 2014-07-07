@@ -8,7 +8,6 @@ import jane.core.MarshalException;
 import jane.core.OctetsStream;
 import jane.core.SBase;
 import jane.core.SContext;
-import jane.core.SContext.Wrap;
 
 /**
  * bean的注释
@@ -218,7 +217,7 @@ public final class TestBean extends Bean<TestBean>
 	}
 
 	@Override
-	public Safe safe(Wrap<?> parent)
+	public Safe safe(SContext.Safe<?> parent)
 	{
 		return new Safe(this, parent);
 	}
@@ -231,7 +230,7 @@ public final class TestBean extends Bean<TestBean>
 
 	public static final class Safe extends SContext.Safe<TestBean>
 	{
-		private Safe(TestBean bean, Wrap<?> parent)
+		private Safe(TestBean bean, SContext.Safe<?> parent)
 		{
 			super(bean, parent);
 		}

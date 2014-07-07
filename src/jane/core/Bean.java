@@ -2,7 +2,6 @@ package jane.core;
 
 import java.io.Serializable;
 import jane.core.SContext.Safe;
-import jane.core.SContext.Wrap;
 
 /**
  * bean的基类(抽象类)
@@ -194,7 +193,7 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	 * 获取自身的安全封装(在事务中支持异常回滚)
 	 * @param parent
 	 */
-	public Safe<B> safe(Wrap<?> parent)
+	public Safe<B> safe(Safe<?> parent)
 	{
 		throw new UnsupportedOperationException();
 	}

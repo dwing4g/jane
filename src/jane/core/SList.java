@@ -1,21 +1,22 @@
 package jane.core;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import jane.core.SContext.Wrap;
+import jane.core.SContext.Safe;
 
 /**
  * List类型的安全修改类
  */
-public final class SList<V> implements List<V>, Cloneable
+public final class SList<V, S> implements List<S>, Cloneable
 {
-	private final Wrap<?> _owner;
+	private final Safe<?> _owner;
 	private final List<V> _list;
 	private SContext      _sCtx;
 
-	public SList(Wrap<?> owner, List<V> list)
+	public SList(Safe<?> owner, List<V> list)
 	{
 		_owner = owner;
 		_list = list;
@@ -26,6 +27,24 @@ public final class SList<V> implements List<V>, Cloneable
 		if(_sCtx != null) return _sCtx;
 		_owner.dirty();
 		return _sCtx = SContext.current();
+	}
+
+	@SuppressWarnings("unchecked")
+	private S safe(V v)
+	{
+		return (S)(v instanceof Bean ? ((Bean<?>)v).safe(_owner) : v);
+	}
+
+	@SuppressWarnings("unchecked")
+	private S safeAlone(V v)
+	{
+		return (S)(v instanceof Bean ? ((Bean<?>)v).safe(null) : v);
+	}
+
+	@SuppressWarnings("unchecked")
+	private V unsafe(Object v)
+	{
+		return (V)(v instanceof Safe ? ((Safe<?>)v).unsafe() : v);
 	}
 
 	@Override
@@ -43,7 +62,7 @@ public final class SList<V> implements List<V>, Cloneable
 	@Override
 	public boolean contains(Object o)
 	{
-		return _list.contains(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o);
+		return _list.contains(unsafe(o));
 	}
 
 	@Override
@@ -55,13 +74,13 @@ public final class SList<V> implements List<V>, Cloneable
 	@Override
 	public int indexOf(Object o)
 	{
-		return _list.indexOf(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o);
+		return _list.indexOf(unsafe(o));
 	}
 
 	@Override
 	public int lastIndexOf(Object o)
 	{
-		return _list.lastIndexOf(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o);
+		return _list.lastIndexOf(unsafe(o));
 	}
 
 	@Override
@@ -77,20 +96,12 @@ public final class SList<V> implements List<V>, Cloneable
 	}
 
 	@Override
-	public V get(int idx)
+	public S get(int idx)
 	{
-		return _list.get(idx);
+		return safe(_list.get(idx));
 	}
 
-	@SuppressWarnings("unchecked")
-	public <S extends Wrap<V>> S getSafe(int idx)
-	{
-		V v = _list.get(idx);
-		return v != null ? (S)((Bean<?>)v).safe(_owner) : null;
-	}
-
-	@Override
-	public boolean add(V v)
+	public boolean addDirect(V v)
 	{
 		if(!_list.add(v)) return false;
 		sContext().addOnRollback(new Runnable()
@@ -104,13 +115,13 @@ public final class SList<V> implements List<V>, Cloneable
 		return true;
 	}
 
-	public <S extends Wrap<V>> void add(S v)
+	@Override
+	public boolean add(S s)
 	{
-		add(v.unsafe());
+		return addDirect(unsafe(s));
 	}
 
-	@Override
-	public void add(final int idx, V v)
+	public void addDirect(final int idx, V v)
 	{
 		_list.add(idx, v);
 		sContext().addOnRollback(new Runnable()
@@ -123,13 +134,13 @@ public final class SList<V> implements List<V>, Cloneable
 		});
 	}
 
-	public <S extends Wrap<V>> void add(final int idx, S v)
+	@Override
+	public void add(int idx, S s)
 	{
-		add(idx, v.unsafe());
+		addDirect(idx, unsafe(s));
 	}
 
-	@Override
-	public boolean addAll(Collection<? extends V> c)
+	public boolean addAllDirect(Collection<? extends V> c)
 	{
 		final int n = c.size();
 		if(!_list.addAll(c)) return false;
@@ -146,7 +157,24 @@ public final class SList<V> implements List<V>, Cloneable
 	}
 
 	@Override
-	public boolean addAll(final int idx, Collection<? extends V> c)
+	public boolean addAll(Collection<? extends S> c)
+	{
+		final int n = c.size();
+		for(S s : c)
+			_list.add(unsafe(s));
+		sContext().addOnRollback(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				for(int i = _list.size() - 1, e = i - n; i > e; --i)
+					_list.remove(i);
+			}
+		});
+		return true;
+	}
+
+	public boolean addAllDirect(final int idx, Collection<? extends V> c)
 	{
 		final int n = c.size();
 		if(!_list.addAll(idx, c)) return false;
@@ -163,7 +191,15 @@ public final class SList<V> implements List<V>, Cloneable
 	}
 
 	@Override
-	public V set(final int idx, V v)
+	public boolean addAll(int idx, Collection<? extends S> c)
+	{
+		List<V> list = new ArrayList<V>(c.size());
+		for(S s : c)
+			list.add(unsafe(s));
+		return addAllDirect(idx, list);
+	}
+
+	public V setDirect(final int idx, V v)
 	{
 		final V vOld = _list.set(idx, v);
 		sContext().addOnRollback(new Runnable()
@@ -177,15 +213,13 @@ public final class SList<V> implements List<V>, Cloneable
 		return vOld;
 	}
 
-	@SuppressWarnings("unchecked")
-	public <S extends Wrap<V>> S set(final int idx, S v)
+	@Override
+	public S set(int idx, S s)
 	{
-		V vOld = set(idx, v.unsafe());
-		return vOld != null ? (S)((Bean<?>)vOld).safe(_owner) : null;
+		return safeAlone(setDirect(idx, unsafe(s)));
 	}
 
-	@Override
-	public V remove(final int idx)
+	public V removeDirect(final int idx)
 	{
 		final V vOld = _list.remove(idx);
 		sContext().addOnRollback(new Runnable()
@@ -199,17 +233,16 @@ public final class SList<V> implements List<V>, Cloneable
 		return vOld;
 	}
 
-	@SuppressWarnings("unchecked")
-	public <S extends Wrap<V>> S removeSafe(int idx)
+	@Override
+	public S remove(int idx)
 	{
-		V vOld = remove(idx);
-		return vOld != null ? (S)((Bean<?>)vOld).safe(_owner) : null;
+		return safeAlone(removeDirect(idx));
 	}
 
 	@Override
 	public boolean remove(Object o)
 	{
-		final int idx = indexOf(o);
+		int idx = indexOf(o);
 		if(idx < 0) return false;
 		remove(idx);
 		return true;
@@ -219,9 +252,9 @@ public final class SList<V> implements List<V>, Cloneable
 	public boolean removeAll(Collection<?> c)
 	{
 		boolean r = false;
-		for(Iterator<V> it = iterator(); it.hasNext();)
+		for(SIterator it = iterator(); it.hasNext();)
 		{
-			if(c.contains(it.next()))
+			if(c.contains(it.nextUnsafe()))
 			{
 				it.remove();
 				r = true;
@@ -234,9 +267,9 @@ public final class SList<V> implements List<V>, Cloneable
 	public boolean retainAll(Collection<?> c)
 	{
 		boolean r = false;
-		for(Iterator<?> it = iterator(); it.hasNext();)
+		for(SIterator it = iterator(); it.hasNext();)
 		{
-			if(!c.contains(it.next()))
+			if(!c.contains(it.nextUnsafe()))
 			{
 				it.remove();
 				r = true;
@@ -276,7 +309,7 @@ public final class SList<V> implements List<V>, Cloneable
 		_list.clear();
 	}
 
-	public final class SIterator implements Iterator<V>
+	public final class SIterator implements Iterator<S>
 	{
 		private final Iterator<V> _it  = _list.iterator();
 		private V                 _cur;
@@ -292,19 +325,17 @@ public final class SList<V> implements List<V>, Cloneable
 			return _it.hasNext();
 		}
 
-		@Override
-		public V next()
+		public V nextUnsafe()
 		{
 			_cur = _it.next();
 			++_idx;
 			return _cur;
 		}
 
-		@SuppressWarnings("unchecked")
-		public <S extends Wrap<V>> S nextSafe()
+		@Override
+		public S next()
 		{
-			V v = next();
-			return v != null ? (S)((Bean<?>)v).safe(_owner) : null;
+			return safe(nextUnsafe());
 		}
 
 		@Override
@@ -326,7 +357,7 @@ public final class SList<V> implements List<V>, Cloneable
 		}
 	}
 
-	public final class SListIterator implements ListIterator<V>
+	public final class SListIterator implements ListIterator<S>
 	{
 		private final ListIterator<V> _it;
 		private V                     _cur;
@@ -363,8 +394,7 @@ public final class SList<V> implements List<V>, Cloneable
 			return _it.previousIndex();
 		}
 
-		@Override
-		public V next()
+		public V nextUnsafe()
 		{
 			_cur = _it.next();
 			++_idx;
@@ -372,15 +402,13 @@ public final class SList<V> implements List<V>, Cloneable
 			return _cur;
 		}
 
-		@SuppressWarnings("unchecked")
-		public <S extends Wrap<V>> S nextSafe()
+		@Override
+		public S next()
 		{
-			V v = next();
-			return v != null ? (S)((Bean<?>)v).safe(_owner) : null;
+			return safe(nextUnsafe());
 		}
 
-		@Override
-		public V previous()
+		public V previousUnsafe()
 		{
 			_cur = _it.previous();
 			--_idx;
@@ -388,11 +416,10 @@ public final class SList<V> implements List<V>, Cloneable
 			return _cur;
 		}
 
-		@SuppressWarnings("unchecked")
-		public <S extends Wrap<V>> S previousSafe()
+		@Override
+		public S previous()
 		{
-			V v = previous();
-			return v != null ? (S)((Bean<?>)v).safe(_owner) : null;
+			return safe(previousUnsafe());
 		}
 
 		@Override
@@ -413,8 +440,7 @@ public final class SList<V> implements List<V>, Cloneable
 			_idx -= 1 - _idxOff;
 		}
 
-		@Override
-		public void set(V v)
+		public void setDirect(V v)
 		{
 			_it.set(v);
 			sContext().addOnRollback(new Runnable()
@@ -430,13 +456,13 @@ public final class SList<V> implements List<V>, Cloneable
 			});
 		}
 
-		public <S extends Wrap<V>> void set(S v)
+		@Override
+		public void set(S s)
 		{
-			set(v.unsafe());
+			setDirect(unsafe(s));
 		}
 
-		@Override
-		public void add(V v)
+		public void addDirect(V v)
 		{
 			_it.add(v);
 			sContext().addOnRollback(new Runnable()
@@ -451,9 +477,10 @@ public final class SList<V> implements List<V>, Cloneable
 			});
 		}
 
-		public <S extends Wrap<V>> void add(S v)
+		@Override
+		public void add(S s)
 		{
-			add(v.unsafe());
+			addDirect(unsafe(s));
 		}
 	}
 
@@ -476,9 +503,9 @@ public final class SList<V> implements List<V>, Cloneable
 	}
 
 	@Override
-	public SList<V> subList(int idxFrom, int idxTo)
+	public SList<V, S> subList(int idxFrom, int idxTo)
 	{
-		return new SList<V>(_owner, _list.subList(idxFrom, idxTo));
+		return new SList<V, S>(_owner, _list.subList(idxFrom, idxTo));
 	}
 
 	@Override

@@ -3,27 +3,21 @@ package jane.core;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
-import jane.core.SContext.Wrap;
+import jane.core.SContext.Safe;
 
 /**
  * Set类型的安全修改类
  */
-public class SSet<V> implements Set<V>, Cloneable
+public class SSet<V, S> implements Set<S>, Cloneable
 {
-	protected final Wrap<?> _owner;
+	protected final Safe<?> _owner;
 	protected final Set<V>  _set;
 	private SContext        _sCtx;
 
-	public SSet(Wrap<?> owner, Set<V> set)
+	public SSet(Safe<?> owner, Set<V> set)
 	{
 		_owner = owner;
 		_set = set;
-	}
-
-	@SuppressWarnings("unchecked")
-	protected <S extends Wrap<V>> S safe(V v)
-	{
-		return v != null ? (S)((Bean<?>)v).safe(_owner) : null;
 	}
 
 	protected SContext sContext()
@@ -31,6 +25,24 @@ public class SSet<V> implements Set<V>, Cloneable
 		if(_sCtx != null) return _sCtx;
 		_owner.dirty();
 		return _sCtx = SContext.current();
+	}
+
+	@SuppressWarnings("unchecked")
+	protected S safe(V v)
+	{
+		return (S)(v instanceof Bean ? ((Bean<?>)v).safe(_owner) : v);
+	}
+
+	@SuppressWarnings("unchecked")
+	protected S safeAlone(V v)
+	{
+		return (S)(v instanceof Bean ? ((Bean<?>)v).safe(null) : v);
+	}
+
+	@SuppressWarnings("unchecked")
+	protected V unsafe(Object v)
+	{
+		return (V)(v instanceof Safe ? ((Safe<?>)v).unsafe() : v);
 	}
 
 	protected void addUndoAdd(final V v)
@@ -72,7 +84,7 @@ public class SSet<V> implements Set<V>, Cloneable
 	@Override
 	public boolean contains(Object o)
 	{
-		return _set.contains(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o);
+		return _set.contains(unsafe(o));
 	}
 
 	@Override
@@ -93,41 +105,43 @@ public class SSet<V> implements Set<V>, Cloneable
 		return _set.toArray(a);
 	}
 
-	@Override
-	public boolean add(V v)
+	public boolean addDirect(V v)
 	{
 		if(!_set.add(v)) return false;
 		addUndoAdd(v);
 		return true;
 	}
 
-	public <S extends Wrap<V>> void add(S v)
+	@Override
+	public boolean add(S s)
 	{
-		add(v.unsafe());
+		return addDirect(unsafe(s));
 	}
 
-	@Override
-	public boolean addAll(Collection<? extends V> c)
+	public boolean addAllDirect(Collection<? extends V> c)
 	{
 		boolean r = false;
 		for(V v : c)
-			if(add(v)) r = true;
+			if(addDirect(v)) r = true;
 		return r;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
-	public boolean remove(Object o)
+	public boolean addAll(Collection<? extends S> c)
 	{
-		Object obj = (o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o);
-		if(!_set.remove(obj)) return false;
-		addUndoRemove((V)obj);
-		return true;
+		boolean r = false;
+		for(S s : c)
+			if(add(s)) r = true;
+		return r;
 	}
 
-	public <S extends Wrap<V>> boolean removeSafe(S v)
+	@Override
+	public boolean remove(Object s)
 	{
-		return remove(v.unsafe());
+		V v = unsafe(s);
+		if(!_set.remove(v)) return false;
+		addUndoRemove(v);
+		return true;
 	}
 
 	@Override
@@ -150,9 +164,9 @@ public class SSet<V> implements Set<V>, Cloneable
 	{
 		if(_set.isEmpty() || _set == c || this == c) return false;
 		boolean r = false;
-		for(Iterator<V> it = iterator(); it.hasNext();)
+		for(SIterator it = iterator(); it.hasNext();)
 		{
-			if(!c.contains(it.next()))
+			if(!c.contains(it.nextUnsafe()))
 			{
 				it.remove();
 				r = true;
@@ -192,7 +206,7 @@ public class SSet<V> implements Set<V>, Cloneable
 		_set.clear();
 	}
 
-	public final class SIterator implements Iterator<V>
+	public final class SIterator implements Iterator<S>
 	{
 		private final Iterator<V> _it;
 		private V                 _cur;
@@ -208,15 +222,15 @@ public class SSet<V> implements Set<V>, Cloneable
 			return _it.hasNext();
 		}
 
-		@Override
-		public V next()
+		public V nextUnsafe()
 		{
 			return _cur = _it.next();
 		}
 
-		public <S extends Wrap<V>> S nextSafe()
+		@Override
+		public S next()
 		{
-			return safe(next());
+			return safe(_cur = _it.next());
 		}
 
 		@Override

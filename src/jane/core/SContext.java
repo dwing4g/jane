@@ -11,17 +11,17 @@ import java.util.List;
  */
 public final class SContext
 {
-	public static abstract class Wrap<B>
+	public static abstract class Safe<B extends Bean<B>> implements Comparable<B>, Cloneable
 	{
 		protected final B     _bean;
-		private final Wrap<?> _parent;
+		private final Safe<?> _parent;
 		protected SContext    _sCtx;
 		private Rec           _rec;
 		private Runnable      _onDirty;
 		protected boolean     _fullUndo;
 		private boolean       _dirty;
 
-		protected Wrap(B bean, Wrap<?> parent)
+		protected Safe(B bean, Safe<?> parent)
 		{
 			_bean = bean;
 			_parent = (parent != null ? parent : this);
@@ -32,16 +32,16 @@ public final class SContext
 			return _bean;
 		}
 
-		public Wrap<?> parent()
+		public Safe<?> parent()
 		{
 			return _parent;
 		}
 
-		public Wrap<?> owner()
+		public Safe<?> owner()
 		{
-			for(Wrap<?> parent = _parent;;)
+			for(Safe<?> parent = _parent;;)
 			{
-				Wrap<?> o = parent._parent;
+				Safe<?> o = parent._parent;
 				if(o == parent) return parent;
 				parent = o;
 			}
@@ -96,14 +96,6 @@ public final class SContext
 				_sCtx = current();
 			}
 			return true;
-		}
-	}
-
-	public static abstract class Safe<B extends Bean<B>> extends Wrap<B> implements Comparable<B>, Cloneable
-	{
-		protected Safe(B bean, Wrap<?> parent)
-		{
-			super(bean, parent);
 		}
 
 		public void addFullUndo()

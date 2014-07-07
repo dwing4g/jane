@@ -5,7 +5,6 @@ import jane.core.Bean;
 import jane.core.MarshalException;
 import jane.core.OctetsStream;
 import jane.core.SContext;
-import jane.core.SContext.Wrap;
 
 /**
  * 测试空bean
@@ -125,7 +124,7 @@ public final class TestEmpty extends Bean<TestEmpty>
 	}
 
 	@Override
-	public Safe safe(Wrap<?> parent)
+	public Safe safe(SContext.Safe<?> parent)
 	{
 		return new Safe(this, parent);
 	}
@@ -138,7 +137,7 @@ public final class TestEmpty extends Bean<TestEmpty>
 
 	public static final class Safe extends SContext.Safe<TestEmpty>
 	{
-		private Safe(TestEmpty bean, Wrap<?> parent)
+		private Safe(TestEmpty bean, SContext.Safe<?> parent)
 		{
 			super(bean, parent);
 		}

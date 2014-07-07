@@ -61,6 +61,13 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		_changed = changed;
 	}
 
+	private SContext sContext()
+	{
+		if(_sCtx != null) return _sCtx;
+		_owner.dirty();
+		return _sCtx = SContext.current();
+	}
+
 	@SuppressWarnings("unchecked")
 	protected S safe(final Object k, final V v)
 	{
@@ -81,22 +88,15 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	private S safe(V v)
+	private S safeAlone(V v)
 	{
-		return (S)(v instanceof Bean ? ((Bean<?>)v).safe(_owner) : v);
+		return (S)(v instanceof Bean ? ((Bean<?>)v).safe(null) : v);
 	}
 
 	@SuppressWarnings("unchecked")
 	private V unsafe(Object v)
 	{
 		return (V)(v instanceof Safe ? ((Safe<?>)v).unsafe() : v);
-	}
-
-	private SContext sContext()
-	{
-		if(_sCtx != null) return _sCtx;
-		_owner.dirty();
-		return _sCtx = SContext.current();
 	}
 
 	protected void addUndoPut(final K k, final V vOld)
@@ -142,7 +142,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	@Override
 	public boolean containsKey(Object k)
 	{
-		return _map.containsKey(k);
+		return _map.containsKey(unsafe(k));
 	}
 
 	@Override
@@ -162,7 +162,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		return safe(k, _map.get(k));
 	}
 
-	public V putUnsafe(K k, V v)
+	public V putDirect(K k, V v)
 	{
 		if(v == null) throw new NullPointerException();
 		if(_changed != null) _changed.put(k, v);
@@ -174,7 +174,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	@Override
 	public S put(K k, S s)
 	{
-		return safe(putUnsafe(k, unsafe(s)));
+		return safeAlone(putDirect(k, unsafe(s)));
 	}
 
 	@Override
@@ -185,24 +185,24 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		{
 			S s = e.getValue();
 			V v = unsafe(s);
-			if(v != null) putUnsafe(e.getKey(), v);
+			if(v != null) putDirect(e.getKey(), v);
 		}
 	}
 
-	public void putAllUnsafe(Map<? extends K, ? extends V> m)
+	public void putAllDirect(Map<? extends K, ? extends V> m)
 	{
 		if(_map == m || this == m) return;
 		for(Entry<? extends K, ? extends V> e : m.entrySet())
 		{
 			V v = e.getValue();
-			if(v != null) putUnsafe(e.getKey(), v);
+			if(v != null) putDirect(e.getKey(), v);
 		}
 	}
 
 	@SuppressWarnings("unchecked")
-	public V removeUnsafe(Object k)
+	public V removeDirect(Object k)
 	{
-		final V vOld = _map.remove(k);
+		V vOld = _map.remove(unsafe(k));
 		if(vOld == null) return null;
 		addUndoRemove((K)k, vOld);
 		return vOld;
@@ -211,7 +211,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	@Override
 	public S remove(Object k)
 	{
-		return safe(removeUnsafe(k));
+		return safeAlone(removeDirect(k));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -271,7 +271,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 			return safe(_e.getKey(), _e.getValue());
 		}
 
-		public V setValueUnsafe(V v)
+		public V setValueDirect(V v)
 		{
 			if(v == null) throw new NullPointerException();
 			K k = _e.getKey();
@@ -284,7 +284,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		@Override
 		public S setValue(S s)
 		{
-			return safe(_e.getKey(), setValueUnsafe(unsafe(s)));
+			return safe(_e.getKey(), setValueDirect(unsafe(s)));
 		}
 
 		@Override
@@ -357,13 +357,13 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		public boolean contains(Object o)
 		{
 			if(_it == null) _it = _map.entrySet();
-			return _it.contains(o);
+			return _it.contains(unsafe(o));
 		}
 
 		@Override
 		public boolean remove(Object o)
 		{
-			return SMap.this.remove(o instanceof Safe ? ((Safe<?>)o).unsafe() : o) != null;
+			return SMap.this.remove(o) != null;
 		}
 
 		@Override
@@ -401,13 +401,13 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		@Override
 		public boolean contains(Object o)
 		{
-			return SMap.this.containsKey(o instanceof Safe ? ((Safe<?>)o).unsafe() : o);
+			return SMap.this.containsKey(o);
 		}
 
 		@Override
 		public boolean remove(Object o)
 		{
-			return SMap.this.remove(o instanceof Safe ? ((Safe<?>)o).unsafe() : o) != null;
+			return SMap.this.remove(o) != null;
 		}
 
 		@Override
@@ -445,7 +445,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		@Override
 		public boolean contains(Object o)
 		{
-			return SMap.this.containsValue(o instanceof Safe ? ((Safe<?>)o).unsafe() : o);
+			return SMap.this.containsValue(o);
 		}
 
 		@Override

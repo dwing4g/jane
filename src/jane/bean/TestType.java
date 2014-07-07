@@ -21,7 +21,6 @@ import jane.core.Octets;
 import jane.core.OctetsStream;
 import jane.core.SBase;
 import jane.core.SContext;
-import jane.core.SContext.Wrap;
 import jane.core.SDeque;
 import jane.core.SList;
 import jane.core.SMap;
@@ -732,7 +731,7 @@ public final class TestType extends Bean<TestType>
 	}
 
 	@Override
-	public Safe safe(Wrap<?> parent)
+	public Safe safe(SContext.Safe<?> parent)
 	{
 		return new Safe(this, parent);
 	}
@@ -745,7 +744,7 @@ public final class TestType extends Bean<TestType>
 
 	public static final class Safe extends SContext.Safe<TestType>
 	{
-		private Safe(TestType bean, Wrap<?> parent)
+		private Safe(TestType bean, SContext.Safe<?> parent)
 		{
 			super(bean, parent);
 		}
@@ -870,9 +869,9 @@ public final class TestType extends Bean<TestType>
 			_bean.v9 = (v9 != null ? v9 : "");
 		}
 
-		public SList<Boolean> getV10()
+		public SList<Boolean, Boolean> getV10()
 		{
-			return new SList<Boolean>(this, _bean.v10);
+			return new SList<Boolean, Boolean>(this, _bean.v10);
 		}
 
 		public ArrayList<Boolean> unsafeV10()
@@ -880,9 +879,9 @@ public final class TestType extends Bean<TestType>
 			return _bean.v10;
 		}
 
-		public SList<Byte> getV11()
+		public SList<Byte, Byte> getV11()
 		{
-			return new SList<Byte>(this, _bean.v11);
+			return new SList<Byte, Byte>(this, _bean.v11);
 		}
 
 		public LinkedList<Byte> unsafeV11()
@@ -890,9 +889,9 @@ public final class TestType extends Bean<TestType>
 			return _bean.v11;
 		}
 
-		public SDeque<Integer> getV12()
+		public SDeque<Integer, Integer> getV12()
 		{
-			return new SDeque<Integer>(this, _bean.v12);
+			return new SDeque<Integer, Integer>(this, _bean.v12);
 		}
 
 		public ArrayDeque<Integer> unsafeV12()
@@ -900,9 +899,9 @@ public final class TestType extends Bean<TestType>
 			return _bean.v12;
 		}
 
-		public SSet<Long> getV13()
+		public SSet<Long, Long> getV13()
 		{
-			return new SSet<Long>(this, _bean.v13);
+			return new SSet<Long, Long>(this, _bean.v13);
 		}
 
 		public HashSet<Long> unsafeV13()
@@ -910,9 +909,9 @@ public final class TestType extends Bean<TestType>
 			return _bean.v13;
 		}
 
-		public SSSet<Float> getV14()
+		public SSSet<Float, Float> getV14()
 		{
-			return new SSSet<Float>(this, _bean.v14);
+			return new SSSet<Float, Float>(this, _bean.v14);
 		}
 
 		public TreeSet<Float> unsafeV14()
@@ -920,9 +919,9 @@ public final class TestType extends Bean<TestType>
 			return _bean.v14;
 		}
 
-		public SSet<Double> getV15()
+		public SSet<Double, Double> getV15()
 		{
-			return new SSet<Double>(this, _bean.v15);
+			return new SSet<Double, Double>(this, _bean.v15);
 		}
 
 		public LinkedHashSet<Double> unsafeV15()

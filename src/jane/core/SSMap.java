@@ -25,7 +25,7 @@ public final class SSMap<K, V, S> extends SMap<K, V, S> implements NavigableMap<
 	@Override
 	public Comparator<? super K> comparator()
 	{
-		return ((NavigableMap<K, V>)_map).comparator();
+		return null;
 	}
 
 	@Override
@@ -123,15 +123,15 @@ public final class SSMap<K, V, S> extends SMap<K, V, S> implements NavigableMap<
 	}
 
 	@Override
-	public SSSet<K> navigableKeySet()
+	public SSSet<K, K> navigableKeySet()
 	{
-		return new SSSet<K>(_owner, ((NavigableMap<K, V>)_map).navigableKeySet());
+		return new SSSet<K, K>(_owner, ((NavigableMap<K, V>)_map).navigableKeySet());
 	}
 
 	@Override
-	public SSSet<K> descendingKeySet()
+	public SSSet<K, K> descendingKeySet()
 	{
-		return new SSSet<K>(_owner, ((NavigableMap<K, V>)_map).descendingKeySet());
+		return new SSSet<K, K>(_owner, ((NavigableMap<K, V>)_map).descendingKeySet());
 	}
 
 	@Override

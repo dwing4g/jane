@@ -182,7 +182,7 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 	}
 
 	@Override
-	public Safe safe(Wrap<?> parent)
+	public Safe safe(SContext.Safe<?> parent)
 	{
 		return new Safe(this, parent);
 	}
@@ -195,7 +195,7 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 
 	public static final class Safe extends SContext.Safe<#(bean.name)>
 	{
-		private Safe(#(bean.name) bean, Wrap<?> parent)
+		private Safe(#(bean.name) bean, SContext.Safe<?> parent)
 		{
 			super(bean, parent);
 		}
@@ -609,7 +609,7 @@ typedef.vector = merge(typedef.octets,
 	import = { "java.util.ArrayList", "java.util.Collection", "jane.core.Util", "jane.core.SList" },
 	type = function(var) return "ArrayList<" .. subtypename(var, var.k) .. ">" end,
 	type_i = function(var) return "Collection<" .. subtypename(var, var.k) .. ">" end,
-	stype = function(var) return "SList<" .. subtypename(var, var.k) .. ">" end,
+	stype = function(var) return "SList<" .. subtypename(var, var.k) .. ", " .. subtypename_safe(var, var.k) .. ">" end,
 	final = "final ",
 	field = "",
 	fieldget = "",
@@ -673,7 +673,7 @@ typedef.deque = merge(typedef.list,
 {
 	import = { "java.util.ArrayDeque", "java.util.Collection", "jane.core.Util", "jane.core.SDeque" },
 	type = function(var) return "ArrayDeque<" .. subtypename(var, var.k) .. ">" end,
-	stype = function(var) return "SDeque<" .. subtypename(var, var.k) .. ">" end,
+	stype = function(var) return "SDeque<" .. subtypename(var, var.k) .. ", " .. subtypename_safe(var, var.k) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new ArrayDeque<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
 	init = function(var) return "this.#(var.name) = new ArrayDeque<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
 })
@@ -681,7 +681,7 @@ typedef.hashset = merge(typedef.list,
 {
 	import = { "java.util.HashSet", "java.util.Collection", "jane.core.Util", "jane.core.SSet" },
 	type = function(var) return "HashSet<" .. subtypename(var, var.k) .. ">" end,
-	stype = function(var) return "SSet<" .. subtypename(var, var.k) .. ">" end,
+	stype = function(var) return "SSet<" .. subtypename(var, var.k) .. ", " .. subtypename_safe(var, var.k) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
 	init = function(var) return "this.#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
 })
@@ -689,7 +689,7 @@ typedef.treeset = merge(typedef.hashset,
 {
 	import = { "java.util.TreeSet", "java.util.Collection", "jane.core.Util", "jane.core.SSSet" },
 	type = function(var) return "TreeSet<" .. subtypename(var, var.k) .. ">" end,
-	stype = function(var) return "SSSet<" .. subtypename(var, var.k) .. ">" end,
+	stype = function(var) return "SSSet<" .. subtypename(var, var.k) .. ", " .. subtypename_safe(var, var.k) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new TreeSet<" .. subtypename_new(var, var.k) .. ">();\n" end,
 	init = function(var) return "this.#(var.name) = new TreeSet<" .. subtypename_new(var, var.k) .. ">(); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
 })
@@ -908,7 +908,6 @@ local function bean_const(code)
 		gsub("import jane%.core%.DynBean;\n", ""):
 		gsub("import jane%.core%.SBase;\n", ""):
 		gsub("import jane%.core%.SContext;\n", ""):
-		gsub("import jane%.core%.SContext%.Wrap;\n", ""):
 		gsub("\tprivate static Field .-\n", ""):
 		gsub("\tstatic\n.-\n\t}\n\n", ""):
 		gsub("%*/ String ", "*/ final String "):
@@ -941,7 +940,7 @@ end
 function bean(bean)
 	bean_common(bean)
 
-	bean.import = { ["jane.core.Bean"] = true, ["jane.core.MarshalException"] = true, ["jane.core.OctetsStream"] = true, ["jane.core.SContext"] = true, ["jane.core.SContext.Wrap"] = true }
+	bean.import = { ["jane.core.Bean"] = true, ["jane.core.MarshalException"] = true, ["jane.core.OctetsStream"] = true, ["jane.core.SContext"] = true }
 	local vartypes = { bean.name }
 	for _, var in ipairs(bean) do
 		do_var(var)
