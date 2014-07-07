@@ -199,7 +199,7 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 		throw new UnsupportedOperationException();
 	}
 
-	public final Safe<B> safe()
+	public Safe<B> safe()
 	{
 		return safe(null);
 	}

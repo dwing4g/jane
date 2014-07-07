@@ -3,21 +3,21 @@ package jane.core;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.NavigableMap;
-import jane.core.SContext.Wrap;
+import jane.core.SContext.Safe;
 
 /**
  * NavigableMap类型的安全修改类
  * <p>
  * 不支持value为null
  */
-public final class SSMap<K, V> extends SMap<K, V> implements NavigableMap<K, V>
+public final class SSMap<K, V, S> extends SMap<K, V, S> implements NavigableMap<K, S>
 {
-	public SSMap(Wrap<?> owner, NavigableMap<K, V> map, SMapListener<K, V> listener)
+	public SSMap(Safe<?> owner, NavigableMap<K, V> map, SMapListener<K, V> listener)
 	{
 		super(owner, map, listener);
 	}
 
-	protected SSMap(Wrap<?> owner, NavigableMap<K, V> map, Map<K, V> changed)
+	protected SSMap(Safe<?> owner, NavigableMap<K, V> map, Map<K, V> changed)
 	{
 		super(owner, map, changed);
 	}
@@ -101,25 +101,25 @@ public final class SSMap<K, V> extends SMap<K, V> implements NavigableMap<K, V>
 	}
 
 	@Override
-	public Entry<K, V> pollFirstEntry()
+	public SEntry pollFirstEntry()
 	{
 		Entry<K, V> e = ((NavigableMap<K, V>)_map).pollFirstEntry();
 		if(e != null) addUndoRemove(e.getKey(), e.getValue());
-		return e;
+		return new SEntry(e);
 	}
 
 	@Override
-	public Entry<K, V> pollLastEntry()
+	public SEntry pollLastEntry()
 	{
 		Entry<K, V> e = ((NavigableMap<K, V>)_map).pollLastEntry();
 		if(e != null) addUndoRemove(e.getKey(), e.getValue());
-		return e;
+		return new SEntry(e);
 	}
 
 	@Override
-	public SSMap<K, V> descendingMap()
+	public SSMap<K, V, S> descendingMap()
 	{
-		return new SSMap<K, V>(_owner, ((NavigableMap<K, V>)_map).descendingMap(), _changed);
+		return new SSMap<K, V, S>(_owner, ((NavigableMap<K, V>)_map).descendingMap(), _changed);
 	}
 
 	@Override
@@ -135,37 +135,37 @@ public final class SSMap<K, V> extends SMap<K, V> implements NavigableMap<K, V>
 	}
 
 	@Override
-	public SSMap<K, V> subMap(K from, boolean fromInclusive, K to, boolean toInclusive)
+	public SSMap<K, V, S> subMap(K from, boolean fromInclusive, K to, boolean toInclusive)
 	{
-		return new SSMap<K, V>(_owner, ((NavigableMap<K, V>)_map).subMap(from, fromInclusive, to, toInclusive), _changed);
+		return new SSMap<K, V, S>(_owner, ((NavigableMap<K, V>)_map).subMap(from, fromInclusive, to, toInclusive), _changed);
 	}
 
 	@Override
-	public SSMap<K, V> headMap(K to, boolean inclusive)
+	public SSMap<K, V, S> headMap(K to, boolean inclusive)
 	{
-		return new SSMap<K, V>(_owner, ((NavigableMap<K, V>)_map).headMap(to, inclusive), _changed);
+		return new SSMap<K, V, S>(_owner, ((NavigableMap<K, V>)_map).headMap(to, inclusive), _changed);
 	}
 
 	@Override
-	public SSMap<K, V> tailMap(K from, boolean inclusive)
+	public SSMap<K, V, S> tailMap(K from, boolean inclusive)
 	{
-		return new SSMap<K, V>(_owner, ((NavigableMap<K, V>)_map).tailMap(from, inclusive), _changed);
+		return new SSMap<K, V, S>(_owner, ((NavigableMap<K, V>)_map).tailMap(from, inclusive), _changed);
 	}
 
 	@Override
-	public SSMap<K, V> subMap(K from, K to)
+	public SSMap<K, V, S> subMap(K from, K to)
 	{
 		return subMap(from, true, to, false);
 	}
 
 	@Override
-	public SSMap<K, V> headMap(K to)
+	public SSMap<K, V, S> headMap(K to)
 	{
 		return headMap(to, false);
 	}
 
 	@Override
-	public SSMap<K, V> tailMap(K from)
+	public SSMap<K, V, S> tailMap(K from)
 	{
 		return tailMap(from, true);
 	}

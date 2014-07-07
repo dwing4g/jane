@@ -223,6 +223,12 @@ public final class TestBean extends Bean<TestBean>
 		return new Safe(this, parent);
 	}
 
+	@Override
+	public Safe safe()
+	{
+		return new Safe(this, null);
+	}
+
 	public static final class Safe extends SContext.Safe<TestBean>
 	{
 		private Safe(TestBean bean, Wrap<?> parent)

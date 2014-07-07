@@ -737,6 +737,12 @@ public final class TestType extends Bean<TestType>
 		return new Safe(this, parent);
 	}
 
+	@Override
+	public Safe safe()
+	{
+		return new Safe(this, null);
+	}
+
 	public static final class Safe extends SContext.Safe<TestType>
 	{
 		private Safe(TestType bean, Wrap<?> parent)
@@ -929,9 +935,9 @@ public final class TestType extends Bean<TestType>
 			LISTENER_v16 = listener;
 		}
 
-		public SMap<Long, String> getV16()
+		public SMap<Long, String, String> getV16()
 		{
-			return new SMap<Long, String>(this, _bean.v16, LISTENER_v16);
+			return new SMap<Long, String, String>(this, _bean.v16, LISTENER_v16);
 		}
 
 		public HashMap<Long, String> unsafeV16()
@@ -944,9 +950,9 @@ public final class TestType extends Bean<TestType>
 			LISTENER_v17 = listener;
 		}
 
-		public SSMap<TestBean, Boolean> getV17()
+		public SSMap<TestBean, Boolean, Boolean> getV17()
 		{
-			return new SSMap<TestBean, Boolean>(this, _bean.v17, LISTENER_v17);
+			return new SSMap<TestBean, Boolean, Boolean>(this, _bean.v17, LISTENER_v17);
 		}
 
 		public TreeMap<TestBean, Boolean> unsafeV17()
@@ -959,9 +965,9 @@ public final class TestType extends Bean<TestType>
 			LISTENER_v18 = listener;
 		}
 
-		public SMap<Octets, TestBean> getV18()
+		public SMap<Octets, TestBean, TestBean.Safe> getV18()
 		{
-			return new SMap<Octets, TestBean>(this, _bean.v18, LISTENER_v18);
+			return new SMap<Octets, TestBean, TestBean.Safe>(this, _bean.v18, LISTENER_v18);
 		}
 
 		public LinkedHashMap<Octets, TestBean> unsafeV18()

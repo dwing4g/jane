@@ -8,13 +8,11 @@ import jane.core.DBManager;
 import jane.core.Octets;
 import jane.core.Procedure;
 import jane.core.SContext.Rec;
-import jane.core.SMap;
 import jane.core.SMap.SMapListener;
 import jane.core.StorageLevelDB;
 import jane.bean.AllTables;
 import jane.bean.TestBean;
 import jane.bean.TestType;
-import jane.bean.TestType.Safe;
 
 public final class TestUndo
 {
@@ -115,12 +113,12 @@ public final class TestUndo
 				TestType.Safe a = TestTable.getSafe(1);
 				if(a == null)
 				{
-					a = (Safe)new TestType().safe();
+					a = new TestType().safe();
 					TestTable.putSafe(1, a);
 				}
-				SMap<Octets, TestBean> map = a.getV18();
-				map.put(Octets.wrap("a"), new TestBean(11, 22));
-				map.put(Octets.wrap("b"), new TestBean(33, 44));
+				Map<Octets, TestBean.Safe> map = a.getV18();
+				map.put(Octets.wrap("a"), new TestBean(11, 22).safe());
+				map.put(Octets.wrap("b"), new TestBean(33, 44).safe());
 				map.remove(Octets.wrap("a"));
 				System.out.println("=== 5");
 			}
@@ -133,9 +131,9 @@ public final class TestUndo
 			{
 				lock(TestTable.lockId(1));
 				TestType.Safe a = TestTable.getSafe(1);
-				SMap<Octets, TestBean> map = a.getV18();
+				Map<Octets, TestBean.Safe> map = a.getV18();
 				map.remove(Octets.wrap("a"));
-				TestBean.Safe b = map.getSafe(Octets.wrap("b"));
+				TestBean.Safe b = map.get(Octets.wrap("b"));
 				b.setValue1(55);
 				System.out.println("=== 6");
 			}

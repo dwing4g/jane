@@ -187,6 +187,12 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 		return new Safe(this, parent);
 	}
 
+	@Override
+	public Safe safe()
+	{
+		return new Safe(this, null);
+	}
+
 	public static final class Safe extends SContext.Safe<#(bean.name)>
 	{
 		private Safe(#(bean.name) bean, Wrap<?> parent)
@@ -378,6 +384,9 @@ local function subtypename(var, t)
 	end
 	if type(def) == "table" then return type(def.type_o) == "string" and def.type_o or def.type_o(var) end
 	error("ERROR: unknown subtypename(" .. var .. ", " .. t .. ")")
+end
+local function subtypename_safe(var, t)
+	return typedef[t] and subtypename(var, t) or (t .. ".Safe")
 end
 local function subtypename_new(var, t)
 	if not var then return jdk7 and "" or ", " end
@@ -696,7 +705,7 @@ typedef.hashmap = merge(typedef.list,
 	import = { "java.util.HashMap", "java.util.Map.Entry", "java.util.Map", "jane.core.Util", "jane.core.SMap", "jane.core.SMap.SMapListener" },
 	type = function(var) return "HashMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	type_i = function(var) return "Map<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
-	stype = function(var) return "SMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
+	stype = function(var) return "SMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ", " .. subtypename_safe(var, var.v) .. ">" end,
 	field = function(var) return [[
 	private static Field FIELD_#(var.name);
 	private static SMapListener<]] .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. [[> LISTENER_#(var.name);
@@ -743,7 +752,7 @@ typedef.treemap = merge(typedef.hashmap,
 {
 	import = { "java.util.TreeMap", "java.util.Map", "jane.core.Util", "jane.core.SSMap" },
 	type = function(var) return "TreeMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
-	stype = function(var) return "SSMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
+	stype = function(var) return "SSMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ", " .. subtypename_safe(var, var.v) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new TreeMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">();\n" end,
 	init = function(var) return "this.#(var.name) = new TreeMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(); if(#(var.name) != null) this.#(var.name).putAll(#(var.name))" end,
 	assign = "this.#(var.name).clear(); if(b.#(var.name) != null) this.#(var.name).putAll(b.#(var.name))",

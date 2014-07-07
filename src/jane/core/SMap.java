@@ -7,14 +7,14 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import jane.core.SContext.Rec;
-import jane.core.SContext.Wrap;
+import jane.core.SContext.Safe;
 
 /**
  * Map类型的安全修改类
  * <p>
  * 不支持value为null
  */
-public class SMap<K, V> implements Map<K, V>, Cloneable
+public class SMap<K, V, S> implements Map<K, S>, Cloneable
 {
 	public interface SMapListener<K, V>
 	{
@@ -26,12 +26,12 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 		void onChanged(Rec rec, Map<K, V> changed);
 	}
 
-	protected final Wrap<?>   _owner;
+	protected final Safe<?>   _owner;
 	protected final Map<K, V> _map;
 	private SContext          _sCtx;
 	protected Map<K, V>       _changed;
 
-	public SMap(Wrap<?> owner, Map<K, V> map, final SMapListener<K, V> listener)
+	public SMap(Safe<?> owner, Map<K, V> map, final SMapListener<K, V> listener)
 	{
 		_owner = owner;
 		_map = map;
@@ -54,7 +54,7 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 		}
 	}
 
-	protected SMap(Wrap<?> owner, Map<K, V> map, Map<K, V> changed)
+	protected SMap(Safe<?> owner, Map<K, V> map, Map<K, V> changed)
 	{
 		_owner = owner;
 		_map = map;
@@ -62,10 +62,10 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	protected <S extends Wrap<V>> S safe(final Object k, final V v)
+	protected S safe(final Object k, final V v)
 	{
-		if(v == null) return null;
-		S s = (S)((Bean<?>)v).safe(_owner);
+		if(!(v instanceof Bean)) return (S)v;
+		Safe<?> s = ((Bean<?>)v).safe(_owner);
 		if(_changed != null)
 		{
 			s.onDirty(new Runnable()
@@ -77,7 +77,19 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 				}
 			});
 		}
-		return s;
+		return (S)s;
+	}
+
+	@SuppressWarnings("unchecked")
+	private S safe(V v)
+	{
+		return (S)(v instanceof Bean ? ((Bean<?>)v).safe(_owner) : v);
+	}
+
+	@SuppressWarnings("unchecked")
+	private V unsafe(Object v)
+	{
+		return (V)(v instanceof Safe ? ((Safe<?>)v).unsafe() : v);
 	}
 
 	private SContext sContext()
@@ -136,22 +148,21 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 	@Override
 	public boolean containsValue(Object v)
 	{
-		return _map.containsValue(v instanceof Wrap ? ((Wrap<?>)v).unsafe() : v);
+		return _map.containsValue(unsafe(v));
 	}
 
-	@Override
-	public V get(Object k)
+	public V getUnsafe(Object k)
 	{
 		return _map.get(k);
 	}
 
-	public <S extends Wrap<V>> S getSafe(Object k)
+	@Override
+	public S get(Object k)
 	{
 		return safe(k, _map.get(k));
 	}
 
-	@Override
-	public V put(K k, V v)
+	public V putUnsafe(K k, V v)
 	{
 		if(v == null) throw new NullPointerException();
 		if(_changed != null) _changed.put(k, v);
@@ -160,25 +171,36 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 		return v;
 	}
 
-	public <S extends Wrap<V>> S put(K k, S v)
+	@Override
+	public S put(K k, S s)
 	{
-		return safe(k, put(k, v.unsafe()));
+		return safe(putUnsafe(k, unsafe(s)));
 	}
 
 	@Override
-	public void putAll(Map<? extends K, ? extends V> m)
+	public void putAll(Map<? extends K, ? extends S> m)
+	{
+		if(_map == m || this == m) return;
+		for(Entry<? extends K, ? extends S> e : m.entrySet())
+		{
+			S s = e.getValue();
+			V v = unsafe(s);
+			if(v != null) putUnsafe(e.getKey(), v);
+		}
+	}
+
+	public void putAllUnsafe(Map<? extends K, ? extends V> m)
 	{
 		if(_map == m || this == m) return;
 		for(Entry<? extends K, ? extends V> e : m.entrySet())
 		{
 			V v = e.getValue();
-			if(v != null) put(e.getKey(), v);
+			if(v != null) putUnsafe(e.getKey(), v);
 		}
 	}
 
 	@SuppressWarnings("unchecked")
-	@Override
-	public V remove(Object k)
+	public V removeUnsafe(Object k)
 	{
 		final V vOld = _map.remove(k);
 		if(vOld == null) return null;
@@ -186,9 +208,10 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 		return vOld;
 	}
 
-	public <S extends Wrap<V>> S removeSafe(Object k)
+	@Override
+	public S remove(Object k)
 	{
-		return safe(k, remove(k));
+		return safe(removeUnsafe(k));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -227,7 +250,7 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 		_map.clear();
 	}
 
-	public final class SEntry implements Entry<K, V>
+	public final class SEntry implements Entry<K, S>
 	{
 		private final Entry<K, V> _e;
 
@@ -243,18 +266,12 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 		}
 
 		@Override
-		public V getValue()
-		{
-			return _e.getValue();
-		}
-
-		public <S extends Wrap<V>> S getValueSafe()
+		public S getValue()
 		{
 			return safe(_e.getKey(), _e.getValue());
 		}
 
-		@Override
-		public V setValue(V v)
+		public V setValueUnsafe(V v)
 		{
 			if(v == null) throw new NullPointerException();
 			K k = _e.getKey();
@@ -264,9 +281,10 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 			return v;
 		}
 
-		public <S extends Wrap<V>> V setValue(S v)
+		@Override
+		public S setValue(S s)
 		{
-			return setValue(v.unsafe());
+			return safe(_e.getKey(), setValueUnsafe(unsafe(s)));
 		}
 
 		@Override
@@ -302,13 +320,13 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 		public void remove()
 		{
 			K k = _cur.getKey();
-			V v = _cur.getValue();
+			V v = unsafe(_cur.getValue());
 			_it.remove();
 			addUndoRemove(k, v);
 		}
 	}
 
-	public final class SEntrySet extends AbstractSet<Entry<K, V>>
+	public final class SEntrySet extends AbstractSet<Entry<K, S>>
 	{
 		private Set<Entry<K, V>> _it;
 
@@ -317,9 +335,9 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 		}
 
 		@Override
-		public SIterator<Entry<K, V>> iterator()
+		public SIterator<Entry<K, S>> iterator()
 		{
-			return new SIterator<Entry<K, V>>()
+			return new SIterator<Entry<K, S>>()
 			{
 				@Override
 				public SEntry next()
@@ -345,7 +363,7 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 		@Override
 		public boolean remove(Object o)
 		{
-			return SMap.this.remove(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o) != null;
+			return SMap.this.remove(o instanceof Safe ? ((Safe<?>)o).unsafe() : o) != null;
 		}
 
 		@Override
@@ -383,13 +401,13 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 		@Override
 		public boolean contains(Object o)
 		{
-			return SMap.this.containsKey(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o);
+			return SMap.this.containsKey(o instanceof Safe ? ((Safe<?>)o).unsafe() : o);
 		}
 
 		@Override
 		public boolean remove(Object o)
 		{
-			return SMap.this.remove(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o) != null;
+			return SMap.this.remove(o instanceof Safe ? ((Safe<?>)o).unsafe() : o) != null;
 		}
 
 		@Override
@@ -399,19 +417,19 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 		}
 	}
 
-	public final class SValues extends AbstractCollection<V>
+	public final class SValues extends AbstractCollection<S>
 	{
 		private SValues()
 		{
 		}
 
 		@Override
-		public SIterator<V> iterator()
+		public SIterator<S> iterator()
 		{
-			return new SIterator<V>()
+			return new SIterator<S>()
 			{
 				@Override
-				public V next()
+				public S next()
 				{
 					return nextEntry().getValue();
 				}
@@ -427,7 +445,7 @@ public class SMap<K, V> implements Map<K, V>, Cloneable
 		@Override
 		public boolean contains(Object o)
 		{
-			return SMap.this.containsValue(o instanceof Wrap ? ((Wrap<?>)o).unsafe() : o);
+			return SMap.this.containsValue(o instanceof Safe ? ((Safe<?>)o).unsafe() : o);
 		}
 
 		@Override

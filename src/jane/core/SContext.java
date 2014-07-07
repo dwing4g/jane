@@ -13,18 +13,18 @@ public final class SContext
 {
 	public static abstract class Wrap<B>
 	{
-		protected final B       _bean;
-		protected final Wrap<?> _owner;
-		protected SContext      _sCtx;
-		private Rec             _rec;
-		private Runnable        _onDirty;
-		protected boolean       _fullUndo;
-		private boolean         _dirty;
+		protected final B     _bean;
+		private final Wrap<?> _parent;
+		protected SContext    _sCtx;
+		private Rec           _rec;
+		private Runnable      _onDirty;
+		protected boolean     _fullUndo;
+		private boolean       _dirty;
 
 		protected Wrap(B bean, Wrap<?> parent)
 		{
 			_bean = bean;
-			_owner = (parent != null ? parent.owner() : this);
+			_parent = (parent != null ? parent : this);
 		}
 
 		public B unsafe()
@@ -32,9 +32,19 @@ public final class SContext
 			return _bean;
 		}
 
+		public Wrap<?> parent()
+		{
+			return _parent;
+		}
+
 		public Wrap<?> owner()
 		{
-			return _owner;
+			for(Wrap<?> parent = _parent;;)
+			{
+				Wrap<?> o = parent._parent;
+				if(o == parent) return parent;
+				parent = o;
+			}
 		}
 
 		public Rec record()
@@ -61,10 +71,10 @@ public final class SContext
 
 		public void dirty()
 		{
-			if(_owner == this)
+			if(_parent == this)
 				_dirty = true;
 			else
-				_owner.dirty();
+				_parent.dirty();
 			if(_onDirty != null)
 			{
 				_onDirty.run();
@@ -82,7 +92,7 @@ public final class SContext
 					_onDirty.run();
 					_onDirty = null;
 				}
-				_owner.dirty();
+				_parent.dirty();
 				_sCtx = current();
 			}
 			return true;
