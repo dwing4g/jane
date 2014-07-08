@@ -707,7 +707,7 @@ typedef.hashset = merge(typedef.list,
 })
 typedef.treeset = merge(typedef.hashset,
 {
-	import = { "java.util.TreeSet", "java.util.Collection", "jane.core.Util", "jane.core.SSSet" },
+	import = { "java.util.TreeSet", "java.util.Collection", "jane.core.Util", "jane.core.SSSet", "jane.core.SSet.SSetListener" },
 	type = function(var) return "TreeSet<" .. subtypename(var, var.k) .. ">" end,
 	stype = function(var) return "SSSet<" .. subtypename(var, var.k) .. ", " .. subtypename_safe(var, var.k) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new TreeSet<" .. subtypename_new(var, var.k) .. ">();\n" end,
@@ -715,7 +715,7 @@ typedef.treeset = merge(typedef.hashset,
 })
 typedef.linkedhashset = merge(typedef.hashset,
 {
-	import = { "java.util.LinkedHashSet", "java.util.Collection", "jane.core.Util", "jane.core.SSet" },
+	import = { "java.util.LinkedHashSet", "java.util.Collection", "jane.core.Util", "jane.core.SSet", "jane.core.SSet.SSetListener" },
 	type = function(var) return "LinkedHashSet<" .. subtypename(var, var.k) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new LinkedHashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
 	init = function(var) return "this.#(var.name) = new LinkedHashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
@@ -768,7 +768,7 @@ typedef.hashmap = merge(typedef.list,
 })
 typedef.treemap = merge(typedef.hashmap,
 {
-	import = { "java.util.TreeMap", "java.util.Map", "jane.core.Util", "jane.core.SSMap" },
+	import = { "java.util.TreeMap", "java.util.Map.Entry", "java.util.Map", "jane.core.Util", "jane.core.SSMap", "jane.core.SMap.SMapListener" },
 	type = function(var) return "TreeMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	stype = function(var) return "SSMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ", " .. subtypename_safe(var, var.v) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new TreeMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">();\n" end,
@@ -777,7 +777,7 @@ typedef.treemap = merge(typedef.hashmap,
 })
 typedef.linkedhashmap = merge(typedef.hashmap,
 {
-	import = { "java.util.LinkedHashMap", "java.util.Map", "jane.core.Util", "jane.core.SMap" },
+	import = { "java.util.LinkedHashMap", "java.util.Map.Entry", "java.util.Map", "jane.core.Util", "jane.core.SMap", "jane.core.SMap.SMapListener" },
 	type = function(var) return "LinkedHashMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new LinkedHashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap));\n" end,
 	init = function(var) return "this.#(var.name) = new LinkedHashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).putAll(#(var.name))" end,
