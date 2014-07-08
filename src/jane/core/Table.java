@@ -175,7 +175,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	 * 会自动添加到读cache中<br>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 */
-	public V get(K k)
+	public V getUnsafe(K k)
 	{
 		V v = _cache.get(k);
 		if(v != null) return v;
@@ -197,21 +197,21 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	}
 
 	/**
-	 * 同get,但同时设置修改标记
+	 * 同getUnsafe,但同时设置修改标记
 	 */
 	public V getModified(K k)
 	{
-		V v = get(k);
+		V v = getUnsafe(k);
 		if(v != null) modify(k, v);
 		return v;
 	}
 
 	/**
-	 * 同get,但增加的安全封装,可回滚修改
+	 * 同getUnsafe,但增加的安全封装,可回滚修改
 	 */
-	public S getSafe(K k)
+	public S get(K k)
 	{
-		V v = get(k);
+		V v = getUnsafe(k);
 		return v != null ? SContext.current().addRecord(this, k, v) : null;
 	}
 
@@ -221,7 +221,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	 * 不会自动添加到读cache中<br>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 */
-	public V getNoCache(K k)
+	public V getNoCacheUnsafe(K k)
 	{
 		V v = _cache.get(k);
 		if(v != null) return v;
@@ -236,11 +236,11 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	}
 
 	/**
-	 * 同getNoCache,但增加的安全封装,可回滚修改
+	 * 同getNoCacheUnsafe,但增加的安全封装,可回滚修改
 	 */
-	public S getNoCacheSafe(K k)
+	public S getNoCache(K k)
 	{
-		V v = getNoCache(k);
+		V v = getNoCacheUnsafe(k);
 		return v != null ? SContext.current().addRecord(this, k, v) : null;
 	}
 
@@ -250,7 +250,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	 * 只在读和写cache中获取<br>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 */
-	public V getCache(K k)
+	public V getCacheUnsafe(K k)
 	{
 		V v = _cache.get(k);
 		if(v != null) return v;
@@ -260,11 +260,11 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	}
 
 	/**
-	 * 同getCache,但增加的安全封装,可回滚修改
+	 * 同getCacheUnsafe,但增加的安全封装,可回滚修改
 	 */
-	public S getCacheSafe(K k)
+	public S getCache(K k)
 	{
-		V v = getCache(k);
+		V v = getCacheUnsafe(k);
 		return v != null ? SContext.current().addRecord(this, k, v) : null;
 	}
 
@@ -295,7 +295,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	}
 
 	@SuppressWarnings("unchecked")
-	void modifySafe(Object k, Object v)
+	void modify(Object k, Object v)
 	{
 		modify((K)k, (V)v);
 	}
@@ -306,7 +306,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 * @param v 如果是get获取到的对象引用,可调用modify来提高性能
 	 */
-	public void put(K k, V v)
+	public void putUnsafe(K k, V v)
 	{
 		V vOld = _cache.put(k, v);
 		if(vOld == v)
@@ -336,13 +336,13 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	}
 
 	/**
-	 * 同put,但增加的安全封装,可回滚修改
+	 * 同putUnsafe,但增加的安全封装,可回滚修改
 	 */
-	public void putSafe(final K k, V v)
+	public void put(final K k, V v)
 	{
 		if(v.stored())
 		    throw new IllegalStateException("put shared record: t=" + _tableName + ",k=" + k + ",v=" + v);
-		final V vOld = getNoCache(k);
+		final V vOld = getNoCacheUnsafe(k);
 		SContext.current().addOnRollback(new Runnable()
 		{
 			@Override
@@ -351,18 +351,18 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 				if(vOld != null)
 				{
 					vOld.setSaveState(0);
-					put(k, vOld);
+					putUnsafe(k, vOld);
 				}
 				else
-					remove(k);
+					removeUnsafe(k);
 			}
 		});
-		put(k, v);
+		putUnsafe(k, v);
 	}
 
-	public void putSafe(K k, S s)
+	public void put(K k, S s)
 	{
-		putSafe(k, s.unsafe());
+		put(k, s.unsafe());
 		s.record(new Record<K, V, S>(this, k, s));
 	}
 
@@ -371,7 +371,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	 * <p>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 */
-	public void remove(K k)
+	public void removeUnsafe(K k)
 	{
 		_cache.remove(k);
 		if(_cacheMod != null && _cacheMod.put(k, _deleted) == null)
@@ -379,11 +379,11 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	}
 
 	/**
-	 * 同remove,但增加的安全封装,可回滚修改
+	 * 同removeUnsafe,但增加的安全封装,可回滚修改
 	 */
-	public void removeSafe(final K k)
+	public void remove(final K k)
 	{
-		final V vOld = getNoCache(k);
+		final V vOld = getNoCacheUnsafe(k);
 		if(vOld == null) return;
 		SContext.current().addOnRollback(new Runnable()
 		{
@@ -391,10 +391,10 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 			public void run()
 			{
 				vOld.setSaveState(0);
-				put(k, vOld);
+				putUnsafe(k, vOld);
 			}
 		});
-		remove(k);
+		removeUnsafe(k);
 	}
 
 	/**

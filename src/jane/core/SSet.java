@@ -1,8 +1,10 @@
 package jane.core;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import jane.core.SContext.Rec;
 import jane.core.SContext.Safe;
 
 /**
@@ -10,14 +12,45 @@ import jane.core.SContext.Safe;
  */
 public class SSet<V, S> implements Set<S>, Cloneable
 {
+	public interface SSetListener<V>
+	{
+		/**
+		 * 增删统一一个回调接口
+		 * @param rec 对应table及记录键值的封装
+		 * @param added 所有已增加的元素
+		 * @param removed 所有已删除的元素
+		 */
+		void onChanged(Rec rec, Set<V> added, Set<V> removed);
+	}
+
 	protected final Safe<?> _owner;
 	protected final Set<V>  _set;
 	private SContext        _sCtx;
+	protected Set<V>        _added;
+	protected Set<V>        _removed;
 
-	public SSet(Safe<?> owner, Set<V> set)
+	public SSet(Safe<?> owner, Set<V> set, final SSetListener<V> listener)
 	{
 		_owner = owner;
 		_set = set;
+		if(listener != null)
+		{
+			final Rec rec = owner.record();
+			if(rec != null)
+			{
+				_added = new HashSet<V>();
+				_removed = new HashSet<V>();
+				SContext.current().addOnCommit(new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						if(!_added.isEmpty() || !_removed.isEmpty())
+						    listener.onChanged(rec, _added, _removed);
+					}
+				});
+			}
+		}
 	}
 
 	protected SContext sContext()
@@ -47,6 +80,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 
 	protected void addUndoAdd(final V v)
 	{
+		if(_added != null) _added.add(v);
 		sContext().addOnRollback(new Runnable()
 		{
 			@Override
@@ -59,6 +93,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 
 	protected void addUndoRemove(final V v)
 	{
+		if(_removed != null) _removed.add(v);
 		sContext().addOnRollback(new Runnable()
 		{
 			@Override
@@ -203,6 +238,11 @@ public class SSet<V, S> implements Set<S>, Cloneable
 				_saved.clear();
 			}
 		});
+		if(_removed != null)
+		{
+			for(V v : _set)
+				_removed.add(v);
+		}
 		_set.clear();
 	}
 

@@ -25,6 +25,15 @@ public final class AllBeans
 		return r;
 	}
 
+	public static IntMap<BeanHandler<?>> getTestClientHandlers()
+	{
+		IntMap<BeanHandler<?>> r = new IntMap<BeanHandler<?>>(3 * 4);
+		r.put(1, new jane.handler.testclient.TestBeanHandler());
+		r.put(3, new jane.handler.testclient.TestTypeHandler());
+		r.put(5, new jane.handler.testclient.TestRpcBeanHandler());
+		return r;
+	}
+
 	public static IntMap<BeanHandler<?>> getTestServerHandlers()
 	{
 		IntMap<BeanHandler<?>> r = new IntMap<BeanHandler<?>>(4 * 4);
@@ -32,15 +41,6 @@ public final class AllBeans
 		r.put(3, new jane.handler.testserver.TestTypeHandler());
 		r.put(4, new jane.handler.testserver.TestEmptyHandler());
 		r.put(5, new jane.handler.testserver.TestRpcBeanHandler());
-		return r;
-	}
-
-	public static IntMap<BeanHandler<?>> getTestClientHandlers()
-	{
-		IntMap<BeanHandler<?>> r = new IntMap<BeanHandler<?>>(3 * 4);
-		r.put(1, new jane.handler.testclient.TestBeanHandler());
-		r.put(3, new jane.handler.testclient.TestTypeHandler());
-		r.put(5, new jane.handler.testclient.TestRpcBeanHandler());
 		return r;
 	}
 }

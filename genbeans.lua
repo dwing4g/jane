@@ -679,11 +679,31 @@ typedef.deque = merge(typedef.list,
 })
 typedef.hashset = merge(typedef.list,
 {
-	import = { "java.util.HashSet", "java.util.Collection", "jane.core.Util", "jane.core.SSet" },
+	import = { "java.util.HashSet", "java.util.Collection", "jane.core.Util", "jane.core.SSet", "jane.core.SSet.SSetListener" },
 	type = function(var) return "HashSet<" .. subtypename(var, var.k) .. ">" end,
 	stype = function(var) return "SSet<" .. subtypename(var, var.k) .. ", " .. subtypename_safe(var, var.k) .. ">" end,
+	field = function(var) return [[
+	private static SSetListener<]] .. subtypename(var, var.k) .. [[> LISTENER_#(var.name);
+]] end,
 	new = function(var) return "\t\t#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
 	init = function(var) return "this.#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
+	getsafe = function(var) return [[
+
+		public static void onListener#(var.name_u)(SSetListener<]] .. subtypename(var, var.k) .. [[> listener)
+		{
+			LISTENER_#(var.name) = listener;
+		}
+
+		public #(var.stype) get#(var.name_u)()
+		{
+			return new #(var.stype)(this, _bean.#(var.name), LISTENER_#(var.name));
+		}
+
+		public #(var.type) unsafe#(var.name_u)()
+		{
+			return _bean.#(var.name);
+		}
+]] end,
 })
 typedef.treeset = merge(typedef.hashset,
 {
@@ -707,10 +727,8 @@ typedef.hashmap = merge(typedef.list,
 	type_i = function(var) return "Map<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	stype = function(var) return "SMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ", " .. subtypename_safe(var, var.v) .. ">" end,
 	field = function(var) return [[
-	private static Field FIELD_#(var.name);
 	private static SMapListener<]] .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. [[> LISTENER_#(var.name);
 ]] end,
-	fieldget = "\t\t\tFIELD_#(var.name) = c.getDeclaredField(\"#(var.name)\"); FIELD_#(var.name).setAccessible(true);\n";
 	new = function(var) return "\t\t#(var.name) = new HashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap));\n" end,
 	init = function(var) return "this.#(var.name) = new HashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).putAll(#(var.name))" end,
 	getsafe = function(var) return [[
@@ -1042,6 +1060,7 @@ end
 local key_conv = { int = "Integer", integer = "Integer", Integer = "Integer", long = "Long", Long = "Long", float = "Float", Float = "Float", double = "Double", Double = "Double",
 					string = "String", String = "String", binary = "Octets", bytes = "Octets", data = "Octets", octets = "Octets", Octets = "Octets" }
 function dbt(table)
+	if not handlers.dbt then return end
 	local key_type = key_conv[table.key]
 	if key_type then
 		if key_type == "Octets" then tables.imports["jane.core.Octets"] = true end

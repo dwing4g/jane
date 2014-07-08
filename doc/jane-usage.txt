@@ -110,6 +110,7 @@ handler
     {
         GameServer = "jane.handler.gameserver", -- 服务器需要处理的beans及输出目录/命名空间
         GameClient = true, -- 服务器引用的beans,只生成beans,不生成handler框架
+        dbt = true, -- 引用数据库表(dbt)的定义
     },
 }
 
@@ -147,11 +148,11 @@ DBManager.instance().submit(new Procedure()
     protected void onProcess() throws Exception
     {
         lock(AllTables.user.lockId(arg.getUserid())); // 先给此表的userid加记录锁
-        DBUserProp userprop = AllTables.user.get(arg.getUserid()); // 取记录
+        DBUserProp userprop = AllTables.user.getUnsafe(arg.getUserid()); // 取记录
         if(userprop == null) // 如果记录不存在
         {
             userprop = new DBUserProp(DBUserProp.PROP_INIT); // 创建新记录
-            AllTables.user.put(arg.getUserid(), userprop); // 插入记录
+            AllTables.user.putUnsafe(arg.getUserid(), userprop); // 插入记录
         }
         userprop.setProp(userprop.getProp() + arg.getProp_delta()); // 修改记录
         AllTables.user.modify(arg.getUserid(), userprop); // 标记记录已修改(直接写法必须有此行, 而安全写法无需此行)
@@ -165,11 +166,11 @@ DBManager.instance().submit(new Procedure()
     protected void onProcess() throws Exception
     {
         lock(AllTables.user.lockId(arg.getUserid())); // 先给此表的userid加记录锁
-        DBUserProp.Safe userprop = AllTables.user.getSafe(arg.getUserid()); // 取记录(安全方式)
+        DBUserProp.Safe userprop = AllTables.user.get(arg.getUserid()); // 取记录(安全方式)
         if(userprop == null) // 如果记录不存在
         {
             userprop = new DBUserProp(DBUserProp.PROP_INIT).safe(); // 创建新记录(安全方式)
-            AllTables.user.putSafe(arg.getUserid(), userprop); // 插入记录(安全方式)
+            AllTables.user.put(arg.getUserid(), userprop); // 插入记录(安全方式)
         }
         userprop.setProp(userprop.getProp() + arg.getProp_delta()); // 修改记录
     }

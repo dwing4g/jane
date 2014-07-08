@@ -125,13 +125,13 @@ public final class SSMap<K, V, S> extends SMap<K, V, S> implements NavigableMap<
 	@Override
 	public SSSet<K, K> navigableKeySet()
 	{
-		return new SSSet<K, K>(_owner, ((NavigableMap<K, V>)_map).navigableKeySet());
+		return new SSSet<K, K>(_owner, ((NavigableMap<K, V>)_map).navigableKeySet(), null);
 	}
 
 	@Override
 	public SSSet<K, K> descendingKeySet()
 	{
-		return new SSSet<K, K>(_owner, ((NavigableMap<K, V>)_map).descendingKeySet());
+		return new SSSet<K, K>(_owner, ((NavigableMap<K, V>)_map).descendingKeySet(), null);
 	}
 
 	@Override

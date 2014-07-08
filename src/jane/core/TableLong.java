@@ -211,7 +211,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	 * 会自动添加到读cache中<br>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 */
-	public V get(long k)
+	public V getUnsafe(long k)
 	{
 		V v = _cache.get(k);
 		if(v != null) return v;
@@ -233,21 +233,21 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	}
 
 	/**
-	 * 同get,但同时设置修改标记
+	 * 同getUnsafe,但同时设置修改标记
 	 */
 	public V getModified(long k)
 	{
-		V v = get(k);
+		V v = getUnsafe(k);
 		if(v != null) modify(k, v);
 		return v;
 	}
 
 	/**
-	 * 同get,但增加的安全封装,可回滚修改
+	 * 同getUnsafe,但增加的安全封装,可回滚修改
 	 */
-	public S getSafe(long k)
+	public S get(long k)
 	{
-		V v = get(k);
+		V v = getUnsafe(k);
 		return v != null ? SContext.current().addRecord(this, k, v) : null;
 	}
 
@@ -257,7 +257,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	 * 不会自动添加到读cache中<br>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 */
-	public V getNoCache(long k)
+	public V getNoCacheUnsafe(long k)
 	{
 		V v = _cache.get(k);
 		if(v != null) return v;
@@ -272,11 +272,11 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	}
 
 	/**
-	 * 同getNoCache,但增加的安全封装,可回滚修改
+	 * 同getNoCacheUnsafe,但增加的安全封装,可回滚修改
 	 */
-	public S getNoCacheSafe(long k)
+	public S getNoCache(long k)
 	{
-		V v = getNoCache(k);
+		V v = getNoCacheUnsafe(k);
 		return v != null ? SContext.current().addRecord(this, k, v) : null;
 	}
 
@@ -286,7 +286,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	 * 只在读和写cache中获取<br>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 */
-	public V getCache(long k)
+	public V getCacheUnsafe(long k)
 	{
 		V v = _cache.get(k);
 		if(v != null) return v;
@@ -296,11 +296,11 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	}
 
 	/**
-	 * 同getCache,但增加的安全封装,可回滚修改
+	 * 同getCacheUnsafe,但增加的安全封装,可回滚修改
 	 */
-	public S getCacheSafe(long k)
+	public S getCache(long k)
 	{
-		V v = getCache(k);
+		V v = getCacheUnsafe(k);
 		return v != null ? SContext.current().addRecord(this, k, v) : null;
 	}
 
@@ -331,7 +331,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	}
 
 	@SuppressWarnings("unchecked")
-	void modifySafe(long k, Object v)
+	void modify(long k, Object v)
 	{
 		modify(k, (V)v);
 	}
@@ -343,7 +343,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	 * 如果使用自增长ID来插入记录的表,则不能用此方法来插入新的记录
 	 * @param v 如果是get获取到的对象引用,可调用modify来提高性能
 	 */
-	public void put(long k, V v)
+	public void putUnsafe(long k, V v)
 	{
 		V vOld = _cache.put(k, v);
 		if(vOld == v)
@@ -373,13 +373,13 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	}
 
 	/**
-	 * 同put,但增加的安全封装,可回滚修改
+	 * 同putUnsafe,但增加的安全封装,可回滚修改
 	 */
-	public void putSafe(final long k, V v)
+	public void put(final long k, V v)
 	{
 		if(v.stored())
 		    throw new IllegalStateException("put shared record: t=" + _tableName + ",k=" + k + ",v=" + v);
-		final V vOld = getNoCache(k);
+		final V vOld = getNoCacheUnsafe(k);
 		SContext.current().addOnRollback(new Runnable()
 		{
 			@Override
@@ -388,18 +388,18 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 				if(vOld != null)
 				{
 					vOld.setSaveState(0);
-					put(k, vOld);
+					putUnsafe(k, vOld);
 				}
 				else
-					remove(k);
+					removeUnsafe(k);
 			}
 		});
-		put(k, v);
+		putUnsafe(k, v);
 	}
 
-	public void putSafe(long k, S s)
+	public void put(long k, S s)
 	{
-		putSafe(k, s.unsafe());
+		put(k, s.unsafe());
 		s.record(new RecordLong<V, S>(this, k, s));
 	}
 
@@ -412,14 +412,14 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	 * @param v 插入的新value
 	 * @return 返回插入的自增长ID值
 	 */
-	public long insert(V v)
+	public long insertUnsafe(V v)
 	{
 		if(v.stored())
 		    throw new IllegalStateException("insert shared record: t=" + _tableName + ",v=" + v);
 		long k;
 		do
 			k = (_idCounter.incrementAndGet() << _autoIdLowBits) + _autoIdOffset;
-		while(getNoCache(k) != null);
+		while(getNoCacheUnsafe(k) != null);
 		v.setSaveState(2);
 		_cache.put(k, v);
 		if(_cacheMod != null)
@@ -431,24 +431,32 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	}
 
 	/**
-	 * 同insert,但增加的安全封装,可回滚修改(ID分配不支持回滚,回滚会产生无效ID)
+	 * 同insertUnsafe,但自动插入默认初始化的value
 	 */
-	public long insertSafe(V v)
+	public long insertUnsafe()
 	{
-		final long k = insert(v);
+		return insertUnsafe(_deleted.create());
+	}
+
+	/**
+	 * 同insertUnsafe,但增加的安全封装,可回滚修改(ID分配不支持回滚,回滚会产生无效ID)
+	 */
+	public long insert(V v)
+	{
+		final long k = insertUnsafe(v);
 		SContext.current().addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
 			{
-				remove(k);
+				removeUnsafe(k);
 			}
 		});
 		return k;
 	}
 
 	/**
-	 * 同insert,自动插入默认初始化的value
+	 * 同insertUnsafe,但自动插入默认初始化的value,增加的安全封装,可回滚修改(ID分配不支持回滚,回滚会产生无效ID)
 	 */
 	public long insert()
 	{
@@ -460,7 +468,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	 * <p>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 */
-	public void remove(long k)
+	public void removeUnsafe(long k)
 	{
 		_cache.remove(k);
 		if(_cacheMod != null && _cacheMod.put(k, _deleted) == null)
@@ -468,11 +476,11 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	}
 
 	/**
-	 * 同remove,但增加的安全封装,可回滚修改
+	 * 同removeUnsafe,但增加的安全封装,可回滚修改
 	 */
-	public void removeSafe(final long k)
+	public void remove(final long k)
 	{
-		final V vOld = getNoCache(k);
+		final V vOld = getNoCacheUnsafe(k);
 		if(vOld == null) return;
 		SContext.current().addOnRollback(new Runnable()
 		{
@@ -480,10 +488,10 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 			public void run()
 			{
 				vOld.setSaveState(0);
-				put(k, vOld);
+				putUnsafe(k, vOld);
 			}
 		});
-		remove(k);
+		removeUnsafe(k);
 	}
 
 	/**

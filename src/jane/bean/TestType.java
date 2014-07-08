@@ -28,6 +28,7 @@ import jane.core.SMap.SMapListener;
 import jane.core.SSMap;
 import jane.core.SSSet;
 import jane.core.SSet;
+import jane.core.SSet.SSetListener;
 import jane.core.Util;
 
 /**
@@ -47,11 +48,11 @@ public final class TestType extends Bean<TestType>
 	private static Field FIELD_v7;
 	private static Field FIELD_v8;
 	private static Field FIELD_v9;
-	private static Field FIELD_v16;
+	private static SSetListener<Long> LISTENER_v13;
+	private static SSetListener<Float> LISTENER_v14;
+	private static SSetListener<Double> LISTENER_v15;
 	private static SMapListener<Long, String> LISTENER_v16;
-	private static Field FIELD_v17;
 	private static SMapListener<TestBean, Boolean> LISTENER_v17;
-	private static Field FIELD_v18;
 	private static SMapListener<Octets, TestBean> LISTENER_v18;
 
 	private /* 1*/ boolean v1; // 1字节布尔,0表示假,1表示真,其它默认表示真
@@ -88,9 +89,6 @@ public final class TestType extends Bean<TestType>
 			FIELD_v7 = c.getDeclaredField("v7"); FIELD_v7.setAccessible(true);
 			FIELD_v8 = c.getDeclaredField("v8"); FIELD_v8.setAccessible(true);
 			FIELD_v9 = c.getDeclaredField("v9"); FIELD_v9.setAccessible(true);
-			FIELD_v16 = c.getDeclaredField("v16"); FIELD_v16.setAccessible(true);
-			FIELD_v17 = c.getDeclaredField("v17"); FIELD_v17.setAccessible(true);
-			FIELD_v18 = c.getDeclaredField("v18"); FIELD_v18.setAccessible(true);
 		}
 		catch(Exception e)
 		{
@@ -899,9 +897,14 @@ public final class TestType extends Bean<TestType>
 			return _bean.v12;
 		}
 
+		public static void onListenerV13(SSetListener<Long> listener)
+		{
+			LISTENER_v13 = listener;
+		}
+
 		public SSet<Long, Long> getV13()
 		{
-			return new SSet<Long, Long>(this, _bean.v13);
+			return new SSet<Long, Long>(this, _bean.v13, LISTENER_v13);
 		}
 
 		public HashSet<Long> unsafeV13()
@@ -909,9 +912,14 @@ public final class TestType extends Bean<TestType>
 			return _bean.v13;
 		}
 
+		public static void onListenerV14(SSetListener<Float> listener)
+		{
+			LISTENER_v14 = listener;
+		}
+
 		public SSSet<Float, Float> getV14()
 		{
-			return new SSSet<Float, Float>(this, _bean.v14);
+			return new SSSet<Float, Float>(this, _bean.v14, LISTENER_v14);
 		}
 
 		public TreeSet<Float> unsafeV14()
@@ -919,9 +927,14 @@ public final class TestType extends Bean<TestType>
 			return _bean.v14;
 		}
 
+		public static void onListenerV15(SSetListener<Double> listener)
+		{
+			LISTENER_v15 = listener;
+		}
+
 		public SSet<Double, Double> getV15()
 		{
-			return new SSet<Double, Double>(this, _bean.v15);
+			return new SSet<Double, Double>(this, _bean.v15, LISTENER_v15);
 		}
 
 		public LinkedHashSet<Double> unsafeV15()

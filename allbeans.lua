@@ -11,6 +11,7 @@ handler
 	{
 		TestServer = namespace .. ".handler.testserver", -- 服务器需要处理的beans及输出目录/命名空间
 		TestClient = true, -- 服务器引用的beans,只生成beans,不生成handler框架
+		dbt = true, -- 引用数据库表(dbt)的定义
 	},
 	Client =
 	{

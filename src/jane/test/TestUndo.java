@@ -30,13 +30,13 @@ public final class TestUndo
 			protected void onProcess() throws Exception
 			{
 				lock(Benchmark.lockId(id));
-				TestBean.Safe a = Benchmark.getSafe(id);
+				TestBean.Safe a = Benchmark.get(id);
 				if(a == null)
 				{
 					TestBean aa = new TestBean();
 					aa.setValue1(v);
 					System.out.println("new: " + aa.getValue1());
-					Benchmark.putSafe(id, aa);
+					Benchmark.put(id, aa);
 				}
 				else
 				{
@@ -57,7 +57,7 @@ public final class TestUndo
 			protected void onProcess() throws Exception
 			{
 				lock(Benchmark.lockId(id));
-				TestBean.Safe a = Benchmark.getSafe(id);
+				TestBean.Safe a = Benchmark.get(id);
 				System.out.println("get: " + a.getValue1());
 				a.setValue1(v + 1);
 				System.out.println("set: " + a.getValue1());
@@ -72,7 +72,7 @@ public final class TestUndo
 			protected void onProcess() throws Exception
 			{
 				lock(Benchmark.lockId(id));
-				TestBean.Safe a = Benchmark.getSafe(id);
+				TestBean.Safe a = Benchmark.get(id);
 				System.out.println("get: " + a.getValue1());
 				a.setValue1(v + 2);
 				System.out.println("set: " + a.getValue1());
@@ -86,7 +86,7 @@ public final class TestUndo
 			protected void onProcess() throws Exception
 			{
 				lock(Benchmark.lockId(id));
-				TestBean.Safe a = Benchmark.getSafe(id);
+				TestBean.Safe a = Benchmark.get(id);
 				System.out.println("get: " + a.getValue1());
 				System.out.println("=== 4");
 			}
@@ -110,11 +110,11 @@ public final class TestUndo
 			protected void onProcess() throws Exception
 			{
 				lock(TestTable.lockId(1));
-				TestType.Safe a = TestTable.getSafe(1);
+				TestType.Safe a = TestTable.get(1);
 				if(a == null)
 				{
 					a = new TestType().safe();
-					TestTable.putSafe(1, a);
+					TestTable.put(1, a);
 				}
 				Map<Octets, TestBean.Safe> map = a.getV18();
 				map.put(Octets.wrap("a"), new TestBean(11, 22).safe());
@@ -130,7 +130,7 @@ public final class TestUndo
 			protected void onProcess() throws Exception
 			{
 				lock(TestTable.lockId(1));
-				TestType.Safe a = TestTable.getSafe(1);
+				TestType.Safe a = TestTable.get(1);
 				Map<Octets, TestBean.Safe> map = a.getV18();
 				map.remove(Octets.wrap("a"));
 				TestBean.Safe b = map.get(Octets.wrap("b"));

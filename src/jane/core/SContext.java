@@ -278,21 +278,21 @@ public final class SContext
 	<K, V extends Bean<V>, S extends Safe<V>> S addRecord(Table<K, V, S> table, K key, V value)
 	{
 		@SuppressWarnings("unchecked")
-		S vSafe = (S)value.safe(null);
-		Record<K, V, S> rec = new Record<K, V, S>(table, key, vSafe);
-		vSafe.record(rec);
+		S s = (S)value.safe(null);
+		Record<K, V, S> rec = new Record<K, V, S>(table, key, s);
+		s.record(rec);
 		_records.add(rec);
-		return vSafe;
+		return s;
 	}
 
 	<V extends Bean<V>, S extends Safe<V>> S addRecord(TableLong<V, S> table, long key, V value)
 	{
 		@SuppressWarnings("unchecked")
-		S vSafe = (S)value.safe(null);
-		RecordLong<V, S> rec = new RecordLong<V, S>(table, key, vSafe);
-		vSafe.record(rec);
+		S s = (S)value.safe(null);
+		RecordLong<V, S> rec = new RecordLong<V, S>(table, key, s);
+		s.record(rec);
 		_recordLongs.add(rec);
-		return vSafe;
+		return s;
 	}
 
 	public void addOnCommit(Runnable r)
@@ -312,14 +312,14 @@ public final class SContext
 		for(Record<?, ?, ?> r : _records)
 		{
 			if(r._value.isDirtyAndClear())
-			    r._table.modifySafe(r._key, r._value.unsafe());
+			    r._table.modify(r._key, r._value.unsafe());
 		}
 		_records.clear();
 
 		for(RecordLong<?, ?> r : _recordLongs)
 		{
 			if(r._value.isDirtyAndClear())
-			    r._table.modifySafe(r._key, r._value.unsafe());
+			    r._table.modify(r._key, r._value.unsafe());
 		}
 		_recordLongs.clear();
 

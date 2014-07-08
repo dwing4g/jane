@@ -70,12 +70,12 @@ public abstract class Procedure implements Runnable
 							if(t.isAlive())
 							{
 								Procedure p = e.getValue().proc;
-								if(p != null && now - p._beginTime > 5000)
+								if(p != null && now - p._beginTime > Const.procedureTimeout * 1000)
 								{
 									synchronized(p)
 									{
 										long timeout = now - p._beginTime;
-										if(timeout > 5000 && e.getValue().proc != null)
+										if(timeout > Const.procedureTimeout * 1000 && e.getValue().proc != null)
 										{
 											if(p._sid != null)
 											{
@@ -173,9 +173,27 @@ public abstract class Procedure implements Runnable
 		}
 	}
 
+	@SuppressWarnings("serial")
+	private static class Undo extends RuntimeException
+	{
+		private static final Undo _instance = new Undo();
+
+		@SuppressWarnings("sync-override")
+		@Override
+		public Throwable fillInStackTrace()
+		{
+			return this;
+		}
+	}
+
 	public static RuntimeException redo()
 	{
 		return Redo._instance;
+	}
+
+	public static RuntimeException undo()
+	{
+		return Undo._instance;
 	}
 
 	/**
@@ -586,7 +604,8 @@ public abstract class Procedure implements Runnable
 		{
 			try
 			{
-				onException(e);
+				if(e != undo())
+				    onException(e);
 			}
 			catch(Throwable ex)
 			{

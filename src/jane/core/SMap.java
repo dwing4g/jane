@@ -265,6 +265,11 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 			return _e.getKey();
 		}
 
+		public V getValueUnsafe()
+		{
+			return _e.getValue();
+		}
+
 		@Override
 		public S getValue()
 		{
@@ -284,7 +289,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		@Override
 		public S setValue(S s)
 		{
-			return safe(_e.getKey(), setValueDirect(unsafe(s)));
+			return safeAlone(setValueDirect(unsafe(s)));
 		}
 
 		@Override
@@ -320,7 +325,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		public void remove()
 		{
 			K k = _cur.getKey();
-			V v = unsafe(_cur.getValue());
+			V v = _cur.getValueUnsafe();
 			_it.remove();
 			addUndoRemove(k, v);
 		}
