@@ -2,6 +2,7 @@
 local arg = arg
 local type = type
 local string = string
+local lower = string.lower
 local error = error
 local pairs = pairs
 local table = table
@@ -9,6 +10,7 @@ local concat = table.concat
 local ipairs = ipairs
 local print = print
 local open = io.open
+local tostring = tostring
 
 local jdk7 = false -- false for jdk6
 namespace = arg[1] -- for bean namespace
@@ -853,6 +855,9 @@ local function do_var(var)
 	basetype, var.k, var.v, var.cap = var.type:match "^%s*([%w_]+)%s*<?%s*([%w_]*)%s*,?%s*([%w_]*)%s*>?%s*%(?%s*([%w%._]*)%s*%)?%s*$"
 	if not var.cap then var.cap = "" end
 	local def = typedef[basetype]
+	if not def and typedef[lower(basetype)] then basetype = lower(basetype) def = typedef[basetype] end
+	if var.k and not typedef[var.k] and typedef[lower(var.k)] then var.k = lower(var.k) end
+	if var.v and not typedef[var.v] and typedef[lower(var.v)] then var.v = lower(var.v) end
 	if not def and basetype == var.type then def = typedef.bean end
 	if type(def) == "table" then
 		for k, v in pairs(def) do
@@ -904,9 +909,10 @@ end
 local function bean_common(bean)
 	bean.name = trim(bean.name)
 	if bean.name:find("[^%w_]") or typedef[bean.name] or bean.name == "AllBeans" or bean.name == "AllTables" then error("ERROR: invalid bean.name: " .. bean.name) end
-	if name_code[bean.name] then error("ERROR: duplicated bean.name: " .. bean.name) end
-	if type_bean[bean.type] then error("ERROR: duplicated bean.type: " .. bean.type) end
-	if bean.type < 1 or bean.type > 0x7fffffff then error("ERROR: invalid bean.type: " .. bean.type) end
+	if name_code[lower(bean.name)] then error("ERROR: duplicated bean.name: " .. bean.name) end
+	if type(bean.type) ~= "number" then bean.type = 0 end
+	if bean.handlers and type_bean[bean.type] then error("ERROR: duplicated bean.type: " .. bean.type) end
+	if bean.handlers and (bean.type < 1 or bean.type > 0x7fffffff) then error("ERROR: invalid bean.type: " .. tostring(bean.type) .. " (bean.name: " .. bean.name .. ")") end
 	for name in (bean.handlers or ""):gmatch("([%w_]+)") do
 		if not all_handlers[name] then error("ERROR: not defined handle: " .. name) end
 		hdl_types[name] = hdl_types[name] or {}
@@ -991,6 +997,8 @@ function bean(bean)
 		bean.pool_func = ""
 	end
 
+	if not bean.initsize then bean.initsize = 0 end
+	if type(bean.initsize) == "number" and bean.initsize > 0x100000 then print("WARNING: bean.initsize = " .. bean.initsize .. " > 1MB (bean.name:" .. bean.name .. ")") end
 	bean.imports = get_imports(bean.import)
 	bean.uid = gen_uid(concat(vartypes))
 
@@ -1010,8 +1018,24 @@ function bean(bean)
 	end)
 
 	bean.param_warning = (#vartypes > 1 and "" or "/** @param b unused */\n\t")
-	name_code[bean.name] = code_conv(code, "bean", bean):gsub(#vartypes > 1 and "#[<>]#" or "#<#(.-)#>#", ""):gsub("int h = (%d+ %* 0x9e3779b1;)\n\t\treturn h;", "return %1"):gsub("\r", "")
-	if bean.const then name_code[bean.name] = bean_const(name_code[bean.name]) end
+	code = code_conv(code, "bean", bean):gsub(#vartypes > 1 and "#[<>]#" or "#<#(.-)#>#", ""):gsub("int h = (%d+ %* 0x9e3779b1;)\n\t\treturn h;", "return %1"):gsub("\r", "")
+	if bean.const then code = bean_const(code) end
+	local c, n = code:gsub([[
+	static
+	{
+		try
+		{
+			Class<[%w_]+> c = [%w_]+%.class;
+		}
+		catch%(Exception e%)
+		{
+		}
+	}
+
+]], "")
+	if n > 0 then code = c:gsub("import java.lang.reflect.Field;\n", "") end
+	name_code[bean.name] = code
+	name_code[lower(bean.name)] = code
 end
 
 local outpath = (arg[4] or "."):gsub("\\", "/")
@@ -1053,6 +1077,7 @@ function rpc(bean)
 	bean_common(bean)
 	bean.uid = gen_uid(name_bean[bean.arg].uid .. name_bean[bean.res].uid)
 	name_code[bean.name] = code_conv(template_rpcbean, "bean", bean):gsub("\r", "")
+	name_code[lower(bean.name)] = name_code[bean.name]
 	savebean(bean.arg)
 	savebean(bean.res)
 end

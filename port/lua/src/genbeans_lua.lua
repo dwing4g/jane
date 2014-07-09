@@ -57,7 +57,8 @@ function bean(bean)
 	if bean.name:find("[^%w_]") or typemap[bean.name] then error("ERROR: invalid bean.name: " .. bean.name) end
 	if name_used[bean.name] then error("ERROR: duplicated bean.name: " .. bean.name) end
 	if type_bean[bean.type] then error("ERROR: duplicated bean.type: " .. bean.type) end
-	if bean.type < 1 or bean.type > 0x7fffffff then error("ERROR: invalid bean.type: " .. bean.type) end
+	if type(bean.type) ~= "number" then bean.type = 0 end
+	if bean.handlers and (bean.type < 1 or bean.type > 0x7fffffff) then error("ERROR: invalid bean.type: " .. tostring(bean.type) .. " (bean.name: " .. bean.name .. ")") end
 	type_bean[bean.type] = bean
 	name_bean[bean.name] = bean
 
