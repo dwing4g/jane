@@ -101,7 +101,7 @@ namespace Jane.Bean
 			this.v18.Clear(); if(b.v18 != null) Util.addAll(this.v18, b.v18);
 			this.v19.assign(ref b.v19);
 		}
-
+/*
 		public bool getV1()
 		{
 			return v1;
@@ -236,7 +236,7 @@ namespace Jane.Bean
 		{
 			return v19;
 		}
-
+*/
 		public int type()
 		{
 			return 2;
@@ -599,7 +599,7 @@ namespace Jane.Bean
 			--s.Length;
 			return s.Append('}').ToString();
 		}
-
+#if TO_JSON_LUA
 		public StringBuilder toJson(StringBuilder s)
 		{
 			if(s == null) s = new StringBuilder(1024);
@@ -663,5 +663,6 @@ namespace Jane.Bean
 		{
 			return toLua(null);
 		}
+#endif
 	}
 }

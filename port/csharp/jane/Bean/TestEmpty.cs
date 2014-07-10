@@ -21,7 +21,7 @@ namespace Jane.Bean
 		public void assign(ref TestEmpty b)
 		{
 		}
-
+/**/
 		public int type()
 		{
 			return 3;
@@ -104,7 +104,7 @@ namespace Jane.Bean
 			StringBuilder s = new StringBuilder(16 + 0 * 2).Append('{');
 			return s.Append('}').ToString();
 		}
-
+#if TO_JSON_LUA
 		public StringBuilder toJson(StringBuilder s)
 		{
 			if(s == null) s = new StringBuilder(1024);
@@ -128,5 +128,6 @@ namespace Jane.Bean
 		{
 			return toLua(null);
 		}
+#endif
 	}
 }

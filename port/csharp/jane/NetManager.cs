@@ -187,7 +187,7 @@ namespace Jane
 				onDelSession(code, e);
 		}
 
-		public bool send(IBean bean)
+		public bool sendDirect(IBean bean)
 		{
 			if(!_tcpClient.Connected || _tcpStream == null) return false;
 			OctetsStream os = new OctetsStream(bean.initSize() + 10);
@@ -203,6 +203,11 @@ namespace Jane
 				_tcpStream.BeginWrite(os.array(), os.position(), os.remain(), writeCallback, bean);
 			}
 			return true;
+		}
+
+		public virtual bool send(IBean bean)
+		{
+			return sendDirect(bean);
 		}
 
 		protected virtual void Dispose(bool disposing)

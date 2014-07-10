@@ -257,7 +257,7 @@ namespace Jane
 			s[s.Length - 1] = '}';
 			return s.Append(',');
 		}
-
+#if TO_JSON_LUA
 		/**
 		 * 把字符串转化成Java/JSON字符串输出到StringBuilder中;
 		 */
@@ -358,5 +358,6 @@ namespace Jane
 			s[s.Length - 1] = '}';
 			return s.Append(',');
 		}
+#endif
 	}
 }

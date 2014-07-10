@@ -1,5 +1,7 @@
 using System;
+#if TO_JSON_LUA
 using System.Text;
+#endif
 
 namespace Jane
 {
@@ -51,7 +53,7 @@ namespace Jane
 		 * @return 必须是参数os;
 		 */
 		OctetsStream unmarshal(OctetsStream os);
-
+#if TO_JSON_LUA
 		/**
 		 * 把bean的数据格式化成JSON格式返回;
 		 * @param s 可提供一个StringBuilder对象. 如果传入null,则自动创建一个新的StringBuilder;
@@ -65,5 +67,6 @@ namespace Jane
 		 */
 		StringBuilder toLua(StringBuilder s);
 		StringBuilder toLua();
+#endif
 	}
 }

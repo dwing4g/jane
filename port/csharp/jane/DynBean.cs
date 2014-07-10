@@ -129,7 +129,7 @@ namespace Jane
 				s.Append(',').Append(p.Key).Append(':').Append(p.Value);
 			return s.Append('}').ToString();
 		}
-
+#if TO_JSON_LUA
 		public StringBuilder toJson(StringBuilder s)
 		{
 			if(s == null) s = new StringBuilder(_fields.Count * 16 + 16);
@@ -187,5 +187,6 @@ namespace Jane
 		{
 			return toLua(null);
 		}
+#endif
 	}
 }

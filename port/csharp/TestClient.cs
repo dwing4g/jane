@@ -51,6 +51,11 @@ namespace Jane
 			return null;
 		}
 
+		public override bool send(IBean bean)
+		{
+			return sendDirect(bean);
+		}
+
 		static void Main(string[] args)
 		{
 			using(NetManager mgr = new TestClient())

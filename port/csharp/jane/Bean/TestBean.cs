@@ -35,7 +35,7 @@ namespace Jane.Bean
 			this.value1 = b.value1;
 			this.value2 = b.value2;
 		}
-
+/*
 		public int getValue1()
 		{
 			return value1;
@@ -55,7 +55,7 @@ namespace Jane.Bean
 		{
 			this.value2 = value2;
 		}
-
+*/
 		public int type()
 		{
 			return 1;
@@ -155,7 +155,7 @@ namespace Jane.Bean
 			--s.Length;
 			return s.Append('}').ToString();
 		}
-
+#if TO_JSON_LUA
 		public StringBuilder toJson(StringBuilder s)
 		{
 			if(s == null) s = new StringBuilder(1024);
@@ -185,5 +185,6 @@ namespace Jane.Bean
 		{
 			return toLua(null);
 		}
+#endif
 	}
 }

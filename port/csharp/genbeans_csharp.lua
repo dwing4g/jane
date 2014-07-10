@@ -9,6 +9,7 @@ local concat = table.concat
 local ipairs = ipairs
 local print = print
 local open = io.open
+local tostring = tostring
 
 namespace = arg[1] -- for bean namespace
 local namespace = namespace
@@ -44,12 +45,12 @@ namespace ]=] .. namespace .. [=[.Bean
 		{
 #(#			#(var.assign);
 #)#		}
-#(#
+/*#(#
 		public #(var.type) get#(var.name_u)()
 		{
 			return #(var.name);
 		}
-#(var.set)#)#
+#(var.set)#)#*/
 		public int type()
 		{
 			return #(bean.type);
@@ -142,7 +143,7 @@ namespace ]=] .. namespace .. [=[.Bean
 #)#			--s.Length;#>#
 			return s.Append('}').ToString();
 		}
-
+#if TO_JSON_LUA
 		public StringBuilder toJson(StringBuilder s)
 		{
 			if(s == null) s = new StringBuilder(1024);
@@ -170,6 +171,7 @@ namespace ]=] .. namespace .. [=[.Bean
 		{
 			return toLua(null);
 		}
+#endif
 	}
 }
 ]=]

@@ -5,6 +5,7 @@ local ipairs = ipairs
 local format = string.format
 local concat = table.concat
 local open = io.open
+local type = type
 
 local beanfile = "../../allbeans.lua"
 
