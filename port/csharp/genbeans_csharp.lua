@@ -562,14 +562,14 @@ local function code_conv(code, prefix, t)
 	return code:gsub("#%(" .. prefix .. "%.([%w_]+)%)", function(name) return t[name] end)
 end
 
-local name_code = {}
-local type_bean = {}
-local name_bean = {}
-local handlers = {}
-local has_handler
-local all_handlers = {}
-local hdl_types = {}
-local bean_order = {}
+local name_code = {} -- bean name => bean code
+local type_bean = {} -- bean type => bean
+local name_bean = {} -- bean name => bean
+local handlers = {} -- selected handler name => handler path
+local has_handler -- any selected handler?
+local all_handlers = {} -- all handlers name => true
+local hdl_names = {} -- handler name => {bean names}
+local bean_order = {} -- defined order => bean name
 function handler(hdls)
 	if not arg[2] then error("ERROR: arg[2] must be handler name(s)") end
 	for hdlname in arg[2]:gmatch("([%w_]+)") do
@@ -594,11 +594,10 @@ local function bean_common(bean)
 	if name_code[bean.name] then error("ERROR: duplicated bean.name: " .. bean.name) end
 	if type(bean.type) ~= "number" then bean.type = 0 end
 	if bean.handlers and type_bean[bean.type] then error("ERROR: duplicated bean.type: " .. bean.type) end
-	if bean.handlers and (bean.type < 1 or bean.type > 0x7fffffff) then error("ERROR: invalid bean.type: " .. tostring(bean.type) .. " (bean.name: " .. bean.name .. ")") end
 	for name in (bean.handlers or ""):gmatch("([%w_]+)") do
 		if not all_handlers[name] then error("ERROR: not defined handle: " .. name) end
-		hdl_types[name] = hdl_types[name] or {}
-		hdl_types[name][#hdl_types[name] + 1] = bean.type
+		hdl_names[name] = hdl_names[name] or {}
+		hdl_names[name][#hdl_names[name] + 1] = bean.name
 	end
 	type_bean[bean.type] = bean
 	name_bean[bean.name] = bean
@@ -645,6 +644,7 @@ function bean(bean)
 		return code:sub(-2, -1) ~= ", " and code or code:sub(1, -3)
 	end)
 
+	if not bean.maxsize then bean.maxsize = 0x7fffffff end
 	bean.param_warning = (#vartypes > 1 and "" or "/** @param b unused */\n\t\t")
 	name_code[bean.name] = code_conv(code, "bean", bean):gsub(#vartypes > 1 and "#[<>]#" or "#<#(.-)#>#", ""):gsub("\r", "")
 	bean_order[#bean_order + 1] = bean.name
@@ -694,15 +694,16 @@ local bean_count = 0
 checksave(outpath .. namespace .. "/Bean/AllBeans.cs", (template_allbeans:gsub("#%[#(.-)#%]#", function(body)
 	local subcode = {}
 	for hdlname, hdlpath in pairs(handlers) do
-		local types = hdl_types[hdlname] or {}
-		local hdl = { name = hdlname, path = tostring(hdlpath), count = #types }
+		local names = hdl_names[hdlname] or {}
+		local hdl = { name = hdlname, path = tostring(hdlpath), count = #names }
 		subcode[#subcode + 1] = code_conv(body:gsub("#%(#(.-)#%)#", function(body)
 			local subcode2 = {}
-			for _, t in ipairs(types) do
-				local bean = type_bean[t]
+			for _, name in ipairs(names) do
+				local bean = name_bean[name]
 				savebean(bean.name)
 				subcode2[#subcode2 + 1] = code_conv(body, "bean", bean)
 				if type(hdlpath) == "string" then
+					if bean.type <= 0 or bean.type > 0x7fffffff then error("ERROR: invalid bean.type: " .. tostring(bean.type) .. " (bean.name: " .. bean.name .. ")") end
 					if not bean.arg then
 						checksave(outpath .. hdlpath:gsub("%.", "/") .. "/" .. bean.name .. "Handler.cs", code_conv(code_conv(template_bean_handler:gsub("#%(#(.-)#%)#", function(body)
 							local subcode3 = {}
@@ -726,8 +727,10 @@ end):gsub("#%(#(.-)#%)#", function(body)
 	for _, beanname in ipairs(bean_order) do
 		if bean_order[beanname] then
 			local bean = name_bean[beanname]
-			subcode[#subcode + 1] = code_conv(body, "bean", bean)
-			bean_count = bean_count + 1
+			if bean.type > 0 then
+				subcode[#subcode + 1] = code_conv(body, "bean", bean)
+				bean_count = bean_count + 1
+			end
 		end
 	end
 	return concat(subcode)

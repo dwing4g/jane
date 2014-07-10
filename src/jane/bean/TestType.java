@@ -37,7 +37,7 @@ import jane.core.Util;
 public final class TestType extends Bean<TestType>
 {
 	private static final long serialVersionUID = 0xbeacabe90777739dL;
-	public  static final int BEAN_TYPE = 3;
+	public  static final int BEAN_TYPE = 2;
 	public  static final TestType BEAN_STUB = new TestType();
 	private static Field FIELD_v1;
 	private static Field FIELD_v2;
@@ -344,7 +344,7 @@ public final class TestType extends Bean<TestType>
 	@Override
 	public int type()
 	{
-		return 3;
+		return 2;
 	}
 
 	@Override
@@ -566,7 +566,7 @@ public final class TestType extends Bean<TestType>
 	@Override
 	public int hashCode()
 	{
-		int h = 3 * 0x9e3779b1;
+		int h = 2 * 0x9e3779b1;
 		h = h * 31 + 1 + (this.v1 ? 0xcafebabe : 0xdeadbeef);
 		h = h * 31 + 1 + this.v2;
 		h = h * 31 + 1 + this.v3;

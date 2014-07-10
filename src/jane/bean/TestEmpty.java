@@ -12,7 +12,7 @@ import jane.core.SContext;
 public final class TestEmpty extends Bean<TestEmpty>
 {
 	private static final long serialVersionUID = 0xbeac245da40b43f8L;
-	public  static final int BEAN_TYPE = 4;
+	public  static final int BEAN_TYPE = 3;
 	public  static final TestEmpty BEAN_STUB = new TestEmpty();
 
 	@Override
@@ -29,7 +29,7 @@ public final class TestEmpty extends Bean<TestEmpty>
 	@Override
 	public int type()
 	{
-		return 4;
+		return 3;
 	}
 
 	@Override
@@ -81,7 +81,7 @@ public final class TestEmpty extends Bean<TestEmpty>
 	@Override
 	public int hashCode()
 	{
-		return 4 * 0x9e3779b1;
+		return 3 * 0x9e3779b1;
 	}
 
 	@Override

@@ -4,14 +4,16 @@
 local num, str, bool, vec, map = 0, 1, 2, 3, 4
 return require "util".initBeans {
 	TestBean = { __type = 1, __vars = {
+		TEST_CONST1 = 5,
+		TEST_CONST2 = "test_const2",
 		[ 1] = { name = "value1", type = num },
 		[ 2] = { name = "value2", type = num },
 	}},
-	TestKeyBean = { __type = 2, __vars = {
+	TestKeyBean = { __type = 0, __vars = {
 		[ 1] = { name = "key1", type = num },
 		[ 2] = { name = "key2", type = str },
 	}},
-	TestType = { __type = 3, __vars = {
+	TestType = { __type = 2, __vars = {
 		[ 1] = { name = "v1", type = bool },
 		[ 2] = { name = "v2", type = num },
 		[ 3] = { name = "v3", type = num },
@@ -32,7 +34,7 @@ return require "util".initBeans {
 		[18] = { name = "v18", type = map, key = str, value = "TestBean" },
 		[19] = { name = "v19", type = "TestBean" },
 	}},
-	TestEmpty = { __type = 4, __vars = {
+	TestEmpty = { __type = 3, __vars = {
 	}},
 }
 

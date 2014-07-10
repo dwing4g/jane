@@ -15,7 +15,8 @@ local template_bean = [=[
 local num, str, bool, vec, map = 0, 1, 2, 3, 4
 return require "util".initBeans {
 #[#	#(bean.name) = { __type = #(bean.type), __vars = {
-#(#		[#(var.id2)] = { name = "#(var.name)", type = #(var.btype)#(var.keyval) },
+#{#		#(var.name)#(var.value),
+#}##(#		[#(var.id2)] = { name = "#(var.name)", type = #(var.btype)#(var.keyval) },
 #)#	}},
 #]#}
 
@@ -58,13 +59,14 @@ function bean(bean)
 	if name_used[bean.name] then error("ERROR: duplicated bean.name: " .. bean.name) end
 	if type_bean[bean.type] then error("ERROR: duplicated bean.type: " .. bean.type) end
 	if type(bean.type) ~= "number" then bean.type = 0 end
-	if bean.handlers and (bean.type < 1 or bean.type > 0x7fffffff) then error("ERROR: invalid bean.type: " .. tostring(bean.type) .. " (bean.name: " .. bean.name .. ")") end
 	type_bean[bean.type] = bean
 	name_bean[bean.name] = bean
 
 	for _, var in ipairs(bean) do
 		if var.id and (var.id < 1 or var.id > 62) then error("ERROR: id=" .. var.id .. " must be in [1, 62]") end
 		if not var.id then var.id = 0 end
+		if type(var.value) == "string" then var.value = "\"" .. var.value .. "\"" end
+		var.value = var.value and " = " .. var.value or ""
 		var.id2 = format("%2d", var.id)
 		var.name = trim(var.name)
 		var.type = trim(var.type)
@@ -118,7 +120,13 @@ checksave(outpath .. "src/bean.lua", (template_bean:gsub("#%[#(.-)#%]#", functio
 	local subcode = {}
 	for _, name in ipairs(bean_order) do
 		local bean = name_bean[name]
-		subcode[#subcode + 1] = code_conv(body:gsub("#%(#(.-)#%)#", function(body)
+		subcode[#subcode + 1] = code_conv(body:gsub("#{#(.-)#}#", function(body)
+			local subcode2 = {}
+			for _, var in ipairs(bean) do
+				if var.id == 0 then subcode2[#subcode2 + 1] = code_conv(body, "var", var) end
+			end
+			return concat(subcode2)
+		end):gsub("#%(#(.-)#%)#", function(body)
 			local subcode2 = {}
 			for _, var in ipairs(bean) do
 				if var.id > 0 then subcode2[#subcode2 + 1] = code_conv(code_conv(body, "var", var), "var", var) end

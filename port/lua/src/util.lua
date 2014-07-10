@@ -181,8 +181,10 @@ function util.initBeans(c)
 		local vars = b.__vars
 		local r = {}
 		for i, v in pairs(vars) do
-			v.id = i -- vars中加入id字段
-			r[v.name] = v -- 在临时表中加入var名索引
+			if type(v) == "table" then
+				v.id = i -- vars中加入id字段
+				r[v.name] = v -- 在临时表中加入var名索引
+			end
 		end
 		for n, v in pairs(r) do
 			vars[n] = v -- 把临时表归并到vars中,使vars加入var名索引
@@ -195,7 +197,7 @@ function util.initBeans(c)
 	for i, b in pairs(s) do
 		c[i] = b
 		for n, v in pairs(b.__vars) do
-			if type(n) == "string" then
+			if type(n) == "string" and type(v) == "table" then
 				local t = v.type
 				v = m[t]
 				if v == nil then

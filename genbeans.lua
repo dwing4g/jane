@@ -885,7 +885,7 @@ local name_bean = {} -- bean name => bean
 local handlers = {} -- selected handler name => handler path
 local has_handler -- any selected handler?
 local all_handlers = {} -- all handlers name => true
-local hdl_types = {} -- handler name => {bean types}
+local hdl_names = {} -- handler name => {bean names}
 local bean_order = {} -- defined order => bean name
 local tables = { imports = { ["java.util.HashMap"] = true, ["jane.core.Bean"] = true } }
 function handler(hdls)
@@ -912,11 +912,10 @@ local function bean_common(bean)
 	if name_code[lower(bean.name)] then error("ERROR: duplicated bean.name: " .. bean.name) end
 	if type(bean.type) ~= "number" then bean.type = 0 end
 	if bean.handlers and type_bean[bean.type] then error("ERROR: duplicated bean.type: " .. bean.type) end
-	if bean.handlers and (bean.type < 1 or bean.type > 0x7fffffff) then error("ERROR: invalid bean.type: " .. tostring(bean.type) .. " (bean.name: " .. bean.name .. ")") end
 	for name in (bean.handlers or ""):gmatch("([%w_]+)") do
 		if not all_handlers[name] then error("ERROR: not defined handle: " .. name) end
-		hdl_types[name] = hdl_types[name] or {}
-		hdl_types[name][#hdl_types[name] + 1] = bean.type
+		hdl_names[name] = hdl_names[name] or {}
+		hdl_names[name][#hdl_names[name] + 1] = bean.name
 	end
 	type_bean[bean.type] = bean
 	name_bean[bean.name] = bean
@@ -997,6 +996,7 @@ function bean(bean)
 		bean.pool_func = ""
 	end
 
+	if not bean.maxsize then bean.maxsize = 0x7fffffff end
 	if not bean.initsize then bean.initsize = 0 end
 	if type(bean.initsize) == "number" and bean.initsize > 0x100000 then print("WARNING: bean.initsize = " .. bean.initsize .. " > 1MB (bean.name:" .. bean.name .. ")") end
 	bean.imports = get_imports(bean.import)
@@ -1127,15 +1127,16 @@ local bean_count = 0
 checksave(outpath .. namespace .. "/bean/AllBeans.java", (template_allbeans:gsub("#%[#(.-)#%]#", function(body)
 	local subcode = {}
 	for hdlname, hdlpath in pairs(handlers) do
-		local types = hdl_types[hdlname] or {}
-		local hdl = { name = hdlname, path = tostring(hdlpath), count = #types }
+		local names = hdl_names[hdlname] or {}
+		local hdl = { name = hdlname, path = tostring(hdlpath), count = #names }
 		subcode[#subcode + 1] = code_conv(body:gsub("#%(#(.-)#%)#", function(body)
 			local subcode2 = {}
-			for _, t in ipairs(types) do
-				local bean = type_bean[t]
+			for _, name in ipairs(names) do
+				local bean = name_bean[name]
 				savebean(bean.name)
 				subcode2[#subcode2 + 1] = code_conv(body, "bean", bean)
 				if type(hdlpath) == "string" then
+					if bean.type <= 0 or bean.type > 0x7fffffff then error("ERROR: invalid bean.type: " .. tostring(bean.type) .. " (bean.name: " .. bean.name .. ")") end
 					if not bean.arg then
 						checksave(outpath .. hdlpath:gsub("%.", "/") .. "/" .. bean.name .. "Handler.java", code_conv(code_conv(template_bean_handler:gsub("#%(#(.-)#%)#", function(body)
 							local subcode3 = {}
@@ -1169,8 +1170,10 @@ end):gsub("#%(#(.-)#%)#", function(body)
 	for _, beanname in ipairs(bean_order) do
 		if bean_order[beanname] then
 			local bean = name_bean[beanname]
-			subcode[#subcode + 1] = code_conv(body, "bean", bean)
-			bean_count = bean_count + 1
+			if bean.type > 0 then
+				subcode[#subcode + 1] = code_conv(body, "bean", bean)
+				bean_count = bean_count + 1
+			end
 		end
 	end
 	return concat(subcode)

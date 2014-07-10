@@ -16,9 +16,8 @@ public final class AllBeans
 	/** 获取全部的bean实例 */
 	public static Collection<Bean<?>> getAllBeans()
 	{
-		List<Bean<?>> r = new ArrayList<Bean<?>>(5);
+		List<Bean<?>> r = new ArrayList<Bean<?>>(4);
 		r.add(TestBean.BEAN_STUB);
-		r.add(TestKeyBean.BEAN_STUB);
 		r.add(TestType.BEAN_STUB);
 		r.add(TestEmpty.BEAN_STUB);
 		r.add(TestRpcBean.BEAN_STUB);
@@ -29,8 +28,8 @@ public final class AllBeans
 	{
 		IntMap<BeanHandler<?>> r = new IntMap<BeanHandler<?>>(3 * 4);
 		r.put(1, new jane.handler.testclient.TestBeanHandler());
-		r.put(3, new jane.handler.testclient.TestTypeHandler());
-		r.put(5, new jane.handler.testclient.TestRpcBeanHandler());
+		r.put(2, new jane.handler.testclient.TestTypeHandler());
+		r.put(4, new jane.handler.testclient.TestRpcBeanHandler());
 		return r;
 	}
 
@@ -38,9 +37,9 @@ public final class AllBeans
 	{
 		IntMap<BeanHandler<?>> r = new IntMap<BeanHandler<?>>(4 * 4);
 		r.put(1, new jane.handler.testserver.TestBeanHandler());
-		r.put(3, new jane.handler.testserver.TestTypeHandler());
-		r.put(4, new jane.handler.testserver.TestEmptyHandler());
-		r.put(5, new jane.handler.testserver.TestRpcBeanHandler());
+		r.put(2, new jane.handler.testserver.TestTypeHandler());
+		r.put(3, new jane.handler.testserver.TestEmptyHandler());
+		r.put(4, new jane.handler.testserver.TestRpcBeanHandler());
 		return r;
 	}
 }

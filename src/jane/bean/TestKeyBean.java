@@ -12,7 +12,7 @@ import jane.core.Util;
 public final class TestKeyBean extends Bean<TestKeyBean>
 {
 	private static final long serialVersionUID = 0xbeac0364a4241981L;
-	public  static final int BEAN_TYPE = 2;
+	public  static final int BEAN_TYPE = 0;
 	public  static final TestKeyBean BEAN_STUB = new TestKeyBean();
 
 	private /* 1*/ int key1; // KEY-1
@@ -48,7 +48,7 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 	@Override
 	public int type()
 	{
-		return 2;
+		return 0;
 	}
 
 	@Override
@@ -72,7 +72,7 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 	@Override
 	public int maxSize()
 	{
-		return 16;
+		return 2147483647;
 	}
 
 	@Override
@@ -98,7 +98,7 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 	@Override
 	public int hashCode()
 	{
-		int h = 2 * 0x9e3779b1;
+		int h = 0 * 0x9e3779b1;
 		h = h * 31 + 1 + this.key1;
 		h = h * 31 + 1 + this.key2.hashCode();
 		return h;

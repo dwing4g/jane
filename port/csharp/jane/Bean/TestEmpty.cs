@@ -11,7 +11,7 @@ namespace Jane.Bean
 	[Serializable]
 	public struct TestEmpty : IBean, IEquatable<TestEmpty>, IComparable<TestEmpty>
 	{
-		public const int BEAN_TYPE = 4;
+		public const int BEAN_TYPE = 3;
 
 		public void reset()
 		{
@@ -24,7 +24,7 @@ namespace Jane.Bean
 
 		public int type()
 		{
-			return 4;
+			return 3;
 		}
 
 		public int initSize()
@@ -69,7 +69,7 @@ namespace Jane.Bean
 
 		public override int GetHashCode()
 		{
-			int h = unchecked(4 * (int)0x9e3779b1);
+			int h = unchecked(3 * (int)0x9e3779b1);
 			return h;
 		}
 

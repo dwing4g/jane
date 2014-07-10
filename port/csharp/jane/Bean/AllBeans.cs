@@ -11,8 +11,8 @@ namespace Jane.Bean
 		{
 			IDictionary<int, NetManager.BeanDelegate> r = new Dictionary<int, NetManager.BeanDelegate>(3 * 4);
 			r.Add(1, TestBean.create);
-			r.Add(3, TestType.create);
-			r.Add(4, TestEmpty.create);
+			r.Add(2, TestType.create);
+			r.Add(3, TestEmpty.create);
 			return r;
 		}
 
@@ -20,7 +20,7 @@ namespace Jane.Bean
 		{
 			IDictionary<int, NetManager.HandlerDelegate> r = new Dictionary<int, NetManager.HandlerDelegate>(2 * 4);
 			r.Add(1, Jane.Handler.TestBeanHandler.onProcess);
-			r.Add(3, Jane.Handler.TestTypeHandler.onProcess);
+			r.Add(2, Jane.Handler.TestTypeHandler.onProcess);
 			return r;
 		}
 	}

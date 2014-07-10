@@ -33,12 +33,12 @@ bean{ name="TestBean", type=1, initsize=16, maxsize=16, poolsize=1000, comment="
 	handlers="TestServer,TestClient", -- 列出哪些handlers需要引用这个bean
 }
 
-bean{ name="TestKeyBean", type=2, initsize=16, maxsize=16, const=true, comment="作为key或配置的bean",
+bean{ name="TestKeyBean", initsize=16, const=true, comment="作为key或配置的bean",
 	{ id=1, name="key1", type="int", comment="KEY-1" },
 	{ id=2, name="key2", type="string", comment="KEY-2" },
 }
 
-bean{ name="TestType", type=3, initsize=256, maxsize=65536, comment="测试生成所有支持的类型",
+bean{ name="TestType", type=2, initsize=256, maxsize=65536, comment="测试生成所有支持的类型",
 	{ id= 1,    name="v1",  type="bool",                        comment="1字节布尔,0表示假,1表示真,其它默认表示真" },
 	{ id= 2,    name="v2",  type="byte",                        comment="1字节整数" },
 	{ id= 3,    name="v3",  type="short",                       comment="2字节整数" },
@@ -61,15 +61,15 @@ bean{ name="TestType", type=3, initsize=256, maxsize=65536, comment="测试生�
 	handlers="TestServer,TestClient",
 }
 
-bean{ name="TestEmpty", type=4, initsize=0, maxsize=0, comment="测试空bean",
+bean{ name="TestEmpty", type=3, initsize=0, maxsize=0, comment="测试空bean",
 	handlers="TestServer",
 }
 
-rpc { name="TestRpcBean", type=5, arg="TestBean", res="TestType", comment="RPC的注释",
+rpc { name="TestRpcBean", type=4, arg="TestBean", res="TestType", comment="RPC的注释",
 	handlers="TestServer,TestClient",
 }
 
-rpc { name="TestRpcBean2", type=6, arg="TestBean", res="TestBean",
+rpc { name="TestRpcBean2", arg="TestBean", res="TestBean",
 }
 
 dbt { name="TestTable", id=1, lock="test", key="id", value="TestType", cachesize=65536, comment="数据库表定义. key类型只能是32/64位整数/浮点数或字符串/binary类型或bean类型, id类型表示优化的非负数long类型" }

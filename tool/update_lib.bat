@@ -13,6 +13,7 @@ set H2DB=..\..\h2database
 	copy /y %H2DB%\h2\src\main\org\h2\engine\Constants.java					..\lib\mvstore\org\h2\engine\
 	copy /y %H2DB%\h2\src\main\org\h2\mvstore\Chunk.java					..\lib\mvstore\org\h2\mvstore\
 	copy /y %H2DB%\h2\src\main\org\h2\mvstore\ConcurrentLinkedList.java		..\lib\mvstore\org\h2\mvstore\
+	copy /y %H2DB%\h2\src\main\org\h2\mvstore\ConcurrentRing.java			..\lib\mvstore\org\h2\mvstore\
 	copy /y %H2DB%\h2\src\main\org\h2\mvstore\Cursor.java					..\lib\mvstore\org\h2\mvstore\
 	copy /y %H2DB%\h2\src\main\org\h2\mvstore\CursorPos.java				..\lib\mvstore\org\h2\mvstore\
 	copy /y %H2DB%\h2\src\main\org\h2\mvstore\DataUtils.java				..\lib\mvstore\org\h2\mvstore\

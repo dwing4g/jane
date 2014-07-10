@@ -11,7 +11,7 @@ namespace Jane.Bean
 	[Serializable]
 	public struct TestType : IBean, IEquatable<TestType>, IComparable<TestType>
 	{
-		public const int BEAN_TYPE = 3;
+		public const int BEAN_TYPE = 2;
 
 		public  /* 1*/ bool v1; // 1字节布尔,0表示假,1表示真,其它默认表示真;
 		public  /* 2*/ sbyte v2; // 1字节整数;
@@ -239,7 +239,7 @@ namespace Jane.Bean
 
 		public int type()
 		{
-			return 3;
+			return 2;
 		}
 
 		public int initSize()
@@ -466,7 +466,7 @@ namespace Jane.Bean
 
 		public override int GetHashCode()
 		{
-			int h = unchecked(3 * (int)0x9e3779b1);
+			int h = unchecked(2 * (int)0x9e3779b1);
 			h = h * 31 + 1 + (int)(this.v1 ? 0xcafebabe : 0xdeadbeef);
 			h = h * 31 + 1 + this.v2;
 			h = h * 31 + 1 + this.v3;
