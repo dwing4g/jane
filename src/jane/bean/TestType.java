@@ -54,6 +54,7 @@ public final class TestType extends Bean<TestType>
 	private static SMapListener<Long, String> LISTENER_v16;
 	private static SMapListener<TestBean, Boolean> LISTENER_v17;
 	private static SMapListener<Octets, TestBean> LISTENER_v18;
+	private static Field FIELD_v20;
 
 	private /* 1*/ boolean v1; // 1字节布尔,0表示假,1表示真,其它默认表示真
 	private /* 2*/ byte v2; // 1字节整数
@@ -74,6 +75,7 @@ public final class TestType extends Bean<TestType>
 	private /*17*/ final TreeMap<TestBean, Boolean> v17; // 排序映射容器(TreeMap)
 	private /*18*/ final LinkedHashMap<Octets, TestBean> v18; // 有序映射容器(LinkedHashMap)
 	private /*19*/ final TestBean v19; // 嵌入其它bean
+	private /* 0*/ java.lang.String v20; // 非序列化字段
 
 	static
 	{
@@ -89,6 +91,7 @@ public final class TestType extends Bean<TestType>
 			FIELD_v7 = c.getDeclaredField("v7"); FIELD_v7.setAccessible(true);
 			FIELD_v8 = c.getDeclaredField("v8"); FIELD_v8.setAccessible(true);
 			FIELD_v9 = c.getDeclaredField("v9"); FIELD_v9.setAccessible(true);
+			FIELD_v20 = c.getDeclaredField("v20"); FIELD_v20.setAccessible(true);
 		}
 		catch(Exception e)
 		{
@@ -109,9 +112,10 @@ public final class TestType extends Bean<TestType>
 		v17 = new TreeMap<TestBean, Boolean>();
 		v18 = new LinkedHashMap<Octets, TestBean>();
 		v19 = new TestBean();
+		v20 = null;
 	}
 
-	public TestType(boolean v1, byte v2, short v3, int v4, long v5, float v6, double v7, Octets v8, String v9, Collection<Boolean> v10, Collection<Byte> v11, Collection<Integer> v12, Collection<Long> v13, Collection<Float> v14, Collection<Double> v15, Map<Long, String> v16, Map<TestBean, Boolean> v17, Map<Octets, TestBean> v18, TestBean v19)
+	public TestType(boolean v1, byte v2, short v3, int v4, long v5, float v6, double v7, Octets v8, String v9, Collection<Boolean> v10, Collection<Byte> v11, Collection<Integer> v12, Collection<Long> v13, Collection<Float> v14, Collection<Double> v15, Map<Long, String> v16, Map<TestBean, Boolean> v17, Map<Octets, TestBean> v18, TestBean v19, java.lang.String v20)
 	{
 		this.v1 = v1;
 		this.v2 = v2;
@@ -132,6 +136,7 @@ public final class TestType extends Bean<TestType>
 		this.v17 = new TreeMap<TestBean, Boolean>(); if(v17 != null) this.v17.putAll(v17);
 		this.v18 = new LinkedHashMap<Octets, TestBean>(); if(v18 != null) this.v18.putAll(v18);
 		this.v19 = (v19 != null ? v19.clone() : new TestBean());
+		this.v20 = v20;
 	}
 
 	@Override
@@ -156,6 +161,7 @@ public final class TestType extends Bean<TestType>
 		v17.clear();
 		v18.clear();
 		v19.reset();
+		v20 = null;
 	}
 
 	@Override
@@ -182,6 +188,7 @@ public final class TestType extends Bean<TestType>
 		this.v17.clear(); if(b.v17 != null) this.v17.putAll(b.v17);
 		this.v18.clear(); if(b.v18 != null) this.v18.putAll(b.v18);
 		this.v19.assign(b.v19);
+		this.v20 = b.v20;
 	}
 
 	public boolean getV1()
@@ -339,6 +346,16 @@ public final class TestType extends Bean<TestType>
 	public TestBean getV19()
 	{
 		return v19;
+	}
+
+	public java.lang.String getV20()
+	{
+		return v20;
+	}
+
+	public void setV20(java.lang.String v20)
+	{
+		this.v20 = v20;
 	}
 
 	@Override
@@ -560,7 +577,7 @@ public final class TestType extends Bean<TestType>
 	@Override
 	public TestType clone()
 	{
-		return new TestType(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19);
+		return new TestType(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20);
 	}
 
 	@Override
@@ -586,6 +603,7 @@ public final class TestType extends Bean<TestType>
 		h = h * 31 + 1 + this.v17.hashCode();
 		h = h * 31 + 1 + this.v18.hashCode();
 		h = h * 31 + 1 + this.v19.hashCode();
+		h = h * 31 + 1 + 0;
 		return h;
 	}
 
@@ -614,6 +632,7 @@ public final class TestType extends Bean<TestType>
 		if(!this.v17.equals(b.v17)) return false;
 		if(!this.v18.equals(b.v18)) return false;
 		if(!this.v19.equals(b.v19)) return false;
+		if(!this.v20.equals(b.v20)) return false;
 		return true;
 	}
 
@@ -642,6 +661,7 @@ public final class TestType extends Bean<TestType>
 		c = Util.compareTo(this.v17, b.v17); if(c != 0) return c;
 		c = Util.compareTo(this.v18, b.v18); if(c != 0) return c;
 		c = this.v19.compareTo(b.v19); if(c != 0) return c;
+		c = 0; if(c != 0) return c;
 		return 0;
 	}
 
@@ -668,6 +688,7 @@ public final class TestType extends Bean<TestType>
 		Util.append(s, this.v17);
 		Util.append(s, this.v18);
 		s.append(this.v19).append(',');
+		s.append(this.v20).append(',');
 		s.setLength(s.length() - 1);
 		return s.append('}').toString();
 	}
@@ -863,7 +884,7 @@ public final class TestType extends Bean<TestType>
 
 		public void setV9(String v9)
 		{
-			if(initSContext()) _sCtx.addOnRollback(new SBase.SString(_bean, FIELD_v9, _bean.v9));
+			if(initSContext()) _sCtx.addOnRollback(new SBase.SObject(_bean, FIELD_v9, _bean.v9));
 			_bean.v9 = (v9 != null ? v9 : "");
 		}
 
@@ -995,6 +1016,17 @@ public final class TestType extends Bean<TestType>
 		public TestBean unsafeV19()
 		{
 			return _bean.v19;
+		}
+
+		public java.lang.String getV20()
+		{
+			return _bean.v20;
+		}
+
+		public void setV20(java.lang.String v20)
+		{
+			if(initSContext()) _sCtx.addOnRollback(new SBase.SObject(_bean, FIELD_v20, _bean.v20));
+			_bean.v20 = v20;
 		}
 	}
 }

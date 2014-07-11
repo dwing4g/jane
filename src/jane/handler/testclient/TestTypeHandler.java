@@ -28,6 +28,7 @@ public final class TestTypeHandler extends BeanHandler<TestType>
 	|*| TreeMap<TestBean, Boolean> v17; // 排序映射容器(TreeMap)
 	|*| LinkedHashMap<Octets, TestBean> v18; // 有序映射容器(LinkedHashMap)
 	|*| TestBean v19; // 嵌入其它bean
+	|*| java.lang.String v20; // 非序列化字段
 	\*/
 
 	@Override

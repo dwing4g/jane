@@ -105,8 +105,7 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 	@Override
 	public OctetsStream marshal(OctetsStream s)
 	{
-#(#		#(var.marshal)
-#)#		return s.marshal1((byte)0);
+#(##(var.marshal)#)#		return s.marshal1((byte)0);
 	}
 
 	@Override
@@ -115,8 +114,7 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 		for(;;) { int i = s.unmarshalInt1() & 0xff, t = i & 3; switch(i >> 2)
 		{
 			case 0: return s;
-#(#			#(var.unmarshal) break;
-#)#			default: s.unmarshalSkipVar(t);
+#(##(var.unmarshal)#)#			default: s.unmarshalSkipVar(t);
 		}}
 	}
 
@@ -168,8 +166,7 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 	{
 		if(s == null) s = new StringBuilder(1024);
 		s.append('{');#<#
-#(#		#(var.tojson);
-#)#		s.setLength(s.length() - 1);#>#
+#(##(var.tojson)#)#		s.setLength(s.length() - 1);#>#
 		return s.append('}');
 	}
 
@@ -178,8 +175,7 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 	{
 		if(s == null) s = new StringBuilder(1024);
 		s.append('{');#<#
-#(#		#(var.tolua);
-#)#		s.setLength(s.length() - 1);#>#
+#(##(var.tolua)#)#		s.setLength(s.length() - 1);#>#
 		return s.append('}');
 	}
 
@@ -440,15 +436,15 @@ typedef.byte =
 			_bean.#(var.name) = #(var.name);
 		}
 ]],
-	marshal = function(var) return string.format("if(this.#(var.name) != 0) s.marshal1((byte)0x%02x).marshal(this.#(var.name));", var.id * 4) end,
-	unmarshal = "case #(var.id): this.#(var.name) = (#(var.type))s.unmarshalInt(t);",
+	marshal = function(var) return string.format("\t\tif(this.#(var.name) != 0) s.marshal1((byte)0x%02x).marshal(this.#(var.name));\n", var.id * 4) end,
+	unmarshal = "\t\t\tcase #(var.id): this.#(var.name) = (#(var.type))s.unmarshalInt(t); break;\n",
 	unmarshal_kv = function(var, kv, t) if kv then return "(" .. typename(var, var[kv]) .. ")s.unmarshalIntKV(" .. t .. ")" end end,
 	hashcode = "this.#(var.name)",
 	equals = "this.#(var.name) != b.#(var.name)",
 	compareto = "this.#(var.name) - b.#(var.name)",
 	tostring = "s.append(this.#(var.name)).append(',')",
-	tojson = "s.append(\"\\\"#(var.name)\\\":\").append(this.#(var.name)).append(',')",
-	tolua = "s.append(\"#(var.name)=\").append(this.#(var.name)).append(',')",
+	tojson = "\t\ts.append(\"\\\"#(var.name)\\\":\").append(this.#(var.name)).append(',');\n",
+	tolua = "\t\ts.append(\"#(var.name)=\").append(this.#(var.name)).append(',');\n",
 }
 typedef.char  = merge(typedef.byte, { type = "char",  type_i = "char",  type_o = "Char"  })
 typedef.short = merge(typedef.byte, { type = "short", type_i = "short", type_o = "Short" })
@@ -457,7 +453,7 @@ typedef.int = merge(typedef.byte,
 	type = "int",
 	type_i = "int",
 	type_o = "Integer",
-	unmarshal = "case #(var.id): this.#(var.name) = s.unmarshalInt(t);",
+	unmarshal = "\t\t\tcase #(var.id): this.#(var.name) = s.unmarshalInt(t); break;\n",
 	unmarshal_kv = function(var, kv, t) if kv then return "s.unmarshalIntKV(" .. t .. ")" end end,
 })
 typedef.long = merge(typedef.byte,
@@ -465,7 +461,7 @@ typedef.long = merge(typedef.byte,
 	type = "long",
 	type_i = "long",
 	type_o = "Long",
-	unmarshal = "case #(var.id): this.#(var.name) = s.unmarshalLong(t);",
+	unmarshal = "\t\t\tcase #(var.id): this.#(var.name) = s.unmarshalLong(t); break;\n",
 	unmarshal_kv = function(var, kv, t) if kv then return "s.unmarshalLongKV(" .. t .. ")" end end,
 	hashcode = "(int)this.#(var.name)",
 	compareto = "Long.signum(this.#(var.name) - b.#(var.name))",
@@ -474,8 +470,8 @@ typedef.bool = merge(typedef.byte,
 {
 	type = "boolean", type_i = "boolean", type_o = "Boolean",
 	reset = "#(var.name) = false",
-	marshal = function(var) return string.format("if(this.#(var.name)) s.marshal1((byte)0x%02x).marshal1((byte)1);", var.id * 4) end,
-	unmarshal = "case #(var.id): this.#(var.name) = (s.unmarshalInt(t) != 0);",
+	marshal = function(var) return string.format("\t\tif(this.#(var.name)) s.marshal1((byte)0x%02x).marshal1((byte)1);\n", var.id * 4) end,
+	unmarshal = "\t\t\tcase #(var.id): this.#(var.name) = (s.unmarshalInt(t) != 0); break;\n",
 	unmarshal_kv = function(var, kv, t) if kv then return "(s.unmarshalIntKV(" .. t .. ") != 0)" end end,
 	hashcode = "(this.#(var.name) ? 0xcafebabe : 0xdeadbeef)",
 	compareto = "(this.#(var.name) == b.#(var.name) ? 0 : (this.#(var.name) ? 1 : -1))",
@@ -484,8 +480,8 @@ typedef.float = merge(typedef.byte,
 {
 	type = "float", type_i = "float", type_o = "Float",
 	subtypeid = 4,
-	marshal = function(var) return string.format("if(this.#(var.name) != 0) s.marshal2(0x%04x).marshal(this.#(var.name));", var.id * 0x400 + 0x308) end,
-	unmarshal = "case #(var.id): this.#(var.name) = s.unmarshalFloat(t);",
+	marshal = function(var) return string.format("\t\tif(this.#(var.name) != 0) s.marshal2(0x%04x).marshal(this.#(var.name));\n", var.id * 0x400 + 0x308) end,
+	unmarshal = "\t\t\tcase #(var.id): this.#(var.name) = s.unmarshalFloat(t); break;\n",
 	unmarshal_kv = function(var, kv, t) if kv then return "s.unmarshalFloatKV(" .. t .. ")" end end,
 	hashcode = "Float.floatToRawIntBits(this.#(var.name))",
 	compareto = "Float.compare(this.#(var.name), b.#(var.name))",
@@ -494,8 +490,8 @@ typedef.double = merge(typedef.byte,
 {
 	type = "double", type_i = "double", type_o = "Double",
 	subtypeid = 5,
-	marshal = function(var) return string.format("if(this.#(var.name) != 0) s.marshal2(0x%04x).marshal(this.#(var.name));", var.id * 0x400 + 0x309) end,
-	unmarshal = "case #(var.id): this.#(var.name) = s.unmarshalDouble(t);",
+	marshal = function(var) return string.format("\t\tif(this.#(var.name) != 0) s.marshal2(0x%04x).marshal(this.#(var.name));\n", var.id * 0x400 + 0x309) end,
+	unmarshal = "\t\t\tcase #(var.id): this.#(var.name) = s.unmarshalDouble(t); break;\n",
 	unmarshal_kv = function(var, kv, t) if kv then return "s.unmarshalDoubleKV(" .. t .. ")" end end,
 	hashcode = "(int)((Double.doubleToRawLongBits(this.#(var.name)) * 0x100000001L) >> 32)",
 	compareto = "Double.compare(this.#(var.name), b.#(var.name))",
@@ -520,18 +516,18 @@ typedef.string = merge(typedef.byte,
 
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			if(initSContext()) _sCtx.addOnRollback(new SBase.S#(var.type_o)(_bean, FIELD_#(var.name), _bean.#(var.name)));
+			if(initSContext()) _sCtx.addOnRollback(new SBase.SObject(_bean, FIELD_#(var.name), _bean.#(var.name)));
 			_bean.#(var.name) = (#(var.name) != null ? #(var.name) : "");
 		}
 ]],
-	marshal = function(var) return string.format("if(!this.#(var.name).isEmpty()) s.marshal1((byte)0x%02x).marshal(this.#(var.name));", var.id * 4 + 1) end,
-	unmarshal = "case #(var.id): this.#(var.name) = s.unmarshalString(t);",
+	marshal = function(var) return string.format("\t\tif(!this.#(var.name).isEmpty()) s.marshal1((byte)0x%02x).marshal(this.#(var.name));\n", var.id * 4 + 1) end,
+	unmarshal = "\t\t\tcase #(var.id): this.#(var.name) = s.unmarshalString(t); break;\n",
 	unmarshal_kv = function(var, kv, t) if kv then return "s.unmarshalStringKV(" .. t .. ")" end end,
 	hashcode = "this.#(var.name).hashCode()",
 	equals = "!this.#(var.name).equals(b.#(var.name))",
 	compareto = "this.#(var.name).compareTo(b.#(var.name))",
-	tojson = "Util.toJStr(s.append(\"\\\"#(var.name)\\\":\"), this.#(var.name)).append(',')",
-	tolua = "Util.toJStr(s.append(\"#(var.name)=\"), this.#(var.name)).append(',')",
+	tojson = "\t\tUtil.toJStr(s.append(\"\\\"#(var.name)\\\":\"), this.#(var.name)).append(',');\n",
+	tolua = "\t\tUtil.toJStr(s.append(\"#(var.name)=\"), this.#(var.name)).append(',');\n",
 })
 typedef.octets = merge(typedef.string,
 {
@@ -600,11 +596,11 @@ typedef.octets = merge(typedef.string,
 		}
 ]],
 	setsafe = "",
-	marshal = function(var) return string.format("if(!this.#(var.name).empty()) s.marshal1((byte)0x%02x).marshal(this.#(var.name));", var.id * 4 + 1) end,
-	unmarshal = "case #(var.id): s.unmarshal(this.#(var.name), t);",
+	marshal = function(var) return string.format("\t\tif(!this.#(var.name).empty()) s.marshal1((byte)0x%02x).marshal(this.#(var.name));\n", var.id * 4 + 1) end,
+	unmarshal = "\t\t\tcase #(var.id): s.unmarshal(this.#(var.name), t); break;\n",
 	unmarshal_kv = function(var, kv, t) if kv then return "s.unmarshalOctetsKV(" .. t .. ")" end end,
-	tojson = "this.#(var.name).dumpJStr(s.append(\"\\\"#(var.name)\\\":\")).append(',')",
-	tolua = "this.#(var.name).dumpJStr(s.append(\"#(var.name)=\")).append(',')",
+	tojson = "\t\tthis.#(var.name).dumpJStr(s.append(\"\\\"#(var.name)\\\":\")).append(',');\n",
+	tolua = "\t\tthis.#(var.name).dumpJStr(s.append(\"#(var.name)=\")).append(',');\n",
 })
 typedef.vector = merge(typedef.octets,
 {
@@ -631,13 +627,14 @@ typedef.vector = merge(typedef.octets,
 			return _bean.#(var.name);
 		}
 ]],
-	marshal = function(var) return string.format([[if(!this.#(var.name).isEmpty())
+	marshal = function(var) return string.format([[		if(!this.#(var.name).isEmpty())
 		{
 			s.marshal2(0x%04x).marshalUInt(this.#(var.name).size());
 			for(%s v : this.#(var.name))
 				s.marshal(v);
-		}]], var.id * 0x400 + 0x300 + subtypeid(var.k), subtypename(var, var.k)) end,
-	unmarshal = function(var) return string.format([[case #(var.id):
+		}
+]], var.id * 0x400 + 0x300 + subtypeid(var.k), subtypename(var, var.k)) end,
+	unmarshal = function(var) return string.format([[			case #(var.id):
 			{
 				this.#(var.name).clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
@@ -648,11 +645,12 @@ typedef.vector = merge(typedef.octets,
 				this.#(var.name).ensureCapacity(n < 0x10000 ? n : 0x10000);
 				for(; n > 0; --n)
 					this.#(var.name).add(%s);
-			}]], get_unmarshal_kv(var, "k", "t")) end,
+			} break;
+]], get_unmarshal_kv(var, "k", "t")) end,
 	compareto = "Util.compareTo(this.#(var.name), b.#(var.name))",
 	tostring = "Util.append(s, this.#(var.name))",
-	tojson = "Util.appendJson(s.append(\"\\\"#(var.name)\\\":\"), this.#(var.name))",
-	tolua = "Util.appendLua(s.append(\"#(var.name)=\"), this.#(var.name))",
+	tojson = "\t\tUtil.appendJson(s.append(\"\\\"#(var.name)\\\":\"), this.#(var.name));\n",
+	tolua = "\t\tUtil.appendLua(s.append(\"#(var.name)=\"), this.#(var.name));\n",
 })
 typedef.list = merge(typedef.vector,
 {
@@ -660,7 +658,7 @@ typedef.list = merge(typedef.vector,
 	type = function(var) return "LinkedList<" .. subtypename(var, var.k) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new LinkedList<" .. subtypename_new(var, var.k) .. ">();\n" end,
 	init = function(var) return "this.#(var.name) = new LinkedList<" .. subtypename_new(var, var.k) .. ">(); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
-	unmarshal = function(var) return string.format([[case #(var.id):
+	unmarshal = function(var) return string.format([[			case #(var.id):
 			{
 				this.#(var.name).clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
@@ -669,7 +667,8 @@ typedef.list = merge(typedef.vector,
 				t &= 7;
 				for(int n = s.unmarshalUInt(); n > 0; --n)
 					this.#(var.name).add(%s);
-			}]], get_unmarshal_kv(var, "k", "t")) end,
+			} break;
+]], get_unmarshal_kv(var, "k", "t")) end,
 })
 typedef.deque = merge(typedef.list,
 {
@@ -750,13 +749,14 @@ typedef.hashmap = merge(typedef.list,
 			return _bean.#(var.name);
 		}
 ]] end,
-	marshal = function(var) return string.format([[if(!this.#(var.name).isEmpty())
+	marshal = function(var) return string.format([[		if(!this.#(var.name).isEmpty())
 		{
 			s.marshal2(0x%04x).marshalUInt(this.#(var.name).size());
 			for(Entry<%s, %s> e : this.#(var.name).entrySet())
 				s.marshal(e.getKey()).marshal(e.getValue());
-		}]], var.id * 0x400 + 0x340 + subtypeid(var.k) * 8 + subtypeid(var.v), subtypename(var, var.k), subtypename(var, var.v)) end,
-	unmarshal = function(var) return string.format([[case #(var.id):
+		}
+]], var.id * 0x400 + 0x340 + subtypeid(var.k) * 8 + subtypeid(var.v), subtypename(var, var.k), subtypename(var, var.v)) end,
+	unmarshal = function(var) return string.format([[			case #(var.id):
 			{
 				this.#(var.name).clear();
 				if(t != 3) { s.unmarshalSkipVar(t); break; }
@@ -765,7 +765,8 @@ typedef.hashmap = merge(typedef.list,
 				int k = (t >> 3) & 7; t &= 7;
 				for(int n = s.unmarshalUInt(); n > 0; --n)
 					this.#(var.name).put(%s, %s);
-			}]], get_unmarshal_kv(var, "k", "k"), get_unmarshal_kv(var, "v", "t")) end,
+			} break;
+]], get_unmarshal_kv(var, "k", "k"), get_unmarshal_kv(var, "v", "t")) end,
 	assign = "this.#(var.name).clear(); if(b.#(var.name) != null) this.#(var.name).putAll(b.#(var.name))",
 })
 typedef.treemap = merge(typedef.hashmap,
@@ -813,16 +814,57 @@ typedef.bean = merge(typedef.octets,
 		}
 ]],
 	setsafe = "",
-	marshal = function(var) return string.format([[{
+	marshal = function(var) return string.format([[
+		{
 			int n = s.size();
 			this.#(var.name).marshal(s.marshal1((byte)0x%02x));
 			if(s.size() - n < 3) s.resize(n);
-		}]], var.id * 4 + 2) end,
-	unmarshal = "case #(var.id): s.unmarshalBean(this.#(var.name), t);",
+		}
+]], var.id * 4 + 2) end,
+	unmarshal = "\t\t\tcase #(var.id): s.unmarshalBean(this.#(var.name), t); break;\n",
 	unmarshal_kv = function(var, kv, t) if kv then return "s.unmarshalBeanKV(new " .. typename(var, var[kv]) .. "(), " .. t .. ")" end end,
 	compareto = "this.#(var.name).compareTo(b.#(var.name))",
-	tojson = "this.#(var.name).toJson(s.append(\"\\\"#(var.name)\\\":\")).append(',')",
-	tolua = "this.#(var.name).toLua(s.append(\"#(var.name)=\")).append(',')",
+	tojson = "\t\tthis.#(var.name).toJson(s.append(\"\\\"#(var.name)\\\":\")).append(',');\n",
+	tolua = "\t\tthis.#(var.name).toLua(s.append(\"#(var.name)=\")).append(',');\n",
+})
+typedef.ref = merge(typedef.bean,
+{
+	final = "",
+	field = "\tprivate static Field FIELD_#(var.name);\n",
+	fieldget = "\t\t\tFIELD_#(var.name) = c.getDeclaredField(\"#(var.name)\"); FIELD_#(var.name).setAccessible(true);\n";
+	new = "\t\t#(var.name) = null;\n",
+	init = "this.#(var.name) = #(var.name)",
+	reset = "#(var.name) = null",
+	assign = "this.#(var.name) = b.#(var.name)",
+	set = [[
+
+	public void set#(var.name_u)(#(var.type) #(var.name))
+	{
+		this.#(var.name) = #(var.name);
+	}
+]],
+	getsafe = [[
+
+		public #(var.type) get#(var.name_u)()
+		{
+			return _bean.#(var.name);
+		}
+]],
+	setsafe = function() return [[
+
+		public void set#(var.name_u)(#(var.type) #(var.name))
+		{
+			if(initSContext()) _sCtx.addOnRollback(new SBase.SObject(_bean, FIELD_#(var.name), _bean.#(var.name)));
+			_bean.#(var.name) = #(var.name);
+		}
+]] end,
+	marshal = "",
+	unmarshal = "",
+	unmarshal_kv = "",
+	hashcode = "0",
+	compareto = "0",
+	tojson = "",
+	tolua = "",
 })
 typedef.boolean = typedef.bool
 typedef.integer = typedef.int
@@ -842,8 +884,8 @@ local function trim(s)
 	return s:gsub("[%c ]+", "")
 end
 local function do_var(var)
-	if var.id and (var.id < 1 or var.id > 62) then error("ERROR: id=" .. var.id .. " must be in [1, 62]") end
-	if not var.id then var.id = 0 end
+	if type(var.id) ~= "number" then var.id = -1 end
+	if var.id < -1 or var.id > 62 then error("ERROR: normal id=" .. var.id .. " must be in [1, 62]") end
 	var.import = {}
 	var.id2 = string.format("%2d", var.id)
 	var.name = trim(var.name)
@@ -852,13 +894,13 @@ local function do_var(var)
 	if type(var.value) == "string" then var.value = "\"" .. var.value .. "\"" end
 	var.value = var.value and " = " .. var.value or ""
 	local basetype
-	basetype, var.k, var.v, var.cap = var.type:match "^%s*([%w_]+)%s*<?%s*([%w_]*)%s*,?%s*([%w_]*)%s*>?%s*%(?%s*([%w%._]*)%s*%)?%s*$"
+	basetype, var.k, var.v, var.cap = var.type:match "^%s*([%w_%.]+)%s*<?%s*([%w_%.]*)%s*,?%s*([%w_%.]*)%s*>?%s*%(?%s*([%w_%.]*)%s*%)?%s*$"
 	if not var.cap then var.cap = "" end
 	local def = typedef[basetype]
 	if not def and typedef[lower(basetype)] then basetype = lower(basetype) def = typedef[basetype] end
 	if var.k and not typedef[var.k] and typedef[lower(var.k)] then var.k = lower(var.k) end
 	if var.v and not typedef[var.v] and typedef[lower(var.v)] then var.v = lower(var.v) end
-	if not def and basetype == var.type then def = typedef.bean end
+	if not def then def = var.id > 0 and typedef.bean or typedef.ref end
 	if type(def) == "table" then
 		for k, v in pairs(def) do
 			if type(v) == "function" then v = v(var) end
@@ -890,7 +932,7 @@ local bean_order = {} -- defined order => bean name
 local tables = { imports = { ["java.util.HashMap"] = true, ["jane.core.Bean"] = true } }
 function handler(hdls)
 	if not arg[2] then error("ERROR: arg[2] must be handler name(s)") end
-	for hdlname in arg[2]:gmatch("([%w_]+)") do
+	for hdlname in arg[2]:gmatch("([%w_%.]+)") do
 		local hdl = hdls[hdlname]
 		if not hdl then error("ERROR: not found or unknown handler name: " .. hdlname) end
 		for hdlname, hdlpath in pairs(hdl) do
@@ -912,7 +954,7 @@ local function bean_common(bean)
 	if name_code[lower(bean.name)] then error("ERROR: duplicated bean.name: " .. bean.name) end
 	if type(bean.type) ~= "number" then bean.type = 0 end
 	if bean.handlers and type_bean[bean.type] then error("ERROR: duplicated bean.type: " .. bean.type) end
-	for name in (bean.handlers or ""):gmatch("([%w_]+)") do
+	for name in (bean.handlers or ""):gmatch("([%w_%.]+)") do
 		if not all_handlers[name] then error("ERROR: not defined handle: " .. name) end
 		hdl_names[name] = hdl_names[name] or {}
 		hdl_names[name][#hdl_names[name] + 1] = bean.name
@@ -1005,13 +1047,13 @@ function bean(bean)
 	local code = template_bean:gsub("#{#(.-)#}#", function(body)
 		local subcode = {}
 		for _, var in ipairs(bean) do
-			if var.id == 0 then subcode[#subcode + 1] = code_conv(body, "var", var) end
+			if var.id == -1 then subcode[#subcode + 1] = code_conv(body, "var", var) end
 		end
 		return concat(subcode)
 	end):gsub("#%(#(.-)#%)#", function(body)
 		local subcode = {}
 		for _, var in ipairs(bean) do
-			if var.id > 0 then subcode[#subcode + 1] = code_conv(code_conv(body, "var", var), "var", var) end
+			if var.id >= 0 then subcode[#subcode + 1] = code_conv(code_conv(body, "var", var), "var", var) end
 		end
 		local code = concat(subcode)
 		return code:sub(-2, -1) ~= ", " and code or code:sub(1, -3)
@@ -1025,7 +1067,7 @@ function bean(bean)
 	{
 		try
 		{
-			Class<[%w_]+> c = [%w_]+%.class;
+			Class<[%w_%.]+> c = [%w_%.]+%.class;
 		}
 		catch%(Exception e%)
 		{
@@ -1144,7 +1186,7 @@ checksave(outpath .. namespace .. "/bean/AllBeans.java", (template_allbeans:gsub
 								subcode3[#subcode3 + 1] = code_conv(body, "var", var)
 							end
 							return concat(subcode3)
-						end), "hdl", hdl), "bean", bean):gsub("\r", ""), 1, "(%s+class%s+" .. bean.name .. "Handler%s+extends%s+BeanHandler%s*<)[%w_%s]+>", "%1" .. bean.name .. ">")
+						end), "hdl", hdl), "bean", bean):gsub("\r", ""), 1, "(%s+class%s+" .. bean.name .. "Handler%s+extends%s+BeanHandler%s*<)[%w_%.%s]+>", "%1" .. bean.name .. ">")
 					else
 						local bean_sub
 						local bean_arg, bean_res = name_bean[bean.arg], name_bean[bean.res]
@@ -1156,7 +1198,7 @@ checksave(outpath .. namespace .. "/bean/AllBeans.java", (template_allbeans:gsub
 							end
 							return concat(subcode3)
 						end), "hdl", hdl), "bean", bean), "bean_arg", bean_arg), "bean_res", bean_res):gsub(bean_arg ~= bean_res and "#[<>]#" or "#%<#(.-)#%>#", ""):
-							gsub("\r", ""), 2, "(%s+class%s+" .. bean.name .. "Handler%s+extends%s+RpcHandler%s*<)[%w_%s]+,[%w_%s]+>", "%1" .. bean_arg.name .. ", " .. bean_res.name .. ">")
+							gsub("\r", ""), 2, "(%s+class%s+" .. bean.name .. "Handler%s+extends%s+RpcHandler%s*<)[%w_%.%s]+,[%w_%.%s]+>", "%1" .. bean_arg.name .. ", " .. bean_res.name .. ">")
 					end
 				end
 			end

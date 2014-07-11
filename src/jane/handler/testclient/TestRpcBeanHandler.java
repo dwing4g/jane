@@ -35,6 +35,7 @@ public final class TestRpcBeanHandler extends RpcHandler<TestBean, TestType>
 	|*| TreeMap<TestBean, Boolean> v17; // 排序映射容器(TreeMap)
 	|*| LinkedHashMap<Octets, TestBean> v18; // 有序映射容器(LinkedHashMap)
 	|*| TestBean v19; // 嵌入其它bean
+	|*| java.lang.String v20; // 非序列化字段
 	\*/
 
 	@Override

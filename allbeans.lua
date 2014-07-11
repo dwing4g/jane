@@ -58,6 +58,7 @@ bean{ name="TestType", type=2, initsize=256, maxsize=65536, comment="测试生�
 	{ id=17,    name="v17", type="treemap<TestBean,bool>",      comment="排序映射容器(TreeMap)" },
 	{ id=18,    name="v18", type="linkedmap<binary,TestBean>",  comment="有序映射容器(LinkedHashMap)" },
 	{ id=19,    name="v19", type="TestBean",                    comment="嵌入其它bean" },
+	{ id=0,     name="v20", type="java.lang.String",            comment="非序列化字段" },
 	handlers="TestServer,TestClient",
 }
 

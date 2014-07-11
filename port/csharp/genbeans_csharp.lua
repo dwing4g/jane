@@ -537,8 +537,8 @@ local function trim(s)
 	return s:gsub("[%c ]+", "")
 end
 local function do_var(var)
-	if var.id and (var.id < 1 or var.id > 62) then error("ERROR: id=" .. var.id .. " must be in [1, 62]") end
-	if not var.id then var.id = 0 end
+	if type(var.id) ~= "number" then var.id = -1 end
+	if var.id < -1 or var.id > 62 then error("ERROR: normal id=" .. var.id .. " must be in [1, 62]") end
 	var.id2 = string.format("%2d", var.id)
 	var.name = trim(var.name)
 	var.type = trim(var.type)
@@ -546,7 +546,7 @@ local function do_var(var)
 	if type(var.value) == "string" then var.value = "\"" .. var.value .. "\"" end
 	var.value = var.value and " = " .. var.value or ""
 	local basetype
-	basetype, var.k, var.v, var.cap = var.type:match "^%s*([%w_]+)%s*<?%s*([%w_]*)%s*,?%s*([%w_]*)%s*>?%s*%(?%s*([%w%._]*)%s*%)?%s*$"
+	basetype, var.k, var.v, var.cap = var.type:match "^%s*([%w_%.]+)%s*<?%s*([%w_%.]*)%s*,?%s*([%w_%.]*)%s*>?%s*%(?%s*([%w%._%.]*)%s*%)?%s*$"
 	if not var.cap then var.cap = "" end
 	var.basetype = basetype
 	local def = typedef[basetype]
@@ -574,7 +574,7 @@ local hdl_names = {} -- handler name => {bean names}
 local bean_order = {} -- defined order => bean name
 function handler(hdls)
 	if not arg[2] then error("ERROR: arg[2] must be handler name(s)") end
-	for hdlname in arg[2]:gmatch("([%w_]+)") do
+	for hdlname in arg[2]:gmatch("([%w_%.]+)") do
 		local hdl = hdls[hdlname]
 		if not hdl then error("ERROR: not found or unknown handler name: " .. hdlname) end
 		for hdlname, hdlpath in pairs(hdl) do
@@ -596,7 +596,7 @@ local function bean_common(bean)
 	if name_code[bean.name] then error("ERROR: duplicated bean.name: " .. bean.name) end
 	if type(bean.type) ~= "number" then bean.type = 0 end
 	if bean.handlers and type_bean[bean.type] then error("ERROR: duplicated bean.type: " .. bean.type) end
-	for name in (bean.handlers or ""):gmatch("([%w_]+)") do
+	for name in (bean.handlers or ""):gmatch("([%w_%.]+)") do
 		if not all_handlers[name] then error("ERROR: not defined handle: " .. name) end
 		hdl_names[name] = hdl_names[name] or {}
 		hdl_names[name][#hdl_names[name] + 1] = bean.name
@@ -634,7 +634,7 @@ function bean(bean)
 	local code = template_bean:gsub("#{#(.-)#}#", function(body)
 		local subcode = {}
 		for _, var in ipairs(bean) do
-			if var.id == 0 then subcode[#subcode + 1] = code_conv(body, "var", var) end
+			if var.id == -1 then subcode[#subcode + 1] = code_conv(body, "var", var) end
 		end
 		return concat(subcode)
 	end):gsub("#%(#(.-)#%)#", function(body)
@@ -710,10 +710,10 @@ checksave(outpath .. namespace .. "/Bean/AllBeans.cs", (template_allbeans:gsub("
 						checksave(outpath .. hdlpath:gsub("%.", "/") .. "/" .. bean.name .. "Handler.cs", code_conv(code_conv(template_bean_handler:gsub("#%(#(.-)#%)#", function(body)
 							local subcode3 = {}
 							for _, var in ipairs(bean) do
-								subcode3[#subcode3 + 1] = code_conv(body, "var", var)
+								if var.id > 0 or var.id == -1 then subcode3[#subcode3 + 1] = code_conv(body, "var", var) end
 							end
 							return concat(subcode3)
-						end), "hdl", hdl), "bean", bean):gsub("\r", ""), 1, "(%s+class%s+" .. bean.name .. "Handler%s+extends%s+BeanHandler%s*<)[%w_%s]+>", "%1" .. bean.name .. ">")
+						end), "hdl", hdl), "bean", bean):gsub("\r", ""), 1, "(%s+class%s+" .. bean.name .. "Handler%s+extends%s+BeanHandler%s*<)[%w_%.%s]+>", "%1" .. bean.name .. ">")
 					else
 						error("ERROR: not support rpc for c# port")
 					end

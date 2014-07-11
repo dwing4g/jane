@@ -64,8 +64,8 @@ function bean(bean)
 	name_bean[bean.name] = bean
 
 	for _, var in ipairs(bean) do
-		if var.id and (var.id < 1 or var.id > 62) then error("ERROR: id=" .. var.id .. " must be in [1, 62]") end
-		if not var.id then var.id = 0 end
+		if type(var.id) ~= "number" then var.id = -1 end
+		if var.id < -1 or var.id > 62 then error("ERROR: normal id=" .. var.id .. " must be in [1, 62]") end
 		if type(var.value) == "string" then var.value = "\"" .. var.value .. "\"" end
 		var.value = var.value and " = " .. var.value or ""
 		var.id2 = format("%2d", var.id)
@@ -124,7 +124,7 @@ checksave(outpath .. "src/bean.lua", (template_bean:gsub("#%[#(.-)#%]#", functio
 		subcode[#subcode + 1] = code_conv(body:gsub("#{#(.-)#}#", function(body)
 			local subcode2 = {}
 			for _, var in ipairs(bean) do
-				if var.id == 0 then subcode2[#subcode2 + 1] = code_conv(body, "var", var) end
+				if var.id == -1 then subcode2[#subcode2 + 1] = code_conv(body, "var", var) end
 			end
 			return concat(subcode2)
 		end):gsub("#%(#(.-)#%)#", function(body)

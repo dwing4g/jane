@@ -232,11 +232,11 @@ public abstract class SBase implements Runnable
 		}
 	}
 
-	public static final class SString extends SBase
+	public static final class SObject extends SBase
 	{
-		private final String _saved;
+		private final Object _saved;
 
-		public SString(Bean<?> b, Field field, String v)
+		public SObject(Bean<?> b, Field field, Object v)
 		{
 			super(b, field);
 			_saved = v;
