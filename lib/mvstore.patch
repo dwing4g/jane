@@ -1,8 +1,8 @@
 Index: compress/CompressDeflate.java
 ===================================================================
---- compress/CompressDeflate.java	(revision 5668)
+--- compress/CompressDeflate.java	(revision 5794)
 +++ compress/CompressDeflate.java	(working copy)
-@@ -11,9 +11,6 @@
+@@ -10,9 +10,6 @@
  import java.util.zip.Deflater;
  import java.util.zip.Inflater;
  
@@ -12,7 +12,7 @@ Index: compress/CompressDeflate.java
  /**
   * This is a wrapper class for the Deflater class.
   * This algorithm supports the following options:
-@@ -48,7 +45,7 @@
+@@ -47,7 +44,7 @@
                  deflater.setStrategy(strategy);
              }
          } catch (Exception e) {
@@ -21,7 +21,7 @@ Index: compress/CompressDeflate.java
          }
      }
  
-@@ -88,7 +85,7 @@
+@@ -87,7 +84,7 @@
                  throw new DataFormatException(len + " " + outLen);
              }
          } catch (DataFormatException e) {
@@ -30,11 +30,24 @@ Index: compress/CompressDeflate.java
          }
          decompresser.end();
      }
+Index: engine/Constants.java
+===================================================================
+--- engine/Constants.java	(revision 5794)
++++ engine/Constants.java	(working copy)
+@@ -159,7 +159,7 @@
+     /**
+      * The default cache size in KB.
+      */
+-    public static final int CACHE_SIZE_DEFAULT = SysProperties.scalePropertyForAvailableMemory(64 * 1024);
++//    public static final int CACHE_SIZE_DEFAULT = SysProperties.scalePropertyForAvailableMemory(64 * 1024);
+ 
+     /**
+      * The default cache type.
 Index: mvstore/WriteBuffer.java
 ===================================================================
---- mvstore/WriteBuffer.java	(revision 5668)
+--- mvstore/WriteBuffer.java	(revision 5794)
 +++ mvstore/WriteBuffer.java	(working copy)
-@@ -291,6 +291,12 @@
+@@ -290,6 +290,12 @@
          return buff;
      }
  
@@ -49,15 +62,15 @@ Index: mvstore/WriteBuffer.java
              grow(len);
 Index: store/fs/FilePathDisk.java
 ===================================================================
---- store/fs/FilePathDisk.java	(revision 5668)
+--- store/fs/FilePathDisk.java	(revision 5794)
 +++ store/fs/FilePathDisk.java	(working copy)
 @@ -1,4 +1,4 @@
 -/*
 +/*@formatter:off
-  * Copyright 2004-2013 H2 Group. Multiple-Licensed under the H2 License,
-  * Version 1.0, and under the Eclipse Public License, Version 1.0
-  * (http://h2database.com/html/license.html).
-@@ -19,16 +19,8 @@
+  * Copyright 2004-2014 H2 Group. Multiple-Licensed under the MPL 2.0,
+  * and the EPL 1.0 (http://h2database.com/html/license.html).
+  * Initial Developer: H2 Group
+@@ -18,15 +18,8 @@
  import java.nio.channels.FileChannel;
  import java.nio.channels.FileLock;
  import java.nio.channels.NonWritableChannelException;
@@ -69,12 +82,11 @@ Index: store/fs/FilePathDisk.java
 -import org.h2.message.DbException;
 -import org.h2.util.IOUtils;
 -import org.h2.util.New;
--import org.h2.util.Utils;
 -
  /**
   * This file system stores files on disk.
   * This is the most common file system.
-@@ -72,16 +64,20 @@
+@@ -70,16 +63,20 @@
       * @return the native file name
       */
      public static String expandUserHomeDirectory(String fileName) {
@@ -95,7 +107,7 @@ Index: store/fs/FilePathDisk.java
          File oldFile = new File(name);
          File newFile = new File(newName.name);
          if (oldFile.getAbsolutePath().equals(newFile.getAbsolutePath())) {
-@@ -106,6 +102,7 @@
+@@ -104,6 +101,7 @@
          }
          throw DbException.get(ErrorCode.FILE_RENAME_FAILED_2,
                  new String[]{name, newName.name});
@@ -103,7 +115,7 @@ Index: store/fs/FilePathDisk.java
      }
  
      private static void wait(int i) {
-@@ -124,7 +121,7 @@
+@@ -122,7 +120,7 @@
      @Override
      public boolean createFile() {
          File file = new File(name);
@@ -112,7 +124,7 @@ Index: store/fs/FilePathDisk.java
              try {
                  return file.createNewFile();
              } catch (IOException e) {
-@@ -142,6 +139,8 @@
+@@ -140,6 +138,8 @@
  
      @Override
      public void delete() {
@@ -121,7 +133,7 @@ Index: store/fs/FilePathDisk.java
          File file = new File(name);
          for (int i = 0; i < SysProperties.MAX_FILE_RETRY; i++) {
              IOUtils.trace("delete", name, null);
-@@ -152,10 +151,13 @@
+@@ -150,10 +150,13 @@
              wait(i);
          }
          throw DbException.get(ErrorCode.FILE_DELETE_FAILED_1, name);
@@ -135,7 +147,7 @@ Index: store/fs/FilePathDisk.java
          ArrayList<FilePath> list = New.arrayList();
          File f = new File(name);
          try {
-@@ -173,6 +175,7 @@
+@@ -171,6 +174,7 @@
          } catch (IOException e) {
              throw DbException.convertIOException(e, name);
          }
@@ -143,7 +155,7 @@ Index: store/fs/FilePathDisk.java
      }
  
      @Override
-@@ -192,7 +195,7 @@
+@@ -190,7 +194,7 @@
              String fileName = new File(name).getCanonicalPath();
              return getPath(fileName);
          } catch (IOException e) {
@@ -152,7 +164,7 @@ Index: store/fs/FilePathDisk.java
          }
      }
  
-@@ -249,6 +252,8 @@
+@@ -247,6 +251,8 @@
  
      @Override
      public void createDirectory() {
@@ -161,7 +173,7 @@ Index: store/fs/FilePathDisk.java
          File dir = new File(name);
          for (int i = 0; i < SysProperties.MAX_FILE_RETRY; i++) {
              if (dir.exists()) {
-@@ -263,6 +268,7 @@
+@@ -261,6 +267,7 @@
              wait(i);
          }
          throw DbException.get(ErrorCode.FILE_CREATION_FAILED_1, name);
@@ -169,7 +181,7 @@ Index: store/fs/FilePathDisk.java
      }
  
      @Override
-@@ -274,7 +280,7 @@
+@@ -272,7 +279,7 @@
                  FileUtils.createDirectories(parent.getAbsolutePath());
              }
              FileOutputStream out = new FileOutputStream(name, append);
@@ -178,7 +190,7 @@ Index: store/fs/FilePathDisk.java
              return out;
          } catch (IOException e) {
              freeMemoryAndFinalize();
-@@ -310,7 +316,7 @@
+@@ -308,7 +315,7 @@
              return in;
          }
          FileInputStream in = new FileInputStream(name);
@@ -187,7 +199,7 @@ Index: store/fs/FilePathDisk.java
          return in;
      }
  
-@@ -319,7 +325,7 @@
+@@ -317,7 +324,7 @@
       * that were not closed, and are no longer referenced.
       */
      static void freeMemoryAndFinalize() {
@@ -196,7 +208,7 @@ Index: store/fs/FilePathDisk.java
          Runtime rt = Runtime.getRuntime();
          long mem = rt.freeMemory();
          for (int i = 0; i < 16; i++) {
-@@ -338,7 +344,7 @@
+@@ -336,7 +343,7 @@
          FileDisk f;
          try {
              f = new FileDisk(name, mode);
@@ -205,7 +217,7 @@ Index: store/fs/FilePathDisk.java
          } catch (IOException e) {
              freeMemoryAndFinalize();
              try {
-@@ -358,6 +364,8 @@
+@@ -356,6 +363,8 @@
      @Override
      public FilePath createTempFile(String suffix, boolean deleteOnExit,
              boolean inTempDir) throws IOException {
@@ -214,7 +226,7 @@ Index: store/fs/FilePathDisk.java
          String fileName = name + ".";
          String prefix = new File(fileName).getName();
          File dir;
-@@ -385,6 +393,7 @@
+@@ -383,6 +392,7 @@
              }
              return get(f.getCanonicalPath());
          }
@@ -222,7 +234,7 @@ Index: store/fs/FilePathDisk.java
      }
  
  }
-@@ -406,7 +415,7 @@
+@@ -404,7 +414,7 @@
  
      @Override
      public void force(boolean metaData) throws IOException {
