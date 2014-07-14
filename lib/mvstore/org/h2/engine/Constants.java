@@ -16,7 +16,7 @@ public class Constants {
     /**
      * The build date is updated for each public release.
      */
-    public static final String BUILD_DATE = "2014-06-23";
+    public static final String BUILD_DATE = "2014-07-13";
 
     /**
      * The build date of the last stable release.
@@ -26,7 +26,7 @@ public class Constants {
     /**
      * The build id is incremented for each public release.
      */
-    public static final int BUILD_ID = 179;
+    public static final int BUILD_ID = 180;
 
     /**
      * The build id of the last stable release.
@@ -159,7 +159,7 @@ public class Constants {
     /**
      * The default cache size in KB.
      */
-    public static final int CACHE_SIZE_DEFAULT = 16 * 1024;
+    public static final int CACHE_SIZE_DEFAULT = SysProperties.scalePropertyForAvailableMemory(64 * 1024);
 
     /**
      * The default cache type.
@@ -237,7 +237,7 @@ public class Constants {
     /**
      * The default page size to use for new databases.
      */
-    public static final int DEFAULT_PAGE_SIZE = 2048;
+    public static final int DEFAULT_PAGE_SIZE = 4096;
 
     /**
      * The default result set concurrency for statements created with
