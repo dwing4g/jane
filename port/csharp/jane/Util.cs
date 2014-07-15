@@ -178,13 +178,13 @@ namespace Jane
 			return new SortedDictEnumerator<K, V>(sdic);
 		}
 
-		public static void addAll<T>(ICollection<T> a, ICollection<T> b)
+		public static void AddAll<T>(ICollection<T> a, ICollection<T> b)
 		{
 			foreach(T e in b)
 				a.Add(e);
 		}
 
-		public static void addAll<K, V>(IDictionary<K, V> a, IDictionary<K, V> b)
+		public static void AddAll<K, V>(IDictionary<K, V> a, IDictionary<K, V> b)
 		{
 			foreach(KeyValuePair<K, V> p in b)
 				a.Add(p);
@@ -193,7 +193,7 @@ namespace Jane
 		/**
 		 * 比较两个序列容器里的元素是否完全相同(包括顺序相同);
 		 */
-		public static int compareTo<T>(ICollection<T> a, ICollection<T> b) where T : IComparable<T>
+		public static int CompareTo<T>(ICollection<T> a, ICollection<T> b) where T : IComparable<T>
 		{
 			int c = a.Count - b.Count;
 			if(c != 0) return c;
@@ -212,7 +212,7 @@ namespace Jane
 		/**
 		 * 比较两个Map容器里的元素是否完全相同(包括顺序相同);
 		 */
-		public static int compareTo<K, V>(IDictionary<K, V> a, IDictionary<K, V> b) where K : IComparable<K> where V : IComparable<V>
+		public static int CompareTo<K, V>(IDictionary<K, V> a, IDictionary<K, V> b) where K : IComparable<K> where V : IComparable<V>
 		{
 			int c = a.Count - b.Count;
 			if(c != 0) return c;
@@ -235,7 +235,7 @@ namespace Jane
 		/**
 		 * 把序列容器里的元素转成字符串输出到StringBuilder中;
 		 */
-		public static StringBuilder append<T>(StringBuilder s, ICollection<T> list)
+		public static StringBuilder Append<T>(StringBuilder s, ICollection<T> list)
 		{
 			if(list.Count <= 0) return s.Append("{},");
 			s.Append('{');
@@ -248,7 +248,7 @@ namespace Jane
 		/**
 		 * 把Map容器里的元素转成字符串输出到StringBuilder中;
 		 */
-		public static StringBuilder append<K, V>(StringBuilder s, IDictionary<K, V> dic)
+		public static StringBuilder Append<K, V>(StringBuilder s, IDictionary<K, V> dic)
 		{
 			if(dic.Count <= 0) return s.Append("{},");
 			s.Append('{');
@@ -261,7 +261,7 @@ namespace Jane
 		/**
 		 * 把字符串转化成Java/JSON字符串输出到StringBuilder中;
 		 */
-		public static StringBuilder toJStr(StringBuilder s, string str)
+		public static StringBuilder ToJStr(StringBuilder s, string str)
 		{
 			return s.Append('"').Append(str.Replace("\\", "\\\\").Replace("\"", "\\\"")).Append('"');
 		}
@@ -269,7 +269,7 @@ namespace Jane
 		/**
 		 * 把普通对象转成JSON字符串输出到StringBuilder中;
 		 */
-		public static StringBuilder appendJson(StringBuilder s, object o)
+		public static StringBuilder AppendJson(StringBuilder s, object o)
 		{
 			if(o is bool)
 				return s.Append((bool)o ? "true" : "false");
@@ -278,20 +278,20 @@ namespace Jane
 			else if(o is Octets)
 				return ((Octets)o).dumpJStr(s);
 			else if(o is IBean)
-				return ((IBean)o).toJson(s);
+				return ((IBean)o).ToJson(s);
 			else
-				return toJStr(s, o.ToString());
+				return ToJStr(s, o.ToString());
 		}
 
 		/**
 		 * 把序列容器里的元素转成JSON字符串输出到StringBuilder中;
 		 */
-		public static StringBuilder appendJson<T>(StringBuilder s, ICollection<T> list)
+		public static StringBuilder AppendJson<T>(StringBuilder s, ICollection<T> list)
 		{
 			if(list.Count <= 0) return s.Append("[],");
 			s.Append('[');
 			foreach(T o in list)
-				appendJson(s, o).Append(',');
+				AppendJson(s, o).Append(',');
 			s[s.Length - 1] = ']';
 			return s.Append(',');
 		}
@@ -299,14 +299,14 @@ namespace Jane
 		/**
 		 * 把Map容器里的元素转成JSON字符串输出到StringBuilder中;
 		 */
-		public static StringBuilder appendJson<K, V>(StringBuilder s, IDictionary<K, V> dic)
+		public static StringBuilder AppendJson<K, V>(StringBuilder s, IDictionary<K, V> dic)
 		{
 			if(dic.Count <= 0) return s.Append("{},");
 			s.Append('{');
 			foreach(KeyValuePair<K, V> p in dic)
 			{
-				appendJson(s, p.Key).Append(':');
-				appendJson(s, p.Value).Append(',');
+				AppendJson(s, p.Key).Append(':');
+				AppendJson(s, p.Value).Append(',');
 			}
 			s[s.Length - 1] = '}';
 			return s.Append(',');
@@ -315,7 +315,7 @@ namespace Jane
 		/**
 		 * 把普通对象转成Lua字符串输出到StringBuilder中;
 		 */
-		public static StringBuilder appendLua(StringBuilder s, object o)
+		public static StringBuilder AppendLua(StringBuilder s, object o)
 		{
 			if(o is bool)
 				return s.Append((bool)o ? "true" : "false");
@@ -324,20 +324,20 @@ namespace Jane
 			else if(o is Octets)
 				return ((Octets)o).dumpJStr(s);
 			else if(o is IBean)
-				return ((IBean)o).toLua(s);
+				return ((IBean)o).ToLua(s);
 			else
-				return toJStr(s, o.ToString());
+				return ToJStr(s, o.ToString());
 		}
 
 		/**
 		 * 把序列容器里的元素转成Lua字符串输出到StringBuilder中;
 		 */
-		public static StringBuilder appendLua<T>(StringBuilder s, ICollection<T> list)
+		public static StringBuilder AppendLua<T>(StringBuilder s, ICollection<T> list)
 		{
 			if(list.Count <= 0) return s.Append("{},");
 			s.Append('{');
 			foreach(T o in list)
-				appendLua(s, o).Append(',');
+				AppendLua(s, o).Append(',');
 			s[s.Length - 1] = '}';
 			return s.Append(',');
 		}
@@ -345,15 +345,15 @@ namespace Jane
 		/**
 		 * 把Map容器里的元素转成Lua字符串输出到StringBuilder中;
 		 */
-		public static StringBuilder appendLua<K, V>(StringBuilder s, IDictionary<K, V> dic)
+		public static StringBuilder AppendLua<K, V>(StringBuilder s, IDictionary<K, V> dic)
 		{
 			if(dic.Count <= 0) return s.Append("{},");
 			s.Append('{');
 			foreach(KeyValuePair<K, V> p in dic)
 			{
 				s.Append('[');
-				appendLua(s, p.Key).Append(']').Append('=');
-				appendLua(s, p.Value).Append(',');
+				AppendLua(s, p.Key).Append(']').Append('=');
+				AppendLua(s, p.Value).Append(',');
 			}
 			s[s.Length - 1] = '}';
 			return s.Append(',');

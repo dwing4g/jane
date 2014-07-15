@@ -36,54 +36,54 @@ namespace ]=] .. namespace .. [=[.Bean
 #(#			#(var.init);
 #)#		}
 
-#>#		public void reset()
+#>#		public void Reset()
 		{
 #(#			#(var.reset);
 #)#		}
 
-		#(bean.param_warning)public void assign(ref #(bean.name) b)
+		#(bean.param_warning)public void Assign(ref #(bean.name) b)
 		{
 #(#			#(var.assign);
 #)#		}
 /*#(#
-		public #(var.type) get#(var.name_u)()
+		public #(var.type) Get#(var.name_u)()
 		{
 			return #(var.name);
 		}
 #(var.set)#)#*/
-		public int type()
+		public int Type()
 		{
 			return #(bean.type);
 		}
 
-		public int initSize()
+		public int InitSize()
 		{
 			return #(bean.initsize);
 		}
 
-		public int maxSize()
+		public int MaxSize()
 		{
 			return #(bean.maxsize);
 		}
 
-		public void init()
+		public void Init()
 		{
 #(##(var.new)#)#		}
 
-		public static IBean create()
+		public static IBean Create()
 		{
 			IBean b = new #(bean.name)();
-			b.init();
+			b.Init();
 			return b;
 		}
 
-		public OctetsStream marshal(OctetsStream s)
+		public OctetsStream Marshal(OctetsStream s)
 		{
 #(#			#(var.marshal)
 #)#			return s.marshal1((byte)0);
 		}
 
-		public OctetsStream unmarshal(OctetsStream s)
+		public OctetsStream Unmarshal(OctetsStream s)
 		{
 			for(;;) { int i = s.unmarshalUInt1(), t = i & 3; switch(i >> 2)
 			{
@@ -144,7 +144,7 @@ namespace ]=] .. namespace .. [=[.Bean
 			return s.Append('}').ToString();
 		}
 #if TO_JSON_LUA
-		public StringBuilder toJson(StringBuilder s)
+		public StringBuilder ToJson(StringBuilder s)
 		{
 			if(s == null) s = new StringBuilder(1024);
 			s.Append('{');#<#
@@ -153,12 +153,12 @@ namespace ]=] .. namespace .. [=[.Bean
 			return s.Append('}');
 		}
 
-		public StringBuilder toJson()
+		public StringBuilder ToJson()
 		{
-			return toJson(null);
+			return ToJson(null);
 		}
 
-		public StringBuilder toLua(StringBuilder s)
+		public StringBuilder ToLua(StringBuilder s)
 		{
 			if(s == null) s = new StringBuilder(1024);
 			s.Append('{');#<#
@@ -167,9 +167,9 @@ namespace ]=] .. namespace .. [=[.Bean
 			return s.Append('}');
 		}
 
-		public StringBuilder toLua()
+		public StringBuilder ToLua()
 		{
-			return toLua(null);
+			return ToLua(null);
 		}
 #endif
 	}
@@ -185,17 +185,17 @@ namespace ]=] .. namespace .. [=[.Bean
 	public struct AllBeans
 	{
 		/** 获取全部bean的创建代理 */
-		public static IDictionary<int, NetManager.BeanDelegate> getAllBeans()
+		public static IDictionary<int, NetManager.BeanDelegate> GetAllBeans()
 		{
 			IDictionary<int, NetManager.BeanDelegate> r = new Dictionary<int, NetManager.BeanDelegate>(#(bean.count) * 4);
-#(#			r.Add(#(bean.type), #(bean.name).create);
+#(#			r.Add(#(bean.type), #(bean.name).Create);
 #)#			return r;
 		}
 #[#
-		public static IDictionary<int, NetManager.HandlerDelegate> get#(hdl.name)Handlers()
+		public static IDictionary<int, NetManager.HandlerDelegate> Get#(hdl.name)Handlers()
 		{
 			IDictionary<int, NetManager.HandlerDelegate> r = new Dictionary<int, NetManager.HandlerDelegate>(#(hdl.count) * 4);
-#(#			r.Add(#(bean.type), #(hdl.path).#(bean.name)Handler.onProcess);
+#(#			r.Add(#(bean.type), #(hdl.path).#(bean.name)Handler.OnProcess);
 #)#			return r;
 		}
 #]#	}
@@ -213,10 +213,10 @@ namespace #(hdl.path)
 #(#		|*| #(var.type) #(var.name)#(var.value);#(var.comment)
 #)#		\*/
 
-		public static void onProcess(NetManager manager, IBean _arg_)
+		public static void OnProcess(NetManager manager, IBean _arg_)
 		{
 			#(bean.name) arg = (#(bean.name))_arg_;
-			// System.Console.WriteLine("{0}.onProcess: arg={1}", arg.GetType().Name, arg);
+			// System.Console.WriteLine("{0}.OnProcess: arg={1}", arg.GetType().Name, arg);
 
 		}
 	}
@@ -362,8 +362,8 @@ typedef.string = merge(typedef.byte,
 	hashcode = "this.#(var.name).GetHashCode()",
 	equals = "!this.#(var.name).Equals(b.#(var.name))",
 	compareto = "this.#(var.name).CompareTo(b.#(var.name))",
-	tojson = "Util.toJStr(s.Append(\"\\\"#(var.name)\\\":\"), this.#(var.name)).Append(',')",
-	tolua = "Util.toJStr(s.Append(\"#(var.name)=\"), this.#(var.name)).Append(',')",
+	tojson = "Util.ToJStr(s.Append(\"\\\"#(var.name)\\\":\"), this.#(var.name)).Append(',')",
+	tolua = "Util.ToJStr(s.Append(\"#(var.name)=\"), this.#(var.name)).Append(',')",
 })
 typedef.octets = merge(typedef.string,
 {
@@ -407,17 +407,17 @@ typedef.vector = merge(typedef.octets,
 					for(; n > 0; --n)
 						this.#(var.name).Add(%s);
 				}]], get_unmarshal_kv(var, "k", "t")) end,
-	compareto = "Util.compareTo(this.#(var.name), b.#(var.name))",
-	tostring = "Util.append(s, this.#(var.name))",
-	tojson = "Util.appendJson(s.Append(\"\\\"#(var.name)\\\":\"), this.#(var.name))",
-	tolua = "Util.appendLua(s.Append(\"#(var.name)=\"), this.#(var.name))",
+	compareto = "Util.CompareTo(this.#(var.name), b.#(var.name))",
+	tostring = "Util.Append(s, this.#(var.name))",
+	tojson = "Util.AppendJson(s.Append(\"\\\"#(var.name)\\\":\"), this.#(var.name))",
+	tolua = "Util.AppendLua(s.Append(\"#(var.name)=\"), this.#(var.name))",
 })
 typedef.list = merge(typedef.vector,
 {
 	type = function(var) return "LinkedList<" .. subtypename(var, var.k) .. ">" end,
 	new = function(var) return "\t\t\t#(var.name) = new LinkedList<" .. subtypename_new(var, var.k) .. ">();\n" end,
-	init = function(var) return "this.#(var.name) = new LinkedList<" .. subtypename_new(var, var.k) .. ">(); if(#(var.name) != null) Util.addAll(this.#(var.name), #(var.name))" end,
-	assign = "this.#(var.name).Clear(); if(b.#(var.name) != null) Util.addAll(this.#(var.name), b.#(var.name))",
+	init = function(var) return "this.#(var.name) = new LinkedList<" .. subtypename_new(var, var.k) .. ">(); if(#(var.name) != null) Util.AddAll(this.#(var.name), #(var.name))" end,
+	assign = "this.#(var.name).Clear(); if(b.#(var.name) != null) Util.AddAll(this.#(var.name), b.#(var.name))",
 	unmarshal = function(var) return string.format([[case #(var.id):
 				{
 					this.#(var.name).Clear();
@@ -463,7 +463,7 @@ typedef.hashmap = merge(typedef.hashset,
 	type = function(var) return "Dictionary<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	type_i = function(var) return "IDictionary<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	new = function(var) return "\t\t\t#(var.name) = new Dictionary<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap));\n" end,
-	init = function(var) return "this.#(var.name) = new Dictionary<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap)); if(#(var.name) != null) Util.addAll(this.#(var.name), #(var.name))" end,
+	init = function(var) return "this.#(var.name) = new Dictionary<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap)); if(#(var.name) != null) Util.AddAll(this.#(var.name), #(var.name))" end,
 	marshal = function(var) return string.format([[if(this.#(var.name).Count > 0)
 			{
 				s.marshal2(0x%04x).marshalUInt(this.#(var.name).Count);
@@ -480,23 +480,23 @@ typedef.hashmap = merge(typedef.hashset,
 					for(int n = s.unmarshalUInt(); n > 0; --n)
 						this.#(var.name).Add(%s, %s);
 				}]], get_unmarshal_kv(var, "k", "k"), get_unmarshal_kv(var, "v", "t")) end,
-	assign = "this.#(var.name).Clear(); if(b.#(var.name) != null) Util.addAll(this.#(var.name), b.#(var.name))",
+	assign = "this.#(var.name).Clear(); if(b.#(var.name) != null) Util.AddAll(this.#(var.name), b.#(var.name))",
 })
 typedef.treemap = merge(typedef.hashmap,
 {
 	type = function(var) return "SortedDictionary<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	type_i = function(var) return "IDictionary<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	new = function(var) return "\t\t\t#(var.name) = new SortedDictionary<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">();\n" end,
-	init = function(var) return "this.#(var.name) = new SortedDictionary<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(); if(#(var.name) != null) Util.addAll(this.#(var.name), #(var.name))" end,
-	assign = "this.#(var.name).Clear(); if(b.#(var.name) != null) Util.addAll(this.#(var.name), b.#(var.name))",
+	init = function(var) return "this.#(var.name) = new SortedDictionary<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(); if(#(var.name) != null) Util.AddAll(this.#(var.name), #(var.name))" end,
+	assign = "this.#(var.name).Clear(); if(b.#(var.name) != null) Util.AddAll(this.#(var.name), b.#(var.name))",
 })
 typedef.linkedhashmap = merge(typedef.hashmap,
 {
 	type = function(var) return "Dictionary<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	type_i = function(var) return "IDictionary<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	new = function(var) return "\t\t\t#(var.name) = new Dictionary<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap));\n" end,
-	init = function(var) return "this.#(var.name) = new Dictionary<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap)); if(#(var.name) != null) Util.addAll(this.#(var.name), #(var.name))" end,
-	assign = "this.#(var.name).Clear(); if(b.#(var.name) != null) Util.addAll(this.#(var.name), b.#(var.name))",
+	init = function(var) return "this.#(var.name) = new Dictionary<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap)); if(#(var.name) != null) Util.AddAll(this.#(var.name), #(var.name))" end,
+	assign = "this.#(var.name).Clear(); if(b.#(var.name) != null) Util.AddAll(this.#(var.name), b.#(var.name))",
 })
 typedef.bean = merge(typedef.octets,
 {
@@ -506,18 +506,18 @@ typedef.bean = merge(typedef.octets,
 	subtypeid = 2,
 	new = function(var) return "\t\t\t#(var.name) = new " .. var.type .. "();\n" end,
 	init = function(var) return "this.#(var.name) = new " .. var.type .. "()" end,
-	reset = "#(var.name).reset()",
-	assign = "this.#(var.name).assign(ref b.#(var.name))",
+	reset = "#(var.name).Reset()",
+	assign = "this.#(var.name).Assign(ref b.#(var.name))",
 	marshal = function(var) return string.format([[{
 				int n = s.size();
-				this.#(var.name).marshal(s.marshal1((byte)0x%02x));
+				this.#(var.name).Marshal(s.marshal1((byte)0x%02x));
 				if(s.size() - n < 3) s.resize(n);
 			}]], var.id * 4 + 2) end,
 	unmarshal = "case #(var.id): s.unmarshalBean(ref this.#(var.name), t);",
 	unmarshal_kv = function(var, kv, t) if kv then return "(" .. typename(var, var[kv]) .. ")s.unmarshalBeanKV(new " .. typename(var, var[kv]) .. "(), " .. t .. ")" end end,
 	compareto = "this.#(var.name).CompareTo(b.#(var.name))",
-	tojson = "this.#(var.name).toJson(s.Append(\"\\\"#(var.name)\\\":\")).Append(',')",
-	tolua = "this.#(var.name).toLua(s.Append(\"#(var.name)=\")).Append(',')",
+	tojson = "this.#(var.name).ToJson(s.Append(\"\\\"#(var.name)\\\":\")).Append(',')",
+	tolua = "this.#(var.name).ToLua(s.Append(\"#(var.name)=\")).Append(',')",
 })
 typedef.boolean = typedef.bool
 typedef.integer = typedef.int

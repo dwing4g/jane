@@ -7,20 +7,20 @@ namespace Jane.Bean
 	public struct AllBeans
 	{
 		/** 获取全部bean的创建代理 */
-		public static IDictionary<int, NetManager.BeanDelegate> getAllBeans()
+		public static IDictionary<int, NetManager.BeanDelegate> GetAllBeans()
 		{
 			IDictionary<int, NetManager.BeanDelegate> r = new Dictionary<int, NetManager.BeanDelegate>(3 * 4);
-			r.Add(1, TestBean.create);
-			r.Add(2, TestType.create);
-			r.Add(3, TestEmpty.create);
+			r.Add(1, TestBean.Create);
+			r.Add(2, TestType.Create);
+			r.Add(3, TestEmpty.Create);
 			return r;
 		}
 
-		public static IDictionary<int, NetManager.HandlerDelegate> getTestClientHandlers()
+		public static IDictionary<int, NetManager.HandlerDelegate> GetTestClientHandlers()
 		{
 			IDictionary<int, NetManager.HandlerDelegate> r = new Dictionary<int, NetManager.HandlerDelegate>(2 * 4);
-			r.Add(1, Jane.Handler.TestBeanHandler.onProcess);
-			r.Add(2, Jane.Handler.TestTypeHandler.onProcess);
+			r.Add(1, Jane.Handler.TestBeanHandler.OnProcess);
+			r.Add(2, Jane.Handler.TestTypeHandler.OnProcess);
 			return r;
 		}
 	}

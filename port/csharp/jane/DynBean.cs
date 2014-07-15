@@ -20,68 +20,68 @@ namespace Jane
 			_fields = new SortedDictionary<int, object>();
 		}
 
-		public void setType(int type)
+		public void SetType(int type)
 		{
 			_type = type;
 		}
 
-		public object getField(int id)
+		public object GetField(int id)
 		{
 			return _fields[id];
 		}
 
-		public void setField(int id, object o)
+		public void SetField(int id, object o)
 		{
 			if(id <= 0 || id > 62) throw new ArgumentException("field id must be in [1,62]: " + id);
 			_fields.Add(id, o);
 		}
 
-		public SortedDictionary<int, object>.Enumerator fieldSet()
+		public SortedDictionary<int, object>.Enumerator FieldSet()
 		{
 			return _fields.GetEnumerator();
 		}
 
-		public int type()
+		public int Type()
 		{
 			return _type;
 		}
 
-		public int initSize()
+		public int InitSize()
 		{
 			return 16;
 		}
 
-		public int maxSize()
+		public int MaxSize()
 		{
 			return int.MaxValue;
 		}
 
-		public void init()
+		public void Init()
 		{
 			_fields = new SortedDictionary<int, object>();
 		}
 
-		public IBean create()
+		public IBean Create()
 		{
 			IBean b = new DynBean();
-			b.init();
+			b.Init();
 			return b;
 		}
 
-		public void reset()
+		public void Reset()
 		{
 			_type = 0;
 			_fields.Clear();
 		}
 
-		public OctetsStream marshal(OctetsStream os)
+		public OctetsStream Marshal(OctetsStream os)
 		{
 			foreach(KeyValuePair<int, object> p in Util.Enum(_fields))
 				os.marshalVar(p.Key, p.Value);
 			return os.marshal1((byte)0);
 		}
 
-		public OctetsStream unmarshal(OctetsStream os)
+		public OctetsStream Unmarshal(OctetsStream os)
 		{
 			for(_fields.Clear();;)
 			{
@@ -130,7 +130,7 @@ namespace Jane
 			return s.Append('}').ToString();
 		}
 #if TO_JSON_LUA
-		public StringBuilder toJson(StringBuilder s)
+		public StringBuilder ToJson(StringBuilder s)
 		{
 			if(s == null) s = new StringBuilder(_fields.Count * 16 + 16);
 			s.Append("{\"t\":").Append(_type);
@@ -145,21 +145,21 @@ namespace Jane
 				else if(o is Octets)
 					((Octets)o).dumpJStr(s);
 				else if(o is IDictionary)
-					Util.appendJson(s, (IDictionary)o);
+					Util.AppendJson(s, (IDictionary)o);
 				else if(o is ICollection)
-					Util.appendJson(s, (ICollection)o);
+					Util.AppendJson(s, (ICollection)o);
 				else
-					Util.toJStr(s, o.ToString());
+					Util.ToJStr(s, o.ToString());
 			}
 			return s.Append('}');
 		}
 
-		public StringBuilder toJson()
+		public StringBuilder ToJson()
 		{
-			return toJson(null);
+			return ToJson(null);
 		}
 
-		public StringBuilder toLua(StringBuilder s)
+		public StringBuilder ToLua(StringBuilder s)
 		{
 			if(s == null) s = new StringBuilder(_fields.Count * 16 + 16);
 			s.Append("{t=").Append(_type);
@@ -174,18 +174,18 @@ namespace Jane
 				else if(o is Octets)
 					((Octets)o).dumpJStr(s);
 				else if(o is IDictionary)
-					Util.appendLua(s, (IDictionary)o);
+					Util.AppendLua(s, (IDictionary)o);
 				else if(o is ICollection)
-					Util.appendLua(s, (ICollection)o);
+					Util.AppendLua(s, (ICollection)o);
 				else
-					Util.toJStr(s, o.ToString());
+					Util.ToJStr(s, o.ToString());
 			}
 			return s.Append('}');
 		}
 
-		public StringBuilder toLua()
+		public StringBuilder ToLua()
 		{
-			return toLua(null);
+			return ToLua(null);
 		}
 #endif
 	}

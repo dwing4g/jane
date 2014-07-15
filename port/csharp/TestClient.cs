@@ -11,8 +11,8 @@ namespace Jane
 
 		public TestClient()
 		{
-			setBeanDelegates(AllBeans.getAllBeans());
-			setHandlerDelegates(AllBeans.getTestClientHandlers());
+			SetBeanDelegates(AllBeans.GetAllBeans());
+			SetHandlerDelegates(AllBeans.GetTestClientHandlers());
 		}
 
 		public void setFilter(RC4Filter filter)
@@ -20,40 +20,40 @@ namespace Jane
 			_filter = filter;
 		}
 
-		protected override void onAddSession()
+		protected override void OnAddSession()
 		{
 			Console.WriteLine("onAddSession");
 		}
 
-		protected override void onDelSession(int code, Exception e)
+		protected override void OnDelSession(int code, Exception e)
 		{
 			Console.WriteLine("onDelSession: {0}: {1}", code, e);
 		}
 
-		protected override void onAbortSession(Exception e)
+		protected override void OnAbortSession(Exception e)
 		{
 			Console.WriteLine("onAbortSession: {0}", e);
 			Thread.Sleep(3000);
-			connect("127.0.0.1", 9123);
+			Connect("127.0.0.1", 9123);
 		}
 
-		protected override OctetsStream onEncode(byte[] buf, int pos, int len)
+		protected override OctetsStream OnEncode(byte[] buf, int pos, int len)
 		{
 			if(_filter != null)
-				_filter.updateOutput(buf, pos, len);
+				_filter.UpdateOutput(buf, pos, len);
 			return null;
 		}
 
-		protected override OctetsStream onDecode(byte[] buf, int pos, int len)
+		protected override OctetsStream OnDecode(byte[] buf, int pos, int len)
 		{
 			if(_filter != null)
-				_filter.updateInput(buf, pos, len);
+				_filter.UpdateInput(buf, pos, len);
 			return null;
 		}
 
-		public override bool send(IBean bean)
+		public override bool Send(IBean bean)
 		{
-			return sendDirect(bean);
+			return SendDirect(bean);
 		}
 
 		static void Main(string[] args)
@@ -61,7 +61,7 @@ namespace Jane
 			using(NetManager mgr = new TestClient())
 			{
 				Console.WriteLine("connecting ...");
-				mgr.connect("127.0.0.1", 9123);
+				mgr.Connect("127.0.0.1", 9123);
 				Console.WriteLine("press ENTER to exit ...");
 				Console.ReadLine();
 			}

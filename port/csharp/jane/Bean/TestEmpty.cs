@@ -13,47 +13,47 @@ namespace Jane.Bean
 	{
 		public const int BEAN_TYPE = 3;
 
-		public void reset()
+		public void Reset()
 		{
 		}
 
 		/** @param b unused */
-		public void assign(ref TestEmpty b)
+		public void Assign(ref TestEmpty b)
 		{
 		}
 /**/
-		public int type()
+		public int Type()
 		{
 			return 3;
 		}
 
-		public int initSize()
+		public int InitSize()
 		{
 			return 0;
 		}
 
-		public int maxSize()
+		public int MaxSize()
 		{
 			return 0;
 		}
 
-		public void init()
+		public void Init()
 		{
 		}
 
-		public static IBean create()
+		public static IBean Create()
 		{
 			IBean b = new TestEmpty();
-			b.init();
+			b.Init();
 			return b;
 		}
 
-		public OctetsStream marshal(OctetsStream s)
+		public OctetsStream Marshal(OctetsStream s)
 		{
 			return s.marshal1((byte)0);
 		}
 
-		public OctetsStream unmarshal(OctetsStream s)
+		public OctetsStream Unmarshal(OctetsStream s)
 		{
 			for(;;) { int i = s.unmarshalUInt1(), t = i & 3; switch(i >> 2)
 			{
@@ -105,28 +105,28 @@ namespace Jane.Bean
 			return s.Append('}').ToString();
 		}
 #if TO_JSON_LUA
-		public StringBuilder toJson(StringBuilder s)
+		public StringBuilder ToJson(StringBuilder s)
 		{
 			if(s == null) s = new StringBuilder(1024);
 			s.Append('{');
 			return s.Append('}');
 		}
 
-		public StringBuilder toJson()
+		public StringBuilder ToJson()
 		{
-			return toJson(null);
+			return ToJson(null);
 		}
 
-		public StringBuilder toLua(StringBuilder s)
+		public StringBuilder ToLua(StringBuilder s)
 		{
 			if(s == null) s = new StringBuilder(1024);
 			s.Append('{');
 			return s.Append('}');
 		}
 
-		public StringBuilder toLua()
+		public StringBuilder ToLua()
 		{
-			return toLua(null);
+			return ToLua(null);
 		}
 #endif
 	}

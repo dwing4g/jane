@@ -427,12 +427,12 @@ namespace Jane
 
 		public OctetsStream marshal<T>(T b) where T : IBean
 		{
-			return b != null ? b.marshal(this) : marshal1((byte)0);
+			return b != null ? b.Marshal(this) : marshal1((byte)0);
 		}
 
 		public OctetsStream marshal<T>(ref T b) where T : IBean
 		{
-			return b != null ? b.marshal(this) : marshal1((byte)0);
+			return b != null ? b.Marshal(this) : marshal1((byte)0);
 		}
 
 		public static int getKVType(object o)
@@ -477,7 +477,7 @@ namespace Jane
 			else if(o is IBean)
 			{
 				int n = count;
-				((IBean)o).marshal(marshal1((byte)((id << 2) + 2)));
+				((IBean)o).Marshal(marshal1((byte)((id << 2) + 2)));
 				if(count - n < 3) resize(n);
 			}
 			else if(o is Octets)
@@ -764,7 +764,7 @@ namespace Jane
 			{
 				case 0: return unmarshalLong();
 				case 1: return unmarshalOctets();
-				case 2: { DynBean db = new DynBean(); db.unmarshal(this); return db; }
+				case 2: { DynBean db = new DynBean(); db.Unmarshal(this); return db; }
 				case 3: return unmarshalVarSub(unmarshalUInt1());
 				default: throw new MarshalException();
 			}
@@ -834,7 +834,7 @@ namespace Jane
 			{
 				case 0: return unmarshalLong();
 				case 1: return unmarshalOctets();
-				case 2: { DynBean db = new DynBean(); db.unmarshal(this); return db; }
+				case 2: { DynBean db = new DynBean(); db.Unmarshal(this); return db; }
 				case 4: return unmarshalFloat();
 				case 5: return unmarshalDouble();
 				default: throw new MarshalException();
@@ -1118,26 +1118,26 @@ namespace Jane
 
 		public OctetsStream unmarshal<T>(ref T b) where T : IBean
 		{
-			return b.unmarshal(this);
+			return b.Unmarshal(this);
 		}
 
 		public OctetsStream unmarshalBean<T>(ref T b, int type) where T : IBean
 		{
-			if(type == 2) return b.unmarshal(this);
+			if(type == 2) return b.Unmarshal(this);
 			unmarshalSkipVar(type);
 			return this;
 		}
 
 		public T unmarshalBean<T>(T b) where T : IBean
 		{
-			b.unmarshal(this);
+			b.Unmarshal(this);
 			return b;
 		}
 
 		public T unmarshalBeanKV<T>(T b, int type) where T : IBean
 		{
 			if(type == 2)
-				b.unmarshal(this);
+				b.Unmarshal(this);
 			else
 				unmarshalSkipKV(type);
 			return b;

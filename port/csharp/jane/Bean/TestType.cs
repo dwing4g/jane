@@ -45,18 +45,18 @@ namespace Jane.Bean
 			this.v8 = new Octets(5); if(v8 != null) this.v8.replace(v8);
 			this.v9 = v9 ?? string.Empty;
 			this.v10 = new List<bool>(10); if(v10 != null) this.v10.AddRange(v10);
-			this.v11 = new LinkedList<sbyte>(); if(v11 != null) Util.addAll(this.v11, v11);
-			this.v12 = new LinkedList<int>(); if(v12 != null) Util.addAll(this.v12, v12);
+			this.v11 = new LinkedList<sbyte>(); if(v11 != null) Util.AddAll(this.v11, v11);
+			this.v12 = new LinkedList<int>(); if(v12 != null) Util.AddAll(this.v12, v12);
 			this.v13 = new HashSet<long>(); if(v13 != null) this.v13.UnionWith(v13);
 			this.v14 = new SortedSet<float>(); if(v14 != null) this.v14.UnionWith(v14);
 			this.v15 = new HashSet<double>(); if(v15 != null) this.v15.UnionWith(v15);
-			this.v16 = new Dictionary<long, string>(0); if(v16 != null) Util.addAll(this.v16, v16);
-			this.v17 = new SortedDictionary<TestBean, bool>(); if(v17 != null) Util.addAll(this.v17, v17);
-			this.v18 = new Dictionary<Octets, TestBean>(); if(v18 != null) Util.addAll(this.v18, v18);
+			this.v16 = new Dictionary<long, string>(0); if(v16 != null) Util.AddAll(this.v16, v16);
+			this.v17 = new SortedDictionary<TestBean, bool>(); if(v17 != null) Util.AddAll(this.v17, v17);
+			this.v18 = new Dictionary<Octets, TestBean>(); if(v18 != null) Util.AddAll(this.v18, v18);
 			this.v19 = new TestBean();
 		}
 
-		public void reset()
+		public void Reset()
 		{
 			v1 = false;
 			v2 = 0;
@@ -76,10 +76,10 @@ namespace Jane.Bean
 			v16.Clear();
 			v17.Clear();
 			v18.Clear();
-			v19.reset();
+			v19.Reset();
 		}
 
-		public void assign(ref TestType b)
+		public void Assign(ref TestType b)
 		{
 			this.v1 = b.v1;
 			this.v2 = b.v2;
@@ -91,18 +91,18 @@ namespace Jane.Bean
 			if(b.v8 != null) this.v8.replace(b.v8); else this.v8.clear();
 			this.v9 = b.v9 ?? string.Empty;
 			this.v10.Clear(); if(b.v10 != null) this.v10.AddRange(b.v10);
-			this.v11.Clear(); if(b.v11 != null) Util.addAll(this.v11, b.v11);
-			this.v12.Clear(); if(b.v12 != null) Util.addAll(this.v12, b.v12);
+			this.v11.Clear(); if(b.v11 != null) Util.AddAll(this.v11, b.v11);
+			this.v12.Clear(); if(b.v12 != null) Util.AddAll(this.v12, b.v12);
 			this.v13.Clear(); if(b.v13 != null) this.v13.UnionWith(v13);
 			this.v14.Clear(); if(b.v14 != null) this.v14.UnionWith(v14);
 			this.v15.Clear(); if(b.v15 != null) this.v15.UnionWith(v15);
-			this.v16.Clear(); if(b.v16 != null) Util.addAll(this.v16, b.v16);
-			this.v17.Clear(); if(b.v17 != null) Util.addAll(this.v17, b.v17);
-			this.v18.Clear(); if(b.v18 != null) Util.addAll(this.v18, b.v18);
-			this.v19.assign(ref b.v19);
+			this.v16.Clear(); if(b.v16 != null) Util.AddAll(this.v16, b.v16);
+			this.v17.Clear(); if(b.v17 != null) Util.AddAll(this.v17, b.v17);
+			this.v18.Clear(); if(b.v18 != null) Util.AddAll(this.v18, b.v18);
+			this.v19.Assign(ref b.v19);
 		}
 /*
-		public bool getV1()
+		public bool GetV1()
 		{
 			return v1;
 		}
@@ -112,7 +112,7 @@ namespace Jane.Bean
 			this.v1 = v1;
 		}
 
-		public sbyte getV2()
+		public sbyte GetV2()
 		{
 			return v2;
 		}
@@ -122,7 +122,7 @@ namespace Jane.Bean
 			this.v2 = v2;
 		}
 
-		public short getV3()
+		public short GetV3()
 		{
 			return v3;
 		}
@@ -132,7 +132,7 @@ namespace Jane.Bean
 			this.v3 = v3;
 		}
 
-		public int getV4()
+		public int GetV4()
 		{
 			return v4;
 		}
@@ -142,7 +142,7 @@ namespace Jane.Bean
 			this.v4 = v4;
 		}
 
-		public long getV5()
+		public long GetV5()
 		{
 			return v5;
 		}
@@ -152,7 +152,7 @@ namespace Jane.Bean
 			this.v5 = v5;
 		}
 
-		public float getV6()
+		public float GetV6()
 		{
 			return v6;
 		}
@@ -162,7 +162,7 @@ namespace Jane.Bean
 			this.v6 = v6;
 		}
 
-		public double getV7()
+		public double GetV7()
 		{
 			return v7;
 		}
@@ -172,12 +172,12 @@ namespace Jane.Bean
 			this.v7 = v7;
 		}
 
-		public Octets getV8()
+		public Octets GetV8()
 		{
 			return v8;
 		}
 
-		public string getV9()
+		public string GetV9()
 		{
 			return v9;
 		}
@@ -187,72 +187,72 @@ namespace Jane.Bean
 			this.v9 = v9 ?? string.Empty;
 		}
 
-		public List<bool> getV10()
+		public List<bool> GetV10()
 		{
 			return v10;
 		}
 
-		public LinkedList<sbyte> getV11()
+		public LinkedList<sbyte> GetV11()
 		{
 			return v11;
 		}
 
-		public LinkedList<int> getV12()
+		public LinkedList<int> GetV12()
 		{
 			return v12;
 		}
 
-		public HashSet<long> getV13()
+		public HashSet<long> GetV13()
 		{
 			return v13;
 		}
 
-		public SortedSet<float> getV14()
+		public SortedSet<float> GetV14()
 		{
 			return v14;
 		}
 
-		public HashSet<double> getV15()
+		public HashSet<double> GetV15()
 		{
 			return v15;
 		}
 
-		public Dictionary<long, string> getV16()
+		public Dictionary<long, string> GetV16()
 		{
 			return v16;
 		}
 
-		public SortedDictionary<TestBean, bool> getV17()
+		public SortedDictionary<TestBean, bool> GetV17()
 		{
 			return v17;
 		}
 
-		public Dictionary<Octets, TestBean> getV18()
+		public Dictionary<Octets, TestBean> GetV18()
 		{
 			return v18;
 		}
 
-		public TestBean getV19()
+		public TestBean GetV19()
 		{
 			return v19;
 		}
 */
-		public int type()
+		public int Type()
 		{
 			return 2;
 		}
 
-		public int initSize()
+		public int InitSize()
 		{
 			return 256;
 		}
 
-		public int maxSize()
+		public int MaxSize()
 		{
 			return 65536;
 		}
 
-		public void init()
+		public void Init()
 		{
 			v8 = new Octets(5);
 			v9 = string.Empty;
@@ -268,14 +268,14 @@ namespace Jane.Bean
 			v19 = new TestBean();
 		}
 
-		public static IBean create()
+		public static IBean Create()
 		{
 			IBean b = new TestType();
-			b.init();
+			b.Init();
 			return b;
 		}
 
-		public OctetsStream marshal(OctetsStream s)
+		public OctetsStream Marshal(OctetsStream s)
 		{
 			if(this.v1) s.marshal1((byte)0x04).marshal1((byte)1);
 			if(this.v2 != 0) s.marshal1((byte)0x08).marshal(this.v2);
@@ -342,13 +342,13 @@ namespace Jane.Bean
 			}
 			{
 				int n = s.size();
-				this.v19.marshal(s.marshal1((byte)0x4e));
+				this.v19.Marshal(s.marshal1((byte)0x4e));
 				if(s.size() - n < 3) s.resize(n);
 			}
 			return s.marshal1((byte)0);
 		}
 
-		public OctetsStream unmarshal(OctetsStream s)
+		public OctetsStream Unmarshal(OctetsStream s)
 		{
 			for(;;) { int i = s.unmarshalUInt1(), t = i & 3; switch(i >> 2)
 			{
@@ -551,15 +551,15 @@ namespace Jane.Bean
 			c = Math.Sign(this.v7 - b.v7); if(c != 0) return c;
 			c = this.v8.CompareTo(b.v8); if(c != 0) return c;
 			c = this.v9.CompareTo(b.v9); if(c != 0) return c;
-			c = Util.compareTo(this.v10, b.v10); if(c != 0) return c;
-			c = Util.compareTo(this.v11, b.v11); if(c != 0) return c;
-			c = Util.compareTo(this.v12, b.v12); if(c != 0) return c;
-			c = Util.compareTo(this.v13, b.v13); if(c != 0) return c;
-			c = Util.compareTo(this.v14, b.v14); if(c != 0) return c;
-			c = Util.compareTo(this.v15, b.v15); if(c != 0) return c;
-			c = Util.compareTo(this.v16, b.v16); if(c != 0) return c;
-			c = Util.compareTo(this.v17, b.v17); if(c != 0) return c;
-			c = Util.compareTo(this.v18, b.v18); if(c != 0) return c;
+			c = Util.CompareTo(this.v10, b.v10); if(c != 0) return c;
+			c = Util.CompareTo(this.v11, b.v11); if(c != 0) return c;
+			c = Util.CompareTo(this.v12, b.v12); if(c != 0) return c;
+			c = Util.CompareTo(this.v13, b.v13); if(c != 0) return c;
+			c = Util.CompareTo(this.v14, b.v14); if(c != 0) return c;
+			c = Util.CompareTo(this.v15, b.v15); if(c != 0) return c;
+			c = Util.CompareTo(this.v16, b.v16); if(c != 0) return c;
+			c = Util.CompareTo(this.v17, b.v17); if(c != 0) return c;
+			c = Util.CompareTo(this.v18, b.v18); if(c != 0) return c;
 			c = this.v19.CompareTo(b.v19); if(c != 0) return c;
 			return 0;
 		}
@@ -586,21 +586,21 @@ namespace Jane.Bean
 			s.Append(this.v7).Append(',');
 			s.Append(this.v8).Append(',');
 			s.Append(this.v9).Append(',');
-			Util.append(s, this.v10);
-			Util.append(s, this.v11);
-			Util.append(s, this.v12);
-			Util.append(s, this.v13);
-			Util.append(s, this.v14);
-			Util.append(s, this.v15);
-			Util.append(s, this.v16);
-			Util.append(s, this.v17);
-			Util.append(s, this.v18);
+			Util.Append(s, this.v10);
+			Util.Append(s, this.v11);
+			Util.Append(s, this.v12);
+			Util.Append(s, this.v13);
+			Util.Append(s, this.v14);
+			Util.Append(s, this.v15);
+			Util.Append(s, this.v16);
+			Util.Append(s, this.v17);
+			Util.Append(s, this.v18);
 			s.Append(this.v19).Append(',');
 			--s.Length;
 			return s.Append('}').ToString();
 		}
 #if TO_JSON_LUA
-		public StringBuilder toJson(StringBuilder s)
+		public StringBuilder ToJson(StringBuilder s)
 		{
 			if(s == null) s = new StringBuilder(1024);
 			s.Append('{');
@@ -612,27 +612,27 @@ namespace Jane.Bean
 			s.Append("\"v6\":").Append(this.v6).Append(',');
 			s.Append("\"v7\":").Append(this.v7).Append(',');
 			this.v8.dumpJStr(s.Append("\"v8\":")).Append(',');
-			Util.toJStr(s.Append("\"v9\":"), this.v9).Append(',');
-			Util.appendJson(s.Append("\"v10\":"), this.v10);
-			Util.appendJson(s.Append("\"v11\":"), this.v11);
-			Util.appendJson(s.Append("\"v12\":"), this.v12);
-			Util.appendJson(s.Append("\"v13\":"), this.v13);
-			Util.appendJson(s.Append("\"v14\":"), this.v14);
-			Util.appendJson(s.Append("\"v15\":"), this.v15);
-			Util.appendJson(s.Append("\"v16\":"), this.v16);
-			Util.appendJson(s.Append("\"v17\":"), this.v17);
-			Util.appendJson(s.Append("\"v18\":"), this.v18);
-			this.v19.toJson(s.Append("\"v19\":")).Append(',');
+			Util.ToJStr(s.Append("\"v9\":"), this.v9).Append(',');
+			Util.AppendJson(s.Append("\"v10\":"), this.v10);
+			Util.AppendJson(s.Append("\"v11\":"), this.v11);
+			Util.AppendJson(s.Append("\"v12\":"), this.v12);
+			Util.AppendJson(s.Append("\"v13\":"), this.v13);
+			Util.AppendJson(s.Append("\"v14\":"), this.v14);
+			Util.AppendJson(s.Append("\"v15\":"), this.v15);
+			Util.AppendJson(s.Append("\"v16\":"), this.v16);
+			Util.AppendJson(s.Append("\"v17\":"), this.v17);
+			Util.AppendJson(s.Append("\"v18\":"), this.v18);
+			this.v19.ToJson(s.Append("\"v19\":")).Append(',');
 			--s.Length;
 			return s.Append('}');
 		}
 
-		public StringBuilder toJson()
+		public StringBuilder ToJson()
 		{
-			return toJson(null);
+			return ToJson(null);
 		}
 
-		public StringBuilder toLua(StringBuilder s)
+		public StringBuilder ToLua(StringBuilder s)
 		{
 			if(s == null) s = new StringBuilder(1024);
 			s.Append('{');
@@ -644,24 +644,24 @@ namespace Jane.Bean
 			s.Append("v6=").Append(this.v6).Append(',');
 			s.Append("v7=").Append(this.v7).Append(',');
 			this.v8.dumpJStr(s.Append("v8=")).Append(',');
-			Util.toJStr(s.Append("v9="), this.v9).Append(',');
-			Util.appendLua(s.Append("v10="), this.v10);
-			Util.appendLua(s.Append("v11="), this.v11);
-			Util.appendLua(s.Append("v12="), this.v12);
-			Util.appendLua(s.Append("v13="), this.v13);
-			Util.appendLua(s.Append("v14="), this.v14);
-			Util.appendLua(s.Append("v15="), this.v15);
-			Util.appendLua(s.Append("v16="), this.v16);
-			Util.appendLua(s.Append("v17="), this.v17);
-			Util.appendLua(s.Append("v18="), this.v18);
-			this.v19.toLua(s.Append("v19=")).Append(',');
+			Util.ToJStr(s.Append("v9="), this.v9).Append(',');
+			Util.AppendLua(s.Append("v10="), this.v10);
+			Util.AppendLua(s.Append("v11="), this.v11);
+			Util.AppendLua(s.Append("v12="), this.v12);
+			Util.AppendLua(s.Append("v13="), this.v13);
+			Util.AppendLua(s.Append("v14="), this.v14);
+			Util.AppendLua(s.Append("v15="), this.v15);
+			Util.AppendLua(s.Append("v16="), this.v16);
+			Util.AppendLua(s.Append("v17="), this.v17);
+			Util.AppendLua(s.Append("v18="), this.v18);
+			this.v19.ToLua(s.Append("v19=")).Append(',');
 			--s.Length;
 			return s.Append('}');
 		}
 
-		public StringBuilder toLua()
+		public StringBuilder ToLua()
 		{
-			return toLua(null);
+			return ToLua(null);
 		}
 #endif
 	}

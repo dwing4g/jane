@@ -26,36 +26,36 @@ namespace Jane
 		protected readonly byte[] _bufin = new byte[RECV_BUFSIZE];
 		protected readonly OctetsStream _bufos = new OctetsStream();
 
-		public void setBeanDelegates(IDictionary<int, BeanDelegate> bean_map)
+		public void SetBeanDelegates(IDictionary<int, BeanDelegate> bean_map)
 		{
 			_beanMap = bean_map ?? _beanMap;
 		}
 
-		public void setHandlerDelegates(IDictionary<int, HandlerDelegate> handler_map)
+		public void SetHandlerDelegates(IDictionary<int, HandlerDelegate> handler_map)
 		{
 			_handlerMap = handler_map ?? _handlerMap;
 		}
 
 		public bool Connected { get { return _tcpClient.Connected; } }
 
-		protected virtual void onAddSession() {} // 异步IO线程执行;
-		protected virtual void onDelSession(int code, Exception e) {} // 异步IO线程执行;
-		protected virtual void onAbortSession(Exception e) {} // 异步IO线程执行;
-		protected virtual void onSentBean(IBean bean) {} // 异步IO线程执行;
-		protected virtual OctetsStream onEncode(byte[] buf, int pos, int len) { return null; }
-		protected virtual OctetsStream onDecode(byte[] buf, int pos, int len) { return null; } // 异步IO线程执行;
+		protected virtual void OnAddSession() {} // 异步IO线程执行;
+		protected virtual void OnDelSession(int code, Exception e) {} // 异步IO线程执行;
+		protected virtual void OnAbortSession(Exception e) {} // 异步IO线程执行;
+		protected virtual void OnSentBean(IBean bean) {} // 异步IO线程执行;
+		protected virtual OctetsStream OnEncode(byte[] buf, int pos, int len) { return null; }
+		protected virtual OctetsStream OnDecode(byte[] buf, int pos, int len) { return null; } // 异步IO线程执行;
 
-		protected virtual bool onRecvBean(IBean bean) // 异步IO线程执行;
+		protected virtual bool OnRecvBean(IBean bean) // 异步IO线程执行;
 		{
 			HandlerDelegate handler;
-			if(!_handlerMap.TryGetValue(bean.type(), out handler)) return false;
+			if(!_handlerMap.TryGetValue(bean.Type(), out handler)) return false;
 			handler(this, bean);
 			return true;
 		}
 
-		private void decode(int buflen) // 异步IO线程执行;
+		private void Decode(int buflen) // 异步IO线程执行;
 		{
-			OctetsStream os = onDecode(_bufin, 0, buflen);
+			OctetsStream os = OnDecode(_bufin, 0, buflen);
 			if(os != null)
 				_bufos.append(os.array(), os.position(), os.remain());
 			else
@@ -73,12 +73,12 @@ namespace Jane
 						throw new Exception("unknown bean: type=" + ptype + ",size=" + psize);
 					IBean bean = create();
 					int p = _bufos.position();
-					bean.unmarshal(_bufos);
+					bean.Unmarshal(_bufos);
 					int realsize = _bufos.position() - p;
 					if(realsize > psize)
 						throw new Exception("bean realsize overflow: type=" + ptype + ",size=" + psize + ",realsize=" + realsize);
 					pos = p + psize;
-					onRecvBean(bean);
+					OnRecvBean(bean);
 				}
 			}
 			catch(MarshalEOFException)
@@ -88,7 +88,7 @@ namespace Jane
 			_bufos.setPosition(0);
 		}
 
-		private void connectCallback(IAsyncResult res) // 异步IO线程执行;
+		private void ConnectCallback(IAsyncResult res) // 异步IO线程执行;
 		{
 			try
 			{
@@ -98,28 +98,28 @@ namespace Jane
 				}
 				catch(Exception e)
 				{
-					onAbortSession(e);
+					OnAbortSession(e);
 					return;
 				}
 				if(_tcpClient.Connected)
 				{
-					onAddSession();
+					OnAddSession();
 					lock(this)
 					{
 						_tcpStream = _tcpClient.GetStream();
-						_tcpStream.BeginRead(_bufin, 0, _bufin.Length, readCallback, null);
+						_tcpStream.BeginRead(_bufin, 0, _bufin.Length, ReadCallback, null);
 					}
 				}
 				else
-					onAbortSession(null);
+					OnAbortSession(null);
 			}
 			catch(Exception e)
 			{
-				close(CLOSE_CONNECT, e);
+				Close(CLOSE_CONNECT, e);
 			}
 		}
 
-		private void readCallback(IAsyncResult res) // 异步IO线程执行;
+		private void ReadCallback(IAsyncResult res) // 异步IO线程执行;
 		{
 			try
 			{
@@ -130,25 +130,25 @@ namespace Jane
 					{
 						try
 						{
-							decode(buflen);
+							Decode(buflen);
 						}
 						catch(Exception e)
 						{
-							close(CLOSE_DECODE, e);
+							Close(CLOSE_DECODE, e);
 						}
-						_tcpStream.BeginRead(_bufin, 0, _bufin.Length, readCallback, null);
+						_tcpStream.BeginRead(_bufin, 0, _bufin.Length, ReadCallback, null);
 					}
 					else
-						close(CLOSE_READ);
+						Close(CLOSE_READ);
 				}
 			}
 			catch(Exception e)
 			{
-				close(CLOSE_READ, e);
+				Close(CLOSE_READ, e);
 			}
 		}
 
-		private void writeCallback(IAsyncResult res) // 异步IO线程执行;
+		private void WriteCallback(IAsyncResult res) // 异步IO线程执行;
 		{
 			try
 			{
@@ -156,22 +156,22 @@ namespace Jane
 				{
 					IBean bean = (IBean)res.AsyncState;
 					_tcpStream.EndWrite(res);
-					onSentBean(bean);
+					OnSentBean(bean);
 				}
 			}
 			catch(Exception e)
 			{
-				close(CLOSE_WRITE, e);
+				Close(CLOSE_WRITE, e);
 			}
 		}
 
-		public void connect(string host, int port)
+		public void Connect(string host, int port)
 		{
-			close();
-			_tcpClient.BeginConnect(host, port, connectCallback, null);
+			Close();
+			_tcpClient.BeginConnect(host, port, ConnectCallback, null);
 		}
 
-		public void close(int code = CLOSE_ACTIVE, Exception e = null)
+		public void Close(int code = CLOSE_ACTIVE, Exception e = null)
 		{
 			bool hasstream;
 			lock(this)
@@ -184,30 +184,30 @@ namespace Jane
 				}
 			}
 			if(hasstream)
-				onDelSession(code, e);
+				OnDelSession(code, e);
 		}
 
-		public bool sendDirect(IBean bean)
+		public bool SendDirect(IBean bean)
 		{
 			if(!_tcpClient.Connected || _tcpStream == null) return false;
-			OctetsStream os = new OctetsStream(bean.initSize() + 10);
+			OctetsStream os = new OctetsStream(bean.InitSize() + 10);
 			os.resize(10);
-			bean.marshal(os);
+			bean.Marshal(os);
 			int p = os.marshalUIntBack(10, os.size() - 10);
-			os.setPosition(10 - (p + os.marshalUIntBack(10 - p, bean.type())));
-			OctetsStream o = onEncode(os.array(), os.position(), os.remain());
+			os.setPosition(10 - (p + os.marshalUIntBack(10 - p, bean.Type())));
+			OctetsStream o = OnEncode(os.array(), os.position(), os.remain());
 			if(o != null) os = o;
 			lock(this)
 			{
 				if(_tcpStream == null) return false;
-				_tcpStream.BeginWrite(os.array(), os.position(), os.remain(), writeCallback, bean);
+				_tcpStream.BeginWrite(os.array(), os.position(), os.remain(), WriteCallback, bean);
 			}
 			return true;
 		}
 
-		public virtual bool send(IBean bean)
+		public virtual bool Send(IBean bean)
 		{
-			return sendDirect(bean);
+			return SendDirect(bean);
 		}
 
 		protected virtual void Dispose(bool disposing)

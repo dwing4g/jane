@@ -24,19 +24,19 @@ namespace Jane.Bean
 			this.value2 = value2;
 		}
 
-		public void reset()
+		public void Reset()
 		{
 			value1 = 0;
 			value2 = 0;
 		}
 
-		public void assign(ref TestBean b)
+		public void Assign(ref TestBean b)
 		{
 			this.value1 = b.value1;
 			this.value2 = b.value2;
 		}
 /*
-		public int getValue1()
+		public int GetValue1()
 		{
 			return value1;
 		}
@@ -46,7 +46,7 @@ namespace Jane.Bean
 			this.value1 = value1;
 		}
 
-		public long getValue2()
+		public long GetValue2()
 		{
 			return value2;
 		}
@@ -56,40 +56,40 @@ namespace Jane.Bean
 			this.value2 = value2;
 		}
 */
-		public int type()
+		public int Type()
 		{
 			return 1;
 		}
 
-		public int initSize()
+		public int InitSize()
 		{
 			return 16;
 		}
 
-		public int maxSize()
+		public int MaxSize()
 		{
 			return 16;
 		}
 
-		public void init()
+		public void Init()
 		{
 		}
 
-		public static IBean create()
+		public static IBean Create()
 		{
 			IBean b = new TestBean();
-			b.init();
+			b.Init();
 			return b;
 		}
 
-		public OctetsStream marshal(OctetsStream s)
+		public OctetsStream Marshal(OctetsStream s)
 		{
 			if(this.value1 != 0) s.marshal1((byte)0x04).marshal(this.value1);
 			if(this.value2 != 0) s.marshal1((byte)0x08).marshal(this.value2);
 			return s.marshal1((byte)0);
 		}
 
-		public OctetsStream unmarshal(OctetsStream s)
+		public OctetsStream Unmarshal(OctetsStream s)
 		{
 			for(;;) { int i = s.unmarshalUInt1(), t = i & 3; switch(i >> 2)
 			{
@@ -156,7 +156,7 @@ namespace Jane.Bean
 			return s.Append('}').ToString();
 		}
 #if TO_JSON_LUA
-		public StringBuilder toJson(StringBuilder s)
+		public StringBuilder ToJson(StringBuilder s)
 		{
 			if(s == null) s = new StringBuilder(1024);
 			s.Append('{');
@@ -166,12 +166,12 @@ namespace Jane.Bean
 			return s.Append('}');
 		}
 
-		public StringBuilder toJson()
+		public StringBuilder ToJson()
 		{
-			return toJson(null);
+			return ToJson(null);
 		}
 
-		public StringBuilder toLua(StringBuilder s)
+		public StringBuilder ToLua(StringBuilder s)
 		{
 			if(s == null) s = new StringBuilder(1024);
 			s.Append('{');
@@ -181,9 +181,9 @@ namespace Jane.Bean
 			return s.Append('}');
 		}
 
-		public StringBuilder toLua()
+		public StringBuilder ToLua()
 		{
-			return toLua(null);
+			return ToLua(null);
 		}
 #endif
 	}
