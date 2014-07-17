@@ -44,8 +44,8 @@ public final class DBManager
 			public Thread newThread(Runnable r)
 			{
 				Thread t = new Thread(r, "CommitThread");
-				t.setDaemon(false);
-				t.setPriority(Thread.NORM_PRIORITY);
+				t.setDaemon(true);
+				t.setPriority(Thread.NORM_PRIORITY + 1);
 				return t;
 			}
 		});
@@ -57,7 +57,7 @@ public final class DBManager
 			public Thread newThread(Runnable r)
 			{
 				Thread t = new Thread(r, "ProcThread-" + _num.incrementAndGet());
-				t.setDaemon(false);
+				t.setDaemon(true);
 				t.setPriority(Thread.NORM_PRIORITY);
 				return t;
 			}
