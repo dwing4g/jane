@@ -462,7 +462,7 @@ public class Octets implements Cloneable, Comparable<Octets>
 		byte[] data = o._buffer;
 		for(int i = 0; i < n; ++i)
 		{
-			int v = buf[i] - data[i];
+			int v = ((buf[i] & 0xff) - (data[i] & 0xff));
 			if(v != 0) return v;
 		}
 		return _count - o._count;
