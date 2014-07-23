@@ -5,6 +5,7 @@
 /tmp/
 /port/jane.sdf
 /port/jane.suo
+/port/jane.*.suo
 /port/csharp/bin/
 /port/csharp/obj/
 /port/lua/bin/

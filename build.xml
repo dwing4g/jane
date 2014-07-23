@@ -34,7 +34,6 @@
 			<src path="${src}/"/>
 			<src path="${lib}/hashmap/"/>
 			<src path="${lib}/mapdb/"/>
-			<src path="${lib}/mvstore/"/>
 		</javac>
 	</target>
 
@@ -57,7 +56,6 @@
 			<fileset dir="${src}/"/>
 			<fileset dir="${lib}/hashmap/"/>
 			<fileset dir="${lib}/mapdb/"/>
-			<fileset dir="${lib}/mvstore/"/>
 		</jar>
 	</target>
 </project>

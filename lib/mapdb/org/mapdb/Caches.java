@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.logging.Level;
 
 /**
  * Contains various instance cache implementations
@@ -41,14 +42,23 @@ public final class Caches {
         protected final boolean locksEnabled;
         protected LongMap<Object> cache;
 
+        protected final Fun.RecordCondition condition;
+
         protected final ReentrantLock[] locks;
 
 
+        public LRU(Engine engine, int cacheSize, boolean disableLocks, Fun.RecordCondition condition) {
+            this(engine, new LongConcurrentLRUMap<Object>(cacheSize, (int) (cacheSize*0.8)),disableLocks, condition);
+        }
         public LRU(Engine engine, int cacheSize, boolean disableLocks) {
-            this(engine, new LongConcurrentLRUMap<Object>(cacheSize, (int) (cacheSize*0.8)),disableLocks);
+            this(engine,cacheSize,disableLocks,Fun.RECORD_ALWAYS_TRUE);
         }
 
         public LRU(Engine engine, LongMap<Object> cache, boolean disableLocks){
+            this(engine,cache,disableLocks, Fun.RECORD_ALWAYS_TRUE);
+        }
+
+        public LRU(Engine engine, LongMap<Object> cache, boolean disableLocks, Fun.RecordCondition condition){
             super(engine);
             this.locksEnabled = !disableLocks;
             if(disableLocks) {
@@ -61,11 +71,16 @@ public final class Caches {
             }
 
             this.cache = cache;
+            this.condition = condition!=null? condition : Fun.RECORD_ALWAYS_TRUE;
         }
 
         @Override
         public <A> long put(A value, Serializer<A> serializer) {
             long recid =  super.put(value, serializer);
+
+            if(!condition.run(recid, value, serializer))
+                return recid;
+
             final LongMap<Object> cache2 = checkClosed(cache);
             final Lock lock;
             if(locksEnabled) {
@@ -101,7 +116,7 @@ public final class Caches {
             }
             try{
                 ret = super.get(recid, serializer);
-                if(ret!=null)
+                if(ret!=null && condition.run(recid, ret, serializer))
                     cache2.put(recid, ret);
                 return (A) ret;
             }finally {
@@ -113,6 +128,12 @@ public final class Caches {
 
         @Override
         public <A> void update(long recid, A value, Serializer<A> serializer) {
+            if(!condition.run(recid, value, serializer)){
+                super.update(recid,value,serializer);
+                return;
+            }
+
+
             final LongMap<Object> cache2 = checkClosed(cache);
 
             final Lock lock;
@@ -155,6 +176,10 @@ public final class Caches {
 
         @Override
         public <A> boolean compareAndSwap(long recid, A expectedOldValue, A newValue, Serializer<A> serializer) {
+            if(!condition.run(recid, newValue, serializer)){
+                return super.compareAndSwap(recid,expectedOldValue,newValue,serializer);
+            }
+
             Engine engine = getWrappedEngine();
             LongMap cache2 = checkClosed(cache);
 
@@ -231,6 +256,7 @@ public final class Caches {
          */
         protected final long hashSalt = new Random().nextLong();
 
+        protected final Fun.RecordCondition condition;
 
         private static class HashItem {
             final long key;
@@ -242,9 +268,11 @@ public final class Caches {
             }
         }
 
-
-
         public HashTable(Engine engine, int cacheMaxSize, boolean disableLocks) {
+            this(engine,cacheMaxSize, disableLocks, Fun.RECORD_ALWAYS_TRUE);
+        }
+
+        public HashTable(Engine engine, int cacheMaxSize, boolean disableLocks, Fun.RecordCondition condition) {
             super(engine);
             this.locksEnabled = !disableLocks;
             if(disableLocks) {
@@ -260,12 +288,17 @@ public final class Caches {
             this.items = new HashItem[cacheMaxSize];
             this.cacheMaxSize = 1 << (32 - Integer.numberOfLeadingZeros(cacheMaxSize - 1)); //next pow of two
             this.cacheMaxSizeMask = cacheMaxSize-1;
+
+            this.condition = condition!=null? condition : Fun.RECORD_ALWAYS_TRUE;
         }
 
         @Override
         public <A> long put(A value, Serializer<A> serializer) {
             final long recid = getWrappedEngine().put(value, serializer);
             HashItem[] items2 = checkClosed(items);
+
+            if(!condition.run(recid, value, serializer))
+                return recid;
 
             final Lock lock;
             if(locksEnabled) {
@@ -307,7 +340,7 @@ public final class Caches {
             try{
                 //not in cache, fetch and add
                 final A value = engine.get(recid, serializer);
-                if(value!=null)
+                if(value!=null && condition.run(recid, value, serializer))
                     items2[pos] = new HashItem(recid, value);
                 return value;
             }finally{
@@ -323,6 +356,12 @@ public final class Caches {
 
         @Override
         public <A> void update(long recid, A value, Serializer<A> serializer) {
+            if(!condition.run(recid, value, serializer)){
+                super.update(recid,value,serializer);
+                return;
+            }
+
+
             final int pos = position(recid);
             HashItem[] items2 = checkClosed(items);
             HashItem item = new HashItem(recid,value);
@@ -347,6 +386,11 @@ public final class Caches {
 
         @Override
         public <A> boolean compareAndSwap(long recid, A expectedOldValue, A newValue, Serializer<A> serializer) {
+            if(!condition.run(recid, newValue, serializer)){
+                return super.compareAndSwap(recid,expectedOldValue,newValue,serializer);
+            }
+
+
             final int pos = position(recid);
             HashItem[] items2 = checkClosed(items);
             Engine engine = getWrappedEngine();
@@ -444,6 +488,7 @@ public final class Caches {
 
         protected final ReentrantLock[] locks;
         protected final boolean locksEnabled;
+        protected final Fun.RecordCondition condition;
 
 
         protected interface CacheItem{
@@ -498,6 +543,10 @@ public final class Caches {
         final protected boolean useWeakRef;
 
         public WeakSoftRef(Engine engine, boolean useWeakRef, boolean disableLocks){
+            this(engine,useWeakRef, disableLocks,Fun.RECORD_ALWAYS_TRUE);
+        }
+
+        public WeakSoftRef(Engine engine, boolean useWeakRef, boolean disableLocks, Fun.RecordCondition condition){
             super(engine);
             this.locksEnabled = !disableLocks;
             if(disableLocks) {
@@ -510,6 +559,7 @@ public final class Caches {
             }
 
             this.useWeakRef = useWeakRef;
+            this.condition = condition!=null? condition : Fun.RECORD_ALWAYS_TRUE;
 
             queueThread.setDaemon(true);
             queueThread.start();
@@ -535,6 +585,10 @@ public final class Caches {
         @Override
         public <A> long put(A value, Serializer<A> serializer) {
             long recid = getWrappedEngine().put(value, serializer);
+
+            if(!condition.run(recid, value, serializer))
+                return recid;
+
             ReferenceQueue<A> q = (ReferenceQueue<A>) checkClosed(queue);
             LongConcurrentHashMap<CacheItem> items2 = checkClosed(items);
             CacheItem item = useWeakRef?
@@ -586,7 +640,7 @@ public final class Caches {
 
             try{
                 Object value = engine.get(recid, serializer);
-                if(value!=null){
+                if(value!=null && condition.run(recid, value, serializer)){
                     ReferenceQueue<A> q = (ReferenceQueue<A>) checkClosed(queue);
                     item = useWeakRef?
                             new CacheWeakItem(value, q, recid) :
@@ -607,6 +661,11 @@ public final class Caches {
 
         @Override
         public <A> void update(long recid, A value, Serializer<A> serializer) {
+            if(!condition.run(recid, value, serializer)){
+                super.update(recid,value,serializer);
+                return;
+            }
+
             Engine engine = getWrappedEngine();
             ReferenceQueue<A> q = (ReferenceQueue<A>) checkClosed(queue);
             LongConcurrentHashMap<CacheItem> items2 = checkClosed(items);
@@ -661,6 +720,10 @@ public final class Caches {
 
         @Override
         public <A> boolean compareAndSwap(long recid, A expectedOldValue, A newValue, Serializer<A> serializer) {
+            if(!condition.run(recid, newValue, serializer)){
+                return super.compareAndSwap(recid,expectedOldValue,newValue,serializer);
+            }
+
             Engine engine = getWrappedEngine();
             LongMap<CacheItem> items2 = checkClosed(items);
             ReferenceQueue<A> q = (ReferenceQueue<A>) checkClosed(queue);
@@ -748,7 +811,7 @@ public final class Caches {
      */
     public static class HardRef extends LRU {
 
-        final static int CHECK_EVERY_N = 10000;
+        final static int CHECK_EVERY_N = 0xFFFF;
 
         int counter = 0;
 
@@ -756,15 +819,20 @@ public final class Caches {
             super(engine, new LongConcurrentHashMap<Object>(initialCapacity),disableLocks);
         }
 
+        public HardRef(Engine engine, int initialCapacity, boolean disableLocks, Fun.RecordCondition condition) {
+            super(engine, new LongConcurrentHashMap<Object>(initialCapacity),disableLocks, condition);
+        }
+
+
         @Override
         public <A> A get(long recid, Serializer<A> serializer) {
-            checkFreeMem();
+            if(((counter++)& CHECK_EVERY_N)==0 ) {
+                checkFreeMem();
+            }
             return super.get(recid, serializer);
         }
 
         private void checkFreeMem() {
-            if((counter++)%CHECK_EVERY_N==0 ){
-
                 Runtime r = Runtime.getRuntime();
                 long max = r.maxMemory();
                 if(max == Long.MAX_VALUE)
@@ -776,31 +844,39 @@ public final class Caches {
                 //Increasing heap size to max would increase to max
                 free = free + (max-total);
 
-                //TODO logging
-//                if(CC.LOG_TRACE)
-//                    Utils.LOG.fine("DBCache: freemem = " +free + " = "+(free/max)+"%");
+                if(CC.LOG_EWRAP && LOG.isLoggable(Level.FINE))
+                    LOG.fine("HardRefCache: freemem = " +free + " = "+(free/max)+"%");
 
                 if(free<1e7 || free*4 <max){
                     checkClosed(cache).clear();
+                    if(CC.LOG_EWRAP && LOG.isLoggable(Level.FINE))
+                        LOG.fine("Clear HardRef cache");
                 }
-            }
         }
 
         @Override
         public <A> void update(long recid, A value, Serializer<A> serializer) {
-            checkFreeMem();
+            if(((counter++)& CHECK_EVERY_N)==0 ) {
+                checkFreeMem();
+            }
+
             super.update(recid, value, serializer);
         }
 
         @Override
         public <A> void delete(long recid, Serializer<A> serializer){
-            checkFreeMem();
+            if(((counter++)& CHECK_EVERY_N)==0 ) {
+                checkFreeMem();
+            }
+
             super.delete(recid,serializer);
         }
 
         @Override
         public <A> boolean compareAndSwap(long recid, A expectedOldValue, A newValue, Serializer<A> serializer) {
-            checkFreeMem();
+            if(((counter++)& CHECK_EVERY_N)==0 ) {
+                checkFreeMem();
+            }
             return super.compareAndSwap(recid, expectedOldValue, newValue, serializer);
         }
     }

@@ -2,6 +2,7 @@ package jane.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import org.h2.mvstore.DataUtils;
 import org.h2.mvstore.MVMap;
@@ -164,8 +165,21 @@ public final class StorageMVStore implements Storage
 
 	private static final class MVStoreBeanType implements DataType
 	{
+		private static Field  _writeBuffer_buff;
 		private final String  _tableName;
 		private final Bean<?> _stub;
+
+		static
+		{
+			try
+			{
+				_writeBuffer_buff = WriteBuffer.class.getDeclaredField("buff");
+				_writeBuffer_buff.setAccessible(true);
+			}
+			catch(Exception e)
+			{
+			}
+		}
 
 		public MVStoreBeanType(String tableName, Bean<?> stub)
 		{
@@ -199,7 +213,16 @@ public final class StorageMVStore implements Storage
 				if(os.array() == array)
 					bb.position(os.size());
 				else
-					buf.setBuffer(ByteBuffer.wrap(os.array(), os.size(), os.capacity() - os.size()));
+				{
+					try
+					{
+						_writeBuffer_buff.set(buf, ByteBuffer.wrap(os.array(), os.size(), os.capacity() - os.size()));
+					}
+					catch(Exception e)
+					{
+						throw new RuntimeException(e);
+					}
+				}
 			}
 			else
 			{
@@ -228,7 +251,16 @@ public final class StorageMVStore implements Storage
 				if(os.array() == array)
 					bb.position(os.size());
 				else
-					buf.setBuffer(ByteBuffer.wrap(os.array(), os.size(), os.capacity() - os.size()));
+				{
+					try
+					{
+						_writeBuffer_buff.set(buf, ByteBuffer.wrap(os.array(), os.size(), os.capacity() - os.size()));
+					}
+					catch(Exception e)
+					{
+						throw new RuntimeException(e);
+					}
+				}
 			}
 			else
 			{
