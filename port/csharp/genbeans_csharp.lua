@@ -70,7 +70,14 @@ namespace ]=] .. namespace .. [=[.Bean
 		{
 #(##(var.new)#)#		}
 
-		public static IBean Create()
+		public static #(bean.name) Create()
+		{
+			#(bean.name) b = new #(bean.name)();
+			b.Init();
+			return b;
+		}
+
+		public static IBean CreateIBean()
 		{
 			IBean b = new #(bean.name)();
 			b.Init();
@@ -85,6 +92,7 @@ namespace ]=] .. namespace .. [=[.Bean
 
 		public OctetsStream Unmarshal(OctetsStream s)
 		{
+			Init();
 			for(;;) { int i = s.unmarshalUInt1(), t = i & 3; switch(i >> 2)
 			{
 				case 0: return s;
@@ -188,7 +196,7 @@ namespace ]=] .. namespace .. [=[.Bean
 		public static IDictionary<int, NetManager.BeanDelegate> GetAllBeans()
 		{
 			IDictionary<int, NetManager.BeanDelegate> r = new Dictionary<int, NetManager.BeanDelegate>(#(bean.count) * 4);
-#(#			r.Add(#(bean.type), #(bean.name).Create);
+#(#			r.Add(#(bean.type), #(bean.name).CreateIBean);
 #)#			return r;
 		}
 #[#
@@ -389,7 +397,7 @@ typedef.vector = merge(typedef.octets,
 	init = function(var) return "this.#(var.name) = new List<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).AddRange(#(var.name))" end,
 	reset = "#(var.name).Clear()",
 	assign = "this.#(var.name).Clear(); if(b.#(var.name) != null) this.#(var.name).AddRange(b.#(var.name))",
-	marshal = function(var) return string.format([[if(this.#(var.name).Count > 0)
+	marshal = function(var) return string.format([[if(this.#(var.name) != null && this.#(var.name).Count > 0)
 			{
 				s.marshal2(0x%04x).marshalUInt(this.#(var.name).Count);
 				foreach(%s e in Util.Enum(this.#(var.name)))
@@ -464,7 +472,7 @@ typedef.hashmap = merge(typedef.hashset,
 	type_i = function(var) return "IDictionary<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	new = function(var) return "\t\t\t#(var.name) = new Dictionary<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap));\n" end,
 	init = function(var) return "this.#(var.name) = new Dictionary<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap)); if(#(var.name) != null) Util.AddAll(this.#(var.name), #(var.name))" end,
-	marshal = function(var) return string.format([[if(this.#(var.name).Count > 0)
+	marshal = function(var) return string.format([[if(this.#(var.name) != null && this.#(var.name).Count > 0)
 			{
 				s.marshal2(0x%04x).marshalUInt(this.#(var.name).Count);
 				foreach(KeyValuePair<%s, %s> p in Util.Enum(this.#(var.name)))
@@ -504,8 +512,8 @@ typedef.bean = merge(typedef.octets,
 	type_i = function(var) return var.type end,
 	type_o = function(var) return var.type end,
 	subtypeid = 2,
-	new = function(var) return "\t\t\t#(var.name) = new " .. var.type .. "();\n" end,
-	init = function(var) return "this.#(var.name) = new " .. var.type .. "()" end,
+	new = function(var) return "\t\t\t#(var.name) = " .. var.type .. ".Create();\n" end,
+	init = function(var) return "this.#(var.name) = " .. var.type .. ".Create()" end,
 	reset = "#(var.name).Reset()",
 	assign = "this.#(var.name).Assign(ref b.#(var.name))",
 	marshal = function(var) return string.format([[{
@@ -514,7 +522,7 @@ typedef.bean = merge(typedef.octets,
 				if(s.size() - n < 3) s.resize(n);
 			}]], var.id * 4 + 2) end,
 	unmarshal = "case #(var.id): s.unmarshalBean(ref this.#(var.name), t);",
-	unmarshal_kv = function(var, kv, t) if kv then return "(" .. typename(var, var[kv]) .. ")s.unmarshalBeanKV(new " .. typename(var, var[kv]) .. "(), " .. t .. ")" end end,
+	unmarshal_kv = function(var, kv, t) if kv then return "(" .. typename(var, var[kv]) .. ")s.unmarshalBeanKV(" .. typename(var, var[kv]) .. ".Create(), " .. t .. ")" end end,
 	compareto = "this.#(var.name).CompareTo(b.#(var.name))",
 	tojson = "this.#(var.name).ToJson(s.Append(\"\\\"#(var.name)\\\":\")).Append(',')",
 	tolua = "this.#(var.name).ToLua(s.Append(\"#(var.name)=\")).Append(',')",

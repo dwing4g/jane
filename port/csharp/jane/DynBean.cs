@@ -27,18 +27,20 @@ namespace Jane
 
 		public object GetField(int id)
 		{
-			return _fields[id];
+            return _fields != null ? _fields[id] : null;
 		}
 
 		public void SetField(int id, object o)
 		{
 			if(id <= 0 || id > 62) throw new ArgumentException("field id must be in [1,62]: " + id);
-			_fields.Add(id, o);
+            if(_fields == null) _fields = new SortedDictionary<int, object>();
+            _fields.Add(id, o);
 		}
 
 		public SortedDictionary<int, object>.Enumerator FieldSet()
 		{
-			return _fields.GetEnumerator();
+            if(_fields == null) _fields = new SortedDictionary<int, object>();
+            return _fields.GetEnumerator();
 		}
 
 		public int Type()
@@ -71,19 +73,24 @@ namespace Jane
 		public void Reset()
 		{
 			_type = 0;
-			_fields.Clear();
+            if(_fields != null) _fields.Clear();
 		}
 
 		public OctetsStream Marshal(OctetsStream os)
 		{
-			foreach(KeyValuePair<int, object> p in Util.Enum(_fields))
-				os.marshalVar(p.Key, p.Value);
+            if(_fields != null)
+            {
+                foreach(KeyValuePair<int, object> p in Util.Enum(_fields))
+                    os.marshalVar(p.Key, p.Value);
+            }
 			return os.marshal1((byte)0);
 		}
 
 		public OctetsStream Unmarshal(OctetsStream os)
 		{
-			for(_fields.Clear();;)
+            if(_fields == null) _fields = new SortedDictionary<int, object>();
+            else _fields.Clear();
+			for(;;)
 			{
 				int b = os.unmarshalUInt1();
 				if(b == 0) return os;
@@ -94,21 +101,24 @@ namespace Jane
 		public object Clone()
 		{
 			DynBean b = new DynBean(_type);
-			foreach(KeyValuePair<int, object> p in Util.Enum(_fields))
-				b._fields.Add(p.Key, p.Value);
+            if(_fields != null)
+            {
+                foreach(KeyValuePair<int, object> p in Util.Enum(_fields))
+                    b._fields.Add(p.Key, p.Value);
+            }
 			return b;
 		}
 
 		public override int GetHashCode()
 		{
-			return _type + _fields.GetHashCode();
+            return _type + (_fields != null ? _fields.GetHashCode() : 0);
 		}
 
 		public override bool Equals(object o)
 		{
 			if(!(o is DynBean)) return false;
 			DynBean rb = (DynBean)o;
-			return _type == rb._type && _fields.Equals(rb._fields);
+			return _type == rb._type && (_fields == rb._fields || _fields != null && _fields.Equals(rb._fields));
 		}
 
 		public int CompareTo(IBean b)
@@ -123,34 +133,40 @@ namespace Jane
 
 		public override string ToString()
 		{
-			StringBuilder s = new StringBuilder(_fields.Count * 16 + 16);
+			StringBuilder s = new StringBuilder((_fields != null ? _fields.Count * 16 : 0) + 16);
 			s.Append("{t:").Append(_type);
-			foreach(KeyValuePair<int, object> p in Util.Enum(_fields))
-				s.Append(',').Append(p.Key).Append(':').Append(p.Value);
+            if(_fields != null)
+            {
+                foreach(KeyValuePair<int, object> p in Util.Enum(_fields))
+                    s.Append(',').Append(p.Key).Append(':').Append(p.Value);
+            }
 			return s.Append('}').ToString();
 		}
 #if TO_JSON_LUA
 		public StringBuilder ToJson(StringBuilder s)
 		{
-			if(s == null) s = new StringBuilder(_fields.Count * 16 + 16);
+            if(s == null) s = new StringBuilder((_fields != null ? _fields.Count * 16 : 0) + 16);
 			s.Append("{\"t\":").Append(_type);
-			foreach(KeyValuePair<int, object> p in _fields)
-			{
-				s.Append(',').Append('"').Append(p.Key).Append('"').Append(':');
-				object o = p.Value;
-				if(o is bool)
-					s.Append((bool)o ? "true" : "false");
-				else if(o is char)
-					s.Append((int)(char)o);
-				else if(o is Octets)
-					((Octets)o).dumpJStr(s);
-				else if(o is IDictionary)
-					Util.AppendJson(s, (IDictionary)o);
-				else if(o is ICollection)
-					Util.AppendJson(s, (ICollection)o);
-				else
-					Util.ToJStr(s, o.ToString());
-			}
+            if(_fields != null)
+            {
+			    foreach(KeyValuePair<int, object> p in _fields)
+			    {
+				    s.Append(',').Append('"').Append(p.Key).Append('"').Append(':');
+				    object o = p.Value;
+				    if(o is bool)
+					    s.Append((bool)o ? "true" : "false");
+				    else if(o is char)
+					    s.Append((int)(char)o);
+				    else if(o is Octets)
+					    ((Octets)o).dumpJStr(s);
+				    else if(o is IDictionary)
+					    Util.AppendJson(s, (IDictionary)o);
+				    else if(o is ICollection)
+					    Util.AppendJson(s, (ICollection)o);
+				    else
+					    Util.ToJStr(s, o.ToString());
+			    }
+                }
 			return s.Append('}');
 		}
 
@@ -161,25 +177,28 @@ namespace Jane
 
 		public StringBuilder ToLua(StringBuilder s)
 		{
-			if(s == null) s = new StringBuilder(_fields.Count * 16 + 16);
+            if(s == null) s = new StringBuilder((_fields != null ? _fields.Count * 16 : 0) + 16);
 			s.Append("{t=").Append(_type);
-			foreach(KeyValuePair<int, object> p in _fields)
-			{
-				s.Append(',').Append('[').Append(p.Key).Append(']').Append('=');
-				object o = p.Value;
-				if(o is bool)
-					s.Append((bool)o ? "true" : "false");
-				else if(o is char)
-					s.Append((int)(char)o);
-				else if(o is Octets)
-					((Octets)o).dumpJStr(s);
-				else if(o is IDictionary)
-					Util.AppendLua(s, (IDictionary)o);
-				else if(o is ICollection)
-					Util.AppendLua(s, (ICollection)o);
-				else
-					Util.ToJStr(s, o.ToString());
-			}
+            if(_fields != null)
+            {
+			    foreach(KeyValuePair<int, object> p in _fields)
+			    {
+				    s.Append(',').Append('[').Append(p.Key).Append(']').Append('=');
+				    object o = p.Value;
+				    if(o is bool)
+					    s.Append((bool)o ? "true" : "false");
+				    else if(o is char)
+					    s.Append((int)(char)o);
+				    else if(o is Octets)
+					    ((Octets)o).dumpJStr(s);
+				    else if(o is IDictionary)
+					    Util.AppendLua(s, (IDictionary)o);
+				    else if(o is ICollection)
+					    Util.AppendLua(s, (ICollection)o);
+				    else
+					    Util.ToJStr(s, o.ToString());
+			    }
+                }
 			return s.Append('}');
 		}
 

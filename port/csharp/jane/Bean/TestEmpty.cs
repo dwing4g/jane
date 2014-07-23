@@ -41,7 +41,14 @@ namespace Jane.Bean
 		{
 		}
 
-		public static IBean Create()
+		public static TestEmpty Create()
+		{
+			TestEmpty b = new TestEmpty();
+			b.Init();
+			return b;
+		}
+
+		public static IBean CreateIBean()
 		{
 			IBean b = new TestEmpty();
 			b.Init();
@@ -55,6 +62,7 @@ namespace Jane.Bean
 
 		public OctetsStream Unmarshal(OctetsStream s)
 		{
+			Init();
 			for(;;) { int i = s.unmarshalUInt1(), t = i & 3; switch(i >> 2)
 			{
 				case 0: return s;

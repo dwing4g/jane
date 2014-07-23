@@ -10,9 +10,9 @@ namespace Jane.Bean
 		public static IDictionary<int, NetManager.BeanDelegate> GetAllBeans()
 		{
 			IDictionary<int, NetManager.BeanDelegate> r = new Dictionary<int, NetManager.BeanDelegate>(3 * 4);
-			r.Add(1, TestBean.Create);
-			r.Add(2, TestType.Create);
-			r.Add(3, TestEmpty.Create);
+			r.Add(1, TestBean.CreateIBean);
+			r.Add(2, TestType.CreateIBean);
+			r.Add(3, TestEmpty.CreateIBean);
 			return r;
 		}
 

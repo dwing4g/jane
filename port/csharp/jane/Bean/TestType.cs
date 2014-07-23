@@ -53,7 +53,7 @@ namespace Jane.Bean
 			this.v16 = new Dictionary<long, string>(0); if(v16 != null) Util.AddAll(this.v16, v16);
 			this.v17 = new SortedDictionary<TestBean, bool>(); if(v17 != null) Util.AddAll(this.v17, v17);
 			this.v18 = new Dictionary<Octets, TestBean>(); if(v18 != null) Util.AddAll(this.v18, v18);
-			this.v19 = new TestBean();
+			this.v19 = TestBean.Create();
 		}
 
 		public void Reset()
@@ -265,10 +265,17 @@ namespace Jane.Bean
 			v16 = new Dictionary<long, string>(0);
 			v17 = new SortedDictionary<TestBean, bool>();
 			v18 = new Dictionary<Octets, TestBean>();
-			v19 = new TestBean();
+			v19 = TestBean.Create();
 		}
 
-		public static IBean Create()
+		public static TestType Create()
+		{
+			TestType b = new TestType();
+			b.Init();
+			return b;
+		}
+
+		public static IBean CreateIBean()
 		{
 			IBean b = new TestType();
 			b.Init();
@@ -286,55 +293,55 @@ namespace Jane.Bean
 			if(this.v7 != 0) s.marshal2(0x1f09).marshal(this.v7);
 			if(!this.v8.empty()) s.marshal1((byte)0x21).marshal(this.v8);
 			if(this.v9.Length > 0) s.marshal1((byte)0x25).marshal(this.v9);
-			if(this.v10.Count > 0)
+			if(this.v10 != null && this.v10.Count > 0)
 			{
 				s.marshal2(0x2b00).marshalUInt(this.v10.Count);
 				foreach(bool e in Util.Enum(this.v10))
 					s.marshal(e);
 			}
-			if(this.v11.Count > 0)
+			if(this.v11 != null && this.v11.Count > 0)
 			{
 				s.marshal2(0x2f00).marshalUInt(this.v11.Count);
 				foreach(sbyte e in Util.Enum(this.v11))
 					s.marshal(e);
 			}
-			if(this.v12.Count > 0)
+			if(this.v12 != null && this.v12.Count > 0)
 			{
 				s.marshal2(0x3300).marshalUInt(this.v12.Count);
 				foreach(int e in Util.Enum(this.v12))
 					s.marshal(e);
 			}
-			if(this.v13.Count > 0)
+			if(this.v13 != null && this.v13.Count > 0)
 			{
 				s.marshal2(0x3700).marshalUInt(this.v13.Count);
 				foreach(long e in Util.Enum(this.v13))
 					s.marshal(e);
 			}
-			if(this.v14.Count > 0)
+			if(this.v14 != null && this.v14.Count > 0)
 			{
 				s.marshal2(0x3b04).marshalUInt(this.v14.Count);
 				foreach(float e in Util.Enum(this.v14))
 					s.marshal(e);
 			}
-			if(this.v15.Count > 0)
+			if(this.v15 != null && this.v15.Count > 0)
 			{
 				s.marshal2(0x3f05).marshalUInt(this.v15.Count);
 				foreach(double e in Util.Enum(this.v15))
 					s.marshal(e);
 			}
-			if(this.v16.Count > 0)
+			if(this.v16 != null && this.v16.Count > 0)
 			{
 				s.marshal2(0x4341).marshalUInt(this.v16.Count);
 				foreach(KeyValuePair<long, string> p in Util.Enum(this.v16))
 					s.marshal(p.Key).marshal(p.Value);
 			}
-			if(this.v17.Count > 0)
+			if(this.v17 != null && this.v17.Count > 0)
 			{
 				s.marshal2(0x4750).marshalUInt(this.v17.Count);
 				foreach(KeyValuePair<TestBean, bool> p in Util.Enum(this.v17))
 					s.marshal(p.Key).marshal(p.Value);
 			}
-			if(this.v18.Count > 0)
+			if(this.v18 != null && this.v18.Count > 0)
 			{
 				s.marshal2(0x4b4a).marshalUInt(this.v18.Count);
 				foreach(KeyValuePair<Octets, TestBean> p in Util.Enum(this.v18))
@@ -350,6 +357,7 @@ namespace Jane.Bean
 
 		public OctetsStream Unmarshal(OctetsStream s)
 		{
+			Init();
 			for(;;) { int i = s.unmarshalUInt1(), t = i & 3; switch(i >> 2)
 			{
 				case 0: return s;
@@ -442,7 +450,7 @@ namespace Jane.Bean
 					if((t >> 6) != 1) { s.unmarshalSkipVarSub(t); break; }
 					int k = (t >> 3) & 7; t &= 7;
 					for(int n = s.unmarshalUInt(); n > 0; --n)
-						this.v17.Add((TestBean)s.unmarshalBeanKV(new TestBean(), k), (s.unmarshalIntKV(t) != 0));
+						this.v17.Add((TestBean)s.unmarshalBeanKV(TestBean.Create(), k), (s.unmarshalIntKV(t) != 0));
 				} break;
 				case 18:
 				{
@@ -452,7 +460,7 @@ namespace Jane.Bean
 					if((t >> 6) != 1) { s.unmarshalSkipVarSub(t); break; }
 					int k = (t >> 3) & 7; t &= 7;
 					for(int n = s.unmarshalUInt(); n > 0; --n)
-						this.v18.Add(s.unmarshalOctetsKV(k), (TestBean)s.unmarshalBeanKV(new TestBean(), t));
+						this.v18.Add(s.unmarshalOctetsKV(k), (TestBean)s.unmarshalBeanKV(TestBean.Create(), t));
 				} break;
 				case 19: s.unmarshalBean(ref this.v19, t); break;
 				default: s.unmarshalSkipVar(t); break;
