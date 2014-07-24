@@ -193,6 +193,7 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 
 	public static final class Safe extends SContext.Safe<#(bean.name)>
 	{
+#(##(var.safecache)#)#
 		private Safe(#(bean.name) bean, SContext.Safe<?> parent)
 		{
 			super(bean, parent);
@@ -409,7 +410,8 @@ typedef.byte =
 	subtypeid = 0,
 	final = "",
 	field = "\tprivate static Field FIELD_#(var.name);\n",
-	fieldget = "\t\t\tFIELD_#(var.name) = c.getDeclaredField(\"#(var.name)\"); FIELD_#(var.name).setAccessible(true);\n";
+	fieldget = "\t\t\tFIELD_#(var.name) = c.getDeclaredField(\"#(var.name)\"); FIELD_#(var.name).setAccessible(true);\n",
+	safecache = "",
 	new = "",
 	init = "this.#(var.name) = #(var.name)",
 	reset = "#(var.name) = 0",
@@ -686,6 +688,7 @@ typedef.hashset = merge(typedef.list,
 	field = function(var) return [[
 	private static SSetListener<]] .. subtypename(var, var.k) .. [[> LISTENER_#(var.name);
 ]] end,
+	safecache = "\t\tprivate #(var.stype) CACHE_#(var.name);\n",
 	new = function(var) return "\t\t#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
 	init = function(var) return "this.#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
 	getsafe = function(var) return [[
@@ -697,7 +700,8 @@ typedef.hashset = merge(typedef.list,
 
 		public #(var.stype) get#(var.name_u)()
 		{
-			return new #(var.stype)(this, _bean.#(var.name), LISTENER_#(var.name));
+			if(CACHE_#(var.name) == null) CACHE_#(var.name) = new #(var.stype)(this, _bean.#(var.name), LISTENER_#(var.name));
+			return CACHE_#(var.name);
 		}
 
 		public #(var.type) unsafe#(var.name_u)()
@@ -730,6 +734,7 @@ typedef.hashmap = merge(typedef.list,
 	field = function(var) return [[
 	private static SMapListener<]] .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. [[> LISTENER_#(var.name);
 ]] end,
+	safecache = "\t\tprivate #(var.stype) CACHE_#(var.name);\n",
 	new = function(var) return "\t\t#(var.name) = new HashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap));\n" end,
 	init = function(var) return "this.#(var.name) = new HashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).putAll(#(var.name))" end,
 	getsafe = function(var) return [[
@@ -741,7 +746,8 @@ typedef.hashmap = merge(typedef.list,
 
 		public #(var.stype) get#(var.name_u)()
 		{
-			return new #(var.stype)(this, _bean.#(var.name), LISTENER_#(var.name));
+			if(CACHE_#(var.name) == null) CACHE_#(var.name) = new #(var.stype)(this, _bean.#(var.name), LISTENER_#(var.name));
+			return CACHE_#(var.name);
 		}
 
 		public #(var.type) unsafe#(var.name_u)()
@@ -831,7 +837,7 @@ typedef.ref = merge(typedef.bean,
 {
 	final = "",
 	field = "\tprivate static Field FIELD_#(var.name);\n",
-	fieldget = "\t\t\tFIELD_#(var.name) = c.getDeclaredField(\"#(var.name)\"); FIELD_#(var.name).setAccessible(true);\n";
+	fieldget = "\t\t\tFIELD_#(var.name) = c.getDeclaredField(\"#(var.name)\"); FIELD_#(var.name).setAccessible(true);\n",
 	new = "\t\t#(var.name) = null;\n",
 	init = "this.#(var.name) = #(var.name)",
 	reset = "#(var.name) = null",
@@ -1060,7 +1066,11 @@ function bean(bean)
 	end)
 
 	bean.param_warning = (#vartypes > 1 and "" or "/** @param b unused */\n\t")
-	code = code_conv(code, "bean", bean):gsub(#vartypes > 1 and "#[<>]#" or "#<#(.-)#>#", ""):gsub("int h = (%d+ %* 0x9e3779b1;)\n\t\treturn h;", "return %1"):gsub("\r", "")
+	code = code_conv(code, "bean", bean):
+		gsub(#vartypes > 1 and "#[<>]#" or "#<#(.-)#>#", ""):
+		gsub("int h = (%d+ %* 0x9e3779b1;)\n\t\treturn h;", "return %1"):
+		gsub("\n\t{\n\n\t\t", "\n\t{\n\t\t"):
+		gsub("\r", "")
 	if bean.const then code = bean_const(code) end
 	local c, n = code:gsub([[
 	static

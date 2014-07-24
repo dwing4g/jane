@@ -763,6 +763,13 @@ public final class TestType extends Bean<TestType>
 
 	public static final class Safe extends SContext.Safe<TestType>
 	{
+		private SSet<Long, Long> CACHE_v13;
+		private SSSet<Float, Float> CACHE_v14;
+		private SSet<Double, Double> CACHE_v15;
+		private SMap<Long, String, String> CACHE_v16;
+		private SSMap<TestBean, Boolean, Boolean> CACHE_v17;
+		private SMap<Octets, TestBean, TestBean.Safe> CACHE_v18;
+
 		private Safe(TestType bean, SContext.Safe<?> parent)
 		{
 			super(bean, parent);
@@ -925,7 +932,8 @@ public final class TestType extends Bean<TestType>
 
 		public SSet<Long, Long> getV13()
 		{
-			return new SSet<Long, Long>(this, _bean.v13, LISTENER_v13);
+			if(CACHE_v13 == null) CACHE_v13 = new SSet<Long, Long>(this, _bean.v13, LISTENER_v13);
+			return CACHE_v13;
 		}
 
 		public HashSet<Long> unsafeV13()
@@ -940,7 +948,8 @@ public final class TestType extends Bean<TestType>
 
 		public SSSet<Float, Float> getV14()
 		{
-			return new SSSet<Float, Float>(this, _bean.v14, LISTENER_v14);
+			if(CACHE_v14 == null) CACHE_v14 = new SSSet<Float, Float>(this, _bean.v14, LISTENER_v14);
+			return CACHE_v14;
 		}
 
 		public TreeSet<Float> unsafeV14()
@@ -955,7 +964,8 @@ public final class TestType extends Bean<TestType>
 
 		public SSet<Double, Double> getV15()
 		{
-			return new SSet<Double, Double>(this, _bean.v15, LISTENER_v15);
+			if(CACHE_v15 == null) CACHE_v15 = new SSet<Double, Double>(this, _bean.v15, LISTENER_v15);
+			return CACHE_v15;
 		}
 
 		public LinkedHashSet<Double> unsafeV15()
@@ -970,7 +980,8 @@ public final class TestType extends Bean<TestType>
 
 		public SMap<Long, String, String> getV16()
 		{
-			return new SMap<Long, String, String>(this, _bean.v16, LISTENER_v16);
+			if(CACHE_v16 == null) CACHE_v16 = new SMap<Long, String, String>(this, _bean.v16, LISTENER_v16);
+			return CACHE_v16;
 		}
 
 		public HashMap<Long, String> unsafeV16()
@@ -985,7 +996,8 @@ public final class TestType extends Bean<TestType>
 
 		public SSMap<TestBean, Boolean, Boolean> getV17()
 		{
-			return new SSMap<TestBean, Boolean, Boolean>(this, _bean.v17, LISTENER_v17);
+			if(CACHE_v17 == null) CACHE_v17 = new SSMap<TestBean, Boolean, Boolean>(this, _bean.v17, LISTENER_v17);
+			return CACHE_v17;
 		}
 
 		public TreeMap<TestBean, Boolean> unsafeV17()
@@ -1000,7 +1012,8 @@ public final class TestType extends Bean<TestType>
 
 		public SMap<Octets, TestBean, TestBean.Safe> getV18()
 		{
-			return new SMap<Octets, TestBean, TestBean.Safe>(this, _bean.v18, LISTENER_v18);
+			if(CACHE_v18 == null) CACHE_v18 = new SMap<Octets, TestBean, TestBean.Safe>(this, _bean.v18, LISTENER_v18);
+			return CACHE_v18;
 		}
 
 		public LinkedHashMap<Octets, TestBean> unsafeV18()
