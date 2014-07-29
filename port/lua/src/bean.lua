@@ -9,10 +9,6 @@ return require "util".initBeans {
 		[ 1] = { name = "value1", type = num },
 		[ 2] = { name = "value2", type = num },
 	}},
-	TestKeyBean = { __type = 0, __vars = {
-		[ 1] = { name = "key1", type = num },
-		[ 2] = { name = "key2", type = str },
-	}},
 	TestType = { __type = 2, __vars = {
 		[ 1] = { name = "v1", type = bool },
 		[ 2] = { name = "v2", type = num },
@@ -51,18 +47,6 @@ return require "util".initBeans {
 
 ---
 -- @field [parent=#TestBean] #number value2
-
----作为key或配置的bean
--- @field [parent=#bean] #TestKeyBean TestKeyBean
-
----@callof #TestKeyBean
--- @return #TestKeyBean
-
----KEY-1
--- @field [parent=#TestKeyBean] #number key1
-
----KEY-2
--- @field [parent=#TestKeyBean] #string key2
 
 ---测试生成所有支持的类型
 -- @field [parent=#bean] #TestType TestType

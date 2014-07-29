@@ -101,7 +101,7 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
     @SuppressWarnings("rawtypes")
     public static final Comparator COMPARABLE_COMPARATOR = new Comparator<Comparable>() {
         @Override
-        public int compare(Comparable o1, Comparable o2) {
+        final public int compare(final Comparable o1, final Comparable o2) {
             return o1.compareTo(o2);
         }
     };
@@ -288,7 +288,7 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
 
     protected final Serializer<BNode> nodeSerializer;
 
-    protected static class NodeSerializer<A,B> implements  Serializer<BNode>{
+    protected static final class NodeSerializer<A,B> implements  Serializer<BNode>{
 
         protected final boolean hasValues;
         protected final boolean valsOutsideNodes;
@@ -459,10 +459,9 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
             final long next = DataInput2.unpackLong(in);
             final Object[] keys = keySerializer.deserialize(in, start,end,size);
             assert(keys.length==size);
-            assert(keys.length==size);
             Object[] vals = new Object[size-2];
             if(hasValues){
-                for(int i=0;i<size-2;i++){
+                for(int i=0;i<vals.length;i++){
                     if(valsOutsideNodes){
                         long recid = DataInput2.unpackLong(in);
                         vals[i] = recid==0? null: new ValRef(recid);
@@ -643,7 +642,7 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
         return (V) ret;
     }
 
-    protected long nextDir(DirNode d, Object key) {
+    protected final long nextDir(DirNode d, Object key) {
         int pos = findChildren(key, d.keys) - 1;
         if(pos<0) pos = 0;
         return d.child[pos];

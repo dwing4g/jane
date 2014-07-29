@@ -1,13 +1,13 @@
 -- UTF-8 without BOM
 local error = error
 local print = print
+local pairs = pairs
 local ipairs = ipairs
 local format = string.format
 local concat = table.concat
 local open = io.open
 local type = type
-
-local beanfile = "../../allbeans.lua"
+local arg = arg
 
 local template_bean = [=[
 -- UTF-8 without BOM
@@ -54,12 +54,28 @@ local name_used = {}
 local type_bean = {}
 local name_bean = {}
 local bean_order = {}
+local handlers = {} -- selected handler name => true
+local hdl_names = {} -- handler name => {bean names}
+function handler(hdls)
+	if not arg[1] then error("ERROR: arg[1] must be handler name(s)") end
+	for hdlname in arg[1]:gmatch("([%w_%.]+)") do
+		local hdl = hdls[hdlname]
+		if not hdl then error("ERROR: not found or unknown handler name: " .. hdlname) end
+		for hdlname in pairs(hdl) do
+			handlers[hdlname] = true
+		end
+	end
+end
 function bean(bean)
 	bean.name = trim(bean.name)
 	if bean.name:find("[^%w_]") or typemap[bean.name] then error("ERROR: invalid bean.name: " .. bean.name) end
 	if name_used[bean.name] then error("ERROR: duplicated bean.name: " .. bean.name) end
 	if type_bean[bean.type] then error("ERROR: duplicated bean.type: " .. bean.type) end
 	if type(bean.type) ~= "number" then bean.type = 0 end
+	for name in (bean.handlers or ""):gmatch("([%w_%.]+)") do
+		hdl_names[name] = hdl_names[name] or {}
+		hdl_names[name][#hdl_names[name] + 1] = bean.name
+	end
 	type_bean[bean.type] = bean
 	name_bean[bean.name] = bean
 
@@ -92,7 +108,8 @@ function bean(bean)
 	bean_order[#bean_order + 1] = bean.name
 end
 
-dofile(beanfile)
+if not arg[2] then error("ERROR: arg[2] must be input allbeans.lua") end
+dofile(arg[2])
 
 local function checksave(fn, d, change_count, pattern, typename)
 	local f = open(fn, "rb")
@@ -114,26 +131,45 @@ local function checksave(fn, d, change_count, pattern, typename)
 	end
 end
 
-local outpath = (arg[1] or "."):gsub("\\", "/")
+local outpath = (arg[3] or "."):gsub("\\", "/")
 if outpath:sub(-1, -1) ~= "/" then outpath = outpath .. "/" end
+
+local marked = {}
+local function markbean(beanname)
+	if marked[beanname] then return end
+	marked[beanname] = true
+	if not name_bean[beanname] then error("ERROR: unknown bean: " .. beanname) end
+	for _, var in ipairs(name_bean[beanname]) do
+		if name_bean[var.type] then markbean(var.type) end
+		if name_bean[var.k] then markbean(var.k) end
+		if name_bean[var.v] then markbean(var.v) end
+	end
+end
+for hdlname in pairs(handlers) do
+	for _, beanname in ipairs(hdl_names[hdlname]) do
+		markbean(beanname)
+	end
+end
 
 checksave(outpath .. "src/bean.lua", (template_bean:gsub("#%[#(.-)#%]#", function(body)
 	local subcode = {}
 	for _, name in ipairs(bean_order) do
 		local bean = name_bean[name]
-		subcode[#subcode + 1] = code_conv(body:gsub("#{#(.-)#}#", function(body)
-			local subcode2 = {}
-			for _, var in ipairs(bean) do
-				if var.id == -1 then subcode2[#subcode2 + 1] = code_conv(body, "var", var) end
-			end
-			return concat(subcode2)
-		end):gsub("#%(#(.-)#%)#", function(body)
-			local subcode2 = {}
-			for _, var in ipairs(bean) do
-				if var.id > 0 then subcode2[#subcode2 + 1] = code_conv(code_conv(body, "var", var), "var", var) end
-			end
-			return concat(subcode2)
-		end), "bean", bean)
+		if bean and marked[name] then
+			subcode[#subcode + 1] = code_conv(body:gsub("#{#(.-)#}#", function(body)
+				local subcode2 = {}
+				for _, var in ipairs(bean) do
+					if var.id == -1 then subcode2[#subcode2 + 1] = code_conv(body, "var", var) end
+				end
+				return concat(subcode2)
+			end):gsub("#%(#(.-)#%)#", function(body)
+				local subcode2 = {}
+				for _, var in ipairs(bean) do
+					if var.id > 0 then subcode2[#subcode2 + 1] = code_conv(code_conv(body, "var", var), "var", var) end
+				end
+				return concat(subcode2)
+			end), "bean", bean)
+		end
 	end
 	return concat(subcode)
 end)):gsub("\r", ""), 0)
