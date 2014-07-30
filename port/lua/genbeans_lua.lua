@@ -151,7 +151,7 @@ for hdlname in pairs(handlers) do
 	end
 end
 
-checksave(outpath .. "src/bean.lua", (template_bean:gsub("#%[#(.-)#%]#", function(body)
+checksave(outpath .. "bean.lua", (template_bean:gsub("#%[#(.-)#%]#", function(body)
 	local subcode = {}
 	for _, name in ipairs(bean_order) do
 		local bean = name_bean[name]
