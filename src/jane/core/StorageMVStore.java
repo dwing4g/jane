@@ -54,10 +54,53 @@ public final class StorageMVStore implements Storage
 			++_modCount;
 		}
 
+		@SuppressWarnings("unchecked")
 		@Override
 		public boolean walk(WalkHandler<K> handler, K from, K to, boolean inclusive, boolean reverse)
 		{
-			return StorageMVStore.walk(_map, handler, from, to, inclusive, reverse);
+			boolean inc_from = inclusive, inc_to = inclusive;
+			if(from != null && to != null)
+			{
+				if((((Comparable<K>)from).compareTo(to) < 0) == reverse)
+				{
+					K temp = from;
+					from = to;
+					to = temp;
+				}
+			}
+			else
+			{
+				if(from == null)
+				{
+					from = _map.firstKey();
+					inc_from = true;
+				}
+				if(to == null)
+				{
+					to = _map.lastKey();
+					inc_to = true;
+				}
+			}
+			if(inc_from && _map.containsKey(from) && !Helper.onWalkSafe(handler, from)) return false;
+			if(reverse)
+			{
+				for(K k = from;;)
+				{
+					k = _map.lowerKey(k);
+					if(k == null || ((Comparable<K>)k).compareTo(to) <= 0) break;
+					if(!Helper.onWalkSafe(handler, k)) return false;
+				}
+			}
+			else
+			{
+				for(K k = from;;)
+				{
+					k = _map.higherKey(k);
+					if(k == null || ((Comparable<K>)k).compareTo(to) >= 0) break;
+					if(!Helper.onWalkSafe(handler, k)) return false;
+				}
+			}
+			return !inc_to || from.equals(to) || !_map.containsKey(to) || Helper.onWalkSafe(handler, to);
 		}
 	}
 
@@ -93,9 +136,34 @@ public final class StorageMVStore implements Storage
 		}
 
 		@Override
-		public boolean walk(WalkHandler<Long> handler, long from, long to, boolean inclusive, boolean reverse)
+		public boolean walk(WalkHandlerLong handler, long from, long to, boolean inclusive, boolean reverse)
 		{
-			return StorageMVStore.walk(_map, handler, from, to, inclusive, reverse);
+			if((from < to) == reverse)
+			{
+				long temp = from;
+				from = to;
+				to = temp;
+			}
+			if(inclusive && _map.containsKey(from) && !Helper.onWalkSafe(handler, from)) return false;
+			if(reverse)
+			{
+				for(Long k = from;;)
+				{
+					k = _map.lowerKey(k);
+					if(k == null || k <= to) break;
+					if(!Helper.onWalkSafe(handler, k)) return false;
+				}
+			}
+			else
+			{
+				for(Long k = from;;)
+				{
+					k = _map.higherKey(k);
+					if(k == null || k >= to) break;
+					if(!Helper.onWalkSafe(handler, k)) return false;
+				}
+			}
+			return !inclusive || from == to || !_map.containsKey(to) || Helper.onWalkSafe(handler, to);
 		}
 
 		@Override
@@ -392,43 +460,6 @@ public final class StorageMVStore implements Storage
 				objs[i] = o;
 			}
 		}
-	}
-
-	@SuppressWarnings("unchecked")
-	private static <K, V> boolean walk(MVMap<K, V> mvm, WalkHandler<K> handler, K from, K to, boolean inclusive, boolean reverse)
-	{
-		if((((Comparable<K>)from).compareTo(to) < 0) == reverse)
-		{
-			K temp = from;
-			from = to;
-			to = temp;
-		}
-		K kFrom, kTo;
-		if(reverse)
-		{
-			kFrom = mvm.lowerKey(from);
-			kTo = mvm.higherKey(to);
-		}
-		else
-		{
-			kFrom = mvm.higherKey(from);
-			kTo = mvm.lowerKey(to);
-		}
-		if(inclusive && mvm.containsKey(from) && !handler.onWalk(from)) return false;
-		if(kFrom != null && kTo != null)
-		{
-			if(reverse)
-			{
-				for(long i = mvm.getKeyIndex(kFrom), j = mvm.getKeyIndex(kTo); i >= j; --i)
-					if(!handler.onWalk(mvm.getKey(i))) return false;
-			}
-			else
-			{
-				for(long i = mvm.getKeyIndex(kFrom), j = mvm.getKeyIndex(kTo); i <= j; ++i)
-					if(!handler.onWalk(mvm.getKey(i))) return false;
-			}
-		}
-		return !inclusive || from.equals(to) || !mvm.containsKey(to) || handler.onWalk(to);
 	}
 
 	public static StorageMVStore instance()

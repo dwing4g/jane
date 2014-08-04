@@ -8,6 +8,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
 import jane.core.SContext.Record;
 import jane.core.SContext.Safe;
+import jane.core.Storage.Helper;
+import jane.core.Storage.WalkHandler;
 
 /**
  * 通用key类型的数据库表类
@@ -219,7 +221,8 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	 * 根据记录的key获取value
 	 * <p>
 	 * 不会自动添加到读cache中<br>
-	 * 必须在事务中已加锁的状态下调用此方法
+	 * 必须在事务中已加锁的状态下调用此方法<br>
+	 * <b>注意</b>: 不能在同一事务里使用NoCache方式(或混合Cache方式)get同一个记录多次并且对这些记录有多次修改,否则会触发modify函数中的异常
 	 */
 	public V getNoCacheUnsafe(K k)
 	{
@@ -236,7 +239,8 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	}
 
 	/**
-	 * 同getNoCacheUnsafe,但增加的安全封装,可回滚修改
+	 * 同getNoCacheUnsafe,但增加的安全封装,可回滚修改<br>
+	 * <b>注意</b>: 不能在同一事务里使用NoCache方式(或混合Cache方式)get同一个记录多次并且对这些记录有多次修改,否则会触发modify函数中的异常
 	 */
 	public S getNoCache(K k)
 	{
@@ -404,10 +408,10 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	 * 注意此遍历方法是无序的
 	 * @param handler 遍历过程中返回false可中断遍历
 	 */
-	public boolean walkCache(Storage.WalkHandler<K> handler)
+	public boolean walkCache(WalkHandler<K> handler)
 	{
 		for(K k : _cache.keySet())
-			if(!handler.onWalk(k)) return false;
+			if(!Helper.onWalkSafe(handler, k)) return false;
 		return true;
 	}
 
@@ -421,7 +425,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	 * @param inclusive 遍历是否包含from和to的key
 	 * @param reverse 是否按反序遍历
 	 */
-	public boolean walk(Storage.WalkHandler<K> handler, K from, K to, boolean inclusive, boolean reverse)
+	public boolean walk(WalkHandler<K> handler, K from, K to, boolean inclusive, boolean reverse)
 	{
 		if(_stoTable != null)
 		    return _stoTable.walk(handler, from, to, inclusive, reverse);

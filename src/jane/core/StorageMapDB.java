@@ -85,7 +85,14 @@ public final class StorageMapDB implements Storage
 		@Override
 		public boolean walk(WalkHandler<K> handler, K from, K to, boolean inclusive, boolean reverse)
 		{
-			return StorageMapDB.walk(_map, handler, from, to, inclusive, reverse);
+			ConcurrentNavigableMap<K, Octets> map;
+			if(from == null)
+				map = (to == null ? _map : _map.headMap(to, inclusive));
+			else
+				map = (to == null ? _map.tailMap(from, inclusive) : _map.subMap(from, inclusive, to, inclusive));
+			for(K k : (reverse ? map.descendingKeySet() : map.keySet()))
+				if(!Helper.onWalkSafe(handler, k)) return false;
+			return true;
 		}
 	}
 
@@ -141,9 +148,12 @@ public final class StorageMapDB implements Storage
 		}
 
 		@Override
-		public boolean walk(WalkHandler<Long> handler, long from, long to, boolean inclusive, boolean reverse)
+		public boolean walk(WalkHandlerLong handler, long from, long to, boolean inclusive, boolean reverse)
 		{
-			return StorageMapDB.walk(_map, handler, from, to, inclusive, reverse);
+			ConcurrentNavigableMap<Long, Octets> map = _map.subMap(from, inclusive, to, inclusive);
+			for(long k : (reverse ? map.descendingKeySet() : map.keySet()))
+				if(!Helper.onWalkSafe(handler, k)) return false;
+			return true;
 		}
 
 		@Override
@@ -425,18 +435,6 @@ public final class StorageMapDB implements Storage
 	public void registerKeyBean(Map<String, Bean<?>> stubKMap)
 	{
 		_tableStubK.putAll(stubKMap);
-	}
-
-	private static <K, V> boolean walk(BTreeMap<K, V> btm, WalkHandler<K> handler, K from, K to, boolean inclusive, boolean reverse)
-	{
-		ConcurrentNavigableMap<K, V> map;
-		if(from == null)
-			map = (to == null ? btm : btm.headMap(to, inclusive));
-		else
-			map = (to == null ? btm.tailMap(from, inclusive) : btm.subMap(from, inclusive, to, inclusive));
-		for(K k : (reverse ? map.descendingKeySet() : map.keySet()))
-			if(!handler.onWalk(k)) return false;
-		return true;
 	}
 
 	private StorageMapDB()

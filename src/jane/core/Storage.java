@@ -13,6 +13,8 @@ public interface Storage extends Closeable
 {
 	/**
 	 * 遍历数据库表的用户接口
+	 * <p>
+	 * 适用于key是非id类型的表
 	 */
 	interface WalkHandler<K>
 	{
@@ -23,7 +25,53 @@ public interface Storage extends Closeable
 		 * @param k 记录的key
 		 * @return 返回true表示继续遍历, 返回false表示中断遍历
 		 */
-		boolean onWalk(K k);
+		boolean onWalk(K k) throws Exception;
+	}
+
+	/**
+	 * 遍历数据库表的用户接口
+	 * <p>
+	 * 适用于key是id类型的表
+	 */
+	interface WalkHandlerLong
+	{
+		/**
+		 * 每次遍历一个记录都会调用此接口
+		 * <p>
+		 * 实现时要先对key加锁再调用getNoCache(推荐)或get获取记录value
+		 * @param k 记录的key
+		 * @return 返回true表示继续遍历, 返回false表示中断遍历
+		 */
+		boolean onWalk(long k) throws Exception;
+	}
+
+	public static class Helper
+	{
+		public static <K> boolean onWalkSafe(WalkHandler<K> handler, K k)
+		{
+			try
+			{
+				return handler.onWalk(k);
+			}
+			catch(Exception e)
+			{
+				Log.log.error("walk exception:", e);
+				return false;
+			}
+		}
+
+		public static boolean onWalkSafe(WalkHandlerLong handler, long k)
+		{
+			try
+			{
+				return handler.onWalk(k);
+			}
+			catch(Exception e)
+			{
+				Log.log.error("walk exception:", e);
+				return false;
+			}
+		}
 	}
 
 	interface Table<K, V extends Bean<V>>
@@ -107,7 +155,7 @@ public interface Storage extends Closeable
 		 * @param reverse 是否按反序遍历
 		 * @return 返回true表示已完全遍历, 返回false表示被用户中断
 		 */
-		boolean walk(WalkHandler<Long> handler, long from, long to, boolean inclusive, boolean reverse);
+		boolean walk(WalkHandlerLong handler, long from, long to, boolean inclusive, boolean reverse);
 	}
 
 	/**

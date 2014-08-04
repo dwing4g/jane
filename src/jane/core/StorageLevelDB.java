@@ -117,7 +117,7 @@ public final class StorageLevelDB implements Storage
 		}
 
 		@Override
-		public boolean walk(WalkHandler<Long> handler, long from, long to, boolean inclusive, boolean reverse)
+		public boolean walk(WalkHandlerLong handler, long from, long to, boolean inclusive, boolean reverse)
 		{
 			if(from > to)
 			{
@@ -141,7 +141,7 @@ public final class StorageLevelDB implements Storage
 						int comp = keyOs.compareTo(keyTo);
 						if(comp >= 0 && (comp > 0 || !inclusive)) break;
 						keyOs.setPosition(_tableIdLen);
-						if(!handler.onWalk(keyOs.unmarshalLong())) return false;
+						if(!Helper.onWalkSafe(handler, keyOs.unmarshalLong())) return false;
 					}
 				}
 				else
@@ -155,7 +155,7 @@ public final class StorageLevelDB implements Storage
 						int comp = keyOs.compareTo(keyFrom);
 						if(comp <= 0 && (comp < 0 || !inclusive)) break;
 						keyOs.setPosition(_tableIdLen);
-						if(!handler.onWalk(keyOs.unmarshalLong())) return false;
+						if(!Helper.onWalkSafe(handler, keyOs.unmarshalLong())) return false;
 					}
 				}
 			}
@@ -331,7 +331,7 @@ public final class StorageLevelDB implements Storage
 		@Override
 		protected boolean onWalk(WalkHandler<Octets> handler, OctetsStream k)
 		{
-			return handler.onWalk(new Octets(k.array(), k.position(), k.remain()));
+			return Helper.onWalkSafe(handler, new Octets(k.array(), k.position(), k.remain()));
 		}
 	}
 
@@ -383,7 +383,7 @@ public final class StorageLevelDB implements Storage
 		@Override
 		protected boolean onWalk(WalkHandler<String> handler, OctetsStream k)
 		{
-			return handler.onWalk(new String(k.array(), k.position(), k.remain(), Const.stringCharsetUTF8));
+			return Helper.onWalkSafe(handler, new String(k.array(), k.position(), k.remain(), Const.stringCharsetUTF8));
 		}
 	}
 
@@ -439,7 +439,7 @@ public final class StorageLevelDB implements Storage
 		{
 			Bean<?> key = ((Bean<?>)_stubK).alloc();
 			k.unmarshal(key);
-			return handler.onWalk((K)key);
+			return Helper.onWalkSafe(handler, (K)key);
 		}
 	}
 

@@ -10,6 +10,8 @@ import org.mapdb.LongMap;
 import org.mapdb.LongMap.LongMapIterator;
 import jane.core.SContext.RecordLong;
 import jane.core.SContext.Safe;
+import jane.core.Storage.Helper;
+import jane.core.Storage.WalkHandlerLong;
 
 /**
  * 使用ID类型作为key的数据库表类
@@ -255,7 +257,8 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	 * 根据记录的key获取value
 	 * <p>
 	 * 不会自动添加到读cache中<br>
-	 * 必须在事务中已加锁的状态下调用此方法
+	 * 必须在事务中已加锁的状态下调用此方法<br>
+	 * <b>注意</b>: 不能在同一事务里使用NoCache方式(或混合Cache方式)get同一个记录多次并且对这些记录有多次修改,否则会触发modify函数中的异常
 	 */
 	public V getNoCacheUnsafe(long k)
 	{
@@ -272,7 +275,8 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	}
 
 	/**
-	 * 同getNoCacheUnsafe,但增加的安全封装,可回滚修改
+	 * 同getNoCacheUnsafe,但增加的安全封装,可回滚修改<br>
+	 * <b>注意</b>: 不能在同一事务里使用NoCache方式(或混合Cache方式)get同一个记录多次并且对这些记录有多次修改,否则会触发modify函数中的异常
 	 */
 	public S getNoCache(long k)
 	{
@@ -501,10 +505,10 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	 * 注意此遍历方法是无序的
 	 * @param handler 遍历过程中返回false可中断遍历
 	 */
-	public boolean walkCache(Storage.WalkHandler<Long> handler)
+	public boolean walkCache(WalkHandlerLong handler)
 	{
 		for(LongMapIterator<V> it = _cache.longMapIterator(); it.moveToNext();)
-			if(!handler.onWalk(it.key())) return false;
+			if(!Helper.onWalkSafe(handler, it.key())) return false;
 		return true;
 	}
 
@@ -518,19 +522,19 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	 * @param inclusive 遍历是否包含from和to的key
 	 * @param reverse 是否按反序遍历
 	 */
-	public boolean walk(Storage.WalkHandler<Long> handler, long from, long to, boolean inclusive, boolean reverse)
+	public boolean walk(WalkHandlerLong handler, long from, long to, boolean inclusive, boolean reverse)
 	{
 		if(_stoTable != null)
 		    return _stoTable.walk(handler, from, to, inclusive, reverse);
 		return walkCache(handler);
 	}
 
-	public boolean walk(Storage.WalkHandler<Long> handler, boolean reverse)
+	public boolean walk(WalkHandlerLong handler, boolean reverse)
 	{
 		return walk(handler, 0, Long.MAX_VALUE, true, reverse);
 	}
 
-	public boolean walk(Storage.WalkHandler<Long> handler)
+	public boolean walk(WalkHandlerLong handler)
 	{
 		return walk(handler, 0, Long.MAX_VALUE, true, false);
 	}
