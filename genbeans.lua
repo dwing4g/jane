@@ -41,6 +41,7 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 #(##(var.fieldget)#)#		}
 		catch(Exception e)
 		{
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -127,7 +128,7 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 	@Override
 	public int hashCode()
 	{
-		int h = #(bean.type) * 0x9e3779b1;
+		int h = (int)serialVersionUID;
 #(#		h = h * 31 + 1 + #(var.hashcode);
 #)#		return h;
 	}
@@ -919,12 +920,18 @@ end
 local function code_conv(code, prefix, t)
 	return code:gsub("#%(" .. prefix .. "%.([%w_]+)%)", function(name) return t[name] end)
 end
-local function gen_uid(s)
+local uid_used = {}
+local function gen_uid(beanname, s)
 	local h = 0
 	for i = 1, #s do
 		h = h % 0x10000000000 * 4093 + 1 + s:byte(i)
 	end
-	return string.format("0xbeac%04x%08xL", math.floor(h / 0x100000000) % 0x10000, h % 0x100000000)
+	h = string.format("0xbeac%04x%08xL", math.floor(h / 0x100000000) % 0x10000, h % 0x100000000)
+	if uid_used[h] then
+		error("ERROR: hash collisions in gen_uid(" .. uid_used[h] .. ", " .. beanname .. "): " ..  h)
+	end
+	uid_used[h] = beanname
+	return h
 end
 
 local name_code = {} -- bean name => bean code
@@ -1048,7 +1055,7 @@ function bean(bean)
 	if not bean.initsize then bean.initsize = 0 end
 	if type(bean.initsize) == "number" and bean.initsize > 0x100000 then print("WARNING: bean.initsize = " .. bean.initsize .. " > 1MB (bean.name:" .. bean.name .. ")") end
 	bean.imports = get_imports(bean.import)
-	bean.uid = gen_uid(concat(vartypes))
+	bean.uid = gen_uid(bean.name, concat(vartypes))
 
 	local code = template_bean:gsub("#{#(.-)#}#", function(body)
 		local subcode = {}
@@ -1068,7 +1075,7 @@ function bean(bean)
 	bean.param_warning = (#vartypes > 1 and "" or "/** @param b unused */\n\t")
 	code = code_conv(code, "bean", bean):
 		gsub(#vartypes > 1 and "#[<>]#" or "#<#(.-)#>#", ""):
-		gsub("int h = (%d+ %* 0x9e3779b1;)\n\t\treturn h;", "return %1"):
+		gsub("int h = (%(int%)serialVersionUID;)\n\t\treturn h;", "return %1"):
 		gsub("\n\t{\n\n\t\t", "\n\t{\n\t\t"):
 		gsub("\r", "")
 	if bean.const then code = bean_const(code) end
@@ -1127,7 +1134,7 @@ local function savebean(beanname)
 end
 function rpc(bean)
 	bean_common(bean)
-	bean.uid = gen_uid(name_bean[bean.arg].uid .. name_bean[bean.res].uid)
+	bean.uid = gen_uid(bean.name, name_bean[bean.arg].uid .. name_bean[bean.res].uid)
 	name_code[bean.name] = code_conv(template_rpcbean, "bean", bean):gsub("\r", "")
 	name_code[lower(bean.name)] = name_code[bean.name]
 	savebean(bean.arg)

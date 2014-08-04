@@ -36,6 +36,7 @@ public final class TestBean extends Bean<TestBean>
 		}
 		catch(Exception e)
 		{
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -156,7 +157,7 @@ public final class TestBean extends Bean<TestBean>
 	@Override
 	public int hashCode()
 	{
-		int h = 1 * 0x9e3779b1;
+		int h = (int)serialVersionUID;
 		h = h * 31 + 1 + this.value1;
 		h = h * 31 + 1 + (int)this.value2;
 		return h;

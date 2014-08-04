@@ -95,6 +95,7 @@ public final class TestType extends Bean<TestType>
 		}
 		catch(Exception e)
 		{
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -583,7 +584,7 @@ public final class TestType extends Bean<TestType>
 	@Override
 	public int hashCode()
 	{
-		int h = 2 * 0x9e3779b1;
+		int h = (int)serialVersionUID;
 		h = h * 31 + 1 + (this.v1 ? 0xcafebabe : 0xdeadbeef);
 		h = h * 31 + 1 + this.v2;
 		h = h * 31 + 1 + this.v3;

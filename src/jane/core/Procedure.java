@@ -1,5 +1,6 @@
 package jane.core;
 
+import java.lang.management.ManagementFactory;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +64,8 @@ public abstract class Procedure implements Runnable
 				{
 					try
 					{
+						long[] tids = null;
+						boolean foundDeadlock = false;
 						long now = System.currentTimeMillis();
 						for(Entry<Thread, Context> e : _procThreads.entrySet())
 						{
@@ -77,17 +80,38 @@ public abstract class Procedure implements Runnable
 										long timeout = now - p._beginTime;
 										if(timeout > Const.procedureTimeout * 1000 && e.getValue().proc != null)
 										{
-											if(p._sid != null)
+											if(!foundDeadlock)
 											{
-												Log.log.warn("procedure({}) in {} interrupted for timeout({} ms): sid={}",
-												        p.getClass().getName(), t, timeout, p._sid);
+												foundDeadlock = true;
+												tids = ManagementFactory.getThreadMXBean().findDeadlockedThreads();
 											}
-											else
+											if(tids != null)
 											{
-												Log.log.warn("procedure({}) in {} interrupted for timeout({} ms)",
-												        p.getClass().getName(), t, timeout);
+												long tid = t.getId();
+												for(int i = tids.length - 1; i >= 0; --i)
+												{
+													if(tids[i] == tid)
+													{
+														StringBuilder sb = new StringBuilder(4096);
+														if(p._sid != null)
+														{
+															sb.append("procedure({}) in {} interrupted for timeout and deadlock({} ms): sid={}");
+															for(StackTraceElement ste : t.getStackTrace())
+																sb.append("\tat ").append(ste);
+															Log.log.error(sb.toString(), p.getClass().getName(), t, timeout, p._sid);
+														}
+														else
+														{
+															sb.append("procedure({}) in {} interrupted for timeout and deadlock({} ms)");
+															for(StackTraceElement ste : t.getStackTrace())
+																sb.append("\tat ").append(ste);
+															Log.log.error(sb.toString(), p.getClass().getName(), t, timeout);
+														}
+														t.interrupt();
+														break;
+													}
+												}
 											}
-											t.interrupt();
 										}
 									}
 								}
@@ -206,7 +230,16 @@ public abstract class Procedure implements Runnable
 		if(_ctx == null) throw new IllegalStateException("invalid lock/unlock out of procedure");
 		if(_ctx.lockCount == 0) return;
 		for(int i = _ctx.lockCount - 1; i >= 0; --i)
-			_ctx.locks[i].unlock();
+		{
+			try
+			{
+				_ctx.locks[i].unlock();
+			}
+			catch(Throwable e)
+			{
+				Log.log.fatal("UNLOCK FAILED!!!", e);
+			}
+		}
 		_ctx.lockCount = 0;
 	}
 

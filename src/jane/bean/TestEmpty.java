@@ -81,7 +81,7 @@ public final class TestEmpty extends Bean<TestEmpty>
 	@Override
 	public int hashCode()
 	{
-		return 3 * 0x9e3779b1;
+		return (int)serialVersionUID;
 	}
 
 	@Override

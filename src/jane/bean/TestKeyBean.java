@@ -98,7 +98,7 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 	@Override
 	public int hashCode()
 	{
-		int h = 0 * 0x9e3779b1;
+		int h = (int)serialVersionUID;
 		h = h * 31 + 1 + this.key1;
 		h = h * 31 + 1 + this.key2.hashCode();
 		return h;

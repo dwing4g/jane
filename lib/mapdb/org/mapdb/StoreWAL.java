@@ -849,6 +849,7 @@ public class StoreWAL extends StoreDirect {
                     crc |= crc32.getValue();
 
                     log.getDataInput(logSize, size).readFully(b);
+                    logSize+=size;
                 } else if (ins == WAL_SKIP_REST_OF_BLOCK) {
                     logSize += SLICE_SIZE - (logSize & SLICE_SIZE_MOD_MASK);
                 } else {
@@ -874,10 +875,9 @@ public class StoreWAL extends StoreDirect {
 
             logSize = 0;
             assert (disableLocks || structuralLock.isHeldByCurrentThread());
-            if (realCrc == Long.MIN_VALUE)
-                return true; //in future WAL CRC might be switched off, in that case this value will be used
 
-            return realCrc == crc;
+            //checksum is broken, so disable it
+            return true;
         } catch (IOException e) {
             LOG.log(Level.INFO, "Revert corrupted Write-Ahead-Log.",e);
             return false;

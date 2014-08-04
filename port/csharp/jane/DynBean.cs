@@ -27,20 +27,20 @@ namespace Jane
 
 		public object GetField(int id)
 		{
-            return _fields != null ? _fields[id] : null;
+			return _fields != null ? _fields[id] : null;
 		}
 
 		public void SetField(int id, object o)
 		{
 			if(id <= 0 || id > 62) throw new ArgumentException("field id must be in [1,62]: " + id);
-            if(_fields == null) _fields = new SortedDictionary<int, object>();
-            _fields.Add(id, o);
+			if(_fields == null) _fields = new SortedDictionary<int, object>();
+			_fields.Add(id, o);
 		}
 
 		public SortedDictionary<int, object>.Enumerator FieldSet()
 		{
-            if(_fields == null) _fields = new SortedDictionary<int, object>();
-            return _fields.GetEnumerator();
+			if(_fields == null) _fields = new SortedDictionary<int, object>();
+			return _fields.GetEnumerator();
 		}
 
 		public int Type()
@@ -73,23 +73,23 @@ namespace Jane
 		public void Reset()
 		{
 			_type = 0;
-            if(_fields != null) _fields.Clear();
+			if(_fields != null) _fields.Clear();
 		}
 
 		public OctetsStream Marshal(OctetsStream os)
 		{
-            if(_fields != null)
-            {
-                foreach(KeyValuePair<int, object> p in Util.Enum(_fields))
-                    os.marshalVar(p.Key, p.Value);
-            }
+			if(_fields != null)
+			{
+				foreach(KeyValuePair<int, object> p in Util.Enum(_fields))
+					os.marshalVar(p.Key, p.Value);
+			}
 			return os.marshal1((byte)0);
 		}
 
 		public OctetsStream Unmarshal(OctetsStream os)
 		{
-            if(_fields == null) _fields = new SortedDictionary<int, object>();
-            else _fields.Clear();
+			if(_fields == null) _fields = new SortedDictionary<int, object>();
+			else _fields.Clear();
 			for(;;)
 			{
 				int b = os.unmarshalUInt1();
@@ -101,17 +101,17 @@ namespace Jane
 		public object Clone()
 		{
 			DynBean b = new DynBean(_type);
-            if(_fields != null)
-            {
-                foreach(KeyValuePair<int, object> p in Util.Enum(_fields))
-                    b._fields.Add(p.Key, p.Value);
-            }
+			if(_fields != null)
+			{
+				foreach(KeyValuePair<int, object> p in Util.Enum(_fields))
+					b._fields.Add(p.Key, p.Value);
+			}
 			return b;
 		}
 
 		public override int GetHashCode()
 		{
-            return _type + (_fields != null ? _fields.GetHashCode() : 0);
+			return _type + (_fields != null ? _fields.GetHashCode() : 0);
 		}
 
 		public override bool Equals(object o)
@@ -135,38 +135,38 @@ namespace Jane
 		{
 			StringBuilder s = new StringBuilder((_fields != null ? _fields.Count * 16 : 0) + 16);
 			s.Append("{t:").Append(_type);
-            if(_fields != null)
-            {
-                foreach(KeyValuePair<int, object> p in Util.Enum(_fields))
-                    s.Append(',').Append(p.Key).Append(':').Append(p.Value);
-            }
+			if(_fields != null)
+			{
+				foreach(KeyValuePair<int, object> p in Util.Enum(_fields))
+					s.Append(',').Append(p.Key).Append(':').Append(p.Value);
+			}
 			return s.Append('}').ToString();
 		}
 #if TO_JSON_LUA
 		public StringBuilder ToJson(StringBuilder s)
 		{
-            if(s == null) s = new StringBuilder((_fields != null ? _fields.Count * 16 : 0) + 16);
+			if(s == null) s = new StringBuilder((_fields != null ? _fields.Count * 16 : 0) + 16);
 			s.Append("{\"t\":").Append(_type);
-            if(_fields != null)
-            {
-			    foreach(KeyValuePair<int, object> p in _fields)
-			    {
-				    s.Append(',').Append('"').Append(p.Key).Append('"').Append(':');
-				    object o = p.Value;
-				    if(o is bool)
-					    s.Append((bool)o ? "true" : "false");
-				    else if(o is char)
-					    s.Append((int)(char)o);
-				    else if(o is Octets)
-					    ((Octets)o).dumpJStr(s);
-				    else if(o is IDictionary)
-					    Util.AppendJson(s, (IDictionary)o);
-				    else if(o is ICollection)
-					    Util.AppendJson(s, (ICollection)o);
-				    else
-					    Util.ToJStr(s, o.ToString());
-			    }
-                }
+			if(_fields != null)
+			{
+				foreach(KeyValuePair<int, object> p in _fields)
+				{
+					s.Append(',').Append('"').Append(p.Key).Append('"').Append(':');
+					object o = p.Value;
+					if(o is bool)
+						s.Append((bool)o ? "true" : "false");
+					else if(o is char)
+						s.Append((int)(char)o);
+					else if(o is Octets)
+						((Octets)o).dumpJStr(s);
+					else if(o is IDictionary)
+						Util.AppendJson(s, (IDictionary)o);
+					else if(o is ICollection)
+						Util.AppendJson(s, (ICollection)o);
+					else
+						Util.ToJStr(s, o.ToString());
+				}
+				}
 			return s.Append('}');
 		}
 
@@ -177,28 +177,28 @@ namespace Jane
 
 		public StringBuilder ToLua(StringBuilder s)
 		{
-            if(s == null) s = new StringBuilder((_fields != null ? _fields.Count * 16 : 0) + 16);
+			if(s == null) s = new StringBuilder((_fields != null ? _fields.Count * 16 : 0) + 16);
 			s.Append("{t=").Append(_type);
-            if(_fields != null)
-            {
-			    foreach(KeyValuePair<int, object> p in _fields)
-			    {
-				    s.Append(',').Append('[').Append(p.Key).Append(']').Append('=');
-				    object o = p.Value;
-				    if(o is bool)
-					    s.Append((bool)o ? "true" : "false");
-				    else if(o is char)
-					    s.Append((int)(char)o);
-				    else if(o is Octets)
-					    ((Octets)o).dumpJStr(s);
-				    else if(o is IDictionary)
-					    Util.AppendLua(s, (IDictionary)o);
-				    else if(o is ICollection)
-					    Util.AppendLua(s, (ICollection)o);
-				    else
-					    Util.ToJStr(s, o.ToString());
-			    }
-                }
+			if(_fields != null)
+			{
+				foreach(KeyValuePair<int, object> p in _fields)
+				{
+					s.Append(',').Append('[').Append(p.Key).Append(']').Append('=');
+					object o = p.Value;
+					if(o is bool)
+						s.Append((bool)o ? "true" : "false");
+					else if(o is char)
+						s.Append((int)(char)o);
+					else if(o is Octets)
+						((Octets)o).dumpJStr(s);
+					else if(o is IDictionary)
+						Util.AppendLua(s, (IDictionary)o);
+					else if(o is ICollection)
+						Util.AppendLua(s, (ICollection)o);
+					else
+						Util.ToJStr(s, o.ToString());
+				}
+				}
 			return s.Append('}');
 		}
 
