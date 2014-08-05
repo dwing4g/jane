@@ -276,6 +276,7 @@ public final class SContext
 	private final List<RecordLong<?, ?>>       _recordLongs = new ArrayList<RecordLong<?, ?>>();
 	private final List<Runnable>               _onRollbacks = new ArrayList<Runnable>();
 	private final List<Runnable>               _onCommits   = new ArrayList<Runnable>();
+	private boolean                            _hasDirty;
 
 	static
 	{
@@ -338,6 +339,7 @@ public final class SContext
 
 	public boolean hasDirty()
 	{
+		if(_hasDirty) return true;
 		for(Record<?, ?, ?> r : _records)
 		{
 			if(r._value.isDirty())
@@ -359,6 +361,12 @@ public final class SContext
 	public void addOnRollback(Runnable r)
 	{
 		_onRollbacks.add(r);
+	}
+
+	void addOnRollbackDirty(Runnable r)
+	{
+		_onRollbacks.add(r);
+		_hasDirty = true;
 	}
 
 	void commit()
@@ -391,6 +399,7 @@ public final class SContext
 			}
 		}
 		_onCommits.clear();
+		_hasDirty = false;
 	}
 
 	void rollback()
@@ -411,5 +420,6 @@ public final class SContext
 			}
 		}
 		_onRollbacks.clear();
+		_hasDirty = false;
 	}
 }

@@ -568,8 +568,13 @@ typedef.octets = merge(typedef.string,
 
 		public #(var.type) get#(var.name_u)()
 		{
-			if(initSContext()) _sCtx.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.#(var.name), true));
-			return _bean.#(var.name);
+			return _bean.#(var.name).clone();
+		}
+
+		public void set#(var.name_u)(#(var.type) #(var.name))
+		{
+			if(initSContext()) _sCtx.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.#(var.name), false));
+			_bean.#(var.name) = (#(var.name) != null ? #(var.name) : new Octets(#(var.cap)));
 		}
 
 		public byte[] copyOf#(var.name_u)()
