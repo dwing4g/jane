@@ -214,7 +214,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	public S get(K k)
 	{
 		V v = getUnsafe(k);
-		return v != null ? SContext.current().addRecord(this, k, v) : null;
+		return v != null ? SContext.current().addRecord(this, k, v) : SContext.current().getRecord(this, k);
 	}
 
 	/**
@@ -245,7 +245,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	public S getNoCache(K k)
 	{
 		V v = getNoCacheUnsafe(k);
-		return v != null ? SContext.current().addRecord(this, k, v) : null;
+		return v != null ? SContext.current().addRecord(this, k, v) : SContext.current().getRecord(this, k);
 	}
 
 	/**
@@ -269,7 +269,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	public S getCache(K k)
 	{
 		V v = getCacheUnsafe(k);
-		return v != null ? SContext.current().addRecord(this, k, v) : null;
+		return v != null ? SContext.current().addRecord(this, k, v) : SContext.current().getRecord(this, k);
 	}
 
 	/**

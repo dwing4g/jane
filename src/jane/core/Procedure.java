@@ -40,6 +40,7 @@ public abstract class Procedure implements Runnable
 	private static final Map<Thread, Context>   _procThreads = Util.newProcThreadsMap();             // 当前运行的全部事务线程. 用于判断是否超时
 	private static ExceptionHandler             _defaultEh;                                          // 默认的全局异常处理
 	private volatile Context                    _ctx;                                                // 事务所属的线程上下文. 只在事务运行中有效
+	private SContext                            _sctx;                                               // 安全修改的上下文
 	private volatile Object                     _sid;                                                // 事务所属的SessionId
 	private volatile long                       _beginTime;                                          // 事务运行的起始时间. 用于判断是否超时
 
@@ -164,14 +165,14 @@ public abstract class Procedure implements Runnable
 		_sid = sid;
 	}
 
-	protected static void addOnCommit(Runnable r)
+	protected void addOnCommit(Runnable r)
 	{
-		SContext.current().addOnCommit(r);
+		_sctx.addOnCommit(r);
 	}
 
-	protected static void addOnRollback(Runnable r)
+	protected void addOnRollback(Runnable r)
 	{
-		SContext.current().addOnRollback(r);
+		_sctx.addOnRollback(r);
 	}
 
 	/**
@@ -228,6 +229,7 @@ public abstract class Procedure implements Runnable
 	protected final void unlock()
 	{
 		if(_ctx == null) throw new IllegalStateException("invalid lock/unlock out of procedure");
+		if(_sctx.hasDirty()) throw new IllegalStateException("invalid unlock after any dirty record");
 		if(_ctx.lockCount == 0) return;
 		for(int i = _ctx.lockCount - 1; i >= 0; --i)
 		{
@@ -616,6 +618,7 @@ public abstract class Procedure implements Runnable
 			_beginTime = System.currentTimeMillis();
 			_ctx = _tlProc.get();
 			_ctx.proc = this;
+			_sctx = SContext.current();
 			for(int n = Const.maxProceduerRedo;;)
 			{
 				if(Thread.interrupted()) throw new InterruptedException();
@@ -627,11 +630,11 @@ public abstract class Procedure implements Runnable
 				catch(Redo e)
 				{
 				}
-				SContext.current().rollback();
+				_sctx.rollback();
 				unlock();
 				if(--n <= 0) throw new Exception("procedure redo too many times=" + Const.maxProceduerRedo);
 			}
-			SContext.current().commit();
+			_sctx.commit();
 		}
 		catch(Throwable e)
 		{
@@ -649,7 +652,7 @@ public abstract class Procedure implements Runnable
 			}
 			finally
 			{
-				SContext.current().rollback();
+				_sctx.rollback();
 			}
 		}
 		finally
@@ -664,6 +667,7 @@ public abstract class Procedure implements Runnable
 				}
 				_ctx = null;
 			}
+			_sctx = null;
 			if(rl != null) rl.unlock();
 			_sid = null;
 		}

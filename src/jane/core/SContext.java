@@ -57,6 +57,11 @@ public final class SContext
 			_rec = rec;
 		}
 
+		public boolean isDirty()
+		{
+			return _dirty;
+		}
+
 		public boolean isDirtyAndClear()
 		{
 			boolean r = _dirty;
@@ -185,6 +190,8 @@ public final class SContext
 
 		Object getKey();
 
+		long getKeyLong();
+
 		Object getValue();
 	}
 
@@ -211,6 +218,12 @@ public final class SContext
 		public Object getKey()
 		{
 			return _key;
+		}
+
+		@Override
+		public long getKeyLong()
+		{
+			return _key instanceof Number ? ((Number)_key).longValue() : 0;
 		}
 
 		@Override
@@ -241,6 +254,12 @@ public final class SContext
 
 		@Override
 		public Object getKey()
+		{
+			return _key;
+		}
+
+		@Override
+		public long getKeyLong()
 		{
 			return _key;
 		}
@@ -295,6 +314,43 @@ public final class SContext
 		return s;
 	}
 
+	@SuppressWarnings("unchecked")
+	<K, V extends Bean<V>, S extends Safe<V>> S getRecord(Table<K, V, S> table, K key)
+	{
+		for(Record<?, ?, ?> r : _records)
+		{
+			if(r.getKey().equals(key) && r.getTable() == table)
+			    return (S)r.getValue();
+		}
+		return null;
+	}
+
+	@SuppressWarnings("unchecked")
+	<V extends Bean<V>, S extends Safe<V>> S getRecord(TableLong<V, S> table, long key)
+	{
+		for(RecordLong<?, ?> r : _recordLongs)
+		{
+			if(r.getKeyLong() == key && r.getTable() == table)
+			    return (S)r.getValue();
+		}
+		return null;
+	}
+
+	public boolean hasDirty()
+	{
+		for(Record<?, ?, ?> r : _records)
+		{
+			if(r._value.isDirty())
+			    return true;
+		}
+		for(RecordLong<?, ?> r : _recordLongs)
+		{
+			if(r._value.isDirty())
+			    return true;
+		}
+		return false;
+	}
+
 	public void addOnCommit(Runnable r)
 	{
 		_onCommits.add(r);
@@ -305,7 +361,7 @@ public final class SContext
 		_onRollbacks.add(r);
 	}
 
-	public void commit()
+	void commit()
 	{
 		_onRollbacks.clear();
 
@@ -337,7 +393,7 @@ public final class SContext
 		_onCommits.clear();
 	}
 
-	public void rollback()
+	void rollback()
 	{
 		_records.clear();
 		_recordLongs.clear();
