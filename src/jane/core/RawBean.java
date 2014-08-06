@@ -25,7 +25,12 @@ public final class RawBean extends Bean<RawBean>
 	public RawBean(Bean<?> bean)
 	{
 		_type = bean.type();
-		_data = bean.marshal(new OctetsStream(bean.initSize()));
+		OctetsStream os = new OctetsStream(bean.initSize() + 10);
+		os.resize(10);
+		bean.marshalProtocol(os);
+		int n = os.marshalUIntBack(10, os.size() - 10);
+		os.setPosition(10 - (n + os.marshalUIntBack(10 - n, _type)));
+		_data = os;
 	}
 
 	public int getType()

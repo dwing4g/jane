@@ -30,12 +30,13 @@ public final class BeanPool<B extends Bean<B>>
 		return _stub.create();
 	}
 
-	public synchronized void free(B b)
+	public void free(B b)
 	{
-		if(_freeList.size() < _maxFreeCount)
+		b.reset();
+		synchronized(this)
 		{
-			b.reset();
-			_freeList.add(b);
+			if(_freeList.size() < _maxFreeCount)
+			    _freeList.add(b);
 		}
 	}
 }

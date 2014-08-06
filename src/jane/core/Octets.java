@@ -111,6 +111,12 @@ public class Octets implements Cloneable, Comparable<Octets>
 		return _buffer.length;
 	}
 
+	@SuppressWarnings("static-method")
+    public int position()
+	{
+		return 0;
+	}
+
 	public int remain()
 	{
 		return _count;

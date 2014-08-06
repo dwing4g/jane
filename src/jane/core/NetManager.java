@@ -372,7 +372,7 @@ public class NetManager implements IoHandler
 	 * 向某个连接发送bean
 	 * <p>
 	 * 此操作是异步的
-	 * @param bean 如果是RawBean类型,考虑到性能问题,在发送完成前不能修改其中的data对象
+	 * @param bean 如果其type==0,则认为是RawBean类型,仅仅发送RawBean的数据部分. 考虑到性能问题,在发送完成前不能修改RawBean的数据部分
 	 * @return 如果连接已经失效则返回false, 否则返回true
 	 */
 	public boolean send(IoSession session, Bean<?> bean)

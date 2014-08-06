@@ -72,7 +72,8 @@ public class OctetsStream extends Octets
 		return _pos >= _count;
 	}
 
-	public int position()
+	@Override
+    public int position()
 	{
 		return _pos;
 	}

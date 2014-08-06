@@ -25,6 +25,10 @@ public final class DynBean extends Bean<DynBean>
 		_type = type;
 	}
 
+	/**
+	 * 使用BeanCodec接收到的RawBean来构造一个 DynBean<br>
+	 * 即RawBean的数据部分只是一个Bean的marshal数据,不含类型和长度
+	 */
 	public DynBean(RawBean b) throws MarshalException
 	{
 		_type = b.getType();

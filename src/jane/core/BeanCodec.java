@@ -64,12 +64,9 @@ public class BeanCodec extends IoFilterAdapter
 		int type = bean.type();
 		if(type == 0)
 		{
-			RawBean rawbean = (RawBean)bean;
-			Octets rawdata = rawbean.getData();
-			OctetsStream osHead = new OctetsStream(10).marshalUInt(rawbean.getType()).marshalUInt(rawdata.size());
-			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(osHead.array(), 0, osHead.size())));
-			int n = rawdata.size();
-			if(n > 0) next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(rawdata.array(), 0, n)));
+			Octets rawdata = ((RawBean)bean).getData();
+			int n = rawdata.remain();
+			if(n > 0) next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(rawdata.array(), rawdata.position(), n)));
 		}
 		else
 		{
