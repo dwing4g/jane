@@ -36,7 +36,7 @@ import org.mapdb.LongMap.LongMapIterator;
 public class NetManager implements IoHandler
 {
 	private static final LongMap<RpcBean<?, ?>>   _rpcs           = new LongConcurrentHashMap<RpcBean<?, ?>>();    // 当前管理器等待回复的RPC
-	private static final ScheduledExecutorService _rpcThread;                                                      // 处理RPC超时和重连的线程
+	private static final ScheduledExecutorService _rpcThread;                                                      // 处理重连及RPC和事务超时的线程
 	private final String                          _name           = getClass().getName();                          // 当前管理器的名字
 	private Class<? extends IoFilter>             _pcf            = BeanCodec.class;                               // 协议编码器的类
 	private IntMap<BeanHandler<?>>                _handlers       = new IntMap<BeanHandler<?>>(0);                 // bean的处理器
@@ -57,7 +57,7 @@ public class NetManager implements IoHandler
 				return t;
 			}
 		});
-		_rpcThread.scheduleWithFixedDelay(new Runnable()
+		scheduleWithFixedDelay(Const.rpcCheckInterval, new Runnable()
 		{
 			@Override
 			public void run()
@@ -97,7 +97,7 @@ public class NetManager implements IoHandler
 					Log.log.error("BeanManager: RPC timeout thread fatal exception:", e);
 				}
 			}
-		}, Const.rpcCheckInterval, Const.rpcCheckInterval, TimeUnit.SECONDS);
+		});
 	}
 
 	/**
@@ -356,6 +356,15 @@ public class NetManager implements IoHandler
 	public static ScheduledFuture<?> schedule(long delaySec, Runnable runnable)
 	{
 		return _rpcThread.schedule(runnable, delaySec, TimeUnit.SECONDS);
+	}
+
+	/**
+	 * 向网络工作线程调度一个定时任务
+	 * @param periodSec 定时周期的秒数
+	 */
+	static void scheduleWithFixedDelay(int periodSec, Runnable runnable)
+	{
+		_rpcThread.scheduleWithFixedDelay(runnable, periodSec, periodSec, TimeUnit.SECONDS);
 	}
 
 	/**

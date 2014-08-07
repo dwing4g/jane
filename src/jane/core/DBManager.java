@@ -27,7 +27,7 @@ public final class DBManager
 {
 	private static final DBManager                             _instance   = new DBManager();
 	private final SimpleDateFormat                             _sdf        = new SimpleDateFormat("yy-MM-dd-HH-mm-ss"); // 备份文件后缀名的时间格式
-	private final ScheduledExecutorService                     _commitThread;                                          // 处理数据提交和事务超时的线程
+	private final ScheduledExecutorService                     _commitThread;                                          // 处理数据提交的线程
 	private final ThreadPoolExecutor                           _procThreads;                                           // 事务线程池
 	private final ConcurrentMap<Object, ArrayDeque<Procedure>> _qmap       = Util.newConcurrentHashMap();              // 当前sid队列的数量
 	private final AtomicLong                                   _procCount  = new AtomicLong();                         // 绑定过sid的在队列中未运行的事务数量
@@ -242,15 +242,6 @@ public final class DBManager
 	public boolean isExit()
 	{
 		return _exit;
-	}
-
-	/**
-	 * 向提交线程调度一个延迟任务
-	 * @param periodSec 延迟运行的时间(秒)
-	 */
-	void scheduleWithFixedDelay(int periodSec, Runnable runnable)
-	{
-		_commitThread.scheduleWithFixedDelay(runnable, periodSec, periodSec, TimeUnit.SECONDS);
 	}
 
 	/**

@@ -58,7 +58,7 @@ public abstract class Procedure implements Runnable
 		};
 		if(!Const.debug)
 		{
-			DBManager.instance().scheduleWithFixedDelay(5, new Runnable()
+			NetManager.scheduleWithFixedDelay(5, new Runnable()
 			{
 				@Override
 				public void run()
