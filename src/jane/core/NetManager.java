@@ -35,13 +35,14 @@ import org.mapdb.LongMap.LongMapIterator;
  */
 public class NetManager implements IoHandler
 {
-	private static final LongMap<RpcBean<?, ?>>   _rpcs     = new LongConcurrentHashMap<RpcBean<?, ?>>(); // 当前管理器等待回复的RPC
-	private static final ScheduledExecutorService _rpcThread;                                            // 处理RPC超时和重连的线程
-	private final String                          _name     = getClass().getName();                      // 当前管理器的名字
-	private Class<? extends IoFilter>             _pcf      = BeanCodec.class;                           // 协议编码器的类
-	private IntMap<BeanHandler<?>>                _handlers = new IntMap<BeanHandler<?>>(0);             // bean的处理器
-	private volatile NioSocketAcceptor            _acceptor;                                             // mina的网络监听器
-	private volatile NioSocketConnector           _connector;                                            // mina的网络连接器
+	private static final LongMap<RpcBean<?, ?>>   _rpcs           = new LongConcurrentHashMap<RpcBean<?, ?>>();    // 当前管理器等待回复的RPC
+	private static final ScheduledExecutorService _rpcThread;                                                      // 处理RPC超时和重连的线程
+	private final String                          _name           = getClass().getName();                          // 当前管理器的名字
+	private Class<? extends IoFilter>             _pcf            = BeanCodec.class;                               // 协议编码器的类
+	private IntMap<BeanHandler<?>>                _handlers       = new IntMap<BeanHandler<?>>(0);                 // bean的处理器
+	private volatile NioSocketAcceptor            _acceptor;                                                       // mina的网络监听器
+	private volatile NioSocketConnector           _connector;                                                      // mina的网络连接器
+	private int                                   _processorCount = Runtime.getRuntime().availableProcessors() + 1; // 监听器或连接器的处理器数量
 
 	static
 	{
@@ -172,6 +173,16 @@ public class NetManager implements IoHandler
 	}
 
 	/**
+	 * 设置监听器或连接器的处理器数量
+	 * <p>
+	 * 必须在创建连接器和监听器之前修改
+	 */
+	public final void setProcessorCount(int count)
+	{
+		_processorCount = count;
+	}
+
+	/**
 	 * 获取监听器
 	 */
 	public final NioSocketAcceptor getAcceptor()
@@ -182,7 +193,7 @@ public class NetManager implements IoHandler
 			{
 				if(_acceptor == null || _acceptor.isDisposed())
 				{
-					NioSocketAcceptor t = new NioSocketAcceptor();
+					NioSocketAcceptor t = new NioSocketAcceptor(_processorCount);
 					t.setReuseAddress(true);
 					t.setHandler(this);
 					_acceptor = t;
@@ -203,7 +214,7 @@ public class NetManager implements IoHandler
 			{
 				if(_connector == null || _connector.isDisposed())
 				{
-					NioSocketConnector t = new NioSocketConnector();
+					NioSocketConnector t = new NioSocketConnector(_processorCount);
 					t.setHandler(this);
 					t.setConnectTimeoutMillis(Const.connectTimeout * 1000);
 					_connector = t;
