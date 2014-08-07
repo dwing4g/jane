@@ -11,12 +11,14 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import org.apache.mina.core.filterchain.IoFilter;
 import org.apache.mina.core.future.ConnectFuture;
+import org.apache.mina.core.future.DefaultWriteFuture;
 import org.apache.mina.core.future.IoFuture;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
+import org.apache.mina.core.write.DefaultWriteRequest;
 import org.apache.mina.transport.socket.SocketSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
@@ -350,8 +352,10 @@ public class NetManager implements IoHandler
 	 */
 	protected static WriteFuture write(IoSession session, Object obj)
 	{
-		WriteFuture wf = session.write(obj);
-		return wf.getException() == null ? wf : null;
+		if(session.isClosing() || obj == null) return null;
+		WriteFuture wf = new DefaultWriteFuture(session);
+		session.getFilterChain().fireFilterWrite(new DefaultWriteRequest(obj, wf, null));
+		return wf;
 	}
 
 	/**
@@ -363,7 +367,7 @@ public class NetManager implements IoHandler
 	 */
 	public boolean sendRaw(IoSession session, Object obj)
 	{
-		if(session.isClosing() || write(session, obj) == null) return false;
+		if(write(session, obj) == null) return false;
 		if(Log.hasTrace) Log.log.trace("{}({}): send: raw: {}", _name, session.getId(), obj);
 		return true;
 	}
@@ -377,7 +381,7 @@ public class NetManager implements IoHandler
 	 */
 	public boolean send(IoSession session, Bean<?> bean)
 	{
-		if(session.isClosing() || write(session, bean) == null) return false;
+		if(write(session, bean) == null) return false;
 		if(Log.hasTrace) Log.log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.getClass().getSimpleName(), bean);
 		return true;
 	}
@@ -407,7 +411,6 @@ public class NetManager implements IoHandler
 	 */
 	public <A extends Bean<A>> boolean send(final IoSession session, final A bean, final BeanHandler<A> callback)
 	{
-		if(session.isClosing()) return false;
 		WriteFuture wf = write(session, bean);
 		if(wf == null) return false;
 		if(Log.hasTrace) Log.log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.getClass().getSimpleName(), bean);
@@ -456,7 +459,6 @@ public class NetManager implements IoHandler
 	@SuppressWarnings("unchecked")
 	public <A extends Bean<A>, R extends Bean<R>> boolean sendRpc(final IoSession session, final RpcBean<A, R> rpcBean, RpcHandler<A, R> handler)
 	{
-		if(session.isClosing()) return false;
 		rpcBean.setRequest();
 		if(!send(session, rpcBean)) return false;
 		rpcBean.setReqTime((int)(System.currentTimeMillis() / 1000));
@@ -488,7 +490,7 @@ public class NetManager implements IoHandler
 	public void clientBroadcast(Bean<?> bean)
 	{
 		for(IoSession session : getClientSessions().values())
-			if(!session.isClosing()) write(session, bean);
+			write(session, bean);
 	}
 
 	/**
@@ -499,7 +501,7 @@ public class NetManager implements IoHandler
 	public void serverBroadcast(Bean<?> bean)
 	{
 		for(IoSession session : getServerSessions().values())
-			if(!session.isClosing()) write(session, bean);
+			write(session, bean);
 	}
 
 	/**

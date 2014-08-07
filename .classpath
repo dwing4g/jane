@@ -18,6 +18,6 @@
 	<classpathentry kind="lib" path="lib/log4j-api-2.0.1.jar" sourcepath="lib/log4j-api-2.0.1-sources.jar"/>
 	<classpathentry kind="lib" path="lib/log4j-core-2.0.1.jar" sourcepath="lib/log4j-core-2.0.1-sources.jar"/>
 	<classpathentry kind="lib" path="lib/log4j-slf4j-impl-2.0.1.jar" sourcepath="lib/log4j-slf4j-impl-2.0.1-sources.jar"/>
-	<classpathentry kind="lib" path="lib/h2-1.4.180.jar" sourcepath="lib/h2-1.4.180-sources.jar"/>
+	<classpathentry kind="lib" path="lib/h2-1.4.181.jar" sourcepath="lib/h2-1.4.181-sources.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
