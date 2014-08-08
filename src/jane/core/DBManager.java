@@ -271,9 +271,15 @@ public final class DBManager
 					synchronized(DBManager.this)
 					{
 						_exit = true;
-						_procThreads.shutdownNow();
-						_commitThread.shutdownNow();
-						shutdown();
+						try
+						{
+							_procThreads.shutdownNow();
+							_commitThread.shutdown();
+						}
+						finally
+						{
+							shutdown();
+						}
 					}
 					Log.log.info("DBManager.JVMShutDown: db closed");
 				}
@@ -384,16 +390,24 @@ public final class DBManager
 	 */
 	public synchronized void shutdown()
 	{
-		if(_commitFuture != null)
+		try
 		{
-			_commitFuture.cancel(false);
-			_commitFuture = null;
-		}
-		if(_storage != null)
-		{
+			ScheduledFuture<?> future = _commitFuture;
+			if(future != null)
+			{
+				_commitFuture = null;
+				future.cancel(false);
+			}
 			checkpoint();
-			_storage.close();
-			_storage = null;
+		}
+		finally
+		{
+			Storage sto = _storage;
+			if(sto != null)
+			{
+				_storage = null;
+				sto.close();
+			}
 		}
 	}
 
