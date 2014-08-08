@@ -27,11 +27,10 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	/**
 	 * 尝试依次加锁并保存全部表已修改的记录
 	 * <p>
-	 * @param counts 长度必须>=2,用于保存两个统计值,前一个是保存前所有修改的记录数,后一个是保存后的剩余记录数
+	 * @param counts 长度必须>=3,用于保存3个统计值,分别是保存前所有修改的记录数,保存后的剩余记录数,保存的记录数
 	 */
 	static void trySaveModifiedAll(long[] counts)
 	{
-		long m = counts[0], n = counts[1];
 		for(Table<?, ?, ?> table : _tables)
 		{
 			try
@@ -42,14 +41,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 			{
 				Log.log.error("db-commit thread exception(trySaveModified:" + table.getTableName() + "):", e);
 			}
-			finally
-			{
-				m += counts[0];
-				n += counts[1];
-			}
 		}
-		counts[0] = m;
-		counts[1] = n;
 	}
 
 	/**
@@ -112,11 +104,12 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	/**
 	 * 尝试依次加锁并保存此表已修改的记录
 	 * <p>
-	 * @param counts 长度必须>=2,用于保存两个统计值,前一个是保存前所有修改的记录数,后一个是保存后的剩余记录数
+	 * @param counts 长度必须>=3,用于保存3个统计值,分别是保存前所有修改的记录数,保存后的剩余记录数,保存的记录数
 	 */
 	private void trySaveModified(long[] counts)
 	{
-		counts[0] = _cacheMod.size();
+		counts[0] += _cacheMod.size();
+		long n = 0;
 		try
 		{
 			for(K k : _cacheMod.keySet())
@@ -126,6 +119,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 				{
 					try
 					{
+						++n;
 						V v = _cacheMod.get(k);
 						if(v == _deleted)
 							_stoTable.remove(k);
@@ -145,7 +139,8 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 		}
 		finally
 		{
-			counts[1] = _cacheMod.size();
+			counts[1] += _cacheMod.size();
+			counts[2] += n;
 		}
 	}
 

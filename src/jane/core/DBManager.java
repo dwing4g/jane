@@ -71,7 +71,7 @@ public final class DBManager
 	 */
 	private final class CommitTask implements Runnable
 	{
-		private final long[]  _counts       = new long[2];                               // 两个统计数量值,前者是原数量,后者是处理后的新数量
+		private final long[]  _counts       = new long[3];                               // 3个统计数量值,分别是统计前数量,统计后数量,处理过的数量
 		private final long    _modCountMax  = Const.dbCommitModCount;                    // 数据库记录的修改数量触发提交的阙值
 		private final long    _resaveCount  = Const.dbCommitResaveCount;                 // 保存一轮记录后需要重试的记录数阙值
 		private final long    _backupBase;                                               // 备份数据的基准时间
@@ -127,23 +127,23 @@ public final class DBManager
 						// 1.首先尝试遍历单个加锁的方式保存已修改的记录. 此时和其它事务可以并发
 						long t0 = System.currentTimeMillis(), t1 = 0;
 						Log.log.info("db-commit saving:{}...", _modCount.get());
-						_counts[0] = _counts[1] = 0;
+						_counts[0] = _counts[1] = _counts[2] = 0;
 						_storage.putBegin();
 						Table.trySaveModifiedAll(_counts);
 						TableLong.trySaveModifiedAll(_counts);
 						// 2.如果前一轮遍历之后仍然有过多的修改记录,则再试一轮
 						if(_counts[1] >= _resaveCount)
 						{
-							Log.log.info("db-commit saved:{}=>{}, try again...", _counts[0], _counts[1]);
+							Log.log.info("db-commit saved:{}=>{}({}), try again...", _counts[0], _counts[1], _counts[2]);
 							_counts[0] = _counts[1] = 0;
 							Table.trySaveModifiedAll(_counts);
 							TableLong.trySaveModifiedAll(_counts);
 						}
 						// 3.然后加全局事务锁,待其它事务都停止等待时,保存剩余已修改的记录. 只有此步骤不能和其它事务并发
-						if(_counts[0] != 0 || _counts[1] != 0)
+						if(_counts[2] != 0 || _counts[1] != 0 || _counts[0] != 0)
 						{
 							WriteLock wl = Procedure.getWriteLock();
-							Log.log.info("db-commit saved:{}=>{}, flushing...", _counts[0], _counts[1]);
+							Log.log.info("db-commit saved:{}=>{}({}), flushing...", _counts[0], _counts[1], _counts[2]);
 							_storage.putFlush(false);
 							Log.log.info("db-commit procedure pausing...");
 							t1 = System.currentTimeMillis();
