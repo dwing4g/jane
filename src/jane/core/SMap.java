@@ -365,10 +365,11 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 			return _it.contains(unsafe(o));
 		}
 
+		@SuppressWarnings("unchecked")
 		@Override
 		public boolean remove(Object o)
 		{
-			return SMap.this.remove(o) != null;
+			return o instanceof Entry ? SMap.this.remove(((Entry<K, ?>)o).getKey()) != null : false;
 		}
 
 		@Override
