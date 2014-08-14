@@ -339,9 +339,10 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	 */
 	public void put(final K k, V v)
 	{
+		final V vOld = getNoCacheUnsafe(k);
+		if(vOld == v) return;
 		if(v.stored())
 		    throw new IllegalStateException("put shared record: t=" + _tableName + ",k=" + k + ",v=" + v);
-		final V vOld = getNoCacheUnsafe(k);
 		SContext.current().addOnRollbackDirty(new Runnable()
 		{
 			@Override
