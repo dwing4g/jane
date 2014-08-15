@@ -94,7 +94,7 @@ namespace Jane
 			{
 				int b = os.unmarshalUInt1();
 				if(b == 0) return os;
-				_fields.Add(b & 0x3f, os.unmarshalVar(b >> 6));
+				_fields.Add(b >> 2, os.unmarshalVar(b & 3));
 			}
 		}
 

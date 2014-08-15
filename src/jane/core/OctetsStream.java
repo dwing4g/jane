@@ -414,6 +414,7 @@ public class OctetsStream extends Octets
 	public int marshalUIntBack(int p, int x)
 	{
 		int t = _count;
+		if(p < 5 || p > t) throw new IllegalArgumentException("p=" + p + ", _count=" + _count);
 		if(x < 0x80)      { _count = p - 1; marshal1((byte)(x > 0 ? x : 0)); _count = t; return 1; }
 		if(x < 0x4000)    { _count = p - 2; marshal2(x + 0x8000);            _count = t; return 2; }
 		if(x < 0x200000)  { _count = p - 3; marshal3(x + 0xc00000);          _count = t; return 3; }
