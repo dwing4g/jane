@@ -448,7 +448,7 @@ public final class StorageLevelDB implements Storage
 		return _instance;
 	}
 
-	private StorageLevelDB()
+	public StorageLevelDB()
 	{
 	}
 

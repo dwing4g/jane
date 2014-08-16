@@ -437,7 +437,7 @@ public final class StorageMapDB implements Storage
 		_tableStubK.putAll(stubKMap);
 	}
 
-	private StorageMapDB()
+	public StorageMapDB()
 	{
 	}
 
