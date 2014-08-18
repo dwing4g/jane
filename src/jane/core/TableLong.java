@@ -404,63 +404,20 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	}
 
 	/**
-	 * 使用自增长的新ID值作为key插入value
+	 * 分配自增长的新ID值作为key
 	 * <p>
-	 * 必须在事务中调用此方法,调用此方法前不需给新记录加锁<br>
+	 * 必须在事务中调用此方法<br>
 	 * ID自增长的步长由配置的autoIdLowBits和autoIdLowOffset决定,也可以通过setAutoId方法来指定<br>
-	 * 如果此表的记录有不是使用此方法插入的,请谨慎使用此方法,可能因记录ID冲突而导致记录覆盖
-	 * @param v 插入的新value
+	 * 如果此表的记录有不是使用此方法插入的,请谨慎使用此方法,可能因记录ID冲突而导致降低分配性能
 	 * @return 返回插入的自增长ID值
 	 */
-	public long insertUnsafe(V v)
+	public long allocId()
 	{
-		if(v.stored())
-		    throw new IllegalStateException("insert shared record: t=" + _tableName + ",v=" + v);
-		long k;
-		do
-			k = (_idCounter.incrementAndGet() << _autoIdLowBits) + _autoIdOffset;
-		while(getNoCacheUnsafe(k) != null);
-		v.setSaveState(2);
-		_cache.put(k, v);
-		if(_cacheMod != null)
+		for(;;)
 		{
-			_cacheMod.put(k, v);
-			DBManager.instance().incModCount();
+			long k = (_idCounter.incrementAndGet() << _autoIdLowBits) + _autoIdOffset;
+			if(getNoCacheUnsafe(k) == null) return k;
 		}
-		return k;
-	}
-
-	/**
-	 * 同insertUnsafe,但自动插入默认初始化的value
-	 */
-	public long insertUnsafe()
-	{
-		return insertUnsafe(_deleted.create());
-	}
-
-	/**
-	 * 同insertUnsafe,但增加的安全封装,可回滚修改(ID分配不支持回滚,回滚会产生无效ID)
-	 */
-	public long insert(V v)
-	{
-		final long k = insertUnsafe(v);
-		SContext.current().addOnRollbackDirty(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				removeUnsafe(k);
-			}
-		});
-		return k;
-	}
-
-	/**
-	 * 同insertUnsafe,但自动插入默认初始化的value,增加的安全封装,可回滚修改(ID分配不支持回滚,回滚会产生无效ID)
-	 */
-	public long insert()
-	{
-		return insert(_deleted.create());
 	}
 
 	/**
