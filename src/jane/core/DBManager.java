@@ -398,7 +398,7 @@ public final class DBManager
 				_commitFuture = null;
 				future.cancel(false);
 			}
-			checkpoint();
+			if(_storage != null) checkpoint();
 		}
 		finally
 		{

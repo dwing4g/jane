@@ -1,7 +1,8 @@
- .gitignore                      |    3 +
- db/db_impl.h                    |    5 +-
+ .gitignore                      |    4 +
+ db/db_impl.cc                   |    4 +
+ db/db_impl.h                    |    3 +
  make_linux.sh                   |   26 +
- make_mingw.bat                  |   25 +
+ make_mingw.bat                  |   34 +
  port/endian.h                   |    5 +
  snappy/snappy-internal.h        |  150 +++++
  snappy/snappy-sinksource.cc     |   71 +++
@@ -11,35 +12,56 @@
  snappy/snappy-stubs-public.h    |   98 +++
  snappy/snappy.cc                | 1306 +++++++++++++++++++++++++++++++++++++++
  snappy/snappy.h                 |  184 ++++++
- util/env_posix.cc               |   18 +-
- util/env_windows.cc             |  385 ++++++++++++
- util/jni.cc                     |  429 +++++++++++++
- 16 files changed, 3369 insertions(+), 6 deletions(-)
+ util/env_windows.cc             |  377 +++++++++++
+ util/jni.cc                     |  434 +++++++++++++
+ 16 files changed, 3366 insertions(+)
 
 diff --git a/.gitignore b/.gitignore
-index 0630251..0dba0c5 100644
+index 0630251..e690ecf 100644
 --- a/.gitignore
 +++ b/.gitignore
-@@ -4,6 +4,9 @@ build_config.mk
+@@ -4,6 +4,10 @@ build_config.mk
  *.dylib*
  *.so
  *.so.*
 +*.dll
 +*.dll.*
++*.exe
  *_test
  db_bench
  leveldbutil
 +/tmp/
+diff --git a/db/db_impl.cc b/db/db_impl.cc
+index faf5e7d..359fba8 100644
+--- a/db/db_impl.cc
++++ b/db/db_impl.cc
+@@ -35,6 +35,8 @@
+ 
+ namespace leveldb {
+ 
++extern port::Mutex g_mutex_backup;
++
+ const int kNumNonTableCacheFiles = 10;
+ 
+ // Information kept for every waiting writer
+@@ -630,7 +632,9 @@ void DBImpl::MaybeScheduleCompaction() {
+ }
+ 
+ void DBImpl::BGWork(void* db) {
++  g_mutex_backup.Lock();
+   reinterpret_cast<DBImpl*>(db)->BackgroundCall();
++  g_mutex_backup.Unlock();
+ }
+ 
+ void DBImpl::BackgroundCall() {
 diff --git a/db/db_impl.h b/db/db_impl.h
-index cfc9981..a3e2c8e 100644
+index cfc9981..a40df8d 100644
 --- a/db/db_impl.h
 +++ b/db/db_impl.h
-@@ -63,7 +63,10 @@ class DBImpl : public DB {
-   // Samples are taken approximately once every config::kReadBytesPeriod
+@@ -64,6 +64,9 @@ class DBImpl : public DB {
    // bytes.
    void RecordReadSample(Slice key);
--
-+
+ 
 +  // VersionSet* GetVersionSet() { return versions_; }
 +  const Options& GetOptions() { return options_; }
 +
@@ -80,17 +102,17 @@ index 0000000..a32287a
 +$COMPILE -o leveldb_main db/leveldb_main.cc libleveldb.a
 diff --git a/make_mingw.bat b/make_mingw.bat
 new file mode 100644
-index 0000000..2c1a623
+index 0000000..9fbb2fd
 --- /dev/null
 +++ b/make_mingw.bat
-@@ -0,0 +1,25 @@
+@@ -0,0 +1,34 @@
 +@echo off
 +setlocal
 +pushd %~dp0
 +
 +rem install mingw-gcc 4.8+ and append PATH with mingw/bin
 +rem install jdk6+ and set JAVA_HOME
-+if "%JAVA_HOME%" equ "" set JAVA_HOME=C:/Program Files/Java/jdk1.7.0_51
++if "%JAVA_HOME%" equ "" set JAVA_HOME=C:/Program Files/Java/jdk1.7.0_65
 +
 +set CORE_FILES=db/builder.cc db/c.cc db/db_impl.cc db/db_iter.cc db/dbformat.cc db/filename.cc db/log_reader.cc db/log_writer.cc db/memtable.cc db/repair.cc db/table_cache.cc db/version_edit.cc db/version_set.cc db/write_batch.cc table/block.cc table/block_builder.cc table/filter_block.cc table/format.cc table/iterator.cc table/merger.cc table/table.cc table/table_builder.cc table/two_level_iterator.cc util/arena.cc util/bloom.cc util/cache.cc util/coding.cc util/comparator.cc util/crc32c.cc util/env.cc util/env_windows.cc util/filter_policy.cc util/hash.cc util/histogram.cc util/jni.cc util/logging.cc util/options.cc util/status.cc port/port_posix.cc snappy/snappy.cc snappy/snappy-sinksource.cc snappy/snappy-stubs-internal.cc
 +
@@ -98,15 +120,24 @@ index 0000000..2c1a623
 +
 +set OBJ_FILES=builder.o c.o db_impl.o db_iter.o dbformat.o filename.o log_reader.o log_writer.o memtable.o repair.o table_cache.o version_edit.o version_set.o write_batch.o block.o block_builder.o filter_block.o format.o iterator.o merger.o table.o table_builder.o two_level_iterator.o arena.o bloom.o cache.o coding.o comparator.o crc32c.o env.o env_windows.o filter_policy.o hash.o histogram.o jni.o logging.o options.o status.o testutil.o testharness.o port_posix.o snappy.o snappy-sinksource.o snappy-stubs-internal.o
 +
-+set COMPILE=g++ -DOS_LINUX -DLEVELDB_PLATFORM_POSIX -DSNAPPY -DENABLE_JNI -D_POSIX -D__USE_MINGW_ANSI_STDIO=1 -DNDEBUG -I. -Iinclude -Isnappy -Iport -I"%JAVA_HOME%/include" -I"%JAVA_HOME%/include/win64" -I"%JAVA_HOME%/include/win32" -Ofast -flto -fwhole-program -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -pipe -pthread -static -lpthread
++set COMPILE=-DOS_LINUX -DLEVELDB_PLATFORM_POSIX -DSNAPPY -DENABLE_JNI -D_POSIX -D__USE_MINGW_ANSI_STDIO=1 -DNDEBUG -I. -Iinclude -Isnappy -Iport -I"%JAVA_HOME%/include" -I"%JAVA_HOME%/include/win64" -I"%JAVA_HOME%/include/win32" -Ofast -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -pipe -pthread -static -lpthread
 +
-+echo building leveldbjni.dll ...
-+%COMPILE% -shared -Wl,--image-base,0x10000000 -Wl,--kill-at -Wl,-soname -Wl,leveldbjni.dll -o leveldbjni.dll %CORE_FILES%
++set COMPILE32=i686-w64-mingw32-g++.exe -m32 -flto -fwhole-program %COMPILE%
++set COMPILE64=x86_64-w64-mingw32-g++.exe -m64 %COMPILE%
++
++echo building leveldbjni32.dll ...
++%COMPILE32% -shared -Wl,--image-base,0x10000000 -Wl,--kill-at -Wl,-soname -Wl,leveldbjni32.dll -o leveldbjni32.dll %CORE_FILES%
++
++echo building leveldbjni64.dll ...
++%COMPILE64% -shared -Wl,--image-base,0x10000000 -Wl,--kill-at -Wl,-soname -Wl,leveldbjni64.dll -o leveldbjni64.dll %CORE_FILES%
 +
 +echo building db-tools ...
-+%COMPILE% -o db_bench.exe     db/db_bench.cc     %CORE_FILES% %TEST_FILES%
-+%COMPILE% -o db_test.exe      db/db_test.cc      %CORE_FILES% %TEST_FILES%
-+%COMPILE% -o leveldb_main.exe db/leveldb_main.cc %CORE_FILES% %TEST_FILES%
++%COMPILE32% -o db_bench32.exe     db/db_bench.cc     %CORE_FILES% %TEST_FILES%
++%COMPILE64% -o db_bench64.exe     db/db_bench.cc     %CORE_FILES% %TEST_FILES%
++%COMPILE32% -o db_test32.exe      db/db_test.cc      %CORE_FILES% %TEST_FILES%
++%COMPILE64% -o db_test64.exe      db/db_test.cc      %CORE_FILES% %TEST_FILES%
++%COMPILE32% -o leveldb_main32.exe db/leveldb_main.cc %CORE_FILES% %TEST_FILES%
++%COMPILE64% -o leveldb_main64.exe db/leveldb_main.cc %CORE_FILES% %TEST_FILES%
 +
 +pause
 diff --git a/port/endian.h b/port/endian.h
@@ -2647,69 +2678,12 @@ index 0000000..e879e79
 +
 +
 +#endif  // UTIL_SNAPPY_SNAPPY_H__
-diff --git a/util/env_posix.cc b/util/env_posix.cc
-index e1cbebd..6ef8997 100644
---- a/util/env_posix.cc
-+++ b/util/env_posix.cc
-@@ -28,6 +28,8 @@
- #include "util/posix_logger.h"
- 
- namespace leveldb {
-+
-+port::Mutex g_mutex_backup;
- 
- namespace {
- 
-@@ -373,9 +375,11 @@ class PosixEnv : public Env {
- 
-   virtual Status DeleteFile(const std::string& fname) {
-     Status result;
-+    g_mutex_backup.Lock();
-     if (unlink(fname.c_str()) != 0) {
-       result = IOError(fname, errno);
--    }
-+    }
-+    g_mutex_backup.Unlock();
-     return result;
-   }
- 
-@@ -388,10 +392,12 @@ class PosixEnv : public Env {
-   }
- 
-   virtual Status DeleteDir(const std::string& name) {
--    Status result;
-+    Status result;
-+    g_mutex_backup.Lock();
-     if (rmdir(name.c_str()) != 0) {
-       result = IOError(name, errno);
-     }
-+    g_mutex_backup.Unlock();
-     return result;
-   }
- 
-@@ -407,11 +413,13 @@ class PosixEnv : public Env {
-     return s;
-   }
- 
--  virtual Status RenameFile(const std::string& src, const std::string& target) {
--    Status result;
-+  virtual Status RenameFile(const std::string& src, const std::string& target) {
-+    Status result;
-+    g_mutex_backup.Lock();
-     if (rename(src.c_str(), target.c_str()) != 0) {
-       result = IOError(src, errno);
--    }
-+    }
-+    g_mutex_backup.Unlock();
-     return result;
-   }
- 
 diff --git a/util/env_windows.cc b/util/env_windows.cc
 new file mode 100644
-index 0000000..54f4b2f
+index 0000000..33aaa1e
 --- /dev/null
 +++ b/util/env_windows.cc
-@@ -0,0 +1,385 @@
+@@ -0,0 +1,377 @@
 +// Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file. See the AUTHORS file for names of contributors.
@@ -2727,8 +2701,6 @@ index 0000000..54f4b2f
 +#include "util/posix_logger.h"
 +
 +namespace leveldb {
-+
-+port::Mutex g_mutex_backup;
 +
 +namespace {
 +
@@ -2952,9 +2924,7 @@ index 0000000..54f4b2f
 +	}
 +
 +	virtual Status DeleteFile(const std::string& fname) {
-+		g_mutex_backup.Lock();
 +		BOOL r = DeleteFileA(fname.c_str());
-+		g_mutex_backup.Unlock();
 +		return r ? Status::OK() : Status::IOError(fname);
 +	}
 +
@@ -2969,9 +2939,7 @@ index 0000000..54f4b2f
 +		fileop.wFunc = FO_DELETE;
 +		fileop.pFrom = dirname2.c_str();
 +		fileop.fFlags = 0x14; // FOF_SILENT | FOF_NOCONFIRMATION
-+		g_mutex_backup.Lock();
 +		int nResult = SHFileOperationA(&fileop);
-+		g_mutex_backup.Unlock();
 +		return !nResult && !fileop.fAnyOperationsAborted ? Status::OK() : Status::IOError(dirname);
 +	}
 +
@@ -2985,9 +2953,7 @@ index 0000000..54f4b2f
 +	}
 +
 +	virtual Status RenameFile(const std::string& src, const std::string& target) {
-+		g_mutex_backup.Lock();
 +		BOOL r = MoveFileExA(src.c_str(), target.c_str(), MOVEFILE_REPLACE_EXISTING);
-+		g_mutex_backup.Unlock();
 +		return r ? Status::OK() : Status::IOError(src, target);
 +	}
 +
@@ -3097,10 +3063,10 @@ index 0000000..54f4b2f
 +#endif
 diff --git a/util/jni.cc b/util/jni.cc
 new file mode 100644
-index 0000000..be0a94e
+index 0000000..e65bda2
 --- /dev/null
 +++ b/util/jni.cc
-@@ -0,0 +1,429 @@
+@@ -0,0 +1,434 @@
 +// Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file. See the AUTHORS file for names of contributors.
@@ -3108,6 +3074,7 @@ index 0000000..be0a94e
 +#ifdef ENABLE_JNI
 +
 +#include <stdio.h>
++#include <sstream>
 +#include <jni.h>
 +#include "leveldb/db.h"
 +#include "leveldb/env.h"
@@ -3135,7 +3102,7 @@ index 0000000..be0a94e
 +static WriteOptions			g_wo_sync;		// safe for global shared instance
 +static const FilterPolicy*	g_fp = 0;		// safe for global shared instance
 +
-+namespace leveldb { extern port::Mutex g_mutex_backup; }
++namespace leveldb { port::Mutex g_mutex_backup; }
 +
 +// public native static long leveldb_open(String path, int write_bufsize, int cache_size, boolean use_snappy);
 +extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open
@@ -3307,7 +3274,7 @@ index 0000000..be0a94e
 +	}
 +	if(!env.NewSequentialFile(srcfile, &sf).ok() || !sf) return -19;
 +	if(dstsize > 0 && !sf->Skip(dstsize).ok()) { delete sf; return -20; }
-+	FILE* fp = fopen(dstfile.c_str(), (dstsize == 0 ? "wb" : "wb+"));
++	FILE* fp = fopen(dstfile.c_str(), (dstsize == 0 ? "wb" : "rb+"));
 +	if(!fp) { delete sf; return -21; }
 +	if(dstsize > 0) fseek(fp, dstsize, SEEK_SET);
 +	Status s; size_t size; int64_t res = 0;
@@ -3349,7 +3316,7 @@ index 0000000..be0a94e
 +	std::vector<std::string> files;
 +	DBImpl* dbi = 0;
 +	std::set<uint64_t>* liveset = 0;
-+	std::string files_saved;
++	std::stringstream files_saved;
 +	env->CreateDir(dstpathstr);
 +	g_mutex_backup.Lock();
 +	if(!env->GetChildren(srcpathstr, &files).ok()) { g_mutex_backup.Unlock(); return -6; }
@@ -3372,15 +3339,19 @@ index 0000000..be0a94e
 +			if(ft == kTableFile && liveset && liveset->find(num) == liveset->end()) continue;
 +			r = AppendFile(*env, srcpathstr + '/' + *it, dstpathstr + '/' + *it, ft == kTableFile);
 +			if(r > 0) n += r;
-+			files_saved.append(*it);
-+			files_saved.append("\n");
++			files_saved << *it;
++			if(ft == kDescriptorFile)
++			{
++				env->GetFileSize(dstpathstr + '/' + *it, &num);
++				files_saved << ' ' << num;
++			}
++			files_saved << '\n';
 +		}
 +		else if(ft == kCurrentFile)
 +		{
 +			r = AppendFile(*env, srcpathstr + '/' + *it, dstpathstr + '/' + *it + '-' + datetimestr, false);
 +			if(r > 0) n += r;
-+			files_saved.append(*it + '-' + datetimestr);
-+			files_saved.append("\n");
++			files_saved << *it << '-' << datetimestr << '\n';
 +		}
 +		// [optional] copy LOG file to backup dir and rename to LOG-[datetime]
 +		if(r < 0 && dbi) Log(dbi->GetOptions().info_log, "leveldb_backup copy/append failed: r=%d,ft=%d,file='%s'", (int)r, (int)ft, it->c_str());
@@ -3389,7 +3360,7 @@ index 0000000..be0a94e
 +	if(liveset) delete liveset;
 +	WritableFile* wf = 0;
 +	if(!env->NewWritableFile(dstpathstr + '/' + "BACKUP" + '-' + datetimestr, &wf).ok() || !wf) return -7;
-+	if(!wf->Append(Slice(files_saved)).ok()) { delete wf; return -8; }
++	if(!wf->Append(Slice(files_saved.str())).ok()) { delete wf; return -8; }
 +	if(!wf->Sync().ok()) { delete wf; return -9; }
 +	wf->Close();
 +	delete wf;

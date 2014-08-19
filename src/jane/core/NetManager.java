@@ -173,6 +173,16 @@ public class NetManager implements IoHandler
 	}
 
 	/**
+	 * 获取当前响应beans的处理器
+	 * <p>
+	 * 获取到的容器不能做修改
+	 */
+	public final IntMap<BeanHandler<?>> getHandlers()
+	{
+		return _handlers;
+	}
+
+	/**
 	 * 设置监听器或连接器的处理器数量
 	 * <p>
 	 * 必须在创建连接器和监听器之前修改

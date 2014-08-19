@@ -13,7 +13,7 @@ import java.util.Random;
  * the map will have to rehash to the next higher POT size.<br>
  * @author Nathan Sweet
  */
-public final class IntMap<V>
+public final class IntMap<V> implements Cloneable
 {
 	// private static final int PRIME1 = 0xbe1f14b1;
 	private static final int    PRIME2  = 0xb4b82e39;
@@ -573,6 +573,15 @@ public final class IntMap<V>
 	{
 		h *= PRIME3;
 		return (h ^ (h >>> _hashShift)) & _mask;
+	}
+
+	@Override
+	public IntMap<V> clone()
+	{
+		IntMap<V> map = clone();
+		map._keyTable = _keyTable.clone();
+		map._valueTable = _valueTable.clone();
+		return map;
 	}
 
 	@Override
