@@ -576,9 +576,10 @@ public final class IntMap<V> implements Cloneable
 	}
 
 	@Override
-	public IntMap<V> clone()
+	public IntMap<V> clone() throws CloneNotSupportedException
 	{
-		IntMap<V> map = clone();
+		@SuppressWarnings("unchecked")
+		IntMap<V> map = (IntMap<V>)super.clone();
 		map._keyTable = _keyTable.clone();
 		map._valueTable = _valueTable.clone();
 		return map;
