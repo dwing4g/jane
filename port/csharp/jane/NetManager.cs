@@ -31,9 +31,19 @@ namespace Jane
 			_beanMap = bean_map ?? _beanMap;
 		}
 
+		public IDictionary<int, BeanDelegate> GetBeanDelegates()
+		{
+			return _beanMap;
+		}
+
 		public void SetHandlerDelegates(IDictionary<int, HandlerDelegate> handler_map)
 		{
 			_handlerMap = handler_map ?? _handlerMap;
+		}
+
+		public IDictionary<int, HandlerDelegate> GetHandlerDelegates()
+		{
+			return _handlerMap;
 		}
 
 		public bool Connected { get { return _tcpClient.Connected; } }
