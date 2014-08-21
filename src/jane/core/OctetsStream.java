@@ -404,31 +404,31 @@ public class OctetsStream extends Octets
 
 	public OctetsStream marshalUInt(int x)
 	{
-		if(x < 0x80)      return marshal1((byte)(x > 0 ? x : 0)); // 0xxx xxxx
-		if(x < 0x4000)    return marshal2(x + 0x8000);            // 10xx xxxx +1B
-		if(x < 0x200000)  return marshal3(x + 0xc00000);          // 110x xxxx +2B
-		if(x < 0x1000000) return marshal4(x + 0xe0000000);        // 1110 xxxx +3B
-		                  return marshal5((byte)0xf0, x);         // 1111 0000 +4B
+		if(x < 0x80)       return marshal1((byte)(x > 0 ? x : 0)); // 0xxx xxxx
+		if(x < 0x4000)     return marshal2(x + 0x8000);            // 10xx xxxx +1B
+		if(x < 0x200000)   return marshal3(x + 0xc00000);          // 110x xxxx +2B
+		if(x < 0x10000000) return marshal4(x + 0xe0000000);        // 1110 xxxx +3B
+		                   return marshal5((byte)0xf0, x);         // 1111 0000 +4B
 	}
 
 	public int marshalUIntBack(int p, int x)
 	{
 		int t = _count;
 		if(p < 5 || p > t) throw new IllegalArgumentException("p=" + p + ", _count=" + _count);
-		if(x < 0x80)      { _count = p - 1; marshal1((byte)(x > 0 ? x : 0)); _count = t; return 1; }
-		if(x < 0x4000)    { _count = p - 2; marshal2(x + 0x8000);            _count = t; return 2; }
-		if(x < 0x200000)  { _count = p - 3; marshal3(x + 0xc00000);          _count = t; return 3; }
-		if(x < 0x1000000) { _count = p - 4; marshal4(x + 0xe0000000);        _count = t; return 4; }
-		                  { _count = p - 5; marshal5((byte)0xf0, x);         _count = t; return 5; }
+		if(x < 0x80)       { _count = p - 1; marshal1((byte)(x > 0 ? x : 0)); _count = t; return 1; }
+		if(x < 0x4000)     { _count = p - 2; marshal2(x + 0x8000);            _count = t; return 2; }
+		if(x < 0x200000)   { _count = p - 3; marshal3(x + 0xc00000);          _count = t; return 3; }
+		if(x < 0x10000000) { _count = p - 4; marshal4(x + 0xe0000000);        _count = t; return 4; }
+		                   { _count = p - 5; marshal5((byte)0xf0, x);         _count = t; return 5; }
 	}
 
 	public static int marshalUIntLen(int x)
 	{
-		if(x < 0x80)      return 1;
-		if(x < 0x4000)    return 2;
-		if(x < 0x200000)  return 3;
-		if(x < 0x1000000) return 4;
-		                  return 5;
+		if(x < 0x80)       return 1;
+		if(x < 0x4000)     return 2;
+		if(x < 0x200000)   return 3;
+		if(x < 0x10000000) return 4;
+		                   return 5;
 	}
 
 	public OctetsStream marshalUTF8(char x)

@@ -201,11 +201,11 @@ end
 
 -- 序列化1个无符号整数(支持范围:0到+(32-bit))
 function Stream:marshalUInt(v)
-		if v < 0x80      then append(self, char(v))
-	elseif v < 0x4000    then append(self, char(floor(v / 0x100    ) + 0x80,       v % 0x100))
-	elseif v < 0x200000  then append(self, char(floor(v / 0x10000  ) + 0xc0, floor(v / 0x100  ) % 0x100,       v % 0x100))
-	elseif v < 0x1000000 then append(self, char(floor(v / 0x1000000) + 0xe0, floor(v / 0x10000) % 0x100, floor(v / 0x100) % 0x100, v % 0x100))
-	else                      append(self, char(0xf0,  floor(v / 0x1000000), floor(v / 0x10000) % 0x100, floor(v / 0x100) % 0x100, v % 0x100)) end
+		if v < 0x80       then append(self, char(v))
+	elseif v < 0x4000     then append(self, char(floor(v / 0x100    ) + 0x80,       v % 0x100))
+	elseif v < 0x200000   then append(self, char(floor(v / 0x10000  ) + 0xc0, floor(v / 0x100  ) % 0x100,       v % 0x100))
+	elseif v < 0x10000000 then append(self, char(floor(v / 0x1000000) + 0xe0, floor(v / 0x10000) % 0x100, floor(v / 0x100) % 0x100, v % 0x100))
+	else                       append(self, char(0xf0,  floor(v / 0x1000000), floor(v / 0x10000) % 0x100, floor(v / 0x100) % 0x100, v % 0x100)) end
 	return self
 end
 
