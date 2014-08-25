@@ -140,9 +140,20 @@ public abstract class Procedure implements Runnable
 		return _rwlCommit.writeLock();
 	}
 
+	/**
+	 * 设置当前默认的异常处理器
+	 */
 	public static void setDefaultOnException(ExceptionHandler eh)
 	{
 		_defaultEh = eh;
+	}
+
+	/**
+	 * 判断当前线程现在是否在事务执行当中
+	 */
+	public static boolean inProcedure()
+	{
+		return _tlProc.get().proc != null;
 	}
 
 	/**
