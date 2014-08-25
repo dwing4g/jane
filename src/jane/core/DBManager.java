@@ -129,15 +129,13 @@ public final class DBManager
 						Log.log.info("db-commit saving:{}...", _modCount.get());
 						_counts[0] = _counts[1] = _counts[2] = 0;
 						_storage.putBegin();
-						Table.trySaveModifiedAll(_counts);
-						TableLong.trySaveModifiedAll(_counts);
+						TableBase.trySaveModifiedAll(_counts);
 						// 2.如果前一轮遍历之后仍然有过多的修改记录,则再试一轮
 						if(_counts[1] >= _resaveCount)
 						{
 							Log.log.info("db-commit saved:{}=>{}({}), try again...", _counts[0], _counts[1], _counts[2]);
 							_counts[0] = _counts[1] = 0;
-							Table.trySaveModifiedAll(_counts);
-							TableLong.trySaveModifiedAll(_counts);
+							TableBase.trySaveModifiedAll(_counts);
 						}
 						// 3.然后加全局事务锁,待其它事务都停止等待时,保存剩余已修改的记录. 只有此步骤不能和其它事务并发
 						if(_counts[2] != 0 || _counts[1] != 0 || _counts[0] != 0)
@@ -152,7 +150,7 @@ public final class DBManager
 							{
 								_modCount.set(0);
 								Log.log.info("db-commit saving left...");
-								Log.log.info("db-commit saved:{}, flushing left...", Table.saveModifiedAll() + TableLong.saveModifiedAll());
+								Log.log.info("db-commit saved:{}, flushing left...", TableBase.saveModifiedAll());
 								_storage.putFlush(true);
 							}
 							finally

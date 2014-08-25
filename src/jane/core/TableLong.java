@@ -1,7 +1,5 @@
 package jane.core;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import org.mapdb.LongConcurrentHashMap;
@@ -19,58 +17,14 @@ import jane.core.Storage.WalkHandlerLong;
  * ID类型即>=0的long类型, 会比使用Long类型作为key的通用表效率高,且支持自增长ID(从1开始)<br>
  * <b>注意</b>: 一个表要事先确定插入记录是只使用自增长ID还是只指定ID插入,如果都使用则会导致ID冲突
  */
-public final class TableLong<V extends Bean<V>, S extends Safe<V>>
+public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends TableBase<V>
 {
-	private static final List<TableLong<?, ?>> _tables        = new ArrayList<TableLong<?, ?>>(256); // 所有的表列表
-	private final String                       _tableName;                                          // 表名
-	private final Storage.TableLong<V>         _stoTable;                                           // 存储引擎的表对象
-	private final LongMap<V>                   _cache;                                              // 读缓存. 有大小限制,溢出自动清理
-	private final LongConcurrentHashMap<V>     _cacheMod;                                           // 写缓存. 不会溢出,保存到数据库存储引擎后清理
-	private final V                            _deleted;                                            // 表示已删除的value. 同存根bean
-	private final AtomicLong                   _idCounter     = new AtomicLong();                   // 用于自增长ID的统计器, 当前值表示当前表已存在的最大ID值
-	private final int                          _lockId;                                             // 当前表的锁ID. 即锁名的hash值,一般和记录key的hash值计算得出记录的lockId
-	private int                                _autoIdLowBits = Const.autoIdLowBits;                // 自增长ID的预留低位位数
-	private int                                _autoIdOffset  = Const.autoIdLowOffset;              // 自增长ID的低位偏移值
-
-	/**
-	 * 尝试依次加锁并保存全部表已修改的记录
-	 * <p>
-	 * @param counts 长度必须>=3,用于保存3个统计值,分别是保存前所有修改的记录数,保存后的剩余记录数,保存的记录数
-	 */
-	static void trySaveModifiedAll(long[] counts)
-	{
-		for(TableLong<?, ?> table : _tables)
-		{
-			try
-			{
-				table.trySaveModified(counts);
-			}
-			catch(Throwable e)
-			{
-				Log.log.error("db-commit thread exception(trySaveModified:" + table.getTableName() + "):", e);
-			}
-		}
-	}
-
-	/**
-	 * 在所有事务暂停的情况下直接依次保存全部表已修改的记录
-	 */
-	static int saveModifiedAll()
-	{
-		int m = 0;
-		for(TableLong<?, ?> table : _tables)
-		{
-			try
-			{
-				m += table.saveModified();
-			}
-			catch(Throwable e)
-			{
-				Log.log.error("db-commit thread exception(saveModified:" + table.getTableName() + "):", e);
-			}
-		}
-		return m;
-	}
+	private final Storage.TableLong<V>     _stoTable;                             // 存储引擎的表对象
+	private final LongMap<V>               _cache;                                // 读缓存. 有大小限制,溢出自动清理
+	private final LongConcurrentHashMap<V> _cacheMod;                             // 写缓存. 不会溢出,保存到数据库存储引擎后清理
+	private final AtomicLong               _idCounter     = new AtomicLong();     // 用于自增长ID的统计器, 当前值表示当前表已存在的最大ID值
+	private int                            _autoIdLowBits = Const.autoIdLowBits;  // 自增长ID的预留低位位数, 可运行时指定
+	private int                            _autoIdOffset  = Const.autoIdLowOffset; // 自增长ID的低位偏移值, 可运行时指定
 
 	/**
 	 * 创建一个数据库表
@@ -82,25 +36,15 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	 */
 	TableLong(int tableId, String tableName, Storage.TableLong<V> stoTable, String lockName, int cacheSize, V stubV)
 	{
-		_tableName = tableName;
+		super(tableName, stubV, (lockName != null && !(lockName = lockName.trim()).isEmpty() ? lockName.hashCode() : tableId) * 0x9e3779b1);
 		_stoTable = stoTable;
-		_lockId = (lockName != null && !(lockName = lockName.trim()).isEmpty() ? lockName.hashCode() : tableId) * 0x9e3779b1;
 		_cache = new LongConcurrentLRUMap<V>(cacheSize + cacheSize / 2, cacheSize);
 		_cacheMod = (stoTable != null ? new LongConcurrentHashMap<V>() : null);
-		_deleted = stubV;
 		if(stoTable != null)
 		{
 			_idCounter.set(_stoTable.getIdCounter());
 			_tables.add(this);
 		}
-	}
-
-	/**
-	 * 获取数据库表名
-	 */
-	public String getTableName()
-	{
-		return _tableName;
 	}
 
 	/**
@@ -140,7 +84,8 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	 * <p>
 	 * @param counts 长度必须>=3,用于保存3个统计值,分别是保存前所有修改的记录数,保存后的剩余记录数,保存的记录数
 	 */
-	private void trySaveModified(long[] counts)
+	@Override
+	protected void trySaveModified(long[] counts)
 	{
 		counts[0] += _cacheMod.size();
 		long n = 0;
@@ -182,7 +127,8 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>>
 	/**
 	 * 在所有事务暂停的情况下直接依次保存此表已修改的记录
 	 */
-	private int saveModified()
+	@Override
+	protected int saveModified()
 	{
 		for(LongMapIterator<V> it = _cacheMod.longMapIterator(); it.moveToNext();)
 		{

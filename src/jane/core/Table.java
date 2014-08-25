@@ -1,7 +1,5 @@
 package jane.core;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
@@ -14,55 +12,11 @@ import jane.core.Storage.WalkHandler;
 /**
  * 通用key类型的数据库表类
  */
-public final class Table<K, V extends Bean<V>, S extends Safe<V>>
+public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableBase<V>
 {
-	private static final List<Table<?, ?, ?>> _tables = new ArrayList<Table<?, ?, ?>>(16); // 所有的通用key类型的表列表
-	private final String                      _tableName;                                 // 表名
-	private final Storage.Table<K, V>         _stoTable;                                  // 存储引擎的表对象
-	private final Map<K, V>                   _cache;                                     // 读缓存. 有大小限制,溢出自动清理
-	private final ConcurrentMap<K, V>         _cacheMod;                                  // 写缓存. 不会溢出,保存到数据库存储引擎后清理
-	private final V                           _deleted;                                   // 表示已删除的value. 同存根bean
-	private final int                         _lockId;                                    // 当前表的锁ID. 即锁名的hash值,一般和记录key的hash值计算得出记录的lockId
-
-	/**
-	 * 尝试依次加锁并保存全部表已修改的记录
-	 * <p>
-	 * @param counts 长度必须>=3,用于保存3个统计值,分别是保存前所有修改的记录数,保存后的剩余记录数,保存的记录数
-	 */
-	static void trySaveModifiedAll(long[] counts)
-	{
-		for(Table<?, ?, ?> table : _tables)
-		{
-			try
-			{
-				table.trySaveModified(counts);
-			}
-			catch(Throwable e)
-			{
-				Log.log.error("db-commit thread exception(trySaveModified:" + table.getTableName() + "):", e);
-			}
-		}
-	}
-
-	/**
-	 * 在所有事务暂停的情况下直接依次保存全部表已修改的记录
-	 */
-	static int saveModifiedAll()
-	{
-		int m = 0;
-		for(Table<?, ?, ?> table : _tables)
-		{
-			try
-			{
-				m += table.saveModified();
-			}
-			catch(Throwable e)
-			{
-				Log.log.error("db-commit thread exception(saveModified:" + table.getTableName() + "):", e);
-			}
-		}
-		return m;
-	}
+	private final Storage.Table<K, V> _stoTable; // 存储引擎的表对象
+	private final Map<K, V>           _cache;   // 读缓存. 有大小限制,溢出自动清理
+	private final ConcurrentMap<K, V> _cacheMod; // 写缓存. 不会溢出,保存到数据库存储引擎后清理
 
 	/**
 	 * 创建一个数据库表
@@ -74,21 +28,11 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	 */
 	Table(int tableId, String tableName, Storage.Table<K, V> stoTable, String lockName, int cacheSize, V stubV)
 	{
-		_tableName = tableName;
+		super(tableName, stubV, (lockName != null && !(lockName = lockName.trim()).isEmpty() ? lockName.hashCode() : tableId) * 0x9e3779b1);
 		_stoTable = stoTable;
-		_lockId = (lockName != null && !(lockName = lockName.trim()).isEmpty() ? lockName.hashCode() : tableId) * 0x9e3779b1;
 		_cache = Util.newLRUConcurrentHashMap(cacheSize);
 		_cacheMod = (stoTable != null ? Util.<K, V>newConcurrentHashMap() : null);
-		_deleted = stubV;
 		if(stoTable != null) _tables.add(this);
-	}
-
-	/**
-	 * 获取数据库表名
-	 */
-	public String getTableName()
-	{
-		return _tableName;
 	}
 
 	/**
@@ -106,7 +50,8 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	 * <p>
 	 * @param counts 长度必须>=3,用于保存3个统计值,分别是保存前所有修改的记录数,保存后的剩余记录数,保存的记录数
 	 */
-	private void trySaveModified(long[] counts)
+	@Override
+	protected void trySaveModified(long[] counts)
 	{
 		counts[0] += _cacheMod.size();
 		long n = 0;
@@ -147,7 +92,8 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	/**
 	 * 在所有事务暂停的情况下直接依次保存此表已修改的记录
 	 */
-	private int saveModified()
+	@Override
+	protected int saveModified()
 	{
 		for(Entry<K, V> e : _cacheMod.entrySet())
 		{
@@ -174,6 +120,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	 */
 	public V getUnsafe(K k)
 	{
+		_readCount.incrementAndGet();
 		V v = _cache.get(k);
 		if(v != null) return v;
 		if(_cacheMod == null) return null;
@@ -184,6 +131,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 			_cache.put(k, v);
 			return v;
 		}
+		_readStoCount.incrementAndGet();
 		v = _stoTable.get(k);
 		if(v != null)
 		{
@@ -221,6 +169,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	 */
 	public V getNoCacheUnsafe(K k)
 	{
+		_readCount.incrementAndGet();
 		V v = _cache.get(k);
 		if(v != null) return v;
 		if(_cacheMod == null) return null;
@@ -230,6 +179,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 			if(v == _deleted) return null;
 			return v;
 		}
+		_readStoCount.incrementAndGet();
 		return _stoTable.get(k);
 	}
 
@@ -251,6 +201,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>>
 	 */
 	public V getCacheUnsafe(K k)
 	{
+		_readCount.incrementAndGet();
 		V v = _cache.get(k);
 		if(v != null) return v;
 		if(_cacheMod == null) return null;
