@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentMap;
@@ -25,17 +26,18 @@ import jane.core.SContext.Safe;
  */
 public final class DBManager
 {
-	private static final DBManager                             _instance   = new DBManager();
-	private final SimpleDateFormat                             _sdf        = new SimpleDateFormat("yy-MM-dd-HH-mm-ss"); // 备份文件后缀名的时间格式
-	private final ScheduledExecutorService                     _commitThread;                                          // 处理数据提交的线程
-	private final ThreadPoolExecutor                           _procThreads;                                           // 事务线程池
-	private final ConcurrentMap<Object, ArrayDeque<Procedure>> _qmap       = Util.newConcurrentHashMap();              // 当前sid队列的数量
-	private final AtomicLong                                   _procCount  = new AtomicLong();                         // 绑定过sid的在队列中未运行的事务数量
-	private final AtomicLong                                   _modCount   = new AtomicLong();                         // 当前缓存修改的记录数
-	private final CommitTask                                   _commitTask = new CommitTask();                         // 数据提交的任务
-	private volatile Storage                                   _storage;                                               // 存储引擎
-	private volatile ScheduledFuture<?>                        _commitFuture;                                          // 数据提交的结果
-	private volatile boolean                                   _exit;                                                  // 是否在退出状态(已经执行了ShutdownHook)
+	private static final DBManager                             _instance          = new DBManager();
+	private final SimpleDateFormat                             _sdf               = new SimpleDateFormat("yy-MM-dd-HH-mm-ss"); // 备份文件后缀名的时间格式
+	private final ScheduledExecutorService                     _commitThread;                                                 // 处理数据提交的线程
+	private final ThreadPoolExecutor                           _procThreads;                                                  // 事务线程池
+	private final ConcurrentMap<Object, ArrayDeque<Procedure>> _qmap              = Util.newConcurrentHashMap();              // 当前sid队列的数量
+	private final AtomicLong                                   _procCount         = new AtomicLong();                         // 绑定过sid的在队列中未运行的事务数量
+	private final AtomicLong                                   _modCount          = new AtomicLong();                         // 当前缓存修改的记录数
+	private final CommitTask                                   _commitTask        = new CommitTask();                         // 数据提交的任务
+	private final ArrayList<Runnable>                          _shutdownCallbacks = new ArrayList<Runnable>();                // 退出时的用户回调列表
+	private volatile Storage                                   _storage;                                                      // 存储引擎
+	private volatile ScheduledFuture<?>                        _commitFuture;                                                 // 数据提交的结果
+	private volatile boolean                                   _exit;                                                         // 是否在退出状态(已经执行了ShutdownHook)
 
 	{
 		_commitThread = Executors.newSingleThreadScheduledExecutor(new ThreadFactory()
@@ -243,6 +245,16 @@ public final class DBManager
 	}
 
 	/**
+	 * 获取进程退出前的回调列表(可修改)
+	 * <p>
+	 * 在关闭数据库前按顺序调用,每次回调的异常会记录日志并忽略
+	 */
+	public ArrayList<Runnable> getShutdownCallbacks()
+	{
+		return _shutdownCallbacks;
+	}
+
+	/**
 	 * 启动数据库系统
 	 * <p>
 	 * 必须在注册数据库表和操作数据库之前启动
@@ -265,6 +277,19 @@ public final class DBManager
 			{
 				try
 				{
+					Log.log.info("DBManager.JVMShutDown: shutdown begin");
+					for(Runnable r : _shutdownCallbacks)
+					{
+						try
+						{
+							r.run();
+						}
+						catch(Throwable e)
+						{
+							Log.log.error("DBManager.JVMShutDown: user callback exception:", e);
+						}
+						_shutdownCallbacks.clear();
+					}
 					Log.log.info("DBManager.JVMShutDown: db shutdown");
 					synchronized(DBManager.this)
 					{
