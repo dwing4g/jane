@@ -13,25 +13,25 @@ namespace Jane.Bean
 	{
 		public const int BEAN_TYPE = 2;
 
-		public  /* 1*/ bool v1; // 1字节布尔,0表示假,1表示真,其它默认表示真;
-		public  /* 2*/ sbyte v2; // 1字节整数;
-		public  /* 3*/ short v3; // 2字节整数;
-		public  /* 4*/ int v4; // 4字节整数;
-		public  /* 5*/ long v5; // 8字节整数;
-		public  /* 6*/ float v6; // 4字节浮点数;
-		public  /* 7*/ double v7; // 8字节浮点数;
-		public  /* 8*/ Octets v8; // 二进制数据(Octets);
-		public  /* 9*/ string v9; // 字符串(String);
-		public  /*10*/ List<bool> v10; // 数组容器(ArrayList);
-		public  /*11*/ LinkedList<sbyte> v11; // 链表容器(LinkedList);
-		public  /*12*/ LinkedList<int> v12; // 队列容器(ArrayDeque);
-		public  /*13*/ HashSet<long> v13; // 无序集合容器(HashSet);
-		public  /*14*/ SortedSet<float> v14; // 排序集合容器(TreeSet);
-		public  /*15*/ HashSet<double> v15; // 有序集合容器(LinkedHashSet);
-		public  /*16*/ Dictionary<long, string> v16; // 无序映射容器(HashMap);
-		public  /*17*/ SortedDictionary<TestBean, bool> v17; // 排序映射容器(TreeMap);
-		public  /*18*/ Dictionary<Octets, TestBean> v18; // 有序映射容器(LinkedHashMap);
-		public  /*19*/ TestBean v19; // 嵌入其它bean;
+		public  /*  1*/ bool v1; // 1字节布尔,0表示假,1表示真,其它默认表示真;
+		public  /*  2*/ sbyte v2; // 1字节整数;
+		public  /*  3*/ short v3; // 2字节整数;
+		public  /*  4*/ int v4; // 4字节整数;
+		public  /*  5*/ long v5; // 8字节整数;
+		public  /*  6*/ float v6; // 4字节浮点数;
+		public  /*  7*/ double v7; // 8字节浮点数;
+		public  /*  8*/ Octets v8; // 二进制数据(Octets);
+		public  /*  9*/ string v9; // 字符串(String);
+		public  /* 10*/ List<bool> v10; // 数组容器(ArrayList);
+		public  /* 11*/ LinkedList<sbyte> v11; // 链表容器(LinkedList);
+		public  /* 12*/ LinkedList<int> v12; // 队列容器(ArrayDeque);
+		public  /* 13*/ HashSet<long> v13; // 无序集合容器(HashSet);
+		public  /* 14*/ SortedSet<float> v14; // 排序集合容器(TreeSet);
+		public  /* 15*/ HashSet<double> v15; // 有序集合容器(LinkedHashSet);
+		public  /* 16*/ Dictionary<long, string> v16; // 无序映射容器(HashMap);
+		public  /* 17*/ SortedDictionary<TestBean, bool> v17; // 排序映射容器(TreeMap);
+		public  /* 18*/ Dictionary<Octets, TestBean> v18; // 有序映射容器(LinkedHashMap);
+		public  /* 19*/ TestBean v19; // 嵌入其它bean;
 
 		public TestType(bool v1, sbyte v2, short v3, int v4, long v5, float v6, double v7, Octets v8, string v9, ICollection<bool> v10, ICollection<sbyte> v11, ICollection<int> v12, ICollection<long> v13, ICollection<float> v14, ICollection<double> v15, IDictionary<long, string> v16, IDictionary<TestBean, bool> v17, IDictionary<Octets, TestBean> v18, TestBean v19)
 		{
@@ -284,7 +284,7 @@ namespace Jane.Bean
 
 		public OctetsStream Marshal(OctetsStream s)
 		{
-			if(this.v1) s.marshal1((byte)0x04).marshal1((byte)1);
+			if(this.v1) s.marshal2(0x0401);
 			if(this.v2 != 0) s.marshal1((byte)0x08).marshal(this.v2);
 			if(this.v3 != 0) s.marshal1((byte)0x0c).marshal(this.v3);
 			if(this.v4 != 0) s.marshal1((byte)0x10).marshal(this.v4);
@@ -358,7 +358,7 @@ namespace Jane.Bean
 		public OctetsStream Unmarshal(OctetsStream s)
 		{
 			Init();
-			for(;;) { int i = s.unmarshalUInt1(), t = i & 3; switch(i >> 2)
+			for(;;) { int i = s.unmarshalUInt1(), t = i & 3; if(i > 251) i += s.unmarshalUInt1() << 2; switch(i >> 2)
 			{
 				case 0: return s;
 				case 1: this.v1 = (s.unmarshalInt(t) != 0); break;
@@ -547,15 +547,15 @@ namespace Jane.Bean
 			return true;
 		}
 
-        public static bool operator==(TestType a, TestType b)
-        {
-            return a.Equals(b);
-        }
+		public static bool operator==(TestType a, TestType b)
+		{
+			return a.Equals(b);
+		}
 
-        public static bool operator!=(TestType a, TestType b)
-        {
-            return !a.Equals(b);
-        }
+		public static bool operator!=(TestType a, TestType b)
+		{
+			return !a.Equals(b);
+		}
 
 		public int CompareTo(TestType b)
 		{

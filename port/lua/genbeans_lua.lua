@@ -17,7 +17,7 @@ local num, str, bool, vec, map = 0, 1, 2, 3, 4
 return require "util".initBeans {
 #[#	#(bean.name) = { __type = #(bean.type), __vars = {
 #{#		#(var.name)#(var.value),
-#}##(#		[#(var.id2)] = { name = "#(var.name)", type = #(var.btype)#(var.keyval) },
+#}##(#		[#(var.id3)] = { name = "#(var.name)", type = #(var.btype)#(var.keyval) },
 #)#	}},
 #]#}
 
@@ -81,10 +81,10 @@ function bean(bean)
 
 	for _, var in ipairs(bean) do
 		if type(var.id) ~= "number" then var.id = -1 end
-		if var.id < -1 or var.id > 62 then error("ERROR: normal id=" .. var.id .. " must be in [1, 62]") end
+		if var.id < -1 or var.id > 190 then error("ERROR: normal id=" .. var.id .. " must be in [1, 190]") end
 		if type(var.value) == "string" then var.value = "\"" .. var.value .. "\"" end
 		var.value = var.value and " = " .. var.value or ""
-		var.id2 = format("%2d", var.id)
+		var.id3 = format("%3d", var.id)
 		var.name = trim(var.name)
 		var.type = trim(var.type)
 		local basetype

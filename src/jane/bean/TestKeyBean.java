@@ -15,8 +15,8 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 	public  static final int BEAN_TYPE = 0;
 	public  static final TestKeyBean BEAN_STUB = new TestKeyBean();
 
-	private /* 1*/ int key1; // KEY-1
-	private /* 2*/ final String key2; // KEY-2
+	private /*  1*/ int key1; // KEY-1
+	private /*  2*/ final String key2; // KEY-2
 
 	public TestKeyBean()
 	{

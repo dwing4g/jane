@@ -23,8 +23,8 @@ public final class TestBean extends Bean<TestBean>
 	private static Field FIELD_value1;
 	private static Field FIELD_value2;
 
-	private /* 1*/ int value1; // 字段的注释
-	private /* 2*/ long value2;
+	private /*  1*/ int value1; // 字段的注释
+	private /*  2*/ long value2;
 
 	static
 	{
@@ -139,7 +139,7 @@ public final class TestBean extends Bean<TestBean>
 	@Override
 	public OctetsStream unmarshal(OctetsStream s) throws MarshalException
 	{
-		for(;;) { int i = s.unmarshalInt1() & 0xff, t = i & 3; switch(i >> 2)
+		for(;;) { int i = s.unmarshalInt1() & 0xff, t = i & 3; if(i > 251) i += s.unmarshalInt1() << 2; switch(i >> 2)
 		{
 			case 0: return s;
 			case 1: this.value1 = s.unmarshalInt(t); break;

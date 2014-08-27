@@ -63,7 +63,7 @@ namespace Jane.Bean
 		public OctetsStream Unmarshal(OctetsStream s)
 		{
 			Init();
-			for(;;) { int i = s.unmarshalUInt1(), t = i & 3; switch(i >> 2)
+			for(;;) { int i = s.unmarshalUInt1(), t = i & 3; if(i > 251) i += s.unmarshalUInt1() << 2; switch(i >> 2)
 			{
 				case 0: return s;
 				default: s.unmarshalSkipVar(t); break;
@@ -92,15 +92,15 @@ namespace Jane.Bean
 			return true;
 		}
 
-        public static bool operator==(TestEmpty a, TestEmpty b)
-        {
-            return a.Equals(b);
-        }
+		public static bool operator==(TestEmpty a, TestEmpty b)
+		{
+			return a.Equals(b);
+		}
 
-        public static bool operator!=(TestEmpty a, TestEmpty b)
-        {
-            return !a.Equals(b);
-        }
+		public static bool operator!=(TestEmpty a, TestEmpty b)
+		{
+			return !a.Equals(b);
+		}
 
 		public int CompareTo(TestEmpty b)
 		{

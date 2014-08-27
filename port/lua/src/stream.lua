@@ -275,10 +275,17 @@ function Stream:marshal(v, tag, subtype)
 		if tag then
 			if v == 0 then return end
 			if ft then
-				append(self, char(tag * 4 + 3))
-				append(self, char(ftype + 4))
+				if tag < 63 then
+					append(self, char(tag * 4 + 3, ftype + 4))
+				else
+					append(self, char(0xff, tag - 63, ftype + 4))
+				end
 			else
-				append(self, char(tag * 4))
+				if tag < 63 then
+					append(self, char(tag * 4))
+				else
+					append(self, char(0xfc, tag - 63))
+				end
 			end
 		end
 		if ft then
@@ -289,12 +296,22 @@ function Stream:marshal(v, tag, subtype)
 	elseif t == "string" then
 		if tag then
 			if v == "" then return end
-			append(self, char(tag * 4 + 1))
+			if tag < 63 then
+				append(self, char(tag * 4 + 1))
+			else
+				append(self, char(0xfd, tag - 63))
+			end
 		end
 		marshalStr(self, v)
 	elseif t == "table" then
 		if v.__type then -- bean
-			if tag then append(self, char(tag * 4 + 2)) end
+			if tag then
+				if tag < 63 then
+					append(self, char(tag * 4 + 2))
+				else
+					append(self, char(0xfe, tag - 63))
+				end
+			end
 			local vars = v.__class.__vars
 			local buf = self.buf
 			local n = buf and #buf
@@ -311,8 +328,11 @@ function Stream:marshal(v, tag, subtype)
 			end
 		elseif not v.__map then -- vec
 			subtype = vecVarType(v)
-			append(self, char(tag * 4 + 3))
-			append(self, char(subtype))
+			if tag < 63 then
+				append(self, char(tag * 4 + 3, subtype))
+			else
+				append(self, char(0xff, tag - 63, subtype))
+			end
 			self:marshalUInt(#v)
 			for _, vv in ipairs(v) do
 				self:marshal(vv, nil, subtype)
@@ -324,8 +344,11 @@ function Stream:marshal(v, tag, subtype)
 			end
 			if n > 0 then
 				local kt, vt = mapVarType(v)
-				append(self, char(tag * 4 + 3))
-				append(self, char(0x80 + kt * 8 + vt))
+				if tag < 63 then
+					append(self, char(tag * 4 + 3, 0x40 + kt * 8 + vt))
+				else
+					append(self, char(0xff, tag - 63, 0x40 + kt * 8 + vt))
+				end
 				self:marshalUInt(n)
 				for k, vv in pairs(v) do
 					self:marshal(k, nil, kt)
@@ -423,6 +446,7 @@ local function unmarshalVar(self, vars)
 	local v = tag % 4
 	tag = (tag - v) / 4
 	if tag == 0 then return end
+	if tag == 63 then tag = 63 + unmarshalByte(self) end
 	vars = vars and vars[tag]
 	local t = vars and vars.type
 	if v == 0 then

@@ -56,26 +56,26 @@ public final class TestType extends Bean<TestType>
 	private static SMapListener<Octets, TestBean> LISTENER_v18;
 	private static Field FIELD_v20;
 
-	private /* 1*/ boolean v1; // 1字节布尔,0表示假,1表示真,其它默认表示真
-	private /* 2*/ byte v2; // 1字节整数
-	private /* 3*/ short v3; // 2字节整数
-	private /* 4*/ int v4; // 4字节整数
-	private /* 5*/ long v5; // 8字节整数
-	private /* 6*/ float v6; // 4字节浮点数
-	private /* 7*/ double v7; // 8字节浮点数
-	private /* 8*/ Octets v8; // 二进制数据(Octets)
-	private /* 9*/ String v9; // 字符串(String)
-	private /*10*/ final ArrayList<Boolean> v10; // 数组容器(ArrayList)
-	private /*11*/ final LinkedList<Byte> v11; // 链表容器(LinkedList)
-	private /*12*/ final ArrayDeque<Integer> v12; // 队列容器(ArrayDeque)
-	private /*13*/ final HashSet<Long> v13; // 无序集合容器(HashSet)
-	private /*14*/ final TreeSet<Float> v14; // 排序集合容器(TreeSet)
-	private /*15*/ final LinkedHashSet<Double> v15; // 有序集合容器(LinkedHashSet)
-	private /*16*/ final HashMap<Long, String> v16; // 无序映射容器(HashMap)
-	private /*17*/ final TreeMap<TestBean, Boolean> v17; // 排序映射容器(TreeMap)
-	private /*18*/ final LinkedHashMap<Octets, TestBean> v18; // 有序映射容器(LinkedHashMap)
-	private /*19*/ final TestBean v19; // 嵌入其它bean
-	private /* 0*/ java.lang.String v20; // 非序列化字段
+	private /*  1*/ boolean v1; // 1字节布尔,0表示假,1表示真,其它默认表示真
+	private /*  2*/ byte v2; // 1字节整数
+	private /*  3*/ short v3; // 2字节整数
+	private /*  4*/ int v4; // 4字节整数
+	private /*  5*/ long v5; // 8字节整数
+	private /*  6*/ float v6; // 4字节浮点数
+	private /*  7*/ double v7; // 8字节浮点数
+	private /*  8*/ Octets v8; // 二进制数据(Octets)
+	private /*  9*/ String v9; // 字符串(String)
+	private /* 10*/ final ArrayList<Boolean> v10; // 数组容器(ArrayList)
+	private /* 11*/ final LinkedList<Byte> v11; // 链表容器(LinkedList)
+	private /* 12*/ final ArrayDeque<Integer> v12; // 队列容器(ArrayDeque)
+	private /* 13*/ final HashSet<Long> v13; // 无序集合容器(HashSet)
+	private /* 14*/ final TreeSet<Float> v14; // 排序集合容器(TreeSet)
+	private /* 15*/ final LinkedHashSet<Double> v15; // 有序集合容器(LinkedHashSet)
+	private /* 16*/ final HashMap<Long, String> v16; // 无序映射容器(HashMap)
+	private /* 17*/ final TreeMap<TestBean, Boolean> v17; // 排序映射容器(TreeMap)
+	private /* 18*/ final LinkedHashMap<Octets, TestBean> v18; // 有序映射容器(LinkedHashMap)
+	private /* 19*/ final TestBean v19; // 嵌入其它bean
+	private /*  0*/ java.lang.String v20; // 非序列化字段
 
 	static
 	{
@@ -392,7 +392,7 @@ public final class TestType extends Bean<TestType>
 	@Override
 	public OctetsStream marshal(OctetsStream s)
 	{
-		if(this.v1) s.marshal1((byte)0x04).marshal1((byte)1);
+		if(this.v1) s.marshal2(0x0401);
 		if(this.v2 != 0) s.marshal1((byte)0x08).marshal(this.v2);
 		if(this.v3 != 0) s.marshal1((byte)0x0c).marshal(this.v3);
 		if(this.v4 != 0) s.marshal1((byte)0x10).marshal(this.v4);
@@ -466,7 +466,7 @@ public final class TestType extends Bean<TestType>
 	@Override
 	public OctetsStream unmarshal(OctetsStream s) throws MarshalException
 	{
-		for(;;) { int i = s.unmarshalInt1() & 0xff, t = i & 3; switch(i >> 2)
+		for(;;) { int i = s.unmarshalInt1() & 0xff, t = i & 3; if(i > 251) i += s.unmarshalInt1() << 2; switch(i >> 2)
 		{
 			case 0: return s;
 			case 1: this.v1 = (s.unmarshalInt(t) != 0); break;
