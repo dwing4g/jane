@@ -127,6 +127,16 @@ namespace ]=] .. namespace .. [=[.Bean
 #)#			return true;
 		}
 
+        public static bool operator==(#(bean.name) a, #(bean.name) b)
+        {
+            return a.Equals(b);
+        }
+
+        public static bool operator!=(#(bean.name) a, #(bean.name) b)
+        {
+            return !a.Equals(b);
+        }
+
 		public int CompareTo(#(bean.name) b)
 		{#<#
 			int c;#>#

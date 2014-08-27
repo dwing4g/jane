@@ -547,6 +547,16 @@ namespace Jane.Bean
 			return true;
 		}
 
+        public static bool operator==(TestType a, TestType b)
+        {
+            return a.Equals(b);
+        }
+
+        public static bool operator!=(TestType a, TestType b)
+        {
+            return !a.Equals(b);
+        }
+
 		public int CompareTo(TestType b)
 		{
 			int c;

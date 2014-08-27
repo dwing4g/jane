@@ -39,7 +39,7 @@ public class NetManager implements IoHandler
 	private static final ScheduledExecutorService _rpcThread;                                                      // 处理重连及RPC和事务超时的线程
 	private final String                          _name           = getClass().getName();                          // 当前管理器的名字
 	private Class<? extends IoFilter>             _pcf            = BeanCodec.class;                               // 协议编码器的类
-	private IntMap<BeanHandler<?>>                _handlers       = new IntMap<BeanHandler<?>>(0);                 // bean的处理器
+	private volatile IntMap<BeanHandler<?>>       _handlers       = new IntMap<BeanHandler<?>>(0);                 // bean的处理器
 	private volatile NioSocketAcceptor            _acceptor;                                                       // mina的网络监听器
 	private volatile NioSocketConnector           _connector;                                                      // mina的网络连接器
 	private int                                   _processorCount = Runtime.getRuntime().availableProcessors() + 1; // 监听器或连接器的处理器数量

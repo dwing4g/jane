@@ -121,6 +121,16 @@ namespace Jane
 			return _type == rb._type && (_fields == rb._fields || _fields != null && _fields.Equals(rb._fields));
 		}
 
+        public static bool operator==(DynBean a, DynBean b)
+        {
+            return a.Equals(b);
+        }
+
+        public static bool operator!=(DynBean a, DynBean b)
+        {
+            return !a.Equals(b);
+        }
+
 		public int CompareTo(IBean b)
 		{
 			throw new NotSupportedException();

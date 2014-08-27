@@ -92,6 +92,16 @@ namespace Jane.Bean
 			return true;
 		}
 
+        public static bool operator==(TestEmpty a, TestEmpty b)
+        {
+            return a.Equals(b);
+        }
+
+        public static bool operator!=(TestEmpty a, TestEmpty b)
+        {
+            return !a.Equals(b);
+        }
+
 		public int CompareTo(TestEmpty b)
 		{
 			return 0;

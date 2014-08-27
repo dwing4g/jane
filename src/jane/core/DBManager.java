@@ -453,6 +453,14 @@ public final class DBManager
 	}
 
 	/**
+	 * 获取当前事务线程池对象
+	 */
+	public ThreadPoolExecutor getProcThreads()
+	{
+		return _procThreads;
+	}
+
+	/**
 	 * 获取当前事务线程池待运行的事务数量
 	 */
 	public int getProcSubmittedCount()

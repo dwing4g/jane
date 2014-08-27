@@ -18,7 +18,7 @@ public final class IntMap<V> implements Cloneable
 	// private static final int PRIME1 = 0xbe1f14b1;
 	private static final int    PRIME2  = 0xb4b82e39;
 	private static final int    PRIME3  = 0xced1c241;
-	private static final int    EMPTY   = 0;
+	public static final int     EMPTY   = 0;
 	private static final Random _random = new Random();
 	private int                 _size;
 	private int[]               _keyTable;
@@ -77,6 +77,41 @@ public final class IntMap<V> implements Cloneable
 	public int size()
 	{
 		return _size;
+	}
+
+	public int[] getKeyTable()
+	{
+		return _keyTable;
+	}
+
+	public V[] getValueTable()
+	{
+		return _valueTable;
+	}
+
+	public int getTableSize()
+	{
+		return _keyTable.length;
+	}
+
+	public int getIndexKey(int index)
+	{
+		return _keyTable[index];
+	}
+
+	public V getIndexValue(int index)
+	{
+		return _valueTable[index];
+	}
+
+	public boolean hasZeroValue()
+	{
+		return _hasZeroValue;
+	}
+
+	public V getZeroValue()
+	{
+		return _zeroValue;
 	}
 
 	public V put(int key, V value)

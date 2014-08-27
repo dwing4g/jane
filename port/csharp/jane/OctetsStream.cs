@@ -343,7 +343,7 @@ namespace Jane
 		public int marshalUIntBack(int p, int x)
 		{
 			int t = count;
-			if(p < 5 || p > t) throw new ArgumentException("p=" + p + ", _count=" + _count);
+			if(p < 5 || p > t) throw new ArgumentException("p=" + p + ", count=" + count);
 			if(x < 0x80)       { count = p - 1; marshal1((byte)(x > 0 ? x : 0));          count = t; return 1; }
 			if(x < 0x4000)     { count = p - 2; marshal2(x + 0x8000);                     count = t; return 2; }
 			if(x < 0x200000)   { count = p - 3; marshal3(x + 0xc00000);                   count = t; return 3; }
