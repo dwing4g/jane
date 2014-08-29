@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
@@ -498,6 +500,64 @@ public class NetManager implements IoHandler
 		return true;
 	}
 
+	private static final class FutureRPC<R> extends FutureTask<R>
+	{
+		private static final Callable<Object> _call = new Callable<Object>()
+		                                            {
+			                                            @Override
+			                                            public Object call() throws Exception
+			                                            {
+				                                            return null;
+			                                            }
+		                                            };
+
+		@SuppressWarnings("unchecked")
+		public FutureRPC()
+		{
+			super((Callable<R>)_call);
+		}
+
+		@Override
+		public void set(R v)
+		{
+			super.set(v);
+		}
+	}
+
+	/**
+	 * 向某个连接发送RPC请求并返回FutureTask对象
+	 * <p>
+	 * 此操作是异步的
+	 * @return 如果连接已经失效则返回null, 如果RPC超时则对返回的FutureTask对象调用get方法时返回null
+	 */
+	public <A extends Bean<A>, R extends Bean<R>> FutureTask<R> sendRpcSync(final IoSession session, final RpcBean<A, R> rpcBean)
+	{
+		rpcBean.setRequest();
+		if(!send(session, rpcBean)) return null;
+		rpcBean.setReqTime((int)(System.currentTimeMillis() / 1000));
+		rpcBean.setSession(session);
+		final FutureRPC<R> ft = new FutureRPC<R>();
+		rpcBean.setOnClient(new RpcHandler<A, R>()
+		{
+			@Override
+			public void onClient(NetManager m, IoSession s, A a, R r)
+			{
+				ft.set(r);
+			}
+
+			@Override
+			public void onTimeout(NetManager m, IoSession s, A a)
+			{
+				ft.set(null);
+			}
+		});
+		_rpcs.put(rpcBean.getRpcId(), rpcBean);
+		return ft;
+	}
+
+	/**
+	 * 同sendRpc, 区别仅仅是在事务成功后发送RPC
+	 */
 	public <A extends Bean<A>, R extends Bean<R>> boolean sendRpcSafe(final IoSession session, final RpcBean<A, R> rpcBean, final RpcHandler<A, R> handler)
 	{
 		if(session.isClosing()) return false;
