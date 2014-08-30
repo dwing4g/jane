@@ -95,7 +95,7 @@ public final class TestType extends Bean<TestType>
 		}
 		catch(Exception e)
 		{
-			throw new RuntimeException(e);
+			throw new Error(e);
 		}
 	}
 

@@ -36,7 +36,7 @@ public final class TestBean extends Bean<TestBean>
 		}
 		catch(Exception e)
 		{
-			throw new RuntimeException(e);
+			throw new Error(e);
 		}
 	}
 

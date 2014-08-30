@@ -10,8 +10,8 @@ public final class TestMarshal
 		OctetsStream os = new OctetsStream();
 		os.marshal(x);
 		int y = os.unmarshalInt();
-		if(x != y) throw new RuntimeException("unmarshal wrong value: " + x + " -> " + y + " dump: " + os.dump());
-		if(os.position() != os.size()) throw new RuntimeException("unmarshal wrong position: " + x);
+		if(x != y) throw new Error("unmarshal wrong value: " + x + " -> " + y + " dump: " + os.dump());
+		if(os.position() != os.size()) throw new Error("unmarshal wrong position: " + x);
 	}
 
 	private static void testLong(long x) throws MarshalException
@@ -19,8 +19,8 @@ public final class TestMarshal
 		OctetsStream os = new OctetsStream();
 		os.marshal(x);
 		long y = os.unmarshalLong();
-		if(x != y) throw new RuntimeException("unmarshal wrong value: " + x + " -> " + y + " dump: " + os.dump());
-		if(os.position() != os.size()) throw new RuntimeException("unmarshal wrong position: " + x);
+		if(x != y) throw new Error("unmarshal wrong value: " + x + " -> " + y + " dump: " + os.dump());
+		if(os.position() != os.size()) throw new Error("unmarshal wrong position: " + x);
 	}
 
 	private static void testUInt(int x) throws MarshalException
@@ -28,8 +28,8 @@ public final class TestMarshal
 		OctetsStream os = new OctetsStream();
 		os.marshalUInt(x);
 		int y = os.unmarshalUInt();
-		if(x != y) throw new RuntimeException("unmarshal wrong value: " + x + " -> " + y + " dump: " + os.dump());
-		if(os.position() != os.size()) throw new RuntimeException("unmarshal wrong position: " + x);
+		if(x != y) throw new Error("unmarshal wrong value: " + x + " -> " + y + " dump: " + os.dump());
+		if(os.position() != os.size()) throw new Error("unmarshal wrong position: " + x);
 	}
 
 	private static void testUTF8(char x) throws MarshalException
@@ -37,8 +37,8 @@ public final class TestMarshal
 		OctetsStream os = new OctetsStream();
 		os.marshalUTF8(x);
 		char y = os.unmarshalUTF8();
-		if(x != y) throw new RuntimeException("unmarshal wrong value: " + (int)x + " -> " + (int)y + " dump: " + os.dump());
-		if(os.position() != os.size()) throw new RuntimeException("unmarshal wrong position: " + (int)x);
+		if(x != y) throw new Error("unmarshal wrong value: " + (int)x + " -> " + (int)y + " dump: " + os.dump());
+		if(os.position() != os.size()) throw new Error("unmarshal wrong position: " + (int)x);
 	}
 
 	private static void testAll(long x) throws MarshalException

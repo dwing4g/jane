@@ -231,7 +231,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 				}
 				catch(Exception e)
 				{
-					throw new RuntimeException(e);
+					throw new Error(e);
 				}
 			}
 

@@ -14,6 +14,7 @@ public final class RawBean extends Bean<RawBean>
 
 	public RawBean()
 	{
+		_data = new Octets();
 	}
 
 	public RawBean(int type, Octets data)

@@ -41,7 +41,7 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 #(##(var.fieldget)#)#		}
 		catch(Exception e)
 		{
-			throw new RuntimeException(e);
+			throw new Error(e);
 		}
 	}
 

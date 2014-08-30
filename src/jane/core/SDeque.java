@@ -440,7 +440,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 				}
 				catch(Exception e)
 				{
-					throw new RuntimeException(e);
+					throw new Error(e);
 				}
 			}
 

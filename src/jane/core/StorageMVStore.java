@@ -246,6 +246,7 @@ public final class StorageMVStore implements Storage
 			}
 			catch(Exception e)
 			{
+				throw new Error(e);
 			}
 		}
 
@@ -288,7 +289,7 @@ public final class StorageMVStore implements Storage
 					}
 					catch(Exception e)
 					{
-						throw new RuntimeException(e);
+						throw new Error(e);
 					}
 				}
 			}
@@ -326,7 +327,7 @@ public final class StorageMVStore implements Storage
 					}
 					catch(Exception e)
 					{
-						throw new RuntimeException(e);
+						throw new Error(e);
 					}
 				}
 			}

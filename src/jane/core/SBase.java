@@ -35,7 +35,7 @@ public abstract class SBase implements Runnable
 			}
 			catch(Exception e)
 			{
-				throw new RuntimeException(e);
+				throw new Error(e);
 			}
 		}
 	}
@@ -59,7 +59,7 @@ public abstract class SBase implements Runnable
 			}
 			catch(Exception e)
 			{
-				throw new RuntimeException(e);
+				throw new Error(e);
 			}
 		}
 	}
@@ -83,7 +83,7 @@ public abstract class SBase implements Runnable
 			}
 			catch(Exception e)
 			{
-				throw new RuntimeException(e);
+				throw new Error(e);
 			}
 		}
 	}
@@ -107,7 +107,7 @@ public abstract class SBase implements Runnable
 			}
 			catch(Exception e)
 			{
-				throw new RuntimeException(e);
+				throw new Error(e);
 			}
 		}
 	}
@@ -131,7 +131,7 @@ public abstract class SBase implements Runnable
 			}
 			catch(Exception e)
 			{
-				throw new RuntimeException(e);
+				throw new Error(e);
 			}
 		}
 	}
@@ -155,7 +155,7 @@ public abstract class SBase implements Runnable
 			}
 			catch(Exception e)
 			{
-				throw new RuntimeException(e);
+				throw new Error(e);
 			}
 		}
 	}
@@ -179,7 +179,7 @@ public abstract class SBase implements Runnable
 			}
 			catch(Exception e)
 			{
-				throw new RuntimeException(e);
+				throw new Error(e);
 			}
 		}
 	}
@@ -203,7 +203,7 @@ public abstract class SBase implements Runnable
 			}
 			catch(Exception e)
 			{
-				throw new RuntimeException(e);
+				throw new Error(e);
 			}
 		}
 	}
@@ -227,7 +227,7 @@ public abstract class SBase implements Runnable
 			}
 			catch(Exception e)
 			{
-				throw new RuntimeException(e);
+				throw new Error(e);
 			}
 		}
 	}
@@ -251,7 +251,7 @@ public abstract class SBase implements Runnable
 			}
 			catch(Exception e)
 			{
-				throw new RuntimeException(e);
+				throw new Error(e);
 			}
 		}
 	}

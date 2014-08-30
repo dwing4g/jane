@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -502,19 +503,19 @@ public class NetManager implements IoHandler
 
 	private static final class FutureRPC<R> extends FutureTask<R>
 	{
-		private static final Callable<Object> _call = new Callable<Object>()
-		                                            {
-			                                            @Override
-			                                            public Object call() throws Exception
-			                                            {
-				                                            return null;
-			                                            }
-		                                            };
+		private static final Callable<?> _dummy = new Callable<Object>()
+		                                        {
+			                                        @Override
+			                                        public Object call()
+			                                        {
+				                                        return null;
+			                                        }
+		                                        };
 
 		@SuppressWarnings("unchecked")
 		public FutureRPC()
 		{
-			super((Callable<R>)_call);
+			super((Callable<R>)_dummy);
 		}
 
 		@Override
@@ -525,12 +526,12 @@ public class NetManager implements IoHandler
 	}
 
 	/**
-	 * 向某个连接发送RPC请求并返回FutureTask对象
+	 * 向某个连接发送RPC请求并返回Future对象
 	 * <p>
 	 * 此操作是异步的
-	 * @return 如果连接已经失效则返回null, 如果RPC超时则对返回的FutureTask对象调用get方法时返回null
+	 * @return 如果连接已经失效则返回null, 如果RPC超时则对返回的Future对象调用get方法时返回null
 	 */
-	public <A extends Bean<A>, R extends Bean<R>> FutureTask<R> sendRpcSync(final IoSession session, final RpcBean<A, R> rpcBean)
+	public <A extends Bean<A>, R extends Bean<R>> Future<R> sendRpcSync(final IoSession session, final RpcBean<A, R> rpcBean)
 	{
 		rpcBean.setRequest();
 		if(!send(session, rpcBean)) return null;

@@ -227,7 +227,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 				}
 				catch(Exception e)
 				{
-					throw new RuntimeException(e);
+					throw new Error(e);
 				}
 			}
 
