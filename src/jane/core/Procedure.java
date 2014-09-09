@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.RandomAccess;
 import java.util.SortedSet;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -33,16 +34,16 @@ public abstract class Procedure implements Runnable
 		private volatile Procedure proc;                                                // 当前运行的事务
 	}
 
-	private static final ThreadLocal<Context>   _tlProc;                                             // 每个事务线程绑定一个上下文
-	private static final Lock[]                 _lockPool    = new ReentrantLock[Const.lockPoolSize]; // 全局共享的锁池
-	private static final int                    _lockMask    = Const.lockPoolSize - 1;               // 锁池下标的掩码
-	private static final ReentrantReadWriteLock _rwlCommit   = new ReentrantReadWriteLock();         // 用于数据提交的读写锁
-	private static final Map<Thread, Context>   _procThreads = Util.newProcThreadsMap();             // 当前运行的全部事务线程. 用于判断是否超时
-	private static ExceptionHandler             _defaultEh;                                          // 默认的全局异常处理
-	private volatile Context                    _ctx;                                                // 事务所属的线程上下文. 只在事务运行中有效
-	private SContext                            _sctx;                                               // 安全修改的上下文
-	private volatile Object                     _sid;                                                // 事务所属的SessionId
-	private volatile long                       _beginTime;                                          // 事务运行的起始时间. 用于判断是否超时
+	private static final ThreadLocal<Context>   _tlProc;                                                // 每个事务线程绑定一个上下文
+	private static final Lock[]                 _lockPool    = new ReentrantLock[Const.lockPoolSize];   // 全局共享的锁池
+	private static final int                    _lockMask    = Const.lockPoolSize - 1;                  // 锁池下标的掩码
+	private static final ReentrantReadWriteLock _rwlCommit   = new ReentrantReadWriteLock();            // 用于数据提交的读写锁
+	private static final Map<Thread, Context>   _procThreads = Util.newProcThreadsMap();                // 当前运行的全部事务线程. 用于判断是否超时
+	private static ExceptionHandler             _defaultEh;                                             // 默认的全局异常处理
+	private final AtomicReference<Context>      _ctx         = new AtomicReference<Procedure.Context>(); // 事务所属的线程上下文. 只在事务运行中有效
+	private SContext                            _sctx;                                                  // 安全修改的上下文
+	private volatile Object                     _sid;                                                   // 事务所属的SessionId
+	private volatile long                       _beginTime;                                             // 事务运行的起始时间. 用于判断是否超时
 
 	static
 	{
@@ -68,18 +69,19 @@ public abstract class Procedure implements Runnable
 						long[] tids = null;
 						boolean foundDeadlock = false;
 						long now = System.currentTimeMillis();
+						long procTimeout = (long)Const.procedureTimeout * 1000;
 						for(Entry<Thread, Context> e : _procThreads.entrySet())
 						{
 							Thread t = e.getKey();
 							if(t.isAlive())
 							{
 								Procedure p = e.getValue().proc;
-								if(p != null && now - p._beginTime > Const.procedureTimeout * 1000)
+								if(p != null && now - p._beginTime > procTimeout)
 								{
 									synchronized(p)
 									{
 										long timeout = now - p._beginTime;
-										if(timeout > Const.procedureTimeout * 1000 && e.getValue().proc != null)
+										if(timeout > procTimeout && e.getValue().proc != null)
 										{
 											if(!foundDeadlock)
 											{
@@ -94,20 +96,10 @@ public abstract class Procedure implements Runnable
 													if(tids[i] == tid)
 													{
 														StringBuilder sb = new StringBuilder(4096);
-														if(p._sid != null)
-														{
-															sb.append("procedure({}) in {} interrupted for timeout and deadlock({} ms): sid={}");
-															for(StackTraceElement ste : t.getStackTrace())
-																sb.append("\tat ").append(ste);
-															Log.log.error(sb.toString(), p.getClass().getName(), t, timeout, p._sid);
-														}
-														else
-														{
-															sb.append("procedure({}) in {} interrupted for timeout and deadlock({} ms)");
-															for(StackTraceElement ste : t.getStackTrace())
-																sb.append("\tat ").append(ste);
-															Log.log.error(sb.toString(), p.getClass().getName(), t, timeout);
-														}
+														sb.append("procedure({}) in {} interrupted for timeout and deadlock({} ms): sid={}");
+														for(StackTraceElement ste : t.getStackTrace())
+															sb.append("\tat ").append(ste);
+														Log.log.error(sb.toString(), p.getClass().getName(), t, timeout, p._sid);
 														t.interrupt();
 														break;
 													}
@@ -193,7 +185,13 @@ public abstract class Procedure implements Runnable
 	 */
 	protected final void setUnintterrupted()
 	{
-		if(_ctx != null) _ctx.proc = null;
+		Context ctx = _ctx.get();
+		if(ctx != null)
+		{
+			Procedure p = ctx.proc;
+			if(p != null)
+			    p._beginTime = Long.MAX_VALUE;
+		}
 	}
 
 	@SuppressWarnings("serial")
@@ -239,21 +237,22 @@ public abstract class Procedure implements Runnable
 	 */
 	protected final void unlock()
 	{
-		if(_ctx == null) throw new IllegalStateException("invalid lock/unlock out of procedure");
+		Context ctx = _ctx.get();
+		if(ctx == null) throw new IllegalStateException("invalid lock/unlock out of procedure");
 		if(_sctx.hasDirty()) throw new IllegalStateException("invalid unlock after any dirty record");
-		if(_ctx.lockCount == 0) return;
-		for(int i = _ctx.lockCount - 1; i >= 0; --i)
+		if(ctx.lockCount == 0) return;
+		for(int i = ctx.lockCount - 1; i >= 0; --i)
 		{
 			try
 			{
-				_ctx.locks[i].unlock();
+				ctx.locks[i].unlock();
 			}
 			catch(Throwable e)
 			{
 				Log.log.fatal("UNLOCK FAILED!!!", e);
 			}
 		}
-		_ctx.lockCount = 0;
+		ctx.lockCount = 0;
 	}
 
 	/**
@@ -299,8 +298,9 @@ public abstract class Procedure implements Runnable
 	protected final void lock(int lockId) throws InterruptedException
 	{
 		unlock();
-		(_ctx.locks[0] = getLock(lockId)).lockInterruptibly();
-		_ctx.lockCount = 1;
+		Context ctx = _ctx.get();
+		(ctx.locks[0] = getLock(lockId)).lockInterruptibly();
+		ctx.lockCount = 1;
 	}
 
 	/**
@@ -317,10 +317,11 @@ public abstract class Procedure implements Runnable
 		if(n > Const.maxLockPerProcedure)
 		    throw new IllegalStateException("lock exceed: " + n + '>' + Const.maxLockPerProcedure);
 		Arrays.sort(lockIds);
+		Context ctx = _ctx.get();
 		for(int i = 0; i < n;)
 		{
-			(_ctx.locks[i] = getLock(lockIds[i])).lockInterruptibly();
-			_ctx.lockCount = ++i;
+			(ctx.locks[i] = getLock(lockIds[i])).lockInterruptibly();
+			ctx.lockCount = ++i;
 		}
 	}
 
@@ -350,10 +351,11 @@ public abstract class Procedure implements Runnable
 				ids[i++] = lockId;
 		}
 		Arrays.sort(ids);
+		Context ctx = _ctx.get();
 		for(i = 0; i < n;)
 		{
-			(_ctx.locks[i] = getLock(ids[i])).lockInterruptibly();
-			_ctx.lockCount = ++i;
+			(ctx.locks[i] = getLock(ids[i])).lockInterruptibly();
+			ctx.lockCount = ++i;
 		}
 	}
 
@@ -371,10 +373,11 @@ public abstract class Procedure implements Runnable
 		if(n > Const.maxLockPerProcedure)
 		    throw new IllegalStateException("lock exceed: " + n + '>' + Const.maxLockPerProcedure);
 		int i = 0;
+		Context ctx = _ctx.get();
 		for(int lockId : lockIds)
 		{
-			(_ctx.locks[i] = getLock(lockId)).lockInterruptibly();
-			_ctx.lockCount = ++i;
+			(ctx.locks[i] = getLock(lockId)).lockInterruptibly();
+			ctx.lockCount = ++i;
 		}
 	}
 
@@ -403,20 +406,21 @@ public abstract class Procedure implements Runnable
 	 */
 	private void lock2(int lockId0, int lockId1) throws InterruptedException
 	{
-		int i = _ctx.lockCount;
+		Context ctx = _ctx.get();
+		int i = ctx.lockCount;
 		if(lockId0 < lockId1)
 		{
-			(_ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
-			_ctx.lockCount = ++i;
-			(_ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
-			_ctx.lockCount = ++i;
+			(ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+			ctx.lockCount = ++i;
+			(ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+			ctx.lockCount = ++i;
 		}
 		else
 		{
-			(_ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
-			_ctx.lockCount = ++i;
-			(_ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
-			_ctx.lockCount = ++i;
+			(ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+			ctx.lockCount = ++i;
+			(ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+			ctx.lockCount = ++i;
 		}
 	}
 
@@ -426,41 +430,42 @@ public abstract class Procedure implements Runnable
 	 */
 	private void lock3(int lockId0, int lockId1, int lockId2) throws InterruptedException
 	{
-		int i = _ctx.lockCount;
+		Context ctx = _ctx.get();
+		int i = ctx.lockCount;
 		if(lockId0 <= lockId1)
 		{
 			if(lockId0 < lockId2)
 			{
-				(_ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
-				_ctx.lockCount = ++i;
+				(ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+				ctx.lockCount = ++i;
 				lock2(lockId1, lockId2);
 			}
 			else
 			{
-				(_ctx.locks[i] = getLock(lockId2)).lockInterruptibly();
-				_ctx.lockCount = ++i;
-				(_ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
-				_ctx.lockCount = ++i;
-				(_ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
-				_ctx.lockCount = ++i;
+				(ctx.locks[i] = getLock(lockId2)).lockInterruptibly();
+				ctx.lockCount = ++i;
+				(ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+				ctx.lockCount = ++i;
+				(ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+				ctx.lockCount = ++i;
 			}
 		}
 		else
 		{
 			if(lockId1 < lockId2)
 			{
-				(_ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
-				_ctx.lockCount = ++i;
+				(ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+				ctx.lockCount = ++i;
 				lock2(lockId0, lockId2);
 			}
 			else
 			{
-				(_ctx.locks[i] = getLock(lockId2)).lockInterruptibly();
-				_ctx.lockCount = ++i;
-				(_ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
-				_ctx.lockCount = ++i;
-				(_ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
-				_ctx.lockCount = ++i;
+				(ctx.locks[i] = getLock(lockId2)).lockInterruptibly();
+				ctx.lockCount = ++i;
+				(ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+				ctx.lockCount = ++i;
+				(ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+				ctx.lockCount = ++i;
 			}
 		}
 	}
@@ -501,6 +506,7 @@ public abstract class Procedure implements Runnable
 	protected final void lock(int lockId0, int lockId1, int lockId2, int lockId3) throws InterruptedException
 	{
 		unlock();
+		Context ctx = _ctx.get();
 		int i = 0;
 		if(lockId0 <= lockId1)
 		{
@@ -508,49 +514,49 @@ public abstract class Procedure implements Runnable
 			{
 				if(lockId0 < lockId3)
 				{
-					(_ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
-					_ctx.lockCount = ++i;
+					(ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+					ctx.lockCount = ++i;
 					lock3(lockId0, lockId1, lockId2);
 				}
 				else
 				{
-					(_ctx.locks[i] = getLock(lockId3)).lockInterruptibly();
-					_ctx.lockCount = ++i;
-					(_ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
-					_ctx.lockCount = ++i;
+					(ctx.locks[i] = getLock(lockId3)).lockInterruptibly();
+					ctx.lockCount = ++i;
+					(ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+					ctx.lockCount = ++i;
 					lock2(lockId1, lockId2);
 				}
 			}
 			else if(lockId2 < lockId3)
 			{
-				(_ctx.locks[i] = getLock(lockId2)).lockInterruptibly();
-				_ctx.lockCount = ++i;
+				(ctx.locks[i] = getLock(lockId2)).lockInterruptibly();
+				ctx.lockCount = ++i;
 				if(lockId0 < lockId3)
 				{
-					(_ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
-					_ctx.lockCount = ++i;
+					(ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+					ctx.lockCount = ++i;
 					lock2(lockId1, lockId3);
 				}
 				else
 				{
-					(_ctx.locks[i] = getLock(lockId3)).lockInterruptibly();
-					_ctx.lockCount = ++i;
-					(_ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
-					_ctx.lockCount = ++i;
-					(_ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
-					_ctx.lockCount = ++i;
+					(ctx.locks[i] = getLock(lockId3)).lockInterruptibly();
+					ctx.lockCount = ++i;
+					(ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+					ctx.lockCount = ++i;
+					(ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+					ctx.lockCount = ++i;
 				}
 			}
 			else
 			{
-				(_ctx.locks[i] = getLock(lockId3)).lockInterruptibly();
-				_ctx.lockCount = ++i;
-				(_ctx.locks[i] = getLock(lockId2)).lockInterruptibly();
-				_ctx.lockCount = ++i;
-				(_ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
-				_ctx.lockCount = ++i;
-				(_ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
-				_ctx.lockCount = ++i;
+				(ctx.locks[i] = getLock(lockId3)).lockInterruptibly();
+				ctx.lockCount = ++i;
+				(ctx.locks[i] = getLock(lockId2)).lockInterruptibly();
+				ctx.lockCount = ++i;
+				(ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+				ctx.lockCount = ++i;
+				(ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+				ctx.lockCount = ++i;
 			}
 		}
 		else
@@ -559,50 +565,68 @@ public abstract class Procedure implements Runnable
 			{
 				if(lockId1 < lockId3)
 				{
-					(_ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
-					_ctx.lockCount = ++i;
+					(ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+					ctx.lockCount = ++i;
 					lock3(lockId0, lockId2, lockId3);
 				}
 				else
 				{
-					(_ctx.locks[i] = getLock(lockId3)).lockInterruptibly();
-					_ctx.lockCount = ++i;
-					(_ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
-					_ctx.lockCount = ++i;
+					(ctx.locks[i] = getLock(lockId3)).lockInterruptibly();
+					ctx.lockCount = ++i;
+					(ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+					ctx.lockCount = ++i;
 					lock2(lockId0, lockId2);
 				}
 			}
 			else if(lockId2 < lockId3)
 			{
-				(_ctx.locks[i] = getLock(lockId2)).lockInterruptibly();
-				_ctx.lockCount = ++i;
+				(ctx.locks[i] = getLock(lockId2)).lockInterruptibly();
+				ctx.lockCount = ++i;
 				if(lockId1 < lockId3)
 				{
-					(_ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
-					_ctx.lockCount = ++i;
+					(ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+					ctx.lockCount = ++i;
 					lock2(lockId0, lockId3);
 				}
 				else
 				{
-					(_ctx.locks[i] = getLock(lockId3)).lockInterruptibly();
-					_ctx.lockCount = ++i;
-					(_ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
-					_ctx.lockCount = ++i;
-					(_ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
-					_ctx.lockCount = ++i;
+					(ctx.locks[i] = getLock(lockId3)).lockInterruptibly();
+					ctx.lockCount = ++i;
+					(ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+					ctx.lockCount = ++i;
+					(ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+					ctx.lockCount = ++i;
 				}
 			}
 			else
 			{
-				(_ctx.locks[i] = getLock(lockId3)).lockInterruptibly();
-				_ctx.lockCount = ++i;
-				(_ctx.locks[i] = getLock(lockId2)).lockInterruptibly();
-				_ctx.lockCount = ++i;
-				(_ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
-				_ctx.lockCount = ++i;
-				(_ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
-				_ctx.lockCount = ++i;
+				(ctx.locks[i] = getLock(lockId3)).lockInterruptibly();
+				ctx.lockCount = ++i;
+				(ctx.locks[i] = getLock(lockId2)).lockInterruptibly();
+				ctx.lockCount = ++i;
+				(ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+				ctx.lockCount = ++i;
+				(ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+				ctx.lockCount = ++i;
 			}
+		}
+	}
+
+	/**
+	 * 事务的运行入口
+	 * <p>
+	 * 同{@link #execute}, 实现Runnable的接口,没有返回值
+	 */
+	@Override
+	public void run()
+	{
+		try
+		{
+			execute();
+		}
+		catch(Throwable e)
+		{
+			Log.log.error("procedure fatal exception: " + toString(), e);
 		}
 	}
 
@@ -612,23 +636,27 @@ public abstract class Procedure implements Runnable
 	 * 一般应通过调度来运行({@link DBManager#submit})<br>
 	 * 如果确保没有顺序问题,也可以由用户直接调用,但不能在事务中嵌套调用
 	 */
-	@Override
-	public void run()
+	public boolean execute() throws Exception
 	{
+		Context ctx = _tlProc.get();
+		if(!_ctx.compareAndSet(null, ctx))
+		{
+			Log.log.error("procedure already running: " + toString());
+			_sid = null;
+			return false;
+		}
+		if(DBManager.instance().isExit())
+		{
+			Thread.sleep(Long.MAX_VALUE); // 如果有退出信号则线程睡死等待终结
+			throw new IllegalStateException();
+		}
 		ReadLock rl = null;
 		try
 		{
-			if(_ctx != null) throw new IllegalStateException("invalid running in procedure");
 			rl = _rwlCommit.readLock();
 			rl.lock();
-			if(DBManager.instance().isExit())
-			{
-				rl.unlock();
-				Thread.sleep(Long.MAX_VALUE); // 如果有退出信号则线程睡死等待终结
-			}
+			ctx.proc = this;
 			_beginTime = System.currentTimeMillis();
-			_ctx = _tlProc.get();
-			_ctx.proc = this;
 			_sctx = SContext.current();
 			for(int n = Const.maxProceduerRedo;;)
 			{
@@ -643,9 +671,10 @@ public abstract class Procedure implements Runnable
 				}
 				_sctx.rollback();
 				unlock();
-				if(--n <= 0) throw new Exception("procedure redo too many times=" + Const.maxProceduerRedo);
+				if(--n <= 0) throw new Exception("procedure redo too many times=" + Const.maxProceduerRedo + ": " + toString());
 			}
 			_sctx.commit();
+			return true;
 		}
 		catch(Throwable e)
 		{
@@ -656,31 +685,27 @@ public abstract class Procedure implements Runnable
 			}
 			catch(Throwable ex)
 			{
-				if(_sid != null)
-					Log.log.error("procedure.onException exception: sid=" + _sid, ex);
-				else
-					Log.log.error("procedure.onException exception:", ex);
+				Log.log.error("procedure.onException exception: " + toString(), ex);
 			}
 			finally
 			{
-				_sctx.rollback();
+				if(_sctx != null)
+				    _sctx.rollback();
 			}
+			return false;
 		}
 		finally
 		{
-			if(_ctx != null)
+			unlock();
+			synchronized(this)
 			{
-				unlock();
-				synchronized(this)
-				{
-					_ctx.proc = null;
-					Thread.interrupted(); // 清除interrupted标识
-				}
-				_ctx = null;
+				ctx.proc = null;
+				Thread.interrupted(); // 清除interrupted标识
 			}
 			_sctx = null;
 			if(rl != null) rl.unlock();
 			_sid = null;
+			_ctx.set(null);
 		}
 	}
 
@@ -697,11 +722,12 @@ public abstract class Procedure implements Runnable
 		if(_defaultEh != null)
 			_defaultEh.onException(e);
 		else
-		{
-			if(_sid != null)
-				Log.log.error("procedure exception: sid=" + _sid, e);
-			else
-				Log.log.error("procedure exception:", e);
-		}
+			Log.log.error("procedure exception: " + toString(), e);
+	}
+
+	@Override
+	public String toString()
+	{
+		return getClass().getName() + ":sid=" + _sid;
 	}
 }
