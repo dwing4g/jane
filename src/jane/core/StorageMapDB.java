@@ -7,17 +7,17 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ConcurrentNavigableMap;
 import org.mapdb.Atomic;
 import org.mapdb.BTreeKeySerializer;
+import org.mapdb.BTreeKeySerializer.BasicKeySerializer;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DB.BTreeMapMaker;
 import org.mapdb.DBMaker;
-import org.mapdb.DataInput2;
-import org.mapdb.DataOutput2;
+import org.mapdb.DataIO.DataInputByteArray;
+import org.mapdb.DataIO.DataInputByteBuffer;
+import org.mapdb.DataIO.DataOutputByteArray;
 import org.mapdb.Serializer;
 
 /**
@@ -27,11 +27,11 @@ import org.mapdb.Serializer;
  */
 public final class StorageMapDB implements Storage
 {
-	private static final StorageMapDB  _instance   = new StorageMapDB();
-	private final Map<String, Bean<?>> _tableStubK = new HashMap<String, Bean<?>>(); // 保存的bean类型key的存根. 用于序列化
-	private DB                         _db;                                         // MapDB的数据库对象(会多线程并发访问)
-	private File                       _dbFile;                                     // 当前数据库的文件
-	private int                        _modCount;                                   // 统计一次提交的put数量(不会被多线程访问)
+	private static final StorageMapDB _instance = new StorageMapDB();
+	private IntMap<Bean<?>>           _stubKMap = new IntMap<Bean<?>>(); // 保存的bean类型key的存根. 用于序列化
+	private DB                        _db;                              // MapDB的数据库对象(会多线程并发访问)
+	private File                      _dbFile;                          // 当前数据库的文件
+	private int                       _modCount;                        // 统计一次提交的put数量(不会被多线程访问)
 
 	private final class Table<K, V extends Bean<V>> implements Storage.Table<K, V>
 	{
@@ -170,28 +170,28 @@ public final class StorageMapDB implements Storage
 		}
 	}
 
-	private static final class MapDBSerializer implements Serializer<Bean<?>>, Serializable
+	private static final class MapDBBeanSerializer implements Serializer<Bean<?>>, Serializable
 	{
-		private static final long       serialVersionUID = 2524574473300271970L;
-		private final String            _tableName;
-		private final transient Bean<?> _stub;
+		private static final long serialVersionUID = 2524574473300271970L;
+		private final int         _tableId;
+		private transient Bean<?> _stub;
 
-		public MapDBSerializer(String tableName, Bean<?> stub)
+		public MapDBBeanSerializer(int tableId, Bean<?> stub)
 		{
-			_tableName = tableName;
+			_tableId = tableId;
 			_stub = stub;
 		}
 
 		@Override
 		public void serialize(DataOutput out, Bean<?> bean)
 		{
-			DataOutput2 do2 = (DataOutput2)out;
-			OctetsStream os = OctetsStream.wrap(do2.buf, do2.pos);
-			os.reserve(do2.pos + bean.initSize());
+			DataOutputByteArray outba = (DataOutputByteArray)out;
+			OctetsStream os = OctetsStream.wrap(outba.buf, outba.pos);
+			os.reserve(outba.pos + bean.initSize());
 			os.marshal1((byte)0); // format
 			bean.marshal(os);
-			do2.buf = os.array();
-			do2.pos = os.size();
+			outba.buf = os.array();
+			outba.pos = os.size();
 		}
 
 		@Override
@@ -199,16 +199,20 @@ public final class StorageMapDB implements Storage
 		{
 			int format = in.readByte();
 			if(format != 0)
-			    throw new IllegalStateException("unknown record value format(" + format + ") in table(" + _tableName + ')');
-			DataInput2 di2 = (DataInput2)in;
-			ByteBuffer bb = di2.buf;
-			Bean<?> bean;
-			if(bb.hasArray())
+			    throw new IllegalStateException("unknown record value format(" + format + ") in table(" + _tableId + ')');
+			if(_stub == null)
 			{
-				int offset = bb.arrayOffset();
-				OctetsStream os = OctetsStream.wrap(bb.array(), offset + bb.limit());
+				_stub = _instance._stubKMap.get(_tableId);
+				if(_stub == null) _stub = DynBean.BEAN_STUB;
+			}
+			Bean<?> bean;
+			if(in instanceof DataInputByteArray)
+			{
+				DataInputByteArray outba = (DataInputByteArray)in;
+				int pos = outba.getPos();
+				OctetsStream os = OctetsStream.wrap(outba.internalByteArray(), pos + available);
+				os.setPosition(pos);
 				os.setExceptionInfo(true);
-				os.setPosition(offset + di2.pos);
 				bean = _stub.alloc();
 				try
 				{
@@ -218,25 +222,47 @@ public final class StorageMapDB implements Storage
 				{
 					throw new IOException(e);
 				}
-				di2.pos = (available >= 0 ? di2.pos + available : os.position() - offset);
+				outba.setPos(os.position());
 			}
 			else
 			{
-				int pos = bb.position();
-				OctetsStream os = ByteBufferStream.wrap(bb);
-				os.setExceptionInfo(true);
-				os.setPosition(di2.pos);
-				bean = _stub.alloc();
-				try
+				DataInputByteBuffer outbb = (DataInputByteBuffer)in;
+				ByteBuffer bb = outbb.buf;
+				if(bb.hasArray())
 				{
-					bean.unmarshal(os);
+					int offset = bb.arrayOffset();
+					OctetsStream os = OctetsStream.wrap(bb.array(), offset + bb.limit());
+					os.setPosition(offset + outbb.pos);
+					os.setExceptionInfo(true);
+					bean = _stub.alloc();
+					try
+					{
+						bean.unmarshal(os);
+					}
+					catch(MarshalException e)
+					{
+						throw new IOException(e);
+					}
+					outbb.pos = os.position() - offset;
 				}
-				catch(MarshalException e)
+				else
 				{
-					throw new IOException(e);
+					int pos = bb.position();
+					OctetsStream os = ByteBufferStream.wrap(bb);
+					os.setPosition(outbb.pos);
+					os.setExceptionInfo(true);
+					bean = _stub.alloc();
+					try
+					{
+						bean.unmarshal(os);
+					}
+					catch(MarshalException e)
+					{
+						throw new IOException(e);
+					}
+					outbb.pos = bb.position();
+					bb.position(pos);
 				}
-				di2.pos = (available >= 0 ? di2.pos + available : bb.position());
-				bb.position(pos);
 			}
 			return bean;
 		}
@@ -245,6 +271,24 @@ public final class StorageMapDB implements Storage
 		public int fixedSize()
 		{
 			return -1;
+		}
+	}
+
+	private static final class MapDBBeanComparator implements Comparator<Bean<?>>, Serializable
+	{
+		private static final long                serialVersionUID = 8114163372703049845L;
+		private static final MapDBBeanComparator _inst            = new MapDBBeanComparator();
+
+		public static MapDBBeanComparator instance()
+		{
+			return _inst;
+		}
+
+		@SuppressWarnings({ "unchecked", "rawtypes" })
+		@Override
+		public int compare(Bean<?> o1, Bean<?> o2)
+		{
+			return ((Bean)o1).compareTo(o2);
 		}
 	}
 
@@ -257,6 +301,30 @@ public final class StorageMapDB implements Storage
 		{
 			return _inst;
 		}
+
+		//@formatter:off
+		private static void marshalUInt(DataOutput out, int x) throws IOException
+		{
+			     if(x < 0x80)      out.writeByte(x);                                        // 0xxx xxxx
+			else if(x < 0x4000)    out.writeShort(x + 0x8000);                              // 10xx xxxx +1B
+			else if(x < 0x200000) {out.writeByte((x + 0xc00000) >> 16); out.writeShort(x);} // 110x xxxx +2B
+			else if(x < 0x1000000) out.writeInt(x + 0xe0000000);                            // 1110 xxxx +3B
+			else {out.writeByte(0xf0); out.writeInt(x);}                                    // 1111 0000 +4B
+		}
+
+		private static int unmarshalUInt(DataInput in) throws IOException
+		{
+			int b = in.readByte() & 0xff;
+			switch(b >> 4)
+			{
+			case  0: case  1: case  2: case  3: case 4: case 5: case 6: case 7: return b;
+			case  8: case  9: case 10: case 11: return ((b & 0x3f) <<  8) + (in.readByte() & 0xff);
+			case 12: case 13:                   return ((b & 0x1f) << 16) + (in.readShort() & 0xffff);
+			case 14:                            return ((b & 0x0f) << 24) + ((in.readByte() & 0xff) << 16) + (in.readShort() & 0xffff);
+			default: int r = in.readInt(); if(r < 0) throw new IOException("minus value: " + r); return r;
+			}
+		}
+		//@formatter:on
 
 		@Override
 		public void serialize(DataOutput out, Octets o) throws IOException
@@ -281,125 +349,66 @@ public final class StorageMapDB implements Storage
 		}
 	}
 
-	private static final class MapDBKeyOctetsSerializer extends BTreeKeySerializer<Octets> implements Serializable
+	private static final class MapDBOctetsComparator implements Comparator<Octets>, Serializable
 	{
-		private static final long                     serialVersionUID = 1259228541710028468L;
-		private static final MapDBKeyOctetsSerializer _inst            = new MapDBKeyOctetsSerializer();
+		private static final long                  serialVersionUID = 3759293914147039203L;
+		private static final MapDBOctetsComparator _inst            = new MapDBOctetsComparator();
 
-		public static MapDBKeyOctetsSerializer instance()
+		public static MapDBOctetsComparator instance()
 		{
 			return _inst;
 		}
 
 		@Override
-		public void serialize(DataOutput out, int start, int end, Object[] keys) throws IOException
+		public int compare(Octets o1, Octets o2)
 		{
-			for(int i = start; i < end; ++i)
-			{
-				Octets o = (Octets)keys[i];
-				marshalUInt(out, o.size());
-				out.write(o.array(), 0, o.size());
-			}
-		}
-
-		@Override
-		public Object[] deserialize(DataInput in, int start, int end, int size) throws IOException
-		{
-			Object[] objs = new Object[size];
-			for(int i = start; i < end; ++i)
-			{
-				int n = unmarshalUInt(in);
-				Octets o = Octets.createSpace(n);
-				in.readFully(o.array(), 0, n);
-				objs[i] = o;
-			}
-			return objs;
-		}
-
-		@Override
-		public Comparator<Octets> getComparator()
-		{
-			return null;
+			return o1.compareTo(o2);
 		}
 	}
 
-	private static final class MapDBKeyStringSerializer extends BTreeKeySerializer<String> implements Serializable
+	private static final class MapDBStringSerializer implements Serializer<String>, Serializable
 	{
-		private static final long                     serialVersionUID = -7289889134227462080L;
-		private static final MapDBKeyStringSerializer _inst            = new MapDBKeyStringSerializer();
+		private static final long                  serialVersionUID = -3968063288659798552L;
+		private static final MapDBStringSerializer _inst            = new MapDBStringSerializer();
 
-		public static MapDBKeyStringSerializer instance()
+		public static MapDBStringSerializer instance()
 		{
 			return _inst;
 		}
 
 		@Override
-		public void serialize(DataOutput out, int start, int end, Object[] keys) throws IOException
+		public void serialize(DataOutput out, String o) throws IOException
 		{
-			for(int i = start; i < end; ++i)
-				out.writeUTF((String)keys[i]);
+			out.writeUTF(o);
 		}
 
 		@Override
-		public Object[] deserialize(DataInput in, int start, int end, int size) throws IOException
+		public String deserialize(DataInput in, int available) throws IOException
 		{
-			Object[] objs = new Object[size];
-			for(int i = start; i < end; ++i)
-				objs[i] = in.readUTF();
-			return objs;
+			return in.readUTF();
 		}
 
 		@Override
-		public Comparator<String> getComparator()
+		public int fixedSize()
 		{
-			return null;
+			return -1;
 		}
 	}
 
-	private static final class MapDBKeyBeanSerializer extends BTreeKeySerializer<Bean<?>> implements Serializable
+	private static final class MapDBStringComparator implements Comparator<String>, Serializable
 	{
-		private static final long         serialVersionUID = -3465230589722405630L;
-		private final String              _tableName;
-		private transient MapDBSerializer _serializer;
+		private static final long                  serialVersionUID = 6085724818521579327L;
+		private static final MapDBStringComparator _inst            = new MapDBStringComparator();
 
-		public MapDBKeyBeanSerializer(String tableName, Bean<?> stub)
+		public static MapDBStringComparator instance()
 		{
-			_tableName = tableName;
-			_serializer = new MapDBSerializer(tableName, stub);
+			return _inst;
 		}
 
 		@Override
-		public void serialize(DataOutput out, int start, int end, Object[] keys)
+		public int compare(String o1, String o2)
 		{
-			if(_serializer == null)
-			{
-				Bean<?> stub = _instance._tableStubK.get(_tableName);
-				if(stub == null) stub = DynBean.BEAN_STUB;
-				_serializer = new MapDBSerializer(_tableName, stub);
-			}
-			for(int i = start; i < end; ++i)
-				_serializer.serialize(out, (Bean<?>)keys[i]);
-		}
-
-		@Override
-		public Object[] deserialize(DataInput in, int start, int end, int size) throws IOException
-		{
-			if(_serializer == null)
-			{
-				Bean<?> stub = _instance._tableStubK.get(_tableName);
-				if(stub == null) stub = DynBean.BEAN_STUB;
-				_serializer = new MapDBSerializer(_tableName, stub);
-			}
-			Object[] objs = new Object[size];
-			for(int i = start; i < end; ++i)
-				objs[i] = _serializer.deserialize(in, -1);
-			return objs;
-		}
-
-		@Override
-		public Comparator<Bean<?>> getComparator()
-		{
-			return null;
+			return o1.compareTo(o2);
 		}
 	}
 
@@ -408,33 +417,16 @@ public final class StorageMapDB implements Storage
 		return _instance;
 	}
 
-	//@formatter:off
-	private static void marshalUInt(DataOutput out, int x) throws IOException
+	public void registerKeyBean(IntMap<Bean<?>> stubKMap)
 	{
-		     if(x < 0x80)      out.writeByte(x);             // 0xxx xxxx
-		else if(x < 0x4000)    out.writeShort(x + 0x8000);   // 10xx xxxx +1B
-		else if(x < 0x200000) {out.writeByte((x + 0xc00000) >> 16); out.writeShort(x);} // 110x xxxx +2B
-		else if(x < 0x1000000) out.writeInt(x + 0xe0000000); // 1110 xxxx +3B
-		else {out.writeByte(0xf0); out.writeInt(x);}         // 1111 0000 +4B
-	}
-
-	private static int unmarshalUInt(DataInput in) throws IOException
-	{
-		int b = in.readByte() & 0xff;
-		switch(b >> 4)
+		try
 		{
-		case  0: case  1: case  2: case  3: case 4: case 5: case 6: case 7: return b;
-		case  8: case  9: case 10: case 11: return ((b & 0x3f) <<  8) + (in.readByte() & 0xff);
-		case 12: case 13:                   return ((b & 0x1f) << 16) + (in.readShort() & 0xffff);
-		case 14:                            return ((b & 0x0f) << 24) + ((in.readByte() & 0xff) << 16) + (in.readShort() & 0xffff);
-		default: int r = in.readInt(); if(r < 0) throw new IOException("minus value: " + r); return r;
+			_stubKMap = stubKMap.clone();
 		}
-	}
-	//@formatter:on
-
-	public void registerKeyBean(Map<String, Bean<?>> stubKMap)
-	{
-		_tableStubK.putAll(stubKMap);
+		catch(CloneNotSupportedException e)
+		{
+			throw new Error(e);
+		}
 	}
 
 	public StorageMapDB()
@@ -451,7 +443,7 @@ public final class StorageMapDB implements Storage
 	public void openDB(File file)
 	{
 		close();
-		DBMaker<?> dbMaker = DBMaker.newFileDB(file);
+		DBMaker dbMaker = DBMaker.newFileDB(file);
 		// 取消注释下面的commitFileSyncDisable可以加快一点commit的速度,写数据量大的时候可以避免同时读非cache数据卡住过长时间
 		// 但程序崩溃的话,有可能导致某些未刷新的数据丢失或影响后面的备份操作,建议平时都要注释
 		// 不过在commit后对StoreWAL调用phys和index的sync可以让数据丢失的可能性降到极低,而且sync操作可以和读操作并发,更不影响cache层的读写
@@ -474,13 +466,13 @@ public final class StorageMapDB implements Storage
 	{
 		BTreeMapMaker btmm = _db.createTreeMap(tableName).valueSerializer(MapDBOctetsSerializer.instance());
 		if(stubK instanceof Octets)
-			btmm.keySerializer(MapDBKeyOctetsSerializer.instance());
+			btmm.keySerializer(new BasicKeySerializer(MapDBOctetsSerializer.instance(), MapDBOctetsComparator.instance()));
 		else if(stubK instanceof String)
-			btmm.keySerializer(MapDBKeyStringSerializer.instance());
+			btmm.keySerializer(new BasicKeySerializer(MapDBStringSerializer.instance(), MapDBStringComparator.instance()));
 		else if(stubK instanceof Bean)
 		{
-			_tableStubK.put(tableName, (Bean<?>)stubK);
-			btmm.keySerializer(new MapDBKeyBeanSerializer(tableName, (Bean<?>)stubK));
+			_stubKMap.put(tableId, (Bean<?>)stubK);
+			btmm.keySerializer(new BasicKeySerializer(new MapDBBeanSerializer(tableId, (Bean<?>)stubK), MapDBBeanComparator.instance()));
 		}
 		return new Table<K, V>(btmm.<K, Octets>makeOrGet(), tableName, stubV);
 	}
@@ -490,7 +482,7 @@ public final class StorageMapDB implements Storage
 	{
 		BTreeMapMaker btmm = _db.createTreeMap(tableName)
 		        .valueSerializer(MapDBOctetsSerializer.instance())
-		        .keySerializer(BTreeKeySerializer.ZERO_OR_POSITIVE_LONG);
+		        .keySerializer(BTreeKeySerializer.LONG);
 		return new TableLong<V>(btmm.<Long, Octets>makeOrGet(), tableName, stubV);
 	}
 

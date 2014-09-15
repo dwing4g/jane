@@ -29,7 +29,7 @@ import java.util.*;
 public final class Fun {
 
 
-	public static final Comparator COMPARATOR = new Comparator<Comparable>() {
+	public static final Comparator COMPARATOR_NULLABLE = new Comparator<Comparable>() {
         @Override
         public int compare(Comparable o1, Comparable o2) {
             if(o1 == null)
@@ -40,6 +40,13 @@ public final class Fun {
                 return o2 == HI?0:1;
             if(o2 == HI) return -1;
 
+            return o1.compareTo(o2);
+        }
+    };
+
+    public static final Comparator COMPARATOR = new Comparator<Comparable>() {
+        @Override
+        public int compare(Comparable o1, Comparable o2) {
             return o1.compareTo(o2);
         }
     };
@@ -61,7 +68,6 @@ public final class Fun {
     public static final Comparator<Tuple4> TUPLE4_COMPARATOR = new Tuple4Comparator(null,null,null,null);
     public static final Comparator<Tuple5> TUPLE5_COMPARATOR = new Tuple5Comparator(null,null,null,null,null);
     public static final Comparator<Tuple6> TUPLE6_COMPARATOR = new Tuple6Comparator(null,null,null,null,null,null);
-
 
     private Fun(){}
 
@@ -108,9 +114,40 @@ public final class Fun {
         return a==b || (a!=null && a.equals(b));
     }
 
+    /** Convert object to string, even if it is primitive array */
+    static String toString(Object keys) {
+        if(keys instanceof long[])
+            return Arrays.toString((long[]) keys);
+        else if(keys instanceof int[])
+            return Arrays.toString((int[]) keys);
+        else if(keys instanceof byte[])
+            return Arrays.toString((byte[]) keys);
+        else if(keys instanceof char[])
+            return Arrays.toString((char[]) keys);
+        else if(keys instanceof float[])
+            return Arrays.toString((float[]) keys);
+        else if(keys instanceof double[])
+            return Arrays.toString((double[]) keys);
+        else  if(keys instanceof boolean[])
+            return Arrays.toString((boolean[]) keys);
+        else  if(keys instanceof Object[])
+            return Arrays.toString((Object[]) keys);
+        else
+            return keys.toString();
+    }
 
-    static public final class Tuple2<A,B> implements Comparable<Tuple2<A,B>>, Serializable {
+    public interface Tuple {
 		
+        void copyIntoArray(Object[] array, int offset);
+
+        int compare(Comparator[] comparators, Object[] values, int offset);
+
+        Object get(int i);
+    }
+
+
+    static public final class Tuple2<A,B> implements Comparable<Tuple2<A,B>>, Serializable, Tuple {
+
     	private static final long serialVersionUID = -8816277286657643283L;
 		
 		final public A a;
@@ -151,9 +188,30 @@ public final class Fun {
         @Override public String toString() {
             return "Tuple2[" + a +", "+b+"]";
         }
+
+        @Override
+        public void copyIntoArray(Object[] array, int offset) {
+            array[offset++] = a;
+            array[offset]=b;
     }
 
-    final static public class Tuple3<A,B,C> implements Comparable<Tuple3<A,B,C>>, Serializable{
+        @Override
+        public int compare(Comparator[] comparators, Object[] values, int offset) {
+            int i = comparators[0].compare(a,values[offset++]);
+            if(i!=0) return i;
+            return comparators[1].compare(b,values[offset]);
+         }
+
+        @Override
+        public Object get(int i) {
+            switch(i){
+                case 0: return a;
+                default: return b;
+            }
+        }
+    }
+
+    final static public class Tuple3<A,B,C> implements Comparable<Tuple3<A,B,C>>, Serializable, Tuple {
 
     	private static final long serialVersionUID = 11785034935947868L;
     	
@@ -202,9 +260,35 @@ public final class Fun {
             result = 31 * result + (c != null ? c.hashCode() : 0);
             return result;
         }
+
+        @Override
+        public void copyIntoArray(Object[] array, int offset) {
+            array[offset++]=a;
+            array[offset++]=b;
+            array[offset]=c;
     }
 
-    final static public class Tuple4<A,B,C,D> implements Comparable<Tuple4<A,B,C,D>>, Serializable{
+        @Override
+        public int compare(Comparator[] comparators, Object[] values, int offset) {
+            int i = comparators[0].compare(a,values[offset++]);
+            if(i!=0) return i;
+            i = comparators[1].compare(b,values[offset++]);
+            if(i!=0) return i;
+            return comparators[2].compare(c,values[offset]);
+        }
+
+        @Override
+        public Object get(int i) {
+            switch(i){
+                case 0: return a;
+                case 1: return b;
+                default: return c;
+            }
+        }
+
+    }
+
+    final static public class Tuple4<A,B,C,D> implements Comparable<Tuple4<A,B,C,D>>, Serializable, Tuple {
 
     	private static final long serialVersionUID = 1630397500758650718L;
     	
@@ -257,10 +341,40 @@ public final class Fun {
             result = 31 * result + (d != null ? d.hashCode() : 0);
             return result;
         }
+
+        @Override
+        public void copyIntoArray(Object[] array, int offset) {
+            array[offset++] = a;
+            array[offset++]=b;
+            array[offset++]=c;
+            array[offset]=d;
     }
 
 
-    final static public class Tuple5<A, B, C, D, E> implements Comparable<Tuple5<A,B,C,D,E>>, Serializable {
+        @Override
+        public int compare(Comparator[] comparators, Object[] values, int offset) {
+            int i = comparators[0].compare(a,values[offset++]);
+            if(i!=0) return i;
+            i = comparators[1].compare(b,values[offset++]);
+            if(i!=0) return i;
+            i =  comparators[2].compare(c,values[offset++]);
+            if(i!=0) return i;
+            return comparators[3].compare(d,values[offset]);
+        }
+
+        @Override
+        public Object get(int i) {
+            switch(i){
+                case 0: return a;
+                case 1: return b;
+                case 2: return c;
+                default: return d;
+            }
+        }
+    }
+
+
+    final static public class Tuple5<A, B, C, D, E> implements Comparable<Tuple5<A,B,C,D,E>>, Serializable, Tuple {
 
         private static final long serialVersionUID = 3975016300758650718L;
 
@@ -320,10 +434,43 @@ public final class Fun {
             result = 31 * result + (e != null ? e.hashCode() : 0);
             return result;
         }
+
+        @Override
+        public int compare(Comparator[] comparators, Object[] values, int offset) {
+            int i = comparators[0].compare(a, values[offset++]);
+            if(i!=0) return i;
+            i = comparators[1].compare(b, values[offset++]);
+            if(i!=0) return i;
+            i =  comparators[2].compare(c,values[offset++]);
+            if(i!=0) return i;
+            i =  comparators[3].compare(d,values[offset++]);
+            if(i!=0) return i;
+            return comparators[4].compare(e,values[offset]);
+    }
+
+        @Override
+        public void copyIntoArray(Object[] array, int offset) {
+            array[offset++] = a;
+            array[offset++]=b;
+            array[offset++]=c;
+            array[offset++]=d;
+            array[offset]=e;
+        }
+
+        @Override
+        public Object get(int i) {
+            switch(i){
+                case 0: return a;
+                case 1: return b;
+                case 2: return c;
+                case 3: return d;
+                default: return e;
+            }
+        }
     }
 
 
-    final static public class Tuple6<A, B, C, D, E, F> implements Comparable<Tuple6<A, B, C, D, E, F>>, Serializable {
+    final static public class Tuple6<A, B, C, D, E, F> implements Comparable<Tuple6<A, B, C, D, E, F>>, Serializable, Tuple {
 
         private static final long serialVersionUID = 7500397586163050718L;
 
@@ -387,6 +534,43 @@ public final class Fun {
             result = 31 * result + (f != null ? f.hashCode() : 0);
             return result;
         }
+
+        @Override
+        public void copyIntoArray(Object[] array, int offset) {
+            array[offset++] = a;
+            array[offset++]=b;
+            array[offset++]=c;
+            array[offset++]=d;
+            array[offset++]=e;
+            array[offset]=f;
+    }
+
+        @Override
+        public int compare(Comparator[] comparators, Object[] values, int offset) {
+            int i = comparators[0].compare(a,values[offset++]);
+            if(i!=0) return i;
+            i = comparators[1].compare(b,values[offset++]);
+            if(i!=0) return i;
+            i =  comparators[2].compare(c,values[offset++]);
+            if(i!=0) return i;
+            i =  comparators[3].compare(d,values[offset++]);
+            if(i!=0) return i;
+            i =  comparators[4].compare(e,values[offset++]);
+            if(i!=0) return i;
+            return comparators[5].compare(f,values[offset]);
+        }
+
+        @Override
+        public Object get(int i) {
+            switch(i){
+                case 0: return a;
+                case 1: return b;
+                case 2: return c;
+                case 3: return d;
+                case 4: return e;
+                default: return f;
+            }
+        }
     }
 
     public static final class Tuple2Comparator<A,B> implements Comparator<Tuple2<A,B>>,Serializable {
@@ -397,8 +581,8 @@ public final class Fun {
         protected final Comparator<B> b;
 
         public Tuple2Comparator(Comparator<A> a, Comparator<B> b) {
-            this.a = a==null? COMPARATOR :a;
-            this.b = b==null? COMPARATOR :b;
+            this.a = a==null? COMPARATOR_NULLABLE   :a;
+            this.b = b==null? COMPARATOR_NULLABLE   :b;
         }
 
 
@@ -444,9 +628,9 @@ public final class Fun {
         protected final Comparator<C> c;
 
         public Tuple3Comparator(Comparator<A> a, Comparator<B> b, Comparator<C> c) {
-            this.a = a==null? COMPARATOR :a;
-            this.b = b==null? COMPARATOR :b;
-            this.c = c==null? COMPARATOR :c;
+            this.a = a==null? COMPARATOR_NULLABLE   :a;
+            this.b = b==null? COMPARATOR_NULLABLE   :b;
+            this.c = c==null? COMPARATOR_NULLABLE   :c;
         }
 
         /** constructor used for deserialization, `extra` is added just to make function not to collide*/
@@ -494,10 +678,10 @@ public final class Fun {
         protected final Comparator<D> d;
 
         public Tuple4Comparator(Comparator<A> a, Comparator<B> b, Comparator<C> c, Comparator<D> d) {
-            this.a = a==null? COMPARATOR :a;
-            this.b = b==null? COMPARATOR :b;
-            this.c = c==null? COMPARATOR :c;
-            this.d = d==null? COMPARATOR :d;
+            this.a = a==null? COMPARATOR_NULLABLE   :a;
+            this.b = b==null? COMPARATOR_NULLABLE   :b;
+            this.c = c==null? COMPARATOR_NULLABLE   :c;
+            this.d = d==null? COMPARATOR_NULLABLE   :d;
         }
 
         /** constructor used for deserialization*/
@@ -552,11 +736,11 @@ public final class Fun {
 
 
         public Tuple5Comparator(Comparator<A> a, Comparator<B> b, Comparator<C> c, Comparator<D> d, Comparator<E> e) {
-            this.a = a == null ? COMPARATOR : a;
-            this.b = b == null ? COMPARATOR : b;
-            this.c = c == null ? COMPARATOR : c;
-            this.d = d == null ? COMPARATOR : d;
-            this.e = e == null ? COMPARATOR : e;
+            this.a = a == null ? COMPARATOR_NULLABLE   : a;
+            this.b = b == null ? COMPARATOR_NULLABLE   : b;
+            this.c = c == null ? COMPARATOR_NULLABLE   : c;
+            this.d = d == null ? COMPARATOR_NULLABLE   : d;
+            this.e = e == null ? COMPARATOR_NULLABLE   : e;
         }
 
         /**
@@ -617,12 +801,12 @@ public final class Fun {
 
 
         public Tuple6Comparator(Comparator<A> a, Comparator<B> b, Comparator<C> c, Comparator<D> d, Comparator<E> e, Comparator<F> f) {
-            this.a = a == null ? COMPARATOR : a;
-            this.b = b == null ? COMPARATOR : b;
-            this.c = c == null ? COMPARATOR : c;
-            this.d = d == null ? COMPARATOR : d;
-            this.e = e == null ? COMPARATOR : e;
-            this.f = f == null ? COMPARATOR : f;
+            this.a = a == null ? COMPARATOR_NULLABLE   : a;
+            this.b = b == null ? COMPARATOR_NULLABLE   : b;
+            this.c = c == null ? COMPARATOR_NULLABLE   : c;
+            this.d = d == null ? COMPARATOR_NULLABLE   : d;
+            this.e = e == null ? COMPARATOR_NULLABLE   : e;
+            this.f = f == null ? COMPARATOR_NULLABLE   : f;
         }
 
         /**
@@ -672,6 +856,37 @@ public final class Fun {
             result = 31 * result + f.hashCode();
             return result;
         }
+    }
+
+
+    /**
+     * Used to run background threads.
+     * Unlike {@link java.util.concurrent.ThreadFactory} it does not give access to threads,
+     * so tasks can run inside {@link java.util.concurrent.Executor}.
+     *
+     * There are some expectations from submitted tasks:
+     *
+     *  * Background tasks is started within reasonable delay. You can not block if thread pool is full.
+     *      That could cause memory leak since queues are not flushed etc..
+     *
+     *  * Runnable code might pause and call {@link Thread#sleep(long)}.
+     *
+     *  * Threads must not be interrupted or terminated. Using daemon thread is forbidden.
+     *      Runnable will exit itself, once db is closed.
+     *
+     */
+    public interface ThreadFactory{
+
+        /** Basic thread factory which starts new thread for each runnable */
+        public static final ThreadFactory BASIC = new ThreadFactory() {
+            @Override
+            public void newThread(String threadName, Runnable runnable) {
+                new Thread(runnable,threadName).start();
+            }
+        };
+
+        /** execute new runnable. Optionally you can name thread using `threadName` argument */
+        void newThread(String threadName, Runnable runnable);
     }
 
     /** function which takes no argument and returns one value*/
@@ -732,7 +947,7 @@ public final class Fun {
                     return 1;
                 return -1;
             }
-            return intCompare(o1.length, o2.length);
+            return compareInt(o1.length, o2.length);
         }
     };
 
@@ -749,7 +964,7 @@ public final class Fun {
                     return 1;
                 return -1;
             }
-            return intCompare(o1.length, o2.length);
+            return compareInt(o1.length, o2.length);
         }
     };
 
@@ -765,7 +980,7 @@ public final class Fun {
                     return 1;
                 return -1;
             }
-            return intCompare(o1.length, o2.length);
+            return compareInt(o1.length, o2.length);
         }
     };
 
@@ -781,7 +996,7 @@ public final class Fun {
                     return 1;
                 return -1;
             }
-            return intCompare(o1.length, o2.length);
+            return compareInt(o1.length, o2.length);
         }
     };
 
@@ -797,7 +1012,7 @@ public final class Fun {
                     return 1;
                 return -1;
             }
-            return intCompare(o1.length, o2.length);
+            return compareInt(o1.length, o2.length);
         }
     };
 
@@ -813,7 +1028,7 @@ public final class Fun {
                 if(r!=0)
                     return r;
             }
-            return intCompare(o1.length, o2.length);
+            return compareInt(o1.length, o2.length);
         }
     };
 
@@ -845,7 +1060,7 @@ public final class Fun {
                 if(r!=0)
                     return r;
             }
-            return intCompare(o1.length, o2.length);
+            return compareInt(o1.length, o2.length);
         }
 
         @Override
@@ -863,10 +1078,14 @@ public final class Fun {
         }
     }
 
-    private static int intCompare(int x, int y) {
+
+    public static int compareInt(int x, int y) {
         return (x < y) ? -1 : ((x == y) ? 0 : 1);
     }
 
+    public static int compareLong(long x, long y) {
+        return (x < y) ? -1 : ((x == y) ? 0 : 1);
+    }
 
     /**
      * Find all Primary Keys associated with Secondary Key.

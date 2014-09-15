@@ -103,7 +103,7 @@ public class SerializerBase implements Serializer<Object>{
             if (indexInObjectStack != -1) {
                 //object was already serialized, just write reference to it and return
                 out.write(Header.OBJECT_STACK);
-                DataOutput2.packInt(out, indexInObjectStack);
+                DataIO.packInt(out, indexInObjectStack);
                 return;
             }
             //add this object to objectStack
@@ -160,32 +160,32 @@ public class SerializerBase implements Serializer<Object>{
         } else if (obj instanceof boolean[]) {
             out.write(Header.ARRAY_BOOLEAN);
             boolean[] a_bool = (boolean[]) obj;
-            DataOutput2.packInt(out, a_bool.length);//write the number of booleans not the number of bytes
+            DataIO.packInt(out, a_bool.length);//write the number of booleans not the number of bytes
             byte[] a = booleanToByteArray(a_bool);
             out.write(a);
             return;
         } else if (obj instanceof short[]) {
             out.write(Header.ARRAY_SHORT);
             short[] a = (short[]) obj;
-            DataOutput2.packInt(out, a.length);
+            DataIO.packInt(out, a.length);
             for(short s:a) out.writeShort(s);
             return;
         } else if (obj instanceof char[]) {
             out.write(Header.ARRAY_CHAR);
             char[] a = (char[]) obj;
-            DataOutput2.packInt(out, a.length);
+            DataIO.packInt(out, a.length);
             for(char s:a) out.writeChar(s);
             return;
         } else if (obj instanceof float[]) {
             out.write(Header.ARRAY_FLOAT);
             float[] a = (float[]) obj;
-            DataOutput2.packInt(out, a.length);
+            DataIO.packInt(out, a.length);
             for(float s:a) out.writeFloat(s);
             return;
         } else if (obj instanceof double[]) {
             out.write(Header.ARRAY_DOUBLE);
             double[] a = (double[]) obj;
-            DataOutput2.packInt(out, a.length);
+            DataIO.packInt(out, a.length);
             for(double s:a) out.writeDouble(s);
             return;
         } else if (obj instanceof int[]) {
@@ -197,16 +197,16 @@ public class SerializerBase implements Serializer<Object>{
         } else if (clazz == BigInteger.class) {
             out.write(Header.BIGINTEGER);
             byte[] buf = ((BigInteger) obj).toByteArray();
-            DataOutput2.packInt(out, buf.length);
+            DataIO.packInt(out, buf.length);
             out.write(buf);
             return;
         } else if (clazz == BigDecimal.class) {
             out.write(Header.BIGDECIMAL);
             BigDecimal d = (BigDecimal) obj;
             byte[] buf = d.unscaledValue().toByteArray();
-            DataOutput2.packInt(out, buf.length);
+            DataIO.packInt(out, buf.length);
             out.write(buf);
-            DataOutput2.packInt(out, d.scale());
+            DataIO.packInt(out, d.scale());
             return;
         } else if (obj instanceof Class) {
             out.write(Header.CLASS);
@@ -233,30 +233,30 @@ public class SerializerBase implements Serializer<Object>{
         final Integer mapdbSingletonHeader = singletons.all.get(obj);
         if(mapdbSingletonHeader!=null){
             out.write(Header.MAPDB);
-            DataOutput2.packInt(out, mapdbSingletonHeader);
+            DataIO.packInt(out, mapdbSingletonHeader);
             return;
         }
 
 
         if(obj instanceof Atomic.Long ){
             out.write(Header.MA_LONG);
-            DataOutput2.packLong(out,((Atomic.Long) obj).recid);
+            DataIO.packLong(out,((Atomic.Long) obj).recid);
             return;
         }else if(obj instanceof Atomic.Integer ){
             out.write(Header.MA_INT);
-            DataOutput2.packLong(out, ((Atomic.Integer) obj).recid);
+            DataIO.packLong(out, ((Atomic.Integer) obj).recid);
             return;
         }else if(obj instanceof Atomic.Boolean ){
             out.write(Header.MA_BOOL);
-            DataOutput2.packLong(out, ((Atomic.Boolean) obj).recid);
+            DataIO.packLong(out, ((Atomic.Boolean) obj).recid);
             return;
         }else if(obj instanceof Atomic.String ){
             out.write(Header.MA_STRING);
-            DataOutput2.packLong(out, ((Atomic.String) obj).recid);
+            DataIO.packLong(out, ((Atomic.String) obj).recid);
             return;
         } else if(obj == this){
             out.write(Header.MAPDB);
-            DataOutput2.packInt(out, HeaderMapDB.THIS_SERIALIZER);
+            DataIO.packInt(out, HeaderMapDB.THIS_SERIALIZER);
             return;
         }
 
@@ -296,7 +296,7 @@ public class SerializerBase implements Serializer<Object>{
             }
             if(allNull){
                 out.write(Header.ARRAY_OBJECT_ALL_NULL);
-                DataOutput2.packInt(out, b.length);
+                DataIO.packInt(out, b.length);
 
                 // Write classfor components
                 Class<?> componentType = obj.getClass().getComponentType();
@@ -308,14 +308,14 @@ public class SerializerBase implements Serializer<Object>{
                 out.write(b.length);
                 for (Object o : b) {
                     if (o == null)
-                        DataOutput2.packLong(out, 0);
+                        DataIO.packLong(out, 0);
                     else
-                        DataOutput2.packLong(out, (Long) o + 1);
+                        DataIO.packLong(out, (Long) o + 1);
                 }
 
             } else {
                 out.write(Header.ARRAY_OBJECT);
-                DataOutput2.packInt(out, b.length);
+                DataIO.packInt(out, b.length);
 
                 // Write classfor components
                 Class<?> componentType = obj.getClass().getComponentType();
@@ -343,9 +343,9 @@ public class SerializerBase implements Serializer<Object>{
                 out.write(l.size());
                 for (Object o : l) {
                     if (o == null)
-                        DataOutput2.packLong(out, 0);
+                        DataIO.packLong(out, 0);
                     else
-                        DataOutput2.packLong(out, (Long) o + 1);
+                        DataIO.packLong(out, (Long) o + 1);
                 }
             } else {
                 serializeCollection(Header.ARRAYLIST, out, obj, objectStack);
@@ -356,7 +356,7 @@ public class SerializerBase implements Serializer<Object>{
         } else if (clazz == TreeSet.class) {
             TreeSet l = (TreeSet) obj;
             out.write(Header.TREESET);
-            DataOutput2.packInt(out, l.size());
+            DataIO.packInt(out, l.size());
             serialize(out, l.comparator(), objectStack);
             for (Object o : l)
                 serialize(out, o, objectStack);
@@ -367,7 +367,7 @@ public class SerializerBase implements Serializer<Object>{
         } else if (clazz == TreeMap.class) {
             TreeMap l = (TreeMap) obj;
             out.write(Header.TREEMAP);
-            DataOutput2.packInt(out, l.size());
+            DataIO.packInt(out, l.size());
             serialize(out, l.comparator(), objectStack);
             for (Object o : l.keySet()) {
                 serialize(out, o, objectStack);
@@ -417,87 +417,52 @@ public class SerializerBase implements Serializer<Object>{
             serialize(out, t.f, objectStack);
         } else if (clazz == BTreeKeySerializer.Tuple2KeySerializer.class){
             out.write(Header.MAPDB);
-            DataOutput2.packInt(out, HeaderMapDB.SERIALIZER_KEY_TUPLE2);
+            DataIO.packInt(out, HeaderMapDB.SERIALIZER_KEY_TUPLE2);
             BTreeKeySerializer.Tuple2KeySerializer s = (BTreeKeySerializer.Tuple2KeySerializer) obj;
             serialize(out, s.aComparator,objectStack);
+            serialize(out, s.bComparator,objectStack);
             serialize(out, s.aSerializer,objectStack);
             serialize(out, s.bSerializer,objectStack);
-        } else if (clazz == BTreeKeySerializer.Tuple3KeySerializer.class){
+        } else if (clazz == BTreeKeySerializer.TupleKeySerializer.class){
             out.write(Header.MAPDB);
-            DataOutput2.packInt(out, HeaderMapDB.SERIALIZER_KEY_TUPLE3);
-            BTreeKeySerializer.Tuple3KeySerializer s = (BTreeKeySerializer.Tuple3KeySerializer) obj;
-            serialize(out, s.aComparator,objectStack);
-            serialize(out, s.bComparator,objectStack);
-            serialize(out, s.aSerializer, objectStack);
-            serialize(out, s.bSerializer, objectStack);
-            serialize(out, s.cSerializer,objectStack);
-        } else if (clazz == BTreeKeySerializer.Tuple4KeySerializer.class){
-            out.write(Header.MAPDB);
-            DataOutput2.packInt(out, HeaderMapDB.SERIALIZER_KEY_TUPLE4);
-            BTreeKeySerializer.Tuple4KeySerializer s = (BTreeKeySerializer.Tuple4KeySerializer) obj;
-            serialize(out, s.aComparator,objectStack);
-            serialize(out, s.bComparator,objectStack);
-            serialize(out, s.cComparator,objectStack);
-            serialize(out, s.aSerializer,objectStack);
-            serialize(out, s.bSerializer, objectStack);
-            serialize(out, s.cSerializer, objectStack);
-            serialize(out, s.dSerializer,objectStack);
-        } else if (clazz == BTreeKeySerializer.Tuple5KeySerializer.class){
-            out.write(Header.MAPDB);
-            DataOutput2.packInt(out, HeaderMapDB.SERIALIZER_KEY_TUPLE5);
-            BTreeKeySerializer.Tuple5KeySerializer s = (BTreeKeySerializer.Tuple5KeySerializer) obj;
-            serialize(out, s.aComparator,objectStack);
-            serialize(out, s.bComparator,objectStack);
-            serialize(out, s.cComparator,objectStack);
-            serialize(out, s.dComparator,objectStack);
-            serialize(out, s.aSerializer,objectStack);
-            serialize(out, s.bSerializer, objectStack);
-            serialize(out, s.cSerializer, objectStack);
-            serialize(out, s.dSerializer,objectStack);
-            serialize(out, s.eSerializer,objectStack);
-        } else if (clazz == BTreeKeySerializer.Tuple6KeySerializer.class){
-            out.write(Header.MAPDB);
-            DataOutput2.packInt(out, HeaderMapDB.SERIALIZER_KEY_TUPLE6);
-            BTreeKeySerializer.Tuple6KeySerializer s = (BTreeKeySerializer.Tuple6KeySerializer) obj;
-            serialize(out, s.aComparator,objectStack);
-            serialize(out, s.bComparator,objectStack);
-            serialize(out, s.cComparator,objectStack);
-            serialize(out, s.dComparator,objectStack);
-            serialize(out, s.eComparator,objectStack);
-            serialize(out, s.aSerializer,objectStack);
-            serialize(out, s.bSerializer,objectStack);
-            serialize(out, s.cSerializer, objectStack);
-            serialize(out, s.dSerializer, objectStack);
-            serialize(out, s.eSerializer,objectStack);
-            serialize(out, s.fSerializer,objectStack);
+            DataIO.packInt(out, HeaderMapDB.SERIALIZER_KEY_TUPLE);
+            BTreeKeySerializer.TupleKeySerializer s = (BTreeKeySerializer.TupleKeySerializer) obj;
+            out.write(s.tsize);
+            for(Comparator c:s.comparators){
+                serialize(out,c,objectStack);
+            }
+            for(Serializer o:s.serializers){
+                serialize(out,o,objectStack);
+            }
         }else if(clazz == BTreeKeySerializer.BasicKeySerializer.class){
             out.write(Header.MAPDB);
-            DataOutput2.packInt(out, HeaderMapDB.B_TREE_BASIC_KEY_SERIALIZER);
-            serialize(out,((BTreeKeySerializer.BasicKeySerializer)obj).defaultSerializer,objectStack);
+            DataIO.packInt(out, HeaderMapDB.B_TREE_BASIC_KEY_SERIALIZER);
+            serialize(out,((BTreeKeySerializer.BasicKeySerializer)obj).serializer,objectStack);
+            serialize(out,((BTreeKeySerializer.BasicKeySerializer)obj).comparator,objectStack);
         } else if (clazz == Fun.ArrayComparator.class){
             out.write(Header.MAPDB);
-            DataOutput2.packInt(out, HeaderMapDB.COMPARATOR_ARRAY);
+            DataIO.packInt(out, HeaderMapDB.COMPARATOR_ARRAY);
             serialize(out, ((Fun.ArrayComparator)obj).comparators,objectStack);
         } else if (clazz == CompressionWrapper.class){
             out.write(Header.MAPDB);
-            DataOutput2.packInt(out, HeaderMapDB.SERIALIZER_COMPRESSION_WRAPPER);
+            DataIO.packInt(out, HeaderMapDB.SERIALIZER_COMPRESSION_WRAPPER);
             serialize(out, ((CompressionWrapper)obj).serializer,objectStack);
         }else if(obj instanceof Fun.Tuple2Comparator ){
             out.write(Header.MAPDB);
-            DataOutput2.packInt(out, HeaderMapDB.TUPLE2_COMPARATOR);
+            DataIO.packInt(out, HeaderMapDB.TUPLE2_COMPARATOR);
             Fun.Tuple2Comparator c = (Fun.Tuple2Comparator) obj;
             serialize(out,c.a,objectStack );
             serialize(out,c.b,objectStack );
         }else if(obj instanceof Fun.Tuple3Comparator ){
             out.write(Header.MAPDB);
-            DataOutput2.packInt(out, HeaderMapDB.TUPLE3_COMPARATOR);
+            DataIO.packInt(out, HeaderMapDB.TUPLE3_COMPARATOR);
             Fun.Tuple3Comparator c = (Fun.Tuple3Comparator) obj;
             serialize(out,c.a,objectStack );
             serialize(out,c.b,objectStack );
             serialize(out,c.c,objectStack );
         }else if(obj instanceof Fun.Tuple4Comparator ){
             out.write(Header.MAPDB);
-            DataOutput2.packInt(out, HeaderMapDB.TUPLE4_COMPARATOR);
+            DataIO.packInt(out, HeaderMapDB.TUPLE4_COMPARATOR);
             Fun.Tuple4Comparator c = (Fun.Tuple4Comparator) obj;
             serialize(out,c.a,objectStack );
             serialize(out,c.b,objectStack );
@@ -505,7 +470,7 @@ public class SerializerBase implements Serializer<Object>{
             serialize(out,c.d,objectStack );
         }else if(obj instanceof Fun.Tuple5Comparator ){
             out.write(Header.MAPDB);
-            DataOutput2.packInt(out, HeaderMapDB.TUPLE5_COMPARATOR);
+            DataIO.packInt(out, HeaderMapDB.TUPLE5_COMPARATOR);
             Fun.Tuple5Comparator c = (Fun.Tuple5Comparator) obj;
             serialize(out,c.a,objectStack );
             serialize(out,c.b,objectStack );
@@ -514,7 +479,7 @@ public class SerializerBase implements Serializer<Object>{
             serialize(out,c.e,objectStack );
         }else if(obj instanceof Fun.Tuple6Comparator ){
             out.write(Header.MAPDB);
-            DataOutput2.packInt(out, HeaderMapDB.TUPLE6_COMPARATOR);
+            DataIO.packInt(out, HeaderMapDB.TUPLE6_COMPARATOR);
             Fun.Tuple6Comparator c = (Fun.Tuple6Comparator) obj;
             serialize(out,c.a,objectStack );
             serialize(out,c.b,objectStack );
@@ -525,7 +490,7 @@ public class SerializerBase implements Serializer<Object>{
         }else if(obj instanceof Atomic.Var ){
             out.write(Header.MA_VAR);
             Atomic.Var v = (Atomic.Var) obj;
-            DataOutput2.packLong(out,v.recid);
+            DataIO.packLong(out,v.recid);
             serialize(out, v.serializer,objectStack);
         } else {
             serializeUnknownObject(out, obj, objectStack);
@@ -542,10 +507,10 @@ public class SerializerBase implements Serializer<Object>{
                 out.write(Header.STRING_0+len);
             }else{
                 out.write(Header.STRING);
-                DataOutput2.packInt(out, len);
+                DataIO.packInt(out, len);
             }
             for (int i = 0; i < len; i++)
-                DataOutput2.packInt(out,(int)((String) obj).charAt(i));
+                DataIO.packInt(out,(int)((String) obj).charAt(i));
         }
     }
 
@@ -559,23 +524,23 @@ public class SerializerBase implements Serializer<Object>{
         }
         if (Byte.MIN_VALUE<=min && max<=Byte.MAX_VALUE) {
             out.write(Header.ARRAY_LONG_BYTE);
-            DataOutput2.packInt(out, val.length);
+            DataIO.packInt(out, val.length);
             for (long i : val) out.write((int) i);
         }else if (Short.MIN_VALUE <= min && max <= Short.MAX_VALUE){
             out.write(Header.ARRAY_LONG_SHORT);
-            DataOutput2.packInt(out, val.length);
+            DataIO.packInt(out, val.length);
             for (long i : val) out.writeShort((int) i);
         } else if (0 <= min) {
             out.write(Header.ARRAY_LONG_PACKED);
-            DataOutput2.packInt(out, val.length);
-            for (long l : val) DataOutput2.packLong(out, l);
+            DataIO.packInt(out, val.length);
+            for (long l : val) DataIO.packLong(out, l);
         }else if (Integer.MIN_VALUE <= min && max <= Integer.MAX_VALUE){
             out.write(Header.ARRAY_LONG_INT);
-            DataOutput2.packInt(out, val.length);
+            DataIO.packInt(out, val.length);
             for (long i : val) out.writeInt((int) i);
         } else {
             out.write(Header.ARRAY_LONG);
-            DataOutput2.packInt(out, val.length);
+            DataIO.packInt(out, val.length);
             for (long i : val) out.writeLong(i);
         }
     }
@@ -589,19 +554,19 @@ public class SerializerBase implements Serializer<Object>{
         }
         if (Byte.MIN_VALUE<=min && max<=Byte.MAX_VALUE) {
             out.write(Header.ARRAY_INT_BYTE);
-            DataOutput2.packInt(out, val.length);
+            DataIO.packInt(out, val.length);
             for (int i : val) out.write(i);
         }else if (Short.MIN_VALUE <= min && max <= Short.MAX_VALUE){
             out.write(Header.ARRAY_INT_SHORT);
-            DataOutput2.packInt(out, val.length);
+            DataIO.packInt(out, val.length);
             for (int i : val) out.writeShort(i);
         } else if (0 <= min) {
             out.write(Header.ARRAY_INT_PACKED);
-            DataOutput2.packInt(out, val.length);
-            for (int l : val) DataOutput2.packInt(out, l);
+            DataIO.packInt(out, val.length);
+            for (int l : val) DataIO.packInt(out, l);
         } else {
             out.write(Header.ARRAY_INT);
-            DataOutput2.packInt(out, val.length);
+            DataIO.packInt(out, val.length);
             for (int i : val) out.writeInt(i);
         }
     }
@@ -814,7 +779,7 @@ public class SerializerBase implements Serializer<Object>{
     private void serializeMap(int header, DataOutput out, Object obj, FastArrayList<Object> objectStack) throws IOException {
         Map l = (Map) obj;
         out.write(header);
-        DataOutput2.packInt(out, l.size());
+        DataIO.packInt(out, l.size());
         for (Object o : l.keySet()) {
             serialize(out, o, objectStack);
             serialize(out, l.get(o), objectStack);
@@ -824,7 +789,7 @@ public class SerializerBase implements Serializer<Object>{
     private void serializeCollection(int header, DataOutput out, Object obj, FastArrayList<Object> objectStack) throws IOException {
         Collection l = (Collection) obj;
         out.write(header);
-        DataOutput2.packInt(out, l.size());
+        DataIO.packInt(out, l.size());
 
         for (Object o : l)
             serialize(out, o, objectStack);
@@ -842,11 +807,11 @@ public class SerializerBase implements Serializer<Object>{
         }
         if(allEqual){
             out.write(Header.ARRAY_BYTE_ALL_EQUAL);
-            DataOutput2.packInt(out, b.length);
+            DataIO.packInt(out, b.length);
             out.write(b[0]);
         }else{
             out.write(Header.ARRAY_BYTE);
-            DataOutput2.packInt(out, b.length);
+            DataIO.packInt(out, b.length);
             out.write(b);
         }
     }
@@ -855,7 +820,7 @@ public class SerializerBase implements Serializer<Object>{
     static String deserializeString(DataInput buf, int len) throws IOException {
         char[] b = new char[len];
         for (int i = 0; i < len; i++)
-            b[i] = (char) DataInput2.unpackInt(buf);
+            b[i] = (char) DataIO.unpackInt(buf);
 
         return new String(b);
     }
@@ -1091,7 +1056,7 @@ public class SerializerBase implements Serializer<Object>{
                 break;
 
             case Header.STRING:
-                ret = deserializeString(is, DataInput2.unpackInt(is));
+                ret = deserializeString(is, DataIO.unpackInt(is));
                 break;
             case Header.STRING_0:
                 ret = EMPTY_STRING;
@@ -1146,7 +1111,7 @@ public class SerializerBase implements Serializer<Object>{
         Object ret;
         switch (head) {
             case Header.OBJECT_STACK:
-                ret = objectStack.data[DataInput2.unpackInt(is)];
+                ret = objectStack.data[DataIO.unpackInt(is)];
                 break;
             case Header.ARRAYLIST:
                 ret = deserializeArrayList(is, objectStack);
@@ -1179,16 +1144,16 @@ public class SerializerBase implements Serializer<Object>{
                 ret = deserializeProperties(is, objectStack);
                 break;
             case Header.MA_LONG:
-                ret = new Atomic.Long(getEngine(),DataInput2.unpackLong(is));
+                ret = new Atomic.Long(getEngine(),DataIO.unpackLong(is));
                 break;
             case Header.MA_INT:
-                ret = new Atomic.Integer(getEngine(),DataInput2.unpackLong(is));
+                ret = new Atomic.Integer(getEngine(),DataIO.unpackLong(is));
                 break;
             case Header.MA_BOOL:
-                ret = new Atomic.Boolean(getEngine(),DataInput2.unpackLong(is));
+                ret = new Atomic.Boolean(getEngine(),DataIO.unpackLong(is));
                 break;
             case Header.MA_STRING:
-                ret = new Atomic.String(getEngine(),DataInput2.unpackLong(is));
+                ret = new Atomic.String(getEngine(),DataIO.unpackLong(is));
                 break;
             case Header.TUPLE2:
                 ret = new Fun.Tuple2(this, is, objectStack);
@@ -1223,7 +1188,7 @@ public class SerializerBase implements Serializer<Object>{
         Object ret;
         switch (head){
             case Header.ARRAY_BYTE_ALL_EQUAL:
-                byte[] b = new byte[DataInput2.unpackInt(is)];
+                byte[] b = new byte[DataIO.unpackInt(is)];
                 Arrays.fill(b, is.readByte());
                 ret = b;
                 break;
@@ -1232,72 +1197,72 @@ public class SerializerBase implements Serializer<Object>{
                 break;
 
             case Header.ARRAY_BOOLEAN:
-                ret = readBooleanArray(DataInput2.unpackInt(is),is);
+                ret = readBooleanArray(DataIO.unpackInt(is),is);
                 break;
             case Header.ARRAY_SHORT:
-                int size = DataInput2.unpackInt(is);
+                int size = DataIO.unpackInt(is);
                 ret = new short[size];
                 for(int i=0;i<size;i++) ((short[])ret)[i] = is.readShort();
                 break;
             case Header.ARRAY_DOUBLE:
-                size = DataInput2.unpackInt(is);
+                size = DataIO.unpackInt(is);
                 ret = new double[size];
                 for(int i=0;i<size;i++) ((double[])ret)[i] = is.readDouble();
                 break;
             case Header.ARRAY_FLOAT:
-                size = DataInput2.unpackInt(is);
+                size = DataIO.unpackInt(is);
                 ret = new float[size];
                 for(int i=0;i<size;i++) ((float[])ret)[i] = is.readFloat();
                 break;
             case Header.ARRAY_CHAR:
-                size = DataInput2.unpackInt(is);
+                size = DataIO.unpackInt(is);
                 ret = new char[size];
                 for(int i=0;i<size;i++) ((char[])ret)[i] = is.readChar();
                 break;
 
             case Header.ARRAY_INT_BYTE:
-                size = DataInput2.unpackInt(is);
+                size = DataIO.unpackInt(is);
                 ret=new int[size];
                 for(int i=0;i<size;i++) ((int[])ret)[i] = is.readByte();
                 break;
             case Header.ARRAY_INT_SHORT:
-                size = DataInput2.unpackInt(is);
+                size = DataIO.unpackInt(is);
                 ret=new int[size];
                 for(int i=0;i<size;i++) ((int[])ret)[i] = is.readShort();
                 break;
             case Header.ARRAY_INT_PACKED:
-                size = DataInput2.unpackInt(is);
+                size = DataIO.unpackInt(is);
                 ret=new int[size];
-                for(int i=0;i<size;i++) ((int[])ret)[i] = DataInput2.unpackInt(is);
+                for(int i=0;i<size;i++) ((int[])ret)[i] = DataIO.unpackInt(is);
                 break;
             case Header.ARRAY_INT:
-                size = DataInput2.unpackInt(is);
+                size = DataIO.unpackInt(is);
                 ret=new int[size];
                 for(int i=0;i<size;i++) ((int[])ret)[i] = is.readInt();
                 break;
 
             case Header.ARRAY_LONG_BYTE:
-                size = DataInput2.unpackInt(is);
+                size = DataIO.unpackInt(is);
                 ret=new long[size];
                 for(int i=0;i<size;i++) ((long[])ret)[i] = is.readByte();
                 break;
             case Header.ARRAY_LONG_SHORT:
-                size = DataInput2.unpackInt(is);
+                size = DataIO.unpackInt(is);
                 ret=new long[size];
                 for(int i=0;i<size;i++) ((long[])ret)[i] = is.readShort();
                 break;
             case Header.ARRAY_LONG_PACKED:
-                size = DataInput2.unpackInt(is);
+                size = DataIO.unpackInt(is);
                 ret=new long[size];
-                for(int i=0;i<size;i++) ((long[])ret)[i] = DataInput2.unpackLong(is);
+                for(int i=0;i<size;i++) ((long[])ret)[i] = DataIO.unpackLong(is);
                 break;
             case Header.ARRAY_LONG_INT:
-                size = DataInput2.unpackInt(is);
+                size = DataIO.unpackInt(is);
                 ret=new long[size];
                 for(int i=0;i<size;i++) ((long[])ret)[i] = is.readInt();
                 break;
             case Header.ARRAY_LONG:
-                size = DataInput2.unpackInt(is);
+                size = DataIO.unpackInt(is);
                 ret=new long[size];
                 for(int i=0;i<size;i++) ((long[])ret)[i] = is.readLong();
                 break;
@@ -1306,7 +1271,7 @@ public class SerializerBase implements Serializer<Object>{
                 ret = new BigInteger(deserializeArrayByte(is));
                 break;
             case Header.BIGDECIMAL:
-                ret = new BigDecimal(new BigInteger(deserializeArrayByte(is)), DataInput2.unpackInt(is));
+                ret = new BigDecimal(new BigInteger(deserializeArrayByte(is)), DataIO.unpackInt(is));
                 break;
 
             case Header.CLASS:
@@ -1347,18 +1312,18 @@ public class SerializerBase implements Serializer<Object>{
     }
 
     protected interface HeaderMapDB{
-        int B_TREE_SERIALIZER_POS_LONG = 1;
+        int B_TREE_SERIALIZER_LONG = 1;
         int B_TREE_SERIALIZER_STRING = 2;
-        int B_TREE_SERIALIZER_POS_INT = 3;
+        int B_TREE_SERIALIZER_INT = 3;
         int SERIALIZER_LONG = 4;
         int SERIALIZER_INT = 5;
         int SERIALIZER_ILLEGAL_ACCESS = 6;
 
         int SERIALIZER_KEY_TUPLE2 = 7;
-        int SERIALIZER_KEY_TUPLE3 = 8;
-        int SERIALIZER_KEY_TUPLE4 = 9;
+        int SERIALIZER_KEY_TUPLE = 8;
+        int SERIALIZER_KEY_UUID = 9;
         int FUN_COMPARATOR = 10;
-        int COMPARABLE_COMPARATOR = 11;
+        int FUN_COMPARATOR_NULLABLE = 11;
         int THIS_SERIALIZER = 12;
         int SERIALIZER_BASIC = 13;
         int SERIALIZER_STRING_NOSIZE = 14;
@@ -1399,21 +1364,19 @@ public class SerializerBase implements Serializer<Object>{
         int SERIALIZER_STRING_ASCII = 46;
 
         int SERIALIZER_COMPRESSION_WRAPPER = 47;
-        int B_TREE_COMPRESSION_SERIALIZER = 48; //TODO is this going to be used?
 
-        int SERIALIZER_STRING_INTERN = 49;
-        int FUN_EMPTY_ITERATOR = 50;
+        int SERIALIZER_STRING_INTERN = 48;
+        int FUN_EMPTY_ITERATOR = 49;
 
-        int TUPLE5_COMPARATOR = 51;
-        int TUPLE6_COMPARATOR = 52;
-        int TUPLE5_COMPARATOR_STATIC = 53;
-        int TUPLE6_COMPARATOR_STATIC = 54;
-        int SERIALIZER_KEY_TUPLE5 = 55;
-        int SERIALIZER_KEY_TUPLE6 = 56;
-        int HASHER_ARRAY = 57;
+        int TUPLE5_COMPARATOR = 50;
+        int TUPLE6_COMPARATOR = 51;
+        int TUPLE5_COMPARATOR_STATIC = 52;
+        int TUPLE6_COMPARATOR_STATIC = 53;
+        int HASHER_ARRAY = 54;
 
-        int RECORD_ALWAYS_TRUE = 58;
-
+        int RECORD_ALWAYS_TRUE = 55;
+        int FUN_THREADFACTORY_BASIC = 56;
+        int B_TREE_SERIALIZER_STRING2 = 57;
     }
 
     protected static final class singletons{
@@ -1422,11 +1385,13 @@ public class SerializerBase implements Serializer<Object>{
 
         static {
             all.put(BTreeKeySerializer.STRING, HeaderMapDB.B_TREE_SERIALIZER_STRING);
-            all.put(BTreeKeySerializer.ZERO_OR_POSITIVE_LONG, HeaderMapDB.B_TREE_SERIALIZER_POS_LONG);
-            all.put(BTreeKeySerializer.ZERO_OR_POSITIVE_INT, HeaderMapDB.B_TREE_SERIALIZER_POS_INT);
+            all.put(BTreeKeySerializer.STRING2, HeaderMapDB.B_TREE_SERIALIZER_STRING2);
+            all.put(BTreeKeySerializer.LONG, HeaderMapDB.B_TREE_SERIALIZER_LONG);
+            all.put(BTreeKeySerializer.INTEGER, HeaderMapDB.B_TREE_SERIALIZER_INT);
+            all.put(BTreeKeySerializer.UUID,HeaderMapDB.SERIALIZER_KEY_UUID);
 
-            all.put(BTreeMap.COMPARABLE_COMPARATOR,HeaderMapDB.COMPARABLE_COMPARATOR);
             all.put(Fun.COMPARATOR,HeaderMapDB.FUN_COMPARATOR);
+            all.put(Fun.COMPARATOR_NULLABLE,HeaderMapDB.FUN_COMPARATOR_NULLABLE);
             all.put(Fun.REVERSE_COMPARATOR,HeaderMapDB.FUN_COMPARATOR_REVERSE);
             all.put(Fun.EMPTY_ITERATOR,HeaderMapDB.FUN_EMPTY_ITERATOR);
             all.put(Fun.TUPLE2_COMPARATOR,HeaderMapDB.TUPLE2_COMPARATOR_STATIC);
@@ -1434,6 +1399,7 @@ public class SerializerBase implements Serializer<Object>{
             all.put(Fun.TUPLE4_COMPARATOR,HeaderMapDB.TUPLE4_COMPARATOR_STATIC);
             all.put(Fun.TUPLE5_COMPARATOR,HeaderMapDB.TUPLE5_COMPARATOR_STATIC);
             all.put(Fun.TUPLE6_COMPARATOR,HeaderMapDB.TUPLE6_COMPARATOR_STATIC);
+            all.put(Fun.ThreadFactory.BASIC,HeaderMapDB.FUN_THREADFACTORY_BASIC);
 
             all.put(Serializer.STRING_NOSIZE,HeaderMapDB.SERIALIZER_STRING_NOSIZE);
             all.put(Serializer.STRING_ASCII,HeaderMapDB.SERIALIZER_STRING_ASCII);
@@ -1489,7 +1455,7 @@ public class SerializerBase implements Serializer<Object>{
 
 
     protected Object deserializeMapDB(DataInput is, FastArrayList<Object> objectStack) throws IOException {
-        int head = DataInput2.unpackInt(is);
+        int head = DataIO.unpackInt(is);
 
         Object singleton = singletons.reverse.get(head);
         if(singleton!=null)
@@ -1506,16 +1472,8 @@ public class SerializerBase implements Serializer<Object>{
             case HeaderMapDB.SERIALIZER_COMPRESSION_WRAPPER:
                 return new CompressionWrapper(this, is, objectStack);
 
-
-            case HeaderMapDB.SERIALIZER_KEY_TUPLE3:
-                return new BTreeKeySerializer.Tuple3KeySerializer(this, is, objectStack);
-
-            case HeaderMapDB.SERIALIZER_KEY_TUPLE4:
-                return new BTreeKeySerializer.Tuple4KeySerializer(this, is, objectStack);
-            case HeaderMapDB.SERIALIZER_KEY_TUPLE5:
-                return new BTreeKeySerializer.Tuple5KeySerializer(this, is, objectStack);
-            case HeaderMapDB.SERIALIZER_KEY_TUPLE6:
-                return new BTreeKeySerializer.Tuple6KeySerializer(this, is, objectStack);
+            case HeaderMapDB.SERIALIZER_KEY_TUPLE:
+                return new BTreeKeySerializer.TupleKeySerializer(this, is, objectStack);
 
             case HeaderMapDB.TUPLE2_COMPARATOR:
                 return new Fun.Tuple2Comparator(this, is, objectStack);
@@ -1550,7 +1508,7 @@ public class SerializerBase implements Serializer<Object>{
 
 
     private byte[] deserializeArrayByte(DataInput is) throws IOException {
-        byte[] bb = new byte[DataInput2.unpackInt(is)];
+        byte[] bb = new byte[DataIO.unpackInt(is)];
         is.readFully(bb);
         return bb;
     }
@@ -1559,7 +1517,7 @@ public class SerializerBase implements Serializer<Object>{
 
 
     private Object[] deserializeArrayObject(DataInput is, FastArrayList<Object> objectStack) throws IOException {
-        int size = DataInput2.unpackInt(is);
+        int size = DataIO.unpackInt(is);
         Class clazz = deserializeClass(is);
         Object[] s = (Object[]) Array.newInstance(clazz, size);
         objectStack.add(s);
@@ -1570,7 +1528,7 @@ public class SerializerBase implements Serializer<Object>{
     }
 
     private Object[] deserializeArrayObjectNoRefs(DataInput is) throws IOException {
-        int size = DataInput2.unpackInt(is);
+        int size = DataIO.unpackInt(is);
         Class clazz = deserializeClass(is);
         Object[] s = (Object[]) Array.newInstance(clazz, size);
         for (int i = 0; i < size; i++){
@@ -1581,7 +1539,7 @@ public class SerializerBase implements Serializer<Object>{
 
 
     private Object[] deserializeArrayObjectAllNull(DataInput is) throws IOException {
-        int size = DataInput2.unpackInt(is);
+        int size = DataIO.unpackInt(is);
         Class clazz = deserializeClass(is);
         return (Object[]) Array.newInstance(clazz, size);
     }
@@ -1591,7 +1549,7 @@ public class SerializerBase implements Serializer<Object>{
         int size = is.readUnsignedByte();
         Object[] s = new Object[size];
         for (int i = 0; i < size; i++) {
-            long l = DataInput2.unpackLong(is);
+            long l = DataIO.unpackLong(is);
             if (l == 0)
                 s[i] = null;
             else
@@ -1602,7 +1560,7 @@ public class SerializerBase implements Serializer<Object>{
 
 
     private ArrayList<Object> deserializeArrayList(DataInput is, FastArrayList<Object> objectStack) throws IOException {
-        int size = DataInput2.unpackInt(is);
+        int size = DataIO.unpackInt(is);
         ArrayList<Object> s = new ArrayList<Object>(size);
         objectStack.add(s);
         for (int i = 0; i < size; i++) {
@@ -1618,7 +1576,7 @@ public class SerializerBase implements Serializer<Object>{
 
         ArrayList<Object> s = new ArrayList<Object>(size);
         for (int i = 0; i < size; i++) {
-            long l = DataInput2.unpackLong(is);
+            long l = DataIO.unpackLong(is);
             if (l == 0)
                 s.add(null);
             else
@@ -1629,7 +1587,7 @@ public class SerializerBase implements Serializer<Object>{
 
 
     private java.util.LinkedList deserializeLinkedList(DataInput is, FastArrayList<Object> objectStack) throws IOException {
-        int size = DataInput2.unpackInt(is);
+        int size = DataIO.unpackInt(is);
         java.util.LinkedList s = new java.util.LinkedList();
         objectStack.add(s);
         for (int i = 0; i < size; i++)
@@ -1641,7 +1599,7 @@ public class SerializerBase implements Serializer<Object>{
 
 
     private HashSet<Object> deserializeHashSet(DataInput is, FastArrayList<Object> objectStack) throws IOException {
-        int size = DataInput2.unpackInt(is);
+        int size = DataIO.unpackInt(is);
         HashSet<Object> s = new HashSet<Object>(size);
         objectStack.add(s);
         for (int i = 0; i < size; i++)
@@ -1651,7 +1609,7 @@ public class SerializerBase implements Serializer<Object>{
 
 
     private LinkedHashSet<Object> deserializeLinkedHashSet(DataInput is, FastArrayList<Object> objectStack) throws IOException {
-        int size = DataInput2.unpackInt(is);
+        int size = DataIO.unpackInt(is);
         LinkedHashSet<Object> s = new LinkedHashSet<Object>(size);
         objectStack.add(s);
         for (int i = 0; i < size; i++)
@@ -1661,7 +1619,7 @@ public class SerializerBase implements Serializer<Object>{
 
 
     private TreeSet<Object> deserializeTreeSet(DataInput is, FastArrayList<Object> objectStack) throws IOException {
-        int size = DataInput2.unpackInt(is);
+        int size = DataIO.unpackInt(is);
         TreeSet<Object> s = new TreeSet<Object>();
         objectStack.add(s);
         Comparator comparator = (Comparator) deserialize(is, objectStack);
@@ -1675,7 +1633,7 @@ public class SerializerBase implements Serializer<Object>{
 
 
     private TreeMap<Object, Object> deserializeTreeMap(DataInput is, FastArrayList<Object> objectStack) throws IOException {
-        int size = DataInput2.unpackInt(is);
+        int size = DataIO.unpackInt(is);
 
         TreeMap<Object, Object> s = new TreeMap<Object, Object>();
         objectStack.add(s);
@@ -1689,7 +1647,7 @@ public class SerializerBase implements Serializer<Object>{
 
 
     private HashMap<Object, Object> deserializeHashMap(DataInput is, FastArrayList<Object> objectStack) throws IOException {
-        int size = DataInput2.unpackInt(is);
+        int size = DataIO.unpackInt(is);
 
         HashMap<Object, Object> s = new HashMap<Object, Object>(size);
         objectStack.add(s);
@@ -1700,7 +1658,7 @@ public class SerializerBase implements Serializer<Object>{
 
 
     private LinkedHashMap<Object, Object> deserializeLinkedHashMap(DataInput is, FastArrayList<Object> objectStack) throws IOException {
-        int size = DataInput2.unpackInt(is);
+        int size = DataIO.unpackInt(is);
 
         LinkedHashMap<Object, Object> s = new LinkedHashMap<Object, Object>(size);
         objectStack.add(s);
@@ -1712,7 +1670,7 @@ public class SerializerBase implements Serializer<Object>{
 
 
     private Properties deserializeProperties(DataInput is, FastArrayList<Object> objectStack) throws IOException {
-        int size = DataInput2.unpackInt(is);
+        int size = DataIO.unpackInt(is);
 
         Properties s = new Properties();
         objectStack.add(s);

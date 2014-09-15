@@ -66,7 +66,7 @@ public final class Pump {
             Comparator comparator, final Serializer serializer){
         if(batchSize<=0) throw new IllegalArgumentException();
         if(comparator==null)
-            comparator=BTreeMap.COMPARABLE_COMPARATOR;
+            comparator=Fun.COMPARATOR;
         if(source==null)
             source = Fun.EMPTY_ITERATOR;
 
@@ -165,7 +165,7 @@ public final class Pump {
      * @return sorted iterator
      */
     public static <E> Iterator<E> sort(Comparator comparator, final boolean mergeDuplicates, final Iterator... iterators) {
-        final Comparator comparator2 = comparator==null?BTreeMap.COMPARABLE_COMPARATOR:comparator;
+        final Comparator comparator2 = comparator==null?Fun.COMPARATOR:comparator;
         return new Iterator<E>(){
 
             final NavigableSet<Fun.Tuple2<Object,Integer>> items = new TreeSet<Fun.Tuple2<Object, Integer>>(
@@ -325,17 +325,14 @@ public final class Pump {
                                              int nodeSize,
                                              boolean valuesStoredOutsideNodes,
                                              long counterRecid,
-                                             BTreeKeySerializer<K> keySerializer,
-                                             Serializer<V> valueSerializer,
-                                             Comparator comparator)
+                                             BTreeKeySerializer keySerializer,
+                                             Serializer<V> valueSerializer)
         {
 
-        if(comparator==null)
-            comparator=BTreeMap.COMPARABLE_COMPARATOR;
 
         final double NODE_LOAD = 0.75;
 
-        Serializer<BTreeMap.BNode> nodeSerializer = new BTreeMap.NodeSerializer(valuesStoredOutsideNodes,keySerializer,valueSerializer,comparator,0);
+        Serializer<BTreeMap.BNode> nodeSerializer = new BTreeMap.NodeSerializer(valuesStoredOutsideNodes,keySerializer,valueSerializer,0);
 
 
         final int nload = (int) (nodeSize * NODE_LOAD);
@@ -358,14 +355,14 @@ public final class Pump {
                 E next = source.next();
                 if(next==null) throw new NullPointerException("source returned null element");
                 K key = keyExtractor==null? (K) next : keyExtractor.run(next);
-                int compared=oldKey==null?-1:comparator.compare(key, oldKey);
+                int compared=oldKey==null?-1:keySerializer.comparator().compare(key, oldKey);
                 while(ignoreDuplicates && compared==0){
                     //move to next
                     if(!source.hasNext())break nodeLoop;
                     next = source.next();
                     if(next==null) throw new NullPointerException("source returned null element");
                     key = keyExtractor==null? (K) next : keyExtractor.run(next);
-                    compared=comparator.compare(key, oldKey);
+                    compared=keySerializer.comparator().compare(key, oldKey);
                 }
 
                 if(oldKey!=null && compared>=0)
@@ -395,8 +392,16 @@ public final class Pump {
 
 
 
-
-            BTreeMap.LeafNode node = new BTreeMap.LeafNode(keys.toArray(),values.toArray() , nextNode);
+            boolean rightEdge = keys.get(keys.size()-1)==null;
+            if(rightEdge)
+                keys.remove(keys.size()-1);
+            boolean leftEdge = keys.get(0)==null;
+            if(leftEdge)
+                keys.remove(0);
+            BTreeMap.LeafNode node = new BTreeMap.LeafNode(
+                    keySerializer.arrayToKeys(keys.toArray()),
+                    leftEdge,rightEdge, false,
+                    values.toArray() , nextNode);
             nextNode = engine.put(node,nodeSerializer);
             K nextKey = keys.get(0);
             keys.clear();
@@ -407,7 +412,7 @@ public final class Pump {
             values.clear();
             values.add(nextVal);
 
-            dirKeys.get(0).add(node.keys()[0]);
+            dirKeys.get(0).add(node.key(keySerializer,0));
             dirRecids.get(0).add(nextNode);
 
             //check node sizes and split them if needed
@@ -417,7 +422,18 @@ public final class Pump {
                 Collections.reverse(dirKeys.get(i));
                 Collections.reverse(dirRecids.get(i));
                 //put node into store
-                BTreeMap.DirNode dir = new BTreeMap.DirNode(dirKeys.get(i).toArray(), dirRecids.get(i));
+                boolean rightEdge2 = dirKeys.get(i).get(dirKeys.get(i).size()-1) == null;
+                if(rightEdge2){
+                    dirKeys.get(i).remove(dirKeys.get(i).size()-1);
+                }
+                boolean leftEdge2 = dirKeys.get(i).get(0)==null;
+                if(leftEdge2){
+                    dirKeys.get(i).remove(0);
+                }
+                BTreeMap.DirNode dir = new BTreeMap.DirNode(
+                        keySerializer.arrayToKeys(dirKeys.get(i).toArray()),
+                        leftEdge2,rightEdge2, false,
+                        toLongArray(dirRecids.get(i)));
                 long dirRecid = engine.put(dir,nodeSerializer);
                 Object dirStart = dirKeys.get(i).get(0);
                 dirKeys.get(i).clear();
@@ -449,7 +465,18 @@ public final class Pump {
             }
 
             //put node into store
-            BTreeMap.DirNode dir = new BTreeMap.DirNode(keys2.toArray(), dirRecids.get(i));
+            boolean rightEdge3 = keys2.get(keys2.size()-1)==null;
+            if(rightEdge3){
+                keys2.remove(keys2.size()-1);
+            }
+            boolean leftEdge3 = keys2.get(0)==null;
+            if(leftEdge3){
+                keys2.remove(0);
+            }
+            BTreeMap.DirNode dir = new BTreeMap.DirNode(
+                    keySerializer.arrayToKeys(keys2.toArray()),
+                    leftEdge3,rightEdge3, false,
+                    toLongArray(dirRecids.get(i)));
             long dirRecid = engine.put(dir,nodeSerializer);
             Object dirStart = keys2.get(0);
             dirKeys.get(i+1).add(dirStart);
@@ -466,9 +493,29 @@ public final class Pump {
         if(counterRecid!=0)
             engine.update(counterRecid, counter, Serializer.LONG);
 
-        BTreeMap.DirNode dir = new BTreeMap.DirNode(dirKeys.get(len).toArray(), dirRecids.get(len));
+
+        boolean rightEdge4 = dirKeys.get(len).get(dirKeys.get(len).size()-1)==null;
+        if(rightEdge4){
+            dirKeys.get(len).remove(dirKeys.get(len).size()-1);
+        }
+        boolean leftEdge4 = dirKeys.get(len).get(0)==null;
+        if(leftEdge4){
+            dirKeys.get(len).remove(0);
+        }
+        BTreeMap.DirNode dir = new BTreeMap.DirNode(
+                keySerializer.arrayToKeys(dirKeys.get(len).toArray()),
+                leftEdge4,rightEdge4, false,
+                toLongArray(dirRecids.get(len)));
         long rootRecid = engine.put(dir, nodeSerializer);
         return engine.put(rootRecid,Serializer.LONG); //root recid
+    }
+
+    private static long[] toLongArray(List<Long> child) {
+        long[] ret= new long[child.size()];
+        for(int i=0;i<child.size();i++){
+            ret[i] = child.get(i);
+        }
+        return ret;
     }
 
     /** create array list with single element*/

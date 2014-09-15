@@ -141,17 +141,6 @@ public class EngineWrapper implements Engine{
         return getWrappedEngine().getSerializerPojo();
     }
 
-    @Override
-    public void closeListenerRegister(Runnable closeListener) {
-        getWrappedEngine().closeListenerRegister(closeListener);
-
-    }
-
-    @Override
-    public void closeListenerUnregister(Runnable closeListener) {
-        getWrappedEngine().closeListenerUnregister(closeListener);
-
-    }
 
     public Engine getWrappedEngine(){
         return checkClosed(engine);
@@ -257,7 +246,7 @@ public class EngineWrapper implements Engine{
 
             private int checksum(){
                 try {
-                    DataOutput2 out = new DataOutput2();
+                    DataIO.DataOutputByteArray out = new DataIO.DataOutputByteArray();
                     serializer.serialize(out, item);
                     byte[] bb = out.copyBytes();
                     return Arrays.hashCode(bb);
@@ -548,15 +537,7 @@ public class EngineWrapper implements Engine{
             throw new IllegalAccessError("already closed");
         }
 
-        @Override
-        public void closeListenerRegister(Runnable closeListener) {
-            throw new IllegalAccessError("already closed");
-        }
 
-        @Override
-        public void closeListenerUnregister(Runnable closeListener) {
-            //this should be probably empty
-        }
     };
 
     /**

@@ -65,7 +65,6 @@ public final class TestMapDB
 		System.out.println(map.get(1L));
 
 		System.out.println("close");
-		map.close();
 		db.commit();
 		db.close();
 		System.out.println("end");
