@@ -35,6 +35,7 @@ public class Octets implements Cloneable, Comparable<Octets>
 
 	public static Octets wrap(byte[] data)
 	{
+		if(data == null) throw new NullPointerException();
 		Octets o = new Octets();
 		o._buffer = data;
 		o._count = data.length;
