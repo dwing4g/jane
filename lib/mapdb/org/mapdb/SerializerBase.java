@@ -221,9 +221,6 @@ public class SerializerBase implements Serializer<Object>{
             out.writeLong(((UUID) obj).getMostSignificantBits());
             out.writeLong(((UUID) obj).getLeastSignificantBits());
             return;
-        } else if(obj == Fun.HI){ //TODO singleton
-            out.write(Header.FUN_HI);
-            return;
         }
 
         /*
@@ -379,54 +376,15 @@ public class SerializerBase implements Serializer<Object>{
             serializeMap(Header.LINKEDHASHMAP, out, obj, objectStack);
         } else if (clazz == Properties.class) {
             serializeMap(Header.PROPERTIES, out, obj, objectStack);
-        } else if (clazz == Fun.Tuple2.class){
+        } else if (clazz == Fun.Pair.class){
             out.write(Header.TUPLE2);
-            Fun.Tuple2 t = (Fun.Tuple2) obj;
+            Fun.Pair t = (Fun.Pair) obj;
             serialize(out, t.a, objectStack);
             serialize(out, t.b, objectStack);
-        } else if (clazz == Fun.Tuple3.class){
-            out.write(Header.TUPLE3);
-            Fun.Tuple3 t = (Fun.Tuple3) obj;
-            serialize(out, t.a, objectStack);
-            serialize(out, t.b, objectStack);
-            serialize(out, t.c, objectStack);
-        } else if (clazz == Fun.Tuple4.class){
-            out.write(Header.TUPLE4);
-            //TODO Tuple serialization code away
-            Fun.Tuple4 t = (Fun.Tuple4) obj;
-            serialize(out, t.a, objectStack);
-            serialize(out, t.b, objectStack);
-            serialize(out, t.c, objectStack);
-            serialize(out, t.d, objectStack);
-        } else if (clazz == Fun.Tuple5.class){
-            out.write(Header.TUPLE5);
-            Fun.Tuple5 t = (Fun.Tuple5) obj;
-            serialize(out, t.a, objectStack);
-            serialize(out, t.b, objectStack);
-            serialize(out, t.c, objectStack);
-            serialize(out, t.d, objectStack);
-            serialize(out, t.e, objectStack);
-        } else if (clazz == Fun.Tuple6.class){
-            out.write(Header.TUPLE6);
-            Fun.Tuple6 t = (Fun.Tuple6) obj;
-            serialize(out, t.a, objectStack);
-            serialize(out, t.b, objectStack);
-            serialize(out, t.c, objectStack);
-            serialize(out, t.d, objectStack);
-            serialize(out, t.e, objectStack);
-            serialize(out, t.f, objectStack);
-        } else if (clazz == BTreeKeySerializer.Tuple2KeySerializer.class){
-            out.write(Header.MAPDB);
-            DataIO.packInt(out, HeaderMapDB.SERIALIZER_KEY_TUPLE2);
-            BTreeKeySerializer.Tuple2KeySerializer s = (BTreeKeySerializer.Tuple2KeySerializer) obj;
-            serialize(out, s.aComparator,objectStack);
-            serialize(out, s.bComparator,objectStack);
-            serialize(out, s.aSerializer,objectStack);
-            serialize(out, s.bSerializer,objectStack);
-        } else if (clazz == BTreeKeySerializer.TupleKeySerializer.class){
+        } else if (clazz == BTreeKeySerializer.ArrayKeySerializer.class){
             out.write(Header.MAPDB);
             DataIO.packInt(out, HeaderMapDB.SERIALIZER_KEY_TUPLE);
-            BTreeKeySerializer.TupleKeySerializer s = (BTreeKeySerializer.TupleKeySerializer) obj;
+            BTreeKeySerializer.ArrayKeySerializer s = (BTreeKeySerializer.ArrayKeySerializer) obj;
             out.write(s.tsize);
             for(Comparator c:s.comparators){
                 serialize(out,c,objectStack);
@@ -447,46 +405,6 @@ public class SerializerBase implements Serializer<Object>{
             out.write(Header.MAPDB);
             DataIO.packInt(out, HeaderMapDB.SERIALIZER_COMPRESSION_WRAPPER);
             serialize(out, ((CompressionWrapper)obj).serializer,objectStack);
-        }else if(obj instanceof Fun.Tuple2Comparator ){
-            out.write(Header.MAPDB);
-            DataIO.packInt(out, HeaderMapDB.TUPLE2_COMPARATOR);
-            Fun.Tuple2Comparator c = (Fun.Tuple2Comparator) obj;
-            serialize(out,c.a,objectStack );
-            serialize(out,c.b,objectStack );
-        }else if(obj instanceof Fun.Tuple3Comparator ){
-            out.write(Header.MAPDB);
-            DataIO.packInt(out, HeaderMapDB.TUPLE3_COMPARATOR);
-            Fun.Tuple3Comparator c = (Fun.Tuple3Comparator) obj;
-            serialize(out,c.a,objectStack );
-            serialize(out,c.b,objectStack );
-            serialize(out,c.c,objectStack );
-        }else if(obj instanceof Fun.Tuple4Comparator ){
-            out.write(Header.MAPDB);
-            DataIO.packInt(out, HeaderMapDB.TUPLE4_COMPARATOR);
-            Fun.Tuple4Comparator c = (Fun.Tuple4Comparator) obj;
-            serialize(out,c.a,objectStack );
-            serialize(out,c.b,objectStack );
-            serialize(out,c.c,objectStack );
-            serialize(out,c.d,objectStack );
-        }else if(obj instanceof Fun.Tuple5Comparator ){
-            out.write(Header.MAPDB);
-            DataIO.packInt(out, HeaderMapDB.TUPLE5_COMPARATOR);
-            Fun.Tuple5Comparator c = (Fun.Tuple5Comparator) obj;
-            serialize(out,c.a,objectStack );
-            serialize(out,c.b,objectStack );
-            serialize(out,c.c,objectStack );
-            serialize(out,c.d,objectStack );
-            serialize(out,c.e,objectStack );
-        }else if(obj instanceof Fun.Tuple6Comparator ){
-            out.write(Header.MAPDB);
-            DataIO.packInt(out, HeaderMapDB.TUPLE6_COMPARATOR);
-            Fun.Tuple6Comparator c = (Fun.Tuple6Comparator) obj;
-            serialize(out,c.a,objectStack );
-            serialize(out,c.b,objectStack );
-            serialize(out,c.c,objectStack );
-            serialize(out,c.d,objectStack );
-            serialize(out,c.e,objectStack );
-            serialize(out,c.f,objectStack );
         }else if(obj instanceof Atomic.Var ){
             out.write(Header.MA_VAR);
             Atomic.Var v = (Atomic.Var) obj;
@@ -1156,19 +1074,7 @@ public class SerializerBase implements Serializer<Object>{
                 ret = new Atomic.String(getEngine(),DataIO.unpackLong(is));
                 break;
             case Header.TUPLE2:
-                ret = new Fun.Tuple2(this, is, objectStack);
-                break;
-            case Header.TUPLE3:
-                ret = new Fun.Tuple3(this, is, objectStack,0);
-                break;
-            case Header.TUPLE4:
-                ret = new Fun.Tuple4(this, is, objectStack);
-                break;
-            case Header.TUPLE5:
-                ret = new Fun.Tuple5(this, is, objectStack);
-                break;
-            case Header.TUPLE6:
-                ret = new Fun.Tuple6(this, is, objectStack);
+                ret = new Fun.Pair(this, is, objectStack);
                 break;
             case Header.MA_VAR:
                 ret = new Atomic.Var(getEngine(), this,is, objectStack);
@@ -1288,9 +1194,6 @@ public class SerializerBase implements Serializer<Object>{
                 ret = deserializeArrayListPackedLong(is);
                 break;
 
-            case Header.FUN_HI:
-                ret = Fun.HI;
-                break;
             case Header.JAVA_SERIALIZATION:
                 throw new AssertionError("Wrong header, data were probably serialized with java.lang.ObjectOutputStream, not with MapDB serialization");
             case Header.ARRAY_OBJECT_PACKED_LONG:
@@ -1312,139 +1215,87 @@ public class SerializerBase implements Serializer<Object>{
     }
 
     protected interface HeaderMapDB{
-        int B_TREE_SERIALIZER_LONG = 1;
-        int B_TREE_SERIALIZER_STRING = 2;
-        int B_TREE_SERIALIZER_INT = 3;
-        int SERIALIZER_LONG = 4;
-        int SERIALIZER_INT = 5;
-        int SERIALIZER_ILLEGAL_ACCESS = 6;
+        int SERIALIZER_KEY_TUPLE = -8;
+        int THIS_SERIALIZER = -12;
+        int B_TREE_BASIC_KEY_SERIALIZER = -15;
+        int COMPARATOR_ARRAY = -45;
 
-        int SERIALIZER_KEY_TUPLE2 = 7;
-        int SERIALIZER_KEY_TUPLE = 8;
-        int SERIALIZER_KEY_UUID = 9;
-        int FUN_COMPARATOR = 10;
-        int FUN_COMPARATOR_NULLABLE = 11;
-        int THIS_SERIALIZER = 12;
-        int SERIALIZER_BASIC = 13;
-        int SERIALIZER_STRING_NOSIZE = 14;
-        int B_TREE_BASIC_KEY_SERIALIZER = 15;
-        int SERIALIZER_BOOLEAN = 16;
-        int SERIALIZER_BYTE_ARRAY_NOSIZE = 17;
-        int SERIALIZER_JAVA = 18;
-        int SERIALIZER_UUID = 19;
-        int SERIALIZER_STRING = 20;
-        int BYTE_ARRAY_SERIALIZER = 21;
-        int TUPLE2_COMPARATOR = 22;
-        int TUPLE3_COMPARATOR = 23;
-        int TUPLE4_COMPARATOR = 24;
-        int TUPLE2_COMPARATOR_STATIC = 25;
-        int TUPLE3_COMPARATOR_STATIC = 26;
-        int TUPLE4_COMPARATOR_STATIC = 27;
-        int FUN_COMPARATOR_REVERSE = 28;
-        int SERIALIZER_CHAR_ARRAY = 29;
-        int SERIALIZER_INT_ARRAY = 30;
-        int SERIALIZER_LONG_ARRAY = 31;
-        int SERIALIZER_DOUBLE_ARRAY = 32;
+        int SERIALIZER_COMPRESSION_WRAPPER = -47;
 
-        int HASHER_BASIC = 33;
-        int HASHER_BYTE_ARRAY = 34;
-        int HASHER_CHAR_ARRAY = 35;
-        int HASHER_INT_ARRAY = 36;
-        int HASHER_LONG_ARRAY = 37;
-        int HASHER_DOUBLE_ARRAY = 38;
-
-        int COMPARATOR_BYTE_ARRAY = 39;
-        int COMPARATOR_CHAR_ARRAY = 40;
-        int COMPARATOR_INT_ARRAY = 41;
-        int COMPARATOR_LONG_ARRAY = 42;
-        int COMPARATOR_DOUBLE_ARRAY = 43;
-        int COMPARATOR_COMPARABLE_ARRAY = 44;
-        int COMPARATOR_ARRAY = 45;
-
-        int SERIALIZER_STRING_ASCII = 46;
-
-        int SERIALIZER_COMPRESSION_WRAPPER = 47;
-
-        int SERIALIZER_STRING_INTERN = 48;
-        int FUN_EMPTY_ITERATOR = 49;
-
-        int TUPLE5_COMPARATOR = 50;
-        int TUPLE6_COMPARATOR = 51;
-        int TUPLE5_COMPARATOR_STATIC = 52;
-        int TUPLE6_COMPARATOR_STATIC = 53;
-        int HASHER_ARRAY = 54;
-
-        int RECORD_ALWAYS_TRUE = 55;
-        int FUN_THREADFACTORY_BASIC = 56;
-        int B_TREE_SERIALIZER_STRING2 = 57;
     }
 
-    protected static final class singletons{
+protected static final class singletons{
         static final Map<Object,Integer> all = new IdentityHashMap<Object, Integer>();
         static final LongHashMap<Object> reverse = new LongHashMap<Object>();
 
         static {
-            all.put(BTreeKeySerializer.STRING, HeaderMapDB.B_TREE_SERIALIZER_STRING);
-            all.put(BTreeKeySerializer.STRING2, HeaderMapDB.B_TREE_SERIALIZER_STRING2);
-            all.put(BTreeKeySerializer.LONG, HeaderMapDB.B_TREE_SERIALIZER_LONG);
-            all.put(BTreeKeySerializer.INTEGER, HeaderMapDB.B_TREE_SERIALIZER_INT);
-            all.put(BTreeKeySerializer.UUID,HeaderMapDB.SERIALIZER_KEY_UUID);
 
-            all.put(Fun.COMPARATOR,HeaderMapDB.FUN_COMPARATOR);
-            all.put(Fun.COMPARATOR_NULLABLE,HeaderMapDB.FUN_COMPARATOR_NULLABLE);
-            all.put(Fun.REVERSE_COMPARATOR,HeaderMapDB.FUN_COMPARATOR_REVERSE);
-            all.put(Fun.EMPTY_ITERATOR,HeaderMapDB.FUN_EMPTY_ITERATOR);
-            all.put(Fun.TUPLE2_COMPARATOR,HeaderMapDB.TUPLE2_COMPARATOR_STATIC);
-            all.put(Fun.TUPLE3_COMPARATOR,HeaderMapDB.TUPLE3_COMPARATOR_STATIC);
-            all.put(Fun.TUPLE4_COMPARATOR,HeaderMapDB.TUPLE4_COMPARATOR_STATIC);
-            all.put(Fun.TUPLE5_COMPARATOR,HeaderMapDB.TUPLE5_COMPARATOR_STATIC);
-            all.put(Fun.TUPLE6_COMPARATOR,HeaderMapDB.TUPLE6_COMPARATOR_STATIC);
-            all.put(Fun.ThreadFactory.BASIC,HeaderMapDB.FUN_THREADFACTORY_BASIC);
+            /*
+             * !!!! IMPORTANT !!!!
+             *   Code bellow defines storage format, do not modify!!!
+             * !!!! IMPORTANT !!!!
+             */
 
-            all.put(Serializer.STRING_NOSIZE,HeaderMapDB.SERIALIZER_STRING_NOSIZE);
-            all.put(Serializer.STRING_ASCII,HeaderMapDB.SERIALIZER_STRING_ASCII);
-            all.put(Serializer.STRING_INTERN,HeaderMapDB.SERIALIZER_STRING_INTERN);
-            all.put(Serializer.LONG,HeaderMapDB.SERIALIZER_LONG);
-            all.put(Serializer.INTEGER,HeaderMapDB.SERIALIZER_INT);
-            all.put(Serializer.ILLEGAL_ACCESS,HeaderMapDB.SERIALIZER_ILLEGAL_ACCESS);
-            all.put(Serializer.BASIC,HeaderMapDB.SERIALIZER_BASIC);
-            all.put(Serializer.BOOLEAN,HeaderMapDB.SERIALIZER_BOOLEAN);
-            all.put(Serializer.BYTE_ARRAY_NOSIZE,HeaderMapDB.SERIALIZER_BYTE_ARRAY_NOSIZE);
-            all.put(Serializer.BYTE_ARRAY,HeaderMapDB.BYTE_ARRAY_SERIALIZER);
-            all.put(Serializer.JAVA,HeaderMapDB.SERIALIZER_JAVA);
-            all.put(Serializer.UUID,HeaderMapDB.SERIALIZER_UUID);
-            all.put(Serializer.STRING,HeaderMapDB.SERIALIZER_STRING);
-            all.put(Serializer.CHAR_ARRAY,HeaderMapDB.SERIALIZER_CHAR_ARRAY);
-            all.put(Serializer.INT_ARRAY,HeaderMapDB.SERIALIZER_INT_ARRAY);
-            all.put(Serializer.LONG_ARRAY,HeaderMapDB.SERIALIZER_LONG_ARRAY);
-            all.put(Serializer.DOUBLE_ARRAY,HeaderMapDB.SERIALIZER_DOUBLE_ARRAY);
+            add( 1, BTreeKeySerializer.STRING);
+            add( 2, BTreeKeySerializer.STRING2);
+            add( 3, BTreeKeySerializer.LONG);
+            add( 4, BTreeKeySerializer.INTEGER);
+            add( 5, BTreeKeySerializer.UUID);
 
-            all.put(Hasher.BASIC,HeaderMapDB.HASHER_BASIC);
-            all.put(Hasher.BYTE_ARRAY,HeaderMapDB.HASHER_BYTE_ARRAY);
-            all.put(Hasher.CHAR_ARRAY,HeaderMapDB.HASHER_CHAR_ARRAY);
-            all.put(Hasher.INT_ARRAY,HeaderMapDB.HASHER_INT_ARRAY);
-            all.put(Hasher.LONG_ARRAY,HeaderMapDB.HASHER_LONG_ARRAY);
-            all.put(Hasher.DOUBLE_ARRAY,HeaderMapDB.HASHER_DOUBLE_ARRAY);
-            all.put(Hasher.ARRAY,HeaderMapDB.HASHER_ARRAY);
+            add( 6, Fun.COMPARATOR);
 
-            all.put(Fun.BYTE_ARRAY_COMPARATOR,HeaderMapDB.COMPARATOR_BYTE_ARRAY);
-            all.put(Fun.CHAR_ARRAY_COMPARATOR,HeaderMapDB.COMPARATOR_CHAR_ARRAY);
-            all.put(Fun.INT_ARRAY_COMPARATOR,HeaderMapDB.COMPARATOR_INT_ARRAY);
-            all.put(Fun.LONG_ARRAY_COMPARATOR,HeaderMapDB.COMPARATOR_LONG_ARRAY);
-            all.put(Fun.DOUBLE_ARRAY_COMPARATOR,HeaderMapDB.COMPARATOR_DOUBLE_ARRAY);
-            all.put(Fun.COMPARABLE_ARRAY_COMPARATOR,HeaderMapDB.COMPARATOR_COMPARABLE_ARRAY);
+            add( 7, Fun.REVERSE_COMPARATOR);
+            add( 8, Fun.EMPTY_ITERATOR);
+            add( 9, Fun.ThreadFactory.BASIC);
 
-            all.put(Fun.RECORD_ALWAYS_TRUE,HeaderMapDB.RECORD_ALWAYS_TRUE);
+            add(10, Serializer.STRING_NOSIZE);
+            add(11, Serializer.STRING_ASCII);
+            add(12, Serializer.STRING_INTERN);
+            add(13, Serializer.LONG);
+            add(14, Serializer.INTEGER);
+            add(15, Serializer.ILLEGAL_ACCESS);
+            add(16, Serializer.BASIC);
+            add(17, Serializer.BOOLEAN);
+            add(18, Serializer.BYTE_ARRAY_NOSIZE);
+            add(19, Serializer.BYTE_ARRAY);
+            add(20, Serializer.JAVA);
+            add(21, Serializer.UUID);
+            add(22, Serializer.STRING);
+            add(23, Serializer.CHAR_ARRAY);
+            add(24, Serializer.INT_ARRAY);
+            add(25, Serializer.LONG_ARRAY);
+            add(26, Serializer.DOUBLE_ARRAY);
 
+            add(27, Hasher.BASIC);
+            add(28, Hasher.BYTE_ARRAY);
+            add(29, Hasher.CHAR_ARRAY);
+            add(30, Hasher.INT_ARRAY);
+            add(31, Hasher.LONG_ARRAY);
+            add(32, Hasher.DOUBLE_ARRAY);
+            add(33, Hasher.ARRAY);
 
-            //important for assertSerializable
-            all.put(Fun.HI,Integer.MIN_VALUE);
+            add(34, Fun.BYTE_ARRAY_COMPARATOR);
+            add(35, Fun.CHAR_ARRAY_COMPARATOR);
+            add(36, Fun.INT_ARRAY_COMPARATOR);
+            add(37, Fun.LONG_ARRAY_COMPARATOR);
+            add(38, Fun.DOUBLE_ARRAY_COMPARATOR);
+            add(39, Fun.COMPARABLE_ARRAY_COMPARATOR);
 
-            for(Map.Entry<Object,Integer> e:all.entrySet()){
-                reverse.put(e.getValue(),e.getKey());
-            }
+            add(40, Fun.RECORD_ALWAYS_TRUE);
+
+            add(41, BTreeKeySerializer.ARRAY2);
+            add(42, BTreeKeySerializer.ARRAY3);
+            add(43, BTreeKeySerializer.ARRAY4);
         }
+
+    private static void add(int header, Object singleton) {
+        Object old = all.put(singleton,header);
+        Object old2 = reverse.put(header,singleton);
+
+        if(old!=null || old2!=null)
+            throw new AssertionError("singleton serializer conflict");
     }
+}
 
     public static void assertSerializable(Object o){
         if(o!=null && !(o instanceof Serializable)
@@ -1464,8 +1315,6 @@ public class SerializerBase implements Serializer<Object>{
         assert(objectStack!=null);
 
         switch(head){
-            case HeaderMapDB.SERIALIZER_KEY_TUPLE2:
-                return new BTreeKeySerializer.Tuple2KeySerializer(this, is, objectStack,0);
             case HeaderMapDB.COMPARATOR_ARRAY:
                 return new Fun.ArrayComparator(this, is, objectStack);
 
@@ -1473,18 +1322,7 @@ public class SerializerBase implements Serializer<Object>{
                 return new CompressionWrapper(this, is, objectStack);
 
             case HeaderMapDB.SERIALIZER_KEY_TUPLE:
-                return new BTreeKeySerializer.TupleKeySerializer(this, is, objectStack);
-
-            case HeaderMapDB.TUPLE2_COMPARATOR:
-                return new Fun.Tuple2Comparator(this, is, objectStack);
-            case HeaderMapDB.TUPLE3_COMPARATOR:
-                return new Fun.Tuple3Comparator(this, is, objectStack,0);
-            case HeaderMapDB.TUPLE4_COMPARATOR:
-                return new Fun.Tuple4Comparator(this, is, objectStack);
-            case HeaderMapDB.TUPLE5_COMPARATOR:
-                return new Fun.Tuple5Comparator(this, is, objectStack);
-            case HeaderMapDB.TUPLE6_COMPARATOR:
-                return new Fun.Tuple6Comparator(this, is, objectStack);
+                return new BTreeKeySerializer.ArrayKeySerializer(this, is, objectStack);
 
             case HeaderMapDB.B_TREE_BASIC_KEY_SERIALIZER:
                 return new BTreeKeySerializer.BasicKeySerializer(this,is,objectStack);
@@ -2027,12 +1865,12 @@ public class SerializerBase implements Serializer<Object>{
 
         int MAPDB = 150;
         int TUPLE2 = 151;
-        int TUPLE3 = 152;
-        int TUPLE4 = 153;
-        int TUPLE5 = 154; //reserved for Tuple5 if we will ever implement it
-        int TUPLE6 = 155; //reserved for Tuple6 if we will ever implement it
-        int TUPLE7 = 156; //reserved for Tuple7 if we will ever implement it
-        int TUPLE8 = 157; //reserved for Tuple8 if we will ever implement it
+//        int TUPLE3 = 152; //TODO unused
+//        int TUPLE4 = 153;
+//        int TUPLE5 = 154; //reserved for Tuple5 if we will ever implement it
+//        int TUPLE6 = 155; //reserved for Tuple6 if we will ever implement it
+//        int TUPLE7 = 156; //reserved for Tuple7 if we will ever implement it
+//        int TUPLE8 = 157; //reserved for Tuple8 if we will ever implement it
 
 
         int  ARRAY_OBJECT = 158;

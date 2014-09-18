@@ -53,8 +53,6 @@ public class StoreAppend extends Store{
     /** at place of recid indicates commited transaction, just ignore this value and continue */
     protected static final long SKIP = 2-RECIDP;
 
-    /** storage file (without number*/
-    protected final File file;
     protected final boolean useRandomAccessFile;
     protected final boolean readOnly;
     protected final boolean syncOnCommit;
@@ -95,11 +93,12 @@ public class StoreAppend extends Store{
 
 
 
-    public StoreAppend(final File file, final boolean useRandomAccessFile, final boolean readOnly,
+    public StoreAppend(final String fileName, Fun.Function1<Volume,String> volumeFactory,
+                       final boolean useRandomAccessFile, final boolean readOnly,
                        final boolean transactionDisabled, final boolean deleteFilesAfterClose,  final boolean syncOnCommitDisabled,
                        boolean checksum, boolean compress, byte[] password, boolean disableLocks) {
-        super(checksum, compress, password,disableLocks);
-        this.file = file;
+        super(fileName, volumeFactory, checksum, compress, password,disableLocks);
+
         this.useRandomAccessFile = useRandomAccessFile;
         this.readOnly = readOnly;
         this.deleteFilesAfterClose = deleteFilesAfterClose;
@@ -107,19 +106,19 @@ public class StoreAppend extends Store{
         this.tx = !transactionDisabled;
         indexInTx = tx?new LongConcurrentHashMap<Long>() : null;
 
-        final File parent = file.getAbsoluteFile().getParentFile();
+        final File parent = new File(fileName).getAbsoluteFile().getParentFile();
         if(!parent.exists() || !parent.isDirectory())
-            throw new IllegalArgumentException("Parent dir does not exist: "+file);
+            throw new IllegalArgumentException("Parent dir does not exist: "+fileName);
 
         //list all matching files and sort them by number
-        final SortedSet<Fun.Tuple2<Long,File>> sortedFiles = new TreeSet<Fun.Tuple2<Long, File>>();
-        final String prefix = file.getName();
+        final SortedSet<Fun.Pair<Long,File>> sortedFiles = new TreeSet<Fun.Pair<Long, File>>();
+        final String prefix = new File(fileName).getName();
         for(File f:parent.listFiles()){
             String name= f.getName();
             if(!name.startsWith(prefix) || name.length()<=prefix.length()+1) continue;
             String number = name.substring(prefix.length()+1, name.length());
             if(!number.matches("^[0-9]+$")) continue;
-            sortedFiles.add(Fun.t2(Long.valueOf(number),f));
+            sortedFiles.add(new Fun.Pair(Long.valueOf(number),f));
         }
 
 
@@ -151,7 +150,7 @@ public class StoreAppend extends Store{
             currPos = pos;
         }else{
             //some files exists, open, check header and replay index
-            for(Fun.Tuple2<Long,File> t:sortedFiles){
+            for(Fun.Pair<Long,File> t:sortedFiles){
                 Long num = t.a;
                 File f = t.b;
                 Volume vol = Volume.volumeForFile(f,useRandomAccessFile,readOnly, 0L, MAX_FILE_SIZE_SHIFT,0);
@@ -226,13 +225,24 @@ public class StoreAppend extends Store{
         }
     }
 
-    public StoreAppend(File file) {
-        this(file,false,false,false,false,false,false,false,null,false);
+    public StoreAppend(String fileName) {
+        this(   fileName,
+                fileName==null || fileName.isEmpty()?Volume.memoryFactory():Volume.fileFactory(),
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                null,
+                false
+        );
     }
 
 
     protected File getFileFromNum(long fileNumber){
-        return new File(file.getPath()+"."+fileNumber);
+        return new File(fileName+"."+fileNumber);
     }
 
     protected void rollover(){

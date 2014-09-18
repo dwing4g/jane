@@ -26,7 +26,6 @@
 package org.mapdb;
 
 
-import java.io.Closeable;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -601,18 +600,20 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
                        valueSerializer.serialize(out,  val);
                     }
                 }else{
-                    //write bits if values are null
-                    boolean[] bools = new boolean[value.vals().length];
-                    for(int i=0;i<bools.length;i++){
-                        bools[i] = value.vals()[i]!=null;
-                    }
-                    //pack
-                    byte[] bb = SerializerBase.booleanToByteArray(bools);
-                    out.write(bb);
+                    serializeSetFlags(out, value);
                 }
-
             }
+        }
 
+        public void serializeSetFlags(DataOutput out, BNode value) throws IOException {
+            //write bits if values are null
+            boolean[] bools = new boolean[value.vals().length];
+            for(int i=0;i<bools.length;i++){
+                bools[i] = value.vals()[i]!=null;
+            }
+            //pack
+            byte[] bb = SerializerBase.booleanToByteArray(bools);
+            out.write(bb);
         }
 
         @Override
@@ -1001,7 +1002,7 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
             if(lo==null){
                 pointToStart();
             }else{
-                Fun.Tuple2<Integer, LeafNode> l = m.findLargerNode(lo, loInclusive);
+                Fun.Pair<Integer, LeafNode> l = m.findLargerNode(lo, loInclusive);
                 currentPos = l!=null? l.a : -1;
                 currentLeaf = l!=null ? l.b : null;
             }
@@ -1528,7 +1529,7 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
 
     }
 
-    protected Fun.Tuple2<Integer,LeafNode> findLargerNode(final K key, boolean inclusive) {
+    protected Fun.Pair<Integer,LeafNode> findLargerNode(final K key, boolean inclusive) {
         if(key==null) return null;
 
         long current = engine.get(rootRecidRef, Serializer.LONG);
@@ -1550,7 +1551,7 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
                 if(leaf.key(keySerializer,i)==null) continue;
 
                 if(-leaf.compare(keySerializer,i, key)<comp){
-                    return Fun.t2(i, leaf);
+                    return new Fun.Pair(i, leaf);
                 }
             }
             if(leaf.next==0) return null; //reached end
