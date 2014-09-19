@@ -29,6 +29,7 @@ public class OctetsStream extends Octets
 
 	public static OctetsStream wrap(byte[] data)
 	{
+		if(data == null) throw new NullPointerException();
 		OctetsStream os = new OctetsStream();
 		os._buffer = data;
 		os._count = data.length;
@@ -112,6 +113,7 @@ public class OctetsStream extends Octets
 	@Override
     public OctetsStream wraps(byte[] data)
 	{
+		if(data == null) throw new NullPointerException();
 		_buffer = data;
 		_count = data.length;
 		return this;
