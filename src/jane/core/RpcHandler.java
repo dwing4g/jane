@@ -10,24 +10,23 @@ import org.apache.mina.core.session.IoSession;
 public abstract class RpcHandler<A extends Bean<A>, R extends Bean<R>> extends BeanHandler<RpcBean<A, R>>
 {
 	/**
-	 * RPC请求的回调
+	 * RPC请求的处理
 	 * <p>
-	 * 回调时arg是传来的请求参数对象, res默认是已初始化的回复对象
+	 * 处理时rpcBean.arg是传来的请求参数对象, rpcBean.res默认是已初始化的回复对象
 	 * @param manager
 	 * @param session
-	 * @param arg
-	 * @param res
+	 * @param rpcBean
 	 * @return 返回true且res不为null时会立即自动发送回复, 否则不自动发送回复
 	 */
-	public boolean onServer(NetManager manager, IoSession session, A arg, R res) throws Exception
+	public boolean onServer(NetManager manager, IoSession session, RpcBean<A, R> rpcBean) throws Exception
 	{
 		return true;
 	}
 
 	/**
-	 * RPC回复的回调
+	 * RPC回复的处理
 	 * <p>
-	 * 回调时arg是之前发送请求时的参数对象, res是传来的回复对象
+	 * 处理时arg是之前发送请求时的参数对象, res是传来的回复对象
 	 * @param manager
 	 * @param session
 	 * @param arg
@@ -63,11 +62,10 @@ public abstract class RpcHandler<A extends Bean<A>, R extends Bean<R>> extends B
 		if(rpcBean.isRequest())
 		{
 			R res = rpcBean.getRes();
-			if(res == null) res = rpcBean.createRes();
-			if(onServer(manager, session, rpcBean.getArg(), res))
+			if(res == null) rpcBean.setRes(rpcBean.createRes());
+			if(onServer(manager, session, rpcBean))
 			{
 				rpcBean.setArg(null);
-				rpcBean.setRes(res);
 				rpcBean.setResponse();
 				manager.send(session, rpcBean);
 			}

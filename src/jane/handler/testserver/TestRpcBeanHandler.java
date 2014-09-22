@@ -3,6 +3,7 @@ package jane.handler.testserver;
 import org.apache.mina.core.session.IoSession;
 import jane.core.Log;
 import jane.core.NetManager;
+import jane.core.RpcBean;
 import jane.core.RpcHandler;
 import jane.bean.TestBean;
 import jane.bean.TestType;
@@ -39,8 +40,10 @@ public final class TestRpcBeanHandler extends RpcHandler<TestBean, TestType>
 	\*/
 
 	@Override
-	public boolean onServer(final NetManager manager, final IoSession session, final TestBean arg, final TestType res)
+	public boolean onServer(final NetManager manager, final IoSession session, final RpcBean<TestBean, TestType> rpcBean)
 	{
+		final TestBean arg = rpcBean.getArg();
+		// final TestType res = rpcBean.getRes();
 		Log.log.debug("{}: onServer: {}", getClass().getName(), arg);
 		return true;
 	}
