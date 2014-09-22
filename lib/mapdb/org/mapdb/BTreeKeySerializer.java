@@ -1,9 +1,6 @@
 package org.mapdb;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.io.Serializable;
+import java.io.*;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.UUID;
@@ -157,6 +154,8 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
         protected final Comparator comparator;
 
         public BasicKeySerializer(Serializer serializer, Comparator comparator) {
+            if(serializer == null || comparator == null)
+                throw new  NullPointerException();
             this.serializer = serializer;
             this.comparator = comparator;
         }
@@ -166,6 +165,8 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
             objectStack.add(this);
             serializer = (Serializer) serializerBase.deserialize(is,objectStack);
             comparator = (Comparator) serializerBase.deserialize(is,objectStack);
+            if(serializer == null || comparator == null)
+                throw new  NullPointerException();
         }
 
         @Override
@@ -558,178 +559,6 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
      */
     public static final  BTreeKeySerializer ZERO_OR_POSITIVE_INT = INTEGER;
 
-    /**
-     * Applies delta packing on {@code java.lang.String}. This serializer splits consequent strings
-     * to two parts: shared prefix and different suffix. Only suffix is than stored.
-     */
-    public static final  BTreeKeySerializer<String, byte[][]> STRING2 = new BTreeKeySerializer<String, byte[][]>() {
-
-        @Override
-        public void serialize(DataOutput out, byte[][] chars) throws IOException {
-            byte[] previous = null;
-            for (byte[] b:chars) {
-                leadingValuePackWrite(out, b, previous, 0);
-                previous = b;
-            }
-        }
-
-        @Override
-        public byte[][] deserialize(DataInput in, int nodeSize) throws IOException {
-            byte[][] ret = new byte[nodeSize][];
-            byte[] previous = null;
-            for (int i = 0; i < nodeSize; i++) {
-                byte[] b = leadingValuePackRead(in, previous, 0);
-                if (b == null) continue;
-                ret[i] = b;
-                previous = b;
-            }
-            return ret;
-        }
-
-        /** compares two char arrays, has same contract as {@link String#compareTo(String)} */
-        int compare(byte[] c1, byte[] c2){
-            int end = (c1.length <= c2.length) ? c1.length : c2.length;
-            int ret;
-            for(int i=0;i<end;i++){
-                if ((ret = c1[i] - c2[i]) != 0) {
-                    return ret;
-                }
-            }
-            return c1.length - c2.length;
-        }
-
-
-        /** compares char array and string, has same contract as {@link String#compareTo(String)} */
-        int compare(byte[] c1, String c2){
-            int end = Math.min(c1.length,c2.length());
-            int ret;
-            for(int i=0;i<end;i++){
-                if ((ret = c1[i] - (byte)c2.charAt(i)) != 0) {
-                    return ret;
-                }
-            }
-            return c1.length - c2.length();
-        }
-
-        @Override
-        public int compare(byte[][] chars, int pos1, int pos2) {
-            return compare(chars[pos1],chars[pos2]);
-        }
-
-        @Override
-        public int compare(byte[][] chars, int pos, String key) {
-            return compare(chars[pos],key);
-        }
-
-        @Override
-        public String getKey(byte[][] chars, int pos) {
-            return new String(chars[pos]); //TODO call private constr, so no copy is made
-        }
-
-        @Override
-        public Comparator comparator() {
-            return Fun.COMPARATOR;
-        }
-
-        @Override
-        public byte[][] emptyKeys() {
-            return new byte[0][];
-        }
-
-        @Override
-        public int length(byte[][] chars) {
-            return chars.length;
-        }
-
-        @Override
-        public byte[][] putKey(byte[][] keys, int pos, String newKey) {
-            return (byte[][]) BTreeMap.arrayPut(keys, pos, newKey.getBytes());
-        }
-
-        @Override
-        public byte[][] copyOfRange(byte[][] keys, int from, int to) {
-            return Arrays.copyOfRange( keys,from,to);
-        }
-
-
-        @Override
-        public byte[][] arrayToKeys(Object[] keys) {
-            byte[][] ret = new byte[keys.length][];
-            for(int i=keys.length-1;i>=0;i--)
-                ret[i] = ((String)keys[i]).getBytes();
-            return ret;
-        }
-
-        @Override
-        public byte[][] deleteKey(byte[][] keys, int pos) {
-            byte[][] keys2 = new byte[keys.length-1][];
-            System.arraycopy(keys,0,keys2, 0, pos);
-            System.arraycopy(keys, pos+1, keys2, pos, keys2.length-pos);
-            return keys2;
-        }
-    };
-
-    /**
-     * Read previously written data from {@code leadingValuePackWrite()} method.
-     *
-     * author: Kevin Day
-     */
-    public static byte[] leadingValuePackRead(DataInput in, byte[] previous, int ignoreLeadingCount) throws IOException {
-        int len = DataIO.unpackInt(in) - 1;  // 0 indicates null
-        if (len == -1)
-            return null;
-
-        int actualCommon = DataIO.unpackInt(in);
-
-        byte[] buf = new byte[len];
-
-        if (previous == null) {
-            actualCommon = 0;
-        }
-
-
-        if (actualCommon > 0) {
-            in.readFully(buf, 0, ignoreLeadingCount);
-            System.arraycopy(previous, ignoreLeadingCount, buf, ignoreLeadingCount, actualCommon - ignoreLeadingCount);
-        }
-        in.readFully(buf, actualCommon, len - actualCommon);
-        return buf;
-    }
-
-    /**
-     * This method is used for delta compression for keys.
-     * Writes the contents of buf to the DataOutput out, with special encoding if
-     * there are common leading bytes in the previous group stored by this compressor.
-     *
-     * author: Kevin Day
-     */
-    public static void leadingValuePackWrite(DataOutput out, byte[] buf, byte[] previous, int ignoreLeadingCount) throws IOException {
-        if (buf == null) {
-            DataIO.packInt(out, 0);
-            return;
-        }
-
-        int actualCommon = ignoreLeadingCount;
-
-        if (previous != null) {
-            int maxCommon = buf.length > previous.length ? previous.length : buf.length;
-
-            if (maxCommon > Short.MAX_VALUE) maxCommon = Short.MAX_VALUE;
-
-            for (; actualCommon < maxCommon; actualCommon++) {
-                if (buf[actualCommon] != previous[actualCommon])
-                    break;
-            }
-        }
-
-
-        // there are enough common bytes to justify compression
-        DataIO.packInt(out, buf.length + 1);// store as +1, 0 indicates null
-        DataIO.packInt(out, actualCommon);
-        out.write(buf, 0, ignoreLeadingCount);
-        out.write(buf, actualCommon, buf.length - actualCommon);
-
-    }
 
     public static final BTreeKeySerializer ARRAY2 = new ArrayKeySerializer(
             new Comparator[]{Fun.COMPARATOR,Fun.COMPARATOR},
@@ -1051,7 +880,31 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
         }
     };
 
-    public static final class ByteArrayKeys{
+    public interface StringArrayKeys {
+
+        int commonPrefixLen();
+
+        int length();
+
+        BTreeKeySerializer.StringArrayKeys deleteKey(int pos);
+
+        BTreeKeySerializer.StringArrayKeys copyOfRange(int from, int to);
+
+        BTreeKeySerializer.StringArrayKeys putKey(int pos, String newKey);
+
+        int compare(int pos1, String string);
+
+        int compare(int pos1, int pos2);
+
+        String getKeyString(int pos);
+
+        boolean hasUnicodeChars();
+
+        void serialize(DataOutput out, int prefixLen) throws IOException;
+    }
+
+    //TODO right now byte[] contains 7 bit characters, but it should be expandable to 8bit.
+    public static final class ByteArrayKeys implements StringArrayKeys {
         final int[] offset;
         final byte[] array;
 
@@ -1061,63 +914,173 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
 
             assert(array.length==0 || array.length == offset[offset.length-1]);
         }
-    }
 
+        ByteArrayKeys(DataInput in, int[] offsets, int prefixLen) throws IOException {
+            this.offset = offsets;
+            array = new byte[offsets[offsets.length-1]];
 
-    public static final BTreeKeySerializer<String,ByteArrayKeys> STRING_BYTE_ARRAY = new BTreeKeySerializer<String,ByteArrayKeys>() {
-        @Override
-        public void serialize(DataOutput out, ByteArrayKeys keys) throws IOException {
-            int offset = 0;
-            for(int o:keys.offset){
-                DataIO.packInt(out,o-offset);
-                offset = o;
+            in.readFully(array, 0, prefixLen);
+            for(int i=0; i<offsets.length-1;i++){
+                System.arraycopy(array,0,array,offsets[i],prefixLen);
             }
 
-            out.write(keys.array);
+            //read suffixes
+            int offset = prefixLen;
+            for(int o:offsets){
+                in.readFully(array,offset,o-offset);
+                offset = o+prefixLen;
+            }
+
+        }
+
+        ByteArrayKeys(int[] offsets, Object[] keys) {
+            this.offset = offsets;
+            //fill large array
+            array = new byte[offsets[offsets.length-1]];
+            int bbOffset = 0;
+            for (Object key : keys) {
+                String str = (String) key;
+                for (int j = 0; j < str.length(); j++) {
+                    array[bbOffset++] = (byte) str.charAt(j);
+                }
+            }
         }
 
         @Override
-        public ByteArrayKeys deserialize(DataInput in, int nodeSize) throws IOException {
-            int[] offsets = new int[nodeSize];
-            int old=0;
-            for(int i=0;i<nodeSize;i++){
-                old+= DataIO.unpackInt(in);
-                offsets[i]=old;
+        public int commonPrefixLen() {
+            int lenMinus1 = offset.length-1;
+            for(int ret = 0;; ret++){
+                if(offset[0]==ret)
+                    return ret;
+                byte byt = array[ret];
+                for(int i=0;i<lenMinus1;i++){
+                    int o = offset[i]+ret;
+                    if( o==offset[i+1]  || //too long
+                            array[o]!=byt //other character
+                            )
+                        return ret;
+                }
             }
+        }
 
-            byte[] bb = new byte[old];
-            in.readFully(bb);
+        @Override
+        public int length() {
+            return offset.length;
+        }
+
+        @Override
+        public ByteArrayKeys deleteKey(int pos) {
+            int split = pos==0? 0: offset[pos-1];
+            int next = offset[pos];
+
+            byte[] bb = new byte[array.length - (next-split)];
+            int[] offsets = new  int[offset.length - 1];
+
+            System.arraycopy(array,0,bb,0,split);
+            System.arraycopy(array,next,bb,split,array.length-next);
+
+            int minus=0;
+            int plusI=0;
+            for(int i=0;i<offsets.length;i++){
+                if(i==pos){
+                    //skip current item and normalize offsets
+                    plusI=1;
+                    minus = next-split;
+                }
+                offsets[i] = offset[i+plusI] - minus;
+            }
             return new ByteArrayKeys(offsets,bb);
         }
 
         @Override
-        public int compare(ByteArrayKeys byteArrayKeys, int pos1, int pos2) {
-            int start1 = pos1==0 ? 0 : byteArrayKeys.offset[pos1-1];
-            int start2 = pos2==0 ? 0 : byteArrayKeys.offset[pos2-1];
-            int len1 = byteArrayKeys.offset[pos1] - start1;
-            int len2 = byteArrayKeys.offset[pos2] - start2;
-            int len = Math.min(len1,len2);
+        public ByteArrayKeys copyOfRange(int from, int to) {
+            int start = from==0? 0: offset[from-1];
+            int end = to==0? 0: offset[to-1];
+            byte[] bb = Arrays.copyOfRange(array,start,end);
+
+            int[] offsets = new int[to-from];
+            for(int i=0;i<offsets.length;i++){
+                offsets[i] = offset[i+from] - start;
+            }
+
+            return new ByteArrayKeys(offsets,bb);
+        }
+
+        @Override
+        public StringArrayKeys putKey(int pos, String newKey) {
+            if(containsUnicode(newKey)){
+                return CharArrayKeys.putKey(this,pos,newKey);
+            }
+            return putKey(pos,newKey.getBytes());
+        }
+
+        static final boolean containsUnicode(String str){
+            int strLen = str.length();
+            for(int i=0;i<strLen;i++){
+                if(str.charAt(i)>127)
+                    return true;
+            }
+            return false;
+        }
+
+        public ByteArrayKeys putKey(int pos, byte[] newKey) {
+            byte[] bb = new byte[array.length+ newKey.length];
+            int split1 = pos==0? 0: offset[pos-1];
+            System.arraycopy(array,0,bb,0,split1);
+            System.arraycopy(newKey,0,bb,split1,newKey.length);
+            System.arraycopy(array,split1,bb,split1+newKey.length,array.length-split1);
+
+            int[] offsets = new int[offset.length+1];
+
+            int plus = 0;
+            int plusI = 0;
+            for(int i=0;i<offset.length;i++){
+                if(i==pos){
+                    //skip one item and increase space
+                    plus = newKey.length;
+                    plusI = 1;
+
+                }
+                offsets[i+plusI] = offset[i] + plus;
+            }
+            offsets[pos] = split1+newKey.length;
+
+            return new ByteArrayKeys(offsets,bb);
+        }
+
+        public byte[] getKey(int pos) {
+            int from =  pos==0 ? 0 : offset[pos-1];
+            int to =  offset[pos];
+            return Arrays.copyOfRange(array, from, to);
+        }
+
+        public int compare(int pos1, byte[] string) {
+            int strLen = string.length;
+            int start1 = pos1==0 ? 0 : offset[pos1-1];
+            int start2 = 0;
+            int len1 = offset[pos1] - start1;
+            int len = Math.min(len1,strLen);
 
             while(len-- != 0){
-                byte b1 = byteArrayKeys.array[start1++];
-                byte b2 = byteArrayKeys.array[start2++];
+                byte b1 = array[start1++];
+                byte b2 = string[start2++];
                 if(b1!=b2){
                     return b1-b2;
                 }
             }
-            return len1 - len2;
+            return len1 - strLen;
         }
 
         @Override
-        public int compare(ByteArrayKeys byteArrayKeys, int pos1, String string) {
+        public int compare(int pos1, String string) {
             int strLen = string.length();
-            int start1 = pos1==0 ? 0 : byteArrayKeys.offset[pos1-1];
+            int start1 = pos1==0 ? 0 : offset[pos1-1];
             int start2 = 0;
-            int len1 = byteArrayKeys.offset[pos1] - start1;
+            int len1 = offset[pos1] - start1;
             int len = Math.min(len1,strLen);
 
             while(len-- != 0){
-                byte b1 = byteArrayKeys.array[start1++];
+                byte b1 = array[start1++];
                 byte b2 = (byte) string.charAt(start2++);
                 if(b1!=b2){
                     return b1-b2;
@@ -1126,30 +1089,517 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
             return len1 - strLen;
         }
 
+        @Override
+        public int compare(int pos1, int pos2) {
+            int start1 = pos1==0 ? 0 : offset[pos1-1];
+            int start2 = pos2==0 ? 0 : offset[pos2-1];
+            int len1 = offset[pos1] - start1;
+            int len2 = offset[pos2] - start2;
+            int len = Math.min(len1,len2);
 
-
-        private byte[] toBytes(String string) {
-            byte[] ret = new byte[string.length()];
-            for(int i=ret.length-1;i!=-1;i--){
-                ret[i] = (byte) string.charAt(i);
+            while(len-- != 0){
+                byte b1 = array[start1++];
+                byte b2 = array[start2++];
+                if(b1!=b2){
+                    return b1-b2;
+                }
             }
-            return ret;
+            return len1 - len2;
         }
 
         @Override
-        public String getKey(ByteArrayKeys byteArrayKeys, int pos) {
-            int from =  pos==0 ? 0 : byteArrayKeys.offset[pos-1];
-            int to =  byteArrayKeys.offset[pos];
-            byte[] ret =  Arrays.copyOfRange(byteArrayKeys.array, from, to);
-            return toString(ret);
-        }
-
-        private String toString(byte[] ret) {
+        public String getKeyString(int pos) {
+            byte[] ret = getKey(pos);
             StringBuilder sb = new StringBuilder(ret.length);
             for(byte b:ret){
                 sb.append((char)b);
             }
             return sb.toString();
+        }
+
+        @Override
+        public boolean hasUnicodeChars() {
+            return false;
+        }
+
+        @Override
+        public void serialize(DataOutput out, int prefixLen) throws IOException {
+            //write rest of the suffix
+            out.write(array,0,prefixLen);
+
+            //write suffixes
+            int aa = prefixLen;
+            for(int o:offset){
+                out.write(array, aa, o-aa);
+                aa = o+prefixLen;
+            }
+        }
+    }
+
+    public static final class CharArrayKeys implements StringArrayKeys {
+        final int[] offset;
+        final char[] array;
+
+        CharArrayKeys(int[] offset, char[] array) {
+            this.offset = offset;
+            this.array = array;
+
+            assert(array.length==0 || array.length == offset[offset.length-1]);
+        }
+
+        public CharArrayKeys(DataInput in, int[] offsets, int prefixLen) throws IOException {
+            this.offset = offsets;
+            array = new char[offsets[offsets.length-1]];
+
+            inReadFully(in, 0, prefixLen);
+            for(int i=0; i<offsets.length-1;i++){
+                System.arraycopy(array,0,array,offsets[i],prefixLen);
+            }
+
+            //read suffixes
+            int offset = prefixLen;
+            for(int o:offsets){
+                inReadFully(in, offset, o);
+                offset = o+prefixLen;
+            }
+        }
+
+        CharArrayKeys(int[] offsets, Object[] keys) {
+            this.offset = offsets;
+            //fill large array
+            array = new char[offsets[offsets.length-1]];
+            int bbOffset = 0;
+            for (Object key : keys) {
+                String str = (String) key;
+                str.getChars(0, str.length(), array, bbOffset);
+                bbOffset += str.length();
+            }
+        }
+
+
+
+        private void inReadFully(DataInput in, int from, int to) throws IOException {
+            for(int i=from;i<to;i++){
+                array[i] = (char) DataIO.unpackInt(in);
+            }
+        }
+
+        @Override
+        public int commonPrefixLen() {
+            int lenMinus1 = offset.length-1;
+            for(int ret = 0;; ret++){
+                if(offset[0]==ret)
+                    return ret;
+                char byt = array[ret];
+                for(int i=0;i<lenMinus1;i++){
+                    int o = offset[i]+ret;
+                    if( o==offset[i+1]  || //too long
+                            array[o]!=byt //other character
+                            )
+                        return ret;
+                }
+            }
+        }
+
+        @Override
+        public int length() {
+            return offset.length;
+        }
+
+        @Override
+        public CharArrayKeys deleteKey(int pos) {
+            int split = pos==0? 0: offset[pos-1];
+            int next = offset[pos];
+
+            char[] bb = new char[array.length - (next-split)];
+            int[] offsets = new  int[offset.length - 1];
+
+            System.arraycopy(array,0,bb,0,split);
+            System.arraycopy(array,next,bb,split,array.length-next);
+
+            int minus=0;
+            int plusI=0;
+            for(int i=0;i<offsets.length;i++){
+                if(i==pos){
+                    //skip current item and normalize offsets
+                    plusI=1;
+                    minus = next-split;
+                }
+                offsets[i] = offset[i+plusI] - minus;
+            }
+            return new CharArrayKeys(offsets,bb);
+        }
+
+        @Override
+        public CharArrayKeys copyOfRange(int from, int to) {
+            int start = from==0? 0: offset[from-1];
+            int end = to==0? 0: offset[to-1];
+            char[] bb = Arrays.copyOfRange(array,start,end);
+
+            int[] offsets = new int[to-from];
+            for(int i=0;i<offsets.length;i++){
+                offsets[i] = offset[i+from] - start;
+            }
+
+            return new CharArrayKeys(offsets,bb);
+        }
+
+        @Override
+        public CharArrayKeys putKey(int pos, String newKey) {
+            int strLen = newKey.length();
+            char[] bb = new char[array.length+ strLen];
+            int split1 = pos==0? 0: offset[pos-1];
+            System.arraycopy(array,0,bb,0,split1);
+            newKey.getChars(0,strLen,bb,split1);
+            System.arraycopy(array,split1,bb,split1+strLen,array.length-split1);
+
+            int[] offsets = new int[offset.length+1];
+
+            int plus = 0;
+            int plusI = 0;
+            for(int i=0;i<offset.length;i++){
+                if(i==pos){
+                    //skip one item and increase space
+                    plus = strLen;
+                    plusI = 1;
+                }
+                offsets[i+plusI] = offset[i] + plus;
+            }
+            offsets[pos] = split1+strLen;
+
+            return new CharArrayKeys(offsets,bb);
+        }
+
+        public static StringArrayKeys putKey(ByteArrayKeys kk, int pos, String newKey) {
+            int strLen = newKey.length();
+            char[] bb = new char[kk.array.length+ strLen];
+            int split1 = pos==0? 0: kk.offset[pos-1];
+            for(int i=0;i<split1;i++){
+                bb[i] = (char) kk.array[i];
+            }
+            newKey.getChars(0,strLen,bb,split1);
+            for(int i=split1;i<kk.array.length;i++){
+                bb[i+strLen] = (char) kk.array[i];
+            }
+            int[] offsets = new int[kk.offset.length+1];
+            int plus = 0;
+            int plusI = 0;
+            for(int i=0;i<kk.offset.length;i++){
+                if(i==pos){
+                    //skip one item and increase space
+                    plus = strLen;
+                    plusI = 1;
+                }
+                offsets[i+plusI] = kk.offset[i] + plus;
+            }
+            offsets[pos] = split1+strLen;
+
+            return new CharArrayKeys(offsets,bb);
+
+        }
+
+
+        @Override
+        public int compare(int pos1, String string) {
+            int strLen = string.length();
+            int start1 = pos1==0 ? 0 : offset[pos1-1];
+            int start2 = 0;
+            int len1 = offset[pos1] - start1;
+            int len = Math.min(len1,strLen);
+
+            while(len-- != 0){
+                char b1 = array[start1++];
+                char b2 = string.charAt(start2++);
+                if(b1!=b2){
+                    return b1-b2;
+                }
+            }
+            return len1 - strLen;
+        }
+
+        @Override
+        public int compare(int pos1, int pos2) {
+            int start1 = pos1==0 ? 0 : offset[pos1-1];
+            int start2 = pos2==0 ? 0 : offset[pos2-1];
+            int len1 = offset[pos1] - start1;
+            int len2 = offset[pos2] - start2;
+            int len = Math.min(len1,len2);
+
+            while(len-- != 0){
+                char b1 = array[start1++];
+                char b2 = array[start2++];
+                if(b1!=b2){
+                    return b1-b2;
+                }
+            }
+            return len1 - len2;
+        }
+
+        @Override
+        public String getKeyString(int pos) {
+            int from =  pos==0 ? 0 : offset[pos-1];
+            int len =  offset[pos]-from;
+            return new String(array,from,len);
+        }
+
+        @Override
+        public boolean hasUnicodeChars() {
+            for(char c:array){
+                if(c>127)
+                    return true;
+            }
+            return false;
+        }
+
+        @Override
+        public void serialize(DataOutput out, int prefixLen) throws IOException {
+                //write rest of the suffix
+                outWrite(out, 0, prefixLen);
+
+                //write suffixes
+                int aa = prefixLen;
+                for(int o:offset){
+                    outWrite(out,  aa, o);
+                    aa = o+prefixLen;
+                }
+            }
+
+        private void outWrite(DataOutput out, int from, int to) throws IOException {
+            for(int i=from;i<to;i++){
+                DataIO.packInt(out,array[i]);
+            }
+        }
+
+    }
+
+
+
+    public static final  BTreeKeySerializer<String, char[][]> STRING2 = new BTreeKeySerializer<String, char[][]>() {
+
+        @Override
+        public void serialize(DataOutput out, char[][] chars) throws IOException {
+            boolean unicode = false;
+            //write lengths
+            for(char[] b:chars){
+                DataIO.packInt(out,b.length);
+                if(!unicode) {
+                    for (char cc : b) {
+                        if (cc>127)
+                            unicode = true;
+                    }
+                }
+            }
+
+
+            //find common prefix
+            int prefixLen = commonPrefixLen(chars);
+            DataIO.packInt(out,(prefixLen<<1) | (unicode?1:0));
+            for (int i = 0; i < prefixLen; i++) {
+              DataIO.packInt(out, chars[0][i]);
+            }
+
+            for(char[] b:chars){
+                for (int i = prefixLen; i < b.length; i++) {
+                    DataIO.packInt(out, b[i]);
+                }
+            }
+        }
+
+        @Override
+        public char[][] deserialize(DataInput in, int nodeSize) throws IOException {
+            char[][] ret = new char[nodeSize][];
+
+            //read lengths and init arrays
+            for(int i=0;i<ret.length;i++){
+                int len = DataIO.unpackInt(in);
+                ret[i] = new char[len];
+            }
+
+            //read and distribute common prefix
+            int prefixLen = DataIO.unpackInt(in);
+            boolean unicode = 1==(prefixLen & 1);
+            prefixLen >>>=1;
+
+            for(int i=0;i<prefixLen;i++){
+                ret[0][i] = (char) in.readByte();
+            }
+
+            for(int i=1;i<ret.length;i++){
+                System.arraycopy(ret[0],0,ret[i],0,prefixLen);
+            }
+
+            //read suffixes
+            for(char[] b:ret){
+                 for(int j=prefixLen;j<b.length;j++){
+                     b[j] = (char) DataIO.unpackInt(in);
+                 }
+            }
+
+            return ret;
+        }
+
+        /** compares two char arrays, has same contract as {@link String#compareTo(String)} */
+        int compare(char[] c1, char[] c2){
+            int end = (c1.length <= c2.length) ? c1.length : c2.length;
+            int ret;
+            for(int i=0;i<end;i++){
+                if ((ret = c1[i] - c2[i]) != 0) {
+                    return ret;
+                }
+            }
+            return c1.length - c2.length;
+        }
+
+
+        /** compares char array and string, has same contract as {@link String#compareTo(String)} */
+        int compare(char[] c1, String c2){
+            int end = Math.min(c1.length,c2.length());
+            int ret;
+            for(int i=0;i<end;i++){
+                if ((ret = c1[i] - c2.charAt(i)) != 0) {
+                    return ret;
+                }
+            }
+            return c1.length - c2.length();
+        }
+
+        @Override
+        public int compare(char[][] chars, int pos1, int pos2) {
+            return compare(chars[pos1],chars[pos2]);
+        }
+
+        @Override
+        public int compare(char[][] chars, int pos, String key) {
+            return compare(chars[pos],key);
+        }
+
+        @Override
+        public String getKey(char[][] chars, int pos) {
+            return new String(chars[pos]);
+        }
+
+        @Override
+        public Comparator comparator() {
+            return Fun.COMPARATOR;
+        }
+
+        @Override
+        public char[][] emptyKeys() {
+            return new char[0][];
+        }
+
+        @Override
+        public int length(char[][] chars) {
+            return chars.length;
+        }
+
+        @Override
+        public char[][] putKey(char[][] keys, int pos, String newKey) {
+            return (char[][]) BTreeMap.arrayPut(keys, pos, newKey.toCharArray());
+        }
+
+        @Override
+        public char[][] copyOfRange(char[][] keys, int from, int to) {
+            return Arrays.copyOfRange( keys,from,to);
+        }
+
+
+        @Override
+        public char[][] arrayToKeys(Object[] keys) {
+            char[][] ret = new char[keys.length][];
+            for(int i=keys.length-1;i>=0;i--)
+                ret[i] = ((String)keys[i]).toCharArray();
+            return ret;
+        }
+
+        @Override
+        public char[][] deleteKey(char[][] keys, int pos) {
+            char[][] keys2 = new char[keys.length-1][];
+            System.arraycopy(keys,0,keys2, 0, pos);
+            System.arraycopy(keys, pos+1, keys2, pos, keys2.length-pos);
+            return keys2;
+        }
+    };
+
+    protected static int commonPrefixLen(byte[][] bytes) {
+        for(int ret=0;;ret++){
+            if(bytes[0].length==ret) {
+                return ret;
+            }
+            byte byt = bytes[0][ret];
+            for(int i=1;i<bytes.length;i++){
+                if(bytes[i].length==ret || byt!=bytes[i][ret])
+                    return ret;
+            }
+        }
+    }
+
+    protected static int commonPrefixLen(char[][] chars) {
+        for(int ret=0;;ret++){
+            if(chars[0].length==ret) {
+                return ret;
+            }
+            char byt = chars[0][ret];
+            for(int i=1;i<chars.length;i++){
+                if(chars[i].length==ret || byt!=chars[i][ret])
+                    return ret;
+            }
+        }
+    }
+
+    public static final BTreeKeySerializer<String,StringArrayKeys> STRING = new BTreeKeySerializer<String,StringArrayKeys>() {
+        @Override
+        public void serialize(DataOutput out, StringArrayKeys keys2) throws IOException {
+            ByteArrayKeys keys = (ByteArrayKeys) keys2;
+            int offset = 0;
+            //write sizes
+            for(int o:keys.offset){
+                DataIO.packInt(out,(o-offset));
+                offset = o;
+            }
+
+            int unicode = keys2.hasUnicodeChars()?1:0;
+            
+            //find and write common prefix
+            int prefixLen = keys.commonPrefixLen();
+            DataIO.packInt(out,(prefixLen<<1) | unicode);
+            keys2.serialize(out, prefixLen);
+        }
+
+        @Override
+        public StringArrayKeys deserialize(DataInput in, int nodeSize) throws IOException {
+            //read data sizes
+            int[] offsets = new int[nodeSize];
+            int old=0;
+            for(int i=0;i<nodeSize;i++){
+                old+= DataIO.unpackInt(in);
+                offsets[i]=old;
+            }
+            //read and distribute common prefix
+            int prefixLen = DataIO.unpackInt(in);
+            boolean useUnicode = (0!=(prefixLen & 1));
+            prefixLen >>>=1;
+
+            return useUnicode?
+                    new CharArrayKeys(in,offsets,prefixLen):
+                    new ByteArrayKeys(in,offsets,prefixLen);
+        }
+
+        @Override
+        public int compare(StringArrayKeys byteArrayKeys, int pos1, int pos2) {
+            return byteArrayKeys.compare(pos1,pos2);
+        }
+
+        @Override
+        public int compare(StringArrayKeys byteArrayKeys, int pos1, String string) {
+            return byteArrayKeys.compare(pos1,string);
+        }
+
+
+
+        @Override
+        public String getKey(StringArrayKeys byteArrayKeys, int pos) {
+            return byteArrayKeys.getKeyString(pos);
         }
 
         @Override
@@ -1163,35 +1613,252 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
         }
 
         @Override
-        public int length(ByteArrayKeys byteArrayKeys) {
-            return byteArrayKeys.offset.length;
+        public int length(StringArrayKeys byteArrayKeys) {
+            return byteArrayKeys.length();
         }
 
         @Override
-        public ByteArrayKeys putKey(ByteArrayKeys byteArrayKeys, int pos, String string) {
-            byte[] newKey = toBytes(string);
-            byte[] bb = new byte[byteArrayKeys.array.length+ newKey.length];
-            int split1 = pos==0? 0: byteArrayKeys.offset[pos-1];
-            System.arraycopy(byteArrayKeys.array,0,bb,0,split1);
-            System.arraycopy(newKey,0,bb,split1,newKey.length);
-            System.arraycopy(byteArrayKeys.array,split1,bb,split1+newKey.length,byteArrayKeys.array.length-split1);
+        public StringArrayKeys putKey(StringArrayKeys byteArrayKeys, int pos, String string) {
+            return byteArrayKeys.putKey(pos,string);
+        }
 
-            int[] offsets = new int[byteArrayKeys.offset.length+1];
+        @Override
+        public StringArrayKeys arrayToKeys(Object[] keys) {
+            if(keys.length==0)
+                return emptyKeys();
 
-            int plus = 0;
-            int plusI = 0;
-            for(int i=0;i<byteArrayKeys.offset.length;i++){
-                if(i==pos){
-                    //skip one item and increase space
-                    plus = newKey.length;
-                    plusI = 1;
+            boolean unicode = false;
 
+            //fill offsets
+            int[] offsets = new int[keys.length];
+
+            int old=0;
+            for(int i=0;i<keys.length;i++){
+                String b = (String) keys[i];
+
+                if(!unicode && ByteArrayKeys.containsUnicode(b)) {
+                    unicode = true;
                 }
-                offsets[i+plusI] = byteArrayKeys.offset[i] + plus;
+
+                old+=b.length();
+                offsets[i]=old;
             }
-            offsets[pos] = split1+newKey.length;
+
+            return unicode?
+                    new CharArrayKeys(offsets, keys):
+                    new ByteArrayKeys(offsets,keys);
+        }
+
+        @Override
+        public StringArrayKeys copyOfRange(StringArrayKeys byteArrayKeys, int from, int to) {
+            return byteArrayKeys.copyOfRange(from,to);
+        }
+
+        @Override
+        public StringArrayKeys deleteKey(StringArrayKeys byteArrayKeys, int pos) {
+            return byteArrayKeys.deleteKey(pos);
+        }
+    };
+
+    public static final  BTreeKeySerializer<byte[], byte[][]> BYTE_ARRAY2 = new BTreeKeySerializer<byte[], byte[][]>() {
+
+        @Override
+        public void serialize(DataOutput out, byte[][] chars) throws IOException {
+            //write lengths
+            for(byte[] b:chars){
+                DataIO.packInt(out,b.length);
+            }
+
+            //find common prefix
+            int prefixLen = commonPrefixLen(chars);
+            DataIO.packInt(out,prefixLen);
+            out.write(chars[0], 0, prefixLen);
+
+            for(byte[] b:chars){
+                out.write(b,prefixLen,b.length-prefixLen);
+            }
+        }
+
+        @Override
+        public byte[][] deserialize(DataInput in, int nodeSize) throws IOException {
+            byte[][] ret = new byte[nodeSize][];
+
+            //read lengths and init arrays
+            for(int i=0;i<ret.length;i++){
+                ret[i] = new byte[DataIO.unpackInt(in)];
+            }
+
+            //read and distribute common prefix
+            int prefixLen = DataIO.unpackInt(in);
+            in.readFully(ret[0],0,prefixLen);
+            for(int i=1;i<ret.length;i++){
+                System.arraycopy(ret[0],0,ret[i],0,prefixLen);
+            }
+
+            //read suffixes
+            for(int i=0;i<ret.length;i++){
+                in.readFully(ret[i], prefixLen, ret[i].length - prefixLen);
+            }
+
+            return ret;
+        }
+
+        /** compares two char arrays, has same contract as {@link String#compareTo(String)} */
+        int compare(byte[] c1, byte[] c2){
+            int end = (c1.length <= c2.length) ? c1.length : c2.length;
+            int ret;
+            for(int i=0;i<end;i++){
+                if ((ret = c1[i] - c2[i]) != 0) {
+                    return ret;
+                }
+            }
+            return c1.length - c2.length;
+        }
+
+
+
+        @Override
+        public int compare(byte[][] chars, int pos1, int pos2) {
+            return compare(chars[pos1], chars[pos2]);
+        }
+
+        @Override
+        public int compare(byte[][] chars, int pos, byte[] key) {
+            return compare(chars[pos],key);
+        }
+
+        @Override
+        public byte[] getKey(byte[][] chars, int pos) {
+            return chars[pos];
+        }
+
+        @Override
+        public Comparator comparator() {
+            return Fun.BYTE_ARRAY_COMPARATOR;
+        }
+
+        @Override
+        public byte[][] emptyKeys() {
+            return new byte[0][];
+        }
+
+        @Override
+        public int length(byte[][] chars) {
+            return chars.length;
+        }
+
+        @Override
+        public byte[][] putKey(byte[][] keys, int pos, byte[] newKey) {
+            return (byte[][]) BTreeMap.arrayPut(keys, pos, newKey);
+        }
+
+        @Override
+        public byte[][] copyOfRange(byte[][] keys, int from, int to) {
+            return Arrays.copyOfRange( keys,from,to);
+        }
+
+
+        @Override
+        public byte[][] arrayToKeys(Object[] keys) {
+            byte[][] ret = new byte[keys.length][];
+            for(int i=keys.length-1;i>=0;i--)
+                ret[i] = (byte[]) keys[i];
+            return ret;
+        }
+
+        @Override
+        public byte[][] deleteKey(byte[][] keys, int pos) {
+            byte[][] keys2 = new byte[keys.length-1][];
+            System.arraycopy(keys,0,keys2, 0, pos);
+            System.arraycopy(keys, pos+1, keys2, pos, keys2.length-pos);
+            return keys2;
+        }
+    };
+
+    public static final BTreeKeySerializer<byte[],ByteArrayKeys> BYTE_ARRAY = new BTreeKeySerializer<byte[],ByteArrayKeys>() {
+        @Override
+        public void serialize(DataOutput out, ByteArrayKeys keys) throws IOException {
+            int offset = 0;
+            //write sizes
+            for(int o:keys.offset){
+                DataIO.packInt(out,o-offset);
+                offset = o;
+            }
+
+            //find and write common prefix
+            int prefixLen = keys.commonPrefixLen();
+            DataIO.packInt(out, prefixLen);
+            out.write(keys.array,0,prefixLen);
+
+            //write suffixes
+            offset = prefixLen;
+            for(int o:keys.offset){
+                out.write(keys.array, offset, o-offset);
+                offset = o+prefixLen;
+            }
+        }
+
+        @Override
+        public ByteArrayKeys deserialize(DataInput in, int nodeSize) throws IOException {
+            //read data sizes
+            int[] offsets = new int[nodeSize];
+            int old=0;
+            for(int i=0;i<nodeSize;i++){
+                old+= DataIO.unpackInt(in);
+                offsets[i]=old;
+            }
+            byte[] bb = new byte[old];
+
+            //read and distribute common prefix
+            int prefixLen = DataIO.unpackInt(in);
+            in.readFully(bb, 0, prefixLen);
+            for(int i=0; i<offsets.length-1;i++){
+                System.arraycopy(bb, 0, bb, offsets[i], prefixLen);
+            }
+
+            //read suffixes
+            int offset = prefixLen;
+            for(int o:offsets){
+                in.readFully(bb,offset,o-offset);
+                offset = o+prefixLen;
+            }
 
             return new ByteArrayKeys(offsets,bb);
+        }
+
+        @Override
+        public int compare(ByteArrayKeys byteArrayKeys, int pos1, int pos2) {
+            return byteArrayKeys.compare(pos1,pos2);
+        }
+
+        @Override
+        public int compare(ByteArrayKeys byteArrayKeys, int pos1, byte[] string) {
+            return byteArrayKeys.compare(pos1,string);
+        }
+
+        @Override
+        public byte[] getKey(ByteArrayKeys byteArrayKeys, int pos) {
+            return byteArrayKeys.getKey(pos);
+        }
+
+        @Override
+        public Comparator comparator() {
+            return Fun.BYTE_ARRAY_COMPARATOR;
+        }
+
+        @Override
+        public ByteArrayKeys emptyKeys() {
+            return new ByteArrayKeys(new int[0], new byte[0]);
+        }
+
+        @Override
+        public int length(ByteArrayKeys byteArrayKeys) {
+            return byteArrayKeys.length();
+        }
+
+        @Override
+        public ByteArrayKeys putKey(ByteArrayKeys byteArrayKeys, int pos, byte[] newKey) {
+            return byteArrayKeys.putKey(pos,newKey);
         }
 
         @Override
@@ -1201,8 +1868,8 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
 
             int old=0;
             for(int i=0;i<keys.length;i++){
-                String b = (String) keys[i];
-                old+=b.length();
+                byte[] b = (byte[]) keys[i];
+                old+=b.length;
                 offsets[i]=old;
             }
 
@@ -1211,8 +1878,7 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
             old=0;
             for(int i=0;i<keys.length;i++){
                 int curr = offsets[i];
-                String str = (String) keys[i];
-                System.arraycopy(toBytes(str), 0, bb, old, curr - old);
+                System.arraycopy(keys[i], 0, bb, old, curr - old);
                 old=curr;
             }
 
@@ -1221,43 +1887,121 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
 
         @Override
         public ByteArrayKeys copyOfRange(ByteArrayKeys byteArrayKeys, int from, int to) {
-            int start = from==0? 0: byteArrayKeys.offset[from-1];
-            int end = to==0? 0: byteArrayKeys.offset[to-1];
-            byte[] bb = Arrays.copyOfRange(byteArrayKeys.array,start,end);
-
-            int[] offsets = new int[to-from];
-            for(int i=0;i<offsets.length;i++){
-                offsets[i] = byteArrayKeys.offset[i+from] - start;
-            }
-
-            return new ByteArrayKeys(offsets,bb);
+            return byteArrayKeys.copyOfRange(from,to);
         }
 
         @Override
         public ByteArrayKeys deleteKey(ByteArrayKeys byteArrayKeys, int pos) {
-            int split = pos==0? 0: byteArrayKeys.offset[pos-1];
-            int next = byteArrayKeys.offset[pos];
-
-            byte[] bb = new byte[byteArrayKeys.array.length - (next-split)];
-            int[] offsets = new  int[byteArrayKeys.offset.length - 1];
-
-            System.arraycopy(byteArrayKeys.array,0,bb,0,split);
-            System.arraycopy(byteArrayKeys.array,next,bb,split,byteArrayKeys.array.length-next);
-
-            int minus=0;
-            int plusI=0;
-            for(int i=0;i<offsets.length;i++){
-                if(i==pos){
-                    //skip current item and normalize offsets
-                    plusI=1;
-                    minus = next-split;
-                }
-                offsets[i] = byteArrayKeys.offset[i+plusI] - minus;
-            }
-            return new ByteArrayKeys(offsets,bb);
+            return byteArrayKeys.deleteKey(pos);
         }
     };
 
-    public static final BTreeKeySerializer<String,ByteArrayKeys> STRING = STRING_BYTE_ARRAY;
+    public static class Compress extends BTreeKeySerializer {
 
+        final BTreeKeySerializer wrapped;
+        final CompressLZF lzf = new CompressLZF();
+
+        public Compress(BTreeKeySerializer wrapped) {
+            if(wrapped == null)
+                throw new  NullPointerException();
+
+            this.wrapped = wrapped;
+        }
+
+        protected Compress(SerializerBase serializerBase, DataInput in, SerializerBase.FastArrayList objectStack) throws IOException {
+            objectStack.add(this);
+            wrapped = (BTreeKeySerializer) serializerBase.deserialize(in,objectStack);
+            if(wrapped == null)
+                throw new  NullPointerException();
+        }
+
+        @Override
+        public void serialize(DataOutput out, Object o) throws IOException {
+            DataIO.DataOutputByteArray out2 = new DataIO.DataOutputByteArray();
+            wrapped.serialize(out2, o);
+            DataIO.packInt(out,out2.pos);
+            byte[] out3 = new byte[out2.pos+100];
+            int compSize = lzf.compress(out2.buf,out2.pos,out3,0);
+            out.write(out3,0,compSize);
+        }
+
+        @Override
+        public Object deserialize(DataInput in, int nodeSize) throws IOException {
+            int unpackSize = DataIO.unpackInt(in);
+            byte[] in2 = new byte[unpackSize];
+            lzf.expand(in,in2,0,in2.length);
+            return wrapped.deserialize(new DataIO.DataInputByteArray(in2),nodeSize);
+        }
+
+        @Override
+        public int compare(Object o, int pos1, int pos2) {
+            return wrapped.compare(o, pos1, pos2);
+        }
+
+        @Override
+        public int compare(Object o, int pos, Object o2) {
+            return wrapped.compare(o, pos, o2);
+        }
+
+        @Override
+        public boolean compareIsSmaller(Object o, int pos, Object o2) {
+            return wrapped.compareIsSmaller(o, pos, o2);
+        }
+
+        @Override
+        public Object getKey(Object o, int pos) {
+            return wrapped.getKey(o, pos);
+        }
+
+        @Override
+        public Comparator comparator() {
+            return wrapped.comparator();
+        }
+
+        @Override
+        public Object emptyKeys() {
+            return wrapped.emptyKeys();
+        }
+
+        @Override
+        public int length(Object o) {
+            return wrapped.length(o);
+        }
+
+        @Override
+        public Object putKey(Object o, int pos, Object newKey) {
+            return wrapped.putKey(o, pos, newKey);
+        }
+
+        @Override
+        public Object copyOfRange(Object o, int from, int to) {
+            return wrapped.copyOfRange(o, from, to);
+        }
+
+        @Override
+        public Object deleteKey(Object o, int pos) {
+            return wrapped.deleteKey(o, pos);
+        }
+
+        @Override
+        public int findChildren(BTreeMap.BNode node, Object key) {
+            return wrapped.findChildren(node, key);
+        }
+
+        @Override
+        public int findChildren2(BTreeMap.BNode node, Object key) {
+            return wrapped.findChildren2(node, key);
+        }
+
+        @Override
+        public Object arrayToKeys(Object[] keys) {
+            return wrapped.arrayToKeys(keys);
+        }
+
+        @Override
+        public Object[] keysToArray(Object o) {
+            return wrapped.keysToArray(o);
+        }
+
+    }
 }
