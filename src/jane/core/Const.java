@@ -40,6 +40,7 @@ public final class Const
 	public static final int         mapDBFileLevel;
 	public static final int         mapDBCacheCount;
 	public static final int         mvStoreCacheSize;
+	public static final String      levelDBNativePath;
 	public static final int         levelDBWriteBufferSize;
 	public static final int         levelDBCacheSize;
 	public static final long        levelDBFullBackupPeriod;
@@ -86,6 +87,7 @@ public final class Const
 		mapDBFileLevel = getPropInt("mapDBFileLevel", 0, 0, 3);
 		mapDBCacheCount = getPropInt("mapDBCacheCount", 32768, 0);
 		mvStoreCacheSize = getPropInt("mvStoreCacheSize", 32, 0);
+		levelDBNativePath = getPropStr("levelDBNativePath", "lib");
 		levelDBWriteBufferSize = getPropInt("levelDBWriteBufferSize", 32, 0);
 		levelDBCacheSize = getPropInt("levelDBCacheSize", 32, 0);
 		levelDBFullBackupPeriod = getPropLong("levelDBFullBackupPeriod", 604800, 1, Long.MAX_VALUE / 1000);

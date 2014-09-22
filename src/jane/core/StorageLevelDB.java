@@ -24,7 +24,7 @@ public final class StorageLevelDB implements Storage
 
 	static
 	{
-		System.load(new File("lib", System.mapLibraryName("leveldbjni" + System.getProperty("sun.arch.data.model"))).getAbsolutePath());
+		System.load(new File(Const.levelDBNativePath, System.mapLibraryName("leveldbjni" + System.getProperty("sun.arch.data.model"))).getAbsolutePath());
 	}
 
 	public native static long leveldb_open(String path, int writeBufSize, int cacheSize, boolean useSnappy);
