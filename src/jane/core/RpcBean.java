@@ -142,6 +142,10 @@ public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 	public RpcBean<A, R> clone()
 	{
 		RpcBean<A, R> b = create();
+		b._rpcId = _rpcId;
+		b._reqTime = _reqTime;
+		b._session = _session;
+		b._onClient = _onClient;
 		if(_arg != null) b._arg = _arg.clone();
 		if(_res != null) b._res = _res.clone();
 		return b;
