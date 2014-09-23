@@ -38,14 +38,14 @@ import org.mapdb.LongMap.LongMapIterator;
  */
 public class NetManager implements IoHandler
 {
-	private static final LongMap<RpcBean<?, ?>>   _rpcs           = new LongConcurrentHashMap<RpcBean<?, ?>>();    // 当前管理器等待回复的RPC
-	private static final ScheduledExecutorService _rpcThread;                                                      // 处理重连及RPC和事务超时的线程
-	private final String                          _name           = getClass().getName();                          // 当前管理器的名字
-	private Class<? extends IoFilter>             _pcf            = BeanCodec.class;                               // 协议编码器的类
-	private volatile IntMap<BeanHandler<?>>       _handlers       = new IntMap<BeanHandler<?>>(0);                 // bean的处理器
-	private volatile NioSocketAcceptor            _acceptor;                                                       // mina的网络监听器
-	private volatile NioSocketConnector           _connector;                                                      // mina的网络连接器
-	private int                                   _processorCount = Runtime.getRuntime().availableProcessors() + 1; // 监听器或连接器的处理器数量
+	private static final LongMap<RpcBean<?, ?, ?>> _rpcs           = new LongConcurrentHashMap<RpcBean<?, ?, ?>>(); // 当前管理器等待回复的RPC
+	private static final ScheduledExecutorService  _rpcThread;                                                      // 处理重连及RPC和事务超时的线程
+	private final String                           _name           = getClass().getName();                          // 当前管理器的名字
+	private Class<? extends IoFilter>              _pcf            = BeanCodec.class;                               // 协议编码器的类
+	private volatile IntMap<BeanHandler<?>>        _handlers       = new IntMap<BeanHandler<?>>(0);                 // bean的处理器
+	private volatile NioSocketAcceptor             _acceptor;                                                       // mina的网络监听器
+	private volatile NioSocketConnector            _connector;                                                      // mina的网络连接器
+	private int                                    _processorCount = Runtime.getRuntime().availableProcessors() + 1; // 监听器或连接器的处理器数量
 
 	static
 	{
@@ -68,12 +68,12 @@ public class NetManager implements IoHandler
 				try
 				{
 					int now = (int)(System.currentTimeMillis() / 1000);
-					for(LongMapIterator<RpcBean<?, ?>> it = _rpcs.longMapIterator(); it.moveToNext();)
+					for(LongMapIterator<RpcBean<?, ?, ?>> it = _rpcs.longMapIterator(); it.moveToNext();)
 					{
-						RpcBean<?, ?> rpcbean = it.value();
+						RpcBean<?, ?, ?> rpcbean = it.value();
 						if(now - rpcbean.getReqTime() > rpcbean.getTimeout() && _rpcs.remove(it.key()) != null)
 						{
-							RpcHandler<?, ?> onclient = rpcbean.getOnClient();
+							RpcHandler<?, ?, ?> onclient = rpcbean.getOnClient();
 							IoSession session = rpcbean.getSession();
 							rpcbean.setSession(null); // 绑定期已过,清除对session的引用
 							if(onclient != null)
@@ -108,7 +108,7 @@ public class NetManager implements IoHandler
 	 * <p>
 	 * 只在RPC得到回复时调用
 	 */
-	static RpcBean<?, ?> removeRpc(int rpcId)
+	static RpcBean<?, ?, ?> removeRpc(int rpcId)
 	{
 		return _rpcs.remove(rpcId);
 	}
@@ -490,13 +490,14 @@ public class NetManager implements IoHandler
 	 * @return 如果连接已经失效则返回false且不会有回复和超时的回调, 否则返回true
 	 */
 	@SuppressWarnings("unchecked")
-	public <A extends Bean<A>, R extends Bean<R>> boolean sendRpc(final IoSession session, final RpcBean<A, R> rpcBean, RpcHandler<A, R> handler)
+	public <A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>>
+	        boolean sendRpc(final IoSession session, final RpcBean<A, R, B> rpcBean, RpcHandler<A, R, B> handler)
 	{
 		rpcBean.setRequest();
 		if(!send(session, rpcBean)) return false;
 		rpcBean.setReqTime((int)(System.currentTimeMillis() / 1000));
 		rpcBean.setSession(session);
-		rpcBean.setOnClient(handler != null ? handler : (RpcHandler<A, R>)_handlers.get(rpcBean.type()));
+		rpcBean.setOnClient(handler != null ? handler : (RpcHandler<A, R, B>)_handlers.get(rpcBean.type()));
 		_rpcs.put(rpcBean.getRpcId(), rpcBean);
 		return true;
 	}
@@ -531,14 +532,15 @@ public class NetManager implements IoHandler
 	 * 此操作是异步的
 	 * @return 如果连接已经失效则返回null, 如果RPC超时则对返回的Future对象调用get方法时返回null
 	 */
-	public <A extends Bean<A>, R extends Bean<R>> Future<R> sendRpcSync(final IoSession session, final RpcBean<A, R> rpcBean)
+	public <A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>>
+	        Future<R> sendRpcSync(final IoSession session, final RpcBean<A, R, B> rpcBean)
 	{
 		rpcBean.setRequest();
 		if(!send(session, rpcBean)) return null;
 		rpcBean.setReqTime((int)(System.currentTimeMillis() / 1000));
 		rpcBean.setSession(session);
 		final FutureRPC<R> ft = new FutureRPC<R>();
-		rpcBean.setOnClient(new RpcHandler<A, R>()
+		rpcBean.setOnClient(new RpcHandler<A, R, B>()
 		{
 			@Override
 			public void onClient(NetManager m, IoSession s, A a, R r)
@@ -559,7 +561,8 @@ public class NetManager implements IoHandler
 	/**
 	 * 同sendRpc, 区别仅仅是在事务成功后发送RPC
 	 */
-	public <A extends Bean<A>, R extends Bean<R>> boolean sendRpcSafe(final IoSession session, final RpcBean<A, R> rpcBean, final RpcHandler<A, R> handler)
+	public <A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>>
+	        boolean sendRpcSafe(final IoSession session, final RpcBean<A, R, B> rpcBean, final RpcHandler<A, R, B> handler)
 	{
 		if(session.isClosing()) return false;
 		SContext.current().addOnCommit(new Runnable()

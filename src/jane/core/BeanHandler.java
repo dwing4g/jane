@@ -5,7 +5,7 @@ import org.apache.mina.core.session.IoSession;
 /**
  * bean处理器的基类(抽象类)
  */
-public abstract class BeanHandler<A extends Bean<A>>
+public abstract class BeanHandler<B extends Bean<B>>
 {
 	/**
 	 * 处理的入口
@@ -13,11 +13,11 @@ public abstract class BeanHandler<A extends Bean<A>>
 	@SuppressWarnings("unchecked")
 	public final void process(NetManager manager, IoSession session, Bean<?> bean) throws Exception
 	{
-		onProcess(manager, session, (A)bean);
+		onProcess(manager, session, (B)bean);
 	}
 
 	/**
 	 * 处理回调的接口
 	 */
-	public abstract void onProcess(NetManager manager, IoSession session, A arg) throws Exception;
+	public abstract void onProcess(NetManager manager, IoSession session, B arg) throws Exception;
 }

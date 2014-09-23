@@ -208,7 +208,7 @@ package ]=] .. namespace .. [=[.bean;
 
 import jane.core.RpcBean;
 #(bean.comment)
-public final class #(bean.name) extends RpcBean<#(bean.arg), #(bean.res)>
+public final class #(bean.name) extends RpcBean<#(bean.arg), #(bean.res), #(bean.name)>
 {
 	private static final long serialVersionUID = #(bean.uid);
 	public  static final #(bean.name) BEAN_STUB = new #(bean.name)();
@@ -283,12 +283,12 @@ package #(hdl.path);
 import org.apache.mina.core.session.IoSession;
 import jane.core.Log;
 import jane.core.NetManager;
-import jane.core.RpcBean;
 import jane.core.RpcHandler;
 import ]=] .. namespace .. [=[.bean.#(bean_arg.name);#<#
 import ]=] .. namespace .. [=[.bean.#(bean_res.name);#>#
+import ]=] .. namespace .. [=[.bean.#(bean.name);#>#
 
-public final class #(bean.name)Handler extends RpcHandler<#(bean_arg.name), #(bean_res.name)>
+public final class #(bean.name)Handler extends RpcHandler<#(bean_arg.name), #(bean_res.name), #(bean.name)>
 {
 	/*\
 #(#	|*| #(var.type) #(var.name)#(var.value);#(var.comment)
@@ -298,10 +298,10 @@ public final class #(bean.name)Handler extends RpcHandler<#(bean_arg.name), #(be
 #)#	\*/
 
 	@Override
-	public boolean onServer(final NetManager manager, final IoSession session, final RpcBean<#(bean_arg.name), #(bean_res.name)> rpcBean)
+	public boolean onServer(final NetManager manager, final IoSession session, final #(bean.name) rpcBean)
 	{
 		final #(bean_arg.name) arg = rpcBean.getArg();
-		// final #(bean_res.name) res = rpcBean.getRes();
+		//final #(bean_res.name) res = rpcBean.getRes();
 		Log.log.debug("{}: onServer: {}", getClass().getName(), arg);
 		return true;
 	}
