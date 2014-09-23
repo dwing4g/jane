@@ -4,7 +4,6 @@ import org.apache.mina.core.session.IoSession;
 import jane.core.BeanHandler;
 import jane.core.Log;
 import jane.core.NetManager;
-import jane.core.RpcHandler;
 import jane.bean.TestBean;
 import jane.bean.TestRpcBean;
 import jane.bean.TestType;
@@ -22,7 +21,7 @@ public final class TestBeanHandler extends BeanHandler<TestBean>
 	public void onProcess(final NetManager manager, final IoSession session, final TestBean arg)
 	{
 		Log.log.debug("{}: arg={}", getClass().getName(), arg);
-		manager.sendRpc(session, new TestRpcBean(arg), new RpcHandler<TestBean, TestType>()
+		manager.sendRpc(session, new TestRpcBean(arg), new TestRpcBeanHandler()
 		{
 			@Override
 			public void onClient(NetManager mgr, IoSession ses, TestBean a, TestType r)

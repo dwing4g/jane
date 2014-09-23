@@ -5,9 +5,10 @@ import jane.core.Log;
 import jane.core.NetManager;
 import jane.core.RpcHandler;
 import jane.bean.TestBean;
+import jane.bean.TestRpcBean;
 import jane.bean.TestType;
 
-public final class TestRpcBeanHandler extends RpcHandler<TestBean, TestType>
+public class TestRpcBeanHandler extends RpcHandler<TestBean, TestType, TestRpcBean>
 {
 	/*\
 	|*| int TEST_CONST1 = 5; // 测试类静态常量
@@ -39,8 +40,10 @@ public final class TestRpcBeanHandler extends RpcHandler<TestBean, TestType>
 	\*/
 
 	@Override
-	public boolean onServer(final NetManager manager, final IoSession session, final TestBean arg, final TestType res)
+	public boolean onServer(final NetManager manager, final IoSession session, final TestRpcBean rpcBean)
 	{
+		final TestBean arg = rpcBean.getArg();
+		//final TestType res = rpcBean.getRes();
 		Log.log.debug("{}: onServer: {}", getClass().getName(), arg);
 		return true;
 	}

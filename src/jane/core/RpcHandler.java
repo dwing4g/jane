@@ -7,27 +7,26 @@ import org.apache.mina.core.session.IoSession;
  * <p>
  * 此类是BeanHandler的子类
  */
-public abstract class RpcHandler<A extends Bean<A>, R extends Bean<R>> extends BeanHandler<RpcBean<A, R>>
+public abstract class RpcHandler<A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>> extends BeanHandler<B>
 {
 	/**
-	 * RPC请求的回调
+	 * RPC请求的处理
 	 * <p>
-	 * 回调时arg是传来的请求参数对象, res默认是已初始化的回复对象
+	 * 处理时rpcBean.arg是传来的请求参数对象, rpcBean.res默认是已初始化的回复对象
 	 * @param manager
 	 * @param session
-	 * @param arg
-	 * @param res
+	 * @param rpcBean
 	 * @return 返回true且res不为null时会立即自动发送回复, 否则不自动发送回复
 	 */
-	public boolean onServer(NetManager manager, IoSession session, A arg, R res) throws Exception
+	public boolean onServer(NetManager manager, IoSession session, B rpcBean) throws Exception
 	{
 		return true;
 	}
 
 	/**
-	 * RPC回复的回调
+	 * RPC回复的处理
 	 * <p>
-	 * 回调时arg是之前发送请求时的参数对象, res是传来的回复对象
+	 * 处理时arg是之前发送请求时的参数对象, res是传来的回复对象
 	 * @param manager
 	 * @param session
 	 * @param arg
@@ -58,16 +57,15 @@ public abstract class RpcHandler<A extends Bean<A>, R extends Bean<R>> extends B
 	}
 
 	@Override
-	public void onProcess(NetManager manager, IoSession session, RpcBean<A, R> rpcBean) throws Exception
+	public void onProcess(NetManager manager, IoSession session, B rpcBean) throws Exception
 	{
 		if(rpcBean.isRequest())
 		{
 			R res = rpcBean.getRes();
-			if(res == null) res = rpcBean.createRes();
-			if(onServer(manager, session, rpcBean.getArg(), res))
+			if(res == null) rpcBean.setRes(rpcBean.createRes());
+			if(onServer(manager, session, rpcBean))
 			{
 				rpcBean.setArg(null);
-				rpcBean.setRes(res);
 				rpcBean.setResponse();
 				manager.send(session, rpcBean);
 			}
@@ -75,11 +73,11 @@ public abstract class RpcHandler<A extends Bean<A>, R extends Bean<R>> extends B
 		else
 		{
 			@SuppressWarnings("unchecked")
-			RpcBean<A, R> rpcbeanOld = (RpcBean<A, R>)NetManager.removeRpc(rpcBean.getRpcId());
+			RpcBean<A, R, B> rpcbeanOld = (RpcBean<A, R, B>)NetManager.removeRpc(rpcBean.getRpcId());
 			if(rpcbeanOld != null)
 			{
 				rpcbeanOld.setSession(null); // 绑定期已过,清除对session的引用
-				RpcHandler<A, R> onClient = rpcbeanOld.getOnClient();
+				RpcHandler<A, R, B> onClient = rpcbeanOld.getOnClient();
 				if(onClient != null)
 					rpcbeanOld.setOnClient(null);
 				else

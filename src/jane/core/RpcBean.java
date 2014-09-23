@@ -8,16 +8,16 @@ import org.apache.mina.core.session.IoSession;
  * <p>
  * 包含请求和回复的两个bean
  */
-public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>> extends Bean<RpcBean<A, R>>
+public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>> extends Bean<B>
 {
-	private static final long          serialVersionUID = -1390859818193499717L;
-	private static final AtomicInteger RPCID            = new AtomicInteger();                 // RPC的ID分配器
-	private transient int              _rpcId           = RPCID.getAndIncrement() & 0x7fffffff; // RPC的ID. 用于匹配请求和回复的RPC
-	private transient int              _reqTime;                                               // 发送请求的时间戳(秒)
-	private transient IoSession        _session;                                               // 请求时绑定的session
-	private transient RpcHandler<A, R> _onClient;                                              // 回复的回调
-	protected A                        _arg;                                                   // 请求bean
-	protected R                        _res;                                                   // 回复bean
+	private static final long             serialVersionUID = -1390859818193499717L;
+	private static final AtomicInteger    RPCID            = new AtomicInteger();                 // RPC的ID分配器
+	private transient int                 _rpcId           = RPCID.getAndIncrement() & 0x7fffffff; // RPC的ID. 用于匹配请求和回复的RPC
+	private transient int                 _reqTime;                                               // 发送请求的时间戳(秒)
+	private transient IoSession           _session;                                               // 请求时绑定的session
+	private transient RpcHandler<A, R, B> _onClient;                                              // 回复的回调
+	protected A                           _arg;                                                   // 请求bean
+	protected R                           _res;                                                   // 回复bean
 
 	int getReqTime()
 	{
@@ -39,12 +39,12 @@ public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 		_session = session;
 	}
 
-	public RpcHandler<A, R> getOnClient()
+	public RpcHandler<A, R, B> getOnClient()
 	{
 		return _onClient;
 	}
 
-	public void setOnClient(RpcHandler<A, R> handler)
+	public void setOnClient(RpcHandler<A, R, B> handler)
 	{
 		_onClient = handler;
 	}
@@ -57,6 +57,11 @@ public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 	public int getRpcId()
 	{
 		return _rpcId & 0x7fffffff;
+	}
+
+	void setRpcId(int rpcId)
+	{
+		_rpcId = rpcId;
 	}
 
 	/**
@@ -139,9 +144,13 @@ public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 	}
 
 	@Override
-	public RpcBean<A, R> clone()
+	public B clone()
 	{
-		RpcBean<A, R> b = create();
+		B b = create();
+		b.setRpcId(_rpcId);
+		b.setReqTime(_reqTime);
+		b.setSession(_session);
+		b.setOnClient(_onClient);
 		if(_arg != null) b._arg = _arg.clone();
 		if(_res != null) b._res = _res.clone();
 		return b;
@@ -187,7 +196,7 @@ public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>> extends Bean
 	{
 		if(o == this) return true;
 		if(!(o instanceof RpcBean)) return false;
-		RpcBean<?, ?> b = (RpcBean<?, ?>)o;
+		RpcBean<?, ?, ?> b = (RpcBean<?, ?, ?>)o;
 		return (_arg == b._arg || _arg != null && _arg.equals(b._arg)) &&
 		        (_res == b._res || _res != null && _res.equals(b._res)) &&
 		        getClass() == o.getClass();

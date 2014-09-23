@@ -6,7 +6,7 @@ import jane.core.RpcBean;
 /**
  * RPC的注释
  */
-public final class TestRpcBean extends RpcBean<TestBean, TestType>
+public final class TestRpcBean extends RpcBean<TestBean, TestType, TestRpcBean>
 {
 	private static final long serialVersionUID = 0xbeac34fc308a6e36L;
 	public  static final TestRpcBean BEAN_STUB = new TestRpcBean();
