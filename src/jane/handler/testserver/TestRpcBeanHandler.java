@@ -49,14 +49,17 @@ public class TestRpcBeanHandler extends RpcHandler<TestBean, TestType, TestRpcBe
 	}
 
 	@Override
-	public void onClient(final NetManager manager, final IoSession session, final TestBean arg, final TestType res)
+	public void onClient(final NetManager manager, final IoSession session, final TestRpcBean rpcBean)
 	{
+		final TestBean arg = rpcBean.getArg();
+		final TestType res = rpcBean.getRes();
 		Log.log.debug("{}: onClient: arg={},res={}", getClass().getName(), arg, res);
 	}
 
 	@Override
-	public void onTimeout(final NetManager manager, final IoSession session, final TestBean arg)
+	public void onTimeout(final NetManager manager, final IoSession session, final TestRpcBean rpcBean)
 	{
+		final TestBean arg = rpcBean.getArg();
 		Log.log.debug("{}: onTimeout: {}", getClass().getName(), arg);
 	}
 }

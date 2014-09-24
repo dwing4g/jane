@@ -307,14 +307,17 @@ public final class #(bean.name)Handler extends RpcHandler<#(bean_arg.name), #(be
 	}
 
 	@Override
-	public void onClient(final NetManager manager, final IoSession session, final #(bean_arg.name) arg, final #(bean_res.name) res)
+	public void onClient(final NetManager manager, final IoSession session, final #(bean.name) rpcBean)
 	{
+		final #(bean_arg.name) arg = rpcBean.getArg();
+		final #(bean_res.name) res = rpcBean.getRes();
 		Log.log.debug("{}: onClient: arg={},res={}", getClass().getName(), arg, res);
 	}
 
 	@Override
-	public void onTimeout(final NetManager manager, final IoSession session, final #(bean_arg.name) arg)
+	public void onTimeout(final NetManager manager, final IoSession session, final #(bean.name) rpcBean)
 	{
+		final #(bean_arg.name) arg = rpcBean.getArg();
 		Log.log.debug("{}: onTimeout: {}", getClass().getName(), arg);
 	}
 }
@@ -560,10 +563,15 @@ typedef.octets = merge(typedef.string,
 	import = { "jane.core.Octets", "jane.core.DynBean", "jane.core.SBase" },
 	type = "Octets", type_i = "Octets", type_o = "Octets",
 	new = "\t\t#(var.name) = new Octets(#(var.cap));\n",
-	init = "this.#(var.name) = new Octets(#(var.cap)); if(#(var.name) != null) this.#(var.name).replace(#(var.name))",
+	init = "this.#(var.name) = (#(var.name) != null ? #(var.name) : new Octets())",
 	reset = "#(var.name).clear()",
 	assign = "if(b.#(var.name) != null) this.#(var.name).replace(b.#(var.name)); else this.#(var.name).clear()",
 	set = [[
+
+	public void set#(var.name_u)(#(var.type) #(var.name))
+	{
+		this.#(var.name) = (#(var.name) != null ? #(var.name) : new Octets());
+	}
 
 	public <B extends Bean<B>> void marshal#(var.name_u)(Bean<B> b)
 	{

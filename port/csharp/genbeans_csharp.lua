@@ -409,10 +409,16 @@ typedef.octets = merge(typedef.string,
 	public = "public ",
 --	final = "readonly ",
 	new = "\t\t\t#(var.name) = new Octets(#(var.cap));\n",
-	init = "this.#(var.name) = new Octets(#(var.cap)); if(#(var.name) != null) this.#(var.name).replace(#(var.name))",
+	init = "this.#(var.name) = #(var.name) ?? new Octets()",
 	reset = "#(var.name).clear()",
 	assign = "if(b.#(var.name) != null) this.#(var.name).replace(b.#(var.name)); else this.#(var.name).clear()",
-	set = "",
+	set = [[
+
+		public void set#(var.name_u)(#(var.type) #(var.name))
+		{
+			this.#(var.name) = #(var.name) ?? new Octets();
+		}
+]],
 	marshal = function(var)
 		return var.id < 63 and
 			string.format("if(!this.#(var.name).empty()) s.marshal1((byte)0x%02x).marshal(this.#(var.name));", var.id * 4 + 1) or
