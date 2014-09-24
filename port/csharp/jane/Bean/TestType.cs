@@ -42,7 +42,7 @@ namespace Jane.Bean
 			this.v5 = v5;
 			this.v6 = v6;
 			this.v7 = v7;
-			this.v8 = new Octets(5); if(v8 != null) this.v8.replace(v8);
+			this.v8 = v8 ?? new Octets();
 			this.v9 = v9 ?? string.Empty;
 			this.v10 = new List<bool>(10); if(v10 != null) this.v10.AddRange(v10);
 			this.v11 = new LinkedList<sbyte>(); if(v11 != null) Util.AddAll(this.v11, v11);
@@ -177,6 +177,11 @@ namespace Jane.Bean
 			return v8;
 		}
 
+		public void setV8(Octets v8)
+		{
+			this.v8 = v8 ?? new Octets();
+		}
+
 		public string GetV9()
 		{
 			return v9;
@@ -192,9 +197,19 @@ namespace Jane.Bean
 			return v10;
 		}
 
+		public void setV10(List<bool> v10)
+		{
+			this.v10 = v10 ?? new Octets();
+		}
+
 		public LinkedList<sbyte> GetV11()
 		{
 			return v11;
+		}
+
+		public void setV11(LinkedList<sbyte> v11)
+		{
+			this.v11 = v11 ?? new Octets();
 		}
 
 		public LinkedList<int> GetV12()
@@ -202,9 +217,19 @@ namespace Jane.Bean
 			return v12;
 		}
 
+		public void setV12(LinkedList<int> v12)
+		{
+			this.v12 = v12 ?? new Octets();
+		}
+
 		public HashSet<long> GetV13()
 		{
 			return v13;
+		}
+
+		public void setV13(HashSet<long> v13)
+		{
+			this.v13 = v13 ?? new Octets();
 		}
 
 		public SortedSet<float> GetV14()
@@ -212,9 +237,19 @@ namespace Jane.Bean
 			return v14;
 		}
 
+		public void setV14(SortedSet<float> v14)
+		{
+			this.v14 = v14 ?? new Octets();
+		}
+
 		public HashSet<double> GetV15()
 		{
 			return v15;
+		}
+
+		public void setV15(HashSet<double> v15)
+		{
+			this.v15 = v15 ?? new Octets();
 		}
 
 		public Dictionary<long, string> GetV16()
@@ -222,9 +257,19 @@ namespace Jane.Bean
 			return v16;
 		}
 
+		public void setV16(Dictionary<long, string> v16)
+		{
+			this.v16 = v16 ?? new Octets();
+		}
+
 		public SortedDictionary<TestBean, bool> GetV17()
 		{
 			return v17;
+		}
+
+		public void setV17(SortedDictionary<TestBean, bool> v17)
+		{
+			this.v17 = v17 ?? new Octets();
 		}
 
 		public Dictionary<Octets, TestBean> GetV18()
@@ -232,9 +277,19 @@ namespace Jane.Bean
 			return v18;
 		}
 
+		public void setV18(Dictionary<Octets, TestBean> v18)
+		{
+			this.v18 = v18 ?? new Octets();
+		}
+
 		public TestBean GetV19()
 		{
 			return v19;
+		}
+
+		public void setV19(TestBean v19)
+		{
+			this.v19 = v19 ?? new Octets();
 		}
 */
 		public int Type()

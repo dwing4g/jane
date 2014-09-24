@@ -125,7 +125,7 @@ public final class TestType extends Bean<TestType>
 		this.v5 = v5;
 		this.v6 = v6;
 		this.v7 = v7;
-		this.v8 = new Octets(5); if(v8 != null) this.v8.replace(v8);
+		this.v8 = (v8 != null ? v8 : new Octets());
 		this.v9 = (v9 != null ? v9 : "");
 		this.v10 = new ArrayList<Boolean>(10); if(v10 != null) this.v10.addAll(v10);
 		this.v11 = new LinkedList<Byte>(); if(v11 != null) this.v11.addAll(v11);
@@ -265,6 +265,11 @@ public final class TestType extends Bean<TestType>
 	public Octets getV8()
 	{
 		return v8;
+	}
+
+	public void setV8(Octets v8)
+	{
+		this.v8 = (v8 != null ? v8 : new Octets());
 	}
 
 	public <B extends Bean<B>> void marshalV8(Bean<B> b)
