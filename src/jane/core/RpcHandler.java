@@ -29,10 +29,9 @@ public abstract class RpcHandler<A extends Bean<A>, R extends Bean<R>, B extends
 	 * 处理时arg是之前发送请求时的参数对象, res是传来的回复对象
 	 * @param manager
 	 * @param session
-	 * @param arg
-	 * @param res
+	 * @param rpcBean
 	 */
-	public void onClient(NetManager manager, IoSession session, A arg, R res) throws Exception
+	public void onClient(NetManager manager, IoSession session, B rpcBean) throws Exception
 	{
 	}
 
@@ -44,16 +43,16 @@ public abstract class RpcHandler<A extends Bean<A>, R extends Bean<R>, B extends
 	 * 如果调用了此回调,则即使之后收到该RPC的回复也不会有任何回调处理
 	 * @param manager
 	 * @param session
-	 * @param arg
+	 * @param rpcBean
 	 */
-	public void onTimeout(NetManager manager, IoSession session, A arg) throws Exception
+	public void onTimeout(NetManager manager, IoSession session, B rpcBean) throws Exception
 	{
 	}
 
 	@SuppressWarnings("unchecked")
-	final void timeout(NetManager manager, IoSession session, Object arg) throws Exception
+	final void timeout(NetManager manager, IoSession session, Object rpcBean) throws Exception
 	{
-		onTimeout(manager, session, (A)arg);
+		onTimeout(manager, session, (B)rpcBean);
 	}
 
 	@Override
@@ -73,7 +72,7 @@ public abstract class RpcHandler<A extends Bean<A>, R extends Bean<R>, B extends
 		else
 		{
 			@SuppressWarnings("unchecked")
-			RpcBean<A, R, B> rpcbeanOld = (RpcBean<A, R, B>)NetManager.removeRpc(rpcBean.getRpcId());
+			B rpcbeanOld = (B)NetManager.removeRpc(rpcBean.getRpcId());
 			if(rpcbeanOld != null)
 			{
 				rpcbeanOld.setSession(null); // 绑定期已过,清除对session的引用
@@ -82,7 +81,8 @@ public abstract class RpcHandler<A extends Bean<A>, R extends Bean<R>, B extends
 					rpcbeanOld.setOnClient(null);
 				else
 					onClient = this;
-				onClient.onClient(manager, session, rpcbeanOld.getArg(), rpcBean.getRes());
+				rpcbeanOld.setRes(rpcBean.getRes());
+				onClient.onClient(manager, session, rpcbeanOld);
 			}
 		}
 	}

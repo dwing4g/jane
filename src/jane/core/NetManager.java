@@ -84,7 +84,7 @@ public class NetManager implements IoHandler
 									IoHandler manager = session.getHandler();
 									try
 									{
-										onclient.timeout((NetManager)manager, session, rpcbean.getArg());
+										onclient.timeout((NetManager)manager, session, rpcbean);
 									}
 									catch(Throwable e)
 									{
@@ -543,13 +543,13 @@ public class NetManager implements IoHandler
 		rpcBean.setOnClient(new RpcHandler<A, R, B>()
 		{
 			@Override
-			public void onClient(NetManager m, IoSession s, A a, R r)
+			public void onClient(NetManager m, IoSession s, B b)
 			{
-				ft.set(r);
+				ft.set(b.getRes());
 			}
 
 			@Override
-			public void onTimeout(NetManager m, IoSession s, A a)
+			public void onTimeout(NetManager m, IoSession s, B b)
 			{
 				ft.set(null);
 			}

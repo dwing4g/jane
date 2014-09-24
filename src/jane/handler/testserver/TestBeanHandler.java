@@ -6,7 +6,6 @@ import jane.core.Log;
 import jane.core.NetManager;
 import jane.bean.TestBean;
 import jane.bean.TestRpcBean;
-import jane.bean.TestType;
 
 public final class TestBeanHandler extends BeanHandler<TestBean>
 {
@@ -24,16 +23,16 @@ public final class TestBeanHandler extends BeanHandler<TestBean>
 		manager.sendRpc(session, new TestRpcBean(arg), new TestRpcBeanHandler()
 		{
 			@Override
-			public void onClient(NetManager mgr, IoSession ses, TestBean a, TestType r)
+			public void onClient(NetManager mgr, IoSession ses, TestRpcBean rpcBean)
 			{
-				Log.log.info("{}: onClient: a={},r={}", getClass().getName(), a, r);
+				Log.log.info("{}: onClient: a={},r={}", getClass().getName(), rpcBean.getArg(), rpcBean.getRes());
 				ses.close(false);
 			}
 
 			@Override
-			public void onTimeout(NetManager mgr, IoSession ses, TestBean a)
+			public void onTimeout(NetManager mgr, IoSession ses, TestRpcBean rpcBean)
 			{
-				Log.log.info("{}: onTimeout: {}", getClass().getName(), a);
+				Log.log.info("{}: onTimeout: {}", getClass().getName(), rpcBean.getArg());
 				ses.close(false);
 			}
 		});
