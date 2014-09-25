@@ -653,7 +653,7 @@ public class NetManager implements IoHandler
 	}
 
 	@Override
-	public void sessionOpened(IoSession session) throws Exception
+	public void sessionOpened(IoSession session)
 	{
 		if(Log.hasDebug) Log.log.debug("{}({}): open: {}", _name, session.getId(), session.getRemoteAddress());
 		onAddSession(session);
@@ -664,6 +664,12 @@ public class NetManager implements IoHandler
 	{
 		if(Log.hasDebug) Log.log.debug("{}({}): close: {}", _name, session.getId(), session.getRemoteAddress());
 		onDelSession(session);
+	}
+
+	@Override
+	public void inputClosed(IoSession session)
+	{
+		session.close(true);
 	}
 
 	@Override
