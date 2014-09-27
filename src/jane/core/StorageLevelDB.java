@@ -490,7 +490,7 @@ public final class StorageLevelDB implements Storage
 		    return (Storage.Table<K, V>)new TableString<V>(tableId, tableName, stubV);
 		if(stubK instanceof Bean)
 		    return new TableBean<K, V>(tableId, tableName, (K)stubK, stubV);
-		throw new UnsupportedOperationException("unsupported key type: " + stubK.getClass().getName() + " for table: " + tableName);
+		throw new UnsupportedOperationException("unsupported key type: " + (stubK != null ? stubK.getClass().getName() : "null") + " for table: " + tableName);
 	}
 
 	@Override
