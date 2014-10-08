@@ -96,8 +96,8 @@ public class StoreAppend extends Store{
     public StoreAppend(final String fileName, Fun.Function1<Volume,String> volumeFactory,
                        final boolean useRandomAccessFile, final boolean readOnly,
                        final boolean transactionDisabled, final boolean deleteFilesAfterClose,  final boolean syncOnCommitDisabled,
-                       boolean checksum, boolean compress, byte[] password, boolean disableLocks) {
-        super(fileName, volumeFactory, checksum, compress, password,disableLocks);
+                       boolean checksum, boolean compress, byte[] password) {
+        super(fileName, volumeFactory, checksum, compress, password);
 
         this.useRandomAccessFile = useRandomAccessFile;
         this.readOnly = readOnly;
@@ -235,8 +235,7 @@ public class StoreAppend extends Store{
                 false,
                 false,
                 false,
-                null,
-                false
+                null
         );
     }
 
@@ -278,88 +277,65 @@ public class StoreAppend extends Store{
 
     @Override
     public long preallocate() {
-        final Lock lock;
-        if(disableLocks) {
-            lock = null;
-        }else {
-            lock = locks[new Random().nextInt(locks.length)].readLock();
-            lock.lock();
-        }
+        final Lock lock = locks[new Random().nextInt(locks.length)].readLock();
+        lock.lock();
+
         try{
-            if(!disableLocks) {
-                structuralLock.lock();
-            }
+            structuralLock.lock();
+
             final long recid;
             try{
                 recid = ++maxRecid;
 
                 modified = true;
             }finally{
-                if(!disableLocks) {
-                    structuralLock.unlock();
-                }
+                structuralLock.unlock();
             }
 
-            assert(recid>0);
+            if(CC.PARANOID && ! (recid>0))
+                throw new AssertionError();
             return recid;
         }finally {
-            if(!disableLocks) {
-                lock.unlock();
-            }
+            lock.unlock();
         }
-
     }
 
 
     @Override
     public void preallocate(long[] recids) {
-        final Lock lock;
-        if(disableLocks) {
-            lock = null;
-        }else {
-            lock = locks[new Random().nextInt(locks.length)].readLock();
-            lock.lock();
-        }
+        final Lock lock  = locks[new Random().nextInt(locks.length)].readLock();
+        lock.lock();
+
         try{
-            if(!disableLocks) {
-                structuralLock.lock();
-            }
+            structuralLock.lock();
             try{
                 for(int i = 0;i<recids.length;i++){
                     recids[i] = ++maxRecid;
-                    assert(recids[i]>0);
+                    if(CC.PARANOID && ! (recids[i]>0))
+                        throw new AssertionError();
                 }
 
                 modified = true;
             }finally{
-                if(!disableLocks) {
-                    structuralLock.unlock();
-                }
+                structuralLock.unlock();
             }
         }finally {
-            if(!disableLocks) {
-                lock.unlock();
-            }
+            lock.unlock();
         }
-
     }
 
     @Override
     public <A> long put(A value, Serializer<A> serializer) {
-        assert(value!=null);
+        if(CC.PARANOID && ! (value!=null))
+            throw new AssertionError();
         DataIO.DataOutputByteArray out = serialize(value,serializer);
 
-        final Lock lock;
-        if(disableLocks) {
-            lock = null;
-        }else {
-            lock = locks[new Random().nextInt(locks.length)].readLock();
-            lock.lock();
-        }
+        final Lock lock = locks[new Random().nextInt(locks.length)].readLock();
+        lock.lock();
+
         try{
-            if(!disableLocks) {
-                structuralLock.lock();
-            }
+            structuralLock.lock();
+
             final long oldPos,recid,indexVal;
             try{
                 rollover();
@@ -377,9 +353,7 @@ public class StoreAppend extends Store{
 
                 modified = true;
             }finally{
-                if(!disableLocks) {
-                    structuralLock.unlock();
-                }
+                structuralLock.unlock();
             }
 
             //write data
@@ -388,33 +362,26 @@ public class StoreAppend extends Store{
             recycledDataOuts.offer(out);
             setIndexVal(recid, indexVal);
 
-            assert(recid>0);
+            if(CC.PARANOID && ! (recid>0))
+                throw new AssertionError();
             return recid;
         }finally {
-            if(!disableLocks) {
-                lock.unlock();
-            }
+            lock.unlock();
         }
     }
 
     @Override
     public <A> A get(long recid, Serializer<A> serializer) {
-        assert(recid>0);
-        final Lock lock;
-        if(disableLocks) {
-            lock = null;
-        }else {
-            lock = locks[Store.lockPos(recid)].readLock();
-            lock.lock();
-        }
+        if(CC.PARANOID && ! (recid>0))
+            throw new AssertionError();
+        final Lock lock = locks[Store.lockPos(recid)].readLock();
+        lock.lock();
         try{
             return getNoLock(recid, serializer);
         }catch(IOException e){
             throw new IOError(e);
         }finally {
-            if(!disableLocks) {
-                lock.unlock();
-            }
+            lock.unlock();
         }
     }
 
@@ -437,23 +404,19 @@ public class StoreAppend extends Store{
 
     @Override
     public <A> void update(long recid, A value, Serializer<A> serializer) {
-        assert(value!=null);
-        assert(recid>0);
+        if(CC.PARANOID && ! (value!=null))
+            throw new AssertionError();
+        if(CC.PARANOID && ! (recid>0))
+            throw new AssertionError();
         DataIO.DataOutputByteArray out = serialize(value,serializer);
 
-        final Lock lock;
-        if(disableLocks) {
-            lock = null;
-        }else {
-            lock = locks[Store.lockPos(recid)].writeLock();
-            lock.lock();
-        }
+        final Lock lock = locks[Store.lockPos(recid)].writeLock();
+        lock.lock();
+
         try{
             updateNoLock(recid, out);
         }finally {
-            if(!disableLocks) {
-                lock.unlock();
-            }
+            lock.unlock();
         }
         recycledDataOuts.offer(out);
     }
@@ -461,9 +424,7 @@ public class StoreAppend extends Store{
     protected void updateNoLock(long recid, DataIO.DataOutputByteArray out) {
         final long indexVal, oldPos;
 
-        if(!disableLocks) {
-            structuralLock.lock();
-        }
+        structuralLock.lock();
         try{
             rollover();
             currVolume.ensureAvailable(currPos+6+4+out.pos);
@@ -476,9 +437,7 @@ public class StoreAppend extends Store{
             currPos+=out.pos;
             modified = true;
         }finally {
-            if(!disableLocks) {
-                structuralLock.unlock();
-            }
+            structuralLock.unlock();
         }
         //write data
         currVolume.ensureAvailable(oldPos+out.pos);
@@ -490,16 +449,14 @@ public class StoreAppend extends Store{
 
     @Override
     public <A> boolean compareAndSwap(long recid, A expectedOldValue, A newValue, Serializer<A> serializer) {
-        assert(expectedOldValue!=null && newValue!=null);
-        assert(recid>0);
+        if(CC.PARANOID && ! (expectedOldValue!=null && newValue!=null))
+            throw new AssertionError();
+        if(CC.PARANOID && ! (recid>0))
+            throw new AssertionError();
         DataIO.DataOutputByteArray out = serialize(newValue,serializer);
-        final Lock lock;
-        if(disableLocks) {
-            lock = null;
-        }else {
-            lock = locks[Store.lockPos(recid)].writeLock();
-            lock.lock();
-        }
+        final Lock lock = locks[Store.lockPos(recid)].writeLock();
+        lock.lock();
+
         boolean ret;
         try{
             Object old = getNoLock(recid,serializer);
@@ -512,9 +469,7 @@ public class StoreAppend extends Store{
         }catch(IOException e){
             throw new IOError(e);
         }finally {
-            if(!disableLocks) {
-                lock.unlock();
-            }
+            lock.unlock();
         }
         recycledDataOuts.offer(out);
         return ret;
@@ -522,18 +477,13 @@ public class StoreAppend extends Store{
 
     @Override
     public <A> void delete(long recid, Serializer<A> serializer) {
-        assert(recid>0);
-        final Lock lock;
-        if(disableLocks) {
-            lock = null;
-        }else {
-            lock = locks[Store.lockPos(recid)].writeLock();
-            lock.lock();
-        }
+        if(CC.PARANOID && ! (recid>0))
+            throw new AssertionError();
+        final Lock lock = locks[Store.lockPos(recid)].writeLock();
+        lock.lock();
+
         try{
-            if(!disableLocks) {
-                structuralLock.lock();
-            }
+            structuralLock.lock();
             try{
                 rollover();
                 currVolume.ensureAvailable(currPos+6+0);
@@ -543,23 +493,16 @@ public class StoreAppend extends Store{
                 currPos+=currVolume.putPackedLong(currPos, 1);
                 modified = true;
             }finally{
-                if(!disableLocks) {
-                    structuralLock.unlock();
-                }
+                structuralLock.unlock();
             }
         }finally{
-            if(!disableLocks) {
-                lock.unlock();
-            }
+            lock.unlock();
         }
     }
 
     @Override
     public void close() {
         if(closed) return;
-
-        for(Runnable closeListener:closeListeners)
-            closeListener.run();
 
         if(serializerPojo!=null && serializerPojo.hasUnsavedChanges()){
             serializerPojo.save(this);

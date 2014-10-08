@@ -27,7 +27,7 @@ import java.util.Arrays;
  * <p>
  * This implementation uses 32 rounds.
  * The best attack reported as of 2009 is 36 rounds (Wikipedia).
- * <p/>
+ * <p>
  * It requires 32 byte long encryption key, so SHA256 password hash is used.
  */
 public final class EncryptionXTEA{
@@ -62,7 +62,8 @@ public final class EncryptionXTEA{
 
 
     public void encrypt(byte[] bytes, int off, int len) {
-        assert(len % ALIGN == 0):("unaligned len " + len);
+        if(CC.PARANOID && ! (len % ALIGN == 0))
+            throw new AssertionError("unaligned len " + len);
 
         for (int i = off; i < off + len; i += 8) {
             encryptBlock(bytes, bytes, i);
@@ -70,7 +71,8 @@ public final class EncryptionXTEA{
     }
 
     public void decrypt(byte[] bytes, int off, int len) {
-        assert(len % ALIGN == 0):("unaligned len " + len);
+        if(CC.PARANOID && ! (len % ALIGN == 0))
+            throw new AssertionError("unaligned len " + len);
 
         for (int i = off; i < off + len; i += 8) {
             decryptBlock(bytes, bytes, i);

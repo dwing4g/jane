@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class SerializerPojo extends SerializerBase implements Serializable{
 
 
-    protected static final Serializer<CopyOnWriteArrayList<ClassInfo>> serializer = new Serializer<CopyOnWriteArrayList<ClassInfo>>() {
+    protected static final Serializer<CopyOnWriteArrayList<ClassInfo>> serializer = new Serializer.Trusted<CopyOnWriteArrayList<ClassInfo>>() {
 
         @Override
 		public void serialize(DataOutput out, CopyOnWriteArrayList<ClassInfo> obj) throws IOException {
@@ -242,7 +242,8 @@ public class SerializerPojo extends SerializerBase implements Serializable{
         if (containsClass(clazz))
             return;
 
-        assert(lock.isWriteLockedByCurrentThread());
+        if(CC.PARANOID && ! (lock.isWriteLockedByCurrentThread()))
+            throw new AssertionError();
 
         final boolean advancedSer = usesAdvancedSerialization(clazz);
         ObjectStreamField[] streamFields = advancedSer? new ObjectStreamField[0]:getFields(clazz);
@@ -540,14 +541,14 @@ public class SerializerPojo extends SerializerBase implements Serializable{
     /**
      * For pojo serialization we need to instantiate class without invoking its constructor.
      * There are two ways to do it:
-     * <p/>
+     * <p>
      *   Using proprietary API on Oracle JDK and OpenJDK
      *   sun.reflect.ReflectionFactory.getReflectionFactory().newConstructorForSerialization()
      *   more at http://www.javaspecialists.eu/archive/Issue175.html
-     * <p/>
+     * <p>
      *   Using 'ObjectInputStream.newInstance' on Android
      *   http://stackoverflow.com/a/3448384
-     * <p/>
+     * <p>
      *   If non of these works we fallback into usual reflection which requires an no-arg constructor
      */
     @SuppressWarnings("restriction")

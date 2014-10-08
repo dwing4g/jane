@@ -97,27 +97,31 @@ public class DB implements Closeable {
     }
 
     public <A> A catGet(String name, A init){
-        assert(Thread.holdsLock(DB.this));
+        if(CC.PARANOID && ! (Thread.holdsLock(DB.this)))
+            throw new AssertionError();
         A ret = (A) catalog.get(name);
         return ret!=null? ret : init;
     }
 
 
     public <A> A catGet(String name){
-        assert(Thread.holdsLock(DB.this));
+        if(CC.PARANOID && ! (Thread.holdsLock(DB.this)))
+            throw new AssertionError();
         //$DELAY$
         return (A) catalog.get(name);
     }
 
     public <A> A catPut(String name, A value){
-        assert(Thread.holdsLock(DB.this));
+        if(CC.PARANOID && ! (Thread.holdsLock(DB.this)))
+            throw new AssertionError();
         //$DELAY$
         catalog.put(name, value);
         return value;
     }
 
     public <A> A catPut(String name, A value, A retValueIfNull){
-        assert(Thread.holdsLock(DB.this));
+        if(CC.PARANOID && ! (Thread.holdsLock(DB.this)))
+            throw new AssertionError();
         if(value==null) return retValueIfNull;
         //$DELAY$
         catalog.put(name, value);
@@ -830,8 +834,7 @@ public class DB implements Closeable {
                 catGet(name+".counterRecid",0L),
                 catGet(name+".keySerializer",new BTreeKeySerializer.BasicKeySerializer(getDefaultSerializer(),Fun.COMPARATOR)),
                 catGet(name+".valueSerializer",getDefaultSerializer()),
-                catGet(name+".numberOfNodeMetas",0),
-                false
+                catGet(name+".numberOfNodeMetas",0)
                 );
         //$DELAY$
         namedPut(name, ret);
@@ -900,8 +903,7 @@ public class DB implements Closeable {
                 catPut(name+".counterRecid",counterRecid),
                 m.keySerializer,
                 (Serializer<V>)m.valueSerializer,
-                catPut(m.name+".numberOfNodeMetas",0),
-                false
+                catPut(m.name+".numberOfNodeMetas",0)
         );
         //$DELAY$
         catalog.put(name + ".type", "TreeMap");
@@ -982,8 +984,7 @@ public class DB implements Closeable {
                 catGet(name+".counterRecid",0L),
                 catGet(name+".keySerializer",new BTreeKeySerializer.BasicKeySerializer(getDefaultSerializer(),Fun.COMPARATOR)),
                 null,
-                catGet(name+".numberOfNodeMetas",0),
-                false
+                catGet(name+".numberOfNodeMetas",0)
         ).keySet();
         //$DELAY$
         namedPut(name, ret);
@@ -1041,8 +1042,7 @@ public class DB implements Closeable {
                 catPut(m.name+".counterRecid",counterRecid),
                 m.serializer,
                 null,
-                catPut(m.name+".numberOfNodeMetas",0),
-                false
+                catPut(m.name+".numberOfNodeMetas",0)
         ).keySet();
         //$DELAY$
         catalog.put(m.name + ".type", "TreeSet");
@@ -1564,7 +1564,7 @@ public class DB implements Closeable {
     /**
      * Closes database.
      * All other methods will throw 'IllegalAccessError' after this method was called.
-     * <p/>
+     * <p>
      * !! it is necessary to call this method before JVM exits!!
      */
     synchronized public void close(){
@@ -1635,7 +1635,7 @@ public class DB implements Closeable {
     /**
      * Perform storage maintenance.
      * Typically compact underlying storage and reclaim unused space.
-     * <p/>
+     * <p>
      * NOTE: MapDB does not have smart defragmentation algorithms. So compaction usually recreates entire
      * store from scratch. This may require additional disk space.
      */

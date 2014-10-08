@@ -76,20 +76,18 @@ public class StoreWAL extends StoreDirect {
             boolean checksum,
             boolean compress,
             byte[] password,
-            boolean disableLocks,
             int sizeIncrement) {
         super(fileName, volFac, indexVolFac,
                 readOnly, deleteFilesAfterClose,
                 spaceReclaimMode, syncOnCommitDisabled, sizeLimit,
                 checksum, compress, password,
-                disableLocks, sizeIncrement);
+                sizeIncrement);
 
         this.log = volFac.run(fileName+TRANS_LOG_FILE_EXT);
 
         boolean allGood = false;
-        if(!disableLocks) {
-            structuralLock.lock();
-        }
+        structuralLock.lock();
+
         try{
             reloadIndexFile();
             if(verifyLogFile()){
@@ -116,10 +114,7 @@ public class StoreWAL extends StoreDirect {
                     phys = null;
                 }
             }
-
-            if(!disableLocks) {
-                structuralLock.unlock();
-            }
+            structuralLock.unlock();
         }
     }
 
@@ -136,7 +131,6 @@ public class StoreWAL extends StoreDirect {
                 false,
                 false,
                 null,
-                false,
                 0
         );
     }
@@ -148,7 +142,8 @@ public class StoreWAL extends StoreDirect {
     }
 
     protected void reloadIndexFile() {
-        assert(disableLocks || structuralLock.isHeldByCurrentThread());
+        if(CC.PARANOID && ! ( structuralLock.isHeldByCurrentThread()))
+            throw new AssertionError();
         logSize = 16;
         modified.clear();
         longStackPages.clear();
@@ -168,7 +163,8 @@ public class StoreWAL extends StoreDirect {
     }
 
     protected  void logReset() {
-        assert(disableLocks || structuralLock.isHeldByCurrentThread());
+        if(CC.PARANOID && ! ( structuralLock.isHeldByCurrentThread()))
+            throw new AssertionError();
         log.truncate(16);
         log.ensureAvailable(16);
         log.putInt(0, HEADER);
@@ -184,13 +180,11 @@ public class StoreWAL extends StoreDirect {
         final long ioRecid;
         final long logPos;
 
-        if(!disableLocks) {
-            newRecidLock.readLock().lock();
-        }
+        newRecidLock.readLock().lock();
+
         try{
-            if(!disableLocks) {
-                structuralLock.lock();
-            }
+            structuralLock.lock();
+
             try{
                 ioRecid = freeIoRecidTake(false);
                 logPos = logSize;
@@ -199,35 +193,26 @@ public class StoreWAL extends StoreDirect {
                 log.ensureAvailable(logSize);
 
             }finally{
-                if(!disableLocks) {
-                    structuralLock.unlock();
-                }
+                structuralLock.unlock();
             }
-            final Lock lock;
-            if(disableLocks) {
-                lock = null;
-            }else {
-                lock = locks[Store.lockPos(ioRecid)].writeLock();
-                lock.lock();
-            }
+            final Lock lock = locks[Store.lockPos(ioRecid)].writeLock();
+            lock.lock();
+
             try{
 
                 //write data into log
                 walIndexVal(logPos, ioRecid, MASK_DISCARD);
                 modified.put(ioRecid, PREALLOC);
             }finally{
-                if(!disableLocks) {
-                    lock.unlock();
-                }
+                lock.unlock();
             }
         }finally{
-            if(!disableLocks) {
-                newRecidLock.readLock().unlock();
-            }
+            newRecidLock.readLock().unlock();
         }
 
         long recid =  (ioRecid-IO_USER_START)/8;
-        assert(recid>0);
+        if(CC.PARANOID && ! (recid>0))
+            throw new AssertionError();
         return recid;
     }
 
@@ -235,14 +220,11 @@ public class StoreWAL extends StoreDirect {
     @Override
     public void preallocate(final long[] recids) {
         long logPos;
-        if(!disableLocks) {
-            newRecidLock.readLock().lock();
-        }
-        try{
 
-            if(!disableLocks) {
-                structuralLock.lock();
-            }
+        newRecidLock.readLock().lock();
+        try{
+            structuralLock.lock();
+
             try{
                 logPos = logSize;
                 for(int i=0;i<recids.length;i++)
@@ -253,56 +235,46 @@ public class StoreWAL extends StoreDirect {
                 log.ensureAvailable(logSize);
 
             }finally{
-                if(!disableLocks) {
-                    structuralLock.unlock();
-                }
+                structuralLock.unlock();
             }
             //write data into log
             for(int i=0;i<recids.length;i++){
                 final long ioRecid = recids[i];
-                final Lock lock2;
-                if(disableLocks) {
-                    lock2 = null;
-                }else {
-                    lock2 = locks[Store.lockPos(ioRecid)].writeLock();
-                    lock2.lock();
-                }
+                final Lock lock2 = locks[Store.lockPos(ioRecid)].writeLock();
+                lock2.lock();
+
                 try{
                     walIndexVal(logPos, ioRecid, MASK_DISCARD);
                     logPos+=1+8+8;
                     modified.put(ioRecid, PREALLOC);
                 }finally{
-                    if(!disableLocks) {
-                        lock2.unlock();
-                    }
+                    lock2.unlock();
                 }
                 recids[i] =  (ioRecid-IO_USER_START)/8;
-                assert(recids[i]>0);
+                if(CC.PARANOID && ! (recids[i]>0))
+                    throw new AssertionError();
             }
         }finally{
-            if(!disableLocks) {
-                newRecidLock.readLock().unlock();
-            }
+            newRecidLock.readLock().unlock();
         }
     }
 
 
     @Override
     public <A> long put(A value, Serializer<A> serializer) {
-        assert(value!=null);
+        if(CC.PARANOID && ! (value!=null))
+            throw new AssertionError();
         DataIO.DataOutputByteArray out = serialize(value, serializer);
 
         final long ioRecid;
         final long[] physPos;
         final long[] logPos;
 
-        if(!disableLocks) {
-            newRecidLock.readLock().lock();
-        }
+        newRecidLock.readLock().lock();
+
         try{
-            if(!disableLocks) {
-                structuralLock.lock();
-            }
+            structuralLock.lock();
+
             try{
                 ioRecid = freeIoRecidTake(false);
                 //first get space in phys
@@ -311,18 +283,12 @@ public class StoreWAL extends StoreDirect {
                 logPos = logAllocate(physPos);
 
             }finally{
-                if(!disableLocks) {
-                    structuralLock.unlock();
-                }
+                structuralLock.unlock();
             }
 
-            final Lock lock;
-            if(disableLocks) {
-                lock = null;
-            }else {
-                lock = locks[Store.lockPos(ioRecid)].writeLock();
-                lock.lock();
-            }
+            final Lock lock = locks[Store.lockPos(ioRecid)].writeLock();
+            lock.lock();
+
             try{
                 //write data into log
                 walIndexVal((logPos[0]&LOG_MASK_OFFSET) - 1-8-8-1-8, ioRecid, physPos[0]|MASK_ARCHIVE);
@@ -331,18 +297,15 @@ public class StoreWAL extends StoreDirect {
                 modified.put(ioRecid,logPos);
                 recycledDataOuts.offer(out);
             }finally{
-                if(!disableLocks) {
-                    lock.unlock();
-                }
+                lock.unlock();
             }
         }finally{
-            if(!disableLocks) {
-                newRecidLock.readLock().unlock();
-            }
+            newRecidLock.readLock().unlock();
         }
 
         long recid =  (ioRecid-IO_USER_START)/8;
-        assert(recid>0);
+        if(CC.PARANOID && ! (recid>0))
+            throw new AssertionError();
         return recid;
     }
 
@@ -371,16 +334,20 @@ public class StoreWAL extends StoreDirect {
             logC |= DataIO.longHash(pos | header | physPos[i] | (c > 0 ? physPos[i + 1] : 0) | crc32.getValue());
 
             outPos +=size-c;
-            assert(logSize>=outPos);
+            if(CC.PARANOID && ! (logSize>=outPos))
+                throw new AssertionError();
         }
         logChecksumAdd(logC);
-        assert(outPos==out.pos);
+        if(CC.PARANOID && ! (outPos==out.pos))
+            throw new AssertionError();
     }
 
 
     protected void walIndexVal(long logPos, long ioRecid, long indexVal) {
-        assert(disableLocks || locks[Store.lockPos(ioRecid)].writeLock().isHeldByCurrentThread());
-        assert(logSize>=logPos+1+8+8);
+        if(CC.PARANOID && ! ( locks[Store.lockPos(ioRecid)].writeLock().isHeldByCurrentThread()))
+            throw new AssertionError();
+        if(CC.PARANOID && ! (logSize>=logPos+1+8+8))
+            throw new AssertionError();
         log.putByte(logPos, WAL_INDEX_LONG);
         log.putLong(logPos + 1, ioRecid);
         log.putLong(logPos + 9, indexVal);
@@ -390,7 +357,8 @@ public class StoreWAL extends StoreDirect {
 
 
     protected long[] logAllocate(long[] physPos) {
-        assert(disableLocks || structuralLock.isHeldByCurrentThread());
+        if(CC.PARANOID && ! ( structuralLock.isHeldByCurrentThread()))
+            throw new AssertionError();
         logSize+=1+8+8; //space used for index val
 
         long[] ret = new long[physPos.length];
@@ -408,7 +376,8 @@ public class StoreWAL extends StoreDirect {
     }
 
     protected void checkLogRounding() {
-        assert(disableLocks || structuralLock.isHeldByCurrentThread());
+        if(CC.PARANOID && ! ( structuralLock.isHeldByCurrentThread()))
+            throw new AssertionError();
         if((logSize& SLICE_SIZE_MOD_MASK)+MAX_REC_SIZE*2> SLICE_SIZE){
             log.ensureAvailable(logSize+1);
             log.putByte(logSize, WAL_SKIP_REST_OF_BLOCK);
@@ -419,30 +388,26 @@ public class StoreWAL extends StoreDirect {
 
     @Override
     public <A> A get(long recid, Serializer<A> serializer) {
-        assert(recid>0);
+        if(CC.PARANOID && ! (recid>0))
+            throw new AssertionError();
         final long ioRecid = IO_USER_START + recid*8;
-        final Lock lock;
-        if(disableLocks) {
-            lock = null;
-        }else {
-            lock = locks[Store.lockPos(ioRecid)].readLock();
-            lock.lock();
-        }
+        final Lock lock = locks[Store.lockPos(ioRecid)].readLock();
+        lock.lock();
+
         try{
             return get2(ioRecid, serializer);
         }catch(IOException e){
             throw new IOError(e);
         }finally{
-            if(!disableLocks) {
-                lock.unlock();
-            }
+            lock.unlock();
         }
     }
 
     @Override
     protected <A> A get2(long ioRecid, Serializer<A> serializer) throws IOException {
-        assert(disableLocks || locks[Store.lockPos(ioRecid)].getWriteHoldCount()==0||
-                locks[Store.lockPos(ioRecid)].writeLock().isHeldByCurrentThread());
+        if(CC.PARANOID && ! ( locks[Store.lockPos(ioRecid)].getWriteHoldCount()==0||
+                locks[Store.lockPos(ioRecid)].writeLock().isHeldByCurrentThread()))
+            throw new AssertionError();
 
         //check if record was modified in current transaction
         long[] r = modified.get(ioRecid);
@@ -480,17 +445,15 @@ public class StoreWAL extends StoreDirect {
 
     @Override
     public <A> void update(long recid, A value, Serializer<A> serializer) {
-        assert(recid>0);
-        assert(value!=null);
+        if(CC.PARANOID && ! (recid>0))
+            throw new AssertionError();
+        if(CC.PARANOID && ! (value!=null))
+            throw new AssertionError();
         DataIO.DataOutputByteArray out = serialize(value, serializer);
         final long ioRecid = IO_USER_START + recid*8;
-        final Lock lock;
-        if(disableLocks) {
-            lock = null;
-        }else {
-            lock = locks[Store.lockPos(ioRecid)].writeLock();
-            lock.lock();
-        }
+        final Lock lock = locks[Store.lockPos(ioRecid)].writeLock();
+        lock.lock();
+
         try{
             final long[] physPos;
             final long[] logPos;
@@ -504,9 +467,8 @@ public class StoreWAL extends StoreDirect {
                 linkedRecords = null;
             }
 
-            if(!disableLocks) {
-                structuralLock.lock();
-            }
+            structuralLock.lock();
+
             try{
 
                 //free first record pointed from indexVal
@@ -527,9 +489,7 @@ public class StoreWAL extends StoreDirect {
                 logPos = logAllocate(physPos);
 
             }finally{
-                if(!disableLocks) {
-                    structuralLock.unlock();
-                }
+                structuralLock.unlock();
             }
 
             //write data into log
@@ -538,25 +498,21 @@ public class StoreWAL extends StoreDirect {
 
             modified.put(ioRecid,logPos);
         }finally{
-            if(!disableLocks) {
-                lock.unlock();
-            }
+            lock.unlock();
         }
         recycledDataOuts.offer(out);
     }
 
     @Override
     public <A> boolean compareAndSwap(long recid, A expectedOldValue, A newValue, Serializer<A> serializer) {
-        assert(recid>0);
-        assert(expectedOldValue!=null && newValue!=null);
+        if(CC.PARANOID && ! (recid>0))
+            throw new AssertionError();
+        if(CC.PARANOID && ! (expectedOldValue!=null && newValue!=null))
+            throw new AssertionError();
         final long ioRecid = IO_USER_START + recid*8;
-        final Lock lock;
-        if(disableLocks) {
-            lock = null;
-        }else {
-            lock = locks[Store.lockPos(ioRecid)].writeLock();
-            lock.lock();
-        }
+        final Lock lock = locks[Store.lockPos(ioRecid)].writeLock();
+        lock.lock();
+
         DataIO.DataOutputByteArray out;
         try{
 
@@ -576,9 +532,8 @@ public class StoreWAL extends StoreDirect {
                 linkedRecords = getLinkedRecordsIndexVals(indexVal);
             }
 
-            if(!disableLocks) {
-                structuralLock.lock();
-            }
+            structuralLock.lock();
+
             try{
 
                 //free first record pointed from indexVal
@@ -599,9 +554,7 @@ public class StoreWAL extends StoreDirect {
                 logPos = logAllocate(physPos);
 
             }finally{
-                if(!disableLocks) {
-                    structuralLock.unlock();
-                }
+                structuralLock.unlock();
             }
 
             //write data into log
@@ -613,9 +566,7 @@ public class StoreWAL extends StoreDirect {
         }catch(IOException e){
             throw new IOError(e);
         }finally{
-            if(!disableLocks) {
-                lock.unlock();
-            }
+            lock.unlock();
         }
         recycledDataOuts.offer(out);
         return true;
@@ -623,15 +574,12 @@ public class StoreWAL extends StoreDirect {
 
     @Override
     public <A> void delete(long recid, Serializer<A> serializer) {
-        assert(recid>0);
+        if(CC.PARANOID && ! (recid>0))
+            throw new AssertionError();
         final long ioRecid = IO_USER_START + recid*8;
-        final Lock lock;
-        if(disableLocks) {
-            lock = null;
-        }else {
-            lock = locks[Store.lockPos(ioRecid)].writeLock();
-            lock.lock();
-        }
+        final Lock lock = locks[Store.lockPos(ioRecid)].writeLock();
+        lock.lock();
+
         try{
             final long logPos;
 
@@ -642,9 +590,9 @@ public class StoreWAL extends StoreDirect {
                 if(indexVal==MASK_DISCARD) return;
                 linkedRecords = getLinkedRecordsIndexVals(indexVal);
             }
-            if(!disableLocks) {
-                structuralLock.lock();
-            }
+
+            structuralLock.lock();
+
             try{
                 logPos = logSize;
                 checkLogRounding();
@@ -664,16 +612,12 @@ public class StoreWAL extends StoreDirect {
                 }
 
             }finally {
-                if(!disableLocks) {
                     structuralLock.unlock();
-                }
             }
             walIndexVal(logPos,ioRecid,0|MASK_ARCHIVE);
             modified.put(ioRecid, TOMBSTONE);
         }finally {
-            if(!disableLocks) {
                 lock.unlock();
-            }
         }
     }
 
@@ -693,10 +637,12 @@ public class StoreWAL extends StoreDirect {
             int crc = 0;
             LongMap.LongMapIterator<byte[]> iter = longStackPages.longMapIterator();
             while(iter.moveToNext()){
-                assert(iter.key()>>>48==0);
+                if(CC.PARANOID && ! (iter.key()>>>48==0))
+                    throw new AssertionError();
                 final byte[] array = iter.value();
                 final long pageSize = ((array[0]&0xFF)<<8)|(array[1]&0xFF) ;
-                assert(array.length==pageSize);
+                if(CC.PARANOID && ! (array.length==pageSize))
+                    throw new AssertionError();
                 final long firstVal = (pageSize<<48)|iter.key();
                 log.ensureAvailable(logSize+1+8+pageSize);
 
@@ -793,7 +739,8 @@ public class StoreWAL extends StoreDirect {
     }
 
     protected boolean verifyLogFile() {
-        assert(disableLocks || structuralLock.isHeldByCurrentThread());
+        if(CC.PARANOID && ! ( structuralLock.isHeldByCurrentThread()))
+            throw new AssertionError();
 
         if(readOnly && log==null)
             return false;
@@ -902,7 +849,8 @@ public class StoreWAL extends StoreDirect {
             logSize += 4;
 
             logSize = 0;
-            assert (disableLocks || structuralLock.isHeldByCurrentThread());
+            if(CC.PARANOID && !  (structuralLock.isHeldByCurrentThread()))
+                throw new AssertionError();
 
             //checksum is broken, so disable it
             return true;
@@ -918,7 +866,8 @@ public class StoreWAL extends StoreDirect {
 
 
     protected void replayLogFile(){
-        assert(disableLocks || structuralLock.isHeldByCurrentThread());
+        if(CC.PARANOID && ! ( structuralLock.isHeldByCurrentThread()))
+            throw new AssertionError();
 
         if(readOnly && log==null)
             return; //TODO how to handle log replay if we are readonly?
@@ -993,7 +942,8 @@ public class StoreWAL extends StoreDirect {
 
         logReset();
 
-        assert(disableLocks || structuralLock.isHeldByCurrentThread());
+        if(CC.PARANOID && ! ( structuralLock.isHeldByCurrentThread()))
+            throw new AssertionError();
     }
 
 
@@ -1012,7 +962,8 @@ public class StoreWAL extends StoreDirect {
     }
 
     protected long[] getLinkedRecordsFromLog(long ioRecid){
-        assert(disableLocks || locks[Store.lockPos(ioRecid)].writeLock().isHeldByCurrentThread());
+        if(CC.PARANOID && ! ( locks[Store.lockPos(ioRecid)].writeLock().isHeldByCurrentThread()))
+            throw new AssertionError();
         long[] ret0 = modified.get(ioRecid);
         if(ret0==PREALLOC) return ret0;
 
@@ -1030,8 +981,10 @@ public class StoreWAL extends StoreDirect {
 
     @Override
     protected long longStackTake(long ioList, boolean recursive) {
-        assert(disableLocks || structuralLock.isHeldByCurrentThread());
-        assert(ioList>=IO_FREE_RECID && ioList<IO_USER_START) :"wrong ioList: "+ioList;
+        if(CC.PARANOID && ! ( structuralLock.isHeldByCurrentThread()))
+            throw new AssertionError();
+        if(CC.PARANOID && ! (ioList>=IO_FREE_RECID && ioList<IO_USER_START))
+            throw new AssertionError("wrong ioList: "+ioList);
 
 
         long dataOffset = indexVals[((int) ioList/8)];
@@ -1051,12 +1004,14 @@ public class StoreWAL extends StoreDirect {
             //yes, delete this page
             long next = longStackGetSixLong(page,2);
             long size = ((page[0]&0xFF)<<8) | (page[1]&0xFF);
-            assert(size == page.length);
+            if(CC.PARANOID && ! (size == page.length))
+                throw new AssertionError();
             if(next !=0){
                 //update index so it points to previous page
                 byte[] nextPage = longStackGetPage(next); //TODO this page is not modifed, but is added to LOG
                 long nextSize = ((nextPage[0]&0xFF)<<8) | (nextPage[1]&0xFF);
-                assert((nextSize-8)%6==0);
+                if(CC.PARANOID && ! ((nextSize-8)%6==0))
+                    throw new AssertionError();
                 indexVals[((int) ioList/8)]=((nextSize-6)<<48)|next;
                 indexValsModified[((int) ioList/8)]=true;
             }else{
@@ -1072,7 +1027,8 @@ public class StoreWAL extends StoreDirect {
             }
             //put space used by this page into free list
             freePhysPut((size<<48) | dataOffset, true);
-            assert(dataOffset>>>48==0);
+            if(CC.PARANOID && ! (dataOffset>>>48==0))
+                throw new AssertionError();
             longStackPages.remove(dataOffset);
         }else{
             //no, it was not last record at this page, so just decrement the counter
@@ -1089,9 +1045,12 @@ public class StoreWAL extends StoreDirect {
 
     @Override
     protected void longStackPut(long ioList, long offset, boolean recursive) {
-        assert(disableLocks || structuralLock.isHeldByCurrentThread());
-        assert(offset>>>48==0);
-        assert(ioList>=IO_FREE_RECID && ioList<=IO_USER_START): "wrong ioList: "+ioList;
+        if(CC.PARANOID && ! ( structuralLock.isHeldByCurrentThread()))
+            throw new AssertionError();
+        if(CC.PARANOID && ! (offset>>>48==0))
+            throw new AssertionError();
+        if(CC.PARANOID && ! (ioList>=IO_FREE_RECID && ioList<=IO_USER_START))
+            throw new AssertionError("wrong ioList: "+ioList);
 
         long dataOffset = indexVals[((int) ioList/8)];
         long pos = dataOffset>>>48;
@@ -1101,7 +1060,8 @@ public class StoreWAL extends StoreDirect {
             //yes empty, create new page and fill it with values
             final long listPhysid = freePhysTake((int) LONG_STACK_PREF_SIZE,true,true) &MASK_OFFSET;
             if(listPhysid == 0) throw new AssertionError();
-            assert(listPhysid>>>48==0);
+            if(CC.PARANOID && ! (listPhysid>>>48==0))
+                throw new AssertionError();
             //set previous Free Index List page to zero as this is first page
             //also set size of this record
             byte[] page = new byte[(int) LONG_STACK_PREF_SIZE];
@@ -1119,7 +1079,8 @@ public class StoreWAL extends StoreDirect {
             byte[] page = longStackGetPage(dataOffset);
             long size = ((page[0]&0xFF)<<8)|(page[1]&0xFF);
 
-            assert(pos+6<=size);
+            if(CC.PARANOID && ! (pos+6<=size))
+                throw new AssertionError();
             if(pos+6==size){ //is current page full?
                 long newPageSize = LONG_STACK_PREF_SIZE;
                 if(ioList == size2ListIoRecid(LONG_STACK_PREF_SIZE)){
@@ -1141,7 +1102,8 @@ public class StoreWAL extends StoreDirect {
 
                 //set the value itself
                 longStackPutSixLong(newPage, 8, offset);
-                assert(listPhysid>>>48==0);
+                if(CC.PARANOID && ! (listPhysid>>>48==0))
+                    throw new AssertionError();
                 longStackPages.put(listPhysid,newPage);
 
                 //and update index file with new page location and number of records
@@ -1169,7 +1131,8 @@ public class StoreWAL extends StoreDirect {
 
 
     protected static void longStackPutSixLong(byte[] page, int pos, long value) {
-        assert(value>=0 && (value>>>6*8)==0): "value does not fit";
+        if(CC.PARANOID && ! (value>=0 && (value>>>6*8)==0))
+            throw new AssertionError("value does not fit");
         page[pos + 0] = (byte) (0xff & (value >> 40));
         page[pos + 1] = (byte) (0xff & (value >> 32));
         page[pos + 2] = (byte) (0xff & (value >> 24));
@@ -1181,14 +1144,17 @@ public class StoreWAL extends StoreDirect {
 
 
     protected byte[] longStackGetPage(long offset) {
-        assert(offset>=16);
-        assert(offset>>>48==0);
+        if(CC.PARANOID && ! (offset>=16))
+            throw new AssertionError();
+        if(CC.PARANOID && ! (offset>>>48==0))
+            throw new AssertionError();
 
         byte[] ret = longStackPages.get(offset);
         if(ret==null){
             //read page size
             int size = phys.getUnsignedShort(offset);
-            assert(size>=8+6);
+            if(CC.PARANOID && ! (size>=8+6))
+                throw new AssertionError();
             ret = new byte[size];
             try {
                 phys.getDataInput(offset,size).readFully(ret);
@@ -1205,9 +1171,6 @@ public class StoreWAL extends StoreDirect {
 
     @Override
     public void close() {
-        for(Runnable closeListener:closeListeners)
-            closeListener.run();
-
         if(serializerPojo!=null && serializerPojo.hasUnsavedChanges()){
             serializerPojo.save(this);
         }
@@ -1239,13 +1202,15 @@ public class StoreWAL extends StoreDirect {
     }
 
     @Override protected void compactPreUnderLock() {
-        assert(disableLocks || structuralLock.isLocked());
+        if(CC.PARANOID && ! ( structuralLock.isLocked()))
+            throw new AssertionError();
         if(logDirty())
             throw new IllegalAccessError("WAL not empty; commit first, than compact");
     }
 
     @Override protected void compactPostUnderLock() {
-        assert(disableLocks || structuralLock.isLocked());
+        if(CC.PARANOID && ! ( structuralLock.isLocked()))
+            throw new AssertionError();
         reloadIndexFile();
     }
 
