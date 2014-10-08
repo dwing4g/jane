@@ -58,8 +58,8 @@ License:
   * rupy:           https://code.google.com/p/rupy/
   * tjws:           http://tjws.sourceforge.net/
  * 数据库:
-  * leveldb:        https://code.google.com/p/leveldb/
-  * leveldb-jni:    https://code.google.com/r/dwing4g-leveldbjni/
+  * leveldb:        https://github.com/google/leveldb
+  * leveldb-jni:    https://github.com/dwing4g/leveldb
   * leveldb-jni:    https://code.google.com/r/bgrainger-leveldb/
   * leveldb-jni:    https://github.com/fusesource/leveldbjni
   * leveldb-java:   https://github.com/dain/leveldb
