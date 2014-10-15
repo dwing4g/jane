@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
@@ -234,27 +235,22 @@ public final class XlsxExport
 	 */
 	public static void xlsx2Txt(InputStream isXlsx, int sheetId, OutputStream outTxt) throws Exception
 	{
-		Map<Integer, Map<Integer, String>> maps = xlsx2Maps(isXlsx, sheetId);
-
-		PrintWriter pw = new PrintWriter(new OutputStreamWriter(outTxt, "UTF-8"));
-		try
+		Charset cs = Charset.forName("UTF-8");
+		for(Map.Entry<Integer, Map<Integer, String>> e : xlsx2Maps(isXlsx, sheetId).entrySet())
 		{
-			for(Map.Entry<Integer, Map<Integer, String>> e : maps.entrySet())
+			int y = e.getKey();
+			for(Map.Entry<Integer, String> e2 : e.getValue().entrySet())
 			{
-				int y = e.getKey();
-				for(Map.Entry<Integer, String> e2 : e.getValue().entrySet())
-				{
-					pw.print(y);
-					pw.print(' ');
-					pw.print(e2.getKey());
-					pw.print(' ');
-					pw.println(e2.getValue());
-				}
+				outTxt.write(String.valueOf(y).getBytes(cs));
+				outTxt.write(' ');
+				outTxt.write(e2.getKey().toString().getBytes(cs));
+				outTxt.write(' ');
+				byte[] bytes = e2.getValue().getBytes(cs);
+				outTxt.write(String.valueOf(bytes.length).getBytes(cs));
+				outTxt.write(' ');
+				outTxt.write(bytes);
+				outTxt.write('\n');
 			}
-		}
-		finally
-		{
-			pw.close();
 		}
 	}
 
