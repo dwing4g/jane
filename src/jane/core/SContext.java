@@ -54,7 +54,7 @@ public final class SContext
 
 		public final void checkLock()
 		{
-			_rec.checkLock();
+			if(_rec != null) _rec.checkLock();
 		}
 
 		void record(Rec rec)
@@ -94,7 +94,7 @@ public final class SContext
 
 		protected boolean initSContext()
 		{
-			_rec.checkLock();
+			if(_rec != null) _rec.checkLock();
 			if(_fullUndo) return false;
 			if(_sCtx == null)
 			{
