@@ -63,6 +63,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 
 	private SContext sContext()
 	{
+		_owner.checkLock();
 		if(_sCtx != null) return _sCtx;
 		_owner.dirty();
 		return _sCtx = SContext.current();
@@ -116,8 +117,9 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 
 	protected void addUndoRemove(final K k, final V vOld)
 	{
+		SContext ctx = sContext();
 		if(_changed != null) _changed.put(k, null);
-		sContext().addOnRollback(new Runnable()
+		ctx.addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -218,8 +220,9 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	@Override
 	public void clear()
 	{
+		SContext ctx = sContext();
 		if(_map.isEmpty()) return;
-		sContext().addOnRollback(new Runnable()
+		ctx.addOnRollback(new Runnable()
 		{
 			private final Map<K, V> _saved;
 

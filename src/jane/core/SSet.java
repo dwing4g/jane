@@ -55,6 +55,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 
 	protected SContext sContext()
 	{
+		_owner.checkLock();
 		if(_sCtx != null) return _sCtx;
 		_owner.dirty();
 		return _sCtx = SContext.current();
@@ -80,8 +81,9 @@ public class SSet<V, S> implements Set<S>, Cloneable
 
 	protected void addUndoAdd(final V v)
 	{
+		SContext ctx = sContext();
 		if(_added != null) _added.add(v);
-		sContext().addOnRollback(new Runnable()
+		ctx.addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -93,8 +95,9 @@ public class SSet<V, S> implements Set<S>, Cloneable
 
 	protected void addUndoRemove(final V v)
 	{
+		SContext ctx = sContext();
 		if(_removed != null) _removed.add(v);
-		sContext().addOnRollback(new Runnable()
+		ctx.addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -214,8 +217,9 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	@Override
 	public void clear()
 	{
+		SContext ctx = sContext();
 		if(_set.isEmpty()) return;
-		sContext().addOnRollback(new Runnable()
+		ctx.addOnRollback(new Runnable()
 		{
 			private final Set<V> _saved;
 
