@@ -79,9 +79,8 @@ public class SSet<V, S> implements Set<S>, Cloneable
 		return (V)(v instanceof Safe ? ((Safe<?>)v).unsafe() : v);
 	}
 
-	protected void addUndoAdd(final V v)
+	protected void addUndoAdd(SContext ctx, final V v)
 	{
-		SContext ctx = sContext();
 		if(_added != null) _added.add(v);
 		ctx.addOnRollback(new Runnable()
 		{
@@ -93,9 +92,8 @@ public class SSet<V, S> implements Set<S>, Cloneable
 		});
 	}
 
-	protected void addUndoRemove(final V v)
+	protected void addUndoRemove(SContext ctx, final V v)
 	{
-		SContext ctx = sContext();
 		if(_removed != null) _removed.add(v);
 		ctx.addOnRollback(new Runnable()
 		{
@@ -145,8 +143,9 @@ public class SSet<V, S> implements Set<S>, Cloneable
 
 	public boolean addDirect(V v)
 	{
+		SContext ctx = sContext();
 		if(!_set.add(v)) return false;
-		addUndoAdd(v);
+		addUndoAdd(ctx, v);
 		return true;
 	}
 
@@ -176,9 +175,10 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	@Override
 	public boolean remove(Object s)
 	{
+		SContext ctx = sContext();
 		V v = unsafe(s);
 		if(!_set.remove(v)) return false;
-		addUndoRemove(v);
+		addUndoRemove(ctx, v);
 		return true;
 	}
 
@@ -280,8 +280,9 @@ public class SSet<V, S> implements Set<S>, Cloneable
 		@Override
 		public void remove()
 		{
+			SContext ctx = sContext();
 			_it.remove();
-			addUndoRemove(_cur);
+			addUndoRemove(ctx, _cur);
 		}
 	}
 

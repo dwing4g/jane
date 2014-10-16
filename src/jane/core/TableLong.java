@@ -186,12 +186,22 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	}
 
 	/**
-	 * 同getUnsafe,但增加的安全封装,可回滚修改
+	 * 同getUnsafe,但增加的安全封装,可回滚修改,但没有加锁检查
 	 */
-	public S get(long k)
+	public S getNoLock(long k)
 	{
 		V v = getUnsafe(k);
 		return v != null ? SContext.current().addRecord(this, k, v) : SContext.current().getRecord(this, k);
+	}
+
+	/**
+	 * 同getNoLock,但有加锁检查
+	 */
+	public S get(long k)
+	{
+		if(!Procedure.isLockedByCurrentThread(lockId(k)))
+		    throw new IllegalAccessError("get unlocked record! table=" + _tableName + ",key=" + k);
+		return getNoLock(k);
 	}
 
 	/**
