@@ -8,7 +8,6 @@ import java.util.Map.Entry;
 import java.util.RandomAccess;
 import java.util.SortedSet;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
@@ -29,13 +28,13 @@ public abstract class Procedure implements Runnable
 	 */
 	private static final class Context
 	{
-		private final Lock[]       locks = new ReentrantLock[Const.maxLockPerProcedure]; // 当前线程已经加过的锁
-		private volatile int       lockCount;                                           // 当前进程已经加过锁的数量
-		private volatile Procedure proc;                                                // 当前运行的事务
+		private final ReentrantLock[] locks = new ReentrantLock[Const.maxLockPerProcedure]; // 当前线程已经加过的锁
+		private volatile int          lockCount;                                           // 当前进程已经加过锁的数量
+		private volatile Procedure    proc;                                                // 当前运行的事务
 	}
 
 	private static final ThreadLocal<Context>   _tlProc;                                                // 每个事务线程绑定一个上下文
-	private static final Lock[]                 _lockPool    = new ReentrantLock[Const.lockPoolSize];   // 全局共享的锁池
+	private static final ReentrantLock[]        _lockPool    = new ReentrantLock[Const.lockPoolSize];   // 全局共享的锁池
 	private static final int                    _lockMask    = Const.lockPoolSize - 1;                  // 锁池下标的掩码
 	private static final ReentrantReadWriteLock _rwlCommit   = new ReentrantReadWriteLock();            // 用于数据提交的读写锁
 	private static final Map<Thread, Context>   _procThreads = Util.newProcThreadsMap();                // 当前运行的全部事务线程. 用于判断是否超时
@@ -258,10 +257,10 @@ public abstract class Procedure implements Runnable
 	/**
 	 * 根据lockId获取实际的锁对象
 	 */
-	private static Lock getLock(int lockId)
+	private static ReentrantLock getLock(int lockId)
 	{
 		lockId &= _lockMask;
-		Lock lock = _lockPool[lockId];
+		ReentrantLock lock = _lockPool[lockId];
 		if(lock != null) return lock;
 		synchronized(_lockPool)
 		{
@@ -279,13 +278,29 @@ public abstract class Procedure implements Runnable
 	}
 
 	/**
+	 * 判断lockId是否已被获取到锁
+	 */
+	public static final boolean isLocked(int lockid)
+	{
+		return getLock(lockid).isLocked();
+	}
+
+	/**
+	 * 判断lockId是否已被当前线程获取到锁
+	 */
+	public static final boolean isLockedByCurrentThread(int lockid)
+	{
+		return getLock(lockid).isHeldByCurrentThread();
+	}
+
+	/**
 	 * 尝试加锁一个lockId
 	 * <p>
 	 * 只用于内部提交数据
 	 */
-	static Lock tryLock(int lockId)
+	static ReentrantLock tryLock(int lockId)
 	{
-		Lock lock = getLock(lockId);
+		ReentrantLock lock = getLock(lockId);
 		return lock.tryLock() ? lock : null;
 	}
 

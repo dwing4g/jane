@@ -24,6 +24,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 
 	private SContext sContext()
 	{
+		_owner.checkLock();
 		if(_sCtx != null) return _sCtx;
 		_owner.dirty();
 		return _sCtx = SContext.current();
@@ -151,8 +152,9 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 
 	public boolean addDirect(V v)
 	{
+		SContext ctx = sContext();
 		if(!_deque.add(v)) return false;
-		sContext().addOnRollback(new Runnable()
+		ctx.addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -171,8 +173,9 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 
 	public void addFirstDirect(V v)
 	{
+		SContext ctx = sContext();
 		_deque.addFirst(v);
-		sContext().addOnRollback(new Runnable()
+		ctx.addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -246,9 +249,10 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 
 	public boolean addAllDirect(Collection<? extends V> c)
 	{
+		SContext ctx = sContext();
 		final int n = c.size();
 		if(!_deque.addAll(c)) return false;
-		sContext().addOnRollback(new Runnable()
+		ctx.addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -263,10 +267,11 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	@Override
 	public boolean addAll(Collection<? extends S> c)
 	{
+		SContext ctx = sContext();
 		final int n = c.size();
 		for(S s : c)
 			_deque.addLast(unsafe(s));
-		sContext().addOnRollback(new Runnable()
+		ctx.addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -280,8 +285,9 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 
 	public V removeDirect()
 	{
+		SContext ctx = sContext();
 		final V vOld = _deque.remove();
-		sContext().addOnRollback(new Runnable()
+		ctx.addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -317,8 +323,9 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 
 	public V removeLastDirect()
 	{
+		SContext ctx = sContext();
 		final V vOld = _deque.removeLast();
-		sContext().addOnRollback(new Runnable()
+		ctx.addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -349,9 +356,10 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 
 	public V pollDirect()
 	{
+		SContext ctx = sContext();
 		final V vOld = _deque.poll();
 		if(vOld == null) return null;
-		sContext().addOnRollback(new Runnable()
+		ctx.addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -381,9 +389,10 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 
 	public V pollLastDirect()
 	{
+		SContext ctx = sContext();
 		final V vOld = _deque.pollLast();
 		if(vOld == null) return null;
-		sContext().addOnRollback(new Runnable()
+		ctx.addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -427,8 +436,9 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	@Override
 	public void clear()
 	{
+		SContext ctx = sContext();
 		if(_deque.isEmpty()) return;
-		sContext().addOnRollback(new Runnable()
+		ctx.addOnRollback(new Runnable()
 		{
 			private final Deque<V> _saved;
 

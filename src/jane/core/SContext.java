@@ -52,6 +52,11 @@ public final class SContext
 			return _rec;
 		}
 
+		public final void checkLock()
+		{
+			_rec.checkLock();
+		}
+
 		void record(Rec rec)
 		{
 			_rec = rec;
@@ -89,6 +94,7 @@ public final class SContext
 
 		protected boolean initSContext()
 		{
+			_rec.checkLock();
 			if(_fullUndo) return false;
 			if(_sCtx == null)
 			{
@@ -186,13 +192,15 @@ public final class SContext
 
 	public interface Rec
 	{
-		Object getTable();
+		TableBase<?> getTable();
 
 		Object getKey();
 
 		long getKeyLong();
 
 		Object getValue();
+
+		void checkLock();
 	}
 
 	static final class Record<K, V extends Bean<V>, S extends Safe<V>> implements Rec
@@ -200,16 +208,18 @@ public final class SContext
 		private final Table<K, V, S> _table;
 		private final K              _key;
 		private final S              _value;
+		private final int            _lockId;
 
 		Record(Table<K, V, S> table, K key, S value)
 		{
 			_table = table;
 			_key = key;
 			_value = value;
+			_lockId = table.lockId(key);
 		}
 
 		@Override
-		public Object getTable()
+		public TableBase<V> getTable()
 		{
 			return _table;
 		}
@@ -227,9 +237,16 @@ public final class SContext
 		}
 
 		@Override
-		public Object getValue()
+		public S getValue()
 		{
-			return _value.unsafe();
+			return _value;
+		}
+
+		@Override
+		public void checkLock()
+		{
+			if(!Procedure.isLockedByCurrentThread(_lockId))
+			    throw new IllegalAccessError("write unlocked record! table=" + _table.getTableName() + ",key=" + _key);
 		}
 	}
 
@@ -238,16 +255,18 @@ public final class SContext
 		private final TableLong<V, S> _table;
 		private final long            _key;
 		private final S               _value;
+		private final int             _lockId;
 
 		RecordLong(TableLong<V, S> table, long key, S value)
 		{
 			_table = table;
 			_key = key;
 			_value = value;
+			_lockId = table.lockId(key);
 		}
 
 		@Override
-		public Object getTable()
+		public TableBase<V> getTable()
 		{
 			return _table;
 		}
@@ -265,9 +284,16 @@ public final class SContext
 		}
 
 		@Override
-		public Object getValue()
+		public S getValue()
 		{
-			return _value.unsafe();
+			return _value;
+		}
+
+		@Override
+		public void checkLock()
+		{
+			if(!Procedure.isLockedByCurrentThread(_lockId))
+			    throw new IllegalAccessError("write unlocked record! table=" + _table.getTableName() + ",key=" + _key);
 		}
 	}
 

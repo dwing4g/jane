@@ -24,6 +24,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 
 	private SContext sContext()
 	{
+		_owner.checkLock();
 		if(_sCtx != null) return _sCtx;
 		_owner.dirty();
 		return _sCtx = SContext.current();
@@ -103,8 +104,9 @@ public final class SList<V, S> implements List<S>, Cloneable
 
 	public boolean addDirect(V v)
 	{
+		SContext ctx = sContext();
 		if(!_list.add(v)) return false;
-		sContext().addOnRollback(new Runnable()
+		ctx.addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -123,8 +125,9 @@ public final class SList<V, S> implements List<S>, Cloneable
 
 	public void addDirect(final int idx, V v)
 	{
+		SContext ctx = sContext();
 		_list.add(idx, v);
-		sContext().addOnRollback(new Runnable()
+		ctx.addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -142,9 +145,10 @@ public final class SList<V, S> implements List<S>, Cloneable
 
 	public boolean addAllDirect(Collection<? extends V> c)
 	{
+		SContext ctx = sContext();
 		final int n = c.size();
 		if(!_list.addAll(c)) return false;
-		sContext().addOnRollback(new Runnable()
+		ctx.addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -159,10 +163,11 @@ public final class SList<V, S> implements List<S>, Cloneable
 	@Override
 	public boolean addAll(Collection<? extends S> c)
 	{
+		SContext ctx = sContext();
 		final int n = c.size();
 		for(S s : c)
 			_list.add(unsafe(s));
-		sContext().addOnRollback(new Runnable()
+		ctx.addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -176,9 +181,10 @@ public final class SList<V, S> implements List<S>, Cloneable
 
 	public boolean addAllDirect(final int idx, Collection<? extends V> c)
 	{
+		SContext ctx = sContext();
 		final int n = c.size();
 		if(!_list.addAll(idx, c)) return false;
-		sContext().addOnRollback(new Runnable()
+		ctx.addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -201,8 +207,9 @@ public final class SList<V, S> implements List<S>, Cloneable
 
 	public V setDirect(final int idx, V v)
 	{
+		SContext ctx = sContext();
 		final V vOld = _list.set(idx, v);
-		sContext().addOnRollback(new Runnable()
+		ctx.addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -221,8 +228,9 @@ public final class SList<V, S> implements List<S>, Cloneable
 
 	public V removeDirect(final int idx)
 	{
+		SContext ctx = sContext();
 		final V vOld = _list.remove(idx);
-		sContext().addOnRollback(new Runnable()
+		ctx.addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -282,8 +290,9 @@ public final class SList<V, S> implements List<S>, Cloneable
 	@Override
 	public void clear()
 	{
+		SContext ctx = sContext();
 		if(_list.isEmpty()) return;
-		sContext().addOnRollback(new Runnable()
+		ctx.addOnRollback(new Runnable()
 		{
 			private final List<V> _saved;
 
@@ -341,8 +350,9 @@ public final class SList<V, S> implements List<S>, Cloneable
 		@Override
 		public void remove()
 		{
+			SContext ctx = sContext();
 			_it.remove();
-			sContext().addOnRollback(new Runnable()
+			ctx.addOnRollback(new Runnable()
 			{
 				private final V   _v = _cur;
 				private final int _i = _idx;
@@ -425,8 +435,9 @@ public final class SList<V, S> implements List<S>, Cloneable
 		@Override
 		public void remove()
 		{
+			SContext ctx = sContext();
 			_it.remove();
-			sContext().addOnRollback(new Runnable()
+			ctx.addOnRollback(new Runnable()
 			{
 				private final V   _v = _cur;
 				private final int _i = _idx + _idxOff;
@@ -442,8 +453,9 @@ public final class SList<V, S> implements List<S>, Cloneable
 
 		public void setDirect(V v)
 		{
+			SContext ctx = sContext();
 			_it.set(v);
-			sContext().addOnRollback(new Runnable()
+			ctx.addOnRollback(new Runnable()
 			{
 				private final V   _v = _cur;
 				private final int _i = _idx + _idxOff;
@@ -464,8 +476,9 @@ public final class SList<V, S> implements List<S>, Cloneable
 
 		public void addDirect(V v)
 		{
+			SContext ctx = sContext();
 			_it.add(v);
-			sContext().addOnRollback(new Runnable()
+			ctx.addOnRollback(new Runnable()
 			{
 				private final int _i = _idx + _idxOff;
 
