@@ -61,7 +61,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		_changed = changed;
 	}
 
-	private SContext sContext()
+	protected SContext sContext()
 	{
 		_owner.checkLock();
 		if(_sCtx != null) return _sCtx;
@@ -100,9 +100,9 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		return (V)(v instanceof Safe ? ((Safe<?>)v).unsafe() : v);
 	}
 
-	protected void addUndoPut(final K k, final V vOld)
+	protected void addUndoPut(SContext ctx, final K k, final V vOld)
 	{
-		sContext().addOnRollback(new Runnable()
+		ctx.addOnRollback(new Runnable()
 		{
 			@Override
 			public void run()
@@ -115,9 +115,8 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		});
 	}
 
-	protected void addUndoRemove(final K k, final V vOld)
+	protected void addUndoRemove(SContext ctx, final K k, final V vOld)
 	{
-		SContext ctx = sContext();
 		if(_changed != null) _changed.put(k, null);
 		ctx.addOnRollback(new Runnable()
 		{
@@ -166,10 +165,11 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 
 	public V putDirect(K k, V v)
 	{
+		SContext ctx = sContext();
 		if(v == null) throw new NullPointerException();
 		if(_changed != null) _changed.put(k, v);
 		v = _map.put(k, v);
-		addUndoPut(k, v);
+		addUndoPut(ctx, k, v);
 		return v;
 	}
 
@@ -204,9 +204,10 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	@SuppressWarnings("unchecked")
 	public V removeDirect(Object k)
 	{
+		SContext ctx = sContext();
 		V vOld = _map.remove(unsafe(k));
 		if(vOld == null) return null;
-		addUndoRemove((K)k, vOld);
+		addUndoRemove(ctx, (K)k, vOld);
 		return vOld;
 	}
 
@@ -281,11 +282,12 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 
 		public V setValueDirect(V v)
 		{
+			SContext ctx = sContext();
 			if(v == null) throw new NullPointerException();
 			K k = _e.getKey();
 			if(_changed != null) _changed.put(k, v);
 			v = _e.setValue(v);
-			addUndoPut(k, v);
+			addUndoPut(ctx, k, v);
 			return v;
 		}
 
@@ -327,10 +329,11 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		@Override
 		public void remove()
 		{
+			SContext ctx = sContext();
 			K k = _cur.getKey();
 			V v = _cur.getValueUnsafe();
 			_it.remove();
-			addUndoRemove(k, v);
+			addUndoRemove(ctx, k, v);
 		}
 	}
 

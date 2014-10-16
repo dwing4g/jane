@@ -91,8 +91,9 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 
 	public V pollFirstDirect()
 	{
+		SContext ctx = sContext();
 		V v = ((NavigableSet<V>)_set).pollFirst();
-		if(v != null) addUndoRemove(v);
+		if(v != null) addUndoRemove(ctx, v);
 		return v;
 	}
 
@@ -104,8 +105,9 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 
 	public V pollLastDirect()
 	{
+		SContext ctx = sContext();
 		V v = ((NavigableSet<V>)_set).pollLast();
-		if(v != null) addUndoRemove(v);
+		if(v != null) addUndoRemove(ctx, v);
 		return v;
 	}
 
