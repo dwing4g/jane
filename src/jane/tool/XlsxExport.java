@@ -101,8 +101,10 @@ public final class XlsxExport
 			{
 				String v = node.getTextContent().trim();
 				String t = elem.getAttribute("t").trim();
-				if(t.equals("s")) v = strTable[Integer.parseInt(v)];
-				if(t.equals("b")) v = (v.equals("1") ? "TRUE" : "FALSE");
+				if(t.equals("s"))
+					v = strTable[Integer.parseInt(v)];
+				else if(t.equals("b"))
+				    v = (v.equals("1") ? "TRUE" : "FALSE");
 				if(v != null && !v.isEmpty())
 				{
 					t = elem.getAttribute("r");
