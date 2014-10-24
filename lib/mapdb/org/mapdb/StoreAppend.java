@@ -125,16 +125,16 @@ public class StoreAppend extends Store{
         if(sortedFiles.isEmpty()){
             //no files, create empty store
             Volume zero = Volume.volumeForFile(getFileFromNum(0),useRandomAccessFile, readOnly,0L,MAX_FILE_SIZE_SHIFT,0);
-            zero.ensureAvailable(Engine.LAST_RESERVED_RECID*8+8);
+            zero.ensureAvailable(Engine.RECID_LAST_RESERVED*8+8);
             zero.putLong(0, HEADER);
             long pos = 8;
             //put reserved records as empty
-            for(long recid=1;recid<=LAST_RESERVED_RECID;recid++){
+            for(long recid=1;recid<=RECID_LAST_RESERVED;recid++){
                 pos+=zero.putPackedLong(pos, recid+RECIDP);
                 pos+=zero.putPackedLong(pos, 0+SIZEP); //and mark it with zero size (0==tombstone)
             }
-            maxRecid = LAST_RESERVED_RECID;
-            index.ensureAvailable(LAST_RESERVED_RECID * 8 + 8);
+            maxRecid = RECID_LAST_RESERVED;
+            index.ensureAvailable(RECID_LAST_RESERVED * 8 + 8);
 
             volumes.put(0L, zero);
 
@@ -286,6 +286,7 @@ public class StoreAppend extends Store{
             final long recid;
             try{
                 recid = ++maxRecid;
+                deleteNoLock(recid);
 
                 modified = true;
             }finally{
@@ -302,30 +303,9 @@ public class StoreAppend extends Store{
 
 
     @Override
-    public void preallocate(long[] recids) {
-        final Lock lock  = locks[new Random().nextInt(locks.length)].readLock();
-        lock.lock();
-
-        try{
-            structuralLock.lock();
-            try{
-                for(int i = 0;i<recids.length;i++){
-                    recids[i] = ++maxRecid;
-                    if(CC.PARANOID && ! (recids[i]>0))
-                        throw new AssertionError();
-                }
-
-                modified = true;
-            }finally{
-                structuralLock.unlock();
-            }
-        }finally {
-            lock.unlock();
-        }
-    }
-
-    @Override
     public <A> long put(A value, Serializer<A> serializer) {
+        if(serializer == null)
+            throw new NullPointerException();
         if(CC.PARANOID && ! (value!=null))
             throw new AssertionError();
         DataIO.DataOutputByteArray out = serialize(value,serializer);
@@ -372,6 +352,8 @@ public class StoreAppend extends Store{
 
     @Override
     public <A> A get(long recid, Serializer<A> serializer) {
+        if(serializer == null)
+            throw new NullPointerException();
         if(CC.PARANOID && ! (recid>0))
             throw new AssertionError();
         final Lock lock = locks[Store.lockPos(recid)].readLock();
@@ -387,8 +369,12 @@ public class StoreAppend extends Store{
 
     protected <A> A getNoLock(long recid, Serializer<A> serializer) throws IOException {
         long indexVal = indexVal(recid);
+        if(indexVal==0) {
+            if(recid<=RECID_LAST_RESERVED)
+                return null;
+            throw new DBException(DBException.Code.ENGINE_GET_VOID);
+        }
 
-        if(indexVal==0) return null;
         Volume vol = volumes.get(indexVal>>>FILE_SHIFT);
         long fileOffset = indexVal&FILE_MASK;
         long size = vol.getPackedLong(fileOffset);
@@ -404,6 +390,8 @@ public class StoreAppend extends Store{
 
     @Override
     public <A> void update(long recid, A value, Serializer<A> serializer) {
+        if(serializer == null)
+            throw new NullPointerException();
         if(CC.PARANOID && ! (value!=null))
             throw new AssertionError();
         if(CC.PARANOID && ! (recid>0))
@@ -449,54 +437,66 @@ public class StoreAppend extends Store{
 
     @Override
     public <A> boolean compareAndSwap(long recid, A expectedOldValue, A newValue, Serializer<A> serializer) {
-        if(CC.PARANOID && ! (expectedOldValue!=null && newValue!=null))
-            throw new AssertionError();
+        if(serializer == null)
+            throw new NullPointerException();
         if(CC.PARANOID && ! (recid>0))
             throw new AssertionError();
-        DataIO.DataOutputByteArray out = serialize(newValue,serializer);
+        DataIO.DataOutputByteArray out = null;
         final Lock lock = locks[Store.lockPos(recid)].writeLock();
         lock.lock();
 
-        boolean ret;
         try{
-            Object old = getNoLock(recid,serializer);
-            if(expectedOldValue.equals(old)){
-                updateNoLock(recid,out);
-                ret = true;
+            Object oldVal = getNoLock(recid,serializer);
+
+            // compare oldValue and expected
+            if((oldVal == null && expectedOldValue!=null) || (oldVal!=null && !oldVal.equals(expectedOldValue)))
+                return false;
+
+            if(newValue==null){
+                //delete here
+                deleteNoLock(recid);
             }else{
-                ret = false;
+                out = serialize(newValue,serializer);
+                updateNoLock(recid,out);
             }
         }catch(IOException e){
             throw new IOError(e);
         }finally {
             lock.unlock();
         }
-        recycledDataOuts.offer(out);
-        return ret;
+        if(out!=null)
+            recycledDataOuts.offer(out);
+        return true;
     }
 
     @Override
     public <A> void delete(long recid, Serializer<A> serializer) {
+        if(serializer == null)
+            throw new NullPointerException();
         if(CC.PARANOID && ! (recid>0))
             throw new AssertionError();
         final Lock lock = locks[Store.lockPos(recid)].writeLock();
         lock.lock();
 
         try{
-            structuralLock.lock();
-            try{
-                rollover();
-                currVolume.ensureAvailable(currPos+6+0);
-                currPos+=currVolume.putPackedLong(currPos, recid+SIZEP);
-                setIndexVal(recid, (currFileNum<<FILE_SHIFT) | currPos);
-                //write tombstone
-                currPos+=currVolume.putPackedLong(currPos, 1);
-                modified = true;
-            }finally{
-                structuralLock.unlock();
-            }
+            deleteNoLock(recid);
         }finally{
             lock.unlock();
+        }
+    }
+
+    protected void deleteNoLock(long recid) {
+        structuralLock.lock();
+        try{
+            rollover();
+            currVolume.ensureAvailable(currPos+6+0);
+            currPos+=currVolume.putPackedLong(currPos, recid+SIZEP);
+            setIndexVal(recid, (currFileNum<<FILE_SHIFT) | currPos);
+            //write tombstone
+            currPos+=currVolume.putPackedLong(currPos, 1);
+            modified = true;
+        }finally{
+            structuralLock.unlock();
         }
     }
 

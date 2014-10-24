@@ -118,7 +118,7 @@ public abstract class Store implements Engine{
             pojoLock.lock();
             try{
                 if(serializerPojo==null){
-                    final CopyOnWriteArrayList<SerializerPojo.ClassInfo> classInfos = get(Engine.CLASS_INFO_RECID, SerializerPojo.serializer);
+                    final CopyOnWriteArrayList<SerializerPojo.ClassInfo> classInfos = get(Engine.RECID_CLASS_CATALOG, SerializerPojo.serializer);
                     serializerPojo = new SerializerPojo(classInfos);
                     serializerPojoInitLock = null;
                 }
@@ -347,10 +347,7 @@ public abstract class Store implements Engine{
     private static final int LOCK_MASK = CC.CONCURRENCY-1;
 
     protected static int lockPos(final long key) {
-        int h = (int)(key ^ (key >>> 32));
-        h ^= (h >>> 20) ^ (h >>> 12);
-        h ^= (h >>> 7) ^ (h >>> 4);
-        return h & LOCK_MASK;
+        return DataIO.longHash(key) & LOCK_MASK;
     }
 
     @Override

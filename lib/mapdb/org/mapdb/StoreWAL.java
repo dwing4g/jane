@@ -217,51 +217,11 @@ public class StoreWAL extends StoreDirect {
     }
 
 
-    @Override
-    public void preallocate(final long[] recids) {
-        long logPos;
-
-        newRecidLock.readLock().lock();
-        try{
-            structuralLock.lock();
-
-            try{
-                logPos = logSize;
-                for(int i=0;i<recids.length;i++)
-                    recids[i] = freeIoRecidTake(false) ;
-
-                //now get space in log
-                logSize+=recids.length*(1+8+8); //space used for index vals
-                log.ensureAvailable(logSize);
-
-            }finally{
-                structuralLock.unlock();
-            }
-            //write data into log
-            for(int i=0;i<recids.length;i++){
-                final long ioRecid = recids[i];
-                final Lock lock2 = locks[Store.lockPos(ioRecid)].writeLock();
-                lock2.lock();
-
-                try{
-                    walIndexVal(logPos, ioRecid, MASK_DISCARD);
-                    logPos+=1+8+8;
-                    modified.put(ioRecid, PREALLOC);
-                }finally{
-                    lock2.unlock();
-                }
-                recids[i] =  (ioRecid-IO_USER_START)/8;
-                if(CC.PARANOID && ! (recids[i]>0))
-                    throw new AssertionError();
-            }
-        }finally{
-            newRecidLock.readLock().unlock();
-        }
-    }
-
 
     @Override
     public <A> long put(A value, Serializer<A> serializer) {
+        if(serializer == null)
+            throw new NullPointerException();
         if(CC.PARANOID && ! (value!=null))
             throw new AssertionError();
         DataIO.DataOutputByteArray out = serialize(value, serializer);
@@ -387,23 +347,6 @@ public class StoreWAL extends StoreDirect {
 
 
     @Override
-    public <A> A get(long recid, Serializer<A> serializer) {
-        if(CC.PARANOID && ! (recid>0))
-            throw new AssertionError();
-        final long ioRecid = IO_USER_START + recid*8;
-        final Lock lock = locks[Store.lockPos(ioRecid)].readLock();
-        lock.lock();
-
-        try{
-            return get2(ioRecid, serializer);
-        }catch(IOException e){
-            throw new IOError(e);
-        }finally{
-            lock.unlock();
-        }
-    }
-
-    @Override
     protected <A> A get2(long ioRecid, Serializer<A> serializer) throws IOException {
         if(CC.PARANOID && ! ( locks[Store.lockPos(ioRecid)].getWriteHoldCount()==0||
                 locks[Store.lockPos(ioRecid)].writeLock().isHeldByCurrentThread()))
@@ -444,181 +387,87 @@ public class StoreWAL extends StoreDirect {
     }
 
     @Override
-    public <A> void update(long recid, A value, Serializer<A> serializer) {
-        if(CC.PARANOID && ! (recid>0))
-            throw new AssertionError();
-        if(CC.PARANOID && ! (value!=null))
-            throw new AssertionError();
-        DataIO.DataOutputByteArray out = serialize(value, serializer);
-        final long ioRecid = IO_USER_START + recid*8;
-        final Lock lock = locks[Store.lockPos(ioRecid)].writeLock();
-        lock.lock();
+    protected void update2(DataIO.DataOutputByteArray out, long ioRecid) {
+        final long[] physPos;
+        final long[] logPos;
 
-        try{
-            final long[] physPos;
-            final long[] logPos;
-
-            long indexVal = 0;
-            long[] linkedRecords = getLinkedRecordsFromLog(ioRecid);
-            if(linkedRecords==null){
-                indexVal = index.getLong(ioRecid);
-                linkedRecords = getLinkedRecordsIndexVals(indexVal);
-            }else if(linkedRecords == PREALLOC){
-                linkedRecords = null;
-            }
-
-            structuralLock.lock();
-
-            try{
-
-                //free first record pointed from indexVal
-                if((indexVal>>>48)>0)
-                    freePhysPut(indexVal,false);
-
-                //if there are more linked records, free those as well
-                if(linkedRecords!=null){
-                    for(int i=0; i<linkedRecords.length &&linkedRecords[i]!=0;i++){
-                        freePhysPut(linkedRecords[i],false);
-                    }
-                }
-
-
-                //first get space in phys
-                physPos = physAllocate(out.pos,false,false);
-                //now get space in log
-                logPos = logAllocate(physPos);
-
-            }finally{
-                structuralLock.unlock();
-            }
-
-            //write data into log
-            walIndexVal((logPos[0]&LOG_MASK_OFFSET) - 1-8-8-1-8, ioRecid, physPos[0]|MASK_ARCHIVE);
-            walPhysArray(out, physPos, logPos);
-
-            modified.put(ioRecid,logPos);
-        }finally{
-            lock.unlock();
+        long indexVal = 0;
+        long[] linkedRecords = getLinkedRecordsFromLog(ioRecid);
+        if (linkedRecords == null) {
+            indexVal = index.getLong(ioRecid);
+            linkedRecords = getLinkedRecordsIndexVals(indexVal);
+        } else if (linkedRecords == PREALLOC) {
+            linkedRecords = null;
         }
-        recycledDataOuts.offer(out);
+
+        structuralLock.lock();
+
+        try {
+
+            //free first record pointed from indexVal
+            if ((indexVal >>> 48) > 0)
+                freePhysPut(indexVal, false);
+
+            //if there are more linked records, free those as well
+            if (linkedRecords != null) {
+                for (int i = 0; i < linkedRecords.length && linkedRecords[i] != 0; i++) {
+                    freePhysPut(linkedRecords[i], false);
+                }
+            }
+
+
+            //first get space in phys
+            physPos = physAllocate(out.pos, false, false);
+            //now get space in log
+            logPos = logAllocate(physPos);
+
+        } finally {
+            structuralLock.unlock();
+        }
+
+        //write data into log
+        walIndexVal((logPos[0] & LOG_MASK_OFFSET) - 1 - 8 - 8 - 1 - 8, ioRecid, physPos[0] | MASK_ARCHIVE);
+        walPhysArray(out, physPos, logPos);
+
+        modified.put(ioRecid, logPos);
     }
 
     @Override
-    public <A> boolean compareAndSwap(long recid, A expectedOldValue, A newValue, Serializer<A> serializer) {
-        if(CC.PARANOID && ! (recid>0))
-            throw new AssertionError();
-        if(CC.PARANOID && ! (expectedOldValue!=null && newValue!=null))
-            throw new AssertionError();
-        final long ioRecid = IO_USER_START + recid*8;
-        final Lock lock = locks[Store.lockPos(ioRecid)].writeLock();
-        lock.lock();
+    protected void delete2(long ioRecid){
+        final long logPos;
 
-        DataIO.DataOutputByteArray out;
-        try{
-
-            A oldVal = get2(ioRecid,serializer);
-            if((oldVal == null && expectedOldValue!=null) || (oldVal!=null && !oldVal.equals(expectedOldValue)))
-                return false;
-
-            out = serialize(newValue, serializer);
-
-            final long[] physPos;
-            final long[] logPos;
-
-            long indexVal = 0;
-            long[] linkedRecords = getLinkedRecordsFromLog(ioRecid);
-            if(linkedRecords==null){
-                indexVal = index.getLong(ioRecid);
-                linkedRecords = getLinkedRecordsIndexVals(indexVal);
-            }
-
-            structuralLock.lock();
-
-            try{
-
-                //free first record pointed from indexVal
-                if((indexVal>>>48)>0)
-                    freePhysPut(indexVal,false);
-
-                //if there are more linked records, free those as well
-                if(linkedRecords!=null){
-                    for(int i=0; i<linkedRecords.length &&linkedRecords[i]!=0;i++){
-                        freePhysPut(linkedRecords[i],false);
-                    }
-                }
-
-
-                //first get space in phys
-                physPos = physAllocate(out.pos,false,false);
-                //now get space in log
-                logPos = logAllocate(physPos);
-
-            }finally{
-                structuralLock.unlock();
-            }
-
-            //write data into log
-            walIndexVal((logPos[0]&LOG_MASK_OFFSET) - 1-8-8-1-8, ioRecid, physPos[0]|MASK_ARCHIVE);
-            walPhysArray(out, physPos, logPos);
-
-            modified.put(ioRecid, logPos);
-
-        }catch(IOException e){
-            throw new IOError(e);
-        }finally{
-            lock.unlock();
+        long indexVal = 0;
+        long[] linkedRecords = getLinkedRecordsFromLog(ioRecid);
+        if(linkedRecords==null){
+            indexVal = index.getLong(ioRecid);
+            if(indexVal==MASK_DISCARD) return;
+            linkedRecords = getLinkedRecordsIndexVals(indexVal);
         }
-        recycledDataOuts.offer(out);
-        return true;
-    }
 
-    @Override
-    public <A> void delete(long recid, Serializer<A> serializer) {
-        if(CC.PARANOID && ! (recid>0))
-            throw new AssertionError();
-        final long ioRecid = IO_USER_START + recid*8;
-        final Lock lock = locks[Store.lockPos(ioRecid)].writeLock();
-        lock.lock();
+        structuralLock.lock();
 
         try{
-            final long logPos;
+            logPos = logSize;
+            checkLogRounding();
+            logSize+=1+8+8; //space used for index val
+            log.ensureAvailable(logSize);
 
-            long indexVal = 0;
-            long[] linkedRecords = getLinkedRecordsFromLog(ioRecid);
-            if(linkedRecords==null){
-                indexVal = index.getLong(ioRecid);
-                if(indexVal==MASK_DISCARD) return;
-                linkedRecords = getLinkedRecordsIndexVals(indexVal);
-            }
+            //free first record pointed from indexVal
+            if((indexVal>>>48)>0)
+                freePhysPut(indexVal,false);
 
-            structuralLock.lock();
-
-            try{
-                logPos = logSize;
-                checkLogRounding();
-                logSize+=1+8+8; //space used for index val
-                log.ensureAvailable(logSize);
-                longStackPut(IO_FREE_RECID, ioRecid,false);
-
-                //free first record pointed from indexVal
-                if((indexVal>>>48)>0)
-                    freePhysPut(indexVal,false);
-
-                //if there are more linked records, free those as well
-                if(linkedRecords!=null){
-                    for(int i=0; i<linkedRecords.length &&linkedRecords[i]!=0;i++){
-                        freePhysPut(linkedRecords[i],false);
-                    }
+            //if there are more linked records, free those as well
+            if(linkedRecords!=null){
+                for(int i=0; i<linkedRecords.length &&linkedRecords[i]!=0;i++){
+                    freePhysPut(linkedRecords[i],false);
                 }
-
-            }finally {
-                    structuralLock.unlock();
             }
-            walIndexVal(logPos,ioRecid,0|MASK_ARCHIVE);
-            modified.put(ioRecid, TOMBSTONE);
+
         }finally {
-                lock.unlock();
+            structuralLock.unlock();
         }
+        walIndexVal(logPos,ioRecid, MASK_DISCARD|MASK_ARCHIVE);
+        modified.put(ioRecid, TOMBSTONE);
     }
 
     @Override
@@ -1119,26 +968,27 @@ public class StoreWAL extends StoreDirect {
         }
     }
 
+    //TODO move those two methods into Volume.ByteArrayVol
     protected static long longStackGetSixLong(byte[] page, int pos) {
         return
-                ((long) (page[pos + 0] & 0xff) << 40) |
-                        ((long) (page[pos + 1] & 0xff) << 32) |
-                        ((long) (page[pos + 2] & 0xff) << 24) |
-                        ((long) (page[pos + 3] & 0xff) << 16) |
-                        ((long) (page[pos + 4] & 0xff) << 8) |
-                        ((long) (page[pos + 5] & 0xff) << 0);
+                ((long) (page[pos++] & 0xff) << 40) |
+                        ((long) (page[pos++ ] & 0xff) << 32) |
+                        ((long) (page[pos++] & 0xff) << 24) |
+                        ((long) (page[pos++] & 0xff) << 16) |
+                        ((long) (page[pos++] & 0xff) << 8) |
+                        ((long) (page[pos] & 0xff));
     }
 
 
     protected static void longStackPutSixLong(byte[] page, int pos, long value) {
-        if(CC.PARANOID && ! (value>=0 && (value>>>6*8)==0))
+        if(CC.PARANOID && (value>>>48)!=0)
             throw new AssertionError("value does not fit");
-        page[pos + 0] = (byte) (0xff & (value >> 40));
-        page[pos + 1] = (byte) (0xff & (value >> 32));
-        page[pos + 2] = (byte) (0xff & (value >> 24));
-        page[pos + 3] = (byte) (0xff & (value >> 16));
-        page[pos + 4] = (byte) (0xff & (value >> 8));
-        page[pos + 5] = (byte) (0xff & (value >> 0));
+        page[pos++] = (byte) (0xff & (value >> 40));
+        page[pos++] = (byte) (0xff & (value >> 32));
+        page[pos++] = (byte) (0xff & (value >> 24));
+        page[pos++] = (byte) (0xff & (value >> 16));
+        page[pos++] = (byte) (0xff & (value >> 8));
+        page[pos] = (byte) (0xff & (value));
 
     }
 
@@ -1205,7 +1055,7 @@ public class StoreWAL extends StoreDirect {
         if(CC.PARANOID && ! ( structuralLock.isLocked()))
             throw new AssertionError();
         if(logDirty())
-            throw new IllegalAccessError("WAL not empty; commit first, than compact");
+            throw new DBException(DBException.Code.ENGINE_COMPACT_UNCOMMITED);
     }
 
     @Override protected void compactPostUnderLock() {

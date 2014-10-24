@@ -139,30 +139,6 @@ public class TxEngine extends EngineWrapper {
     }
 
     @Override
-    public void preallocate(long[] recids) {
-        commitLock.writeLock().lock();
-        try {
-            uncommitedData = true;
-            super.preallocate(recids);
-            for(long recid:recids){
-                Lock lock = locks[Store.lockPos(recid)].writeLock();
-                lock.lock();
-                try{
-                    for(Reference<Tx> txr:txs){
-                        Tx tx = txr.get();
-                        if(tx==null) continue;
-                        tx.old.putIfAbsent(recid,TOMBSTONE);
-                    }
-                }finally {
-                    lock.unlock();
-                }
-            }
-        } finally {
-            commitLock.writeLock().unlock();
-        }
-    }
-
-    @Override
     public <A> long put(A value, Serializer<A> serializer) {
         commitLock.readLock().lock();
         try {
@@ -337,9 +313,6 @@ public class TxEngine extends EngineWrapper {
         protected LongConcurrentHashMap<Fun.Pair> mod =
                 fullTx ? new LongConcurrentHashMap<Fun.Pair>() : null;
 
-        protected Collection<Long> usedPreallocatedRecids =
-                fullTx ? new ArrayList<Long>() : null;
-
         protected final Reference<Tx> ref = new WeakReference<Tx>(this,txQueue);
 
         protected boolean closed = false;
@@ -358,30 +331,12 @@ public class TxEngine extends EngineWrapper {
 
             commitLock.writeLock().lock();
             try{
-                Long recid = preallocRecidTake();
-                usedPreallocatedRecids.add(recid);
-                return recid;
+                return preallocRecidTake();
             }finally {
                 commitLock.writeLock().unlock();
             }
         }
 
-        @Override
-        public void preallocate(long[] recids) {
-            if(!fullTx)
-                throw new UnsupportedOperationException("read-only");
-
-            commitLock.writeLock().lock();
-            try{
-                for(int i=0;i<recids.length;i++){
-                    Long recid = preallocRecidTake();
-                    usedPreallocatedRecids.add(recid);
-                    recids[i] = recid;
-                }
-            }finally {
-                commitLock.writeLock().unlock();
-            }
-        }
 
     @Override
     public <A> long put(A value, Serializer<A> serializer) {
@@ -390,7 +345,6 @@ public class TxEngine extends EngineWrapper {
         commitLock.writeLock().lock();
         try{
             Long recid = preallocRecidTake();
-            usedPreallocatedRecids.add(recid);
             mod.put(recid, new Fun.Pair(value,serializer));
             return recid;
         }finally {
@@ -584,9 +538,6 @@ public class TxEngine extends EngineWrapper {
             txs.remove(ref);
             cleanTxQueue();
 
-            for(Long prealloc:usedPreallocatedRecids){
-                TxEngine.this.superDelete(prealloc,null);
-            }
             TxEngine.this.superCommit();
 
             close();
