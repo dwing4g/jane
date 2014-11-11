@@ -170,7 +170,7 @@ public final class StorageMapDB implements Storage
 		}
 	}
 
-	private static final class MapDBBeanSerializer implements Serializer<Bean<?>>, Serializable
+	private static final class MapDBBeanSerializer extends Serializer<Bean<?>> implements Serializable
 	{
 		private static final long serialVersionUID = 2524574473300271970L;
 		private final int         _tableId;
@@ -272,6 +272,18 @@ public final class StorageMapDB implements Storage
 		{
 			return -1;
 		}
+
+		@Override
+		public int hashCode()
+		{
+			return _tableId;
+		}
+
+		@Override
+		public boolean equals(Object obj)
+		{
+			return obj instanceof MapDBBeanSerializer ? ((MapDBBeanSerializer)obj)._tableId == _tableId : false;
+		}
 	}
 
 	private static final class MapDBBeanComparator implements Comparator<Bean<?>>, Serializable
@@ -292,7 +304,7 @@ public final class StorageMapDB implements Storage
 		}
 	}
 
-	private static final class MapDBOctetsSerializer implements Serializer<Octets>, Serializable
+	private static final class MapDBOctetsSerializer extends Serializer<Octets> implements Serializable
 	{
 		private static final long                  serialVersionUID = 1582853052220638690L;
 		private static final MapDBOctetsSerializer _inst            = new MapDBOctetsSerializer();
@@ -347,6 +359,18 @@ public final class StorageMapDB implements Storage
 		{
 			return -1;
 		}
+
+		@Override
+		public int hashCode()
+		{
+			return 0;
+		}
+
+		@Override
+		public boolean equals(Object obj)
+		{
+			return obj instanceof MapDBOctetsSerializer;
+		}
 	}
 
 	private static final class MapDBOctetsComparator implements Comparator<Octets>, Serializable
@@ -366,7 +390,7 @@ public final class StorageMapDB implements Storage
 		}
 	}
 
-	private static final class MapDBStringSerializer implements Serializer<String>, Serializable
+	private static final class MapDBStringSerializer extends Serializer<String> implements Serializable
 	{
 		private static final long                  serialVersionUID = -3968063288659798552L;
 		private static final MapDBStringSerializer _inst            = new MapDBStringSerializer();
@@ -392,6 +416,18 @@ public final class StorageMapDB implements Storage
 		public int fixedSize()
 		{
 			return -1;
+		}
+
+		@Override
+		public int hashCode()
+		{
+			return 0;
+		}
+
+		@Override
+		public boolean equals(Object obj)
+		{
+			return obj instanceof MapDBStringSerializer;
 		}
 	}
 

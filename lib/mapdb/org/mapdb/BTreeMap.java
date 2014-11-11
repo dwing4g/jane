@@ -130,7 +130,7 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
 
     private final KeySet keySet;
 
-    private final EntrySet entrySet = new EntrySet(this);
+    private final EntrySet entrySet;
 
     private final Values values = new Values(this);
 
@@ -192,7 +192,7 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
         }
     }
 
-    protected static final class ValRefSerializer implements Serializer.Trusted<ValRef>{
+    protected static final class ValRefSerializer extends Serializer<ValRef>{
 
         @Override
         public void serialize(DataOutput out, ValRef value) throws IOException {
@@ -205,8 +205,18 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
         }
 
         @Override
-        public int fixedSize() {
-            return -1;
+        public boolean isTrusted() {
+            return true;
+        }
+
+        @Override
+        public boolean equals(ValRef a1, ValRef a2) {
+            throw new IllegalAccessError();
+        }
+
+        @Override
+        public int hashCode(ValRef valRef) {
+            throw new IllegalAccessError();
         }
     }
 
@@ -537,7 +547,7 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
 
     protected final Serializer<BNode> nodeSerializer;
 
-    protected static final class NodeSerializer<A,B> implements  Serializer.Trusted<BNode>{
+    protected static final class NodeSerializer<A,B> extends Serializer<BNode>{
 
         protected static final int LEAF_MASK = 1<<15;
         protected static final int LEFT_SHIFT = 14;
@@ -694,10 +704,9 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
         }
 
         @Override
-        public int fixedSize() {
-            return -1;
+        public boolean isTrusted() {
+            return keySerializer.isTrusted() && valueSerializer.isTrusted();
         }
-
     }
 
 
@@ -733,7 +742,7 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
 
         this.keySerializer = keySerializer;
         this.valueSerializer = valueSerializer;
-
+        entrySet = new EntrySet(this, valueSerializer);
 
         this.nodeSerializer = new NodeSerializer(valsOutsideNodes,keySerializer,valueSerializer,numberOfNodeMetas);
 
@@ -1187,7 +1196,7 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
                 //$DELAY$
                 Object oldVal =   A.vals()[pos-1];
                 oldVal = valExpand(oldVal);
-                if(value!=null && !value.equals(oldVal)){
+                if(value!=null && valueSerializer!=null && !valueSerializer.equals((V)value,(V)oldVal)){
                     unlock(nodeLocks, current);
                     //$DELAY$
                     return null;
@@ -1718,7 +1727,7 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
         //$DELAY$
         while(valueIter.hasNext()){
             //$DELAY$
-            if(value.equals(valueIter.next()))
+            if(valueSerializer.equals((V)value,valueIter.next()))
                 return true;
         }
         return false;
@@ -1993,8 +2002,10 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
 
     static final class EntrySet<K1,V1> extends AbstractSet<Map.Entry<K1,V1>> {
         private final ConcurrentNavigableMap<K1, V1> m;
-        EntrySet(ConcurrentNavigableMap<K1, V1> map) {
+        private final Serializer valueSerializer;
+        EntrySet(ConcurrentNavigableMap<K1, V1> map, Serializer valueSerializer) {
             m = map;
+            this.valueSerializer = valueSerializer;
         }
 
         @Override
@@ -2016,7 +2027,7 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
             if(key == null) return false;
             V1 v = m.get(key);
             //$DELAY$
-            return v != null && v.equals(e.getValue());
+            return v != null && valueSerializer.equals(v,e.getValue());
         }
         @Override
 		public boolean remove(Object o) {
@@ -2138,7 +2149,7 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
             if(value==null) throw new NullPointerException();
             Iterator<V> i = valueIterator();
             while(i.hasNext()){
-                if(value.equals(i.next()))
+                if(m.valueSerializer.equals((V)value,i.next()))
                     return true;
             }
             return false;
@@ -2463,7 +2474,7 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
 
         @Override
         public Set<Entry<K, V>> entrySet() {
-            return new EntrySet<K, V>(this);
+            return new EntrySet<K, V>(this,m.valueSerializer);
         }
 
 
@@ -2556,7 +2567,7 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
             if(value==null) throw new NullPointerException();
             Iterator<V> i = valueIterator();
             while(i.hasNext()){
-                if(value.equals(i.next()))
+                if(m.valueSerializer.equals((V) value,i.next()))
                     return true;
             }
             return false;
@@ -2883,7 +2894,7 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
 
         @Override
         public Set<Entry<K, V>> entrySet() {
-            return new EntrySet<K, V>(this);
+            return new EntrySet<K, V>(this,m.valueSerializer);
         }
 
 

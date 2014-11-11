@@ -14,7 +14,7 @@ public final class TestMapDB
 {
 	private final long v;
 
-	public static class VS implements Serializer<TestMapDB>, Serializable
+	public static final class VS extends Serializer<TestMapDB> implements Serializable
 	{
 		private static final long serialVersionUID = -2046267611056801207L;
 
@@ -37,6 +37,18 @@ public final class TestMapDB
 		public int fixedSize()
 		{
 			return 8;
+		}
+
+		@Override
+		public int hashCode()
+		{
+			return 0;
+		}
+
+		@Override
+		public boolean equals(Object obj)
+		{
+			return obj instanceof VS;
 		}
 	}
 
