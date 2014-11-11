@@ -68,7 +68,7 @@ function handler(hdls)
 end
 function bean(bean)
 	bean.name = trim(bean.name)
-	if bean.name:find("[^%w_]") or typemap[bean.name] then error("ERROR: invalid bean.name: " .. bean.name) end
+	if bean.name:find("[^%w_]") or typemap[bean.name:lower()] then error("ERROR: invalid bean.name: " .. bean.name) end
 	if name_used[bean.name] then error("ERROR: duplicated bean.name: " .. bean.name) end
 	if type_bean[bean.type] then error("ERROR: duplicated bean.type: " .. bean.type) end
 	if type(bean.type) ~= "number" then bean.type = 0 end
@@ -89,9 +89,9 @@ function bean(bean)
 		var.type = trim(var.type)
 		local basetype
 		basetype, var.k, var.v = var.type:match "^%s*([%w_]+)%s*<?%s*([%w_]*)%s*,?%s*([%w_]*)%s*>?%s*%(?%s*([%w%._]*)%s*%)?%s*$"
-		var.btype = typemap[basetype] or '"' .. basetype .. '"'
-		var.key = var.k and (typemap[var.k] or '"' .. var.k .. '"')
-		var.val = var.v and (typemap[var.v] or '"' .. var.v .. '"')
+		var.btype = typemap[basetype:lower()] or '"' .. basetype .. '"'
+		var.key = var.k and (typemap[var.k:lower()] or '"' .. var.k .. '"')
+		var.val = var.v and (typemap[var.v:lower()] or '"' .. var.v .. '"')
 		if var.key == '""' then var.key = nil end
 		if var.val == '""' then var.val = nil end
 		if not var.val then var.val = var.key; var.key = nil end
