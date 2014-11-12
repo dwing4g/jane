@@ -3,6 +3,7 @@ local popen = io.popen
 local write = io.write
 local format = string.format
 local byte = string.byte
+local arg = {...}
 
 local filename, i, line, col, c, state
 local function WriteInfo(str)

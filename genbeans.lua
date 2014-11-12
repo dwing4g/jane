@@ -1,5 +1,4 @@
 -- UTF-8 without BOM
-local arg = arg
 local type = type
 local string = string
 local lower = string.lower
@@ -11,6 +10,7 @@ local ipairs = ipairs
 local print = print
 local open = io.open
 local tostring = tostring
+local arg = {...}
 
 local jdk7 = false -- false for jdk6
 namespace = arg[1] -- for bean namespace
