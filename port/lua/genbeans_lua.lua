@@ -7,7 +7,7 @@ local format = string.format
 local concat = table.concat
 local open = io.open
 local type = type
-local arg = arg
+local arg = {...}
 
 local template_bean = [=[
 -- UTF-8 without BOM

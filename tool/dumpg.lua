@@ -5,6 +5,7 @@ local sort = table.sort
 local print = print
 local ipairs = ipairs
 local format = string.format
+local arg = {...}
 
 local dumpstr = {
 	write = function(self, s) self[#self + 1] = s end,

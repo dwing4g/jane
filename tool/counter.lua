@@ -12,7 +12,7 @@ local function CountFile(fn)
 	end
 end
 
-for _, path in ipairs(arg) do
+for _, path in ipairs({...}) do
 	print(path)
 	for fn in io.popen("dir/a-d/b/o/s " .. path .. "\\*.*"):read"*a":gmatch"%C+" do
 		CountFile(fn)

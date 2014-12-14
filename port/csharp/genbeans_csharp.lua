@@ -1,5 +1,4 @@
 -- UTF-8 without BOM
-local arg = arg
 local type = type
 local string = string
 local error = error
@@ -10,6 +9,7 @@ local ipairs = ipairs
 local print = print
 local open = io.open
 local tostring = tostring
+local arg = {...}
 
 namespace = arg[1] -- for bean namespace
 local namespace = namespace

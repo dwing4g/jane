@@ -2,6 +2,7 @@ package.path = package.path .. ";metalualib/?.lua;luainspect/?.lua"
 
 local LA = require "luainspect.ast"
 local LI = require "luainspect.init"
+local arg = {...}
 
 print("inspect " .. arg[1] .. " ... ")
 local f = io.open(arg[1], "rb")
