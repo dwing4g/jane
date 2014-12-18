@@ -112,6 +112,30 @@ function util.str(s)
 	end
 end
 
+-- 导出table成lua脚本字符串,key/value支持number/string,value还支持bool/table
+local function dumpTable(t, out, n)
+	local o = out
+	if not o then o, n = {}, 1 end
+	o[n] = "{"
+	local e = n + 1
+	for k, v in pairs(t) do
+		o[n + 1] = format(type(k) == "string" and "[%q]=" or "[%d]=", k)
+		n = n + 2
+		local vt = type(v)
+		if vt == "table" then
+			n = dumpTable(v, o, n)
+		else
+			o[n] = vt == "string" and format("%q", v) or tostring(v)
+		end
+		n = n + 1
+		o[n] = ","
+		e = n
+	end
+	o[e] = "}"
+	return out and n or concat(o)
+end
+util.dump = dumpTable
+
 -- 获取bean的详细字符串,后三个参数仅内部使用
 function util.toStr(t, out, m, name)
 	local o = out or {}
