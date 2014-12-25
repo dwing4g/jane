@@ -13,7 +13,7 @@ JVM="\
 -verbose:gc"
 
 LIB="\
-lib/slf4j-api-1.7.8.jar:\
+lib/slf4j-api-1.7.9.jar:\
 lib/log4j-core-2.1.jar:\
 lib/log4j-api-2.1.jar:\
 lib/log4j-slf4j-impl-2.1.jar:\
