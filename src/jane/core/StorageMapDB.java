@@ -487,9 +487,9 @@ public final class StorageMapDB implements Storage
 		// dbmaker = dbmaker.snapshotEnable(); // 使用此行可以获取到数据库的只读快照,目前尚未使用此特性,建议注释
 		dbMaker = dbMaker.asyncWriteEnable(); // 如果注释此行,提交过程的性能会大幅降低,建议不注释
 		dbMaker = (Const.mapDBCacheCount > 0 ? dbMaker.cacheSize(Const.mapDBCacheCount) : dbMaker.cacheDisable());
-		if(Const.mapDBFileLevel == 2)
+		/*if(Const.mapDBFileLevel == 2)
 			dbMaker = dbMaker.mmapFileEnablePartial(); // 不使用任何文件映射(比完全内存映射慢2~3倍)
-		else if(Const.mapDBFileLevel == 3)
+		else*/ if(Const.mapDBFileLevel == 3)
 			dbMaker = dbMaker.mmapFileEnable(); // 仅索引文件映射(比不使用任何文件映射好的不明显)
 		else if(Const.mapDBFileLevel != 1)
 		    dbMaker = dbMaker.mmapFileEnableIfSupported(); // 根据系统32/64位来决定文件使用完全不映射和完全映射(建议使用)
