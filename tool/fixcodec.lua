@@ -7,21 +7,21 @@ local arg = {...}
 
 local filename, i, line, col, c, state
 local function WriteInfo(str)
-	write(format("%s(%5X,%d-%d)<%02X>: %s\n", filename, i, line, col, c, str))
+	write(format("%s(%5X,%d-%d)<%02X>: %s\n", filename, i, line, col, c or 0, str))
 end
 
-local function FixFile()
+local function CheckFile()
 	local f, err = open(filename, "rb")
 	if not f then print(format("ERROR: can not open file(%s): %s", filename, err)) return end
 	local s = f:read"*a"
 	f:close() f = nil
 	local n = #s
 	i, line, col, state = 1, 1, 1, 0
-	local isjava = filename:find("%.java$")
-	local has0d = false
+	local fix = false
 
 	if s:sub(1, 3) == "\xef\xbb\xbf" then
 		WriteInfo("file head has UTF-8 bom")
+		fix = true
 	end
 
 	while i <= n do
@@ -44,29 +44,45 @@ local function FixFile()
 			if c == 0x0a then
 				line = line + 1
 				col = 0
---				if isjava and not has0d then
---					WriteInfo("no \\r before \\n")
---				end
-			else -- if not (isjava and c == 0x0d) then
+			else
 				WriteInfo("invalid control char")
+				fix = true
 			end
 		end
-		has0d = (c == 0x0d)
 		i = i + 1
 		col = col + 1
 	end
+	return fix
 end
 
-local function FixDir(dirname)
-	for fn in io.popen("dir/a-d/b/o/s " .. dirname .. "\\*.*"):read"*a":gmatch"%C+" do
-		filename = fn
-		FixFile()
+local function FixFile()
+	local f, err = open(filename, "rb")
+	if not f then print(format("ERROR: can not read file(%s): %s", filename, err)) return end
+	local s = f:read"*a"
+	f:close() f = nil
+
+	local d = s:gsub("[%z\x01-\x08\x0b-\x1f]+", ""):gsub("^\xef\xbb\xbf", "")
+	if s ~= d then
+		local f, err = open(filename, "wb")
+		if not f then print(format("ERROR: can not write file(%s): %s", filename, err)) return end
+		f:write(d)
+		f:close()
+		print("FIXED: " .. filename)
 	end
 end
 
+local function FixDir(dirname, wildcard)
+	for fn in io.popen("dir/a-d/b/o/s " .. dirname .. "\\" .. (wildcard or "*.*")):read"*a":gmatch"%C+" do
+		filename = fn
+		if CheckFile() then FixFile() end
+	end
+end
+
+local wildcard = arg[1]
+table.remove(arg, 1)
 for _, path in ipairs(arg) do
 	print(path)
-	FixDir(path)
+	FixDir(path, wildcard)
 end
 
 print("======")
