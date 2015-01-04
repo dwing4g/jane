@@ -40,6 +40,7 @@ local function list(op)
 	for _,name in ipairs(vindex) do
 		print(format("%s%4d %s", op == "GSET" and "***" or "   ", vname[name], name))
 	end
+	if #vindex > 0 then print(format("ALL: %2d", #vindex)) end
 end
 
 print(arg[1])
