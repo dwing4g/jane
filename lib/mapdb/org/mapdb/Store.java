@@ -1,18 +1,3 @@
-/*
- *  Copyright (c) 2012 Jan Kotek
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
 package org.mapdb;
 
 import java.io.DataInput;
@@ -20,53 +5,51 @@ import java.io.IOError;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.logging.Logger;
 import java.util.zip.CRC32;
 
 /**
- * Low level record store.
+ *
  */
-public abstract class Store implements Engine{
+public abstract class Store implements Engine {
 
-    protected static final Logger LOG = Logger.getLogger(Store.class.getName());
+
+    /** protects structural layout of records. Memory allocator is single threaded under this lock */
+    protected final ReentrantLock structuralLock = new ReentrantLock(CC.FAIR_LOCKS);
+
+    /** protects lifecycle methods such as commit, rollback and close() */
+    protected final ReentrantLock commitLock = new ReentrantLock(CC.FAIR_LOCKS);
+
+    /** protects data from being overwritten while read */
+    protected final ReentrantReadWriteLock[] locks;
+
+
+    protected volatile boolean closed = false;
+    protected final boolean readonly;
 
     protected final String fileName;
-    protected final boolean checksum;
-    protected final boolean compress;
-    protected final boolean encrypt;
-    protected final byte[] password;
+    protected Fun.Function1<Volume, String> volumeFactory;
+    protected boolean checksum;
+    protected boolean compress;
+    protected boolean encrypt;
     protected final EncryptionXTEA encryptionXTEA;
-
-    protected final static int CHECKSUM_FLAG_MASK = 1;
-    protected final static int COMPRESS_FLAG_MASK = 1<<2;
-    protected final static int ENCRYPT_FLAG_MASK = 1<<3;
-
-
-    protected static final int SLICE_SIZE = 1<< CC.VOLUME_SLICE_SHIFT;
-
-    protected static final int SLICE_SIZE_MOD_MASK = SLICE_SIZE -1;
-    protected final Fun.Function1<Volume, String> volumeFactory;
-
-    /** default serializer used for persistence. Handles POJO and other stuff which requires write-able access to Engine */
-    protected SerializerPojo serializerPojo;
-
-
-
     protected final ThreadLocal<CompressLZF> LZF;
 
-    protected Store(String fileName, Fun.Function1<Volume, String> volumeFactory, boolean checksum, boolean compress, byte[] password) {
+
+    protected Store(
+            String fileName,
+            Fun.Function1<Volume, String> volumeFactory,
+            boolean checksum,
+            boolean compress,
+            byte[] password,
+            boolean readonly) {
         this.fileName = fileName;
         this.volumeFactory = volumeFactory;
-        structuralLock = new ReentrantLock(CC.FAIR_LOCKS);
-        newRecidLock = new ReentrantReadWriteLock(CC.FAIR_LOCKS);
         locks = new ReentrantReadWriteLock[CC.CONCURRENCY];
         for(int i=0;i< locks.length;i++){
             locks[i] = new ReentrantReadWriteLock(CC.FAIR_LOCKS);
@@ -75,7 +58,7 @@ public abstract class Store implements Engine{
         this.checksum = checksum;
         this.compress = compress;
         this.encrypt =  password!=null;
-        this.password = password;
+        this.readonly = readonly;
         this.encryptionXTEA = !encrypt?null:new EncryptionXTEA(password);
 
         this.LZF = !compress?null:new ThreadLocal<CompressLZF>() {
@@ -86,78 +69,47 @@ public abstract class Store implements Engine{
         };
     }
 
-    public abstract long getMaxRecid();
-    public abstract ByteBuffer getRaw(long recid);
-    public abstract Iterator<Long> getFreeRecids();
-    public abstract void updateRaw(long recid, ByteBuffer data);
+    public void init(){}
 
-    /** returns maximal store size or `0` if there is no limit */
-    public abstract long getSizeLimit();
+    @Override
+    public <A> A get(long recid, Serializer<A> serializer) {
+        if(serializer==null)
+            throw new NullPointerException();
 
-    /** returns current size occupied by physical store (does not include index). It means file allocated by physical file */
-    public abstract long getCurrSize();
-
-    /** returns free size in  physical store (does not include index). */
-    public abstract long getFreeSize();
-
-    /** get some statistics about store. This may require traversing entire store, so it can take some time.*/
-    public abstract String calculateStatistics();
-
-    public void printStatistics(){
-        System.out.println(calculateStatistics());
-    }
-
-    protected Lock serializerPojoInitLock = new ReentrantLock(CC.FAIR_LOCKS);
-
-    /**
-     * @return default serializer used in this DB, it handles POJO and other stuff.
-     */
-    public  SerializerPojo getSerializerPojo() {
-        final Lock pojoLock = serializerPojoInitLock;
-        if(pojoLock!=null) {
-            pojoLock.lock();
-            try{
-                if(serializerPojo==null){
-                    final CopyOnWriteArrayList<SerializerPojo.ClassInfo> classInfos = get(Engine.RECID_CLASS_CATALOG, SerializerPojo.serializer);
-                    serializerPojo = new SerializerPojo(classInfos);
-                    serializerPojoInitLock = null;
-                }
-            }finally{
-                pojoLock.unlock();
-            }
-
+        final Lock lock = locks[lockPos(recid)].readLock();
+        lock.lock();
+        try{
+            return get2(recid,serializer);
+        }finally {
+            lock.unlock();
         }
-        return serializerPojo;
     }
 
+    protected abstract <A> A get2(long recid, Serializer<A> serializer);
 
-    protected final ReentrantLock structuralLock;
-    protected final ReentrantReadWriteLock newRecidLock;
-    protected final ReentrantReadWriteLock[] locks;
+    @Override
+    public <A> void update(long recid, A value, Serializer<A> serializer) {
+        if(serializer==null)
+            throw new NullPointerException();
 
+        //serialize outside lock
+        DataIO.DataOutputByteArray out = serialize(value, serializer);
 
-    protected void lockAllWrite() {
-        newRecidLock.writeLock().lock();
-        for(ReentrantReadWriteLock l: locks) {
-            l.writeLock().lock();
+        final Lock lock = locks[lockPos(recid)].writeLock();
+        lock.lock();
+        try{
+            update2(recid,out);
+        }finally {
+            lock.unlock();
         }
-        structuralLock.lock();
     }
 
-    protected void unlockAllWrite() {
-        structuralLock.unlock();
-        for(ReentrantReadWriteLock l: locks) {
-            l.writeLock().unlock();
-        }
-        newRecidLock.writeLock().unlock();
-    }
-
-
-
-    protected final Queue<DataIO.DataOutputByteArray> recycledDataOuts = new ArrayBlockingQueue<DataIO.DataOutputByteArray>(128);
-
+    protected final AtomicReference<DataIO.DataOutputByteArray> recycledDataOut =
+            new AtomicReference<DataIO.DataOutputByteArray>();
 
     protected <A> DataIO.DataOutputByteArray serialize(A value, Serializer<A> serializer){
+        if(value==null)
+            return null;
         try {
             DataIO.DataOutputByteArray out = newDataOut2();
 
@@ -178,7 +130,7 @@ public abstract class Store implements Engine{
                     if(newLen>=out.pos) newLen= 0; //larger after compression
 
                     if(newLen==0){
-                        recycledDataOuts.offer(tmp);
+                        recycledDataOut.lazySet(tmp);
                         //compression had no effect, so just write zero at beginning and move array by 1
                         out.ensureAvail(out.pos+1);
                         System.arraycopy(out.buf,0,out.buf,1,out.pos);
@@ -190,7 +142,7 @@ public abstract class Store implements Engine{
                         out.pos=0;
                         DataIO.packInt(out,decompSize);
                         out.write(tmp.buf,0,newLen);
-                        recycledDataOuts.offer(tmp);
+                        recycledDataOut.lazySet(tmp);
                     }
 
                 }
@@ -218,7 +170,7 @@ public abstract class Store implements Engine{
 
                 if(CC.PARANOID)try{
                     //check that array is the same after deserialization
-                    DataInput inp = new DataIO.DataInputByteArray(Arrays.copyOf(out.buf,out.pos));
+                    DataInput inp = new DataIO.DataInputByteArray(Arrays.copyOf(out.buf, out.pos));
                     byte[] decompress = deserialize(Serializer.BYTE_ARRAY_NOSIZE,out.pos,inp);
 
                     DataIO.DataOutputByteArray expected = newDataOut2();
@@ -242,87 +194,160 @@ public abstract class Store implements Engine{
     }
 
     protected DataIO.DataOutputByteArray newDataOut2() {
-        DataIO.DataOutputByteArray tmp = recycledDataOuts.poll();
+        DataIO.DataOutputByteArray tmp = recycledDataOut.getAndSet(null);
         if(tmp==null) tmp = new DataIO.DataOutputByteArray();
         else tmp.pos=0;
         return tmp;
     }
 
 
-    protected <A> A deserialize(Serializer<A> serializer, int size, DataInput input) throws IOException {
-        DataIO.DataInputInternal di = (DataIO.DataInputInternal) input;
-        if(size>0){
-            if(checksum){
-                //last two digits is checksum
-                size -= 4;
+    protected <A> A deserialize(Serializer<A> serializer, int size, DataInput input){
+        try {
+            //TODO if serializer is not trusted, use boundary check
+            //TODO return future and finish deserialization outside lock, does even bring any performance bonus?
 
-                //read data into tmp buffer
-                DataIO.DataOutputByteArray tmp = newDataOut2();
-                tmp.ensureAvail(size);
-                int oldPos = di.getPos();
-                di.readFully(tmp.buf, 0, size);
-                final int checkExpected = di.readInt();
-                di.setPos(oldPos);
-                //calculate checksums
-                CRC32 crc = new CRC32();
-                crc.update(tmp.buf, 0, size);
-                recycledDataOuts.offer(tmp);
-                int check = (int) crc.getValue();
-                if(check!=checkExpected)
-                    throw new IOException("Checksum does not match, data broken");
-            }
+            DataIO.DataInputInternal di = (DataIO.DataInputInternal) input;
+            if (size > 0) {
+                if (checksum) {
+                    //last two digits is checksum
+                    size -= 4;
 
-            if(encrypt){
-                DataIO.DataOutputByteArray tmp = newDataOut2();
-                size-=1;
-                tmp.ensureAvail(size);
-                di.readFully(tmp.buf, 0, size);
-                encryptionXTEA.decrypt(tmp.buf, 0, size);
-                int cut = di.readUnsignedByte(); //length dif from 16bytes
-                di = new DataIO.DataInputByteArray(tmp.buf);
-                size -= cut;
-            }
-
-            if(compress) {
-                //final int origPos = di.pos;
-                int decompSize = DataIO.unpackInt(di);
-                if(decompSize==0){
-                    size-=1;
-                    //rest of `di` is uncompressed data
-                }else{
-                    DataIO.DataOutputByteArray out = newDataOut2();
-                    out.ensureAvail(decompSize);
-                    CompressLZF lzf = LZF.get();
-                    //TODO copy to heap if Volume is not mapped
-                    //argument is not needed; unpackedSize= size-(di.pos-origPos),
-                    byte[] b = di.internalByteArray();
-                    if(b!=null) {
-                        lzf.expand(b, di.getPos(), out.buf, 0, decompSize);
-                    }else{
-                        ByteBuffer bb = di.internalByteBuffer();
-                        if(bb!=null) {
-                            lzf.expand(bb, di.getPos(), out.buf, 0, decompSize);
-                        }else{
-                            lzf.expand(di,out.buf, 0, decompSize);
-                        }
-                    }
-                    di = new DataIO.DataInputByteArray(out.buf);
-                    size = decompSize;
+                    //read data into tmp buffer
+                    DataIO.DataOutputByteArray tmp = newDataOut2();
+                    tmp.ensureAvail(size);
+                    int oldPos = di.getPos();
+                    di.readFully(tmp.buf, 0, size);
+                    final int checkExpected = di.readInt();
+                    di.setPos(oldPos);
+                    //calculate checksums
+                    CRC32 crc = new CRC32();
+                    crc.update(tmp.buf, 0, size);
+                    recycledDataOut.lazySet(tmp);
+                    int check = (int) crc.getValue();
+                    if (check != checkExpected)
+                        throw new IOException("Checksum does not match, data broken");
                 }
+
+                if (encrypt) {
+                    DataIO.DataOutputByteArray tmp = newDataOut2();
+                    size -= 1;
+                    tmp.ensureAvail(size);
+                    di.readFully(tmp.buf, 0, size);
+                    encryptionXTEA.decrypt(tmp.buf, 0, size);
+                    int cut = di.readUnsignedByte(); //length dif from 16bytes
+                    di = new DataIO.DataInputByteArray(tmp.buf);
+                    size -= cut;
+                }
+
+                if (compress) {
+                    //final int origPos = di.pos;
+                    int decompSize = DataIO.unpackInt(di);
+                    if (decompSize == 0) {
+                        size -= 1;
+                        //rest of `di` is uncompressed data
+                    } else {
+                        DataIO.DataOutputByteArray out = newDataOut2();
+                        out.ensureAvail(decompSize);
+                        CompressLZF lzf = LZF.get();
+                        //TODO copy to heap if Volume is not mapped
+                        //argument is not needed; unpackedSize= size-(di.pos-origPos),
+                        byte[] b = di.internalByteArray();
+                        if (b != null) {
+                            lzf.expand(b, di.getPos(), out.buf, 0, decompSize);
+                        } else {
+                            ByteBuffer bb = di.internalByteBuffer();
+                            if (bb != null) {
+                                lzf.expand(bb, di.getPos(), out.buf, 0, decompSize);
+                            } else {
+                                lzf.expand(di, out.buf, 0, decompSize);
+                            }
+                        }
+                        di = new DataIO.DataInputByteArray(out.buf);
+                        size = decompSize;
+                    }
+                }
+
             }
 
+            int start = di.getPos();
+
+            A ret = serializer.deserialize(di, size);
+            if (size + start > di.getPos())
+                throw new AssertionError("data were not fully read, check your serializer ");
+            if (size + start < di.getPos())
+                throw new AssertionError("data were read beyond record size, check your serializer");
+            return ret;
+        }catch(IOException e){
+            throw new IOError(e);
         }
-
-        int start = di.getPos();
-
-        A ret = serializer.deserialize(di,size);
-        if(size+start>di.getPos())
-            throw new AssertionError("data were not fully read, check your serializer ");
-        if(size+start<di.getPos())
-            throw new AssertionError("data were read beyond record size, check your serializer");
-        return ret;
     }
 
+    protected abstract  void update2(long recid, DataIO.DataOutputByteArray out);
+
+    @Override
+    public <A> boolean compareAndSwap(long recid, A expectedOldValue, A newValue, Serializer<A> serializer) {
+        if(serializer==null)
+            throw new NullPointerException();
+
+        //TODO binary CAS & serialize outside lock
+        final Lock lock = locks[lockPos(recid)].writeLock();
+        lock.lock();
+        try{
+            A oldVal = get2(recid,serializer);
+            if(oldVal==expectedOldValue || (oldVal!=null && serializer.equals(oldVal,expectedOldValue))){
+                update2(recid,serialize(newValue,serializer));
+                return true;
+            }
+            return false;
+        }finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public <A> void delete(long recid, Serializer<A> serializer) {
+        if(serializer==null)
+            throw new NullPointerException();
+
+        final Lock lock = locks[lockPos(recid)].writeLock();
+        lock.lock();
+        try{
+            delete2(recid, serializer);
+        }finally {
+            lock.unlock();
+        }
+    }
+
+    protected abstract <A> void delete2(long recid, Serializer<A> serializer);
+
+    private static final int LOCK_MASK = CC.CONCURRENCY-1;
+
+    protected static final int lockPos(final long recid) {
+        return DataIO.longHash(recid) & LOCK_MASK;
+    }
+
+    protected void assertReadLocked(long recid) {
+//        if(locks[lockPos(recid)].writeLock().getHoldCount()!=0){
+//            throw new AssertionError();
+//        }
+    }
+
+    protected void assertWriteLocked(long recid) {
+        if(!locks[lockPos(recid)].isWriteLockedByCurrentThread()){
+            throw new AssertionError();
+        }
+    }
+
+
+    @Override
+    public boolean isClosed() {
+        return closed;
+    }
+
+    @Override
+    public boolean isReadOnly() {
+        return readonly;
+    }
 
     /** traverses {@link EngineWrapper}s and returns underlying {@link Store}*/
     public static Store forDB(DB db){
@@ -333,33 +358,11 @@ public abstract class Store implements Engine{
     public static Store forEngine(Engine e){
         if(e instanceof EngineWrapper)
             return forEngine(((EngineWrapper) e).getWrappedEngine());
-        if(e instanceof TxEngine.Tx)
-            return forEngine(((TxEngine.Tx) e).getWrappedEngine());
         return (Store) e;
     }
 
-    protected int expectedMasks(){
-        return (encrypt?ENCRYPT_FLAG_MASK:0) |
-                (checksum?CHECKSUM_FLAG_MASK:0) |
-                (compress?COMPRESS_FLAG_MASK:0);
-    }
+    public abstract long getCurrSize();
 
-    private static final int LOCK_MASK = CC.CONCURRENCY-1;
-
-    protected static int lockPos(final long key) {
-        return DataIO.longHash(key) & LOCK_MASK;
-    }
-
-    @Override
-    public boolean canSnapshot() {
-        return false;
-    }
-
-    @Override
-    public Engine snapshot() throws UnsupportedOperationException {
-        throw new UnsupportedOperationException("Snapshots are not supported");
-    }
-
-
+    public abstract long getFreeSize();
 
 }

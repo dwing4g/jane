@@ -60,6 +60,8 @@ public final class DataIO {
         do {
             b = is.readUnsignedByte();
             result |= (b & 0x7F) << offset;
+            if(CC.PARANOID && offset>32)
+                throw new AssertionError();
             offset += 7;
         }while((b & 0x80) != 0);
         return result;
@@ -84,22 +86,14 @@ public final class DataIO {
             //$DELAY$
             b = in.readUnsignedByte();
             result |= (b & 0x7F) << offset;
+            if(CC.PARANOID && offset>64)
+                throw new AssertionError();
             offset += 7;
         }while((b & 0x80) != 0);
         //$DELAY$
         return result;
     }
 
-    public static int nextPowTwo(final int a)
-    {
-        //$DELAY$
-        int b = 1;
-        while (b < a)
-        {
-            b = b << 1;
-        }
-        return b;
-    }
 
     /**
      * Pack long into output stream.
@@ -158,6 +152,117 @@ public final class DataIO {
         //$DELAY$
         h ^= (h >>> 20) ^ (h >>> 12);
         return h ^ (h >>> 7) ^ (h >>> 4);
+    }
+
+    public static final long PACK_LONG_BIDI_MASK = 0xFFFFFFFFFFFFFFL;
+
+
+    public static int packLongBidi(DataOutput out, long value) throws IOException {
+        out.write((((int) value & 0x7F))| 0x80);
+        value >>>= 7;
+        int counter = 2;
+
+        //$DELAY$
+        while ((value & ~0x7FL) != 0) {
+            out.write((((int) value & 0x7F)));
+            value >>>= 7;
+            //$DELAY$
+            counter++;
+        }
+        //$DELAY$
+        out.write((byte) value| 0x80);
+        return counter;
+    }
+
+    public static int packLongBidi(byte[] buf, int pos, long value) {
+        buf[pos++] = (byte) ((((int) value & 0x7F))| 0x80);
+        value >>>= 7;
+        int counter = 2;
+
+        //$DELAY$
+        while ((value & ~0x7FL) != 0) {
+            buf[pos++] = (byte) (((int) value & 0x7F));
+            value >>>= 7;
+            //$DELAY$
+            counter++;
+        }
+        //$DELAY$
+        buf[pos++] = (byte) ((byte) value| 0x80);
+        return counter;
+    }
+
+
+    public static long unpackLongBidi(byte[] bb, int pos){
+        //$DELAY$
+        long b = bb[pos++];
+        if(CC.PARANOID && (b&0x80)==0)
+            throw new AssertionError();
+        long result = (b & 0x7F) ;
+        int offset = 7;
+        do {
+            //$DELAY$
+            b = bb[pos++];
+            result |= (b & 0x7F) << offset;
+            if(CC.PARANOID && offset>64)
+                throw new AssertionError();
+            offset += 7;
+        }while((b & 0x80) == 0);
+        //$DELAY$
+        return (((long)(offset/7))<<56) | result;
+    }
+
+
+    public static long unpackLongBidiReverse(byte[] bb, int pos){
+        //$DELAY$
+        long b = bb[--pos];
+        if(CC.PARANOID && (b&0x80)==0)
+            throw new AssertionError();
+        long result = (b & 0x7F) ;
+        int counter = 1;
+        do {
+            //$DELAY$
+            b = bb[--pos];
+            result = (b & 0x7F) | (result<<7);
+            if(CC.PARANOID && counter>8)
+                throw new AssertionError();
+            counter++;
+        }while((b & 0x80) == 0);
+        //$DELAY$
+        return (((long)counter)<<56) | result;
+    }
+
+    public static long getLong(byte[] buf, int pos) {
+        final int end = pos + 8;
+        long ret = 0;
+        for (; pos < end; pos++) {
+            ret = (ret << 8) | (buf[pos] & 0xFF);
+        }
+        return ret;
+    }
+
+    public static void putLong(byte[] buf, int pos,long v) {
+        buf[pos++] = (byte) (0xff & (v >> 56));
+        buf[pos++] = (byte) (0xff & (v >> 48));
+        buf[pos++] = (byte) (0xff & (v >> 40));
+        buf[pos++] = (byte) (0xff & (v >> 32));
+        buf[pos++] = (byte) (0xff & (v >> 24));
+        buf[pos++] = (byte) (0xff & (v >> 16));
+        buf[pos++] = (byte) (0xff & (v >> 8));
+        buf[pos] = (byte) (0xff & (v));
+    }
+
+
+
+
+    public static int nextPowTwo(final int a)
+    {
+        //$DELAY$
+        int b = 1;
+        while (b < a)
+        {
+            b = b << 1;
+        }
+        return b;
     }
 
 
@@ -507,6 +612,7 @@ public final class DataIO {
 
         @Override
         public String readUTF() throws IOException {
+            //TODO verify this method accross multiple serializers
             final int size = unpackInt(this);
             //$DELAY$
             return SerializerBase.deserializeString(this, size);
@@ -574,16 +680,21 @@ public final class DataIO {
             //$DELAY$
             n+=pos;
             if ((n&sizeMask)!=0) {
-                //$DELAY$
-                int newSize = buf.length;
-                while(newSize<n){
-                    //$DELAY$
-                    newSize<<=2;
-                    sizeMask<<=2;
-                }
-                //$DELAY$
-                buf = Arrays.copyOf(buf, newSize);
+                grow(n);
+
             }
+        }
+
+        private void grow(long n) {
+            //$DELAY$
+            int newSize = buf.length;
+            while(newSize<n){
+                //$DELAY$
+                newSize<<=2;
+                sizeMask<<=2;
+            }
+            //$DELAY$
+            buf = Arrays.copyOf(buf, newSize);
         }
 
 
@@ -708,5 +819,64 @@ public final class DataIO {
         }
 
     }
+
+
+    public static long parity1Set(long i) {
+        if(CC.PARANOID && (i&1)!=0)
+            throw new DBException.PointerChecksumBroken();
+        return i | ((Long.bitCount(i)+1)%2);
+    }
+
+    public static long parity1Get(long i) {
+        if(Long.bitCount(i)%2!=1){
+            throw new DBException.PointerChecksumBroken();
+        }
+        return i&0xFFFFFFFFFFFFFFFEL;
+    }
+
+    public static long parity3Set(long i) {
+        if(CC.PARANOID && (i&0x7)!=0)
+            throw new DBException.PointerChecksumBroken(); //TODO stronger parity
+        return i | ((Long.bitCount(i)+1)%8);
+    }
+
+    public static long parity3Get(long i) {
+        long ret = i&0xFFFFFFFFFFFFFFF8L;
+        if((Long.bitCount(ret)+1)%8!=(i&0x7)){
+            throw new DBException.PointerChecksumBroken();
+        }
+        return ret;
+    }
+
+    public static long parity4Set(long i) {
+        if(CC.PARANOID && (i&0xF)!=0)
+            throw new DBException.PointerChecksumBroken(); //TODO stronger parity
+        return i | ((Long.bitCount(i)+1)%16);
+    }
+
+    public static long parity4Get(long i) {
+        long ret = i&0xFFFFFFFFFFFFFFF0L;
+        if((Long.bitCount(ret)+1)%16!=(i&0xF)){
+            throw new DBException.PointerChecksumBroken();
+        }
+        return ret;
+    }
+
+
+    public static long parity16Set(long i) {
+        if(CC.PARANOID && (i&0xFFFF)!=0)
+            throw new DBException.PointerChecksumBroken(); //TODO stronger parity
+        return i | ((Long.bitCount(i)+1)%2);
+    }
+
+    public static long parity16Get(long i) {
+        if(Long.bitCount(i)%2!=1){
+            throw new DBException.PointerChecksumBroken();
+        }
+        return i&0xFFFFFFFFFFFF0000L;
+    }
+
+
+
 
 }

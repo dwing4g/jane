@@ -338,223 +338,216 @@ public class TxEngine extends EngineWrapper {
         }
 
 
-    @Override
-    public <A> long put(A value, Serializer<A> serializer) {
-        if(!fullTx)
-            throw new UnsupportedOperationException("read-only");
-        commitLock.writeLock().lock();
-        try{
-            Long recid = preallocRecidTake();
-            mod.put(recid, new Fun.Pair(value,serializer));
-            return recid;
-        }finally {
-            commitLock.writeLock().unlock();
-        }
-    }
-
-    @Override
-    public <A> A get(long recid, Serializer<A> serializer) {
-        commitLock.readLock().lock();
-        try{
-            if(closed) throw new IllegalAccessError("closed");
-            Lock lock = locks[Store.lockPos(recid)].readLock();
-            lock.lock();
+        @Override
+        public <A> long put(A value, Serializer<A> serializer) {
+            if(!fullTx)
+                throw new UnsupportedOperationException("read-only");
+            commitLock.writeLock().lock();
             try{
-                return getNoLock(recid, serializer);
+                Long recid = preallocRecidTake();
+                mod.put(recid, new Fun.Pair(value,serializer));
+                return recid;
             }finally {
-                lock.unlock();
-            }
-        }finally {
-            commitLock.readLock().unlock();
-        }
-    }
-
-    private <A> A getNoLock(long recid, Serializer<A> serializer) {
-        if(fullTx){
-            Fun.Pair tu = mod.get(recid);
-            if(tu!=null){
-                if(tu.a==TOMBSTONE)
-                    return null;
-                return (A) tu.a;
+                commitLock.writeLock().unlock();
             }
         }
 
-        Object oldVal = old.get(recid);
-        if(oldVal!=null){
-            if(oldVal==TOMBSTONE)
-                return null;
-            return (A) oldVal;
-        }
-        return TxEngine.this.get(recid, serializer);
-    }
-
-    @Override
-    public <A> void update(long recid, A value, Serializer<A> serializer) {
-        if(!fullTx)
-            throw new UnsupportedOperationException("read-only");
-        commitLock.readLock().lock();
-        try{
-            mod.put(recid, new Fun.Pair(value,serializer));
-        }finally {
-            commitLock.readLock().unlock();
-        }
-    }
-
-    @Override
-    public <A> boolean compareAndSwap(long recid, A expectedOldValue, A newValue, Serializer<A> serializer) {
-        if(!fullTx)
-            throw new UnsupportedOperationException("read-only");
-
-        commitLock.readLock().lock();
-        try{
-
-            Lock lock = locks[Store.lockPos(recid)].writeLock();
-            lock.lock();
+        @Override
+        public <A> A get(long recid, Serializer<A> serializer) {
+            commitLock.readLock().lock();
             try{
-                A oldVal = getNoLock(recid, serializer);
-                boolean ret = oldVal!=null && oldVal.equals(expectedOldValue);
-                if(ret){
-                    mod.put(recid,new Fun.Pair(newValue,serializer));
+                if(closed) throw new IllegalAccessError("closed");
+                Lock lock = locks[Store.lockPos(recid)].readLock();
+                lock.lock();
+                try{
+                    return getNoLock(recid, serializer);
+                }finally {
+                    lock.unlock();
                 }
-                return ret;
             }finally {
-                lock.unlock();
+                commitLock.readLock().unlock();
             }
-        }finally {
-            commitLock.readLock().unlock();
-        }
-    }
-
-    @Override
-    public <A> void delete(long recid, Serializer<A> serializer) {
-        if(!fullTx)
-            throw new UnsupportedOperationException("read-only");
-
-        commitLock.readLock().lock();
-        try{
-            mod.put(recid,new Fun.Pair(TOMBSTONE,serializer));
-        }finally {
-            commitLock.readLock().unlock();
         }
 
-    }
+        private <A> A getNoLock(long recid, Serializer<A> serializer) {
+            if(fullTx){
+                Fun.Pair tu = mod.get(recid);
+                if(tu!=null){
+                    if(tu.a==TOMBSTONE)
+                        return null;
+                    return (A) tu.a;
+                }
+            }
 
-    @Override
-    public void close() {
-        closed = true;
-        old.clear();
-        ref.clear();
-    }
+            Object oldVal = old.get(recid);
+            if(oldVal!=null){
+                if(oldVal==TOMBSTONE)
+                    return null;
+                return (A) oldVal;
+            }
+            return TxEngine.this.get(recid, serializer);
+        }
 
-    @Override
-    public boolean isClosed() {
-        return closed;
-    }
+        @Override
+        public <A> void update(long recid, A value, Serializer<A> serializer) {
+            if(!fullTx)
+                throw new UnsupportedOperationException("read-only");
+            commitLock.readLock().lock();
+            try{
+                mod.put(recid, new Fun.Pair(value,serializer));
+            }finally {
+                commitLock.readLock().unlock();
+            }
+        }
 
-    @Override
-    public void commit() {
-        if(!fullTx)
-            throw new UnsupportedOperationException("read-only");
+        @Override
+        public <A> boolean compareAndSwap(long recid, A expectedOldValue, A newValue, Serializer<A> serializer) {
+            if(!fullTx)
+                throw new UnsupportedOperationException("read-only");
 
-        commitLock.writeLock().lock();
-        try{
-            if(closed) return;
-            if(uncommitedData)
-                throw new IllegalAccessError("uncommitted data");
-            txs.remove(ref);
-            cleanTxQueue();
+            commitLock.readLock().lock();
+            try{
 
-            if(pojo.hasUnsavedChanges())
-                pojo.save(this);
+                Lock lock = locks[Store.lockPos(recid)].writeLock();
+                lock.lock();
+                try{
+                    A oldVal = getNoLock(recid, serializer);
+                    boolean ret = oldVal!=null && oldVal.equals(expectedOldValue);
+                    if(ret){
+                        mod.put(recid,new Fun.Pair(newValue,serializer));
+                    }
+                    return ret;
+                }finally {
+                    lock.unlock();
+                }
+            }finally {
+                commitLock.readLock().unlock();
+            }
+        }
 
-            //check no other TX has modified our data
-            LongMap.LongMapIterator oldIter = old.longMapIterator();
-            while(oldIter.moveToNext()){
-                long recid = oldIter.key();
-                for(Reference<Tx> ref2:txs){
-                    Tx tx = ref2.get();
-                    if(tx==this||tx==null) continue;
-                    if(tx.mod.containsKey(recid)){
+        @Override
+        public <A> void delete(long recid, Serializer<A> serializer) {
+            if(!fullTx)
+                throw new UnsupportedOperationException("read-only");
+
+            commitLock.readLock().lock();
+            try{
+                mod.put(recid,new Fun.Pair(TOMBSTONE,serializer));
+            }finally {
+                commitLock.readLock().unlock();
+            }
+
+        }
+
+        @Override
+        public void close() {
+            closed = true;
+            old.clear();
+            ref.clear();
+        }
+
+        @Override
+        public boolean isClosed() {
+            return closed;
+        }
+
+        @Override
+        public void commit() {
+            if(!fullTx)
+                throw new UnsupportedOperationException("read-only");
+
+            commitLock.writeLock().lock();
+            try{
+                if(closed) return;
+                if(uncommitedData)
+                    throw new IllegalAccessError("uncommitted data");
+                txs.remove(ref);
+                cleanTxQueue();
+
+                //check no other TX has modified our data
+                LongMap.LongMapIterator oldIter = old.longMapIterator();
+                while(oldIter.moveToNext()){
+                    long recid = oldIter.key();
+                    for(Reference<Tx> ref2:txs){
+                        Tx tx = ref2.get();
+                        if(tx==this||tx==null) continue;
+                        if(tx.mod.containsKey(recid)){
+                            close();
+                            throw new TxRollbackException();
+                        }
+                    }
+                }
+
+                LongMap.LongMapIterator<Fun.Pair> iter = mod.longMapIterator();
+                while(iter.moveToNext()){
+                    long recid = iter.key();
+                    if(old.containsKey(recid)){
                         close();
                         throw new TxRollbackException();
                     }
                 }
-            }
 
-            LongMap.LongMapIterator<Fun.Pair> iter = mod.longMapIterator();
-            while(iter.moveToNext()){
-                long recid = iter.key();
-                if(old.containsKey(recid)){
-                    close();
-                    throw new TxRollbackException();
+                iter = mod.longMapIterator();
+                while(iter.moveToNext()){
+                    long recid = iter.key();
+
+                    Fun.Pair val = iter.value();
+                    Serializer ser = (Serializer) val.b;
+                    Object old = superGet(recid,ser);
+                    if(old==null)
+                        old = TOMBSTONE;
+                    for(Reference<Tx> txr:txs){
+                        Tx tx = txr.get();
+                        if(tx==null||tx==this) continue;
+                        tx.old.putIfAbsent(recid,old);
+
+                    }
+
+                    if(val.a==TOMBSTONE){
+                        superDelete(recid, ser);
+                    }else {
+                        superUpdate(recid, val.a, ser);
+                    }
                 }
+                superCommit();
+
+                close();
+            }finally {
+                commitLock.writeLock().unlock();
             }
-
-            iter = mod.longMapIterator();
-            while(iter.moveToNext()){
-                long recid = iter.key();
-
-                Fun.Pair val = iter.value();
-                Serializer ser = (Serializer) val.b;
-                Object old = superGet(recid,ser);
-                if(old==null)
-                    old = TOMBSTONE;
-                for(Reference<Tx> txr:txs){
-                    Tx tx = txr.get();
-                    if(tx==null||tx==this) continue;
-                    tx.old.putIfAbsent(recid,old);
-
-                }
-
-                if(val.a==TOMBSTONE){
-                    superDelete(recid, ser);
-                }else {
-                    superUpdate(recid, val.a, ser);
-                }
-            }
-
-            //there are no conflicts, so update the POJO in parent
-            //TODO sort of hack, is it thread safe?
-            getWrappedEngine().getSerializerPojo().registered = pojo.registered;
-            superCommit();
-
-            close();
-        }finally {
-            commitLock.writeLock().unlock();
         }
-    }
 
-    @Override
-    public void rollback() throws UnsupportedOperationException {
-        if(!fullTx)
-            throw new UnsupportedOperationException("read-only");
+        @Override
+        public void rollback() throws UnsupportedOperationException {
+            if(!fullTx)
+                throw new UnsupportedOperationException("read-only");
 
-        commitLock.writeLock().lock();
-        try{
-            if(closed) return;
-            if(uncommitedData)
-                throw new IllegalAccessError("uncommitted data");
+            commitLock.writeLock().lock();
+            try{
+                if(closed) return;
+                if(uncommitedData)
+                    throw new IllegalAccessError("uncommitted data");
 
-            txs.remove(ref);
-            cleanTxQueue();
+                txs.remove(ref);
+                cleanTxQueue();
 
-            TxEngine.this.superCommit();
+                TxEngine.this.superCommit();
 
-            close();
-        }finally {
-            commitLock.writeLock().unlock();
+                close();
+            }finally {
+                commitLock.writeLock().unlock();
+            }
         }
-    }
 
-    @Override
-    public boolean isReadOnly() {
-        return !fullTx;
-    }
+        @Override
+        public boolean isReadOnly() {
+            return !fullTx;
+        }
 
-    @Override
-    public boolean canRollback() {
-        return fullTx;
-    }
+        @Override
+        public boolean canRollback() {
+            return fullTx;
+        }
 
         @Override
         public boolean canSnapshot() {
@@ -568,25 +561,17 @@ public class TxEngine extends EngineWrapper {
         }
 
         @Override
-    public void clearCache() {
-    }
+        public void clearCache() {
+        }
 
-    @Override
-    public void compact() {
-    }
-
-
-    SerializerPojo pojo = new SerializerPojo((CopyOnWriteArrayList<SerializerPojo.ClassInfo>) TxEngine.this.getSerializerPojo().registered.clone());
-
-    @Override
-    public SerializerPojo getSerializerPojo() {
-        return pojo;
-    }
+        @Override
+        public void compact() {
+        }
 
 
         public Engine getWrappedEngine() {
-        return TxEngine.this.getWrappedEngine();
-    }
+            return TxEngine.this.getWrappedEngine();
+        }
 
     }
 

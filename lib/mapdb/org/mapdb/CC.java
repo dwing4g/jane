@@ -39,7 +39,7 @@ public interface CC {
      * For example HashMap may check if keys implements hash function correctly.
      * This may slow down MapDB thousands times
      */
-    boolean PARANOID = false;
+    boolean PARANOID = true;
 
     /**
      * Compile-in detailed log messages from store.
@@ -96,9 +96,15 @@ public interface CC {
     boolean FAIR_LOCKS = false;
 
 
-    int VOLUME_SLICE_SHIFT = 20; // 1 MB
+    int VOLUME_PAGE_SHIFT = 20; // 1 MB
 
-    @Deprecated
-    int VOLUME_CHUNK_SHIFT = VOLUME_SLICE_SHIFT;
+    boolean STORE_INDEX_CRC = false; //TODO move to feature bit field
+
+    /**
+     * Will print stack trace of all operations which are write any data at given offset
+     * Used for debugging.
+     */
+    long VOLUME_PRINT_STACK_AT_OFFSET = 0;
+
 }
 
