@@ -29,16 +29,16 @@ function Network.new()
 	return setmetatable({}, network_mt)
 end
 
-function Network:onOpen()
+function Network:onOpen() -- connect successed
 end
 
-function Network:onClose(code, err)
+function Network:onClose(code, err) -- code: < 0 for error
 end
 
-function Network:onRecv(b)
-	if b then
-		local f = b.onProcess
-		if f then f(b) end
+function Network:onRecv(p) -- p: a protocol table
+	if p then
+		local f = p.onProcess
+		if f then f(p) end
 	end
 end
 
@@ -73,7 +73,7 @@ function Network:connect(addr, port)
 	self.ctime = clock()
 	tcp:settimeout(0)
 	local res, err = tcp:connect(addr, port)
-	log("connect:", res, err)
+	log("connect:", res, err) -- nil, "timeout" for async connecting
 	if not res and err ~= "timeout" then
 		self:close(-2, err)
 		return false
@@ -88,6 +88,10 @@ function Network:send(b)
 	buf:marshalUInt(b.__type):marshalUInt(bbuf:limit()):append(bbuf):flush()
 	wbuf:append(self:onEncode(buf))
 	return true
+end
+
+function Network:isSending()
+	return not self.wbuf:isEmpty()
 end
 
 local function checkOpen(self)
@@ -117,7 +121,7 @@ function Network:doTick(time)
 	if not tcp then return end
 	local tcpsw = (not wbuf or wbuf:limit() > 0) and tcps or nil
 	local tr, tw, err = socket.select(tcps, tcpsw, time or 0)
-	log("select:", tr and #tr, tw and #tw, err)
+	-- log("select:", tr and #tr, tw and #tw, err)
 	if tr and #tr > 0 then
 		checkOpen(self)
 		local rbuf = self.rbuf
@@ -144,11 +148,12 @@ function Network:doTick(time)
 		checkOpen(self)
 		local wbuf = self.wbuf:flush()
 		while wbuf:remain() > 0 do
-			local pos, err, ppos = tcp:send(wbuf, wbuf:pos() + 1)
-			log("send:", pos, err, ppos)
-			if pos then wbuf:pos(pos - 1)
+			local pos = wbuf:pos()
+			local n, err, pn = tcp:send(wbuf._buf, pos + 1)
+			log("send:", n, err, pn)
+			if n then wbuf:pos(pos + n)
 			else
-				if ppos then wbuf:pos(ppos - 1) end
+				if pn then wbuf:pos(pos + pn) end
 				if err ~= "timeout" then self:close(-6, err) end
 				break
 			end

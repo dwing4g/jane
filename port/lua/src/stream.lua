@@ -155,6 +155,12 @@ function Stream:flush()
 	return self
 end
 
+function Stream:isEmpty()
+	if self._pos < self._lim then return false end
+	local t = self.buf
+	return not t or #t == 0
+end
+
 -- 转换成字符串返回,用于显示及日志输出
 local function __tostring(self)
 	local buf = self._buf
@@ -289,7 +295,7 @@ function Stream:marshal(v, tag, subtype)
 			end
 		end
 		if ft then
-			marshalStr(self, writef(v))
+			append(self, writef(v))
 		else
 			self:marshalInt(v)
 		end
