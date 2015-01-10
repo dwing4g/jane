@@ -29,25 +29,17 @@ function Network.new()
 	return setmetatable({}, network_mt)
 end
 
-function Network:onOpen()
+function Network:onOpen() -- connect successed
 end
 
-function Network:onClose(code, err)
+function Network:onClose(code, err) -- code: < 0 for error
 end
 
-function Network:onRecv(b)
-	if b then
-		local f = b.onProcess
-		if f then f(b) end
+function Network:onRecv(bean)
+	if bean then
+		local f = bean.onProcess
+		if f then f(bean) end
 	end
-end
-
-function Network:onEncode(s)
-	return s
-end
-
-function Network:onDecode(s)
-	return s
 end
 
 function Network:close(code, err)
@@ -73,21 +65,27 @@ function Network:connect(addr, port)
 	self.ctime = clock()
 	tcp:settimeout(0)
 	local res, err = tcp:connect(addr, port)
-	log("connect:", res, err)
+	log("connect:", res, err) -- nil, "timeout" for async connecting
 	if not res and err ~= "timeout" then
-		self:close(-2, err)
+		self:close(-2, err) -- sync connect error, such as dns failed
 		return false
 	end
 	return true
 end
 
-function Network:send(b)
+function Network:send(bean)
 	local wbuf = self.wbuf
 	if not wbuf then return false end
-	local buf, bbuf = Stream(), Stream():marshal(b):flush()
-	buf:marshalUInt(b.__type):marshalUInt(bbuf:limit()):append(bbuf):flush()
-	wbuf:append(self:onEncode(buf))
+	local buf, bbuf = Stream(), Stream():marshal(bean):flush()
+	buf:marshalUInt(bean.__type):marshalUInt(bbuf:limit()):append(bbuf):flush()
+	local onEncode = self.onEncode
+	if onEncode then buf = onEncode(self, buf) end
+	wbuf:append(buf)
 	return true
+end
+
+function Network:isSending()
+	return self.wbuf and not self.wbuf:isEmpty()
 end
 
 local function checkOpen(self)
@@ -107,57 +105,69 @@ local function decode(self, s)
 	local epos = s:pos() + size
 	local cls = bean[type]
 	log("decode.type:", type, epos)
-	self:onRecv(s:unmarshal(cls))
+	local bean = s:unmarshal(cls)
 	s:pos(epos)
-	return true
+	return bean
 end
 
 function Network:doTick(time)
 	local tcp, tcps, wbuf = self.tcp, self.tcps, self.wbuf
 	if not tcp then return end
-	local tcpsw = (not wbuf or wbuf:limit() > 0) and tcps or nil
+	local tcpsw = (not wbuf or not wbuf:isEmpty()) and tcps or nil
 	local tr, tw, err = socket.select(tcps, tcpsw, time or 0)
-	log("select:", tr and #tr, tw and #tw, err)
+	-- log("select:", tr and #tr, tw and #tw, err)
 	if tr and #tr > 0 then
 		checkOpen(self)
 		local rbuf = self.rbuf
 		while true do
 			local buf, err, pbuf = tcp:receive(8192)
 			log("receive:", buf and #buf, err, pbuf and #pbuf)
-			rbuf:append(self:onDecode(buf or pbuf))
+			local onDecode = self.onDecode
+			rbuf:append(onDecode and onDecode(self, buf or pbuf) or buf or pbuf)
 			if not buf then
 				rbuf:flush()
 				local pos
-				repeat
+				while true do
 					pos = rbuf:pos()
-					local s, r = pcall(decode, self, rbuf)
-				until not s or not r
-				self.rbuf = Stream(rbuf:sub(pos))
-				log("recv_left:", pos, self.rbuf:limit())
-				if err ~= "timeout" then self:close(-4, err)
-				elseif #pbuf == 0 then self:close(-5, err) end
+					local s, bean = pcall(decode, self, rbuf)
+					if not s or not bean then break end
+					local s, err = pcall(self.onRecv, self, bean)
+					if not s then log("ERROR:", err) end
+				end
+				rbuf = Stream(rbuf:sub(pos))
+				self.rbuf = rbuf
+				log("recv_left:", pos, rbuf:limit())
+				if err ~= "timeout" then self:close(-4, err) -- "closed": remote close
+				elseif #pbuf == 0 then self:close(-5, "reset") end -- remote reset
 				break
 			end
 		end
+		if not self.tcp then return end
 	end
 	if tw and #tw > 0 then
 		checkOpen(self)
-		local wbuf = self.wbuf:flush()
+		wbuf = self.wbuf:flush()
+		local pos = wbuf:pos()
 		while wbuf:remain() > 0 do
-			local pos, err, ppos = tcp:send(wbuf, wbuf:pos() + 1)
-			log("send:", pos, err, ppos)
-			if pos then wbuf:pos(pos - 1)
+			local n, err, pn = tcp:send(wbuf._buf, pos + 1)
+			log("send:", n, err, pn)
+			if n then
+				pos = pos + n
+				wbuf:pos(pos)
 			else
-				if ppos then wbuf:pos(ppos - 1) end
-				if err ~= "timeout" then self:close(-6, err) end
+				if pn then
+					pos = pos + pn
+					wbuf:pos(pos)
+				end
+				if err ~= "timeout" then self:close(-6, err) return end
 				break
 			end
 		end
-		local pos = wbuf:pos()
 		if pos > 0 then self.wbuf = Stream(wbuf:sub(pos)) end
 	elseif self.ctime then
 		if clock() - self.ctime >= (self.ctimeout or 5) then
-			self:close(-3, "connect failed")
+			self:close(-3, "timeout") -- connect timeout
+			return
 		end
 	end
 	return true
