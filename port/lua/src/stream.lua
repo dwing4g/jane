@@ -10,7 +10,7 @@ local setmetatable = setmetatable
 local string = string
 local byte = string.byte
 local char = string.char
-local strSub = string.sub
+local strsub = string.sub
 local format = string.format
 local concat = table.concat
 local floor = math.floor
@@ -24,9 +24,9 @@ local writef = (ftype == 4 and platform.writef32 or platform.writef64)
 
 --[[ 注意:
 * long类型只支持低52(二进制)位, 高12位必须保证为0, 否则结果未定义
-* 序列化浮点数只能指定固定的32位或64位
+* 序列化浮点数只能指定固定的32位或64位(通过ftype指定)
 * 字符串类型是原生数据格式, 一般建议使用UTF-8, 否则不利于显示及日志输出
-* marshal容器字段时,容器里的key和value类型必须一致, 否则会marshal出错误的结果
+* marshal容器类型字段时,容器里的key和value类型必须一致, 否则会marshal出错误的结果
 * 由于使用lua table表示map容器, 当key是bean类型时, 无法索引, 只能遍历访问
 --]]
 
@@ -41,7 +41,7 @@ function Stream.new(data)
 	return setmetatable({ _buf = data, _pos = 0, _lim = #data }, Stream)
 end
 
--- 清空,重置
+-- 清空/重置
 function Stream:clear()
 	self._buf = ""
 	self._pos = 0
@@ -59,12 +59,19 @@ function Stream:swap(oct)
 	return self
 end
 
--- 当前可反序列化的长度,即pos到limit的长度
+-- 当前可反序列化的长度,即pos到limit的长度,不包括临时追加空间
 function Stream:remain()
 	return self._lim - self._pos
 end
 
--- 获取或设置当前的pos,只用于反序列化,基于0
+-- 判断是否剩余内容为空,包括临时追加空间
+function Stream:isEmpty()
+	if self._pos < self._lim then return false end
+	local t = self.buf
+	return not t or #t == 0
+end
+
+-- 获取或设置当前的pos,只用于反序列化,基于0,负值表示倒数
 function Stream:pos(pos)
 	if not pos then return self._pos end
 	pos = tonumber(pos) or 0
@@ -76,20 +83,20 @@ function Stream:pos(pos)
 	return self
 end
 
--- 获取或设置当前的limit,只用于反序列化,基于0
-function Stream:limit(limit)
-	if not limit then return self._lim end
+-- 获取或设置当前的limit,只用于反序列化,基于0,负值表示倒数
+function Stream:limit(lim)
+	if not lim then return self._lim end
 	local n = #self._buf
-	limit = tonumber(limit) or n
-	if limit < 0 then
-		limit = n + limit
-		if limit < 0 then limit = 0 end
-	elseif limit > n then limit = n end
-	self._lim = limit
+	lim = tonumber(lim) or n
+	if lim < 0 then
+		lim = n + lim
+		if lim < 0 then lim = 0 end
+	elseif lim > n then lim = n end
+	self._lim = lim
 	return self
 end
 
--- 获取Stream中的部分数据
+-- 获取Stream中的部分数据,data可传入字符串或Stream对象,pos默认0(可为负值),size默认到数据结尾的最长值
 function Stream.sub(data, pos, size)
 	if type(data) == "table" then
 		data = data._buf
@@ -102,10 +109,10 @@ function Stream.sub(data, pos, size)
 		pos = n + pos
 		if pos < 0 then pos = 0 end
 	end
-	return strSub(data, pos + 1, pos + (size > 0 and size or 0))
+	return strsub(data, pos + 1, pos + (size > 0 and size or 0))
 end
 
--- 临时追加data(pos,size)到当前的Stream结尾,可连续追加若干次,最后调用flush来真正实现追加合并
+-- 临时追加字符串或Stream对象的data(pos,size)到当前的Stream结尾.可连续追加若干次,最后调用flush来真正实现追加合并
 local function append(self, data, pos, size)
 	if type(data) == "table" then
 		data = data._buf
@@ -135,7 +142,7 @@ function Stream:pop(n)
 	if t then
 		local s = #t
 		local i = s - n + 1
-		if i <= 1 then return self:popAll() end
+		if i <= 1 then  return self:popAll() end
 		for i = i, s do
 			t[i] = nil
 		end
@@ -143,7 +150,7 @@ function Stream:pop(n)
 	return self
 end
 
--- 合并之前追加的内容
+-- 合并之前追加的内容并更新limit
 function Stream:flush()
 	local t = self.buf
 	if t then
@@ -153,12 +160,6 @@ function Stream:flush()
 		self._lim = #buf
 	end
 	return self
-end
-
-function Stream:isEmpty()
-	if self._pos < self._lim then return false end
-	local t = self.buf
-	return not t or #t == 0
 end
 
 -- 转换成字符串返回,用于显示及日志输出
@@ -402,7 +403,7 @@ local function unmarshalStr(self, n)
 	if pos + n > self._lim then error "unmarshal overflow" end
 	local p = pos + n
 	self._pos = p
-	return strSub(self._buf, pos + 1, p)
+	return strsub(self._buf, pos + 1, p)
 end
 
 -- 反序列化1个无符号整数(支持范围:0到+(32-bit))

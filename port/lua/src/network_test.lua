@@ -15,9 +15,9 @@ function net:onClose(code, err)
 	net:connect("127.0.0.1", 9123)
 end
 
-function net:onRecv(p)
-	print("onRecv:", p)
-	Network.onRecv(self, p)
+function net:onRecv(bean)
+	print("onRecv:", bean)
+	Network.onRecv(self, bean)
 end
 
 net:connect("127.0.0.1", 9123)
