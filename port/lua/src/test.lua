@@ -66,9 +66,10 @@ do
 	b.v19.value2 = 3
 	print(b.v19.value2)
 	print(b.v19)
-	print(b.__class.__type)
-	print(b.__class.__vars[17].name)
-	print(b.__class.__vars.v18.id)
+	print(b.__name)
+	print(b.__type)
+	print(b.__base[17].name)
+	print(b.__base.v18.id)
 end
 
 print "----------------------------------------"

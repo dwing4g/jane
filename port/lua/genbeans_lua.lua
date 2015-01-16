@@ -15,7 +15,7 @@ local template_bean = [=[
 
 local num, str, bool, vec, map = 0, 1, 2, 3, 4
 return require "util".initBeans {
-#[#	#(bean.name) = { __type = #(bean.type), __vars = {
+#[#	#(bean.name) = { __type = #(bean.type), __base = {
 #{#		#(var.name)#(var.value),
 #}##(#		[#(var.id3)] = { name = "#(var.name)", type = #(var.btype)#(var.keyval) },
 #)#	}},
