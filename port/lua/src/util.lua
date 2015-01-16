@@ -59,6 +59,7 @@ end
 
 -- 使一个表只读(只对这个表触发读及__index操作,递归只读,无法遍历,所有只读过的表读__readonly键都返回true),原型对应关系表统一存到弱表proto里
 local proto = setmetatable({}, { __mode = "k" })
+local dummy = function() end -- 共享的空函数
 local readonly
 local readonlyMt = {
 	__index = function(t, k)
@@ -66,7 +67,7 @@ local readonlyMt = {
 		if type(v) == "table" then return readonly(v) end
 		return k == "__readonly" or v
 	end,
-	__newindex = function() end, -- 写入完全忽略
+	__newindex = dummy, -- 写入完全忽略
 }
 readonly = function(t)
 	local rot = {}
@@ -214,13 +215,12 @@ function util.toStr(t, out, m, name)
 end
 
 -- 根据bean描述表初始化所有的bean类
--- bean类的字段:
--- __type: bean的类型ID
--- __name: bean的名字
--- __base: bean的字段/常量表,key是字段ID或字段名或常量key,value是{id=字段ID,name=字段名,type/key/value=类型ID或bean名}或常量value
--- __tostring: 指向util.toStr函数
--- bean对象的特殊字段:
+-- bean类及对象都可访问的特殊字段:
 -- __class: 对应的bean类
+-- __type: bean的类型ID(类的实体字段)
+-- __name: bean的名字(类的实体字段)
+-- __base: bean的字段/常量表(类的实体字段). key是字段ID或字段名或常量key,value是{id=字段ID,name=字段名,type/key/value=类型ID或bean名}或常量value
+-- __tostring: 指向util.toStr函数(类的实体字段). 只供bean对象转换成字符串时自动调用
 -- 关联容器表的特殊字段:
 -- __map: true
 function util.initBeans(c)
@@ -242,7 +242,7 @@ function util.initBeans(c)
 		b.__tostring = util.toStr
 		s[b.__type] = util.class(b) -- 创建类并放入临时表中
 	end
-	local m = { [0] = 0, "", false, {}, setmetatable({}, { __index = { __map = true }}) } -- 基础类型的stub值
+	local m = { [0] = 0, "", false, setmetatable({}, { __newindex = dummy }), setmetatable({}, { __index = { __map = true }, __newindex = dummy }) } -- 基础类型的stub值
 	for i, b in pairs(s) do
 		c[i] = b -- 把临时表s归并到c中,使c加入__type索引
 		for n, v in pairs(b.__base) do
