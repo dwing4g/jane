@@ -319,12 +319,12 @@ function Stream:marshal(v, tag, subtype)
 					append(self, char(0xfe, tag - 63))
 				end
 			end
-			local vars = v.__class.__vars
+			local vars = v.__base -- v.__class.__base for non-readonly __base
 			local buf = self.buf
 			local n = buf and #buf
 			for nn, vv in pairs(v) do
 				local var = vars[nn]
-				if var then
+				if type(var) == "table" then
 					self:marshal(vv, var.id)
 				end
 			end
@@ -501,13 +501,13 @@ end
 
 -- 根据类来反序列化1个bean
 function Stream:unmarshal(cls)
-	local vars = cls and cls.__vars
+	local vars = cls and cls.__base
 	local obj = cls and cls() or {}
 	while true do
-		local id, vv = unmarshalVar(self, vars)
+		local id, v = unmarshalVar(self, vars)
 		if not id then return obj end
 		local var = vars and vars[id]
-		obj[var and var.name or id] = vv
+		obj[var and var.name or id] = v
 	end
 end
 

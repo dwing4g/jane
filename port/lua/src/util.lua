@@ -42,7 +42,7 @@ end
 util.clone = clone
 
 -- 表t清空并从表s中复制全部内容(规则同上)
-function util.cloneTo(t, s)
+function util.cloneTo(s, t)
 	util.clear(t)
 	for k, v in pairs(s) do
 		t[k] = clone(v)
@@ -50,8 +50,32 @@ function util.cloneTo(t, s)
 	return setmetatable(t, getmetatable(s))
 end
 
--- 表的Copy On Write处理,原型对应关系表统一存到弱表proto里
+-- 表s里的内容拷贝覆盖到t中(浅拷贝,不涉及元表)
+function util.copyTo(s, t)
+	for k, v in pairs(s) do
+		t[k] = v
+	end
+end
+
+-- 使一个表只读(只对这个表触发读及__index操作,递归只读,无法遍历,所有只读过的表读__readonly键都返回true),原型对应关系表统一存到弱表proto里
 local proto = setmetatable({}, { __mode = "k" })
+local readonly
+local readonlyMt = {
+	__index = function(t, k)
+		local v = proto[t][k]
+		if type(v) == "table" then return readonly(v) end
+		return k == "__readonly" or v
+	end,
+	__newindex = function() end, -- 写入完全忽略
+}
+readonly = function(t)
+	local rot = {}
+	proto[rot] = t
+	return setmetatable(rot, readonlyMt)
+end
+util.readonly = readonly
+
+-- 表的Copy On Write处理(只能遍历copy过的键值),原型对应关系表统一存到弱表proto里
 local cowMt
 cowMt = {
 	__index = function(t, k)
@@ -89,7 +113,7 @@ function util.class(c)
 	c = c or {}
 	c.__index = function(t, k)
 		local v = c[k]
-		if type(v) ~= "table" or v == c then return v end
+		if type(v) ~= "table" or v == c or v.__readonly then return v end
 		local vv = setmetatable({}, cowMt)
 		proto[vv] = v
 		t[k] = vv
@@ -163,7 +187,7 @@ function util.toStr(t, out, m, name)
 			o[n + 2] = name
 			o[n + 3] = ":"
 			n = n + 2
-			for i, v in pairs(cls.__vars) do
+			for i, v in pairs(cls.__base) do
 				if type(i) == "number" then
 					name = v.name
 					v = rawget(t, name)
@@ -191,47 +215,48 @@ end
 
 -- 根据bean描述表初始化所有的bean类
 -- bean类的字段:
--- __name: bean的名字
 -- __type: bean的类型ID
--- __vars: bean的字段表,key是字段ID或字段名,value是{id=字段ID,name=字段名,type/key/value=类型ID或bean名}
+-- __name: bean的名字
+-- __base: bean的字段/常量表,key是字段ID或字段名或常量key,value是{id=字段ID,name=字段名,type/key/value=类型ID或bean名}或常量value
 -- __tostring: 指向util.toStr函数
 -- bean对象的特殊字段:
 -- __class: 对应的bean类
 -- 关联容器表的特殊字段:
 -- __map: true
 function util.initBeans(c)
-	local s = {}
+	local s = {} -- 临时存储类的表,以bean类型值为索引,用于后面创建
 	for n, b in pairs(c) do
-		local vars = b.__vars
-		local r = {}
+		local vars = b.__base -- 生成代码中的初始定义
+		local r = {} -- 临时表,以var名为索引,稍后合并到__base中
 		for i, v in pairs(vars) do
 			if type(v) == "table" then
 				v.id = i -- vars中加入id字段
-				r[v.name] = v -- 在临时表中加入var名索引
+				r[v.name] = v
 			end
 		end
 		for n, v in pairs(r) do
-			vars[n] = v -- 把临时表归并到vars中,使vars加入var名索引
+			vars[n] = v -- 把临时表r归并到vars中,使vars加入var名索引
 		end
-		b.__name = n -- bean中加入__name字段
-		s[b.__type] = util.class(b) -- 创建类并放入临时表中
+		vars.__readonly = true -- 考虑效率,这里仅仅定义只读标记以便读取时不做CopyOnWrite处理,直接返回表引用,信任使用者不会做修改操作(可注释此行移除此特性)
+		b.__name = n -- bean类中加入__name字段
 		b.__tostring = util.toStr
+		s[b.__type] = util.class(b) -- 创建类并放入临时表中
 	end
-	local m = { [0] = 0, "", false, {}, setmetatable({}, { __index = { __map = true }}) }
+	local m = { [0] = 0, "", false, {}, setmetatable({}, { __index = { __map = true }}) } -- 基础类型的stub值
 	for i, b in pairs(s) do
-		c[i] = b
-		for n, v in pairs(b.__vars) do
-			if type(n) == "string" and type(v) == "table" then
+		c[i] = b -- 把临时表s归并到c中,使c加入__type索引
+		for n, v in pairs(b.__base) do
+			if type(n) == "string" and type(v) == "table" then -- 只取字段名为索引的字段
 				local t = v.type
 				v = m[t]
 				if v == nil then
 					v = c[t]
 					if not v then
-						error(format("unknown type '%s' in '%s.%s'", t, b.__name, n))
+						error(format("unknown type '%s' in '%s.%s'", t, b.__name, n)) -- 未定义的bean类型字段
 					end
-					v = v() -- bean stub实例
+					v = v() -- 构造bean类型字段的stub实例
 				end
-				b[n] = v -- stub值
+				b[n] = v -- 生成bean类的stub字段值
 			end
 		end
 	end
