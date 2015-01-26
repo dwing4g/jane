@@ -3,9 +3,8 @@ package jane.core;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import org.mapdb.LongConcurrentHashMap;
+import org.mapdb.LongConcurrentHashMap.LongMapIterator;
 import org.mapdb.LongConcurrentLRUMap;
-import org.mapdb.LongMap;
-import org.mapdb.LongMap.LongMapIterator;
 import jane.core.SContext.RecordLong;
 import jane.core.SContext.Safe;
 import jane.core.Storage.Helper;
@@ -20,7 +19,7 @@ import jane.core.Storage.WalkHandlerLong;
 public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends TableBase<V>
 {
 	private final Storage.TableLong<V>     _stoTable;                             // 存储引擎的表对象
-	private final LongMap<V>               _cache;                                // 读缓存. 有大小限制,溢出自动清理
+	private final LongConcurrentLRUMap<V>  _cache;                                // 读缓存. 有大小限制,溢出自动清理
 	private final LongConcurrentHashMap<V> _cacheMod;                             // 写缓存. 不会溢出,保存到数据库存储引擎后清理
 	private final AtomicLong               _idCounter     = new AtomicLong();     // 用于自增长ID的统计器, 当前值表示当前表已存在的最大ID值
 	private int                            _autoIdLowBits = Const.autoIdLowBits;  // 自增长ID的预留低位位数, 可运行时指定
@@ -420,7 +419,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	 */
 	public boolean walkCache(WalkHandlerLong handler)
 	{
-		for(LongMapIterator<V> it = _cache.longMapIterator(); it.moveToNext();)
+		for(LongConcurrentLRUMap.LongMapIterator<V> it = _cache.longMapIterator(); it.moveToNext();)
 			if(!Helper.onWalkSafe(handler, it.key())) return false;
 		return true;
 	}

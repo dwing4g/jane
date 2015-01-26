@@ -16,13 +16,14 @@
 
 package org.mapdb;
 
-import org.mapdb.EngineWrapper.ReadOnlyEngine;
 
 import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Logger;
 
 /**
  * A builder class for creating and opening a database.
@@ -30,6 +31,8 @@ import java.util.*;
  * @author Jan Kotek
  */
 public class DBMaker{
+
+    protected static final Logger LOG = Logger.getLogger(DBMaker.class.getName());
 
     protected final String TRUE = "true";
 
@@ -54,7 +57,15 @@ public class DBMaker{
         String volume_mmapf = "mmapf";
         String volume_byteBuffer = "byteBuffer";
         String volume_directByteBuffer = "directByteBuffer";
+        String volume_unsafe = "unsafe";
 
+
+        String lockScale = "lockScale";
+
+        String lock = "lock";
+        String lock_readWrite = "readWrite";
+        String lock_single = "single";
+        String lock_threadUnsafe = "threadUnsafe";
 
         String store = "store";
         String store_direct = "direct";
@@ -138,6 +149,24 @@ public class DBMaker{
 
     public  DBMaker _newMemoryDirectDB() {
         props.setProperty(Keys.volume,Keys.volume_directByteBuffer);
+        return this;
+    }
+
+
+    /** Creates new in-memory database. Changes are lost after JVM exits.
+     * <p>
+     * This will use {@code sun.misc.Unsafe}. It uses direct-memory access and avoids boundary checking.
+     * It is bit faster compared to {@code DirectByteBuffer}, but can cause JVM crash in case of error.
+     * <p>
+     * If {@code sun.misc.Unsafe} is not available for some reason, MapDB will log an warning and fallback into
+     * {@code DirectByteBuffer} based in-memory store without throwing an exception.
+     */
+    public static DBMaker newMemoryUnsafeDB(){
+        return new DBMaker()._newMemoryUnsafeDB();
+    }
+
+    public  DBMaker _newMemoryUnsafeDB() {
+        props.setProperty(Keys.volume,Keys.volume_unsafe);
         return this;
     }
 
@@ -389,6 +418,47 @@ public class DBMaker{
         props.put(Keys.cache,Keys.cache_lru);
         return this;
     }
+
+    /**
+     * Disable locks. This will make MapDB thread unsafe. It will also disable any background thread workers.
+     * <p>
+     * <b>WARNING: </b> this option is dangerous. With locks disabled multi-threaded access could cause data corruption and causes.
+     * MapDB does not have fail-fast iterator or any other means of protection
+     * <p>
+     * @return this builder
+     */
+    public DBMaker lockThreadUnsafeEnable() {
+        props.put(Keys.lock, Keys.lock_threadUnsafe);
+        return this;
+    }
+
+    /**
+     * Disables double read-write locks and enables single read-write locks.
+     * <p>
+     * This type of locking have smaller overhead and can be faster in mostly-write scenario.
+     * <p>
+     * @return this builder
+     */
+    public DBMaker lockSingleEnable() {
+        props.put(Keys.lock, Keys.lock_single);
+        return this;
+    }
+
+
+    /**
+     * Sets concurrency scale. More locks means better scalability with multiple cores, but also higher memory overhead
+     * <p>
+     * This value has to be power of two, so it is rounded up automatically.
+     * <p>
+     * @return this builder
+     */
+    public DBMaker lockScale(int scale) {
+        props.put(Keys.lockScale, ""+scale);
+        return this;
+    }
+
+
+
     /**
      * Enables Memory Mapped Files, much faster storage option. However on 32bit JVM this mode could corrupt
      * your DB thanks to 4GB memory addressing limit.
@@ -423,7 +493,7 @@ public class DBMaker{
      * <p>
      * For unbounded caches (such as HardRef cache) it is initial capacity of underlying table (HashMap).
      * <p>
-     * Default cache size is 32768.
+     * Default cache size is 2048.
      *
      * @param cacheSize new cache size
      * @return this builder
@@ -455,6 +525,7 @@ public class DBMaker{
      * @return this builder
      */
     public DBMaker asyncWriteEnable(){
+        LOG.warning("AsyncWrite is not implemented at this moment");
         props.setProperty(Keys.asyncWrite,TRUE);
         return this;
     }
@@ -482,7 +553,7 @@ public class DBMaker{
     }
 
     /**
-     * Set size of async Write Queue. Default size is 32 000
+     * Set size of async Write Queue. Default size is
      * <p>
      * Using too large queue size can lead to out of memory exception.
      *
@@ -686,23 +757,74 @@ public class DBMaker{
 
         extendArgumentCheck();
 
+
         Engine engine;
+        int lockingStrategy = 0;
+        String lockingStrategyStr = props.getProperty(Keys.lock,Keys.lock_readWrite);
+        if(Keys.lock_single.equals(lockingStrategyStr)){
+            lockingStrategy = 1;
+        }else if(Keys.lock_threadUnsafe.equals(lockingStrategyStr)) {
+            lockingStrategy = 2;
+        }
+
+        final int lockScale = DataIO.nextPowTwo(propsGetInt(Keys.lockScale,CC.DEFAULT_LOCK_SCALE));
+
+        boolean cacheLockDisable = lockingStrategy!=0;
 
         if(Keys.store_heap.equals(store)){
-            engine = extendHeapStore();
+            engine = new StoreHeap(propsGetBool(Keys.transactionDisable),lockScale,lockingStrategy);
 
         }else  if(Keys.store_append.equals(store)){
             if(Keys.volume_byteBuffer.equals(volume)||Keys.volume_directByteBuffer.equals(volume))
                 throw new UnsupportedOperationException("Append Storage format is not supported with in-memory dbs");
 
             Fun.Function1<Volume, String> volFac = extendStoreVolumeFactory(false);
-            engine = extendStoreAppend(file, volFac);
+            engine = new StoreAppend(
+                    file,
+                    volFac,
+                    createCache(cacheLockDisable,lockScale),
+                    lockScale,
+                    lockingStrategy,
+                    propsGetBool(Keys.checksum),
+                    Keys.compression_lzf.equals(props.getProperty(Keys.compression)),
+                    propsGetXteaEncKey(),
+                    propsGetBool(Keys.readOnly),
+                    propsGetBool(Keys.transactionDisable)
+            );
 
         }else{
             Fun.Function1<Volume, String> volFac = extendStoreVolumeFactory(false);
+            boolean compressionEnabled = Keys.compression_lzf.equals(props.getProperty(Keys.compression));
+
             engine = propsGetBool(Keys.transactionDisable) ?
-                    extendStoreDirect(file, volFac):
-                    extendStoreWAL(file, volFac);
+
+                    new StoreDirect(
+                            file,
+                            volFac,
+                            createCache(cacheLockDisable,lockScale),
+                            lockScale,
+                            lockingStrategy,
+                            propsGetBool(Keys.checksum),
+                            compressionEnabled,
+                            propsGetXteaEncKey(),
+                            propsGetBool(Keys.readOnly),
+                            propsGetInt(Keys.freeSpaceReclaimQ,CC.DEFAULT_FREE_SPACE_RECLAIM_Q),
+                            propsGetBool(Keys.commitFileSyncDisable),
+                            0):
+
+                    new StoreWAL(
+                            file,
+                            volFac,
+                            createCache(cacheLockDisable,lockScale),
+                            lockScale,
+                            lockingStrategy,
+                            propsGetBool(Keys.checksum),
+                            compressionEnabled,
+                            propsGetXteaEncKey(),
+                            propsGetBool(Keys.readOnly),
+                            propsGetInt(Keys.freeSpaceReclaimQ, CC.DEFAULT_FREE_SPACE_RECLAIM_Q),
+                            propsGetBool(Keys.commitFileSyncDisable),
+                            0);
         }
 
         if(engine instanceof Store){
@@ -715,38 +837,19 @@ public class DBMaker{
             engine = extendAsyncWriteEngine(engine);
         }
 
-        final String cache = props.getProperty(Keys.cache, CC.DEFAULT_CACHE);
-
-        if(Keys.cache_disable.equals(cache)){
-            //do not wrap engine in cache
-        }else if(Keys.cache_hashTable.equals(cache)){
-            engine = extendCacheHashTable(engine);
-        }else if (Keys.cache_hardRef.equals(cache)){
-            engine = extendCacheHardRef(engine);
-        }else if (Keys.cache_weakRef.equals(cache)){
-            engine = extendCacheWeakRef(engine);
-        }else if (Keys.cache_softRef.equals(cache)){
-            engine = extendCacheSoftRef(engine);
-        }else if (Keys.cache_lru.equals(cache)){
-            engine = extendCacheLRU(engine);
-        }else{
-            throw new IllegalArgumentException("unknown cache type: "+cache);
-        }
-
-        engine = extendWrapCache(engine);
 
 
         if(propsGetBool(Keys.snapshots))
-            engine = extendSnapshotEngine(engine);
+            engine = extendSnapshotEngine(engine, lockScale);
 
         engine = extendWrapSnapshotEngine(engine);
 
         if(readOnly)
-            engine = new ReadOnlyEngine(engine);
+            engine = new Engine.ReadOnly(engine);
 
 
         if(propsGetBool(Keys.closeOnJvmShutdown)){
-            engine = new EngineWrapper.CloseOnJVMShutdown(engine);
+            engine = new CloseOnJVMShutdown(engine);
         }
 
 
@@ -774,6 +877,28 @@ public class DBMaker{
         return engine;
     }
 
+    protected Store.Cache createCache(boolean disableLocks, int lockScale) {
+        final String cache = props.getProperty(Keys.cache, CC.DEFAULT_CACHE);
+
+        if(Keys.cache_disable.equals(cache)){
+            return null;
+        }else if(Keys.cache_hashTable.equals(cache)){
+            int cacheSize = propsGetInt(Keys.cacheSize, CC.DEFAULT_CACHE_SIZE) / lockScale;
+            return new Store.Cache.HashTable(cacheSize,disableLocks);
+        }else if (Keys.cache_hardRef.equals(cache)){
+            int cacheSize = propsGetInt(Keys.cacheSize, CC.DEFAULT_CACHE_SIZE) / lockScale;
+            return new Store.Cache.HardRef(cacheSize,disableLocks);
+        }else if (Keys.cache_weakRef.equals(cache)){
+            return new Store.Cache.WeakSoftRef(true,disableLocks);
+        }else if (Keys.cache_softRef.equals(cache)){
+            return new Store.Cache.WeakSoftRef(false,disableLocks);
+        }else if (Keys.cache_lru.equals(cache)){
+            int cacheSize = propsGetInt(Keys.cacheSize, CC.DEFAULT_CACHE_SIZE) / lockScale;
+            return new Store.Cache.LRU(cacheSize,disableLocks);
+        }else{
+            throw new IllegalArgumentException("unknown cache type: "+cache);
+        }
+    }
 
 
     protected int propsGetInt(String key, int defValue){
@@ -830,33 +955,8 @@ public class DBMaker{
     }
 
 
-    protected Engine extendSnapshotEngine(Engine engine) {
-        return new TxEngine(engine,propsGetBool(Keys.fullTx));
-    }
-
-    protected Engine extendCacheLRU(Engine engine) {
-        int cacheSize = propsGetInt(Keys.cacheSize, CC.DEFAULT_CACHE_SIZE);
-        return new Caches.LRU(engine, cacheSize, cacheCondition);
-    }
-
-    protected Engine extendCacheWeakRef(Engine engine) {
-        return new Caches.WeakSoftRef(engine,true, cacheCondition, threadFactory);
-    }
-
-    protected Engine extendCacheSoftRef(Engine engine) {
-        return new Caches.WeakSoftRef(engine,false,cacheCondition, threadFactory);
-    }
-
-
-
-    protected Engine extendCacheHardRef(Engine engine) {
-        int cacheSize = propsGetInt(Keys.cacheSize, CC.DEFAULT_CACHE_SIZE);
-        return new Caches.HardRef(engine,cacheSize, cacheCondition);
-    }
-
-    protected Engine extendCacheHashTable(Engine engine) {
-        int cacheSize = propsGetInt(Keys.cacheSize, CC.DEFAULT_CACHE_SIZE);
-        return new Caches.HashTable(engine, cacheSize, cacheCondition);
+    protected Engine extendSnapshotEngine(Engine engine, int lockScale) {
+        return new TxEngine(engine,propsGetBool(Keys.fullTx), lockScale);
     }
 
     protected Engine extendAsyncWriteEngine(Engine engine) {
@@ -877,62 +977,9 @@ public class DBMaker{
     }
 
 
-    protected Engine extendWrapCache(Engine engine) {
-        return engine;
-    }
 
     protected Engine extendWrapSnapshotEngine(Engine engine) {
         return engine;
-    }
-
-
-    protected Engine extendHeapStore() {
-        return new StoreHeap(propsGetBool(Keys.transactionDisable));
-    }
-
-    protected Engine extendStoreAppend(String fileName, Fun.Function1<Volume,String> volumeFactory) {
-        boolean compressionEnabled = Keys.compression_lzf.equals(props.getProperty(Keys.compression));
-        return new StoreAppend(
-                  fileName,
-                  volumeFactory,
-                  propsGetBool(Keys.checksum),
-                  compressionEnabled,
-                  propsGetXteaEncKey(),
-                  propsGetBool(Keys.readOnly)
-          );
-    }
-
-    protected Engine extendStoreDirect(
-            String fileName,
-            Fun.Function1<Volume,String> volumeFactory) {
-        boolean compressionEnabled = Keys.compression_lzf.equals(props.getProperty(Keys.compression));
-        return new StoreDirect(
-                fileName,
-                volumeFactory,
-                propsGetBool(Keys.checksum),
-                compressionEnabled,
-                propsGetXteaEncKey(),
-                propsGetBool(Keys.readOnly),
-                propsGetInt(Keys.freeSpaceReclaimQ,CC.DEFAULT_FREE_SPACE_RECLAIM_Q),
-                propsGetBool(Keys.commitFileSyncDisable),
-                0);
-    }
-
-    protected Engine extendStoreWAL(
-            String fileName,
-            Fun.Function1<Volume,String> volumeFactory) {
-        boolean compressionEnabled = Keys.compression_lzf.equals(props.getProperty(Keys.compression));
-
-        return new StoreWAL(
-                fileName,
-                volumeFactory,
-                propsGetBool(Keys.checksum),
-                compressionEnabled,
-                propsGetXteaEncKey(),
-                propsGetBool(Keys.readOnly),
-                propsGetInt(Keys.freeSpaceReclaimQ, CC.DEFAULT_FREE_SPACE_RECLAIM_Q),
-                propsGetBool(Keys.commitFileSyncDisable),
-                0);
     }
 
 
@@ -942,6 +989,8 @@ public class DBMaker{
             return Volume.memoryFactory(false,CC.VOLUME_PAGE_SHIFT);
         else if(Keys.volume_directByteBuffer.equals(volume))
             return Volume.memoryFactory(true,CC.VOLUME_PAGE_SHIFT);
+        else if(Keys.volume_unsafe.equals(volume))
+            return Volume.memoryUnsafeFactory(CC.VOLUME_PAGE_SHIFT);
 
         boolean raf = propsGetRafMode()!=0;
         if(raf && index && propsGetRafMode()==1)
@@ -968,4 +1017,126 @@ public class DBMaker{
         }
         return ret;
     }
+
+    /**
+     * Closes Engine on JVM shutdown using shutdown hook: {@link Runtime#addShutdownHook(Thread)}
+     * If engine was closed by user before JVM shutdown, hook is removed to save memory.
+     */
+    public static class CloseOnJVMShutdown implements Engine{
+
+        final protected AtomicBoolean shutdownHappened = new AtomicBoolean(false);
+
+        final Runnable hookRunnable = new Runnable() {
+            @Override
+            public void run() {
+                shutdownHappened.set(true);
+                CloseOnJVMShutdown.this.hook = null;
+                if(CloseOnJVMShutdown.this.isClosed())
+                    return;
+                CloseOnJVMShutdown.this.close();
+            }
+        };
+
+        protected final Engine engine;
+
+        protected Thread hook;
+
+
+        public CloseOnJVMShutdown(Engine engine) {
+            this.engine = engine;
+            hook = new Thread(hookRunnable,"MapDB shutdown hook");
+            Runtime.getRuntime().addShutdownHook(hook);
+        }
+
+        @Override
+        public long preallocate() {
+            return engine.preallocate();
+        }
+
+        @Override
+        public <A> long put(A value, Serializer<A> serializer) {
+            return engine.put(value,serializer);
+        }
+
+        @Override
+        public <A> A get(long recid, Serializer<A> serializer) {
+            return engine.get(recid,serializer);
+        }
+
+        @Override
+        public <A> void update(long recid, A value, Serializer<A> serializer) {
+            engine.update(recid,value,serializer);
+        }
+
+        @Override
+        public <A> boolean compareAndSwap(long recid, A expectedOldValue, A newValue, Serializer<A> serializer) {
+            return engine.compareAndSwap(recid,expectedOldValue,newValue,serializer);
+        }
+
+        @Override
+        public <A> void delete(long recid, Serializer<A> serializer) {
+            engine.delete(recid,serializer);
+        }
+
+        @Override
+        public void close() {
+            engine.close();
+            if(!shutdownHappened.get() && hook!=null){
+                Runtime.getRuntime().removeShutdownHook(hook);
+            }
+            hook = null;
+        }
+
+        @Override
+        public boolean isClosed() {
+            return engine.isClosed();
+        }
+
+        @Override
+        public void commit() {
+            engine.commit();
+        }
+
+        @Override
+        public void rollback() throws UnsupportedOperationException {
+            engine.rollback();
+        }
+
+        @Override
+        public boolean isReadOnly() {
+            return engine.isReadOnly();
+        }
+
+        @Override
+        public boolean canRollback() {
+            return engine.canRollback();
+        }
+
+        @Override
+        public boolean canSnapshot() {
+            return engine.canSnapshot();
+        }
+
+        @Override
+        public Engine snapshot() throws UnsupportedOperationException {
+            return engine.snapshot();
+        }
+
+        @Override
+        public Engine getWrappedEngine() {
+            return engine;
+        }
+
+        @Override
+        public void clearCache() {
+            engine.clearCache();
+        }
+
+        @Override
+        public void compact() {
+            engine.compact();
+        }
+    }
+
+
 }

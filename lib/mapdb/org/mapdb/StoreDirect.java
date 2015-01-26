@@ -52,8 +52,6 @@ public class StoreDirect extends Store {
 
     protected Volume vol;
     protected Volume headVol;
-    /** used in WAL */
-    protected Volume realVol;
 
     //TODO this only grows under structural lock, but reads are outside structural lock, does it have to be volatile?
     protected long[] indexPages;
@@ -62,6 +60,9 @@ public class StoreDirect extends Store {
 
     public StoreDirect(String fileName,
                        Fun.Function1<Volume, String> volumeFactory,
+                       Cache cache,
+                       int lockScale,
+                       int lockingStrategy,
                        boolean checksum,
                        boolean compress,
                        byte[] password,
@@ -70,7 +71,7 @@ public class StoreDirect extends Store {
                        boolean commitFileSyncDisable,
                        int sizeIncrement
                        ) {
-        super(fileName,volumeFactory,checksum,compress,password,readonly);
+        super(fileName,volumeFactory, cache, lockScale, lockingStrategy, checksum,compress,password,readonly);
         this.vol = volumeFactory.run(fileName);
     }
 
@@ -183,7 +184,11 @@ public class StoreDirect extends Store {
     }
 
     public StoreDirect(String fileName) {
-        this(fileName, fileName==null? Volume.memoryFactory() : Volume.fileFactory(),
+        this(fileName,
+                fileName==null? Volume.memoryFactory() : Volume.fileFactory(),
+                null,
+                CC.DEFAULT_LOCK_SCALE,
+                0,
                 false,false,null,false,0,
                 false,0);
     }
@@ -255,7 +260,7 @@ public class StoreDirect extends Store {
     @Override
     protected void update2(long recid, DataOutputByteArray out) {
         if(CC.PARANOID)
-            assertWriteLocked(recid);
+            assertWriteLocked(lockPos(recid));
 
         long[] oldOffsets = offsetsGet(recid);
         int oldSize = offsetsTotalSize(oldOffsets);
@@ -332,7 +337,7 @@ public class StoreDirect extends Store {
 
     protected void indexValPut(long recid, int size, long offset, boolean linked, boolean unused) {
         if(CC.PARANOID)
-            assertWriteLocked(recid);
+            assertWriteLocked(lockPos(recid));
 
         long indexOffset = recidToOffset(recid);
         long newval = composeIndexVal(size,offset,linked,unused,true);
@@ -355,7 +360,7 @@ public class StoreDirect extends Store {
     @Override
     protected <A> void delete2(long recid, Serializer<A> serializer) {
         if(CC.PARANOID)
-            assertWriteLocked(recid);
+            assertWriteLocked(lockPos(recid));
 
         long[] offsets = offsetsGet(recid);
         structuralLock.lock();
@@ -413,10 +418,12 @@ public class StoreDirect extends Store {
         if(CC.PARANOID && offsets!=null && (offsets[0]&MOFFSET)<PAGE_SIZE)
             throw new AssertionError();
 
-        Lock lock = locks[lockPos(recid)].writeLock();
+        int lockPos = lockPos(recid);
+        Lock lock = locks[lockPos].writeLock();
         lock.lock();
         try {
-            putData(recid,offsets, out);
+            caches[lockPos].put(recid,value);
+            putData(recid, offsets, out);
         }finally {
             lock.unlock();
         }
@@ -426,7 +433,7 @@ public class StoreDirect extends Store {
 
     protected void putData(long recid, long[] offsets, DataOutputByteArray out) {
         if(CC.PARANOID)
-            assertWriteLocked(recid);
+            assertWriteLocked(lockPos(recid));
         if(CC.PARANOID && offsetsTotalSize(offsets)!=(out==null?0:out.pos))
             throw new AssertionError("size mismatch");
 
@@ -710,6 +717,12 @@ public class StoreDirect extends Store {
             flush();
             vol.close();
             vol = null;
+
+            for(Cache c:caches){
+                c.close();
+            }
+            Arrays.fill(caches,null);
+
         }finally{
             commitLock.unlock();
         }

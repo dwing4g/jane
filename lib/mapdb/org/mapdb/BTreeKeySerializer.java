@@ -263,26 +263,29 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
 
         @Override
         public void serialize(DataOutput out, long[] keys) throws IOException {
+            DataIO.DataOutputByteArray out2 = (DataIO.DataOutputByteArray) out; //TODO fallback option if cast fails
             long prev = keys[0];
-            DataIO.packLong(out, prev);
+            out2.packLong(prev);
             for(int i=1;i<keys.length;i++){
                 long curr = keys[i];
                 //$DELAY$
-                DataIO.packLong(out, curr - prev);
+                out2.packLong(curr-prev);
                 prev = curr;
             }
         }
 
         @Override
         public long[] deserialize(DataInput in, int nodeSize) throws IOException {
-            long[] ret = new long[nodeSize];
-            long prev = 0 ;
-            for(int i = 0; i<nodeSize; i++){
-                //$DELAY$
-                prev += DataIO.unpackLong(in);
-                ret[i] = prev;
-            }
-            return ret;
+            DataIO.DataInputInternal in2 = (DataIO.DataInputInternal) in; //TODO fallback option if cast fails
+            return in2.unpackLongArrayDeltaCompression(nodeSize);
+//            long[] ret = new long[nodeSize];
+//            long prev = 0 ;
+//            for(int i = 0; i<nodeSize; i++){
+//                //$DELAY$
+//                prev += in2.unpackLong();
+//                ret[i] = prev;
+//            }
+//            return ret;
         }
 
         @Override
@@ -322,7 +325,12 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
 
         @Override
         public long[] putKey(long[] keys, int pos, Long newKey) {
-            return BTreeMap.arrayLongPut(keys, pos, newKey);
+            final long[] ret = Arrays.copyOf(keys,keys.length+1);
+            if(pos<keys.length){
+                System.arraycopy(keys,pos,ret,pos+1,keys.length-pos);
+            }
+            ret[pos] = newKey;
+            return ret;
         }
 
         @Override

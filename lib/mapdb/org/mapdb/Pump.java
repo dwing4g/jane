@@ -16,7 +16,6 @@
 package org.mapdb;
 
 import java.io.*;
-import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
@@ -345,7 +344,7 @@ public final class Pump {
                 keys.add(key);
                 counter++;
 
-                Object val = valueExtractor!=null?valueExtractor.run(next):BTreeMap.EMPTY;
+                Object val = valueExtractor!=null?valueExtractor.run(next):Boolean.TRUE;
                 if(val==null) throw new NullPointerException("extractValue returned null value");
                 if(valuesStoredOutsideNodes){
                     long recid = engine.put((V) val,valueSerializer);
@@ -376,7 +375,9 @@ public final class Pump {
             BTreeMap.LeafNode node = new BTreeMap.LeafNode(
                     keySerializer.arrayToKeys(keys.toArray()),
                     leftEdge,rightEdge, false,
-                    values.toArray() , nextNode);
+                    (valueSerializer==null?Serializer.BOOLEAN:valueSerializer)
+                            .valueArrayFromArray(values.toArray()),
+                    nextNode);
             nextNode = engine.put(node,nodeSerializer);
             K nextKey = keys.get(0);
             keys.clear();
@@ -408,7 +409,7 @@ public final class Pump {
                 BTreeMap.DirNode dir = new BTreeMap.DirNode(
                         keySerializer.arrayToKeys(dirKeys.get(i).toArray()),
                         leftEdge2,rightEdge2, false,
-                        toLongArray(dirRecids.get(i)));
+                        toSixLongArray(dirRecids.get(i)));
                 long dirRecid = engine.put(dir,nodeSerializer);
                 Object dirStart = dirKeys.get(i).get(0);
                 dirKeys.get(i).clear();
@@ -451,7 +452,7 @@ public final class Pump {
             BTreeMap.DirNode dir = new BTreeMap.DirNode(
                     keySerializer.arrayToKeys(keys2.toArray()),
                     leftEdge3,rightEdge3, false,
-                    toLongArray(dirRecids.get(i)));
+                    toSixLongArray(dirRecids.get(i)));
             long dirRecid = engine.put(dir,nodeSerializer);
             Object dirStart = keys2.get(0);
             dirKeys.get(i+1).add(dirStart);
@@ -480,15 +481,15 @@ public final class Pump {
         BTreeMap.DirNode dir = new BTreeMap.DirNode(
                 keySerializer.arrayToKeys(dirKeys.get(len).toArray()),
                 leftEdge4,rightEdge4, false,
-                toLongArray(dirRecids.get(len)));
+                toSixLongArray(dirRecids.get(len)));
         long rootRecid = engine.put(dir, nodeSerializer);
         return engine.put(rootRecid,Serializer.RECID); //root recid
     }
 
-    private static long[] toLongArray(List<Long> child) {
-        long[] ret= new long[child.size()];
+    private static byte[] toSixLongArray(List<Long> child) {
+        byte[] ret= new byte[child.size()*6];
         for(int i=0;i<child.size();i++){
-            ret[i] = child.get(i);
+            DataIO.putSixLong(ret,i*6,child.get(i));
         }
         return ret;
     }
@@ -553,7 +554,7 @@ public final class Pump {
         while(pumpSource.hasNext()){
             A o = pumpSource.next();
             K key = pumpKeyExtractor.run(o);
-            V val = pumpValueExtractor==null? (V) BTreeMap.EMPTY : pumpValueExtractor.run(o);
+            V val = pumpValueExtractor==null? (V) Boolean.TRUE : pumpValueExtractor.run(o);
             if(pumpIgnoreDuplicates) {
                 m.put(key,val);
             }else{

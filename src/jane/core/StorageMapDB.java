@@ -489,7 +489,7 @@ public final class StorageMapDB implements Storage
 		dbMaker = (Const.mapDBCacheCount > 0 ? dbMaker.cacheSize(Const.mapDBCacheCount) : dbMaker.cacheDisable());
 		/*if(Const.mapDBFileLevel == 2)
 			dbMaker = dbMaker.mmapFileEnablePartial(); // 不使用任何文件映射(比完全内存映射慢2~3倍)
-		else*/ if(Const.mapDBFileLevel == 3)
+		else*/if(Const.mapDBFileLevel == 3)
 			dbMaker = dbMaker.mmapFileEnable(); // 仅索引文件映射(比不使用任何文件映射好的不明显)
 		else if(Const.mapDBFileLevel != 1)
 		    dbMaker = dbMaker.mmapFileEnableIfSupported(); // 根据系统32/64位来决定文件使用完全不映射和完全映射(建议使用)
@@ -559,16 +559,11 @@ public final class StorageMapDB implements Storage
 	{
 		if(_dbFile == null)
 		    throw new IllegalStateException("current database is not opened");
-		File fsrcP = new File(_dbFile.getAbsolutePath() + ".p");
 		File fdstTmp = new File(fdst.getAbsolutePath() + ".tmp");
-		File fdstP = new File(fdst.getAbsolutePath() + ".p");
-		File fdstPTmp = new File(fdst.getAbsolutePath() + ".p.tmp");
 		long r = Util.copyFile(_dbFile, fdstTmp);
-		r += Util.copyFile(fsrcP, fdstPTmp);
 		if(!fdstTmp.renameTo(fdst))
 		    throw new IOException("backup database file can not rename: " + fdstTmp.getPath() + " => " + fdst.getPath());
-		if(!fdstPTmp.renameTo(fdstP))
-		    throw new IOException("backup database file can not rename: " + fdstTmp.getPath() + " => " + fdst.getPath());
+		//TODO: backup other files?
 		return r;
 	}
 }

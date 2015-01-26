@@ -96,7 +96,7 @@ public class HTreeMap<K,V>   extends AbstractMap<K,V> implements ConcurrentMap<K
         public final V value;
 
         public LinkedNode(final long next, long expireLinkNodeRecid, final K key, final V value ){
-            if(CC.PARANOID && next>>48!=0)
+            if(CC.PARANOID && next>>>48!=0)
                 throw new AssertionError("next recid too big");
             this.key = key;
             this.expireLinkNodeRecid = expireLinkNodeRecid;
@@ -134,7 +134,7 @@ public class HTreeMap<K,V>   extends AbstractMap<K,V> implements ConcurrentMap<K
                     DataIO.unpackLong(in),
                     expireFlag? DataIO.unpackLong(in):0L,
                     keySerializer.deserialize(in,-1),
-                    hasValues? valueSerializer.deserialize(in,-1) : (V) BTreeMap.EMPTY
+                    hasValues? valueSerializer.deserialize(in,-1) : (V) Boolean.TRUE
             );
         }
 
@@ -176,15 +176,13 @@ public class HTreeMap<K,V>   extends AbstractMap<K,V> implements ConcurrentMap<K
             }
 
             //write bitmap
-            int pos = 0;
-            for(pos=0;pos<16;pos++){
-                out.writeByte(value[pos]);
-            }
+            out.write(value,0,16);
+            DataIO.DataOutputByteArray out2 = (DataIO.DataOutputByteArray) out;
 
             //write recids
-            for(;pos<value.length;pos+=6){
+            for(int pos=16;pos<value.length;pos+=6){
                 long recid = DataIO.getSixLong(value,pos);
-                DataIO.packLong(out,recid);
+                out2.packLong(recid);
             }
         }
 
@@ -204,10 +202,8 @@ public class HTreeMap<K,V>   extends AbstractMap<K,V> implements ConcurrentMap<K
             DataIO.putLong(ret,0,bitmap1);
             DataIO.putLong(ret,8,bitmap2);
 
-            for(int pos=16;pos<arrayLen;pos+=6){
-                long recid = DataIO.unpackLong(in);
-                DataIO.putSixLong(ret,pos,recid);
-            }
+            DataIO.DataInputInternal in2 = (DataIO.DataInputInternal) in;
+            in2.unpackLongSixArray(ret,16,arrayLen);
 
             return ret;
        }
@@ -221,11 +217,7 @@ public class HTreeMap<K,V>   extends AbstractMap<K,V> implements ConcurrentMap<K
     /** list of segments, this is immutable*/
     protected final long[] segmentRecids;
 
-    protected final ReentrantReadWriteLock[] segmentLocks = new ReentrantReadWriteLock[16];
-    {
-        for(int i=0;i< 16;i++)  segmentLocks[i]=new ReentrantReadWriteLock(CC.FAIR_LOCKS);
-    }
-
+    protected final ReentrantReadWriteLock[] segmentLocks;
 
 
 
@@ -247,8 +239,11 @@ public class HTreeMap<K,V>   extends AbstractMap<K,V> implements ConcurrentMap<K
 //            SerializerBase.assertSerializable(valueSerializer);
         }
 
+        segmentLocks=new ReentrantReadWriteLock[16];
+        for(int i=0;i< 16;i++)  {
+            segmentLocks[i]=new ReentrantReadWriteLock(CC.FAIR_LOCKS);
+        }
 
-        if(segmentRecids.length!=16) throw new IllegalArgumentException();
 
         this.engine = engine;
         this.hashSalt = hashSalt;
@@ -865,7 +860,7 @@ public class HTreeMap<K,V>   extends AbstractMap<K,V> implements ConcurrentMap<K
             if(HTreeMap.this.hasValues)
                 throw new UnsupportedOperationException();
             else
-                return HTreeMap.this.put(k, (V) BTreeMap.EMPTY) == null;
+                return HTreeMap.this.put(k, (V) Boolean.TRUE) == null;
         }
 
         @Override
@@ -1001,9 +996,19 @@ public class HTreeMap<K,V>   extends AbstractMap<K,V> implements ConcurrentMap<K
 
 
     protected int hash(final Object key) {
+        //TODO investigate hash distribution and performance impact
         int h = keySerializer.hashCode((K) key) ^ hashSalt;
-        h ^= (h >>> 20) ^ (h >>> 12);
-        return h ^ (h >>> 7) ^ (h >>> 4);
+        //spread low bits,
+        //need so many mixes so each bit becomes part of segment
+        //segment is upper 4 bits
+        h ^= (h<<4);
+        h ^= (h<<4);
+        h ^= (h<<4);
+        h ^= (h<<4);
+        h ^= (h<<4);
+        h ^= (h<<4);
+        h ^= (h<<4);
+        return h;
     }
 
 
@@ -1046,7 +1051,7 @@ public class HTreeMap<K,V>   extends AbstractMap<K,V> implements ConcurrentMap<K
 
         private LinkedNode[] advance(int lastHash){
 
-            int segment = lastHash >>>28;
+            int segment = lastHash>>>28;
 
             //two phases, first find old item and increase hash
             Lock lock = segmentLocks[segment].readLock();
@@ -1087,7 +1092,7 @@ public class HTreeMap<K,V>   extends AbstractMap<K,V> implements ConcurrentMap<K
 
         private LinkedNode[] findNextLinkedNode(int hash) {
             //second phase, start search from increased hash to find next items
-            for(int segment = Math.max(hash >>>28, lastSegment); segment<16;segment++){
+            for(int segment = Math.max(hash>>>28, lastSegment); segment<16;segment++){
                 final Lock lock = expireAccessFlag ? segmentLocks[segment].writeLock() :segmentLocks[segment].readLock() ;
                 lock.lock();
                 try{

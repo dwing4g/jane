@@ -12,95 +12,54 @@ public final class DataIO {
     private DataIO(){}
 
 
-    /* unpackInt,unpackLong, packInt, and packLong originally come from Kryo framework
-     * and were written by Nathan Sweet.
-     * It was modified to fit MapDB purposes.
-     * It is relicensed from BSD to Apache 2 with his permission:
+    /*
+     * unpack/pack methods originally come from Kryo framework by Nathan Sweet
+     * But they were replaced, and no original code remains.
      *
-     * Date: 27.5.2014 12:44
-     *
-     *   Hi Jan,
-     *
-     *   I'm fine with you putting code from the Kryo under Apache 2.0, as long as you keep the copyright and author. :)
-     *
-     *   Cheers!
-     *   -Nate
-     *
-     * -----------------------------
-     *
-     *  Copyright (c) 2012 Nathan Sweet
-     *
-     *  Licensed under the Apache License, Version 2.0 (the "License");
-     *  you may not use this file except in compliance with the License.
-     *  You may obtain a copy of the License at
-     *
-     *    http://www.apache.org/licenses/LICENSE-2.0
-     *
-     *  Unless required by applicable law or agreed to in writing, software
-     *  distributed under the License is distributed on an "AS IS" BASIS,
-     *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-     *  See the License for the specific language governing permissions and
-     *  limitations under the License.
+     * This code packs bytes in oposite direction, so unpack is faster.
      */
 
     /**
      * Unpack int value from the input stream.
-     *
-     * This method originally comes from Kryo Framework, author Nathan Sweet.
-     * It was heavily modified to fit MapDB needs.
      *
      * @param is The input stream.
      * @return The long value.
      * @throws java.io.IOException
      */
     static public int unpackInt(DataInput is) throws IOException {
-        int offset = 0;
-        int result=0;
-        int b;
-        do {
-            b = is.readUnsignedByte();
-            result |= (b & 0x7F) << offset;
-            if(CC.PARANOID && offset>32)
-                throw new AssertionError();
-            offset += 7;
-        }while((b & 0x80) != 0);
-        return result;
+        int ret = 0;
+        byte v;
+        do{
+            v = is.readByte();
+            ret = (ret<<7 ) | (v & 0x7F);
+        }while(v<0);
+
+        return ret;
     }
 
     /**
      * Unpack long value from the input stream.
-     *
-     * This method originally comes from Kryo Framework, author Nathan Sweet.
-     * It was heavily modified to fit MapDB needs.
      *
      * @param in The input stream.
      * @return The long value.
      * @throws java.io.IOException
      */
     static public long unpackLong(DataInput in) throws IOException {
-        //$DELAY$
-        int offset = 0;
-        long result=0;
-        long b;
-        do {
-            //$DELAY$
-            b = in.readUnsignedByte();
-            result |= (b & 0x7F) << offset;
-            if(CC.PARANOID && offset>64)
-                throw new AssertionError();
-            offset += 7;
-        }while((b & 0x80) != 0);
-        //$DELAY$
-        return result;
+        long ret = 0;
+        byte v;
+        do{
+            v = in.readByte();
+            ret = (ret<<7 ) | (v & 0x7F);
+        }while(v<0);
+
+        return ret;
     }
 
 
     /**
      * Pack long into output stream.
+     * Pack long into output stream.
      * It will occupy 1-10 bytes depending on value (lower values occupy smaller space)
-     *
-     * This method originally comes from Kryo Framework, author Nathan Sweet.
-     * It was modified to fit MapDB needs.
      *
      * @param out DataOutput to put value into
      * @param value to be serialized, must be non-negative
@@ -109,13 +68,14 @@ public final class DataIO {
      */
     static public void packLong(DataOutput out, long value) throws IOException {
         //$DELAY$
-        while ((value & ~0x7FL) != 0) {
-            out.write((((int) value & 0x7F) | 0x80));
-            value >>>= 7;
+        int shift = 63-Long.numberOfLeadingZeros(value);
+        shift -= shift%7; // round down to nearest multiple of 7
+        while(shift!=0){
+            out.writeByte((byte) (((value>>>shift) & 0x7F) | 0x80));
             //$DELAY$
+            shift-=7;
         }
-        //$DELAY$
-        out.write((byte) value);
+        out.writeByte((byte) (value & 0x7F));
     }
 
     /**
@@ -125,20 +85,22 @@ public final class DataIO {
      * This method originally comes from Kryo Framework, author Nathan Sweet.
      * It was modified to fit MapDB needs.
      *
-     * @param in DataOutput to put value into
+     * @param out DataOutput to put value into
      * @param value to be serialized, must be non-negative
      * @throws java.io.IOException
      */
 
-    static public void packInt(DataOutput in, int value) throws IOException {
+    static public void packInt(DataOutput out, int value) throws IOException {
         //$DELAY$
-        while ((value & ~0x7F) != 0) {
+        int shift = 31-Integer.numberOfLeadingZeros(value);
+        shift -= shift%7; // round down to nearest multiple of 7
+        while(shift!=0){
+            out.writeByte((byte) (((value>>>shift) & 0x7F) | 0x80));
             //$DELAY$
-            in.write(((value & 0x7F) | 0x80));
-            value >>>= 7;
+            shift-=7;
         }
         //$DELAY$
-        in.write((byte) value);
+        out.writeByte((byte) (value & 0x7F));
     }
 
     public static int longHash(final long key) {
@@ -146,19 +108,29 @@ public final class DataIO {
         int h = (int)(key ^ (key >>> 32));
         h ^= (h >>> 20) ^ (h >>> 12);
         return h ^ (h >>> 7) ^ (h >>> 4);
+
+        //TODO koloboke version, investigate
+//        long h = key * -7046029254386353131L;
+//        h ^= h >> 32;
+//        return (int)(h ^ h >> 16);
+
     }
 
     public static int intHash(int h) {
         //$DELAY$
         h ^= (h >>> 20) ^ (h >>> 12);
         return h ^ (h >>> 7) ^ (h >>> 4);
+
+        //TODO koloboke version, investigate
+//        int h = key * -1640531527;
+//        return h ^ h >> 16;
     }
 
     public static final long PACK_LONG_BIDI_MASK = 0xFFFFFFFFFFFFFFL;
 
 
     public static int packLongBidi(DataOutput out, long value) throws IOException {
-        out.write((((int) value & 0x7F))| 0x80);
+        out.write((((int) value & 0x7F)) | 0x80);
         value >>>= 7;
         int counter = 2;
 
@@ -232,12 +204,16 @@ public final class DataIO {
     }
 
     public static long getLong(byte[] buf, int pos) {
-        final int end = pos + 8;
-        long ret = 0;
-        for (; pos < end; pos++) {
-            ret = (ret << 8) | (buf[pos] & 0xFF);
-        }
-        return ret;
+       return
+               ((((long)buf[pos++]) << 56) |
+                (((long)buf[pos++] & 0xFF) << 48) |
+                (((long)buf[pos++] & 0xFF) << 40) |
+                (((long)buf[pos++] & 0xFF) << 32) |
+                (((long)buf[pos++] & 0xFF) << 24) |
+                (((long)buf[pos++] & 0xFF) << 16) |
+                (((long)buf[pos++] & 0xFF) <<  8) |
+                (((long)buf[pos] & 0xFF)));
+
     }
 
     public static void putLong(byte[] buf, int pos,long v) {
@@ -279,13 +255,7 @@ public final class DataIO {
 
     public static int nextPowTwo(final int a)
     {
-        //$DELAY$
-        int b = 1;
-        while (b < a)
-        {
-            b = b << 1;
-        }
-        return b;
+        return 1 << (32 - Integer.numberOfLeadingZeros(a - 1));
     }
 
 
@@ -293,7 +263,7 @@ public final class DataIO {
      * Give access to internal byte[] or ByteBuffer in DataInput2..
      * Should not be used unless you are writing MapDB extension and needs some performance bonus
      */
-    interface DataInputInternal extends DataInput,Closeable {
+    public interface DataInputInternal extends DataInput,Closeable {
 
         int getPos();
         void setPos(int pos);
@@ -306,6 +276,14 @@ public final class DataIO {
 
 
         void close();
+
+        long unpackLong() throws IOException;
+
+        int unpackInt() throws IOException;
+
+        void unpackLongSixArray(byte[] b, int start, int end)  throws IOException;
+
+        long[] unpackLongArrayDeltaCompression(int size) throws IOException;
     }
 
     /** DataInput on top of `byte[]` */
@@ -385,23 +363,31 @@ public final class DataIO {
 
         @Override
         public int readInt() throws IOException {
-            final int end = pos + 4;
-            int ret = 0;
-            for (; pos < end; pos++) {
-                //$DELAY$
-                ret = (ret << 8) | (buf[pos] & 0xFF);
-            }
+            int p = pos;
+            final byte[] b = buf;
+            final int ret =
+                    ((((int)b[p++]) << 24) |
+                     (((int)b[p++] & 0xFF) << 16) |
+                     (((int)b[p++] & 0xFF) <<  8) |
+                     (((int)b[p++] & 0xFF)));
+            pos = p;
             return ret;
         }
 
         @Override
         public long readLong() throws IOException {
-            final int end = pos + 8;
-            long ret = 0;
-            for (; pos < end; pos++) {
-                //$DELAY$
-                ret = (ret << 8) | (buf[pos] & 0xFF);
-            }
+            int p = pos;
+            final byte[] b = buf;
+            final long ret =
+                    ((((long)b[p++]) << 56) |
+                    (((long)b[p++] & 0xFF) << 48) |
+                    (((long)b[p++] & 0xFF) << 40) |
+                    (((long)b[p++] & 0xFF) << 32) |
+                    (((long)b[p++] & 0xFF) << 24) |
+                    (((long)b[p++] & 0xFF) << 16) |
+                    (((long)b[p++] & 0xFF) <<  8) |
+                    (((long)b[p++] & 0xFF)));
+            pos = p;
             return ret;
         }
 
@@ -455,23 +441,76 @@ public final class DataIO {
         public void close() {
         }
 
-        protected int unpackInt() throws IOException {
-            int offset = 0;
-            int result=0;
-            int b;
-            do {
+        @Override
+        public long unpackLong() throws IOException {
+            byte[] b = buf;
+            int p = pos;
+            long ret = 0;
+            byte v;
+            do{
                 //$DELAY$
-                b = buf[pos++];
-                result |= (b & 0x7F) << offset;
-                offset += 7;
-            }while((b & 0x80) != 0);
-            //$DELAY$
-            return result;
+                v = b[p++];
+                ret = (ret<<7 ) | (v & 0x7F);
+            }while(v<0);
+            pos = p;
+            return ret;
         }
 
+        @Override
+        public int unpackInt() throws IOException {
+            byte[] b = buf;
+            int p = pos;
+            int ret = 0;
+            byte v;
+            do{
+                //$DELAY$
+                v = b[p++];
+                ret = (ret<<7 ) | (v & 0x7F);
+            }while(v<0);
+            pos = p;
+            return ret;
+        }
+
+        @Override
+        public void unpackLongSixArray(byte[] b, int start, int end)  throws IOException {
+            int pos2 = pos;
+            byte[] buf2 = buf;
+            long ret;
+            byte v;
+            for(;start<end;start+=6) {
+                ret = 0;
+                do {
+                    //$DELAY$
+                    v = buf2[pos2++];
+                    ret = (ret << 7) | (v & 0x7F);
+                } while (v < 0);
+                DataIO.putSixLong(b,start,ret);
+            }
+            pos = pos2;
+        }
+
+        @Override
+        public long[] unpackLongArrayDeltaCompression(final int size) throws IOException {
+            long[] ret = new long[size];
+            int pos2 = pos;
+            byte[] buf2 = buf;
+            long prev =0;
+            byte v;
+            for(int i=0;i<size;i++){
+                long r = 0;
+                do {
+                    //$DELAY$
+                    v = buf2[pos2++];
+                    r = (r << 7) | (v & 0x7F);
+                } while (v < 0);
+                prev+=r;
+                ret[i]=prev;
+            }
+            pos = pos2;
+            return ret;
+        }
 
     }
-
 
     /**
      * Wraps `DataInput` into `InputStream`
@@ -636,14 +675,10 @@ public final class DataIO {
         @Override
         public String readUTF() throws IOException {
             //TODO verify this method accross multiple serializers
-            final int size = unpackInt(this);
+            final int size = unpackInt();
             //$DELAY$
             return SerializerBase.deserializeString(this, size);
         }
-
-
-
-
 
 
         @Override
@@ -669,6 +704,71 @@ public final class DataIO {
         @Override
         public void close() {
         }
+
+        @Override
+        public long unpackLong() throws IOException {
+            long ret = 0;
+            byte v;
+            do{
+                v = buf.get(pos++);
+                ret = (ret<<7 ) | (v & 0x7F);
+            }while(v<0);
+
+            return ret;
+        }
+
+        @Override
+        public int unpackInt() throws IOException {
+            int ret = 0;
+            byte v;
+            do{
+                v = buf.get(pos++);
+                ret = (ret<<7 ) | (v & 0x7F);
+            }while(v<0);
+
+            return ret;
+        }
+
+
+        @Override
+        public void unpackLongSixArray(byte[] b, int start, int end)  throws IOException {
+            int pos2 = pos;
+            ByteBuffer buf2 = buf;
+            long ret;
+            byte v;
+            for(;start<end;start+=6) {
+                ret = 0;
+                do {
+                    //$DELAY$
+                    v = buf2.get(pos2++);
+                    ret = (ret << 7) | (v & 0x7F);
+                } while (v < 0);
+                DataIO.putSixLong(b,start,ret);
+            }
+            pos = pos2;
+        }
+
+        @Override
+        public long[] unpackLongArrayDeltaCompression(final int size) throws IOException {
+            long[] ret = new long[size];
+            int pos2 = pos;
+            ByteBuffer buf2 = buf;
+            long prev=0;
+            byte v;
+            for(int i=0;i<size;i++){
+                long r = 0;
+                do {
+                    //$DELAY$
+                    v = buf2.get(pos2++);
+                    r = (r << 7) | (v & 0x7F);
+                } while (v < 0);
+                prev+=r;
+                ret[i]=prev;
+            }
+            pos = pos2;
+            return ret;
+        }
+
     }
 
     /**
@@ -687,7 +787,7 @@ public final class DataIO {
 
         public DataOutputByteArray(){
             pos = 0;
-            buf = new byte[16]; //TODO take hint from serializer for initial size
+            buf = new byte[128]; //TODO take hint from serializer for initial size
             sizeMask = 0xFFFFFFFF-(buf.length-1);
         }
 
@@ -704,19 +804,13 @@ public final class DataIO {
             n+=pos;
             if ((n&sizeMask)!=0) {
                 grow(n);
-
             }
         }
 
-        private void grow(long n) {
+        private void grow(int n) {
             //$DELAY$
-            int newSize = buf.length;
-            while(newSize<n){
-                //$DELAY$
-                newSize<<=2;
-                sizeMask<<=2;
-            }
-            //$DELAY$
+            int newSize = Math.max(nextPowTwo(n),buf.length);
+            sizeMask = 0xFFFFFFFF-(newSize-1);
             buf = Arrays.copyOf(buf, newSize);
         }
 
@@ -825,22 +919,27 @@ public final class DataIO {
             }
         }
 
-        //TODO remove pack methods  perhaps
-        protected void packInt(int value) throws IOException {
-            if(CC.PARANOID && value<0)
-                throw new AssertionError("negative value: "+value);
-
-            while ((value & ~0x7F) != 0) {
-                ensureAvail(1);
-                //$DELAY$
-                buf[pos++]= (byte) ((value & 0x7F) | 0x80);
-                value >>>= 7;
+        public void packInt(int value) throws IOException {
+            ensureAvail(5); //ensure worst case bytes
+            int shift = 31-Integer.numberOfLeadingZeros(value);
+            shift -= shift%7; // round down to nearest multiple of 7
+            while(shift!=0){
+                buf[pos++] = (byte) (((value>>>shift) & 0x7F) | 0x80);
+                shift-=7;
             }
-            //$DELAY$
-            ensureAvail(1);
-            buf[pos++]= (byte) value;
+            buf[pos++] = (byte) (value & 0x7F);
         }
 
+        public void packLong(long value) {
+            ensureAvail(10); //ensure worst case bytes
+            int shift = 63-Long.numberOfLeadingZeros(value);
+            shift -= shift%7; // round down to nearest multiple of 7
+            while(shift!=0){
+                buf[pos++] = (byte) (((value>>>shift) & 0x7F) | 0x80);
+                shift-=7;
+            }
+            buf[pos++] = (byte) (value & 0x7F);
+        }
     }
 
 

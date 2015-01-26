@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * MapDB note: reworked to implement LongMap. Original comes from:
  * https://svn.apache.org/repos/asf/lucene/dev/trunk/solr/core/src/java/org/apache/solr/util/ConcurrentLRUCache.java
  */
-public class LongConcurrentLRUMap<V> extends LongMap<V> {
+public class LongConcurrentLRUMap<V> {
 
     protected final LongConcurrentHashMap<CacheEntry<V>> map;
     protected final int upperWaterMark, lowerWaterMark;
@@ -82,7 +82,6 @@ public class LongConcurrentLRUMap<V> extends LongMap<V> {
         return e.value;
     }
 
-    @Override
     public boolean isEmpty() {
         return map.isEmpty();
     }
@@ -627,7 +626,6 @@ public class LongConcurrentLRUMap<V> extends LongMap<V> {
         return size.get();
     }
 
-    @Override
     public Iterator<V> valuesIterator() {
         final Iterator<CacheEntry<V>> iter = map.valuesIterator();
         return new Iterator<V>(){
@@ -649,9 +647,17 @@ public class LongConcurrentLRUMap<V> extends LongMap<V> {
         };
     }
 
-    @Override
+    /** Iterates over LongMap key and values without boxing long keys */
+    public interface LongMapIterator<V>{
+        boolean moveToNext();
+        long key();
+        V value();
+
+        void remove();
+    }
+
     public LongMapIterator<V> longMapIterator() {
-        final LongMapIterator<CacheEntry<V>> iter = map.longMapIterator();
+        final LongConcurrentHashMap.LongMapIterator<CacheEntry<V>> iter = map.longMapIterator();
         return new LongMapIterator<V>() {
             @Override
             public boolean moveToNext() {
@@ -679,7 +685,7 @@ public class LongConcurrentLRUMap<V> extends LongMap<V> {
         map.clear();
     }
 
-    public LongMap<CacheEntry<V>> getMap() {
+    public LongConcurrentHashMap<CacheEntry<V>> getMap() {
         return map;
     }
 

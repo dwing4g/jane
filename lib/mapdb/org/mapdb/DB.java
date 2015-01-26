@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A database with easy access to named maps and other collections.
@@ -81,11 +82,12 @@ public class DB implements Closeable {
     }
 
     public DB(Engine engine, boolean strictDBGet, boolean deleteFilesAfterClose) {
-        if(!(engine instanceof EngineWrapper)){
-            //access to Store should be prevented after `close()` was called.
-            //So for this we have to wrap raw Store into EngineWrapper
-            engine = new EngineWrapper(engine);
-        }
+        //TODO investigate dereference and how non-final field affect performance. Perhaps abandon dereference completely
+//        if(!(engine instanceof EngineWrapper)){
+//            //access to Store should be prevented after `close()` was called.
+//            //So for this we have to wrap raw Store into EngineWrapper
+//            engine = new EngineWrapper(engine);
+//        }
         this.engine = engine;
         this.strictDBGet = strictDBGet;
         this.deleteFilesAfterClose = deleteFilesAfterClose;
@@ -448,11 +450,11 @@ public class DB implements Closeable {
             //$DELAY$
             checkShouldCreate(name);
             if(engine.isReadOnly()){
-                Engine e = new StoreHeap(true);
+                Engine e = new StoreHeap(true,1,0);
                 //$DELAY$
                 new DB(e).getHashMap("a");
                 return namedPut(name,
-                        new DB(new EngineWrapper.ReadOnlyEngine(e)).getHashMap("a"));
+                        new DB(new Engine.ReadOnly(e)).getHashMap("a"));
             }
             if(valueCreator!=null)
                 return createHashMap(name).valueCreator(valueCreator).make();
@@ -582,11 +584,11 @@ public class DB implements Closeable {
         if(type==null){
             checkShouldCreate(name);
             if(engine.isReadOnly()){
-                Engine e = new StoreHeap(true);
+                Engine e = new StoreHeap(true,1,0);
                 //$DELAY$
                 new DB(e).getHashSet("a");
                 return namedPut(name,
-                        new DB(new EngineWrapper.ReadOnlyEngine(e)).getHashSet("a"));
+                        new DB(new Engine.ReadOnly(e)).getHashSet("a"));
             }
             return createHashSet(name).makeOrGet();
             //$DELAY$
@@ -907,11 +909,11 @@ public class DB implements Closeable {
         if(type==null){
             checkShouldCreate(name);
             if(engine.isReadOnly()){
-                Engine e = new StoreHeap(true);
+                Engine e = new StoreHeap(true,1,0);
                 new DB(e).getTreeMap("a");
                 //$DELAY$
                 return namedPut(name,
-                        new DB(new EngineWrapper.ReadOnlyEngine(e)).getTreeMap("a"));
+                        new DB(new Engine.ReadOnly(e)).getTreeMap("a"));
             }
             return createTreeMap(name).make();
 
@@ -1057,10 +1059,10 @@ public class DB implements Closeable {
         if(type==null){
             checkShouldCreate(name);
             if(engine.isReadOnly()){
-                Engine e = new StoreHeap(true);
+                Engine e = new StoreHeap(true,1,0);
                 new DB(e).getTreeSet("a");
                 return namedPut(name,
-                        new DB(new EngineWrapper.ReadOnlyEngine(e)).getTreeSet("a"));
+                        new DB(new Engine.ReadOnly(e)).getTreeSet("a"));
             }
             //$DELAY$
             return createTreeSet(name).make();
@@ -1150,10 +1152,10 @@ public class DB implements Closeable {
         if(type==null){
             checkShouldCreate(name);
             if(engine.isReadOnly()){
-                Engine e = new StoreHeap(true);
+                Engine e = new StoreHeap(true,1,0);
                 new DB(e).getQueue("a");
                 return namedPut(name,
-                        new DB(new EngineWrapper.ReadOnlyEngine(e)).getQueue("a"));
+                        new DB(new Engine.ReadOnly(e)).getQueue("a"));
             }
             //$DELAY$
             return createQueue(name,null,true);
@@ -1201,11 +1203,11 @@ public class DB implements Closeable {
         if(type==null){
             checkShouldCreate(name);
             if(engine.isReadOnly()){
-                Engine e = new StoreHeap(true);
+                Engine e = new StoreHeap(true,1,0);
                 //$DELAY$
                 new DB(e).getStack("a");
                 return namedPut(name,
-                        new DB(new EngineWrapper.ReadOnlyEngine(e)).getStack("a"));
+                        new DB(new Engine.ReadOnly(e)).getStack("a"));
             }
             return createStack(name,null,true);
         }
@@ -1250,11 +1252,11 @@ public class DB implements Closeable {
         if(type==null){
             checkShouldCreate(name);
             if(engine.isReadOnly()){
-                Engine e = new StoreHeap(true);
+                Engine e = new StoreHeap(true,1,0);
                 new DB(e).getCircularQueue("a");
                 //$DELAY$
                 return namedPut(name,
-                        new DB(new EngineWrapper.ReadOnlyEngine(e)).getCircularQueue("a"));
+                        new DB(new Engine.ReadOnly(e)).getCircularQueue("a"));
             }
             return createCircularQueue(name,null, 1024);
         }
@@ -1333,11 +1335,11 @@ public class DB implements Closeable {
         if(type==null){
             checkShouldCreate(name);
             if(engine.isReadOnly()){
-                Engine e = new StoreHeap(true);
+                Engine e = new StoreHeap(true,1,0);
                 new DB(e).getAtomicLong("a");
                 //$DELAY$
                 return namedPut(name,
-                        new DB(new EngineWrapper.ReadOnlyEngine(e)).getAtomicLong("a"));
+                        new DB(new Engine.ReadOnly(e)).getAtomicLong("a"));
             }
             return createAtomicLong(name,0L);
         }
@@ -1373,11 +1375,11 @@ public class DB implements Closeable {
         if(type==null){
             checkShouldCreate(name);
             if(engine.isReadOnly()){
-                Engine e = new StoreHeap(true);
+                Engine e = new StoreHeap(true,1,0);
                 new DB(e).getAtomicInteger("a");
                 //$DELAY$
                 return namedPut(name,
-                        new DB(new EngineWrapper.ReadOnlyEngine(e)).getAtomicInteger("a"));
+                        new DB(new Engine.ReadOnly(e)).getAtomicInteger("a"));
             }
             return createAtomicInteger(name, 0);
         }
@@ -1414,10 +1416,10 @@ public class DB implements Closeable {
         if(type==null){
             checkShouldCreate(name);
             if(engine.isReadOnly()){
-                Engine e = new StoreHeap(true);
+                Engine e = new StoreHeap(true,1,0);
                 new DB(e).getAtomicBoolean("a");
                 return namedPut(name,
-                        new DB(new EngineWrapper.ReadOnlyEngine(e)).getAtomicBoolean("a"));
+                        new DB(new Engine.ReadOnly(e)).getAtomicBoolean("a"));
             }
             //$DELAY$
             return createAtomicBoolean(name, false);
@@ -1459,11 +1461,11 @@ public class DB implements Closeable {
         if(type==null){
             checkShouldCreate(name);
             if(engine.isReadOnly()){
-                Engine e = new StoreHeap(true);
+                Engine e = new StoreHeap(true,1,0);
                 new DB(e).getAtomicString("a");
                 //$DELAY$
                 return namedPut(name,
-                        new DB(new EngineWrapper.ReadOnlyEngine(e)).getAtomicString("a"));
+                        new DB(new Engine.ReadOnly(e)).getAtomicString("a"));
             }
             return createAtomicString(name, "");
         }
@@ -1500,10 +1502,10 @@ public class DB implements Closeable {
         if(type==null){
             checkShouldCreate(name);
             if(engine.isReadOnly()){
-                Engine e = new StoreHeap(true);
+                Engine e = new StoreHeap(true,1,0);
                 new DB(e).getAtomicVar("a");
                 return namedPut(name,
-                        new DB(new EngineWrapper.ReadOnlyEngine(e)).getAtomicVar("a"));
+                        new DB(new Engine.ReadOnly(e)).getAtomicVar("a"));
             }
             //$DELAY$
             return createAtomicVar(name, null, getDefaultSerializer());
@@ -1670,7 +1672,7 @@ public class DB implements Closeable {
         String fileName = deleteFilesAfterClose?Store.forEngine(engine).fileName:null;
         engine.close();
         //dereference db to prevent memory leaks
-        engine = EngineWrapper.CLOSED;
+        engine = CLOSED_ENGINE;
         namesInstanciated = Collections.unmodifiableMap(new HashMap());
         namesLookup = Collections.unmodifiableMap(new HashMap());
 
@@ -1801,6 +1803,100 @@ public class DB implements Closeable {
         //$DELAY$
         if(!expected.equals(type)) throw new IllegalArgumentException("Wrong type: "+type);
     }
+
+
+    /** throws `IllegalArgumentError("already closed)` on all access */
+    protected static final Engine CLOSED_ENGINE = new Engine(){
+
+
+        @Override
+        public long preallocate() {
+            throw new IllegalAccessError("already closed");
+        }
+
+
+        @Override
+        public <A> long put(A value, Serializer<A> serializer) {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public <A> A get(long recid, Serializer<A> serializer) {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public <A> void update(long recid, A value, Serializer<A> serializer) {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public <A> boolean compareAndSwap(long recid, A expectedOldValue, A newValue, Serializer<A> serializer) {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public <A> void delete(long recid, Serializer<A> serializer) {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public void close() {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public boolean isClosed() {
+            return true;
+        }
+
+        @Override
+        public void commit() {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public void rollback() throws UnsupportedOperationException {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public boolean isReadOnly() {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public boolean canRollback() {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public boolean canSnapshot() {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public Engine snapshot() throws UnsupportedOperationException {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public Engine getWrappedEngine() {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public void clearCache() {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public void compact() {
+            throw new IllegalAccessError("already closed");
+        }
+
+
+    };
 
 
 }
