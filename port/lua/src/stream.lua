@@ -465,7 +465,7 @@ local function unmarshalVar(self, vars)
 		v = self:unmarshal(t and bean[t])
 	else
 		v = unmarshalByte(self)
-		if v < 0x80 then
+		if v < 0x40 then
 			if v < 8 then -- list
 				local n = self:unmarshalUInt()
 				t = vars and vars.value
@@ -483,7 +483,7 @@ local function unmarshalVar(self, vars)
 			end
 		else -- map
 			local n = v % 8
-			local k = (v - 0x80 - n) / 8
+			local k = (v - 0x40 - n) / 8
 			v, n = n, self:unmarshalUInt()
 			local kt = vars and vars.key
 			kt = k ~= 2 and k or kt and bean[kt]
