@@ -99,6 +99,7 @@ end
 
 local function decode(self, s)
 	log("decode:", s:remain())
+	if s:remain() <= 0 then return end
 	local type = s:unmarshalUInt()
 	local size = s:unmarshalUInt()
 	if size > s:remain() then return end
@@ -133,6 +134,7 @@ function Network:doTick(time)
 					if not s or not bean then break end
 					local s, err = pcall(self.onRecv, self, bean)
 					if not s then log("ERROR:", err) end
+					if self.rbuf ~= rbuf then return end -- onRecv may close or reconnect
 				end
 				rbuf = Stream(rbuf:sub(pos))
 				self.rbuf = rbuf
@@ -157,10 +159,10 @@ function Network:doTick(time)
 			else
 				if pn then
 					pos = pos + pn
-					wbuf:pos(pos)
 				end
+				if pos > 0 then self.wbuf = Stream(wbuf:sub(pos)) end
 				if err ~= "timeout" then self:close(-6, err) return end
-				break
+				return true
 			end
 		end
 		if pos > 0 then self.wbuf = Stream(wbuf:sub(pos)) end
