@@ -15,13 +15,14 @@ local concat = table.concat
 local util = {}
 
 -- 清除整个表中的全部内容(不修改元表)
-function util.clear(t)
+local function clear(t)
 	while true do
 		local k = next(t)
 		if k == nil then return end
 		t[k] = nil
 	end
 end
+util.clear = clear
 
 -- 复制t,如果t不是表则直接返回,否则进行深拷贝,包括元表及相同引用,参数m仅内部使用
 local function clone(t, m)
@@ -43,7 +44,7 @@ util.clone = clone
 
 -- 表t清空并从表s中复制全部内容(规则同上)
 function util.cloneTo(s, t)
-	util.clear(t)
+	clear(t)
 	for k, v in pairs(s) do
 		t[k] = clone(v)
 	end
@@ -110,7 +111,7 @@ local classMt = {
 -- ClassA = class { ... } -- 也可以使用class()并动态构造类字段,类字段即为默认的实例字段,__base字段可指定基类
 -- InstanceA = ClassA() -- 构造实例,如果类字段有__new函数则自动调用,否则可以传入1个表作为初始实例内容
 -- ClassA == InstanceA.__class -- 特殊的__class字段可以获取类
-function util.class(c)
+local function class(c)
 	c = c or {}
 	c.__index = function(t, k)
 		local v = c[k]
@@ -122,9 +123,10 @@ function util.class(c)
 	end
 	return setmetatable(c, classMt)
 end
+util.class = class
 
 -- 获取s变量的字符串,可见字符串或[数量]
-function util.str(s)
+local function str(s)
 	if type(s) == "string" then
 		local n = #s
 		for i = 1, n do
@@ -136,6 +138,7 @@ function util.str(s)
 		return tostring(s)
 	end
 end
+util.str = str
 
 -- 导出table成lua脚本字符串,key/value支持number/string,value还支持bool/table
 local function dumpTable(t, out, n)
@@ -162,12 +165,12 @@ end
 util.dump = dumpTable
 
 -- 获取bean的详细字符串,后三个参数仅内部使用
-function util.toStr(t, out, m, name)
+local function toStr(t, out, m, name)
 	local o = out or {}
 	local n = #o
 	if type(t) ~= "table" then
 		n = n + 1
-		o[n] = util.str(t)
+		o[n] = str(t)
 	else
 		if m then
 			if m[t] then
@@ -195,16 +198,16 @@ function util.toStr(t, out, m, name)
 					if v ~= nil then
 						o[n + 2] = name
 						o[n + 3] = "="
-						n = util.toStr(v, o, m, name)
+						n = toStr(v, o, m, name)
 						o[n + 1] = ","
 					end
 				end
 			end
 		else
 			for k, v in pairs(t) do
-				n = util.toStr(k, o, m, k)
+				n = toStr(k, o, m, k)
 				o[n + 1] = "="
-				n = util.toStr(v, o, m, k)
+				n = toStr(v, o, m, k)
 				o[n + 1] = ","
 			end
 		end
@@ -213,6 +216,7 @@ function util.toStr(t, out, m, name)
 	end
 	return out and n or concat(o)
 end
+util.toStr = toStr
 
 -- 根据bean描述表初始化所有的bean类
 -- bean类及对象都可访问的特殊字段:
@@ -220,11 +224,11 @@ end
 -- __type: bean的类型ID(类的实体字段)
 -- __name: bean的名字(类的实体字段)
 -- __base: bean的字段/常量表(类的实体字段). key是字段ID或字段名或常量key,value是{id=字段ID,name=字段名,type/key/value=类型ID或bean名}或常量value
--- __tostring: 指向util.toStr函数(类的实体字段). 只供bean对象转换成字符串时自动调用
+-- __tostring: 指向toStr函数(类的实体字段). 只供bean对象转换成字符串时自动调用
 -- 关联容器表的特殊字段:
 -- __map: true
 function util.initBeans(c)
-	local s = {} -- 临时存储类的表,以bean类型值为索引,用于后面创建
+	local s = {} -- 临时存储类的表,以bean类型名为索引,用于后面创建
 	for n, b in pairs(c) do
 		local vars = b.__base -- 生成代码中的初始定义
 		local r = {} -- 临时表,以var名为索引,稍后合并到__base中
@@ -239,12 +243,15 @@ function util.initBeans(c)
 		end
 		vars.__readonly = true -- 考虑效率,这里仅仅定义只读标记以便读取时不做CopyOnWrite处理,直接返回表引用,信任使用者不会做修改操作(可注释此行移除此特性)
 		b.__name = n -- bean类中加入__name字段
-		b.__tostring = util.toStr
-		s[b.__type] = util.class(b) -- 创建类并放入临时表中
+		b.__tostring = toStr
+		s[n] = class(b) -- 创建类并放入临时表中
 	end
 	local m = { [0] = 0, "", false, setmetatable({}, { __newindex = dummy }), setmetatable({}, { __index = { __map = true }, __newindex = dummy }) } -- 基础类型的stub值
-	for i, b in pairs(s) do
-		c[i] = b -- 把临时表s归并到c中,使c加入__type索引
+	for n, b in pairs(s) do
+		local i = c[n].__type
+		if i > 0 then
+			c[i] = b -- 把临时表s归并到c中,使c加入__type索引
+		end
 		for n, v in pairs(b.__base) do
 			if type(n) == "string" and type(v) == "table" then -- 只取字段名为索引的字段
 				local t = v.type
