@@ -101,7 +101,8 @@ local classMt = {
 		local new = c.__new
 		if new then
 			local obj = setmetatable({}, c)
-			return new(obj, t, ...) or obj
+			local r = new(obj, t, ...)
+			return r == nil and obj or r
 		end
 		return setmetatable(t or {}, c)
 	end,
@@ -249,7 +250,7 @@ function util.initBeans(c)
 	local m = { [0] = 0, "", false, setmetatable({}, { __newindex = dummy }), setmetatable({}, { __index = { __map = true }, __newindex = dummy }) } -- 基础类型的stub值
 	for n, b in pairs(s) do
 		local i = c[n].__type
-		if i > 0 then
+		if i ~= 0 then
 			c[i] = b -- 把临时表s归并到c中,使c加入__type索引
 		end
 		for n, v in pairs(b.__base) do
