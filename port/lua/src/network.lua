@@ -65,7 +65,7 @@ function Network:connect(addr, port)
 	self.ctime = clock()
 	tcp:settimeout(0)
 	local res, err = tcp:connect(addr, port)
-	log("connect:", res, err) -- nil, "timeout" for async connecting
+	log("connect:", addr, port, res, err) -- nil, "timeout" for async connecting
 	if not res and err ~= "timeout" then
 		self:close(-2, err) -- sync connect error, such as dns failed
 		return false

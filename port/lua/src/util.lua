@@ -14,6 +14,20 @@ local concat = table.concat
 
 local util = {}
 
+-- 表的Copy On Write处理(只能遍历copy过的键值),原型对应关系表统一存到弱表proto里
+local proto = setmetatable({}, { __mode = "k" })
+local cowMt
+cowMt = {
+	__index = function(t, k)
+		local v = proto[t][k]
+		if type(v) ~= "table" then return v end
+		local vv = setmetatable({}, cowMt)
+		proto[vv] = v
+		t[k] = vv
+		return vv
+	end,
+}
+
 -- 清除整个表中的全部内容(不修改元表)
 local function clear(t)
 	while true do
@@ -38,7 +52,11 @@ local function clone(t, m)
 	for k, v in pairs(t) do
 		r[k] = clone(v, m)
 	end
-	return setmetatable(r, getmetatable(t))
+	local mt = getmetatable(t)
+	if mt == cowMt then
+		proto[r] = proto[t]
+	end
+	return setmetatable(r, mt)
 end
 util.clone = clone
 
@@ -59,7 +77,6 @@ function util.copyTo(s, t)
 end
 
 -- 使一个表只读(只对这个表触发读及__index操作,递归只读,无法遍历,所有只读过的表读__readonly键都返回true),原型对应关系表统一存到弱表proto里
-local proto = setmetatable({}, { __mode = "k" })
 local dummy = function() end -- 共享的空函数
 local readonly
 local readonlyMt = {
@@ -77,19 +94,6 @@ readonly = function(t)
 end
 util.readonly = readonly
 
--- 表的Copy On Write处理(只能遍历copy过的键值),原型对应关系表统一存到弱表proto里
-local cowMt
-cowMt = {
-	__index = function(t, k)
-		local v = proto[t][k]
-		if type(v) ~= "table" then return v end
-		local vv = setmetatable({}, cowMt)
-		proto[vv] = v
-		t[k] = vv
-		return vv
-	end,
-}
-
 -- 类的元表,定义默认字段值的获取,包括基类,定义调用类即为构造实例
 local classMt = {
 	__index = function(c, k)
@@ -101,7 +105,8 @@ local classMt = {
 		local new = c.__new
 		if new then
 			local obj = setmetatable({}, c)
-			return new(obj, t, ...) or obj
+			local r = new(obj, t, ...)
+			return r == nil and obj or r
 		end
 		return setmetatable(t or {}, c)
 	end,
@@ -249,7 +254,7 @@ function util.initBeans(c)
 	local m = { [0] = 0, "", false, setmetatable({}, { __newindex = dummy }), setmetatable({}, { __index = { __map = true }, __newindex = dummy }) } -- 基础类型的stub值
 	for n, b in pairs(s) do
 		local i = c[n].__type
-		if i > 0 then
+		if i ~= 0 then
 			c[i] = b -- 把临时表s归并到c中,使c加入__type索引
 		end
 		for n, v in pairs(b.__base) do

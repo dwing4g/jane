@@ -668,8 +668,8 @@ local function bean_common(bean)
 	bean.name = trim(bean.name)
 	if bean.name:find("[^%w_]") or typedef[bean.name] or bean.name == "AllBeans" or bean.name == "AllTables" then error("ERROR: invalid bean.name: " .. bean.name) end
 	if name_code[bean.name] then error("ERROR: duplicated bean.name: " .. bean.name) end
-	if type(bean.type) ~= "number" then bean.type = 0 end
 	if bean.handlers and type_bean[bean.type] then error("ERROR: duplicated bean.type: " .. bean.type) end
+	if type(bean.type) ~= "number" then bean.type = 0 end
 	for name in (bean.handlers or ""):gmatch("([%w_%.]+)") do
 		if not all_handlers[name] then error("ERROR: not defined handler: " .. name) end
 		hdl_names[name] = hdl_names[name] or {}
