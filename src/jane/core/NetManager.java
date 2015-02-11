@@ -380,12 +380,24 @@ public class NetManager implements IoHandler
 	}
 
 	/**
-	 * 唯一的发送入口
+	 * 发送bean的底层入口
 	 */
 	protected static WriteFuture write(IoSession session, Object obj)
 	{
 		if(session.isClosing() || obj == null) return null;
 		WriteFuture wf = new DefaultWriteFuture(session);
+		session.getFilterChain().fireFilterWrite(new DefaultWriteRequest(obj, wf, null));
+		return wf;
+	}
+
+	/**
+	 * 发送bean的底层入口. 可带监听器
+	 */
+	protected static WriteFuture write(IoSession session, Object obj, IoFutureListener<?> listener)
+	{
+		if(session.isClosing() || obj == null) return null;
+		WriteFuture wf = new DefaultWriteFuture(session);
+		if(listener != null) wf.addListener(listener);
 		session.getFilterChain().fireFilterWrite(new DefaultWriteRequest(obj, wf, null));
 		return wf;
 	}
@@ -443,12 +455,13 @@ public class NetManager implements IoHandler
 	 */
 	public <A extends Bean<A>> boolean send(final IoSession session, final A bean, final BeanHandler<A> callback)
 	{
-		WriteFuture wf = write(session, bean);
-		if(wf == null) return false;
-		if(Log.hasTrace) Log.log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.getClass().getSimpleName(), bean);
-		if(callback != null)
+		if(session.isClosing() || bean == null) return false;
+		WriteFuture wf;
+		if(callback == null)
+			wf = write(session, bean);
+		else
 		{
-			wf.addListener(new IoFutureListener<IoFuture>()
+			wf = write(session, bean, new IoFutureListener<IoFuture>()
 			{
 				@Override
 				public void operationComplete(IoFuture future)
@@ -464,6 +477,8 @@ public class NetManager implements IoHandler
 				}
 			});
 		}
+		if(wf == null) return false;
+		if(Log.hasTrace) Log.log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.getClass().getSimpleName(), bean);
 		return true;
 	}
 
@@ -492,12 +507,24 @@ public class NetManager implements IoHandler
 	public <A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>>
 	        boolean sendRpc(final IoSession session, final RpcBean<A, R, B> rpcBean, RpcHandler<A, R, B> handler)
 	{
+		if(session.isClosing() || rpcBean == null) return false;
 		rpcBean.setRequest();
-		if(!send(session, rpcBean)) return false;
 		rpcBean.setReqTime((int)(System.currentTimeMillis() / 1000));
 		rpcBean.setSession(session);
 		rpcBean.setOnClient(handler != null ? handler : (RpcHandler<A, R, B>)_handlers.get(rpcBean.type()));
-		_rpcs.put(rpcBean.getRpcId(), rpcBean);
+		if(_rpcs.putIfAbsent(rpcBean.getRpcId(), rpcBean) != null)
+		{
+			rpcBean.setSession(null);
+			rpcBean.setOnClient(null);
+			throw new RuntimeException("do not send the same RPC in the same time");
+		}
+		if(!send(session, rpcBean))
+		{
+			rpcBean.setSession(null);
+			rpcBean.setOnClient(null);
+			_rpcs.remove(rpcBean.getRpcId());
+			return false;
+		}
 		return true;
 	}
 
@@ -534,8 +561,8 @@ public class NetManager implements IoHandler
 	public <A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>>
 	        Future<R> sendRpcSync(final IoSession session, final RpcBean<A, R, B> rpcBean)
 	{
+		if(session.isClosing() || rpcBean == null) return null;
 		rpcBean.setRequest();
-		if(!send(session, rpcBean)) return null;
 		rpcBean.setReqTime((int)(System.currentTimeMillis() / 1000));
 		rpcBean.setSession(session);
 		final FutureRPC<R> ft = new FutureRPC<R>();
@@ -553,7 +580,19 @@ public class NetManager implements IoHandler
 				ft.set(null);
 			}
 		});
-		_rpcs.put(rpcBean.getRpcId(), rpcBean);
+		if(_rpcs.putIfAbsent(rpcBean.getRpcId(), rpcBean) != null)
+		{
+			rpcBean.setSession(null);
+			rpcBean.setOnClient(null);
+			throw new RuntimeException("do not send the same RPC in the same time");
+		}
+		if(!send(session, rpcBean))
+		{
+			rpcBean.setSession(null);
+			rpcBean.setOnClient(null);
+			_rpcs.remove(rpcBean.getRpcId());
+			return null;
+		}
 		return ft;
 	}
 
@@ -578,7 +617,7 @@ public class NetManager implements IoHandler
 	/**
 	 * 对连接器管理的全部连接广播bean
 	 * <p>
-	 * 警告: 连接数很大的情况下慎用,必要时应自己在某一工作线程中即时或定时地逐一发送
+	 * 警告: 不能广播RPC. 连接数很大的情况下慎用,必要时应自己在某一工作线程中即时或定时地逐一发送
 	 */
 	public void clientBroadcast(Bean<?> bean)
 	{
@@ -589,7 +628,7 @@ public class NetManager implements IoHandler
 	/**
 	 * 对监听器管理的全部连接广播bean
 	 * <p>
-	 * 警告: 连接数很大的情况下慎用,必要时应自己在某一工作线程中即时或定时地逐一发送
+	 * 警告: 不能广播RPC. 连接数很大的情况下慎用,必要时应自己在某一工作线程中即时或定时地逐一发送
 	 */
 	public void serverBroadcast(Bean<?> bean)
 	{
@@ -668,7 +707,7 @@ public class NetManager implements IoHandler
 	@Override
 	public void inputClosed(IoSession session)
 	{
-		session.close(true);
+		session.close(false);
 	}
 
 	@Override
@@ -708,6 +747,6 @@ public class NetManager implements IoHandler
 	public void exceptionCaught(IoSession session, Throwable cause)
 	{
 		Log.log.error(_name + '(' + session.getId() + ',' + session.getRemoteAddress() + "): exception:", cause);
-		session.close(true);
+		session.close(false);
 	}
 }

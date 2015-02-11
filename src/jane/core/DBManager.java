@@ -288,8 +288,8 @@ public final class DBManager
 						{
 							Log.log.error("DBManager.JVMShutDown: user callback exception:", e);
 						}
-						_shutdownCallbacks.clear();
 					}
+					_shutdownCallbacks.clear();
 					Log.log.info("DBManager.JVMShutDown: db shutdown");
 					synchronized(DBManager.this)
 					{
