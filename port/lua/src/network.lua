@@ -70,6 +70,8 @@ function Network:connect(addr, port)
 		self:close(-2, err) -- sync connect error, such as dns failed
 		return false
 	end
+	self.addr = addr
+	self.port = port
 	return true
 end
 
@@ -82,6 +84,10 @@ function Network:send(bean)
 	if onEncode then buf = onEncode(self, buf) end
 	wbuf:append(buf)
 	return true
+end
+
+function Network:isOpen()
+	return self.rbuf ~= nil
 end
 
 function Network:isSending()

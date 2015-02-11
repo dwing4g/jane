@@ -63,10 +63,15 @@ util.clone = clone
 -- 表t清空并从表s中复制全部内容(规则同上)
 function util.cloneTo(s, t)
 	clear(t)
+	local m = {}
 	for k, v in pairs(s) do
-		t[k] = clone(v)
+		t[k] = clone(v, m)
 	end
-	return setmetatable(t, getmetatable(s))
+	local mt = getmetatable(s)
+	if mt == cowMt then
+		proto[t] = proto[s]
+	end
+	return setmetatable(t, mt)
 end
 
 -- 表s里的内容拷贝覆盖到t中(浅拷贝,不涉及元表)
