@@ -13,6 +13,14 @@ local function log(...)
 --	print(...)
 end
 
+-- defined close code in this file:
+-- -1: (in connect) reconnected
+-- -2: (in connect) sync connect error, such as dns failed
+-- -3: (in doTick ) connect timeout
+-- -4: (in doTick ) remote close
+-- -5: (in doTick ) remote reset
+-- -6: (in doTick ) send failed
+
 ---@module Network
 local Network = {}
 
@@ -76,8 +84,12 @@ function Network:connect(addr, port)
 end
 
 function Network:send(bean)
+	if not self.tcp then return false end
 	local wbuf = self.wbuf
-	if not wbuf then return false end
+	if not wbuf then
+		wbuf = Stream()
+		self.wbuf = wbuf
+	end
 	local buf, bbuf = Stream(), Stream():marshal(bean):flush()
 	buf:marshalUInt(bean.__type):marshalUInt(bbuf:limit()):append(bbuf):flush()
 	local onEncode = self.onEncode
