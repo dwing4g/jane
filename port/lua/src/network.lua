@@ -56,10 +56,10 @@ function Network:close(code, err)
 		log("close:", tcp:close())
 		self.tcp = nil
 		self.tcps = nil
+		self.wbuf = nil
 		if self.rbuf or self.ctime then
-			self.ctime = nil
 			self.rbuf = nil
-			self.wbuf = nil
+			self.ctime = nil
 			self:onClose(code or 0, err or "")
 		end
 	end
