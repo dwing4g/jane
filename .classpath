@@ -13,11 +13,11 @@
 	</classpathentry>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
 	<classpathentry kind="lib" path="lib/luaj-jse-2.0.3.jar" sourcepath="lib/luaj-sources-2.0.3.jar"/>
-	<classpathentry kind="lib" path="lib/slf4j-api-1.7.9.jar" sourcepath="lib/slf4j-api-1.7.9-sources.jar"/>
+	<classpathentry kind="lib" path="lib/slf4j-api-1.7.10.jar" sourcepath="lib/slf4j-api-1.7.10-sources.jar"/>
 	<classpathentry kind="lib" path="lib/mina-core-2.0.9.jar" sourcepath="lib/mina-core-2.0.9-src.jar"/>
-	<classpathentry kind="lib" path="lib/log4j-api-2.1.jar" sourcepath="lib/log4j-api-2.1-sources.jar"/>
-	<classpathentry kind="lib" path="lib/log4j-core-2.1.jar" sourcepath="lib/log4j-core-2.1-sources.jar"/>
-	<classpathentry kind="lib" path="lib/log4j-slf4j-impl-2.1.jar" sourcepath="lib/log4j-slf4j-impl-2.1-sources.jar"/>
+	<classpathentry kind="lib" path="lib/log4j-api-2.2.jar" sourcepath="lib/log4j-api-2.2-sources.jar"/>
+	<classpathentry kind="lib" path="lib/log4j-core-2.2.jar" sourcepath="lib/log4j-core-2.2-sources.jar"/>
+	<classpathentry kind="lib" path="lib/log4j-slf4j-impl-2.2.jar" sourcepath="lib/log4j-slf4j-impl-2.2-sources.jar"/>
 	<classpathentry kind="lib" path="lib/h2-mvstore-1.4.184.jar" sourcepath="lib/h2-mvstore-1.4.184-src.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
