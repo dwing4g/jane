@@ -151,7 +151,10 @@ function Network:doTick(time)
 					local s, bean = pcall(decode, self, rbuf)
 					if not s or not bean then break end
 					local s, err = pcall(self.onRecv, self, bean)
-					if not s then log("ERROR:", err) end
+					if not s then
+						self.rbuf = Stream(rbuf:sub(pos))
+						error("ERROR: " .. err)
+					end
 					if self.rbuf ~= rbuf then return end -- onRecv may close or reconnect
 				end
 				rbuf = Stream(rbuf:sub(pos))

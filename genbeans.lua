@@ -958,11 +958,11 @@ typedef.map = typedef.hashmap
 typedef.linkedmap = typedef.linkedhashmap
 
 local function trim(s)
-	return s:gsub("[%c ]+", "")
+	return s:gsub("[%c%s]+", "")
 end
 local function do_var(var)
 	if type(var.id) ~= "number" then var.id = -1 end
-	if var.id < -1 or var.id > 190 then error("ERROR: normal id=" .. var.id .. " must be in [1, 190]") end
+	if var.id < -1 or var.id > 190 then error("ERROR: var.id=" .. var.id .. " must be in [1, 190]") end
 	var.import = {}
 	var.id3 = string.format("%3d", var.id)
 	var.name = trim(var.name)
@@ -1090,9 +1090,12 @@ function bean(bean)
 
 	bean.import = { ["jane.core.Bean"] = true, ["jane.core.MarshalException"] = true, ["jane.core.OctetsStream"] = true, ["jane.core.SContext"] = true }
 	local vartypes = { bean.name }
+	local id_used = {}
 	for _, var in ipairs(bean) do
 		do_var(var)
 		if var.id > 0 then
+			if id_used[var.id] then error("ERROR: duplicated var.id: " .. var.id .. " in bean: " .. bean.name) end
+			id_used[var.id] = true
 			vartypes[#vartypes + 1] = var.type
 			for _, v in ipairs(var.import) do
 				bean.import[v] = true
@@ -1145,9 +1148,13 @@ function bean(bean)
 	bean.param_warning = (#vartypes > 1 and "" or "/** @param b unused */\n\t")
 	code = code_conv(code, "bean", bean):
 		gsub(#vartypes > 1 and "#[<>]#" or "#<#(.-)#>#", ""):
+		gsub("\n\n\tstatic\n\t{\n\t\ttry\n\t\t{\n\t\t\tClass<.-> c = .-%.class;\n\t\t}\n\t\tcatch%(Exception e%)\n\t\t{\n\t\t\tthrow new Error%(e%);\n\t\t}\n\t}", ""):
 		gsub("int h = (%(int%)serialVersionUID;)\n\t\treturn h;", "return %1"):
 		gsub("\n\t{\n\n\t\t", "\n\t{\n\t\t"):
 		gsub("\r", "")
+	if not code:find("\tprivate static Field ") then
+		code = code:gsub("import java.lang.reflect.Field;\n", "")
+	end
 	if bean.const then code = bean_const(code) end
 	local c, n = code:gsub([[
 	static

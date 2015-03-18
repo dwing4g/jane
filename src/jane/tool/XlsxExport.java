@@ -39,8 +39,8 @@ public final class XlsxExport
 
 	private static String getColumnName(int id) // 只支持A(1)~ZZ(26*26+26)
 	{
-		if(id < 26) return new String(new char[] { (char)(id + 'A' - 1) });
-		return new String(new char[] { (char)((id - 1) / 26 + 'A' - 1), (char)((id - 1) % 26 + 'A') });
+		if(id < 26) return new String(new char[] { (char)(id + 'A') });
+		return new String(new char[] { (char)(id / 26 + 'A' - 1), (char)(id % 26 + 'A') });
 	}
 
 	private static String toXmlStr(String s)
@@ -89,7 +89,19 @@ public final class XlsxExport
 		NodeList nl = db.parse(new ByteArrayInputStream(xmlStr)).getDocumentElement().getElementsByTagName("si");
 		String[] strTable = new String[nl.getLength()]; // <si><t>string</t></si>
 		for(int i = 0, n = nl.getLength(); i < n; ++i)
-			strTable[i] = ((Element)nl.item(i)).getElementsByTagName("t").item(0).getTextContent().trim();
+		{
+			NodeList ts = ((Element)nl.item(i)).getElementsByTagName("t");
+			int tn = ts.getLength();
+			if(tn == 1)
+				strTable[i] = ts.item(0).getTextContent().trim();
+			else
+			{
+				StringBuilder sb = new StringBuilder();
+				for(int j = 0; j < tn; ++j)
+					sb.append(ts.item(j).getTextContent().trim());
+				strTable[i] = sb.toString();
+			}
+		}
 
 		Map<Integer, Map<Integer, String>> res = new TreeMap<Integer, Map<Integer, String>>();
 		nl = db.parse(new ByteArrayInputStream(xmlSheet)).getDocumentElement().getElementsByTagName("c");
