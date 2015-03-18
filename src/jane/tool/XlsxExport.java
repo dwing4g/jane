@@ -39,8 +39,8 @@ public final class XlsxExport
 
 	private static String getColumnName(int id) // 只支持A(1)~ZZ(26*26+26)
 	{
-		if(id < 26) return new String(new char[] { (char)(id + 'A' - 1) });
-		return new String(new char[] { (char)((id - 1) / 26 + 'A' - 1), (char)((id - 1) % 26 + 'A') });
+		if(id < 26) return new String(new char[] { (char)(id + 'A') });
+		return new String(new char[] { (char)(id / 26 + 'A' - 1), (char)(id % 26 + 'A') });
 	}
 
 	private static String toXmlStr(String s)
