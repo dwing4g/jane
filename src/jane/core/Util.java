@@ -121,6 +121,48 @@ public final class Util
 	}
 
 	/**
+	 * 把src容器的内容深度拷贝覆盖到dst容器中
+	 * @return dst容器
+	 */
+	@SuppressWarnings("unchecked")
+	public static <V> Collection<V> appendDeep(Collection<V> src, Collection<V> dst)
+	{
+		if(src != null && !src.isEmpty())
+		{
+			V v = src.iterator().next();
+			if(v instanceof Bean)
+			{
+				for(V vv : src)
+					dst.add((V)((Bean<?>)vv).clone());
+			}
+			else
+				dst.addAll(src);
+		}
+		return dst;
+	}
+
+	/**
+	 * 把src容器的内容深度拷贝覆盖到dst容器中
+	 * @return dst容器
+	 */
+	@SuppressWarnings("unchecked")
+	public static <K, V> Map<K, V> appendDeep(Map<K, V> src, Map<K, V> dst)
+	{
+		if(src != null && !src.isEmpty())
+		{
+			V v = src.values().iterator().next();
+			if(v instanceof Bean)
+			{
+				for(Entry<K, V> e : src.entrySet())
+					dst.put(e.getKey(), (V)((Bean<?>)e.getValue()).clone());
+			}
+			else
+				dst.putAll(src);
+		}
+		return dst;
+	}
+
+	/**
 	 * 把序列容器里的元素转成字符串输出到{@link StringBuilder}中
 	 */
 	public static StringBuilder append(StringBuilder s, Collection<?> c)

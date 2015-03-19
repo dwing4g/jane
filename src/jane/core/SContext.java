@@ -27,6 +27,7 @@ public final class SContext
 			_parent = (parent != null ? parent : this);
 		}
 
+		@Deprecated
 		public B unsafe()
 		{
 			return _bean;
@@ -225,7 +226,7 @@ public final class SContext
 		}
 
 		@Override
-		public Object getKey()
+		public K getKey()
 		{
 			return _key;
 		}
@@ -272,7 +273,7 @@ public final class SContext
 		}
 
 		@Override
-		public Object getKey()
+		public Long getKey()
 		{
 			return _key;
 		}

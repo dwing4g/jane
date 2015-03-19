@@ -153,6 +153,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	 * 会自动添加到读cache中<br>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 */
+	@Deprecated
 	public V getUnsafe(long k)
 	{
 		V v = _cache.get(k);
@@ -177,6 +178,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	/**
 	 * 同getUnsafe,但同时设置修改标记
 	 */
+	@Deprecated
 	public V getModified(long k)
 	{
 		V v = getUnsafe(k);
@@ -210,6 +212,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	 * 必须在事务中已加锁的状态下调用此方法<br>
 	 * <b>注意</b>: 不能在同一事务里使用NoCache方式(或混合Cache方式)get同一个记录多次并且对这些记录有多次修改,否则会触发modify函数中的异常
 	 */
+	@Deprecated
 	public V getNoCacheUnsafe(long k)
 	{
 		V v = _cache.get(k);
@@ -240,6 +243,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	 * 只在读和写cache中获取<br>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 */
+	@Deprecated
 	public V getCacheUnsafe(long k)
 	{
 		V v = _cache.get(k);
@@ -297,6 +301,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	 * 如果使用自增长ID来插入记录的表,则不能用此方法来插入新的记录
 	 * @param v 如果是get获取到的对象引用,可调用modify来提高性能
 	 */
+	@Deprecated
 	public void putUnsafe(long k, V v)
 	{
 		V vOld = _cache.put(k, v);
@@ -354,6 +359,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 		putUnsafe(k, v);
 	}
 
+	@SuppressWarnings("deprecation")
 	public void put(long k, S s)
 	{
 		put(k, s.unsafe());
@@ -382,6 +388,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	 * <p>
 	 * 必须在事务中已加锁的状态下调用此方法
 	 */
+	@Deprecated
 	public void removeUnsafe(long k)
 	{
 		_cache.remove(k);

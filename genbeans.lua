@@ -629,6 +629,7 @@ typedef.octets = merge(typedef.string,
 			return _bean.unmarshal#(var.name_u)();
 		}
 
+		@Deprecated
 		public #(var.type) unsafe#(var.name_u)()
 		{
 			return _bean.#(var.name);
@@ -655,8 +656,8 @@ typedef.vector = merge(typedef.octets,
 	field = "",
 	fieldget = "",
 	new = function(var) return "\t\t#(var.name) = new ArrayList<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
-	init = function(var) return "this.#(var.name) = new ArrayList<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
-	assign = "this.#(var.name).clear(); if(b.#(var.name) != null) this.#(var.name).addAll(b.#(var.name))",
+	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new ArrayList<" .. subtypename_new(var, var.k) .. ">(#(var.cap)))" end,
+	assign = "this.#(var.name).clear(); Util.appendDeep(#(var.name), this.#(var.name))",
 	set = "",
 	getsafe = [[
 
@@ -665,6 +666,7 @@ typedef.vector = merge(typedef.octets,
 			return new #(var.stype)(this, _bean.#(var.name));
 		}
 
+		@Deprecated
 		public #(var.type) unsafe#(var.name_u)()
 		{
 			return _bean.#(var.name);
@@ -710,7 +712,7 @@ typedef.list = merge(typedef.vector,
 	import = { "java.util.LinkedList", "java.util.Collection", "jane.core.Util", "jane.core.SList" },
 	type = function(var) return "LinkedList<" .. subtypename(var, var.k) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new LinkedList<" .. subtypename_new(var, var.k) .. ">();\n" end,
-	init = function(var) return "this.#(var.name) = new LinkedList<" .. subtypename_new(var, var.k) .. ">(); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
+	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new LinkedList<" .. subtypename_new(var, var.k) .. ">())" end,
 	unmarshal = function(var) return string.format([[			case #(var.id):
 			{
 				this.#(var.name).clear();
@@ -729,7 +731,7 @@ typedef.deque = merge(typedef.list,
 	type = function(var) return "ArrayDeque<" .. subtypename(var, var.k) .. ">" end,
 	stype = function(var) return "SDeque<" .. subtypename(var, var.k) .. ", " .. subtypename_safe(var, var.k) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new ArrayDeque<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
-	init = function(var) return "this.#(var.name) = new ArrayDeque<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
+	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new ArrayDeque<" .. subtypename_new(var, var.k) .. ">(#(var.cap)))" end,
 })
 typedef.hashset = merge(typedef.list,
 {
@@ -741,7 +743,7 @@ typedef.hashset = merge(typedef.list,
 ]] end,
 	safecache = "\t\tprivate #(var.stype) CACHE_#(var.name);\n",
 	new = function(var) return "\t\t#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
-	init = function(var) return "this.#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
+	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap)))" end,
 	getsafe = function(var) return [[
 
 		public static void onListener#(var.name_u)(SSetListener<]] .. subtypename(var, var.k) .. [[> listener)
@@ -755,6 +757,7 @@ typedef.hashset = merge(typedef.list,
 			return CACHE_#(var.name);
 		}
 
+		@Deprecated
 		public #(var.type) unsafe#(var.name_u)()
 		{
 			return _bean.#(var.name);
@@ -767,14 +770,14 @@ typedef.treeset = merge(typedef.hashset,
 	type = function(var) return "TreeSet<" .. subtypename(var, var.k) .. ">" end,
 	stype = function(var) return "SSSet<" .. subtypename(var, var.k) .. ", " .. subtypename_safe(var, var.k) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new TreeSet<" .. subtypename_new(var, var.k) .. ">();\n" end,
-	init = function(var) return "this.#(var.name) = new TreeSet<" .. subtypename_new(var, var.k) .. ">(); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
+	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new TreeSet<" .. subtypename_new(var, var.k) .. ">())" end,
 })
 typedef.linkedhashset = merge(typedef.hashset,
 {
 	import = { "java.util.LinkedHashSet", "java.util.Collection", "jane.core.Util", "jane.core.SSet", "jane.core.SSet.SSetListener" },
 	type = function(var) return "LinkedHashSet<" .. subtypename(var, var.k) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new LinkedHashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
-	init = function(var) return "this.#(var.name) = new LinkedHashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).addAll(#(var.name))" end,
+	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new LinkedHashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap)))" end,
 })
 typedef.hashmap = merge(typedef.list,
 {
@@ -787,7 +790,7 @@ typedef.hashmap = merge(typedef.list,
 ]] end,
 	safecache = "\t\tprivate #(var.stype) CACHE_#(var.name);\n",
 	new = function(var) return "\t\t#(var.name) = new HashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap));\n" end,
-	init = function(var) return "this.#(var.name) = new HashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).putAll(#(var.name))" end,
+	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new HashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap)))" end,
 	getsafe = function(var) return [[
 
 		public static void onListener#(var.name_u)(SMapListener<]] .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. [[> listener)
@@ -801,6 +804,7 @@ typedef.hashmap = merge(typedef.list,
 			return CACHE_#(var.name);
 		}
 
+		@Deprecated
 		public #(var.type) unsafe#(var.name_u)()
 		{
 			return _bean.#(var.name);
@@ -834,7 +838,6 @@ typedef.hashmap = merge(typedef.list,
 					this.#(var.name).put(%s, %s);
 			} break;
 ]], get_unmarshal_kv(var, "k", "k"), get_unmarshal_kv(var, "v", "t")) end,
-	assign = "this.#(var.name).clear(); if(b.#(var.name) != null) this.#(var.name).putAll(b.#(var.name))",
 })
 typedef.treemap = merge(typedef.hashmap,
 {
@@ -842,16 +845,14 @@ typedef.treemap = merge(typedef.hashmap,
 	type = function(var) return "TreeMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	stype = function(var) return "SSMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ", " .. subtypename_safe(var, var.v) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new TreeMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">();\n" end,
-	init = function(var) return "this.#(var.name) = new TreeMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(); if(#(var.name) != null) this.#(var.name).putAll(#(var.name))" end,
-	assign = "this.#(var.name).clear(); if(b.#(var.name) != null) this.#(var.name).putAll(b.#(var.name))",
+	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new TreeMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">())" end,
 })
 typedef.linkedhashmap = merge(typedef.hashmap,
 {
 	import = { "java.util.LinkedHashMap", "java.util.Map.Entry", "java.util.Map", "jane.core.Util", "jane.core.SMap", "jane.core.SMap.SMapListener" },
 	type = function(var) return "LinkedHashMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new LinkedHashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap));\n" end,
-	init = function(var) return "this.#(var.name) = new LinkedHashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).putAll(#(var.name))" end,
-	assign = "this.#(var.name).clear(); if(b.#(var.name) != null) this.#(var.name).putAll(b.#(var.name))",
+	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new LinkedHashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap)))" end,
 })
 typedef.bean = merge(typedef.octets,
 {
@@ -875,6 +876,7 @@ typedef.bean = merge(typedef.octets,
 			return _bean.#(var.name).safe(this);
 		}
 
+		@Deprecated
 		public #(var.type) unsafe#(var.name_u)()
 		{
 			return _bean.#(var.name);

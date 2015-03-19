@@ -317,7 +317,7 @@ public final class StorageMapDB implements Storage
 		//@formatter:off
 		private static void marshalUInt(DataOutput out, int x) throws IOException
 		{
-			     if(x < 0x80)      out.writeByte(x);                                        // 0xxx xxxx
+				 if(x < 0x80)      out.writeByte(x);                                        // 0xxx xxxx
 			else if(x < 0x4000)    out.writeShort(x + 0x8000);                              // 10xx xxxx +1B
 			else if(x < 0x200000) {out.writeByte((x + 0xc00000) >> 16); out.writeShort(x);} // 110x xxxx +2B
 			else if(x < 0x1000000) out.writeInt(x + 0xe0000000);                            // 1110 xxxx +3B

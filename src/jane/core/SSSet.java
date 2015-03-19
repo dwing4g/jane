@@ -23,6 +23,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 		return null;
 	}
 
+	@Deprecated
 	public V firstUnsafe()
 	{
 		return ((NavigableSet<V>)_set).first();
@@ -34,6 +35,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 		return safe(firstUnsafe());
 	}
 
+	@Deprecated
 	public V lastUnsafe()
 	{
 		return ((NavigableSet<V>)_set).last();
@@ -45,6 +47,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 		return safe(lastUnsafe());
 	}
 
+	@Deprecated
 	public V lowerUnsafe(V e)
 	{
 		return ((NavigableSet<V>)_set).lower(e);
@@ -56,6 +59,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 		return safe(lowerUnsafe(unsafe(s)));
 	}
 
+	@Deprecated
 	public V floorUnsafe(V e)
 	{
 		return ((NavigableSet<V>)_set).floor(e);
@@ -67,6 +71,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 		return safe(floorUnsafe(unsafe(s)));
 	}
 
+	@Deprecated
 	public V ceilingUnsafe(V e)
 	{
 		return ((NavigableSet<V>)_set).ceiling(e);
@@ -78,6 +83,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 		return safe(ceilingUnsafe(unsafe(s)));
 	}
 
+	@Deprecated
 	public V higherUnsafe(V e)
 	{
 		return ((NavigableSet<V>)_set).higher(e);
