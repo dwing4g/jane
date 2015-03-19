@@ -42,7 +42,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		return (S)(v instanceof Bean ? ((Bean<?>)v).safe(null) : v);
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "deprecation" })
 	private V unsafe(Object v)
 	{
 		return (V)(v instanceof Safe ? ((Safe<?>)v).unsafe() : v);
@@ -84,6 +84,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		return _deque.toArray(a);
 	}
 
+	@Deprecated
 	public V elementUnsafe()
 	{
 		return _deque.element();
@@ -95,6 +96,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		return safe(_deque.element());
 	}
 
+	@Deprecated
 	public V peekUnsafe()
 	{
 		return _deque.peek();
@@ -106,6 +108,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		return safe(_deque.peek());
 	}
 
+	@Deprecated
 	public V getFirstUnsafe()
 	{
 		return _deque.getFirst();
@@ -117,6 +120,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		return safe(_deque.getFirst());
 	}
 
+	@Deprecated
 	public V getLastUnsafe()
 	{
 		return _deque.getLast();
@@ -128,6 +132,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		return safe(_deque.getLast());
 	}
 
+	@Deprecated
 	public V peekFirstUnsafe()
 	{
 		return _deque.peekFirst();
@@ -139,6 +144,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		return safe(_deque.peekFirst());
 	}
 
+	@Deprecated
 	public V peekLastUnsafe()
 	{
 		return _deque.peekLast();
@@ -479,6 +485,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 			return _it.hasNext();
 		}
 
+		@Deprecated
 		public V nextUnsafe()
 		{
 			return _it.next();
@@ -509,10 +516,29 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		return new SIterator(true);
 	}
 
-	@Override
-	public Object clone()
+	public void appendTo(Deque<V> deque)
 	{
-		return new UnsupportedOperationException();
+		Util.appendDeep(_deque, deque);
+	}
+
+	public void cloneTo(Deque<V> deque)
+	{
+		deque.clear();
+		Util.appendDeep(_deque, deque);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public Deque<V> clone()
+	{
+		try
+		{
+			return (Deque<V>)Util.appendDeep(_deque, _deque.getClass().newInstance());
+		}
+		catch(Exception e)
+		{
+			throw new Error(e);
+		}
 	}
 
 	@Override

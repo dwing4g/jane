@@ -74,6 +74,15 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	}
 
 	/**
+	 * 从另一个safe bean赋值到自身
+	 */
+	@SuppressWarnings("deprecation")
+	public void assign(Safe<B> b)
+	{
+		assign(b.unsafe());
+	}
+
+	/**
 	 * bean的初始预计序列化长度
 	 * <p>
 	 * 用于序列化此bean前预留的空间大小(字节). 子类应该实现这个方法返回合适的值,默认只有16字节

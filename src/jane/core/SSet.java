@@ -73,7 +73,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 		return (S)(v instanceof Bean ? ((Bean<?>)v).safe(null) : v);
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "deprecation" })
 	protected V unsafe(Object v)
 	{
 		return (V)(v instanceof Safe ? ((Safe<?>)v).unsafe() : v);
@@ -266,6 +266,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 			return _it.hasNext();
 		}
 
+		@Deprecated
 		public V nextUnsafe()
 		{
 			return _cur = _it.next();
@@ -292,10 +293,29 @@ public class SSet<V, S> implements Set<S>, Cloneable
 		return new SIterator(_set.iterator());
 	}
 
-	@Override
-	public Object clone()
+	public void appendTo(Set<V> set)
 	{
-		return new UnsupportedOperationException();
+		Util.appendDeep(_set, set);
+	}
+
+	public void cloneTo(Set<V> set)
+	{
+		set.clear();
+		Util.appendDeep(_set, set);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public Set<V> clone()
+	{
+		try
+		{
+			return (Set<V>)Util.appendDeep(_set, _set.getClass().newInstance());
+		}
+		catch(Exception e)
+		{
+			throw new Error(e);
+		}
 	}
 
 	@Override

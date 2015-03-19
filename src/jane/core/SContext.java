@@ -27,6 +27,7 @@ public final class SContext
 			_parent = (parent != null ? parent : this);
 		}
 
+		@Deprecated
 		public B unsafe()
 		{
 			return _bean;

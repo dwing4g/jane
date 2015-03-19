@@ -42,7 +42,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 		return (S)(v instanceof Bean ? ((Bean<?>)v).safe(null) : v);
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "deprecation" })
 	private V unsafe(Object v)
 	{
 		return (V)(v instanceof Safe ? ((Safe<?>)v).unsafe() : v);
@@ -334,6 +334,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 			return _it.hasNext();
 		}
 
+		@Deprecated
 		public V nextUnsafe()
 		{
 			_cur = _it.next();
@@ -404,6 +405,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 			return _it.previousIndex();
 		}
 
+		@Deprecated
 		public V nextUnsafe()
 		{
 			_cur = _it.next();
@@ -418,6 +420,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 			return safe(nextUnsafe());
 		}
 
+		@Deprecated
 		public V previousUnsafe()
 		{
 			_cur = _it.previous();
@@ -521,10 +524,29 @@ public final class SList<V, S> implements List<S>, Cloneable
 		return new SList<V, S>(_owner, _list.subList(idxFrom, idxTo));
 	}
 
-	@Override
-	public Object clone()
+	public void appendTo(List<V> list)
 	{
-		return new UnsupportedOperationException();
+		Util.appendDeep(_list, list);
+	}
+
+	public void cloneTo(List<V> list)
+	{
+		list.clear();
+		Util.appendDeep(_list, list);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<V> clone()
+	{
+		try
+		{
+			return (List<V>)Util.appendDeep(_list, _list.getClass().newInstance());
+		}
+		catch(Exception e)
+		{
+			throw new Error(e);
+		}
 	}
 
 	@Override

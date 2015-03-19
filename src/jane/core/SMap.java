@@ -94,7 +94,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		return (S)(v instanceof Bean ? ((Bean<?>)v).safe(null) : v);
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "deprecation" })
 	private V unsafe(Object v)
 	{
 		return (V)(v instanceof Safe ? ((Safe<?>)v).unsafe() : v);
@@ -152,6 +152,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		return _map.containsValue(unsafe(v));
 	}
 
+	@Deprecated
 	public V getUnsafe(Object k)
 	{
 		return _map.get(k);
@@ -269,6 +270,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 			return _e.getKey();
 		}
 
+		@Deprecated
 		public V getValueUnsafe()
 		{
 			return _e.getValue();
@@ -485,10 +487,29 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		return new SValues();
 	}
 
-	@Override
-	public Object clone()
+	public void appendTo(Map<K, V> map)
 	{
-		return new UnsupportedOperationException();
+		Util.appendDeep(_map, map);
+	}
+
+	public void cloneTo(Map<K, V> map)
+	{
+		map.clear();
+		Util.appendDeep(_map, map);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public Map<K, V> clone()
+	{
+		try
+		{
+			return Util.appendDeep(_map, _map.getClass().newInstance());
+		}
+		catch(Exception e)
+		{
+			throw new Error(e);
+		}
 	}
 
 	@Override

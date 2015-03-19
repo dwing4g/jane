@@ -127,15 +127,15 @@ public final class TestType extends Bean<TestType>
 		this.v7 = v7;
 		this.v8 = (v8 != null ? v8 : new Octets());
 		this.v9 = (v9 != null ? v9 : "");
-		this.v10 = new ArrayList<Boolean>(10); if(v10 != null) this.v10.addAll(v10);
-		this.v11 = new LinkedList<Byte>(); if(v11 != null) this.v11.addAll(v11);
-		this.v12 = new ArrayDeque<Integer>(); if(v12 != null) this.v12.addAll(v12);
-		this.v13 = new HashSet<Long>(); if(v13 != null) this.v13.addAll(v13);
-		this.v14 = new TreeSet<Float>(); if(v14 != null) this.v14.addAll(v14);
-		this.v15 = new LinkedHashSet<Double>(); if(v15 != null) this.v15.addAll(v15);
-		this.v16 = new HashMap<Long, String>(0); if(v16 != null) this.v16.putAll(v16);
-		this.v17 = new TreeMap<TestBean, Boolean>(); if(v17 != null) this.v17.putAll(v17);
-		this.v18 = new LinkedHashMap<Octets, TestBean>(); if(v18 != null) this.v18.putAll(v18);
+		Util.appendDeep(v10, this.v10 = new ArrayList<Boolean>(10));
+		Util.appendDeep(v11, this.v11 = new LinkedList<Byte>());
+		Util.appendDeep(v12, this.v12 = new ArrayDeque<Integer>());
+		Util.appendDeep(v13, this.v13 = new HashSet<Long>());
+		Util.appendDeep(v14, this.v14 = new TreeSet<Float>());
+		Util.appendDeep(v15, this.v15 = new LinkedHashSet<Double>());
+		Util.appendDeep(v16, this.v16 = new HashMap<Long, String>(0));
+		Util.appendDeep(v17, this.v17 = new TreeMap<TestBean, Boolean>());
+		Util.appendDeep(v18, this.v18 = new LinkedHashMap<Octets, TestBean>());
 		this.v19 = (v19 != null ? v19.clone() : new TestBean());
 		this.v20 = v20;
 	}
@@ -179,15 +179,15 @@ public final class TestType extends Bean<TestType>
 		this.v7 = b.v7;
 		if(b.v8 != null) this.v8.replace(b.v8); else this.v8.clear();
 		this.v9 = (b.v9 != null ? b.v9 : "");
-		this.v10.clear(); if(b.v10 != null) this.v10.addAll(b.v10);
-		this.v11.clear(); if(b.v11 != null) this.v11.addAll(b.v11);
-		this.v12.clear(); if(b.v12 != null) this.v12.addAll(b.v12);
-		this.v13.clear(); if(b.v13 != null) this.v13.addAll(b.v13);
-		this.v14.clear(); if(b.v14 != null) this.v14.addAll(b.v14);
-		this.v15.clear(); if(b.v15 != null) this.v15.addAll(b.v15);
-		this.v16.clear(); if(b.v16 != null) this.v16.putAll(b.v16);
-		this.v17.clear(); if(b.v17 != null) this.v17.putAll(b.v17);
-		this.v18.clear(); if(b.v18 != null) this.v18.putAll(b.v18);
+		this.v10.clear(); Util.appendDeep(v10, this.v10);
+		this.v11.clear(); Util.appendDeep(v11, this.v11);
+		this.v12.clear(); Util.appendDeep(v12, this.v12);
+		this.v13.clear(); Util.appendDeep(v13, this.v13);
+		this.v14.clear(); Util.appendDeep(v14, this.v14);
+		this.v15.clear(); Util.appendDeep(v15, this.v15);
+		this.v16.clear(); Util.appendDeep(v16, this.v16);
+		this.v17.clear(); Util.appendDeep(v17, this.v17);
+		this.v18.clear(); Util.appendDeep(v18, this.v18);
 		this.v19.assign(b.v19);
 		this.v20 = b.v20;
 	}
@@ -890,6 +890,7 @@ public final class TestType extends Bean<TestType>
 			return _bean.unmarshalV8();
 		}
 
+		@Deprecated
 		public Octets unsafeV8()
 		{
 			return _bean.v8;
@@ -911,6 +912,7 @@ public final class TestType extends Bean<TestType>
 			return new SList<Boolean, Boolean>(this, _bean.v10);
 		}
 
+		@Deprecated
 		public ArrayList<Boolean> unsafeV10()
 		{
 			return _bean.v10;
@@ -921,6 +923,7 @@ public final class TestType extends Bean<TestType>
 			return new SList<Byte, Byte>(this, _bean.v11);
 		}
 
+		@Deprecated
 		public LinkedList<Byte> unsafeV11()
 		{
 			return _bean.v11;
@@ -931,6 +934,7 @@ public final class TestType extends Bean<TestType>
 			return new SDeque<Integer, Integer>(this, _bean.v12);
 		}
 
+		@Deprecated
 		public ArrayDeque<Integer> unsafeV12()
 		{
 			return _bean.v12;
@@ -947,6 +951,7 @@ public final class TestType extends Bean<TestType>
 			return CACHE_v13;
 		}
 
+		@Deprecated
 		public HashSet<Long> unsafeV13()
 		{
 			return _bean.v13;
@@ -963,6 +968,7 @@ public final class TestType extends Bean<TestType>
 			return CACHE_v14;
 		}
 
+		@Deprecated
 		public TreeSet<Float> unsafeV14()
 		{
 			return _bean.v14;
@@ -979,6 +985,7 @@ public final class TestType extends Bean<TestType>
 			return CACHE_v15;
 		}
 
+		@Deprecated
 		public LinkedHashSet<Double> unsafeV15()
 		{
 			return _bean.v15;
@@ -995,6 +1002,7 @@ public final class TestType extends Bean<TestType>
 			return CACHE_v16;
 		}
 
+		@Deprecated
 		public HashMap<Long, String> unsafeV16()
 		{
 			return _bean.v16;
@@ -1011,6 +1019,7 @@ public final class TestType extends Bean<TestType>
 			return CACHE_v17;
 		}
 
+		@Deprecated
 		public TreeMap<TestBean, Boolean> unsafeV17()
 		{
 			return _bean.v17;
@@ -1027,6 +1036,7 @@ public final class TestType extends Bean<TestType>
 			return CACHE_v18;
 		}
 
+		@Deprecated
 		public LinkedHashMap<Octets, TestBean> unsafeV18()
 		{
 			return _bean.v18;
@@ -1037,6 +1047,7 @@ public final class TestType extends Bean<TestType>
 			return _bean.v19.safe(this);
 		}
 
+		@Deprecated
 		public TestBean unsafeV19()
 		{
 			return _bean.v19;
