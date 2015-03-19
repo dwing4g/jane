@@ -84,10 +84,11 @@ public final class SList<V, S> implements List<S>, Cloneable
 		return _list.lastIndexOf(unsafe(o));
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public Object[] toArray()
+	public V[] toArray()
 	{
-		return _list.toArray();
+		return (V[])_list.toArray();
 	}
 
 	@Override

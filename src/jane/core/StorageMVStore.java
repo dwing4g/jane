@@ -218,7 +218,7 @@ public final class StorageMVStore implements Storage
 		}
 
 		@Override
-		public Object read(ByteBuffer buf)
+		public Long read(ByteBuffer buf)
 		{
 			return DataUtils.readVarLong(buf);
 		}
@@ -347,7 +347,7 @@ public final class StorageMVStore implements Storage
 		}
 
 		@Override
-		public Object read(ByteBuffer buf)
+		public Bean<?> read(ByteBuffer buf)
 		{
 			int offset = buf.arrayOffset();
 			OctetsStream os = OctetsStream.wrap(buf.array(), offset + buf.limit());
@@ -442,7 +442,7 @@ public final class StorageMVStore implements Storage
 		}
 
 		@Override
-		public Object read(ByteBuffer buf)
+		public Octets read(ByteBuffer buf)
 		{
 			int n = DataUtils.readVarInt(buf);
 			Octets o = Octets.createSpace(n);

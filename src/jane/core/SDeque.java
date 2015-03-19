@@ -72,10 +72,11 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		return _deque.containsAll(c);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public Object[] toArray()
+	public V[] toArray()
 	{
-		return _deque.toArray();
+		return (V[])_deque.toArray();
 	}
 
 	@Override

@@ -303,9 +303,9 @@ public final class StorageMapDB implements Storage
 		}
 
 		@Override
-		public Object[] deserialize(DataInput in, int start, int end, int size) throws IOException
+		public Octets[] deserialize(DataInput in, int start, int end, int size) throws IOException
 		{
-			Object[] objs = new Object[size];
+			Octets[] objs = new Octets[size];
 			for(int i = start; i < end; ++i)
 			{
 				int n = unmarshalUInt(in);
@@ -341,9 +341,9 @@ public final class StorageMapDB implements Storage
 		}
 
 		@Override
-		public Object[] deserialize(DataInput in, int start, int end, int size) throws IOException
+		public String[] deserialize(DataInput in, int start, int end, int size) throws IOException
 		{
-			Object[] objs = new Object[size];
+			String[] objs = new String[size];
 			for(int i = start; i < end; ++i)
 				objs[i] = in.readUTF();
 			return objs;
@@ -382,7 +382,7 @@ public final class StorageMapDB implements Storage
 		}
 
 		@Override
-		public Object[] deserialize(DataInput in, int start, int end, int size) throws IOException
+		public Bean<?>[] deserialize(DataInput in, int start, int end, int size) throws IOException
 		{
 			if(_serializer == null)
 			{
@@ -390,7 +390,7 @@ public final class StorageMapDB implements Storage
 				if(stub == null) stub = DynBean.BEAN_STUB;
 				_serializer = new MapDBSerializer(_tableName, stub);
 			}
-			Object[] objs = new Object[size];
+			Bean<?>[] objs = new Bean<?>[size];
 			for(int i = start; i < end; ++i)
 				objs[i] = _serializer.deserialize(in, -1);
 			return objs;

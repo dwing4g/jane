@@ -226,7 +226,7 @@ public final class SContext
 		}
 
 		@Override
-		public Object getKey()
+		public K getKey()
 		{
 			return _key;
 		}
@@ -273,7 +273,7 @@ public final class SContext
 		}
 
 		@Override
-		public Object getKey()
+		public Long getKey()
 		{
 			return _key;
 		}

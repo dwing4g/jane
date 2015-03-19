@@ -129,10 +129,11 @@ public class SSet<V, S> implements Set<S>, Cloneable
 		return _set.containsAll(c);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public Object[] toArray()
+	public V[] toArray()
 	{
-		return _set.toArray();
+		return (V[])_set.toArray();
 	}
 
 	@Override
