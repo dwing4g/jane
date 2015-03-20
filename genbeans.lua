@@ -657,7 +657,7 @@ typedef.vector = merge(typedef.octets,
 	fieldget = "",
 	new = function(var) return "\t\t#(var.name) = new ArrayList<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
 	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new ArrayList<" .. subtypename_new(var, var.k) .. ">(#(var.cap)))" end,
-	assign = "this.#(var.name).clear(); Util.appendDeep(#(var.name), this.#(var.name))",
+	assign = "this.#(var.name).clear(); Util.appendDeep(b.#(var.name), this.#(var.name))",
 	set = "",
 	getsafe = [[
 
