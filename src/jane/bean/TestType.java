@@ -866,7 +866,7 @@ public final class TestType extends Bean<TestType>
 		public void setV8(Octets v8)
 		{
 			if(initSContext()) _sCtx.addOnRollback(new SBase.SOctets(_bean, FIELD_v8, _bean.v8, false));
-			_bean.v8 = (v8 != null ? v8 : new Octets(5));
+			_bean.v8 = (v8 != null ? v8.clone() : new Octets(5));
 		}
 
 		public byte[] copyOfV8()

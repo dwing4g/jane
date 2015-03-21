@@ -605,7 +605,7 @@ typedef.octets = merge(typedef.string,
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
 			if(initSContext()) _sCtx.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.#(var.name), false));
-			_bean.#(var.name) = (#(var.name) != null ? #(var.name) : new Octets(#(var.cap)));
+			_bean.#(var.name) = (#(var.name) != null ? #(var.name).clone() : new Octets(#(var.cap)));
 		}
 
 		public byte[] copyOf#(var.name_u)()
@@ -1231,7 +1231,7 @@ function dbt(table)
 		table.key = key_type
 		if table.memory then table.keys = "null"
 		elseif key_type == "String" then table.keys = "\"\""
-		elseif key_type == "Octets" then table.keys = "Octets.EMPTY"
+		elseif key_type == "Octets" then table.keys = "new Octets()"
 		else table.keys = "new " .. key_type .. "(0)" end
 		table.keyg = "null"
 		table.comma = ", "
