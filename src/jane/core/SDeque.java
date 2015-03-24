@@ -464,6 +464,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 			@Override
 			public void run()
 			{
+				_deque.clear();
 				_deque.addAll(_saved);
 				_saved.clear();
 			}
@@ -515,6 +516,19 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	public Iterator<S> descendingIterator()
 	{
 		return new SIterator(true);
+	}
+
+	public SDeque<V, S> append(Deque<V> deque)
+	{
+		Util.appendDeep(deque, _deque);
+		return this;
+	}
+
+	public SDeque<V, S> assign(Deque<V> deque)
+	{
+		clear();
+		Util.appendDeep(deque, _deque);
+		return this;
 	}
 
 	public void appendTo(Deque<V> deque)
