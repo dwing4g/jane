@@ -1067,12 +1067,14 @@ local function bean_const(code)
 		gsub("\tpublic DynBean unmarshal.-\n\t}\n\n", ""):
 		gsub("\n\t@Override\n\tpublic Safe safe.-\n\t}\n", ""):
 		gsub("\t@Override\n\tpublic void reset%(.-\n\t}", [[
+	@Deprecated
 	@Override
 	public void reset()
 	{
 		throw new UnsupportedOperationException();
 	}]]):
 		gsub("\t@Override\n\tpublic OctetsStream unmarshal%(.-\n\t}", [[
+	@Deprecated
 	@Override
 	public OctetsStream unmarshal(OctetsStream s) throws MarshalException
 	{

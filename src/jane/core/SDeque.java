@@ -313,6 +313,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		return safeAlone(removeDirect());
 	}
 
+	@Deprecated
 	@Override
 	public boolean remove(Object o)
 	{
@@ -351,12 +352,14 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		return safeAlone(removeLastDirect());
 	}
 
+	@Deprecated
 	@Override
 	public boolean removeFirstOccurrence(Object o)
 	{
 		throw new UnsupportedOperationException();
 	}
 
+	@Deprecated
 	@Override
 	public boolean removeLastOccurrence(Object o)
 	{
@@ -429,12 +432,14 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		return remove();
 	}
 
+	@Deprecated
 	@Override
 	public boolean removeAll(Collection<?> c)
 	{
 		throw new UnsupportedOperationException();
 	}
 
+	@Deprecated
 	@Override
 	public boolean retainAll(Collection<?> c)
 	{
@@ -501,6 +506,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 			return safe(_it.next());
 		}
 
+		@Deprecated
 		@Override
 		public void remove()
 		{
