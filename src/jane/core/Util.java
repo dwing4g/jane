@@ -127,7 +127,7 @@ public final class Util
 	@SuppressWarnings("unchecked")
 	public static <V> Collection<V> appendDeep(Collection<V> src, Collection<V> dst)
 	{
-		if(src != null && !src.isEmpty())
+		if(src != null && !src.isEmpty() && src != dst)
 		{
 			V v = src.iterator().next();
 			if(v instanceof Bean)
@@ -148,7 +148,7 @@ public final class Util
 	@SuppressWarnings("unchecked")
 	public static <K, V> Map<K, V> appendDeep(Map<K, V> src, Map<K, V> dst)
 	{
-		if(src != null && !src.isEmpty())
+		if(src != null && !src.isEmpty() && src != dst)
 		{
 			V v = src.values().iterator().next();
 			if(v instanceof Bean)

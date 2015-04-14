@@ -129,6 +129,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 		return _set.containsAll(c);
 	}
 
+	@Deprecated
 	@SuppressWarnings("unchecked")
 	@Override
 	public V[] toArray()
@@ -136,6 +137,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 		return (V[])_set.toArray();
 	}
 
+	@Deprecated
 	@Override
 	public <T> T[] toArray(T[] a)
 	{
@@ -239,6 +241,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 			@Override
 			public void run()
 			{
+				_set.clear();
 				_set.addAll(_saved);
 				_saved.clear();
 			}
@@ -292,6 +295,19 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	public SIterator iterator()
 	{
 		return new SIterator(_set.iterator());
+	}
+
+	public SSet<V, S> append(Set<V> set)
+	{
+		Util.appendDeep(set, _set);
+		return this;
+	}
+
+	public SSet<V, S> assign(Set<V> set)
+	{
+		clear();
+		Util.appendDeep(set, _set);
+		return this;
 	}
 
 	public void appendTo(Set<V> set)

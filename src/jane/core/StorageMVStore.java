@@ -37,7 +37,7 @@ public final class StorageMVStore implements Storage
 		@Override
 		public V get(K k)
 		{
-			return _map.get(k);
+			return _map.get(k).clone();
 		}
 
 		@Override
@@ -118,7 +118,7 @@ public final class StorageMVStore implements Storage
 		@Override
 		public V get(long k)
 		{
-			return _map.get(k);
+			return _map.get(k).clone();
 		}
 
 		@Override

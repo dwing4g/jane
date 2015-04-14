@@ -240,21 +240,20 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	 */
 	public void modify(K k, V v)
 	{
-		if(!v.modified())
+		if(!v.modified() && _cacheMod != null)
 		{
-			if(_cacheMod != null)
+			V vOld = _cacheMod.put(k, v);
+			if(vOld == null)
 			{
-				V vOld = _cacheMod.put(k, v);
-				if(vOld == null)
-					DBManager.instance().incModCount();
-				else if(vOld != v)
-				{
-					_cacheMod.put(k, vOld);
-					throw new IllegalStateException("modify unmatched record: t=" + _tableName +
-					        ",k=" + k + ",vOld=" + vOld + ",v=" + v);
-				}
+				v.setSaveState(2);
+				DBManager.instance().incModCount();
 			}
-			v.setSaveState(2);
+			else if(vOld != v)
+			{
+				_cacheMod.put(k, vOld);
+				throw new IllegalStateException("modify unmatched record: t=" + _tableName +
+				        ",k=" + k + ",vOld=" + vOld + ",v=" + v);
+			}
 		}
 	}
 
@@ -284,9 +283,11 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 				{
 					vOld = _cacheMod.put(k, v);
 					if(vOld == null)
-					    DBManager.instance().incModCount();
+					{
+						v.setSaveState(2);
+						DBManager.instance().incModCount();
+					}
 				}
-				v.setSaveState(2);
 			}
 			else
 			{

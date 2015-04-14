@@ -29,6 +29,7 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 		this.key2 = (key2 != null ? key2 : "");
 	}
 
+	@Deprecated
 	@Override
 	public void reset()
 	{
@@ -83,6 +84,7 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 		return s.marshal1((byte)0);
 	}
 
+	@Deprecated
 	@Override
 	public OctetsStream unmarshal(OctetsStream s) throws MarshalException
 	{

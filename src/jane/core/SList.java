@@ -84,6 +84,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 		return _list.lastIndexOf(unsafe(o));
 	}
 
+	@Deprecated
 	@SuppressWarnings("unchecked")
 	@Override
 	public V[] toArray()
@@ -91,6 +92,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 		return (V[])_list.toArray();
 	}
 
+	@Deprecated
 	@Override
 	public <T> T[] toArray(T[] a)
 	{
@@ -103,6 +105,9 @@ public final class SList<V, S> implements List<S>, Cloneable
 		return safe(_list.get(idx));
 	}
 
+	/**
+	 * NOTE: do NOT modify v after called
+	 */
 	public boolean addDirect(V v)
 	{
 		SContext ctx = sContext();
@@ -154,7 +159,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 			@Override
 			public void run()
 			{
-				for(int i = _list.size() - 1, e = i - n; i > e; --i)
+				for(int i = _list.size() - 1; i >= n; --i)
 					_list.remove(i);
 			}
 		});
@@ -173,7 +178,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 			@Override
 			public void run()
 			{
-				for(int i = _list.size() - 1, e = i - n; i > e; --i)
+				for(int i = _list.size() - 1; i >= n; --i)
 					_list.remove(i);
 			}
 		});
@@ -312,6 +317,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 			@Override
 			public void run()
 			{
+				_list.clear();
 				_list.addAll(_saved);
 				_saved.clear();
 			}
@@ -523,6 +529,19 @@ public final class SList<V, S> implements List<S>, Cloneable
 	public SList<V, S> subList(int idxFrom, int idxTo)
 	{
 		return new SList<V, S>(_owner, _list.subList(idxFrom, idxTo));
+	}
+
+	public SList<V, S> append(List<V> list)
+	{
+		Util.appendDeep(list, _list);
+		return this;
+	}
+
+	public SList<V, S> assign(List<V> list)
+	{
+		clear();
+		Util.appendDeep(list, _list);
+		return this;
 	}
 
 	public void appendTo(List<V> list)

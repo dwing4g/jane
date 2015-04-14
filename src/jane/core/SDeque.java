@@ -72,6 +72,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		return _deque.containsAll(c);
 	}
 
+	@Deprecated
 	@SuppressWarnings("unchecked")
 	@Override
 	public V[] toArray()
@@ -79,6 +80,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		return (V[])_deque.toArray();
 	}
 
+	@Deprecated
 	@Override
 	public <T> T[] toArray(T[] a)
 	{
@@ -311,6 +313,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		return safeAlone(removeDirect());
 	}
 
+	@Deprecated
 	@Override
 	public boolean remove(Object o)
 	{
@@ -349,12 +352,14 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		return safeAlone(removeLastDirect());
 	}
 
+	@Deprecated
 	@Override
 	public boolean removeFirstOccurrence(Object o)
 	{
 		throw new UnsupportedOperationException();
 	}
 
+	@Deprecated
 	@Override
 	public boolean removeLastOccurrence(Object o)
 	{
@@ -427,12 +432,14 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		return remove();
 	}
 
+	@Deprecated
 	@Override
 	public boolean removeAll(Collection<?> c)
 	{
 		throw new UnsupportedOperationException();
 	}
 
+	@Deprecated
 	@Override
 	public boolean retainAll(Collection<?> c)
 	{
@@ -464,6 +471,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 			@Override
 			public void run()
 			{
+				_deque.clear();
 				_deque.addAll(_saved);
 				_saved.clear();
 			}
@@ -498,6 +506,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 			return safe(_it.next());
 		}
 
+		@Deprecated
 		@Override
 		public void remove()
 		{
@@ -515,6 +524,19 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	public Iterator<S> descendingIterator()
 	{
 		return new SIterator(true);
+	}
+
+	public SDeque<V, S> append(Deque<V> deque)
+	{
+		Util.appendDeep(deque, _deque);
+		return this;
+	}
+
+	public SDeque<V, S> assign(Deque<V> deque)
+	{
+		clear();
+		Util.appendDeep(deque, _deque);
+		return this;
 	}
 
 	public void appendTo(Deque<V> deque)

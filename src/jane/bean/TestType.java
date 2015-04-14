@@ -125,7 +125,7 @@ public final class TestType extends Bean<TestType>
 		this.v5 = v5;
 		this.v6 = v6;
 		this.v7 = v7;
-		this.v8 = (v8 != null ? v8 : new Octets());
+		this.v8 = (v8 != null ? v8 : new Octets(5));
 		this.v9 = (v9 != null ? v9 : "");
 		Util.appendDeep(v10, this.v10 = new ArrayList<Boolean>(10));
 		Util.appendDeep(v11, this.v11 = new LinkedList<Byte>());
@@ -179,15 +179,15 @@ public final class TestType extends Bean<TestType>
 		this.v7 = b.v7;
 		if(b.v8 != null) this.v8.replace(b.v8); else this.v8.clear();
 		this.v9 = (b.v9 != null ? b.v9 : "");
-		this.v10.clear(); Util.appendDeep(v10, this.v10);
-		this.v11.clear(); Util.appendDeep(v11, this.v11);
-		this.v12.clear(); Util.appendDeep(v12, this.v12);
-		this.v13.clear(); Util.appendDeep(v13, this.v13);
-		this.v14.clear(); Util.appendDeep(v14, this.v14);
-		this.v15.clear(); Util.appendDeep(v15, this.v15);
-		this.v16.clear(); Util.appendDeep(v16, this.v16);
-		this.v17.clear(); Util.appendDeep(v17, this.v17);
-		this.v18.clear(); Util.appendDeep(v18, this.v18);
+		this.v10.clear(); Util.appendDeep(b.v10, this.v10);
+		this.v11.clear(); Util.appendDeep(b.v11, this.v11);
+		this.v12.clear(); Util.appendDeep(b.v12, this.v12);
+		this.v13.clear(); Util.appendDeep(b.v13, this.v13);
+		this.v14.clear(); Util.appendDeep(b.v14, this.v14);
+		this.v15.clear(); Util.appendDeep(b.v15, this.v15);
+		this.v16.clear(); Util.appendDeep(b.v16, this.v16);
+		this.v17.clear(); Util.appendDeep(b.v17, this.v17);
+		this.v18.clear(); Util.appendDeep(b.v18, this.v18);
 		this.v19.assign(b.v19);
 		this.v20 = b.v20;
 	}
@@ -269,7 +269,7 @@ public final class TestType extends Bean<TestType>
 
 	public void setV8(Octets v8)
 	{
-		this.v8 = (v8 != null ? v8 : new Octets());
+		this.v8 = (v8 != null ? v8 : new Octets(5));
 	}
 
 	public <B extends Bean<B>> void marshalV8(Bean<B> b)
@@ -866,7 +866,7 @@ public final class TestType extends Bean<TestType>
 		public void setV8(Octets v8)
 		{
 			if(initSContext()) _sCtx.addOnRollback(new SBase.SOctets(_bean, FIELD_v8, _bean.v8, false));
-			_bean.v8 = (v8 != null ? v8 : new Octets(5));
+			_bean.v8 = (v8 != null ? v8.clone() : new Octets(5));
 		}
 
 		public byte[] copyOfV8()

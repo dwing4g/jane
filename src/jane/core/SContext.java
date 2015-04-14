@@ -139,6 +139,11 @@ public final class SContext
 			_bean.assign(b);
 		}
 
+		public void assign(Safe<B> s)
+		{
+			assign(s.unsafe());
+		}
+
 		public OctetsStream marshal(OctetsStream s)
 		{
 			return _bean.marshal(s);

@@ -563,14 +563,14 @@ typedef.octets = merge(typedef.string,
 	import = { "jane.core.Octets", "jane.core.DynBean", "jane.core.SBase" },
 	type = "Octets", type_i = "Octets", type_o = "Octets",
 	new = "\t\t#(var.name) = new Octets(#(var.cap));\n",
-	init = "this.#(var.name) = (#(var.name) != null ? #(var.name) : new Octets())",
+	init = "this.#(var.name) = (#(var.name) != null ? #(var.name) : new Octets(#(var.cap)))",
 	reset = "#(var.name).clear()",
 	assign = "if(b.#(var.name) != null) this.#(var.name).replace(b.#(var.name)); else this.#(var.name).clear()",
 	set = [[
 
 	public void set#(var.name_u)(#(var.type) #(var.name))
 	{
-		this.#(var.name) = (#(var.name) != null ? #(var.name) : new Octets());
+		this.#(var.name) = (#(var.name) != null ? #(var.name) : new Octets(#(var.cap)));
 	}
 
 	public <B extends Bean<B>> void marshal#(var.name_u)(Bean<B> b)
@@ -605,7 +605,7 @@ typedef.octets = merge(typedef.string,
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
 			if(initSContext()) _sCtx.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.#(var.name), false));
-			_bean.#(var.name) = (#(var.name) != null ? #(var.name) : new Octets(#(var.cap)));
+			_bean.#(var.name) = (#(var.name) != null ? #(var.name).clone() : new Octets(#(var.cap)));
 		}
 
 		public byte[] copyOf#(var.name_u)()
@@ -657,7 +657,7 @@ typedef.vector = merge(typedef.octets,
 	fieldget = "",
 	new = function(var) return "\t\t#(var.name) = new ArrayList<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
 	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new ArrayList<" .. subtypename_new(var, var.k) .. ">(#(var.cap)))" end,
-	assign = "this.#(var.name).clear(); Util.appendDeep(#(var.name), this.#(var.name))",
+	assign = "this.#(var.name).clear(); Util.appendDeep(b.#(var.name), this.#(var.name))",
 	set = "",
 	getsafe = [[
 
@@ -1067,12 +1067,14 @@ local function bean_const(code)
 		gsub("\tpublic DynBean unmarshal.-\n\t}\n\n", ""):
 		gsub("\n\t@Override\n\tpublic Safe safe.-\n\t}\n", ""):
 		gsub("\t@Override\n\tpublic void reset%(.-\n\t}", [[
+	@Deprecated
 	@Override
 	public void reset()
 	{
 		throw new UnsupportedOperationException();
 	}]]):
 		gsub("\t@Override\n\tpublic OctetsStream unmarshal%(.-\n\t}", [[
+	@Deprecated
 	@Override
 	public OctetsStream unmarshal(OctetsStream s) throws MarshalException
 	{
@@ -1231,7 +1233,7 @@ function dbt(table)
 		table.key = key_type
 		if table.memory then table.keys = "null"
 		elseif key_type == "String" then table.keys = "\"\""
-		elseif key_type == "Octets" then table.keys = "Octets.EMPTY"
+		elseif key_type == "Octets" then table.keys = "new Octets()"
 		else table.keys = "new " .. key_type .. "(0)" end
 		table.keyg = "null"
 		table.comma = ", "

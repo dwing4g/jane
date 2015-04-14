@@ -243,6 +243,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 			@Override
 			public void run()
 			{
+				_map.clear();
 				_map.putAll(_saved);
 				_saved.clear();
 			}
@@ -485,6 +486,19 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	public SValues values()
 	{
 		return new SValues();
+	}
+
+	public SMap<K, V, S> append(Map<K, V> map)
+	{
+		Util.appendDeep(map, _map);
+		return this;
+	}
+
+	public SMap<K, V, S> assign(Map<K, V> map)
+	{
+		clear();
+		Util.appendDeep(map, _map);
+		return this;
 	}
 
 	public void appendTo(Map<K, V> map)
