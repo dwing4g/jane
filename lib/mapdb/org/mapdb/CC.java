@@ -17,18 +17,23 @@
 package org.mapdb;
 
 /**
- * Compiler Configuration. There are some static final boolean fields, which describe features MapDB was compiled with.
  * <p>
- * MapDB can be compiled with/without some features. For example fine logging is useful for debuging,
+ * Compiler Configuration. There are some static final boolean fields, which describe features MapDB was compiled with.
+ * </p><p>
+ *
+ * MapDB can be compiled with/without some features. For example fine logging is useful for debugging,
  * but should not be present in production version. Java does not have preprocessor so
  * we use <a href="http://en.wikipedia.org/wiki/Dead_code_elimination">Dead code elimination</a> to achieve it.
- * <p>
+ * </p><p>
+ *
  * Typical usage:
+ * </p>
  * <pre>{@code
  *     if(CC.PARANOID && arg.calculateSize()!=33){  //calculateSize may take long time
  *         throw new IllegalArgumentException("wrong size");
  *     }
  * }</pre>
+ *
  *
  * @author  Jan Kotek
  */
@@ -70,16 +75,14 @@ public interface CC {
     boolean LOG_HTREEMAP = false;
 
 
-    int ASYNC_WRITE_FLUSH_DELAY = 100;
-    int ASYNC_WRITE_QUEUE_SIZE = 32000;
-
-    int ASYNC_RECID_PREALLOC_QUEUE_SIZE = 128;
-
     /**
+     * <p>
      * Default concurrency level. Should be greater than number of threads accessing
      * MapDB concurrently. On other side larger number consumes more memory
-     * <p>
-     * This number must be power of two: `CONCURRENCY = 2^N`
+     * </p><p>
+     *
+     * This number must be power of two: {@code CONCURRENCY = 2^N}
+     * </p>
      */
     int DEFAULT_LOCK_SCALE = 16;
 
@@ -89,7 +92,10 @@ public interface CC {
 
     int DEFAULT_CACHE_SIZE = 2048;
 
-    String DEFAULT_CACHE = DBMaker.Keys.cache_hashTable;
+    String DEFAULT_CACHE = DBMaker.Keys.cache_disable;
+
+    /** default executor scheduled rate for {@link org.mapdb.Store.Cache.WeakSoftRef} */
+    long DEFAULT_CACHE_EXECUTOR_PERIOD = 1000;
 
     int DEFAULT_FREE_SPACE_RECLAIM_Q = 5;
 
@@ -107,5 +113,13 @@ public interface CC {
      */
     long VOLUME_PRINT_STACK_AT_OFFSET = 0;
 
+
+    long DEFAULT_HTREEMAP_EXECUTOR_PERIOD = 1000;
+    long DEFAULT_STORE_EXECUTOR_SCHED_RATE = 1000;
+
+    long DEFAULT_METRICS_LOG_PERIOD = 10000;
+
+    boolean METRICS_CACHE = true;
+    boolean METRICS_STORE = true;
 }
 

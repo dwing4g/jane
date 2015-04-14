@@ -26,21 +26,23 @@
 package org.mapdb;
 
 
+import java.io.Closeable;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentNavigableMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.LockSupport;
 
 
 /**
+ * <p>
  * A scalable concurrent {@link ConcurrentNavigableMap} implementation.
  * The map is sorted according to the {@linkplain Comparable natural
  * ordering} of its keys, or by a {@link Comparator} provided at map
  * creation time.
- * <p> 
+ * </p><p>
+ *
  * Insertion, removal,
  * update, and access operations safely execute concurrently by
  * multiple threads.  Iterators are <i>weakly consistent</i>, returning
@@ -49,36 +51,42 @@ import java.util.concurrent.locks.LockSupport;
  * ConcurrentModificationException}, and may proceed concurrently with
  * other operations. Ascending key ordered views and their iterators
  * are faster than descending ones.
- * <p> 
+ * </p><p>
+ *
  * It is possible to obtain <i>consistent</i> iterator by using <code>snapshot()</code>
  * method.
- *<p> 
+ * </p><p>
+ *
  * All <tt>Map.Entry</tt> pairs returned by methods in this class
  * and its views represent snapshots of mappings at the time they were
  * produced. They do <em>not</em> support the <tt>Entry.setValue</tt>
  * method. (Note however that it is possible to change mappings in the
  * associated map using <tt>put</tt>, <tt>putIfAbsent</tt>, or
  * <tt>replace</tt>, depending on exactly which effect you need.)
- *<p> 
+ * </p><p>
+ *
  * This collection has optional size counter. If this is enabled Map size is
  * kept in {@link Atomic.Long} variable. Keeping counter brings considerable
  * overhead on inserts and removals.
  * If the size counter is not enabled the <tt>size</tt> method is <em>not</em> a constant-time operation.
  * Determining the current number of elements requires a traversal of the elements.
- *<p> 
+ * </p><p>
+ *
  * Additionally, the bulk operations <tt>putAll</tt>, <tt>equals</tt>, and
  * <tt>clear</tt> are <em>not</em> guaranteed to be performed
  * atomically. For example, an iterator operating concurrently with a
  * <tt>putAll</tt> operation might view only some of the added
  * elements. NOTE: there is an optional 
- *<p> 
+ * </p><p>
+ *
  * This class and its views and iterators implement all of the
  * <em>optional</em> methods of the {@link Map} and {@link Iterator}
  * interfaces. Like most other concurrent collections, this class does
  * <em>not</em> permit the use of <tt>null</tt> keys or values because some
  * null return values cannot be reliably distinguished from the absence of
  * elements.
- *<p> 
+ * </p><p>
+ *
  * Theoretical design of BTreeMap is based on 1986 paper
  * <a href="http://www.sciencedirect.com/science/article/pii/0022000086900218">
  * Concurrent operations on B∗-trees with overtaking</a>
@@ -87,23 +95,28 @@ import java.util.concurrent.locks.LockSupport;
  * <a href="http://cs.au.dk/~tyoung/~td202/">notes</a>
  * and <a href="http://cs.au.dk/~tyoung/~td202/btree/">demo application</a> from Thomas Dinsdale-Young.
  * Also more work from Thomas: <a href="http://www.doc.ic.ac.uk/research/technicalreports/2011/#10">A Simple Abstraction for Complex Concurrent Indexes</a>
- * <p>
+ * </p><p>
+ *
  * B-Linked-Tree used here does not require locking for read.
  * Updates and inserts locks only one, two or three nodes.
  * Original BTree design does not use overlapping lock (lock is released before parent node is locked), I added it just to feel safer.
- <p> 
+ * </p><p>
+ *
  * This B-Linked-Tree structure does not support removal well, entry deletion does not collapse tree nodes. Massive
  * deletion causes empty nodes and performance lost. There is workaround in form of compaction process, but it is not
  * implemented yet.
+ * </p>
  *
  * @author Jan Kotek
  * @author some parts by Doug Lea and JSR-166 group
  *
- * TODO links to BTree papers are not working anymore.
  */
 @SuppressWarnings({ "unchecked", "rawtypes" })
-public class BTreeMap<K,V> extends AbstractMap<K,V>
-        implements ConcurrentNavigableMap<K,V>, Bind.MapWithModificationListener<K,V>{
+public class BTreeMap<K,V>
+        extends AbstractMap<K,V>
+        implements ConcurrentNavigableMap<K,V>,
+        Bind.MapWithModificationListener<K,V>,
+        Closeable {
 
     /** recid under which reference to rootRecid is stored */
     protected final long rootRecidRef;
@@ -143,6 +156,12 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
     protected final Atomic.Long counter;
 
     protected final int numberOfNodeMetas;
+    /**
+     * Indicates if this collection collection was not made by DB by user.
+     * If user can not access DB object, we must shutdown Executor and close Engine ourself in close() method.
+     */
+    protected final boolean closeEngine;
+
 
     /** hack used for DB Catalog*/
     protected static SortedMap<String, Object> preinitCatalog(DB db) {
@@ -166,10 +185,17 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
         Serializer valser = db.getDefaultSerializer();
         if(CC.PARANOID && valser == null)
             throw new AssertionError();
-        return new BTreeMap<String, Object>(db.engine,Engine.RECID_NAME_CATALOG,32,false,0,
+        return new BTreeMap<String, Object>(
+                db.engine,
+                false,
+                Engine.RECID_NAME_CATALOG,
+                32,
+                false,
+                0,
                 keyser,
                 valser,
-                0);
+                0
+                );
     }
 
 
@@ -837,6 +863,7 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
     /** Constructor used to create new BTreeMap.
      *
      * @param engine used for persistence
+     * @param closeEngine if this object was created without DB. If true shutdown everything on close method, otherwise DB takes care of shutdown
      * @param rootRecidRef reference to root recid
      * @param maxNodeSize maximal BTree Node size. Node will split if number of entries is higher
      * @param valsOutsideNodes Store Values outside of BTree Nodes in separate record?
@@ -847,13 +874,16 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
      */
     public BTreeMap(
             Engine engine,
+            boolean closeEngine,
             long rootRecidRef,
             int maxNodeSize,
             boolean valsOutsideNodes,
             long counterRecid,
             BTreeKeySerializer keySerializer,
             final Serializer<V> valueSerializer,
-            int numberOfNodeMetas) {
+            int numberOfNodeMetas
+            ) {
+        this.closeEngine = closeEngine;
 
         if(maxNodeSize%2!=0)
             throw new IllegalArgumentException("maxNodeSize must be dividable by 2");
@@ -901,12 +931,13 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
             //$DELAY$
             BNode n= engine.get(r,nodeSerializer);
             leftEdges2.add(r);
-            if(n.isLeaf()) break;
+            if(n.isLeaf())
+                break;
             r = n.child(0);
         }
         //$DELAY$
         Collections.reverse(leftEdges2);
-        leftEdges = new CopyOnWriteArrayList<Long>(leftEdges2);
+        leftEdges = Collections.synchronizedList(leftEdges2);
     }
 
     /** creates empty root node and returns recid of its reference*/
@@ -2263,7 +2294,10 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
 
 
 
-    static final class KeySet<E> extends AbstractSet<E> implements NavigableSet<E> {
+    static final class KeySet<E>
+            extends AbstractSet<E>
+            implements NavigableSet<E>,
+            Closeable{
 
         protected final ConcurrentNavigableMap<E,Object> m;
         private final boolean hasValues;
@@ -2376,6 +2410,12 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
                 throw new UnsupportedOperationException();
             else
                 return m.put(k, Boolean.TRUE ) == null;
+        }
+
+        @Override
+        public void close() {
+            if(m instanceof BTreeMap)
+                ((BTreeMap)m).close();
         }
     }
 
@@ -3350,9 +3390,17 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
     public NavigableMap<K,V> snapshot(){
         Engine snapshot = TxEngine.createSnapshotFor(engine);
 
-        return new BTreeMap<K, V>(snapshot, rootRecidRef, maxNodeSize, valsOutsideNodes,
+        return new BTreeMap<K, V>(
+                snapshot,
+                closeEngine,
+                rootRecidRef,
+                maxNodeSize,
+                valsOutsideNodes,
                 counter==null?0L:counter.recid,
-                keySerializer, valueSerializer, numberOfNodeMetas);
+                keySerializer,
+                valueSerializer,
+                numberOfNodeMetas
+                );
     }
 
 
@@ -3510,6 +3558,13 @@ public class BTreeMap<K,V> extends AbstractMap<K,V>
             }
         }
 
+    }
+
+    @Override
+    public void close(){
+        if(closeEngine) {
+            engine.close();
+        }
     }
 
 

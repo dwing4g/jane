@@ -7,11 +7,10 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Random;
+import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.*;
 import java.util.logging.Level;
@@ -24,6 +23,8 @@ import java.util.zip.CRC32;
 public abstract class Store implements Engine {
 
     protected static final Logger LOG = Logger.getLogger(Store.class.getName());
+
+    //TODO if locks are disabled, use NoLock for structuralLock and commitLock
 
     /** protects structural layout of records. Memory allocator is single threaded under this lock */
     protected final ReentrantLock structuralLock = new ReentrantLock(CC.FAIR_LOCKS);
@@ -48,7 +49,17 @@ public abstract class Store implements Engine {
     protected final EncryptionXTEA encryptionXTEA;
     protected final ThreadLocal<CompressLZF> LZF;
 
+    protected final AtomicLong metricsDataWrite;
+    protected final AtomicLong metricsRecordWrite;
+    protected final AtomicLong metricsDataRead;
+    protected final AtomicLong metricsRecordRead;
+
+
     protected final Cache[] caches;
+
+    public static final int LOCKING_STRATEGY_READWRITELOCK=0;
+    public static final int LOCKING_STRATEGY_WRITELOCK=1;
+    public static final int LOCKING_STRATEGY_NOLOCK=2;
 
     protected Store(
             String fileName,
@@ -66,24 +77,34 @@ public abstract class Store implements Engine {
         this.lockMask = lockScale-1;
         if(Integer.bitCount(lockScale)!=1)
             throw new IllegalArgumentException();
+        //TODO replace with incrementer on java 8
+        metricsDataWrite = new AtomicLong();
+        metricsRecordWrite = new AtomicLong();
+        metricsDataRead = new AtomicLong();
+        metricsRecordRead = new AtomicLong();
+
         locks = new ReadWriteLock[lockScale];
         for(int i=0;i< locks.length;i++){
-            if(lockingStrategy==0)
+            if(lockingStrategy==LOCKING_STRATEGY_READWRITELOCK)
                 locks[i] = new ReentrantReadWriteLock(CC.FAIR_LOCKS);
-            else if(lockingStrategy==1){
+            else if(lockingStrategy==LOCKING_STRATEGY_WRITELOCK){
                 locks[i] = new ReadWriteSingleLock(new ReentrantLock(CC.FAIR_LOCKS));
+            }else if(lockingStrategy==LOCKING_STRATEGY_NOLOCK){
+                locks[i] = new ReadWriteSingleLock(NOLOCK);
             }else{
-                locks[i] = new ReadWriteSingleLock(new NoLock());
+                throw new IllegalArgumentException("Illegal locking strategy: "+lockingStrategy);
             }
         }
 
-        caches = new Cache[lockScale];
-        if(cache==null)
-            cache = Cache.ZERO_CACHE;
-        caches[0] = cache;
-        for(int i=1;i<caches.length;i++){
-            //each segment needs different cache, since StoreCache is not thread safe
-            caches[i] = cache.clone();
+        if(cache==null) {
+            caches = null;
+        }else {
+            caches = new Cache[lockScale];
+            caches[0] = cache;
+            for (int i = 1; i < caches.length; i++) {
+                //each segment needs different cache, since StoreCache is not thread safe
+                caches[i] = cache.newCacheForOtherSegment();
+            }
         }
 
 
@@ -112,15 +133,17 @@ public abstract class Store implements Engine {
 
         int lockPos = lockPos(recid);
         final Lock lock = locks[lockPos].readLock();
-        final Cache cache = caches[lockPos];
+        final Cache cache = caches==null ? null : caches[lockPos];
         lock.lock();
         try{
-            A o = (A) cache.get(recid);
+            A o = cache==null ? null : (A) cache.get(recid);
             if(o!=null) {
                 return o== Cache.NULL?null:o;
             }
             o =  get2(recid,serializer);
-            cache.put(recid,o);
+            if(cache!=null) {
+                cache.put(recid, o);
+            }
             return o;
         }finally {
             lock.unlock();
@@ -141,16 +164,19 @@ public abstract class Store implements Engine {
         DataIO.DataOutputByteArray out = serialize(value, serializer);
         int lockPos = lockPos(recid);
         final Lock lock = locks[lockPos].writeLock();
-        final Cache cache = caches[lockPos];
+        final Cache cache = caches==null ? null : caches[lockPos];
         lock.lock();
         try{
-            cache.put(recid,value);
+            if(cache!=null) {
+                cache.put(recid, value);
+            }
             update2(recid,out);
         }finally {
             lock.unlock();
         }
     }
 
+    //TODO DataOutputByteArray is not thread safe, make one recycled per segment lock
     protected final AtomicReference<DataIO.DataOutputByteArray> recycledDataOut =
             new AtomicReference<DataIO.DataOutputByteArray>();
 
@@ -233,6 +259,10 @@ public abstract class Store implements Engine {
                     throw new RuntimeException(e);
                 }
             }
+
+            metricsDataWrite.getAndAdd(out.pos);
+            metricsRecordWrite.incrementAndGet();
+
             return out;
         } catch (IOException e) {
             throw new IOError(e);
@@ -265,6 +295,10 @@ public abstract class Store implements Engine {
                 throw new AssertionError("data were not fully read, check your serializer ");
             if (size + start < di.getPos())
                 throw new AssertionError("data were read beyond record size, check your serializer");
+
+            metricsDataRead.getAndAdd(size);
+            metricsRecordRead.getAndIncrement();
+
             return ret;
         }catch(IOException e){
             throw new IOError(e);
@@ -356,10 +390,10 @@ public abstract class Store implements Engine {
         //TODO binary CAS & serialize outside lock
         final int lockPos = lockPos(recid);
         final Lock lock = locks[lockPos].writeLock();
-        final Cache cache = caches[lockPos];
+        final Cache cache = caches==null ? null : caches[lockPos];
         lock.lock();
         try{
-            A oldVal = (A) cache.get(recid);
+            A oldVal =  cache==null ? null : (A)cache.get(recid);
             if(oldVal == null) {
                 oldVal = get2(recid, serializer);
             }else if(oldVal == Cache.NULL){
@@ -367,7 +401,9 @@ public abstract class Store implements Engine {
             }
             if(oldVal==expectedOldValue || (oldVal!=null && serializer.equals(oldVal,expectedOldValue))){
                 update2(recid,serialize(newValue,serializer));
-                cache.put(recid,newValue);
+                if(cache!=null) {
+                    cache.put(recid, newValue);
+                }
                 return true;
             }
             return false;
@@ -387,10 +423,12 @@ public abstract class Store implements Engine {
 
         final int lockPos = lockPos(recid);
         final Lock lock = locks[lockPos].writeLock();
-        final Cache cache = caches[lockPos];
+        final Cache cache = caches==null ? null : caches[lockPos];
         lock.lock();
         try{
-            cache.put(recid, null);
+            if(cache!=null) {
+                cache.put(recid, null);
+            }
             delete2(recid, serializer);
         }finally {
             lock.unlock();
@@ -459,6 +497,9 @@ public abstract class Store implements Engine {
         if(closed)
             throw new IllegalAccessError("closed");
 
+        if(caches==null)
+            return;
+
         for(int i=0;i<locks.length;i++){
             Lock lock = locks[i].readLock();
             lock.lock();
@@ -470,89 +511,128 @@ public abstract class Store implements Engine {
         }
     }
 
+    /** puts metrics into given map */
+    public void metricsCollect(Map<String,Long> map) {
+        map.put(DB.METRICS_DATA_WRITE,metricsDataWrite.getAndSet(0));
+        map.put(DB.METRICS_RECORD_WRITE,metricsRecordWrite.getAndSet(0));
+        map.put(DB.METRICS_DATA_READ,metricsDataRead.getAndSet(0));
+        map.put(DB.METRICS_RECORD_READ,metricsRecordRead.getAndSet(0));
+
+        long cacheHit = 0;
+        long cacheMiss = 0;
+        if(caches!=null) {
+            for (Cache c : caches) {
+                cacheHit += c.metricsCacheHit();
+                cacheMiss += c.metricsCacheMiss();
+            }
+        }
+
+        map.put(DB.METRICS_CACHE_HIT,cacheHit);
+        map.put(DB.METRICS_CACHE_MISS, cacheMiss);
+    }
+
     /**
      * Cache implementation, part of {@link Store} class.
      */
-    public interface Cache {
+    public static abstract class Cache {
 
-        Object NULL = new Object();
+        protected final Lock lock;
+        protected long cacheHitCounter = 0;
+        protected long cacheMissCounter = 0;
 
-        Cache ZERO_CACHE = new Cache() {
-            @Override
-            public Object get(long recid) {
-                return null;
+        protected static final Object NULL = new Object();
+
+        public Cache(boolean disableLocks) {
+            this.lock = disableLocks?null:  new ReentrantLock(CC.FAIR_LOCKS);
+        }
+
+
+        public abstract Object get(long recid);
+        public abstract void put(long recid, Object item);
+
+        public abstract void clear();
+        public abstract void close();
+
+        public abstract Cache newCacheForOtherSegment();
+
+        /** how many times was cache hit, also reset counter */
+        public long metricsCacheHit() {
+            Lock lock = this.lock;
+            if(lock!=null)
+                lock.lock();
+            try {
+                long ret = cacheHitCounter;
+                cacheHitCounter=0;
+                return ret;
+            }finally {
+                if(lock!=null)
+                    lock.unlock();
             }
+        }
 
-            @Override
-            public void put(long recid, Object item) {
+
+        /** how many times was cache miss, also reset counter */
+        public long metricsCacheMiss() {
+            Lock lock = this.lock;
+            if(lock!=null)
+                lock.lock();
+            try {
+                long ret = cacheMissCounter;
+                cacheMissCounter=0;
+                return ret;
+            }finally {
+                if(lock!=null)
+                    lock.unlock();
             }
-
-            @Override
-            public void clear() {
-            }
-
-            @Override
-            public void close() {
-            }
-
-            @Override
-            public Cache clone() {
-                return this;
-            }
-        };
-
-
-        Object get(long recid);
-        void put(long recid, Object item);
-
-        void clear();
-        void close();
-
-        Cache clone();
+        }
 
         /**
+         * <p>
          * Fixed size cache which uses hash table.
          * Is thread-safe and requires only minimal locking.
          * Items are randomly removed and replaced by hash collisions.
-         * <p>
+         * </p><p>
          * This is simple, concurrent, small-overhead, random cache.
+         * </p>
          *
          * @author Jan Kotek
          */
-        public static final class HashTable implements Cache {
+        public static final class HashTable extends Cache {
 
 
             protected final long[] recids; //TODO 6 byte longs
             protected final Object[] items;
 
-            protected final Lock lock;
-
             protected final int cacheMaxSizeMask;
-
-            /**
-             * Salt added to keys before hashing, so it is harder to trigger hash collision attack.
-             */
-            protected final long hashSalt = new Random().nextLong();
 
 
             public HashTable(int cacheMaxSize, boolean disableLocks) {
+                super(disableLocks);
                 cacheMaxSize = DataIO.nextPowTwo(cacheMaxSize); //next pow of two
 
                 this.cacheMaxSizeMask = cacheMaxSize-1;
 
                 this.recids = new long[cacheMaxSize];
                 this.items = new Object[cacheMaxSize];
-
-                lock = disableLocks?null:  new ReentrantLock(CC.FAIR_LOCKS);
             }
 
             @Override
             public Object get(long recid) {
                 int pos = pos(recid);
+                Lock lock = this.lock;
                 if(lock!=null)
                     lock.lock();
                 try {
-                    return recids[pos] == recid ? items[pos] : null;
+                    boolean hit = recids[pos] == recid;
+                    if(hit){
+                        if(CC.METRICS_CACHE)
+                            cacheHitCounter++;
+                        return items[pos];
+                    }else{
+                        if(CC.METRICS_CACHE)
+                            cacheMissCounter++;
+                        return null;
+                    }
                 }finally {
                     if(lock!=null)
                         lock.unlock();
@@ -564,6 +644,7 @@ public abstract class Store implements Engine {
                 if(item == null)
                     item = NULL;
                 int pos = pos(recid);
+                Lock lock = this.lock;
                 if(lock!=null)
                     lock.lock();
                 try {
@@ -581,6 +662,7 @@ public abstract class Store implements Engine {
 
             @Override
             public void clear() {
+                Lock lock = this.lock;
                 if(lock!=null)
                     lock.lock();
                 try {
@@ -598,9 +680,10 @@ public abstract class Store implements Engine {
             }
 
             @Override
-            public Cache clone() {
+            public Cache newCacheForOtherSegment() {
                 return new HashTable(recids.length,lock==null);
             }
+
         }
 
 
@@ -610,7 +693,7 @@ public abstract class Store implements Engine {
      *
      * @author Jan Kotek
      */
-    public static class WeakSoftRef implements Store.Cache {
+    public static class WeakSoftRef extends Store.Cache {
 
 
         protected interface CacheItem{
@@ -653,29 +736,56 @@ public abstract class Store implements Engine {
 
         protected LongObjectMap<CacheItem> items = new LongObjectMap<CacheItem>();
 
-        protected final Lock lock;
-
         protected final static int CHECK_EVERY_N = 0xFFFF;
         protected int counter = 0;
-
+        protected final ScheduledExecutorService executor;
 
         protected final boolean useWeakRef;
+        protected final long executorScheduledRate;
 
-        public WeakSoftRef(boolean useWeakRef,boolean disableLocks) {
+        public WeakSoftRef(boolean useWeakRef, boolean disableLocks,
+                           ScheduledExecutorService executor,
+                           long executorScheduledRate) {
+            super(disableLocks);
+            if(CC.PARANOID && disableLocks && executor!=null) {
+                throw new IllegalArgumentException("Lock can not be disabled with executor enabled");
+            }
             this.useWeakRef = useWeakRef;
-            lock = disableLocks?null:  new ReentrantLock(CC.FAIR_LOCKS);
+            this.executor = executor;
+            this.executorScheduledRate = executorScheduledRate;
+            if(executor!=null){
+                executor.scheduleAtFixedRate(new Runnable() {
+                    @Override
+                    public void run() {
+                        WeakSoftRef.this.flushGCedLocked();
+                    }
+                    },
+                    (long) (executorScheduledRate*Math.random()),
+                    executorScheduledRate,
+                    TimeUnit.MILLISECONDS);
+            }
         }
 
 
         @Override
         public Object get(long recid) {
+            Lock lock = this.lock;
             if(lock!=null)
                 lock.lock();
             try{
                 CacheItem item = items.get(recid);
-                Object ret = item==null? null: item.get();
+                Object ret;
+                if(item==null){
+                    if(CC.METRICS_CACHE)
+                        cacheMissCounter++;
+                    ret = null;
+                }else{
+                    if(CC.METRICS_CACHE)
+                        cacheHitCounter++;
+                    ret = item.get();
+                }
 
-                if (((counter++) & CHECK_EVERY_N) == 0) {
+                if (executor==null && (((counter++) & CHECK_EVERY_N) == 0)) {
                     flushGCed();
                 }
                 return ret;
@@ -689,17 +799,17 @@ public abstract class Store implements Engine {
         public void put(long recid, Object item) {
             if(item ==null)
                 item = Cache.NULL;
-
+            CacheItem cacheItem = useWeakRef?
+                    new CacheWeakItem(item,queue,recid):
+                    new CacheSoftItem(item,queue,recid);
+            Lock lock = this.lock;
             if(lock!=null)
                 lock.lock();
             try{
-                CacheItem cacheItem = useWeakRef?
-                        new CacheWeakItem(item,queue,recid):
-                        new CacheSoftItem(item,queue,recid);
                 CacheItem older = items.put(recid,cacheItem);
                 if(older!=null)
                     older.clear();
-                if (((counter++) & CHECK_EVERY_N) == 0) {
+                if (executor==null && (((counter++) & CHECK_EVERY_N) == 0)) {
                     flushGCed();
                 }
             }finally {
@@ -711,10 +821,11 @@ public abstract class Store implements Engine {
 
         @Override
         public void clear() {
+            Lock lock = this.lock;
             if(lock!=null)
                 lock.lock();
             try{
-                //TODO clear weak/soft cache
+                items.clear(); //TODO more efficient method, which would bypass queue
             }finally {
                 if(lock!=null)
                     lock.unlock();
@@ -724,6 +835,7 @@ public abstract class Store implements Engine {
 
         @Override
         public void close() {
+            Lock lock = this.lock;
             if(lock!=null)
                 lock.lock();
             try{
@@ -739,11 +851,20 @@ public abstract class Store implements Engine {
         }
 
         @Override
-        public Cache clone() {
-            return new Cache.WeakSoftRef(useWeakRef,lock==null);
+        public Cache newCacheForOtherSegment() {
+            return new Cache.WeakSoftRef(
+                    useWeakRef,
+                    lock==null,
+                    executor,
+                    executorScheduledRate);
         }
 
         protected void flushGCed() {
+            if(CC.PARANOID && lock!=null &&
+                    (lock instanceof ReentrantLock) &&
+                    !((ReentrantLock)lock).isHeldByCurrentThread()) {
+                throw new AssertionError("Not locked by current thread");
+            }
             counter = 1;
             CacheItem item = (CacheItem) queue.poll();
             while(item!=null){
@@ -757,6 +878,19 @@ public abstract class Store implements Engine {
             }
         }
 
+
+        protected void flushGCedLocked() {
+            Lock lock = this.lock;
+            if(lock!=null)
+                lock.lock();
+            try{
+                flushGCed();
+            }finally {
+                if(lock!=null)
+                    lock.unlock();
+            }
+        }
+
     }
 
     /**
@@ -765,7 +899,7 @@ public abstract class Store implements Engine {
      *
      * @author Jan Kotek
      */
-    public static final class HardRef implements  Store.Cache{
+    public static final class HardRef extends  Store.Cache{
 
         protected final static int CHECK_EVERY_N = 0xFFFF;
 
@@ -775,13 +909,33 @@ public abstract class Store implements Engine {
 
         protected final int initialCapacity;
 
+        protected final ScheduledExecutorService executor;
+        protected final long executorPeriod;
 
-        protected final Lock lock;
 
-        public HardRef(int initialCapacity, boolean disableLocks) {
+        public HardRef(int initialCapacity, boolean disableLocks, ScheduledExecutorService executor, long executorPeriod) {
+            super(disableLocks);
+            if(disableLocks && executor!=null)
+                throw new IllegalArgumentException("Executor can not be enabled with lock disabled");
+            
             this.initialCapacity = initialCapacity;
             cache = new Store.LongObjectMap(initialCapacity);
-            lock = disableLocks?null:  new ReentrantLock(CC.FAIR_LOCKS);
+            this.executor = executor;
+            this.executorPeriod = executorPeriod;
+            if(executor!=null){
+                executor.scheduleAtFixedRate(new Runnable() {
+                    @Override
+                    public void run() {
+                        Lock lock = HardRef.this.lock;
+                        lock.lock();
+                        try {
+                            checkFreeMem();
+                        }finally {
+                            lock.unlock();
+                        }
+                    }
+                },executorPeriod,executorPeriod,TimeUnit.MILLISECONDS);
+            }
         }
 
 
@@ -810,13 +964,23 @@ public abstract class Store implements Engine {
 
         @Override
         public Object get(long recid) {
+            Lock lock = this.lock;
             if(lock!=null)
                 lock.lock();
             try {
-                if (((counter++) & CHECK_EVERY_N) == 0) {
+                if (executor==null && ((counter++) & CHECK_EVERY_N) == 0) {
                     checkFreeMem();
                 }
                 Object item = cache.get(recid);
+
+                if(CC.METRICS_CACHE){
+                    if(item!=null){
+                        cacheHitCounter++;
+                    }else{
+                        cacheMissCounter++;
+                    }
+                }
+
                 return item;
             }finally {
                 if(lock!=null)
@@ -828,10 +992,11 @@ public abstract class Store implements Engine {
         public void put(long recid, Object item) {
             if(item == null)
                 item = Cache.NULL;
+            Lock lock = this.lock;
             if(lock!=null)
                 lock.lock();
             try {
-                if (((counter++) & CHECK_EVERY_N) == 0) {
+                if (executor==null && ((counter++) & CHECK_EVERY_N) == 0) {
                     checkFreeMem();
                 }
                 cache.put(recid,item);
@@ -843,6 +1008,7 @@ public abstract class Store implements Engine {
 
         @Override
         public void clear() {
+            Lock lock = this.lock;
             if(lock!=null)
                 lock.lock();
             try{
@@ -859,30 +1025,39 @@ public abstract class Store implements Engine {
         }
 
         @Override
-        public Cache clone() {
-            return new HardRef(initialCapacity,lock==null);
+        public Cache newCacheForOtherSegment() {
+            return new HardRef(initialCapacity,lock==null,executor,executorPeriod);
         }
     }
 
-        public static final class LRU implements Cache {
+        public static final class LRU extends Cache {
 
             protected final int cacheSize;
-            protected final Lock lock;
 
             //TODO specialized version of LinkedHashMap to use primitive longs
             protected final LinkedHashMap<Long, Object> items = new LinkedHashMap<Long,Object>();
 
             public LRU(int cacheSize, boolean disableLocks) {
+                super(disableLocks);
                 this.cacheSize = cacheSize;
-                lock = disableLocks?null:  new ReentrantLock(CC.FAIR_LOCKS);
             }
 
             @Override
             public Object get(long recid) {
+                Lock lock = this.lock;
                 if(lock!=null)
                     lock.lock();
                 try{
-                    return items.get(recid);
+                    Object ret =  items.get(recid);
+                    if(CC.METRICS_CACHE){
+                        if(ret!=null){
+                            cacheHitCounter++;
+                        }else{
+                            cacheMissCounter++;
+                        }
+                    }
+                    return ret;
+
                 }finally {
                     if(lock!=null)
                         lock.unlock();
@@ -894,6 +1069,7 @@ public abstract class Store implements Engine {
                 if(item == null)
                     item = Cache.NULL;
 
+                Lock lock = this.lock;
                 if(lock!=null)
                     lock.lock();
                 try{
@@ -918,6 +1094,7 @@ public abstract class Store implements Engine {
 
             @Override
             public void clear() {
+                Lock lock = this.lock;
                 if(lock!=null)
                     lock.lock();
                 try{
@@ -934,7 +1111,7 @@ public abstract class Store implements Engine {
             }
 
             @Override
-            public Cache clone() {
+            public Cache newCacheForOtherSegment() {
                 return new LRU(cacheSize,lock==null);
             }
         }
@@ -943,14 +1120,18 @@ public abstract class Store implements Engine {
 
 
     /**
+     * <p>
      * Open Hash Map which uses primitive long as values and keys.
-     * <p/>
+     * </p><p>
+     *
      * This is very stripped down version from Koloboke Collection Library.
      * I removed modCount, free value (defaults to zero) and
      * most of the methods. Only put/get operations are supported.
-     * <p/>
+     * </p><p>
+     *
      * To iterate over collection one has to traverse {@code table} which contains
      * key-value pairs and skip zero pairs.
+     * </p>
      *
      * @author originaly part of Koloboke library, Roman Leventov, Higher Frequency Trading
      * @author heavily modified for MapDB
@@ -1133,14 +1314,18 @@ public abstract class Store implements Engine {
 
 
     /**
+     * <p>
      * Open Hash Map which uses primitive long as keys.
-     * <p/>
+     * </p><p>
+     *
      * This is very stripped down version from Koloboke Collection Library.
      * I removed modCount, free value (defaults to zero) and
      * most of the methods. Only put/get/remove operations are supported.
-     * <p/>
+     * </p><p>
+     *
      * To iterate over collection one has to traverse {@code set} which contains
-     * keys, va7lues are in separate field.
+     * keys, values are in separate field.
+     * </p>
      *
      * @author originaly part of Koloboke library, Roman Leventov, Higher Frequency Trading
      * @author heavily modified for MapDB
@@ -1359,8 +1544,8 @@ public abstract class Store implements Engine {
 
 
     /** fake lock */
-    //TODO perhaps add some basic assertions?
-    public static final class NoLock implements Lock{
+
+    public static final Lock NOLOCK = new Lock(){
 
         @Override
         public void lock() {
@@ -1388,7 +1573,7 @@ public abstract class Store implements Engine {
         public Condition newCondition() {
             throw new UnsupportedOperationException();
         }
-    }
+    };
 
     /** fake read/write lock which in fact locks on single write lock */
     public static final class ReadWriteSingleLock implements ReadWriteLock{
@@ -1413,15 +1598,19 @@ public abstract class Store implements Engine {
 
 
     /**
+     * <p>
      * Open Hash Map which uses primitive long as keys.
      * It also has two values, instead of single one
-     * <p/>
+     * </p><p>
+     *
      * This is very stripped down version from Koloboke Collection Library.
      * I removed modCount, free value (defaults to zero) and
      * most of the methods. Only put/get/remove operations are supported.
-     * <p/>
+     * </p><p>
+     *
      * To iterate over collection one has to traverse {@code set} which contains
      * keys, values are in separate field.
+     * </p>
      *
      * @author originaly part of Koloboke library, Roman Leventov, Higher Frequency Trading
      * @author heavily modified for MapDB

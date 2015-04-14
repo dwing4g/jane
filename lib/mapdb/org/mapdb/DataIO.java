@@ -58,7 +58,6 @@ public final class DataIO {
 
     /**
      * Pack long into output stream.
-     * Pack long into output stream.
      * It will occupy 1-10 bytes depending on value (lower values occupy smaller space)
      *
      * @param out DataOutput to put value into
@@ -79,7 +78,7 @@ public final class DataIO {
     }
 
     /**
-     * Pack  int into output stream.
+     * Pack int into an output stream.
      * It will occupy 1-5 bytes depending on value (lower values occupy smaller space)
      *
      * This method originally comes from Kryo Framework, author Nathan Sweet.
@@ -268,10 +267,10 @@ public final class DataIO {
         int getPos();
         void setPos(int pos);
 
-        /** return underlying `byte[]` or null if it does not exist*/
+        /** return underlying {@code byte[]} or null if it does not exist*/
         byte[] internalByteArray();
 
-        /** return underlying `ByteBuffer` or null if it does not exist*/
+        /** return underlying {@code ByteBuffer} or null if it does not exist*/
         ByteBuffer internalByteBuffer();
 
 
@@ -287,7 +286,7 @@ public final class DataIO {
         void unpackIntArray(int[] ret, int i, int len);
     }
 
-    /** DataInput on top of `byte[]` */
+    /** DataInput on top of {@code byte[]} */
     static public final class DataInputByteArray implements DataInput, DataInputInternal {
         protected final byte[] buf;
         protected int pos;
@@ -532,7 +531,7 @@ public final class DataIO {
     }
 
     /**
-     * Wraps `DataInput` into `InputStream`
+     * Wraps {@code DataInput} into {@code InputStream}
      */
     public static final class DataInputToStream extends InputStream {
 
@@ -811,7 +810,6 @@ public final class DataIO {
 
     /**
      * Provides {@link java.io.DataOutput} implementation on top of growable {@code byte[]}
-     * <p>
      *  {@link java.io.ByteArrayOutputStream} is not used as it requires {@code byte[]} copying
      *
      * @author Jan Kotek

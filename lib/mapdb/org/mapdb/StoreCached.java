@@ -1,6 +1,8 @@
 package org.mapdb;
 
 import java.util.Arrays;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
 import static org.mapdb.DataIO.*;
@@ -37,16 +39,41 @@ public class StoreCached extends StoreDirect {
             boolean readonly,
             int freeSpaceReclaimQ,
             boolean commitFileSyncDisable,
-            int sizeIncrement) {
+            int sizeIncrement,
+            ScheduledExecutorService executor,
+            long executorScheduledRate
+            ) {
         super(fileName, volumeFactory, cache,
                 lockScale,
                 lockingStrategy,
                 checksum, compress, password, readonly,
-                freeSpaceReclaimQ, commitFileSyncDisable, sizeIncrement);
+                freeSpaceReclaimQ, commitFileSyncDisable, sizeIncrement,executor);
 
         writeCache = new LongObjectObjectMap[this.lockScale];
         for (int i = 0; i < writeCache.length; i++) {
             writeCache[i] = new LongObjectObjectMap();
+        }
+        if(this.executor!=null &&
+                !(this instanceof StoreWAL) //TODO async write should work for StoreWAL as well
+                ){
+            for(int i=0;i<this.lockScale;i++){
+                final int seg = i;
+                final Lock lock = locks[i].writeLock();
+                this.executor.scheduleAtFixedRate(new Runnable() {
+                    @Override
+                    public void run() {
+                        lock.lock();
+                        try {
+                            flushWriteCacheSegment(seg);
+                        }finally {
+                            lock.unlock();
+                        }
+                    }
+                    },
+                        (long) (executorScheduledRate*Math.random()),
+                        executorScheduledRate,
+                        TimeUnit.MILLISECONDS);
+            }
         }
     }
 
@@ -58,7 +85,8 @@ public class StoreCached extends StoreDirect {
                 CC.DEFAULT_LOCK_SCALE,
                 0,
                 false, false, null, false, 0,
-                false, 0);
+                false, 0,
+                null, 0L);
     }
 
     @Override
@@ -255,7 +283,7 @@ public class StoreCached extends StoreDirect {
                 vol.putData(offset, val, 0, val.length);
             }
             dirtyStackPages.clear();
-
+            headVol.putLong(LAST_PHYS_ALLOCATED_DATA_OFFSET,parity3Set(lastAllocatedData));
             //set header checksum
             headVol.putInt(HEAD_CHECKSUM, headChecksum(headVol));
             //and flush head
@@ -298,11 +326,11 @@ public class StoreCached extends StoreDirect {
                 continue;
             Object value = values[i*2];
             if (value == TOMBSTONE2) {
-                delete2(recid, Serializer.ILLEGAL_ACCESS);
+                super.delete2(recid, Serializer.ILLEGAL_ACCESS);
             } else {
                 Serializer s = (Serializer) values[i*2+1];
                 DataOutputByteArray buf = serialize(value, s); //TODO somehow serialize outside lock?
-                update2(recid, buf);
+                super.update2(recid, buf);
                 recycledDataOut.lazySet(buf);
             }
         }
@@ -351,11 +379,13 @@ public class StoreCached extends StoreDirect {
             throw new NullPointerException();
 
         int lockPos = lockPos(recid);
-        Cache cache = caches[lockPos];
+        Cache cache = caches==null ? null : caches[lockPos];
         Lock lock = locks[lockPos].writeLock();
         lock.lock();
         try {
-            cache.put(recid,value);
+            if(cache!=null) {
+                cache.put(recid, value);
+            }
             writeCache[lockPos].put(recid, value, serializer);
         } finally {
             lock.unlock();
@@ -371,18 +401,20 @@ public class StoreCached extends StoreDirect {
         //TODO binary CAS & serialize outside lock
         final int lockPos = lockPos(recid);
         final Lock lock = locks[lockPos].writeLock();
-        final Cache cache = caches[lockPos];
+        final Cache cache = caches==null ? null : caches[lockPos];
         LongObjectObjectMap<A,Serializer<A>> map = writeCache[lockPos];
         lock.lock();
         try{
-            A oldVal = (A) cache.get(recid);
+            A oldVal = cache==null ? null : (A) cache.get(recid);
             if(oldVal == null) {
                 oldVal = get2(recid, serializer);
             }else if(oldVal == Cache.NULL){
                 oldVal = null;
             }
             if(oldVal==expectedOldValue || (oldVal!=null && serializer.equals(oldVal,expectedOldValue))){
-                cache.put(recid,newValue);
+                if(cache!=null) {
+                    cache.put(recid, newValue);
+                }
                 map.put(recid,newValue,serializer);
                 return true;
             }
