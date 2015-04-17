@@ -130,11 +130,10 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	}
 
 	@Deprecated
-	@SuppressWarnings("unchecked")
 	@Override
-	public V[] toArray()
+	public Object[] toArray()
 	{
-		return (V[])_set.toArray();
+		return _set.toArray();
 	}
 
 	@Deprecated

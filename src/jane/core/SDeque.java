@@ -73,11 +73,10 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	}
 
 	@Deprecated
-	@SuppressWarnings("unchecked")
 	@Override
-	public V[] toArray()
+	public Object[] toArray()
 	{
-		return (V[])_deque.toArray();
+		return _deque.toArray();
 	}
 
 	@Deprecated

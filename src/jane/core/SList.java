@@ -85,11 +85,10 @@ public final class SList<V, S> implements List<S>, Cloneable
 	}
 
 	@Deprecated
-	@SuppressWarnings("unchecked")
 	@Override
-	public V[] toArray()
+	public Object[] toArray()
 	{
-		return (V[])_list.toArray();
+		return _list.toArray();
 	}
 
 	@Deprecated
