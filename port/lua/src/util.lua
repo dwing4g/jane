@@ -256,7 +256,7 @@ function util.initBeans(c)
 		b.__tostring = toStr
 		s[n] = class(b) -- 创建类并放入临时表中
 	end
-	local m = { [0] = 0, "", false, setmetatable({}, { __newindex = dummy }), setmetatable({}, { __index = { __map = true }, __newindex = dummy }) } -- 基础类型的stub值
+	local m = { [0] = 0, "", false, setmetatable({}, { __index = { __vec = true }, __newindex = dummy }), setmetatable({}, { __index = { __map = true }, __newindex = dummy }) } -- 基础类型的stub值
 	for n, b in pairs(s) do
 		local i = c[n].__type
 		if i ~= 0 then

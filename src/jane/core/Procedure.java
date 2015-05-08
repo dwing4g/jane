@@ -219,14 +219,24 @@ public abstract class Procedure implements Runnable
 		}
 	}
 
-	public static RuntimeException redo()
+	public static RuntimeException redoException()
 	{
 		return Redo._instance;
 	}
 
-	public static RuntimeException undo()
+	public static RuntimeException undoException()
 	{
 		return Undo._instance;
+	}
+
+	public static void redo()
+	{
+		throw Redo._instance;
+	}
+
+	public static void undo()
+	{
+		throw Undo._instance;
 	}
 
 	/**
@@ -695,7 +705,7 @@ public abstract class Procedure implements Runnable
 		{
 			try
 			{
-				if(e != undo())
+				if(e != undoException())
 				    onException(e);
 			}
 			catch(Throwable ex)
