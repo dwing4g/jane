@@ -265,8 +265,8 @@ local function mapVarType(t)
 	return k, v
 end
 
--- 序列化v值,类型自动判断;可选前置序列化tag;subtype仅用于内部序列化容器元素的类型提示;proto表示v的类型原型,有助于v不带原型时识别类型
-function Stream:marshal(v, tag, subtype, proto)
+-- 序列化v值,类型自动判断;可选前置序列化tag;subtype仅用于内部序列化容器元素的类型提示;varmeta表示v的类型描述表,有助于v不带原型时识别类型
+function Stream:marshal(v, tag, subtype, varmeta)
 	local t = type(v)
 	if t == "boolean" then
 		v = v and 1 or 0
@@ -311,7 +311,7 @@ function Stream:marshal(v, tag, subtype, proto)
 		end
 		marshalStr(self, v)
 	elseif t == "table" then
-		if v.__type or proto and proto.__type then -- bean
+		if varmeta and type(varmeta.type) == "string" or v.__type then -- bean
 			if tag then
 				if tag < 63 then
 					append(self, char(tag * 4 + 2))
@@ -333,7 +333,7 @@ function Stream:marshal(v, tag, subtype, proto)
 			else
 				append(self, "\0")
 			end
-		elseif v.__vec or proto and proto.__vec then
+		elseif varmeta and varmeta.type == 3 or v.__vec then
 			if #v > 0 then
 				subtype = vecVarType(v)
 				if not subtype then
@@ -349,7 +349,7 @@ function Stream:marshal(v, tag, subtype, proto)
 					self:marshal(vv, nil, subtype)
 				end
 			end
-		elseif v.__map or proto and proto.__map then
+		elseif varmeta and varmeta.type == 4 or v.__map then
 			local n = 0
 			for _ in pairs(v) do
 				n = n + 1
