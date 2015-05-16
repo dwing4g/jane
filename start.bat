@@ -13,10 +13,10 @@ set JVM=^
 -verbose:gc
 
 set LIB=^
-lib/slf4j-api-1.7.10.jar;^
-lib/log4j-core-2.2.jar;^
-lib/log4j-api-2.2.jar;^
-lib/log4j-slf4j-impl-2.2.jar;^
+lib/slf4j-api-1.7.12.jar;^
+lib/log4j-core-2.3.jar;^
+lib/log4j-api-2.3.jar;^
+lib/log4j-slf4j-impl-2.3.jar;^
 lib/mina-core-2.0.9.jar;^
 lib/luaj-jse-2.0.3.jar;^
 lib/h2-mvstore-1.4.184.jar;^
