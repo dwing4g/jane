@@ -10,9 +10,25 @@ local setmetatable = setmetatable
 local string = string
 local byte = string.byte
 local format = string.format
+local table = table
+local sort = table.sort
 local concat = table.concat
 
 local util = {}
+
+function util.spairs(t)
+	local s = {}
+	for k in pairs(t) do
+		s[#s + 1] = k
+	end
+	sort(s)
+	local i = 1
+	return function()
+		local k = s[i]
+		i = i + 1
+		return k, k and t[k]
+	end
+end
 
 -- 表的Copy On Write处理(只能遍历copy过的键值),原型对应关系表统一存到弱表proto里
 local proto = setmetatable({}, { __mode = "k" })
@@ -174,7 +190,7 @@ local function dumpTable(t, out, n)
 		e = n
 	end
 	o[e] = "}"
-	return out and n or concat(o)
+	return out and e or concat(o)
 end
 util.dump = dumpTable
 
