@@ -35,8 +35,8 @@ public final class Const
 	public static final String      dbBackupBase;
 	public static final long        dbBackupPeriod;
 	public static final int         procedureTimeout;
-	public static final int         autoIdLowBits;
-	public static final int         autoIdLowOffset;
+	public static final int         autoIdBegin;
+	public static final int         autoIdStride;
 	public static final int         mapDBFileLevel;
 	public static final int         mapDBCacheCount;
 	public static final int         mvStoreCacheSize;
@@ -82,8 +82,8 @@ public final class Const
 		dbBackupBase = getPropStr("dbBackupBase", "2014-01-06 04:00:00");
 		dbBackupPeriod = getPropLong("dbBackupPeriod", 3600, 1, Long.MAX_VALUE / 1000);
 		procedureTimeout = getPropInt("procedureTimeout", 5, 1);
-		autoIdLowBits = getPropInt("autoIDLowBits", 0, 0, 32);
-		autoIdLowOffset = getPropInt("autoIDLowOffset", 0, 0, (1 << autoIdLowBits) - 1);
+		autoIdBegin = getPropInt("autoIdBegin", 0, 0);
+		autoIdStride = getPropInt("autoIdStride", 1, 1);
 		mapDBFileLevel = getPropInt("mapDBFileLevel", 0, 0, 3);
 		mapDBCacheCount = getPropInt("mapDBCacheCount", 32768, 0);
 		mvStoreCacheSize = getPropInt("mvStoreCacheSize", 32, 0);
