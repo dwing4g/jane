@@ -285,9 +285,23 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	}
 
 	@SuppressWarnings("unchecked")
-	void modify(long k, Object v)
+	void modify(long k, Object vo)
 	{
-		modify(k, (V)v);
+		V v = (V)vo;
+		if(!v.modified() && _cacheMod != null)
+		{
+			V vOld = _cacheMod.put(k, v);
+			if(vOld == null)
+			{
+				v.setSaveState(2);
+				DBManager.instance().incModCount();
+			}
+			else if(vOld != v)
+			{
+				// 可能之前已经覆盖或删除过记录,然后再modify的话,就忽略本次modify了,因为SContext.commit无法识别这种情况
+				_cacheMod.put(k, vOld);
+			}
+		}
 	}
 
 	/**
