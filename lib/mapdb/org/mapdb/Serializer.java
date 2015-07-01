@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.UUID;
 
@@ -77,9 +78,9 @@ public abstract class Serializer<A> {
         }
 
         @Override
-        public BTreeKeySerializer getBTreeKeySerializer(boolean descending) {
-            if(descending) {
-                return super.getBTreeKeySerializer(descending);
+        public BTreeKeySerializer getBTreeKeySerializer(Comparator comparator) {
+            if(comparator!=null && comparator!=Fun.COMPARATOR) {
+                return super.getBTreeKeySerializer(comparator);
             }
             return BTreeKeySerializer.STRING;
         }
@@ -145,9 +146,9 @@ public abstract class Serializer<A> {
         }
 
         @Override
-        public BTreeKeySerializer getBTreeKeySerializer(boolean descending) {
-            if(descending) {
-                return super.getBTreeKeySerializer(descending);
+        public BTreeKeySerializer getBTreeKeySerializer(Comparator comparator) {
+            if(comparator!=null && comparator!=Fun.COMPARATOR) {
+                return super.getBTreeKeySerializer(comparator);
             }
             return BTreeKeySerializer.STRING; //TODO ascii specific serializer?
         }
@@ -184,9 +185,9 @@ public abstract class Serializer<A> {
         }
 
         @Override
-        public BTreeKeySerializer getBTreeKeySerializer(boolean descending) {
-            if(descending) {
-                return super.getBTreeKeySerializer(descending);
+        public BTreeKeySerializer getBTreeKeySerializer(Comparator comparator) {
+            if(comparator!=null && comparator!=Fun.COMPARATOR) {
+                return super.getBTreeKeySerializer(comparator);
             }
             return BTreeKeySerializer.STRING;
         }
@@ -194,53 +195,16 @@ public abstract class Serializer<A> {
     };
 
 
+    abstract protected static class EightByteSerializer<E> extends Serializer<E>{
 
-
-
-    /** Serializes Long into 8 bytes, used mainly for testing.
-     * Does not handle null values.*/
-
-    public static final Serializer<Long> LONG = new Serializer<Long>() {
-        @Override
-        public void serialize(DataOutput out, Long value) throws IOException {
-            out.writeLong(value);
-        }
+        protected abstract E unpack(long l);
+        protected abstract long pack(E l);
 
         @Override
-        public Long deserialize(DataInput in, int available) throws IOException {
-            return in.readLong();
+        public E valueArrayGet(Object vals, int pos){
+            return unpack(((long[]) vals)[pos]);
         }
 
-        @Override
-        public int fixedSize() {
-            return 8;
-        }
-
-        @Override
-        public boolean isTrusted() {
-            return true;
-        }
-
-        @Override
-        public void valueArraySerialize(DataOutput out, Object vals) throws IOException {
-            for(long o:(long[]) vals){
-                out.writeLong(o); //TODO pack?
-            }
-        }
-
-        @Override
-        public Object valueArrayDeserialize(DataInput in, int size) throws IOException {
-            long[] ret = new long[size];
-            for(int i=0;i<size;i++){
-                ret[i] = in.readLong();
-            }
-            return ret;
-        }
-
-        @Override
-        public Long valueArrayGet(Object vals, int pos){
-            return ((long[])vals)[pos];
-        }
 
         @Override
         public int valueArraySize(Object vals){
@@ -253,21 +217,21 @@ public abstract class Serializer<A> {
         }
 
         @Override
-        public Object valueArrayPut(Object vals, int pos, Long newValue) {
+        public Object valueArrayPut(Object vals, int pos, E newValue) {
 
             long[] array = (long[]) vals;
             final long[] ret = Arrays.copyOf(array, array.length+1);
             if(pos<array.length){
                 System.arraycopy(array, pos, ret, pos+1, array.length-pos);
             }
-            ret[pos] = newValue;
+            ret[pos] = pack(newValue);
             return ret;
         }
 
         @Override
-        public Object valueArrayUpdateVal(Object vals, int pos, Long newValue) {
+        public Object valueArrayUpdateVal(Object vals, int pos, E newValue) {
             long[] vals2 = ((long[])vals).clone();
-            vals2[pos] = newValue;
+            vals2[pos] = pack(newValue);
             return vals2;
         }
 
@@ -277,7 +241,7 @@ public abstract class Serializer<A> {
             int pos=0;
 
             for(Object o:objects){
-                ret[pos++] = (Long)o;
+                ret[pos++] = pack((E) o);
             }
 
             return ret;
@@ -298,28 +262,172 @@ public abstract class Serializer<A> {
         }
 
         @Override
-        public BTreeKeySerializer getBTreeKeySerializer(boolean descending) {
-            if(descending) {
-                return super.getBTreeKeySerializer(descending);
+        public void valueArraySerialize(DataOutput out, Object vals) throws IOException {
+            for(long o:(long[]) vals){
+                out.writeLong(o);
+            }
+        }
+
+        @Override
+        public Object valueArrayDeserialize(DataInput in, int size) throws IOException {
+            long[] ret = new long[size];
+            for(int i=0;i<size;i++){
+                ret[i] = in.readLong();
+            }
+            return ret;
+        }
+
+
+        @Override
+        public boolean isTrusted() {
+            return true;
+        }
+
+
+        @Override
+        public int fixedSize() {
+            return 8;
+        }
+
+    }
+
+
+    abstract protected static class LongSerializer extends EightByteSerializer<Long> {
+
+        @Override
+        protected Long unpack(long l) {
+            return new Long(l);
+        }
+
+        @Override
+        protected long pack(Long l) {
+            return l.longValue();
+        }
+
+        @Override
+        public BTreeKeySerializer getBTreeKeySerializer(Comparator comparator) {
+            if(comparator!=null && comparator!=Fun.COMPARATOR) {
+                return super.getBTreeKeySerializer(comparator);
             }
             return BTreeKeySerializer.LONG;
+        }
+    }
+
+    /** Serializes Long into 8 bytes, used mainly for testing.
+     * Does not handle null values.*/
+
+    public static final Serializer<Long> LONG = new LongSerializer() {
+
+        @Override
+        public void serialize(DataOutput out, Long value) throws IOException {
+            out.writeLong(value);
+        }
+
+        @Override
+        public Long deserialize(DataInput in, int available) throws IOException {
+            return in.readLong();
         }
 
     };
 
-    /** Serializes Integer into 4 bytes.
-     * Does not handle null values.*/
-
-    public static final Serializer<Integer> INTEGER = new Serializer<Integer>(){
-
+    /**
+     *  Packs positive LONG, so smaller positive values occupy less than 8 bytes.
+     *  Large and negative values could occupy 8 or 9 bytes.
+     */
+    public static final Serializer<Long> LONG_PACKED = new LongSerializer(){
         @Override
-        public void serialize(DataOutput out, Integer value) throws IOException {
-            out.writeInt(value);
+        public void serialize(DataOutput out, Long value) throws IOException {
+            ((DataIO.DataOutputByteArray) out).packLong(value);
         }
 
         @Override
-        public Integer deserialize(DataInput in, int available) throws IOException {
-            return in.readInt();
+        public Long deserialize(DataInput in, int available) throws IOException {
+            return ((DataIO.DataInputInternal)in).unpackLong();
+        }
+
+        @Override
+        public void valueArraySerialize(DataOutput out, Object vals) throws IOException {
+            DataIO.DataOutputByteArray out2 = (DataIO.DataOutputByteArray) out;
+            for(long o:(long[]) vals){
+                out2.packLong(o);
+            }
+        }
+
+        @Override
+        public Object valueArrayDeserialize(DataInput in, int size) throws IOException {
+            DataIO.DataInputInternal i = (DataIO.DataInputInternal) in;
+            long[] ret = new long[size];
+            i.unpackLongArray(ret,0,size);
+            return ret;
+        }
+
+        @Override
+        public int fixedSize() {
+            return -1;
+        }
+    };
+
+
+    /** packs Long so small values occupy less than 8 bytes. Large (positive and negative)
+     * values could occupy more 8 to 9 bytes. It uses zigzag conversion before packing,
+     * number is multiplied by two, with last bite indicating negativity.
+     */
+    public static final Serializer<Long> LONG_PACKED_ZIGZAG = new LongSerializer(){
+
+        long wrap(long i){
+            long plus = i<0?1:0; //this could be improved by eliminating condition
+            return Math.abs(i*2)+plus;
+        }
+
+        long unwrap(long i){
+            long m = 1 - 2 * (i&1); // +1 if even, -1 if odd
+            return (i>>>1) * m;
+        }
+
+        @Override
+        public void serialize(DataOutput out, Long value) throws IOException {
+            ((DataIO.DataOutputByteArray) out).packLong(wrap(value));
+        }
+
+        @Override
+        public Long deserialize(DataInput in, int available) throws IOException {
+            return unwrap(((DataIO.DataInputInternal) in).unpackLong());
+        }
+
+        @Override
+        public void valueArraySerialize(DataOutput out, Object vals) throws IOException {
+            DataIO.DataOutputByteArray out2 = (DataIO.DataOutputByteArray) out;
+            for(long o:(long[]) vals){
+                out2.packLong(wrap(o));
+            }
+        }
+
+        @Override
+        public Object valueArrayDeserialize(DataInput in, int size) throws IOException {
+            DataIO.DataInputInternal i = (DataIO.DataInputInternal) in;
+            long[] ret = new long[size];
+            i.unpackLongArray(ret,0,size);
+            for(int a=0;a<size;a++){
+                ret[a] = unwrap(ret[a]);
+            }
+            return ret;
+        }
+
+        @Override
+        public int fixedSize() {
+            return -1;
+        }
+    };
+
+
+    abstract protected static class FourByteSerializer<E> extends Serializer<E>{
+
+        protected abstract E unpack(int l);
+        protected abstract int pack(E l);
+
+        @Override
+        public boolean isTrusted() {
+            return true;
         }
 
         @Override
@@ -328,29 +436,8 @@ public abstract class Serializer<A> {
         }
 
         @Override
-        public boolean isTrusted() {
-            return true;
-        }
-
-        @Override
-        public void valueArraySerialize(DataOutput out, Object vals) throws IOException {
-            for(int o:(int[]) vals){
-                out.writeInt(o); //TODO pack?
-            }
-        }
-
-        @Override
-        public Object valueArrayDeserialize(DataInput in, int size) throws IOException {
-            int[] ret = new int[size];
-            for(int i=0;i<size;i++){
-                ret[i] = in.readInt();
-            }
-            return ret;
-        }
-
-        @Override
-        public Integer valueArrayGet(Object vals, int pos){
-            return ((int[])vals)[pos];
+        public E valueArrayGet(Object vals, int pos){
+            return unpack(((int[])vals)[pos]);
         }
 
         @Override
@@ -364,21 +451,21 @@ public abstract class Serializer<A> {
         }
 
         @Override
-        public Object valueArrayPut(Object vals, int pos, Integer newValue) {
+        public Object valueArrayPut(Object vals, int pos, E newValue) {
 
             int[] array = (int[]) vals;
             final int[] ret = Arrays.copyOf(array, array.length+1);
             if(pos<array.length){
                 System.arraycopy(array, pos, ret, pos+1, array.length-pos);
             }
-            ret[pos] = newValue;
+            ret[pos] = pack(newValue);
             return ret;
         }
 
         @Override
-        public Object valueArrayUpdateVal(Object vals, int pos, Integer newValue) {
+        public Object valueArrayUpdateVal(Object vals, int pos, E newValue) {
             int[] vals2 = ((int[])vals).clone();
-            vals2[pos] = newValue;
+            vals2[pos] = pack(newValue);
             return vals2;
         }
 
@@ -388,7 +475,7 @@ public abstract class Serializer<A> {
             int pos=0;
 
             for(Object o:objects){
-                ret[pos++] = (Integer)o;
+                ret[pos++] = pack((E) o);
             }
 
             return ret;
@@ -408,14 +495,148 @@ public abstract class Serializer<A> {
             return vals2;
         }
 
+
         @Override
-        public BTreeKeySerializer getBTreeKeySerializer(boolean descending) {
-            if(descending) {
-                return super.getBTreeKeySerializer(descending);
+        public void valueArraySerialize(DataOutput out, Object vals) throws IOException {
+            for(int o:(int[]) vals){
+                out.writeInt(o);
+            }
+        }
+
+        @Override
+        public Object valueArrayDeserialize(DataInput in, int size) throws IOException {
+            int[] ret = new int[size];
+            for(int i=0;i<size;i++){
+                ret[i] = in.readInt();
+            }
+            return ret;
+        }
+    }
+
+    abstract protected static class IntegerSerializer extends FourByteSerializer<Integer> {
+
+        @Override
+        protected Integer unpack(int l) {
+            return l;
+        }
+
+        @Override
+        protected int pack(Integer l) {
+            return l;
+        }
+
+        @Override
+        public BTreeKeySerializer getBTreeKeySerializer(Comparator comparator) {
+            if(comparator!=null && comparator!=Fun.COMPARATOR) {
+                return super.getBTreeKeySerializer(comparator);
             }
             return BTreeKeySerializer.INTEGER;
         }
+    }
 
+    /** Serializes Integer into 4 bytes, used mainly for testing.
+     * Does not handle null values.*/
+
+    public static final Serializer<Integer> INTEGER = new IntegerSerializer() {
+
+        @Override
+        public void serialize(DataOutput out, Integer value) throws IOException {
+            out.writeInt(value);
+        }
+
+        @Override
+        public Integer deserialize(DataInput in, int available) throws IOException {
+            return in.readInt();
+        }
+
+    };
+
+    /**
+     *  Packs positive Integer, so smaller positive values occupy less than 4 bytes.
+     *  Large and negative values could occupy 4 or 5 bytes.
+     */
+    public static final Serializer<Integer> INTEGER_PACKED = new IntegerSerializer(){
+        @Override
+        public void serialize(DataOutput out, Integer value) throws IOException {
+            ((DataIO.DataOutputByteArray) out).packInt(value);
+        }
+
+        @Override
+        public Integer deserialize(DataInput in, int available) throws IOException {
+            return ((DataIO.DataInputInternal)in).unpackInt();
+        }
+
+        @Override
+        public void valueArraySerialize(DataOutput out, Object vals) throws IOException {
+            DataIO.DataOutputByteArray out2 = (DataIO.DataOutputByteArray) out;
+            for(int o:(int[]) vals){
+                out2.packIntBigger(o);
+            }
+        }
+
+        @Override
+        public Object valueArrayDeserialize(DataInput in, int size) throws IOException {
+            DataIO.DataInputInternal i = (DataIO.DataInputInternal) in;
+            int[] ret = new int[size];
+            i.unpackIntArray(ret, 0, size);
+            return ret;
+        }
+
+        @Override
+        public int fixedSize() {
+            return -1;
+        }
+
+    };
+
+    /** packs Integer so small values occupy less than 4 bytes. Large (positive and negative)
+     * values could occupy more 4 to 5 bytes. It uses zigzag conversion before packing,
+     * number is multiplied by two, with last bite indicating negativity.
+     */
+    public static final Serializer<Integer> INTEGER_PACKED_ZIGZAG = new IntegerSerializer(){
+
+        long wrap(int i){
+            long plus = i<0?1:0; //this could be improved by eliminating condition
+            return Math.abs(i*2)+plus;
+        }
+
+        int unwrap(long i){
+            long m = 1 - 2 * (i&1); // +1 if even, -1 if odd
+            return (int) ((i>>>1) * m);
+        }
+
+        @Override
+        public void serialize(DataOutput out, Integer value) throws IOException {
+            ((DataIO.DataOutputByteArray) out).packLong(wrap(value));
+        }
+
+        @Override
+        public Integer deserialize(DataInput in, int available) throws IOException {
+            return unwrap(((DataIO.DataInputInternal)in).unpackLong());
+        }
+
+        @Override
+        public void valueArraySerialize(DataOutput out, Object vals) throws IOException {
+            DataIO.DataOutputByteArray out2 = (DataIO.DataOutputByteArray) out;
+            for(int o:(int[]) vals){
+                out2.packLong(wrap(o));
+            }
+        }
+
+        @Override
+        public Object valueArrayDeserialize(DataInput in, int size) throws IOException {
+            DataIO.DataInputInternal i = (DataIO.DataInputInternal) in;
+            int[] ret = new int[size];
+            for(int a=0;a<size;a++){
+                ret[a] = unwrap(i.unpackLong());
+            }
+            return ret;
+        }
+
+        @Override
+        public int fixedSize() {
+            return -1;
+        }
     };
 
 
@@ -446,24 +667,31 @@ public abstract class Serializer<A> {
 
     /** Packs recid + it adds 3bits checksum. */
 
-    public static final Serializer<Long> RECID = new Serializer<Long>() {
+    public static final Serializer<Long> RECID = new EightByteSerializer<Long>() {
+
         @Override
         public void serialize(DataOutput out, Long value) throws IOException {
-            long val = value<<3;
-            val = DataIO.parity3Set(val);
-            DataIO.packLong(out,val);
+            DataIO.packRecid(out, value);
         }
 
         @Override
         public Long deserialize(DataInput in, int available) throws IOException {
-            long val =  DataIO.unpackLong(in);
-            val = DataIO.parity3Get(val);
-            return val >>> 3;
+            return DataIO.unpackRecid(in);
         }
 
         @Override
         public int fixedSize() {
-            return 8;
+            return -1;
+        }
+
+        @Override
+        protected Long unpack(long l) {
+            return l;
+        }
+
+        @Override
+        protected long pack(Long l) {
+            return l;
         }
 
         @Override
@@ -471,9 +699,60 @@ public abstract class Serializer<A> {
             return true;
         }
 
-        //TODO RECID btree key serializer (long with added parity checks)
+
+        @Override
+        public void valueArraySerialize(DataOutput out, Object vals) throws IOException {
+            for(long o:(long[]) vals){
+                DataIO.packRecid(out,o);
+            }
+        }
+
+        @Override
+        public Object valueArrayDeserialize(DataInput in, int size) throws IOException {
+            long[] ret = new long[size];
+            for(int i=0;i<size;i++){
+                ret[i] = DataIO.unpackRecid(in);
+            }
+            return ret;
+        }
     };
 
+    public static final Serializer<long[]> RECID_ARRAY = new Serializer<long[]>() {
+        @Override
+        public void serialize(DataOutput out, long[] value) throws IOException {
+            DataIO.packInt(out,value.length);
+            for(long recid:value){
+                DataIO.packRecid(out,recid);
+            }
+        }
+
+        @Override
+        public long[] deserialize(DataInput in, int available) throws IOException {
+            int size = DataIO.unpackInt(in);
+            long[] ret = new long[size];
+            for(int i=0;i<size;i++){
+                ret[i] = DataIO.unpackRecid(in);
+            }
+            return ret;
+        };
+
+
+        @Override
+        public boolean isTrusted() {
+            return true;
+        }
+
+        @Override
+        public boolean equals(long[] a1, long[] a2) {
+            return Arrays.equals(a1,a2);
+        }
+
+        @Override
+        public int hashCode(long[] bytes) {
+            return Arrays.hashCode(bytes);
+        }
+
+    };
 
     /**
      * Always throws {@link IllegalAccessError} when invoked. Useful for testing and assertions.
@@ -532,9 +811,9 @@ public abstract class Serializer<A> {
         }
 
         @Override
-        public BTreeKeySerializer getBTreeKeySerializer(boolean descending) {
-            if(descending) {
-                return super.getBTreeKeySerializer(descending);
+        public BTreeKeySerializer getBTreeKeySerializer(Comparator comparator) {
+            if(comparator!=null && comparator!=Fun.COMPARATOR) {
+                return super.getBTreeKeySerializer(comparator);
             }
             return BTreeKeySerializer.BYTE_ARRAY;
         }
@@ -574,9 +853,9 @@ public abstract class Serializer<A> {
         }
 
         @Override
-        public BTreeKeySerializer getBTreeKeySerializer(boolean descending) {
-            if(descending) {
-                return super.getBTreeKeySerializer(descending);
+        public BTreeKeySerializer getBTreeKeySerializer(Comparator comparator) {
+            if(comparator!=null && comparator!=Fun.COMPARATOR) {
+                return super.getBTreeKeySerializer(comparator);
             }
             return BTreeKeySerializer.BYTE_ARRAY;
         }
@@ -901,9 +1180,9 @@ public abstract class Serializer<A> {
         }
 
         @Override
-        public BTreeKeySerializer getBTreeKeySerializer(boolean descending) {
-            if(descending) {
-                return super.getBTreeKeySerializer(descending);
+        public BTreeKeySerializer getBTreeKeySerializer(Comparator comparator) {
+            if(comparator!=null && comparator!=Fun.COMPARATOR) {
+                return super.getBTreeKeySerializer(comparator);
             }
             return BTreeKeySerializer.UUID;
         }
@@ -931,7 +1210,19 @@ public abstract class Serializer<A> {
         }
 
     } ;
-    public static final Serializer<Float> FLOAT = new Serializer<Float>() {
+
+    public static final Serializer<Float> FLOAT = new FourByteSerializer<Float>() {
+
+        @Override
+        protected Float unpack(int l) {
+            return Float.intBitsToFloat(l);
+        }
+
+        @Override
+        protected int pack(Float l) {
+            return Float.floatToIntBits(l);
+        }
+
         @Override
         public void serialize(DataOutput out, Float value) throws IOException {
             out.writeFloat(value); //TODO test all new serialziers
@@ -942,20 +1233,20 @@ public abstract class Serializer<A> {
             return in.readFloat();
         }
 
-        @Override
-        public int fixedSize() {
-            return 4;
-        }
-
-        @Override
-        public boolean isTrusted() {
-            return true;
-        }
-
     } ;
 
 
-    public static final Serializer<Double> DOUBLE = new Serializer<Double>() {
+    public static final Serializer<Double> DOUBLE = new EightByteSerializer<Double>() {
+        @Override
+        protected Double unpack(long l) {
+            return Double.longBitsToDouble(l);
+        }
+
+        @Override
+        protected long pack(Double l) {
+            return Double.doubleToLongBits(l);
+        }
+
         @Override
         public void serialize(DataOutput out, Double value) throws IOException {
             out.writeDouble(value);
@@ -964,16 +1255,6 @@ public abstract class Serializer<A> {
         @Override
         public Double deserialize(DataInput in, int available) throws IOException {
             return in.readDouble();
-        }
-
-        @Override
-        public int fixedSize() {
-            return 8;
-        }
-
-        @Override
-        public boolean isTrusted() {
-            return true;
         }
 
     } ;
@@ -1139,15 +1420,15 @@ public abstract class Serializer<A> {
     } ;
 
 
-    public static final Serializer<Class> CLASS = new Serializer<Class>() {
+    public static final Serializer<Class<?>> CLASS = new Serializer<Class<?>>() {
 
         @Override
-        public void serialize(DataOutput out, Class value) throws IOException {
+        public void serialize(DataOutput out, Class<?> value) throws IOException {
             out.writeUTF(value.getName());
         }
 
         @Override
-        public Class deserialize(DataInput in, int available) throws IOException {
+        public Class<?> deserialize(DataInput in, int available) throws IOException {
             return SerializerPojo.classForName(in.readUTF());
         }
 
@@ -1157,18 +1438,18 @@ public abstract class Serializer<A> {
         }
 
         @Override
-        public boolean equals(Class a1, Class a2) {
+        public boolean equals(Class<?> a1, Class<?> a2) {
             return a1==a2 || (a1.toString().equals(a2.toString()));
         }
 
         @Override
-        public int hashCode(Class aClass) {
+        public int hashCode(Class<?> aClass) {
             //class does not override identity hash code
             return aClass.toString().hashCode();
         }
     };
 
-    public static final Serializer<Date> DATE = new Serializer<Date>() {
+    public static final Serializer<Date> DATE = new EightByteSerializer<Date>() {
 
         @Override
         public void serialize(DataOutput out, Date value) throws IOException {
@@ -1181,13 +1462,13 @@ public abstract class Serializer<A> {
         }
 
         @Override
-        public int fixedSize() {
-            return 8;
+        protected Date unpack(long l) {
+            return new Date(l);
         }
 
         @Override
-        public boolean isTrusted() {
-            return true;
+        protected long pack(Date l) {
+            return l.getTime();
         }
     };
 
@@ -1209,7 +1490,8 @@ public abstract class Serializer<A> {
         }
 
         /** used for deserialization */
-        protected CompressionWrapper(SerializerBase serializerBase, DataInput is, SerializerBase.FastArrayList<Object> objectStack) throws IOException {
+        @SuppressWarnings("unchecked")
+		protected CompressionWrapper(SerializerBase serializerBase, DataInput is, SerializerBase.FastArrayList<Object> objectStack) throws IOException {
             objectStack.add(this);
             this.serializer = (Serializer<E>) serializerBase.deserialize(is,objectStack);
         }
@@ -1250,8 +1532,8 @@ public abstract class Serializer<A> {
             LZF.get().expand(in,unpacked,0,unpackedSize);
             DataIO.DataInputByteArray in2 = new DataIO.DataInputByteArray(unpacked);
             E ret =  serializer.deserialize(in2,unpackedSize);
-            if(CC.PARANOID && ! (in2.pos==unpackedSize))
-                throw new AssertionError( "data were not fully read");
+            if(CC.ASSERT && ! (in2.pos==unpackedSize))
+                throw new DBException.DataCorruption( "data were not fully read");
             return ret;
         }
 
@@ -1260,7 +1542,7 @@ public abstract class Serializer<A> {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            CompressionWrapper that = (CompressionWrapper) o;
+            CompressionWrapper<?> that = (CompressionWrapper<?>) o;
             return serializer.equals(that.serializer);
         }
 
@@ -1275,36 +1557,39 @@ public abstract class Serializer<A> {
         }
     }
 
-    public static final class Array extends Serializer<Object[]> implements  Serializable{
+    public static final class Array<T> extends Serializer<T[]> implements  Serializable{
 
-        protected final Serializer serializer;
+		private static final long serialVersionUID = -7443421486382532062L;
+		protected final Serializer<T> serializer;
 
-        public Array(Serializer serializer) {
+        public Array(Serializer<T> serializer) {
             this.serializer = serializer;
         }
 
         /** used for deserialization */
-        protected Array(SerializerBase serializerBase, DataInput is, SerializerBase.FastArrayList<Object> objectStack) throws IOException {
+        @SuppressWarnings("unchecked")
+		protected Array(SerializerBase serializerBase, DataInput is, SerializerBase.FastArrayList<Object> objectStack) throws IOException {
             objectStack.add(this);
-            this.serializer = (Serializer) serializerBase.deserialize(is,objectStack);
+            this.serializer = (Serializer<T>) serializerBase.deserialize(is,objectStack);
         }
 
 
         @Override
-        public void serialize(DataOutput out, Object[] value) throws IOException {
+        public void serialize(DataOutput out, T[] value) throws IOException {
             DataIO.packInt(out,value.length);
-            for(Object a:value){
+            for(T a:value){
                 serializer.serialize(out,a);
             }
         }
 
         @Override
-        public Object[] deserialize(DataInput in, int available) throws IOException {
-            Object[] ret = new Object[DataIO.unpackInt(in)];
+        public T[] deserialize(DataInput in, int available) throws IOException {
+        	T[] ret =(T[]) new Object[DataIO.unpackInt(in)];
             for(int i=0;i<ret.length;i++){
                 ret[i] = serializer.deserialize(in,-1);
             }
             return ret;
+            
         }
 
         @Override
@@ -1313,7 +1598,7 @@ public abstract class Serializer<A> {
         }
 
         @Override
-        public boolean equals(Object[] a1, Object[] a2) {
+        public boolean equals(T[] a1, T[] a2) {
             if(a1==a2)
                 return true;
             if(a1==null || a1.length!=a2.length)
@@ -1327,9 +1612,9 @@ public abstract class Serializer<A> {
         }
 
         @Override
-        public int hashCode(Object[] objects) {
+        public int hashCode(T[] objects) {
             int ret = objects.length;
-            for(Object a:objects){
+            for(T a:objects){
                 ret=31*ret+serializer.hashCode(a);
             }
             return ret;
@@ -1339,7 +1624,7 @@ public abstract class Serializer<A> {
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            return serializer.equals(((Array) o).serializer);
+            return serializer.equals(((Array<?>) o).serializer);
 
         }
 
@@ -1351,7 +1636,7 @@ public abstract class Serializer<A> {
 
     //this has to be lazily initialized due to circular dependencies
     static final  class __BasicInstance {
-        final static Serializer s = new SerializerBase();
+        final static Serializer<Object> s = new SerializerBase();
     }
 
 
@@ -1360,8 +1645,7 @@ public abstract class Serializer<A> {
      * It does not handle custom POJO classes. It also does not handle classes which
      * require access to {@code DB} itself.
      */
-    @SuppressWarnings("unchecked")
-    public static final Serializer<Object> BASIC = new Serializer(){
+    public static final Serializer<Object> BASIC = new Serializer<Object>(){
 
         @Override
         public void serialize(DataOutput out, Object value) throws IOException {
@@ -1386,7 +1670,7 @@ public abstract class Serializer<A> {
      * @param out ObjectOutput to save object into
      * @param value Object to serialize
      */
-    abstract public void serialize( DataOutput out, A value)
+    abstract public void serialize(DataOutput out, A value)
             throws IOException;
 
 
@@ -1423,7 +1707,8 @@ public abstract class Serializer<A> {
         return a.hashCode();
     }
 
-    public void valueArraySerialize(DataOutput out, Object vals) throws IOException {
+    @SuppressWarnings("unchecked")
+	public void valueArraySerialize(DataOutput out, Object vals) throws IOException {
         Object[] vals2 = (Object[]) vals;
         for(Object o:vals2){
             serialize(out, (A) o);
@@ -1438,7 +1723,8 @@ public abstract class Serializer<A> {
         return ret;
     }
 
-    public A valueArrayGet(Object vals, int pos){
+    @SuppressWarnings("unchecked")
+	public A valueArrayGet(Object vals, int pos){
         return (A) ((Object[])vals)[pos];
     }
 
@@ -1476,9 +1762,10 @@ public abstract class Serializer<A> {
         return vals2;
     }
 
-    public BTreeKeySerializer getBTreeKeySerializer(boolean descending){
-        return new BTreeKeySerializer.BasicKeySerializer(Serializer.this,
-                descending? Fun.REVERSE_COMPARATOR : Fun.COMPARATOR);
+    public BTreeKeySerializer getBTreeKeySerializer(Comparator comparator){
+        if(comparator==null)
+            comparator = Fun.COMPARATOR;
+        return new BTreeKeySerializer.BasicKeySerializer(Serializer.this,comparator);
     }
 
 

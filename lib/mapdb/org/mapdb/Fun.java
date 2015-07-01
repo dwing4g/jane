@@ -28,24 +28,54 @@ import java.util.*;
  */
 public final class Fun {
 
-    public static final Comparator COMPARATOR = new Comparator<Comparable>() {
+    /** place holder for some stuff in future */
+    public static final Object PLACEHOLDER = new Object(){
+        @Override public String toString() {
+            return "Fun.PLACEHOLDER";
+        }
+    };
+
+    /**
+	 * A utility method for getting a type-safe Comparator, it provides type-inference help.
+	 * Use this method instead of {@link Fun#COMPARATOR} in order to insure type-safety
+	 * ex: {@code Comparator<Integer> comparator = getComparator();}
+	 * @return comparator
+	 */
+	public static <T> Comparator<T> comparator(){
+		return Fun.COMPARATOR;
+	}
+	
+	/**
+	 * A utility method for getting a type-safe reversed Comparator (the negation of {@link Fun#comparator()}).
+	 * Use this method instead of {@link Fun#REVERSE_COMPARATOR} in order to insure type-safety
+	 * ex: {@code Comparator<Integer> comparator = getReversedComparator();}
+	 * @return comparator
+	 */
+	public static <T> Comparator<T> reverseComparator(){
+		return Fun.REVERSE_COMPARATOR;
+	}
+	
+    @SuppressWarnings("rawtypes")
+	public static final Comparator COMPARATOR = new Comparator<Comparable>() {
         @Override
         public int compare(Comparable o1, Comparable o2) {
             return o1.compareTo(o2);
         }
     };
 
-    public static final Comparator<Comparable> REVERSE_COMPARATOR = new Comparator<Comparable>() {
+    @SuppressWarnings("rawtypes")
+	public static final Comparator REVERSE_COMPARATOR = new Comparator<Comparable>() {
         @Override
         public int compare(Comparable o1, Comparable o2) {
             return -COMPARATOR.compare(o1,o2);
         }
     };
 
-
-    /** empty iterator (note: Collections.EMPTY_ITERATOR is Java 7 specific and should not be used)*/
     public static final Iterator EMPTY_ITERATOR = new ArrayList(0).iterator();
 
+    public static <T> Iterator<T> emptyIterator(){
+    	return EMPTY_ITERATOR;
+    }
 
     private Fun(){}
 
@@ -76,16 +106,6 @@ public final class Fun {
             return keys.toString();
     }
 
-    /** function which always returns given object */
-    public static <R> Function0<R> funReturnObject(final R obj) {
-        return new Function0<R>() {
-            @Override
-            public R run() {
-                return obj;
-            }
-        };
-    }
-
     static public final class Pair<A,B> implements Comparable<Pair<A,B>>, Serializable {
 
     	private static final long serialVersionUID = -8816277286657643283L;
@@ -107,16 +127,16 @@ public final class Fun {
 
 
         @Override public int compareTo(Pair<A,B> o) {
-            int i = ((Comparable)a).compareTo(o.a);
+            int i = ((Comparable<A>)a).compareTo(o.a);
             if(i!=0)
                 return i;
-            return ((Comparable)b).compareTo(o.b);
+            return ((Comparable<B>)b).compareTo(o.b);
         }
 
         @Override public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            final Pair t = (Pair) o;
+            final Pair<?, ?> t = (Pair<?,?>) o;
             return eq(a,t.a) && eq(b,t.b);
         }
 
@@ -141,6 +161,11 @@ public final class Fun {
     /** function which takes one argument and returns one value*/
     public interface Function1<R,A>{
         R run(A a);
+    }
+
+    /** function which takes one int argument and returns one value*/
+    public interface Function1Int<R>{
+        R run(int a);
     }
 
     /** function which takes two argument and returns one value*/

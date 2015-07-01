@@ -248,7 +248,6 @@ public class SerializerBase extends Serializer<Object>{
         ser.put(HashSet.class, new Ser<Collection>(){
             @Override
             public void serialize(DataOutput out, Collection value, FastArrayList objectStack) throws IOException {
-                //TODO serialize hash salt to preserve order after deserialization? applies to map  as well
                 serializeCollection(Header.HASHSET, out,value, objectStack);
             }
         });
@@ -1001,7 +1000,6 @@ public class SerializerBase extends Serializer<Object>{
                     DataIO.packInt(out, len);
                 }
                 for (int i = 0; i < len; i++)
-                    //TODO native UTF8 might be faster, investigate and perhaps elimite packInt for chars!
                     DataIO.packInt(out,(int)(value.charAt(i)));
             }
         }
@@ -1456,7 +1454,7 @@ public class SerializerBase extends Serializer<Object>{
 
             mapdb_add(7, Fun.REVERSE_COMPARATOR);
             mapdb_add(8, Fun.EMPTY_ITERATOR);
-//TODO unused:            mapdb_add(9, Fun.ThreadFactory.BASIC);
+            mapdb_add(9, Fun.PLACEHOLDER);
 
             mapdb_add(10, Serializer.STRING_NOSIZE);
             mapdb_add(11, Serializer.STRING_ASCII);
@@ -1482,7 +1480,6 @@ public class SerializerBase extends Serializer<Object>{
             mapdb_add(37, Fun.LONG_ARRAY_COMPARATOR);
             mapdb_add(38, Fun.DOUBLE_ARRAY_COMPARATOR);
             mapdb_add(39, Fun.COMPARABLE_ARRAY_COMPARATOR);
-
             mapdb_add(40, Fun.RECORD_ALWAYS_TRUE);
 
             mapdb_add(41, BTreeKeySerializer.ARRAY2);
@@ -1583,7 +1580,11 @@ public class SerializerBase extends Serializer<Object>{
             });
 
             mapdb_add(66, Serializer.RECID);
-
+            mapdb_add(67, Serializer.LONG_PACKED);
+            mapdb_add(68, Serializer.LONG_PACKED_ZIGZAG);
+            mapdb_add(69, Serializer.INTEGER_PACKED);
+            mapdb_add(70, Serializer.INTEGER_PACKED_ZIGZAG);
+            mapdb_add(71, Serializer.RECID_ARRAY);
         }
 
 
@@ -1625,7 +1626,6 @@ public class SerializerBase extends Serializer<Object>{
 
 
     protected Class deserializeClass(DataInput is) throws IOException {
-        //TODO override 'deserializeClass' in SerializerPojo
         return SerializerPojo.classForName(is.readUTF());
     }
 
@@ -1751,11 +1751,11 @@ public class SerializerBase extends Serializer<Object>{
 
     /** override this method to extend SerializerBase functionality*/
     protected void serializeUnknownObject(DataOutput out, Object obj, FastArrayList<Object> objectStack) throws IOException {
-        throw new AssertionError("Could not serialize unknown object: "+obj.getClass().getName());
+        throw new NotSerializableException("Could not serialize unknown object: "+obj.getClass().getName());
     }
     /** override this method to extend SerializerBase functionality*/
     protected Object deserializeUnknownHeader(DataInput is, int head, FastArrayList<Object> objectStack) throws IOException {
-        throw new AssertionError("Unknown serialization header: " + head);
+        throw new DBException.DataCorruption("Unknown serialization header: " + head);
     }
 
     /**
@@ -2097,13 +2097,16 @@ public class SerializerBase extends Serializer<Object>{
 
         int MAPDB = 150;
         int PAIR = 151;
-//        int TUPLE3 = 152; //TODO unused
-//        int TUPLE4 = 153;
-//        int TUPLE5 = 154; //reserved for Tuple5 if we will ever implement it
-//        int TUPLE6 = 155; //reserved for Tuple6 if we will ever implement it
-//        int TUPLE7 = 156; //reserved for Tuple7 if we will ever implement it
-//        int TUPLE8 = 157; //reserved for Tuple8 if we will ever implement it
+        int MA_LONG = 152;
+        int MA_INT = 153;
+        int MA_BOOL = 154;
+        int MA_STRING = 155;
+        int MA_VAR = 156;
 
+        /**
+         * reference to named object
+         */
+        int NAMED = 157;
 
         int  ARRAY_OBJECT = 158;
         //special cases for BTree values which stores references
@@ -2136,16 +2139,8 @@ public class SerializerBase extends Serializer<Object>{
          */
         int OBJECT_STACK = 174;
 
-        /**
-         * reference to named object
-         */
-        int NAMED = 175;
 
-        int MA_LONG = 176;
-        int MA_INT = 177;
-        int MA_BOOL = 178;
-        int MA_STRING = 179;
-        int MA_VAR = 180;
+
 
     }
 
@@ -2153,4 +2148,20 @@ public class SerializerBase extends Serializer<Object>{
     public boolean isTrusted() {
         return true;
     }
+
+    /** return true if mapdb knows howto serialize given object*/
+    public boolean isSerializable(Object o) {
+        //check if is known singleton
+        if(mapdb_all.containsKey(o)) {
+            return true;
+        }
+
+        //check list of classes
+        if(ser.containsKey(o.getClass())) {
+            return true;
+        }
+
+        return false;
+    }
+
 }

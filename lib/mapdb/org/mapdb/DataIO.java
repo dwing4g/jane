@@ -11,14 +11,6 @@ public final class DataIO {
 
     private DataIO(){}
 
-
-    /*
-     * unpack/pack methods originally come from Kryo framework by Nathan Sweet
-     * But they were replaced, and no original code remains.
-     *
-     * This code packs bytes in oposite direction, so unpack is faster.
-     */
-
     /**
      * Unpack int value from the input stream.
      *
@@ -78,11 +70,56 @@ public final class DataIO {
     }
 
     /**
+     * Calculate how much bytes packed long consumes.
+     *
+     * @param value to calculate
+     * @return number of bytes used in packed form
+     */
+    public static int packLongSize(long value) {
+        int shift = 63-Long.numberOfLeadingZeros(value);
+        shift -= shift%7; // round down to nearest multiple of 7
+        int ret = 1;
+        while(shift!=0){
+            //TODO remove cycle, just count zeroes
+            shift-=7;
+            ret++;
+        }
+        return ret;
+    }
+
+
+    /**
+     * Unpack RECID value from the input stream with 3 bit checksum.
+     *
+     * @param in The input stream.
+     * @return The long value.
+     * @throws java.io.IOException
+     */
+    static public long unpackRecid(DataInput in) throws IOException {
+        long val = unpackLong(in);
+        val = DataIO.parity3Get(val);
+        return val >>> 3;
+    }
+
+
+    /**
+     * Pack RECID into output stream with 3 bit checksum.
+     * It will occupy 1-10 bytes depending on value (lower values occupy smaller space)
+     *
+     * @param out DataOutput to put value into
+     * @param value to be serialized, must be non-negative
+     * @throws java.io.IOException
+     *
+     */
+    static public void packRecid(DataOutput out, long value) throws IOException {
+        value = DataIO.parity3Set(value<<3);
+        packLong(out,value);
+    }
+
+
+    /**
      * Pack int into an output stream.
      * It will occupy 1-5 bytes depending on value (lower values occupy smaller space)
-     *
-     * This method originally comes from Kryo Framework, author Nathan Sweet.
-     * It was modified to fit MapDB needs.
      *
      * @param out DataOutput to put value into
      * @param value to be serialized, must be non-negative
@@ -90,6 +127,38 @@ public final class DataIO {
      */
 
     static public void packInt(DataOutput out, int value) throws IOException {
+       // Optimize for the common case where value is small. This is particular important where our caller
+       // is SerializerBase.SER_STRING.serialize because most chars will be ASCII characters and hence in this range.
+       // credit Max Bolingbroke https://github.com/jankotek/MapDB/pull/489
+
+        int shift = (value & ~0x7F); //reuse variable
+        if (shift != 0) {
+            //$DELAY$
+            shift = 31-Integer.numberOfLeadingZeros(value);
+            shift -= shift%7; // round down to nearest multiple of 7
+            while(shift!=0){
+                out.writeByte((byte) (((value>>>shift) & 0x7F) | 0x80));
+                //$DELAY$
+                shift-=7;
+            }
+        }
+        //$DELAY$
+        out.writeByte((byte) (value & 0x7F));
+    }
+
+    /**
+     * Pack int into an output stream.
+     * It will occupy 1-5 bytes depending on value (lower values occupy smaller space)
+     *
+     * This method is same as {@link #packInt(DataOutput, int)},
+     * but is optimized for values larger than 127. Usually it is recids.
+     *
+     * @param out DataOutput to put value into
+     * @param value to be serialized, must be non-negative
+     * @throws java.io.IOException
+     */
+
+    static public void packIntBigger(DataOutput out, int value) throws IOException {
         //$DELAY$
         int shift = 31-Integer.numberOfLeadingZeros(value);
         shift -= shift%7; // round down to nearest multiple of 7
@@ -102,30 +171,22 @@ public final class DataIO {
         out.writeByte((byte) (value & 0x7F));
     }
 
-    public static int longHash(final long key) {
+    public static int longHash(long h) {
         //$DELAY$
-        int h = (int)(key ^ (key >>> 32));
-        h ^= (h >>> 20) ^ (h >>> 12);
-        return h ^ (h >>> 7) ^ (h >>> 4);
-
-        //TODO koloboke version, investigate
-//        long h = key * -7046029254386353131L;
-//        h ^= h >> 32;
-//        return (int)(h ^ h >> 16);
-
+        h = h * -7046029254386353131L;
+        h ^= h >> 32;
+        return (int)(h ^ h >> 16);
+        //TODO koloboke credit
     }
 
     public static int intHash(int h) {
         //$DELAY$
-        h ^= (h >>> 20) ^ (h >>> 12);
-        return h ^ (h >>> 7) ^ (h >>> 4);
-
-        //TODO koloboke version, investigate
-//        int h = key * -1640531527;
-//        return h ^ h >> 16;
+        h = h * -1640531527;
+        return h ^ h >> 16;
+        //TODO koloboke credit
     }
 
-    public static final long PACK_LONG_BIDI_MASK = 0xFFFFFFFFFFFFFFL;
+    public static final long PACK_LONG_RESULT_MASK = 0xFFFFFFFFFFFFFFL;
 
 
     public static int packLongBidi(DataOutput out, long value) throws IOException {
@@ -166,16 +227,16 @@ public final class DataIO {
     public static long unpackLongBidi(byte[] bb, int pos){
         //$DELAY$
         long b = bb[pos++];
-        if(CC.PARANOID && (b&0x80)==0)
-            throw new AssertionError();
+        if(CC.ASSERT && (b&0x80)==0)
+            throw new DBException.DataCorruption("long pack bidi wrong header");
         long result = (b & 0x7F) ;
         int offset = 7;
         do {
             //$DELAY$
             b = bb[pos++];
             result |= (b & 0x7F) << offset;
-            if(CC.PARANOID && offset>64)
-                throw new AssertionError();
+            if(CC.ASSERT && offset>64)
+                throw new DBException.DataCorruption("long pack bidi too long");
             offset += 7;
         }while((b & 0x80) == 0);
         //$DELAY$
@@ -186,16 +247,16 @@ public final class DataIO {
     public static long unpackLongBidiReverse(byte[] bb, int pos){
         //$DELAY$
         long b = bb[--pos];
-        if(CC.PARANOID && (b&0x80)==0)
-            throw new AssertionError();
+        if(CC.ASSERT && (b&0x80)==0)
+            throw new DBException.DataCorruption("long pack bidi wrong header");
         long result = (b & 0x7F) ;
         int counter = 1;
         do {
             //$DELAY$
             b = bb[--pos];
             result = (b & 0x7F) | (result<<7);
-            if(CC.PARANOID && counter>8)
-                throw new AssertionError();
+            if(CC.ASSERT && counter>8)
+                throw new DBException.DataCorruption("long pack bidi too long");
             counter++;
         }while((b & 0x80) == 0);
         //$DELAY$
@@ -238,7 +299,7 @@ public final class DataIO {
     }
 
     public static void putSixLong(byte[] buf, int pos, long value) {
-        if(CC.PARANOID && (value>>>48!=0))
+        if(CC.ASSERT && (value>>>48!=0))
             throw new AssertionError();
 
         buf[pos++] = (byte) (0xff & (value >> 40));
@@ -348,17 +409,15 @@ public final class DataIO {
         @Override
         public int readUnsignedShort() throws IOException {
             //$DELAY$
-            return (((buf[pos++] & 0xff) << 8) |
-                    ((buf[pos++] & 0xff)));
+            return readChar();
         }
 
         @Override
         public char readChar() throws IOException {
             //$DELAY$
-            // I know: 4 bytes, but char only consumes 2,
-            // has to stay here for backward compatibility
-            //TODO char 4 byte
-            return (char) readInt();
+            return (char) (
+                    ((buf[pos++] & 0xff) << 8) |
+                    (buf[pos++] & 0xff));
         }
 
         @Override
@@ -412,7 +471,6 @@ public final class DataIO {
             char[] b = new char[len];
             for (int i = 0; i < len; i++)
                 //$DELAY$
-                //TODO char 4 bytes
                 b[i] = (char) unpackInt();
             return new String(b);
         }
@@ -639,18 +697,15 @@ public final class DataIO {
 
         @Override
         public int readUnsignedShort() throws IOException {
-            //$DELAY$
-            return (( (buf.get(pos++) & 0xff) << 8) |
-                    ( (buf.get(pos++) & 0xff)));
+            return readChar();
         }
 
         @Override
         public char readChar() throws IOException {
             //$DELAY$
-            // I know: 4 bytes, but char only consumes 2,
-            // has to stay here for backward compatibility
-            //TODO 4 byte char
-            return (char) readInt();
+            return (char) (
+                    ((buf.get(pos++) & 0xff) << 8) |
+                     (buf.get(pos++) & 0xff));
         }
 
         @Override
@@ -891,10 +946,9 @@ public final class DataIO {
 
         @Override
         public void writeChar(final int v) throws IOException {
-            // I know: 4 bytes, but char only consumes 2,
-            // has to stay here for backward compatibility
-            //TODO 4 byte char
-            writeInt(v);
+            ensureAvail(2);
+            buf[pos++] = (byte) (v>>>8);
+            buf[pos++] = (byte) (v);
         }
 
         @Override
@@ -957,6 +1011,24 @@ public final class DataIO {
 
         public void packInt(int value) throws IOException {
             ensureAvail(5); //ensure worst case bytes
+
+            // Optimize for the common case where value is small. This is particular important where our caller
+            // is SerializerBase.SER_STRING.serialize because most chars will be ASCII characters and hence in this range.
+            // credit Max Bolingbroke https://github.com/jankotek/MapDB/pull/489
+            int shift = (value & ~0x7F); //reuse variable
+            if (shift != 0) {
+                shift = 31 - Integer.numberOfLeadingZeros(value);
+                shift -= shift % 7; // round down to nearest multiple of 7
+                while (shift != 0) {
+                    buf[pos++] = (byte) (((value >>> shift) & 0x7F) | 0x80);
+                    shift -= 7;
+                }
+            }
+            buf[pos++] = (byte) (value & 0x7F);
+        }
+
+        public void packIntBigger(int value) throws IOException {
+            ensureAvail(5); //ensure worst case bytes
             int shift = 31-Integer.numberOfLeadingZeros(value);
             shift -= shift%7; // round down to nearest multiple of 7
             while(shift!=0){
@@ -980,7 +1052,7 @@ public final class DataIO {
 
 
     public static long parity1Set(long i) {
-        if(CC.PARANOID && (i&1)!=0)
+        if(CC.ASSERT && (i&1)!=0)
             throw new DBException.PointerChecksumBroken();
         return i | ((Long.bitCount(i)+1)%2);
     }
@@ -993,8 +1065,8 @@ public final class DataIO {
     }
 
     public static long parity3Set(long i) {
-        if(CC.PARANOID && (i&0x7)!=0)
-            throw new DBException.PointerChecksumBroken(); //TODO stronger parity
+        if(CC.ASSERT && (i&0x7)!=0)
+            throw new DBException.PointerChecksumBroken();
         return i | ((Long.bitCount(i)+1)%8);
     }
 
@@ -1007,8 +1079,8 @@ public final class DataIO {
     }
 
     public static long parity4Set(long i) {
-        if(CC.PARANOID && (i&0xF)!=0)
-            throw new DBException.PointerChecksumBroken(); //TODO stronger parity
+        if(CC.ASSERT && (i&0xF)!=0)
+            throw new DBException.PointerChecksumBroken();
         return i | ((Long.bitCount(i)+1)%16);
     }
 
@@ -1022,19 +1094,49 @@ public final class DataIO {
 
 
     public static long parity16Set(long i) {
-        if(CC.PARANOID && (i&0xFFFF)!=0)
-            throw new DBException.PointerChecksumBroken(); //TODO stronger parity
-        return i | ((Long.bitCount(i)+1)%2);
+        if(CC.ASSERT && (i&0xFFFF)!=0)
+            throw new DBException.PointerChecksumBroken();
+        return i | (DataIO.longHash(i)&0xFFFFL);
     }
 
     public static long parity16Get(long i) {
-        if(Long.bitCount(i)%2!=1){
+        long ret = i&0xFFFFFFFFFFFF0000L;
+        if((DataIO.longHash(ret)&0xFFFFL) != (i&0xFFFFL)){
             throw new DBException.PointerChecksumBroken();
         }
-        return i&0xFFFFFFFFFFFF0000L;
+        return ret;
     }
 
 
+    /**
+     * Converts binary array into its hexadecimal representation.
+     *
+     * @param bb binary data
+     * @return hexadecimal string
+     */
+    public static String toHexa( byte [] bb ) {
+        char[] HEXA_CHARS = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+        char[] ret = new char[bb.length*2];
+        for(int i=0;i<bb.length;i++){
+            ret[i*2] =HEXA_CHARS[((bb[i]& 0xF0) >> 4)];
+            ret[i*2+1] = HEXA_CHARS[((bb[i] & 0x0F))];
+        }
+        return new String(ret);
+    }
+
+    /**
+     * Converts hexadecimal string into binary data
+     * @param s hexadecimal string
+     * @return binary data
+     * @throws NumberFormatException in case of string format error
+     */
+    public static byte[] fromHexa(String s ) {
+        byte[] ret = new byte[s.length()/2];
+        for(int i=0;i<ret.length;i++){
+            ret[i] = (byte) Integer.parseInt(s.substring(i*2,i*2+2),16);
+        }
+        return ret;
+    }
 
 
 }

@@ -1,6 +1,9 @@
 package org.mapdb;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.UUID;
@@ -52,9 +55,9 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
     public abstract KEY getKey(KEYS keys, int pos);
 
 
-    public static final BTreeKeySerializer BASIC = new BTreeKeySerializer.BasicKeySerializer(Serializer.BASIC, Fun.COMPARATOR);
+    public static final BTreeKeySerializer<Object, Object[]> BASIC = new BTreeKeySerializer.BasicKeySerializer(Serializer.BASIC, Fun.COMPARATOR);
 
-    public abstract Comparator comparator();
+    public abstract Comparator<?> comparator();
 
     public abstract KEYS emptyKeys();
 
@@ -213,7 +216,7 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
         }
 
         @Override
-        public Comparator comparator() {
+        public Comparator<?> comparator() {
             return comparator;
         }
 
@@ -259,7 +262,7 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
      * Difference between consequential numbers is also packed itself, so for small diffs it takes only single byte per
      * number.
      */
-    public static final  BTreeKeySerializer LONG = new BTreeKeySerializer<Long,long[]>() {
+    public static final  BTreeKeySerializer<Long,long[]> LONG = new BTreeKeySerializer<Long,long[]>() {
 
         @Override
         public void serialize(DataOutput out, long[] keys) throws IOException {
@@ -309,7 +312,7 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
         }
 
         @Override
-        public Comparator comparator() {
+        public Comparator<?> comparator() {
             return Fun.COMPARATOR;
         }
 
@@ -433,11 +436,11 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
      * Difference between consequential numbers is also packed itself, so for small diffs it takes only single byte per
      * number.
      */
-    public static final  BTreeKeySerializer INTEGER = new BTreeKeySerializer<Integer,int[]>() {
+    public static final  BTreeKeySerializer<Integer,int[]> INTEGER = new BTreeKeySerializer<Integer,int[]>() {
         @Override
         public void serialize(DataOutput out, int[] keys) throws IOException {
             int prev = keys[0];
-            DataIO.packInt(out, prev);
+            DataIO.packIntBigger(out, prev);
             //$DELAY$
             for(int i=1;i<keys.length;i++){
                 int curr = keys[i];
@@ -481,7 +484,7 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
         }
 
         @Override
-        public Comparator comparator() {
+        public Comparator<?> comparator() {
             return Fun.COMPARATOR;
         }
 
@@ -701,10 +704,10 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
                 }
             }
 
-            if(CC.PARANOID){
+            if(CC.ASSERT){
                 for(int j:counts){
                     if(j!=0)
-                        throw new AssertionError();
+                        throw new DBException.DataCorruption("inconsistent counts");
                 }
             }
             return ret;
@@ -749,7 +752,7 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
         }
 
         @Override
-        public Comparator comparator() {
+        public Comparator<?> comparator() {
             return comparator;
         }
 
@@ -765,8 +768,8 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
 
         @Override
         public Object[] putKey(Object[] keys, int pos, Object[] newKey) {
-            if(CC.PARANOID && newKey.length!=tsize)
-                throw new AssertionError();
+            if(CC.ASSERT && newKey.length!=tsize)
+                throw new DBException.DataCorruption("inconsistent size");
             pos*=tsize;
             Object[] ret = new Object[keys.length+tsize];
             System.arraycopy(keys, 0, ret, 0, pos);
@@ -783,8 +786,8 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
             int pos=0;
             //$DELAY$
             for(Object o:keys){
-                if(CC.PARANOID && ((Object[])o).length!=tsize)
-                    throw new AssertionError();
+                if(CC.ASSERT && ((Object[])o).length!=tsize)
+                    throw new DBException.DataCorruption("keys have wrong size");
                 System.arraycopy(o,0,ret,pos,tsize);
                 //$DELAY$
                 pos+=tsize;
@@ -879,7 +882,7 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
         }
 
         @Override
-        public Comparator comparator() {
+        public Comparator<?> comparator() {
             return Fun.COMPARATOR;
         }
 
@@ -969,8 +972,8 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
             this.offset = offset;
             this.array = array;
 
-            if(CC.PARANOID && ! (array.length==0 || array.length == offset[offset.length-1]))
-                throw new AssertionError();
+            if(CC.ASSERT && ! (array.length==0 || array.length == offset[offset.length-1]))
+                throw new DBException.DataCorruption("inconsistent array size");
         }
 
         ByteArrayKeys(DataInput in, int[] offsets, int prefixLen) throws IOException {
@@ -1212,8 +1215,8 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
             this.offset = offset;
             this.array = array;
 
-            if(CC.PARANOID && ! (array.length==0 || array.length == offset[offset.length-1]))
-                throw new AssertionError();
+            if(CC.ASSERT && ! (array.length==0 || array.length == offset[offset.length-1]))
+                throw new DBException.DataCorruption("inconsistent array size");
         }
 
         public CharArrayKeys(DataInput in, int[] offsets, int prefixLen) throws IOException {
@@ -1561,7 +1564,7 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
         }
 
         @Override
-        public Comparator comparator() {
+        public Comparator<?> comparator() {
             return Fun.COMPARATOR;
         }
 
@@ -1606,6 +1609,7 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
     };
 
     protected static int commonPrefixLen(byte[][] bytes) {
+        //TODO refactor to calculate minimal length first, to save comparations.
         for(int ret=0;;ret++){
             if(bytes[0].length==ret) {
                 return ret;
@@ -1688,7 +1692,7 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
         }
 
         @Override
-        public Comparator comparator() {
+        public Comparator<?> comparator() {
             return Fun.COMPARATOR;
         }
 
@@ -1820,7 +1824,7 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
         }
 
         @Override
-        public Comparator comparator() {
+        public Comparator<?> comparator() {
             return Fun.BYTE_ARRAY_COMPARATOR;
         }
 
@@ -1930,7 +1934,7 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
         }
 
         @Override
-        public Comparator comparator() {
+        public Comparator<?> comparator() {
             return Fun.BYTE_ARRAY_COMPARATOR;
         }
 
@@ -2044,7 +2048,7 @@ public abstract class BTreeKeySerializer<KEY,KEYS>{
         }
 
         @Override
-        public Comparator comparator() {
+        public Comparator<?> comparator() {
             return wrapped.comparator();
         }
 

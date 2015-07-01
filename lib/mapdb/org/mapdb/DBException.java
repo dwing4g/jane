@@ -19,6 +19,10 @@ public class DBException extends RuntimeException{
         super(message,cause);
     }
 
+    public DBException() {
+
+    }
+
 
     public static class EngineGetVoid extends DBException{
         public EngineGetVoid(){
@@ -57,7 +61,7 @@ public class DBException extends RuntimeException{
         }
 
         public VolumeIOError(String msg, Throwable cause){
-            super(msg,cause);
+            super(msg, cause);
         }
 
         public VolumeIOError(Throwable cause){
@@ -86,6 +90,10 @@ public class DBException extends RuntimeException{
         public DataCorruption(String msg){
             super(msg);
         }
+
+        public DataCorruption() {
+            super();
+        }
     }
 
     public static class ChecksumBroken extends DataCorruption{
@@ -111,4 +119,33 @@ public class DBException extends RuntimeException{
             super("Thread interrupted",e);
         }
     }
+
+    public static class PumpSourceDuplicate extends DBException {
+        public PumpSourceDuplicate(Object key) {
+            super("Duplicate found, use .pumpIgnoreDuplicates() to ignore. Duplicate key:"+key);
+        }
+    }
+
+    public static class PumpSourceNotSorted extends DBException {
+        public PumpSourceNotSorted() {
+            super("Source iterator not sorted, use .pumpPresort(10000000) to sort keys.");
+        }
+    }
+
+    public static class WrongConfig extends DBException{
+        public WrongConfig(String message) {
+            super(message);
+        }
+
+        public WrongConfig(String message, Throwable cause) {
+            super(message,cause);
+        }
+    }
+
+    public static class UnknownSerializer extends DBException{
+        public UnknownSerializer(String message) {
+            super(message);
+        }
+    }
+
 }

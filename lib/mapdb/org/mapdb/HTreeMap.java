@@ -62,6 +62,9 @@ public class HTreeMap<K,V>
     protected static final int DIV8 = 3;
     protected static final int MOD8 = 0x7;
 
+    /** number of segments. Must be 16 in production, can be also 1 for debugging */
+    static final int SEG = 16;
+
     /** is this a Map or Set?  if false, entries do not have values, only keys are allowed*/
     protected final boolean hasValues;
 
@@ -70,12 +73,12 @@ public class HTreeMap<K,V>
      */
     protected final int hashSalt;
 
-    protected final Atomic.Long counter;
+    protected final long[] counterRecids;
 
     protected final Serializer<K> keySerializer;
     protected final Serializer<V> valueSerializer;
 
-    protected final Engine engine;
+    protected final Engine[] engines;
     protected final boolean closeEngine;
 
     protected final boolean expireFlag;
@@ -99,7 +102,7 @@ public class HTreeMap<K,V>
 
     protected final boolean closeExecutor;
     protected final ScheduledExecutorService executor;
-    protected final Lock sequentialLock;
+    protected final Lock consistencyLock;
 
 
     /** node which holds key-value pair */
@@ -112,8 +115,8 @@ public class HTreeMap<K,V>
         public final V value;
 
         public LinkedNode(final long next, long expireLinkNodeRecid, final K key, final V value ){
-            if(CC.PARANOID && next>>>48!=0)
-                throw new AssertionError("next recid too big");
+            if(CC.ASSERT && next>>>48!=0)
+                throw new DBException.DataCorruption("next recid too big");
             this.key = key;
             this.expireLinkNodeRecid = expireLinkNodeRecid;
             this.value = value;
@@ -144,7 +147,7 @@ public class HTreeMap<K,V>
 
         @Override
         public LinkedNode<K,V> deserialize(DataInput in, int available) throws IOException {
-            if(CC.PARANOID && ! (available!=0))
+            if(CC.ASSERT && available==0)
                 throw new AssertionError();
             return new LinkedNode<K, V>(
                     DataIO.unpackLong(in),
@@ -190,7 +193,7 @@ public class HTreeMap<K,V>
 
             int[] c = (int[]) value;
 
-            if(CC.PARANOID){
+            if(CC.ASSERT){
                 int len = 4 +
                         Integer.bitCount(c[0])+
                         Integer.bitCount(c[1])+
@@ -198,7 +201,7 @@ public class HTreeMap<K,V>
                         Integer.bitCount(c[3]);
 
                 if(len!=c.length)
-                    throw new AssertionError("bitmap!=len");
+                    throw new DBException.DataCorruption("bitmap!=len");
             }
 
             //write bitmaps
@@ -219,13 +222,13 @@ public class HTreeMap<K,V>
         private void serializeLong(DataIO.DataOutputByteArray out, Object value) throws IOException {
             long[] c= (long[]) value;
 
-            if(CC.PARANOID){
+            if(CC.ASSERT){
                 int len = 2 +
                         Long.bitCount(c[0])+
                         Long.bitCount(c[1]);
 
                 if(len!=c.length)
-                    throw new AssertionError("bitmap!=len");
+                    throw new DBException.DataCorruption("bitmap!=len");
             }
 
             out.writeLong(c[0]);
@@ -300,9 +303,9 @@ public class HTreeMap<K,V>
      * Opens HTreeMap
      */
     public HTreeMap(
-            Engine engine,
+            Engine[] engines,
             boolean closeEngine,
-            long counterRecid,
+            long[] counterRecids,
             int hashSalt,
             long[] segmentRecids,
             Serializer<K> keySerializer,
@@ -318,42 +321,40 @@ public class HTreeMap<K,V>
             ScheduledExecutorService executor,
             long executorPeriod,
             boolean closeExecutor,
-            Lock sequentialLock) {
+            Lock consistencyLock) {
 
-        if(counterRecid<0)
+        if(counterRecids!=null && counterRecids.length!=SEG)
             throw new IllegalArgumentException();
-        if(engine==null)
+        if(engines==null)
             throw new NullPointerException();
+        if(engines.length!=SEG)
+            throw new IllegalArgumentException("engines wrong length");
         if(segmentRecids==null)
             throw new NullPointerException();
         if(keySerializer==null)
             throw new NullPointerException();
 
-//        SerializerBase.assertSerializable(keySerializer); //TODO serializer serialization
         this.hasValues = valueSerializer!=null;
-        if(hasValues) {
-//            SerializerBase.assertSerializable(valueSerializer);
-        }
 
-        segmentLocks=new ReentrantReadWriteLock[16];
-        for(int i=0;i< 16;i++)  {
+        segmentLocks=new ReentrantReadWriteLock[SEG];
+        for(int i=0;i< SEG;i++)  {
             segmentLocks[i]=new ReentrantReadWriteLock(CC.FAIR_LOCKS);
         }
 
         this.closeEngine = closeEngine;
         this.closeExecutor = closeExecutor;
 
-        this.engine = engine;
+        this.engines = engines.clone();
         this.hashSalt = hashSalt;
-        this.segmentRecids = Arrays.copyOf(segmentRecids,16);
+        this.segmentRecids = Arrays.copyOf(segmentRecids,SEG);
         this.keySerializer = keySerializer;
         this.valueSerializer = valueSerializer;
-        this.sequentialLock = sequentialLock==null? Store.NOLOCK : sequentialLock;
+        this.consistencyLock = consistencyLock ==null? Store.NOLOCK : consistencyLock;
 
         if(expire==0 && expireAccess!=0){
             expire = expireAccess;
         }
-        if(expireMaxSize!=0 && counterRecid==0){
+        if(expireMaxSize!=0 && counterRecids==null){
             throw new IllegalArgumentException("expireMaxSize must have counter enabled");
         }
 
@@ -363,18 +364,18 @@ public class HTreeMap<K,V>
         this.expireTimeStart = expireTimeStart;
         this.expireAccessFlag = expireAccess !=0L || expireMaxSize!=0 || expireStoreSize!=0;
         this.expireAccess = expireAccess;
-        this.expireHeads = expireHeads==null? null : Arrays.copyOf(expireHeads,16);
-        this.expireTails = expireTails==null? null : Arrays.copyOf(expireTails,16);
+        this.expireHeads = expireHeads==null? null : Arrays.copyOf(expireHeads,SEG);
+        this.expireTails = expireTails==null? null : Arrays.copyOf(expireTails,SEG);
         this.expireMaxSizeFlag = expireMaxSize!=0;
         this.expireMaxSize = expireMaxSize;
         this.expireStoreSize = expireStoreSize;
         this.valueCreator = valueCreator;
 
-        if(counterRecid!=0){
-            this.counter = new Atomic.Long(engine,counterRecid);
-            Bind.size(this,counter);
+        if(counterRecids!=null){
+            // use per-segment counter and sum all segments in map.size()
+            this.counterRecids = counterRecids.clone();
         }else{
-            this.counter = null;
+            this.counterRecids = null;
         }
 
         expireSingleThreadFlag = (expireFlag && executor==null);
@@ -382,7 +383,8 @@ public class HTreeMap<K,V>
         this.executor = executor;
 
         if(expireFlag && executor!=null){
-            if(executor!=null) {
+            if(executor!=null && engines[0].canRollback()) {
+                //TODO this should be covered by SequentialLock, check it, and remove warning
                 LOG.warning("HTreeMap Expiration should not be used with transaction enabled. It can lead to data corruption, commit might happen while background thread works, and only part of expiration data will be commited.");
             }
 
@@ -391,33 +393,33 @@ public class HTreeMap<K,V>
                 final int seg = i;
                 final Lock lock = segmentLocks[seg].writeLock();
                 executor.scheduleAtFixedRate(new Runnable() {
-                    @Override
-                    public void run() {
-                        long removePerSegment = HTreeMap.this.expireCalcRemovePerSegment();
-                        if(removePerSegment<=0)
-                            return;
-                        lock.lock();
-                        try {
-                            HTreeMap.this.expirePurgeSegment(seg, removePerSegment);
-                        }finally{
-                            lock.unlock();
-                        }
-                    }
-                },
-                (long) (executorPeriod * Math.random()),
-                executorPeriod,
-                TimeUnit.MILLISECONDS);
+                                                 @Override
+                                                 public void run() {
+                                                     long removePerSegment = HTreeMap.this.expireCalcRemovePerSegment();
+                                                     if(HTreeMap.this.expire==0 && HTreeMap.this.expireAccess==0 && removePerSegment<=0 )
+                                                         return;
+                                                     lock.lock();
+                                                     try {
+                                                         HTreeMap.this.expirePurgeSegment(seg, removePerSegment);
+                                                     }finally{
+                                                         lock.unlock();
+                                                     }
+                                                 }
+                                             },
+                        (long) (executorPeriod * Math.random()),
+                        executorPeriod,
+                        TimeUnit.MILLISECONDS);
             }
         }
     }
 
 
 
-    protected static long[] preallocateSegments(Engine engine){
+    protected static long[] preallocateSegments(Engine[] engines){
         //prealocate segmentRecids, so we dont have to lock on those latter
-        long[] ret = new long[16];
-        for(int i=0;i<16;i++)
-            ret[i] = engine.put(new int[4], DIR_SERIALIZER);
+        long[] ret = new long[SEG];
+        for(int i=0;i<SEG;i++)
+            ret[i] = engines[i].put(new int[4], DIR_SERIALIZER);
         return ret;
     }
 
@@ -436,29 +438,45 @@ public class HTreeMap<K,V>
 
     @Override
     public long sizeLong() {
-        if(counter!=null)
-            return counter.get();
+        if(counterRecids!=null) {
+            long ret = 0;
+            for(int i=0;i<counterRecids.length;i++){
+                Lock lock = segmentLocks[i].readLock();
+                lock.lock();
+                try {
+                    ret += engines[i].get(counterRecids[i], Serializer.LONG);
+                }finally {
+                    lock.unlock();
+                }
+            }
+            return ret;
+        }
 
 
         long counter = 0;
 
         //search tree, until we find first non null
-        for(int i=0;i<16;i++){
+        for(int i=0;i<SEG;i++){
             Lock lock = segmentLocks[i].readLock();
             lock.lock();
             try{
                 final long dirRecid = segmentRecids[i];
-                counter+=recursiveDirCount(dirRecid);
+                counter+=recursiveDirCount(engines[i],dirRecid);
             }finally {
                 lock.unlock();
             }
         }
 
-
         return counter;
     }
 
-    private long recursiveDirCount(final long dirRecid) {
+    public long mappingCount(){
+        //method added in java 8
+        return sizeLong();
+    }
+
+
+    private long recursiveDirCount(Engine engine,final long dirRecid) {
         Object dir = engine.get(dirRecid, DIR_SERIALIZER);
         long counter = 0;
         int dirLen = dirLen(dir);
@@ -467,7 +485,7 @@ public class HTreeMap<K,V>
             if((recid&1)==0){
                 //reference to another subdir
                 recid = recid>>>1;
-                counter += recursiveDirCount(recid);
+                counter += recursiveDirCount(engine, recid);
             }else{
                 //reference to linked list, count it
                 recid = recid>>>1;
@@ -487,13 +505,21 @@ public class HTreeMap<K,V>
 
     @Override
     public boolean isEmpty() {
+        if(counterRecids!=null){
+            for(int i=0;i<counterRecids.length;i++){
+                if(0==engines[i].get(counterRecids[i],Serializer.LONG))
+                    return true;
+            }
+            return false;
+        }
+
         //search tree, until we find first non null
-        for(int i=0;i<16;i++){
+        for(int i=0;i<SEG;i++){
             Lock lock = segmentLocks[i].readLock();
             lock.lock();
             try{
                 long dirRecid = segmentRecids[i];
-                Object dir = engine.get(dirRecid, DIR_SERIALIZER);
+                Object dir = engines[i].get(dirRecid, DIR_SERIALIZER);
                 if(!dirIsEmpty(dir)){
                     return false;
                 }
@@ -579,13 +605,14 @@ public class HTreeMap<K,V>
 
     protected LinkedNode<K,V> getInner(Object o, int h, int segment) {
         long recid = segmentRecids[segment];
+        Engine engine = engines[segment];
         for(int level=3;level>=0;level--){
             Object dir = engine.get(recid, DIR_SERIALIZER);
             if(dir == null)
                 return null;
             final int slot = (h>>>(level*7 )) & 0x7F;
-            if(CC.PARANOID && ! (slot<128))
-                throw new AssertionError();
+            if(CC.ASSERT && slot>128)
+                throw new DBException.DataCorruption("slot too high");
             recid = dirGetSlot(dir, slot);
             if(recid == 0)
                 return null;
@@ -596,8 +623,8 @@ public class HTreeMap<K,V>
                     LinkedNode<K,V> ln = engine.get(recid, LN_SERIALIZER);
                     if(ln == null) return null;
                     if(keySerializer.equals(ln.key, (K) o)){
-                        if(CC.PARANOID && ! (hash(ln.key)==h))
-                            throw new AssertionError();
+                        if(CC.ASSERT && hash(ln.key)!=h)
+                            throw new DBException.DataCorruption("inconsistent hash");
                         return ln;
                     }
                     if(ln.next==0) return null;
@@ -663,8 +690,8 @@ public class HTreeMap<K,V>
 
     /** converts hash slot into actual offset in dir array, using bitmap */
     protected static final int dirOffsetFromSlot(int[] dir, int slot) {
-        if(CC.PARANOID && slot>127)
-            throw new AssertionError();
+        if(CC.ASSERT && slot>127)
+            throw new DBException.DataCorruption("slot too high");
         int val = slot>>>5;
         slot &=31;
         int isSet = ((dir[val] >>> (slot)) & 1); //check if bit at given slot is set
@@ -687,8 +714,8 @@ public class HTreeMap<K,V>
 
     /** converts hash slot into actual offset in dir array, using bitmap */
     protected static final int dirOffsetFromSlot(long[] dir, int slot) {
-        if(CC.PARANOID && slot>127)
-            throw new AssertionError();
+        if(CC.ASSERT && slot>127)
+            throw new DBException.DataCorruption("slot too high");
 
         int offset = 0;
         long v = dir[0];
@@ -772,8 +799,8 @@ public class HTreeMap<K,V>
 
     protected static final Object dirRemove(Object dir, final int slot){
         int offset = dirOffsetFromSlot(dir, slot);
-        if(CC.PARANOID && offset<=0){
-            throw new AssertionError();
+        if(CC.ASSERT && offset<=0){
+            throw new DBException.DataCorruption("offset too low");
         }
 
         if(dir instanceof int[]) {
@@ -816,7 +843,7 @@ public class HTreeMap<K,V>
         V ret;
         final int h = hash(key);
         final int segment = h >>>28;
-        sequentialLock.lock();
+        consistencyLock.lock();
         try {
             segmentLocks[segment].writeLock().lock();
             try {
@@ -825,7 +852,7 @@ public class HTreeMap<K,V>
                 segmentLocks[segment].writeLock().unlock();
             }
         }finally {
-            sequentialLock.unlock();
+            consistencyLock.unlock();
         }
 
         if(expireSingleThreadFlag)
@@ -836,14 +863,15 @@ public class HTreeMap<K,V>
 
     private V putInner(K key, V value, int h, int segment) {
         long dirRecid = segmentRecids[segment];
+        Engine engine = engines[segment];
 
         int level = 3;
         while(true){
             Object dir = engine.get(dirRecid, DIR_SERIALIZER);
             final int slot =  (h>>>(7*level )) & 0x7F;
 
-            if(CC.PARANOID && ! (slot<=127))
-                throw new AssertionError();
+            if(CC.ASSERT && slot>127)
+                throw new DBException.DataCorruption("slot too high");
 
             if(dir == null ){
                 //create new dir
@@ -870,8 +898,8 @@ public class HTreeMap<K,V>
                         //found, replace value at this node
                         V oldVal = ln.value;
                         ln = new LinkedNode<K, V>(ln.next, ln.expireLinkNodeRecid, ln.key, value);
-                        if(CC.PARANOID && ln.next==recid)
-                            throw new AssertionError("cyclic reference in linked list");
+                        if(CC.ASSERT && ln.next==recid)
+                            throw new DBException.DataCorruption("cyclic reference in linked list");
 
                         engine.update(recid, ln, LN_SERIALIZER);
                         if(expireFlag)
@@ -883,12 +911,12 @@ public class HTreeMap<K,V>
                     ln = ((recid==0)?
                             null :
                             engine.get(recid, LN_SERIALIZER));
-                    if(CC.PARANOID && ln!=null && ln.next==recid)
-                        throw new AssertionError("cyclic reference in linked list");
+                    if(CC.ASSERT && ln!=null && ln.next==recid)
+                        throw new DBException.DataCorruption("cyclic reference in linked list");
 
                     counter++;
-                    if(CC.PARANOID && counter>1024*1024)
-                        throw new AssertionError("linked list too large");
+                    if(CC.ASSERT && counter>1024*1024)
+                        throw new DBException.DataCorruption("linked list too large");
                 }
                 //key was not found at linked list, so just append it to beginning
             }
@@ -902,8 +930,8 @@ public class HTreeMap<K,V>
                     final long expireNodeRecid = expireFlag? engine.preallocate():0L;
                     final LinkedNode<K,V> node = new LinkedNode<K, V>(0, expireNodeRecid, key, value);
                     final long newRecid = engine.put(node, LN_SERIALIZER);
-                    if(CC.PARANOID && newRecid==node.next)
-                        throw new AssertionError("cyclic reference in linked list");
+                    if(CC.ASSERT && newRecid==node.next)
+                        throw new DBException.DataCorruption("cyclic reference in linked list");
                     //add newly inserted record
                     final int pos =(h >>>(7*(level-1) )) & 0x7F;
                     nextDir = dirPut(nextDir,pos,( newRecid<<1) | 1);
@@ -922,8 +950,8 @@ public class HTreeMap<K,V>
                     n = new LinkedNode<K, V>(recid2>>>1, n.expireLinkNodeRecid, n.key, n.value);
                     nextDir = dirPut(nextDir,pos,(nodeRecid<<1) | 1);
                     engine.update(nodeRecid, n, LN_SERIALIZER);
-                    if(CC.PARANOID && nodeRecid==n.next)
-                        throw new AssertionError("cyclic reference in linked list");
+                    if(CC.ASSERT && nodeRecid==n.next)
+                        throw new DBException.DataCorruption("cyclic reference in linked list");
                     nodeRecid = nextRecid;
                 }
 
@@ -933,6 +961,9 @@ public class HTreeMap<K,V>
                 dir = dirPut(dir, parentPos, (nextDirRecid<<1) | 0);
                 engine.update(dirRecid, dir, DIR_SERIALIZER);
                 notify(key, null, value);
+                //update counter
+                counter(segment, engine, +1);
+
                 return null;
             }else{
                 // record does not exist in linked list, so create new one
@@ -942,15 +973,28 @@ public class HTreeMap<K,V>
                 final long newRecid = engine.put(
                         new LinkedNode<K, V>(recid, expireNodeRecid, key, value),
                         LN_SERIALIZER);
-                if(CC.PARANOID && newRecid==recid)
-                    throw new AssertionError("cyclic reference in linked list");
+                if(CC.ASSERT && newRecid==recid)
+                    throw new DBException.DataCorruption("cyclic reference in linked list");
                 dir = dirPut(dir,slot,(newRecid<<1) | 1);
                 engine.update(dirRecid, dir, DIR_SERIALIZER);
-                if(expireFlag) expireLinkAdd(segment,expireNodeRecid, newRecid,h);
+                if(expireFlag)
+                    expireLinkAdd(segment,expireNodeRecid, newRecid,h);
                 notify(key, null, value);
+                //update counter
+                counter(segment,engine,+1);
                 return null;
             }
         }
+    }
+
+    protected void counter(int segment, Engine engine, int plus) {
+        if(counterRecids==null) {
+            return;
+        }
+
+        long oldCounter = engine.get(counterRecids[segment], Serializer.LONG);
+        oldCounter+=plus;
+        engine.update(counterRecids[segment], oldCounter, Serializer.LONG);
     }
 
 
@@ -960,7 +1004,7 @@ public class HTreeMap<K,V>
 
         final int h = hash(key);
         final int segment = h >>>28;
-        sequentialLock.lock();
+        consistencyLock.lock();
         try {
             segmentLocks[segment].writeLock().lock();
             try {
@@ -969,7 +1013,7 @@ public class HTreeMap<K,V>
                 segmentLocks[segment].writeLock().unlock();
             }
         }finally {
-            sequentialLock.unlock();
+            consistencyLock.unlock();
         }
 
         if(expireSingleThreadFlag)
@@ -979,18 +1023,19 @@ public class HTreeMap<K,V>
 
 
     protected V removeInternal(Object key, int segment, int h, boolean removeExpire){
+        Engine engine = engines[segment];
         final  long[] dirRecids = new long[4];
         int level = 3;
         dirRecids[level] = segmentRecids[segment];
 
-        if(CC.PARANOID && ! (segment==h>>>28))
-            throw new AssertionError();
+        if(CC.ASSERT && segment!=h>>>28)
+            throw new DBException.DataCorruption("inconsistent hash");
 
         while(true){
             Object dir = engine.get(dirRecids[level], DIR_SERIALIZER);
             final int slot =  (h>>>(7*level )) & 0x7F;
-            if(CC.PARANOID && ! (slot<=127))
-                throw new AssertionError();
+            if(CC.ASSERT && slot>127)
+                throw new DBException.DataCorruption("slot too high");
 
             if(dir == null ){
                 //create new dir
@@ -1017,7 +1062,7 @@ public class HTreeMap<K,V>
                         if(prevLn == null ){
                             //referenced directly from dir
                             if(ln.next==0){
-                                recursiveDirDelete(h, level, dirRecids, dir, slot);
+                                recursiveDirDelete(engine, h, level, dirRecids, dir, slot);
 
 
                             }else{
@@ -1029,15 +1074,16 @@ public class HTreeMap<K,V>
                             //referenced from LinkedNode
                             prevLn = new LinkedNode<K, V>(ln.next, prevLn.expireLinkNodeRecid,prevLn.key, prevLn.value);
                             engine.update(prevRecid, prevLn, LN_SERIALIZER);
-                            if(CC.PARANOID && prevRecid==prevLn.next)
-                                throw new AssertionError("cyclic reference in linked list");
+                            if(CC.ASSERT && prevRecid==prevLn.next)
+                                throw new DBException.DataCorruption("cyclic reference in linked list");
                         }
                         //found, remove this node
-                        if(CC.PARANOID && ! (hash(ln.key)==h))
-                            throw new AssertionError();
+                        if(CC.ASSERT && ! (hash(ln.key)==h))
+                            throw new DBException.DataCorruption("inconsistent hash");
                         engine.delete(recid, LN_SERIALIZER);
                         if(removeExpire && expireFlag) expireLinkRemove(segment, ln.expireLinkNodeRecid);
                         notify((K) key, ln.value, null);
+                        counter(segment,engine,-1);
                         return ln.value;
                     }
                     prevRecid = recid;
@@ -1056,7 +1102,7 @@ public class HTreeMap<K,V>
     }
 
 
-    private void recursiveDirDelete(int h, int level, long[] dirRecids, Object dir, int slot) {
+    private void recursiveDirDelete(Engine engine, int h, int level, long[] dirRecids, Object dir, int slot) {
         //was only item in linked list, so try to collapse the dir
         dir = dirRemove(dir, slot);
 
@@ -1070,7 +1116,7 @@ public class HTreeMap<K,V>
 
                 final Object parentDir = engine.get(dirRecids[level + 1], DIR_SERIALIZER);
                 final int parentPos = (h >>> (7 * (level + 1))) & 0x7F;
-                recursiveDirDelete(h,level+1,dirRecids, parentDir, parentPos);
+                recursiveDirDelete(engine, h,level+1,dirRecids, parentDir, parentPos);
                 //parentDir[parentPos>>>DIV8][parentPos&MOD8] = 0;
                 //engine.update(dirRecids[level + 1],parentDir,DIR_SERIALIZER);
 
@@ -1082,14 +1128,19 @@ public class HTreeMap<K,V>
 
     @Override
     public void clear() {
-        sequentialLock.lock();
+        consistencyLock.lock();
         try {
-            for (int i = 0; i < 16; i++)
+            for (int i = 0; i < SEG; i++) {
+                segmentLocks[i].writeLock().lock();
                 try {
-                    segmentLocks[i].writeLock().lock();
+                    Engine engine = engines[i];
+
+                    if(counterRecids!=null){
+                        engine.update(counterRecids[i],0L, Serializer.LONG);
+                    }
 
                     final long dirRecid = segmentRecids[i];
-                    recursiveDirClear(dirRecid);
+                    recursiveDirClear(engine, dirRecid);
 
                     //set dir to null, as segment recid is immutable
                     engine.update(dirRecid, new int[4], DIR_SERIALIZER);
@@ -1101,12 +1152,13 @@ public class HTreeMap<K,V>
                 } finally {
                     segmentLocks[i].writeLock().unlock();
                 }
+            }
         }finally {
-            sequentialLock.unlock();
+            consistencyLock.unlock();
         }
     }
 
-    private void recursiveDirClear(final long dirRecid) {
+    private void recursiveDirClear(Engine engine, final long dirRecid) {
         final Object dir = engine.get(dirRecid, DIR_SERIALIZER);
         if(dir == null)
             return;
@@ -1117,15 +1169,15 @@ public class HTreeMap<K,V>
                 //another dir
                 recid = recid>>>1;
                 //recursively remove dir
-                recursiveDirClear(recid);
+                recursiveDirClear(engine, recid);
                 engine.delete(recid, DIR_SERIALIZER);
             }else{
                 //linked list to delete
                 recid = recid>>>1;
                 while(recid!=0){
                     LinkedNode n = engine.get(recid, LN_SERIALIZER);
-                    if(CC.PARANOID && n.next==recid)
-                        throw new AssertionError("cyclic reference in linked list");
+                    if(CC.ASSERT && n.next==recid)
+                        throw new DBException.DataCorruption("cyclic reference in linked list");
                     engine.delete(recid,LN_SERIALIZER);
                     notify((K)n.key, (V)n.value , null);
                     recid = n.next;
@@ -1319,18 +1371,18 @@ public class HTreeMap<K,V>
 
 
     protected int hash(final Object key) {
-        //TODO investigate hash distribution and performance impact
+        //TODO investigate if hashSalt has any efect
         int h = keySerializer.hashCode((K) key) ^ hashSalt;
-        //spread low bits,
-        //need so many mixes so each bit becomes part of segment
-        //segment is upper 4 bits
-        h ^= (h<<4);
-        h ^= (h<<4);
-        h ^= (h<<4);
-        h ^= (h<<4);
-        h ^= (h<<4);
-        h ^= (h<<4);
-        h ^= (h<<4);
+        //stear hashcode a bit, to make sure bits are spread
+        h = h * -1640531527;
+        h =  h ^ h >> 16;
+        //TODO koloboke credit
+
+        //this section is eliminated by compiler, if no debugging is used
+        if(SEG==1){
+            //make sure segment number is always zero
+            h = h & 0xFFFFFFF;
+        }
         return h;
     }
 
@@ -1375,6 +1427,7 @@ public class HTreeMap<K,V>
         private LinkedNode[] advance(int lastHash){
 
             int segment = lastHash>>>28;
+            Engine engine = engines[segment];
 
             //two phases, first find old item and increase hash
             Lock lock = segmentLocks[segment].readLock();
@@ -1412,16 +1465,17 @@ public class HTreeMap<K,V>
 
         private LinkedNode[] findNextLinkedNode(int hash) {
             //second phase, start search from increased hash to find next items
-            for(int segment = Math.max(hash>>>28, lastSegment); segment<16;segment++){
+            for(int segment = Math.max(hash>>>28, lastSegment); segment<SEG;segment++){
+                Engine engine = engines[segment];
                 final Lock lock = expireAccessFlag ? segmentLocks[segment].writeLock() :segmentLocks[segment].readLock() ;
                 lock.lock();
                 try{
                     lastSegment = Math.max(segment,lastSegment);
                     long dirRecid = segmentRecids[segment];
-                    LinkedNode ret[] = findNextLinkedNodeRecur(dirRecid, hash, 3);
-                    if(CC.PARANOID && ret!=null) for(LinkedNode ln:ret){
+                    LinkedNode ret[] = findNextLinkedNodeRecur(engine, dirRecid, hash, 3);
+                    if(CC.ASSERT && ret!=null) for(LinkedNode ln:ret){
                         if(( hash(ln.key)>>>28!=segment))
-                            throw new AssertionError();
+                            throw new DBException.DataCorruption("inconsistent hash");
                     }
                     //System.out.println(Arrays.asList(ret));
                     if(ret !=null){
@@ -1439,7 +1493,7 @@ public class HTreeMap<K,V>
             return null;
         }
 
-        private LinkedNode[] findNextLinkedNodeRecur(long dirRecid, int newHash, int level){
+        private LinkedNode[] findNextLinkedNodeRecur(Engine engine,long dirRecid, int newHash, int level){
             final Object dir = engine.get(dirRecid, DIR_SERIALIZER);
             if(dir == null)
                 return null;
@@ -1473,7 +1527,7 @@ public class HTreeMap<K,V>
                     }else{
                         //found another dir, continue dive
                         recid = recid>>1;
-                        LinkedNode[] ret = findNextLinkedNodeRecur(recid, first ? newHash : 0, level - 1);
+                        LinkedNode[] ret = findNextLinkedNodeRecur(engine, recid, first ? newHash : 0, level - 1);
                         if(ret != null) return ret;
                     }
                 }
@@ -1567,7 +1621,7 @@ public class HTreeMap<K,V>
 
         V ret;
 
-        sequentialLock.lock();
+        consistencyLock.lock();
         try {
             segmentLocks[segment].writeLock().lock();
             try {
@@ -1581,7 +1635,7 @@ public class HTreeMap<K,V>
                 segmentLocks[segment].writeLock().unlock();
             }
         }finally {
-            sequentialLock.unlock();
+            consistencyLock.unlock();
         }
 
         if(expireSingleThreadFlag)
@@ -1600,7 +1654,7 @@ public class HTreeMap<K,V>
         final int h = HTreeMap.this.hash(key);
         final int segment = h >>>28;
 
-        sequentialLock.lock();
+        consistencyLock.lock();
         try {
             segmentLocks[segment].writeLock().lock();
             try {
@@ -1613,7 +1667,7 @@ public class HTreeMap<K,V>
                 segmentLocks[segment].writeLock().unlock();
             }
         }finally {
-            sequentialLock.unlock();
+            consistencyLock.unlock();
         }
 
         if(expireSingleThreadFlag)
@@ -1632,7 +1686,7 @@ public class HTreeMap<K,V>
         final int h = HTreeMap.this.hash(key);
         final int segment = h >>>28;
 
-        sequentialLock.lock();
+        consistencyLock.lock();
         try {
             segmentLocks[segment].writeLock().lock();
             try {
@@ -1645,7 +1699,7 @@ public class HTreeMap<K,V>
                 segmentLocks[segment].writeLock().unlock();
             }
         }finally {
-            sequentialLock.unlock();
+            consistencyLock.unlock();
         }
 
         if(expireSingleThreadFlag)
@@ -1662,7 +1716,7 @@ public class HTreeMap<K,V>
         final int h = HTreeMap.this.hash(key);
         final int segment =  h >>>28;
 
-        sequentialLock.lock();
+        consistencyLock.lock();
         try {
             segmentLocks[segment].writeLock().lock();
             try {
@@ -1674,7 +1728,7 @@ public class HTreeMap<K,V>
                 segmentLocks[segment].writeLock().unlock();
             }
         }finally {
-            sequentialLock.unlock();
+            consistencyLock.unlock();
         }
 
         if(expireSingleThreadFlag)
@@ -1745,12 +1799,14 @@ public class HTreeMap<K,V>
 
 
     protected void expireLinkAdd(int segment, long expireNodeRecid, long keyRecid, int hash){
-        if(CC.PARANOID && ! (segmentLocks[segment].writeLock().isHeldByCurrentThread()))
+        if(CC.ASSERT && ! (segmentLocks[segment].writeLock().isHeldByCurrentThread()))
             throw new AssertionError();
-        if(CC.PARANOID && ! (expireNodeRecid>0))
-            throw new AssertionError();
-        if(CC.PARANOID && ! (keyRecid>0))
-            throw new AssertionError();
+        if(CC.ASSERT && expireNodeRecid<=0)
+            throw new DBException.DataCorruption("recid too low");
+        if(CC.ASSERT && keyRecid<=0)
+        throw new DBException.DataCorruption("recid too low");
+
+        Engine engine = engines[segment];
 
         long time = expire==0 ? 0: expire+System.currentTimeMillis()-expireTimeStart;
         long head = engine.get(expireHeads[segment],Serializer.LONG);
@@ -1776,8 +1832,10 @@ public class HTreeMap<K,V>
     }
 
     protected void expireLinkBump(int segment, long nodeRecid, boolean access){
-        if(CC.PARANOID && ! (segmentLocks[segment].writeLock().isHeldByCurrentThread()))
+        if(CC.ASSERT && ! (segmentLocks[segment].writeLock().isHeldByCurrentThread()))
             throw new AssertionError();
+
+        Engine engine = engines[segment];
 
         ExpireLinkNode n = engine.get(nodeRecid,ExpireLinkNode.SERIALIZER);
         long newTime =
@@ -1824,8 +1882,10 @@ public class HTreeMap<K,V>
     }
 
     protected ExpireLinkNode expireLinkRemoveLast(int segment){
-        if(CC.PARANOID && ! (segmentLocks[segment].writeLock().isHeldByCurrentThread()))
+        if(CC.ASSERT && ! (segmentLocks[segment].writeLock().isHeldByCurrentThread()))
             throw new AssertionError();
+
+        Engine engine = engines[segment];
 
         long tail = engine.get(expireTails[segment],Serializer.LONG);
         if(tail==0) return null;
@@ -1850,8 +1910,10 @@ public class HTreeMap<K,V>
 
 
     protected ExpireLinkNode expireLinkRemove(int segment, long nodeRecid){
-        if(CC.PARANOID && ! (segmentLocks[segment].writeLock().isHeldByCurrentThread()))
+        if(CC.ASSERT && ! (segmentLocks[segment].writeLock().isHeldByCurrentThread()))
             throw new AssertionError();
+
+        Engine engine = engines[segment];
 
         ExpireLinkNode n = engine.get(nodeRecid,ExpireLinkNode.SERIALIZER);
         engine.delete(nodeRecid,ExpireLinkNode.SERIALIZER);
@@ -1887,8 +1949,10 @@ public class HTreeMap<K,V>
     public long getMaxExpireTime(){
         if(!expireFlag) return 0;
         long ret = 0;
-        for(int segment = 0;segment<16;segment++){
-            segmentLocks[segment].readLock().lock();
+        for(int segment = 0;segment<SEG;segment++){
+            Engine engine = engines[segment];
+            final Lock lock = segmentLocks[segment].readLock();
+            lock.lock();
             try{
                 long head = engine.get(expireHeads[segment],Serializer.LONG);
                 if(head == 0) continue;
@@ -1896,7 +1960,7 @@ public class HTreeMap<K,V>
                 if(ln==null || ln.time==0) continue;
                 ret = Math.max(ret, ln.time+expireTimeStart);
             }finally{
-                segmentLocks[segment].readLock().unlock();
+                lock.unlock();
             }
         }
         return ret;
@@ -1908,8 +1972,10 @@ public class HTreeMap<K,V>
     public long getMinExpireTime(){
         if(!expireFlag) return 0;
         long ret = Long.MAX_VALUE;
-        for(int segment = 0;segment<16;segment++){
-            segmentLocks[segment].readLock().lock();
+        for(int segment = 0;segment<SEG;segment++){
+            Engine engine = engines[segment];
+            final Lock lock = segmentLocks[segment].readLock();
+            lock.lock();
             try{
                 long tail = engine.get(expireTails[segment],Serializer.LONG);
                 if(tail == 0) continue;
@@ -1917,7 +1983,7 @@ public class HTreeMap<K,V>
                 if(ln==null || ln.time==0) continue;
                 ret = Math.min(ret, ln.time+expireTimeStart);
             }finally{
-                segmentLocks[segment].readLock().unlock();
+                lock.unlock();
             }
         }
         if(ret == Long.MAX_VALUE) ret =0;
@@ -1933,7 +1999,7 @@ public class HTreeMap<K,V>
         long removePerSegment = expireCalcRemovePerSegment();
 
         long counter = 0;
-        for(int seg=0;seg<16;seg++){
+        for(int seg=0;seg<SEG;seg++){
             segmentLocks[seg].writeLock().lock();
             try {
                 counter += expirePurgeSegment(seg, removePerSegment);
@@ -1950,9 +2016,9 @@ public class HTreeMap<K,V>
     private long expireCalcRemovePerSegment() {
         long removePerSegment = 0;
         if(expireMaxSizeFlag){
-            long size = counter.get();
+            long size = size();
             if(size>expireMaxSize){
-                removePerSegment=1+(size-expireMaxSize)/16;
+                removePerSegment=1+(size-expireMaxSize)/SEG;
                 if(LOG.isLoggable(Level.FINE)){
                     LOG.log(Level.FINE, "HTreeMap expirator expireMaxSize, will remove {0,number,integer} entries per segment",
                             removePerSegment);
@@ -1962,7 +2028,9 @@ public class HTreeMap<K,V>
 
 
         if(expireStoreSize!=0 && removePerSegment==0){
-            Store store = Store.forEngine(engine);
+            //TODO calculate for all segments
+            //TODO thread unsafe access if underlying engine is thread-unsafe
+            Store store = Store.forEngine(engines[0]);
             long storeSize = store.getCurrSize()-store.getFreeSize();
             if(expireStoreSize<storeSize){
                 removePerSegment=640;
@@ -1977,71 +2045,74 @@ public class HTreeMap<K,V>
     }
 
     protected long expirePurgeSegment(int seg, long removePerSegment) {
-            if(CC.PARANOID && !segmentLocks[seg].isWriteLockedByCurrentThread())
-                throw new AssertionError("seg write lock");
+        if(CC.ASSERT && !segmentLocks[seg].isWriteLockedByCurrentThread())
+            throw new AssertionError("seg write lock");
 //            expireCheckSegment(seg);
-            long recid = engine.get(expireTails[seg],Serializer.LONG);
-            long counter=0;
-            ExpireLinkNode last =null,n=null;
-            while(recid!=0){
-                n = engine.get(recid, ExpireLinkNode.SERIALIZER);
-                if(CC.PARANOID && ! (n!=ExpireLinkNode.EMPTY))
-                    throw new AssertionError();
-                if(CC.PARANOID && ! ( n.hash>>>28 == seg))
-                    throw new AssertionError();
+        Engine engine = engines[seg];
+        long recid = engine.get(expireTails[seg],Serializer.LONG);
+        long counter=0;
+        ExpireLinkNode last =null,n=null;
+        while(recid!=0){
+            n = engine.get(recid, ExpireLinkNode.SERIALIZER);
+            if(CC.ASSERT && n==ExpireLinkNode.EMPTY)
+                throw new DBException.DataCorruption("empty expire link node");
+            if(CC.ASSERT &&  n.hash>>>28 != seg)
+                throw new DBException.DataCorruption("inconsistent hash");
 
-                final boolean remove = ++counter < removePerSegment ||
-                        ((expire!=0 || expireAccess!=0) &&  n.time+expireTimeStart<System.currentTimeMillis());
+            final boolean remove = ++counter < removePerSegment ||
+                    ((expire!=0 || expireAccess!=0) &&  n.time+expireTimeStart<System.currentTimeMillis());
 
-                if(remove){
-                    engine.delete(recid, ExpireLinkNode.SERIALIZER);
-                    LinkedNode<K,V> ln = engine.get(n.keyRecid,LN_SERIALIZER);
-                    removeInternal(ln.key,seg, n.hash, false);
-                }else{
-                    break;
-                }
-                last=n;
-                recid=n.next;
-            }
-            // patch linked list
-            if(last ==null ){
-                //no items removed
-            }else if(recid == 0){
-                //all items were taken, so zero items
-                engine.update(expireTails[seg],0L, Serializer.LONG);
-                engine.update(expireHeads[seg],0L, Serializer.LONG);
+            if(remove){
+                engine.delete(recid, ExpireLinkNode.SERIALIZER);
+                LinkedNode<K,V> ln = engine.get(n.keyRecid,LN_SERIALIZER);
+                removeInternal(ln.key,seg, n.hash, false);
+                notify(ln.key, ln.value, null);
             }else{
-                //update tail to point to next item
-                engine.update(expireTails[seg],recid, Serializer.LONG);
-                //and update next item to point to tail
-                n = engine.get(recid, ExpireLinkNode.SERIALIZER);
-                n = n.copyPrev(0);
-                engine.update(recid,n,ExpireLinkNode.SERIALIZER);
+                break;
             }
-            return counter;
+            last=n;
+            recid=n.next;
+        }
+        // patch linked list
+        if(last ==null ){
+            //no items removed
+        }else if(recid == 0){
+            //all items were taken, so zero items
+            engine.update(expireTails[seg],0L, Serializer.LONG);
+            engine.update(expireHeads[seg],0L, Serializer.LONG);
+        }else{
+            //update tail to point to next item
+            engine.update(expireTails[seg],recid, Serializer.LONG);
+            //and update next item to point to tail
+            n = engine.get(recid, ExpireLinkNode.SERIALIZER);
+            n = n.copyPrev(0);
+            engine.update(recid,n,ExpireLinkNode.SERIALIZER);
+        }
+        return counter;
 //            expireCheckSegment(seg);
 
     }
 
 
     protected void expireCheckSegment(int segment){
+        Engine engine = engines[segment];
         long current = engine.get(expireTails[segment],Serializer.LONG);
         if(current==0){
             if(engine.get(expireHeads[segment],Serializer.LONG)!=0)
-                throw new AssertionError("head not 0");
+                throw new DBException.DataCorruption("head not 0");
             return;
         }
 
         long prev = 0;
         while(current!=0){
             ExpireLinkNode curr = engine.get(current,ExpireLinkNode.SERIALIZER);
-            if(CC.PARANOID && ! (curr.prev==prev))
-                throw new AssertionError("wrong prev "+curr.prev +" - "+prev);
+            if(CC.ASSERT && ! (curr.prev==prev))
+                throw new DBException.DataCorruption("wrong prev "+curr.prev +" - "+prev);
             prev= current;
             current = curr.next;
         }
         if(engine.get(expireHeads[segment],Serializer.LONG)!=prev)
-            throw new AssertionError("wrong head");
+            throw new DBException.DataCorruption("wrong head");
 
     }
 
@@ -2057,11 +2128,21 @@ public class HTreeMap<K,V>
      * @return snapshot
      */
     public Map<K,V> snapshot(){
-        Engine snapshot = TxEngine.createSnapshotFor(engine);
+        Engine[] snapshots = new Engine[SEG];
+        snapshots[0] = TxEngine.createSnapshotFor(engines[0]);
+
+        //TODO thread unsafe if underlying engines are not thread safe
+        for(int i=1;i<SEG;i++){
+            if(engines[i]!=engines[0])
+                snapshots[i] = TxEngine.createSnapshotFor(engines[1]);
+            else
+                snapshots[i] = snapshots[0];
+        }
+
         return new HTreeMap<K, V>(
-                snapshot,
+                snapshots,
                 closeEngine,
-                counter==null?0:counter.recid,
+                counterRecids,
                 hashSalt,
                 segmentRecids,
                 keySerializer,
@@ -2098,7 +2179,7 @@ public class HTreeMap<K,V>
     }
 
     protected void notify(K key, V oldValue, V newValue) {
-        if(CC.PARANOID && ! (segmentLocks[hash(key)>>>28].isWriteLockedByCurrentThread()))
+        if(CC.ASSERT && ! (segmentLocks[hash(key)>>>28].isWriteLockedByCurrentThread()))
             throw new AssertionError();
         Bind.MapListener<K,V>[] modListeners2  = modListeners;
         for(Bind.MapListener<K,V> listener:modListeners2){
@@ -2107,8 +2188,10 @@ public class HTreeMap<K,V>
         }
     }
 
+
     public Engine getEngine(){
-        return engine;
+        return engines[0];
+        //TODO what about other engines?
     }
 
 
@@ -2125,8 +2208,18 @@ public class HTreeMap<K,V>
         }
 
         if(closeEngine) {
-            engine.close();
+            engines[0].close();
+            for(int i=1;i<SEG;i++){
+                if(engines[i]!=engines[0])
+                    engines[i].close();
+            }
         }
+    }
+
+    static Engine[] fillEngineArray(Engine engine){
+        Engine[] ret = new Engine[SEG];
+        Arrays.fill(ret,engine);
+        return ret;
     }
 
 }

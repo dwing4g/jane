@@ -183,7 +183,7 @@ public class BTreeMap<K,V>
             db.getEngine().commit();
         }
         Serializer valser = db.getDefaultSerializer();
-        if(CC.PARANOID && valser == null)
+        if(CC.ASSERT && valser == null)
             throw new AssertionError();
         return new BTreeMap<String, Object>(
                 db.engine,
@@ -221,7 +221,7 @@ public class BTreeMap<K,V>
 
         @Override
         public String toString() {
-            return "BTreeMap-ValRer["+recid+"]";
+            return "BTreeMap-ValRef["+recid+"]";
         }
     }
 
@@ -384,13 +384,13 @@ public class BTreeMap<K,V>
             if(end>1){
                 for(int i = 1;i<=end;i++){
                     if(keyser.compare(keys,i-1, i)>=0)
-                        throw new AssertionError("keys are not sorted: "+Arrays.toString(keyser.keysToArray(keys)));
+                        throw new DBException.DataCorruption("keys are not sorted: "+Arrays.toString(keyser.keysToArray(keys)));
                 }
             }
             //check last key is sorted or null
             if(!isRightEdge() && keylen>2){
                 if(keyser.compare(keys,keylen-2, keylen-1)>0){
-                    throw new AssertionError("Last key is not sorted: "+Arrays.toString(keyser.keysToArray(keys)));
+                    throw new DBException.DataCorruption("Last key is not sorted: "+Arrays.toString(keyser.keysToArray(keys)));
                 }
             }
         }
@@ -413,7 +413,7 @@ public class BTreeMap<K,V>
             super(keys, leftEdge, rightEdge, tooLarge);
             this.child = child;
 
-            if(CC.PARANOID)
+            if(CC.ASSERT)
                 checkStructure(null,null);
         }
 
@@ -464,10 +464,10 @@ public class BTreeMap<K,V>
             int childLen = child instanceof int[]? ((int[])child).length : ((long[])child).length;
 
             if(keyser!=null && childLen!=keysLen(keyser))
-                throw new AssertionError();
+                throw new DBException.DataCorruption("bnode has inconsistent lengths");
 
             if((isRightEdge() != (next()==0)))
-                throw new AssertionError();
+                throw new DBException.DataCorruption("bnode right edge inconsistent with link");
 
         }
 
@@ -581,7 +581,7 @@ public class BTreeMap<K,V>
             this.vals = vals;
             this.next = next;
 
-            if(CC.PARANOID)
+            if(CC.ASSERT)
                 checkStructure(null,null);
         }
 
@@ -605,7 +605,7 @@ public class BTreeMap<K,V>
         public void checkStructure(BTreeKeySerializer keyser, Serializer valser) {
             super.checkStructure(keyser,valser);
             if((next==0)!=isRightEdge()){
-                throw new AssertionError("Next link inconsistent: "+this);
+                throw new DBException.DataCorruption("Next link inconsistent: "+this);
             }
 
             if(valser==null)
@@ -614,14 +614,14 @@ public class BTreeMap<K,V>
             int valsSize = valser.valueArraySize(vals);
 
             if(keyser!=null && (keysLen(keyser) != valsSize+2)) {
-                throw new AssertionError("Inconsistent vals size: " + this);
+                throw new DBException.DataCorruption("Inconsistent vals size: " + this);
             }
             //$DELAY$
 
             for (int i=0;i<valsSize;i++) {
                 Object val = valser.valueArrayGet(vals,i);
                 if (val == null)
-                    throw new AssertionError("Val is null: " + this);
+                    throw new DBException.DataCorruption("Val is null: " + this);
             }
 
         }
@@ -716,14 +716,14 @@ public class BTreeMap<K,V>
         protected final int numberOfNodeMetas;
 
         public NodeSerializer(boolean valsOutsideNodes, BTreeKeySerializer keySerializer, Serializer valueSerializer,  int numberOfNodeMetas) {
-            if(CC.PARANOID && ! (keySerializer!=null))
-                throw new AssertionError();
+            if(keySerializer==null)
+                throw new NullPointerException("keySerializer not set");
             this.hasValues = valueSerializer!=null;
             this.valsOutsideNodes = valsOutsideNodes;
             this.keySerializer = keySerializer;
-            this.valueSerializer =  hasValues?
+            this.valueSerializer =  (Serializer) (hasValues?
                     (valsOutsideNodes? new ValRefSerializer() : valueSerializer):
-                    Serializer.BOOLEAN;
+                    Serializer.BOOLEAN);
             this.numberOfNodeMetas = numberOfNodeMetas;
         }
 
@@ -732,7 +732,7 @@ public class BTreeMap<K,V>
             final boolean isLeaf = value.isLeaf();
 
             //check node integrity in paranoid mode
-            if(CC.PARANOID){
+            if(CC.ASSERT){
                 value.checkStructure(keySerializer,valueSerializer);
             }
             //$DELAY$
@@ -807,7 +807,7 @@ public class BTreeMap<K,V>
                 node = deserializeDir(in2, size, left, right);
             }
             //$DELAY$
-            if(CC.PARANOID){
+            if(CC.ASSERT){
                 node.checkStructure(keySerializer,valueSerializer);
             }
             return node;
@@ -895,8 +895,6 @@ public class BTreeMap<K,V>
             throw new IllegalArgumentException();
         if(keySerializer==null)
             throw new NullPointerException();
-//        SerializerBase.assertSerializable(keySerializer); //TODO serializer serialization
-//        SerializerBase.assertSerializable(valueSerializer);
 
         this.rootRecidRef = rootRecidRef;
         this.hasValues = valueSerializer!=null;
@@ -925,8 +923,8 @@ public class BTreeMap<K,V>
         ArrayList leftEdges2 = new ArrayList<Long>();
         long r = engine.get(rootRecidRef,Serializer.RECID);
         for(;;){
-            if(CC.PARANOID && r<=0)
-                throw new AssertionError();
+            if(CC.ASSERT && r<=0)
+                throw new DBException.DataCorruption("wrong recid");
 
             //$DELAY$
             BNode n= engine.get(r,nodeSerializer);
@@ -1029,13 +1027,6 @@ public class BTreeMap<K,V>
     protected V put2(final K key, final V value2, final boolean putOnlyIfAbsent){
         K v = key;
 
-        V value = value2;
-        if(valsOutsideNodes){
-            long recid = engine.put(value2, valueSerializer);
-            //$DELAY$
-            value = (V) new ValRef(recid);
-        }
-
         int stackPos = -1;
         long[] stackVals = new long[4];
 
@@ -1048,8 +1039,8 @@ public class BTreeMap<K,V>
             long t = current;
             current = nextDir((DirNode) A, v);
             //$DELAY$
-            if(CC.PARANOID && ! (current>0) )
-                throw new AssertionError(A);
+            if(CC.ASSERT && ! (current>0) )
+                throw new DBException.DataCorruption("wrong recid");
             //if is not link
             if (current != A.next()) {
                 //stack push t
@@ -1062,7 +1053,7 @@ public class BTreeMap<K,V>
             //$DELAY$
             A = engine.get(current, nodeSerializer);
         }
-        int level = 1;
+        int level = 0;
 
         long p=0;
         try{
@@ -1087,13 +1078,21 @@ public class BTreeMap<K,V>
                     if(putOnlyIfAbsent){
                         //is not absent, so quit
                         unlock(nodeLocks, current);
-                        if(CC.PARANOID) assertNoLocks(nodeLocks);
+                        if(CC.ASSERT) assertNoLocks(nodeLocks);
                         return valExpand(oldVal);
                     }
+
                     //insert new
+                    V value = value2;
+                    if(valsOutsideNodes){
+                        long recid = engine.put(value2, valueSerializer);
+                        //$DELAY$
+                        value = (V) new ValRef(recid);
+                    }
+
                     //$DELAY$
                     A = ((LeafNode)A).copyChangeValue(valueSerializer, pos,value);
-                    if(CC.PARANOID && ! (nodeLocks.get(current)==Thread.currentThread()))
+                    if(CC.ASSERT && ! (nodeLocks.get(current)==Thread.currentThread()))
                         throw new AssertionError();
                     engine.update(current, A, nodeSerializer);
                     //$DELAY$
@@ -1102,7 +1101,7 @@ public class BTreeMap<K,V>
                     notify(key,ret, value2);
                     unlock(nodeLocks, current);
                     //$DELAY$
-                    if(CC.PARANOID) assertNoLocks(nodeLocks);
+                    if(CC.ASSERT) assertNoLocks(nodeLocks);
                     return ret;
                 }
 
@@ -1130,6 +1129,13 @@ public class BTreeMap<K,V>
 
             }while(!found);
 
+            V value = value2;
+            if(valsOutsideNodes){
+                long recid = engine.put(value2, valueSerializer);
+                //$DELAY$
+                value = (V) new ValRef(recid);
+            }
+
             int pos = keySerializer.findChildren(A, v);
             //$DELAY$
             A = A.copyAddKey(keySerializer,valueSerializer, pos,v,p,value);
@@ -1137,14 +1143,14 @@ public class BTreeMap<K,V>
             // can be new item inserted into A without splitting it?
             if(A.keysLen(keySerializer) - (A.isLeaf()?1:0)<maxNodeSize){
                 //$DELAY$
-                if(CC.PARANOID && ! (nodeLocks.get(current)==Thread.currentThread()))
+                if(CC.ASSERT && ! (nodeLocks.get(current)==Thread.currentThread()))
                     throw new AssertionError();
                 engine.update(current, A, nodeSerializer);
 
                 notify(key,  null, value2);
                 //$DELAY$
                 unlock(nodeLocks, current);
-                if(CC.PARANOID) assertNoLocks(nodeLocks);
+                if(CC.ASSERT) assertNoLocks(nodeLocks);
                 return null;
             }else{
                 //node is not safe, it requires splitting
@@ -1156,7 +1162,7 @@ public class BTreeMap<K,V>
                 long q = engine.put(B, nodeSerializer);
                 A = A.copySplitLeft(keySerializer,valueSerializer, splitPos, q);
                 //$DELAY$
-                if(CC.PARANOID && ! (nodeLocks.get(current)==Thread.currentThread()))
+                if(CC.ASSERT && ! (nodeLocks.get(current)==Thread.currentThread()))
                     throw new AssertionError();
                 engine.update(current, A, nodeSerializer);
 
@@ -1173,8 +1179,8 @@ public class BTreeMap<K,V>
                         current = leftEdges.get(level-1);
                     }
                     //$DELAY$
-                    if(CC.PARANOID && ! (current>0))
-                        throw new AssertionError();
+                    if(CC.ASSERT && ! (current>0))
+                        throw new DBException.DataCorruption("wrong recid");
                 }else{
                     Object rootChild =
                         (current<Integer.MAX_VALUE && q<Integer.MAX_VALUE) ?
@@ -1187,23 +1193,27 @@ public class BTreeMap<K,V>
                             true,true,false,
                             rootChild);
                     //$DELAY$
-                    lock(nodeLocks, rootRecidRef);
-                    //$DELAY$
                     unlock(nodeLocks, current);
+                    //$DELAY$
+                    lock(nodeLocks, rootRecidRef);
+
                     //$DELAY$
                     long newRootRecid = engine.put(R, nodeSerializer);
                     //$DELAY$
-                    if(CC.PARANOID && ! (nodeLocks.get(rootRecidRef)==Thread.currentThread()))
+                    if(CC.ASSERT && ! (nodeLocks.get(rootRecidRef)==Thread.currentThread()))
                         throw new AssertionError();
-                    engine.update(rootRecidRef, newRootRecid, Serializer.RECID);
-                    //add newRootRecid into leftEdges
+
                     leftEdges.add(newRootRecid);
+                    //TODO there could be a race condition between leftEdges  update and rootRecidRef update. Investigate!
+                    //$DELAY$
+
+                    engine.update(rootRecidRef, newRootRecid, Serializer.RECID);
 
                     notify(key, null, value2);
                     //$DELAY$
                     unlock(nodeLocks, rootRecidRef);
                     //$DELAY$
-                    if(CC.PARANOID) assertNoLocks(nodeLocks);
+                    if(CC.ASSERT) assertNoLocks(nodeLocks);
                     //$DELAY$
                     return null;
                 }
@@ -1500,12 +1510,13 @@ public class BTreeMap<K,V>
         long old =0;
         try{for(;;){
             //$DELAY$
-            lock(nodeLocks, current);
-            //$DELAY$
             if(old!=0) {
                 //$DELAY$
                 unlock(nodeLocks, old);
             }
+            //$DELAY$
+            lock(nodeLocks, current);
+
             A = engine.get(current, nodeSerializer);
             //$DELAY$
             int pos = keySerializer.findChildren2(A, key);
@@ -1532,7 +1543,7 @@ public class BTreeMap<K,V>
                 A = putNewValue!=null?
                         ((LeafNode)A).copyChangeValue(valueSerializer,pos,putNewValueOutside):
                         ((LeafNode)A).copyRemoveKey(keySerializer,valueSerializer,pos);
-                if(CC.PARANOID && ! (nodeLocks.get(current)==Thread.currentThread()))
+                if(CC.ASSERT && ! (nodeLocks.get(current)==Thread.currentThread()))
                     throw new AssertionError();
                 //$DELAY$
                 engine.update(current, A, nodeSerializer);
@@ -1655,10 +1666,6 @@ public class BTreeMap<K,V>
 
     static  class BTreeValueIterator<V> extends BTreeIterator implements Iterator<V>{
 
-        BTreeValueIterator(BTreeMap m) {
-            super(m);
-        }
-
         BTreeValueIterator(BTreeMap m, Object lo, boolean loInclusive, Object hi, boolean hiInclusive) {
             super(m, lo, loInclusive, hi, hiInclusive);
         }
@@ -1701,10 +1708,6 @@ public class BTreeMap<K,V>
 
     static class BTreeDescendingKeyIterator<K> extends BTreeDescendingIterator implements Iterator<K>{
 
-        BTreeDescendingKeyIterator(BTreeMap m) {
-            super(m);
-        }
-
         BTreeDescendingKeyIterator(BTreeMap m, Object lo, boolean loInclusive, Object hi, boolean hiInclusive) {
             super(m, lo, loInclusive, hi, hiInclusive);
         }
@@ -1723,10 +1726,6 @@ public class BTreeMap<K,V>
 
     static  class BTreeDescendingValueIterator<V> extends BTreeDescendingIterator implements Iterator<V>{
 
-        BTreeDescendingValueIterator(BTreeMap m) {
-            super(m);
-        }
-
         BTreeDescendingValueIterator(BTreeMap m, Object lo, boolean loInclusive, Object hi, boolean hiInclusive) {
             super(m, lo, loInclusive, hi, hiInclusive);
         }
@@ -1744,10 +1743,6 @@ public class BTreeMap<K,V>
     }
 
     static  class BTreeDescendingEntryIterator<K,V> extends BTreeDescendingIterator implements  Iterator<Entry<K, V>>{
-
-        BTreeDescendingEntryIterator(BTreeMap m) {
-            super(m);
-        }
 
         BTreeDescendingEntryIterator(BTreeMap m, Object lo, boolean loInclusive, Object hi, boolean hiInclusive) {
             super(m, lo, loInclusive, hi, hiInclusive);
@@ -1771,7 +1766,7 @@ public class BTreeMap<K,V>
 
 
     protected Entry<K, V> makeEntry(Object key, Object value) {
-        if(CC.PARANOID && ! (!(value instanceof ValRef)))
+        if(CC.ASSERT && ! (!(value instanceof ValRef)))
             throw new AssertionError();
         return new SimpleImmutableEntry<K, V>((K)key,  (V)value);
     }
@@ -1802,6 +1797,12 @@ public class BTreeMap<K,V>
         }
         return size;
     }
+
+    public long mappingCount(){
+        //method added in java 8
+        return sizeLong();
+    }
+
 
     @Override
     public V putIfAbsent(K key, V value) {
@@ -1854,6 +1855,28 @@ public class BTreeMap<K,V>
         }
         //$DELAY$
         return makeEntry(l.key(keySerializer,1), valExpand(l.val(0, valueSerializer)));
+    }
+
+
+    @Override
+    public K firstKey() {
+        final long rootRecid = engine.get(rootRecidRef, Serializer.RECID);
+        BNode n = engine.get(rootRecid, nodeSerializer);
+        //$DELAY$
+        while(!n.isLeaf()){
+            //$DELAY$
+            n = engine.get(n.child(0), nodeSerializer);
+        }
+        LeafNode l = (LeafNode) n;
+        //follow link until necessary
+        while(l.keysLen(keySerializer)==2){
+            if(l.next==0)
+                throw new NoSuchElementException();
+            //$DELAY$
+            l = (LeafNode) engine.get(l.next, nodeSerializer);
+        }
+        //$DELAY$
+        return (K) l.key(keySerializer, 1);
     }
 
 
@@ -2178,12 +2201,6 @@ public class BTreeMap<K,V>
     }
 
 
-    @Override
-    public K firstKey() {
-        Entry<K,V> e = firstEntry();
-        if(e==null) throw new NoSuchElementException();
-        return e.getKey();
-    }
 
     @Override
     public K lastKey() {
@@ -2243,7 +2260,7 @@ public class BTreeMap<K,V>
     }
 
     Iterator<V> valueIterator() {
-        return new BTreeValueIterator(this);
+        return new BTreeValueIterator(this,null,false,null,false);
     }
 
     Iterator<Map.Entry<K,V>> entryIterator() {
@@ -2583,7 +2600,6 @@ public class BTreeMap<K,V>
 
         @Override
         public int size() {
-            //TODO add method which returns long, compatible with new method in Java8 streams, not forget other submaps, reverse maps
             //TODO use counted btrees once they become available
             if(hi==null && lo==null)
                 return m.size();
@@ -3430,9 +3446,9 @@ public class BTreeMap<K,V>
 
     //TODO check  references to notify
     protected void notify(K key, V oldValue, V newValue) {
-        if(CC.PARANOID && ! (!(oldValue instanceof ValRef)))
+        if(CC.ASSERT && ! (!(oldValue instanceof ValRef)))
             throw new AssertionError();
-        if(CC.PARANOID && ! (!(newValue instanceof ValRef)))
+        if(CC.ASSERT && ! (!(newValue instanceof ValRef)))
             throw new AssertionError();
 
         Bind.MapListener<K,V>[] modListeners2  = modListeners;
@@ -3493,7 +3509,7 @@ public class BTreeMap<K,V>
 
     protected static void unlock(LongConcurrentHashMap<Thread> locks,final long recid) {
         final Thread t = locks.remove(recid);
-        if(CC.PARANOID && ! (t==Thread.currentThread()))
+        if(CC.ASSERT && ! (t==Thread.currentThread()))
             throw new AssertionError("unlocked wrong thread");
     }
 
@@ -3511,7 +3527,7 @@ public class BTreeMap<K,V>
 
         final Thread currentThread = Thread.currentThread();
         //check node is not already locked by this thread
-        if(CC.PARANOID && ! (locks.get(recid)!= currentThread))
+        if(CC.ASSERT && ! (locks.get(recid)!= currentThread))
             throw new AssertionError("node already locked by current thread: "+recid);
 
         while(locks.putIfAbsent(recid, currentThread) != null){
@@ -3533,21 +3549,21 @@ public class BTreeMap<K,V>
         n.checkStructure(keySerializer,valueSerializer);
 
         if(recids.get(rootRecid)!=null){
-            throw new AssertionError("Duplicate recid: "+rootRecid);
+            throw new DBException.DataCorruption("Duplicate recid: "+rootRecid);
         }
         recids.put(rootRecid,this);
 
         if(n.next()!=0L && recids.get(n.next())==null){
-            throw new AssertionError("Next link was not found: "+n);
+            throw new DBException.DataCorruption("Next link was not found: "+n);
         }
         if(n.next()==rootRecid){
-            throw new AssertionError("Recursive next: "+n);
+            throw new DBException.DataCorruption("Recursive next: "+n);
         }
         if(!n.isLeaf()){
             for(int i=n.childArrayLength()-1;i>=0;i--){
                 long recid = n.child(i);
                 if(recid==rootRecid){
-                    throw new AssertionError("Recursive recid: "+n);
+                    throw new DBException.DataCorruption("Recursive recid: "+n);
                 }
 
                 if(recid==0 || recid==n.next()){

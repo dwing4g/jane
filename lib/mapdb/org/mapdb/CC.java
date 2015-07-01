@@ -29,7 +29,7 @@ package org.mapdb;
  * Typical usage:
  * </p>
  * <pre>{@code
- *     if(CC.PARANOID && arg.calculateSize()!=33){  //calculateSize may take long time
+ *     if(CC.ASSERT && arg.calculateSize()!=33){  //calculateSize may take long time
  *         throw new IllegalArgumentException("wrong size");
  *     }
  * }</pre>
@@ -37,14 +37,17 @@ package org.mapdb;
  *
  * @author  Jan Kotek
  */
-public interface CC {
+//TODO add methods to DBMaker to access compiler settings
+interface CC {
 
     /**
      * Compile with more assertions and verifications.
      * For example HashMap may check if keys implements hash function correctly.
      * This will slow down MapDB significantly.
      */
-    boolean PARANOID = true;
+    boolean ASSERT = true;
+
+    boolean PARANOID = false;
 
 
     /**
@@ -105,8 +108,6 @@ public interface CC {
 
     int VOLUME_PAGE_SHIFT = 20; // 1 MB
 
-    boolean STORE_INDEX_CRC = false; //TODO move to feature bit field
-
     /**
      * Will print stack trace of all operations which are write any data at given offset
      * Used for debugging.
@@ -121,5 +122,12 @@ public interface CC {
 
     boolean METRICS_CACHE = true;
     boolean METRICS_STORE = true;
+
+    int DEFAULT_ASYNC_WRITE_QUEUE_SIZE = 1024;
+
+    Volume.VolumeFactory DEFAULT_MEMORY_VOLUME_FACTORY = Volume.ByteArrayVol.FACTORY;
+
+    //TODO AppendStoreTest par* test fails if this changes  to FileChannelVol
+    Volume.VolumeFactory DEFAULT_FILE_VOLUME_FACTORY = Volume.RandomAccessFileVol.FACTORY;
 }
 

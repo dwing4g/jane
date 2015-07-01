@@ -1,7 +1,8 @@
 package org.mapdb;
 
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -21,10 +22,11 @@ public class StoreHeap extends Store{
     protected int freeRecidTail;
     protected long maxRecid = RECID_FIRST;
     protected final Lock newRecidLock;
+    protected List<Snapshot> snapshots;
 
 
-    public StoreHeap(boolean txDisabled, int lockScale, int lockingStrategy){
-        super(null,null,null,lockScale, 0, false,false,null,false);
+    public StoreHeap(boolean txDisabled, int lockScale, int lockingStrategy, boolean snapshotEnable){
+        super(null,null,null,lockScale, 0, false,false,null,false, snapshotEnable);
         data = new LongObjectMap[this.lockScale];
         for(int i=0;i<data.length;i++){
             data[i] = new LongObjectMap();
@@ -44,6 +46,9 @@ public class StoreHeap extends Store{
         freeRecid = new long[16];
         freeRecidTail=0;
 
+        snapshots = snapshotEnable?
+                new CopyOnWriteArrayList<Snapshot>():
+                null;
 
         for(long recid=1;recid<=RECID_LAST_RESERVED;recid++){
             data[lockPos(recid)].put(recid,NULL);
@@ -53,7 +58,7 @@ public class StoreHeap extends Store{
 
     @Override
     protected <A> A get2(long recid, Serializer<A> serializer) {
-        if(CC.PARANOID)
+        if(CC.ASSERT)
             assertReadLocked(recid);
 
         int pos = lockPos(recid);
@@ -80,11 +85,7 @@ public class StoreHeap extends Store{
         lock.lock();
         try{
             Object old = data2.put(recid,val2);
-            if(rollback!=null){
-                LongObjectMap rol = rollback[pos];
-                if(rol.get(recid)==null)
-                    rol.put(recid,old);
-            }
+            updateOld(pos, recid, old);
         }finally {
             lock.unlock();
         }
@@ -99,17 +100,11 @@ public class StoreHeap extends Store{
     protected <A> void delete2(long recid, Serializer<A> serializer) {
         int pos = lockPos(recid);
 
-        if(CC.PARANOID)
+        if(CC.ASSERT)
             assertWriteLocked(pos);
 
         Object old = data[pos].put(recid,TOMBSTONE);
-
-        if(rollback!=null){
-            LongObjectMap rol = rollback[pos];
-            if(rol.get(recid)==null)
-                rol.put(recid,old);
-        }
-
+        updateOld(pos,recid,old);
     }
 
     @Override
@@ -119,26 +114,36 @@ public class StoreHeap extends Store{
         if(closed)
             throw new IllegalAccessError("closed");
 
-        final int lockPos = lockPos(recid);
-        final Lock lock = locks[lockPos].writeLock();
+        final int pos = lockPos(recid);
+        final Lock lock = locks[pos].writeLock();
         lock.lock();
         try{
             A oldVal = get2(recid, serializer);
             if(oldVal==expectedOldValue || (oldVal!=null && serializer.equals(oldVal,expectedOldValue))){
                 Object newValue2 = newValue==null?NULL:newValue;
-                Object old = data[lockPos].put(recid,newValue2);
+                Object old = data[pos].put(recid, newValue2);
 
-                if(rollback!=null){
-                    LongObjectMap rol = rollback[lockPos];
-                    if(rol.get(recid)==null)
-                        rol.put(recid,old);
-                }
+                updateOld(pos, recid, old);
+
 
                 return true;
             }
             return false;
         }finally {
             lock.unlock();
+        }
+    }
+
+    protected void updateOld(int pos, long recid, Object old) {
+        if(rollback!=null){
+            LongObjectMap rol = rollback[pos];
+            if(rol.get(recid)==null)
+                rol.put(recid,old);
+        }
+        if(snapshots!=null){
+            for(Snapshot snap:snapshots){
+                snap.oldData[pos].putIfAbsent(recid, old);
+            }
         }
     }
 
@@ -282,13 +287,10 @@ public class StoreHeap extends Store{
     }
 
     @Override
-    public boolean canSnapshot() {
-        return false;
-    }
-
-    @Override
     public Engine snapshot() throws UnsupportedOperationException {
-        return null;
+        if(snapshots==null)
+            throw new UnsupportedOperationException();
+        return new Snapshot(StoreHeap.this);
     }
 
     @Override
@@ -310,7 +312,7 @@ public class StoreHeap extends Store{
                             }
 
                             //put into list of free recids
-                            m.remove(m.set[i]);
+                            m.remove(m.set[j]);
 
                             if(freeRecid.length==freeRecidTail){
                                 freeRecid = Arrays.copyOf(freeRecid, freeRecid.length*2);
@@ -330,5 +332,76 @@ public class StoreHeap extends Store{
             commitLock.unlock();
         }
 
+    }
+
+    public static class Snapshot extends ReadOnly {
+
+        protected StoreHeap engine;
+
+        protected LongObjectMap[] oldData;
+
+        public Snapshot(StoreHeap engine) {
+            this.engine = engine;
+            oldData = new LongObjectMap[engine.lockScale];
+            for(int i=0;i<oldData.length;i++){
+                oldData[i] = new LongObjectMap();
+            }
+            engine.snapshots.add(Snapshot.this);
+        }
+
+        @Override
+        public <A> A get(long recid, Serializer<A> serializer) {
+            StoreHeap engine = this.engine;
+            int pos = engine.lockPos(recid);
+            Lock lock = engine.locks[pos].readLock();
+            lock.lock();
+            try{
+                Object ret = oldData[pos].get(recid);
+                if(ret==null)
+                    ret = engine.get(recid,serializer);
+                if(ret==TOMBSTONE)
+                    return null;
+                return (A) ret;
+            }finally {
+                lock.unlock();
+            }
+        }
+
+        @Override
+        public void close() {
+            engine.snapshots.remove(Snapshot.this);
+            engine = null;
+            oldData = null;
+        }
+
+        @Override
+        public boolean isClosed() {
+            return engine!=null;
+        }
+
+        @Override
+        public boolean canRollback() {
+            return false;
+        }
+
+        @Override
+        public boolean canSnapshot() {
+            return true;
+        }
+
+        @Override
+        public Engine snapshot() throws UnsupportedOperationException {
+            return this;
+        }
+
+        @Override
+        public Engine getWrappedEngine() {
+            return engine;
+        }
+
+        @Override
+        public void clearCache() {
+
+        }
     }
 }

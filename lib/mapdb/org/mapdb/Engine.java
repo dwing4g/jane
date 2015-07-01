@@ -17,6 +17,7 @@
 package org.mapdb;
 
 import java.io.Closeable;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * <p>
@@ -50,7 +51,7 @@ import java.io.Closeable;
  * </ol>
  *
  * <p>
- * TODO document more examples of Engine  wrappers
+ * TODO Engine Wrappers are sort of obsole, update this whole section
  * </p><p>
  *
  * Engine uses {@code recid} to identify records. There is zero error handling in case recid is invalid
@@ -123,12 +124,11 @@ public interface Engine  extends Closeable {
      */
     long RECID_FIRST = RECID_LAST_RESERVED+1;
 
-
     /**
      * Preallocates recid for not yet created record. It does not insert any data into it.
      * @return new recid
      */
-    //TODO in some cases recid is persisted and used between compaction. perhaps use put(null)
+    //TODO in some cases recid is persisted and used between compaction. perhaps use put(null). Much latter: in what cases? I do not recall any.
     //TODO clarify difference between put/update(null) and delete/preallocate
     long preallocate();
 
@@ -142,6 +142,7 @@ public interface Engine  extends Closeable {
      * @throws java.lang.NullPointerException if serializer is null
      */
     <A> long put(A value, Serializer<A> serializer);
+
 
     /**
      * <p>
@@ -177,7 +178,6 @@ public interface Engine  extends Closeable {
      */
     <A> void update(long recid, A value, Serializer<A> serializer);
 
-
     /**
      * <p>
      * Updates existing record in atomic <a href="http://en.wikipedia.org/wiki/Compare-and-swap">(Compare And Swap)</a> manner.
@@ -204,6 +204,7 @@ public interface Engine  extends Closeable {
      */
     <A> boolean compareAndSwap(long recid, A expectedOldValue, A newValue, Serializer<A> serializer);
 
+
     /**
      * <p>
      * Remove existing record from store/cache
@@ -221,7 +222,6 @@ public interface Engine  extends Closeable {
      */
     <A> void delete(long recid, Serializer<A>  serializer);
 
-
     /**
      * <p>
      * Close store/cache. This method must be called before JVM exits to flush all caches and prevent store corruption.
@@ -232,7 +232,7 @@ public interface Engine  extends Closeable {
      * throw any exception including <code>NullPointerException</code>
      * </p><p>
      *
-     * There is an configuration option {@link DBMaker#closeOnJvmShutdown()} which uses shutdown hook to automatically
+     * There is an configuration option {@link DBMaker.Maker#closeOnJvmShutdown()} which uses shutdown hook to automatically
      * close Engine when JVM shutdowns.
      * </p>
      */
@@ -245,6 +245,7 @@ public interface Engine  extends Closeable {
      * @return true if engine was closed
      */
     public boolean isClosed();
+
 
     /**
      * Makes all changes made since the previous commit/rollback permanent.
@@ -284,27 +285,14 @@ public interface Engine  extends Closeable {
     /** if this is wrapper return underlying engine, or null */
     Engine getWrappedEngine();
 
-
     /** clears any underlying cache */
     void clearCache();
+
 
     void compact();
 
 
-    /**
-     * Wraps an <code>Engine</code> and throws
-     * <code>UnsupportedOperationException("Read-only")</code>
-     * on any modification attempt.
-     */
-    public static final class ReadOnly implements Engine {
-
-
-        protected final Engine engine;
-
-        public ReadOnly(Engine engine){
-            this.engine = engine;
-        }
-
+    abstract class ReadOnly implements Engine{
 
         @Override
         public long preallocate() {
@@ -322,10 +310,22 @@ public interface Engine  extends Closeable {
             throw new UnsupportedOperationException("Read-only");
         }
 
+
         @Override
-        public <A> A get(long recid, Serializer<A> serializer) {
-            return engine.get(recid,serializer);
+        public void commit() {
+            throw new UnsupportedOperationException("Read-only");
         }
+
+        @Override
+        public void rollback() {
+            throw new UnsupportedOperationException("Read-only");
+        }
+
+        @Override
+        public boolean isReadOnly() {
+            return true;
+        }
+
 
         @Override
         public <A> void update(long recid, A value, Serializer<A> serializer) {
@@ -335,6 +335,36 @@ public interface Engine  extends Closeable {
         @Override
         public <A> void delete(long recid, Serializer<A> serializer){
             throw new UnsupportedOperationException("Read-only");
+        }
+
+
+
+        @Override
+        public void compact() {
+            throw new UnsupportedOperationException("Read-only");
+        }
+
+
+    }
+
+    /**
+     * Wraps an <code>Engine</code> and throws
+     * <code>UnsupportedOperationException("Read-only")</code>
+     * on any modification attempt.
+     */
+    final class ReadOnlyWrapper extends ReadOnly{
+
+
+        protected final Engine engine;
+
+
+        public ReadOnlyWrapper(Engine engine){
+            this.engine = engine;
+        }
+
+        @Override
+        public <A> A get(long recid, Serializer<A> serializer) {
+            return engine.get(recid, serializer);
         }
 
         @Override
@@ -348,19 +378,123 @@ public interface Engine  extends Closeable {
         }
 
         @Override
-        public void commit() {
-            throw new UnsupportedOperationException("Read-only");
+        public boolean canRollback() {
+            return engine.canRollback();
+        }
+
+
+        @Override
+        public Engine getWrappedEngine() {
+            return engine;
         }
 
         @Override
-        public void rollback() {
-            throw new UnsupportedOperationException("Read-only");
+        public void clearCache() {
+            engine.clearCache();
         }
 
+
+        @Override
+        public boolean canSnapshot() {
+            return engine.canSnapshot();
+        }
+
+        @Override
+        public Engine snapshot() throws UnsupportedOperationException {
+            return engine.snapshot();
+        }
+
+    }
+
+
+    /**
+     * Closes Engine on JVM shutdown using shutdown hook: {@link Runtime#addShutdownHook(Thread)}
+     * If engine was closed by user before JVM shutdown, hook is removed to save memory.
+     */
+    class CloseOnJVMShutdown implements Engine{
+
+
+        final protected AtomicBoolean shutdownHappened = new AtomicBoolean(false);
+
+        final Runnable hookRunnable = new Runnable() {
+            @Override
+            public void run() {
+                shutdownHappened.set(true);
+                CloseOnJVMShutdown.this.hook = null;
+                if(CloseOnJVMShutdown.this.isClosed())
+                    return;
+                CloseOnJVMShutdown.this.close();
+            }
+        };
+
+        protected final Engine engine;
+
+        protected Thread hook;
+
+        public CloseOnJVMShutdown(Engine engine) {
+            this.engine = engine;
+            hook = new Thread(hookRunnable,"MapDB shutdown hook");
+            Runtime.getRuntime().addShutdownHook(hook);
+        }
+
+
+        @Override
+        public long preallocate() {
+            return engine.preallocate();
+        }
+
+        @Override
+        public <A> long put(A value, Serializer<A> serializer) {
+            return engine.put(value,serializer);
+        }
+
+        @Override
+        public <A> A get(long recid, Serializer<A> serializer) {
+            return engine.get(recid,serializer);
+        }
+
+        @Override
+        public <A> void update(long recid, A value, Serializer<A> serializer) {
+            engine.update(recid,value,serializer);
+        }
+
+        @Override
+        public <A> boolean compareAndSwap(long recid, A expectedOldValue, A newValue, Serializer<A> serializer) {
+            return engine.compareAndSwap(recid,expectedOldValue,newValue,serializer);
+        }
+
+        @Override
+        public <A> void delete(long recid, Serializer<A> serializer) {
+            engine.delete(recid,serializer);
+        }
+
+        @Override
+        public void close() {
+            engine.close();
+            if(!shutdownHappened.get() && hook!=null){
+                Runtime.getRuntime().removeShutdownHook(hook);
+            }
+            hook = null;
+        }
+
+        @Override
+        public boolean isClosed() {
+            return engine.isClosed();
+        }
+
+        @Override
+        public void commit() {
+            engine.commit();
+        }
+
+        @Override
+        public void rollback() throws UnsupportedOperationException {
+            engine.rollback();
+        }
 
         @Override
         public boolean isReadOnly() {
-            return true;
+            return engine.isReadOnly();
         }
 
         @Override
@@ -370,7 +504,7 @@ public interface Engine  extends Closeable {
 
         @Override
         public boolean canSnapshot() {
-            return true;
+            return engine.canSnapshot();
         }
 
         @Override
@@ -390,11 +524,100 @@ public interface Engine  extends Closeable {
 
         @Override
         public void compact() {
-            throw new UnsupportedOperationException("Read-only");
+            engine.compact();
+        }
+
+    }
+    /** throws {@code IllegalAccessError("already closed")} on all access */
+    Engine CLOSED_ENGINE = new Engine(){
+
+
+        @Override
+        public long preallocate() {
+            throw new IllegalAccessError("already closed");
         }
 
 
-    }
+        @Override
+        public <A> long put(A value, Serializer<A> serializer) {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public <A> A get(long recid, Serializer<A> serializer) {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public <A> void update(long recid, A value, Serializer<A> serializer) {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public <A> boolean compareAndSwap(long recid, A expectedOldValue, A newValue, Serializer<A> serializer) {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public <A> void delete(long recid, Serializer<A> serializer) {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public void close() {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public boolean isClosed() {
+            return true;
+        }
+
+        @Override
+        public void commit() {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public void rollback() throws UnsupportedOperationException {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public boolean isReadOnly() {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public boolean canRollback() {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public boolean canSnapshot() {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public Engine snapshot() throws UnsupportedOperationException {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public Engine getWrappedEngine() {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public void clearCache() {
+            throw new IllegalAccessError("already closed");
+        }
+
+        @Override
+        public void compact() {
+            throw new IllegalAccessError("already closed");
+        }
 
 
+    };
 }

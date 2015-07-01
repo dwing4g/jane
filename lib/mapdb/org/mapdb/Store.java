@@ -7,7 +7,10 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -23,6 +26,14 @@ import java.util.zip.CRC32;
 public abstract class Store implements Engine {
 
     protected static final Logger LOG = Logger.getLogger(Store.class.getName());
+
+    protected static final long FEAT_COMP_LZW = 64L-1L;
+    protected static final long FEAT_ENC_XTEA = 64L-2L;
+    protected static final long FEAT_CRC = 64L-3L;
+
+    protected static final long HEAD_CHECKSUM = 4;
+    protected static final long HEAD_FEATURES = 8;
+
 
     //TODO if locks are disabled, use NoLock for structuralLock and commitLock
 
@@ -42,12 +53,13 @@ public abstract class Store implements Engine {
     protected final boolean readonly;
 
     protected final String fileName;
-    protected Fun.Function1<Volume, String> volumeFactory;
-    protected boolean checksum;
-    protected boolean compress;
-    protected boolean encrypt;
+    protected final Volume.VolumeFactory volumeFactory;
+    protected final boolean checksum;
+    protected final boolean compress;
+    protected final boolean encrypt;
     protected final EncryptionXTEA encryptionXTEA;
     protected final ThreadLocal<CompressLZF> LZF;
+    protected final boolean snapshotEnable;
 
     protected final AtomicLong metricsDataWrite;
     protected final AtomicLong metricsRecordWrite;
@@ -63,20 +75,22 @@ public abstract class Store implements Engine {
 
     protected Store(
             String fileName,
-            Fun.Function1<Volume, String> volumeFactory,
+            Volume.VolumeFactory volumeFactory,
             Cache cache,
             int lockScale,
             int lockingStrategy,
             boolean checksum,
             boolean compress,
             byte[] password,
-            boolean readonly) {
+            boolean readonly,
+            boolean snapshotEnable) {
         this.fileName = fileName;
         this.volumeFactory = volumeFactory;
         this.lockScale = lockScale;
+        this.snapshotEnable = snapshotEnable;
         this.lockMask = lockScale-1;
         if(Integer.bitCount(lockScale)!=1)
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("Lock Scale must be power of two");
         //TODO replace with incrementer on java 8
         metricsDataWrite = new AtomicLong();
         metricsRecordWrite = new AtomicLong();
@@ -123,6 +137,45 @@ public abstract class Store implements Engine {
     }
 
     public void init(){}
+
+    protected void checkFeaturesBitmap(final long feat){
+        boolean xteaEnc = (feat>>>FEAT_ENC_XTEA&1)!=0;
+        if(xteaEnc&& !encrypt){
+            throw new DBException.WrongConfig("Store was created with encryption, but no password is set in config.");
+        }
+        if(!xteaEnc&& encrypt){
+            throw new DBException.WrongConfig("Password is set, but store is not encrypted.");
+        }
+
+        boolean lzwComp = (feat>>>FEAT_COMP_LZW&1)!=0;
+        if(lzwComp&& !compress){
+            throw new DBException.WrongConfig("Store was created with compression, but no compression is enabled in config.");
+        }
+        if(!lzwComp&& compress){
+            throw new DBException.WrongConfig("Compression is set in config, but store was created with compression.");
+        }
+
+        boolean crc = (feat>>>FEAT_CRC&1)!=0;
+        if(crc&& !checksum){
+            throw new DBException.WrongConfig("Store was created with CRC32 checksum, but it is not enabled in config.");
+        }
+        if(!crc&& checksum){
+            throw new DBException.WrongConfig("Checksum us enabled, but store was created without it.");
+        }
+
+        int endZeroes = Long.numberOfTrailingZeros(feat);
+        if(endZeroes<FEAT_CRC){
+            throw new DBException.WrongConfig("Unknown feature #"+endZeroes+". Store was created with never MapDB version, this version does not support this feature.");
+        }
+    }
+
+    protected long makeFeaturesBitmap(){
+        return
+            (compress ? 1L<<FEAT_COMP_LZW : 0) |
+            (encrypt  ? 1L<<FEAT_ENC_XTEA : 0) |
+            (checksum  ? 1L<<FEAT_CRC : 0)
+        ;
+    }
 
     @Override
     public <A> A get(long recid, Serializer<A> serializer) {
@@ -251,7 +304,7 @@ public abstract class Store implements Engine {
 
                     byte[] expected2 = Arrays.copyOf(expected.buf, expected.pos);
                     //check arrays equals
-                    if(CC.PARANOID && ! (Arrays.equals(expected2,decompress)))
+                    if(CC.ASSERT && ! (Arrays.equals(expected2,decompress)))
                         throw new AssertionError();
 
 
@@ -292,9 +345,11 @@ public abstract class Store implements Engine {
 
             A ret = serializer.deserialize(di, size);
             if (size + start > di.getPos())
-                throw new AssertionError("data were not fully read, check your serializer ");
+                throw new  DBException.DataCorruption("Data were not fully read, check your serializer. Read size:"
+                        +(di.getPos()-start)+", expected size:"+size);
             if (size + start < di.getPos())
-                throw new AssertionError("data were read beyond record size, check your serializer");
+                throw new  DBException.DataCorruption("Data were read beyond record size, check your serializer. Read size:"
+                        +(di.getPos()-start)+", expected size:"+size);
 
             metricsDataRead.getAndAdd(size);
             metricsRecordRead.getAndIncrement();
@@ -371,9 +426,12 @@ public abstract class Store implements Engine {
 
         A ret = serializer.deserialize(di, size);
         if (size + start > di.getPos())
-            throw new AssertionError("data were not fully read, check your serializer ");
+            throw new  DBException.DataCorruption("Data were not fully read, check your serializer. Read size:"
+                    +(di.getPos()-start)+", expected size:"+size);
         if (size + start < di.getPos())
-            throw new AssertionError("data were read beyond record size, check your serializer");
+            throw new  DBException.DataCorruption("Data were read beyond record size, check your serializer. Read size:"
+                    +(di.getPos()-start)+", expected size:"+size);
+
         return ret;
     }
 
@@ -747,7 +805,7 @@ public abstract class Store implements Engine {
                            ScheduledExecutorService executor,
                            long executorScheduledRate) {
             super(disableLocks);
-            if(CC.PARANOID && disableLocks && executor!=null) {
+            if(CC.ASSERT && disableLocks && executor!=null) {
                 throw new IllegalArgumentException("Lock can not be disabled with executor enabled");
             }
             this.useWeakRef = useWeakRef;
@@ -799,9 +857,10 @@ public abstract class Store implements Engine {
         public void put(long recid, Object item) {
             if(item ==null)
                 item = Cache.NULL;
-            CacheItem cacheItem = useWeakRef?
+            CacheItem cacheItem = (CacheItem) //cast needed for some buggy compilers
+                    (useWeakRef?
                     new CacheWeakItem(item,queue,recid):
-                    new CacheSoftItem(item,queue,recid);
+                    new CacheSoftItem(item,queue,recid));
             Lock lock = this.lock;
             if(lock!=null)
                 lock.lock();
@@ -860,7 +919,7 @@ public abstract class Store implements Engine {
         }
 
         protected void flushGCed() {
-            if(CC.PARANOID && lock!=null &&
+            if(CC.ASSERT && lock!=null &&
                     (lock instanceof ReentrantLock) &&
                     !((ReentrantLock)lock).isHeldByCurrentThread()) {
                 throw new AssertionError("Not locked by current thread");
@@ -1155,7 +1214,7 @@ public abstract class Store implements Engine {
 
 
         public long get(long key) {
-            if(CC.PARANOID && key==0)
+            if(CC.ASSERT && key==0)
                 throw new IllegalArgumentException("zero key");
 
             int index = index(key);
@@ -1169,10 +1228,10 @@ public abstract class Store implements Engine {
         }
 
         public long put(long key, long value) {
-            if(CC.PARANOID && key==0)
+            if(CC.ASSERT && key==0)
                 throw new IllegalArgumentException("zero key");
 
-            if(CC.PARANOID && value==0)
+            if(CC.ASSERT && value==0)
                 throw new IllegalArgumentException("zero val");
 
             int index = insert(key, value);
@@ -1189,7 +1248,7 @@ public abstract class Store implements Engine {
         }
 
         int insert(long key, long value) {
-            if(CC.PARANOID && key==0)
+            if(CC.ASSERT && key==0)
                 throw new IllegalArgumentException("zero key");
 
             long[] tab = table;
@@ -1269,7 +1328,7 @@ public abstract class Store implements Engine {
 
         void rehash(int newCapacity) {
             long[] tab = table;
-            if(CC.PARANOID && !((newCapacity & (newCapacity - 1)) == 0)) //is power of two?
+            if(CC.ASSERT && !((newCapacity & (newCapacity - 1)) == 0)) //is power of two?
                 throw new AssertionError();
             maxSize = maxSize(newCapacity);
             table = new long[newCapacity * 2];
@@ -1310,6 +1369,22 @@ public abstract class Store implements Engine {
         }
 
 
+        public LongLongMap clone(){
+            LongLongMap ret = new LongLongMap();
+            ret.maxSize = maxSize;
+            ret.size = size;
+            ret.table = table.clone();
+            return ret;
+        }
+
+        public boolean putIfAbsent(long key, long value) {
+            if(get(key)==0){
+                put(key,value);
+                return true;
+            }else{
+                return false;
+            }
+        }
     }
 
 
@@ -1350,7 +1425,7 @@ public abstract class Store implements Engine {
         }
 
         public V get(long key) {
-            if(CC.PARANOID && key==0)
+            if(CC.ASSERT && key==0)
                 throw new IllegalArgumentException("zero key");
 
             int index = index(key);
@@ -1394,7 +1469,7 @@ public abstract class Store implements Engine {
         }
 
         public V put(long key, V value) {
-            if(CC.PARANOID && key==0)
+            if(CC.ASSERT && key==0)
                 throw new IllegalArgumentException("zero key");
 
             int index = insert(key, value);
@@ -1485,60 +1560,69 @@ public abstract class Store implements Engine {
         }
 
         public V remove(long key) {
-            if(CC.PARANOID && key==0)
+            if(CC.ASSERT && key==0)
                 throw new IllegalArgumentException("zero key");
-                long[] keys = set;
-                int capacityMask = keys.length - 1;
-                int index;
-                long cur;
-                keyPresent:
-                if ((cur = keys[index = DataIO.longHash(key) & capacityMask]) != key) {
-                    if (cur == 0) {
-                        // key is absent
-                        return null;
-                    } else {
-                        while (true) {
-                            if ((cur = keys[(index = (index - 1) & capacityMask)]) == key) {
-                                break keyPresent;
-                            } else if (cur == 0) {
-                                // key is absent
-                                return null;
-                            }
+            long[] keys = set;
+            int capacityMask = keys.length - 1;
+            int index;
+            long cur;
+            keyPresent:
+            if ((cur = keys[index = DataIO.longHash(key) & capacityMask]) != key) {
+                if (cur == 0) {
+                    // key is absent
+                    return null;
+                } else {
+                    while (true) {
+                        if ((cur = keys[(index = (index - 1) & capacityMask)]) == key) {
+                            break keyPresent;
+                        } else if (cur == 0) {
+                            // key is absent
+                            return null;
                         }
                     }
                 }
-                // key is present
-                Object[] vals = values;
-                V val = (V) vals[index];
+            }
+            // key is present
+            Object[] vals = values;
+            V val = (V) vals[index];
 
-                int indexToRemove = index;
-                int indexToShift = indexToRemove;
-                int shiftDistance = 1;
-                while (true) {
-                    indexToShift = (indexToShift - 1) & capacityMask;
-                    long keyToShift;
-                    if ((keyToShift = keys[indexToShift]) == 0) {
-                        break;
-                    }
-                    if (((DataIO.longHash(keyToShift) - indexToShift) & capacityMask) >= shiftDistance) {
-                        keys[indexToRemove] = keyToShift;
-                        vals[indexToRemove] = vals[indexToShift];
-                        indexToRemove = indexToShift;
-                        shiftDistance = 1;
-                    } else {
-                        shiftDistance++;
-                        if (indexToShift == 1 + index) {
-                            throw new java.util.ConcurrentModificationException();
-                        }
+            int indexToRemove = index;
+            int indexToShift = indexToRemove;
+            int shiftDistance = 1;
+            while (true) {
+                indexToShift = (indexToShift - 1) & capacityMask;
+                long keyToShift;
+                if ((keyToShift = keys[indexToShift]) == 0) {
+                    break;
+                }
+                if (((DataIO.longHash(keyToShift) - indexToShift) & capacityMask) >= shiftDistance) {
+                    keys[indexToRemove] = keyToShift;
+                    vals[indexToRemove] = vals[indexToShift];
+                    indexToRemove = indexToShift;
+                    shiftDistance = 1;
+                } else {
+                    shiftDistance++;
+                    if (indexToShift == 1 + index) {
+                        throw new java.util.ConcurrentModificationException();
                     }
                 }
-                keys[indexToRemove] = 0;
-                vals[indexToRemove] = null;
+            }
+            keys[indexToRemove] = 0;
+            vals[indexToRemove] = null;
 
-                //post remove hook
-                size--;
+            //post remove hook
+            size--;
 
-                return val;
+            return val;
+        }
+
+        public boolean putIfAbsent(long key, V value) {
+            if(get(key)==null){
+                put(key,value);
+                return true;
+            }else{
+                return false;
+            }
         }
     }
 
@@ -1596,6 +1680,62 @@ public abstract class Store implements Engine {
         }
     }
 
+    /** Lock which blocks parallel execution, but does not use MemoryBarrier (and does not flush CPU cache)*/
+    public static final class MemoryBarrierLessLock implements Lock{
+
+        final static int WAIT_NANOS = 100;
+
+        final protected AtomicLong lockedThread = new AtomicLong(Long.MAX_VALUE); //MAX_VALUE indicates null,
+
+        @Override
+        public void lock() {
+            long hash = Thread.currentThread().hashCode();
+            while(!lockedThread.compareAndSet(Long.MAX_VALUE,hash)){
+                LockSupport.parkNanos(WAIT_NANOS);
+            }
+        }
+
+        @Override
+        public void lockInterruptibly() throws InterruptedException {
+            Thread currThread = Thread.currentThread();
+            long hash = currThread.hashCode();
+            while(!lockedThread.compareAndSet(Long.MAX_VALUE,hash)){
+                LockSupport.parkNanos(WAIT_NANOS);
+                if(currThread.isInterrupted())
+                    throw new InterruptedException();
+            }
+        }
+
+        @Override
+        public boolean tryLock() {
+            long hash = Thread.currentThread().hashCode();
+            return lockedThread.compareAndSet(Long.MAX_VALUE, hash);
+        }
+
+        @Override
+        public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
+            long hash = Thread.currentThread().hashCode();
+            long time2 = unit.toNanos(time);
+            while(!lockedThread.compareAndSet(Long.MAX_VALUE,hash) && time2>0){
+                LockSupport.parkNanos(WAIT_NANOS);
+                time2-=WAIT_NANOS;
+            }
+            return time2>0;
+        }
+
+        @Override
+        public void unlock() {
+            long hash = Thread.currentThread().hashCode();
+            if(!lockedThread.compareAndSet(hash,Long.MAX_VALUE)){
+                throw new IllegalMonitorStateException("Can not unlock, current thread does not hold this lock");
+            }
+        }
+
+        @Override
+        public Condition newCondition() {
+            throw new UnsupportedOperationException();
+        }
+    }
 
     /**
      * <p>
@@ -1635,7 +1775,7 @@ public abstract class Store implements Engine {
         }
 
         public int get(long key) {
-            if(CC.PARANOID && key==0)
+            if(CC.ASSERT && key==0)
                 throw new IllegalArgumentException("zero key");
 
             int index = index(key);
@@ -1650,7 +1790,7 @@ public abstract class Store implements Engine {
 
 
         public V1 get1(long key) {
-            if(CC.PARANOID && key==0)
+            if(CC.ASSERT && key==0)
                 throw new IllegalArgumentException("zero key");
 
             int index = index(key);
@@ -1664,7 +1804,7 @@ public abstract class Store implements Engine {
         }
 
         public V2 get2(long key) {
-            if(CC.PARANOID && key==0)
+            if(CC.ASSERT && key==0)
                 throw new IllegalArgumentException("zero key");
 
             int index = index(key);
@@ -1709,7 +1849,7 @@ public abstract class Store implements Engine {
         }
 
         public int put(long key, V1 val1, V2 val2) {
-            if(CC.PARANOID && key==0)
+            if(CC.ASSERT && key==0)
                 throw new IllegalArgumentException("zero key");
 
             int index = insert(key, val1,val2);
@@ -1803,7 +1943,7 @@ public abstract class Store implements Engine {
         }
 
         public int  remove(long key) {
-            if(CC.PARANOID && key==0)
+            if(CC.ASSERT && key==0)
                 throw new IllegalArgumentException("zero key");
             long[] keys = set;
             int capacityMask = keys.length - 1;
@@ -1860,10 +2000,31 @@ public abstract class Store implements Engine {
 
             return val;
         }
+
     }
 
     @Override
     public Engine getWrappedEngine() {
         return null;
     }
+
+
+    @Override
+    public boolean canSnapshot() {
+        return snapshotEnable;
+    }
+
+    protected final long longParitySet(long value) {
+        return checksum?
+                DataIO.parity16Set(value << 16):
+                DataIO.parity1Set(value<<1);
+    }
+
+    protected final long longParityGet(long value) {
+        return checksum?
+                DataIO.parity16Get(value)>>>16:
+                DataIO.parity1Get(value)>>>1;
+    }
+
+
 }

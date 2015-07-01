@@ -19,11 +19,13 @@ package org.mapdb;
 import java.io.*;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
 import java.util.Arrays;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -43,9 +45,69 @@ import java.util.logging.Logger;
  */
 public abstract class Volume implements Closeable{
 
+    public static abstract class VolumeFactory{
+        public abstract Volume makeVolume(String file, boolean readOnly,
+                                          int sliceShift, long initSize, boolean fixedSize);
+
+        public Volume makeVolume(String file, boolean readOnly){
+            return makeVolume(file,readOnly,CC.VOLUME_PAGE_SHIFT, 0, false);
+        }
+    }
+
     private static final byte[] CLEAR = new byte[1024];
 
     protected static final Logger LOG = Logger.getLogger(Volume.class.getName());
+
+    /**
+     * If {@code sun.misc.Unsafe} is available it will use Volume based on Unsafe.
+     * If Unsafe is not available for some reason (Android), use DirectByteBuffer instead.
+     */
+    public static final VolumeFactory UNSAFE_VOL_FACTORY = new VolumeFactory() {
+
+        @Override
+        public Volume makeVolume(String file, boolean readOnly, int sliceShift, long initSize, boolean fixedSize) {
+            String packageName = Volume.class.getPackage().getName();
+            Class clazz;
+            try {
+                clazz = Class.forName(packageName+".UnsafeStuff$UnsafeVolume");
+            } catch (ClassNotFoundException e) {
+                clazz = null;
+            }
+
+            if(clazz!=null){
+                try {
+                    return (Volume) clazz.getConstructor(long.class, int.class).newInstance(0L, sliceShift);
+                } catch (Exception e) {
+                    LOG.log(Level.WARNING, "Could not invoke UnsafeVolume constructor. " +
+                            "Falling back to DirectByteBuffer",e);
+
+                }
+            }
+
+            return MemoryVol.FACTORY.makeVolume(file, readOnly, sliceShift, initSize, fixedSize);
+        }
+    };
+
+    protected volatile boolean closed;
+
+    public boolean isClosed(){
+        return closed;
+    }
+
+    //uncomment to get stack trace on Volume leak warning
+//    final private Throwable constructorStackTrace = new AssertionError();
+
+    @Override protected void finalize(){
+        if(CC.ASSERT){
+            if(!closed
+                    && !(this instanceof ByteArrayVol)
+                    && !(this instanceof SingleByteArrayVol)){
+                LOG.log(Level.WARNING, "Open Volume was GCed, possible file handle leak."
+//                        ,constructorStackTrace
+                );
+            }
+        }
+    }
 
     /**
      * Check space allocated by Volume is bigger or equal to given offset.
@@ -122,7 +184,7 @@ public abstract class Volume implements Closeable{
     }
 
     public void putUnsignedByte(long offset, int b) {
-        putByte(offset, (byte)(b & 0xff));
+        putByte(offset, (byte) (b & 0xff));
     }
 
 
@@ -145,17 +207,17 @@ public abstract class Volume implements Closeable{
 
     public long getLongPackBidi(long offset){
         //$DELAY$
-        long b = getUnsignedByte(offset++);
-        if(CC.PARANOID && (b&0x80)==0)
-            throw new AssertionError();
+        long b = getUnsignedByte(offset++); //TODO this could be inside loop, change all implementations
+        if(CC.ASSERT && (b&0x80)==0)
+            throw new DBException.DataCorruption();
         long result = (b & 0x7F) ;
         int shift = 7;
         do {
             //$DELAY$
             b = getUnsignedByte(offset++);
             result |= (b & 0x7F) << shift;
-            if(CC.PARANOID && shift>64)
-                throw new AssertionError();
+            if(CC.ASSERT && shift>64)
+                throw new DBException.DataCorruption();
             shift += 7;
         }while((b & 0x80) == 0);
         //$DELAY$
@@ -165,16 +227,16 @@ public abstract class Volume implements Closeable{
     public long getLongPackBidiReverse(long offset){
         //$DELAY$
         long b = getUnsignedByte(--offset);
-        if(CC.PARANOID && (b&0x80)==0)
-            throw new AssertionError();
+        if(CC.ASSERT && (b&0x80)==0)
+            throw new DBException.DataCorruption();
         long result = (b & 0x7F) ;
         int counter = 1;
         do {
             //$DELAY$
             b = getUnsignedByte(--offset);
             result = (b & 0x7F) | (result<<7);
-            if(CC.PARANOID && counter>8)
-                throw new AssertionError();
+            if(CC.ASSERT && counter>8)
+                throw new DBException.DataCorruption();
             counter++;
         }while((b & 0x80) == 0);
         //$DELAY$
@@ -192,8 +254,8 @@ public abstract class Volume implements Closeable{
     }
 
     public void putSixLong(long pos, long value) {
-        if(CC.PARANOID && (value>>>48!=0))
-            throw new AssertionError();
+        if(CC.ASSERT && (value>>>48!=0))
+            throw new DBException.DataCorruption();
 
         putByte(pos++, (byte) (0xff & (value >> 40)));
         putByte(pos++, (byte) (0xff & (value >> 32)));
@@ -204,6 +266,46 @@ public abstract class Volume implements Closeable{
     }
 
 
+    /**
+     * Put packed long at given position.
+     *
+     * @param value to be written
+     * @return number of bytes consumed by packed value
+     */
+    public int putPackedLong(long pos, long value){
+        //$DELAY$
+        int ret = 0;
+        int shift = 63-Long.numberOfLeadingZeros(value);
+        shift -= shift%7; // round down to nearest multiple of 7
+        while(shift!=0){
+            putByte(pos + (ret++), (byte) (((value >>> shift) & 0x7F) | 0x80));
+            //$DELAY$
+            shift-=7;
+        }
+        putByte(pos+(ret++),(byte) (value & 0x7F));
+        return ret;
+    }
+
+
+
+    /**
+     * Unpack long value from the Volume. Highest 4 bits reused to indicate number of bytes read from Volume.
+     * One can use {@code result & DataIO.PACK_LONG_RESULT_MASK} to remove size;
+     *
+     * @param position to read value from
+     * @return The long value, minus highest byte
+     */
+    public long getPackedLong(long position){
+        long ret = 0;
+        long pos2 = 0;
+        byte v;
+        do{
+            v = getByte(position+(pos2++));
+            ret = (ret<<7 ) | (v & 0x7F);
+        }while(v<0);
+
+        return (pos2<<60) | ret;
+    }
 
 
     /** returns underlying file if it exists */
@@ -233,12 +335,6 @@ public abstract class Volume implements Closeable{
     }
 
 
-    public static Volume volumeForFile(File f, boolean useRandomAccessFile, boolean readOnly,  int sliceShift, int sizeIncrement) {
-        return useRandomAccessFile ?
-                new FileChannelVol(f, readOnly, sliceShift, sizeIncrement):
-                new MappedFileVol(f, readOnly,sliceShift, sizeIncrement);
-    }
-
     /**
      * Set all bytes between {@code startOffset} and {@code endOffset} to zero.
      * Area between offsets must be ready for write once clear finishes.
@@ -247,70 +343,22 @@ public abstract class Volume implements Closeable{
 
 
 
-    public static Fun.Function1<Volume,String> fileFactory(){
-        return fileFactory(false,false,CC.VOLUME_PAGE_SHIFT,0);
-    }
-
-    public static Fun.Function1<Volume,String> fileFactory(
-            final boolean useRandomAccessFile,
-            final boolean readOnly,
-            final int sliceShift,
-            final int sizeIncrement) {
-        return new Fun.Function1<Volume, String>() {
-            @Override
-            public Volume run(String file) {
-                return volumeForFile(new File(file), useRandomAccessFile,
-                        readOnly,  sliceShift, sizeIncrement);
-            }
-        };
-    }
-
-
-    public static Fun.Function1<Volume,String> memoryFactory() {
-        return memoryFactory(false,CC.VOLUME_PAGE_SHIFT);
-    }
-
-    public static Fun.Function1<Volume,String> memoryFactory(
-            final boolean useDirectBuffer, final int sliceShift) {
-        return new Fun.Function1<Volume,String>() {
-
-            @Override
-            public Volume run(String s) {
-                return useDirectBuffer?
-                        new MemoryVol(true,  sliceShift):
-                        new ByteArrayVol(sliceShift);
-            }
-        };
-    }
-
-    public static Fun.Function1<Volume,String> memoryUnsafeFactory(final int sliceShift) {
-        return new Fun.Function1<Volume,String>() {
-
-            @Override
-            public Volume run(String s) {
-                return UnsafeVolume.unsafeAvailable()?
-                        new UnsafeVolume(-1,sliceShift):
-                        new MemoryVol(true,sliceShift);
-            }
-        };
-    }
-
     /**
-     * Copy content of one volume to another.
+     * Copy content of this volume to another.
      * Target volume might grow, but is never shrank.
      * Target is also not synced
      */
-    public static void copy(Volume from, Volume to) {
-        final long volSize = from.length();
+    public void copyEntireVolumeTo(Volume to) {
+        final long volSize = length();
         final long bufSize = 1L<<CC.VOLUME_PAGE_SHIFT;
 
         to.ensureAvailable(volSize);
 
         for(long offset=0;offset<volSize;offset+=bufSize){
             long size = Math.min(volSize,offset+bufSize)-offset;
-            if(CC.PARANOID && (size<0))
+            if(CC.ASSERT && (size<0))
                 throw new AssertionError();
-            from.transferInto(offset,to,offset, size);
+            transferInto(offset,to,offset, size);
         }
 
     }
@@ -516,7 +564,7 @@ public abstract class Volume implements Closeable{
 
         @Override
         public void clear(long startOffset, long endOffset) {
-            if(CC.PARANOID && (startOffset >>> sliceShift) != ((endOffset-1) >>> sliceShift))
+            if(CC.ASSERT && (startOffset >>> sliceShift) != ((endOffset-1) >>> sliceShift))
                 throw new AssertionError();
             ByteBuffer buf = slices[(int)(startOffset >>> sliceShift)];
             int start = (int) (startOffset&sliceSizeModMask);
@@ -552,28 +600,37 @@ public abstract class Volume implements Closeable{
          * There is no public JVM API to unmap buffer, so this tries to use SUN proprietary API for unmap.
          * Any error is silently ignored (for example SUN API does not exist on Android).
          */
-        protected void unmap(MappedByteBuffer b){
+        protected boolean unmap(MappedByteBuffer b){
             try{
                 if(unmapHackSupported){
 
                     // need to dispose old direct buffer, see bug
                     // http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4724038
                     Method cleanerMethod = b.getClass().getMethod("cleaner", new Class[0]);
+                    cleanerMethod.setAccessible(true);
                     if(cleanerMethod!=null){
-                        cleanerMethod.setAccessible(true);
                         Object cleaner = cleanerMethod.invoke(b);
                         if(cleaner!=null){
                             Method clearMethod = cleaner.getClass().getMethod("clean", new Class[0]);
-                            if(clearMethod!=null)
+                            if(clearMethod!=null) {
                                 clearMethod.invoke(cleaner);
+                                return true;
+                            }
+                        }else{
+                            //cleaner is null, try fallback method for readonly buffers
+                            Method attMethod = b.getClass().getMethod("attachment", new Class[0]);
+                            attMethod.setAccessible(true);
+                            Object att = attMethod.invoke(b);
+                            return att instanceof MappedByteBuffer &&
+                                    unmap((MappedByteBuffer) att);
                         }
                     }
                 }
             }catch(Exception e){
                 unmapHackSupported = false;
-                //TODO exception handling
-                //Utils.LOG.log(Level.WARNING, "ByteBufferVol Unmap failed", e);
+                LOG.log(Level.WARNING, "Unmap failed", e);
             }
+            return false;
         }
 
         private static boolean unmapHackSupported = true;
@@ -595,13 +652,22 @@ public abstract class Volume implements Closeable{
 
     public static final class MappedFileVol extends ByteBufferVol {
 
+        public static final VolumeFactory FACTORY = new VolumeFactory() {
+            @Override
+            public Volume makeVolume(String file, boolean readOnly, int sliceShift, long initSize, boolean fixedSize) {
+                //TODO optimize if fixedSize is bellow 2GB
+                //TODO prealocate initsize
+                return new MappedFileVol(new File(file),readOnly,sliceShift);
+            }
+        };
+
         protected final File file;
         protected final FileChannel fileChannel;
         protected final FileChannel.MapMode mapMode;
         protected final java.io.RandomAccessFile raf;
 
 
-        public MappedFileVol(File file, boolean readOnly, int sliceShift, int sizeIncrement) {
+        public MappedFileVol(File file, boolean readOnly, int sliceShift) {
             super(readOnly,sliceShift);
             this.file = file;
             this.mapMode = readOnly? FileChannel.MapMode.READ_ONLY: FileChannel.MapMode.READ_WRITE;
@@ -629,6 +695,7 @@ public abstract class Volume implements Closeable{
         public void close() {
             growLock.lock();
             try{
+                closed = true;
                 fileChannel.close();
                 raf.close();
                 //TODO not sure if no sync causes problems while unlocking files
@@ -678,11 +745,13 @@ public abstract class Volume implements Closeable{
         @Override
         protected ByteBuffer makeNewBuffer(long offset) {
             try {
-                if(CC.PARANOID && ! ((offset& sliceSizeModMask)==0))
+                if(CC.ASSERT && ! ((offset& sliceSizeModMask)==0))
                     throw new AssertionError();
-                if(CC.PARANOID && ! (offset>=0))
+                if(CC.ASSERT && ! (offset>=0))
                     throw new AssertionError();
                 ByteBuffer ret = fileChannel.map(mapMode,offset, sliceSize);
+                if(CC.ASSERT && ret.order() != ByteOrder.BIG_ENDIAN)
+                    throw new AssertionError("Little-endian");
                 if(mapMode == FileChannel.MapMode.READ_ONLY) {
                     ret = ret.asReadOnlyBuffer();
                 }
@@ -758,6 +827,17 @@ public abstract class Volume implements Closeable{
     }
 
     public static final class MemoryVol extends ByteBufferVol {
+
+        /** factory for DirectByteBuffer storage*/
+        public static final VolumeFactory FACTORY = new VolumeFactory() {
+            @Override
+            public Volume makeVolume(String file, boolean readOnly, int sliceShift, long initSize, boolean fixedSize) {
+                //TODO prealocate initSize
+                //TODO optimize for fixedSize smaller than 2GB
+                return new MemoryVol(true,sliceShift);
+            }
+        }
+                ;
         protected final boolean useDirectBuffer;
 
         @Override
@@ -773,9 +853,12 @@ public abstract class Volume implements Closeable{
         @Override
         protected ByteBuffer makeNewBuffer(long offset) {
             try {
-                return useDirectBuffer ?
+                ByteBuffer b =  useDirectBuffer ?
                         ByteBuffer.allocateDirect(sliceSize) :
                         ByteBuffer.allocate(sliceSize);
+                if(CC.ASSERT && b.order()!= ByteOrder.BIG_ENDIAN)
+                    throw new AssertionError("little-endian");
+                return b;
             }catch(OutOfMemoryError e){
                 throw new DBException.OutOfMemory(e);
             }
@@ -813,6 +896,7 @@ public abstract class Volume implements Closeable{
         @Override public void close() {
             growLock.lock();
             try{
+                closed = true;
                 for(ByteBuffer b: slices){
                     if(b!=null && (b instanceof MappedByteBuffer)){
                         unmap((MappedByteBuffer)b);
@@ -844,6 +928,14 @@ public abstract class Volume implements Closeable{
      */
     public static final class FileChannelVol extends Volume {
 
+        public static final VolumeFactory FACTORY = new VolumeFactory() {
+
+            @Override
+            public Volume makeVolume(String file, boolean readOnly, int sliceShift, long initSize, boolean fixedSize) {
+                return new FileChannelVol(new File(file),readOnly, sliceShift);
+            }
+        };
+
         protected final File file;
         protected final int sliceSize;
         protected RandomAccessFile raf;
@@ -851,9 +943,9 @@ public abstract class Volume implements Closeable{
         protected final boolean readOnly;
 
         protected volatile long size;
-        protected final Object growLock = new Object();
+        protected final Lock growLock = new ReentrantLock(CC.FAIR_LOCKS);
 
-        public FileChannelVol(File file, boolean readOnly, int sliceShift, int sizeIncrement){
+        public FileChannelVol(File file, boolean readOnly, int sliceShift){
             this.file = file;
             this.readOnly = readOnly;
             this.sliceSize = 1<<sliceShift;
@@ -878,7 +970,7 @@ public abstract class Volume implements Closeable{
         }
 
         public FileChannelVol(File file) {
-            this(file, false,CC.VOLUME_PAGE_SHIFT, 0);
+            this(file, false,CC.VOLUME_PAGE_SHIFT);
         }
 
         protected static void checkFolder(File file, boolean readOnly) throws IOException {
@@ -902,45 +994,53 @@ public abstract class Volume implements Closeable{
             if(offset% sliceSize !=0)
                 offset += sliceSize - offset% sliceSize; //round up to multiply of slice size
 
-            if(offset>size)synchronized (growLock){
+            if(offset>size){
+                growLock.lock();
                 try {
-                    channel.truncate(offset);
+                    raf.setLength(offset);
                     size = offset;
-                }catch(ClosedByInterruptException e){
-                    throw new DBException.VolumeClosedByInterrupt(e);
-                }catch(ClosedChannelException e){
-                    throw new DBException.VolumeClosed(e);
                 } catch (IOException e) {
                     throw new DBException.VolumeIOError(e);
+                }finally {
+                    growLock.unlock();
                 }
             }
         }
 
         @Override
         public void truncate(long size) {
-            synchronized (growLock){
-                try {
-                    this.size = size;
-                    channel.truncate(size);
-                }catch(ClosedByInterruptException e){
-                    throw new DBException.VolumeClosedByInterrupt(e);
-                }catch(ClosedChannelException e){
-                    throw new DBException.VolumeClosed(e);
-                } catch (IOException e) {
-                    throw new DBException.VolumeIOError(e);
-                }
+            growLock.lock();
+            try {
+                this.size = size;
+                channel.truncate(size);
+            }catch(ClosedByInterruptException e){
+                throw new DBException.VolumeClosedByInterrupt(e);
+            }catch(ClosedChannelException e){
+                throw new DBException.VolumeClosed(e);
+            } catch (IOException e) {
+                throw new DBException.VolumeIOError(e);
+            }finally{
+                growLock.unlock();
             }
         }
 
-        protected void writeFully(long offset, ByteBuffer buf) throws IOException {
+        protected void writeFully(long offset, ByteBuffer buf){
             int remaining = buf.limit()-buf.position();
             if(CC.VOLUME_PRINT_STACK_AT_OFFSET!=0 && CC.VOLUME_PRINT_STACK_AT_OFFSET>=offset && CC.VOLUME_PRINT_STACK_AT_OFFSET <= offset+remaining){
                 new IOException("VOL STACK:").printStackTrace();
             }
-            while(remaining>0){
-                int write = channel.write(buf, offset);
-                if(write<0) throw new EOFException();
-                remaining-=write;
+            try {
+                while(remaining>0){
+                    int write = channel.write(buf, offset);
+                    if(write<0) throw new EOFException();
+                    remaining-=write;
+                }
+            }catch(ClosedByInterruptException e){
+                throw new DBException.VolumeClosedByInterrupt(e);
+            }catch(ClosedChannelException e){
+                throw new DBException.VolumeClosed(e);
+            } catch (IOException e) {
+                throw new DBException.VolumeIOError(e);
             }
         }
 
@@ -951,17 +1051,10 @@ public abstract class Volume implements Closeable{
                 new IOException("VOL STACK:").printStackTrace();
             }
 
-            try{
-                ByteBuffer buf = ByteBuffer.allocate(8);
-                buf.putLong(0, value);
-                writeFully(offset, buf);
-            }catch(ClosedByInterruptException e){
-                throw new DBException.VolumeClosedByInterrupt(e);
-            }catch(ClosedChannelException e){
-                throw new DBException.VolumeClosed(e);
-            } catch (IOException e) {
-                throw new DBException.VolumeIOError(e);
-            }
+
+            ByteBuffer buf = ByteBuffer.allocate(8);
+            buf.putLong(0, value);
+            writeFully(offset, buf);
         }
 
         @Override
@@ -970,17 +1063,9 @@ public abstract class Volume implements Closeable{
                 new IOException("VOL STACK:").printStackTrace();
             }
 
-            try{
-                ByteBuffer buf = ByteBuffer.allocate(4);
-                buf.putInt(0, value);
-                writeFully(offset, buf);
-            }catch(ClosedByInterruptException e){
-                throw new DBException.VolumeClosedByInterrupt(e);
-            }catch(ClosedChannelException e){
-                throw new DBException.VolumeClosed(e);
-            } catch (IOException e) {
-                throw new DBException.VolumeIOError(e);
-            }
+            ByteBuffer buf = ByteBuffer.allocate(4);
+            buf.putInt(0, value);
+            writeFully(offset, buf);
         }
 
         @Override
@@ -989,133 +1074,79 @@ public abstract class Volume implements Closeable{
                 new IOException("VOL STACK:").printStackTrace();
             }
 
-            try{
-                ByteBuffer buf = ByteBuffer.allocate(1);
-                buf.put(0, value);
-                writeFully(offset, buf);
-            }catch(ClosedByInterruptException e){
-                throw new DBException.VolumeClosedByInterrupt(e);
-            }catch(ClosedChannelException e){
-                throw new DBException.VolumeClosed(e);
-            } catch (IOException e) {
-                throw new DBException.VolumeIOError(e);
-            }
+
+            ByteBuffer buf = ByteBuffer.allocate(1);
+            buf.put(0, value);
+            writeFully(offset, buf);
         }
 
         @Override
         public void putData(long offset, byte[] src, int srcPos, int srcSize) {
-            try{
-                ByteBuffer buf = ByteBuffer.wrap(src,srcPos, srcSize);
-                writeFully(offset, buf);
-            }catch(ClosedByInterruptException e){
-                throw new DBException.VolumeClosedByInterrupt(e);
-            }catch(ClosedChannelException e){
-                throw new DBException.VolumeClosed(e);
-            } catch (IOException e) {
-                throw new DBException.VolumeIOError(e);
-            }
+            ByteBuffer buf = ByteBuffer.wrap(src,srcPos, srcSize);
+            writeFully(offset, buf);
         }
 
         @Override
         public void putData(long offset, ByteBuffer buf) {
+            writeFully(offset,buf);
+        }
+
+        protected void readFully(long offset, ByteBuffer buf){
+            int remaining = buf.limit()-buf.position();
             try{
-                writeFully(offset,buf);
+                while(remaining>0){
+                    int read = channel.read(buf, offset);
+                    if(read<0)
+                        throw new EOFException();
+                    remaining-=read;
+                }
             }catch(ClosedByInterruptException e){
                 throw new DBException.VolumeClosedByInterrupt(e);
             }catch(ClosedChannelException e){
                 throw new DBException.VolumeClosed(e);
             } catch (IOException e) {
                 throw new DBException.VolumeIOError(e);
-            }
-        }
-
-        protected void readFully(long offset, ByteBuffer buf) throws IOException {
-            int remaining = buf.limit()-buf.position();
-            while(remaining>0){
-                int read = channel.read(buf, offset);
-                if(read<0)
-                    throw new EOFException();
-                remaining-=read;
             }
         }
 
         @Override
         public long getLong(long offset) {
-            try{
-                ByteBuffer buf = ByteBuffer.allocate(8);
-                readFully(offset,buf);
-                return buf.getLong(0);
-            }catch(ClosedByInterruptException e){
-                throw new DBException.VolumeClosedByInterrupt(e);
-            }catch(ClosedChannelException e){
-                throw new DBException.VolumeClosed(e);
-            } catch (IOException e) {
-                throw new DBException.VolumeIOError(e);
-            }
+            ByteBuffer buf = ByteBuffer.allocate(8);
+            readFully(offset, buf);
+            return buf.getLong(0);
         }
 
         @Override
         public int getInt(long offset) {
-            try{
-                ByteBuffer buf = ByteBuffer.allocate(4);
-                readFully(offset,buf);
-                return buf.getInt(0);
-            }catch(ClosedByInterruptException e){
-                throw new DBException.VolumeClosedByInterrupt(e);
-            }catch(ClosedChannelException e){
-                throw new DBException.VolumeClosed(e);
-            } catch (IOException e) {
-                throw new DBException.VolumeIOError(e);
-            }
+            ByteBuffer buf = ByteBuffer.allocate(4);
+            readFully(offset,buf);
+            return buf.getInt(0);
         }
 
         @Override
         public byte getByte(long offset) {
-            try{
-                ByteBuffer buf = ByteBuffer.allocate(1);
-                readFully(offset,buf);
-                return buf.get(0);
-            }catch(ClosedByInterruptException e){
-                throw new DBException.VolumeClosedByInterrupt(e);
-            }catch(ClosedChannelException e){
-                throw new DBException.VolumeClosed(e);
-            } catch (IOException e) {
-                throw new DBException.VolumeIOError(e);
-            }
+            ByteBuffer buf = ByteBuffer.allocate(1);
+            readFully(offset,buf);
+            return buf.get(0);
         }
 
         @Override
         public DataIO.DataInputByteBuffer getDataInput(long offset, int size) {
-            try{
-                ByteBuffer buf = ByteBuffer.allocate(size);
-                readFully(offset,buf);
-                return new DataIO.DataInputByteBuffer(buf,0);
-            }catch(ClosedByInterruptException e){
-                throw new DBException.VolumeClosedByInterrupt(e);
-            }catch(ClosedChannelException e){
-                throw new DBException.VolumeClosed(e);
-            } catch (IOException e) {
-                throw new DBException.VolumeIOError(e);
-            }
+            ByteBuffer buf = ByteBuffer.allocate(size);
+            readFully(offset,buf);
+            return new DataIO.DataInputByteBuffer(buf,0);
         }
 
         @Override
         public void getData(long offset, byte[] bytes, int bytesPos, int size) {
-            try{
-                ByteBuffer buf = ByteBuffer.wrap(bytes,bytesPos,size);
-                readFully(offset,buf);
-            }catch(ClosedByInterruptException e){
-                throw new DBException.VolumeClosedByInterrupt(e);
-            }catch(ClosedChannelException e){
-                throw new DBException.VolumeClosed(e);
-            } catch (IOException e) {
-                throw new DBException.VolumeIOError(e);
-            }
+            ByteBuffer buf = ByteBuffer.wrap(bytes,bytesPos,size);
+            readFully(offset,buf);
         }
 
         @Override
         public void close() {
             try{
+                closed = true;
                 if(channel!=null)
                     channel.close();
                 channel = null;
@@ -1215,6 +1246,16 @@ public abstract class Volume implements Closeable{
 
     public static final class ByteArrayVol extends Volume{
 
+        public static final VolumeFactory FACTORY = new VolumeFactory() {
+
+            @Override
+            public Volume makeVolume(String file, boolean readOnly, int sliceShift, long initSize, boolean fixedSize) {
+                //TODO optimize for fixedSize if bellow 2GB
+                //TODO preallocate minimal size
+                return new ByteArrayVol(sliceShift);
+            }
+        };
+
         protected final ReentrantLock growLock = new ReentrantLock(CC.FAIR_LOCKS);
 
         protected final int sliceShift;
@@ -1228,7 +1269,6 @@ public abstract class Volume implements Closeable{
             this.sliceSize = 1<< sliceShift;
             this.sliceSizeModMask = sliceSize -1;
         }
-
 
         @Override
         public final void ensureAvailable(long offset) {
@@ -1383,7 +1423,7 @@ public abstract class Volume implements Closeable{
 
         @Override
         public void clear(long startOffset, long endOffset) {
-            if(CC.PARANOID && (startOffset >>> sliceShift) != ((endOffset-1) >>> sliceShift))
+            if(CC.ASSERT && (startOffset >>> sliceShift) != ((endOffset-1) >>> sliceShift))
                 throw new AssertionError();
             byte[] buf = slices[(int)(startOffset >>> sliceShift)];
             int start = (int) (startOffset&sliceSizeModMask);
@@ -1410,6 +1450,7 @@ public abstract class Volume implements Closeable{
             int pos = (int) (offset & sliceSizeModMask);
             byte[] buf = slices[((int) (offset >>> sliceShift))];
 
+            //TODO verify loop
             final int end = pos + 4;
             int ret = 0;
             for (; pos < end; pos++) {
@@ -1440,6 +1481,7 @@ public abstract class Volume implements Closeable{
 
         @Override
         public void close() {
+            closed = true;
             slices =null;
         }
 
@@ -1528,7 +1570,7 @@ public abstract class Volume implements Closeable{
 
         @Override
         public void putData(long offset, byte[] src, int srcPos, int srcSize) {
-            System.arraycopy(src,srcPos,data, (int) offset,srcSize);
+            System.arraycopy(src, srcPos, data, (int) offset, srcSize);
         }
 
         @Override
@@ -1565,6 +1607,7 @@ public abstract class Volume implements Closeable{
         @Override
         public int getInt(long offset) {
             int pos = (int) offset;
+            //TODO verify loop
             final int end = pos + 4;
             int ret = 0;
             for (; pos < end; pos++) {
@@ -1590,6 +1633,7 @@ public abstract class Volume implements Closeable{
 
         @Override
         public void close() {
+            closed = true;
             //TODO perhaps set `data` to null? what are performance implications for non-final fieldd?
         }
 
@@ -1712,6 +1756,7 @@ public abstract class Volume implements Closeable{
 
         @Override
         public void close() {
+            closed = true;
             vol.close();
         }
 
@@ -1809,6 +1854,14 @@ public abstract class Volume implements Closeable{
 
     public static final class RandomAccessFileVol extends Volume{
 
+
+        public static final VolumeFactory FACTORY = new VolumeFactory() {
+            @Override
+            public Volume makeVolume(String file, boolean readOnly, int sliceShift, long initSize, boolean fixedSize) {
+                //TODO allocate initSize
+                return new RandomAccessFileVol(new File(file), readOnly);
+            }
+        };
         protected final File file;
         protected final RandomAccessFile raf;
 
@@ -1946,6 +1999,7 @@ public abstract class Volume implements Closeable{
 
         @Override
         public void close() {
+            closed = true;
             try {
                 raf.close();
             } catch (IOException e) {
@@ -1970,7 +2024,7 @@ public abstract class Volume implements Closeable{
         @Override
         public boolean isEmpty() {
             try {
-                return raf.length()==0;
+                return isClosed() || raf.length()==0;
             } catch (IOException e) {
                 throw new DBException.VolumeIOError(e);
             }
@@ -2009,598 +2063,6 @@ public abstract class Volume implements Closeable{
             } catch (IOException e) {
                 throw new DBException.VolumeIOError(e);
             }
-        }
-    }
-
-
-
-
-
-
-    public static final class UnsafeVolume extends Volume {
-
-        private static final sun.misc.Unsafe UNSAFE = getUnsafe();
-
-        // Cached array base offset
-        private static final long ARRAY_BASE_OFFSET = UNSAFE ==null?-1 : UNSAFE.arrayBaseOffset(byte[].class);;
-
-        public static boolean unsafeAvailable(){
-            return UNSAFE !=null;
-        }
-
-        @SuppressWarnings("restriction")
-        private static sun.misc.Unsafe getUnsafe() {
-            try {
-
-                java.lang.reflect.Field singleoneInstanceField = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-                singleoneInstanceField.setAccessible(true);
-                sun.misc.Unsafe ret =  (sun.misc.Unsafe)singleoneInstanceField.get(null);
-                return ret;
-            } catch (Throwable e) {
-                LOG.log(Level.WARNING,"Could not instantiate sun.miscUnsafe. Fall back to DirectByteBuffer.",e);
-                return null;
-            }
-        }
-
-
-
-
-        // This number limits the number of bytes to copy per call to Unsafe's
-        // copyMemory method. A limit is imposed to allow for safepoint polling
-        // during a large copy
-        static final long UNSAFE_COPY_THRESHOLD = 1024L * 1024L;
-
-
-        static void copyFromArray(byte[] src, long srcPos,
-                                  long dstAddr, long length)
-        {
-            long offset = ARRAY_BASE_OFFSET + srcPos;
-            while (length > 0) {
-                long size = (length > UNSAFE_COPY_THRESHOLD) ? UNSAFE_COPY_THRESHOLD : length;
-                UNSAFE.copyMemory(src, offset, null, dstAddr, size);
-                length -= size;
-                offset += size;
-                dstAddr += size;
-            }
-        }
-
-
-        static void copyToArray(long srcAddr, byte[] dst, long dstPos,
-                                long length)
-        {
-            long offset = ARRAY_BASE_OFFSET + dstPos;
-            while (length > 0) {
-                long size = (length > UNSAFE_COPY_THRESHOLD) ? UNSAFE_COPY_THRESHOLD : length;
-                UNSAFE.copyMemory(null, srcAddr, dst, offset, size);
-                length -= size;
-                srcAddr += size;
-                offset += size;
-            }
-        }
-
-
-
-        protected volatile long[] addresses= new long[0];
-        protected volatile sun.nio.ch.DirectBuffer[] buffers = new sun.nio.ch.DirectBuffer[0];
-
-        protected final long sizeLimit;
-        protected final boolean hasLimit;
-        protected final int sliceShift;
-        protected final int sliceSizeModMask;
-        protected final int sliceSize;
-
-        protected final ReentrantLock growLock = new ReentrantLock(CC.FAIR_LOCKS);
-
-
-        public UnsafeVolume() {
-            this(0, CC.VOLUME_PAGE_SHIFT);
-        }
-
-        public UnsafeVolume(long sizeLimit, int sliceShift) {
-            this.sizeLimit = sizeLimit;
-            this.hasLimit = sizeLimit>0;
-            this.sliceShift = sliceShift;
-            this.sliceSize = 1<< sliceShift;
-            this.sliceSizeModMask = sliceSize -1;
-
-        }
-
-
-        @Override
-        public void ensureAvailable(long offset) {
-            //*LOG*/ System.err.printf("tryAvailabl: offset:%d\n",offset);
-            //*LOG*/ System.err.flush();
-            if(hasLimit && offset>sizeLimit) {
-                //return false;
-                throw new IllegalAccessError("too big"); //TODO size limit here
-            }
-
-            int slicePos = (int) (offset >>> sliceShift);
-
-            //check for most common case, this is already mapped
-            if (slicePos < addresses.length){
-                return;
-            }
-
-            growLock.lock();
-            try{
-                //check second time
-                if(slicePos< addresses.length)
-                    return; //already enough space
-
-                int oldSize = addresses.length;
-                long[] addresses2 = addresses;
-                sun.nio.ch.DirectBuffer[] buffers2 = buffers;
-
-                int newSize = Math.max(slicePos + 1, addresses2.length * 2);
-                addresses2 = Arrays.copyOf(addresses2, newSize);
-                buffers2 = Arrays.copyOf(buffers2, newSize);
-
-                for(int pos=oldSize;pos<addresses2.length;pos++) {
-                    //take address from DirectByteBuffer so allocated memory can be released by GC
-                    sun.nio.ch.DirectBuffer buf = (sun.nio.ch.DirectBuffer)ByteBuffer.allocateDirect(sliceSize);
-                    long address = buf.address();
-
-                    //TODO is cleanup necessary here?
-                    //TODO speedup  by copying an array
-                    for(long i=0;i<sliceSize;i+=8) {
-                        UNSAFE.putLong(address + i, 0L);
-                    }
-
-                    buffers2[pos]=buf;
-                    addresses2[pos]=address;
-                }
-
-                addresses = addresses2;
-                buffers = buffers2;
-            }finally{
-                growLock.unlock();
-            }
-        }
-
-
-        @Override
-        public void truncate(long size) {
-            //TODO support truncate
-        }
-
-        @Override
-        public void putLong(long offset, long value) {
-            //*LOG*/ System.err.printf("putLong: offset:%d, value:%d\n",offset,value);
-            //*LOG*/ System.err.flush();
-            value = Long.reverseBytes(value);
-            final long address = addresses[((int) (offset >>> sliceShift))];
-            offset = offset & sliceSizeModMask;
-            UNSAFE.putLong(address + offset, value);
-        }
-
-        @Override
-        public void putInt(long offset, int value) {
-            //*LOG*/ System.err.printf("putInt: offset:%d, value:%d\n",offset,value);
-            //*LOG*/ System.err.flush();
-            value = Integer.reverseBytes(value);
-            final long address = addresses[((int) (offset >>> sliceShift))];
-            offset = offset & sliceSizeModMask;
-            UNSAFE.putInt(address + offset, value);
-        }
-
-        @Override
-        public void putByte(long offset, byte value) {
-            //*LOG*/ System.err.printf("putByte: offset:%d, value:%d\n",offset,value);
-            //*LOG*/ System.err.flush();
-            final long address = addresses[((int) (offset >>> sliceShift))];
-            offset = offset & sliceSizeModMask;
-            UNSAFE.putByte(address + offset, value);
-        }
-
-        @Override
-        public void putData(long offset, byte[] src, int srcPos, int srcSize) {
-//        for(int pos=srcPos;pos<srcPos+srcSize;pos++){
-//            UNSAFE.putByte(address+offset+pos,src[pos]);
-//        }
-            //*LOG*/ System.err.printf("putData: offset:%d, srcLen:%d, srcPos:%d, srcSize:%d\n",offset, src.length, srcPos, srcSize);
-            //*LOG*/ System.err.flush();
-            final long address = addresses[((int) (offset >>> sliceShift))];
-            offset = offset & sliceSizeModMask;
-
-            copyFromArray(src, srcPos, address+offset, srcSize);
-        }
-
-        @Override
-        public void putData(long offset, ByteBuffer buf) {
-            //*LOG*/ System.err.printf("putData: offset:%d, bufPos:%d, bufLimit:%d:\n",offset,buf.position(), buf.limit());
-            //*LOG*/ System.err.flush();
-            final long address = addresses[((int) (offset >>> sliceShift))];
-            offset = offset & sliceSizeModMask;
-
-            for(int pos=buf.position();pos<buf.limit();pos++){
-                UNSAFE.putByte(address + offset + pos, buf.get(pos));
-            }
-
-        }
-
-        @Override
-        public long getLong(long offset) {
-            //*LOG*/ System.err.printf("getLong: offset:%d \n",offset);
-            //*LOG*/ System.err.flush();
-            final long address = addresses[((int) (offset >>> sliceShift))];
-            offset = offset & sliceSizeModMask;
-            long l =  UNSAFE.getLong(address +offset);
-            return Long.reverseBytes(l);
-        }
-
-        @Override
-        public int getInt(long offset) {
-            //*LOG*/ System.err.printf("getInt: offset:%d\n",offset);
-            //*LOG*/ System.err.flush();
-            final long address = addresses[((int) (offset >>> sliceShift))];
-            offset = offset & sliceSizeModMask;
-            int i =  UNSAFE.getInt(address +offset);
-            return Integer.reverseBytes(i);
-        }
-
-        @Override
-        public byte getByte(long offset) {
-            //*LOG*/ System.err.printf("getByte: offset:%d\n",offset);
-            //*LOG*/ System.err.flush();
-            final long address = addresses[((int) (offset >>> sliceShift))];
-            offset = offset & sliceSizeModMask;
-
-            return UNSAFE.getByte(address +offset);
-        }
-
-        @Override
-        public DataInput getDataInput(long offset, int size) {
-            final long address = addresses[((int) (offset >>> sliceShift))];
-            offset = offset & sliceSizeModMask;
-            return new DataInputUnsafe(address, (int) offset);
-        }
-
-        @Override
-        public void getData(long offset, byte[] bytes, int bytesPos, int size) {
-            final long address = addresses[((int) (offset >>> sliceShift))];
-            offset = offset & sliceSizeModMask;
-            copyToArray(address+offset,bytes, bytesPos,size);
-        }
-
-//        @Override
-//        public DataInput2 getDataInput(long offset, int size) {
-//            //*LOG*/ System.err.printf("getDataInput: offset:%d, size:%d\n",offset,size);
-//            //*LOG*/ System.err.flush();
-//            byte[] dst = new byte[size];
-////        for(int pos=0;pos<size;pos++){
-////            dst[pos] = UNSAFE.getByte(address +offset+pos);
-////        }
-//
-//            final long address = addresses[((int) (offset >>> sliceShift))];
-//            offset = offset & sliceSizeModMask;
-//
-//            copyToArray(address+offset, dst, ARRAY_BASE_OFFSET,
-//                    0,
-//                    size);
-//
-//            return new DataInput2(dst);
-//        }
-
-
-
-        @Override
-        public void putDataOverlap(long offset, byte[] data, int pos, int len) {
-            boolean overlap = (offset>>>sliceShift != (offset+len)>>>sliceShift);
-
-            if(overlap){
-                while(len>0){
-                    long addr = addresses[((int) (offset >>> sliceShift))];
-                    long pos2 = offset&sliceSizeModMask;
-
-                    long toPut = Math.min(len,sliceSize - pos2);
-
-                    //System.arraycopy(data, pos, b, pos2, toPut);
-                    copyFromArray(data,pos,addr+pos2,toPut);
-
-                    pos+=toPut;
-                    len -=toPut;
-                    offset+=toPut;
-                }
-            }else{
-                putData(offset,data,pos,len);
-            }
-        }
-
-        @Override
-        public DataInput getDataInputOverlap(long offset, int size) {
-            boolean overlap = (offset>>>sliceShift != (offset+size)>>>sliceShift);
-            if(overlap){
-                byte[] bb = new byte[size];
-                final int origLen = size;
-                while(size>0){
-                    long addr = addresses[((int) (offset >>> sliceShift))];
-                    long pos = offset&sliceSizeModMask;
-                    long toPut = Math.min(size,sliceSize - pos);
-
-                    //System.arraycopy(b, pos, bb, origLen - size, toPut);
-                    copyToArray(addr+pos,bb,origLen-size,toPut);
-
-                    size -=toPut;
-                    offset+=toPut;
-                }
-                return new DataIO.DataInputByteArray(bb);
-            }else{
-                //return mapped buffer
-                return getDataInput(offset,size);
-            }
-        }
-
-
-
-        @Override
-        public void close() {
-            sun.nio.ch.DirectBuffer[] buf2 = buffers;
-            buffers=null;
-            addresses = null;
-            for(sun.nio.ch.DirectBuffer buf:buf2){
-                buf.cleaner().clean();
-            }
-        }
-
-        @Override
-        public void sync() {
-        }
-
-        @Override
-        public int sliceSize() {
-            return sliceSize;
-        }
-
-        @Override
-        public boolean isEmpty() {
-            return addresses.length==0;
-        }
-
-
-        @Override
-        public boolean isSliced() {
-            return true;
-        }
-
-        @Override
-        public long length() {
-            return 1L*addresses.length*sliceSize;
-        }
-
-        @Override
-        public File getFile() {
-            return null;
-        }
-
-        @Override
-        public void clear(long startOffset, long endOffset) {
-            while(startOffset<endOffset){
-                putByte(startOffset++, (byte) 0); //TODO use batch copy
-            }
-        }
-
-        public static final class DataInputUnsafe implements DataIO.DataInputInternal{
-
-            protected final long baseAdress;
-            protected long pos2;
-
-            public DataInputUnsafe(long baseAdress, int pos) {
-                this.baseAdress = baseAdress;
-                this.pos2 = baseAdress+pos;
-            }
-
-
-            @Override
-            public int getPos() {
-                return (int) (pos2-baseAdress);
-            }
-
-            @Override
-            public void setPos(int pos) {
-                this.pos2 = baseAdress+pos;
-            }
-
-            @Override
-            public byte[] internalByteArray() {
-                return null;
-            }
-
-            @Override
-            public ByteBuffer internalByteBuffer() {
-                return null;
-            }
-
-            @Override
-            public void close() {
-
-            }
-
-            @Override
-            public long unpackLong() throws IOException {
-                sun.misc.Unsafe UNSAFE = Volume.UnsafeVolume.UNSAFE;
-                long pos = pos2;
-                long ret = 0;
-                byte v;
-                do{
-                    //$DELAY$
-                    v = UNSAFE.getByte(pos++);
-                    ret = (ret<<7 ) | (v & 0x7F);
-                }while(v<0);
-                pos2 = pos;
-                return ret;
-
-            }
-
-            @Override
-            public int unpackInt() throws IOException {
-                sun.misc.Unsafe UNSAFE = Volume.UnsafeVolume.UNSAFE;
-                long pos = pos2;
-                int ret = 0;
-                byte v;
-                do{
-                    //$DELAY$
-                    v = UNSAFE.getByte(pos++);
-                    ret = (ret<<7 ) | (v & 0x7F);
-                }while(v<0);
-                pos2 = pos;
-                return ret;
-
-            }
-
-
-            @Override
-            public long[] unpackLongArrayDeltaCompression(final int size) throws IOException {
-                sun.misc.Unsafe UNSAFE = Volume.UnsafeVolume.UNSAFE;
-                long[] ret = new long[size];
-                long pos2_ = pos2;
-                long prev=0;
-                byte v;
-                for(int i=0;i<size;i++){
-                    long r = 0;
-                    do {
-                        //$DELAY$
-                        v = UNSAFE.getByte(pos2_++);
-                        r = (r << 7) | (v & 0x7F);
-                    } while (v < 0);
-                    prev+=r;
-                    ret[i]=prev;
-                }
-                pos2 = pos2_;
-                return ret;
-            }
-
-            @Override
-            public void unpackLongArray(long[] array, int start, int end) {
-                sun.misc.Unsafe UNSAFE = Volume.UnsafeVolume.UNSAFE;
-                long pos2_ = pos2;
-                long ret;
-                byte v;
-                for(;start<end;start++) {
-                    ret = 0;
-                    do {
-                        //$DELAY$
-                        v = UNSAFE.getByte(pos2_++);
-                        ret = (ret << 7) | (v & 0x7F);
-                    } while (v < 0);
-                    array[start] = ret;
-                }
-                pos2 = pos2_;
-            }
-
-            @Override
-            public void unpackIntArray(int[] array, int start, int end) {
-                sun.misc.Unsafe UNSAFE = Volume.UnsafeVolume.UNSAFE;
-                long pos2_ = pos2;
-                int ret;
-                byte v;
-                for(;start<end;start++) {
-                    ret = 0;
-                    do {
-                        //$DELAY$
-                        v = UNSAFE.getByte(pos2_++);
-                        ret = (ret << 7) | (v & 0x7F);
-                    } while (v < 0);
-                    array[start]=ret;
-                }
-                pos2 = pos2_;
-            }
-
-            @Override
-            public void readFully(byte[] b) throws IOException {
-                copyToArray(pos2, b, 0, b.length);
-                pos2+=b.length;
-            }
-
-            @Override
-            public void readFully(byte[] b, int off, int len) throws IOException {
-                copyToArray(pos2,b,off,len);
-                pos2+=len;
-            }
-
-            @Override
-            public int skipBytes(int n) throws IOException {
-                pos2+=n;
-                return n;
-            }
-
-            @Override
-            public boolean readBoolean() throws IOException {
-                return readByte()==1;
-            }
-
-            @Override
-            public byte readByte() throws IOException {
-                return Volume.UnsafeVolume.UNSAFE.getByte(pos2++);
-            }
-
-            @Override
-            public int readUnsignedByte() throws IOException {
-                return Volume.UnsafeVolume.UNSAFE.getByte(pos2++) & 0xFF;
-            }
-
-            @Override
-            public short readShort() throws IOException {
-                //$DELAY$
-                return (short)((readByte() << 8) | (readByte() & 0xff));
-            }
-
-            @Override
-            public int readUnsignedShort() throws IOException {
-                //$DELAY$
-                return (((readByte() & 0xff) << 8) |
-                        ((readByte() & 0xff)));
-            }
-
-            @Override
-            public char readChar() throws IOException {
-                //$DELAY$
-                // I know: 4 bytes, but char only consumes 2,
-                // has to stay here for backward compatibility
-                //TODO char 4 byte
-                return (char) readInt();
-            }
-
-            @Override
-            public int readInt() throws IOException {
-                int ret = UnsafeVolume.UNSAFE.getInt(pos2);
-                pos2+=4;
-                return Integer.reverseBytes(ret);
-            }
-
-            @Override
-            public long readLong() throws IOException {
-                long ret = UnsafeVolume.UNSAFE.getLong(pos2);
-                pos2+=8;
-                return Long.reverseBytes(ret); //TODO endianes might change on some platforms?
-            }
-
-            @Override
-            public float readFloat() throws IOException {
-                return Float.intBitsToFloat(readInt());
-            }
-
-            @Override
-            public double readDouble() throws IOException {
-                return Double.longBitsToDouble(readLong());
-            }
-
-            @Override
-            public String readLine() throws IOException {
-                return readUTF();
-            }
-
-            @Override
-            public String readUTF() throws IOException {
-                final int len = unpackInt();
-                char[] b = new char[len];
-                for (int i = 0; i < len; i++)
-                    //$DELAY$
-                    //TODO char 4 bytes
-                    b[i] = (char) unpackInt();
-                return new String(b);
-            }
-
         }
     }
 }

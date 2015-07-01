@@ -88,7 +88,7 @@ public final class Bind {
      * @param <K> key type  in map
      * @param <V> value type in map
      */
-    public interface MapWithModificationListener<K,V> extends Map<K,V> {
+    public interface MapWithModificationListener<K,V> extends ConcurrentMap<K,V> {
         /**
          * Add new modification listener notified when Map has been updated
          * @param listener callback interface notified when map changes
@@ -124,8 +124,8 @@ public final class Bind {
      *
      * NOTE: {@link BTreeMap} and {@link HTreeMap} already supports this directly as optional parameter named {@code counter}.
      * In that case all calls to {@code Map.size()} are forwarded to underlying counter. Check parameters at
-     * {@link DB#createHashMap(String)} and
-     * {@link DB#createTreeMap(String)}
+     * {@link DB#hashMapCreate(String)} and
+     * {@link DB#treeMapCreate(String)}
      *
      *
      * @param map primary map whose size needs to be tracked
@@ -587,8 +587,9 @@ public final class Bind {
      */
     public static <K,V> void mapInverse(MapWithModificationListener<K,V> primary,
                                         Set<Object[]> inverse) {
-        Bind.secondaryKey(primary,inverse, new Fun.Function2<V, K,V>(){
-            @Override public V run(K key, V value) {
+        Bind.secondaryKey(primary, inverse, new Fun.Function2<V, K, V>() {
+            @Override
+            public V run(K key, V value) {
                 return value;
             }
         });
@@ -707,4 +708,41 @@ public final class Bind {
 
         primary.modificationListenerAdd(listener);
     }
+
+
+    /**
+     * After key is removed from primary for some reason (map.remove, or expiration in {@link HTreeMap}),
+     * it gets moved into secondary collection. This does not apply to updated values where key remains
+     * unchanged (put(), replace()..)
+     *
+     * @param primary map from which data are removed by user
+     * @param secondary map which gets automatically updated with data removed from primary
+     * @param overwriteSecondary if true any data in secondary will be overwritten.
+     *                           If false only non-existing keys will be inserted
+     *                             ({@code put() versus putIfAbsent()};
+     * @param <K> key
+     * @param <V> value
+     */
+    public static <K,V> void mapPutAfterDelete(
+            MapWithModificationListener<K,V> primary,
+            final MapWithModificationListener<K,V> secondary,
+            final boolean overwriteSecondary
+            ) {
+
+        primary.modificationListenerAdd(new MapListener<K, V>() {
+            @Override
+            public void update(K key, V oldVal, V newVal) {
+                //in case of removal, put data to secondary
+                if(newVal==null){
+                    if(overwriteSecondary) {
+                        secondary.put(key, oldVal);
+                    }else {
+                        secondary.putIfAbsent(key, oldVal);
+                    }
+                }
+            }
+        });
+    }
+
+
 }

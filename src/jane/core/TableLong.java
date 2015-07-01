@@ -16,10 +16,11 @@ import jane.core.Storage.WalkHandlerLong;
  * ID类型即>=0的long类型, 会比使用Long类型作为key的通用表效率高,且支持自增长ID(从1开始)<br>
  * <b>注意</b>: 一个表要事先确定插入记录是只使用自增长ID还是只指定ID插入,如果都使用则会导致ID冲突
  */
+@SuppressWarnings("deprecation")
 public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends TableBase<V>
 {
 	private final Storage.TableLong<V>     _stoTable;                         // 存储引擎的表对象
-	private final LongMap<V>               _cache;                            // 读缓存. 有大小限制,溢出自动清理
+	private final LongConcurrentLRUMap<V>  _cache;                            // 读缓存. 有大小限制,溢出自动清理
 	private final LongConcurrentHashMap<V> _cacheMod;                         // 写缓存. 不会溢出,保存到数据库存储引擎后清理
 	private final AtomicLong               _idCounter    = new AtomicLong();  // 用于自增长ID的统计器, 当前值表示当前表已存在的最大ID值
 	private int                            _autoIdBegin  = Const.autoIdBegin; // 自增长ID的初始值, 可运行时指定
@@ -370,7 +371,6 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 		putUnsafe(k, v);
 	}
 
-	@SuppressWarnings("deprecation")
 	public void put(long k, S s)
 	{
 		put(k, s.unsafe());

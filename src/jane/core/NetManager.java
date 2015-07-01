@@ -35,6 +35,7 @@ import org.mapdb.LongConcurrentHashMap.LongMapIterator;
  * <li>服务器监听: 用于监听端口,并管理连接到此的所有连接处理
  * <li>客户端连接: 用于连接到服务器的一条连接处理
  */
+@SuppressWarnings("deprecation")
 public class NetManager implements IoHandler
 {
 	private static final LongConcurrentHashMap<RpcBean<?, ?, ?>> _rpcs           = new LongConcurrentHashMap<RpcBean<?, ?, ?>>(); // 当前管理器等待回复的RPC

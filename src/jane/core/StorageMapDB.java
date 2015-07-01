@@ -15,6 +15,7 @@ import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DB.BTreeMapMaker;
 import org.mapdb.DBMaker;
+import org.mapdb.DBMaker.Maker;
 import org.mapdb.DataIO.DataInputByteArray;
 import org.mapdb.DataIO.DataInputByteBuffer;
 import org.mapdb.DataIO.DataOutputByteArray;
@@ -103,6 +104,7 @@ public final class StorageMapDB implements Storage
 		private final Atomic.Long            _idCounter;
 		private final V                      _stubV;
 
+		@SuppressWarnings("deprecation")
 		public TableLong(BTreeMap<Long, Octets> map, String tableName, V stubV)
 		{
 			_map = map;
@@ -475,11 +477,12 @@ public final class StorageMapDB implements Storage
 		return "md";
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public void openDB(File file)
 	{
 		close();
-		DBMaker dbMaker = DBMaker.newFileDB(file);
+		Maker dbMaker = DBMaker.fileDB(file);
 		// 取消注释下面的commitFileSyncDisable可以加快一点commit的速度,写数据量大的时候可以避免同时读非cache数据卡住过长时间
 		// 但程序崩溃的话,有可能导致某些未刷新的数据丢失或影响后面的备份操作,建议平时都要注释
 		// 不过在commit后对StoreWAL调用phys和index的sync可以让数据丢失的可能性降到极低,而且sync操作可以和读操作并发,更不影响cache层的读写
@@ -500,6 +503,7 @@ public final class StorageMapDB implements Storage
 	@Override
 	public <K, V extends Bean<V>> Storage.Table<K, V> openTable(int tableId, String tableName, Object stubK, V stubV)
 	{
+		@SuppressWarnings("deprecation")
 		BTreeMapMaker btmm = _db.createTreeMap(tableName).valueSerializer(MapDBOctetsSerializer.instance());
 		if(stubK instanceof Octets)
 			btmm.keySerializer(new BasicKeySerializer(MapDBOctetsSerializer.instance(), MapDBOctetsComparator.instance()));
@@ -516,6 +520,7 @@ public final class StorageMapDB implements Storage
 	@Override
 	public <V extends Bean<V>> Storage.TableLong<V> openTable(int tableId, String tableName, V stubV)
 	{
+		@SuppressWarnings("deprecation")
 		BTreeMapMaker btmm = _db.createTreeMap(tableName)
 		        .valueSerializer(MapDBOctetsSerializer.instance())
 		        .keySerializer(BTreeKeySerializer.LONG);

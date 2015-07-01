@@ -23,10 +23,10 @@
  */
 
 package org.mapdb;
+
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.Random;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -35,6 +35,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Jan Kotek
  * @author Doug Lea
  */
+@Deprecated
 public class LongConcurrentHashMap< V>
          implements Serializable  {
     private static final long serialVersionUID = 7249069246763182397L;
