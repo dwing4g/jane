@@ -10,9 +10,25 @@ local setmetatable = setmetatable
 local string = string
 local byte = string.byte
 local format = string.format
+local table = table
+local sort = table.sort
 local concat = table.concat
 
 local util = {}
+
+function util.spairs(t)
+	local s = {}
+	for k in pairs(t) do
+		s[#s + 1] = k
+	end
+	sort(s)
+	local i = 1
+	return function()
+		local k = s[i]
+		i = i + 1
+		return k, k and t[k]
+	end
+end
 
 -- 表的Copy On Write处理(只能遍历copy过的键值),原型对应关系表统一存到弱表proto里
 local proto = setmetatable({}, { __mode = "k" })
@@ -20,7 +36,7 @@ local cowMt
 cowMt = {
 	__index = function(t, k)
 		local v = proto[t][k]
-		if type(v) ~= "table" then return v end
+		if type(v) ~= "table" or v.__readonly then return v end
 		local vv = setmetatable({}, cowMt)
 		proto[vv] = v
 		t[k] = vv
@@ -40,7 +56,7 @@ util.clear = clear
 
 -- 复制t,如果t不是表则直接返回,否则进行深拷贝,包括元表及相同引用,参数m仅内部使用
 local function clone(t, m)
-	if type(t) ~= "table" then return t end
+	if type(t) ~= "table" or t.__readonly then return t end
 	if m then
 		local v = m[t]
 		if v ~= nil then return v end
@@ -91,8 +107,12 @@ local readonlyMt = {
 		return k == "__readonly" or v
 	end,
 	__newindex = dummy, -- 写入完全忽略
+	__call = function(t, ...)
+		return proto[t](...)
+	end,
 }
 readonly = function(t)
+	if type(t) ~= "table" or t.__readonly then return t end
 	local rot = {}
 	proto[rot] = t
 	return setmetatable(rot, readonlyMt)
@@ -113,7 +133,7 @@ local classMt = {
 			local r = new(obj, t, ...)
 			return r == nil and obj or r
 		end
-		return setmetatable(t or {}, c)
+		return setmetatable(t or {}, c.__readonly and proto[c] or c)
 	end,
 }
 
@@ -170,7 +190,7 @@ local function dumpTable(t, out, n)
 		e = n
 	end
 	o[e] = "}"
-	return out and n or concat(o)
+	return out and e or concat(o)
 end
 util.dump = dumpTable
 
@@ -251,12 +271,11 @@ function util.initBeans(c)
 		for n, v in pairs(r) do
 			vars[n] = v -- 把临时表r归并到vars中,使vars加入var名索引
 		end
-		vars.__readonly = true -- 考虑效率,这里仅仅定义只读标记以便读取时不做CopyOnWrite处理,直接返回表引用,信任使用者不会做修改操作(可注释此行移除此特性)
 		b.__name = n -- bean类中加入__name字段
 		b.__tostring = toStr
 		s[n] = class(b) -- 创建类并放入临时表中
 	end
-	local m = { [0] = 0, "", false, setmetatable({}, { __newindex = dummy }), setmetatable({}, { __index = { __map = true }, __newindex = dummy }) } -- 基础类型的stub值
+	local m = { [0] = 0, "", false, setmetatable({}, { __index = { __vec = true }, __newindex = dummy }), setmetatable({}, { __index = { __map = true }, __newindex = dummy }) } -- 基础类型的stub值
 	for n, b in pairs(s) do
 		local i = c[n].__type
 		if i ~= 0 then

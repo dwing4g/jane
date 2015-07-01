@@ -66,11 +66,13 @@ public final class TestBean extends Bean<TestBean>
 		this.value2 = b.value2;
 	}
 
+	/** @return 字段的注释 */
 	public int getValue1()
 	{
 		return value1;
 	}
 
+	/** @param value1 字段的注释 */
 	public void setValue1(int value1)
 	{
 		this.value1 = value1;
@@ -236,11 +238,13 @@ public final class TestBean extends Bean<TestBean>
 			super(bean, parent);
 		}
 
+		/** @return 字段的注释 */
 		public int getValue1()
 		{
 			return _bean.value1;
 		}
 
+		/** @param value1 字段的注释 */
 		public void setValue1(int value1)
 		{
 			if(initSContext()) _sCtx.addOnRollback(new SBase.SInteger(_bean, FIELD_value1, _bean.value1));

@@ -192,86 +192,103 @@ public final class TestType extends Bean<TestType>
 		this.v20 = b.v20;
 	}
 
+	/** @return 1字节布尔,0表示假,1表示真,其它默认表示真 */
 	public boolean getV1()
 	{
 		return v1;
 	}
 
+	/** @param v1 1字节布尔,0表示假,1表示真,其它默认表示真 */
 	public void setV1(boolean v1)
 	{
 		this.v1 = v1;
 	}
 
+	/** @return 1字节整数 */
 	public byte getV2()
 	{
 		return v2;
 	}
 
+	/** @param v2 1字节整数 */
 	public void setV2(byte v2)
 	{
 		this.v2 = v2;
 	}
 
+	/** @return 2字节整数 */
 	public short getV3()
 	{
 		return v3;
 	}
 
+	/** @param v3 2字节整数 */
 	public void setV3(short v3)
 	{
 		this.v3 = v3;
 	}
 
+	/** @return 4字节整数 */
 	public int getV4()
 	{
 		return v4;
 	}
 
+	/** @param v4 4字节整数 */
 	public void setV4(int v4)
 	{
 		this.v4 = v4;
 	}
 
+	/** @return 8字节整数 */
 	public long getV5()
 	{
 		return v5;
 	}
 
+	/** @param v5 8字节整数 */
 	public void setV5(long v5)
 	{
 		this.v5 = v5;
 	}
 
+	/** @return 4字节浮点数 */
 	public float getV6()
 	{
 		return v6;
 	}
 
+	/** @param v6 4字节浮点数 */
 	public void setV6(float v6)
 	{
 		this.v6 = v6;
 	}
 
+	/** @return 8字节浮点数 */
 	public double getV7()
 	{
 		return v7;
 	}
 
+	/** @param v7 8字节浮点数 */
 	public void setV7(double v7)
 	{
 		this.v7 = v7;
 	}
 
+	/** @return 二进制数据(Octets) */
 	public Octets getV8()
 	{
 		return v8;
 	}
 
+	/** @param v8 二进制数据(Octets) */
 	public void setV8(Octets v8)
 	{
 		this.v8 = (v8 != null ? v8 : new Octets(5));
 	}
 
+	/** 二进制数据(Octets) */
 	public <B extends Bean<B>> void marshalV8(Bean<B> b)
 	{
 		OctetsStream os = OctetsStream.wrap(this.v8);
@@ -281,12 +298,14 @@ public final class TestType extends Bean<TestType>
 		b.marshal(os);
 	}
 
+	/** 二进制数据(Octets) */
 	public <B extends Bean<B>> Bean<B> unmarshalV8(Bean<B> b) throws MarshalException
 	{
 		b.unmarshal(OctetsStream.wrap(this.v8));
 		return b;
 	}
 
+	/** 二进制数据(Octets) */
 	public DynBean unmarshalV8() throws MarshalException
 	{
 		DynBean b = new DynBean();
@@ -294,71 +313,85 @@ public final class TestType extends Bean<TestType>
 		return b;
 	}
 
+	/** @return 字符串(String) */
 	public String getV9()
 	{
 		return v9;
 	}
 
+	/** @param v9 字符串(String) */
 	public void setV9(String v9)
 	{
 		this.v9 = (v9 != null ? v9 : "");
 	}
 
+	/** @return 数组容器(ArrayList) */
 	public ArrayList<Boolean> getV10()
 	{
 		return v10;
 	}
 
+	/** @return 链表容器(LinkedList) */
 	public LinkedList<Byte> getV11()
 	{
 		return v11;
 	}
 
+	/** @return 队列容器(ArrayDeque) */
 	public ArrayDeque<Integer> getV12()
 	{
 		return v12;
 	}
 
+	/** @return 无序集合容器(HashSet) */
 	public HashSet<Long> getV13()
 	{
 		return v13;
 	}
 
+	/** @return 排序集合容器(TreeSet) */
 	public TreeSet<Float> getV14()
 	{
 		return v14;
 	}
 
+	/** @return 有序集合容器(LinkedHashSet) */
 	public LinkedHashSet<Double> getV15()
 	{
 		return v15;
 	}
 
+	/** @return 无序映射容器(HashMap) */
 	public HashMap<Long, String> getV16()
 	{
 		return v16;
 	}
 
+	/** @return 排序映射容器(TreeMap) */
 	public TreeMap<TestBean, Boolean> getV17()
 	{
 		return v17;
 	}
 
+	/** @return 有序映射容器(LinkedHashMap) */
 	public LinkedHashMap<Octets, TestBean> getV18()
 	{
 		return v18;
 	}
 
+	/** @return 嵌入其它bean */
 	public TestBean getV19()
 	{
 		return v19;
 	}
 
+	/** @return 非序列化字段 */
 	public java.lang.String getV20()
 	{
 		return v20;
 	}
 
+	/** @param v20 非序列化字段 */
 	public void setV20(java.lang.String v20)
 	{
 		this.v20 = v20;
@@ -781,283 +814,334 @@ public final class TestType extends Bean<TestType>
 			super(bean, parent);
 		}
 
+		/** @return 1字节布尔,0表示假,1表示真,其它默认表示真 */
 		public boolean getV1()
 		{
 			return _bean.v1;
 		}
 
+		/** @param v1 1字节布尔,0表示假,1表示真,其它默认表示真 */
 		public void setV1(boolean v1)
 		{
 			if(initSContext()) _sCtx.addOnRollback(new SBase.SBoolean(_bean, FIELD_v1, _bean.v1));
 			_bean.v1 = v1;
 		}
 
+		/** @return 1字节整数 */
 		public byte getV2()
 		{
 			return _bean.v2;
 		}
 
+		/** @param v2 1字节整数 */
 		public void setV2(byte v2)
 		{
 			if(initSContext()) _sCtx.addOnRollback(new SBase.SByte(_bean, FIELD_v2, _bean.v2));
 			_bean.v2 = v2;
 		}
 
+		/** @return 2字节整数 */
 		public short getV3()
 		{
 			return _bean.v3;
 		}
 
+		/** @param v3 2字节整数 */
 		public void setV3(short v3)
 		{
 			if(initSContext()) _sCtx.addOnRollback(new SBase.SShort(_bean, FIELD_v3, _bean.v3));
 			_bean.v3 = v3;
 		}
 
+		/** @return 4字节整数 */
 		public int getV4()
 		{
 			return _bean.v4;
 		}
 
+		/** @param v4 4字节整数 */
 		public void setV4(int v4)
 		{
 			if(initSContext()) _sCtx.addOnRollback(new SBase.SInteger(_bean, FIELD_v4, _bean.v4));
 			_bean.v4 = v4;
 		}
 
+		/** @return 8字节整数 */
 		public long getV5()
 		{
 			return _bean.v5;
 		}
 
+		/** @param v5 8字节整数 */
 		public void setV5(long v5)
 		{
 			if(initSContext()) _sCtx.addOnRollback(new SBase.SLong(_bean, FIELD_v5, _bean.v5));
 			_bean.v5 = v5;
 		}
 
+		/** @return 4字节浮点数 */
 		public float getV6()
 		{
 			return _bean.v6;
 		}
 
+		/** @param v6 4字节浮点数 */
 		public void setV6(float v6)
 		{
 			if(initSContext()) _sCtx.addOnRollback(new SBase.SFloat(_bean, FIELD_v6, _bean.v6));
 			_bean.v6 = v6;
 		}
 
+		/** @return 8字节浮点数 */
 		public double getV7()
 		{
 			return _bean.v7;
 		}
 
+		/** @param v7 8字节浮点数 */
 		public void setV7(double v7)
 		{
 			if(initSContext()) _sCtx.addOnRollback(new SBase.SDouble(_bean, FIELD_v7, _bean.v7));
 			_bean.v7 = v7;
 		}
 
+		/** @return 二进制数据(Octets) */
 		public Octets getV8()
 		{
 			return _bean.v8.clone();
 		}
 
+		/** @param v8 二进制数据(Octets) */
 		public void setV8(Octets v8)
 		{
 			if(initSContext()) _sCtx.addOnRollback(new SBase.SOctets(_bean, FIELD_v8, _bean.v8, false));
 			_bean.v8 = (v8 != null ? v8.clone() : new Octets(5));
 		}
 
+		/** 二进制数据(Octets) */
 		public byte[] copyOfV8()
 		{
 			return _bean.v8.getBytes();
 		}
 
+		/** 二进制数据(Octets) */
 		public <B extends Bean<B>> void marshalV8(Bean<B> b)
 		{
 			if(initSContext()) _sCtx.addOnRollback(new SBase.SOctets(_bean, FIELD_v8, _bean.v8, false));
 			_bean.v8 = b.marshal(new OctetsStream(b.initSize()));
 		}
 
+		/** 二进制数据(Octets) */
 		public <B extends Bean<B>> Bean<B> unmarshalV8(Bean<B> b) throws MarshalException
 		{
 			return _bean.unmarshalV8(b);
 		}
 
+		/** 二进制数据(Octets) */
 		public DynBean unmarshalV8() throws MarshalException
 		{
 			return _bean.unmarshalV8();
 		}
 
+		/** @return 二进制数据(Octets) */
 		@Deprecated
 		public Octets unsafeV8()
 		{
 			return _bean.v8;
 		}
 
+		/** @return 字符串(String) */
 		public String getV9()
 		{
 			return _bean.v9;
 		}
 
+		/** @param v9 字符串(String) */
 		public void setV9(String v9)
 		{
 			if(initSContext()) _sCtx.addOnRollback(new SBase.SObject(_bean, FIELD_v9, _bean.v9));
 			_bean.v9 = (v9 != null ? v9 : "");
 		}
 
+		/** @return 数组容器(ArrayList) */
 		public SList<Boolean, Boolean> getV10()
 		{
 			return new SList<Boolean, Boolean>(this, _bean.v10);
 		}
 
+		/** @return 数组容器(ArrayList) */
 		@Deprecated
 		public ArrayList<Boolean> unsafeV10()
 		{
 			return _bean.v10;
 		}
 
+		/** @return 链表容器(LinkedList) */
 		public SList<Byte, Byte> getV11()
 		{
 			return new SList<Byte, Byte>(this, _bean.v11);
 		}
 
+		/** @return 链表容器(LinkedList) */
 		@Deprecated
 		public LinkedList<Byte> unsafeV11()
 		{
 			return _bean.v11;
 		}
 
+		/** @return 队列容器(ArrayDeque) */
 		public SDeque<Integer, Integer> getV12()
 		{
 			return new SDeque<Integer, Integer>(this, _bean.v12);
 		}
 
+		/** @return 队列容器(ArrayDeque) */
 		@Deprecated
 		public ArrayDeque<Integer> unsafeV12()
 		{
 			return _bean.v12;
 		}
 
+		/** 无序集合容器(HashSet) */
 		public static void onListenerV13(SSetListener<Long> listener)
 		{
 			LISTENER_v13 = listener;
 		}
 
+		/** @return 无序集合容器(HashSet) */
 		public SSet<Long, Long> getV13()
 		{
 			if(CACHE_v13 == null) CACHE_v13 = new SSet<Long, Long>(this, _bean.v13, LISTENER_v13);
 			return CACHE_v13;
 		}
 
+		/** @return 无序集合容器(HashSet) */
 		@Deprecated
 		public HashSet<Long> unsafeV13()
 		{
 			return _bean.v13;
 		}
 
+		/** 排序集合容器(TreeSet) */
 		public static void onListenerV14(SSetListener<Float> listener)
 		{
 			LISTENER_v14 = listener;
 		}
 
+		/** @return 排序集合容器(TreeSet) */
 		public SSSet<Float, Float> getV14()
 		{
 			if(CACHE_v14 == null) CACHE_v14 = new SSSet<Float, Float>(this, _bean.v14, LISTENER_v14);
 			return CACHE_v14;
 		}
 
+		/** @return 排序集合容器(TreeSet) */
 		@Deprecated
 		public TreeSet<Float> unsafeV14()
 		{
 			return _bean.v14;
 		}
 
+		/** 有序集合容器(LinkedHashSet) */
 		public static void onListenerV15(SSetListener<Double> listener)
 		{
 			LISTENER_v15 = listener;
 		}
 
+		/** @return 有序集合容器(LinkedHashSet) */
 		public SSet<Double, Double> getV15()
 		{
 			if(CACHE_v15 == null) CACHE_v15 = new SSet<Double, Double>(this, _bean.v15, LISTENER_v15);
 			return CACHE_v15;
 		}
 
+		/** @return 有序集合容器(LinkedHashSet) */
 		@Deprecated
 		public LinkedHashSet<Double> unsafeV15()
 		{
 			return _bean.v15;
 		}
 
+		/** 无序映射容器(HashMap) */
 		public static void onListenerV16(SMapListener<Long, String> listener)
 		{
 			LISTENER_v16 = listener;
 		}
 
+		/** @return 无序映射容器(HashMap) */
 		public SMap<Long, String, String> getV16()
 		{
 			if(CACHE_v16 == null) CACHE_v16 = new SMap<Long, String, String>(this, _bean.v16, LISTENER_v16);
 			return CACHE_v16;
 		}
 
+		/** @return 无序映射容器(HashMap) */
 		@Deprecated
 		public HashMap<Long, String> unsafeV16()
 		{
 			return _bean.v16;
 		}
 
+		/** 排序映射容器(TreeMap) */
 		public static void onListenerV17(SMapListener<TestBean, Boolean> listener)
 		{
 			LISTENER_v17 = listener;
 		}
 
+		/** @return 排序映射容器(TreeMap) */
 		public SSMap<TestBean, Boolean, Boolean> getV17()
 		{
 			if(CACHE_v17 == null) CACHE_v17 = new SSMap<TestBean, Boolean, Boolean>(this, _bean.v17, LISTENER_v17);
 			return CACHE_v17;
 		}
 
+		/** @return 排序映射容器(TreeMap) */
 		@Deprecated
 		public TreeMap<TestBean, Boolean> unsafeV17()
 		{
 			return _bean.v17;
 		}
 
+		/** 有序映射容器(LinkedHashMap) */
 		public static void onListenerV18(SMapListener<Octets, TestBean> listener)
 		{
 			LISTENER_v18 = listener;
 		}
 
+		/** @return 有序映射容器(LinkedHashMap) */
 		public SMap<Octets, TestBean, TestBean.Safe> getV18()
 		{
 			if(CACHE_v18 == null) CACHE_v18 = new SMap<Octets, TestBean, TestBean.Safe>(this, _bean.v18, LISTENER_v18);
 			return CACHE_v18;
 		}
 
+		/** @return 有序映射容器(LinkedHashMap) */
 		@Deprecated
 		public LinkedHashMap<Octets, TestBean> unsafeV18()
 		{
 			return _bean.v18;
 		}
 
+		/** @return 嵌入其它bean */
 		public TestBean.Safe getV19()
 		{
 			return _bean.v19.safe(this);
 		}
 
+		/** @return 嵌入其它bean */
 		@Deprecated
 		public TestBean unsafeV19()
 		{
 			return _bean.v19;
 		}
 
+		/** @return 非序列化字段 */
 		public java.lang.String getV20()
 		{
 			return _bean.v20;
 		}
 
+		/** @param v20 非序列化字段 */
 		public void setV20(java.lang.String v20)
 		{
 			if(initSContext()) _sCtx.addOnRollback(new SBase.SObject(_bean, FIELD_v20, _bean.v20));

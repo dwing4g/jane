@@ -18,12 +18,12 @@ import jane.core.Storage.WalkHandlerLong;
  */
 public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends TableBase<V>
 {
-	private final Storage.TableLong<V>     _stoTable;                             // 存储引擎的表对象
-	private final LongConcurrentLRUMap<V>  _cache;                                // 读缓存. 有大小限制,溢出自动清理
-	private final LongConcurrentHashMap<V> _cacheMod;                             // 写缓存. 不会溢出,保存到数据库存储引擎后清理
-	private final AtomicLong               _idCounter     = new AtomicLong();     // 用于自增长ID的统计器, 当前值表示当前表已存在的最大ID值
-	private int                            _autoIdLowBits = Const.autoIdLowBits;  // 自增长ID的预留低位位数, 可运行时指定
-	private int                            _autoIdOffset  = Const.autoIdLowOffset; // 自增长ID的低位偏移值, 可运行时指定
+	private final Storage.TableLong<V>     _stoTable;                         // 存储引擎的表对象
+	private final LongMap<V>               _cache;                            // 读缓存. 有大小限制,溢出自动清理
+	private final LongConcurrentHashMap<V> _cacheMod;                         // 写缓存. 不会溢出,保存到数据库存储引擎后清理
+	private final AtomicLong               _idCounter    = new AtomicLong();  // 用于自增长ID的统计器, 当前值表示当前表已存在的最大ID值
+	private int                            _autoIdBegin  = Const.autoIdBegin; // 自增长ID的初始值, 可运行时指定
+	private int                            _autoIdStride = Const.autoIdStride; // 自增长ID的分配跨度, 可运行时指定
 
 	/**
 	 * 创建一个数据库表
@@ -50,22 +50,18 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	 * 指定表的自增长ID参数
 	 * <p>
 	 * 表的自增长参数默认由配置决定<br>
-	 * 每个表的自增长参数必须保证始终不变,否则可能因记录ID冲突而导致记录覆盖,所以此方法只适合在初始化表后立即调用一次
-	 * @param lowBits 自增长ID的预留低位位数. 范围:[0,32]
-	 * @param offset 自增长ID的低位偏移值. 范围:[0,2^lowbits)
+	 * 每个表的自增长参数应该保证始终不变,否则可能因记录ID冲突而导致记录覆盖,所以此方法只适合在初始化表后立即调用一次
+	 * @param begin 自增长ID的初始值. 范围:[0,)
+	 * @param stride 自增长ID的分配跨度. 范围:[1,]
 	 */
-	public void setAutoId(int lowBits, int offset)
+	public void setAutoId(int begin, int stride)
 	{
-		if(lowBits < 0)
-			lowBits = 0;
-		else if(lowBits > 32)
-		    lowBits = 32;
-		if(offset < 0)
-			offset = 0;
-		else if(offset > 1 << lowBits)
-		    offset = (1 << lowBits) - 1;
-		_autoIdLowBits = lowBits;
-		_autoIdOffset = offset;
+		if(begin < 0)
+		    begin = 0;
+		if(stride < 1)
+		    stride = 1;
+		_autoIdBegin = begin;
+		_autoIdStride = stride;
 	}
 
 	/**
@@ -288,9 +284,23 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	}
 
 	@SuppressWarnings("unchecked")
-	void modify(long k, Object v)
+	void modify(long k, Object vo)
 	{
-		modify(k, (V)v);
+		V v = (V)vo;
+		if(!v.modified() && _cacheMod != null)
+		{
+			V vOld = _cacheMod.put(k, v);
+			if(vOld == null)
+			{
+				v.setSaveState(2);
+				DBManager.instance().incModCount();
+			}
+			else if(vOld != v)
+			{
+				// 可能之前已经覆盖或删除过记录,然后再modify的话,就忽略本次modify了,因为SContext.commit无法识别这种情况
+				_cacheMod.put(k, vOld);
+			}
+		}
 	}
 
 	/**
@@ -371,15 +381,15 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	 * 分配自增长的新ID值作为key
 	 * <p>
 	 * 必须在事务中调用此方法<br>
-	 * ID自增长的步长由配置的autoIdLowBits和autoIdLowOffset决定,也可以通过setAutoId方法来指定<br>
-	 * 如果此表的记录有不是使用此方法插入的,请谨慎使用此方法,可能因记录ID冲突而导致降低分配性能
+	 * 自增长ID的分配规则由配置的autoIdBegin和autoIdStride决定,也可以通过setAutoId方法来指定<br>
+	 * 如果此表的记录有不是使用此方法插入的,请谨慎使用此方法,可能因记录ID冲突而导致分配性能降低
 	 * @return 返回插入的自增长ID值
 	 */
 	public long allocId()
 	{
 		for(;;)
 		{
-			long k = (_idCounter.incrementAndGet() << _autoIdLowBits) + _autoIdOffset;
+			long k = _idCounter.getAndIncrement() * _autoIdStride + _autoIdBegin;
 			if(getNoCacheUnsafe(k) == null) return k;
 		}
 	}

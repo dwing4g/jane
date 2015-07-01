@@ -265,8 +265,8 @@ local function mapVarType(t)
 	return k, v
 end
 
--- 序列化v值,类型自动判断,可选前置序列化tag,subtype仅用于内部序列化容器元素的类型提示
-function Stream:marshal(v, tag, subtype)
+-- 序列化v值,类型自动判断;可选前置序列化tag;subtype仅用于内部序列化容器元素的类型提示;varmeta表示v的类型描述表,有助于v不带原型时识别类型
+function Stream:marshal(v, tag, subtype, varmeta)
 	local t = type(v)
 	if t == "boolean" then
 		v = v and 1 or 0
@@ -311,7 +311,7 @@ function Stream:marshal(v, tag, subtype)
 		end
 		marshalStr(self, v)
 	elseif t == "table" then
-		if v.__type then -- bean
+		if varmeta and type(varmeta.type) == "string" or v.__type then -- bean
 			if tag then
 				if tag < 63 then
 					append(self, char(tag * 4 + 2))
@@ -325,7 +325,7 @@ function Stream:marshal(v, tag, subtype)
 			for nn, vv in pairs(v) do
 				local var = vars[nn]
 				if type(var) == "table" then
-					self:marshal(vv, var.id)
+					self:marshal(vv, var.id, nil, var)
 				end
 			end
 			if tag and n == #buf then
@@ -333,24 +333,32 @@ function Stream:marshal(v, tag, subtype)
 			else
 				append(self, "\0")
 			end
-		elseif not v.__map then -- vec
-			subtype = vecVarType(v)
-			if tag < 63 then
-				append(self, char(tag * 4 + 3, subtype))
-			else
-				append(self, char(0xff, tag - 63, subtype))
+		elseif varmeta and varmeta.type == 3 or v.__vec then
+			if #v > 0 then
+				subtype = vecVarType(v)
+				if not subtype then
+					error "unknown vector value type for marshal"
+				end
+				if tag < 63 then
+					append(self, char(tag * 4 + 3, subtype))
+				else
+					append(self, char(0xff, tag - 63, subtype))
+				end
+				self:marshalUInt(#v)
+				for _, vv in ipairs(v) do
+					self:marshal(vv, nil, subtype)
+				end
 			end
-			self:marshalUInt(#v)
-			for _, vv in ipairs(v) do
-				self:marshal(vv, nil, subtype)
-			end
-		else -- map
+		elseif varmeta and varmeta.type == 4 or v.__map then
 			local n = 0
 			for _ in pairs(v) do
 				n = n + 1
 			end
 			if n > 0 then
 				local kt, vt = mapVarType(v)
+				if not kt or not vt then
+					error "unknown map key or value type for marshal"
+				end
 				if tag < 63 then
 					append(self, char(tag * 4 + 3, 0x40 + kt * 8 + vt))
 				else
@@ -362,6 +370,8 @@ function Stream:marshal(v, tag, subtype)
 					self:marshal(vv, nil, vt)
 				end
 			end
+		else
+			error "unknown table type (vector or map) for marshal"
 		end
 	end
 	return self

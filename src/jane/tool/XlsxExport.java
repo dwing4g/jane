@@ -287,7 +287,7 @@ public final class XlsxExport
 
 		int sheetId = (args.length >= 4 ? Integer.parseInt(args[3].trim()) : 1);
 		int keyCol = (args.length >= 5 ? Integer.parseInt(args[4].trim()) : 1);
-		System.err.println("INFO: convert " + args[1] + " <" + sheetId + "> => " + args[2] + " ...");
+		System.err.print("INFO: convert " + args[1] + " <" + sheetId + "> => " + args[2] + " ... ");
 		@SuppressWarnings("resource")
 		InputStream is = (args[1].equals("-") ? System.in : new FileInputStream(args[1].trim()));
 		try
@@ -311,7 +311,7 @@ public final class XlsxExport
 		{
 			if(is != System.in) is.close();
 		}
-		System.err.println("INFO: done!");
+		System.err.println("OK!");
 
 		// usage sample:
 		// Map<Integer, TestType> beanmap = new HashMap<Integer, TestType>();

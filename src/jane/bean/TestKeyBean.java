@@ -36,11 +36,13 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 		throw new UnsupportedOperationException();
 	}
 
+	/** @return KEY-1 */
 	public int getKey1()
 	{
 		return key1;
 	}
 
+	/** @return KEY-2 */
 	public String getKey2()
 	{
 		return key2;
