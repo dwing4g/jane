@@ -396,6 +396,24 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	}
 
 	/**
+	 * 获取分配自增长ID的当前计数器值(用于下一次分配)
+	 */
+	public long getIdCounter()
+	{
+		return _idCounter.get();
+	}
+
+	/**
+	 * 设置分配自增长ID的当前计数器值(用于下一次分配)
+	 * <p>
+	 * 警告: 应在知道此方法意义的情况下谨慎调用.
+	 */
+	public void setIdCounter(long idCounter)
+	{
+		_idCounter.set(idCounter);
+	}
+
+	/**
 	 * 根据记录的key删除记录
 	 * <p>
 	 * 必须在事务中已加锁的状态下调用此方法
