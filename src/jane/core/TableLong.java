@@ -65,6 +65,16 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 		_autoIdStride = stride;
 	}
 
+	public int getAutoIdBegin()
+	{
+		return _autoIdBegin;
+	}
+
+	public int getAutoIdStride()
+	{
+		return _autoIdStride;
+	}
+
 	/**
 	 * 根据记录的key获取锁的ID(lockId)
 	 * <p>
