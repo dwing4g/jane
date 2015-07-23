@@ -260,7 +260,7 @@ public class NetManager implements IoHandler
 	public void startServer(InetSocketAddress addr) throws IOException
 	{
 		getAcceptor();
-		Log.log.debug("{}: listening addr={}", _name, addr);
+		Log.log.info("{}: listening addr={}", _name, addr);
 		_acceptor.bind(addr);
 	}
 
@@ -273,7 +273,7 @@ public class NetManager implements IoHandler
 	public ConnectFuture startClient(final InetSocketAddress addr, final Object ctx)
 	{
 		getConnector();
-		Log.log.debug("{}: connecting addr={}", _name, addr);
+		Log.log.info("{}: connecting addr={}", _name, addr);
 		return _connector.connect(addr).addListener(new IoFutureListener<ConnectFuture>()
 		{
 			private int _count;
@@ -286,11 +286,11 @@ public class NetManager implements IoHandler
 					try
 					{
 						++_count;
-						Log.log.debug("{}: connect failed: addr={},count={}", _name, addr, _count);
+						Log.log.info("{}: connect failed: addr={},count={}", _name, addr, _count);
 						int delaySec = onConnectFailed(addr, _count, ctx);
 						if(delaySec == 0)
 						{
-							Log.log.debug("{}: reconnecting addr={},count={}", _name, addr, _count);
+							Log.log.info("{}: reconnecting addr={},count={}", _name, addr, _count);
 							_connector.connect(addr).addListener(this);
 						}
 						else if(delaySec > 0)
@@ -303,7 +303,7 @@ public class NetManager implements IoHandler
 								{
 									try
 									{
-										Log.log.debug("{}: reconnecting addr={},count={}", _name, addr, _count);
+										Log.log.info("{}: reconnecting addr={},count={}", _name, addr, _count);
 										_connector.connect(addr).addListener(listener);
 									}
 									catch(Throwable e)
