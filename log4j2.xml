@@ -31,15 +31,9 @@
 		</Async>
 	</Appenders>
 	<Loggers>
-		<Logger name="org.apache.mina.filter.codec.ProtocolCodecFilter" level="DEBUG" additivity="true">
-			<ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
-		</Logger>
-		<Logger name="org.apache.mina.filter.ssl.SslFilter" level="DEBUG" additivity="true">
-			<ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
-		</Logger>
-		<Logger name="org.apache.mina.filter.ssl.SslHandler" level="DEBUG" additivity="true">
-			<ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
-		</Logger>
+		<Logger name="org.apache.mina.filter.codec.ProtocolCodecFilter" level="INFO" additivity="true"/>
+		<Logger name="org.apache.mina.filter.ssl.SslFilter" level="INFO" additivity="true"/>
+		<Logger name="org.apache.mina.filter.ssl.SslHandler" level="INFO" additivity="true"/>
 		<Root level="TRACE"><!-- level: ALL <= TRACE < DEBUG < INFO < WARN < ERROR < FATAL < OFF -->
 			<AppenderRef ref="ASYNC"/>
 			<AppenderRef ref="STDOUT"/>

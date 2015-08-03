@@ -8,6 +8,7 @@ import jane.core.SContext.Record;
 import jane.core.SContext.Safe;
 import jane.core.Storage.Helper;
 import jane.core.Storage.WalkHandler;
+import jane.core.Storage.WalkHandlerLong;
 
 /**
  * 通用key类型的数据库表类
@@ -414,5 +415,15 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 		if(_stoTable != null)
 		    return _stoTable.walk(handler, from, to, inclusive, reverse);
 		return walkCache(handler);
+	}
+
+	public boolean walk(WalkHandler<K> handler, boolean reverse)
+	{
+		return walk(handler, null, null, true, reverse);
+	}
+
+	public boolean walk(WalkHandler<K> handler)
+	{
+		return walk(handler, null, null, true, false);
 	}
 }

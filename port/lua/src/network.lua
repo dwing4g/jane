@@ -107,10 +107,12 @@ function Network:isSending()
 end
 
 local function checkOpen(self)
+	if not self.wbuf then
+		self.wbuf = Stream()
+	end
 	if not self.rbuf then
 		self.ctime = nil
 		self.rbuf = Stream()
-		self.wbuf = Stream()
 		self:onOpen()
 	end
 end
@@ -152,11 +154,14 @@ function Network:doTick(time)
 					if not s or not bean then break end
 					local s, err = pcall(self.onRecv, self, bean)
 					if not s then
-						self.rbuf = Stream(rbuf:sub(pos))
+						if self.rbuf == rbuf then
+							self.rbuf = Stream(rbuf:sub(pos))
+						end
 						error("ERROR: " .. err)
 					end
 					if self.rbuf ~= rbuf then return end -- onRecv may close or reconnect
 				end
+				if self.rbuf ~= rbuf then return end -- onRecv may close or reconnect
 				rbuf = Stream(rbuf:sub(pos))
 				self.rbuf = rbuf
 				log("recv_left:", pos, rbuf:limit())
@@ -168,7 +173,8 @@ function Network:doTick(time)
 		if not self.tcp then return end
 	end
 	if tw and #tw > 0 then
-		checkOpen(self)
+		checkOpen(self) -- onOpen may close or reconnect
+		if not self.wbuf then return end
 		wbuf = self.wbuf:flush()
 		local pos = wbuf:pos()
 		while wbuf:remain() > 0 do

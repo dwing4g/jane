@@ -163,7 +163,7 @@ public final class DBManager
 							Log.log.info("db-commit procedure continued, committing...");
 						}
 						else
-							Log.log.info("db-commit found no modified record");
+							Log.log.info("db-commit not found modified record");
 						// 4.最后恢复其它事务的运行,并对数据库存储系统做提交操作,完成一整轮的事务性持久化
 						long t2 = System.currentTimeMillis();
 						_storage.commit();
