@@ -5,6 +5,7 @@ local lower = string.lower
 local error = error
 local pairs = pairs
 local table = table
+local sort = table.sort
 local concat = table.concat
 local ipairs = ipairs
 local print = print
@@ -364,6 +365,20 @@ public final class AllTables
 	}
 }
 ]=]
+
+local function spairs(t)
+	local s = {}
+	for k in pairs(t) do
+		s[#s + 1] = k
+	end
+	sort(s)
+	local i = 1
+	return function()
+		local k = s[i]
+		i = i + 1
+		return k, k and t[k]
+	end
+end
 
 local typedef = {}
 local function merge(ta, tb)
@@ -1079,6 +1094,12 @@ local function bean_common(bean)
 		if not all_handlers[name] then error("ERROR: not defined handler: " .. name) end
 		hdl_names[name] = hdl_names[name] or {}
 		hdl_names[name][#hdl_names[name] + 1] = bean.name
+		if bean.arg then
+			hdl_names[name][#hdl_names[name] + 1] = bean.arg
+		end
+		if bean.res then
+			hdl_names[name][#hdl_names[name] + 1] = bean.res
+		end
 	end
 	type_bean[bean.type] = bean
 	name_bean[bean.name] = bean
@@ -1122,7 +1143,7 @@ local function get_imports(import)
 	for k in pairs(import) do
 		imports[#imports + 1] = k
 	end
-	table.sort(imports, function(a, b) return a:gsub("^java%.", ".") < b:gsub("^java%.", ".") end)
+	sort(imports, function(a, b) return a:gsub("^java%.", ".") < b:gsub("^java%.", ".") end)
 	return concat(imports, ";\nimport ")
 end
 function bean(bean)
@@ -1257,14 +1278,12 @@ function rpc(bean)
 	bean.uid = gen_uid(bean.name, name_bean[bean.arg].uid .. name_bean[bean.res].uid)
 	name_code[bean.name] = code_conv(template_rpcbean, "bean", bean):gsub("\r", "")
 	name_code[lower(bean.name)] = name_code[bean.name]
-	savebean(bean.arg)
-	savebean(bean.res)
 end
 
 local key_conv = { int = "Integer", integer = "Integer", Integer = "Integer", long = "Long", Long = "Long", float = "Float", Float = "Float", double = "Double", Double = "Double",
 					string = "String", String = "String", binary = "Octets", bytes = "Octets", data = "Octets", octets = "Octets", Octets = "Octets" }
 function dbt(table)
-	if not handlers.dbt then return end
+	if not handlers.dbt or not table.handler ~= handlers.dbt and table.handler ~= handlers.dbt then return end
 	local key_type = key_conv[table.key]
 	if key_type then
 		if key_type == "Octets" then tables.imports["jane.core.Octets"] = true end
@@ -1305,37 +1324,44 @@ dofile(arg[3])
 local bean_count = 0
 checksave(outpath .. namespace .. "/bean/AllBeans.java", (template_allbeans:gsub("#%[#(.-)#%]#", function(body)
 	local subcode = {}
-	for hdlname, hdlpath in pairs(handlers) do
+	for hdlname, hdlpath in spairs(handlers) do
 		local names = hdl_names[hdlname] or {}
-		local hdl = { name = hdlname, path = tostring(hdlpath), count = #names }
+		local hdl = { name = hdlname, path = tostring(hdlpath), count = 0 }
 		subcode[#subcode + 1] = code_conv(body:gsub("#%(#(.-)#%)#", function(body)
 			local subcode2 = {}
+			local saved = {}
 			for _, name in ipairs(names) do
-				local bean = name_bean[name]
-				savebean(bean.name)
-				subcode2[#subcode2 + 1] = code_conv(body, "bean", bean)
-				if type(hdlpath) == "string" then
-					if bean.type <= 0 or bean.type > 0x7fffffff then error("ERROR: invalid bean.type: " .. tostring(bean.type) .. " (bean.name: " .. bean.name .. ")") end
-					if not bean.arg then
-						checksave(outpath .. hdlpath:gsub("%.", "/") .. "/" .. bean.name .. "Handler.java", code_conv(code_conv(template_bean_handler:gsub("#%(#(.-)#%)#", function(body)
-							local subcode3 = {}
-							for _, var in ipairs(bean) do
-								subcode3[#subcode3 + 1] = code_conv(body, "var", var)
+				if not saved[name] then
+					saved[name] = true
+					local bean = name_bean[name]
+					savebean(bean.name)
+					if bean.type ~= 0 then
+						hdl.count = hdl.count + 1
+						subcode2[#subcode2 + 1] = code_conv(body, "bean", bean)
+						if type(hdlpath) == "string" then
+							if bean.type < 0 or bean.type > 0x7fffffff then error("ERROR: invalid bean.type: " .. tostring(bean.type) .. " (bean.name: " .. bean.name .. ")") end
+							if not bean.arg then
+								checksave(outpath .. hdlpath:gsub("%.", "/") .. "/" .. bean.name .. "Handler.java", code_conv(code_conv(template_bean_handler:gsub("#%(#(.-)#%)#", function(body)
+									local subcode3 = {}
+									for _, var in ipairs(bean) do
+										subcode3[#subcode3 + 1] = code_conv(body, "var", var)
+									end
+									return concat(subcode3)
+								end), "hdl", hdl), "bean", bean):gsub("\r", ""), 1, "(%s+class%s+" .. bean.name .. "Handler%s+extends%s+BeanHandler%s*<)[%w_%.%s]+>", "%1" .. bean.name .. ">")
+							else
+								local bean_sub
+								local bean_arg, bean_res = name_bean[bean.arg], name_bean[bean.res]
+								checksave(outpath .. hdlpath:gsub("%.", "/") .. "/" .. bean.name .. "Handler.java", code_conv(code_conv(code_conv(code_conv(template_rpc_handler:gsub("#%(#(.-)#%)#", function(body)
+									bean_sub = bean_sub and bean_res or bean_arg
+									local subcode3 = {}
+									for _, var in ipairs(bean_sub) do
+										subcode3[#subcode3 + 1] = code_conv(body, "var", var)
+									end
+									return concat(subcode3)
+								end), "hdl", hdl), "bean", bean), "bean_arg", bean_arg), "bean_res", bean_res):gsub(bean_arg ~= bean_res and "#[<>]#" or "#%<#(.-)#%>#", ""):
+									gsub("\r", ""), 2, "(%s+class%s+" .. bean.name .. "Handler%s+extends%s+RpcHandler%s*<)[%w_%.%s]+,[%w_%.%s]+>", "%1" .. bean_arg.name .. ", " .. bean_res.name .. ">")
 							end
-							return concat(subcode3)
-						end), "hdl", hdl), "bean", bean):gsub("\r", ""), 1, "(%s+class%s+" .. bean.name .. "Handler%s+extends%s+BeanHandler%s*<)[%w_%.%s]+>", "%1" .. bean.name .. ">")
-					else
-						local bean_sub
-						local bean_arg, bean_res = name_bean[bean.arg], name_bean[bean.res]
-						checksave(outpath .. hdlpath:gsub("%.", "/") .. "/" .. bean.name .. "Handler.java", code_conv(code_conv(code_conv(code_conv(template_rpc_handler:gsub("#%(#(.-)#%)#", function(body)
-							bean_sub = bean_sub and bean_res or bean_arg
-							local subcode3 = {}
-							for _, var in ipairs(bean_sub) do
-								subcode3[#subcode3 + 1] = code_conv(body, "var", var)
-							end
-							return concat(subcode3)
-						end), "hdl", hdl), "bean", bean), "bean_arg", bean_arg), "bean_res", bean_res):gsub(bean_arg ~= bean_res and "#[<>]#" or "#%<#(.-)#%>#", ""):
-							gsub("\r", ""), 2, "(%s+class%s+" .. bean.name .. "Handler%s+extends%s+RpcHandler%s*<)[%w_%.%s]+,[%w_%.%s]+>", "%1" .. bean_arg.name .. ", " .. bean_res.name .. ">")
+						end
 					end
 				end
 			end
