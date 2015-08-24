@@ -8,7 +8,6 @@ import jane.core.SContext.Record;
 import jane.core.SContext.Safe;
 import jane.core.Storage.Helper;
 import jane.core.Storage.WalkHandler;
-import jane.core.Storage.WalkHandlerLong;
 
 /**
  * 通用key类型的数据库表类
