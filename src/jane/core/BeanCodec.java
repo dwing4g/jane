@@ -19,6 +19,26 @@ public class BeanCodec extends IoFilterAdapter
 	protected int                          _psize   = -1;                              // 当前数据缓存中获得的协议大小. -1表示没获取到
 
 	/**
+	 * 不带栈信息的解码错误异常
+	 */
+	public static class DecodeException extends Exception
+	{
+		private static final long serialVersionUID = -1156050363139281675L;
+
+		public DecodeException(String cause)
+		{
+			super(cause);
+		}
+
+		@SuppressWarnings("sync-override")
+		@Override
+		public Throwable fillInStackTrace()
+		{
+			return this;
+		}
+	}
+
+	/**
 	 * 重新注册所有的beans
 	 * <p>
 	 * 参数中的所有beans会被保存下来当存根(通过调用create方法创建对象)<br>
@@ -102,7 +122,7 @@ public class BeanCodec extends IoFilterAdapter
 			int maxSize = beanMaxSize(_ptype);
 			if(maxSize < 0) maxSize = Const.maxRawBeanSize;
 			if(_psize < 0 || _psize > maxSize)
-			    throw new Exception("bean maxSize overflow: type=" + _ptype + ",size=" + _psize + ",maxSize=" + maxSize);
+			    throw new DecodeException("bean maxSize overflow: type=" + _ptype + ",size=" + _psize + ",maxSize=" + maxSize);
 		}
 		if(_psize > os.remain()) return false;
 		Bean<?> bean = createBean(_ptype);
@@ -112,7 +132,7 @@ public class BeanCodec extends IoFilterAdapter
 			bean.unmarshalProtocol(os);
 			int realSize = os.position() - pos;
 			if(realSize > _psize)
-			    throw new Exception("bean realSize overflow: type=" + _ptype + ",size=" + _psize + ",realSize=" + realSize);
+			    throw new DecodeException("bean realSize overflow: type=" + _ptype + ",size=" + _psize + ",realSize=" + realSize);
 			os.setPosition(pos + _psize);
 			next.messageReceived(session, bean);
 		}

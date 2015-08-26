@@ -48,6 +48,26 @@ public final class HttpCodec extends IoFilterAdapter
 	private OctetsStream            _buf             = new OctetsStream(1024);                                        // 用于解码器的数据缓存
 	private long                    _bodySize;                                                                        // 当前请求所需的内容大小
 
+	/**
+	 * 不带栈信息的解码错误异常
+	 */
+	public static class DecodeException extends Exception
+	{
+		private static final long serialVersionUID = -3397270480347991234L;
+
+		public DecodeException(String cause)
+		{
+			super(cause);
+		}
+
+		@SuppressWarnings("sync-override")
+		@Override
+		public Throwable fillInStackTrace()
+		{
+			return this;
+		}
+	}
+
 	static
 	{
 		_sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
@@ -374,13 +394,13 @@ public final class HttpCodec extends IoFilterAdapter
 					if(p < 0)
 					{
 						if(_buf.size() > Const.maxHttpHeadSize)
-						    throw new Exception("http head size overflow: bufsize=" + _buf.size() + ",maxsize=" + Const.maxHttpHeadSize);
+						    throw new DecodeException("http head size overflow: bufsize=" + _buf.size() + ",maxsize=" + Const.maxHttpHeadSize);
 						if(!in.hasRemaining()) return;
 						continue begin_;
 					}
 					p += HEAD_END_MARK.length;
 					if(p < 18) // 最小的可能是"GET / HTTP/1.1\r\n\r\n"
-					    throw new Exception("http head size too short: headsize=" + p);
+					    throw new DecodeException("http head size too short: headsize=" + p);
 					_buf.setPosition(p);
 					_bodySize = getHeadLong(_buf, CONT_LEN_MARK); // 从HTTP头中找到内容长度
 					if(_bodySize > 0) break; // 有内容则跳到下半部分的处理
@@ -391,7 +411,7 @@ public final class HttpCodec extends IoFilterAdapter
 					p = 0;
 				}
 				if(_bodySize > Const.maxHttpBodySize)
-				    throw new Exception("http body size overflow: bodysize=" + _bodySize + ",maxsize=" + Const.maxHttpBodySize);
+				    throw new DecodeException("http body size overflow: bodysize=" + _bodySize + ",maxsize=" + Const.maxHttpBodySize);
 			}
 			int r = in.remaining();
 			int s = (int)_bodySize - _buf.remain();

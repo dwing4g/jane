@@ -731,7 +731,7 @@ typedef.vector = merge(typedef.octets,
 				if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 				t &= 7;
 				int n = s.unmarshalUInt();
-				this.#(var.name).ensureCapacity(n < 0x10000 ? n : 0x10000);
+				this.#(var.name).ensureCapacity(n < 1000 ? n : 1000);
 				for(; n > 0; --n)
 					this.#(var.name).add(%s);
 			} break;
@@ -1187,7 +1187,7 @@ function bean(bean)
 
 	if not bean.maxsize then bean.maxsize = 0x7fffffff end
 	if not bean.initsize then bean.initsize = 0 end
-	if type(bean.initsize) == "number" and bean.initsize > 0x100000 then print("WARNING: bean.initsize = " .. bean.initsize .. " > 1MB (bean.name:" .. bean.name .. ")") end
+	if type(bean.initsize) == "number" and bean.initsize > 0x10000 then print("WARNING: bean.initsize = " .. bean.initsize .. " > 64KB (bean.name:" .. bean.name .. ")") end
 	bean.imports = get_imports(bean.import)
 	bean.uid = gen_uid(bean.name, concat(vartypes))
 

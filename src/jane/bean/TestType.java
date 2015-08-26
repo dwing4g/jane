@@ -524,7 +524,7 @@ public final class TestType extends Bean<TestType>
 				if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
 				t &= 7;
 				int n = s.unmarshalUInt();
-				this.v10.ensureCapacity(n < 0x10000 ? n : 0x10000);
+				this.v10.ensureCapacity(n < 1000 ? n : 1000);
 				for(; n > 0; --n)
 					this.v10.add((s.unmarshalIntKV(t) != 0));
 			} break;
