@@ -37,6 +37,7 @@ public final class LevelDBExport
 		System.err.println("INFO: exporting db ...");
 		System.out.println("return{");
 		StringBuilder sb = new StringBuilder(1024);
+		long count = 0;
 		for(;;)
 		{
 			byte[] val = StorageLevelDB.leveldb_iter_value(iter);
@@ -56,12 +57,13 @@ public final class LevelDBExport
 			sb.append(']').append('=');
 			Octets.wrap(val).dumpJStr(sb);
 			System.out.println(sb.append(','));
+			++count;
 		}
 		System.out.println('}');
 
 		System.err.println("INFO: closing db ...");
 		StorageLevelDB.leveldb_iter_delete(iter);
 		StorageLevelDB.leveldb_close(db);
-		System.err.println("INFO: done! (" + (System.currentTimeMillis() - t) + " ms)");
+		System.err.println("INFO: done! (count=" + count + ", " + (System.currentTimeMillis() - t) + " ms)");
 	}
 }

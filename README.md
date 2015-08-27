@@ -15,7 +15,6 @@ Feature:
 Todo:
  * unit test
  * more optimization for speed, memory and I/O throughput
- * import database from text file
 
 License:
  * GNU Lesser GPL
@@ -93,5 +92,5 @@ License:
 
 TODO:
  * 网络: 并发/吞吐量调优
- * 数据库: 内存优化, 数据库的文本格式导入工具
+ * 数据库: 内存优化
  * 全面的测试
