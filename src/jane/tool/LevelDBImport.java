@@ -1,7 +1,8 @@
 package jane.tool;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.regex.Matcher;
@@ -12,18 +13,31 @@ import jane.core.StorageLevelDB;
 
 public final class LevelDBImport
 {
-	private static final Pattern s_patHex  = Pattern.compile("\\\\x(..)");
-	private static final Charset s_cs88591 = Charset.forName("ISO-8859-1");
+	private static final Pattern      s_patHex  = Pattern.compile("\\\\x(..)");
+	private static final Charset      s_cs88591 = Charset.forName("ISO-8859-1");
+	private static final OctetsStream s_deleted = OctetsStream.wrap(Octets.EMPTY);
 
 	private static OctetsStream str2Oct(String str)
 	{
-		Matcher mat = s_patHex.matcher(str);
-		if(!mat.find()) return OctetsStream.wrap(str.getBytes(s_cs88591));
-		StringBuffer sb = new StringBuffer(str.length());
-		do
-			mat.appendReplacement(sb, String.valueOf((char)(Integer.parseInt(mat.group(1), 16))));
-		while(mat.find());
-		return OctetsStream.wrap(mat.appendTail(sb).toString().getBytes(s_cs88591));
+		String matchStr = "";
+		try
+		{
+			Matcher mat = s_patHex.matcher(str);
+			if(!mat.find()) return OctetsStream.wrap(str.getBytes(s_cs88591));
+			StringBuffer sb = new StringBuffer(str.length());
+			do
+			{
+				matchStr = mat.group(1);
+				mat.appendReplacement(sb, Matcher.quoteReplacement(String.valueOf((char)(Integer.parseInt(matchStr, 16)))));
+			}
+			while(mat.find());
+			return OctetsStream.wrap(mat.appendTail(sb).toString().getBytes(s_cs88591));
+		}
+		catch(RuntimeException e)
+		{
+			System.err.println("ERROR: parse failed: '" + matchStr + "' in '" + str + '\'');
+			throw e;
+		}
 	}
 
 	public static void main(String[] args) throws Exception
@@ -37,7 +51,7 @@ public final class LevelDBImport
 		String dumpname = args[1].trim();
 
 		long t = System.currentTimeMillis();
-		BufferedReader br = new BufferedReader(new FileReader(dumpname));
+		BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(dumpname), s_cs88591));
 		System.err.println("INFO: opening " + pathname + " ...");
 		long db = StorageLevelDB.leveldb_open(pathname, 0, 0, true);
 		if(db == 0)
@@ -48,24 +62,32 @@ public final class LevelDBImport
 		}
 
 		System.err.println("INFO: importing db ...");
-		Pattern patPut1 = Pattern.compile("put '(.*)' '(.*)'"); // the official leveldb dump file
-		Pattern patPut2 = Pattern.compile("[\"(.*)\"]=\"(.*)\""); // LevelDBExport dump file
+		Pattern patPut1 = Pattern.compile("put '(.*)' '(.*)'"); // the official leveldb log dump file
+		Pattern patPut2 = Pattern.compile("'(.*)' @ \\d+ : val => '(.*)'"); // the official leveldb ldb dump file
+		Pattern patPut3 = Pattern.compile("[\"(.*)\"]=\"(.*)\""); // LevelDBExport dump file
+		Pattern patDel1 = Pattern.compile("del '(.*)'"); // the official leveldb log dump file
+		Pattern patDel2 = Pattern.compile("'(.*)' @ \\d+ : del"); // the official leveldb ldb dump file
 		HashMap<Octets, OctetsStream> buf = new HashMap<Octets, OctetsStream>(10000);
 		long count = 0;
-		for(;;)
+		String line;
+		while((line = br.readLine()) != null)
 		{
-			String line = br.readLine();
-			if(line == null) break;
+			Matcher mat;
+			OctetsStream v;
+			if((mat = patPut1.matcher(line)).find())
+				v = str2Oct(mat.group(2));
+			else if((mat = patPut2.matcher(line)).find())
+				v = str2Oct(mat.group(2));
+			else if((mat = patPut3.matcher(line)).find())
+				v = str2Oct(mat.group(2));
+			else if((mat = patDel1.matcher(line)).find())
+				v = s_deleted;
+			else if((mat = patDel2.matcher(line)).find())
+				v = s_deleted;
+			else
+				continue;
 
-			Matcher mat = patPut1.matcher(line);
-			if(!mat.find())
-			{
-				mat = patPut2.matcher(line);
-				if(!mat.find())
-				    continue;
-			}
-
-			buf.put(str2Oct(mat.group(1)), str2Oct(mat.group(2)));
+			buf.put(str2Oct(mat.group(1)), v);
 			if(buf.size() >= 10000)
 			{
 				count += buf.size();
