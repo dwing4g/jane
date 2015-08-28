@@ -179,7 +179,10 @@ public final class DBManager
 							Log.log.info("db-commit backup begin...");
 							long r = _storage.backup(new File(Const.dbBackupPath, new File(Const.dbFilename).getName() +
 							        '.' + _storage.getFileSuffix() + '.' + _sdf.format(new Date())));
-							Log.log.info("db-commit backup end. ({} bytes) ({} ms)", r, System.currentTimeMillis() - t);
+							if(r >= 0)
+								Log.log.info("db-commit backup end. ({} bytes) ({} ms)", r, System.currentTimeMillis() - t);
+							else
+								Log.log.error("db-commit backup error({}). ({} ms)", r, System.currentTimeMillis() - t);
 						}
 					}
 

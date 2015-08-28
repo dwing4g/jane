@@ -288,17 +288,17 @@ public abstract class Procedure implements Runnable
 	/**
 	 * 判断lockId是否已被获取到锁
 	 */
-	public static final boolean isLocked(int lockid)
+	public static final boolean isLocked(int lockId)
 	{
-		return getLock(lockid & _lockMask).isLocked();
+		return getLock(lockId & _lockMask).isLocked();
 	}
 
 	/**
 	 * 判断lockId是否已被当前线程获取到锁
 	 */
-	public static final boolean isLockedByCurrentThread(int lockid)
+	public static final boolean isLockedByCurrentThread(int lockId)
 	{
-		return getLock(lockid & _lockMask).isHeldByCurrentThread();
+		return getLock(lockId & _lockMask).isHeldByCurrentThread();
 	}
 
 	/**
@@ -524,7 +524,7 @@ public abstract class Procedure implements Runnable
 				{
 					(ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
 					ctx.lockCount = ++i;
-					lock3(lockId0, lockId1, lockId2);
+					lock3(lockId1, lockId2, lockId3);
 				}
 				else
 				{
