@@ -1,12 +1,11 @@
 package jane.core;
 
 import java.lang.management.ManagementFactory;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.RandomAccess;
-import java.util.SortedSet;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -267,20 +266,19 @@ public abstract class Procedure implements Runnable
 	/**
 	 * 根据lockId获取实际的锁对象
 	 */
-	private static ReentrantLock getLock(int lockId)
+	private static ReentrantLock getLock(int lockIdx)
 	{
-		lockId &= _lockMask;
-		ReentrantLock lock = _lockPool[lockId];
+		ReentrantLock lock = _lockPool[lockIdx];
 		if(lock != null) return lock;
 		synchronized(_lockPool)
 		{
-			lock = _lockPool[lockId];
+			lock = _lockPool[lockIdx];
 			if(lock == null)
 			{
 				lock = new ReentrantLock();
 				synchronized(Procedure.class) // memory barrier for out of order problem
 				{
-					_lockPool[lockId] = lock;
+					_lockPool[lockIdx] = lock;
 				}
 			}
 			return lock;
@@ -292,7 +290,7 @@ public abstract class Procedure implements Runnable
 	 */
 	public static final boolean isLocked(int lockid)
 	{
-		return getLock(lockid).isLocked();
+		return getLock(lockid & _lockMask).isLocked();
 	}
 
 	/**
@@ -300,7 +298,7 @@ public abstract class Procedure implements Runnable
 	 */
 	public static final boolean isLockedByCurrentThread(int lockid)
 	{
-		return getLock(lockid).isHeldByCurrentThread();
+		return getLock(lockid & _lockMask).isHeldByCurrentThread();
 	}
 
 	/**
@@ -310,7 +308,7 @@ public abstract class Procedure implements Runnable
 	 */
 	static ReentrantLock tryLock(int lockId)
 	{
-		ReentrantLock lock = getLock(lockId);
+		ReentrantLock lock = getLock(lockId & _lockMask);
 		return lock.tryLock() ? lock : null;
 	}
 
@@ -324,7 +322,7 @@ public abstract class Procedure implements Runnable
 	{
 		unlock();
 		Context ctx = _ctx.get();
-		(ctx.locks[0] = getLock(lockId)).lockInterruptibly();
+		(ctx.locks[0] = getLock(lockId & _lockMask)).lockInterruptibly();
 		ctx.lockCount = 1;
 	}
 
@@ -333,7 +331,7 @@ public abstract class Procedure implements Runnable
 	 * <p>
 	 * lockId通过{@link Table}/{@link TableLong}的lockId方法获取<br>
 	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁
-	 * @param lockIds 注意此数组内的元素会被排序
+	 * @param lockIds 注意此数组内的元素会被修改和排序
 	 */
 	protected final void lock(int[] lockIds) throws InterruptedException
 	{
@@ -341,6 +339,8 @@ public abstract class Procedure implements Runnable
 		int n = lockIds.length;
 		if(n > Const.maxLockPerProcedure)
 		    throw new IllegalStateException("lock exceed: " + n + '>' + Const.maxLockPerProcedure);
+		for(int i = 0; i < n; ++i)
+			lockIds[i] &= _lockMask;
 		Arrays.sort(lockIds);
 		Context ctx = _ctx.get();
 		for(int i = 0; i < n;)
@@ -357,51 +357,30 @@ public abstract class Procedure implements Runnable
 	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁
 	 * @param lockIds 此容器内的元素不会改动
 	 */
-	protected final void lock(List<Integer> lockIds) throws InterruptedException
+	protected final void lock(Collection<Integer> lockIds) throws InterruptedException
 	{
 		unlock();
 		int n = lockIds.size();
 		if(n > Const.maxLockPerProcedure)
 		    throw new IllegalStateException("lock exceed: " + n + '>' + Const.maxLockPerProcedure);
-		int[] ids = new int[n];
+		int[] idxes = new int[n];
 		int i = 0;
-		if(lockIds instanceof RandomAccess)
+		if(lockIds instanceof ArrayList)
 		{
+			ArrayList<Integer> lockList = (ArrayList<Integer>)lockIds;
 			for(; i < n; ++i)
-				ids[i] = lockIds.get(i);
+				idxes[i] = lockList.get(i) & _lockMask;
 		}
 		else
 		{
 			for(int lockId : lockIds)
-				ids[i++] = lockId;
+				idxes[i++] = lockId & _lockMask;
 		}
-		Arrays.sort(ids);
+		Arrays.sort(idxes);
 		Context ctx = _ctx.get();
 		for(i = 0; i < n;)
 		{
-			(ctx.locks[i] = getLock(ids[i])).lockInterruptibly();
-			ctx.lockCount = ++i;
-		}
-	}
-
-	/**
-	 * 加锁一组排序过的lockId
-	 * <p>
-	 * lockId通过{@link Table}/{@link TableLong}的lockId方法获取<br>
-	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁 这个方法比加锁一组未排序的lockId的效率高
-	 * @param lockIds 此容器内的元素不会改动
-	 */
-	protected final void lock(SortedSet<Integer> lockIds) throws InterruptedException
-	{
-		unlock();
-		int n = lockIds.size();
-		if(n > Const.maxLockPerProcedure)
-		    throw new IllegalStateException("lock exceed: " + n + '>' + Const.maxLockPerProcedure);
-		int i = 0;
-		Context ctx = _ctx.get();
-		for(int lockId : lockIds)
-		{
-			(ctx.locks[i] = getLock(lockId)).lockInterruptibly();
+			(ctx.locks[i] = getLock(idxes[i])).lockInterruptibly();
 			ctx.lockCount = ++i;
 		}
 	}
@@ -429,22 +408,22 @@ public abstract class Procedure implements Runnable
 	 * 内部用于排序加锁2个lockId
 	 * <p>
 	 */
-	private void lock2(int lockId0, int lockId1) throws InterruptedException
+	private void lock2(int lockIdx0, int lockIdx1) throws InterruptedException
 	{
 		Context ctx = _ctx.get();
 		int i = ctx.lockCount;
-		if(lockId0 < lockId1)
+		if(lockIdx0 < lockIdx1)
 		{
-			(ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+			(ctx.locks[i] = getLock(lockIdx0)).lockInterruptibly();
 			ctx.lockCount = ++i;
-			(ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+			(ctx.locks[i] = getLock(lockIdx1)).lockInterruptibly();
 			ctx.lockCount = ++i;
 		}
 		else
 		{
-			(ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+			(ctx.locks[i] = getLock(lockIdx1)).lockInterruptibly();
 			ctx.lockCount = ++i;
-			(ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+			(ctx.locks[i] = getLock(lockIdx0)).lockInterruptibly();
 			ctx.lockCount = ++i;
 		}
 	}
@@ -453,43 +432,43 @@ public abstract class Procedure implements Runnable
 	 * 内部用于排序加锁3个lockId
 	 * <p>
 	 */
-	private void lock3(int lockId0, int lockId1, int lockId2) throws InterruptedException
+	private void lock3(int lockIdx0, int lockIdx1, int lockIdx2) throws InterruptedException
 	{
 		Context ctx = _ctx.get();
 		int i = ctx.lockCount;
-		if(lockId0 <= lockId1)
+		if(lockIdx0 <= lockIdx1)
 		{
-			if(lockId0 < lockId2)
+			if(lockIdx0 < lockIdx2)
 			{
-				(ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+				(ctx.locks[i] = getLock(lockIdx0)).lockInterruptibly();
 				ctx.lockCount = ++i;
-				lock2(lockId1, lockId2);
+				lock2(lockIdx1, lockIdx2);
 			}
 			else
 			{
-				(ctx.locks[i] = getLock(lockId2)).lockInterruptibly();
+				(ctx.locks[i] = getLock(lockIdx2)).lockInterruptibly();
 				ctx.lockCount = ++i;
-				(ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+				(ctx.locks[i] = getLock(lockIdx0)).lockInterruptibly();
 				ctx.lockCount = ++i;
-				(ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+				(ctx.locks[i] = getLock(lockIdx1)).lockInterruptibly();
 				ctx.lockCount = ++i;
 			}
 		}
 		else
 		{
-			if(lockId1 < lockId2)
+			if(lockIdx1 < lockIdx2)
 			{
-				(ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+				(ctx.locks[i] = getLock(lockIdx1)).lockInterruptibly();
 				ctx.lockCount = ++i;
-				lock2(lockId0, lockId2);
+				lock2(lockIdx0, lockIdx2);
 			}
 			else
 			{
-				(ctx.locks[i] = getLock(lockId2)).lockInterruptibly();
+				(ctx.locks[i] = getLock(lockIdx2)).lockInterruptibly();
 				ctx.lockCount = ++i;
-				(ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
+				(ctx.locks[i] = getLock(lockIdx1)).lockInterruptibly();
 				ctx.lockCount = ++i;
-				(ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
+				(ctx.locks[i] = getLock(lockIdx0)).lockInterruptibly();
 				ctx.lockCount = ++i;
 			}
 		}
@@ -505,7 +484,7 @@ public abstract class Procedure implements Runnable
 	protected final void lock(int lockId0, int lockId1) throws InterruptedException
 	{
 		unlock();
-		lock2(lockId0, lockId1);
+		lock2(lockId0 & _lockMask, lockId1 & _lockMask);
 	}
 
 	/**
@@ -518,7 +497,7 @@ public abstract class Procedure implements Runnable
 	protected final void lock(int lockId0, int lockId1, int lockId2) throws InterruptedException
 	{
 		unlock();
-		lock3(lockId0, lockId1, lockId2);
+		lock3(lockId0 & _lockMask, lockId1 & _lockMask, lockId2 & _lockMask);
 	}
 
 	/**
@@ -531,6 +510,10 @@ public abstract class Procedure implements Runnable
 	protected final void lock(int lockId0, int lockId1, int lockId2, int lockId3) throws InterruptedException
 	{
 		unlock();
+		lockId0 &= _lockMask;
+		lockId1 &= _lockMask;
+		lockId2 &= _lockMask;
+		lockId3 &= _lockMask;
 		Context ctx = _ctx.get();
 		int i = 0;
 		if(lockId0 <= lockId1)
