@@ -201,7 +201,9 @@ public final class Util
 	 */
 	public static StringBuilder appendJson(StringBuilder s, Object o)
 	{
-		if(o instanceof Octets)
+		if(o instanceof Number)
+			return s.append(o.toString());
+		else if(o instanceof Octets)
 			return ((Octets)o).dumpJStr(s);
 		else if(o instanceof Bean)
 			return ((Bean<?>)o).toJson(s);
@@ -243,7 +245,9 @@ public final class Util
 	 */
 	public static StringBuilder appendLua(StringBuilder s, Object o)
 	{
-		if(o instanceof Octets)
+		if(o instanceof Number)
+			return s.append(o.toString());
+		else if(o instanceof Octets)
 			return ((Octets)o).dumpJStr(s);
 		else if(o instanceof Bean)
 			return ((Bean<?>)o).toLua(s);
