@@ -43,8 +43,8 @@ License:
 
 托管站点:
  * https://github.com/dwing4g/jane
- * https://code.google.com/p/jane-framework/
  * https://git.oschina.net/dwing/jane
+ * https://code.google.com/p/jane-framework/
 
 参考的开源库:
  * 日志库:
@@ -54,7 +54,7 @@ License:
  * 网络库:
   * mina:           http://mina.apache.org/
   * netty:          http://netty.io/
-  * rupy:           https://code.google.com/p/rupy/
+  * rupy:           https://github.com/tinspin/rupy
   * tjws:           http://tjws.sourceforge.net/
  * 数据库:
   * leveldb:        https://github.com/google/leveldb
@@ -69,7 +69,7 @@ License:
  * 脚本库:
   * luaj:           http://luaj.org/luaj/README.html
  * 基础库:
-  * com.googlecode.concurrentlinkedhashmap: https://code.google.com/p/concurrentlinkedhashmap/
+  * com.googlecode.concurrentlinkedhashmap: https://github.com/ben-manes/concurrentlinkedhashmap
   * kryo:           https://github.com/EsotericSoftware/kryo
   * gnu.trove.map:  http://trove.starlight-systems.com/
   * org.cliffc.high_scale_lib: http://sourceforge.net/projects/high-scale-lib/
