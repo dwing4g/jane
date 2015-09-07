@@ -4,7 +4,9 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
-import java.util.HashMap;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.ArrayList;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import jane.core.Octets;
@@ -67,7 +69,7 @@ public final class LevelDBImport
 		Pattern patPut3 = Pattern.compile("[\"(.*)\"]=\"(.*)\""); // LevelDBExport dump file
 		Pattern patDel1 = Pattern.compile("del '(.*)'"); // the official leveldb log dump file
 		Pattern patDel2 = Pattern.compile("'(.*)' @ \\d+ : del"); // the official leveldb ldb dump file
-		HashMap<Octets, OctetsStream> buf = new HashMap<Octets, OctetsStream>(10000);
+		ArrayList<Entry<Octets, OctetsStream>> buf = new ArrayList<Entry<Octets, OctetsStream>>(10000);
 		long count = 0;
 		String line;
 		while((line = br.readLine()) != null)
@@ -87,11 +89,11 @@ public final class LevelDBImport
 			else
 				continue;
 
-			buf.put(str2Oct(mat.group(1)), v);
+			buf.add(new SimpleEntry<Octets, OctetsStream>(str2Oct(mat.group(1)), v));
 			if(buf.size() >= 10000)
 			{
 				count += buf.size();
-				StorageLevelDB.leveldb_write(db, buf.entrySet().iterator());
+				StorageLevelDB.leveldb_write(db, buf.iterator());
 				buf.clear();
 			}
 		}
@@ -99,12 +101,12 @@ public final class LevelDBImport
 		if(!buf.isEmpty())
 		{
 			count += buf.size();
-			StorageLevelDB.leveldb_write(db, buf.entrySet().iterator());
+			StorageLevelDB.leveldb_write(db, buf.iterator());
 			buf.clear();
 		}
 
 		System.err.println("INFO: closing db ...");
 		StorageLevelDB.leveldb_close(db);
-		System.err.println("INFO: done! (count=" + count + ", " + (System.currentTimeMillis() - t) + " ms)");
+		System.err.println("INFO: done! (count=" + count + ") (" + (System.currentTimeMillis() - t) + " ms)");
 	}
 }

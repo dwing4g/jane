@@ -28,10 +28,26 @@ public final class StorageMVStore implements Storage
 	private final class Table<K, V extends Bean<V>> implements Storage.Table<K, V>
 	{
 		private final MVMap<K, V> _map;
+		private final String      _tableName;
+		private final int         _tableId;
 
-		public Table(MVMap<K, V> map)
+		public Table(MVMap<K, V> map, int tableId, String tableName)
 		{
 			_map = map;
+			_tableName = tableName;
+			_tableId = tableId;
+		}
+
+		@Override
+		public int getTableId()
+		{
+			return _tableId;
+		}
+
+		@Override
+		public String getTableName()
+		{
+			return _tableName;
 		}
 
 		@Override
@@ -109,11 +125,25 @@ public final class StorageMVStore implements Storage
 	{
 		private final MVMap<Long, V> _map;
 		private final String         _tableName;
+		private final int            _tableId;
 
-		public TableLong(MVMap<Long, V> map, String tableName)
+		public TableLong(MVMap<Long, V> map, int tableId, String tableName)
 		{
 			_map = map;
 			_tableName = tableName;
+			_tableId = tableId;
+		}
+
+		@Override
+		public int getTableId()
+		{
+			return _tableId;
+		}
+
+		@Override
+		public String getTableName()
+		{
+			return _tableName;
 		}
 
 		@Override
@@ -531,7 +561,7 @@ public final class StorageMVStore implements Storage
 		else
 			_keyType.put(tableName, dtName);
 		return new Table<K, V>(_db.openMap(tableName, new MVMap.Builder<K, V>().keyType(dtK).
-		        valueType(new MVStoreBeanType(tableName, stubV))));
+		        valueType(new MVStoreBeanType(tableName, stubV))), tableId, tableName);
 	}
 
 	@Override
@@ -552,7 +582,7 @@ public final class StorageMVStore implements Storage
 		else
 			_keyType.put(tableName, "Long");
 		return new TableLong<V>(_db.openMap(tableName, new MVMap.Builder<Long, V>().keyType(MVStoreLongType.instance()).
-		        valueType(new MVStoreBeanType(tableName, stubV))), tableName);
+		        valueType(new MVStoreBeanType(tableName, stubV))), tableId, tableName);
 	}
 
 	public static <K, V> MVMap<K, V> openTable(MVStore sto, String tableName, MVMap<String, String> keyType)

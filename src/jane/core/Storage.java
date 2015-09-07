@@ -77,6 +77,16 @@ public interface Storage extends Closeable
 	interface Table<K, V extends Bean<V>>
 	{
 		/**
+		 * 获取表ID
+		 */
+		int getTableId();
+
+		/**
+		 * 获取表名
+		 */
+		String getTableName();
+
+		/**
 		 * 根据记录的key获取value
 		 */
 		V get(K k);
@@ -111,6 +121,16 @@ public interface Storage extends Closeable
 
 	interface TableLong<V extends Bean<V>>
 	{
+		/**
+		 * 获取表ID
+		 */
+		int getTableId();
+
+		/**
+		 * 获取表名
+		 */
+		String getTableName();
+
 		/**
 		 * 根据记录的key获取value
 		 */

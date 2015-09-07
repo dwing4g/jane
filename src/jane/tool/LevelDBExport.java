@@ -64,6 +64,6 @@ public final class LevelDBExport
 		System.err.println("INFO: closing db ...");
 		StorageLevelDB.leveldb_iter_delete(iter);
 		StorageLevelDB.leveldb_close(db);
-		System.err.println("INFO: done! (count=" + count + ", " + (System.currentTimeMillis() - t) + " ms)");
+		System.err.println("INFO: done! (count=" + count + ") (" + (System.currentTimeMillis() - t) + " ms)");
 	}
 }

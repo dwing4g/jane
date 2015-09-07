@@ -37,13 +37,27 @@ public final class StorageMapDB implements Storage
 	{
 		private final BTreeMap<K, Octets> _map;
 		private final String              _tableName;
+		private final int                 _tableId;
 		private final V                   _stubV;
 
-		public Table(BTreeMap<K, Octets> map, String tableName, V stubV)
+		public Table(BTreeMap<K, Octets> map, int tableId, String tableName, V stubV)
 		{
 			_map = map;
 			_tableName = tableName;
+			_tableId = tableId;
 			_stubV = stubV;
+		}
+
+		@Override
+		public int getTableId()
+		{
+			return _tableId;
+		}
+
+		@Override
+		public String getTableName()
+		{
+			return _tableName;
 		}
 
 		@Override
@@ -100,15 +114,29 @@ public final class StorageMapDB implements Storage
 	{
 		private final BTreeMap<Long, Octets> _map;
 		private final String                 _tableName;
+		private final int                    _tableId;
 		private final Atomic.Long            _idCounter;
 		private final V                      _stubV;
 
-		public TableLong(BTreeMap<Long, Octets> map, String tableName, V stubV)
+		public TableLong(BTreeMap<Long, Octets> map, int tableId, String tableName, V stubV)
 		{
 			_map = map;
 			_tableName = tableName;
+			_tableId = tableId;
 			_idCounter = _db.getAtomicLong(tableName + ".idcounter");
 			_stubV = stubV;
+		}
+
+		@Override
+		public int getTableId()
+		{
+			return _tableId;
+		}
+
+		@Override
+		public String getTableName()
+		{
+			return _tableName;
 		}
 
 		@Override
@@ -482,7 +510,7 @@ public final class StorageMapDB implements Storage
 			_tableStubK.put(tableName, (Bean<?>)stubK);
 			btmm.keySerializer(new MapDBKeyBeanSerializer(tableName, (Bean<?>)stubK));
 		}
-		return new Table<K, V>(btmm.<K, Octets>makeOrGet(), tableName, stubV);
+		return new Table<K, V>(btmm.<K, Octets>makeOrGet(), tableId, tableName, stubV);
 	}
 
 	@Override
@@ -491,7 +519,7 @@ public final class StorageMapDB implements Storage
 		BTreeMapMaker btmm = _db.createTreeMap(tableName)
 		        .valueSerializer(MapDBOctetsSerializer.instance())
 		        .keySerializer(BTreeKeySerializer.ZERO_OR_POSITIVE_LONG);
-		return new TableLong<V>(btmm.<Long, Octets>makeOrGet(), tableName, stubV);
+		return new TableLong<V>(btmm.<Long, Octets>makeOrGet(), tableId, tableName, stubV);
 	}
 
 	@Override

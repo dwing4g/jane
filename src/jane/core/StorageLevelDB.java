@@ -53,8 +53,8 @@ public final class StorageLevelDB implements Storage
 	{
 		private final String       _tableName;
 		private final int          _tableId;
-		private final byte[]       _tableIdBuf     = new byte[5];
 		private final int          _tableIdLen;
+		private final byte[]       _tableIdBuf     = new byte[5];
 		private final OctetsStream _tableIdCounter = new OctetsStream(6);
 		private final V            _stubV;
 
@@ -78,6 +78,18 @@ public final class StorageLevelDB implements Storage
 				key.append(_tableIdBuf, 0, _tableIdLen);
 			key.marshal(k);
 			return key;
+		}
+
+		@Override
+		public int getTableId()
+		{
+			return _tableId;
+		}
+
+		@Override
+		public String getTableName()
+		{
+			return _tableName;
 		}
 
 		@Override
@@ -199,8 +211,8 @@ public final class StorageLevelDB implements Storage
 	{
 		protected final String       _tableName;
 		protected final int          _tableId;
-		protected final byte[]       _tableIdBuf  = new byte[5];
 		protected final int          _tableIdLen;
+		protected final byte[]       _tableIdBuf  = new byte[5];
 		protected final OctetsStream _tableIdNext = new OctetsStream(5);
 		protected final V            _stubV;
 
@@ -210,13 +222,28 @@ public final class StorageLevelDB implements Storage
 			_tableId = tableId;
 			OctetsStream os = OctetsStream.wrap(_tableIdBuf, 0);
 			_tableIdLen = os.marshalUInt(tableId).size();
-			_tableIdNext.marshalUInt(tableId + 1);
+			if(tableId < Integer.MAX_VALUE)
+				_tableIdNext.marshalUInt(tableId + 1);
+			else
+				_tableIdNext.marshal1((byte)0xf1);
 			_stubV = stubV;
 		}
 
 		protected abstract OctetsStream getKey(K k);
 
 		protected abstract boolean onWalk(WalkHandler<K> handler, OctetsStream k) throws MarshalException;
+
+		@Override
+		public int getTableId()
+		{
+			return _tableId;
+		}
+
+		@Override
+		public String getTableName()
+		{
+			return _tableName;
+		}
 
 		@Override
 		public void put(K k, V v)
