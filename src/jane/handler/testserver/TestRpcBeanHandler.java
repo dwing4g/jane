@@ -60,6 +60,6 @@ public class TestRpcBeanHandler extends RpcHandler<TestBean, TestType, TestRpcBe
 	public void onTimeout(final NetManager manager, final IoSession session, final TestRpcBean rpcBean)
 	{
 		final TestBean arg = rpcBean.getArg();
-		Log.log.debug("{}: onTimeout: {}", getClass().getName(), arg);
+		Log.log.error("{}: onTimeout: {}", getClass().getName(), arg);
 	}
 }

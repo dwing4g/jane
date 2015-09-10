@@ -320,7 +320,7 @@ public final class #(bean.name)Handler extends RpcHandler<#(bean_arg.name), #(be
 	public void onTimeout(final NetManager manager, final IoSession session, final #(bean.name) rpcBean)
 	{
 		final #(bean_arg.name) arg = rpcBean.getArg();
-		Log.log.debug("{}: onTimeout: {}", getClass().getName(), arg);
+		Log.log.error("{}: onTimeout: {}", getClass().getName(), arg);
 	}
 }
 ]=]

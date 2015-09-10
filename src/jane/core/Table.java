@@ -402,7 +402,8 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	/**
 	 * 按记录key的顺序遍历此表的所有记录
 	 * <p>
-	 * 遍历时注意先根据记录的key获取锁再调用get获得其value, 必须在事务中调用此方法
+	 * 遍历时注意先根据记录的key获取锁再调用get获得其value(取锁操作必须在事务中)<br>
+	 * 注意: 遍历的key列表仅从数据库层获取,当前没有checkpoint的cache记录会被无视,所以get获取到的key可能不是最新,而且得到的value有可能为null
 	 * @param handler 遍历过程中返回false可中断遍历
 	 * @param from 需要遍历的最小key. null表示最小值
 	 * @param to 需要遍历的最大key. null表示最大值

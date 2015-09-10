@@ -32,7 +32,7 @@ public final class TestBeanHandler extends BeanHandler<TestBean>
 			@Override
 			public void onTimeout(NetManager mgr, IoSession ses, TestRpcBean rpcBean)
 			{
-				Log.log.info("{}: onTimeout: {}", getClass().getName(), rpcBean.getArg());
+				Log.log.error("{}: onTimeout: {}", getClass().getName(), rpcBean.getArg());
 				ses.close(false);
 			}
 		});
