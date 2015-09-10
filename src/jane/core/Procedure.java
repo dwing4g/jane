@@ -51,7 +51,8 @@ public abstract class Procedure implements Runnable
 			protected Context initialValue()
 			{
 				Context ctx = new Context();
-				_procThreads.put(Thread.currentThread(), ctx);
+				if(!Const.debug)
+				    _procThreads.put(Thread.currentThread(), ctx);
 				return ctx;
 			}
 		};
