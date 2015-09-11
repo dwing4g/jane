@@ -14,6 +14,11 @@ public abstract class TableBase<V extends Bean<V>>
 	protected final AtomicLong                _readCount    = new AtomicLong();               // 读操作次数统计
 	protected final AtomicLong                _readStoCount = new AtomicLong();               // 读数据库存储的次数统计(即cache-miss的次数统计)
 
+	static List<TableBase<?>> getTables()
+	{
+		return _tables;
+	}
+
 	/**
 	 * 尝试依次加锁并保存全部表已修改的记录
 	 * <p>
@@ -77,6 +82,16 @@ public abstract class TableBase<V extends Bean<V>>
 	{
 		return _tableName;
 	}
+
+	/**
+	 * 获取读缓存记录数
+	 */
+	public abstract int getCacheSize();
+
+	/**
+	 * 获取写缓存记录数
+	 */
+	public abstract int getCacheModSize();
 
 	/**
 	 * 获取对当前表读取的统计次数

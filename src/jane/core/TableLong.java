@@ -155,6 +155,24 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	}
 
 	/**
+	 * 获取读缓存记录数
+	 */
+	@Override
+	public int getCacheSize()
+	{
+		return _cache.size();
+	}
+
+	/**
+	 * 获取写缓存记录数
+	 */
+	@Override
+	public int getCacheModSize()
+	{
+		return _cacheMod.size();
+	}
+
+	/**
 	 * 根据记录的key获取value
 	 * <p>
 	 * 会自动添加到读cache中<br>
@@ -163,6 +181,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	@Deprecated
 	public V getUnsafe(long k)
 	{
+		_readCount.incrementAndGet();
 		V v = _cache.get(k);
 		if(v != null) return v;
 		if(_cacheMod == null) return null;
@@ -173,6 +192,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 			_cache.put(k, v);
 			return v;
 		}
+		_readStoCount.incrementAndGet();
 		v = _stoTable.get(k);
 		if(v != null)
 		{
@@ -222,6 +242,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	@Deprecated
 	public V getNoCacheUnsafe(long k)
 	{
+		_readCount.incrementAndGet();
 		V v = _cache.get(k);
 		if(v != null) return v;
 		if(_cacheMod == null) return null;
@@ -231,6 +252,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 			if(v == _deleted) return null;
 			return v;
 		}
+		_readStoCount.incrementAndGet();
 		return _stoTable.get(k);
 	}
 
@@ -253,6 +275,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	@Deprecated
 	public V getCacheUnsafe(long k)
 	{
+		_readCount.incrementAndGet();
 		V v = _cache.get(k);
 		if(v != null) return v;
 		if(_cacheMod == null) return null;

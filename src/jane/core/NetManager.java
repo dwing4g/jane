@@ -103,6 +103,14 @@ public class NetManager implements IoHandler
 	}
 
 	/**
+	 * 获取当前通信中的RPC数量
+	 */
+	public static int getRpcCount()
+	{
+		return _rpcs.size();
+	}
+
+	/**
 	 * 在当前的RPC调用记录中移除某个RPC
 	 * <p>
 	 * 只在RPC得到回复时调用

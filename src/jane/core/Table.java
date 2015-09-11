@@ -113,6 +113,24 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	}
 
 	/**
+	 * 获取读缓存记录数
+	 */
+	@Override
+	public int getCacheSize()
+	{
+		return _cache.size();
+	}
+
+	/**
+	 * 获取写缓存记录数
+	 */
+	@Override
+	public int getCacheModSize()
+	{
+		return _cacheMod.size();
+	}
+
+	/**
 	 * 根据记录的key获取value
 	 * <p>
 	 * 会自动添加到读cache中<br>
