@@ -645,7 +645,11 @@ public final class StorageMVStore implements Storage
 	{
 		if(_dbFile == null)
 		    throw new IllegalStateException("current database is not opened");
-		File fdstTmp = new File(fdst.getAbsolutePath() + ".tmp");
+		String dstPath = fdst.getAbsolutePath();
+		File path = fdst.getParentFile();
+		if(path != null && !path.isDirectory() && !path.mkdirs())
+		    throw new IOException("create db-backup path failed: " + dstPath);
+		File fdstTmp = new File(dstPath + ".tmp");
 		long r;
 		if(!_db.isClosed())
 		{

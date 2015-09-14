@@ -559,10 +559,14 @@ public final class StorageMapDB implements Storage
 	{
 		if(_dbFile == null)
 		    throw new IllegalStateException("current database is not opened");
+		String dstPath = fdst.getAbsolutePath();
+		File path = fdst.getParentFile();
+		if(path != null && !path.isDirectory() && !path.mkdirs())
+		    throw new IOException("create db-backup path failed: " + dstPath);
 		File fsrcP = new File(_dbFile.getAbsolutePath() + ".p");
-		File fdstTmp = new File(fdst.getAbsolutePath() + ".tmp");
-		File fdstP = new File(fdst.getAbsolutePath() + ".p");
-		File fdstPTmp = new File(fdst.getAbsolutePath() + ".p.tmp");
+		File fdstTmp = new File(dstPath + ".tmp");
+		File fdstP = new File(dstPath + ".p");
+		File fdstPTmp = new File(dstPath + ".p.tmp");
 		long r = Util.copyFile(_dbFile, fdstTmp);
 		r += Util.copyFile(fsrcP, fdstPTmp);
 		if(!fdstTmp.renameTo(fdst))

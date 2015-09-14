@@ -574,15 +574,19 @@ public final class StorageLevelDB implements Storage
 	public long backup(File fdst) throws IOException
 	{
 		if(_dbFile == null) throw new IllegalStateException("current database is not opened");
-		String srcPath = fdst.getAbsolutePath();
-		int pos = srcPath.lastIndexOf('.');
-		if(pos <= 0) throw new IOException("invalid backup path: " + srcPath);
-		srcPath = srcPath.substring(0, pos);
+		String dstPath = fdst.getAbsolutePath();
+		int pos = dstPath.lastIndexOf('.');
+		if(pos <= 0) throw new IOException("invalid db-backup path: " + dstPath);
+		dstPath = dstPath.substring(0, pos);
 		long period = Const.levelDBFullBackupPeriod * 1000;
 		long basetime = DBManager.instance().getBackupBaseTime();
 		long time = System.currentTimeMillis();
 		Date backupDate = new Date(basetime + (time - basetime) / period * period);
 		SimpleDateFormat sdf = DBManager.instance().getBackupDateFormat();
-		return leveldb_backup(_db, srcPath, srcPath + '.' + sdf.format(backupDate), sdf.format(new Date(time)));
+		dstPath += '.' + sdf.format(backupDate);
+		File path = new File(dstPath).getParentFile();
+		if(path != null && !path.isDirectory() && !path.mkdirs())
+		    throw new IOException("create backup path failed: " + dstPath);
+		return leveldb_backup(_db, _dbFile.getAbsolutePath(), dstPath, sdf.format(new Date(time)));
 	}
 }
