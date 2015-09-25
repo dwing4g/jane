@@ -39,7 +39,7 @@ public final class HttpCodec extends IoFilterAdapter
 	private static final byte[]     COOKIE_MARK      = "\r\nCookie: ".getBytes(Const.stringCharsetUTF8);
 	private static final byte[]     CHUNK_OVER_MARK  = "\r\n".getBytes(Const.stringCharsetUTF8);
 	private static final byte[]     CHUNK_END_MARK   = "0\r\n\r\n".getBytes(Const.stringCharsetUTF8);
-	private static final String     DEF_CONT_CHARSET = "UTF-8";
+	private static final String     DEF_CONT_CHARSET = "utf-8";
 	private static final Pattern    PATTERN_COOKIE   = Pattern.compile("(\\w+)=(.*?)(; |$)");
 	private static final Pattern    PATTERN_CHARSET  = Pattern.compile("charset=([\\w-]+)");
 	private static final DateFormat _sdf             = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);

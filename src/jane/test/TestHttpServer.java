@@ -64,7 +64,7 @@ public final class TestHttpServer extends NetManager
 			System.out.println("cookie: " + e.getKey() + ": " + e.getValue());
 		List<String> param = new ArrayList<String>();
 		param.add("Server: jane");
-		param.add("Content-Type: text/html; charset=UTF-8");
+		param.add("Content-Type: text/html; charset=utf-8");
 		param.add("Cache-Control: private");
 		param.add("Pragma: no-cache");
 		if(params.containsKey("file"))

@@ -20,7 +20,7 @@ local function CheckFile()
 	local fix = false
 
 	if s:sub(1, 3) == "\xef\xbb\xbf" then
-		WriteInfo("file head has UTF-8 bom")
+		WriteInfo("file head has utf-8 bom")
 		fix = true
 	end
 

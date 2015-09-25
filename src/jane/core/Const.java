@@ -13,8 +13,8 @@ public final class Const
 {
 	private static final Properties _property         = new Properties();
 	public static final boolean     debug;
-	public static final Charset     stringCharsetUTF8 = Charset.forName("UTF-8");
-	public static final Charset     stringCharsetGBK  = Charset.forName("GBK");
+	public static final Charset     stringCharsetUTF8 = Charset.forName("utf-8");
+	public static final Charset     stringCharsetGBK  = Charset.forName("gbk");
 	public static final Charset     stringCharset;
 	public static final int         connectTimeout;
 	public static final int         rpcCheckInterval;
@@ -62,7 +62,7 @@ public final class Const
 		}
 		String str = System.getProperty("debug");
 		debug = (str != null && str.trim().equalsIgnoreCase("true") || getPropBoolean("debug"));
-		stringCharset = Charset.forName(getPropStr("stringCharset", "UTF-8"));
+		stringCharset = Charset.forName(getPropStr("stringCharset", "utf-8"));
 		connectTimeout = getPropInt("connectTimeout", 5, 1);
 		rpcCheckInterval = getPropInt("rpcCheckInterval", 3, 1);
 		maxRawBeanSize = getPropInt("maxRawBeanSize", 65536, 0);

@@ -107,7 +107,7 @@ public class StatusServer extends NetManager
 			HttpCodec.sendHead(session, "404 Not Found", 0, param);
 		else
 		{
-			param.add("Content-Type: text/html; charset=UTF-8");
+			param.add("Content-Type: text/html; charset=utf-8");
 			param.add("Cache-Control: private");
 			param.add("Pragma: no-cache");
 			byte[] data = genStatus().getBytes(Const.stringCharsetUTF8);

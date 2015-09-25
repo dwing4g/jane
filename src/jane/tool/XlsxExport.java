@@ -195,10 +195,10 @@ public final class XlsxExport
 				strColumn[i] = mat.group(1);
 		}
 
-		PrintWriter pw = new PrintWriter(new OutputStreamWriter(outXml, "UTF-8"));
+		PrintWriter pw = new PrintWriter(new OutputStreamWriter(outXml, "utf-8"));
 		try
 		{
-			pw.print("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<table xlsx=\"");
+			pw.print("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>\n<table xlsx=\"");
 			if(tableName != null) pw.print(toXmlStr(tableName));
 			pw.print("\" sheetid=\"");
 			pw.print(sheetId);
@@ -249,7 +249,7 @@ public final class XlsxExport
 	 */
 	public static void xlsx2Txt(InputStream isXlsx, int sheetId, OutputStream outTxt) throws Exception
 	{
-		Charset cs = Charset.forName("UTF-8");
+		Charset cs = Charset.forName("utf-8");
 		for(Map.Entry<Integer, Map<Integer, String>> e : xlsx2Maps(isXlsx, sheetId).entrySet())
 		{
 			int y = e.getKey();
