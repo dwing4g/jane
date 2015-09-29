@@ -30,6 +30,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	{
 		super(tableId, tableName, stubV, (lockName != null && !(lockName = lockName.trim()).isEmpty() ? lockName.hashCode() : tableId) * 0x9e3779b1);
 		_stoTable = stoTable;
+		if(cacheSize < 1) cacheSize = 1;
 		_cache = Util.newLRUConcurrentHashMap(cacheSize);
 		_cacheMod = (stoTable != null ? Util.<K, V>newConcurrentHashMap() : null);
 		if(stoTable != null) _tables.add(this);
