@@ -404,7 +404,10 @@ local function subtypename(var, t)
 		local t = { id = 0, import = {} } def(t, 0) def = t
 		for k in pairs(t.import) do var.import[k] = true end
 	end
-	if type(def) == "table" then return type(def.type_o) == "string" and def.type_o or def.type_o(var) end
+	if type(def) == "table" then
+		if def.type_o == "Octets" then var.import[#var.import + 1] = "jane.core.Octets" end
+		return type(def.type_o) == "string" and def.type_o or def.type_o(var)
+	end
 	error("ERROR: unknown subtypename(" .. var .. ", " .. t .. ")")
 end
 local function subtypename_safe(var, t)
