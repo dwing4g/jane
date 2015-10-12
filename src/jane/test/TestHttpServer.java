@@ -54,7 +54,7 @@ public final class TestHttpServer extends NetManager
 		String path = HttpCodec.getHeadPath(os);
 		System.out.println("path: " + path);
 		Map<String, String> params = new HashMap<String, String>();
-		HttpCodec.getHeadParams(os, 0, os.position(), params);
+		HttpCodec.getHeadParams(os, params);
 		for(Entry<String, String> e : params.entrySet())
 			System.out.println("param: " + e.getKey() + ": " + e.getValue());
 		System.out.println("charset: " + HttpCodec.getHeadCharset(os));

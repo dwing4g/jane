@@ -171,6 +171,34 @@ public final class HttpCodec extends IoFilterAdapter
 	/**
 	 * @return 获取的参数数量
 	 */
+	public static int getParams(Octets oct, int pos, int len, Map<String, String> params)
+	{
+		byte[] buf = oct.array();
+		if(pos < 0) pos = 0;
+		if(pos + len > buf.length) len = buf.length - pos;
+		if(len <= 0) return 0;
+		int end = pos + len;
+		int n = 0;
+		for(int p; pos < end; pos = p + 1, ++n)
+		{
+			p = oct.find(pos, end, (byte)'&');
+			if(p < 0) p = end;
+			int r = oct.find(pos, p, (byte)'=');
+			if(r >= pos)
+			{
+				String k = decodeUrl(buf, pos, r - pos);
+				String v = decodeUrl(buf, r + 1, p - r - 1);
+				params.put(k, v);
+			}
+			else
+				params.put(decodeUrl(buf, pos, p - pos), "");
+		}
+		return n;
+	}
+
+	/**
+	 * @return 获取的参数数量
+	 */
 	public static int getHeadParams(Octets oct, int pos, int len, Map<String, String> params)
 	{
 		byte[] buf = oct.array();
@@ -184,27 +212,17 @@ public final class HttpCodec extends IoFilterAdapter
 		if(p < 0) return 0;
 		q = oct.find(++p, q, (byte)' ');
 		if(q < p) return 0;
-		int n = 0;
-		for(; p < q; p = e + 1, ++n)
-		{
-			e = oct.find(p, q, (byte)'&');
-			if(e < 0) e = q;
-			int r = oct.find(p, e, (byte)'=');
-			if(r >= p)
-			{
-				String k = decodeUrl(buf, p, r - p);
-				String v = decodeUrl(buf, r + 1, e - r - 1);
-				params.put(k, v);
-			}
-			else
-				params.put(decodeUrl(buf, p, e - p), "");
-		}
-		return n;
+		return getParams(oct, p, q - p, params);
 	}
 
 	public static int getHeadParams(OctetsStream os, Map<String, String> params)
 	{
 		return getHeadParams(os, 0, os.position(), params);
+	}
+
+	public static int getBodyParams(OctetsStream os, Map<String, String> params)
+	{
+		return getParams(os, os.position(), os.remain(), params);
 	}
 
 	public static long getHeadLong(OctetsStream head, byte[] key)
