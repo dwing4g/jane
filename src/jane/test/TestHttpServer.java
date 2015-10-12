@@ -116,7 +116,7 @@ public final class TestHttpServer extends NetManager
 			Log.log.error(getName() + '(' + session.getId() + ',' + session.getRemoteAddress() + "): exception: {}", cause.getMessage());
 		else
 			Log.log.error(getName() + '(' + session.getId() + ',' + session.getRemoteAddress() + "): exception:", cause);
-		session.close(false);
+		session.close(true);
 	}
 
 	public static void main(String[] args) throws Exception

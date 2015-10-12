@@ -356,14 +356,13 @@ public class NetManager implements IoHandler
 
 	/**
 	 * 停止全部相关客户端的连接
-	 * @param immediately 是否立即关闭
 	 */
-	public void stopAllClients(boolean immediately)
+	public void stopAllClients()
 	{
 		if(_connector != null)
 		{
 			for(IoSession session : _connector.getManagedSessions().values())
-				session.close(immediately);
+				session.close(true);
 		}
 	}
 
@@ -715,7 +714,7 @@ public class NetManager implements IoHandler
 	@Override
 	public void inputClosed(IoSession session)
 	{
-		session.close(false);
+		session.close(true);
 	}
 
 	@Override
@@ -755,6 +754,6 @@ public class NetManager implements IoHandler
 	public void exceptionCaught(IoSession session, Throwable cause)
 	{
 		Log.log.error(_name + '(' + session.getId() + ',' + session.getRemoteAddress() + "): exception:", cause);
-		session.close(false);
+		session.close(true);
 	}
 }
