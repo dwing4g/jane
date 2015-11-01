@@ -771,12 +771,12 @@ public class OctetsStream extends Octets
 
 	public float unmarshalFloat() throws MarshalException
 	{
-		return Float.intBitsToFloat(unmarshalInt4());
+		return Float.floatToRawIntBits(unmarshalInt4());
 	}
 
 	public double unmarshalDouble() throws MarshalException
 	{
-		return Double.longBitsToDouble(unmarshalLong8());
+		return Double.doubleToRawLongBits(unmarshalLong8());
 	}
 
 	public OctetsStream unmarshalSkip(int n) throws MarshalException

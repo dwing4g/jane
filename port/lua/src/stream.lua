@@ -13,6 +13,7 @@ local char = string.char
 local strsub = string.sub
 local format = string.format
 local concat = table.concat
+local reverse = string.reverse
 local floor = math.floor
 local require = require
 local bean = require "bean"
@@ -296,7 +297,7 @@ function Stream:marshal(v, tag, subtype, varmeta)
 			end
 		end
 		if ft then
-			append(self, writef(v))
+			append(self, reverse(writef(v))) -- reverse for little-endian
 		else
 			self:marshalInt(v)
 		end
@@ -394,7 +395,7 @@ local function unmarshalByte(self)
 	return byte(self._buf, pos)
 end
 
--- 反序列化n个字节
+-- 反序列化n个字节的小端整数
 local function unmarshalBytes(self, n)
 	local pos = self._pos
 	if pos + n > self._lim then error "unmarshal overflow" end
@@ -405,6 +406,14 @@ local function unmarshalBytes(self, n)
 	end
 	self._pos = pos + n
 	return v
+end
+
+-- 反序列化n个字节
+local function unmarshalData(self, n)
+	local pos = self._pos
+	if pos + n > self._lim then error "unmarshal overflow" end
+	self._pos = pos + n
+	return self._buf:sub(pos + 1, pos + n)
 end
 
 -- 反序列化1个字符串
@@ -452,8 +461,8 @@ end
 local function unmarshalSubVar(self, subtype)
 	if subtype == 0 then return self:unmarshalInt() end
 	if subtype == 1 then return unmarshalStr(self, self:unmarshalUInt()) end
-	if subtype == 4 then return readf32(unmarshalBytes(self, 4)) end
-	if subtype == 5 then return readf64(unmarshalBytes(self, 8)) end
+	if subtype == 4 then return readf32(reverse(unmarshalData(self, 4))) end -- reverse for little-endian
+	if subtype == 5 then return readf64(reverse(unmarshalData(self, 8))) end -- reverse for little-endian
 	return self:unmarshal(subtype)
 end
 
@@ -485,9 +494,9 @@ local function unmarshalVar(self, vars)
 					v[i] = unmarshalSubVar(self, t)
 				end
 			elseif v == 8 then
-				v = readf32(unmarshalBytes(self, 4))
+				v = readf32(reverse(unmarshalData(self, 4))) -- reverse for little-endian
 			elseif v == 9 then
-				v = readf64(unmarshalBytes(self, 8))
+				v = readf64(reverse(unmarshalData(self, 8))) -- reverse for little-endian
 			else
 				v = nil
 			end
