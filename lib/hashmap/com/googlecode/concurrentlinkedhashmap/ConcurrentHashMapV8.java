@@ -218,7 +218,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * @param <K> the type of keys maintained by this map
  * @param <V> the type of mapped values
  */
-@SuppressWarnings("all")
 public class ConcurrentHashMapV8<K,V> extends AbstractMap<K,V>
     implements ConcurrentMap<K,V>, Serializable {
     private static final long serialVersionUID = 7249069246763182397L;
@@ -2707,14 +2706,14 @@ public class ConcurrentHashMapV8<K,V> extends AbstractMap<K,V>
         private final void contendedLock() {
             boolean waiting = false;
             for (int s;;) {
-                if (((s = lockState) & WRITER) == 0) {
+                if (((s = lockState) & ~WAITER) == 0) {
                     if (U.compareAndSwapInt(this, LOCKSTATE, s, WRITER)) {
                         if (waiting)
                             waiter = null;
                         return;
                     }
                 }
-                else if ((s | WAITER) == 0) {
+                else if ((s & WAITER) == 0) {
                     if (U.compareAndSwapInt(this, LOCKSTATE, s, s | WAITER)) {
                         waiting = true;
                         waiter = Thread.currentThread();
@@ -2730,8 +2729,8 @@ public class ConcurrentHashMapV8<K,V> extends AbstractMap<K,V>
          * using tree comparisons from root, but continues linear
          * search when lock not available.
          */
-@Override
-final Node<K,V> find(int h, Object k) {
+        @Override
+        final Node<K,V> find(int h, Object k) {
             if (k != null) {
                 for (Node<K,V> e = first; e != null; e = e.next) {
                     int s; K ek;
