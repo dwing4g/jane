@@ -149,6 +149,12 @@ public final class HttpCodec extends IoFilterAdapter
 		return new String(dst, 0, dstPos, Const.stringCharsetUTF8);
 	}
 
+	public static String getHeadLine(OctetsStream head)
+	{
+		int p = head.find(0, head.position(), (byte)'\r');
+		return p < 0 ? "" : new String(head.array(), 0, p, Const.stringCharsetUTF8);
+	}
+
 	public static String getHeadVerb(OctetsStream head)
 	{
 		int p = head.find(0, head.position(), (byte)' ');

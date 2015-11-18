@@ -14,6 +14,7 @@ public final class Const
 {
 	private static final Properties _property         = new Properties();
 	public static final boolean     debug;
+	public static final Charset     stringCharsetISO  = Charset.forName("iso-8859-1");
 	public static final Charset     stringCharsetUTF8 = Charset.forName("utf-8");
 	public static final Charset     stringCharsetGBK  = Charset.forName("gbk");
 	public static final Charset     stringCharset;
