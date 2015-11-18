@@ -71,39 +71,54 @@ public abstract class Procedure implements Runnable
 						boolean foundDeadlock = false;
 						long now = System.currentTimeMillis();
 						long procTimeout = (long)Const.procedureTimeout * 1000;
+						long procDeadlockTimeout = (long)Const.procedureDeadlockTimeout * 1000;
+						long procTimoutMin = Math.min(procTimeout, procDeadlockTimeout);
 						for(Entry<Thread, Context> e : _procThreads.entrySet())
 						{
 							Thread t = e.getKey();
 							if(t.isAlive())
 							{
 								Procedure p = e.getValue().proc;
-								if(p != null && now - p._beginTime > procTimeout)
+								if(p != null && now - p._beginTime > procTimoutMin)
 								{
 									synchronized(p)
 									{
-										long timeout = now - p._beginTime;
-										if(timeout > procTimeout && e.getValue().proc != null)
+										if(p == e.getValue().proc)
 										{
-											if(!foundDeadlock)
+											long timeout = now - p._beginTime;
+											if(timeout > procTimeout)
 											{
-												foundDeadlock = true;
-												tids = ManagementFactory.getThreadMXBean().findDeadlockedThreads();
+												StringBuilder sb = new StringBuilder(4096);
+												sb.append("procedure({}) in {} interrupted for timeout ({} ms): sid={}");
+												for(StackTraceElement ste : t.getStackTrace())
+													sb.append("\tat ").append(ste);
+												Log.log.error(sb.toString(), p.getClass().getName(), t, timeout, p._sid);
+												t.interrupt();
+												_interruptCount.incrementAndGet();
 											}
-											if(tids != null)
+											else if(timeout > procDeadlockTimeout)
 											{
-												long tid = t.getId();
-												for(int i = tids.length - 1; i >= 0; --i)
+												if(!foundDeadlock)
 												{
-													if(tids[i] == tid)
+													foundDeadlock = true;
+													tids = ManagementFactory.getThreadMXBean().findDeadlockedThreads();
+												}
+												if(tids != null)
+												{
+													long tid = t.getId();
+													for(int i = tids.length - 1; i >= 0; --i)
 													{
-														StringBuilder sb = new StringBuilder(4096);
-														sb.append("procedure({}) in {} interrupted for timeout and deadlock({} ms): sid={}");
-														for(StackTraceElement ste : t.getStackTrace())
-															sb.append("\tat ").append(ste);
-														Log.log.error(sb.toString(), p.getClass().getName(), t, timeout, p._sid);
-														t.interrupt();
-														_interruptCount.incrementAndGet();
-														break;
+														if(tids[i] == tid)
+														{
+															StringBuilder sb = new StringBuilder(4096);
+															sb.append("procedure({}) in {} interrupted for deadlock timeout({} ms): sid={}");
+															for(StackTraceElement ste : t.getStackTrace())
+																sb.append("\tat ").append(ste);
+															Log.log.error(sb.toString(), p.getClass().getName(), t, timeout, p._sid);
+															t.interrupt();
+															_interruptCount.incrementAndGet();
+															break;
+														}
 													}
 												}
 											}

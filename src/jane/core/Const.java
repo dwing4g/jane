@@ -1,6 +1,7 @@
 package jane.core;
 
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Properties;
 
@@ -35,6 +36,7 @@ public final class Const
 	public static final String      dbBackupBase;
 	public static final long        dbBackupPeriod;
 	public static final int         procedureTimeout;
+	public static final int         procedureDeadlockTimeout;
 	public static final int         autoIdBegin;
 	public static final int         autoIdStride;
 	public static final int         mapDBFileLevel;
@@ -48,18 +50,35 @@ public final class Const
 	static
 	{
 		String janeProp = null;
+		FileInputStream fis = null;
 		try
 		{
 			janeProp = System.getProperty("jane.prop");
 			if(janeProp == null || (janeProp = janeProp.trim()).isEmpty())
 			    janeProp = "jane.properties";
 			Log.log.debug("{}: load {}", Const.class.getName(), janeProp);
-			_property.load(new FileInputStream(janeProp));
+			fis = new FileInputStream(janeProp);
+			_property.load(fis);
 		}
 		catch(Exception e)
 		{
-			Log.log.warn("{}: load {} failed, use all default properties", Const.class.getName(), janeProp);
+			Log.log.error("{}: load {} failed, use all default properties", Const.class.getName(), janeProp);
 		}
+		finally
+		{
+			if(fis != null)
+			{
+				try
+				{
+					fis.close();
+				}
+				catch(IOException e)
+				{
+					Log.log.error("close jane.prop=" + janeProp + " file failed", e);
+				}
+			}
+		}
+
 		String str = System.getProperty("debug");
 		debug = (str != null && str.trim().equalsIgnoreCase("true") || getPropBoolean("debug"));
 		stringCharset = Charset.forName(getPropStr("stringCharset", "utf-8"));
@@ -81,7 +100,8 @@ public final class Const
 		dbCommitPeriod = getPropLong("dbCommitPeriod", 60, 1, Long.MAX_VALUE / 1000);
 		dbBackupBase = getPropStr("dbBackupBase", "2014-01-06 04:00:00");
 		dbBackupPeriod = getPropLong("dbBackupPeriod", 3600, 1, Long.MAX_VALUE / 1000);
-		procedureTimeout = getPropInt("procedureTimeout", 5, 1);
+		procedureTimeout = getPropInt("procedureTimeout", 60, 1);
+		procedureDeadlockTimeout = getPropInt("procedureDeadlockTimeout", 5, 1);
 		autoIdBegin = getPropInt("autoIdBegin", 0, 0);
 		autoIdStride = getPropInt("autoIdStride", 1, 1);
 		mapDBFileLevel = getPropInt("mapDBFileLevel", 0, 0, 3);
