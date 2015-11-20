@@ -174,6 +174,16 @@ public final class HttpCodec extends IoFilterAdapter
 		return decodeUrl(head.array(), p, q - p);
 	}
 
+	public static String getHeadPathParams(OctetsStream head)
+	{
+		int e = head.position();
+		int p = head.find(0, e, (byte)' ');
+		if(p < 0) return "";
+		int q = head.find(++p, e, (byte)' ');
+		if(q < 0) return "";
+		return decodeUrl(head.array(), p, q - p);
+	}
+
 	/**
 	 * @return 获取的参数数量
 	 */
