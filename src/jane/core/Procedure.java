@@ -89,12 +89,12 @@ public abstract class Procedure implements Runnable
 											if(timeout > procTimeout)
 											{
 												StringBuilder sb = new StringBuilder(4096);
-												sb.append("procedure({}) in {} interrupted for timeout ({} ms): sid={}");
+												sb.append("procedure({}) in {} interrupted for timeout ({} ms): sid={}\n");
 												for(StackTraceElement ste : t.getStackTrace())
-													sb.append("\tat ").append(ste);
+													sb.append("\tat ").append(ste).append('\n');
 												Log.log.error(sb.toString(), p.getClass().getName(), t, timeout, p._sid);
-												t.interrupt();
 												_interruptCount.incrementAndGet();
+												t.interrupt();
 											}
 											else if(timeout > procDeadlockTimeout)
 											{
@@ -111,12 +111,12 @@ public abstract class Procedure implements Runnable
 														if(tids[i] == tid)
 														{
 															StringBuilder sb = new StringBuilder(4096);
-															sb.append("procedure({}) in {} interrupted for deadlock timeout({} ms): sid={}");
+															sb.append("procedure({}) in {} interrupted for deadlock timeout({} ms): sid={}\n");
 															for(StackTraceElement ste : t.getStackTrace())
-																sb.append("\tat ").append(ste);
+																sb.append("\tat ").append(ste).append('\n');
 															Log.log.error(sb.toString(), p.getClass().getName(), t, timeout, p._sid);
-															t.interrupt();
 															_interruptCount.incrementAndGet();
+															t.interrupt();
 															break;
 														}
 													}
