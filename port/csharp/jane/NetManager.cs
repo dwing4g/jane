@@ -24,29 +24,9 @@ namespace Jane
 		private readonly ConcurrentQueue<IAsyncResult> _eventQueue = new ConcurrentQueue<IAsyncResult>(); // 网络事件队列;
 		private readonly byte[] _bufin = new byte[RECV_BUFSIZE]; // 直接接收数据的缓冲区;
 		private OctetsStream _bufos; // 接收数据未处理部分的缓冲区(也用于接收事件的对象);
-		private IDictionary<int, BeanDelegate> _beanMap = new Dictionary<int, BeanDelegate>(); // 所有注册beans的创建代理;
-		private IDictionary<int, HandlerDelegate> _handlerMap = new Dictionary<int, HandlerDelegate>(); // 所有注册beans的处理代理;
 
-		public IDictionary<int, BeanDelegate> GetBeanDelegates()
-		{
-			return _beanMap;
-		}
-
-		public void SetBeanDelegates(IDictionary<int, BeanDelegate> beanMap)
-		{
-			_beanMap = beanMap ?? _beanMap;
-		}
-
-		public IDictionary<int, HandlerDelegate> GetHandlerDelegates()
-		{
-			return _handlerMap;
-		}
-
-		public void SetHandlerDelegates(IDictionary<int, HandlerDelegate> handlerMap)
-		{
-			_handlerMap = handlerMap ?? _handlerMap;
-		}
-
+		public IDictionary<int, BeanDelegate> BeanMap { get; set; } // 所有注册beans的创建代理;
+		public IDictionary<int, HandlerDelegate> HandlerMap { get; set; } // 所有注册beans的处理代理;
 		public bool Connected { get { return _socket != null && _socket.Connected; } } // 是否在连接状态;
 
 		protected virtual void OnAddSession() {} // 执行连接后,异步由Tick方法回调,异常会抛出;
@@ -72,7 +52,7 @@ namespace Jane
 					int psize = _bufos.UnmarshalUInt();
 					if(psize > _bufos.Remain()) break;
 					BeanDelegate create;
-					if(!_beanMap.TryGetValue(ptype, out create))
+					if(BeanMap == null || !BeanMap.TryGetValue(ptype, out create))
 						throw new Exception("unknown bean: type=" + ptype + ",size=" + psize);
 					IBean bean = create();
 					int p = _bufos.Position();
@@ -108,7 +88,7 @@ namespace Jane
 		protected bool ProcessBean(IBean bean) // 同步处理bean,异常会抛出;
 		{
 			HandlerDelegate handler;
-			if(!_handlerMap.TryGetValue(bean.Type(), out handler)) return false;
+			if(HandlerMap == null || !HandlerMap.TryGetValue(bean.Type(), out handler)) return false;
 			handler(this, bean);
 			return true;
 		}

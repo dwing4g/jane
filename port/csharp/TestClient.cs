@@ -19,8 +19,8 @@ namespace Jane
 
 		public TestClient()
 		{
-			SetBeanDelegates(AllBeans.GetAllBeans());
-			SetHandlerDelegates(AllBeans.GetTestClientHandlers());
+			BeanMap = AllBeans.GetAllBeans();
+			HandlerMap = AllBeans.GetTestClientHandlers();
 		}
 
 		/**
