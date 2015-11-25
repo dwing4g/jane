@@ -20,7 +20,7 @@ namespace Jane.Handler
 			RC4Filter filter = new RC4Filter();
 			filter.SetInputKey(new byte[] { 1, 2, 3 }, 3);
 			filter.SetOutputKey(new byte[] { 1, 2, 3 }, 3);
-			prog.setFilter(filter);
+			prog.SetFilter(filter);
 
 			manager.Send(arg);
 		}

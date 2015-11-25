@@ -276,7 +276,7 @@ namespace Jane
 			else if(o is char)
 				return s.Append((int)(char)o);
 			else if(o is Octets)
-				return ((Octets)o).dumpJStr(s);
+				return ((Octets)o).DumpJStr(s);
 			else if(o is IBean)
 				return ((IBean)o).ToJson(s);
 			else
@@ -322,7 +322,7 @@ namespace Jane
 			else if(o is char)
 				return s.Append((int)(char)o);
 			else if(o is Octets)
-				return ((Octets)o).dumpJStr(s);
+				return ((Octets)o).DumpJStr(s);
 			else if(o is IBean)
 				return ((IBean)o).ToLua(s);
 			else

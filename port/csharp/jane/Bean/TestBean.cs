@@ -91,20 +91,20 @@ namespace Jane.Bean
 
 		public OctetsStream Marshal(OctetsStream s)
 		{
-			if(this.value1 != 0) s.marshal1((byte)0x04).marshal(this.value1);
-			if(this.value2 != 0) s.marshal1((byte)0x08).marshal(this.value2);
-			return s.marshal1((byte)0);
+			if(this.value1 != 0) s.Marshal1((byte)0x04).Marshal(this.value1);
+			if(this.value2 != 0) s.Marshal1((byte)0x08).Marshal(this.value2);
+			return s.Marshal1((byte)0);
 		}
 
 		public OctetsStream Unmarshal(OctetsStream s)
 		{
 			Init();
-			for(;;) { int i = s.unmarshalUInt1(), t = i & 3; if(i > 251) i += s.unmarshalUInt1() << 2; switch(i >> 2)
+			for(;;) { int i = s.UnmarshalUInt1(), t = i & 3; if(i > 251) i += s.UnmarshalUInt1() << 2; switch(i >> 2)
 			{
 				case 0: return s;
-				case 1: this.value1 = s.unmarshalInt(t); break;
-				case 2: this.value2 = s.unmarshalLong(t); break;
-				default: s.unmarshalSkipVar(t); break;
+				case 1: this.value1 = s.UnmarshalInt(t); break;
+				case 2: this.value2 = s.UnmarshalLong(t); break;
+				default: s.UnmarshalSkipVar(t); break;
 			}}
 		}
 

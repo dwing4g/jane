@@ -57,16 +57,16 @@ namespace Jane.Bean
 
 		public OctetsStream Marshal(OctetsStream s)
 		{
-			return s.marshal1((byte)0);
+			return s.Marshal1((byte)0);
 		}
 
 		public OctetsStream Unmarshal(OctetsStream s)
 		{
 			Init();
-			for(;;) { int i = s.unmarshalUInt1(), t = i & 3; if(i > 251) i += s.unmarshalUInt1() << 2; switch(i >> 2)
+			for(;;) { int i = s.UnmarshalUInt1(), t = i & 3; if(i > 251) i += s.UnmarshalUInt1() << 2; switch(i >> 2)
 			{
 				case 0: return s;
-				default: s.unmarshalSkipVar(t); break;
+				default: s.UnmarshalSkipVar(t); break;
 			}}
 		}
 

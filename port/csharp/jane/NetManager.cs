@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Sockets;
 
@@ -15,20 +16,46 @@ namespace Jane
 		public const int CLOSE_READ = 2;
 		public const int CLOSE_WRITE = 3;
 		public const int CLOSE_DECODE = 4;
-		public const int RECV_BUFSIZE = 8192;
+		public const int RECV_BUFSIZE = 8192; // 每次接收网络数据的缓冲区大小;
+
+		private readonly object EVENT_CONNECT = new object();
+		private readonly object EVENT_READ = new object();
 
 		public delegate IBean BeanDelegate();
 		public delegate void HandlerDelegate(NetManager mgr, IBean arg);
-		protected IDictionary<int, BeanDelegate> _beanMap = new Dictionary<int, BeanDelegate>(); // 所有注册beans的创建代理;
-		protected IDictionary<int, HandlerDelegate> _handlerMap = new Dictionary<int, HandlerDelegate>(); // 所有注册beans的处理代理;
-		private readonly TcpClient _tcpClient = new TcpClient();
-		private NetworkStream _tcpStream;
-		protected readonly byte[] _bufin = new byte[RECV_BUFSIZE];
-		protected readonly OctetsStream _bufos = new OctetsStream();
 
-		public void SetBeanDelegates(IDictionary<int, BeanDelegate> bean_map)
+		private TcpClient _tcpClient = new TcpClient();
+		private NetworkStream _tcpStream;
+		private readonly ConcurrentQueue<IAsyncResult> _eventQueue = new ConcurrentQueue<IAsyncResult>();
+		private readonly byte[] _bufin = new byte[RECV_BUFSIZE];
+		private readonly OctetsStream _bufos = new OctetsStream();
+		private IDictionary<int, BeanDelegate> _beanMap = new Dictionary<int, BeanDelegate>(); // 所有注册beans的创建代理;
+		private IDictionary<int, HandlerDelegate> _handlerMap = new Dictionary<int, HandlerDelegate>(); // 所有注册beans的处理代理;
+
+		~NetManager()
 		{
-			_beanMap = bean_map ?? _beanMap;
+			Dispose(false);
+		}
+
+		public void Dispose()
+		{
+			Dispose(true);
+			GC.SuppressFinalize(this);
+		}
+
+		protected virtual void Dispose(bool disposing)
+		{
+			if(_tcpClient != null)
+			{
+				TcpClient tcpClient = _tcpClient;
+				_tcpClient = null;
+				tcpClient.Close();
+			}
+		}
+
+		public void SetBeanDelegates(IDictionary<int, BeanDelegate> beanMap)
+		{
+			_beanMap = beanMap ?? _beanMap;
 		}
 
 		public IDictionary<int, BeanDelegate> GetBeanDelegates()
@@ -36,9 +63,9 @@ namespace Jane
 			return _beanMap;
 		}
 
-		public void SetHandlerDelegates(IDictionary<int, HandlerDelegate> handler_map)
+		public void SetHandlerDelegates(IDictionary<int, HandlerDelegate> handlerMap)
 		{
-			_handlerMap = handler_map ?? _handlerMap;
+			_handlerMap = handlerMap ?? _handlerMap;
 		}
 
 		public IDictionary<int, HandlerDelegate> GetHandlerDelegates()
@@ -46,45 +73,37 @@ namespace Jane
 			return _handlerMap;
 		}
 
-		public bool Connected { get { return _tcpClient.Connected; } }
+		public bool Connected { get { return _tcpStream != null && _tcpClient != null && _tcpClient.Connected; } }
 
-		protected virtual void OnAddSession() {} // 异步IO线程执行;
-		protected virtual void OnDelSession(int code, Exception e) {} // 异步IO线程执行;
-		protected virtual void OnAbortSession(Exception e) {} // 异步IO线程执行;
-		protected virtual void OnSentBean(IBean bean) {} // 异步IO线程执行;
-		protected virtual OctetsStream OnEncode(byte[] buf, int pos, int len) { return null; }
-		protected virtual OctetsStream OnDecode(byte[] buf, int pos, int len) { return null; } // 异步IO线程执行;
+		protected virtual void OnAddSession() {} // 执行连接后,异步由Tick方法回调,异常会调Close(CLOSE_CONNECT,e);
+		protected virtual void OnDelSession(int code, Exception e) {} // 由Close(主动/Connect/Tick)方法调用,异常会抛出;
+		protected virtual void OnAbortSession(Exception e) {} // 由Tick方法调用,异常会抛出;
+		protected virtual void OnSentBean(IBean bean) {} // 由Tick方法调用,异常会抛出;
+		protected virtual OctetsStream OnEncode(byte[] buf, int pos, int len) { return null; } // 由SendDirect方法回调,异常会抛出;
+		protected virtual OctetsStream OnDecode(byte[] buf, int pos, int len) { return null; } // 由Tick方法回调,异常会调Close(CLOSE_DECODE,e);
 
-		protected virtual bool OnRecvBean(IBean bean) // 异步IO线程执行;
-		{
-			HandlerDelegate handler;
-			if(!_handlerMap.TryGetValue(bean.Type(), out handler)) return false;
-			handler(this, bean);
-			return true;
-		}
-
-		private void Decode(int buflen) // 异步IO线程执行;
+		private void Decode(int buflen)
 		{
 			OctetsStream os = OnDecode(_bufin, 0, buflen);
 			if(os != null)
-				_bufos.append(os.array(), os.position(), os.remain());
+				_bufos.Append(os.Array(), os.Position(), os.Remain());
 			else
-				_bufos.append(_bufin, 0, buflen);
+				_bufos.Append(_bufin, 0, buflen);
 			int pos = 0;
 			try
 			{
 				for(;;)
 				{
-					int ptype = _bufos.unmarshalUInt();
-					int psize = _bufos.unmarshalUInt();
-					if(psize > _bufos.remain()) break;
+					int ptype = _bufos.UnmarshalUInt();
+					int psize = _bufos.UnmarshalUInt();
+					if(psize > _bufos.Remain()) break;
 					BeanDelegate create;
 					if(!_beanMap.TryGetValue(ptype, out create))
 						throw new Exception("unknown bean: type=" + ptype + ",size=" + psize);
 					IBean bean = create();
-					int p = _bufos.position();
+					int p = _bufos.Position();
 					bean.Unmarshal(_bufos);
-					int realsize = _bufos.position() - p;
+					int realsize = _bufos.Position() - p;
 					if(realsize > psize)
 						throw new Exception("bean realsize overflow: type=" + ptype + ",size=" + psize + ",realsize=" + realsize);
 					pos = p + psize;
@@ -94,125 +113,128 @@ namespace Jane
 			catch(MarshalEOFException)
 			{
 			}
-			_bufos.erase(0, pos);
-			_bufos.setPosition(0);
+			finally
+			{
+				_bufos.Erase(0, pos);
+				_bufos.SetPosition(0);
+			}
 		}
 
-		private void ConnectCallback(IAsyncResult res) // 异步IO线程执行;
+		protected virtual void OnRecvBean(IBean bean) // 在Tick解协议过程中回调;
 		{
 			try
+			{
+				ProcessBean(bean);
+			}
+			catch(Exception)
+			{
+			}
+		}
+
+		protected bool ProcessBean(IBean bean)
+		{
+			HandlerDelegate handler;
+			if(!_handlerMap.TryGetValue(bean.Type(), out handler)) return false;
+			handler(this, bean);
+			return true;
+		}
+
+		private void OnEventConnect(IAsyncResult res)
+		{
+			Exception ex = null;
+			try
+			{
+				_tcpClient.EndConnect(res);
+			}
+			catch(Exception e)
+			{
+				ex = e;
+			}
+			if(_tcpClient.Connected)
 			{
 				try
 				{
-					_tcpClient.EndConnect(res);
+					OnAddSession();
+					_tcpStream = _tcpClient.GetStream();
+					_tcpStream.BeginRead(_bufin, 0, _bufin.Length, OnAsyncEvent, EVENT_READ);
 				}
 				catch(Exception e)
 				{
-					OnAbortSession(e);
+					Close(CLOSE_CONNECT, e);
+				}
+			}
+			else
+				OnAbortSession(ex);
+		}
+
+		private void OnEventRead(IAsyncResult res)
+		{
+			Exception ex = null;
+			try
+			{
+				int buflen = _tcpStream.EndRead(res);
+				if(buflen > 0)
+				{
+					try
+					{
+						Decode(buflen);
+					}
+					catch(Exception e)
+					{
+						Close(CLOSE_DECODE, e);
+						return;
+					}
+					_tcpStream.BeginRead(_bufin, 0, _bufin.Length, OnAsyncEvent, EVENT_READ);
 					return;
 				}
-				if(_tcpClient.Connected)
-				{
-					OnAddSession();
-					lock(this)
-					{
-						_tcpStream = _tcpClient.GetStream();
-						_tcpStream.BeginRead(_bufin, 0, _bufin.Length, ReadCallback, null);
-					}
-				}
-				else
-					OnAbortSession(null);
 			}
 			catch(Exception e)
 			{
-				Close(CLOSE_CONNECT, e);
+				ex = e;
 			}
+			Close(CLOSE_READ, ex);
 		}
 
-		private void ReadCallback(IAsyncResult res) // 异步IO线程执行;
+		private void OnEventWrite(IAsyncResult res)
 		{
+			IBean bean = res.AsyncState as IBean;
 			try
 			{
-				lock(this)
-				{
-					int buflen = _tcpStream.EndRead(res);
-					if(buflen > 0)
-					{
-						try
-						{
-							Decode(buflen);
-						}
-						catch(Exception e)
-						{
-							Close(CLOSE_DECODE, e);
-						}
-						_tcpStream.BeginRead(_bufin, 0, _bufin.Length, ReadCallback, null);
-					}
-					else
-						Close(CLOSE_READ);
-				}
-			}
-			catch(Exception e)
-			{
-				Close(CLOSE_READ, e);
-			}
-		}
-
-		private void WriteCallback(IAsyncResult res) // 异步IO线程执行;
-		{
-			try
-			{
-				lock(this)
-				{
-					IBean bean = (IBean)res.AsyncState;
-					_tcpStream.EndWrite(res);
-					OnSentBean(bean);
-				}
+				_tcpStream.EndWrite(res);
 			}
 			catch(Exception e)
 			{
 				Close(CLOSE_WRITE, e);
+				return;
+			}
+			OnSentBean(bean);
+		}
+
+		private void OnAsyncEvent(IAsyncResult res) // 本类只有此方法是另一线程回调执行的,其它方法必须在单一线程执行或触发;
+		{
+			_eventQueue.Enqueue(res);
+		}
+
+		public void Tick()
+		{
+			IAsyncResult res;
+			while(_eventQueue.TryDequeue(out res))
+			{
+				if(res.AsyncState == EVENT_READ)
+					OnEventRead(res);
+				else if(res.AsyncState == EVENT_CONNECT)
+					OnEventConnect(res);
+				else
+					OnEventWrite(res);
 			}
 		}
 
 		public void Connect(string host, int port)
 		{
+			if(_tcpClient == null)
+				throw new Exception("TcpClient disposed");
 			Close();
-			_tcpClient.BeginConnect(host, port, ConnectCallback, null);
-		}
-
-		public void Close(int code = CLOSE_ACTIVE, Exception e = null)
-		{
-			bool hasstream;
-			lock(this)
-			{
-				hasstream = (_tcpStream != null);
-				if(hasstream)
-				{
-					_tcpStream.Close();
-					_tcpStream = null;
-				}
-			}
-			if(hasstream)
-				OnDelSession(code, e);
-		}
-
-		public bool SendDirect(IBean bean)
-		{
-			if(!_tcpClient.Connected || _tcpStream == null) return false;
-			OctetsStream os = new OctetsStream(bean.InitSize() + 10);
-			os.resize(10);
-			bean.Marshal(os);
-			int p = os.marshalUIntBack(10, os.size() - 10);
-			os.setPosition(10 - (p + os.marshalUIntBack(10 - p, bean.Type())));
-			OctetsStream o = OnEncode(os.array(), os.position(), os.remain());
-			if(o != null) os = o;
-			lock(this)
-			{
-				if(_tcpStream == null) return false;
-				_tcpStream.BeginWrite(os.array(), os.position(), os.remain(), WriteCallback, bean);
-			}
-			return true;
+			_tcpClient.BeginConnect(host, port, OnAsyncEvent, EVENT_CONNECT);
 		}
 
 		public virtual bool Send(IBean bean)
@@ -220,14 +242,27 @@ namespace Jane
 			return SendDirect(bean);
 		}
 
-		protected virtual void Dispose(bool disposing)
+		public bool SendDirect(IBean bean)
 		{
-			_tcpClient.Close();
+			if(!Connected) return false;
+			OctetsStream os = new OctetsStream(10 + bean.InitSize());
+			os.Resize(10);
+			bean.Marshal(os);
+			int n = os.MarshalUIntBack(10, os.Size() - 10);
+			os.SetPosition(10 - (n + os.MarshalUIntBack(10 - n, bean.Type())));
+			os = OnEncode(os.Array(), os.Position(), os.Remain()) ?? os;
+			_tcpStream.BeginWrite(os.Array(), os.Position(), os.Remain(), OnAsyncEvent, bean);
+			return true;
 		}
 
-		public void Dispose()
+		public void Close(int code = CLOSE_ACTIVE, Exception e = null) // 除了主动调用外,Connect/Tick也会调用;
 		{
-			Dispose(true);
+			if(_tcpStream != null)
+			{
+				_tcpStream.Close();
+				_tcpStream = null;
+				OnDelSession(code, e);
+			}
 		}
 	}
 }

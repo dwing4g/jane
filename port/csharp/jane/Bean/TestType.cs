@@ -65,7 +65,7 @@ namespace Jane.Bean
 			v5 = 0;
 			v6 = 0;
 			v7 = 0;
-			v8.clear();
+			v8.Clear();
 			v9 = string.Empty;
 			v10.Clear();
 			v11.Clear();
@@ -88,7 +88,7 @@ namespace Jane.Bean
 			this.v5 = b.v5;
 			this.v6 = b.v6;
 			this.v7 = b.v7;
-			if(b.v8 != null) this.v8.replace(b.v8); else this.v8.clear();
+			if(b.v8 != null) this.v8.Replace(b.v8); else this.v8.Clear();
 			this.v9 = b.v9 ?? string.Empty;
 			this.v10.Clear(); if(b.v10 != null) this.v10.AddRange(b.v10);
 			this.v11.Clear(); if(b.v11 != null) Util.AddAll(this.v11, b.v11);
@@ -339,186 +339,186 @@ namespace Jane.Bean
 
 		public OctetsStream Marshal(OctetsStream s)
 		{
-			if(this.v1) s.marshal2(0x0401);
-			if(this.v2 != 0) s.marshal1((byte)0x08).marshal(this.v2);
-			if(this.v3 != 0) s.marshal1((byte)0x0c).marshal(this.v3);
-			if(this.v4 != 0) s.marshal1((byte)0x10).marshal(this.v4);
-			if(this.v5 != 0) s.marshal1((byte)0x14).marshal(this.v5);
-			if(this.v6 != 0) s.marshal2(0x1b08).marshal(this.v6);
-			if(this.v7 != 0) s.marshal2(0x1f09).marshal(this.v7);
-			if(!this.v8.empty()) s.marshal1((byte)0x21).marshal(this.v8);
-			if(this.v9.Length > 0) s.marshal1((byte)0x25).marshal(this.v9);
+			if(this.v1) s.Marshal2(0x0401);
+			if(this.v2 != 0) s.Marshal1((byte)0x08).Marshal(this.v2);
+			if(this.v3 != 0) s.Marshal1((byte)0x0c).Marshal(this.v3);
+			if(this.v4 != 0) s.Marshal1((byte)0x10).Marshal(this.v4);
+			if(this.v5 != 0) s.Marshal1((byte)0x14).Marshal(this.v5);
+			if(this.v6 != 0) s.Marshal2(0x1b08).Marshal(this.v6);
+			if(this.v7 != 0) s.Marshal2(0x1f09).Marshal(this.v7);
+			if(!this.v8.Empty()) s.Marshal1((byte)0x21).Marshal(this.v8);
+			if(this.v9.Length > 0) s.Marshal1((byte)0x25).Marshal(this.v9);
 			if(this.v10 != null && this.v10.Count > 0)
 			{
-				s.marshal2(0x2b00).marshalUInt(this.v10.Count);
+				s.Marshal2(0x2b00).MarshalUInt(this.v10.Count);
 				foreach(bool e in Util.Enum(this.v10))
-					s.marshal(e);
+					s.Marshal(e);
 			}
 			if(this.v11 != null && this.v11.Count > 0)
 			{
-				s.marshal2(0x2f00).marshalUInt(this.v11.Count);
+				s.Marshal2(0x2f00).MarshalUInt(this.v11.Count);
 				foreach(sbyte e in Util.Enum(this.v11))
-					s.marshal(e);
+					s.Marshal(e);
 			}
 			if(this.v12 != null && this.v12.Count > 0)
 			{
-				s.marshal2(0x3300).marshalUInt(this.v12.Count);
+				s.Marshal2(0x3300).MarshalUInt(this.v12.Count);
 				foreach(int e in Util.Enum(this.v12))
-					s.marshal(e);
+					s.Marshal(e);
 			}
 			if(this.v13 != null && this.v13.Count > 0)
 			{
-				s.marshal2(0x3700).marshalUInt(this.v13.Count);
+				s.Marshal2(0x3700).MarshalUInt(this.v13.Count);
 				foreach(long e in Util.Enum(this.v13))
-					s.marshal(e);
+					s.Marshal(e);
 			}
 			if(this.v14 != null && this.v14.Count > 0)
 			{
-				s.marshal2(0x3b04).marshalUInt(this.v14.Count);
+				s.Marshal2(0x3b04).MarshalUInt(this.v14.Count);
 				foreach(float e in Util.Enum(this.v14))
-					s.marshal(e);
+					s.Marshal(e);
 			}
 			if(this.v15 != null && this.v15.Count > 0)
 			{
-				s.marshal2(0x3f05).marshalUInt(this.v15.Count);
+				s.Marshal2(0x3f05).MarshalUInt(this.v15.Count);
 				foreach(double e in Util.Enum(this.v15))
-					s.marshal(e);
+					s.Marshal(e);
 			}
 			if(this.v16 != null && this.v16.Count > 0)
 			{
-				s.marshal2(0x4341).marshalUInt(this.v16.Count);
+				s.Marshal2(0x4341).MarshalUInt(this.v16.Count);
 				foreach(KeyValuePair<long, string> p in Util.Enum(this.v16))
-					s.marshal(p.Key).marshal(p.Value);
+					s.Marshal(p.Key).Marshal(p.Value);
 			}
 			if(this.v17 != null && this.v17.Count > 0)
 			{
-				s.marshal2(0x4750).marshalUInt(this.v17.Count);
+				s.Marshal2(0x4750).MarshalUInt(this.v17.Count);
 				foreach(KeyValuePair<TestBean, bool> p in Util.Enum(this.v17))
-					s.marshal(p.Key).marshal(p.Value);
+					s.Marshal(p.Key).Marshal(p.Value);
 			}
 			if(this.v18 != null && this.v18.Count > 0)
 			{
-				s.marshal2(0x4b4a).marshalUInt(this.v18.Count);
+				s.Marshal2(0x4b4a).MarshalUInt(this.v18.Count);
 				foreach(KeyValuePair<Octets, TestBean> p in Util.Enum(this.v18))
-					s.marshal(p.Key).marshal(p.Value);
+					s.Marshal(p.Key).Marshal(p.Value);
 			}
 			{
-				int n = s.size();
-				this.v19.Marshal(s.marshal1((byte)0x4e));
-				if(s.size() - n < 3) s.resize(n);
+				int n = s.Size();
+				this.v19.Marshal(s.Marshal1((byte)0x4e));
+				if(s.Size() - n < 3) s.Resize(n);
 			}
-			return s.marshal1((byte)0);
+			return s.Marshal1((byte)0);
 		}
 
 		public OctetsStream Unmarshal(OctetsStream s)
 		{
 			Init();
-			for(;;) { int i = s.unmarshalUInt1(), t = i & 3; if(i > 251) i += s.unmarshalUInt1() << 2; switch(i >> 2)
+			for(;;) { int i = s.UnmarshalUInt1(), t = i & 3; if(i > 251) i += s.UnmarshalUInt1() << 2; switch(i >> 2)
 			{
 				case 0: return s;
-				case 1: this.v1 = (s.unmarshalInt(t) != 0); break;
-				case 2: this.v2 = (sbyte)s.unmarshalInt(t); break;
-				case 3: this.v3 = (short)s.unmarshalInt(t); break;
-				case 4: this.v4 = s.unmarshalInt(t); break;
-				case 5: this.v5 = s.unmarshalLong(t); break;
-				case 6: this.v6 = s.unmarshalFloat(t); break;
-				case 7: this.v7 = s.unmarshalDouble(t); break;
-				case 8: s.unmarshal(this.v8, t); break;
-				case 9: this.v9 = s.unmarshalString(t); break;
+				case 1: this.v1 = (s.UnmarshalInt(t) != 0); break;
+				case 2: this.v2 = (sbyte)s.UnmarshalInt(t); break;
+				case 3: this.v3 = (short)s.UnmarshalInt(t); break;
+				case 4: this.v4 = s.UnmarshalInt(t); break;
+				case 5: this.v5 = s.UnmarshalLong(t); break;
+				case 6: this.v6 = s.UnmarshalFloat(t); break;
+				case 7: this.v7 = s.UnmarshalDouble(t); break;
+				case 8: s.Unmarshal(this.v8, t); break;
+				case 9: this.v9 = s.UnmarshalString(t); break;
 				case 10:
 				{
 					this.v10.Clear();
-					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalUInt1();
-					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
+					if(t != 3) { s.UnmarshalSkipVar(t); break; }
+					t = s.UnmarshalUInt1();
+					if((t >> 3) != 0) { s.UnmarshalSkipVarSub(t); break; }
 					t &= 7;
-					int n = s.unmarshalUInt();
+					int n = s.UnmarshalUInt();
 					this.v10.Capacity = (n < 0x10000 ? n : 0x10000);
 					for(; n > 0; --n)
-						this.v10.Add((s.unmarshalIntKV(t) != 0));
+						this.v10.Add((s.UnmarshalIntKV(t) != 0));
 				} break;
 				case 11:
 				{
 					this.v11.Clear();
-					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalUInt1();
-					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
+					if(t != 3) { s.UnmarshalSkipVar(t); break; }
+					t = s.UnmarshalUInt1();
+					if((t >> 3) != 0) { s.UnmarshalSkipVarSub(t); break; }
 					t &= 7;
-					for(int n = s.unmarshalUInt(); n > 0; --n)
-						this.v11.AddLast((sbyte)s.unmarshalIntKV(t));
+					for(int n = s.UnmarshalUInt(); n > 0; --n)
+						this.v11.AddLast((sbyte)s.UnmarshalIntKV(t));
 				} break;
 				case 12:
 				{
 					this.v12.Clear();
-					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalUInt1();
-					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
+					if(t != 3) { s.UnmarshalSkipVar(t); break; }
+					t = s.UnmarshalUInt1();
+					if((t >> 3) != 0) { s.UnmarshalSkipVarSub(t); break; }
 					t &= 7;
-					for(int n = s.unmarshalUInt(); n > 0; --n)
-						this.v12.AddLast(s.unmarshalIntKV(t));
+					for(int n = s.UnmarshalUInt(); n > 0; --n)
+						this.v12.AddLast(s.UnmarshalIntKV(t));
 				} break;
 				case 13:
 				{
 					this.v13.Clear();
-					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalUInt1();
-					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
+					if(t != 3) { s.UnmarshalSkipVar(t); break; }
+					t = s.UnmarshalUInt1();
+					if((t >> 3) != 0) { s.UnmarshalSkipVarSub(t); break; }
 					t &= 7;
-					for(int n = s.unmarshalUInt(); n > 0; --n)
-						this.v13.Add(s.unmarshalLongKV(t));
+					for(int n = s.UnmarshalUInt(); n > 0; --n)
+						this.v13.Add(s.UnmarshalLongKV(t));
 				} break;
 				case 14:
 				{
 					this.v14.Clear();
-					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalUInt1();
-					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
+					if(t != 3) { s.UnmarshalSkipVar(t); break; }
+					t = s.UnmarshalUInt1();
+					if((t >> 3) != 0) { s.UnmarshalSkipVarSub(t); break; }
 					t &= 7;
-					for(int n = s.unmarshalUInt(); n > 0; --n)
-						this.v14.Add(s.unmarshalFloatKV(t));
+					for(int n = s.UnmarshalUInt(); n > 0; --n)
+						this.v14.Add(s.UnmarshalFloatKV(t));
 				} break;
 				case 15:
 				{
 					this.v15.Clear();
-					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalUInt1();
-					if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
+					if(t != 3) { s.UnmarshalSkipVar(t); break; }
+					t = s.UnmarshalUInt1();
+					if((t >> 3) != 0) { s.UnmarshalSkipVarSub(t); break; }
 					t &= 7;
-					for(int n = s.unmarshalUInt(); n > 0; --n)
-						this.v15.Add(s.unmarshalDoubleKV(t));
+					for(int n = s.UnmarshalUInt(); n > 0; --n)
+						this.v15.Add(s.UnmarshalDoubleKV(t));
 				} break;
 				case 16:
 				{
 					this.v16.Clear();
-					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalUInt1();
-					if((t >> 6) != 1) { s.unmarshalSkipVarSub(t); break; }
+					if(t != 3) { s.UnmarshalSkipVar(t); break; }
+					t = s.UnmarshalUInt1();
+					if((t >> 6) != 1) { s.UnmarshalSkipVarSub(t); break; }
 					int k = (t >> 3) & 7; t &= 7;
-					for(int n = s.unmarshalUInt(); n > 0; --n)
-						this.v16.Add(s.unmarshalLongKV(k), s.unmarshalStringKV(t));
+					for(int n = s.UnmarshalUInt(); n > 0; --n)
+						this.v16.Add(s.UnmarshalLongKV(k), s.UnmarshalStringKV(t));
 				} break;
 				case 17:
 				{
 					this.v17.Clear();
-					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalUInt1();
-					if((t >> 6) != 1) { s.unmarshalSkipVarSub(t); break; }
+					if(t != 3) { s.UnmarshalSkipVar(t); break; }
+					t = s.UnmarshalUInt1();
+					if((t >> 6) != 1) { s.UnmarshalSkipVarSub(t); break; }
 					int k = (t >> 3) & 7; t &= 7;
-					for(int n = s.unmarshalUInt(); n > 0; --n)
-						this.v17.Add((TestBean)s.unmarshalBeanKV(TestBean.Create(), k), (s.unmarshalIntKV(t) != 0));
+					for(int n = s.UnmarshalUInt(); n > 0; --n)
+						this.v17.Add((TestBean)s.UnmarshalBeanKV(TestBean.Create(), k), (s.UnmarshalIntKV(t) != 0));
 				} break;
 				case 18:
 				{
 					this.v18.Clear();
-					if(t != 3) { s.unmarshalSkipVar(t); break; }
-					t = s.unmarshalUInt1();
-					if((t >> 6) != 1) { s.unmarshalSkipVarSub(t); break; }
+					if(t != 3) { s.UnmarshalSkipVar(t); break; }
+					t = s.UnmarshalUInt1();
+					if((t >> 6) != 1) { s.UnmarshalSkipVarSub(t); break; }
 					int k = (t >> 3) & 7; t &= 7;
-					for(int n = s.unmarshalUInt(); n > 0; --n)
-						this.v18.Add(s.unmarshalOctetsKV(k), (TestBean)s.unmarshalBeanKV(TestBean.Create(), t));
+					for(int n = s.UnmarshalUInt(); n > 0; --n)
+						this.v18.Add(s.UnmarshalOctetsKV(k), (TestBean)s.UnmarshalBeanKV(TestBean.Create(), t));
 				} break;
-				case 19: s.unmarshalBean(ref this.v19, t); break;
-				default: s.unmarshalSkipVar(t); break;
+				case 19: s.UnmarshalBean(ref this.v19, t); break;
+				default: s.UnmarshalSkipVar(t); break;
 			}}
 		}
 
@@ -684,7 +684,7 @@ namespace Jane.Bean
 			s.Append("\"v5\":").Append(this.v5).Append(',');
 			s.Append("\"v6\":").Append(this.v6).Append(',');
 			s.Append("\"v7\":").Append(this.v7).Append(',');
-			this.v8.dumpJStr(s.Append("\"v8\":")).Append(',');
+			this.v8.DumpJStr(s.Append("\"v8\":")).Append(',');
 			Util.ToJStr(s.Append("\"v9\":"), this.v9).Append(',');
 			Util.AppendJson(s.Append("\"v10\":"), this.v10);
 			Util.AppendJson(s.Append("\"v11\":"), this.v11);
@@ -716,7 +716,7 @@ namespace Jane.Bean
 			s.Append("v5=").Append(this.v5).Append(',');
 			s.Append("v6=").Append(this.v6).Append(',');
 			s.Append("v7=").Append(this.v7).Append(',');
-			this.v8.dumpJStr(s.Append("v8=")).Append(',');
+			this.v8.DumpJStr(s.Append("v8=")).Append(',');
 			Util.ToJStr(s.Append("v9="), this.v9).Append(',');
 			Util.AppendLua(s.Append("v10="), this.v10);
 			Util.AppendLua(s.Append("v11="), this.v11);

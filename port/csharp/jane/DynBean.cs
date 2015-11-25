@@ -81,9 +81,9 @@ namespace Jane
 			if(_fields != null)
 			{
 				foreach(KeyValuePair<int, object> p in Util.Enum(_fields))
-					os.marshalVar(p.Key, p.Value);
+					os.MarshalVar(p.Key, p.Value);
 			}
-			return os.marshal1((byte)0);
+			return os.Marshal1((byte)0);
 		}
 
 		public OctetsStream Unmarshal(OctetsStream os)
@@ -92,9 +92,9 @@ namespace Jane
 			else _fields.Clear();
 			for(;;)
 			{
-				int b = os.unmarshalUInt1();
+				int b = os.UnmarshalUInt1();
 				if(b == 0) return os;
-				_fields.Add(b >> 2, os.unmarshalVar(b & 3));
+				_fields.Add(b >> 2, os.UnmarshalVar(b & 3));
 			}
 		}
 
@@ -121,15 +121,15 @@ namespace Jane
 			return _type == rb._type && (_fields == rb._fields || _fields != null && _fields.Equals(rb._fields));
 		}
 
-        public static bool operator==(DynBean a, DynBean b)
-        {
-            return a.Equals(b);
-        }
+		public static bool operator==(DynBean a, DynBean b)
+		{
+			return a.Equals(b);
+		}
 
-        public static bool operator!=(DynBean a, DynBean b)
-        {
-            return !a.Equals(b);
-        }
+		public static bool operator!=(DynBean a, DynBean b)
+		{
+			return !a.Equals(b);
+		}
 
 		public int CompareTo(IBean b)
 		{
@@ -168,7 +168,7 @@ namespace Jane
 					else if(o is char)
 						s.Append((int)(char)o);
 					else if(o is Octets)
-						((Octets)o).dumpJStr(s);
+						((Octets)o).DumpJStr(s);
 					else if(o is IDictionary)
 						Util.AppendJson(s, (IDictionary)o);
 					else if(o is ICollection)
@@ -176,7 +176,7 @@ namespace Jane
 					else
 						Util.ToJStr(s, o.ToString());
 				}
-				}
+			}
 			return s.Append('}');
 		}
 
@@ -200,7 +200,7 @@ namespace Jane
 					else if(o is char)
 						s.Append((int)(char)o);
 					else if(o is Octets)
-						((Octets)o).dumpJStr(s);
+						((Octets)o).DumpJStr(s);
 					else if(o is IDictionary)
 						Util.AppendLua(s, (IDictionary)o);
 					else if(o is ICollection)
@@ -208,7 +208,7 @@ namespace Jane
 					else
 						Util.ToJStr(s, o.ToString());
 				}
-				}
+			}
 			return s.Append('}');
 		}
 

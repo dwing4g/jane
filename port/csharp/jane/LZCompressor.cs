@@ -139,19 +139,19 @@ namespace Jane
 				_hash[h] = srcpos;
 				f = srcpos - p;
 				if(f > 0x82080 || f <= 0 || src[p] != a || src[p + 2] != src[srcpos + 2] || src[p + 1] != b)
-				    { PutByte(a); ++srcpos; continue; }
+					{ PutByte(a); ++srcpos; continue; }
 				n = 3; h = srclen - srcpos + 2;
 				if(h > 0x2001) h = 0x2001;
 				while(n < h && src[p + n] == src[srcpos + n]) ++n;
-				     if(f == f1)    PutBits(0x0c, 4);                    // 1100
+					 if(f == f1)    PutBits(0x0c, 4);                    // 1100
 				else if(f == f2)   {PutBits(0x1a, 5); f2=f1;f1=f;}       // 1 1010
 				else if(f == f3)   {PutBits(0x1b, 5); f3=f2;f2=f1;f1=f;} // 1 1011
 				else{if(f == f4)    PutBits(0x1c, 5);                    // 1 1100
 				else if(f < 0x81)   PutBits(f + 0x000e7f, 12);           // 1110 1xxx xxxx
 				else if(f < 0x2081) PutBits(f + 0x03bf7f, 18);           // 11 110x xxxx xxxx xxxx
 				else if(n > 3)      PutBits(f + 0xf7df7f, 24);           // 1111 1xxx xxxx xxxx xxxx xxxx
-				     else          {PutByte(a); ++srcpos; continue;} f4=f3;f3=f2;f2=f1;f1=f;}
-				     if(n < 5)      PutBits(n - 3, 2);         // 0x
+					 else          {PutByte(a); ++srcpos; continue;} f4=f3;f3=f2;f2=f1;f1=f;}
+					 if(n < 5)      PutBits(n - 3, 2);         // 0x
 				else if(n < 9)      PutBits(n + 3, 4);         // 10xx
 				else if(n < 0x11)   PutBits(n + 0x27, 6);      // 11 0xxx
 				else if(n < 0x21)   PutBits(n + 0xcf, 8);      // 1110 xxxx
@@ -181,18 +181,18 @@ namespace Jane
 			int n, f = 1, f2 = 2, f3 = 3, f4 = 4;
 			for(dstlen += dstpos; dstpos < dstlen;)
 			{
-				     if(GetBit() >= 0)  dst[dstpos++] = (byte)GetBits(7);
+					 if(GetBit() >= 0)  dst[dstpos++] = (byte)GetBits(7);
 				else if(GetBit() >= 0)  dst[dstpos++] = (byte)(GetBits(7) + 0x80);
 				else{if(GetBit() >= 0)
-				    {if(GetBit() <  0)
-				     if(GetBit() >= 0) {n = f2; f2=f;f=n;}
-				     else              {n = f3; f3=f2;f2=f;f=n;}}
+					{if(GetBit() <  0)
+					 if(GetBit() >= 0) {n = f2; f2=f;f=n;}
+					 else              {n = f3; f3=f2;f2=f;f=n;}}
 				else{if(GetBit() >= 0)
-				     if(GetBit() >= 0)  n = f4;
-				     else               n = GetBits(7) + 1;
+					 if(GetBit() >= 0)  n = f4;
+					 else               n = GetBits(7) + 1;
 				else if(GetBit() >= 0)  n = GetBits(13) + 0x81;
-				     else               n = GetBits(19) + 0x2081; f4=f3;f3=f2;f2=f;f=n;}
-				     if(GetBit() >= 0)  n = (int)((uint)GetBit() >> 31) + 3;
+					 else               n = GetBits(19) + 0x2081; f4=f3;f3=f2;f2=f;f=n;}
+					 if(GetBit() >= 0)  n = (int)((uint)GetBit() >> 31) + 3;
 				else if(GetBit() >= 0)  n = GetBits(2) + 5;
 				else if(GetBit() >= 0)  n = GetBits(3) + 9;
 				else if(GetBit() >= 0)  n = GetBits(4) + 0x11;
