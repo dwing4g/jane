@@ -58,6 +58,7 @@ namespace Jane
 			for(LinkedListNode<IBean> node = _sendingBeans.Last; node != null; node = node.Previous)
 				_sendBeans.AddFirst(node.Value);
 			_sendingBeans.Clear();
+			Connect();
 		}
 
 		/**
@@ -67,7 +68,7 @@ namespace Jane
 		protected override void OnAbortSession(Exception e)
 		{
 			Console.WriteLine("onAbortSession: {0}", e);
-			Connect(_serverAddr, _serverPort);
+			Connect();
 		}
 
 		/**
@@ -93,7 +94,7 @@ namespace Jane
 		}
 
 		/**
-		 * 接收到每个完整的bean都会调用此函数;
+		 * 接收到每个完整的bean都会调用此方法;
 		 * 一般在这里立即同步处理协议,也可以先放到接收队列里,合适的时机处理;
 		 */
 		protected override void OnRecvBean(IBean bean)
@@ -110,6 +111,7 @@ namespace Jane
 
 		public void Connect()
 		{
+			_filter = null;
 			Connect(_serverAddr, _serverPort);
 		}
 
@@ -157,7 +159,7 @@ namespace Jane
 		}
 
 		/**
-		 * GNet独立程序测试用的主函数;
+		 * GNet独立程序测试用的入口;
 		 * 展示如何使用此类;
 		 */
 		public static void Main(string[] args)
@@ -166,11 +168,11 @@ namespace Jane
 			{
 				Console.WriteLine("connecting ...");
 				mgr.setServerAddr(DEFAULT_SERVER_ADDR, DEFAULT_SERVER_PORT); // 连接前先设置好服务器的地址和端口;
-				mgr.Connect(); // 开始异步连接,成功或失败反馈到回调函数;
+				mgr.Connect(); // 开始异步连接,成功或失败反馈到回调方法;
 				Console.WriteLine("press ENTER to exit ...");
 				while(!Console.KeyAvailable || Console.ReadKey(true).Key != ConsoleKey.Enter) // 工作线程的主循环;
 				{
-					mgr.Tick(); // 在当前线程处理网络事件,很多回调函数在此同步执行;
+					mgr.Tick(); // 在当前线程处理网络事件,很多回调方法在此同步执行;
 					Thread.Sleep(100); // 可替换成其它工作事务;
 				}
 				Console.WriteLine("exiting ...");

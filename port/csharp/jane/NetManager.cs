@@ -17,46 +17,19 @@ namespace Jane
 		public const int CLOSE_DECODE = 3; // 解码失败,接收数据格式错误;
 		public const int RECV_BUFSIZE = 8192; // 每次接收网络数据的缓冲区大小;
 
-		private static readonly object EVENT_CONNECT = new object(); // 网络连接事件;
-		private static readonly object EVENT_READ = new object(); // 网络读取事件;
-
 		public delegate IBean BeanDelegate(); // 用于创建bean;
 		public delegate void HandlerDelegate(NetManager mgr, IBean arg); // 用于处理bean;
 
-		private TcpClient _tcpClient = new TcpClient(); // TCP对象;
-		private NetworkStream _tcpStream; // TCP流对象;
+		private Socket _socket; // socket对象(也用于连接事件的对象);
 		private readonly ConcurrentQueue<IAsyncResult> _eventQueue = new ConcurrentQueue<IAsyncResult>(); // 网络事件队列;
 		private readonly byte[] _bufin = new byte[RECV_BUFSIZE]; // 直接接收数据的缓冲区;
-		private readonly OctetsStream _bufos = new OctetsStream(); // 接收数据未处理部分的缓冲区;
+		private OctetsStream _bufos; // 接收数据未处理部分的缓冲区(也用于接收事件的对象);
 		private IDictionary<int, BeanDelegate> _beanMap = new Dictionary<int, BeanDelegate>(); // 所有注册beans的创建代理;
 		private IDictionary<int, HandlerDelegate> _handlerMap = new Dictionary<int, HandlerDelegate>(); // 所有注册beans的处理代理;
 
-		~NetManager()
+		public IDictionary<int, BeanDelegate> GetBeanDelegates()
 		{
-			Dispose(false);
-		}
-
-		public void Dispose() // 一旦调用了Dispose,则本对象不能再处理网络事务;
-		{
-			Dispose(true);
-			GC.SuppressFinalize(this);
-		}
-
-		protected virtual void Dispose(bool disposing)
-		{
-			if(_tcpClient != null)
-			{
-				try
-				{
-					Close();
-				}
-				catch(Exception)
-				{
-				}
-				TcpClient tcpClient = _tcpClient;
-				_tcpClient = null;
-				tcpClient.Close();
-			}
+			return _beanMap;
 		}
 
 		public void SetBeanDelegates(IDictionary<int, BeanDelegate> beanMap)
@@ -64,9 +37,9 @@ namespace Jane
 			_beanMap = beanMap ?? _beanMap;
 		}
 
-		public IDictionary<int, BeanDelegate> GetBeanDelegates()
+		public IDictionary<int, HandlerDelegate> GetHandlerDelegates()
 		{
-			return _beanMap;
+			return _handlerMap;
 		}
 
 		public void SetHandlerDelegates(IDictionary<int, HandlerDelegate> handlerMap)
@@ -74,12 +47,7 @@ namespace Jane
 			_handlerMap = handlerMap ?? _handlerMap;
 		}
 
-		public IDictionary<int, HandlerDelegate> GetHandlerDelegates()
-		{
-			return _handlerMap;
-		}
-
-		public bool Connected { get { return _tcpStream != null && _tcpClient != null && _tcpClient.Connected; } } // 是否在连接状态;
+		public bool Connected { get { return _socket != null && _socket.Connected; } } // 是否在连接状态;
 
 		protected virtual void OnAddSession() {} // 执行连接后,异步由Tick方法回调,异常会抛出;
 		protected virtual void OnDelSession(int code, Exception e) {} // 由Close(主动/Connect/Tick)方法调用,异常会抛出;
@@ -147,23 +115,22 @@ namespace Jane
 
 		private void OnEventConnect(IAsyncResult res)
 		{
-			if(_tcpClient == null) return;
 			Exception ex = null;
 			try
 			{
-				_tcpClient.EndConnect(res);
+				_socket.EndConnect(res);
 			}
 			catch(Exception e)
 			{
 				ex = e;
 			}
-			if(_tcpClient.Connected)
+			if(_socket.Connected)
 			{
 				OnAddSession();
 				try
 				{
-					_tcpStream = _tcpClient.GetStream();
-					_tcpStream.BeginRead(_bufin, 0, _bufin.Length, OnAsyncEvent, EVENT_READ);
+					_bufos = new OctetsStream();
+					_socket.BeginReceive(_bufin, 0, _bufin.Length, SocketFlags.None, OnAsyncEvent, _bufos);
 				}
 				catch(Exception e)
 				{
@@ -176,11 +143,10 @@ namespace Jane
 
 		private void OnEventRead(IAsyncResult res)
 		{
-			if(_tcpStream == null) return;
 			Exception ex = null;
 			try
 			{
-				int buflen = _tcpStream.EndRead(res);
+				int buflen = _socket.EndReceive(res);
 				if(buflen > 0)
 				{
 					try
@@ -192,7 +158,7 @@ namespace Jane
 						Close(CLOSE_DECODE, e);
 						return;
 					}
-					_tcpStream.BeginRead(_bufin, 0, _bufin.Length, OnAsyncEvent, EVENT_READ);
+					_socket.BeginReceive(_bufin, 0, _bufin.Length, SocketFlags.None, OnAsyncEvent, _bufos);
 					return;
 				}
 			}
@@ -205,18 +171,21 @@ namespace Jane
 
 		private void OnEventWrite(IAsyncResult res)
 		{
-			if(_tcpStream == null) return;
+			if(_socket == null) return;
 			IBean bean = res.AsyncState as IBean;
-			try
+			if(bean != null)
 			{
-				_tcpStream.EndWrite(res);
+				try
+				{
+					_socket.EndSend(res);
+				}
+				catch(Exception e)
+				{
+					Close(CLOSE_WRITE, e);
+					return;
+				}
+				OnSentBean(bean);
 			}
-			catch(Exception e)
-			{
-				Close(CLOSE_WRITE, e);
-				return;
-			}
-			OnSentBean(bean);
 		}
 
 		private void OnAsyncEvent(IAsyncResult res) // 本类只有此方法是另一线程回调执行的,其它方法必须在单一线程执行或触发;
@@ -229,21 +198,29 @@ namespace Jane
 			IAsyncResult res;
 			while(_eventQueue.TryDequeue(out res))
 			{
-				if(res.AsyncState == EVENT_READ)
+				if(res.AsyncState == _bufos)
 					OnEventRead(res);
-				else if(res.AsyncState == EVENT_CONNECT)
+				else if(res.AsyncState == _socket)
 					OnEventConnect(res);
 				else
 					OnEventWrite(res);
 			}
 		}
 
-		public void Connect(string host, int port) // 开始异步连接,如果已经连接,则会先主动断开旧连接再重新连接;
+		public void Connect(string host, int port) // 开始异步连接,如果已经连接,则会先主动断开旧连接再重新连接,但在回调OnAddSession或OnAbortSession前不能再次调用此对象的此方法;
 		{
-			if(_tcpClient == null)
-				throw new Exception("TcpClient disposed");
 			Close();
-			_tcpClient.BeginConnect(host, port, OnAsyncEvent, EVENT_CONNECT);
+			try
+			{
+				_socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+				// _socket.NoDelay = false;
+				// _socket.LingerState = new LingerOption(true, 1);
+				_socket.BeginConnect(host, port, OnAsyncEvent, _socket);
+			}
+			catch(Exception e)
+			{
+				OnAbortSession(e);
+			}
 		}
 
 		public virtual bool Send(IBean bean)
@@ -260,21 +237,52 @@ namespace Jane
 			int n = os.MarshalUIntBack(10, os.Size() - 10);
 			os.SetPosition(10 - (n + os.MarshalUIntBack(10 - n, bean.Type())));
 			os = OnEncode(os.Array(), os.Position(), os.Remain()) ?? os;
-			_tcpStream.BeginWrite(os.Array(), os.Position(), os.Remain(), OnAsyncEvent, bean);
+			try
+			{
+				_socket.BeginSend(os.Array(), os.Position(), os.Remain(),SocketFlags.None, OnAsyncEvent, bean);
+			}
+			catch(Exception e)
+			{
+				Close(CLOSE_WRITE, e);
+			}
 			return true;
 		}
 
 		public void Close(int code = CLOSE_ACTIVE, Exception e = null) // 除了主动调用外,Connect/Tick也会调用;
 		{
-			if(_tcpStream != null)
+			if(_socket != null)
 			{
-				_tcpStream.Close();
-				_tcpStream = null;
-				_bufos.Reset();
+				_socket.Close();
+				_socket = null;
 				IAsyncResult res;
-				while(_eventQueue.TryDequeue(out res));
-				OnDelSession(code, e);
+				while(_eventQueue.TryDequeue(out res)) ;
+				if(_bufos != null)
+				{
+					_bufos = null;
+					OnDelSession(code, e);
+				}
 			}
+		}
+
+		public void Dispose()
+		{
+			Dispose(true);
+		}
+
+		protected virtual void Dispose(bool disposing)
+		{
+			try
+			{
+				Close();
+			}
+			catch(Exception)
+			{
+			}
+		}
+
+		~NetManager()
+		{
+			Dispose(false);
 		}
 	}
 }
