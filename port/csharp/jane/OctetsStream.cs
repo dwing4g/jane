@@ -12,31 +12,31 @@ namespace Jane
 	[Serializable]
 	public class OctetsStream : Octets
 	{
-		protected int pos; // 当前的读写位置;
+		protected int _pos; // 当前的读写位置;
 
 		public new static OctetsStream Wrap(byte[] data, int size)
 		{
 			OctetsStream os = new OctetsStream();
-			os.buffer = data;
-			if(size > data.Length) os.count = data.Length;
-			else if(size < 0)      os.count = 0;
-			else                   os.count = size;
+			os._buffer = data;
+			if(size > data.Length) os._count = data.Length;
+			else if(size < 0)      os._count = 0;
+			else                   os._count = size;
 			return os;
 		}
 
 		public new static OctetsStream Wrap(byte[] data)
 		{
 			OctetsStream os = new OctetsStream();
-			os.buffer = data;
-			os.count = data.Length;
+			os._buffer = data;
+			os._count = data.Length;
 			return os;
 		}
 
 		public static OctetsStream Wrap(Octets o)
 		{
 			OctetsStream os = new OctetsStream();
-			os.buffer = o.Array();
-			os.count = o.Size();
+			os._buffer = o.Array();
+			os._count = o.Size();
 			return os;
 		}
 
@@ -62,185 +62,185 @@ namespace Jane
 
 		public bool Eos()
 		{
-			return pos >= count;
+			return _pos >= _count;
 		}
 
 		public int Position()
 		{
-			return pos;
+			return _pos;
 		}
 
 		public void SetPosition(int pos)
 		{
-			this.pos = pos;
+			this._pos = pos;
 		}
 
 		public override int Remain()
 		{
-			return count - pos;
+			return _count - _pos;
 		}
 
 		public OctetsStream Wraps(Octets o)
 		{
-			buffer = o.Array();
-			count = o.Size();
+			_buffer = o.Array();
+			_count = o.Size();
 			return this;
 		}
 
 		public override object Clone()
 		{
 			OctetsStream os = new OctetsStream(this);
-			os.pos = pos;
+			os._pos = _pos;
 			return os;
 		}
 
 		public override string ToString()
 		{
-			return "[" + pos + '/' + count + '/' + buffer.Length + ']';
+			return "[" + _pos + '/' + _count + '/' + _buffer.Length + ']';
 		}
 
 		public override StringBuilder Dump(StringBuilder s)
 		{
-			if(s == null) s = new StringBuilder(count * 3 + 16);
-			return base.Dump(s).Append(':').Append(pos);
+			if(s == null) s = new StringBuilder(_count * 3 + 16);
+			return base.Dump(s).Append(':').Append(_pos);
 		}
 
 		public OctetsStream Marshal1(byte x)
 		{
-			int count_new = count + 1;
+			int count_new = _count + 1;
 			Reserve(count_new);
-			buffer[count] = x;
-			count = count_new;
+			_buffer[_count] = x;
+			_count = count_new;
 			return this;
 		}
 
 		public OctetsStream Marshal2(int x)
 		{
-			int count_new = count + 2;
+			int count_new = _count + 2;
 			Reserve(count_new);
-			buffer[count    ] = (byte)(x >> 8);
-			buffer[count + 1] = (byte)x;
-			count = count_new;
+			_buffer[_count    ] = (byte)(x >> 8);
+			_buffer[_count + 1] = (byte)x;
+			_count = count_new;
 			return this;
 		}
 
 		public OctetsStream Marshal3(int x)
 		{
-			int count_new = count + 3;
+			int count_new = _count + 3;
 			Reserve(count_new);
-			buffer[count    ] = (byte)(x >> 16);
-			buffer[count + 1] = (byte)(x >> 8);
-			buffer[count + 2] = (byte)x;
-			count = count_new;
+			_buffer[_count    ] = (byte)(x >> 16);
+			_buffer[_count + 1] = (byte)(x >> 8);
+			_buffer[_count + 2] = (byte)x;
+			_count = count_new;
 			return this;
 		}
 
 		public OctetsStream Marshal4(int x)
 		{
-			int count_new = count + 4;
+			int count_new = _count + 4;
 			Reserve(count_new);
-			buffer[count    ] = (byte)(x >> 24);
-			buffer[count + 1] = (byte)(x >> 16);
-			buffer[count + 2] = (byte)(x >> 8);
-			buffer[count + 3] = (byte)x;
-			count = count_new;
+			_buffer[_count    ] = (byte)(x >> 24);
+			_buffer[_count + 1] = (byte)(x >> 16);
+			_buffer[_count + 2] = (byte)(x >> 8);
+			_buffer[_count + 3] = (byte)x;
+			_count = count_new;
 			return this;
 		}
 
 		public OctetsStream Marshal5(byte b, int x)
 		{
-			int count_new = count + 5;
+			int count_new = _count + 5;
 			Reserve(count_new);
-			buffer[count    ] = b;
-			buffer[count + 1] = (byte)(x >> 24);
-			buffer[count + 2] = (byte)(x >> 16);
-			buffer[count + 3] = (byte)(x >> 8);
-			buffer[count + 4] = (byte)x;
-			count = count_new;
+			_buffer[_count    ] = b;
+			_buffer[_count + 1] = (byte)(x >> 24);
+			_buffer[_count + 2] = (byte)(x >> 16);
+			_buffer[_count + 3] = (byte)(x >> 8);
+			_buffer[_count + 4] = (byte)x;
+			_count = count_new;
 			return this;
 		}
 
 		public OctetsStream Marshal5(long x)
 		{
-			int count_new = count + 5;
+			int count_new = _count + 5;
 			Reserve(count_new);
-			buffer[count    ] = (byte)(x >> 32);
-			buffer[count + 1] = (byte)(x >> 24);
-			buffer[count + 2] = (byte)(x >> 16);
-			buffer[count + 3] = (byte)(x >> 8);
-			buffer[count + 4] = (byte)x;
-			count = count_new;
+			_buffer[_count    ] = (byte)(x >> 32);
+			_buffer[_count + 1] = (byte)(x >> 24);
+			_buffer[_count + 2] = (byte)(x >> 16);
+			_buffer[_count + 3] = (byte)(x >> 8);
+			_buffer[_count + 4] = (byte)x;
+			_count = count_new;
 			return this;
 		}
 
 		public OctetsStream Marshal6(long x)
 		{
-			int count_new = count + 6;
+			int count_new = _count + 6;
 			Reserve(count_new);
-			buffer[count    ] = (byte)(x >> 40);
-			buffer[count + 1] = (byte)(x >> 32);
-			buffer[count + 2] = (byte)(x >> 24);
-			buffer[count + 3] = (byte)(x >> 16);
-			buffer[count + 4] = (byte)(x >> 8);
-			buffer[count + 5] = (byte)x;
-			count = count_new;
+			_buffer[_count    ] = (byte)(x >> 40);
+			_buffer[_count + 1] = (byte)(x >> 32);
+			_buffer[_count + 2] = (byte)(x >> 24);
+			_buffer[_count + 3] = (byte)(x >> 16);
+			_buffer[_count + 4] = (byte)(x >> 8);
+			_buffer[_count + 5] = (byte)x;
+			_count = count_new;
 			return this;
 		}
 
 		public OctetsStream Marshal7(long x)
 		{
-			int count_new = count + 7;
+			int count_new = _count + 7;
 			Reserve(count_new);
-			buffer[count    ] = (byte)(x >> 48);
-			buffer[count + 1] = (byte)(x >> 40);
-			buffer[count + 2] = (byte)(x >> 32);
-			buffer[count + 3] = (byte)(x >> 24);
-			buffer[count + 4] = (byte)(x >> 16);
-			buffer[count + 5] = (byte)(x >> 8);
-			buffer[count + 6] = (byte)x;
-			count = count_new;
+			_buffer[_count    ] = (byte)(x >> 48);
+			_buffer[_count + 1] = (byte)(x >> 40);
+			_buffer[_count + 2] = (byte)(x >> 32);
+			_buffer[_count + 3] = (byte)(x >> 24);
+			_buffer[_count + 4] = (byte)(x >> 16);
+			_buffer[_count + 5] = (byte)(x >> 8);
+			_buffer[_count + 6] = (byte)x;
+			_count = count_new;
 			return this;
 		}
 
 		public OctetsStream Marshal8(long x)
 		{
-			int count_new = count + 8;
+			int count_new = _count + 8;
 			Reserve(count_new);
-			buffer[count    ] = (byte)(x >> 56);
-			buffer[count + 1] = (byte)(x >> 48);
-			buffer[count + 2] = (byte)(x >> 40);
-			buffer[count + 3] = (byte)(x >> 32);
-			buffer[count + 4] = (byte)(x >> 24);
-			buffer[count + 5] = (byte)(x >> 16);
-			buffer[count + 6] = (byte)(x >> 8);
-			buffer[count + 7] = (byte)x;
-			count = count_new;
+			_buffer[_count    ] = (byte)(x >> 56);
+			_buffer[_count + 1] = (byte)(x >> 48);
+			_buffer[_count + 2] = (byte)(x >> 40);
+			_buffer[_count + 3] = (byte)(x >> 32);
+			_buffer[_count + 4] = (byte)(x >> 24);
+			_buffer[_count + 5] = (byte)(x >> 16);
+			_buffer[_count + 6] = (byte)(x >> 8);
+			_buffer[_count + 7] = (byte)x;
+			_count = count_new;
 			return this;
 		}
 
 		public OctetsStream Marshal9(byte b, long x)
 		{
-			int count_new = count + 9;
+			int count_new = _count + 9;
 			Reserve(count_new);
-			buffer[count    ] = b;
-			buffer[count + 1] = (byte)(x >> 56);
-			buffer[count + 2] = (byte)(x >> 48);
-			buffer[count + 3] = (byte)(x >> 40);
-			buffer[count + 4] = (byte)(x >> 32);
-			buffer[count + 5] = (byte)(x >> 24);
-			buffer[count + 6] = (byte)(x >> 16);
-			buffer[count + 7] = (byte)(x >> 8);
-			buffer[count + 8] = (byte)x;
-			count = count_new;
+			_buffer[_count    ] = b;
+			_buffer[_count + 1] = (byte)(x >> 56);
+			_buffer[_count + 2] = (byte)(x >> 48);
+			_buffer[_count + 3] = (byte)(x >> 40);
+			_buffer[_count + 4] = (byte)(x >> 32);
+			_buffer[_count + 5] = (byte)(x >> 24);
+			_buffer[_count + 6] = (byte)(x >> 16);
+			_buffer[_count + 7] = (byte)(x >> 8);
+			_buffer[_count + 8] = (byte)x;
+			_count = count_new;
 			return this;
 		}
 
 		public OctetsStream Marshal(bool b)
 		{
-			int count_new = count + 1;
+			int count_new = _count + 1;
 			Reserve(count_new);
-			buffer[count] = (byte)(b ? 1 : 0);
-			count = count_new;
+			_buffer[_count] = (byte)(b ? 1 : 0);
+			_count = count_new;
 			return this;
 		}
 
@@ -342,13 +342,13 @@ namespace Jane
 
 		public int MarshalUIntBack(int p, int x)
 		{
-			int t = count;
-			if(p < 5 || p > t) throw new ArgumentException("p=" + p + ", count=" + count);
-			if(x < 0x80)       { count = p - 1; Marshal1((byte)(x > 0 ? x : 0));          count = t; return 1; }
-			if(x < 0x4000)     { count = p - 2; Marshal2(x + 0x8000);                     count = t; return 2; }
-			if(x < 0x200000)   { count = p - 3; Marshal3(x + 0xc00000);                   count = t; return 3; }
-			if(x < 0x10000000) { count = p - 4; Marshal4(x + unchecked((int)0xe0000000)); count = t; return 4; }
-							   { count = p - 5; Marshal5((byte)0xf0, x);                  count = t; return 5; }
+			int t = _count;
+			if(p < 5 || p > t) throw new ArgumentException("p=" + p + ", count=" + _count);
+			if(x < 0x80)       { _count = p - 1; Marshal1((byte)(x > 0 ? x : 0));          _count = t; return 1; }
+			if(x < 0x4000)     { _count = p - 2; Marshal2(x + 0x8000);                     _count = t; return 2; }
+			if(x < 0x200000)   { _count = p - 3; Marshal3(x + 0xc00000);                   _count = t; return 3; }
+			if(x < 0x10000000) { _count = p - 4; Marshal4(x + unchecked((int)0xe0000000)); _count = t; return 4; }
+							   { _count = p - 5; Marshal5((byte)0xf0, x);                  _count = t; return 5; }
 		}
 
 		public static int MarshalUIntLen(int x)
@@ -412,7 +412,7 @@ namespace Jane
 				else bn += (c < 0x800 ? 2 : 3);
 			}
 			MarshalUInt(bn);
-			Reserve(count + bn);
+			Reserve(_count + bn);
 			if(bn == cn)
 			{
 				for(int i = 0; i < cn; ++i)
@@ -477,9 +477,9 @@ namespace Jane
 			}
 			else if(o is IBean)
 			{
-				int n = count;
+				int n = _count;
 				((IBean)o).Marshal(Marshal1((byte)((id << 2) + 2)));
-				if(count - n < 3) Resize(n);
+				if(_count - n < 3) Resize(n);
 			}
 			else if(o is Octets)
 			{
@@ -574,44 +574,44 @@ namespace Jane
 
 		public sbyte UnmarshalInt1()
 		{
-			if(pos >= count) throw new MarshalEOFException();
-			return (sbyte)buffer[pos++];
+			if(_pos >= _count) throw new MarshalEOFException();
+			return (sbyte)_buffer[_pos++];
 		}
 
 		public byte UnmarshalUInt1()
 		{
-			if(pos >= count) throw new MarshalEOFException();
-			return buffer[pos++];
+			if(_pos >= _count) throw new MarshalEOFException();
+			return _buffer[_pos++];
 		}
 
 		public int UnmarshalInt2()
 		{
-			int pos_new = pos + 2;
-			if(pos_new > count) throw new MarshalEOFException();
-			byte b0 = buffer[pos    ];
-			byte b1 = buffer[pos + 1];
-			pos = pos_new;
+			int pos_new = _pos + 2;
+			if(pos_new > _count) throw new MarshalEOFException();
+			byte b0 = _buffer[_pos    ];
+			byte b1 = _buffer[_pos + 1];
+			_pos = pos_new;
 			return ((sbyte)b0 << 8) + b1;
 		}
 
 		public int UnmarshalUInt2()
 		{
-			int pos_new = pos + 2;
-			if(pos_new > count) throw new MarshalEOFException();
-			byte b0 = buffer[pos    ];
-			byte b1 = buffer[pos + 1];
-			pos = pos_new;
+			int pos_new = _pos + 2;
+			if(pos_new > _count) throw new MarshalEOFException();
+			byte b0 = _buffer[_pos    ];
+			byte b1 = _buffer[_pos + 1];
+			_pos = pos_new;
 			return (b0 << 8) + b1;
 		}
 
 		public int UnmarshalInt3()
 		{
-			int pos_new = pos + 3;
-			if(pos_new > count) throw new MarshalEOFException();
-			byte b0 = buffer[pos    ];
-			byte b1 = buffer[pos + 1];
-			byte b2 = buffer[pos + 2];
-			pos = pos_new;
+			int pos_new = _pos + 3;
+			if(pos_new > _count) throw new MarshalEOFException();
+			byte b0 = _buffer[_pos    ];
+			byte b1 = _buffer[_pos + 1];
+			byte b2 = _buffer[_pos + 2];
+			_pos = pos_new;
 			return (b0 << 16) +
 				   (b1 <<  8) +
 					b2;
@@ -619,13 +619,13 @@ namespace Jane
 
 		public int UnmarshalInt4()
 		{
-			int pos_new = pos + 4;
-			if(pos_new > count) new MarshalEOFException();
-			byte b0 = buffer[pos    ];
-			byte b1 = buffer[pos + 1];
-			byte b2 = buffer[pos + 2];
-			byte b3 = buffer[pos + 3];
-			pos = pos_new;
+			int pos_new = _pos + 4;
+			if(pos_new > _count) new MarshalEOFException();
+			byte b0 = _buffer[_pos    ];
+			byte b1 = _buffer[_pos + 1];
+			byte b2 = _buffer[_pos + 2];
+			byte b3 = _buffer[_pos + 3];
+			_pos = pos_new;
 			return (b0 << 24) +
 				   (b1 << 16) +
 				   (b2 <<  8) +
@@ -634,14 +634,14 @@ namespace Jane
 
 		public long UnmarshalLong5()
 		{
-			int pos_new = pos + 5;
-			if(pos_new > count) new MarshalEOFException();
-			byte b0 = buffer[pos    ];
-			byte b1 = buffer[pos + 1];
-			byte b2 = buffer[pos + 2];
-			byte b3 = buffer[pos + 3];
-			byte b4 = buffer[pos + 4];
-			pos = pos_new;
+			int pos_new = _pos + 5;
+			if(pos_new > _count) new MarshalEOFException();
+			byte b0 = _buffer[_pos    ];
+			byte b1 = _buffer[_pos + 1];
+			byte b2 = _buffer[_pos + 2];
+			byte b3 = _buffer[_pos + 3];
+			byte b4 = _buffer[_pos + 4];
+			_pos = pos_new;
 			return ((long)b0 << 32) +
 				   ((long)b1 << 24) +
 				   (      b2 << 16) +
@@ -651,15 +651,15 @@ namespace Jane
 
 		public long UnmarshalLong6()
 		{
-			int pos_new = pos + 6;
-			if(pos_new > count) new MarshalEOFException();
-			byte b0 = buffer[pos    ];
-			byte b1 = buffer[pos + 1];
-			byte b2 = buffer[pos + 2];
-			byte b3 = buffer[pos + 3];
-			byte b4 = buffer[pos + 4];
-			byte b5 = buffer[pos + 5];
-			pos = pos_new;
+			int pos_new = _pos + 6;
+			if(pos_new > _count) new MarshalEOFException();
+			byte b0 = _buffer[_pos    ];
+			byte b1 = _buffer[_pos + 1];
+			byte b2 = _buffer[_pos + 2];
+			byte b3 = _buffer[_pos + 3];
+			byte b4 = _buffer[_pos + 4];
+			byte b5 = _buffer[_pos + 5];
+			_pos = pos_new;
 			return ((long)b0 << 40) +
 				   ((long)b1 << 32) +
 				   ((long)b2 << 24) +
@@ -670,16 +670,16 @@ namespace Jane
 
 		public long UnmarshalLong7()
 		{
-			int pos_new = pos + 7;
-			if(pos_new > count) new MarshalEOFException();
-			byte b0 = buffer[pos    ];
-			byte b1 = buffer[pos + 1];
-			byte b2 = buffer[pos + 2];
-			byte b3 = buffer[pos + 3];
-			byte b4 = buffer[pos + 4];
-			byte b5 = buffer[pos + 5];
-			byte b6 = buffer[pos + 6];
-			pos = pos_new;
+			int pos_new = _pos + 7;
+			if(pos_new > _count) new MarshalEOFException();
+			byte b0 = _buffer[_pos    ];
+			byte b1 = _buffer[_pos + 1];
+			byte b2 = _buffer[_pos + 2];
+			byte b3 = _buffer[_pos + 3];
+			byte b4 = _buffer[_pos + 4];
+			byte b5 = _buffer[_pos + 5];
+			byte b6 = _buffer[_pos + 6];
+			_pos = pos_new;
 			return ((long)b0 << 48) +
 				   ((long)b1 << 40) +
 				   ((long)b2 << 32) +
@@ -691,17 +691,17 @@ namespace Jane
 
 		public long UnmarshalLong8()
 		{
-			int pos_new = pos + 8;
-			if(pos_new > count) new MarshalEOFException();
-			byte b0 = buffer[pos    ];
-			byte b1 = buffer[pos + 1];
-			byte b2 = buffer[pos + 2];
-			byte b3 = buffer[pos + 3];
-			byte b4 = buffer[pos + 4];
-			byte b5 = buffer[pos + 5];
-			byte b6 = buffer[pos + 6];
-			byte b7 = buffer[pos + 7];
-			pos = pos_new;
+			int pos_new = _pos + 8;
+			if(pos_new > _count) new MarshalEOFException();
+			byte b0 = _buffer[_pos    ];
+			byte b1 = _buffer[_pos + 1];
+			byte b2 = _buffer[_pos + 2];
+			byte b3 = _buffer[_pos + 3];
+			byte b4 = _buffer[_pos + 4];
+			byte b5 = _buffer[_pos + 5];
+			byte b6 = _buffer[_pos + 6];
+			byte b7 = _buffer[_pos + 7];
+			_pos = pos_new;
 			return ((long)b0 << 56) +
 				   ((long)b1 << 48) +
 				   ((long)b2 << 40) +
@@ -725,10 +725,10 @@ namespace Jane
 		public OctetsStream UnmarshalSkip(int n)
 		{
 			if(n < 0) throw new MarshalException();
-			int pos_new = pos + n;
-			if(pos_new > count) throw new MarshalEOFException();
-			if(pos_new < pos) throw new MarshalException();
-			pos = pos_new;
+			int pos_new = _pos + n;
+			if(pos_new > _count) throw new MarshalEOFException();
+			if(pos_new < _pos) throw new MarshalException();
+			_pos = pos_new;
 			return this;
 		}
 
@@ -1062,12 +1062,12 @@ namespace Jane
 		{
 			int size = UnmarshalUInt();
 			if(size <= 0) return EMPTY;
-			int pos_new = pos + size;
-			if(pos_new > count) new MarshalEOFException();
-			if(pos_new < pos) new MarshalException();
+			int pos_new = _pos + size;
+			if(pos_new > _count) new MarshalEOFException();
+			if(pos_new < _pos) new MarshalException();
 			byte[] r = new byte[size];
-			Buffer.BlockCopy(buffer, pos, r, 0, size);
-			pos = pos_new;
+			Buffer.BlockCopy(_buffer, _pos, r, 0, size);
+			_pos = pos_new;
 			return r;
 		}
 
@@ -1091,11 +1091,11 @@ namespace Jane
 				o.Clear();
 				return this;
 			}
-			int pos_new = pos + size;
-			if(pos_new > count) new MarshalEOFException();
-			if(pos_new < pos) new MarshalException();
-			o.Replace(buffer, pos, size);
-			pos = pos_new;
+			int pos_new = _pos + size;
+			if(pos_new > _count) new MarshalEOFException();
+			if(pos_new < _pos) new MarshalException();
+			o.Replace(_buffer, _pos, size);
+			_pos = pos_new;
 			return this;
 		}
 
@@ -1109,11 +1109,11 @@ namespace Jane
 		public Octets UnmarshalRaw(int size)
 		{
 			if(size <= 0) return new Octets();
-			int pos_new = pos + size;
-			if(pos_new > count) new MarshalEOFException();
-			if(pos_new < pos) new MarshalException();
-			Octets o = new Octets(buffer, pos, size);
-			pos = pos_new;
+			int pos_new = _pos + size;
+			if(pos_new > _count) new MarshalEOFException();
+			if(pos_new < _pos) new MarshalException();
+			Octets o = new Octets(_buffer, _pos, size);
+			_pos = pos_new;
 			return o;
 		}
 
@@ -1162,14 +1162,14 @@ namespace Jane
 		{
 			int size = UnmarshalUInt();
 			if(size <= 0) return string.Empty;
-			int pos_new = pos + size;
-			if(pos_new > count) new MarshalEOFException();
-			if(pos_new < pos) new MarshalException();
+			int pos_new = _pos + size;
+			if(pos_new > _count) new MarshalEOFException();
+			if(pos_new < _pos) new MarshalException();
 			char[] tmp = new char[size];
 			int n = 0;
-			while(pos < pos_new)
+			while(_pos < pos_new)
 				tmp[n++] = UnmarshalUTF8();
-			pos = pos_new;
+			_pos = pos_new;
 			return new string(tmp, 0, n);
 		}
 

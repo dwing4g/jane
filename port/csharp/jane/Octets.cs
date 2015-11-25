@@ -14,8 +14,8 @@ namespace Jane
 		public static readonly byte[] EMPTY = new byte[0]; // 共享的空缓冲区;
 		public const int DEFAULT_SIZE = 16; // 默认的缓冲区;
 		protected static Encoding _defaultCharset = Encoding.UTF8;
-		protected byte[] buffer = EMPTY; // 数据缓冲区;
-		protected int count; // 当前有效的数据缓冲区大小;
+		protected byte[] _buffer = EMPTY; // 数据缓冲区;
+		protected int _count; // 当前有效的数据缓冲区大小;
 
 		public static void SetDefaultEncoding(Encoding enc)
 		{
@@ -25,18 +25,18 @@ namespace Jane
 		public static Octets Wrap(byte[] data, int size)
 		{
 			Octets o = new Octets();
-			o.buffer = data;
-			if(size > data.Length) o.count = data.Length;
-			else if(size < 0) o.count = 0;
-			else o.count = size;
+			o._buffer = data;
+			if(size > data.Length) o._count = data.Length;
+			else if(size < 0) o._count = 0;
+			else o._count = size;
 			return o;
 		}
 
 		public static Octets Wrap(byte[] data)
 		{
 			Octets o = new Octets();
-			o.buffer = data;
-			o.count = data.Length;
+			o._buffer = data;
+			o._count = data.Length;
 			return o;
 		}
 
@@ -60,8 +60,8 @@ namespace Jane
 			Octets o = new Octets();
 			if(size > 0)
 			{
-				o.buffer = new byte[size];
-				o.count = size;
+				o._buffer = new byte[size];
+				o._count = size;
 			}
 			return o;
 		}
@@ -92,71 +92,71 @@ namespace Jane
 
 		public byte[] Array()
 		{
-			return buffer;
+			return _buffer;
 		}
 
 		public bool Empty()
 		{
-			return count <= 0;
+			return _count <= 0;
 		}
 
 		public int Size()
 		{
-			return count;
+			return _count;
 		}
 
 		public int Capacity()
 		{
-			return buffer.Length;
+			return _buffer.Length;
 		}
 
 		public virtual int Remain()
 		{
-			return count;
+			return _count;
 		}
 
 		public byte GetByte(int p)
 		{
-			return buffer[p];
+			return _buffer[p];
 		}
 
 		public void SetByte(int p, byte b)
 		{
-			buffer[p] = b;
+			_buffer[p] = b;
 		}
 
 		public void Clear()
 		{
-			count = 0;
+			_count = 0;
 		}
 
 		public void Reset()
 		{
-			buffer = EMPTY;
-			count = 0;
+			_buffer = EMPTY;
+			_count = 0;
 		}
 
 		public byte[] GetBytes()
 		{
-			if(count <= 0) return EMPTY;
-			byte[] buf = new byte[count];
-			Buffer.BlockCopy(buffer, 0, buf, 0, count);
+			if(_count <= 0) return EMPTY;
+			byte[] buf = new byte[_count];
+			Buffer.BlockCopy(_buffer, 0, buf, 0, _count);
 			return buf;
 		}
 
 		public Octets Wraps(byte[] data, int size)
 		{
-			buffer = data;
-			if(size > data.Length) count = data.Length;
-			else if(size < 0) count = 0;
-			else count = size;
+			_buffer = data;
+			if(size > data.Length) _count = data.Length;
+			else if(size < 0) _count = 0;
+			else _count = size;
 			return this;
 		}
 
 		public Octets Wraps(byte[] data)
 		{
-			buffer = data;
-			count = data.Length;
+			_buffer = data;
+			_count = data.Length;
 			return this;
 		}
 
@@ -165,16 +165,16 @@ namespace Jane
 		 */
 		public void Shrink(int size)
 		{
-			if(count <= 0)
+			if(_count <= 0)
 			{
 				Reset();
 				return;
 			}
-			if(size < count) size = count;
-			if(size >= buffer.Length) return;
+			if(size < _count) size = _count;
+			if(size >= _buffer.Length) return;
 			byte[] buf = new byte[size];
-			Buffer.BlockCopy(buffer, 0, buf, 0, count);
-			buffer = buf;
+			Buffer.BlockCopy(_buffer, 0, buf, 0, _count);
+			_buffer = buf;
 		}
 
 		public void Shrink()
@@ -184,13 +184,13 @@ namespace Jane
 
 		public void Reserve(int size)
 		{
-			if(size > buffer.Length)
+			if(size > _buffer.Length)
 			{
 				int cap = DEFAULT_SIZE;
 				while(size > cap) cap <<= 1;
 				byte[] buf = new byte[cap];
-				if(count > 0) Buffer.BlockCopy(buffer, 0, buf, 0, count);
-				buffer = buf;
+				if(_count > 0) Buffer.BlockCopy(_buffer, 0, buf, 0, _count);
+				_buffer = buf;
 			}
 		}
 
@@ -199,11 +199,11 @@ namespace Jane
 		 */
 		public void ReserveSpace(int size)
 		{
-			if(size > buffer.Length)
+			if(size > _buffer.Length)
 			{
 				int cap = DEFAULT_SIZE;
 				while(size > cap) cap <<= 1;
-				buffer = new byte[cap];
+				_buffer = new byte[cap];
 			}
 		}
 
@@ -211,20 +211,20 @@ namespace Jane
 		{
 			if(size < 0) size = 0;
 			else Reserve(size);
-			count = size;
+			_count = size;
 		}
 
 		public void Replace(byte[] data, int pos, int size)
 		{
-			if(size <= 0) { count = 0; return; }
+			if(size <= 0) { _count = 0; return; }
 			int len = data.Length;
 			if(pos < 0) pos = 0;
-			if(pos >= len) { count = 0; return; }
+			if(pos >= len) { _count = 0; return; }
 			len -= pos;
 			if(size > len) size = len;
 			ReserveSpace(size);
-			Buffer.BlockCopy(data, pos, buffer, 0, size);
-			count = size;
+			Buffer.BlockCopy(data, pos, _buffer, 0, size);
+			_count = size;
 		}
 
 		public void Replace(byte[] data)
@@ -234,19 +234,19 @@ namespace Jane
 
 		public void Replace(Octets o)
 		{
-			Replace(o.buffer, 0, o.count);
+			Replace(o._buffer, 0, o._count);
 		}
 
 		public void Swap(Octets o)
 		{
-			int size = count; count = o.count; o.count = size;
-			byte[] buf = o.buffer; o.buffer = buffer; buffer = buf;
+			int size = _count; _count = o._count; o._count = size;
+			byte[] buf = o._buffer; o._buffer = _buffer; _buffer = buf;
 		}
 
 		public Octets Append(byte b)
 		{
-			Reserve(count + 1);
-			buffer[count++] = b;
+			Reserve(_count + 1);
+			_buffer[_count++] = b;
 			return this;
 		}
 
@@ -258,9 +258,9 @@ namespace Jane
 			if(pos >= len) return this;
 			len -= pos;
 			if(size > len) size = len;
-			Reserve(count + size);
-			Buffer.BlockCopy(data, pos, buffer, count, size);
-			count += size;
+			Reserve(_count + size);
+			Buffer.BlockCopy(data, pos, _buffer, _count, size);
+			_count += size;
 			return this;
 		}
 
@@ -271,23 +271,23 @@ namespace Jane
 
 		public Octets Append(Octets o)
 		{
-			return Append(o.buffer, 0, o.count);
+			return Append(o._buffer, 0, o._count);
 		}
 
 		public Octets Insert(int from, byte[] data, int pos, int size)
 		{
 			if(from < 0) from = 0;
-			if(from >= count) return Append(data, pos, size);
+			if(from >= _count) return Append(data, pos, size);
 			if(size <= 0) return this;
 			int len = data.Length;
 			if(pos < 0) pos = 0;
 			if(pos >= len) return this;
 			len -= pos;
 			if(size > len) size = len;
-			Reserve(count + size);
-			Buffer.BlockCopy(buffer, from, buffer, from + size, count - from);
-			Buffer.BlockCopy(data, pos, buffer, from, size);
-			count += size;
+			Reserve(_count + size);
+			Buffer.BlockCopy(_buffer, from, _buffer, from + size, _count - from);
+			Buffer.BlockCopy(data, pos, _buffer, from, size);
+			_count += size;
 			return this;
 		}
 
@@ -298,30 +298,30 @@ namespace Jane
 
 		public Octets Insert(int from, Octets o)
 		{
-			return Insert(from, o.buffer, 0, o.count);
+			return Insert(from, o._buffer, 0, o._count);
 		}
 
 		public Octets Erase(int from, int to)
 		{
 			if(from < 0) from = 0;
-			if(from >= count || from >= to) return this;
-			if(to >= count) count = from;
+			if(from >= _count || from >= to) return this;
+			if(to >= _count) _count = from;
 			else
 			{
-				count -= to;
-				Buffer.BlockCopy(buffer, to, buffer, from, count);
-				count += from;
+				_count -= to;
+				Buffer.BlockCopy(_buffer, to, _buffer, from, _count);
+				_count += from;
 			}
 			return this;
 		}
 
 		public Octets EraseFront(int size)
 		{
-			if(size >= count) count = 0;
+			if(size >= _count) _count = 0;
 			else if(size > 0)
 			{
-				count -= size;
-				Buffer.BlockCopy(buffer, size, buffer, 0, count);
+				_count -= size;
+				Buffer.BlockCopy(_buffer, size, _buffer, 0, _count);
 			}
 			return this;
 		}
@@ -329,8 +329,8 @@ namespace Jane
 		public int Find(int pos, int end, byte b)
 		{
 			if(pos < 0) pos = 0;
-			if(end > count) end = count;
-			byte[] buf = buffer;
+			if(end > _count) end = _count;
+			byte[] buf = _buffer;
 			for(; pos < end; ++pos)
 				if(buf[pos] == b) return pos;
 			return -1;
@@ -338,12 +338,12 @@ namespace Jane
 
 		public int Find(int pos, byte b)
 		{
-			return Find(pos, count, b);
+			return Find(pos, _count, b);
 		}
 
 		public int Find(byte b)
 		{
-			return Find(0, count, b);
+			return Find(0, _count, b);
 		}
 
 		public int Find(int pos, int end, byte[] b, int p, int s)
@@ -352,8 +352,8 @@ namespace Jane
 			if(p + s > b.Length) s = b.Length - p;
 			if(s <= 0) return 0;
 			if(pos < 0) pos = 0;
-			if(end > count - s + 1) end = count - s + 1;
-			byte[] buf = buffer;
+			if(end > _count - s + 1) end = _count - s + 1;
+			byte[] buf = _buffer;
 			byte c = b[0];
 			for(; pos < end; ++pos)
 			{
@@ -371,12 +371,12 @@ namespace Jane
 
 		public int Find(int pos, byte[] b, int p, int s)
 		{
-			return Find(pos, count, b, p, s);
+			return Find(pos, _count, b, p, s);
 		}
 
 		public int Find(byte[] b, int p, int s)
 		{
-			return Find(0, count, b, p, s);
+			return Find(0, _count, b, p, s);
 		}
 
 		public int Find(int pos, int end, byte[] b)
@@ -386,45 +386,45 @@ namespace Jane
 
 		public int Find(int pos, byte[] b)
 		{
-			return Find(pos, count, b, 0, b.Length);
+			return Find(pos, _count, b, 0, b.Length);
 		}
 
 		public int Find(byte[] b)
 		{
-			return Find(0, count, b, 0, b.Length);
+			return Find(0, _count, b, 0, b.Length);
 		}
 
 		public void SetString(string str)
 		{
-			buffer = _defaultCharset.GetBytes(str);
-			count = buffer.Length;
+			_buffer = _defaultCharset.GetBytes(str);
+			_count = _buffer.Length;
 		}
 
 		public void SetString(string str, Encoding encoding)
 		{
-			buffer = encoding.GetBytes(str);
-			count = buffer.Length;
+			_buffer = encoding.GetBytes(str);
+			_count = _buffer.Length;
 		}
 
 		public void SetString(string str, string encoding)
 		{
-			buffer = Encoding.GetEncoding(encoding).GetBytes(str);
-			count = buffer.Length;
+			_buffer = Encoding.GetEncoding(encoding).GetBytes(str);
+			_count = _buffer.Length;
 		}
 
 		public string GetString()
 		{
-			return _defaultCharset.GetString(buffer, 0, count);
+			return _defaultCharset.GetString(_buffer, 0, _count);
 		}
 
 		public string GetString(Encoding encoding)
 		{
-			return encoding.GetString(buffer, 0, count);
+			return encoding.GetString(_buffer, 0, _count);
 		}
 
 		public string GetString(string encoding)
 		{
-			return Encoding.GetEncoding(encoding).GetString(buffer, 0, count);
+			return Encoding.GetEncoding(encoding).GetString(_buffer, 0, _count);
 		}
 
 		public virtual object Clone()
@@ -434,18 +434,18 @@ namespace Jane
 
 		public override int GetHashCode()
 		{
-			int result = count;
-			if(count <= 32)
+			int result = _count;
+			if(_count <= 32)
 			{
-				for(int i = 0; i < count; ++i)
-					result = 31 * result + buffer[i];
+				for(int i = 0; i < _count; ++i)
+					result = 31 * result + _buffer[i];
 			}
 			else
 			{
 				for(int i = 0; i < 16; ++i)
-					result = 31 * result + buffer[i];
-				for(int i = count - 16; i < count; ++i)
-					result = 31 * result + buffer[i];
+					result = 31 * result + _buffer[i];
+				for(int i = _count - 16; i < _count; ++i)
+					result = 31 * result + _buffer[i];
 			}
 			return result;
 		}
@@ -453,15 +453,15 @@ namespace Jane
 		public int CompareTo(Octets o)
 		{
 			if(o == null) return 1;
-			int n = (count <= o.count ? count : o.count);
-			byte[] buf = buffer;
-			byte[] data = o.buffer;
+			int n = (_count <= o._count ? _count : o._count);
+			byte[] buf = _buffer;
+			byte[] data = o._buffer;
 			for(int i = 0; i < n; ++i)
 			{
 				int v = buf[i] - data[i];
 				if(v != 0) return v;
 			}
-			return count - o.count;
+			return _count - o._count;
 		}
 
 		public int CompareTo(object o)
@@ -475,30 +475,30 @@ namespace Jane
 			if(this == o) return true;
 			if(!(o is Octets)) return false;
 			Octets oct = (Octets)o;
-			if(count != oct.count) return false;
-			byte[] buf = buffer;
-			byte[] data = oct.buffer;
-			for(int i = 0, n = count; i < n; ++i)
+			if(_count != oct._count) return false;
+			byte[] buf = _buffer;
+			byte[] data = oct._buffer;
+			for(int i = 0, n = _count; i < n; ++i)
 				if(buf[i] != data[i]) return false;
 			return true;
 		}
 
 		public override string ToString()
 		{
-			return "[" + count + '/' + buffer.Length + ']';
+			return "[" + _count + '/' + _buffer.Length + ']';
 		}
 
 		public virtual StringBuilder Dump(StringBuilder s)
 		{
-			if(s == null) s = new StringBuilder(count * 3 + 4);
+			if(s == null) s = new StringBuilder(_count * 3 + 4);
 			s.Append('[');
-			if(count <= 0) return s.Append(']');
+			if(_count <= 0) return s.Append(']');
 			for(int i = 0;;)
 			{
-				int b = buffer[i];
+				int b = _buffer[i];
 				s.Append(HEX[(b >> 4) & 15]);
 				s.Append(HEX[b & 15]);
-				if(++i >= count) return s.Append(']');
+				if(++i >= _count) return s.Append(']');
 				s.Append(' ');
 			}
 		}
@@ -510,16 +510,16 @@ namespace Jane
 
 		public StringBuilder DumpJStr(StringBuilder s)
 		{
-			if(s == null) s = new StringBuilder(count * 4 + 4);
+			if(s == null) s = new StringBuilder(_count * 4 + 4);
 			s.Append('"');
-			if(count <= 0) return s.Append('"');
+			if(_count <= 0) return s.Append('"');
 			for(int i = 0;;)
 			{
-				int b = buffer[i];
+				int b = _buffer[i];
 				s.Append('\\').Append('x');
 				s.Append(HEX[(b >> 4) & 15]);
 				s.Append(HEX[b & 15]);
-				if(++i >= count) return s.Append('"');
+				if(++i >= _count) return s.Append('"');
 			}
 		}
 

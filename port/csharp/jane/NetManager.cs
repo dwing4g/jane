@@ -11,24 +11,23 @@ namespace Jane
 	 */
 	public class NetManager : IDisposable
 	{
-		public const int CLOSE_ACTIVE = 0;
-		public const int CLOSE_CONNECT = 1;
-		public const int CLOSE_READ = 2;
-		public const int CLOSE_WRITE = 3;
-		public const int CLOSE_DECODE = 4;
+		public const int CLOSE_ACTIVE = 0; // 主动断开,包括已连接的情况下再次执行连接导致旧连接断开;
+		public const int CLOSE_READ   = 1; // 接收失败,可能是对方主动断开;
+		public const int CLOSE_WRITE  = 2; // 发送失败,可能是对方主动断开;
+		public const int CLOSE_DECODE = 3; // 解码失败,接收数据格式错误;
 		public const int RECV_BUFSIZE = 8192; // 每次接收网络数据的缓冲区大小;
 
-		private readonly object EVENT_CONNECT = new object();
-		private readonly object EVENT_READ = new object();
+		private static readonly object EVENT_CONNECT = new object(); // 网络连接事件;
+		private static readonly object EVENT_READ = new object(); // 网络读取事件;
 
-		public delegate IBean BeanDelegate();
-		public delegate void HandlerDelegate(NetManager mgr, IBean arg);
+		public delegate IBean BeanDelegate(); // 用于创建bean;
+		public delegate void HandlerDelegate(NetManager mgr, IBean arg); // 用于处理bean;
 
-		private TcpClient _tcpClient = new TcpClient();
-		private NetworkStream _tcpStream;
-		private readonly ConcurrentQueue<IAsyncResult> _eventQueue = new ConcurrentQueue<IAsyncResult>();
-		private readonly byte[] _bufin = new byte[RECV_BUFSIZE];
-		private readonly OctetsStream _bufos = new OctetsStream();
+		private TcpClient _tcpClient = new TcpClient(); // TCP对象;
+		private NetworkStream _tcpStream; // TCP流对象;
+		private readonly ConcurrentQueue<IAsyncResult> _eventQueue = new ConcurrentQueue<IAsyncResult>(); // 网络事件队列;
+		private readonly byte[] _bufin = new byte[RECV_BUFSIZE]; // 直接接收数据的缓冲区;
+		private readonly OctetsStream _bufos = new OctetsStream(); // 接收数据未处理部分的缓冲区;
 		private IDictionary<int, BeanDelegate> _beanMap = new Dictionary<int, BeanDelegate>(); // 所有注册beans的创建代理;
 		private IDictionary<int, HandlerDelegate> _handlerMap = new Dictionary<int, HandlerDelegate>(); // 所有注册beans的处理代理;
 
@@ -37,7 +36,7 @@ namespace Jane
 			Dispose(false);
 		}
 
-		public void Dispose()
+		public void Dispose() // 一旦调用了Dispose,则本对象不能再处理网络事务;
 		{
 			Dispose(true);
 			GC.SuppressFinalize(this);
@@ -47,6 +46,13 @@ namespace Jane
 		{
 			if(_tcpClient != null)
 			{
+				try
+				{
+					Close();
+				}
+				catch(Exception)
+				{
+				}
 				TcpClient tcpClient = _tcpClient;
 				_tcpClient = null;
 				tcpClient.Close();
@@ -73,9 +79,9 @@ namespace Jane
 			return _handlerMap;
 		}
 
-		public bool Connected { get { return _tcpStream != null && _tcpClient != null && _tcpClient.Connected; } }
+		public bool Connected { get { return _tcpStream != null && _tcpClient != null && _tcpClient.Connected; } } // 是否在连接状态;
 
-		protected virtual void OnAddSession() {} // 执行连接后,异步由Tick方法回调,异常会调Close(CLOSE_CONNECT,e);
+		protected virtual void OnAddSession() {} // 执行连接后,异步由Tick方法回调,异常会抛出;
 		protected virtual void OnDelSession(int code, Exception e) {} // 由Close(主动/Connect/Tick)方法调用,异常会抛出;
 		protected virtual void OnAbortSession(Exception e) {} // 由Tick方法调用,异常会抛出;
 		protected virtual void OnSentBean(IBean bean) {} // 由Tick方法调用,异常会抛出;
@@ -120,7 +126,7 @@ namespace Jane
 			}
 		}
 
-		protected virtual void OnRecvBean(IBean bean) // 在Tick解协议过程中回调;
+		protected virtual void OnRecvBean(IBean bean) // 在Tick解协议过程中解出一个bean时回调,默认会同步处理bean并忽略异常;
 		{
 			try
 			{
@@ -131,7 +137,7 @@ namespace Jane
 			}
 		}
 
-		protected bool ProcessBean(IBean bean)
+		protected bool ProcessBean(IBean bean) // 同步处理bean,异常会抛出;
 		{
 			HandlerDelegate handler;
 			if(!_handlerMap.TryGetValue(bean.Type(), out handler)) return false;
@@ -141,6 +147,7 @@ namespace Jane
 
 		private void OnEventConnect(IAsyncResult res)
 		{
+			if(_tcpClient == null) return;
 			Exception ex = null;
 			try
 			{
@@ -152,15 +159,15 @@ namespace Jane
 			}
 			if(_tcpClient.Connected)
 			{
+				OnAddSession();
 				try
 				{
-					OnAddSession();
 					_tcpStream = _tcpClient.GetStream();
 					_tcpStream.BeginRead(_bufin, 0, _bufin.Length, OnAsyncEvent, EVENT_READ);
 				}
 				catch(Exception e)
 				{
-					Close(CLOSE_CONNECT, e);
+					Close(CLOSE_READ, e);
 				}
 			}
 			else
@@ -169,6 +176,7 @@ namespace Jane
 
 		private void OnEventRead(IAsyncResult res)
 		{
+			if(_tcpStream == null) return;
 			Exception ex = null;
 			try
 			{
@@ -197,6 +205,7 @@ namespace Jane
 
 		private void OnEventWrite(IAsyncResult res)
 		{
+			if(_tcpStream == null) return;
 			IBean bean = res.AsyncState as IBean;
 			try
 			{
@@ -215,7 +224,7 @@ namespace Jane
 			_eventQueue.Enqueue(res);
 		}
 
-		public void Tick()
+		public void Tick() // 在网络开始连接和已经连接时,要频繁调用此方法来及时处理网络接收和发送;
 		{
 			IAsyncResult res;
 			while(_eventQueue.TryDequeue(out res))
@@ -229,7 +238,7 @@ namespace Jane
 			}
 		}
 
-		public void Connect(string host, int port)
+		public void Connect(string host, int port) // 开始异步连接,如果已经连接,则会先主动断开旧连接再重新连接;
 		{
 			if(_tcpClient == null)
 				throw new Exception("TcpClient disposed");
@@ -261,6 +270,9 @@ namespace Jane
 			{
 				_tcpStream.Close();
 				_tcpStream = null;
+				_bufos.Reset();
+				IAsyncResult res;
+				while(_eventQueue.TryDequeue(out res));
 				OnDelSession(code, e);
 			}
 		}
