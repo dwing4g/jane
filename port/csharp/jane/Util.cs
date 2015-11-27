@@ -81,7 +81,7 @@ namespace Jane
 
 			public T Current { get { return _enum.Current; } }
 		}
-
+/*
 		public struct SortedSetEnumerator<T>
 		{
 			private SortedSet<T>.Enumerator _enum;
@@ -103,7 +103,7 @@ namespace Jane
 
 			public T Current { get { return _enum.Current; } }
 		}
-
+*/
 		public struct DictEnumerator<K, V>
 		{
 			private Dictionary<K, V>.Enumerator _enum;
@@ -162,12 +162,12 @@ namespace Jane
 		{
 			return new HashSetEnumerator<T>(list);
 		}
-
+/*
 		public static SortedSetEnumerator<T> Enum<T>(SortedSet<T> list)
 		{
 			return new SortedSetEnumerator<T>(list);
 		}
-
+*/
 		public static DictEnumerator<K, V> Enum<K, V>(Dictionary<K, V> dic)
 		{
 			return new DictEnumerator<K, V>(dic);

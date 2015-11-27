@@ -26,7 +26,7 @@ namespace Jane.Bean
 		public  /* 11*/ LinkedList<sbyte> v11; // 链表容器(LinkedList);
 		public  /* 12*/ LinkedList<int> v12; // 队列容器(ArrayDeque);
 		public  /* 13*/ HashSet<long> v13; // 无序集合容器(HashSet);
-		public  /* 14*/ SortedSet<float> v14; // 排序集合容器(TreeSet);
+		public  /* 14*/ HashSet<float> v14; // 排序集合容器(TreeSet);
 		public  /* 15*/ HashSet<double> v15; // 有序集合容器(LinkedHashSet);
 		public  /* 16*/ Dictionary<long, string> v16; // 无序映射容器(HashMap);
 		public  /* 17*/ SortedDictionary<TestBean, bool> v17; // 排序映射容器(TreeMap);
@@ -48,7 +48,7 @@ namespace Jane.Bean
 			this.v11 = new LinkedList<sbyte>(); if(v11 != null) Util.AddAll(this.v11, v11);
 			this.v12 = new LinkedList<int>(); if(v12 != null) Util.AddAll(this.v12, v12);
 			this.v13 = new HashSet<long>(); if(v13 != null) this.v13.UnionWith(v13);
-			this.v14 = new SortedSet<float>(); if(v14 != null) this.v14.UnionWith(v14);
+			this.v14 = new HashSet<float>(); if(v14 != null) this.v14.UnionWith(v14);
 			this.v15 = new HashSet<double>(); if(v15 != null) this.v15.UnionWith(v15);
 			this.v16 = new Dictionary<long, string>(0); if(v16 != null) Util.AddAll(this.v16, v16);
 			this.v17 = new SortedDictionary<TestBean, bool>(); if(v17 != null) Util.AddAll(this.v17, v17);
@@ -232,12 +232,12 @@ namespace Jane.Bean
 			this.v13 = v13 ?? new Octets();
 		}
 
-		public SortedSet<float> GetV14()
+		public HashSet<float> GetV14()
 		{
 			return v14;
 		}
 
-		public void setV14(SortedSet<float> v14)
+		public void setV14(HashSet<float> v14)
 		{
 			this.v14 = v14 ?? new Octets();
 		}
@@ -315,7 +315,7 @@ namespace Jane.Bean
 			v11 = new LinkedList<sbyte>();
 			v12 = new LinkedList<int>();
 			v13 = new HashSet<long>();
-			v14 = new SortedSet<float>();
+			v14 = new HashSet<float>();
 			v15 = new HashSet<double>();
 			v16 = new Dictionary<long, string>(0);
 			v17 = new SortedDictionary<TestBean, bool>();

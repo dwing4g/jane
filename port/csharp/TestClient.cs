@@ -169,13 +169,12 @@ namespace Jane
 				Console.WriteLine("connecting ...");
 				mgr.setServerAddr(DEFAULT_SERVER_ADDR, DEFAULT_SERVER_PORT); // 连接前先设置好服务器的地址和端口;
 				mgr.Connect(); // 开始异步连接,成功或失败反馈到回调方法;
-				Console.WriteLine("press ENTER to exit ...");
-				while(!Console.KeyAvailable || Console.ReadKey(true).Key != ConsoleKey.Enter) // 工作线程的主循环;
+				Console.WriteLine("press CTRL+C or close this window to exit ...");
+				for(;;) // 工作线程的主循环;
 				{
 					mgr.Tick(); // 在当前线程处理网络事件,很多回调方法在此同步执行;
 					Thread.Sleep(100); // 可替换成其它工作事务;
 				}
-				Console.WriteLine("exiting ...");
 			}
 		}
 	}

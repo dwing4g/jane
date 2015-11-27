@@ -18,7 +18,7 @@ namespace Jane.Handler
 		|*| LinkedList<sbyte> v11; // 链表容器(LinkedList);
 		|*| LinkedList<int> v12; // 队列容器(ArrayDeque);
 		|*| HashSet<long> v13; // 无序集合容器(HashSet);
-		|*| SortedSet<float> v14; // 排序集合容器(TreeSet);
+		|*| HashSet<float> v14; // 排序集合容器(TreeSet);
 		|*| HashSet<double> v15; // 有序集合容器(LinkedHashSet);
 		|*| Dictionary<long, string> v16; // 无序映射容器(HashMap);
 		|*| SortedDictionary<TestBean, bool> v17; // 排序映射容器(TreeMap);

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Sockets;
 
@@ -15,13 +14,13 @@ namespace Jane
 		public const int CLOSE_READ   = 1; // 接收失败,可能是对方主动断开;
 		public const int CLOSE_WRITE  = 2; // 发送失败,可能是对方主动断开;
 		public const int CLOSE_DECODE = 3; // 解码失败,接收数据格式错误;
-		public const int RECV_BUFSIZE = 8192; // 每次接收网络数据的缓冲区大小;
+		public const int RECV_BUFSIZE = 32768; // 每次接收网络数据的缓冲区大小;
 
 		public delegate IBean BeanDelegate(); // 用于创建bean;
 		public delegate void HandlerDelegate(NetManager mgr, IBean arg); // 用于处理bean;
 
 		private Socket _socket; // socket对象(也用于连接事件的对象);
-		private readonly ConcurrentQueue<IAsyncResult> _eventQueue = new ConcurrentQueue<IAsyncResult>(); // 网络事件队列;
+		private readonly Queue<IAsyncResult> _eventQueue = new Queue<IAsyncResult>(); // 网络事件队列;
 		private readonly byte[] _bufin = new byte[RECV_BUFSIZE]; // 直接接收数据的缓冲区;
 		private OctetsStream _bufos; // 接收数据未处理部分的缓冲区(也用于接收事件的对象);
 
@@ -170,14 +169,21 @@ namespace Jane
 
 		private void OnAsyncEvent(IAsyncResult res) // 本类只有此方法是另一线程回调执行的,其它方法必须在单一线程执行或触发;
 		{
-			_eventQueue.Enqueue(res);
+			lock(_eventQueue)
+				_eventQueue.Enqueue(res);
 		}
 
 		public void Tick() // 在网络开始连接和已经连接时,要频繁调用此方法来及时处理网络接收和发送;
 		{
+			if(_eventQueue.Count <= 0) return; // 这里并发脏读,应该没问题的;
 			IAsyncResult res;
-			while(_eventQueue.TryDequeue(out res))
+			for(;;)
 			{
+				lock(_eventQueue)
+				{
+					if(_eventQueue.Count <= 0) return;
+					res = _eventQueue.Dequeue();
+				}
 				if(res.AsyncState == _bufos)
 					OnEventRead(res);
 				else if(res.AsyncState == _socket)
@@ -234,8 +240,8 @@ namespace Jane
 			{
 				_socket.Close();
 				_socket = null;
-				IAsyncResult res;
-				while(_eventQueue.TryDequeue(out res)) ;
+				lock(_eventQueue)
+					_eventQueue.Clear();
 				if(_bufos != null)
 				{
 					_bufos = null;
