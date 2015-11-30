@@ -393,7 +393,10 @@ public class NetManager implements IoHandler
 	{
 		if(session.isClosing() || obj == null) return null;
 		WriteFuture wf = new DefaultWriteFuture(session);
-		session.getFilterChain().fireFilterWrite(new DefaultWriteRequest(obj, wf, null));
+		synchronized(session)
+		{
+			session.getFilterChain().fireFilterWrite(new DefaultWriteRequest(obj, wf, null));
+		}
 		return wf;
 	}
 
@@ -405,7 +408,10 @@ public class NetManager implements IoHandler
 		if(session.isClosing() || obj == null) return null;
 		WriteFuture wf = new DefaultWriteFuture(session);
 		if(listener != null) wf.addListener(listener);
-		session.getFilterChain().fireFilterWrite(new DefaultWriteRequest(obj, wf, null));
+		synchronized(session)
+		{
+			session.getFilterChain().fireFilterWrite(new DefaultWriteRequest(obj, wf, null));
+		}
 		return wf;
 	}
 

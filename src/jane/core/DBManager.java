@@ -610,7 +610,7 @@ public final class DBManager
 						_procCount.decrementAndGet();
 						try
 						{
-							proc.run();
+							proc.execute();
 						}
 						catch(Throwable e)
 						{
