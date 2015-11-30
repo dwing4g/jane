@@ -15,7 +15,6 @@ import org.apache.mina.core.file.FileRegion;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.ssl.SslFilter;
 import jane.core.HttpCodec;
-import jane.core.Log;
 import jane.core.NetManager;
 import jane.core.OctetsStream;
 
@@ -107,16 +106,6 @@ public final class TestHttpServer extends NetManager
 				e.printStackTrace();
 			}
 		}
-	}
-
-	@Override
-	public void exceptionCaught(IoSession session, Throwable cause)
-	{
-		if(cause instanceof IOException)
-			Log.log.error(getName() + '(' + session.getId() + ',' + session.getRemoteAddress() + "): exception: {}", cause.getMessage());
-		else
-			Log.log.error(getName() + '(' + session.getId() + ',' + session.getRemoteAddress() + "): exception:", cause);
-		session.close(true);
 	}
 
 	public static void main(String[] args) throws Exception

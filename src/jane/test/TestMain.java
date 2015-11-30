@@ -24,15 +24,12 @@ public final class TestMain
 			TestServer.instance().startServer(new InetSocketAddress("0.0.0.0", 9123));
 			TestClient.instance().startClient(new InetSocketAddress("127.0.0.1", 9123));
 			new StatusServer().startServer(new InetSocketAddress("0.0.0.0", 80));
+			Log.log.info("================================ startup: end");
 		}
 		catch(Throwable e)
 		{
 			Log.log.error("startup exception:", e);
 			e.printStackTrace(System.err);
-		}
-		finally
-		{
-			Log.log.info("================================ startup: end");
 		}
 	}
 }
