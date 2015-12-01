@@ -31,7 +31,7 @@ namespace Jane
 		protected virtual void OnAddSession() {} // 执行连接后,异步由Tick方法回调,异常会抛出;
 		protected virtual void OnDelSession(int code, Exception e) {} // 由Close(主动/Connect/Tick)方法调用,异常会抛出;
 		protected virtual void OnAbortSession(Exception e) {} // 由Tick方法调用,异常会抛出;
-		protected virtual void OnSentBean(IBean bean) {} // 由Tick方法调用,异常会抛出;
+		protected virtual void OnSentBean(object obj) {} // 由Tick方法调用,异常会抛出;
 		protected virtual OctetsStream OnEncode(byte[] buf, int pos, int len) { return null; } // 由SendDirect方法回调,异常会抛出;
 		protected virtual OctetsStream OnDecode(byte[] buf, int pos, int len) { return null; } // 由Tick方法回调,异常会调Close(CLOSE_DECODE,e);
 
@@ -45,7 +45,7 @@ namespace Jane
 			int pos = 0;
 			try
 			{
-				for(;;)
+				while(_bufos.Remain() >= 3) // type+size+bean;
 				{
 					int ptype = _bufos.UnmarshalUInt();
 					int psize = _bufos.UnmarshalUInt();
@@ -151,20 +151,16 @@ namespace Jane
 		private void OnEventWrite(IAsyncResult res)
 		{
 			if(_socket == null) return;
-			IBean bean = res.AsyncState as IBean;
-			if(bean != null)
+			try
 			{
-				try
-				{
-					_socket.EndSend(res);
-				}
-				catch(Exception e)
-				{
-					Close(CLOSE_WRITE, e);
-					return;
-				}
-				OnSentBean(bean);
+				_socket.EndSend(res);
 			}
+			catch(Exception e)
+			{
+				Close(CLOSE_WRITE, e);
+				return;
+			}
+			OnSentBean(res.AsyncState);
 		}
 
 		private void OnAsyncEvent(IAsyncResult res) // 本类只有此方法是另一线程回调执行的,其它方法必须在单一线程执行或触发;
@@ -209,9 +205,24 @@ namespace Jane
 			}
 		}
 
-		public virtual bool Send(IBean bean)
+		public bool SendDirect(byte[] data, int pos, int len, object userdata = null)
 		{
-			return SendDirect(bean);
+			OctetsStream os = OnEncode(data, pos, len);
+			if(os != null)
+			{
+				data = os.Array();
+				pos = os.Position();
+				len = os.Remain();
+			}
+			try
+			{
+				_socket.BeginSend(data, pos, len, SocketFlags.None, OnAsyncEvent, userdata);
+			}
+			catch(Exception e)
+			{
+				Close(CLOSE_WRITE, e);
+			}
+			return true;
 		}
 
 		public bool SendDirect(IBean bean)
@@ -222,16 +233,17 @@ namespace Jane
 			bean.Marshal(os);
 			int n = os.MarshalUIntBack(10, os.Size() - 10);
 			os.SetPosition(10 - (n + os.MarshalUIntBack(10 - n, bean.Type())));
-			os = OnEncode(os.Array(), os.Position(), os.Remain()) ?? os;
-			try
-			{
-				_socket.BeginSend(os.Array(), os.Position(), os.Remain(),SocketFlags.None, OnAsyncEvent, bean);
-			}
-			catch(Exception e)
-			{
-				Close(CLOSE_WRITE, e);
-			}
-			return true;
+			return SendDirect(os.Array(), os.Position(), os.Remain(), bean);
+		}
+
+		public virtual bool Send(byte[] data, int pos, int len, object userdata = null)
+		{
+			return SendDirect(data, pos, len, userdata);
+		}
+
+		public virtual bool Send(IBean bean)
+		{
+			return SendDirect(bean);
 		}
 
 		public void Close(int code = CLOSE_ACTIVE, Exception e = null) // 除了主动调用外,Connect/Tick也会调用;

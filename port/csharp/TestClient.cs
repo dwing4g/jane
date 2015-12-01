@@ -143,9 +143,11 @@ namespace Jane
 		 * 注意这并不能保证服务器已经成功接收了此协议;
 		 * 主要用于触发其他队列中协议的立即发送;
 		 */
-		protected override void OnSentBean(IBean bean)
+		protected override void OnSentBean(object obj)
 		{
-			_sendingBeans.Remove(bean);
+			IBean bean = obj as IBean;
+			if(bean != null)
+				_sendingBeans.Remove(bean);
 			BeginSend();
 		}
 
