@@ -64,7 +64,7 @@ public final class TestHttpServer extends NetManager
 		List<String> param = new ArrayList<String>();
 		param.add("Server: jane");
 		param.add("Content-Type: text/html; charset=utf-8");
-		param.add("Cache-Control: private");
+		param.add("Cache-Control: no-cache");
 		param.add("Pragma: no-cache");
 		if(params.containsKey("file"))
 		{

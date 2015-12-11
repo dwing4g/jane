@@ -108,7 +108,7 @@ public class StatusServer extends NetManager
 		else
 		{
 			param.add("Content-Type: text/html; charset=utf-8");
-			param.add("Cache-Control: private");
+			param.add("Cache-Control: no-cache");
 			param.add("Pragma: no-cache");
 			byte[] data = genStatus().getBytes(Const.stringCharsetUTF8);
 			HttpCodec.sendHead(session, "200 OK", data.length, param);
