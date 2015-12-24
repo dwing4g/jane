@@ -159,7 +159,7 @@ namespace Jane
 			s.Append("{\"t\":").Append(_type);
 			if(_fields != null)
 			{
-				foreach(KeyValuePair<int, object> p in _fields)
+				foreach(KeyValuePair<int, object> p in Util.Enum(_fields))
 				{
 					s.Append(',').Append('"').Append(p.Key).Append('"').Append(':');
 					object o = p.Value;
@@ -191,7 +191,7 @@ namespace Jane
 			s.Append("{t=").Append(_type);
 			if(_fields != null)
 			{
-				foreach(KeyValuePair<int, object> p in _fields)
+				foreach(KeyValuePair<int, object> p in Util.Enum(_fields))
 				{
 					s.Append(',').Append('[').Append(p.Key).Append(']').Append('=');
 					object o = p.Value;
