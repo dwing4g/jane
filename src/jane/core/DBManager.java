@@ -177,8 +177,13 @@ public final class DBManager
 							_backupTime += _backupPeriod;
 							if(_backupTime <= t) _backupTime += ((t - _backupTime) / _backupPeriod + 1) * _backupPeriod;
 							Log.log.info("db-commit backup begin...");
+							String timeStr;
+							synchronized(_sdf)
+							{
+								timeStr = _sdf.format(new Date());
+							}
 							long r = _storage.backup(new File(Const.dbBackupPath, new File(Const.dbFilename).getName() +
-							        '.' + _storage.getFileSuffix() + '.' + _sdf.format(new Date())));
+							        '.' + _storage.getFileSuffix() + '.' + timeStr));
 							if(r >= 0)
 								Log.log.info("db-commit backup end. ({} bytes) ({} ms)", r, System.currentTimeMillis() - t);
 							else
@@ -208,11 +213,14 @@ public final class DBManager
 	}
 
 	/**
-	 * 获取备份时间字符串的格式
+	 * 获取以备份时间格式格式化一个时间
 	 */
-	public SimpleDateFormat getBackupDateFormat()
+	public String getBackupDateStr(Date date)
 	{
-		return _sdf;
+		synchronized(_sdf)
+		{
+			return _sdf.format(date);
+		}
 	}
 
 	/**

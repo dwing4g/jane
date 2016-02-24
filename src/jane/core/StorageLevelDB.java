@@ -2,7 +2,6 @@ package jane.core;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
@@ -582,11 +581,10 @@ public final class StorageLevelDB implements Storage
 		long basetime = DBManager.instance().getBackupBaseTime();
 		long time = System.currentTimeMillis();
 		Date backupDate = new Date(basetime + (time - basetime) / period * period);
-		SimpleDateFormat sdf = DBManager.instance().getBackupDateFormat();
-		dstPath += '.' + sdf.format(backupDate);
+		dstPath += '.' + DBManager.instance().getBackupDateStr(backupDate);
 		File path = new File(dstPath).getParentFile();
 		if(path != null && !path.isDirectory() && !path.mkdirs())
 		    throw new IOException("create backup path failed: " + dstPath);
-		return leveldb_backup(_db, _dbFile.getAbsolutePath(), dstPath, sdf.format(new Date(time)));
+		return leveldb_backup(_db, _dbFile.getAbsolutePath(), dstPath, DBManager.instance().getBackupDateStr(new Date(time)));
 	}
 }
