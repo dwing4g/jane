@@ -47,7 +47,7 @@ public final class DynBean extends Bean<DynBean>
 
 	public Object setField(int id, Object o)
 	{
-		if(id <= 0 || id > 62) throw new IllegalArgumentException("field id must be in [1,62]: " + id);
+		if(id < 1 || id > 190) throw new IllegalArgumentException("field id must be in [1,190]: " + id);
 		return _fields.put(id, o);
 	}
 
@@ -96,6 +96,7 @@ public final class DynBean extends Bean<DynBean>
 		{
 			int b = os.unmarshalInt1() & 0xff;
 			if(b == 0) return os;
+			if(b > 251) b += os.unmarshalInt1() << 2;
 			_fields.put(b >> 2, os.unmarshalVar(b & 3));
 		}
 	}

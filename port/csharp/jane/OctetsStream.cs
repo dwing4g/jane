@@ -449,42 +449,60 @@ namespace Jane
 			return 1;
 		}
 
+		private OctetsStream MarshalId(int id, int type) // id must be in [1,190]
+		{
+			if(id < 63)
+				Marshal1((byte)((id << 2) + type));
+			else
+				Marshal2((type << 8) + id - 63 + 0xfc00);
+			return this;
+		}
+
+		private OctetsStream MarshalIdSubType(int id, int subType) // id must be in [1,190], subType must be > 0
+		{
+			if(id < 63)
+				Marshal2((id << 10) + subType + 0x300);
+			else
+				Marshal3(((id - 63) << 8) + subType + 0xff0000);
+			return this;
+		}
+
 		public OctetsStream MarshalVar(int id, object o)
 		{
-			if(id < 1 || id > 62) throw new ArgumentException("id must be in [1,62]: " + id);
+			if(id < 1 || id > 190) throw new ArgumentException("id must be in [1,190]: " + id);
 			if(o is IConvertible)
 			{
 				if(o is float)
 				{
 					float v = (float)o;
-					if(v != 0) Marshal2((id << 10) + 0x308).Marshal(v);
+					if(v != 0) MarshalIdSubType(id, 8).Marshal(v);
 				}
 				else if(o is double)
 				{
 					double v = (double)o;
-					if(v != 0) Marshal2((id << 10) + 0x309).Marshal(v);
+					if(v != 0) MarshalIdSubType(id, 9).Marshal(v);
 				}
 				else if(o is string)
 				{
 					string str = (string)o;
-					if(str.Length > 0) Marshal1((byte)((id << 2) + 1)).Marshal(str);
+					if(str.Length > 0) MarshalId(id, 1).Marshal(str);
 				}
 				else
 				{
 					long v = ((IConvertible)o).ToInt64(null);
-					if(v != 0) Marshal1((byte)(id << 2)).Marshal(v);
+					if(v != 0) MarshalId(id, 0).Marshal(v);
 				}
 			}
 			else if(o is IBean)
 			{
 				int n = _count;
-				((IBean)o).Marshal(Marshal1((byte)((id << 2) + 2)));
+				((IBean)o).Marshal(MarshalId(id, 2));
 				if(_count - n < 3) Resize(n);
 			}
 			else if(o is Octets)
 			{
 				Octets oct = (Octets)o;
-				if(!oct.Empty()) Marshal1((byte)((id << 2) + 1)).Marshal(oct);
+				if(!oct.Empty()) MarshalId(id, 1).Marshal(oct);
 			}
 			else if(o is IDictionary)
 			{
@@ -494,11 +512,11 @@ namespace Jane
 				{
 					IDictionaryEnumerator de = dic.GetEnumerator();
 					de.MoveNext();
-					int ktype = GetKVType(de.Key);
-					int vtype = GetKVType(de.Value);
-					Marshal2((id << 10) + 0x340 + (ktype << 3) + vtype).MarshalUInt(n);
+					int kType = GetKVType(de.Key);
+					int vType = GetKVType(de.Value);
+					MarshalIdSubType(id, 0x40 + (kType << 3) + vType).MarshalUInt(n);
 					do
-						MarshalKV(ktype, de.Key).MarshalKV(vtype, de.Value);
+						MarshalKV(kType, de.Key).MarshalKV(vType, de.Value);
 					while(de.MoveNext());
 				}
 			}
@@ -510,10 +528,10 @@ namespace Jane
 				{
 					IEnumerator e = list.GetEnumerator();
 					e.MoveNext();
-					int vtype = GetKVType(e.Current);
-					Marshal2((id << 10) + 0x300 + vtype).MarshalUInt(n);
+					int vType = GetKVType(e.Current);
+					MarshalIdSubType(id, vType).MarshalUInt(n);
 					do
-						MarshalKV(vtype, e.Current);
+						MarshalKV(vType, e.Current);
 					while(e.MoveNext());
 				}
 			}

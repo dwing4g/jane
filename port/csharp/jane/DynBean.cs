@@ -32,7 +32,7 @@ namespace Jane
 
 		public void SetField(int id, object o)
 		{
-			if(id <= 0 || id > 62) throw new ArgumentException("field id must be in [1,62]: " + id);
+			if(id < 1 || id > 190) throw new ArgumentException("field id must be in [1,190]: " + id);
 			if(_fields == null) _fields = new SortedDictionary<int, object>();
 			_fields.Add(id, o);
 		}
@@ -94,6 +94,7 @@ namespace Jane
 			{
 				int b = os.UnmarshalUInt1();
 				if(b == 0) return os;
+				if(b > 251) b += os.UnmarshalInt1() << 2;
 				_fields.Add(b >> 2, os.UnmarshalVar(b & 3));
 			}
 		}

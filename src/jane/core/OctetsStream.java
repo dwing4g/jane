@@ -532,52 +532,70 @@ public class OctetsStream extends Octets
 		return 1;
 	}
 
+	private OctetsStream marshalId(int id, int type) // id must be in [1,190]
+	{
+		if(id < 63)
+			marshal1((byte)((id << 2) + type));
+		else
+			marshal2((type << 8) + id - 63 + 0xfc00);
+		return this;
+	}
+
+	private OctetsStream marshalIdSubType(int id, int subType) // id must be in [1,190], subType must be > 0
+	{
+		if(id < 63)
+			marshal2((id << 10) + subType + 0x300);
+		else
+			marshal3(((id - 63) << 8) + subType + 0xff0000);
+		return this;
+	}
+
 	public OctetsStream marshalVar(int id, Object o)
 	{
-		if(id < 1 || id > 62) throw new IllegalArgumentException("id must be in [1,62]: " + id);
+		if(id < 1 || id > 190) throw new IllegalArgumentException("id must be in [1,190]: " + id);
 		if(o instanceof Number)
 		{
 			if(o instanceof Float)
 			{
 				float v = (Float)o;
-				if(v != 0) marshal2((id << 10) + 0x308).marshal(v);
+				if(v != 0) marshalIdSubType(id, 8).marshal(v);
 			}
 			else if(o instanceof Double)
 			{
 				double v = (Double)o;
-				if(v != 0) marshal2((id << 10) + 0x309).marshal(v);
+				if(v != 0) marshalIdSubType(id, 9).marshal(v);
 			}
 			else // Byte,Short,Integer,Long
 			{
 				long v = ((Number)o).longValue();
-				if(v != 0) marshal1((byte)(id << 2)).marshal(v);
+				if(v != 0) marshalId(id, 0).marshal(v);
 			}
 		}
 		else if(o instanceof Bean)
 		{
 			int n = _count;
-			((Bean<?>)o).marshal(marshal1((byte)((id << 2) + 2)));
+			((Bean<?>)o).marshal(marshalId(id, 2));
 			if(_count - n < 3) resize(n);
 		}
 		else if(o instanceof Octets)
 		{
 			Octets oct = (Octets)o;
-			if(!oct.empty()) marshal1((byte)((id << 2) + 1)).marshal(oct);
+			if(!oct.empty()) marshalId(id, 1).marshal(oct);
 		}
 		else if(o instanceof String)
 		{
 			String str = (String)o;
-			if(!str.isEmpty()) marshal1((byte)((id << 2) + 1)).marshal(str);
+			if(!str.isEmpty()) marshalId(id, 1).marshal(str);
 		}
 		else if(o instanceof Boolean)
 		{
 			boolean v = (Boolean)o;
-			if(v) marshal2((id << 10) + 1);
+			if(v) marshalId(id, 0).marshal1((byte)1);
 		}
 		else if(o instanceof Character)
 		{
 			char v = (Character)o;
-			if(v != 0) marshal1((byte)(id << 2)).marshal(v);
+			if(v != 0) marshalId(id, 0).marshal(v);
 		}
 		else if(o instanceof Collection)
 		{
@@ -586,7 +604,7 @@ public class OctetsStream extends Octets
 			if(n > 0)
 			{
 				int vType = getKVType(list.iterator().next());
-				marshal2((id << 10) + 0x300 + vType).marshalUInt(n);
+				marshalIdSubType(id, vType).marshalUInt(n);
 				for(Object v : list)
 					marshalKV(vType, v);
 			}
@@ -600,7 +618,7 @@ public class OctetsStream extends Octets
 				Entry<?, ?> et = map.entrySet().iterator().next();
 				int kType = getKVType(et.getKey());
 				int vType = getKVType(et.getValue());
-				marshal2((id << 10) + 0x340 + (kType << 3) + vType).marshalUInt(n);
+				marshalIdSubType(id, 0x40 + (kType << 3) + vType).marshalUInt(n);
 				for(Entry<?, ?> e : map.entrySet())
 					marshalKV(kType, e.getKey()).marshalKV(vType, e.getValue());
 			}
