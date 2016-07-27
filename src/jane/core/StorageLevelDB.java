@@ -484,7 +484,7 @@ public final class StorageLevelDB implements Storage
 		{
 			OctetsStream v = _writeBuf.get(k);
 			if(v == _deleted) return null;
-			if(v != null) return v;
+			if(v != null) return OctetsStream.wrap(v);
 		}
 		if(_db == 0) throw new IllegalStateException("db closed. key=" + k.dump());
 		byte[] v = leveldb_get(_db, k.array(), k.size());

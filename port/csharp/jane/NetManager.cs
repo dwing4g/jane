@@ -205,7 +205,7 @@ namespace Jane
 			}
 		}
 
-		public bool SendDirect(byte[] data, int pos, int len, object userdata = null)
+		public bool SendDirect(byte[] data, int pos, int len, object userdata = null) // 如果要支持多线程并发此方法,应该加同步,否则OnEncode和BeginSend的数据顺序可能不一致;
 		{
 			OctetsStream os = OnEncode(data, pos, len);
 			if(os != null)
