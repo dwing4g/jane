@@ -653,7 +653,7 @@ public abstract class Procedure implements Runnable
 	 * 同{@link #execute}, 实现Runnable的接口,没有返回值
 	 */
 	@Override
-	public final void run()
+	public void run()
 	{
 		try
 		{
@@ -671,7 +671,7 @@ public abstract class Procedure implements Runnable
 	 * 一般应通过调度来运行({@link DBManager#submit})<br>
 	 * 如果确保没有顺序问题,也可以由用户直接调用,但不能在事务中嵌套调用
 	 */
-	public final boolean execute() throws Exception
+	public boolean execute() throws Exception
 	{
 		Context ctx = _tlProc.get();
 		if(!_ctx.compareAndSet(null, ctx))
