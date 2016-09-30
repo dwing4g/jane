@@ -34,7 +34,7 @@ public final class DBManager
 	private final AtomicLong                                   _procCount         = new AtomicLong();                         // 绑定过sid的在队列中未运行的事务数量
 	private final AtomicLong                                   _modCount          = new AtomicLong();                         // 当前缓存修改的记录数
 	private final CommitTask                                   _commitTask        = new CommitTask();                         // 数据提交的任务
-	private final ArrayList<Runnable>                          _shutdownCallbacks = new ArrayList<Runnable>();                // 退出时的用户回调列表
+	private final ArrayList<Runnable>                          _shutdownCallbacks = new ArrayList<>();                        // 退出时的用户回调列表
 	private volatile Storage                                   _storage;                                                      // 存储引擎
 	private volatile ScheduledFuture<?>                        _commitFuture;                                                 // 数据提交的结果
 	private volatile boolean                                   _exit;                                                         // 是否在退出状态(已经执行了ShutdownHook)
@@ -356,7 +356,7 @@ public final class DBManager
 		if(_storage == null) throw new IllegalArgumentException("call DBManager.startup before open any table");
 		tableName = (tableName != null && !(tableName = tableName.trim()).isEmpty() ? tableName : '[' + String.valueOf(tableId) + ']');
 		Storage.Table<K, V> stoTable = (stubV != null ? _storage.<K, V>openTable(tableId, tableName, stubK, stubV) : null);
-		return new Table<K, V, S>(tableId, tableName, stoTable, lockName, cacheSize, stubV);
+		return new Table<>(tableId, tableName, stoTable, lockName, cacheSize, stubV);
 	}
 
 	/**
@@ -375,7 +375,7 @@ public final class DBManager
 		if(_storage == null) throw new IllegalArgumentException("call DBManager.startup before open any table");
 		tableName = (tableName != null && !(tableName = tableName.trim()).isEmpty() ? tableName : '[' + String.valueOf(tableId) + ']');
 		Storage.TableLong<V> stoTable = (stubV != null ? _storage.openTable(tableId, tableName, stubV) : null);
-		return new TableLong<V, S>(tableId, tableName, stoTable, lockName, cacheSize, stubV);
+		return new TableLong<>(tableId, tableName, stoTable, lockName, cacheSize, stubV);
 	}
 
 	/**
@@ -582,7 +582,7 @@ public final class DBManager
 			q = _qmap.get(sid);
 			if(q == null)
 			{
-				q = new ArrayDeque<Procedure>();
+				q = new ArrayDeque<>();
 				ArrayDeque<Procedure> t = _qmap.putIfAbsent(sid, q); // _qmap增加队列的地方只有这一处
 				if(t != null) q = t;
 			}

@@ -57,7 +57,7 @@ public final class Util
 	 */
 	public static <K, V> ConcurrentMap<K, V> newConcurrentHashMap()
 	{
-		return new ConcurrentHashMap<K, V>(16, 0.5f, Const.dbThreadCount);
+		return new ConcurrentHashMap<>(16, 0.5f, Const.dbThreadCount);
 	}
 
 	/**
@@ -67,7 +67,7 @@ public final class Util
 	 */
 	public static <K, V> Map<K, V> newProcThreadsMap()
 	{
-		return new ConcurrentHashMapV8<K, V>(Math.max(Const.dbThreadCount * 2, 16));
+		return new ConcurrentHashMapV8<>(Math.max(Const.dbThreadCount * 2, 16));
 	}
 
 	/**
@@ -292,17 +292,12 @@ public final class Util
 	 */
 	public static byte[] readAllFile(String fileName) throws IOException
 	{
-		InputStream is = new FileInputStream(fileName);
-		try
+		try(InputStream is = new FileInputStream(fileName))
 		{
 			int n = is.available();
 			byte[] data = new byte[n];
 			is.read(data);
 			return data;
-		}
-		finally
-		{
-			is.close();
 		}
 	}
 
@@ -315,8 +310,7 @@ public final class Util
 	public static long copyFile(FileChannel srcFc, File dstFile) throws IOException
 	{
 		long r = 0;
-		FileOutputStream fos = new FileOutputStream(dstFile);
-		try
+		try(FileOutputStream fos = new FileOutputStream(dstFile))
 		{
 			ByteBuffer bb = ByteBuffer.allocate(32768);
 			for(int n; (n = srcFc.read(bb)) != -1;)
@@ -327,23 +321,14 @@ public final class Util
 				r += n;
 			}
 		}
-		finally
-		{
-			fos.close();
-		}
 		return r;
 	}
 
 	public static long copyFile(File srcFile, File dstFile) throws IOException
 	{
-		FileInputStream fis = new FileInputStream(srcFile);
-		try
+		try(FileInputStream fis = new FileInputStream(srcFile))
 		{
 			return copyFile(fis.getChannel(), dstFile);
-		}
-		finally
-		{
-			fis.close();
 		}
 	}
 
@@ -409,8 +394,7 @@ public final class Util
 	public static <K, B> void xml2BeanMap(String xmlFile, Map<K, B> beanMap, Class<K> keyCls, Class<B> beanCls, Map<String, ?> enumMap) throws Exception
 	{
 		beanMap.clear();
-		InputStream is = new FileInputStream(xmlFile);
-		try
+		try(InputStream is = new FileInputStream(xmlFile))
 		{
 			Element elem = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(is).getDocumentElement();
 			String keyStr = elem.getAttribute("key").trim();
@@ -418,7 +402,7 @@ public final class Util
 			Field[] fields = beanCls.getDeclaredFields();
 			int nField = fields.length;
 			Constructor<?>[] conField = new Constructor<?>[nField];
-			HashMap<Class<?>, Class<?>> clsMap = new HashMap<Class<?>, Class<?>>();
+			HashMap<Class<?>, Class<?>> clsMap = new HashMap<>();
 			clsMap.put(byte.class, Byte.class);
 			clsMap.put(short.class, Short.class);
 			clsMap.put(int.class, Integer.class);
@@ -505,10 +489,6 @@ public final class Util
 				    throw new IllegalStateException("duplicate key:" + keyStr + "=\"" + key + "\" in " + xmlFile);
 			}
 		}
-		finally
-		{
-			is.close();
-		}
 	}
 
 	public static String doHttpReq(String url, Map<String, String> params, String post) throws Exception
@@ -547,15 +527,10 @@ public final class Util
 				conn.setDoOutput(true);
 				conn.setRequestProperty("Content-Type", "text/plain; charset=utf-8");
 				conn.setFixedLengthStreamingMode(body.length);
-				OutputStream os = conn.getOutputStream();
-				try
+				try(OutputStream os = conn.getOutputStream())
 				{
 					os.write(body);
 					os.flush();
-				}
-				finally
-				{
-					if(os != null) os.close();
 				}
 			}
 

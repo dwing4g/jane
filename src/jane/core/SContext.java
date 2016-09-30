@@ -304,10 +304,10 @@ public final class SContext
 	}
 
 	private static final ThreadLocal<SContext> _tlList;
-	private final List<Record<?, ?, ?>>        _records     = new ArrayList<Record<?, ?, ?>>();
-	private final List<RecordLong<?, ?>>       _recordLongs = new ArrayList<RecordLong<?, ?>>();
-	private final List<Runnable>               _onRollbacks = new ArrayList<Runnable>();
-	private final List<Runnable>               _onCommits   = new ArrayList<Runnable>();
+	private final List<Record<?, ?, ?>>        _records     = new ArrayList<>();
+	private final List<RecordLong<?, ?>>       _recordLongs = new ArrayList<>();
+	private final List<Runnable>               _onRollbacks = new ArrayList<>();
+	private final List<Runnable>               _onCommits   = new ArrayList<>();
 	private boolean                            _hasDirty;
 
 	static
@@ -331,7 +331,7 @@ public final class SContext
 	{
 		@SuppressWarnings("unchecked")
 		S s = (S)value.safe(null);
-		Record<K, V, S> rec = new Record<K, V, S>(table, key, s);
+		Record<K, V, S> rec = new Record<>(table, key, s);
 		s.record(rec);
 		_records.add(rec);
 		return s;
@@ -341,7 +341,7 @@ public final class SContext
 	{
 		@SuppressWarnings("unchecked")
 		S s = (S)value.safe(null);
-		RecordLong<V, S> rec = new RecordLong<V, S>(table, key, s);
+		RecordLong<V, S> rec = new RecordLong<>(table, key, s);
 		s.record(rec);
 		_recordLongs.add(rec);
 		return s;

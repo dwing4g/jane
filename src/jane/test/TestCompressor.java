@@ -9,18 +9,21 @@ public final class TestCompressor
 {
 	public static void main(String[] args) throws Exception
 	{
-		FileInputStream fis = new FileInputStream(args[0]);
-		long srcpos = (args.length > 1 ? Long.parseLong(args[1]) : 0);
-		long srclen = (args.length > 2 ? Long.parseLong(args[2]) : fis.getChannel().size());
-		byte[] src = new byte[(int)srclen];
-		if(fis.skip(srcpos) != srcpos)
+		long srcpos, srclen;
+		byte[] src;
+		try(FileInputStream fis = new FileInputStream(args[0]))
 		{
-			System.out.println("ERROR: skip file failed");
-			fis.close();
-			return;
+			srcpos = (args.length > 1 ? Long.parseLong(args[1]) : 0);
+			srclen = (args.length > 2 ? Long.parseLong(args[2]) : fis.getChannel().size());
+			src = new byte[(int)srclen];
+			if(fis.skip(srcpos) != srcpos)
+			{
+				System.out.println("ERROR: skip file failed");
+				fis.close();
+				return;
+			}
+			fis.read(src);
 		}
-		fis.read(src);
-		fis.close();
 		byte[] dst = new byte[LZCompressor.maxCompressedSize((int)srclen)];
 		MessageDigest md5 = MessageDigest.getInstance("MD5");
 		byte[] srcmd5 = md5.digest(src);

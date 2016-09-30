@@ -40,7 +40,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 			final Rec rec = owner.record();
 			if(rec != null)
 			{
-				_changed = new HashMap<K, V>();
+				_changed = new HashMap<>();
 				SContext.current().addOnCommit(new Runnable()
 				{
 					@Override

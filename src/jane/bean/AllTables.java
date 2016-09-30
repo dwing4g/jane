@@ -44,7 +44,7 @@ public final class AllTables
 	{
 		public static HashMap<String, Bean<?>> getKeyTypes()
 		{
-			HashMap<String, Bean<?>> r = new HashMap<String, Bean<?>>(4 * 2);
+			HashMap<String, Bean<?>> r = new HashMap<>(4 * 2);
 			r.put("TestTable", null);
 			r.put("BeanTable", TestKeyBean.BEAN_STUB);
 			r.put("OctetsTable", null);
@@ -54,7 +54,7 @@ public final class AllTables
 
 		public static HashMap<String, Bean<?>> getValueTypes()
 		{
-			HashMap<String, Bean<?>> r = new HashMap<String, Bean<?>>(4 * 2);
+			HashMap<String, Bean<?>> r = new HashMap<>(4 * 2);
 			r.put("TestTable", TestType.BEAN_STUB);
 			r.put("BeanTable", TestBean.BEAN_STUB);
 			r.put("OctetsTable", null);

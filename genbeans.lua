@@ -13,7 +13,7 @@ local open = io.open
 local tostring = tostring
 local arg = {...}
 
-local jdk7 = false -- false for jdk6
+local jdk7 = true -- false for jdk6
 namespace = arg[1] -- for bean namespace
 local namespace = namespace
 if not namespace then error("ERROR: arg[1] must be namespace") end
@@ -1219,6 +1219,9 @@ function bean(bean)
 		gsub("\t+/%*%*  %*/\n", ""):
 		gsub("\n\t{\n\n\t\t", "\n\t{\n\t\t"):
 		gsub("\r", "")
+	if jdk7 then
+		code = code:gsub("( new %w+)<.->", "%1<>")
+	end
 	if not code:find("\tprivate static Field ") then
 		code = code:gsub("import java.lang.reflect.Field;\n", "")
 	end

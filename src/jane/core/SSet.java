@@ -38,8 +38,8 @@ public class SSet<V, S> implements Set<S>, Cloneable
 			final Rec rec = owner.record();
 			if(rec != null)
 			{
-				_added = new HashSet<V>();
-				_removed = new HashSet<V>();
+				_added = new HashSet<>();
+				_removed = new HashSet<>();
 				SContext.current().addOnCommit(new Runnable()
 				{
 					@Override

@@ -511,18 +511,18 @@ public final class StorageLevelDB implements Storage
 	public <K, V extends Bean<V>> Storage.Table<K, V> openTable(int tableId, String tableName, Object stubK, V stubV)
 	{
 		if(stubK instanceof Octets)
-		    return (Storage.Table<K, V>)new TableOctets<V>(tableId, tableName, stubV);
+		    return (Storage.Table<K, V>)new TableOctets<>(tableId, tableName, stubV);
 		if(stubK instanceof String)
-		    return (Storage.Table<K, V>)new TableString<V>(tableId, tableName, stubV);
+		    return (Storage.Table<K, V>)new TableString<>(tableId, tableName, stubV);
 		if(stubK instanceof Bean)
-		    return new TableBean<K, V>(tableId, tableName, (K)stubK, stubV);
+		    return new TableBean<>(tableId, tableName, (K)stubK, stubV);
 		throw new UnsupportedOperationException("unsupported key type: " + (stubK != null ? stubK.getClass().getName() : "null") + " for table: " + tableName);
 	}
 
 	@Override
 	public <V extends Bean<V>> Storage.TableLong<V> openTable(int tableId, String tableName, V stubV)
 	{
-		return new TableLong<V>(tableId, tableName, stubV);
+		return new TableLong<>(tableId, tableName, stubV);
 	}
 
 	@Override

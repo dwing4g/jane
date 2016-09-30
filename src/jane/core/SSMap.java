@@ -121,37 +121,37 @@ public final class SSMap<K, V, S> extends SMap<K, V, S> implements NavigableMap<
 	@Override
 	public SSMap<K, V, S> descendingMap()
 	{
-		return new SSMap<K, V, S>(_owner, ((NavigableMap<K, V>)_map).descendingMap(), _changed);
+		return new SSMap<>(_owner, ((NavigableMap<K, V>)_map).descendingMap(), _changed);
 	}
 
 	@Override
 	public SSSet<K, K> navigableKeySet()
 	{
-		return new SSSet<K, K>(_owner, ((NavigableMap<K, V>)_map).navigableKeySet(), null);
+		return new SSSet<>(_owner, ((NavigableMap<K, V>)_map).navigableKeySet(), null);
 	}
 
 	@Override
 	public SSSet<K, K> descendingKeySet()
 	{
-		return new SSSet<K, K>(_owner, ((NavigableMap<K, V>)_map).descendingKeySet(), null);
+		return new SSSet<>(_owner, ((NavigableMap<K, V>)_map).descendingKeySet(), null);
 	}
 
 	@Override
 	public SSMap<K, V, S> subMap(K from, boolean fromInclusive, K to, boolean toInclusive)
 	{
-		return new SSMap<K, V, S>(_owner, ((NavigableMap<K, V>)_map).subMap(from, fromInclusive, to, toInclusive), _changed);
+		return new SSMap<>(_owner, ((NavigableMap<K, V>)_map).subMap(from, fromInclusive, to, toInclusive), _changed);
 	}
 
 	@Override
 	public SSMap<K, V, S> headMap(K to, boolean inclusive)
 	{
-		return new SSMap<K, V, S>(_owner, ((NavigableMap<K, V>)_map).headMap(to, inclusive), _changed);
+		return new SSMap<>(_owner, ((NavigableMap<K, V>)_map).headMap(to, inclusive), _changed);
 	}
 
 	@Override
 	public SSMap<K, V, S> tailMap(K from, boolean inclusive)
 	{
-		return new SSMap<K, V, S>(_owner, ((NavigableMap<K, V>)_map).tailMap(from, inclusive), _changed);
+		return new SSMap<>(_owner, ((NavigableMap<K, V>)_map).tailMap(from, inclusive), _changed);
 	}
 
 	@Override

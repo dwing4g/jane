@@ -44,7 +44,7 @@ public final class LevelDBClear
 		}
 
 		System.err.println("INFO: clearing " + (tableId >= 0 ? "table:" + tableId : "db") + " ...");
-		ArrayList<Entry<Octets, OctetsStream>> buf = new ArrayList<Entry<Octets, OctetsStream>>(10000);
+		ArrayList<Entry<Octets, OctetsStream>> buf = new ArrayList<>(10000);
 		long count = 0;
 
 		OctetsStream deleted = OctetsStream.wrap(Octets.EMPTY);

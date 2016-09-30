@@ -54,20 +54,21 @@ public final class TestMapDB
 	public static void main(String[] args)
 	{
 		System.out.println("begin");
-		DB db = DBMaker.newFileDB(new File("mapdb_test.md1")).closeOnJvmShutdown()
-		        .snapshotEnable().asyncWriteEnable().cacheSize(32768).make();
-		BTreeMap<Long, TestMapDB> map = db.createTreeMap("test").valueSerializer(new VS()).makeOrGet();
+		try(DB db = DBMaker.newFileDB(new File("mapdb_test.md1")).closeOnJvmShutdown()
+		        .snapshotEnable().asyncWriteEnable().cacheSize(32768).make())
+		{
+			try(BTreeMap<Long, TestMapDB> map = db.createTreeMap("test").valueSerializer(new VS()).makeOrGet())
+			{
+				System.out.println("start");
+				TestMapDB v = map.get(1L);
+				System.out.println(v);
+				map.put(1L, new TestMapDB(v != null ? v.v + 111 : 111L));
+				System.out.println(map.get(1L));
 
-		System.out.println("start");
-		TestMapDB v = map.get(1L);
-		System.out.println(v);
-		map.put(1L, new TestMapDB(v != null ? v.v + 111 : 111L));
-		System.out.println(map.get(1L));
-
-		System.out.println("close");
-		map.close();
-		db.commit();
-		db.close();
+				System.out.println("close");
+			}
+			db.commit();
+		}
 		System.out.println("end");
 	}
 }

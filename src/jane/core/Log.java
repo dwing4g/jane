@@ -86,15 +86,10 @@ public final class Log
 		while(urls.hasMoreElements())
 		{
 			URL url = urls.nextElement();
-			InputStream is = url.openStream();
-			try
+			try(InputStream is = url.openStream())
 			{
 				String time = new Manifest(is).getMainAttributes().getValue(TAG);
 				if(time != null) Log.log.info("{}#{} = {}", url.getPath(), TAG, time);
-			}
-			finally
-			{
-				is.close();
 			}
 		}
 	}

@@ -53,51 +53,53 @@ public final class LevelDBImport
 		String dumpname = args[1].trim();
 
 		long t = System.currentTimeMillis();
-		BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(dumpname), s_cs88591));
-		System.err.println("INFO: opening " + pathname + " ...");
-		long db = StorageLevelDB.leveldb_open(pathname, 0, 0, true);
-		if(db == 0)
-		{
-			System.err.println("ERROR: leveldb_open failed");
-			br.close();
-			return;
-		}
-
-		System.err.println("INFO: importing db ...");
-		Pattern patPut1 = Pattern.compile("put '(.*)' '(.*)'"); // the official leveldb log dump file
-		Pattern patPut2 = Pattern.compile("'(.*)' @ \\d+ : val => '(.*)'"); // the official leveldb ldb dump file
-		Pattern patPut3 = Pattern.compile("[\"(.*)\"]=\"(.*)\""); // LevelDBExport dump file
-		Pattern patDel1 = Pattern.compile("del '(.*)'"); // the official leveldb log dump file
-		Pattern patDel2 = Pattern.compile("'(.*)' @ \\d+ : del"); // the official leveldb ldb dump file
-		ArrayList<Entry<Octets, OctetsStream>> buf = new ArrayList<Entry<Octets, OctetsStream>>(10000);
 		long count = 0;
-		String line;
-		while((line = br.readLine()) != null)
+		long db;
+		ArrayList<Entry<Octets, OctetsStream>> buf = new ArrayList<>(10000);
+		try(BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(dumpname), s_cs88591)))
 		{
-			Matcher mat;
-			OctetsStream v;
-			if((mat = patPut1.matcher(line)).find())
-				v = str2Oct(mat.group(2));
-			else if((mat = patPut2.matcher(line)).find())
-				v = str2Oct(mat.group(2));
-			else if((mat = patPut3.matcher(line)).find())
-				v = str2Oct(mat.group(2));
-			else if((mat = patDel1.matcher(line)).find())
-				v = s_deleted;
-			else if((mat = patDel2.matcher(line)).find())
-				v = s_deleted;
-			else
-				continue;
-
-			buf.add(new SimpleEntry<Octets, OctetsStream>(str2Oct(mat.group(1)), v));
-			if(buf.size() >= 10000)
+			System.err.println("INFO: opening " + pathname + " ...");
+			db = StorageLevelDB.leveldb_open(pathname, 0, 0, true);
+			if(db == 0)
 			{
-				count += buf.size();
-				StorageLevelDB.leveldb_write(db, buf.iterator());
-				buf.clear();
+				System.err.println("ERROR: leveldb_open failed");
+				br.close();
+				return;
+			}
+
+			System.err.println("INFO: importing db ...");
+			Pattern patPut1 = Pattern.compile("put '(.*)' '(.*)'"); // the official leveldb log dump file
+			Pattern patPut2 = Pattern.compile("'(.*)' @ \\d+ : val => '(.*)'"); // the official leveldb ldb dump file
+			Pattern patPut3 = Pattern.compile("[\"(.*)\"]=\"(.*)\""); // LevelDBExport dump file
+			Pattern patDel1 = Pattern.compile("del '(.*)'"); // the official leveldb log dump file
+			Pattern patDel2 = Pattern.compile("'(.*)' @ \\d+ : del"); // the official leveldb ldb dump file
+			String line;
+			while((line = br.readLine()) != null)
+			{
+				Matcher mat;
+				OctetsStream v;
+				if((mat = patPut1.matcher(line)).find())
+					v = str2Oct(mat.group(2));
+				else if((mat = patPut2.matcher(line)).find())
+					v = str2Oct(mat.group(2));
+				else if((mat = patPut3.matcher(line)).find())
+					v = str2Oct(mat.group(2));
+				else if((mat = patDel1.matcher(line)).find())
+					v = s_deleted;
+				else if((mat = patDel2.matcher(line)).find())
+					v = s_deleted;
+				else
+					continue;
+
+				buf.add(new SimpleEntry<Octets, OctetsStream>(str2Oct(mat.group(1)), v));
+				if(buf.size() >= 10000)
+				{
+					count += buf.size();
+					StorageLevelDB.leveldb_write(db, buf.iterator());
+					buf.clear();
+				}
 			}
 		}
-		br.close();
 		if(!buf.isEmpty())
 		{
 			count += buf.size();

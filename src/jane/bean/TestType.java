@@ -103,15 +103,15 @@ public final class TestType extends Bean<TestType>
 	{
 		v8 = new Octets(5);
 		v9 = "";
-		v10 = new ArrayList<Boolean>(10);
-		v11 = new LinkedList<Byte>();
-		v12 = new ArrayDeque<Integer>();
-		v13 = new HashSet<Long>();
-		v14 = new TreeSet<Float>();
-		v15 = new LinkedHashSet<Double>();
-		v16 = new HashMap<Long, String>(0);
-		v17 = new TreeMap<TestBean, Boolean>();
-		v18 = new LinkedHashMap<Octets, TestBean>();
+		v10 = new ArrayList<>(10);
+		v11 = new LinkedList<>();
+		v12 = new ArrayDeque<>();
+		v13 = new HashSet<>();
+		v14 = new TreeSet<>();
+		v15 = new LinkedHashSet<>();
+		v16 = new HashMap<>(0);
+		v17 = new TreeMap<>();
+		v18 = new LinkedHashMap<>();
 		v19 = new TestBean();
 		v20 = null;
 	}
@@ -127,15 +127,15 @@ public final class TestType extends Bean<TestType>
 		this.v7 = v7;
 		this.v8 = (v8 != null ? v8 : new Octets(5));
 		this.v9 = (v9 != null ? v9 : "");
-		Util.appendDeep(v10, this.v10 = new ArrayList<Boolean>(10));
-		Util.appendDeep(v11, this.v11 = new LinkedList<Byte>());
-		Util.appendDeep(v12, this.v12 = new ArrayDeque<Integer>());
-		Util.appendDeep(v13, this.v13 = new HashSet<Long>());
-		Util.appendDeep(v14, this.v14 = new TreeSet<Float>());
-		Util.appendDeep(v15, this.v15 = new LinkedHashSet<Double>());
-		Util.appendDeep(v16, this.v16 = new HashMap<Long, String>(0));
-		Util.appendDeep(v17, this.v17 = new TreeMap<TestBean, Boolean>());
-		Util.appendDeep(v18, this.v18 = new LinkedHashMap<Octets, TestBean>());
+		Util.appendDeep(v10, this.v10 = new ArrayList<>(10));
+		Util.appendDeep(v11, this.v11 = new LinkedList<>());
+		Util.appendDeep(v12, this.v12 = new ArrayDeque<>());
+		Util.appendDeep(v13, this.v13 = new HashSet<>());
+		Util.appendDeep(v14, this.v14 = new TreeSet<>());
+		Util.appendDeep(v15, this.v15 = new LinkedHashSet<>());
+		Util.appendDeep(v16, this.v16 = new HashMap<>(0));
+		Util.appendDeep(v17, this.v17 = new TreeMap<>());
+		Util.appendDeep(v18, this.v18 = new LinkedHashMap<>());
 		this.v19 = (v19 != null ? v19.clone() : new TestBean());
 		this.v20 = v20;
 	}
@@ -966,7 +966,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 数组容器(ArrayList) */
 		public SList<Boolean, Boolean> getV10()
 		{
-			return new SList<Boolean, Boolean>(this, _bean.v10);
+			return new SList<>(this, _bean.v10);
 		}
 
 		/** @return 数组容器(ArrayList) */
@@ -979,7 +979,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 链表容器(LinkedList) */
 		public SList<Byte, Byte> getV11()
 		{
-			return new SList<Byte, Byte>(this, _bean.v11);
+			return new SList<>(this, _bean.v11);
 		}
 
 		/** @return 链表容器(LinkedList) */
@@ -992,7 +992,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 队列容器(ArrayDeque) */
 		public SDeque<Integer, Integer> getV12()
 		{
-			return new SDeque<Integer, Integer>(this, _bean.v12);
+			return new SDeque<>(this, _bean.v12);
 		}
 
 		/** @return 队列容器(ArrayDeque) */
@@ -1011,7 +1011,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 无序集合容器(HashSet) */
 		public SSet<Long, Long> getV13()
 		{
-			if(CACHE_v13 == null) CACHE_v13 = new SSet<Long, Long>(this, _bean.v13, LISTENER_v13);
+			if(CACHE_v13 == null) CACHE_v13 = new SSet<>(this, _bean.v13, LISTENER_v13);
 			return CACHE_v13;
 		}
 
@@ -1031,7 +1031,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 排序集合容器(TreeSet) */
 		public SSSet<Float, Float> getV14()
 		{
-			if(CACHE_v14 == null) CACHE_v14 = new SSSet<Float, Float>(this, _bean.v14, LISTENER_v14);
+			if(CACHE_v14 == null) CACHE_v14 = new SSSet<>(this, _bean.v14, LISTENER_v14);
 			return CACHE_v14;
 		}
 
@@ -1051,7 +1051,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 有序集合容器(LinkedHashSet) */
 		public SSet<Double, Double> getV15()
 		{
-			if(CACHE_v15 == null) CACHE_v15 = new SSet<Double, Double>(this, _bean.v15, LISTENER_v15);
+			if(CACHE_v15 == null) CACHE_v15 = new SSet<>(this, _bean.v15, LISTENER_v15);
 			return CACHE_v15;
 		}
 
@@ -1071,7 +1071,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 无序映射容器(HashMap) */
 		public SMap<Long, String, String> getV16()
 		{
-			if(CACHE_v16 == null) CACHE_v16 = new SMap<Long, String, String>(this, _bean.v16, LISTENER_v16);
+			if(CACHE_v16 == null) CACHE_v16 = new SMap<>(this, _bean.v16, LISTENER_v16);
 			return CACHE_v16;
 		}
 
@@ -1091,7 +1091,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 排序映射容器(TreeMap) */
 		public SSMap<TestBean, Boolean, Boolean> getV17()
 		{
-			if(CACHE_v17 == null) CACHE_v17 = new SSMap<TestBean, Boolean, Boolean>(this, _bean.v17, LISTENER_v17);
+			if(CACHE_v17 == null) CACHE_v17 = new SSMap<>(this, _bean.v17, LISTENER_v17);
 			return CACHE_v17;
 		}
 
@@ -1111,7 +1111,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 有序映射容器(LinkedHashMap) */
 		public SMap<Octets, TestBean, TestBean.Safe> getV18()
 		{
-			if(CACHE_v18 == null) CACHE_v18 = new SMap<Octets, TestBean, TestBean.Safe>(this, _bean.v18, LISTENER_v18);
+			if(CACHE_v18 == null) CACHE_v18 = new SMap<>(this, _bean.v18, LISTENER_v18);
 			return CACHE_v18;
 		}
 

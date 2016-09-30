@@ -28,10 +28,10 @@ import org.mapdb.Serializer;
 public final class StorageMapDB implements Storage
 {
 	private static final StorageMapDB  _instance   = new StorageMapDB();
-	private final Map<String, Bean<?>> _tableStubK = new HashMap<String, Bean<?>>(); // 保存的bean类型key的存根. 用于序列化
-	private DB                         _db;                                         // MapDB的数据库对象(会多线程并发访问)
-	private File                       _dbFile;                                     // 当前数据库的文件
-	private int                        _modCount;                                   // 统计一次提交的put数量(不会被多线程访问)
+	private final Map<String, Bean<?>> _tableStubK = new HashMap<>();   // 保存的bean类型key的存根. 用于序列化
+	private DB                         _db;                             // MapDB的数据库对象(会多线程并发访问)
+	private File                       _dbFile;                         // 当前数据库的文件
+	private int                        _modCount;                       // 统计一次提交的put数量(不会被多线程访问)
 
 	private final class Table<K, V extends Bean<V>> implements Storage.Table<K, V>
 	{
@@ -510,7 +510,7 @@ public final class StorageMapDB implements Storage
 			_tableStubK.put(tableName, (Bean<?>)stubK);
 			btmm.keySerializer(new MapDBKeyBeanSerializer(tableName, (Bean<?>)stubK));
 		}
-		return new Table<K, V>(btmm.<K, Octets>makeOrGet(), tableId, tableName, stubV);
+		return new Table<>(btmm.<K, Octets>makeOrGet(), tableId, tableName, stubV);
 	}
 
 	@Override
@@ -519,7 +519,7 @@ public final class StorageMapDB implements Storage
 		BTreeMapMaker btmm = _db.createTreeMap(tableName)
 		        .valueSerializer(MapDBOctetsSerializer.instance())
 		        .keySerializer(BTreeKeySerializer.ZERO_OR_POSITIVE_LONG);
-		return new TableLong<V>(btmm.<Long, Octets>makeOrGet(), tableId, tableName, stubV);
+		return new TableLong<>(btmm.<Long, Octets>makeOrGet(), tableId, tableName, stubV);
 	}
 
 	@Override

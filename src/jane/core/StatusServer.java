@@ -16,12 +16,12 @@ public class StatusServer extends NetManager
 	@SuppressWarnings("static-method")
 	public ArrayList<Object> genStatusList()
 	{
-		ArrayList<Object> list = new ArrayList<Object>();
+		ArrayList<Object> list = new ArrayList<>();
 
 		long v1 = 0, v2 = 0, v3 = 0, v4 = 0;
 		for(TableBase<?> table : TableBase.getTables())
 		{
-			ArrayList<Object> strs = new ArrayList<Object>();
+			ArrayList<Object> strs = new ArrayList<>();
 			strs.add(table.getTableName());
 			int v = table.getCacheSize();
 			v1 += v;
@@ -38,7 +38,7 @@ public class StatusServer extends NetManager
 			strs.add(rc > 0 ? String.format("%.2f%%", (double)(rc - rtc) * 100 / rc) : "-.--%");
 			list.add(strs);
 		}
-		ArrayList<Object> strs = new ArrayList<Object>();
+		ArrayList<Object> strs = new ArrayList<>();
 		strs.add("ALL");
 		strs.add(v1);
 		strs.add(v2);
@@ -101,7 +101,7 @@ public class StatusServer extends NetManager
 	@Override
 	public void messageReceived(IoSession session, Object message)
 	{
-		ArrayList<String> param = new ArrayList<String>();
+		ArrayList<String> param = new ArrayList<>();
 		param.add("Server: jane");
 		if(HttpCodec.getHeadPath((OctetsStream)message).endsWith("/favicon.ico"))
 			HttpCodec.sendHead(session, "404 Not Found", 0, param);

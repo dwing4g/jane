@@ -21,11 +21,12 @@ public final class DBCompact
 		System.err.println("INFO: opening " + filename + " ...");
 		if(filename.endsWith(".md"))
 		{
-			DB db = DBMaker.newFileDB(new File(filename)).closeOnJvmShutdown().make();
-			System.err.println("INFO: compacting db ...");
-			db.compact();
-			System.err.println("INFO: closing db ...");
-			db.close();
+			try(DB db = DBMaker.newFileDB(new File(filename)).closeOnJvmShutdown().make())
+			{
+				System.err.println("INFO: compacting db ...");
+				db.compact();
+				System.err.println("INFO: closing db ...");
+			}
 		}
 		else if(filename.endsWith(".mv"))
 		{

@@ -66,8 +66,7 @@ public final class XlsxExport
 	{
 		byte[] xmlStr = null, xmlSheet = null;
 		String fileSheet = "xl/worksheets/sheet" + sheetId + ".xml";
-		ZipInputStream zis = new ZipInputStream(isXlsx);
-		try
+		try(ZipInputStream zis = new ZipInputStream(isXlsx))
 		{
 			BufferedInputStream bis = new BufferedInputStream(zis);
 			for(ZipEntry ze; (ze = zis.getNextEntry()) != null;)
@@ -77,10 +76,6 @@ public final class XlsxExport
 				else if(ze.getName().equals(fileSheet))
 				    bis.read(xmlSheet = new byte[(int)ze.getSize()]);
 			}
-		}
-		finally
-		{
-			zis.close();
 		}
 		if(xmlStr == null) throw new IOException("ERROR: not found xl/sharedStrings.xml");
 		if(xmlSheet == null) throw new IOException("ERROR: not found " + fileSheet);
@@ -103,7 +98,7 @@ public final class XlsxExport
 			}
 		}
 
-		Map<Integer, Map<Integer, String>> res = new TreeMap<Integer, Map<Integer, String>>();
+		Map<Integer, Map<Integer, String>> res = new TreeMap<>();
 		nl = db.parse(new ByteArrayInputStream(xmlSheet)).getDocumentElement().getElementsByTagName("c");
 		for(int i = 0, n = nl.getLength(); i < n; ++i)
 		{
@@ -136,7 +131,7 @@ public final class XlsxExport
 							y = Integer.parseInt(t.substring(2));
 						}
 						Map<Integer, String> map = res.get(y);
-						if(map == null) res.put(y, map = new TreeMap<Integer, String>());
+						if(map == null) res.put(y, map = new TreeMap<>());
 						map.put(x, v);
 					}
 				}
@@ -147,14 +142,9 @@ public final class XlsxExport
 
 	public static Map<Integer, Map<Integer, String>> xlsx2Maps(String filename, int sheetId) throws Exception
 	{
-		InputStream is = new FileInputStream(filename);
-		try
+		try(InputStream is = new FileInputStream(filename))
 		{
 			return xlsx2Maps(is, sheetId);
-		}
-		finally
-		{
-			is.close();
 		}
 	}
 
@@ -195,8 +185,7 @@ public final class XlsxExport
 				strColumn[i] = mat.group(1);
 		}
 
-		PrintWriter pw = new PrintWriter(new OutputStreamWriter(outXml, "utf-8"));
-		try
+		try(PrintWriter pw = new PrintWriter(new OutputStreamWriter(outXml, "utf-8")))
 		{
 			pw.print("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>\n<table xlsx=\"");
 			if(tableName != null) pw.print(toXmlStr(tableName));
@@ -232,10 +221,6 @@ public final class XlsxExport
 				if(n > 0) pw.print("/>\n");
 			}
 			pw.print("</table>\n");
-		}
-		finally
-		{
-			pw.close();
 		}
 	}
 

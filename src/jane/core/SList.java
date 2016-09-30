@@ -204,7 +204,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 	@Override
 	public boolean addAll(int idx, Collection<? extends S> c)
 	{
-		List<V> list = new ArrayList<V>(c.size());
+		List<V> list = new ArrayList<>(c.size());
 		for(S s : c)
 			list.add(unsafe(s));
 		return addAllDirect(idx, list);
@@ -527,7 +527,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 	@Override
 	public SList<V, S> subList(int idxFrom, int idxTo)
 	{
-		return new SList<V, S>(_owner, _list.subList(idxFrom, idxTo));
+		return new SList<>(_owner, _list.subList(idxFrom, idxTo));
 	}
 
 	public SList<V, S> append(List<V> list)

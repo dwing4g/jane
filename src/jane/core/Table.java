@@ -367,7 +367,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	public void put(K k, S s)
 	{
 		put(k, s.unsafe());
-		s.record(new Record<K, V, S>(this, k, s));
+		s.record(new Record<>(this, k, s));
 	}
 
 	/**

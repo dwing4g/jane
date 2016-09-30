@@ -51,6 +51,7 @@ public final class Const
 	static
 	{
 		String janeProp = null;
+		@SuppressWarnings("resource")
 		FileInputStream fis = null;
 		try
 		{

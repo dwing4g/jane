@@ -126,7 +126,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 	@Override
 	public SSSet<V, S> descendingSet()
 	{
-		return new SSSet<V, S>(_owner, ((NavigableSet<V>)_set).descendingSet(), _listener);
+		return new SSSet<>(_owner, ((NavigableSet<V>)_set).descendingSet(), _listener);
 	}
 
 	@Override
@@ -137,7 +137,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 
 	public SSSet<V, S> subSetDirect(V from, boolean fromInclusive, V to, boolean toInclusive)
 	{
-		return new SSSet<V, S>(_owner, ((NavigableSet<V>)_set).subSet(from, fromInclusive, to, toInclusive), _listener);
+		return new SSSet<>(_owner, ((NavigableSet<V>)_set).subSet(from, fromInclusive, to, toInclusive), _listener);
 	}
 
 	@Override
@@ -148,7 +148,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 
 	public SSSet<V, S> headSetDirect(V to, boolean inclusive)
 	{
-		return new SSSet<V, S>(_owner, ((NavigableSet<V>)_set).headSet(to, inclusive), _listener);
+		return new SSSet<>(_owner, ((NavigableSet<V>)_set).headSet(to, inclusive), _listener);
 	}
 
 	@Override
@@ -159,7 +159,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 
 	public SSSet<V, S> tailSetDirect(V from, boolean inclusive)
 	{
-		return new SSSet<V, S>(_owner, ((NavigableSet<V>)_set).tailSet(from, inclusive), _listener);
+		return new SSSet<>(_owner, ((NavigableSet<V>)_set).tailSet(from, inclusive), _listener);
 	}
 
 	@Override

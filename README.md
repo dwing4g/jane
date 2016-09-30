@@ -3,7 +3,7 @@
 simple, fast, powerful application server framework based on tcp and embedded database
 
 Feature:
- * application server framework in Java (JDK6)
+ * application server framework in Java (JDK7)
  * TCP server and client framework based on Apache Mina
  * simple, extensible and compact protocol on TCP
  * embedded database based on LevelDB with extremely fast in-memory cache
@@ -20,13 +20,13 @@ License:
  * GNU Lesser GPL
 
 平台:
- * Oracle/Open JDK 6+ (需要ant作为构建环境)
+ * Oracle/Open JDK 7+ (需要ant作为构建环境)
  * Linux 2.6+/Windows 2000+ (运行环境, 推荐64位4核4GB内存以上, 开发可使用32位)
  * Eclipse 4.4+ (主要的Java开发环境,以及LDT的Lua开发插件)
  * Visual Studio 2010+ (C#的开发环境)
 
 语言:
- * Java 6+ (框架和逻辑编写的主语言)
+ * Java 7+ (框架和逻辑编写的主语言)
  * Lua 5.1 (基于Luaj的实现, 目前主要用于代码生成的脚本, 也可作为逻辑调用的脚本, 也用于客户端及工具程序)
  * C# 4.0+ (和Java版本兼容的bean部分实现和代码生成脚本)
 
