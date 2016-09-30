@@ -43,7 +43,6 @@ public final class TestHttpServer extends NetManager
 		System.out.println("onDelSession");
 	}
 
-	@SuppressWarnings("resource")
 	@Override
 	public void messageReceived(IoSession session, Object message)
 	{
@@ -70,11 +69,16 @@ public final class TestHttpServer extends NetManager
 		{
 			try
 			{
-				FileChannel fc = new FileInputStream('.' + path).getChannel();
-				FileRegion fr = new DefaultFileRegion(fc);
-				HttpCodec.sendHead(session, "200 OK", fc.size(), param);
-				Throwable e = session.write(fr).getException();
-				if(e != null) throw e;
+				try(FileInputStream fis = new FileInputStream('.' + path))
+				{
+					try(FileChannel fc = fis.getChannel())
+					{
+						FileRegion fr = new DefaultFileRegion(fc);
+						HttpCodec.sendHead(session, "200 OK", fc.size(), param);
+						Throwable e = session.write(fr).getException();
+						if(e != null) throw e;
+					}
+				}
 			}
 			catch(Throwable e)
 			{
