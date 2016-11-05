@@ -17,7 +17,7 @@ lib/slf4j-api-1.7.21.jar;^
 lib/log4j-core-2.6.2.jar;^
 lib/log4j-api-2.6.2.jar;^
 lib/log4j-slf4j-impl-2.6.2.jar;^
-lib/mina-core-2.0.15.jar;^
+lib/mina-core-2.0.16.jar;^
 lib/luaj-jse-2.0.3.jar;^
 lib/h2-mvstore-1.4.188.jar;^
 jane-core.jar;^
