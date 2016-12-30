@@ -546,7 +546,7 @@ public final class StorageLevelDB implements Storage
 		}
 		if(_db == 0)
 		{
-			Log.log.error("StorageLevelDB.commit: db is closed(db={})", _db);
+			Log.log.error("StorageLevelDB.commit: db is closed");
 			return;
 		}
 		int r = leveldb_write(_db, _writeBuf.entrySet().iterator());
@@ -572,10 +572,10 @@ public final class StorageLevelDB implements Storage
 	@Override
 	public long backup(File fdst) throws IOException
 	{
-		if(_dbFile == null) throw new IllegalStateException("current database is not opened");
+		if(_dbFile == null) throw new IllegalStateException("current db is not opened");
 		String dstPath = fdst.getAbsolutePath();
 		int pos = dstPath.lastIndexOf('.');
-		if(pos <= 0) throw new IOException("invalid db-backup path: " + dstPath);
+		if(pos <= 0) throw new IOException("invalid db backup path: " + dstPath);
 		dstPath = dstPath.substring(0, pos);
 		long period = Const.levelDBFullBackupPeriod * 1000;
 		long basetime = DBManager.instance().getBackupBaseTime();
@@ -584,7 +584,7 @@ public final class StorageLevelDB implements Storage
 		dstPath += '.' + DBManager.instance().getBackupDateStr(backupDate);
 		File path = new File(dstPath).getParentFile();
 		if(path != null && !path.isDirectory() && !path.mkdirs())
-		    throw new IOException("create backup path failed: " + dstPath);
+		    throw new IOException("create db backup path failed: " + dstPath);
 		return leveldb_backup(_db, _dbFile.getAbsolutePath(), dstPath, DBManager.instance().getBackupDateStr(new Date(time)));
 	}
 }
