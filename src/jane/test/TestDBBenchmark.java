@@ -6,8 +6,6 @@ import jane.core.DBManager;
 import jane.core.Procedure;
 import jane.core.Storage;
 import jane.core.StorageLevelDB;
-import jane.core.StorageMVStore;
-import jane.core.StorageMapDB;
 import jane.core.Util;
 import jane.bean.AllTables;
 import jane.bean.TestBean;
@@ -22,12 +20,10 @@ public final class TestDBBenchmark
 		Storage sto = null;
 		if(args.length > 0)
 		{
-			if("md".equals(args[0]))
-				sto = StorageMapDB.instance();
-			else if("mv".equals(args[0]))
-				sto = StorageMVStore.instance();
-			else if("ld".equals(args[0]))
+			if("ld".equals(args[0]))
 			    sto = StorageLevelDB.instance();
+			// else if("me".equals(args[0]))
+			//	sto = StorageMVStore.instance();
 		}
 		if(sto == null) sto = StorageLevelDB.instance();
 		final int count = (args.length > 1 ? ("u".equals(args[1]) ? Integer.MAX_VALUE : Integer.parseInt(args[1])) : 8);

@@ -3,7 +3,7 @@
 simple, fast, powerful application server framework based on tcp and embedded database
 
 Feature:
- * application server framework in Java (JDK7)
+ * application server framework in Java (JDK8 for 2.x, JDK7 for 1.x)
  * TCP server and client framework based on Apache Mina
  * simple, extensible and compact protocol on TCP
  * embedded database based on LevelDB with extremely fast in-memory cache
@@ -37,7 +37,7 @@ License:
 依赖库:
  * 日志库: slf4j-1.7.x log4j-2.x
  * 网络库: mina-core-2.0.x
- * 数据库: leveldb-jni mapdb-1.0.x mvstore-1.4.x (推荐使用LevelDB)
+ * 数据库: leveldb-jni edb (推荐使用LevelDB, edb目前实验中)
  * 脚本库: luaj-jse-2.0.x
  * 基础库: com.googlecode.concurrentlinkedhashmap (高速并发hashmap/linkedhashmap)
 
@@ -62,6 +62,7 @@ License:
   * leveldb-jni:    https://code.google.com/r/bgrainger-leveldb/
   * leveldb-jni:    https://github.com/fusesource/leveldbjni
   * leveldb-java:   https://github.com/dain/leveldb
+  * edb:            http://limax-project.org
   * mapdb:          http://www.mapdb.org/
   * mvstore:        http://www.h2database.com/html/mvstore.html
   * berkeleydb/je:  http://www.oracle.com/technetwork/products/berkeleydb/downloads/index.html

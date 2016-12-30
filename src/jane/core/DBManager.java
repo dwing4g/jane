@@ -337,7 +337,7 @@ public final class DBManager
 	 */
 	public void startup() throws IOException
 	{
-		startup(StorageMapDB.instance());
+		startup(StorageLevelDB.instance());
 	}
 
 	/**
