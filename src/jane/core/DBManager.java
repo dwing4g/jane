@@ -269,7 +269,7 @@ public final class DBManager
 	 * 启动数据库系统
 	 * <p>
 	 * 必须在注册数据库表和操作数据库之前启动
-	 * @param sto 数据库使用的存储引擎实例. 如: StorageMapDB.instance()
+	 * @param sto 数据库使用的存储引擎实例. 如: StorageLevelDB.instance()
 	 */
 	public synchronized void startup(Storage sto) throws IOException
 	{
@@ -333,7 +333,7 @@ public final class DBManager
 	 * 启动数据库系统
 	 * <p>
 	 * 必须在注册数据库表和操作数据库之前启动<br>
-	 * 默认使用StorageMapDB.instance()作为存储引擎
+	 * 默认使用StorageLevelDB.instance()作为存储引擎
 	 */
 	public void startup() throws IOException
 	{

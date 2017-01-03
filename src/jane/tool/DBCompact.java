@@ -8,7 +8,7 @@ public final class DBCompact
 	{
 		if(args.length < 1)
 		{
-			System.err.println("USAGE: java jane.tool.DBCompact <database_file.md|mv|ld>");
+			System.err.println("USAGE: java jane.tool.DBCompact <database_file.ld>");
 			return;
 		}
 		String filename = args[0].trim();
