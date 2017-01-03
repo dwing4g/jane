@@ -4,17 +4,18 @@
  make_linux.sh                   |   26 +
  make_mingw.bat                  |   34 +
  port/endian.h                   |    5 +
- snappy/snappy-internal.h        |  150 +++++
- snappy/snappy-sinksource.cc     |   71 +++
- snappy/snappy-sinksource.h      |  137 ++++
+ snappy/snappy-internal.h        |  212 ++++++
+ snappy/snappy-sinksource.cc     |  104 +++
+ snappy/snappy-sinksource.h      |  182 +++++
  snappy/snappy-stubs-internal.cc |   42 ++
- snappy/snappy-stubs-internal.h  |  491 +++++++++++++++
+ snappy/snappy-stubs-internal.h  |  528 +++++++++++++++
  snappy/snappy-stubs-public.h    |   98 +++
- snappy/snappy.cc                | 1306 +++++++++++++++++++++++++++++++++++++++
- snappy/snappy.h                 |  184 ++++++
- util/env_windows.cc             |  377 +++++++++++
- util/jni.cc                     |  434 +++++++++++++
- 16 files changed, 3366 insertions(+)
+ snappy/snappy.cc                | 1400 +++++++++++++++++++++++++++++++++++++++
+ snappy/snappy.h                 |  203 ++++++
+ util/env_windows.cc             |  390 +++++++++++
+ util/jni.cc                     |  429 ++++++++++++
+ util/logging.cc                 |    2 +-
+ 17 files changed, 3665 insertions(+), 1 deletion(-)
 
 diff --git a/.gitignore b/.gitignore
 index 0630251..e690ecf 100644
@@ -32,7 +33,7 @@ index 0630251..e690ecf 100644
  leveldbutil
 +/tmp/
 diff --git a/db/db_impl.cc b/db/db_impl.cc
-index 49b9595..ea07ff8 100644
+index 60f4e66..3f02da2 100644
 --- a/db/db_impl.cc
 +++ b/db/db_impl.cc
 @@ -35,6 +35,8 @@
@@ -44,7 +45,7 @@ index 49b9595..ea07ff8 100644
  const int kNumNonTableCacheFiles = 10;
  
  // Information kept for every waiting writer
-@@ -630,7 +632,9 @@ void DBImpl::MaybeScheduleCompaction() {
+@@ -660,7 +662,9 @@ void DBImpl::MaybeScheduleCompaction() {
  }
  
  void DBImpl::BGWork(void* db) {
@@ -55,7 +56,7 @@ index 49b9595..ea07ff8 100644
  
  void DBImpl::BackgroundCall() {
 diff --git a/db/db_impl.h b/db/db_impl.h
-index cfc9981..a40df8d 100644
+index 8ff323e..785778c 100644
 --- a/db/db_impl.h
 +++ b/db/db_impl.h
 @@ -64,6 +64,9 @@ class DBImpl : public DB {
@@ -70,7 +71,7 @@ index cfc9981..a40df8d 100644
    struct CompactionState;
 diff --git a/make_linux.sh b/make_linux.sh
 new file mode 100755
-index 0000000..eb3408b
+index 0000000..ba73063
 --- /dev/null
 +++ b/make_linux.sh
 @@ -0,0 +1,26 @@
@@ -97,12 +98,12 @@ index 0000000..eb3408b
 +rm -f *.o 2> /dev/null
 +
 +echo building db-tools ...
-+$COMPILE -o db_bench     db/db_bench.cc     libleveldb.a
-+$COMPILE -o db_test      db/db_test.cc      libleveldb.a
-+$COMPILE -o leveldb_main db/leveldb_main.cc libleveldb.a
++$COMPILE -o db_bench    db/db_bench.cc    libleveldb.a
++$COMPILE -o db_test     db/db_test.cc     libleveldb.a
++$COMPILE -o leveldbutil db/leveldbutil.cc libleveldb.a
 diff --git a/make_mingw.bat b/make_mingw.bat
 new file mode 100644
-index 0000000..3bffc0f
+index 0000000..6a41735
 --- /dev/null
 +++ b/make_mingw.bat
 @@ -0,0 +1,34 @@
@@ -112,7 +113,7 @@ index 0000000..3bffc0f
 +
 +rem install mingw-gcc 4.8+ and append PATH with mingw/bin
 +rem install jdk6+ and set JAVA_HOME
-+if "%JAVA_HOME%" equ "" set JAVA_HOME=C:/Program Files/Java/jdk1.7.0_65
++if "%JAVA_HOME%" equ "" set JAVA_HOME=C:/Program Files/Java/jdk1.8.0_66
 +
 +set CORE_FILES=db/builder.cc db/c.cc db/dumpfile.cc db/db_impl.cc db/db_iter.cc db/dbformat.cc db/filename.cc db/log_reader.cc db/log_writer.cc db/memtable.cc db/repair.cc db/table_cache.cc db/version_edit.cc db/version_set.cc db/write_batch.cc table/block.cc table/block_builder.cc table/filter_block.cc table/format.cc table/iterator.cc table/merger.cc table/table.cc table/table_builder.cc table/two_level_iterator.cc util/arena.cc util/bloom.cc util/cache.cc util/coding.cc util/comparator.cc util/crc32c.cc util/env.cc util/env_windows.cc util/filter_policy.cc util/hash.cc util/histogram.cc util/jni.cc util/logging.cc util/options.cc util/status.cc port/port_posix.cc snappy/snappy.cc snappy/snappy-sinksource.cc snappy/snappy-stubs-internal.cc
 +
@@ -132,12 +133,12 @@ index 0000000..3bffc0f
 +%COMPILE64% -shared -Wl,--image-base,0x10000000 -Wl,--kill-at -Wl,-soname -Wl,leveldbjni64.dll -o leveldbjni64.dll %CORE_FILES%
 +
 +echo building db-tools ...
-+%COMPILE32% -o db_bench32.exe     db/db_bench.cc     %CORE_FILES% %TEST_FILES%
-+%COMPILE64% -o db_bench64.exe     db/db_bench.cc     %CORE_FILES% %TEST_FILES%
-+%COMPILE32% -o db_test32.exe      db/db_test.cc      %CORE_FILES% %TEST_FILES%
-+%COMPILE64% -o db_test64.exe      db/db_test.cc      %CORE_FILES% %TEST_FILES%
-+%COMPILE32% -o leveldb_main32.exe db/leveldb_main.cc %CORE_FILES% %TEST_FILES%
-+%COMPILE64% -o leveldb_main64.exe db/leveldb_main.cc %CORE_FILES% %TEST_FILES%
++%COMPILE32% -o db_bench32.exe    db/db_bench.cc    %CORE_FILES% %TEST_FILES%
++%COMPILE64% -o db_bench64.exe    db/db_bench.cc    %CORE_FILES% %TEST_FILES%
++%COMPILE32% -o db_test32.exe     db/db_test.cc     %CORE_FILES% %TEST_FILES%
++%COMPILE64% -o db_test64.exe     db/db_test.cc     %CORE_FILES% %TEST_FILES%
++%COMPILE32% -o leveldbutil32.exe db/leveldbutil.cc %CORE_FILES% %TEST_FILES%
++%COMPILE64% -o leveldbutil64.exe db/leveldbutil.cc %CORE_FILES% %TEST_FILES%
 +
 +pause
 diff --git a/port/endian.h b/port/endian.h
@@ -153,10 +154,10 @@ index 0000000..7f808fb
 +#endif
 diff --git a/snappy/snappy-internal.h b/snappy/snappy-internal.h
 new file mode 100644
-index 0000000..c99d331
+index 0000000..c4d1f6d
 --- /dev/null
 +++ b/snappy/snappy-internal.h
-@@ -0,0 +1,150 @@
+@@ -0,0 +1,212 @@
 +// Copyright 2008 Google Inc. All Rights Reserved.
 +//
 +// Redistribution and use in source and binary forms, with or without
@@ -187,8 +188,8 @@ index 0000000..c99d331
 +//
 +// Internals shared between the Snappy implementation and its unittest.
 +
-+#ifndef UTIL_SNAPPY_SNAPPY_INTERNAL_H_
-+#define UTIL_SNAPPY_SNAPPY_INTERNAL_H_
++#ifndef THIRD_PARTY_SNAPPY_SNAPPY_INTERNAL_H_
++#define THIRD_PARTY_SNAPPY_SNAPPY_INTERNAL_H_
 +
 +#include "snappy-stubs-internal.h"
 +
@@ -252,7 +253,7 @@ index 0000000..c99d331
 +  // the first non-matching bit and use that to calculate the total
 +  // length of the match.
 +  while (PREDICT_TRUE(s2 <= s2_limit - 8)) {
-+    if (PREDICT_FALSE(UNALIGNED_LOAD64(s2) == UNALIGNED_LOAD64(s1 + matched))) {
++    if (UNALIGNED_LOAD64(s2) == UNALIGNED_LOAD64(s1 + matched)) {
 +      s2 += 8;
 +      matched += 8;
 +    } else {
@@ -267,7 +268,7 @@ index 0000000..c99d331
 +    }
 +  }
 +  while (PREDICT_TRUE(s2 < s2_limit)) {
-+    if (PREDICT_TRUE(s1[matched] == *s2)) {
++    if (s1[matched] == *s2) {
 +      ++s2;
 +      ++matched;
 +    } else {
@@ -303,16 +304,78 @@ index 0000000..c99d331
 +}
 +#endif
 +
++// Lookup tables for decompression code.  Give --snappy_dump_decompression_table
++// to the unit test to recompute char_table.
++
++enum {
++  LITERAL = 0,
++  COPY_1_BYTE_OFFSET = 1,  // 3 bit length + 3 bits of offset in opcode
++  COPY_2_BYTE_OFFSET = 2,
++  COPY_4_BYTE_OFFSET = 3
++};
++static const int kMaximumTagLength = 5;  // COPY_4_BYTE_OFFSET plus the actual offset.
++
++// Mapping from i in range [0,4] to a mask to extract the bottom 8*i bits
++static const uint32 wordmask[] = {
++  0u, 0xffu, 0xffffu, 0xffffffu, 0xffffffffu
++};
++
++// Data stored per entry in lookup table:
++//      Range   Bits-used       Description
++//      ------------------------------------
++//      1..64   0..7            Literal/copy length encoded in opcode byte
++//      0..7    8..10           Copy offset encoded in opcode byte / 256
++//      0..4    11..13          Extra bytes after opcode
++//
++// We use eight bits for the length even though 7 would have sufficed
++// because of efficiency reasons:
++//      (1) Extracting a byte is faster than a bit-field
++//      (2) It properly aligns copy offset so we do not need a <<8
++static const uint16 char_table[256] = {
++  0x0001, 0x0804, 0x1001, 0x2001, 0x0002, 0x0805, 0x1002, 0x2002,
++  0x0003, 0x0806, 0x1003, 0x2003, 0x0004, 0x0807, 0x1004, 0x2004,
++  0x0005, 0x0808, 0x1005, 0x2005, 0x0006, 0x0809, 0x1006, 0x2006,
++  0x0007, 0x080a, 0x1007, 0x2007, 0x0008, 0x080b, 0x1008, 0x2008,
++  0x0009, 0x0904, 0x1009, 0x2009, 0x000a, 0x0905, 0x100a, 0x200a,
++  0x000b, 0x0906, 0x100b, 0x200b, 0x000c, 0x0907, 0x100c, 0x200c,
++  0x000d, 0x0908, 0x100d, 0x200d, 0x000e, 0x0909, 0x100e, 0x200e,
++  0x000f, 0x090a, 0x100f, 0x200f, 0x0010, 0x090b, 0x1010, 0x2010,
++  0x0011, 0x0a04, 0x1011, 0x2011, 0x0012, 0x0a05, 0x1012, 0x2012,
++  0x0013, 0x0a06, 0x1013, 0x2013, 0x0014, 0x0a07, 0x1014, 0x2014,
++  0x0015, 0x0a08, 0x1015, 0x2015, 0x0016, 0x0a09, 0x1016, 0x2016,
++  0x0017, 0x0a0a, 0x1017, 0x2017, 0x0018, 0x0a0b, 0x1018, 0x2018,
++  0x0019, 0x0b04, 0x1019, 0x2019, 0x001a, 0x0b05, 0x101a, 0x201a,
++  0x001b, 0x0b06, 0x101b, 0x201b, 0x001c, 0x0b07, 0x101c, 0x201c,
++  0x001d, 0x0b08, 0x101d, 0x201d, 0x001e, 0x0b09, 0x101e, 0x201e,
++  0x001f, 0x0b0a, 0x101f, 0x201f, 0x0020, 0x0b0b, 0x1020, 0x2020,
++  0x0021, 0x0c04, 0x1021, 0x2021, 0x0022, 0x0c05, 0x1022, 0x2022,
++  0x0023, 0x0c06, 0x1023, 0x2023, 0x0024, 0x0c07, 0x1024, 0x2024,
++  0x0025, 0x0c08, 0x1025, 0x2025, 0x0026, 0x0c09, 0x1026, 0x2026,
++  0x0027, 0x0c0a, 0x1027, 0x2027, 0x0028, 0x0c0b, 0x1028, 0x2028,
++  0x0029, 0x0d04, 0x1029, 0x2029, 0x002a, 0x0d05, 0x102a, 0x202a,
++  0x002b, 0x0d06, 0x102b, 0x202b, 0x002c, 0x0d07, 0x102c, 0x202c,
++  0x002d, 0x0d08, 0x102d, 0x202d, 0x002e, 0x0d09, 0x102e, 0x202e,
++  0x002f, 0x0d0a, 0x102f, 0x202f, 0x0030, 0x0d0b, 0x1030, 0x2030,
++  0x0031, 0x0e04, 0x1031, 0x2031, 0x0032, 0x0e05, 0x1032, 0x2032,
++  0x0033, 0x0e06, 0x1033, 0x2033, 0x0034, 0x0e07, 0x1034, 0x2034,
++  0x0035, 0x0e08, 0x1035, 0x2035, 0x0036, 0x0e09, 0x1036, 0x2036,
++  0x0037, 0x0e0a, 0x1037, 0x2037, 0x0038, 0x0e0b, 0x1038, 0x2038,
++  0x0039, 0x0f04, 0x1039, 0x2039, 0x003a, 0x0f05, 0x103a, 0x203a,
++  0x003b, 0x0f06, 0x103b, 0x203b, 0x003c, 0x0f07, 0x103c, 0x203c,
++  0x0801, 0x0f08, 0x103d, 0x203d, 0x1001, 0x0f09, 0x103e, 0x203e,
++  0x1801, 0x0f0a, 0x103f, 0x203f, 0x2001, 0x0f0b, 0x1040, 0x2040
++};
++
 +}  // end namespace internal
 +}  // end namespace snappy
 +
-+#endif  // UTIL_SNAPPY_SNAPPY_INTERNAL_H_
++#endif  // THIRD_PARTY_SNAPPY_SNAPPY_INTERNAL_H_
 diff --git a/snappy/snappy-sinksource.cc b/snappy/snappy-sinksource.cc
 new file mode 100644
-index 0000000..5844552
+index 0000000..369a132
 --- /dev/null
 +++ b/snappy/snappy-sinksource.cc
-@@ -0,0 +1,71 @@
+@@ -0,0 +1,104 @@
 +// Copyright 2011 Google Inc. All Rights Reserved.
 +//
 +// Redistribution and use in source and binary forms, with or without
@@ -355,6 +418,21 @@ index 0000000..5844552
 +  return scratch;
 +}
 +
++char* Sink::GetAppendBufferVariable(
++      size_t min_size, size_t desired_size_hint, char* scratch,
++      size_t scratch_size, size_t* allocated_size) {
++  *allocated_size = scratch_size;
++  return scratch;
++}
++
++void Sink::AppendAndTakeOwnership(
++    char* bytes, size_t n,
++    void (*deleter)(void*, const char*, size_t),
++    void *deleter_arg) {
++  Append(bytes, n);
++  (*deleter)(deleter_arg, bytes, n);
++}
++
 +ByteArraySource::~ByteArraySource() { }
 +
 +size_t ByteArraySource::Available() const { return left_; }
@@ -383,13 +461,31 @@ index 0000000..5844552
 +  return dest_;
 +}
 +
++void UncheckedByteArraySink::AppendAndTakeOwnership(
++    char* data, size_t n,
++    void (*deleter)(void*, const char*, size_t),
++    void *deleter_arg) {
++  if (data != dest_) {
++    memcpy(dest_, data, n);
++    (*deleter)(deleter_arg, data, n);
++  }
++  dest_ += n;
 +}
++
++char* UncheckedByteArraySink::GetAppendBufferVariable(
++      size_t min_size, size_t desired_size_hint, char* scratch,
++      size_t scratch_size, size_t* allocated_size) {
++  *allocated_size = desired_size_hint;
++  return dest_;
++}
++
++}  // namespace snappy
 diff --git a/snappy/snappy-sinksource.h b/snappy/snappy-sinksource.h
 new file mode 100644
-index 0000000..faabfa1
+index 0000000..8afcdaa
 --- /dev/null
 +++ b/snappy/snappy-sinksource.h
-@@ -0,0 +1,137 @@
+@@ -0,0 +1,182 @@
 +// Copyright 2011 Google Inc. All Rights Reserved.
 +//
 +// Redistribution and use in source and binary forms, with or without
@@ -418,11 +514,10 @@ index 0000000..faabfa1
 +// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 +// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 +
-+#ifndef UTIL_SNAPPY_SNAPPY_SINKSOURCE_H_
-+#define UTIL_SNAPPY_SNAPPY_SINKSOURCE_H_
++#ifndef THIRD_PARTY_SNAPPY_SNAPPY_SINKSOURCE_H_
++#define THIRD_PARTY_SNAPPY_SNAPPY_SINKSOURCE_H_
 +
 +#include <stddef.h>
-+
 +
 +namespace snappy {
 +
@@ -452,6 +547,47 @@ index 0000000..faabfa1
 +  // The default implementation always returns the scratch buffer.
 +  virtual char* GetAppendBuffer(size_t length, char* scratch);
 +
++  // For higher performance, Sink implementations can provide custom
++  // AppendAndTakeOwnership() and GetAppendBufferVariable() methods.
++  // These methods can reduce the number of copies done during
++  // compression/decompression.
++
++  // Append "bytes[0,n-1] to the sink. Takes ownership of "bytes"
++  // and calls the deleter function as (*deleter)(deleter_arg, bytes, n)
++  // to free the buffer. deleter function must be non NULL.
++  //
++  // The default implementation just calls Append and frees "bytes".
++  // Other implementations may avoid a copy while appending the buffer.
++  virtual void AppendAndTakeOwnership(
++      char* bytes, size_t n, void (*deleter)(void*, const char*, size_t),
++      void *deleter_arg);
++
++  // Returns a writable buffer for appending and writes the buffer's capacity to
++  // *allocated_size. Guarantees *allocated_size >= min_size.
++  // May return a pointer to the caller-owned scratch buffer which must have
++  // scratch_size >= min_size.
++  //
++  // The returned buffer is only valid until the next operation
++  // on this ByteSink.
++  //
++  // After writing at most *allocated_size bytes, call Append() with the
++  // pointer returned from this function and the number of bytes written.
++  // Many Append() implementations will avoid copying bytes if this function
++  // returned an internal buffer.
++  //
++  // If the sink implementation allocates or reallocates an internal buffer,
++  // it should use the desired_size_hint if appropriate. If a caller cannot
++  // provide a reasonable guess at the desired capacity, it should set
++  // desired_size_hint = 0.
++  //
++  // If a non-scratch buffer is returned, the caller may only pass
++  // a prefix to it to Append(). That is, it is not correct to pass an
++  // interior pointer to Append().
++  //
++  // The default implementation always returns the scratch buffer.
++  virtual char* GetAppendBufferVariable(
++      size_t min_size, size_t desired_size_hint, char* scratch,
++      size_t scratch_size, size_t* allocated_size);
 +
 + private:
 +  // No copying
@@ -514,6 +650,12 @@ index 0000000..faabfa1
 +  virtual ~UncheckedByteArraySink();
 +  virtual void Append(const char* data, size_t n);
 +  virtual char* GetAppendBuffer(size_t len, char* scratch);
++  virtual char* GetAppendBufferVariable(
++      size_t min_size, size_t desired_size_hint, char* scratch,
++      size_t scratch_size, size_t* allocated_size);
++  virtual void AppendAndTakeOwnership(
++      char* bytes, size_t n, void (*deleter)(void*, const char*, size_t),
++      void *deleter_arg);
 +
 +  // Return the current output pointer so that a caller can see how
 +  // many bytes were produced.
@@ -523,10 +665,9 @@ index 0000000..faabfa1
 +  char* dest_;
 +};
 +
++}  // namespace snappy
 +
-+}
-+
-+#endif  // UTIL_SNAPPY_SNAPPY_SINKSOURCE_H_
++#endif  // THIRD_PARTY_SNAPPY_SNAPPY_SINKSOURCE_H_
 diff --git a/snappy/snappy-stubs-internal.cc b/snappy/snappy-stubs-internal.cc
 new file mode 100644
 index 0000000..6ed3343
@@ -577,10 +718,10 @@ index 0000000..6ed3343
 +}  // namespace snappy
 diff --git a/snappy/snappy-stubs-internal.h b/snappy/snappy-stubs-internal.h
 new file mode 100644
-index 0000000..12393b6
+index 0000000..1954c63
 --- /dev/null
 +++ b/snappy/snappy-stubs-internal.h
-@@ -0,0 +1,491 @@
+@@ -0,0 +1,528 @@
 +// Copyright 2011 Google Inc. All Rights Reserved.
 +//
 +// Redistribution and use in source and binary forms, with or without
@@ -611,8 +752,8 @@ index 0000000..12393b6
 +//
 +// Various stubs for the open-source version of Snappy.
 +
-+#ifndef UTIL_SNAPPY_OPENSOURCE_SNAPPY_STUBS_INTERNAL_H_
-+#define UTIL_SNAPPY_OPENSOURCE_SNAPPY_STUBS_INTERNAL_H_
++#ifndef THIRD_PARTY_SNAPPY_OPENSOURCE_SNAPPY_STUBS_INTERNAL_H_
++#define THIRD_PARTY_SNAPPY_OPENSOURCE_SNAPPY_STUBS_INTERNAL_H_
 +
 +#ifdef HAVE_CONFIG_H
 +#include "config.h"
@@ -699,6 +840,15 @@ index 0000000..12393b6
 +// sub-architectures.
 +//
 +// This is a mess, but there's not much we can do about it.
++//
++// To further complicate matters, only LDR instructions (single reads) are
++// allowed to be unaligned, not LDRD (two reads) or LDM (many reads). Unless we
++// explicitly tell the compiler that these accesses can be unaligned, it can and
++// will combine accesses. On armcc, the way to signal this is done by accessing
++// through the type (uint32 __packed *), but GCC has no such attribute
++// (it ignores __attribute__((packed)) on individual variables). However,
++// we can tell it that a _struct_ is unaligned, which has the same effect,
++// so we do that.
 +
 +#elif defined(__arm__) && \
 +      !defined(__ARM_ARCH_4__) && \
@@ -714,11 +864,39 @@ index 0000000..12393b6
 +      !defined(__ARM_ARCH_6ZK__) && \
 +      !defined(__ARM_ARCH_6T2__)
 +
-+#define UNALIGNED_LOAD16(_p) (*reinterpret_cast<const uint16 *>(_p))
-+#define UNALIGNED_LOAD32(_p) (*reinterpret_cast<const uint32 *>(_p))
++#if __GNUC__
++#define ATTRIBUTE_PACKED __attribute__((__packed__))
++#else
++#define ATTRIBUTE_PACKED
++#endif
 +
-+#define UNALIGNED_STORE16(_p, _val) (*reinterpret_cast<uint16 *>(_p) = (_val))
-+#define UNALIGNED_STORE32(_p, _val) (*reinterpret_cast<uint32 *>(_p) = (_val))
++namespace base {
++namespace internal {
++
++struct Unaligned16Struct {
++  uint16 value;
++  uint8 dummy;  // To make the size non-power-of-two.
++} ATTRIBUTE_PACKED;
++
++struct Unaligned32Struct {
++  uint32 value;
++  uint8 dummy;  // To make the size non-power-of-two.
++} ATTRIBUTE_PACKED;
++
++}  // namespace internal
++}  // namespace base
++
++#define UNALIGNED_LOAD16(_p) \
++    ((reinterpret_cast<const ::snappy::base::internal::Unaligned16Struct *>(_p))->value)
++#define UNALIGNED_LOAD32(_p) \
++    ((reinterpret_cast<const ::snappy::base::internal::Unaligned32Struct *>(_p))->value)
++
++#define UNALIGNED_STORE16(_p, _val) \
++    ((reinterpret_cast< ::snappy::base::internal::Unaligned16Struct *>(_p))->value = \
++         (_val))
++#define UNALIGNED_STORE32(_p, _val) \
++    ((reinterpret_cast< ::snappy::base::internal::Unaligned32Struct *>(_p))->value = \
++         (_val))
 +
 +// TODO(user): NEON supports unaligned 64-bit loads and stores.
 +// See if that would be more efficient on platforms supporting it,
@@ -1071,10 +1249,10 @@ index 0000000..12393b6
 +
 +}  // namespace snappy
 +
-+#endif  // UTIL_SNAPPY_OPENSOURCE_SNAPPY_STUBS_INTERNAL_H_
++#endif  // THIRD_PARTY_SNAPPY_OPENSOURCE_SNAPPY_STUBS_INTERNAL_H_
 diff --git a/snappy/snappy-stubs-public.h b/snappy/snappy-stubs-public.h
 new file mode 100644
-index 0000000..ecda439
+index 0000000..c156ba4
 --- /dev/null
 +++ b/snappy/snappy-stubs-public.h
 @@ -0,0 +1,98 @@
@@ -1113,8 +1291,8 @@ index 0000000..ecda439
 +// which is a public header. Instead, snappy-stubs-public.h is generated by
 +// from snappy-stubs-public.h.in at configure time.
 +
-+#ifndef UTIL_SNAPPY_OPENSOURCE_SNAPPY_STUBS_PUBLIC_H_
-+#define UTIL_SNAPPY_OPENSOURCE_SNAPPY_STUBS_PUBLIC_H_
++#ifndef THIRD_PARTY_SNAPPY_OPENSOURCE_SNAPPY_STUBS_PUBLIC_H_
++#define THIRD_PARTY_SNAPPY_OPENSOURCE_SNAPPY_STUBS_PUBLIC_H_
 +
 +#if 1
 +#include <stdint.h>
@@ -1130,7 +1308,7 @@ index 0000000..ecda439
 +
 +#define SNAPPY_MAJOR 1
 +#define SNAPPY_MINOR 1
-+#define SNAPPY_PATCHLEVEL 1
++#define SNAPPY_PATCHLEVEL 3
 +#define SNAPPY_VERSION \
 +    ((SNAPPY_MAJOR << 16) | (SNAPPY_MINOR << 8) | SNAPPY_PATCHLEVEL)
 +
@@ -1175,13 +1353,13 @@ index 0000000..ecda439
 +
 +}  // namespace snappy
 +
-+#endif  // UTIL_SNAPPY_OPENSOURCE_SNAPPY_STUBS_PUBLIC_H_
++#endif  // THIRD_PARTY_SNAPPY_OPENSOURCE_SNAPPY_STUBS_PUBLIC_H_
 diff --git a/snappy/snappy.cc b/snappy/snappy.cc
 new file mode 100644
-index 0000000..f8d0d23
+index 0000000..8a3668c
 --- /dev/null
 +++ b/snappy/snappy.cc
-@@ -0,0 +1,1306 @@
+@@ -0,0 +1,1400 @@
 +// Copyright 2005 Google Inc. All Rights Reserved.
 +//
 +// Redistribution and use in source and binary forms, with or without
@@ -1223,6 +1401,14 @@ index 0000000..f8d0d23
 +
 +namespace snappy {
 +
++using internal::COPY_1_BYTE_OFFSET;
++using internal::COPY_2_BYTE_OFFSET;
++using internal::COPY_4_BYTE_OFFSET;
++using internal::LITERAL;
++using internal::char_table;
++using internal::kMaximumTagLength;
++using internal::wordmask;
++
 +// Any hash function will produce a valid compressed bitstream, but a good
 +// hash function reduces the number of collisions and thus yields better
 +// compression for compressible input, and more speed for incompressible
@@ -1259,14 +1445,6 @@ index 0000000..f8d0d23
 +  // This last factor dominates the blowup, so the final estimate is:
 +  return 32 + source_len + source_len/6;
 +}
-+
-+enum {
-+  LITERAL = 0,
-+  COPY_1_BYTE_OFFSET = 1,  // 3 bit length + 3 bits of offset in opcode
-+  COPY_2_BYTE_OFFSET = 2,
-+  COPY_4_BYTE_OFFSET = 3
-+};
-+static const int kMaximumTagLength = 5;  // COPY_4_BYTE_OFFSET plus the actual offset.
 +
 +// Copy "len" bytes from "src" to "op", one byte at a time.  Used for
 +// handling COPY operations where the input and output regions may
@@ -1322,7 +1500,7 @@ index 0000000..f8d0d23
 +const int kMaxIncrementCopyOverflow = 10;
 +
 +inline void IncrementalCopyFastPath(const char* src, char* op, ssize_t len) {
-+  while (op - src < 8) {
++  while (PREDICT_FALSE(op - src < 8)) {
 +    UnalignedCopy64(src, op);
 +    len -= op - src;
 +    op += op - src;
@@ -1399,7 +1577,7 @@ index 0000000..f8d0d23
 +
 +static inline char* EmitCopy(char* op, size_t offset, int len) {
 +  // Emit 64 byte copies but make sure to keep at least four bytes reserved
-+  while (len >= 68) {
++  while (PREDICT_FALSE(len >= 68)) {
 +    op = EmitCopyLessThan64(op, offset, 64);
 +    len -= 64;
 +  }
@@ -1548,9 +1726,9 @@ index 0000000..f8d0d23
 +      //
 +      // Heuristic match skipping: If 32 bytes are scanned with no matches
 +      // found, start looking only at every other byte. If 32 more bytes are
-+      // scanned, look at every third byte, etc.. When a match is found,
-+      // immediately go back to looking at every byte. This is a small loss
-+      // (~5% performance, ~0.1% density) for compressible data due to more
++      // scanned (or skipped), look at every third byte, etc.. When a match is
++      // found, immediately go back to looking at every byte. This is a small
++      // loss (~5% performance, ~0.1% density) for compressible data due to more
 +      // bookkeeping, but for non-compressible data (such as JPEG) it's a huge
 +      // win since the compressor quickly "realizes" the data is incompressible
 +      // and doesn't bother looking for matches everywhere.
@@ -1566,7 +1744,8 @@ index 0000000..f8d0d23
 +        ip = next_ip;
 +        uint32 hash = next_hash;
 +        assert(hash == Hash(ip, shift));
-+        uint32 bytes_between_hash_lookups = skip++ >> 5;
++        uint32 bytes_between_hash_lookups = skip >> 5;
++        skip += bytes_between_hash_lookups;
 +        next_ip = ip + bytes_between_hash_lookups;
 +        if (PREDICT_FALSE(next_ip > ip_limit)) {
 +          goto emit_remainder;
@@ -1677,162 +1856,6 @@ index 0000000..f8d0d23
 +//   bool TryFastAppend(const char* ip, size_t available, size_t length);
 +// };
 +
-+// -----------------------------------------------------------------------
-+// Lookup table for decompression code.  Generated by ComputeTable() below.
-+// -----------------------------------------------------------------------
-+
-+// Mapping from i in range [0,4] to a mask to extract the bottom 8*i bits
-+static const uint32 wordmask[] = {
-+  0u, 0xffu, 0xffffu, 0xffffffu, 0xffffffffu
-+};
-+
-+// Data stored per entry in lookup table:
-+//      Range   Bits-used       Description
-+//      ------------------------------------
-+//      1..64   0..7            Literal/copy length encoded in opcode byte
-+//      0..7    8..10           Copy offset encoded in opcode byte / 256
-+//      0..4    11..13          Extra bytes after opcode
-+//
-+// We use eight bits for the length even though 7 would have sufficed
-+// because of efficiency reasons:
-+//      (1) Extracting a byte is faster than a bit-field
-+//      (2) It properly aligns copy offset so we do not need a <<8
-+static const uint16 char_table[256] = {
-+  0x0001, 0x0804, 0x1001, 0x2001, 0x0002, 0x0805, 0x1002, 0x2002,
-+  0x0003, 0x0806, 0x1003, 0x2003, 0x0004, 0x0807, 0x1004, 0x2004,
-+  0x0005, 0x0808, 0x1005, 0x2005, 0x0006, 0x0809, 0x1006, 0x2006,
-+  0x0007, 0x080a, 0x1007, 0x2007, 0x0008, 0x080b, 0x1008, 0x2008,
-+  0x0009, 0x0904, 0x1009, 0x2009, 0x000a, 0x0905, 0x100a, 0x200a,
-+  0x000b, 0x0906, 0x100b, 0x200b, 0x000c, 0x0907, 0x100c, 0x200c,
-+  0x000d, 0x0908, 0x100d, 0x200d, 0x000e, 0x0909, 0x100e, 0x200e,
-+  0x000f, 0x090a, 0x100f, 0x200f, 0x0010, 0x090b, 0x1010, 0x2010,
-+  0x0011, 0x0a04, 0x1011, 0x2011, 0x0012, 0x0a05, 0x1012, 0x2012,
-+  0x0013, 0x0a06, 0x1013, 0x2013, 0x0014, 0x0a07, 0x1014, 0x2014,
-+  0x0015, 0x0a08, 0x1015, 0x2015, 0x0016, 0x0a09, 0x1016, 0x2016,
-+  0x0017, 0x0a0a, 0x1017, 0x2017, 0x0018, 0x0a0b, 0x1018, 0x2018,
-+  0x0019, 0x0b04, 0x1019, 0x2019, 0x001a, 0x0b05, 0x101a, 0x201a,
-+  0x001b, 0x0b06, 0x101b, 0x201b, 0x001c, 0x0b07, 0x101c, 0x201c,
-+  0x001d, 0x0b08, 0x101d, 0x201d, 0x001e, 0x0b09, 0x101e, 0x201e,
-+  0x001f, 0x0b0a, 0x101f, 0x201f, 0x0020, 0x0b0b, 0x1020, 0x2020,
-+  0x0021, 0x0c04, 0x1021, 0x2021, 0x0022, 0x0c05, 0x1022, 0x2022,
-+  0x0023, 0x0c06, 0x1023, 0x2023, 0x0024, 0x0c07, 0x1024, 0x2024,
-+  0x0025, 0x0c08, 0x1025, 0x2025, 0x0026, 0x0c09, 0x1026, 0x2026,
-+  0x0027, 0x0c0a, 0x1027, 0x2027, 0x0028, 0x0c0b, 0x1028, 0x2028,
-+  0x0029, 0x0d04, 0x1029, 0x2029, 0x002a, 0x0d05, 0x102a, 0x202a,
-+  0x002b, 0x0d06, 0x102b, 0x202b, 0x002c, 0x0d07, 0x102c, 0x202c,
-+  0x002d, 0x0d08, 0x102d, 0x202d, 0x002e, 0x0d09, 0x102e, 0x202e,
-+  0x002f, 0x0d0a, 0x102f, 0x202f, 0x0030, 0x0d0b, 0x1030, 0x2030,
-+  0x0031, 0x0e04, 0x1031, 0x2031, 0x0032, 0x0e05, 0x1032, 0x2032,
-+  0x0033, 0x0e06, 0x1033, 0x2033, 0x0034, 0x0e07, 0x1034, 0x2034,
-+  0x0035, 0x0e08, 0x1035, 0x2035, 0x0036, 0x0e09, 0x1036, 0x2036,
-+  0x0037, 0x0e0a, 0x1037, 0x2037, 0x0038, 0x0e0b, 0x1038, 0x2038,
-+  0x0039, 0x0f04, 0x1039, 0x2039, 0x003a, 0x0f05, 0x103a, 0x203a,
-+  0x003b, 0x0f06, 0x103b, 0x203b, 0x003c, 0x0f07, 0x103c, 0x203c,
-+  0x0801, 0x0f08, 0x103d, 0x203d, 0x1001, 0x0f09, 0x103e, 0x203e,
-+  0x1801, 0x0f0a, 0x103f, 0x203f, 0x2001, 0x0f0b, 0x1040, 0x2040
-+};
-+
-+// In debug mode, allow optional computation of the table at startup.
-+// Also, check that the decompression table is correct.
-+#ifndef NDEBUG
-+DEFINE_bool(snappy_dump_decompression_table, false,
-+            "If true, we print the decompression table at startup.");
-+
-+static uint16 MakeEntry(unsigned int extra,
-+                        unsigned int len,
-+                        unsigned int copy_offset) {
-+  // Check that all of the fields fit within the allocated space
-+  assert(extra       == (extra & 0x7));          // At most 3 bits
-+  assert(copy_offset == (copy_offset & 0x7));    // At most 3 bits
-+  assert(len         == (len & 0x7f));           // At most 7 bits
-+  return len | (copy_offset << 8) | (extra << 11);
-+}
-+
-+static void ComputeTable() {
-+  uint16 dst[256];
-+
-+  // Place invalid entries in all places to detect missing initialization
-+  int assigned = 0;
-+  for (int i = 0; i < 256; i++) {
-+    dst[i] = 0xffff;
-+  }
-+
-+  // Small LITERAL entries.  We store (len-1) in the top 6 bits.
-+  for (unsigned int len = 1; len <= 60; len++) {
-+    dst[LITERAL | ((len-1) << 2)] = MakeEntry(0, len, 0);
-+    assigned++;
-+  }
-+
-+  // Large LITERAL entries.  We use 60..63 in the high 6 bits to
-+  // encode the number of bytes of length info that follow the opcode.
-+  for (unsigned int extra_bytes = 1; extra_bytes <= 4; extra_bytes++) {
-+    // We set the length field in the lookup table to 1 because extra
-+    // bytes encode len-1.
-+    dst[LITERAL | ((extra_bytes+59) << 2)] = MakeEntry(extra_bytes, 1, 0);
-+    assigned++;
-+  }
-+
-+  // COPY_1_BYTE_OFFSET.
-+  //
-+  // The tag byte in the compressed data stores len-4 in 3 bits, and
-+  // offset/256 in 5 bits.  offset%256 is stored in the next byte.
-+  //
-+  // This format is used for length in range [4..11] and offset in
-+  // range [0..2047]
-+  for (unsigned int len = 4; len < 12; len++) {
-+    for (unsigned int offset = 0; offset < 2048; offset += 256) {
-+      dst[COPY_1_BYTE_OFFSET | ((len-4)<<2) | ((offset>>8)<<5)] =
-+        MakeEntry(1, len, offset>>8);
-+      assigned++;
-+    }
-+  }
-+
-+  // COPY_2_BYTE_OFFSET.
-+  // Tag contains len-1 in top 6 bits, and offset in next two bytes.
-+  for (unsigned int len = 1; len <= 64; len++) {
-+    dst[COPY_2_BYTE_OFFSET | ((len-1)<<2)] = MakeEntry(2, len, 0);
-+    assigned++;
-+  }
-+
-+  // COPY_4_BYTE_OFFSET.
-+  // Tag contents len-1 in top 6 bits, and offset in next four bytes.
-+  for (unsigned int len = 1; len <= 64; len++) {
-+    dst[COPY_4_BYTE_OFFSET | ((len-1)<<2)] = MakeEntry(4, len, 0);
-+    assigned++;
-+  }
-+
-+  // Check that each entry was initialized exactly once.
-+  if (assigned != 256) {
-+    fprintf(stderr, "ComputeTable: assigned only %d of 256\n", assigned);
-+    abort();
-+  }
-+  for (int i = 0; i < 256; i++) {
-+    if (dst[i] == 0xffff) {
-+      fprintf(stderr, "ComputeTable: did not assign byte %d\n", i);
-+      abort();
-+    }
-+  }
-+
-+  if (FLAGS_snappy_dump_decompression_table) {
-+    printf("static const uint16 char_table[256] = {\n  ");
-+    for (int i = 0; i < 256; i++) {
-+      printf("0x%04x%s",
-+             dst[i],
-+             ((i == 255) ? "\n" : (((i%8) == 7) ? ",\n  " : ", ")));
-+    }
-+    printf("};\n");
-+  }
-+
-+  // Check that computed table matched recorded table
-+  for (int i = 0; i < 256; i++) {
-+    if (dst[i] != char_table[i]) {
-+      fprintf(stderr, "ComputeTable: byte %d: computed (%x), expect (%x)\n",
-+              i, static_cast<int>(dst[i]), static_cast<int>(char_table[i]));
-+      abort();
-+    }
-+  }
-+}
-+#endif /* !NDEBUG */
 +
 +// Helper class for decompression
 +class SnappyDecompressor {
@@ -1885,7 +1908,9 @@ index 0000000..f8d0d23
 +      if (n == 0) return false;
 +      const unsigned char c = *(reinterpret_cast<const unsigned char*>(ip));
 +      reader_->Skip(1);
-+      *result |= static_cast<uint32>(c & 0x7f) << shift;
++      uint32 val = c & 0x7f;
++      if (((val << shift) >> shift) != val) return false;
++      *result |= val << shift;
 +      if (c < 128) {
 +        break;
 +      }
@@ -2047,6 +2072,7 @@ index 0000000..f8d0d23
 +
 +  // Process the entire input
 +  decompressor->DecompressAllTags(writer);
++  writer->Flush();
 +  return (decompressor->eof() && writer->CheckLength());
 +}
 +
@@ -2149,7 +2175,7 @@ index 0000000..f8d0d23
 +  const size_t output_iov_count_;
 +
 +  // We are currently writing into output_iov_[curr_iov_index_].
-+  int curr_iov_index_;
++  size_t curr_iov_index_;
 +
 +  // Bytes written to output_iov_[curr_iov_index_] so far.
 +  size_t curr_iov_written_;
@@ -2160,7 +2186,7 @@ index 0000000..f8d0d23
 +  // Maximum number of bytes that will be decompressed into output_iov_.
 +  size_t output_limit_;
 +
-+  inline char* GetIOVecPointer(int index, size_t offset) {
++  inline char* GetIOVecPointer(size_t index, size_t offset) {
 +    return reinterpret_cast<char*>(output_iov_[index].iov_base) +
 +        offset;
 +  }
@@ -2241,7 +2267,7 @@ index 0000000..f8d0d23
 +    }
 +
 +    // Locate the iovec from which we need to start the copy.
-+    int from_iov_index = curr_iov_index_;
++    size_t from_iov_index = curr_iov_index_;
 +    size_t from_iov_offset = curr_iov_written_;
 +    while (offset > 0) {
 +      if (from_iov_offset >= offset) {
@@ -2250,8 +2276,8 @@ index 0000000..f8d0d23
 +      }
 +
 +      offset -= from_iov_offset;
++      assert(from_iov_index > 0);
 +      --from_iov_index;
-+      assert(from_iov_index >= 0);
 +      from_iov_offset = output_iov_[from_iov_index].iov_len;
 +    }
 +
@@ -2299,6 +2325,7 @@ index 0000000..f8d0d23
 +    return true;
 +  }
 +
++  inline void Flush() {}
 +};
 +
 +bool RawUncompressToIOVec(const char* compressed, size_t compressed_length,
@@ -2329,7 +2356,8 @@ index 0000000..f8d0d23
 + public:
 +  inline explicit SnappyArrayWriter(char* dst)
 +      : base_(dst),
-+        op_(dst) {
++        op_(dst),
++        op_limit_(dst) {
 +  }
 +
 +  inline void SetExpectedLength(size_t len) {
@@ -2399,6 +2427,10 @@ index 0000000..f8d0d23
 +    op_ = op + len;
 +    return true;
 +  }
++  inline size_t Produced() const {
++    return op_ - base_;
++  }
++  inline void Flush() {}
 +};
 +
 +bool RawUncompress(const char* compressed, size_t n, char* uncompressed) {
@@ -2425,7 +2457,6 @@ index 0000000..f8d0d23
 +  return RawUncompress(compressed, n, string_as_array(uncompressed));
 +}
 +
-+
 +// A Writer that drops everything on the floor and just does validation
 +class SnappyDecompressionValidator {
 + private:
@@ -2433,7 +2464,7 @@ index 0000000..f8d0d23
 +  size_t produced_;
 +
 + public:
-+  inline SnappyDecompressionValidator() : produced_(0) { }
++  inline SnappyDecompressionValidator() : expected_(0), produced_(0) { }
 +  inline void SetExpectedLength(size_t len) {
 +    expected_ = len;
 +  }
@@ -2454,12 +2485,18 @@ index 0000000..f8d0d23
 +    produced_ += len;
 +    return produced_ <= expected_;
 +  }
++  inline void Flush() {}
 +};
 +
 +bool IsValidCompressedBuffer(const char* compressed, size_t n) {
 +  ByteArraySource reader(compressed, n);
 +  SnappyDecompressionValidator writer;
 +  return InternalUncompress(&reader, &writer);
++}
++
++bool IsValidCompressed(Source* compressed) {
++  SnappyDecompressionValidator writer;
++  return InternalUncompress(compressed, &writer);
 +}
 +
 +void RawCompress(const char* input,
@@ -2485,15 +2522,250 @@ index 0000000..f8d0d23
 +  return compressed_length;
 +}
 +
++// -----------------------------------------------------------------------
++// Sink interface
++// -----------------------------------------------------------------------
++
++// A type that decompresses into a Sink. The template parameter
++// Allocator must export one method "char* Allocate(int size);", which
++// allocates a buffer of "size" and appends that to the destination.
++template <typename Allocator>
++class SnappyScatteredWriter {
++  Allocator allocator_;
++
++  // We need random access into the data generated so far.  Therefore
++  // we keep track of all of the generated data as an array of blocks.
++  // All of the blocks except the last have length kBlockSize.
++  vector<char*> blocks_;
++  size_t expected_;
++
++  // Total size of all fully generated blocks so far
++  size_t full_size_;
++
++  // Pointer into current output block
++  char* op_base_;       // Base of output block
++  char* op_ptr_;        // Pointer to next unfilled byte in block
++  char* op_limit_;      // Pointer just past block
++
++  inline size_t Size() const {
++    return full_size_ + (op_ptr_ - op_base_);
++  }
++
++  bool SlowAppend(const char* ip, size_t len);
++  bool SlowAppendFromSelf(size_t offset, size_t len);
++
++ public:
++  inline explicit SnappyScatteredWriter(const Allocator& allocator)
++      : allocator_(allocator),
++        full_size_(0),
++        op_base_(NULL),
++        op_ptr_(NULL),
++        op_limit_(NULL) {
++  }
++
++  inline void SetExpectedLength(size_t len) {
++    assert(blocks_.empty());
++    expected_ = len;
++  }
++
++  inline bool CheckLength() const {
++    return Size() == expected_;
++  }
++
++  // Return the number of bytes actually uncompressed so far
++  inline size_t Produced() const {
++    return Size();
++  }
++
++  inline bool Append(const char* ip, size_t len) {
++    size_t avail = op_limit_ - op_ptr_;
++    if (len <= avail) {
++      // Fast path
++      memcpy(op_ptr_, ip, len);
++      op_ptr_ += len;
++      return true;
++    } else {
++      return SlowAppend(ip, len);
++    }
++  }
++
++  inline bool TryFastAppend(const char* ip, size_t available, size_t length) {
++    char* op = op_ptr_;
++    const int space_left = op_limit_ - op;
++    if (length <= 16 && available >= 16 + kMaximumTagLength &&
++        space_left >= 16) {
++      // Fast path, used for the majority (about 95%) of invocations.
++      UNALIGNED_STORE64(op, UNALIGNED_LOAD64(ip));
++      UNALIGNED_STORE64(op + 8, UNALIGNED_LOAD64(ip + 8));
++      op_ptr_ = op + length;
++      return true;
++    } else {
++      return false;
++    }
++  }
++
++  inline bool AppendFromSelf(size_t offset, size_t len) {
++    // See SnappyArrayWriter::AppendFromSelf for an explanation of
++    // the "offset - 1u" trick.
++    if (offset - 1u < op_ptr_ - op_base_) {
++      const size_t space_left = op_limit_ - op_ptr_;
++      if (space_left >= len + kMaxIncrementCopyOverflow) {
++        // Fast path: src and dst in current block.
++        IncrementalCopyFastPath(op_ptr_ - offset, op_ptr_, len);
++        op_ptr_ += len;
++        return true;
++      }
++    }
++    return SlowAppendFromSelf(offset, len);
++  }
++
++  // Called at the end of the decompress. We ask the allocator
++  // write all blocks to the sink.
++  inline void Flush() { allocator_.Flush(Produced()); }
++};
++
++template<typename Allocator>
++bool SnappyScatteredWriter<Allocator>::SlowAppend(const char* ip, size_t len) {
++  size_t avail = op_limit_ - op_ptr_;
++  while (len > avail) {
++    // Completely fill this block
++    memcpy(op_ptr_, ip, avail);
++    op_ptr_ += avail;
++    assert(op_limit_ - op_ptr_ == 0);
++    full_size_ += (op_ptr_ - op_base_);
++    len -= avail;
++    ip += avail;
++
++    // Bounds check
++    if (full_size_ + len > expected_) {
++      return false;
++    }
++
++    // Make new block
++    size_t bsize = min<size_t>(kBlockSize, expected_ - full_size_);
++    op_base_ = allocator_.Allocate(bsize);
++    op_ptr_ = op_base_;
++    op_limit_ = op_base_ + bsize;
++    blocks_.push_back(op_base_);
++    avail = bsize;
++  }
++
++  memcpy(op_ptr_, ip, len);
++  op_ptr_ += len;
++  return true;
++}
++
++template<typename Allocator>
++bool SnappyScatteredWriter<Allocator>::SlowAppendFromSelf(size_t offset,
++                                                         size_t len) {
++  // Overflow check
++  // See SnappyArrayWriter::AppendFromSelf for an explanation of
++  // the "offset - 1u" trick.
++  const size_t cur = Size();
++  if (offset - 1u >= cur) return false;
++  if (expected_ - cur < len) return false;
++
++  // Currently we shouldn't ever hit this path because Compress() chops the
++  // input into blocks and does not create cross-block copies. However, it is
++  // nice if we do not rely on that, since we can get better compression if we
++  // allow cross-block copies and thus might want to change the compressor in
++  // the future.
++  size_t src = cur - offset;
++  while (len-- > 0) {
++    char c = blocks_[src >> kBlockLog][src & (kBlockSize-1)];
++    Append(&c, 1);
++    src++;
++  }
++  return true;
++}
++
++class SnappySinkAllocator {
++ public:
++  explicit SnappySinkAllocator(Sink* dest): dest_(dest) {}
++  ~SnappySinkAllocator() {}
++
++  char* Allocate(int size) {
++    Datablock block(new char[size], size);
++    blocks_.push_back(block);
++    return block.data;
++  }
++
++  // We flush only at the end, because the writer wants
++  // random access to the blocks and once we hand the
++  // block over to the sink, we can't access it anymore.
++  // Also we don't write more than has been actually written
++  // to the blocks.
++  void Flush(size_t size) {
++    size_t size_written = 0;
++    size_t block_size;
++    for (int i = 0; i < blocks_.size(); ++i) {
++      block_size = min<size_t>(blocks_[i].size, size - size_written);
++      dest_->AppendAndTakeOwnership(blocks_[i].data, block_size,
++                                    &SnappySinkAllocator::Deleter, NULL);
++      size_written += block_size;
++    }
++    blocks_.clear();
++  }
++
++ private:
++  struct Datablock {
++    char* data;
++    size_t size;
++    Datablock(char* p, size_t s) : data(p), size(s) {}
++  };
++
++  static void Deleter(void* arg, const char* bytes, size_t size) {
++    delete[] bytes;
++  }
++
++  Sink* dest_;
++  vector<Datablock> blocks_;
++
++  // Note: copying this object is allowed
++};
++
++size_t UncompressAsMuchAsPossible(Source* compressed, Sink* uncompressed) {
++  SnappySinkAllocator allocator(uncompressed);
++  SnappyScatteredWriter<SnappySinkAllocator> writer(allocator);
++  InternalUncompress(compressed, &writer);
++  return writer.Produced();
++}
++
++bool Uncompress(Source* compressed, Sink* uncompressed) {
++  // Read the uncompressed length from the front of the compressed input
++  SnappyDecompressor decompressor(compressed);
++  uint32 uncompressed_len = 0;
++  if (!decompressor.ReadUncompressedLength(&uncompressed_len)) {
++    return false;
++  }
++
++  char c;
++  size_t allocated_size;
++  char* buf = uncompressed->GetAppendBufferVariable(
++      1, uncompressed_len, &c, 1, &allocated_size);
++
++  // If we can get a flat buffer, then use it, otherwise do block by block
++  // uncompression
++  if (allocated_size >= uncompressed_len) {
++    SnappyArrayWriter writer(buf);
++    bool result = InternalUncompressAllTags(
++        &decompressor, &writer, uncompressed_len);
++    uncompressed->Append(buf, writer.Produced());
++    return result;
++  } else {
++    SnappySinkAllocator allocator(uncompressed);
++    SnappyScatteredWriter<SnappySinkAllocator> writer(allocator);
++    return InternalUncompressAllTags(&decompressor, &writer, uncompressed_len);
++  }
++}
 +
 +} // end namespace snappy
-+
 diff --git a/snappy/snappy.h b/snappy/snappy.h
 new file mode 100644
-index 0000000..e879e79
+index 0000000..4568db8
 --- /dev/null
 +++ b/snappy/snappy.h
-@@ -0,0 +1,184 @@
+@@ -0,0 +1,203 @@
 +// Copyright 2005 and onwards Google Inc.
 +//
 +// Redistribution and use in source and binary forms, with or without
@@ -2532,8 +2804,8 @@ index 0000000..e879e79
 +// using BMDiff and then compressing the output of BMDiff with
 +// Snappy.
 +
-+#ifndef UTIL_SNAPPY_SNAPPY_H__
-+#define UTIL_SNAPPY_SNAPPY_H__
++#ifndef THIRD_PARTY_SNAPPY_SNAPPY_H__
++#define THIRD_PARTY_SNAPPY_SNAPPY_H__
 +
 +#include <stddef.h>
 +#include <string>
@@ -2580,6 +2852,18 @@ index 0000000..e879e79
 +  bool Uncompress(const char* compressed, size_t compressed_length,
 +                  string* uncompressed);
 +
++  // Decompresses "compressed" to "*uncompressed".
++  //
++  // returns false if the message is corrupted and could not be decompressed
++  bool Uncompress(Source* compressed, Sink* uncompressed);
++
++  // This routine uncompresses as much of the "compressed" as possible
++  // into sink.  It returns the number of valid bytes added to sink
++  // (extra invalid bytes may have been added due to errors; the caller
++  // should ignore those). The emitted data typically has length
++  // GetUncompressedLength(), but may be shorter if an error is
++  // encountered.
++  size_t UncompressAsMuchAsPossible(Source* compressed, Sink* uncompressed);
 +
 +  // ------------------------------------------------------------------------
 +  // Lower-level character array based routines.  May be useful for
@@ -2660,6 +2944,14 @@ index 0000000..e879e79
 +  bool IsValidCompressedBuffer(const char* compressed,
 +                               size_t compressed_length);
 +
++  // Returns true iff the contents of "compressed" can be uncompressed
++  // successfully.  Does not return the uncompressed data.  Takes
++  // time proportional to *compressed length, but is usually at least
++  // a factor of four faster than actual decompression.
++  // On success, consumes all of *compressed.  On failure, consumes an
++  // unspecified prefix of *compressed.
++  bool IsValidCompressed(Source* compressed);
++
 +  // The size of a compression block. Note that many parts of the compression
 +  // code assumes that kBlockSize <= 65536; in particular, the hash table
 +  // can only store 16-bit offsets, and EmitCopy() also assumes the offset
@@ -2676,14 +2968,13 @@ index 0000000..e879e79
 +  static const size_t kMaxHashTableSize = 1 << kMaxHashTableBits;
 +}  // end namespace snappy
 +
-+
-+#endif  // UTIL_SNAPPY_SNAPPY_H__
++#endif  // THIRD_PARTY_SNAPPY_SNAPPY_H__
 diff --git a/util/env_windows.cc b/util/env_windows.cc
 new file mode 100644
-index 0000000..33aaa1e
+index 0000000..499a007
 --- /dev/null
 +++ b/util/env_windows.cc
-@@ -0,0 +1,377 @@
+@@ -0,0 +1,390 @@
 +// Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file. See the AUTHORS file for names of contributors.
@@ -2698,6 +2989,7 @@ index 0000000..33aaa1e
 +#include "leveldb/env.h"
 +#include "leveldb/status.h"
 +#include "port/port.h"
++#define localtime_r(x,y) localtime_s(y,x)
 +#include "util/posix_logger.h"
 +
 +namespace leveldb {
@@ -3051,6 +3343,18 @@ index 0000000..33aaa1e
 +		// round up to the next millisecond
 +		Sleep((micros + 999) / 1000);
 +	}
++
++	virtual Status NewAppendableFile(const std::string& fname, WritableFile** result) {
++		*result = 0;
++		HANDLE file = CreateFileA(fname.c_str(), GENERIC_WRITE, FILE_SHARE_READ, 0, OPEN_ALWAYS, 0, 0);
++		if(file == INVALID_HANDLE_VALUE) return Status::IOError(fname);
++		if(SetFilePointer(file, 0, 0, FILE_END) == INVALID_SET_FILE_POINTER) {
++			CloseHandle(file);
++			return Status::IOError(fname);
++		}
++		*result = new WindowsWritableFile(fname, file);
++		return Status::OK();
++	}
 +};
 +
 +Env* Env::Default() {
@@ -3063,10 +3367,10 @@ index 0000000..33aaa1e
 +#endif
 diff --git a/util/jni.cc b/util/jni.cc
 new file mode 100644
-index 0000000..e65bda2
+index 0000000..f510e96
 --- /dev/null
 +++ b/util/jni.cc
-@@ -0,0 +1,434 @@
+@@ -0,0 +1,429 @@
 +// Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file. See the AUTHORS file for names of contributors.
@@ -3340,7 +3644,7 @@ index 0000000..e65bda2
 +			r = AppendFile(*env, srcpathstr + '/' + *it, dstpathstr + '/' + *it, ft == kTableFile);
 +			if(r > 0) n += r;
 +			files_saved << *it;
-+			if(ft == kDescriptorFile)
++			// if(ft == kDescriptorFile)
 +			{
 +				env->GetFileSize(dstpathstr + '/' + *it, &num);
 +				files_saved << ' ' << num;
@@ -3400,13 +3704,8 @@ index 0000000..e65bda2
 +				else // must be comp > 0
 +					if(type <= 1) it->Prev();
 +			}
-+			else
-+			{
-+				if(type >= 2)
-+					it->SeekToFirst();
-+				else
-+					it->SeekToLast();
-+			}
++			else if(type < 2)
++				it->SeekToLast();
 +			jenv->ReleaseByteArrayElements(key, keyptr, JNI_ABORT);
 +		}
 +	}
@@ -3501,3 +3800,16 @@ index 0000000..e65bda2
 +}
 +
 +#endif
+diff --git a/util/logging.cc b/util/logging.cc
+index ca6b324..c006309 100644
+--- a/util/logging.cc
++++ b/util/logging.cc
+@@ -22,7 +22,7 @@ void AppendNumberTo(std::string* str, uint64_t num) {
+ void AppendEscapedStringTo(std::string* str, const Slice& value) {
+   for (size_t i = 0; i < value.size(); i++) {
+     char c = value[i];
+-    if (c >= ' ' && c <= '~') {
++    if (c >= ' ' && c <= '~' && c != '\\' && c != '\'' && c != '\"') {
+       str->push_back(c);
+     } else {
+       char buf[10];
