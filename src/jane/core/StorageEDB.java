@@ -31,7 +31,7 @@ public final class StorageEDB implements Storage
 		return n0 - n1;
 	}
 
-	private class TableLong<V extends Bean<V>> implements Storage.TableLong<V>
+	private final class TableLong<V extends Bean<V>> implements Storage.TableLong<V>
 	{
 		private final String _tableName;
 		private final int    _tableId;
@@ -55,9 +55,11 @@ public final class StorageEDB implements Storage
 			}
 		}
 
-		private OctetsStream getKey(long k)
+		private byte[] getKey(long k)
 		{
-			return new OctetsStream(9).marshal(k);
+			byte[] r = new byte[OctetsStream.marshalLen(k)];
+			OctetsStream.wrap(r, 0).marshal(k);
+			return r;
 		}
 
 		@Override
@@ -101,7 +103,7 @@ public final class StorageEDB implements Storage
 		{
 			try
 			{
-				_edb.replace(_tableIdStr, getKey(k).getBytes(), v.marshal(new OctetsStream(_stubV.initSize()).marshal((byte)0)).getBytes()); // format
+				_edb.replace(_tableIdStr, getKey(k), v.marshal(new OctetsStream(_stubV.initSize()).marshal((byte)0)).getBytes()); // format
 			}
 			catch(IOException e)
 			{
@@ -114,7 +116,7 @@ public final class StorageEDB implements Storage
 		{
 			try
 			{
-				_edb.remove(_tableIdStr, getKey(k).getBytes());
+				_edb.remove(_tableIdStr, getKey(k));
 			}
 			catch(IOException e)
 			{
@@ -131,8 +133,8 @@ public final class StorageEDB implements Storage
 				from = to;
 				to = t;
 			}
-			byte[] keyFrom = getKey(from).getBytes();
-			byte[] keyTo = getKey(to).getBytes();
+			byte[] keyFrom = getKey(from);
+			byte[] keyTo = getKey(to);
 			try
 			{
 				if(!reverse)
@@ -191,7 +193,7 @@ public final class StorageEDB implements Storage
 			{
 				try
 				{
-					_edb.replace(_tableIdStr, _tableIdCounter, new OctetsStream(9).marshal(v).getBytes());
+					_edb.replace(_tableIdStr, _tableIdCounter, getKey(v));
 				}
 				catch(IOException e)
 				{
@@ -313,7 +315,7 @@ public final class StorageEDB implements Storage
 		}
 	}
 
-	private class TableOctets<V extends Bean<V>> extends TableBase<Octets, V>
+	private final class TableOctets<V extends Bean<V>> extends TableBase<Octets, V>
 	{
 		public TableOctets(int tableId, String tableName, V stubV)
 		{
@@ -329,7 +331,7 @@ public final class StorageEDB implements Storage
 		@Override
 		public V get(Octets k)
 		{
-			OctetsStream val = dbget(_tableIdStr, getKey(k));
+			OctetsStream val = dbget(_tableIdStr, k);
 			if(val == null) return null;
 			val.setExceptionInfo(true);
 			V v = _stubV.alloc();
@@ -357,7 +359,7 @@ public final class StorageEDB implements Storage
 		}
 	}
 
-	private class TableString<V extends Bean<V>> extends TableBase<String, V>
+	private final class TableString<V extends Bean<V>> extends TableBase<String, V>
 	{
 		protected TableString(int tableId, String tableName, V stubV)
 		{
@@ -405,7 +407,7 @@ public final class StorageEDB implements Storage
 		}
 	}
 
-	private class TableBean<K, V extends Bean<V>> extends TableBase<K, V>
+	private final class TableBean<K, V extends Bean<V>> extends TableBase<K, V>
 	{
 		private final K _stubK;
 
@@ -465,19 +467,23 @@ public final class StorageEDB implements Storage
 	{
 	}
 
-	private OctetsStream dbget(String table, Octets k)
+	private OctetsStream dbget(String table, byte[] k)
 	{
-		if(_edb == null) throw new IllegalStateException("db closed. key=" + k.dump());
-		byte[] v;
+		if(_edb == null) throw new IllegalStateException("db closed. key=" + Octets.wrap(k).dump());
 		try
 		{
-			v = _edb.find(table, k.getBytes());
+			byte[] v = _edb.find(table, k);
+			return v != null ? OctetsStream.wrap(v) : null;
 		}
 		catch(IOException e)
 		{
 			throw new RuntimeException(e);
 		}
-		return v != null ? OctetsStream.wrap(v) : null;
+	}
+
+	private OctetsStream dbget(String table, Octets k)
+	{
+		return dbget(table, k.getBytes());
 	}
 
 	@Override

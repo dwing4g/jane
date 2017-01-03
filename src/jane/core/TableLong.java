@@ -40,7 +40,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 		_stoTable = stoTable;
 		if(cacheSize < 1) cacheSize = 1;
 		_cache = new LongConcurrentLRUMap<>(cacheSize + (cacheSize + 1) / 2, cacheSize);
-		_cacheMod = (stoTable != null ? new LongConcurrentHashMap<V>() : null);
+		_cacheMod = (stoTable != null ? new LongConcurrentHashMap<>() : null);
 		if(stoTable != null)
 		{
 			_idCounter.set(_stoTable.getIdCounter());

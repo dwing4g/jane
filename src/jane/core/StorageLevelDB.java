@@ -48,7 +48,7 @@ public final class StorageLevelDB implements Storage
 
 	public native static boolean leveldb_compact(long handle, byte[] keyFrom, int keyFromLen, byte[] keyTo, int keyToLen);
 
-	private class TableLong<V extends Bean<V>> implements Storage.TableLong<V>
+	private final class TableLong<V extends Bean<V>> implements Storage.TableLong<V>
 	{
 		private final String       _tableName;
 		private final int          _tableId;
@@ -311,7 +311,7 @@ public final class StorageLevelDB implements Storage
 		}
 	}
 
-	private class TableOctets<V extends Bean<V>> extends TableBase<Octets, V>
+	private final class TableOctets<V extends Bean<V>> extends TableBase<Octets, V>
 	{
 		public TableOctets(int tableId, String tableName, V stubV)
 		{
@@ -361,7 +361,7 @@ public final class StorageLevelDB implements Storage
 		}
 	}
 
-	private class TableString<V extends Bean<V>> extends TableBase<String, V>
+	private final class TableString<V extends Bean<V>> extends TableBase<String, V>
 	{
 		protected TableString(int tableId, String tableName, V stubV)
 		{
@@ -413,7 +413,7 @@ public final class StorageLevelDB implements Storage
 		}
 	}
 
-	private class TableBean<K, V extends Bean<V>> extends TableBase<K, V>
+	private final class TableBean<K, V extends Bean<V>> extends TableBase<K, V>
 	{
 		private final K _stubK;
 
