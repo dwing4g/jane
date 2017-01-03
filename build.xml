@@ -26,7 +26,7 @@
 				<include name="*.jar"/>
 			</fileset>
 		</path>
-		<javac destdir="${classes}" encoding="utf-8" classpathref="classpath" source="1.8" target="1.8" debug="on" debuglevel="lines,vars,source" fork="true" memoryMaximumSize="512m" includeantruntime="false">
+		<javac destdir="${classes}" encoding="utf-8" classpathref="classpath" source="1.7" target="1.7" debug="on" debuglevel="lines,vars,source" fork="true" memoryMaximumSize="512m" includeantruntime="false">
 			<compilerarg value="-nowarn"/>
 			<!--compilerarg value="-Xlint:deprecation"/-->
 			<!--compilerarg value="-Xlint:unchecked"/-->
@@ -34,7 +34,6 @@
 			<src path="${src}/"/>
 			<src path="${lib}/hashmap/"/>
 			<src path="${lib}/mapdb/"/>
-			<src path="${lib}/edb/"/>
 		</javac>
 	</target>
 
@@ -57,7 +56,6 @@
 			<fileset dir="${src}/"/>
 			<fileset dir="${lib}/hashmap/"/>
 			<fileset dir="${lib}/mapdb/"/>
-			<fileset dir="${lib}/edb/"/>
 		</jar>
 	</target>
 </project>

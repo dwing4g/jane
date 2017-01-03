@@ -5,7 +5,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import jane.core.DBManager;
 import jane.core.Procedure;
 import jane.core.Storage;
-import jane.core.StorageEDB;
 import jane.core.StorageLevelDB;
 import jane.core.Util;
 import jane.bean.AllTables;
@@ -22,9 +21,7 @@ public final class TestDBBenchmark
 		if(args.length > 0)
 		{
 			if("ld".equals(args[0]))
-				sto = StorageLevelDB.instance();
-			else if("edb".equals(args[0]))
-			    sto = StorageEDB.instance();
+			    sto = StorageLevelDB.instance();
 		}
 		if(sto == null) sto = StorageLevelDB.instance();
 		final int count = (args.length > 1 ? ("u".equals(args[1]) ? Integer.MAX_VALUE : Integer.parseInt(args[1])) : 8);

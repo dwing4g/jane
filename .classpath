@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="src" path="lib/edb">
-		<attributes>
-			<attribute name="ignore_optional_problems" value="true"/>
-		</attributes>
-	</classpathentry>
 	<classpathentry kind="src" path="lib/hashmap">
 		<attributes>
 			<attribute name="ignore_optional_problems" value="true"/>
@@ -16,7 +11,7 @@
 			<attribute name="ignore_optional_problems" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
 	<classpathentry kind="lib" path="lib/luaj-jse-2.0.3.jar" sourcepath="lib/luaj-sources-2.0.3.jar"/>
 	<classpathentry kind="lib" path="lib/slf4j-api-1.7.21.jar" sourcepath="lib/slf4j-api-1.7.21-sources.jar"/>
 	<classpathentry kind="lib" path="lib/mina-core-2.0.16.jar" sourcepath="lib/mina-core-2.0.16-src.jar"/>
