@@ -13,10 +13,10 @@ JVM="\
 -verbose:gc"
 
 LIB="\
-lib/slf4j-api-1.7.21.jar:\
-lib/log4j-core-2.6.2.jar:\
-lib/log4j-api-2.6.2.jar:\
-lib/log4j-slf4j-impl-2.6.2.jar:\
+lib/slf4j-api-1.7.22.jar:\
+lib/log4j-core-2.7.jar:\
+lib/log4j-api-2.7.jar:\
+lib/log4j-slf4j-impl-2.7.jar:\
 lib/mina-core-2.0.16.jar:\
 lib/luaj-jse-2.0.3.jar:\
 jane-core.jar:\
