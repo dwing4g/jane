@@ -8,14 +8,13 @@ package jane.core;
 @SuppressWarnings("serial")
 public class MarshalException extends Exception
 {
-	private static final WithoutTrace    _instanceWt    = new WithoutTrace();
-	private static final EOFWithoutTrace _instanceEofWt = new EOFWithoutTrace();
-
 	/**
 	 * 不带栈信息的MarshalException
 	 */
 	public static class WithoutTrace extends MarshalException
 	{
+		private static final WithoutTrace _instance = new WithoutTrace();
+
 		public WithoutTrace()
 		{
 		}
@@ -53,6 +52,8 @@ public class MarshalException extends Exception
 	 */
 	public static class EOFWithoutTrace extends EOF
 	{
+		private static final EOFWithoutTrace _instance = new EOFWithoutTrace();
+
 		public EOFWithoutTrace()
 		{
 		}
@@ -72,7 +73,7 @@ public class MarshalException extends Exception
 
 	public static MarshalException create(boolean withTrace)
 	{
-		return withTrace ? new MarshalException() : _instanceWt;
+		return withTrace ? new MarshalException() : WithoutTrace._instance;
 	}
 
 	public static MarshalException create(Throwable e, boolean withTrace)
@@ -82,7 +83,7 @@ public class MarshalException extends Exception
 
 	public static EOF createEOF(boolean withTrace)
 	{
-		return withTrace ? new EOF() : _instanceEofWt;
+		return withTrace ? new EOF() : EOFWithoutTrace._instance;
 	}
 
 	public static EOF createEOF(Throwable e, boolean withTrace)

@@ -351,9 +351,7 @@ public final class HttpCodec extends IoFilterAdapter
 	{
 		int n = chunk.remain();
 		if(n <= 0) return true;
-		ByteBuffer buf = (chunk instanceof OctetsStream ?
-		        ByteBuffer.wrap(chunk.array(), ((OctetsStream)chunk).position(), n) :
-		        ByteBuffer.wrap(chunk.array(), 0, n));
+		ByteBuffer buf = ByteBuffer.wrap(chunk.array(), chunk.position(), n);
 		return NetManager.write(session, buf) != null;
 	}
 

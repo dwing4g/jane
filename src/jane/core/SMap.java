@@ -378,7 +378,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		@Override
 		public boolean remove(Object o)
 		{
-			return o instanceof Entry ? SMap.this.remove(((Entry<K, ?>)o).getKey()) != null : false;
+			return o instanceof Entry && SMap.this.remove(((Entry<K, ?>)o).getKey()) != null;
 		}
 
 		@Override

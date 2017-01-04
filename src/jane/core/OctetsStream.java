@@ -299,7 +299,7 @@ public class OctetsStream extends Octets
 
 	public OctetsStream marshal(Character x)
 	{
-		return x != null ? marshal((int)x.charValue()) : marshal1((byte)0);
+		return x != null ? marshal((int)x) : marshal1((byte)0);
 	}
 
 	public OctetsStream marshal(byte x)

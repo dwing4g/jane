@@ -409,7 +409,7 @@ public final class Util
 			clsMap.put(long.class, Long.class);
 			clsMap.put(float.class, Float.class);
 			clsMap.put(double.class, Double.class);
-			for(int i = 0, n = nField; i < n; ++i)
+			for(int i = 0; i < nField; ++i)
 			{
 				Field field = fields[i];
 				if((field.getModifiers() & (Modifier.STATIC | Modifier.FINAL)) == 0)
@@ -424,7 +424,7 @@ public final class Util
 			{
 				elem = (Element)nl.item(i);
 				String str = (keyStr.isEmpty() ? null : elem.getAttribute(keyStr).trim());
-				K key = null;
+				K key;
 				try
 				{
 					key = (conKey != null && str != null ? conKey.newInstance(str) : (K)Integer.valueOf(i + 1));

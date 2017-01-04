@@ -315,7 +315,7 @@ public abstract class Procedure implements Runnable
 	/**
 	 * 判断lockId是否已被获取到锁
 	 */
-	public static final boolean isLocked(int lockId)
+	public static boolean isLocked(int lockId)
 	{
 		return getLock(lockId & _lockMask).isLocked();
 	}
@@ -323,7 +323,7 @@ public abstract class Procedure implements Runnable
 	/**
 	 * 判断lockId是否已被当前线程获取到锁
 	 */
-	public static final boolean isLockedByCurrentThread(int lockId)
+	public static boolean isLockedByCurrentThread(int lockId)
 	{
 		return getLock(lockId & _lockMask).isHeldByCurrentThread();
 	}
