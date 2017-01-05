@@ -9,7 +9,7 @@ Feature:
  * embedded database based on LevelDB with extremely fast in-memory cache
  * single process with multi-thread concurrent network and database
  * optimized for high performance (1 million TPS on one core of 3GHz PC)
- * simple implement but powerful (only 14K+ lines of core source code)
+ * simple implement but powerful (only 13K+ lines of core source code)
  * easy to understand and use with code generation for Java bean code
 
 Todo:
@@ -47,6 +47,11 @@ License:
  * https://code.google.com/p/jane-framework/
 
 参考的开源库:
+ * 基础库:
+  * com.googlecode.concurrentlinkedhashmap: https://github.com/ben-manes/concurrentlinkedhashmap
+  * kryo:           https://github.com/EsotericSoftware/kryo
+  * gnu.trove.map:  http://trove.starlight-systems.com/
+  * org.cliffc.high_scale_lib: http://sourceforge.net/projects/high-scale-lib/
  * 日志库:
   * slf4j:          http://www.slf4j.org/
   * log4j:          http://logging.apache.org/log4j/2.x/
@@ -69,11 +74,6 @@ License:
   * perst:          http://www.mcobject.com/perst/
  * 脚本库:
   * luaj:           http://luaj.org/luaj/README.html
- * 基础库:
-  * com.googlecode.concurrentlinkedhashmap: https://github.com/ben-manes/concurrentlinkedhashmap
-  * kryo:           https://github.com/EsotericSoftware/kryo
-  * gnu.trove.map:  http://trove.starlight-systems.com/
-  * org.cliffc.high_scale_lib: http://sourceforge.net/projects/high-scale-lib/
 
 相关软件:
  * JDK:             http://www.oracle.com/technetwork/java/javase/downloads/index.html
