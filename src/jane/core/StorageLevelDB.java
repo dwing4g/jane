@@ -14,12 +14,12 @@ import java.util.Map.Entry;
  */
 public final class StorageLevelDB implements Storage
 {
-	private static final StorageLevelDB     _instance = new StorageLevelDB();
-	private static final OctetsStream       _deleted  = OctetsStream.wrap(Octets.EMPTY); // 表示已删除的值
-	private final Map<Octets, OctetsStream> _writeBuf = Util.newConcurrentHashMap();    // 提交过程中临时的写缓冲区
-	private long                            _db;                                        // LevelDB的数据库对象句柄
-	private File                            _dbFile;                                    // 当前数据库的文件
-	private volatile boolean                _writing;                                   // 是否正在执行写操作
+	private static final StorageLevelDB		_instance = new StorageLevelDB();
+	private static final OctetsStream		_deleted  = OctetsStream.wrap(Octets.EMPTY); // 表示已删除的值
+	private final Map<Octets, OctetsStream>	_writeBuf = Util.newConcurrentHashMap();	 // 提交过程中临时的写缓冲区
+	private long							_db;										 // LevelDB的数据库对象句柄
+	private File							_dbFile;									 // 当前数据库的文件
+	private volatile boolean				_writing;									 // 是否正在执行写操作
 
 	static
 	{
@@ -50,12 +50,12 @@ public final class StorageLevelDB implements Storage
 
 	private final class TableLong<V extends Bean<V>> implements Storage.TableLong<V>
 	{
-		private final String       _tableName;
-		private final int          _tableId;
-		private final int          _tableIdLen;
-		private final byte[]       _tableIdBuf     = new byte[5];
+		private final String	   _tableName;
+		private final int		   _tableId;
+		private final int		   _tableIdLen;
+		private final byte[]	   _tableIdBuf	   = new byte[5];
 		private final OctetsStream _tableIdCounter = new OctetsStream(6);
-		private final V            _stubV;
+		private final V			   _stubV;
 
 		public TableLong(int tableId, String tableName, V stubV)
 		{
@@ -104,7 +104,7 @@ public final class StorageLevelDB implements Storage
 				if(format != 0)
 				{
 					throw new IllegalStateException("unknown record value format(" + format + ") in table("
-					        + _tableName + ',' + _tableId + "),key=(" + k + ')');
+							+ _tableName + ',' + _tableId + "),key=(" + k + ')');
 				}
 				v.unmarshal(val);
 			}
@@ -202,18 +202,18 @@ public final class StorageLevelDB implements Storage
 		public void setIdCounter(long v)
 		{
 			if(v != getIdCounter())
-			    _writeBuf.put(_tableIdCounter, new OctetsStream(9).marshal(v));
+				_writeBuf.put(_tableIdCounter, new OctetsStream(9).marshal(v));
 		}
 	}
 
 	private abstract class TableBase<K, V extends Bean<V>> implements Storage.Table<K, V>
 	{
-		protected final String       _tableName;
-		protected final int          _tableId;
-		protected final int          _tableIdLen;
-		protected final byte[]       _tableIdBuf  = new byte[5];
+		protected final String		 _tableName;
+		protected final int			 _tableId;
+		protected final int			 _tableIdLen;
+		protected final byte[]		 _tableIdBuf  = new byte[5];
 		protected final OctetsStream _tableIdNext = new OctetsStream(5);
-		protected final V            _stubV;
+		protected final V			 _stubV;
 
 		protected TableBase(int tableId, String tableName, V stubV)
 		{
@@ -343,7 +343,7 @@ public final class StorageLevelDB implements Storage
 				if(format != 0)
 				{
 					throw new IllegalStateException("unknown record value format(" + format + ") in table("
-					        + _tableName + ',' + _tableId + "),key=(" + k + ')');
+							+ _tableName + ',' + _tableId + "),key=(" + k + ')');
 				}
 				v.unmarshal(val);
 			}
@@ -395,7 +395,7 @@ public final class StorageLevelDB implements Storage
 				if(format != 0)
 				{
 					throw new IllegalStateException("unknown record value format(" + format + ") in table("
-					        + _tableName + ',' + _tableId + "),key=(" + k + ')');
+							+ _tableName + ',' + _tableId + "),key=(" + k + ')');
 				}
 				v.unmarshal(val);
 			}
@@ -448,7 +448,7 @@ public final class StorageLevelDB implements Storage
 				if(format != 0)
 				{
 					throw new IllegalStateException("unknown record value format(" + format + ") in table("
-					        + _tableName + ',' + _tableId + "),key=" + k);
+							+ _tableName + ',' + _tableId + "),key=" + k);
 				}
 				v.unmarshal(val);
 			}
@@ -511,11 +511,11 @@ public final class StorageLevelDB implements Storage
 	public <K, V extends Bean<V>> Storage.Table<K, V> openTable(int tableId, String tableName, Object stubK, V stubV)
 	{
 		if(stubK instanceof Octets)
-		    return (Storage.Table<K, V>)new TableOctets<>(tableId, tableName, stubV);
+			return (Storage.Table<K, V>)new TableOctets<>(tableId, tableName, stubV);
 		if(stubK instanceof String)
-		    return (Storage.Table<K, V>)new TableString<>(tableId, tableName, stubV);
+			return (Storage.Table<K, V>)new TableString<>(tableId, tableName, stubV);
 		if(stubK instanceof Bean)
-		    return new TableBean<>(tableId, tableName, (K)stubK, stubV);
+			return new TableBean<>(tableId, tableName, (K)stubK, stubV);
 		throw new UnsupportedOperationException("unsupported key type: " + (stubK != null ? stubK.getClass().getName() : "null") + " for table: " + tableName);
 	}
 
@@ -584,7 +584,7 @@ public final class StorageLevelDB implements Storage
 		dstPath += '.' + DBManager.instance().getBackupDateStr(backupDate);
 		File path = new File(dstPath).getParentFile();
 		if(path != null && !path.isDirectory() && !path.mkdirs())
-		    throw new IOException("create db backup path failed: " + dstPath);
+			throw new IOException("create db backup path failed: " + dstPath);
 		return leveldb_backup(_db, _dbFile.getAbsolutePath(), dstPath, DBManager.instance().getBackupDateStr(new Date(time)));
 	}
 }

@@ -7,10 +7,10 @@ package jane.core;
  */
 public final class RawBean extends Bean<RawBean>
 {
-	private static final long   serialVersionUID = -5813606138942352066L;
-	public static final RawBean BEAN_STUB        = new RawBean();
-	private int                 _type;                                   // 未知的bean类型
-	private final Octets        _data;                                   // 未知的bean数据
+	private static final long	serialVersionUID = -5813606138942352066L;
+	public static final RawBean	BEAN_STUB		 = new RawBean();
+	private int					_type;									 // 未知的bean类型
+	private final Octets		_data;									 // 未知的bean数据
 
 	public RawBean()
 	{

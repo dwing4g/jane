@@ -21,8 +21,8 @@ public final class RC4Filter extends IoFilterAdapter
 {
 	private final byte[] _ctxI = new byte[256];
 	private final byte[] _ctxO = new byte[256];
-	private int          _idx1I, _idx2I;
-	private int          _idx1O, _idx2O;
+	private int			 _idx1I, _idx2I;
+	private int			 _idx1O, _idx2O;
 
 	private static void setKey(byte[] ctx, byte[] key, int len)
 	{

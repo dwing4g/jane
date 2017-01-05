@@ -26,18 +26,18 @@ import jane.core.SContext.Safe;
  */
 public final class DBManager
 {
-	private static final DBManager                             _instance          = new DBManager();
-	private final SimpleDateFormat                             _sdf               = new SimpleDateFormat("yy-MM-dd-HH-mm-ss"); // 备份文件后缀名的时间格式
-	private final ScheduledExecutorService                     _commitThread;                                                 // 处理数据提交的线程
-	private final ThreadPoolExecutor                           _procThreads;                                                  // 事务线程池
-	private final ConcurrentMap<Object, ArrayDeque<Procedure>> _qmap              = Util.newConcurrentHashMap();              // 当前sid队列的数量
-	private final AtomicLong                                   _procCount         = new AtomicLong();                         // 绑定过sid的在队列中未运行的事务数量
-	private final AtomicLong                                   _modCount          = new AtomicLong();                         // 当前缓存修改的记录数
-	private final CommitTask                                   _commitTask        = new CommitTask();                         // 数据提交的任务
-	private final ArrayList<Runnable>                          _shutdownCallbacks = new ArrayList<>();                        // 退出时的用户回调列表
-	private volatile Storage                                   _storage;                                                      // 存储引擎
-	private volatile ScheduledFuture<?>                        _commitFuture;                                                 // 数据提交的结果
-	private volatile boolean                                   _exit;                                                         // 是否在退出状态(已经执行了ShutdownHook)
+	private static final DBManager							   _instance		  = new DBManager();
+	private final SimpleDateFormat							   _sdf				  = new SimpleDateFormat("yy-MM-dd-HH-mm-ss"); // 备份文件后缀名的时间格式
+	private final ScheduledExecutorService					   _commitThread;												   // 处理数据提交的线程
+	private final ThreadPoolExecutor						   _procThreads;												   // 事务线程池
+	private final ConcurrentMap<Object, ArrayDeque<Procedure>> _qmap			  = Util.newConcurrentHashMap();			   // 当前sid队列的数量
+	private final AtomicLong								   _procCount		  = new AtomicLong();						   // 绑定过sid的在队列中未运行的事务数量
+	private final AtomicLong								   _modCount		  = new AtomicLong();						   // 当前缓存修改的记录数
+	private final CommitTask								   _commitTask		  = new CommitTask();						   // 数据提交的任务
+	private final ArrayList<Runnable>						   _shutdownCallbacks = new ArrayList<>();						   // 退出时的用户回调列表
+	private volatile Storage								   _storage;													   // 存储引擎
+	private volatile ScheduledFuture<?>						   _commitFuture;												   // 数据提交的结果
+	private volatile boolean								   _exit;														   // 是否在退出状态(已经执行了ShutdownHook)
 
 	{
 		_commitThread = Executors.newSingleThreadScheduledExecutor(new ThreadFactory()
@@ -73,14 +73,14 @@ public final class DBManager
 	 */
 	private final class CommitTask implements Runnable
 	{
-		private final long[]  _counts       = new long[3];                               // 3个统计数量值,分别是统计前数量,统计后数量,处理过的数量
-		private final long    _modCountMax  = Const.dbCommitModCount;                    // 数据库记录的修改数量触发提交的阙值
-		private final long    _resaveCount  = Const.dbCommitResaveCount;                 // 保存一轮记录后需要重试的记录数阙值
-		private final long    _backupBase;                                               // 备份数据的基准时间
-		private final long    _commitPeriod = Const.dbCommitPeriod * 1000;               // 提交数据库的周期
-		private final long    _backupPeriod = Const.dbBackupPeriod * 1000;               // 备份数据库的周期
-		private volatile long _commitTime   = System.currentTimeMillis() + _commitPeriod; // 下次提交数据库的时间
-		private volatile long _backupTime;                                               // 下次备份数据库的时间
+		private final long[]  _counts		= new long[3];								  // 3个统计数量值,分别是统计前数量,统计后数量,处理过的数量
+		private final long	  _modCountMax	= Const.dbCommitModCount;					  // 数据库记录的修改数量触发提交的阙值
+		private final long	  _resaveCount	= Const.dbCommitResaveCount;				  // 保存一轮记录后需要重试的记录数阙值
+		private final long	  _backupBase;												  // 备份数据的基准时间
+		private final long	  _commitPeriod	= Const.dbCommitPeriod * 1000;				  // 提交数据库的周期
+		private final long	  _backupPeriod	= Const.dbBackupPeriod * 1000;				  // 备份数据库的周期
+		private volatile long _commitTime	= System.currentTimeMillis() + _commitPeriod; // 下次提交数据库的时间
+		private volatile long _backupTime;												  // 下次备份数据库的时间
 
 		private CommitTask()
 		{
@@ -183,7 +183,7 @@ public final class DBManager
 								timeStr = _sdf.format(new Date());
 							}
 							long r = _storage.backup(new File(Const.dbBackupPath, new File(Const.dbFilename).getName() +
-							        '.' + _storage.getFileSuffix() + '.' + timeStr));
+									'.' + _storage.getFileSuffix() + '.' + timeStr));
 							if(r >= 0)
 								Log.log.info("db-commit backup end. ({} bytes) ({} ms)", r, System.currentTimeMillis() - t);
 							else
@@ -278,7 +278,7 @@ public final class DBManager
 		File dbfile = new File(Const.dbFilename + '.' + sto.getFileSuffix());
 		File dbpath = dbfile.getParentFile();
 		if(dbpath != null && !dbpath.isDirectory() && !dbpath.mkdirs())
-		    throw new IOException("create db path failed: " + Const.dbFilename);
+			throw new IOException("create db path failed: " + Const.dbFilename);
 		_storage = sto;
 		_storage.openDB(dbfile);
 		Runtime.getRuntime().addShutdownHook(new Thread("DBManager.JVMShutDown")
@@ -355,7 +355,7 @@ public final class DBManager
 	{
 		if(_storage == null) throw new IllegalArgumentException("call DBManager.startup before open any table");
 		tableName = (tableName != null && !(tableName = tableName.trim()).isEmpty() ? tableName : '[' + String.valueOf(tableId) + ']');
-		Storage.Table<K, V> stoTable = (stubV != null ? _storage.<K, V>openTable(tableId, tableName, stubK, stubV) : null);
+		Storage.Table<K, V> stoTable = (stubV != null ? _storage.<K, V> openTable(tableId, tableName, stubK, stubV) : null);
 		return new Table<>(tableId, tableName, stoTable, lockName, cacheSize, stubV);
 	}
 
@@ -386,7 +386,7 @@ public final class DBManager
 	public synchronized void startCommitThread()
 	{
 		if(_commitFuture == null)
-		    _commitFuture = _commitThread.scheduleWithFixedDelay(_commitTask, 1, 1, TimeUnit.SECONDS);
+			_commitFuture = _commitThread.scheduleWithFixedDelay(_commitTask, 1, 1, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -591,8 +591,8 @@ public final class DBManager
 				if(q != _qmap.get(sid)) continue;
 				int qs = q.size();
 				if(qs >= Const.maxSessionProcedure)
-				    throw new IllegalStateException("procedure overflow: procedure=" + p.getClass().getName() + ",sid=" + sid +
-				            ",size=" + q.size() + ",maxsize=" + Const.maxSessionProcedure);
+					throw new IllegalStateException("procedure overflow: procedure=" + p.getClass().getName() + ",sid=" + sid +
+							",size=" + q.size() + ",maxsize=" + Const.maxSessionProcedure);
 				q.add(p);
 				_procCount.incrementAndGet();
 				if(qs > 0) return;

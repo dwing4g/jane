@@ -10,14 +10,14 @@ import org.apache.mina.core.session.IoSession;
  */
 public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>> extends Bean<B>
 {
-	private static final long             serialVersionUID = -1390859818193499717L;
-	private static final AtomicInteger    RPCID            = new AtomicInteger();                 // RPC的ID分配器
-	private transient int                 _rpcId           = RPCID.getAndIncrement() & 0x7fffffff; // RPC的ID. 用于匹配请求和回复的RPC
-	private transient int                 _reqTime;                                               // 发送请求的时间戳(秒)
-	private transient IoSession           _session;                                               // 请求时绑定的session
-	private transient RpcHandler<A, R, B> _onClient;                                              // 回复的回调
-	protected A                           _arg;                                                   // 请求bean
-	protected R                           _res;                                                   // 回复bean
+	private static final long			  serialVersionUID = -1390859818193499717L;
+	private static final AtomicInteger	  RPCID			   = new AtomicInteger();				   // RPC的ID分配器
+	private transient int				  _rpcId		   = RPCID.getAndIncrement() & 0x7fffffff; // RPC的ID. 用于匹配请求和回复的RPC
+	private transient int				  _reqTime;												   // 发送请求的时间戳(秒)
+	private transient IoSession			  _session;												   // 请求时绑定的session
+	private transient RpcHandler<A, R, B> _onClient;											   // 回复的回调
+	protected A							  _arg;													   // 请求bean
+	protected R							  _res;													   // 回复bean
 
 	int getReqTime()
 	{
@@ -160,9 +160,7 @@ public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>, B extends Rp
 	public OctetsStream marshal(OctetsStream os)
 	{
 		os.marshal(_rpcId);
-		return _rpcId >= 0 ?
-		        os.marshalProtocol(_arg != null ? _arg : (_arg = createArg())) :
-		        os.marshalProtocol(_res != null ? _res : (_res = createRes()));
+		return _rpcId >= 0 ? os.marshalProtocol(_arg != null ? _arg : (_arg = createArg())) : os.marshalProtocol(_res != null ? _res : (_res = createRes()));
 	}
 
 	@Override
@@ -198,8 +196,8 @@ public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>, B extends Rp
 		if(!(o instanceof RpcBean)) return false;
 		RpcBean<?, ?, ?> b = (RpcBean<?, ?, ?>)o;
 		return (_arg == b._arg || _arg != null && _arg.equals(b._arg)) &&
-		        (_res == b._res || _res != null && _res.equals(b._res)) &&
-		        getClass() == o.getClass();
+				(_res == b._res || _res != null && _res.equals(b._res)) &&
+				getClass() == o.getClass();
 	}
 
 	@Override

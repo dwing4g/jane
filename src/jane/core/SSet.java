@@ -23,11 +23,11 @@ public class SSet<V, S> implements Set<S>, Cloneable
 		void onChanged(Rec rec, Set<V> added, Set<V> removed);
 	}
 
-	protected final Safe<?> _owner;
-	protected final Set<V>  _set;
-	private SContext        _sCtx;
-	protected Set<V>        _added;
-	protected Set<V>        _removed;
+	protected final Safe<?>	_owner;
+	protected final Set<V>	_set;
+	private SContext		_sCtx;
+	protected Set<V>		_added;
+	protected Set<V>		_removed;
 
 	public SSet(Safe<?> owner, Set<V> set, final SSetListener<V> listener)
 	{
@@ -46,7 +46,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 					public void run()
 					{
 						if(!_added.isEmpty() || !_removed.isEmpty())
-						    listener.onChanged(rec, _added, _removed);
+							listener.onChanged(rec, _added, _removed);
 					}
 				});
 			}
@@ -256,7 +256,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	public final class SIterator implements Iterator<S>
 	{
 		private final Iterator<V> _it;
-		private V                 _cur;
+		private V				  _cur;
 
 		protected SIterator(Iterator<V> it)
 		{
@@ -322,7 +322,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public Set<V> clone()
+	public final Set<V> clone()
 	{
 		try
 		{

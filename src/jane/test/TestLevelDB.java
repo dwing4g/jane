@@ -8,9 +8,9 @@ import jane.core.StorageLevelDB;
 
 public final class TestLevelDB
 {
-	private static final OctetsStream              _deleted  = OctetsStream.wrap(Octets.EMPTY); // 表示已删除的值
-	private static final Map<Octets, OctetsStream> _writebuf = new ConcurrentHashMap<>();      // 提交过程中临时的写缓冲区
-	private static long                            _db;
+	private static final OctetsStream			   _deleted	 = OctetsStream.wrap(Octets.EMPTY);	// 表示已删除的值
+	private static final Map<Octets, OctetsStream> _writebuf = new ConcurrentHashMap<>();		// 提交过程中临时的写缓冲区
+	private static long							   _db;
 
 	private static OctetsStream dbget(Octets k)
 	{

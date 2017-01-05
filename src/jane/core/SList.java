@@ -14,7 +14,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 {
 	private final Safe<?> _owner;
 	private final List<V> _list;
-	private SContext      _sCtx;
+	private SContext	  _sCtx;
 
 	public SList(Safe<?> owner, List<V> list)
 	{
@@ -327,8 +327,8 @@ public final class SList<V, S> implements List<S>, Cloneable
 	public final class SIterator implements Iterator<S>
 	{
 		private final Iterator<V> _it  = _list.iterator();
-		private V                 _cur;
-		private int               _idx = -1;
+		private V				  _cur;
+		private int				  _idx = -1;
 
 		private SIterator()
 		{
@@ -361,7 +361,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 			_it.remove();
 			ctx.addOnRollback(new Runnable()
 			{
-				private final V   _v = _cur;
+				private final V	  _v = _cur;
 				private final int _i = _idx;
 
 				@Override
@@ -377,9 +377,9 @@ public final class SList<V, S> implements List<S>, Cloneable
 	public final class SListIterator implements ListIterator<S>
 	{
 		private final ListIterator<V> _it;
-		private V                     _cur;
-		private int                   _idx;
-		private int                   _idxOff;
+		private V					  _cur;
+		private int					  _idx;
+		private int					  _idxOff;
 
 		private SListIterator(int idx)
 		{
@@ -448,7 +448,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 			_it.remove();
 			ctx.addOnRollback(new Runnable()
 			{
-				private final V   _v = _cur;
+				private final V	  _v = _cur;
 				private final int _i = _idx + _idxOff;
 
 				@Override
@@ -466,7 +466,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 			_it.set(v);
 			ctx.addOnRollback(new Runnable()
 			{
-				private final V   _v = _cur;
+				private final V	  _v = _cur;
 				private final int _i = _idx + _idxOff;
 
 				@Override

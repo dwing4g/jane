@@ -21,7 +21,7 @@ public final class TestDBBenchmark
 		if(args.length > 0)
 		{
 			if("ld".equals(args[0]))
-			    sto = StorageLevelDB.instance();
+				sto = StorageLevelDB.instance();
 		}
 		if(sto == null) sto = StorageLevelDB.instance();
 		final int count = (args.length > 1 ? ("u".equals(args[1]) ? Integer.MAX_VALUE : Integer.parseInt(args[1])) : 8);

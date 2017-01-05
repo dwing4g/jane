@@ -16,20 +16,20 @@ import java.util.Random;
 public final class IntMap<V> implements Cloneable
 {
 	// private static final int PRIME1 = 0xbe1f14b1;
-	private static final int    PRIME2  = 0xb4b82e39;
-	private static final int    PRIME3  = 0xced1c241;
-	public static final int     EMPTY   = 0;
-	private static final Random _random = new Random();
-	private int                 _size;
-	private int[]               _keyTable;
-	private V[]                 _valueTable;
-	private int                 _capacity, _stashSize;
-	private V                   _zeroValue;
-	private boolean             _hasZeroValue;
-	private final float         _loadFactor;
-	private int                 _hashShift, _mask, _threshold;
-	private int                 _stashCapacity;
-	private int                 _pushIterations;
+	private static final int	PRIME2	= 0xb4b82e39;
+	private static final int	PRIME3	= 0xced1c241;
+	public static final int		EMPTY	= 0;
+	private static final Random	_random	= new Random();
+	private int					_size;
+	private int[]				_keyTable;
+	private V[]					_valueTable;
+	private int					_capacity, _stashSize;
+	private V					_zeroValue;
+	private boolean				_hasZeroValue;
+	private final float			_loadFactor;
+	private int					_hashShift, _mask, _threshold;
+	private int					_stashCapacity;
+	private int					_pushIterations;
 
 	public static int nextPowerOfTwo(int value)
 	{
@@ -646,7 +646,7 @@ public final class IntMap<V> implements Cloneable
 		{
 			int key = kt[--i];
 			if(key != EMPTY)
-			    s.append(',').append(key).append('=').append(vt[i]);
+				s.append(',').append(key).append('=').append(vt[i]);
 		}
 		return s.append('}').toString();
 	}

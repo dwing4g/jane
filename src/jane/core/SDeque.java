@@ -14,7 +14,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 {
 	private final Safe<?>  _owner;
 	private final Deque<V> _deque;
-	private SContext       _sCtx;
+	private SContext	   _sCtx;
 
 	public SDeque(Safe<?> owner, Deque<V> queue)
 	{

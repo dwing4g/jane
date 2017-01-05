@@ -39,10 +39,10 @@ import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
  */
 public final class Util
 {
-	private static final Random  _rand              = new Random();
-	private static final Pattern _patCharset        = Pattern.compile("charset=(\\S+)");
-	private static final int     CONNECTION_TIMEOUT = 15 * 1000;
-	private static final int     BUFFER_SIZE        = 8 * 1024;
+	private static final Random	 _rand				= new Random();
+	private static final Pattern _patCharset		= Pattern.compile("charset=(\\S+)");
+	private static final int	 CONNECTION_TIMEOUT	= 15 * 1000;
+	private static final int	 BUFFER_SIZE		= 8 * 1024;
 
 	public static Random getRand()
 	{
@@ -79,7 +79,7 @@ public final class Util
 	{
 		if(maxCount <= 0) return newConcurrentHashMap();
 		return new ConcurrentLinkedHashMap.Builder<K, V>().concurrencyLevel(Const.dbThreadCount)
-		        .maximumWeightedCapacity(maxCount).initialCapacity(maxCount).build();
+				.maximumWeightedCapacity(maxCount).initialCapacity(maxCount).build();
 	}
 
 	/**
@@ -335,8 +335,8 @@ public final class Util
 	public static final class SundaySearch
 	{
 		private final byte[] _pat;
-		private final int    _patLen;
-		private final int[]  _skip = new int[256];
+		private final int	 _patLen;
+		private final int[]	 _skip = new int[256];
 
 		public SundaySearch(byte[] pat, int patLen)
 		{
@@ -432,7 +432,7 @@ public final class Util
 				catch(Exception e)
 				{
 					throw new IllegalStateException("invalid key in record=" + i + ", str=\"" + str +
-					        "\" in " + xmlFile, e);
+							"\" in " + xmlFile, e);
 				}
 				B bean = beanCls.newInstance();
 				for(int j = 0; j < nField; ++j)
@@ -464,8 +464,8 @@ public final class Util
 						catch(Exception e)
 						{
 							throw new IllegalStateException("invalid data in key:" + keyStr + "=\"" + key +
-							        "\", field=\"" + fieldName + "\", str=\"" + fieldValue + "\", type=\"" +
-							        field.getType().getName() + "\" in " + xmlFile, e);
+									"\", field=\"" + fieldName + "\", str=\"" + fieldValue + "\", type=\"" +
+									field.getType().getName() + "\" in " + xmlFile, e);
 						}
 					}
 				}
@@ -481,12 +481,11 @@ public final class Util
 						if(++j < nAttr)
 							sb.append(',');
 						else
-							throw new IllegalStateException(sb.append("\" in key=\"").append(key).
-							        append("\" in ").append(xmlFile).toString());
+							throw new IllegalStateException(sb.append("\" in key=\"").append(key).append("\" in ").append(xmlFile).toString());
 					}
 				}
 				if(beanMap.put(key, bean) != null)
-				    throw new IllegalStateException("duplicate key:" + keyStr + "=\"" + key + "\" in " + xmlFile);
+					throw new IllegalStateException("duplicate key:" + keyStr + "=\"" + key + "\" in " + xmlFile);
 			}
 		}
 	}
@@ -542,7 +541,7 @@ public final class Util
 				{
 					String cs = mat.group(1);
 					if(Charset.isSupported(cs))
-					    encoding = cs;
+						encoding = cs;
 				}
 			}
 

@@ -15,7 +15,7 @@ import jane.core.Storage.WalkHandler;
 public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableBase<V>
 {
 	private final Storage.Table<K, V> _stoTable; // 存储引擎的表对象
-	private final Map<K, V>           _cache;   // 读缓存. 有大小限制,溢出自动清理
+	private final Map<K, V>			  _cache;	 // 读缓存. 有大小限制,溢出自动清理
 	private final ConcurrentMap<K, V> _cacheMod; // 写缓存. 不会溢出,保存到数据库存储引擎后清理
 
 	/**
@@ -32,7 +32,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 		_stoTable = stoTable;
 		if(cacheSize < 1) cacheSize = 1;
 		_cache = Util.newLRUConcurrentHashMap(cacheSize);
-		_cacheMod = (stoTable != null ? Util.<K, V>newConcurrentHashMap() : null);
+		_cacheMod = (stoTable != null ? Util.<K, V> newConcurrentHashMap() : null);
 		if(stoTable != null) _tables.add(this);
 	}
 
@@ -187,7 +187,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	public S get(K k)
 	{
 		if(!Procedure.isLockedByCurrentThread(lockId(k)))
-		    throw new IllegalAccessError("get unlocked record! table=" + _tableName + ",key=" + k);
+			throw new IllegalAccessError("get unlocked record! table=" + _tableName + ",key=" + k);
 		return getNoLock(k);
 	}
 
@@ -271,7 +271,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 			{
 				_cacheMod.put(k, vOld);
 				throw new IllegalStateException("modify unmatched record: t=" + _tableName +
-				        ",k=" + k + ",vOld=" + vOld + ",v=" + v);
+						",k=" + k + ",vOld=" + vOld + ",v=" + v);
 			}
 		}
 	}
@@ -330,7 +330,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 				else
 					_cache.remove(k);
 				throw new IllegalStateException("put shared record: t=" + _tableName +
-				        ",k=" + k + ",vOld=" + vOld + ",v=" + v);
+						",k=" + k + ",vOld=" + vOld + ",v=" + v);
 			}
 		}
 	}
@@ -343,9 +343,9 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 		final V vOld = getNoCacheUnsafe(k);
 		if(vOld == v) return;
 		if(v.stored())
-		    throw new IllegalStateException("put shared record: t=" + _tableName + ",k=" + k + ",v=" + v);
+			throw new IllegalStateException("put shared record: t=" + _tableName + ",k=" + k + ",v=" + v);
 		if(!Procedure.isLockedByCurrentThread(lockId(k)))
-		    throw new IllegalAccessError("put unlocked record! table=" + _tableName + ",key=" + k);
+			throw new IllegalAccessError("put unlocked record! table=" + _tableName + ",key=" + k);
 		SContext.current().addOnRollbackDirty(new Runnable()
 		{
 			@Override
@@ -380,7 +380,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	{
 		_cache.remove(k);
 		if(_cacheMod != null && _cacheMod.put(k, _deleted) == null)
-		    DBManager.instance().incModCount();
+			DBManager.instance().incModCount();
 	}
 
 	/**
@@ -391,7 +391,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 		final V vOld = getNoCacheUnsafe(k);
 		if(vOld == null) return;
 		if(!Procedure.isLockedByCurrentThread(lockId(k)))
-		    throw new IllegalAccessError("remove unlocked record! table=" + _tableName + ",key=" + k);
+			throw new IllegalAccessError("remove unlocked record! table=" + _tableName + ",key=" + k);
 		SContext.current().addOnRollbackDirty(new Runnable()
 		{
 			@Override
@@ -432,7 +432,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	public boolean walk(WalkHandler<K> handler, K from, K to, boolean inclusive, boolean reverse)
 	{
 		if(_stoTable != null)
-		    return _stoTable.walk(handler, from, to, inclusive, reverse);
+			return _stoTable.walk(handler, from, to, inclusive, reverse);
 		return walkCache(handler);
 	}
 

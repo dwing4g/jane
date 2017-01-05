@@ -7,8 +7,8 @@ import java.lang.reflect.Field;
  */
 public abstract class SBase implements Runnable
 {
-	protected final Bean<?> _bean;
-	protected final Field   _field;
+	protected final Bean<?>	_bean;
+	protected final Field	_field;
 
 	protected SBase(Bean<?> b, Field f)
 	{

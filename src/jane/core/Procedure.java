@@ -28,22 +28,22 @@ public abstract class Procedure implements Runnable
 	 */
 	private static final class Context
 	{
-		private final ReentrantLock[] locks = new ReentrantLock[Const.maxLockPerProcedure]; // 当前线程已经加过的锁
-		private volatile int          lockCount;                                           // 当前进程已经加过锁的数量
-		private volatile Procedure    proc;                                                // 当前运行的事务
+		private final ReentrantLock[] locks	= new ReentrantLock[Const.maxLockPerProcedure];	// 当前线程已经加过的锁
+		private volatile int		  lockCount;											// 当前进程已经加过锁的数量
+		private volatile Procedure	  proc;													// 当前运行的事务
 	}
 
-	private static final ThreadLocal<Context>   _tlProc;                                                // 每个事务线程绑定一个上下文
-	private static final ReentrantLock[]        _lockPool       = new ReentrantLock[Const.lockPoolSize]; // 全局共享的锁池
-	private static final int                    _lockMask       = Const.lockPoolSize - 1;               // 锁池下标的掩码
-	private static final ReentrantReadWriteLock _rwlCommit      = new ReentrantReadWriteLock();         // 用于数据提交的读写锁
-	private static final Map<Thread, Context>   _procThreads    = Util.newProcThreadsMap();             // 当前运行的全部事务线程. 用于判断是否超时
-	private static final AtomicLong             _interruptCount = new AtomicLong();                     // 事务被打断的次数统计;
-	private static ExceptionHandler             _defaultEh;                                             // 默认的全局异常处理
-	private final AtomicReference<Context>      _ctx            = new AtomicReference<>();              // 事务所属的线程上下文. 只在事务运行中有效
-	private SContext                            _sctx;                                                  // 安全修改的上下文
-	private volatile Object                     _sid;                                                   // 事务所属的SessionId
-	private volatile long                       _beginTime;                                             // 事务运行的起始时间. 用于判断是否超时
+	private static final ThreadLocal<Context>	_tlProc;												 // 每个事务线程绑定一个上下文
+	private static final ReentrantLock[]		_lockPool		= new ReentrantLock[Const.lockPoolSize]; // 全局共享的锁池
+	private static final int					_lockMask		= Const.lockPoolSize - 1;				 // 锁池下标的掩码
+	private static final ReentrantReadWriteLock	_rwlCommit		= new ReentrantReadWriteLock();			 // 用于数据提交的读写锁
+	private static final Map<Thread, Context>	_procThreads	= Util.newProcThreadsMap();				 // 当前运行的全部事务线程. 用于判断是否超时
+	private static final AtomicLong				_interruptCount	= new AtomicLong();						 // 事务被打断的次数统计;
+	private static ExceptionHandler				_defaultEh;												 // 默认的全局异常处理
+	private final AtomicReference<Context>		_ctx			= new AtomicReference<>();				 // 事务所属的线程上下文. 只在事务运行中有效
+	private SContext							_sctx;													 // 安全修改的上下文
+	private volatile Object						_sid;													 // 事务所属的SessionId
+	private volatile long						_beginTime;												 // 事务运行的起始时间. 用于判断是否超时
 
 	static
 	{
@@ -54,7 +54,7 @@ public abstract class Procedure implements Runnable
 			{
 				Context ctx = new Context();
 				if(!Const.debug)
-				    _procThreads.put(Thread.currentThread(), ctx);
+					_procThreads.put(Thread.currentThread(), ctx);
 				return ctx;
 			}
 		};
@@ -215,7 +215,7 @@ public abstract class Procedure implements Runnable
 		{
 			Procedure p = ctx.proc;
 			if(p != null)
-			    p._beginTime = Long.MAX_VALUE;
+				p._beginTime = Long.MAX_VALUE;
 		}
 	}
 
@@ -365,7 +365,7 @@ public abstract class Procedure implements Runnable
 		unlock();
 		int n = lockIds.length;
 		if(n > Const.maxLockPerProcedure)
-		    throw new IllegalStateException("lock exceed: " + n + '>' + Const.maxLockPerProcedure);
+			throw new IllegalStateException("lock exceed: " + n + '>' + Const.maxLockPerProcedure);
 		for(int i = 0; i < n; ++i)
 			lockIds[i] &= _lockMask;
 		Arrays.sort(lockIds);
@@ -389,7 +389,7 @@ public abstract class Procedure implements Runnable
 		unlock();
 		int n = lockIds.size();
 		if(n > Const.maxLockPerProcedure)
-		    throw new IllegalStateException("lock exceed: " + n + '>' + Const.maxLockPerProcedure);
+			throw new IllegalStateException("lock exceed: " + n + '>' + Const.maxLockPerProcedure);
 		int[] idxes = new int[n];
 		int i = 0;
 		if(lockIds instanceof ArrayList)
@@ -422,7 +422,7 @@ public abstract class Procedure implements Runnable
 	{
 		int n = lockIds.length;
 		if(n + 4 > Const.maxLockPerProcedure)
-		    throw new IllegalStateException("lock exceed: " + (n + 4) + '>' + Const.maxLockPerProcedure);
+			throw new IllegalStateException("lock exceed: " + (n + 4) + '>' + Const.maxLockPerProcedure);
 		lockIds = Arrays.copyOf(lockIds, n + 4);
 		lockIds[n] = lockId0;
 		lockIds[n + 1] = lockId1;
@@ -716,7 +716,7 @@ public abstract class Procedure implements Runnable
 			try
 			{
 				if(e != undoException())
-				    onException(e);
+					onException(e);
 			}
 			catch(Throwable ex)
 			{
@@ -725,7 +725,7 @@ public abstract class Procedure implements Runnable
 			finally
 			{
 				if(_sctx != null)
-				    _sctx.rollback();
+					_sctx.rollback();
 			}
 			return false;
 		}

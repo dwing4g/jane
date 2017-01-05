@@ -39,7 +39,7 @@ public final class TestCompressor
 		md5.reset();
 		byte[] dstmd5 = md5.digest(src);
 		if(!Arrays.equals(srcmd5, dstmd5))
-		    System.out.println("ERROR: unmatched compressed/decompressed data!");
+			System.out.println("ERROR: unmatched compressed/decompressed data!");
 
 		System.out.println(args[0] + ": " + dstlen + ' ' + tc + '/' + td);
 	}

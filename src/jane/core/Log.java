@@ -21,7 +21,7 @@ public final class Log
 		System.setProperty("line.separator", "\n");
 		String prop = System.getProperty("log4j2.prop");
 		if(prop == null || (prop = prop.trim()).isEmpty())
-		    prop = "log4j2.xml";
+			prop = "log4j2.xml";
 		logCtx = Configurator.initialize("jane", log4j2Prop = prop);
 	}
 
@@ -29,13 +29,13 @@ public final class Log
 	 * public给外面方便写日志
 	 */
 	public static final LoggerContext logCtx;
-	public static final Logger        log      = LogManager.getRootLogger();
-	public static final String        log4j2Prop;
-	public static final boolean       hasTrace = log.isTraceEnabled();
-	public static final boolean       hasDebug = log.isDebugEnabled();
-	public static final boolean       hasInfo  = log.isInfoEnabled();
-	public static final boolean       hasWarn  = log.isWarnEnabled();
-	public static final boolean       hasError = log.isErrorEnabled();
+	public static final Logger		  log	   = LogManager.getRootLogger();
+	public static final String		  log4j2Prop;
+	public static final boolean		  hasTrace = log.isTraceEnabled();
+	public static final boolean		  hasDebug = log.isDebugEnabled();
+	public static final boolean		  hasInfo  = log.isInfoEnabled();
+	public static final boolean		  hasWarn  = log.isWarnEnabled();
+	public static final boolean		  hasError = log.isErrorEnabled();
 
 	static
 	{
@@ -111,7 +111,7 @@ public final class Log
 		for(String s : args)
 		{
 			if(s.startsWith("removeAppender="))
-			    removeAppender(s.substring("removeAppender=".length()));
+				removeAppender(s.substring("removeAppender=".length()));
 		}
 	}
 

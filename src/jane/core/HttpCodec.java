@@ -33,20 +33,20 @@ import org.apache.mina.filter.ssl.SslFilter;
  */
 public final class HttpCodec extends IoFilterAdapter
 {
-	private static final byte[]     HEAD_END_MARK    = "\r\n\r\n".getBytes(Const.stringCharsetUTF8);
-	private static final byte[]     CONT_LEN_MARK    = "\r\nContent-Length: ".getBytes(Const.stringCharsetUTF8);
-	private static final byte[]     CONT_TYPE_MARK   = "\r\nContent-Type: ".getBytes(Const.stringCharsetUTF8);
-	private static final byte[]     COOKIE_MARK      = "\r\nCookie: ".getBytes(Const.stringCharsetUTF8);
-	private static final byte[]     CHUNK_OVER_MARK  = "\r\n".getBytes(Const.stringCharsetUTF8);
-	private static final byte[]     CHUNK_END_MARK   = "0\r\n\r\n".getBytes(Const.stringCharsetUTF8);
-	private static final String     DEF_CONT_CHARSET = "utf-8";
-	private static final Pattern    PATTERN_COOKIE   = Pattern.compile("(\\w+)=(.*?)(; |$)");
-	private static final Pattern    PATTERN_CHARSET  = Pattern.compile("charset=([\\w-]+)");
-	private static final DateFormat _sdf             = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
-	private static volatile String  _dateStr;
-	private static volatile long    _lastSec;
-	private OctetsStream            _buf             = new OctetsStream(1024);                                        // 用于解码器的数据缓存
-	private long                    _bodySize;                                                                        // 当前请求所需的内容大小
+	private static final byte[]		HEAD_END_MARK	 = "\r\n\r\n".getBytes(Const.stringCharsetUTF8);
+	private static final byte[]		CONT_LEN_MARK	 = "\r\nContent-Length: ".getBytes(Const.stringCharsetUTF8);
+	private static final byte[]		CONT_TYPE_MARK	 = "\r\nContent-Type: ".getBytes(Const.stringCharsetUTF8);
+	private static final byte[]		COOKIE_MARK		 = "\r\nCookie: ".getBytes(Const.stringCharsetUTF8);
+	private static final byte[]		CHUNK_OVER_MARK	 = "\r\n".getBytes(Const.stringCharsetUTF8);
+	private static final byte[]		CHUNK_END_MARK	 = "0\r\n\r\n".getBytes(Const.stringCharsetUTF8);
+	private static final String		DEF_CONT_CHARSET = "utf-8";
+	private static final Pattern	PATTERN_COOKIE	 = Pattern.compile("(\\w+)=(.*?)(; |$)");
+	private static final Pattern	PATTERN_CHARSET	 = Pattern.compile("charset=([\\w-]+)");
+	private static final DateFormat	_sdf			 = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
+	private static volatile String	_dateStr;
+	private static volatile long	_lastSec;
+	private OctetsStream			_buf			 = new OctetsStream(1024);										  // 用于解码器的数据缓存
+	private long					_bodySize;																		  // 当前请求所需的内容大小
 
 	/**
 	 * 不带栈信息的解码错误异常
@@ -373,12 +373,12 @@ public final class HttpCodec extends IoFilterAdapter
 		{
 			byte[] bytes = (byte[])message;
 			if(bytes.length > 0)
-			    next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(bytes), writeRequest.getFuture(), null));
+				next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(bytes), writeRequest.getFuture(), null));
 		}
 		else if(message instanceof ByteBuffer)
 		{
 			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(String.format("%x\r\n",
-			        ((ByteBuffer)message).remaining()).getBytes(Const.stringCharsetUTF8)), null, null));
+					((ByteBuffer)message).remaining()).getBytes(Const.stringCharsetUTF8)), null, null));
 			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap((ByteBuffer)message), null, null));
 			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(CHUNK_OVER_MARK), writeRequest.getFuture(), null));
 		}
@@ -389,7 +389,7 @@ public final class HttpCodec extends IoFilterAdapter
 			if(n > 0)
 			{
 				next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(os.array(), os.position(), n),
-				                                                  writeRequest.getFuture(), null));
+						writeRequest.getFuture(), null));
 			}
 		}
 		else if(message instanceof Octets)
@@ -399,7 +399,7 @@ public final class HttpCodec extends IoFilterAdapter
 			if(n > 0)
 			{
 				next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(oct.array(), 0, n),
-				                                                  writeRequest.getFuture(), null));
+						writeRequest.getFuture(), null));
 			}
 		}
 	}
@@ -426,13 +426,13 @@ public final class HttpCodec extends IoFilterAdapter
 					if(p < 0)
 					{
 						if(_buf.size() > Const.maxHttpHeadSize)
-						    throw new DecodeException("http head size overflow: bufsize=" + _buf.size() + ",maxsize=" + Const.maxHttpHeadSize);
+							throw new DecodeException("http head size overflow: bufsize=" + _buf.size() + ",maxsize=" + Const.maxHttpHeadSize);
 						if(!in.hasRemaining()) return;
 						continue begin_;
 					}
 					p += HEAD_END_MARK.length;
 					if(p < 18) // 最小的可能是"GET / HTTP/1.1\r\n\r\n"
-					    throw new DecodeException("http head size too short: headsize=" + p);
+						throw new DecodeException("http head size too short: headsize=" + p);
 					_buf.setPosition(p);
 					_bodySize = getHeadLong(_buf, CONT_LEN_MARK); // 从HTTP头中找到内容长度
 					if(_bodySize > 0) break; // 有内容则跳到下半部分的处理
@@ -443,7 +443,7 @@ public final class HttpCodec extends IoFilterAdapter
 					p = 0;
 				}
 				if(_bodySize > Const.maxHttpBodySize)
-				    throw new DecodeException("http body size overflow: bodysize=" + _bodySize + ",maxsize=" + Const.maxHttpBodySize);
+					throw new DecodeException("http body size overflow: bodysize=" + _bodySize + ",maxsize=" + Const.maxHttpBodySize);
 			}
 			int r = in.remaining();
 			int s = (int)_bodySize - _buf.remain();

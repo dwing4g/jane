@@ -13,13 +13,13 @@ public final class SContext
 {
 	public static abstract class Safe<B extends Bean<B>> implements Comparable<B>, Cloneable
 	{
-		protected final B     _bean;
+		protected final B	  _bean;
 		private final Safe<?> _parent;
-		protected SContext    _sCtx;
-		private Rec           _rec;
-		private Runnable      _onDirty;
-		protected boolean     _fullUndo;
-		private boolean       _dirty;
+		protected SContext	  _sCtx;
+		private Rec			  _rec;
+		private Runnable	  _onDirty;
+		protected boolean	  _fullUndo;
+		private boolean		  _dirty;
 
 		protected Safe(B bean, Safe<?> parent)
 		{
@@ -212,9 +212,9 @@ public final class SContext
 	static final class Record<K, V extends Bean<V>, S extends Safe<V>> implements Rec
 	{
 		private final Table<K, V, S> _table;
-		private final K              _key;
-		private final S              _value;
-		private final int            _lockId;
+		private final K				 _key;
+		private final S				 _value;
+		private final int			 _lockId;
 
 		Record(Table<K, V, S> table, K key, S value)
 		{
@@ -252,16 +252,16 @@ public final class SContext
 		public void checkLock()
 		{
 			if(!Procedure.isLockedByCurrentThread(_lockId))
-			    throw new IllegalAccessError("write unlocked record! table=" + _table.getTableName() + ",key=" + _key);
+				throw new IllegalAccessError("write unlocked record! table=" + _table.getTableName() + ",key=" + _key);
 		}
 	}
 
 	static final class RecordLong<V extends Bean<V>, S extends Safe<V>> implements Rec
 	{
 		private final TableLong<V, S> _table;
-		private final long            _key;
-		private final S               _value;
-		private final int             _lockId;
+		private final long			  _key;
+		private final S				  _value;
+		private final int			  _lockId;
 
 		RecordLong(TableLong<V, S> table, long key, S value)
 		{
@@ -299,16 +299,16 @@ public final class SContext
 		public void checkLock()
 		{
 			if(!Procedure.isLockedByCurrentThread(_lockId))
-			    throw new IllegalAccessError("write unlocked record! table=" + _table.getTableName() + ",key=" + _key);
+				throw new IllegalAccessError("write unlocked record! table=" + _table.getTableName() + ",key=" + _key);
 		}
 	}
 
 	private static final ThreadLocal<SContext> _tlList;
-	private final List<Record<?, ?, ?>>        _records     = new ArrayList<>();
-	private final List<RecordLong<?, ?>>       _recordLongs = new ArrayList<>();
-	private final List<Runnable>               _onRollbacks = new ArrayList<>();
-	private final List<Runnable>               _onCommits   = new ArrayList<>();
-	private boolean                            _hasDirty;
+	private final List<Record<?, ?, ?>>		   _records		= new ArrayList<>();
+	private final List<RecordLong<?, ?>>	   _recordLongs	= new ArrayList<>();
+	private final List<Runnable>			   _onRollbacks	= new ArrayList<>();
+	private final List<Runnable>			   _onCommits	= new ArrayList<>();
+	private boolean							   _hasDirty;
 
 	static
 	{
@@ -353,7 +353,7 @@ public final class SContext
 		for(Record<?, ?, ?> r : _records)
 		{
 			if(r.getKey().equals(key) && r.getTable() == table)
-			    return (S)r.getValue();
+				return (S)r.getValue();
 		}
 		return null;
 	}
@@ -364,7 +364,7 @@ public final class SContext
 		for(RecordLong<?, ?> r : _recordLongs)
 		{
 			if(r.getKeyLong() == key && r.getTable() == table)
-			    return (S)r.getValue();
+				return (S)r.getValue();
 		}
 		return null;
 	}
@@ -375,12 +375,12 @@ public final class SContext
 		for(Record<?, ?, ?> r : _records)
 		{
 			if(r._value.isDirty())
-			    return true;
+				return true;
 		}
 		for(RecordLong<?, ?> r : _recordLongs)
 		{
 			if(r._value.isDirty())
-			    return true;
+				return true;
 		}
 		return false;
 	}
@@ -408,14 +408,14 @@ public final class SContext
 		for(Record<?, ?, ?> r : _records)
 		{
 			if(r._value.isDirtyAndClear())
-			    r._table.modify(r._key, r._value.unsafe());
+				r._table.modify(r._key, r._value.unsafe());
 		}
 		_records.clear();
 
 		for(RecordLong<?, ?> r : _recordLongs)
 		{
 			if(r._value.isDirtyAndClear())
-			    r._table.modify(r._key, r._value.unsafe());
+				r._table.modify(r._key, r._value.unsafe());
 		}
 		_recordLongs.clear();
 

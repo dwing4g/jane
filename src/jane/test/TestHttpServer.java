@@ -116,6 +116,6 @@ public final class TestHttpServer extends NetManager
 	{
 		new TestHttpServer(null, null).startServer(new InetSocketAddress("0.0.0.0", 80));
 		if(new File("server.keystore").exists())
-		    new TestHttpServer("server.keystore", "123456").startServer(new InetSocketAddress("0.0.0.0", 443));
+			new TestHttpServer("server.keystore", "123456").startServer(new InetSocketAddress("0.0.0.0", 443));
 	}
 }

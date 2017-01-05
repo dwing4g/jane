@@ -19,12 +19,12 @@ import jane.core.Storage.WalkHandlerLong;
  */
 public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends TableBase<V>
 {
-	private final Storage.TableLong<V>     _stoTable;                         // 存储引擎的表对象
-	private final LongMap<V>               _cache;                            // 读缓存. 有大小限制,溢出自动清理
-	private final LongConcurrentHashMap<V> _cacheMod;                         // 写缓存. 不会溢出,保存到数据库存储引擎后清理
-	private final AtomicLong               _idCounter    = new AtomicLong();  // 用于自增长ID的统计器, 当前值表示当前表已存在的最大ID值
-	private int                            _autoIdBegin  = Const.autoIdBegin; // 自增长ID的初始值, 可运行时指定
-	private int                            _autoIdStride = Const.autoIdStride; // 自增长ID的分配跨度, 可运行时指定
+	private final Storage.TableLong<V>	   _stoTable;						   // 存储引擎的表对象
+	private final LongMap<V>			   _cache;							   // 读缓存. 有大小限制,溢出自动清理
+	private final LongConcurrentHashMap<V> _cacheMod;						   // 写缓存. 不会溢出,保存到数据库存储引擎后清理
+	private final AtomicLong			   _idCounter	 = new AtomicLong();   // 用于自增长ID的统计器, 当前值表示当前表已存在的最大ID值
+	private int							   _autoIdBegin	 = Const.autoIdBegin;  // 自增长ID的初始值, 可运行时指定
+	private int							   _autoIdStride = Const.autoIdStride; // 自增长ID的分配跨度, 可运行时指定
 
 	/**
 	 * 创建一个数据库表
@@ -59,9 +59,9 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	public void setAutoId(int begin, int stride)
 	{
 		if(begin < 0)
-		    begin = 0;
+			begin = 0;
 		if(stride < 1)
-		    stride = 1;
+			stride = 1;
 		_autoIdBegin = begin;
 		_autoIdStride = stride;
 	}
@@ -229,7 +229,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	public S get(long k)
 	{
 		if(!Procedure.isLockedByCurrentThread(lockId(k)))
-		    throw new IllegalAccessError("get unlocked record! table=" + _tableName + ",key=" + k);
+			throw new IllegalAccessError("get unlocked record! table=" + _tableName + ",key=" + k);
 		return getNoLock(k);
 	}
 
@@ -313,7 +313,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 			{
 				_cacheMod.put(k, vOld);
 				throw new IllegalStateException("modify unmatched record: t=" + _tableName +
-				        ",k=" + k + ",vOld=" + vOld + ",v=" + v);
+						",k=" + k + ",vOld=" + vOld + ",v=" + v);
 			}
 		}
 	}
@@ -372,7 +372,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 				else
 					_cache.remove(k);
 				throw new IllegalStateException("put shared record: t=" + _tableName +
-				        ",k=" + k + ",vOld=" + vOld + ",v=" + v);
+						",k=" + k + ",vOld=" + vOld + ",v=" + v);
 			}
 		}
 	}
@@ -385,9 +385,9 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 		final V vOld = getNoCacheUnsafe(k);
 		if(vOld == v) return;
 		if(v.stored())
-		    throw new IllegalStateException("put shared record: t=" + _tableName + ",k=" + k + ",v=" + v);
+			throw new IllegalStateException("put shared record: t=" + _tableName + ",k=" + k + ",v=" + v);
 		if(!Procedure.isLockedByCurrentThread(lockId(k)))
-		    throw new IllegalAccessError("put unlocked record! table=" + _tableName + ",key=" + k);
+			throw new IllegalAccessError("put unlocked record! table=" + _tableName + ",key=" + k);
 		SContext.current().addOnRollbackDirty(new Runnable()
 		{
 			@Override
@@ -457,7 +457,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	{
 		_cache.remove(k);
 		if(_cacheMod != null && _cacheMod.put(k, _deleted) == null)
-		    DBManager.instance().incModCount();
+			DBManager.instance().incModCount();
 	}
 
 	/**
@@ -468,7 +468,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 		final V vOld = getNoCacheUnsafe(k);
 		if(vOld == null) return;
 		if(!Procedure.isLockedByCurrentThread(lockId(k)))
-		    throw new IllegalAccessError("remove unlocked record! table=" + _tableName + ",key=" + k);
+			throw new IllegalAccessError("remove unlocked record! table=" + _tableName + ",key=" + k);
 		SContext.current().addOnRollbackDirty(new Runnable()
 		{
 			@Override
@@ -509,7 +509,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	public boolean walk(WalkHandlerLong handler, long from, long to, boolean inclusive, boolean reverse)
 	{
 		if(_stoTable != null)
-		    return _stoTable.walk(handler, from, to, inclusive, reverse);
+			return _stoTable.walk(handler, from, to, inclusive, reverse);
 		return walkCache(handler);
 	}
 

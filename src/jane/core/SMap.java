@@ -26,10 +26,10 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		void onChanged(Rec rec, Map<K, V> changed);
 	}
 
-	protected final Safe<?>   _owner;
+	protected final Safe<?>	  _owner;
 	protected final Map<K, V> _map;
-	private SContext          _sCtx;
-	protected Map<K, V>       _changed;
+	private SContext		  _sCtx;
+	protected Map<K, V>		  _changed;
 
 	public SMap(Safe<?> owner, Map<K, V> map, final SMapListener<K, V> listener)
 	{
@@ -47,7 +47,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 					public void run()
 					{
 						if(!_changed.isEmpty())
-						    listener.onChanged(rec, _changed);
+							listener.onChanged(rec, _changed);
 					}
 				});
 			}
@@ -315,8 +315,8 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 
 	public abstract class SIterator<E> implements Iterator<E>
 	{
-		private final Iterator<Entry<K, V>> _it = _map.entrySet().iterator();
-		private SEntry                      _cur;
+		private final Iterator<Entry<K, V>>	_it	= _map.entrySet().iterator();
+		private SEntry						_cur;
 
 		@Override
 		public boolean hasNext()
@@ -514,7 +514,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public Map<K, V> clone()
+	public final Map<K, V> clone()
 	{
 		try
 		{

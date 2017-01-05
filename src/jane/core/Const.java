@@ -12,38 +12,38 @@ import java.util.Properties;
  */
 public final class Const
 {
-	private static final Properties _property         = new Properties();
-	public static final boolean     debug;
-	public static final Charset     stringCharsetISO  = Charset.forName("iso-8859-1");
-	public static final Charset     stringCharsetUTF8 = Charset.forName("utf-8");
-	public static final Charset     stringCharsetGBK  = Charset.forName("gbk");
-	public static final Charset     stringCharset;
-	public static final int         connectTimeout;
-	public static final int         rpcCheckInterval;
-	public static final int         maxRawBeanSize;
-	public static final int         maxHttpHeadSize;
-	public static final int         maxHttpBodySize;
-	public static final String      dbFilename;
-	public static final String      dbBackupPath;
-	public static final int         dbThreadCount;
-	public static final int         maxSessionProcedure;
-	public static final int         maxBatchProceduer;
-	public static final int         maxProceduerRedo;
-	public static final int         lockPoolSize;
-	public static final int         maxLockPerProcedure;
-	public static final int         dbCommitResaveCount;
-	public static final int         dbCommitModCount;
-	public static final long        dbCommitPeriod;
-	public static final String      dbBackupBase;
-	public static final long        dbBackupPeriod;
-	public static final int         procedureTimeout;
-	public static final int         procedureDeadlockTimeout;
-	public static final int         autoIdBegin;
-	public static final int         autoIdStride;
-	public static final String      levelDBNativePath;
-	public static final int         levelDBWriteBufferSize;
-	public static final int         levelDBCacheSize;
-	public static final long        levelDBFullBackupPeriod;
+	private static final Properties	_property		  = new Properties();
+	public static final boolean		debug;
+	public static final Charset		stringCharsetISO  = Charset.forName("iso-8859-1");
+	public static final Charset		stringCharsetUTF8 = Charset.forName("utf-8");
+	public static final Charset		stringCharsetGBK  = Charset.forName("gbk");
+	public static final Charset		stringCharset;
+	public static final int			connectTimeout;
+	public static final int			rpcCheckInterval;
+	public static final int			maxRawBeanSize;
+	public static final int			maxHttpHeadSize;
+	public static final int			maxHttpBodySize;
+	public static final String		dbFilename;
+	public static final String		dbBackupPath;
+	public static final int			dbThreadCount;
+	public static final int			maxSessionProcedure;
+	public static final int			maxBatchProceduer;
+	public static final int			maxProceduerRedo;
+	public static final int			lockPoolSize;
+	public static final int			maxLockPerProcedure;
+	public static final int			dbCommitResaveCount;
+	public static final int			dbCommitModCount;
+	public static final long		dbCommitPeriod;
+	public static final String		dbBackupBase;
+	public static final long		dbBackupPeriod;
+	public static final int			procedureTimeout;
+	public static final int			procedureDeadlockTimeout;
+	public static final int			autoIdBegin;
+	public static final int			autoIdStride;
+	public static final String		levelDBNativePath;
+	public static final int			levelDBWriteBufferSize;
+	public static final int			levelDBCacheSize;
+	public static final long		levelDBFullBackupPeriod;
 
 	static
 	{
@@ -54,7 +54,7 @@ public final class Const
 		{
 			janeProp = System.getProperty("jane.prop");
 			if(janeProp == null || (janeProp = janeProp.trim()).isEmpty())
-			    janeProp = "jane.properties";
+				janeProp = "jane.properties";
 			Log.log.debug("{}: load {}", Const.class.getName(), janeProp);
 			fis = new FileInputStream(janeProp);
 			_property.load(fis);

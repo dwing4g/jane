@@ -74,7 +74,7 @@ public final class XlsxExport
 				if(ze.getName().equals("xl/sharedStrings.xml"))
 					bis.read(xmlStr = new byte[(int)ze.getSize()]);
 				else if(ze.getName().equals(fileSheet))
-				    bis.read(xmlSheet = new byte[(int)ze.getSize()]);
+					bis.read(xmlSheet = new byte[(int)ze.getSize()]);
 			}
 		}
 		if(xmlStr == null) throw new IOException("ERROR: not found xl/sharedStrings.xml");
@@ -111,7 +111,7 @@ public final class XlsxExport
 				if(t.equals("s"))
 					v = strTable[Integer.parseInt(v)];
 				else if(t.equals("b"))
-				    v = (v.equals("1") ? "TRUE" : "FALSE");
+					v = (v.equals("1") ? "TRUE" : "FALSE");
 				if(v != null && !v.isEmpty())
 				{
 					t = elem.getAttribute("r");

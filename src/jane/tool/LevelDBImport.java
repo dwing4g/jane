@@ -15,9 +15,9 @@ import jane.core.StorageLevelDB;
 
 public final class LevelDBImport
 {
-	private static final Pattern      s_patHex  = Pattern.compile("\\\\x(..)");
-	private static final Charset      s_cs88591 = Charset.forName("ISO-8859-1");
-	private static final OctetsStream s_deleted = OctetsStream.wrap(Octets.EMPTY);
+	private static final Pattern	  s_patHex	= Pattern.compile("\\\\x(..)");
+	private static final Charset	  s_cs88591	= Charset.forName("ISO-8859-1");
+	private static final OctetsStream s_deleted	= OctetsStream.wrap(Octets.EMPTY);
 
 	private static OctetsStream str2Oct(String str)
 	{

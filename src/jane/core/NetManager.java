@@ -37,14 +37,14 @@ import org.mapdb.LongMap.LongMapIterator;
  */
 public class NetManager implements IoHandler
 {
-	private static final LongConcurrentHashMap<RpcBean<?, ?, ?>> _rpcs           = new LongConcurrentHashMap<>();                 // 当前管理器等待回复的RPC
-	private static final ScheduledExecutorService                _rpcThread;                                                      // 处理重连及RPC和事务超时的线程
-	private final String                                         _name           = getClass().getName();                          // 当前管理器的名字
-	private Class<? extends IoFilter>                            _pcf            = BeanCodec.class;                               // 协议编码器的类
-	private volatile IntMap<BeanHandler<?>>                      _handlers       = new IntMap<>(0);                               // bean的处理器
-	private volatile NioSocketAcceptor                           _acceptor;                                                       // mina的网络监听器
-	private volatile NioSocketConnector                          _connector;                                                      // mina的网络连接器
-	private int                                                  _processorCount = Runtime.getRuntime().availableProcessors() + 1; // 监听器或连接器的处理器数量
+	private static final LongConcurrentHashMap<RpcBean<?, ?, ?>> _rpcs			 = new LongConcurrentHashMap<>();				   // 当前管理器等待回复的RPC
+	private static final ScheduledExecutorService				 _rpcThread;													   // 处理重连及RPC和事务超时的线程
+	private final String										 _name			 = getClass().getName();						   // 当前管理器的名字
+	private Class<? extends IoFilter>							 _pcf			 = BeanCodec.class;								   // 协议编码器的类
+	private volatile IntMap<BeanHandler<?>>						 _handlers		 = new IntMap<>(0);								   // bean的处理器
+	private volatile NioSocketAcceptor							 _acceptor;														   // mina的网络监听器
+	private volatile NioSocketConnector							 _connector;													   // mina的网络连接器
+	private int													 _processorCount = Runtime.getRuntime().availableProcessors() + 1; // 监听器或连接器的处理器数量
 
 	static
 	{
@@ -517,8 +517,7 @@ public class NetManager implements IoHandler
 	 * @return 如果连接已经失效则返回false且不会有回复和超时的回调, 否则返回true
 	 */
 	@SuppressWarnings("unchecked")
-	public <A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>>
-	        boolean sendRpc(final IoSession session, final RpcBean<A, R, B> rpcBean, RpcHandler<A, R, B> handler)
+	public <A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>> boolean sendRpc(final IoSession session, final RpcBean<A, R, B> rpcBean, RpcHandler<A, R, B> handler)
 	{
 		if(session.isClosing() || rpcBean == null) return false;
 		rpcBean.setRequest();
@@ -544,13 +543,13 @@ public class NetManager implements IoHandler
 	private static final class FutureRPC<R> extends FutureTask<R>
 	{
 		private static final Callable<?> _dummy = new Callable<Object>()
-		                                        {
-			                                        @Override
-			                                        public Object call()
-			                                        {
-				                                        return null;
-			                                        }
-		                                        };
+		{
+			@Override
+			public Object call()
+			{
+				return null;
+			}
+		};
 
 		@SuppressWarnings("unchecked")
 		public FutureRPC()
@@ -571,8 +570,7 @@ public class NetManager implements IoHandler
 	 * 此操作是异步的
 	 * @return 如果连接已经失效则返回null, 如果RPC超时则对返回的Future对象调用get方法时返回null
 	 */
-	public <A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>>
-	        Future<R> sendRpcSync(final IoSession session, final RpcBean<A, R, B> rpcBean)
+	public <A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>> Future<R> sendRpcSync(final IoSession session, final RpcBean<A, R, B> rpcBean)
 	{
 		if(session.isClosing() || rpcBean == null) return null;
 		rpcBean.setRequest();
@@ -612,8 +610,7 @@ public class NetManager implements IoHandler
 	/**
 	 * 同sendRpc, 区别仅仅是在事务成功后发送RPC
 	 */
-	public <A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>>
-	        boolean sendRpcSafe(final IoSession session, final RpcBean<A, R, B> rpcBean, final RpcHandler<A, R, B> handler)
+	public <A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>> boolean sendRpcSafe(final IoSession session, final RpcBean<A, R, B> rpcBean, final RpcHandler<A, R, B> handler)
 	{
 		if(session.isClosing()) return false;
 		SContext.current().addOnCommit(new Runnable()

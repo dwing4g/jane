@@ -10,9 +10,9 @@ import java.util.List;
  */
 public final class BeanPool<B extends Bean<B>>
 {
-	private final List<B> _freeList = new ArrayList<>();
-	private final B       _stub;
-	private final int     _maxFreeCount;
+	private final List<B> _freeList	= new ArrayList<>();
+	private final B		  _stub;
+	private final int	  _maxFreeCount;
 
 	public BeanPool(B stub, int maxFreeCount)
 	{
@@ -36,7 +36,7 @@ public final class BeanPool<B extends Bean<B>>
 		synchronized(this)
 		{
 			if(_freeList.size() < _maxFreeCount)
-			    _freeList.add(b);
+				_freeList.add(b);
 		}
 	}
 }

@@ -8,8 +8,8 @@ import jane.bean.AllBeans;
 
 public final class TestClient extends NetManager
 {
-	private static final int        MAX_CONNECT_DELAY_SEC = 60;
-	private static final TestClient _instance             = new TestClient();
+	private static final int		MAX_CONNECT_DELAY_SEC = 60;
+	private static final TestClient	_instance			  = new TestClient();
 
 	public static TestClient instance()
 	{

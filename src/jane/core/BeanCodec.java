@@ -12,11 +12,11 @@ import org.apache.mina.core.write.WriteRequest;
  */
 public class BeanCodec extends IoFilterAdapter
 {
-	protected static final IntMap<Integer> _maxSize = new IntMap<>(65536, 0.5f); // 所有注册beans的最大空间限制
-	protected static final IntMap<Bean<?>> _stubMap = new IntMap<>(65536, 0.5f); // 所有注册beans的存根对象
-	protected final OctetsStream           _os      = new OctetsStream();       // 用于解码器的数据缓存
-	protected int                          _ptype;                              // 当前数据缓存中获得的协议类型
-	protected int                          _psize   = -1;                       // 当前数据缓存中获得的协议大小. -1表示没获取到
+	protected static final IntMap<Integer> _maxSize	= new IntMap<>(65536, 0.5f); // 所有注册beans的最大空间限制
+	protected static final IntMap<Bean<?>> _stubMap	= new IntMap<>(65536, 0.5f); // 所有注册beans的存根对象
+	protected final OctetsStream		   _os		= new OctetsStream();		 // 用于解码器的数据缓存
+	protected int						   _ptype;								 // 当前数据缓存中获得的协议类型
+	protected int						   _psize	= -1;						 // 当前数据缓存中获得的协议大小. -1表示没获取到
 
 	/**
 	 * 不带栈信息的解码错误异常
@@ -89,7 +89,7 @@ public class BeanCodec extends IoFilterAdapter
 			if(n > 0)
 			{
 				next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(rawdata.array(), rawdata.position(), n),
-				                                                  writeRequest.getFuture(), null));
+						writeRequest.getFuture(), null));
 			}
 		}
 		else
@@ -100,7 +100,7 @@ public class BeanCodec extends IoFilterAdapter
 			int p = os.marshalUIntBack(10, os.size() - 10);
 			p = 10 - (p + os.marshalUIntBack(10 - p, type));
 			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(os.array(), p, os.size() - p),
-			                                                  writeRequest.getFuture(), null));
+					writeRequest.getFuture(), null));
 		}
 	}
 
@@ -122,7 +122,7 @@ public class BeanCodec extends IoFilterAdapter
 			int maxSize = beanMaxSize(_ptype);
 			if(maxSize < 0) maxSize = Const.maxRawBeanSize;
 			if(_psize < 0 || _psize > maxSize)
-			    throw new DecodeException("bean maxSize overflow: type=" + _ptype + ",size=" + _psize + ",maxSize=" + maxSize);
+				throw new DecodeException("bean maxSize overflow: type=" + _ptype + ",size=" + _psize + ",maxSize=" + maxSize);
 		}
 		if(_psize > os.remain()) return false;
 		Bean<?> bean = createBean(_ptype);
@@ -132,7 +132,7 @@ public class BeanCodec extends IoFilterAdapter
 			bean.unmarshalProtocol(os);
 			int realSize = os.position() - pos;
 			if(realSize > _psize)
-			    throw new DecodeException("bean realSize overflow: type=" + _ptype + ",size=" + _psize + ",realSize=" + realSize);
+				throw new DecodeException("bean realSize overflow: type=" + _ptype + ",size=" + _psize + ",realSize=" + realSize);
 			os.setPosition(pos + _psize);
 			next.messageReceived(session, bean);
 		}
