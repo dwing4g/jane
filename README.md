@@ -20,10 +20,10 @@ License:
  * GNU Lesser GPL
 
 平台:
- * Oracle/Open JDK 7+ (需要ant作为构建环境)
+ * Oracle/Open JDK 7+ (需要ant作为构建环境, 推荐最新版本)
  * Linux 2.6+/Windows 2000+ (运行环境, 推荐64位4核4GB内存以上, 开发可使用32位)
- * Eclipse 4.4+ (主要的Java开发环境,以及LDT的Lua开发插件)
- * Visual Studio 2010+ (C#的开发环境)
+ * Eclipse 4.4+ (主要的Java开发环境, 推荐最新版本)
+ * Visual Studio 2010+ (C#的开发环境, 推荐最新版本)
 
 语言:
  * Java 7+ (框架和逻辑编写的主语言)
@@ -35,18 +35,18 @@ License:
  * 概念和实现简单清晰
 
 依赖库:
+ * 基础库: com.googlecode.concurrentlinkedhashmap.*, org.mapdb.Long*Map (高速并发HashMap/LinkedHashMap/LRUMap)
  * 日志库: slf4j-1.7.x log4j-2.x
  * 网络库: mina-core-2.0.x
  * 数据库: leveldb-jni
  * 脚本库: luaj-jse-2.0.x
- * 基础库: com.googlecode.concurrentlinkedhashmap (高速并发hashmap/linkedhashmap)
 
 托管站点:
  * https://github.com/dwing4g/jane
  * https://git.oschina.net/dwing/jane
- * https://code.google.com/p/jane-framework/
+ * https://code.google.com/p/jane-framework/ (已不再维护)
 
-参考的开源库:
+参考/备用的开源库:
  * 基础库:
   * com.googlecode.concurrentlinkedhashmap: https://github.com/ben-manes/concurrentlinkedhashmap
   * kryo:           https://github.com/EsotericSoftware/kryo
@@ -89,7 +89,7 @@ License:
  * 支持发送简单的bean, 连续发送bean, 广播bean, rpc统一处理/单独回调/超时处理
  * 支持简易高效的HTTP协议响应及回复
  * 内含简单实用的压缩和加密算法
- * 透明的基于文件和内存的面向对象数据库的操作、缓存、事务型持久化和热备份, 基于记录加锁，支持死锁超时打断
+ * 透明的基于文件和内存的面向对象数据库的操作、缓存、事务型持久化、热备份和增量备份, 基于记录加锁，支持死锁超时打断
 
 TODO:
  * 网络: 并发/吞吐量调优

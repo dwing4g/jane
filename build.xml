@@ -2,7 +2,7 @@
 <project name="jane" default="jar">
 	<!-- install jdk,ant first:
 		example: add this line in linux ~/.bash_profile:
-		export PATH=$PATH:$HOME/apache-ant-1.9.4/bin
+		export PATH=$PATH:$HOME/apache-ant-1.9.8/bin
 	-->
 	<property name="root" value="."/>
 	<property name="classes" value="${root}/classes"/>
@@ -53,7 +53,11 @@
 			<manifest>
 				<attribute name="Created-Time" value="${time}"/>
 			</manifest>
-			<fileset dir="${src}/"/>
+			<fileset dir="${src}/">
+				<exclude name="**/jane/bean/**"/>
+				<exclude name="**/jane/handler/**"/>
+				<exclude name="**/jane/test/**"/>
+			</fileset>
 			<fileset dir="${lib}/hashmap/"/>
 			<fileset dir="${lib}/mapdb/"/>
 		</jar>
