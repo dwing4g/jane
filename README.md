@@ -35,7 +35,7 @@ License:
  * 概念和实现简单清晰
 
 依赖库:
- * 基础库: com.googlecode.concurrentlinkedhashmap.*, org.mapdb.Long*Map (高速并发HashMap/LinkedHashMap/LRUMap)
+ * 基础库: com.googlecode.concurrentlinkedhashmap.\*, org.mapdb.Long\*Map (高速并发HashMap/LinkedHashMap/LRUMap)
  * 日志库: slf4j-1.7.x log4j-2.x
  * 网络库: mina-core-2.0.x
  * 数据库: leveldb-jni

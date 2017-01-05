@@ -36,12 +36,13 @@ jane使用Java语言开发，也推荐使用Java语言开发上层逻辑，当�
 
 jane并不是为了极度的轻量级而全部实现所需的功能，而是调查并选取了一些稳定高效轻量级的开源库作为基础，减少了作者的开发和测试时间，并专注于jane自身的优势和特点。
 选取的依赖库有：
+ConcurrentLinkedHashMap：googlecode上开源的并发LinkedHashMap结构，主要用于高效cache的实现基础。
+Long*Map：开源项目MapDB中的固定以Long作为key特化的并发HashMap以及一个并发LRUMap的实现。
 Mina：著名的Java网络底层库，apache基金会的子项目，高效易用。
 LevelDB：嵌入式key-value型NoSQL数据库，C++语言实现，Google公司开发，jane增加了自实现的jni接口来访问，目前已经编译好的有Windows平台的32/64位版本和Linux平台的64位版本，生产用途应使用64位的版本。
 SLF4J和Log4j2：后者是jane所使用的日志库，前者SLF4J接口的使用范围较广，被Mina库依赖，适合内置并推荐上层开发者使用。Log4j2作为后端，是SLF4J接口的具体实现，运行效率较高。
 LuaJ：Lua语言在JVM平台最好的一个实现，支持Java的脚本语言接口标准，运行效率也很高。
-ConcurrentLinkedHashMap：googlecode上开源的并发LinkedHashMap结构，主要用于高效cache的实现基础。
-以上依赖库以及jane包括源代码的jar和动态库文件大小共有5MB多，不包括源代码则只有3MB多。
+以上依赖库以及jane包括源代码的jar和动态库文件总大小不到10MB。
 
 ● jane框架如何利用多核性能
 
