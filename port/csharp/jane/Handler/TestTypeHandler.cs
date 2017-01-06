@@ -26,7 +26,7 @@ namespace Jane.Handler
 		|*| TestBean v19; // 嵌入其它bean;
 		\*/
 
-		public static void OnProcess(NetManager manager, IBean _arg_)
+		public static void OnProcess(NetManager.NetSession session, IBean _arg_)
 		{
 			TestType arg = (TestType)_arg_;
 			System.Console.WriteLine("{0}.onProcess: arg={1}", arg.GetType().Name, arg);

@@ -11,18 +11,17 @@ namespace Jane.Handler
 		|*| long value2;
 		\*/
 
-		public static void OnProcess(NetManager manager, IBean _arg_)
+		public static void OnProcess(NetManager.NetSession session, IBean _arg_)
 		{
 			TestBean arg = (TestBean)_arg_;
 			System.Console.WriteLine("{0}.onProcess: arg={1}", arg.GetType().Name, arg);
 
-			TestClient prog = (TestClient)manager;
 			RC4Filter filter = new RC4Filter();
 			filter.SetInputKey(new byte[] { 1, 2, 3 }, 3);
 			filter.SetOutputKey(new byte[] { 1, 2, 3 }, 3);
-			prog.SetFilter(filter);
+			((TestClient)session.manager).SetFilter(filter);
 
-			manager.Send(arg);
+			session.Send(arg);
 		}
 	}
 }

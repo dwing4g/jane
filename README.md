@@ -23,7 +23,7 @@ License:
  * Oracle/Open JDK 7+ (需要ant作为构建环境, 推荐最新版本)
  * Linux 2.6+/Windows 2000+ (运行环境, 推荐64位4核4GB内存以上, 开发可使用32位)
  * Eclipse 4.4+ (主要的Java开发环境, 推荐最新版本)
- * Visual Studio 2010+ (C#的开发环境, 推荐最新版本)
+ * Visual Studio 2015+ (C#的开发环境, 推荐最新版本)
 
 语言:
  * Java 7+ (框架和逻辑编写的主语言)

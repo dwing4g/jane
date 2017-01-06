@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading;
-using Jane;
 using Jane.Bean;
 
 namespace Jane
@@ -42,17 +42,17 @@ namespace Jane
 		 * 网络刚连接成功后调用;
 		 * 这里可以立即把发送队列留存的协议发出去;
 		 */
-		protected override void OnAddSession()
+		protected override void OnAddSession(NetSession session)
 		{
 			Console.WriteLine("onAddSession");
-			BeginSend();
+			BeginSend(session);
 		}
 
 		/**
 		 * 已连接成功的网络在刚断开后调用;
 		 * 这里把正在发送中的协议按顺序重新放回待发送队列;
 		 */
-		protected override void OnDelSession(int code, Exception e)
+		protected override void OnDelSession(NetSession session, int code, Exception e)
 		{
 			Console.WriteLine("onDelSession: {0}: {1}", code, e);
 			for(LinkedListNode<IBean> node = _sendingBeans.Last; node != null; node = node.Previous)
@@ -65,7 +65,7 @@ namespace Jane
 		 * 网络未连接成功并放弃本次连接后调用;
 		 * 这里可以选择自动重连或以后手动重连;
 		 */
-		protected override void OnAbortSession(Exception e)
+		protected override void OnAbortSession(IPEndPoint peer, Exception e)
 		{
 			Console.WriteLine("onAbortSession: {0}", e);
 			Connect();
@@ -75,7 +75,7 @@ namespace Jane
 		 * 在即将发出网络数据前做的数据编码过滤;
 		 * 一般用来做压缩和加密;
 		 */
-		protected override OctetsStream OnEncode(byte[] buf, int pos, int len)
+		protected override OctetsStream OnEncode(NetSession session, byte[] buf, int pos, int len)
 		{
 			if(_filter != null)
 				_filter.UpdateOutput(buf, pos, len);
@@ -86,7 +86,7 @@ namespace Jane
 		 * 在刚刚接收网络数据后做的数据解码过滤;
 		 * 一般用来做解密和解压;
 		 */
-		protected override OctetsStream OnDecode(byte[] buf, int pos, int len)
+		protected override OctetsStream OnDecode(NetSession session, byte[] buf, int pos, int len)
 		{
 			if(_filter != null)
 				_filter.UpdateInput(buf, pos, len);
@@ -97,11 +97,11 @@ namespace Jane
 		 * 接收到每个完整的bean都会调用此方法;
 		 * 一般在这里立即同步处理协议,也可以先放到接收队列里,合适的时机处理;
 		 */
-		protected override void OnRecvBean(IBean bean)
+		protected override void OnRecvBean(NetSession session, IBean bean)
 		{
 			try
 			{
-				ProcessBean(bean);
+				ProcessBean(session, bean);
 			}
 			catch(Exception e)
 			{
@@ -118,19 +118,19 @@ namespace Jane
 		/**
 		 * 在发送队列中加入一个bean,待网络可用时(可能立即)按顺序发送;
 		 */
-		public override bool Send(IBean bean)
+		public override bool Send(NetSession session, IBean bean)
 		{
 			_sendBeans.AddLast(bean);
-			BeginSend();
+			BeginSend(session);
 			return true;
 		}
 
-		private void BeginSend()
+		private void BeginSend(NetSession session)
 		{
 			while(_sendBeans.Count > 0)
 			{
 				IBean bean = _sendBeans.First.Value;
-				if(!SendDirect(bean))
+				if(!SendDirect(session, bean))
 					return;
 				_sendingBeans.AddLast(bean);
 				_sendBeans.RemoveFirst();
@@ -143,12 +143,12 @@ namespace Jane
 		 * 注意这并不能保证服务器已经成功接收了此协议;
 		 * 主要用于触发其他队列中协议的立即发送;
 		 */
-		protected override void OnSentBean(object obj)
+		protected override void OnSentBean(NetSession session, object obj)
 		{
 			IBean bean = obj as IBean;
 			if(bean != null)
 				_sendingBeans.Remove(bean);
-			BeginSend();
+			BeginSend(session);
 		}
 
 		/**
@@ -166,17 +166,15 @@ namespace Jane
 		 */
 		public static void Main(string[] args)
 		{
-			using(TestClient mgr = new TestClient()) // 没有特殊情况可以不调用Dispose销毁;
+			TestClient mgr = new TestClient(); // 没有特殊情况可以不调用Dispose销毁;
+			Console.WriteLine("connecting ...");
+			mgr.setServerAddr(DEFAULT_SERVER_ADDR, DEFAULT_SERVER_PORT); // 连接前先设置好服务器的地址和端口;
+			mgr.Connect(); // 开始异步连接,成功或失败反馈到回调方法;
+			Console.WriteLine("press CTRL+C or close this window to exit ...");
+			for(;;) // 工作线程的主循环;
 			{
-				Console.WriteLine("connecting ...");
-				mgr.setServerAddr(DEFAULT_SERVER_ADDR, DEFAULT_SERVER_PORT); // 连接前先设置好服务器的地址和端口;
-				mgr.Connect(); // 开始异步连接,成功或失败反馈到回调方法;
-				Console.WriteLine("press CTRL+C or close this window to exit ...");
-				for(;;) // 工作线程的主循环;
-				{
-					mgr.Tick(); // 在当前线程处理网络事件,很多回调方法在此同步执行;
-					Thread.Sleep(100); // 可替换成其它工作事务;
-				}
+				mgr.Tick(); // 在当前线程处理网络事件,很多回调方法在此同步执行;
+				Thread.Sleep(100); // 可替换成其它工作事务;
 			}
 		}
 	}

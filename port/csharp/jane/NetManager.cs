@@ -1,15 +1,97 @@
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Sockets;
 
 namespace Jane
 {
+	sealed class Pool<T>
+	{
+		readonly List<T> _pool = new List<T>();
+
+		public T Alloc()
+		{
+			int idx = _pool.Count - 1;
+			if(idx < 0) return default(T);
+			T t = _pool[idx];
+			_pool.RemoveAt(idx);
+			return t;
+		}
+
+		public void Free(T t)
+		{
+			_pool.Add(t);
+		}
+	}
+
+	sealed class BufPool
+	{
+		readonly Pool<byte[]> _bytesPool = new Pool<byte[]>();
+		readonly int _bufSize;
+
+		public BufPool(int bufSize)
+		{
+			_bufSize = bufSize;
+		}
+
+		public void SetBuffer(SocketAsyncEventArgs arg)
+		{
+			if(arg.Buffer == null)
+				arg.SetBuffer(_bytesPool.Alloc() ?? new byte[_bufSize], 0, _bufSize);
+		}
+
+		public void FreeBuffer(SocketAsyncEventArgs arg)
+		{
+			if(arg.Buffer != null)
+				_bytesPool.Free(arg.Buffer);
+			arg.SetBuffer(null, 0, 0);
+		}
+	}
+
 	/**
 	 * 网络管理器;
 	 * 目前仅用于客户端,一般要继承此类使用;
 	 */
-	public class NetManager : IDisposable
+	public class NetManager // .Net 4.0 / .Net Core 1.0 / Unity (Mono 2.6)
 	{
+		public sealed class NetSession
+		{
+			public readonly NetManager manager;
+			public readonly Socket socket;
+			public readonly IPEndPoint peer;
+			public readonly OctetsStream recvBuf = new OctetsStream(); // 接收数据未处理部分的缓冲区(也用于接收事件的对象);
+			public object userdata;
+
+			public NetSession(NetManager m, Socket s, IPEndPoint p)
+			{
+				manager = m;
+				socket = s;
+				peer = p;
+			}
+
+			public bool Send(IBean bean)
+			{
+				return manager.Send(this, bean);
+			}
+
+			public void Close(int code = CLOSE_ACTIVE, Exception e = null)
+			{
+				manager.Close(this, code, e);
+			}
+		}
+
+		sealed class NetSendContext
+		{
+			public readonly NetSession session;
+			public readonly object userdata;
+
+			public NetSendContext(NetSession s, object ud)
+			{
+				session = s;
+				userdata = ud;
+			}
+		}
+
 		public const int CLOSE_ACTIVE = 0; // 主动断开,包括已连接的情况下再次执行连接导致旧连接断开;
 		public const int CLOSE_READ   = 1; // 接收失败,可能是对方主动断开;
 		public const int CLOSE_WRITE  = 2; // 发送失败,可能是对方主动断开;
@@ -17,50 +99,49 @@ namespace Jane
 		public const int RECV_BUFSIZE = 32768; // 每次接收网络数据的缓冲区大小;
 
 		public delegate IBean BeanDelegate(); // 用于创建bean;
-		public delegate void HandlerDelegate(NetManager mgr, IBean arg); // 用于处理bean;
+		public delegate void HandlerDelegate(NetSession session, IBean arg); // 用于处理bean;
 
-		private Socket _socket; // socket对象(也用于连接事件的对象);
-		private readonly Queue<IAsyncResult> _eventQueue = new Queue<IAsyncResult>(); // 网络事件队列;
-		private readonly byte[] _bufin = new byte[RECV_BUFSIZE]; // 直接接收数据的缓冲区;
-		private OctetsStream _bufos; // 接收数据未处理部分的缓冲区(也用于接收事件的对象);
+		readonly BufPool _bufPool = new BufPool(RECV_BUFSIZE);
+		readonly Pool<SocketAsyncEventArgs> _argPool = new Pool<SocketAsyncEventArgs>();
+		readonly Queue<SocketAsyncEventArgs> _eventQueue = new Queue<SocketAsyncEventArgs>(); // 网络事件队列;
 
 		public IDictionary<int, BeanDelegate> BeanMap { get; set; } // 所有注册beans的创建代理;
 		public IDictionary<int, HandlerDelegate> HandlerMap { get; set; } // 所有注册beans的处理代理;
-		public bool Connected { get { return _socket != null && _socket.Connected; } } // 是否在连接状态;
 
-		protected virtual void OnAddSession() {} // 执行连接后,异步由Tick方法回调,异常会抛出;
-		protected virtual void OnDelSession(int code, Exception e) {} // 由Close(主动/Connect/Tick)方法调用,异常会抛出;
-		protected virtual void OnAbortSession(Exception e) {} // 由Tick方法调用,异常会抛出;
-		protected virtual void OnSentBean(object obj) {} // 由Tick方法调用,异常会抛出;
-		protected virtual OctetsStream OnEncode(byte[] buf, int pos, int len) { return null; } // 由SendDirect方法回调,异常会抛出;
-		protected virtual OctetsStream OnDecode(byte[] buf, int pos, int len) { return null; } // 由Tick方法回调,异常会调Close(CLOSE_DECODE,e);
+		protected virtual void OnAddSession(NetSession session) {} // 执行连接后,异步由Tick方法回调,异常会抛出;
+		protected virtual void OnDelSession(NetSession session, int code, Exception e) {} // 由Close(主动/Connect/Tick)方法调用,异常会抛出;
+		protected virtual void OnAbortSession(IPEndPoint peer, Exception e) {} // 由Tick方法调用,异常会抛出;
+		protected virtual void OnSentBean(NetSession session, object obj) {} // 由Tick方法调用,异常会抛出;
+		protected virtual OctetsStream OnEncode(NetSession session, byte[] buf, int pos, int len) { return null; } // 由SendDirect方法回调,异常会抛出;
+		protected virtual OctetsStream OnDecode(NetSession session, byte[] buf, int pos, int len) { return null; } // 由Tick方法回调,异常会调Close(CLOSE_DECODE,e);
 
-		private void Decode(int buflen)
+		void Decode(NetSession session, byte[] buf, int pos, int len)
 		{
-			OctetsStream os = OnDecode(_bufin, 0, buflen);
+			OctetsStream os = OnDecode(session, buf, pos, len);
+			OctetsStream recvBuf = session.recvBuf;
 			if(os != null)
-				_bufos.Append(os.Array(), os.Position(), os.Remain());
+				recvBuf.Append(os.Array(), os.Position(), os.Remain());
 			else
-				_bufos.Append(_bufin, 0, buflen);
-			int pos = 0;
+				recvBuf.Append(buf, pos, len);
+			pos = 0;
 			try
 			{
-				while(_bufos.Remain() >= 3) // type+size+bean;
+				while(recvBuf.Remain() >= 3) // type+size+bean;
 				{
-					int ptype = _bufos.UnmarshalUInt();
-					int psize = _bufos.UnmarshalUInt();
-					if(psize > _bufos.Remain()) break;
+					int ptype = recvBuf.UnmarshalUInt();
+					int psize = recvBuf.UnmarshalUInt();
+					if(psize > recvBuf.Remain()) break;
 					BeanDelegate create;
 					if(BeanMap == null || !BeanMap.TryGetValue(ptype, out create))
 						throw new Exception("unknown bean: type=" + ptype + ",size=" + psize);
 					IBean bean = create();
-					int p = _bufos.Position();
-					bean.Unmarshal(_bufos);
-					int realsize = _bufos.Position() - p;
+					int p = recvBuf.Position();
+					bean.Unmarshal(recvBuf);
+					int realsize = recvBuf.Position() - p;
 					if(realsize > psize)
 						throw new Exception("bean realsize overflow: type=" + ptype + ",size=" + psize + ",realsize=" + realsize);
 					pos = p + psize;
-					OnRecvBean(bean);
+					OnRecvBean(session, bean);
 				}
 			}
 			catch(MarshalEOFException)
@@ -68,219 +149,299 @@ namespace Jane
 			}
 			finally
 			{
-				_bufos.Erase(0, pos);
-				_bufos.SetPosition(0);
+				recvBuf.Erase(0, pos);
+				recvBuf.SetPosition(0);
 			}
 		}
 
-		protected virtual void OnRecvBean(IBean bean) // 在Tick解协议过程中解出一个bean时回调,默认会同步处理bean并忽略异常;
+		protected virtual void OnRecvBean(NetSession session, IBean bean) // 在Tick解协议过程中解出一个bean时回调,默认会同步处理bean并忽略异常;
 		{
 			try
 			{
-				ProcessBean(bean);
+				ProcessBean(session, bean);
 			}
 			catch(Exception)
 			{
 			}
 		}
 
-		protected bool ProcessBean(IBean bean) // 同步处理bean,异常会抛出;
+		protected bool ProcessBean(NetSession session, IBean bean) // 同步处理bean,异常会抛出;
 		{
 			HandlerDelegate handler;
 			if(HandlerMap == null || !HandlerMap.TryGetValue(bean.Type(), out handler)) return false;
-			handler(this, bean);
+			handler(session, bean);
 			return true;
 		}
 
-		private void OnEventConnect(IAsyncResult res)
+		SocketAsyncEventArgs AllocArg()
 		{
-			Exception ex = null;
-			try
+			SocketAsyncEventArgs arg = _argPool.Alloc();
+			if(arg == null)
 			{
-				_socket.EndConnect(res);
+				arg = new SocketAsyncEventArgs();
+				arg.Completed += OnAsyncEvent;
 			}
-			catch(Exception e)
-			{
-				ex = e;
-			}
-			if(_socket.Connected)
-			{
-				OnAddSession();
-				try
-				{
-					_bufos = new OctetsStream();
-					_socket.BeginReceive(_bufin, 0, _bufin.Length, SocketFlags.None, OnAsyncEvent, _bufos);
-				}
-				catch(Exception e)
-				{
-					Close(CLOSE_READ, e);
-				}
-			}
-			else
-				OnAbortSession(ex);
+			return arg;
 		}
 
-		private void OnEventRead(IAsyncResult res)
+		void FreeArg(SocketAsyncEventArgs arg)
 		{
-			Exception ex = null;
-			try
-			{
-				int buflen = _socket.EndReceive(res);
-				if(buflen > 0)
-				{
-					try
-					{
-						Decode(buflen);
-					}
-					catch(Exception e)
-					{
-						Close(CLOSE_DECODE, e);
-						return;
-					}
-					_socket.BeginReceive(_bufin, 0, _bufin.Length, SocketFlags.None, OnAsyncEvent, _bufos);
-					return;
-				}
-			}
-			catch(Exception e)
-			{
-				ex = e;
-			}
-			Close(CLOSE_READ, ex);
+			if(arg == null) return;
+			arg.SocketError = SocketError.Success;
+			arg.RemoteEndPoint = null;
+			arg.UserToken = null;
+			_argPool.Free(arg);
 		}
 
-		private void OnEventWrite(IAsyncResult res)
+		void OnEventAccept(SocketAsyncEventArgs arg)
 		{
-			if(_socket == null) return;
-			try
+			IPEndPoint peer = (IPEndPoint)arg.RemoteEndPoint;
+			if(arg.SocketError != SocketError.Success)
 			{
-				_socket.EndSend(res);
-			}
-			catch(Exception e)
-			{
-				Close(CLOSE_WRITE, e);
+				int errCode = (int)arg.SocketError;
+				FreeArg(arg);
+				OnAbortSession(peer, new SocketException(errCode));
 				return;
 			}
-			OnSentBean(res.AsyncState);
+			Socket soc = arg.AcceptSocket;
+			arg.AcceptSocket = null;
+			NetSession session = new NetSession(this, soc, peer);
+			SocketAsyncEventArgs a = null;
+			try
+			{
+				OnAddSession(session);
+				a = AllocArg();
+				a.UserToken = session;
+				_bufPool.SetBuffer(a);
+				if(!soc.ReceiveAsync(a))
+					OnAsyncEvent(null, a);
+			}
+			catch(Exception e)
+			{
+				_bufPool.FreeBuffer(a);
+				FreeArg(a);
+				Close(session, CLOSE_READ, e);
+			}
+			finally
+			{
+				soc = (Socket)arg.UserToken;
+				if(!soc.AcceptAsync(arg))
+					OnAsyncEvent(null, arg);
+			}
 		}
 
-		private void OnAsyncEvent(IAsyncResult res) // 本类只有此方法是另一线程回调执行的,其它方法必须在单一线程执行或触发;
+		void OnEventConnect(SocketAsyncEventArgs arg)
+		{
+			IPEndPoint peer = (IPEndPoint)arg.RemoteEndPoint;
+			arg.RemoteEndPoint = null;
+			if(arg.SocketError != SocketError.Success)
+			{
+				int errCode = (int)arg.SocketError;
+				FreeArg(arg);
+				OnAbortSession(peer, new SocketException(errCode));
+				return;
+			}
+			Socket soc = arg.ConnectSocket;
+			NetSession session = new NetSession(this, soc, peer);
+			arg.UserToken = session;
+			try
+			{
+				OnAddSession(session);
+				_bufPool.SetBuffer(arg);
+				if(!soc.ReceiveAsync(arg))
+					OnAsyncEvent(null, arg);
+			}
+			catch(Exception e)
+			{
+				_bufPool.FreeBuffer(arg);
+				FreeArg(arg);
+				Close(session, CLOSE_READ, e);
+			}
+		}
+
+		void OnEventRecv(SocketAsyncEventArgs arg)
+		{
+			NetSession session = (NetSession)arg.UserToken;
+			if(arg.SocketError != SocketError.Success)
+			{
+				int errCode = (int)arg.SocketError;
+				_bufPool.FreeBuffer(arg);
+				FreeArg(arg);
+				Close(session, CLOSE_READ, new SocketException(errCode));
+				return;
+			}
+			try
+			{
+				Decode(session, arg.Buffer, arg.Offset, arg.BytesTransferred);
+			}
+			catch(Exception e)
+			{
+				_bufPool.FreeBuffer(arg);
+				FreeArg(arg);
+				Close(session, CLOSE_DECODE, e);
+				return;
+			}
+			try
+			{
+				if(!session.socket.ReceiveAsync(arg))
+					OnAsyncEvent(null, arg);
+			}
+			catch(Exception e)
+			{
+				_bufPool.FreeBuffer(arg);
+				FreeArg(arg);
+				Close(session, CLOSE_READ, e);
+			}
+		}
+
+		void OnEventSend(SocketAsyncEventArgs arg)
+		{
+			object ud = arg.UserToken;
+			if(arg.SocketError != SocketError.Success)
+			{
+				int errCode = (int)arg.SocketError;
+				arg.SetBuffer(null, 0, 0);
+				FreeArg(arg);
+				Close((ud as NetSession) ?? (ud as NetSendContext).session, CLOSE_WRITE, new SocketException(errCode));
+				return;
+			}
+			arg.SetBuffer(null, 0, 0);
+			FreeArg(arg);
+			NetSendContext ctx = ud as NetSendContext;
+			if(ctx != null)
+				OnSentBean(ctx.session, ctx.userdata);
+		}
+
+		void OnAsyncEvent(object sender, SocketAsyncEventArgs arg) // 本类只有此方法是另一线程回调执行的,其它方法必须在单一线程执行或触发;
 		{
 			lock(_eventQueue)
-				_eventQueue.Enqueue(res);
+				_eventQueue.Enqueue(arg);
 		}
 
 		public void Tick() // 在网络开始连接和已经连接时,要频繁调用此方法来及时处理网络接收和发送;
 		{
 			if(_eventQueue.Count <= 0) return; // 这里并发脏读,应该没问题的;
-			IAsyncResult res;
+			SocketAsyncEventArgs arg;
 			for(;;)
 			{
 				lock(_eventQueue)
 				{
 					if(_eventQueue.Count <= 0) return;
-					res = _eventQueue.Dequeue();
+					arg = _eventQueue.Dequeue();
 				}
-				if(res.AsyncState == _bufos)
-					OnEventRead(res);
-				else if(res.AsyncState == _socket)
-					OnEventConnect(res);
+				switch(arg.LastOperation)
+				{
+					case SocketAsyncOperation.Receive: OnEventRecv(arg); break;
+					case SocketAsyncOperation.Send: OnEventSend(arg); break;
+					case SocketAsyncOperation.Accept: OnEventAccept(arg); break;
+					case SocketAsyncOperation.Connect: OnEventConnect(arg); break;
+				}
+			}
+		}
+
+		public void Listen(string addr, int port, int backlog = 100)
+		{
+			IPEndPoint host = new IPEndPoint(string.IsNullOrWhiteSpace(addr) ? IPAddress.Any : IPAddress.Parse(addr), port);
+			SocketAsyncEventArgs arg = null;
+			try
+			{
+				Socket soc = new Socket(host.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+				soc.Bind(host);
+				soc.Listen(backlog);
+				arg = AllocArg();
+				arg.UserToken = soc;
+				if(!soc.AcceptAsync(arg))
+					OnAsyncEvent(null, arg);
+			}
+			catch(Exception e)
+			{
+				FreeArg(arg);
+				OnAbortSession(host, e);
+			}
+		}
+
+		public void Connect(string addr, int port) // 开始异步连接,如果已经连接,则会先主动断开旧连接再重新连接,但在回调OnAddSession或OnAbortSession前不能再次调用此对象的此方法;
+		{
+			IPEndPoint peer = new IPEndPoint(IPAddress.Parse(addr), port);
+			SocketAsyncEventArgs arg = null;
+			try
+			{
+				Socket soc = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+				// soc.NoDelay = false;
+				// soc.LingerState = new LingerOption(true, 1);
+				arg = AllocArg();
+				arg.RemoteEndPoint = peer;
+				if(!soc.ConnectAsync(arg))
+					OnAsyncEvent(null, arg);
+			}
+			catch(Exception e)
+			{
+				FreeArg(arg);
+				OnAbortSession(peer, e);
+			}
+		}
+
+		public bool SendDirect(NetSession session, byte[] data, int pos, int len, object userdata = null) // 如果要支持多线程并发此方法,应该加同步,否则OnEncode和SendAsync的数据顺序可能不一致;
+		{
+			SocketAsyncEventArgs arg = null;
+			try
+			{
+				OctetsStream os = OnEncode(session, data, pos, len);
+				if(os != null)
+				{
+					data = os.Array();
+					pos = os.Position();
+					len = os.Remain();
+				}
+				arg = AllocArg();
+				arg.SetBuffer(data, pos, len);
+				if(userdata == null)
+					arg.UserToken = session;
 				else
-					OnEventWrite(res);
-			}
-		}
-
-		public void Connect(string host, int port) // 开始异步连接,如果已经连接,则会先主动断开旧连接再重新连接,但在回调OnAddSession或OnAbortSession前不能再次调用此对象的此方法;
-		{
-			Close();
-			try
-			{
-				_socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-				// _socket.NoDelay = false;
-				// _socket.LingerState = new LingerOption(true, 1);
-				_socket.BeginConnect(host, port, OnAsyncEvent, _socket);
+					arg.UserToken = new NetSendContext(session, userdata);
+				if(!session.socket.SendAsync(arg))
+					OnAsyncEvent(null, arg);
 			}
 			catch(Exception e)
 			{
-				OnAbortSession(e);
-			}
-		}
-
-		public bool SendDirect(byte[] data, int pos, int len, object userdata = null) // 如果要支持多线程并发此方法,应该加同步,否则OnEncode和BeginSend的数据顺序可能不一致;
-		{
-			OctetsStream os = OnEncode(data, pos, len);
-			if(os != null)
-			{
-				data = os.Array();
-				pos = os.Position();
-				len = os.Remain();
-			}
-			try
-			{
-				_socket.BeginSend(data, pos, len, SocketFlags.None, OnAsyncEvent, userdata);
-			}
-			catch(Exception e)
-			{
-				Close(CLOSE_WRITE, e);
+				arg.SetBuffer(null, 0, 0);
+				FreeArg(arg);
+				Close(session, CLOSE_WRITE, e);
 			}
 			return true;
 		}
 
-		public bool SendDirect(IBean bean)
+		public bool SendDirect(NetSession session, IBean bean)
 		{
-			if(!Connected) return false;
+			if(!session.socket.Connected) return false;
 			OctetsStream os = new OctetsStream(10 + bean.InitSize());
 			os.Resize(10);
 			bean.Marshal(os);
 			int n = os.MarshalUIntBack(10, os.Size() - 10);
 			os.SetPosition(10 - (n + os.MarshalUIntBack(10 - n, bean.Type())));
-			return SendDirect(os.Array(), os.Position(), os.Remain(), bean);
+			return SendDirect(session, os.Array(), os.Position(), os.Remain(), bean);
 		}
 
-		public virtual bool Send(byte[] data, int pos, int len, object userdata = null)
+		public virtual bool Send(NetSession session, byte[] data, int pos, int len, object userdata = null)
 		{
-			return SendDirect(data, pos, len, userdata);
+			return SendDirect(session, data, pos, len, userdata);
 		}
 
-		public virtual bool Send(IBean bean)
+		public virtual bool Send(NetSession session, IBean bean)
 		{
-			return SendDirect(bean);
+			return SendDirect(session, bean);
 		}
 
-		public void Close(int code = CLOSE_ACTIVE, Exception e = null) // 除了主动调用外,Connect/Tick也会调用;
-		{
-			if(_socket != null)
-			{
-				_socket.Close();
-				_socket = null;
-				lock(_eventQueue)
-					_eventQueue.Clear();
-				if(_bufos != null)
-				{
-					_bufos = null;
-					OnDelSession(code, e);
-				}
-			}
-		}
-
-		public void Dispose()
-		{
-			Dispose(true);
-		}
-
-		protected virtual void Dispose(bool disposing)
+		public void Close(NetSession session, int code = CLOSE_ACTIVE, Exception e = null) // 除了主动调用外,Connect/Tick也会调用;
 		{
 			try
 			{
-				Close();
+				// session.socket.Shutdown(SocketShutdown.Both);
+				// session.socket.Close();
+				session.socket.Dispose();
 			}
-			catch(Exception)
-			{
-			}
-		}
-
-		~NetManager()
-		{
-			Dispose(false);
+			catch(Exception) {}
+			OnDelSession(session, code, e);
 		}
 	}
 }

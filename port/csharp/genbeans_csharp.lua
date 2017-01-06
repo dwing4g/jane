@@ -231,7 +231,7 @@ namespace #(hdl.path)
 #(#		|*| #(var.type) #(var.name)#(var.value);#(var.comment)
 #)#		\*/
 
-		public static void OnProcess(NetManager manager, IBean _arg_)
+		public static void OnProcess(NetManager.NetSession session, IBean _arg_)
 		{
 			#(bean.name) arg = (#(bean.name))_arg_;
 			// System.Console.WriteLine("{0}.OnProcess: arg={1}", arg.GetType().Name, arg);

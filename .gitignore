@@ -8,6 +8,9 @@
 /port/jane.*.suo
 /port/csharp/bin/
 /port/csharp/obj/
+/port/csharp/*.user
+/port/csharp/project.lock.json
+/port/.vs/
 /port/lua/bin/
 jane-core.jar
 jane-test.jar
