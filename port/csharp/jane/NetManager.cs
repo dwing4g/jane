@@ -5,49 +5,6 @@ using System.Net.Sockets;
 
 namespace Jane
 {
-	sealed class Pool<T>
-	{
-		readonly List<T> _pool = new List<T>();
-
-		public T Alloc()
-		{
-			int idx = _pool.Count - 1;
-			if(idx < 0) return default(T);
-			T t = _pool[idx];
-			_pool.RemoveAt(idx);
-			return t;
-		}
-
-		public void Free(T t)
-		{
-			_pool.Add(t);
-		}
-	}
-
-	sealed class BufPool
-	{
-		readonly Pool<byte[]> _bytesPool = new Pool<byte[]>();
-		readonly int _bufSize;
-
-		public BufPool(int bufSize)
-		{
-			_bufSize = bufSize;
-		}
-
-		public void SetBuffer(SocketAsyncEventArgs arg)
-		{
-			if(arg.Buffer == null)
-				arg.SetBuffer(_bytesPool.Alloc() ?? new byte[_bufSize], 0, _bufSize);
-		}
-
-		public void FreeBuffer(SocketAsyncEventArgs arg)
-		{
-			if(arg.Buffer != null)
-				_bytesPool.Free(arg.Buffer);
-			arg.SetBuffer(null, 0, 0);
-		}
-	}
-
 	/**
 	 * 网络管理器;
 	 * 目前仅用于客户端,一般要继承此类使用;
@@ -60,9 +17,9 @@ namespace Jane
 			public readonly Socket socket;
 			public readonly IPEndPoint peer;
 			public readonly OctetsStream recvBuf = new OctetsStream(); // 接收数据未处理部分的缓冲区(也用于接收事件的对象);
-			public object userdata;
+			public object userdata; // 完全由用户使用
 
-			public NetSession(NetManager m, Socket s, IPEndPoint p)
+			internal NetSession(NetManager m, Socket s, IPEndPoint p)
 			{
 				manager = m;
 				socket = s;
@@ -92,6 +49,50 @@ namespace Jane
 			}
 		}
 
+		sealed class Pool<T>
+		{
+			readonly List<T> _pool = new List<T>();
+
+			public T Alloc()
+			{
+				int idx = _pool.Count - 1;
+				if(idx < 0) return default(T);
+				T t = _pool[idx];
+				_pool.RemoveAt(idx);
+				return t;
+			}
+
+			public void Free(T t)
+			{
+				_pool.Add(t);
+			}
+		}
+
+		sealed class BufPool
+		{
+			readonly Pool<byte[]> _bytesPool = new Pool<byte[]>();
+			readonly int _bufSize;
+
+			public BufPool(int bufSize)
+			{
+				_bufSize = bufSize;
+			}
+
+			public void AllocBuf(SocketAsyncEventArgs arg)
+			{
+				if(arg.Buffer == null)
+					arg.SetBuffer(_bytesPool.Alloc() ?? new byte[_bufSize], 0, _bufSize);
+			}
+
+			public void FreeBuf(SocketAsyncEventArgs arg)
+			{
+				byte[] buf = arg.Buffer;
+				if(buf != null)
+					_bytesPool.Free(buf);
+				arg.SetBuffer(null, 0, 0);
+			}
+		}
+
 		public const int CLOSE_ACTIVE = 0; // 主动断开,包括已连接的情况下再次执行连接导致旧连接断开;
 		public const int CLOSE_READ   = 1; // 接收失败,可能是对方主动断开;
 		public const int CLOSE_WRITE  = 2; // 发送失败,可能是对方主动断开;
@@ -101,18 +102,18 @@ namespace Jane
 		public delegate IBean BeanDelegate(); // 用于创建bean;
 		public delegate void HandlerDelegate(NetSession session, IBean arg); // 用于处理bean;
 
-		readonly BufPool _bufPool = new BufPool(RECV_BUFSIZE);
-		readonly Pool<SocketAsyncEventArgs> _argPool = new Pool<SocketAsyncEventArgs>();
+		readonly BufPool _bufPool = new BufPool(RECV_BUFSIZE); // 网络接收缓冲区池;
+		readonly Pool<SocketAsyncEventArgs> _argPool = new Pool<SocketAsyncEventArgs>(); // 网络时间对象池;
 		readonly Queue<SocketAsyncEventArgs> _eventQueue = new Queue<SocketAsyncEventArgs>(); // 网络事件队列;
 
 		public IDictionary<int, BeanDelegate> BeanMap { get; set; } // 所有注册beans的创建代理;
 		public IDictionary<int, HandlerDelegate> HandlerMap { get; set; } // 所有注册beans的处理代理;
 
-		protected virtual void OnAddSession(NetSession session) {} // 执行连接后,异步由Tick方法回调,异常会抛出;
-		protected virtual void OnDelSession(NetSession session, int code, Exception e) {} // 由Close(主动/Connect/Tick)方法调用,异常会抛出;
-		protected virtual void OnAbortSession(IPEndPoint peer, Exception e) {} // 由Tick方法调用,异常会抛出;
+		protected virtual void OnAddSession(NetSession session) {} // 执行Listen/Connect后,异步由Tick方法回调,异常会触发Close(CLOSE_READ);
+		protected virtual void OnDelSession(NetSession session, int code, Exception e) {} // 由Close(主动/Listen/Connect/Tick)方法调用,异常会抛出;
+		protected virtual void OnAbortSession(IPEndPoint peer, Exception e) {} // 由Listen/Connect/Tick方法调用,异常会抛出;
 		protected virtual void OnSentBean(NetSession session, object obj) {} // 由Tick方法调用,异常会抛出;
-		protected virtual OctetsStream OnEncode(NetSession session, byte[] buf, int pos, int len) { return null; } // 由SendDirect方法回调,异常会抛出;
+		protected virtual OctetsStream OnEncode(NetSession session, byte[] buf, int pos, int len) { return null; } // 由SendDirect方法回调,异常会触发Close(CLOSE_WRITE);
 		protected virtual OctetsStream OnDecode(NetSession session, byte[] buf, int pos, int len) { return null; } // 由Tick方法回调,异常会调Close(CLOSE_DECODE,e);
 
 		void Decode(NetSession session, byte[] buf, int pos, int len)
@@ -186,7 +187,6 @@ namespace Jane
 
 		void FreeArg(SocketAsyncEventArgs arg)
 		{
-			if(arg == null) return;
 			arg.SocketError = SocketError.Success;
 			arg.RemoteEndPoint = null;
 			arg.UserToken = null;
@@ -196,11 +196,12 @@ namespace Jane
 		void OnEventAccept(SocketAsyncEventArgs arg)
 		{
 			IPEndPoint peer = (IPEndPoint)arg.RemoteEndPoint;
-			if(arg.SocketError != SocketError.Success)
+			arg.RemoteEndPoint = null;
+			SocketError errCode = arg.SocketError;
+			if(errCode != SocketError.Success)
 			{
-				int errCode = (int)arg.SocketError;
 				FreeArg(arg);
-				OnAbortSession(peer, new SocketException(errCode));
+				OnAbortSession(peer, new SocketException((int)errCode));
 				return;
 			}
 			Socket soc = arg.AcceptSocket;
@@ -212,21 +213,32 @@ namespace Jane
 				OnAddSession(session);
 				a = AllocArg();
 				a.UserToken = session;
-				_bufPool.SetBuffer(a);
+				_bufPool.AllocBuf(a);
 				if(!soc.ReceiveAsync(a))
 					OnAsyncEvent(null, a);
 			}
 			catch(Exception e)
 			{
-				_bufPool.FreeBuffer(a);
-				FreeArg(a);
+				if(a != null)
+				{
+					_bufPool.FreeBuf(a);
+					FreeArg(a);
+				}
 				Close(session, CLOSE_READ, e);
 			}
 			finally
 			{
-				soc = (Socket)arg.UserToken;
-				if(!soc.AcceptAsync(arg))
-					OnAsyncEvent(null, arg);
+				try
+				{
+					soc = (Socket)arg.UserToken;
+					if(!soc.AcceptAsync(arg))
+						OnAsyncEvent(null, arg);
+				}
+				catch(Exception e)
+				{
+					FreeArg(arg);
+					OnAbortSession(peer, e);
+				}
 			}
 		}
 
@@ -234,11 +246,11 @@ namespace Jane
 		{
 			IPEndPoint peer = (IPEndPoint)arg.RemoteEndPoint;
 			arg.RemoteEndPoint = null;
-			if(arg.SocketError != SocketError.Success)
+			SocketError errCode = arg.SocketError;
+			if(errCode != SocketError.Success)
 			{
-				int errCode = (int)arg.SocketError;
 				FreeArg(arg);
-				OnAbortSession(peer, new SocketException(errCode));
+				OnAbortSession(peer, new SocketException((int)errCode));
 				return;
 			}
 			Socket soc = arg.ConnectSocket;
@@ -247,13 +259,13 @@ namespace Jane
 			try
 			{
 				OnAddSession(session);
-				_bufPool.SetBuffer(arg);
+				_bufPool.AllocBuf(arg);
 				if(!soc.ReceiveAsync(arg))
 					OnAsyncEvent(null, arg);
 			}
 			catch(Exception e)
 			{
-				_bufPool.FreeBuffer(arg);
+				_bufPool.FreeBuf(arg);
 				FreeArg(arg);
 				Close(session, CLOSE_READ, e);
 			}
@@ -262,12 +274,12 @@ namespace Jane
 		void OnEventRecv(SocketAsyncEventArgs arg)
 		{
 			NetSession session = (NetSession)arg.UserToken;
-			if(arg.SocketError != SocketError.Success)
+			SocketError errCode = arg.SocketError;
+			if(errCode != SocketError.Success)
 			{
-				int errCode = (int)arg.SocketError;
-				_bufPool.FreeBuffer(arg);
+				_bufPool.FreeBuf(arg);
 				FreeArg(arg);
-				Close(session, CLOSE_READ, new SocketException(errCode));
+				Close(session, CLOSE_READ, new SocketException((int)errCode));
 				return;
 			}
 			try
@@ -276,7 +288,7 @@ namespace Jane
 			}
 			catch(Exception e)
 			{
-				_bufPool.FreeBuffer(arg);
+				_bufPool.FreeBuf(arg);
 				FreeArg(arg);
 				Close(session, CLOSE_DECODE, e);
 				return;
@@ -288,7 +300,7 @@ namespace Jane
 			}
 			catch(Exception e)
 			{
-				_bufPool.FreeBuffer(arg);
+				_bufPool.FreeBuf(arg);
 				FreeArg(arg);
 				Close(session, CLOSE_READ, e);
 			}
@@ -297,16 +309,14 @@ namespace Jane
 		void OnEventSend(SocketAsyncEventArgs arg)
 		{
 			object ud = arg.UserToken;
-			if(arg.SocketError != SocketError.Success)
-			{
-				int errCode = (int)arg.SocketError;
-				arg.SetBuffer(null, 0, 0);
-				FreeArg(arg);
-				Close((ud as NetSession) ?? (ud as NetSendContext).session, CLOSE_WRITE, new SocketException(errCode));
-				return;
-			}
+			SocketError errCode = arg.SocketError;
 			arg.SetBuffer(null, 0, 0);
 			FreeArg(arg);
+			if(errCode != SocketError.Success)
+			{
+				Close((ud as NetSession) ?? (ud as NetSendContext).session, CLOSE_WRITE, new SocketException((int)errCode));
+				return;
+			}
 			NetSendContext ctx = ud as NetSendContext;
 			if(ctx != null)
 				OnSentBean(ctx.session, ctx.userdata);
@@ -355,7 +365,7 @@ namespace Jane
 			}
 			catch(Exception e)
 			{
-				FreeArg(arg);
+				if(arg != null) FreeArg(arg);
 				OnAbortSession(host, e);
 			}
 		}
@@ -376,7 +386,7 @@ namespace Jane
 			}
 			catch(Exception e)
 			{
-				FreeArg(arg);
+				if(arg != null) FreeArg(arg);
 				OnAbortSession(peer, e);
 			}
 		}
@@ -404,8 +414,11 @@ namespace Jane
 			}
 			catch(Exception e)
 			{
-				arg.SetBuffer(null, 0, 0);
-				FreeArg(arg);
+				if(arg != null)
+				{
+					arg.SetBuffer(null, 0, 0);
+					FreeArg(arg);
+				}
 				Close(session, CLOSE_WRITE, e);
 			}
 			return true;
