@@ -9,6 +9,7 @@
 /port/csharp/bin/
 /port/csharp/obj/
 /port/csharp/*.user
+/port/csharp/project.json
 /port/csharp/project.lock.json
 /port/.vs/
 /port/lua/bin/

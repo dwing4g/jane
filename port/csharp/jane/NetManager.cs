@@ -437,7 +437,7 @@ namespace Jane
 			try
 			{
 				// session.socket.Shutdown(SocketShutdown.Both);
-				session.socket.Close();
+				session.socket.Dispose();
 			}
 			catch(Exception) {}
 			OnDelSession(session, code, e);
