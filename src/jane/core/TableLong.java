@@ -234,6 +234,17 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	}
 
 	/**
+	 * 加锁获取字段,会失去当前事务其它的锁
+	 */
+	public S lockGet(long k) throws InterruptedException
+	{
+		Procedure proc = Procedure.getCurProcedure();
+		if(proc == null) throw new IllegalStateException("invalid lockGet out of procedure");
+		proc.lock(lockId(k));
+		return getNoLock(k);
+	}
+
+	/**
 	 * 根据记录的key获取value
 	 * <p>
 	 * 不会自动添加到读cache中<br>

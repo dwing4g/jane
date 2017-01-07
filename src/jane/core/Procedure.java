@@ -166,6 +166,14 @@ public abstract class Procedure implements Runnable
 	}
 
 	/**
+	 * 获取当前线程正在运行的事务
+	 */
+	public static Procedure getCurProcedure()
+	{
+		return _tlProc.get().proc;
+	}
+
+	/**
 	 * 判断当前线程现在是否在事务执行当中
 	 */
 	public static boolean inProcedure()
