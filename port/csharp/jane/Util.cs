@@ -9,7 +9,7 @@ namespace Jane
 	 */
 	public static class Util
 	{
-		private static readonly Random _rand = new Random();
+		static readonly Random _rand = new Random();
 
 		public static Random getRand()
 		{
@@ -18,7 +18,7 @@ namespace Jane
 
 		public struct ListEnumerator<T>
 		{
-			private List<T>.Enumerator _enum;
+			List<T>.Enumerator _enum;
 
 			public ListEnumerator(List<T> list)
 			{
@@ -40,7 +40,7 @@ namespace Jane
 
 		public struct LinkedListEnumerator<T>
 		{
-			private LinkedList<T>.Enumerator _enum;
+			LinkedList<T>.Enumerator _enum;
 
 			public LinkedListEnumerator(LinkedList<T> list)
 			{
@@ -62,7 +62,7 @@ namespace Jane
 
 		public struct HashSetEnumerator<T>
 		{
-			private HashSet<T>.Enumerator _enum;
+			HashSet<T>.Enumerator _enum;
 
 			public HashSetEnumerator(HashSet<T> hset)
 			{
@@ -84,7 +84,7 @@ namespace Jane
 /*
 		public struct SortedSetEnumerator<T>
 		{
-			private SortedSet<T>.Enumerator _enum;
+			SortedSet<T>.Enumerator _enum;
 
 			public SortedSetEnumerator(SortedSet<T> sset)
 			{
@@ -106,7 +106,7 @@ namespace Jane
 */
 		public struct DictEnumerator<K, V>
 		{
-			private Dictionary<K, V>.Enumerator _enum;
+			Dictionary<K, V>.Enumerator _enum;
 
 			public DictEnumerator(Dictionary<K, V> dic)
 			{
@@ -128,7 +128,7 @@ namespace Jane
 
 		public struct SortedDictEnumerator<K, V>
 		{
-			private SortedDictionary<K, V>.Enumerator _enum;
+			SortedDictionary<K, V>.Enumerator _enum;
 
 			public SortedDictEnumerator(SortedDictionary<K, V> sdic)
 			{

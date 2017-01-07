@@ -341,7 +341,7 @@ namespace Jane
 
 		public void Listen(string addr, int port, int backlog = 100)
 		{
-			IPEndPoint host = new IPEndPoint(string.IsNullOrWhiteSpace(addr) ? IPAddress.Any : IPAddress.Parse(addr), port);
+			IPEndPoint host = new IPEndPoint(string.IsNullOrEmpty(addr) ? IPAddress.Any : IPAddress.Parse(addr), port);
 			SocketAsyncEventArgs arg = null;
 			try
 			{
@@ -437,8 +437,7 @@ namespace Jane
 			try
 			{
 				// session.socket.Shutdown(SocketShutdown.Both);
-				// session.socket.Close();
-				session.socket.Dispose();
+				session.socket.Close();
 			}
 			catch(Exception) {}
 			OnDelSession(session, code, e);

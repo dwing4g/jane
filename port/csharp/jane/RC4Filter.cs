@@ -7,12 +7,12 @@ namespace Jane
 	 */
 	public sealed class RC4Filter
 	{
-		private readonly byte[] _ctxI = new byte[256];
-		private readonly byte[] _ctxO = new byte[256];
-		private int _idx1I, _idx2I;
-		private int _idx1O, _idx2O;
+		readonly byte[] _ctxI = new byte[256];
+		readonly byte[] _ctxO = new byte[256];
+		int _idx1I, _idx2I;
+		int _idx1O, _idx2O;
 
-		private static void SetKey(byte[] ctx, byte[] key, int len)
+		static void SetKey(byte[] ctx, byte[] key, int len)
 		{
 			for(int i = 0; i < 256; ++i)
 				ctx[i] = (byte)i;
@@ -46,7 +46,7 @@ namespace Jane
 			_idx1O = _idx2O = 0;
 		}
 
-		private static int Update(byte[] ctx, int idx1, int idx2, byte[] buf, int pos, int len)
+		static int Update(byte[] ctx, int idx1, int idx2, byte[] buf, int pos, int len)
 		{
 			for(int i = 0; i < len; ++i)
 			{

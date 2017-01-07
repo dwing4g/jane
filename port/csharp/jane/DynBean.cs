@@ -11,8 +11,8 @@ namespace Jane
 	[Serializable]
 	public struct DynBean : IBean
 	{
-		private int _type; // bean的类型(可用可不用,不影响序列化/反序列化);
-		private SortedDictionary<int, object> _fields; // key是字段ID. 为了方便格式化成字符串,使用有序的容器;
+		int _type; // bean的类型(可用可不用,不影响序列化/反序列化);
+		SortedDictionary<int, object> _fields; // key是字段ID. 为了方便格式化成字符串,使用有序的容器;
 
 		public DynBean(int type)
 		{

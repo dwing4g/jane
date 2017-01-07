@@ -10,11 +10,11 @@ namespace Jane
 	 */
 	public sealed class LZCompressor
 	{
-		private int[]  _hash;
-		private byte[] _com;
-		private int    _comPos;
-		private int    _bits;
-		private int    _cache;
+		int[]  _hash;
+		byte[] _com;
+		int    _comPos;
+		int    _bits;
+		int    _cache;
 
 		/**
 		 * 重置当前对象;
@@ -35,7 +35,7 @@ namespace Jane
 			return srclen + (srclen + 7) / 8;
 		}
 
-		private void PutBits(int v, int n) // n = 2~24
+		void PutBits(int v, int n) // n = 2~24
 		{
 			int b = _bits + n, c = _cache + (v << (32 - b));
 			if(b < 8)
@@ -66,7 +66,7 @@ namespace Jane
 			}
 		}
 
-		private void PutFlush()
+		void PutFlush()
 		{
 			if(_bits > 0)
 			{
@@ -76,7 +76,7 @@ namespace Jane
 			}
 		}
 
-		private int GetBit() // the highest bit
+		int GetBit() // the highest bit
 		{
 			if(--_bits >= 0)
 			{
@@ -90,7 +90,7 @@ namespace Jane
 			return c;
 		}
 
-		private int GetBits(int n) // n = 2~19
+		int GetBits(int n) // n = 2~19
 		{
 			int b = _bits, c = _cache;
 			if(b < n)
@@ -116,7 +116,7 @@ namespace Jane
 			return (int)((uint)c >> (32 - n));
 		}
 
-		private void PutByte(byte c)
+		void PutByte(byte c)
 		{
 			if(c >= 0) PutBits(c, 8);                  // 0xxx xxxx
 			else       PutBits((c & 0x7f) + 0x100, 9); // 1 0xxx xxxx

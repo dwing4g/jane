@@ -6,16 +6,16 @@ using Jane.Bean;
 
 namespace Jane
 {
-	public class TestClient : NetManager
+	public sealed class TestClient : NetManager
 	{
-		private const string DEFAULT_SERVER_ADDR = "127.0.0.1";
-		private const int DEFAULT_SERVER_PORT = 9123;
+		const string DEFAULT_SERVER_ADDR = "127.0.0.1";
+		const int DEFAULT_SERVER_PORT = 9123;
 
-		private readonly LinkedList<IBean> _sendBeans = new LinkedList<IBean>(); // 待发送协议的缓冲区;
-		private readonly LinkedList<IBean> _sendingBeans = new LinkedList<IBean>(); // 正在发送协议的缓冲区;
-		private string _serverAddr = DEFAULT_SERVER_ADDR; // 连接服务器的地址;
-		private int _serverPort = DEFAULT_SERVER_PORT; // 连接服务器的端口;
-		private RC4Filter _filter;
+		readonly LinkedList<IBean> _sendBeans = new LinkedList<IBean>(); // 待发送协议的缓冲区;
+		readonly LinkedList<IBean> _sendingBeans = new LinkedList<IBean>(); // 正在发送协议的缓冲区;
+		string _serverAddr = DEFAULT_SERVER_ADDR; // 连接服务器的地址;
+		int _serverPort = DEFAULT_SERVER_PORT; // 连接服务器的端口;
+		RC4Filter _filter;
 
 		public TestClient()
 		{
@@ -125,7 +125,7 @@ namespace Jane
 			return true;
 		}
 
-		private void BeginSend(NetSession session)
+		void BeginSend(NetSession session)
 		{
 			while(_sendBeans.Count > 0)
 			{

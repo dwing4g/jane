@@ -449,7 +449,7 @@ namespace Jane
 			return 1;
 		}
 
-		private OctetsStream MarshalId(int id, int type) // id must be in [1,190]
+		OctetsStream MarshalId(int id, int type) // id must be in [1,190]
 		{
 			if(id < 63)
 				Marshal1((byte)((id << 2) + type));
@@ -458,7 +458,7 @@ namespace Jane
 			return this;
 		}
 
-		private OctetsStream MarshalIdSubType(int id, int subType) // id must be in [1,190], subType must be > 0
+		OctetsStream MarshalIdSubType(int id, int subType) // id must be in [1,190], subType must be > 0
 		{
 			if(id < 63)
 				Marshal2((id << 10) + subType + 0x300);
