@@ -310,17 +310,36 @@ namespace Jane
 		void OnEventSend(SocketAsyncEventArgs arg)
 		{
 			object ud = arg.UserToken;
+			NetSendContext ctx = ud as NetSendContext;
+			NetSession session = (ctx != null ? ctx.session : (NetSession)ud);
 			SocketError errCode = arg.SocketError;
-			arg.SetBuffer(null, 0, 0);
-			FreeArg(arg);
+			Exception ex;
 			if(errCode != SocketError.Success)
+				ex = new SocketException((int)errCode);
+			else if(arg.BytesTransferred < arg.Count)
 			{
-				Close((ud as NetSession) ?? (ud as NetSendContext).session, CLOSE_WRITE, new SocketException((int)errCode));
+				try
+				{
+					arg.SetBuffer(arg.Offset + arg.BytesTransferred, arg.Count - arg.BytesTransferred);
+					if(!session.socket.SendAsync(arg))
+						OnAsyncEvent(null, arg);
+					return;
+				}
+				catch(Exception e)
+				{
+					ex = e;
+				}
+			}
+			else
+			{
+				arg.SetBuffer(null, 0, 0);
+				FreeArg(arg);
+				OnSent(session, ctx != null ? ctx.userdata : null);
 				return;
 			}
-			NetSendContext ctx = ud as NetSendContext;
-			if(ctx != null)
-				OnSent(ctx.session, ctx.userdata);
+			arg.SetBuffer(null, 0, 0);
+			FreeArg(arg);
+			Close(session, CLOSE_WRITE, ex);
 		}
 
 		void OnAsyncEvent(object sender, SocketAsyncEventArgs arg) // 本类只有此方法是另一线程回调执行的,其它方法必须在单一线程执行或触发;
@@ -371,7 +390,8 @@ namespace Jane
 			}
 		}
 
-		public void Connect(string addr, int port) // 开始异步连接,如果已经连接,则会先主动断开旧连接再重新连接,但在回调OnAddSession或OnAbortSession前不能再次调用此对象的此方法;
+		// 开始异步连接,如果已经连接,则会先主动断开旧连接再重新连接,但在回调OnAddSession或OnAbortSession前不能再次调用此对象的此方法;
+		public void Connect(string addr, int port)
 		{
 			IPEndPoint peer = new IPEndPoint(IPAddress.Parse(addr), port);
 			SocketAsyncEventArgs arg = null;
@@ -392,8 +412,8 @@ namespace Jane
 			}
 		}
 
-		// 此方法调用后,一定会触发OnSent或OnDelSession,触发了前者后,才能再次调用此方法;
-		// 如果要支持多线程并发此方法,应该加同步,否则OnEncode和SendAsync的数据顺序可能不一致;
+		// 此方法调用后,一定会触发OnSent或OnDelSession(如果session还没触发过OnDelSession);
+		// 触发了OnSent后,才能再次调用此方法. 返回false或触发OnSent后才能修改data. 不要多线程访问此方法;
 		protected bool SendDirect(NetSession session, byte[] data, int pos, int len, object userdata = null)
 		{
 			if(session.Closed) return false;
