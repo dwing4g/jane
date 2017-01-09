@@ -11,8 +11,7 @@ namespace Jane
 		const string DEFAULT_SERVER_ADDR = "127.0.0.1";
 		const int DEFAULT_SERVER_PORT = 9123;
 
-		readonly LinkedList<IBean> _sendBeans = new LinkedList<IBean>(); // 待发送协议的缓冲区;
-		readonly LinkedList<IBean> _sendingBeans = new LinkedList<IBean>(); // 正在发送协议的缓冲区;
+		readonly Queue<IBean> _sendBeanQueue = new Queue<IBean>(); // 待发送协议的缓冲区;
 		string _serverAddr = DEFAULT_SERVER_ADDR; // 连接服务器的地址;
 		int _serverPort = DEFAULT_SERVER_PORT; // 连接服务器的端口;
 		RC4Filter _filter;
@@ -40,34 +39,27 @@ namespace Jane
 
 		/**
 		 * 网络刚连接成功后调用;
-		 * 这里可以立即把发送队列留存的协议发出去;
 		 */
 		protected override void OnAddSession(NetSession session)
 		{
-			Console.WriteLine("onAddSession");
-			BeginSend(session);
+			Console.WriteLine("onAddSession: {0}", session.peer);
 		}
 
 		/**
 		 * 已连接成功的网络在刚断开后调用;
-		 * 这里把正在发送中的协议按顺序重新放回待发送队列;
 		 */
 		protected override void OnDelSession(NetSession session, int code, Exception e)
 		{
-			Console.WriteLine("onDelSession: {0}: {1}", code, e);
-			for(LinkedListNode<IBean> node = _sendingBeans.Last; node != null; node = node.Previous)
-				_sendBeans.AddFirst(node.Value);
-			_sendingBeans.Clear();
+			Console.WriteLine("onDelSession: {0}: {1}: {2}", session.peer, code, e);
 			Connect();
 		}
 
 		/**
 		 * 网络未连接成功并放弃本次连接后调用;
-		 * 这里可以选择自动重连或以后手动重连;
 		 */
 		protected override void OnAbortSession(IPEndPoint peer, Exception e)
 		{
-			Console.WriteLine("onAbortSession: {0}", e);
+			Console.WriteLine("onAbortSession: {0} {1}", peer, e);
 			Connect();
 		}
 
@@ -109,60 +101,48 @@ namespace Jane
 			}
 		}
 
+		/**
+		 * 开始主动连接;
+		 */
 		public void Connect()
 		{
+			_sendBeanQueue.Clear();
 			_filter = null;
 			Connect(_serverAddr, _serverPort);
 		}
 
 		/**
-		 * 在发送队列中加入一个bean,待网络可用时(可能立即)按顺序发送;
+		 * 发送bean. 发送中的情况下会自动放入发送队列,并按顺序自动发送;
+		 * 发送失败不会得到通知, 要么是连接已经关闭, 要么很快就会触发连接关闭;
 		 */
-		public override bool Send(NetSession session, IBean bean)
+		public override void Send(NetSession session, IBean bean)
 		{
-			_sendBeans.AddLast(bean);
-			BeginSend(session);
-			return true;
-		}
-
-		void BeginSend(NetSession session)
-		{
-			while(_sendBeans.Count > 0)
-			{
-				IBean bean = _sendBeans.First.Value;
-				if(!SendDirect(session, bean))
-					return;
-				_sendingBeans.AddLast(bean);
-				_sendBeans.RemoveFirst();
-			}
+			_sendBeanQueue.Enqueue(bean);
+			if(_sendBeanQueue.Count == 1 && !SendDirect(session, _sendBeanQueue.Peek()))
+				_sendBeanQueue.Clear();
 		}
 
 		/**
-		 * 对已发送完bean的回调;
-		 * 这里清除发送中队列中的此协议;
-		 * 注意这并不能保证服务器已经成功接收了此协议;
-		 * 主要用于触发其他队列中协议的立即发送;
+		 * 对已发送完bean的回调, 触发发送队列中协议的顺序发送;
 		 */
-		protected override void OnSentBean(NetSession session, object obj)
+		protected override void OnSent(NetSession session, object obj)
 		{
-			IBean bean = obj as IBean;
-			if(bean != null)
-				_sendingBeans.Remove(bean);
-			BeginSend(session);
+			if(_sendBeanQueue.Count <= 0) return;
+			_sendBeanQueue.Dequeue();
+			if(_sendBeanQueue.Count > 0 && !SendDirect(session, _sendBeanQueue.Peek()))
+				_sendBeanQueue.Clear();
 		}
 
 		/**
-		 * 清除所有尚未发送成功的beans;
+		 * 清除所有尚未发送的beans;
 		 */
 		public void ClearSendBuffer()
 		{
-			_sendBeans.Clear();
-			_sendingBeans.Clear();
+			_sendBeanQueue.Clear();
 		}
 
 		/**
-		 * GNet独立程序测试用的入口;
-		 * 展示如何使用此类;
+		 * 独立程序测试用的入口, 展示如何使用此类;
 		 */
 		public static void Main(string[] args)
 		{

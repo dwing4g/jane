@@ -18,6 +18,7 @@ namespace Jane
 			public readonly IPEndPoint peer;
 			public readonly OctetsStream recvBuf = new OctetsStream(); // 接收数据未处理部分的缓冲区(也用于接收事件的对象);
 			public object userdata; // 完全由用户使用
+			public bool Closed { get; internal set; }
 
 			internal NetSession(NetManager m, Socket s, IPEndPoint p)
 			{
@@ -26,9 +27,9 @@ namespace Jane
 				peer = p;
 			}
 
-			public bool Send(IBean bean)
+			public void Send(IBean bean)
 			{
-				return manager.Send(this, bean);
+				manager.Send(this, bean);
 			}
 
 			public void Close(int code = CLOSE_ACTIVE, Exception e = null)
@@ -112,7 +113,7 @@ namespace Jane
 		protected virtual void OnAddSession(NetSession session) {} // 执行Listen/Connect后,异步由Tick方法回调,异常会触发Close(CLOSE_READ);
 		protected virtual void OnDelSession(NetSession session, int code, Exception e) {} // 由Close(主动/Listen/Connect/Tick)方法调用,异常会抛出;
 		protected virtual void OnAbortSession(IPEndPoint peer, Exception e) {} // 由Listen/Connect/Tick方法调用,异常会抛出;
-		protected virtual void OnSentBean(NetSession session, object obj) {} // 由Tick方法调用,异常会抛出;
+		protected virtual void OnSent(NetSession session, object obj) {} // 由Tick方法调用,异常会抛出;
 		protected virtual OctetsStream OnEncode(NetSession session, byte[] buf, int pos, int len) { return null; } // 由SendDirect方法回调,异常会触发Close(CLOSE_WRITE);
 		protected virtual OctetsStream OnDecode(NetSession session, byte[] buf, int pos, int len) { return null; } // 由Tick方法回调,异常会调Close(CLOSE_DECODE,e);
 
@@ -319,7 +320,7 @@ namespace Jane
 			}
 			NetSendContext ctx = ud as NetSendContext;
 			if(ctx != null)
-				OnSentBean(ctx.session, ctx.userdata);
+				OnSent(ctx.session, ctx.userdata);
 		}
 
 		void OnAsyncEvent(object sender, SocketAsyncEventArgs arg) // 本类只有此方法是另一线程回调执行的,其它方法必须在单一线程执行或触发;
@@ -376,7 +377,7 @@ namespace Jane
 			SocketAsyncEventArgs arg = null;
 			try
 			{
-				Socket soc = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+				Socket soc = new Socket(peer.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 				// soc.NoDelay = false;
 				// soc.LingerState = new LingerOption(true, 1);
 				arg = AllocArg();
@@ -391,8 +392,11 @@ namespace Jane
 			}
 		}
 
-		public bool SendDirect(NetSession session, byte[] data, int pos, int len, object userdata = null) // 如果要支持多线程并发此方法,应该加同步,否则OnEncode和SendAsync的数据顺序可能不一致;
+		// 此方法调用后,一定会触发OnSent或OnDelSession,触发了前者后,才能再次调用此方法;
+		// 如果要支持多线程并发此方法,应该加同步,否则OnEncode和SendAsync的数据顺序可能不一致;
+		protected bool SendDirect(NetSession session, byte[] data, int pos, int len, object userdata = null)
 		{
+			if(session.Closed) return false;
 			SocketAsyncEventArgs arg = null;
 			try
 			{
@@ -411,6 +415,7 @@ namespace Jane
 					arg.UserToken = new NetSendContext(session, userdata);
 				if(!session.socket.SendAsync(arg))
 					OnAsyncEvent(null, arg);
+				return true;
 			}
 			catch(Exception e)
 			{
@@ -420,13 +425,12 @@ namespace Jane
 					FreeArg(arg);
 				}
 				Close(session, CLOSE_WRITE, e);
+				return false;
 			}
-			return true;
 		}
 
-		public bool SendDirect(NetSession session, IBean bean)
+		protected bool SendDirect(NetSession session, IBean bean)
 		{
-			if(!session.socket.Connected) return false;
 			OctetsStream os = new OctetsStream(10 + bean.InitSize());
 			os.Resize(10);
 			bean.Marshal(os);
@@ -435,14 +439,9 @@ namespace Jane
 			return SendDirect(session, os.Array(), os.Position(), os.Remain(), bean);
 		}
 
-		public virtual bool Send(NetSession session, byte[] data, int pos, int len, object userdata = null)
+		public virtual void Send(NetSession session, IBean bean)
 		{
-			return SendDirect(session, data, pos, len, userdata);
-		}
-
-		public virtual bool Send(NetSession session, IBean bean)
-		{
-			return SendDirect(session, bean);
+			SendDirect(session, bean);
 		}
 
 		public void Close(NetSession session, int code = CLOSE_ACTIVE, Exception e = null) // 除了主动调用外,Connect/Tick也会调用;
@@ -453,7 +452,11 @@ namespace Jane
 				session.socket.Dispose();
 			}
 			catch(Exception) {}
-			OnDelSession(session, code, e);
+			if(!session.Closed)
+			{
+				session.Closed = true;
+				OnDelSession(session, code, e);
+			}
 		}
 	}
 }
