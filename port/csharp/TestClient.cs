@@ -26,7 +26,7 @@ namespace Jane
 		 * 设置连接服务器的地址和端口;
 		 * 要在连接网络前设置;
 		 */
-		public void setServerAddr(string addr, int port)
+		public void SetServerAddr(string addr, int port)
 		{
 			_serverAddr = addr ?? DEFAULT_SERVER_ADDR;
 			_serverPort = port > 0 ? port : DEFAULT_SERVER_PORT;
@@ -148,7 +148,7 @@ namespace Jane
 		{
 			TestClient mgr = new TestClient(); // 没有特殊情况可以不调用Dispose销毁;
 			Console.WriteLine("connecting ...");
-			mgr.setServerAddr(DEFAULT_SERVER_ADDR, DEFAULT_SERVER_PORT); // 连接前先设置好服务器的地址和端口;
+			mgr.SetServerAddr(DEFAULT_SERVER_ADDR, DEFAULT_SERVER_PORT); // 连接前先设置好服务器的地址和端口;
 			mgr.Connect(); // 开始异步连接,成功或失败反馈到回调方法;
 			Console.WriteLine("press CTRL+C or close this window to exit ...");
 			for(;;) // 工作线程的主循环;

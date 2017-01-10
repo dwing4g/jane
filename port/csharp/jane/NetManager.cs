@@ -98,7 +98,7 @@ namespace Jane
 		public const int CLOSE_READ   = 1; // 接收失败,可能是对方主动断开;
 		public const int CLOSE_WRITE  = 2; // 发送失败,可能是对方主动断开;
 		public const int CLOSE_DECODE = 3; // 解码失败,接收数据格式错误;
-		public const int RECV_BUFSIZE = 32768; // 每次接收网络数据的缓冲区大小;
+		public const int RECV_BUFSIZE = 32 * 1024; // 每次接收网络数据的缓冲区大小;
 
 		public delegate IBean BeanDelegate(); // 用于创建bean;
 		public delegate void HandlerDelegate(NetSession session, IBean arg); // 用于处理bean;
@@ -468,7 +468,7 @@ namespace Jane
 		{
 			try
 			{
-				// session.socket.Shutdown(SocketShutdown.Both);
+				// session.socket.Shutdown(SocketShutdown.Receive);
 				session.socket.Dispose();
 			}
 			catch(Exception) {}
