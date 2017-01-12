@@ -45,8 +45,7 @@ public abstract class LongMap<V>
 	/**
 	 * Returns whether this map is empty.
 	 *
-	 * @return {@code true} if this map has no elements, {@code false}
-	 *         otherwise.
+	 * @return {@code true} if this map has no elements, {@code false} otherwise.
 	 * @see #size()
 	 */
 	public abstract boolean isEmpty();
@@ -54,7 +53,7 @@ public abstract class LongMap<V>
 	/**
 	 * Maps the specified key to the specified value.
 	 *
-	 * @param key   the key.
+	 * @param key the key.
 	 * @param value the value.
 	 * @return the value of any previous mapping with the specified key or
 	 *         {@code null} if there was no such mapping.
@@ -65,14 +64,12 @@ public abstract class LongMap<V>
 	 * Removes the mapping from this map
 	 *
 	 * @param key to remove
-	 *  @return value contained under this key, or null if value did not exist
+	 * @return value contained under this key, or null if value did not exist
 	 */
 	public abstract V remove(long key);
 
 	/**
 	 * Returns the number of elements in this map.
-	 *
-	 * @return the number of elements in this map.
 	 */
 	public abstract int size();
 

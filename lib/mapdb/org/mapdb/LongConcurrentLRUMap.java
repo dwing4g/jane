@@ -67,8 +67,7 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 
 	public LongConcurrentLRUMap(int size, int lowerWatermark)
 	{
-		this(size, lowerWatermark, (int)Math.floor((lowerWatermark + size) / 2),
-				(int)Math.ceil(0.75 * size));
+		this(size, lowerWatermark, (int)Math.floor((lowerWatermark + size) / 2), (int)Math.ceil(0.75 * size));
 	}
 
 	public V get(long key)
@@ -427,8 +426,7 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 			size = 0;
 			int heapSize;
 			if(0 == maxSize)
-				// We allocate 1 extra to avoid if statement in top()
-				heapSize = 2;
+				heapSize = 2; // We allocate 1 extra to avoid if statement in top()
 			else
 			{
 				if(maxSize == Integer.MAX_VALUE)

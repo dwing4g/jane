@@ -32,31 +32,28 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 {
 	private static final long serialVersionUID = 362340234235222265L;
 
-	/*
+	/**
 	 * Actual count of entries
 	 */
 	transient int elementCount;
 
-	/*
+	/**
 	 * The internal data structure to hold Entries
 	 */
 	transient Entry<V>[] elementData;
 
-	/*
-	 * modification count, to keep track of structural modifications between the
-	 * HashMap and the iterator
+	/**
+	 * modification count, to keep track of structural modifications between the HashMap and the iterator
 	 */
 	transient int modCount = 0;
 
-	/*
-	 * default size that an HashMap created using the default constructor would
-	 * have.
+	/**
+	 * default size that an HashMap created using the default constructor would have.
 	 */
 	private static final int DEFAULT_SIZE = 16;
 
-	/*
-	 * maximum ratio of (stored elements)/(storage size) which does not lead to
-	 * rehash
+	/**
+	 * maximum ratio of (stored elements)/(storage size) which does not lead to rehash
 	 */
 	final float loadFactor;
 
@@ -70,16 +67,14 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 		return new Random().nextLong();
 	}
 
-	/*
-	 * maximum number of elements that can be put in this map before having to
-	 * rehash
+	/**
+	 * maximum number of elements that can be put in this map before having to rehash
 	 */
 	int threshold;
 
 	static class Entry<V>
 	{
-		final int origKeyHash;
-
+		final int  origKeyHash;
 		final long key;
 		V		   value;
 		Entry<V>   next;
@@ -93,12 +88,11 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 
 	private static class AbstractMapIterator<V>
 	{
-		private int	position = 0;
-		int			expectedModCount;
-		Entry<V>	futureEntry;
-		Entry<V>	currentEntry;
-		Entry<V>	prevEntry;
-
+		private int			 position = 0;
+		int					 expectedModCount;
+		Entry<V>			 futureEntry;
+		Entry<V>			 currentEntry;
+		Entry<V>			 prevEntry;
 		final LongHashMap<V> associatedMap;
 
 		AbstractMapIterator(LongHashMap<V> hm)
@@ -213,7 +207,6 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 	/**
 	 * Create a new element array
 	 *
-	 * @param s
 	 * @return Reference to the element array
 	 */
 	@SuppressWarnings("unchecked")
@@ -233,10 +226,8 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 	/**
 	 * Constructs a new {@code HashMap} instance with the specified capacity.
 	 *
-	 * @param capacity
-	 *            the initial capacity of this hash map.
-	 * @throws IllegalArgumentException
-	 *                when the capacity is less than zero.
+	 * @param capacity the initial capacity of this hash map.
+	 * @throws IllegalArgumentException when the capacity is less than zero.
 	 */
 	public LongHashMap(int capacity)
 	{
@@ -244,11 +235,9 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 	}
 
 	/**
-	 * Calculates the capacity of storage required for storing given number of
-	 * elements
+	 * Calculates the capacity of storage required for storing given number of elements
 	 *
-	 * @param x
-	 *            number of elements
+	 * @param x number of elements
 	 * @return storage size
 	 */
 	private static int calculateCapacity(int x)
@@ -267,16 +256,11 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 	}
 
 	/**
-	 * Constructs a new {@code HashMap} instance with the specified capacity and
-	 * load factor.
+	 * Constructs a new {@code HashMap} instance with the specified capacity and load factor.
 	 *
-	 * @param capacity
-	 *            the initial capacity of this hash map.
-	 * @param loadFactor
-	 *            the initial load factor.
-	 * @throws IllegalArgumentException
-	 *                when the capacity is less than zero or the load factor is
-	 *                less or equal to zero.
+	 * @param capacity the initial capacity of this hash map.
+	 * @param loadFactor the initial load factor.
+	 * @throws IllegalArgumentException when the capacity is less than zero or the load factor is less or equal to zero.
 	 */
 	public LongHashMap(int capacity, float loadFactor)
 	{
@@ -320,8 +304,7 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 	/**
 	 * Returns the value of the mapping with the specified key.
 	 *
-	 * @param key
-	 *            the key.
+	 * @param key the key.
 	 * @return the value of the mapping with the specified key, or {@code null}
 	 *         if no mapping for the specified key is found.
 	 */
@@ -344,19 +327,15 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 	final Entry<V> findNonNullKeyEntry(long key, int index, int keyHash)
 	{
 		Entry<V> m = elementData[index];
-		while(m != null
-				&& (m.origKeyHash != keyHash || key != m.key))
-		{
+		while(m != null && (m.origKeyHash != keyHash || key != m.key))
 			m = m.next;
-		}
 		return m;
 	}
 
 	/**
 	 * Returns whether this map is empty.
 	 *
-	 * @return {@code true} if this map has no elements, {@code false}
-	 *         otherwise.
+	 * @return {@code true} if this map has no elements, {@code false} otherwise.
 	 * @see #size()
 	 */
 	@Override
@@ -368,10 +347,8 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 	/**
 	 * Maps the specified key to the specified value.
 	 *
-	 * @param key
-	 *            the key.
-	 * @param value
-	 *            the value.
+	 * @param key the key.
+	 * @param value the value.
 	 * @return the value of any previous mapping with the specified key or
 	 *         {@code null} if there was no such mapping.
 	 */
@@ -433,8 +410,7 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 	/**
 	 * Removes the mapping with the specified key from this map.
 	 *
-	 * @param key
-	 *            the key of the mapping to remove.
+	 * @param key the key of the mapping to remove.
 	 * @return the value of the removed mapping or {@code null} if no mapping
 	 *         for the specified key was found.
 	 */
@@ -475,8 +451,6 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 
 	/**
 	 * Returns the number of elements in this map.
-	 *
-	 * @return the number of elements in this map.
 	 */
 	@Override
 	public int size()

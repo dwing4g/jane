@@ -36,8 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Jan Kotek
  * @author Doug Lea
  */
-public class LongConcurrentHashMap<V>
-		extends LongMap<V> implements Serializable
+public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 {
 	private static final long serialVersionUID = 7249069246763182397L;
 
@@ -222,8 +221,7 @@ public class LongConcurrentHashMap<V>
 
 		/**
 		 * The table is rehashed when its size exceeds this threshold.
-		 * (The value of this field is always <tt>(int)(capacity *
-		 * loadFactor)</tt>.)
+		 * (The value of this field is always <tt>(int)(capacity * loadFactor)</tt>.)
 		 */
 		transient int threshold;
 
@@ -469,7 +467,6 @@ public class LongConcurrentHashMap<V>
 					//  Single node on list
 					if(next == null)
 						newTable[idx] = e;
-
 					else
 					{
 						// Reuse trailing consecutive sequence at same slot
@@ -491,8 +488,7 @@ public class LongConcurrentHashMap<V>
 						{
 							int k = p.hash & sizeMask;
 							HashEntry<V> n = newTable[k];
-							newTable[k] = new HashEntry<V>(p.key, p.hash,
-									n, p.value);
+							newTable[k] = new HashEntry<V>(p.key, p.hash, n, p.value);
 						}
 					}
 				}
@@ -582,8 +578,7 @@ public class LongConcurrentHashMap<V>
 	 * negative or the load factor or concurrencyLevel are
 	 * nonpositive.
 	 */
-	public LongConcurrentHashMap(int initialCapacity,
-			float loadFactor, int concurrencyLevel)
+	public LongConcurrentHashMap(int initialCapacity, float loadFactor, int concurrencyLevel)
 	{
 		if(!(loadFactor > 0) || initialCapacity < 0 || concurrencyLevel <= 0)
 			throw new IllegalArgumentException();
@@ -673,8 +668,7 @@ public class LongConcurrentHashMap<V>
 		{
 			for(int i = 0; i < segments.length; ++i)
 			{
-				if(segments[i].count != 0 ||
-						mc[i] != segments[i].modCount)
+				if(segments[i].count != 0 || mc[i] != segments[i].modCount)
 					return false;
 			}
 		}
@@ -909,8 +903,6 @@ public class LongConcurrentHashMap<V>
 	}
 
 	/**
-	 *
-	 *
 	 * @throws NullPointerException if the specified key is null
 	 */
 	public boolean remove(long key, Object value)
@@ -920,8 +912,6 @@ public class LongConcurrentHashMap<V>
 	}
 
 	/**
-	 *
-	 *
 	 * @throws NullPointerException if any of the arguments are null
 	 */
 	public boolean replace(long key, V oldValue, V newValue)
@@ -933,8 +923,6 @@ public class LongConcurrentHashMap<V>
 	}
 
 	/**
-	 *
-	 *
 	 * @return the previous value associated with the specified key,
 	 *         or <tt>null</tt> if there was no mapping for the key
 	 * @throws NullPointerException if the specified key or value is null
@@ -1026,9 +1014,7 @@ public class LongConcurrentHashMap<V>
 		}
 	}
 
-	final class KeyIterator
-			extends HashIterator
-			implements Iterator<Long>
+	final class KeyIterator extends HashIterator implements Iterator<Long>
 	{
 		@Override
 		public Long next()
@@ -1037,9 +1023,7 @@ public class LongConcurrentHashMap<V>
 		}
 	}
 
-	final class ValueIterator
-			extends HashIterator
-			implements Iterator<V>
+	final class ValueIterator extends HashIterator implements Iterator<V>
 	{
 		@Override
 		public V next()
