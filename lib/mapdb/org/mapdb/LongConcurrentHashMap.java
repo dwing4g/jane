@@ -1050,7 +1050,6 @@ public class LongConcurrentHashMap<V>
 
 	final class MapIterator extends HashIterator implements LongMapIterator<V>
 	{
-
 		private long key;
 		private V	 value;
 
@@ -1076,5 +1075,4 @@ public class LongConcurrentHashMap<V>
 			return value;
 		}
 	}
-
 }

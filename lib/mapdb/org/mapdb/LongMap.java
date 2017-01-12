@@ -25,7 +25,6 @@ import java.util.Iterator;
  */
 public abstract class LongMap<V>
 {
-
 	/**
 	 * Removes all mappings from this hash map, leaving it empty.
 	 *
@@ -107,13 +106,9 @@ public abstract class LongMap<V>
 		while(iter.moveToNext())
 		{
 			if(first)
-			{
 				first = false;
-			}
 			else
-			{
 				b.append(", ");
-			}
 			b.append(iter.key());
 			b.append(" => ");
 			b.append(iter.value());

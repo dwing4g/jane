@@ -30,7 +30,6 @@ import java.util.Random;
  */
 public class LongHashMap<V> extends LongMap<V> implements Serializable
 {
-
 	private static final long serialVersionUID = 362340234235222265L;
 
 	/*
@@ -112,19 +111,13 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 		public boolean hasNext()
 		{
 			if(futureEntry != null)
-			{
 				return true;
-			}
 			while(position < associatedMap.elementData.length)
 			{
 				if(associatedMap.elementData[position] == null)
-				{
 					position++;
-				}
 				else
-				{
 					return true;
-				}
 			}
 			return false;
 		}
@@ -132,18 +125,14 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 		final void checkConcurrentMod() throws ConcurrentModificationException
 		{
 			if(expectedModCount != associatedMap.modCount)
-			{
 				throw new ConcurrentModificationException();
-			}
 		}
 
 		final void makeNext()
 		{
 			checkConcurrentMod();
 			if(!hasNext())
-			{
 				throw new NoSuchElementException();
-			}
 			if(futureEntry == null)
 			{
 				currentEntry = associatedMap.elementData[position++];
@@ -153,9 +142,7 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 			else
 			{
 				if(currentEntry != null)
-				{
 					prevEntry = currentEntry;
-				}
 				currentEntry = futureEntry;
 				futureEntry = futureEntry.next;
 			}
@@ -165,29 +152,23 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 		{
 			checkConcurrentMod();
 			if(currentEntry == null)
-			{
 				throw new IllegalStateException();
-			}
 			if(prevEntry == null)
 			{
 				int index = currentEntry.origKeyHash & (associatedMap.elementData.length - 1);
 				associatedMap.elementData[index] = associatedMap.elementData[index].next;
 			}
 			else
-			{
 				prevEntry.next = currentEntry.next;
-			}
 			currentEntry = null;
 			expectedModCount++;
 			associatedMap.modCount++;
 			associatedMap.elementCount--;
-
 		}
 	}
 
 	private static class EntryIterator<V> extends AbstractMapIterator<V> implements LongMapIterator<V>
 	{
-
 		EntryIterator(LongHashMap<V> map)
 		{
 			super(map);
@@ -216,7 +197,6 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 
 	private static class ValueIterator<V> extends AbstractMapIterator<V> implements Iterator<V>
 	{
-
 		ValueIterator(LongHashMap<V> map)
 		{
 			super(map);
@@ -274,13 +254,9 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 	private static int calculateCapacity(int x)
 	{
 		if(x >= 1 << 30)
-		{
 			return 1 << 30;
-		}
 		if(x == 0)
-		{
 			return 16;
-		}
 		x = x - 1;
 		x |= x >> 1;
 		x |= x >> 2;
@@ -313,9 +289,7 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 			computeThreshold();
 		}
 		else
-		{
 			throw new IllegalArgumentException();
-		}
 	}
 
 	/**
@@ -356,9 +330,7 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 	{
 		Entry<V> m = getEntry(key);
 		if(m != null)
-		{
 			return m.value;
-		}
 		return null;
 	}
 
@@ -415,9 +387,7 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 			modCount++;
 			entry = createHashedEntry(key, index, hash);
 			if(++elementCount > threshold)
-			{
 				rehash();
-			}
 		}
 
 		V result = entry.value;
@@ -473,9 +443,7 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 	{
 		Entry<V> entry = removeEntry(key);
 		if(entry != null)
-		{
 			return entry.value;
-		}
 		return null;
 	}
 
@@ -495,17 +463,11 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 		}
 
 		if(entry == null)
-		{
 			return null;
-		}
 		if(last == null)
-		{
 			elementData[index] = entry.next;
-		}
 		else
-		{
 			last.next = entry.next;
-		}
 		modCount++;
 		elementCount--;
 		return entry;
@@ -546,5 +508,4 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 		h ^= (h >>> 20) ^ (h >>> 12);
 		return h ^ (h >>> 7) ^ (h >>> 4);
 	}
-
 }

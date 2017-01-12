@@ -39,7 +39,6 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class LongConcurrentLRUMap<V> extends LongMap<V>
 {
-
 	protected final LongConcurrentHashMap<CacheEntry<V>> map;
 	protected final int									 upperWaterMark, lowerWaterMark;
 	protected final ReentrantLock						 markAndSweepLock = new ReentrantLock(true);
@@ -108,13 +107,9 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 		CacheEntry<V> oldCacheEntry = map.put(key, e);
 		int currentSize;
 		if(oldCacheEntry == null)
-		{
 			currentSize = size.incrementAndGet();
-		}
 		else
-		{
 			currentSize = size.get();
-		}
 
 		putCounter.incrementAndGet();
 
@@ -129,9 +124,7 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 		// Thread safety note: isCleaning read is piggybacked (comes after) other volatile reads
 		// in this method.
 		if(currentSize > upperWaterMark && !isCleaning)
-		{
 			markAndSweep();
-		}
 		return oldCacheEntry == null ? null : oldCacheEntry.value;
 	}
 
@@ -279,7 +272,6 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 			// inserting into a priority queue
 			if(sz - numRemoved > acceptableWaterMark)
 			{
-
 				oldestEntry = newOldestEntry == Long.MAX_VALUE ? oldestEntry : newOldestEntry;
 				newOldestEntry = Long.MAX_VALUE;
 				newestEntry = newNewestEntry;
@@ -338,9 +330,7 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 
 						Object o = queue.myInsertWithOverflow(ce);
 						if(o != null)
-						{
 							newOldestEntry = Math.min(((CacheEntry)o).lastAccessedCopy, newOldestEntry);
-						}
 					}
 				}
 
@@ -406,9 +396,7 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 				return ret;
 			}
 			else
-			{
 				return element;
-			}
 		}
 	}
 
@@ -473,9 +461,7 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 				{
 					heap[1] = sentinel;
 					for(int i = 2; i < heap.length; i++)
-					{
 						heap[i] = getSentinelObject();
-					}
 					size = maxSize;
 				}
 			}
@@ -572,9 +558,7 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 				return ret;
 			}
 			else
-			{
 				return element;
-			}
 		}
 
 		/** Returns the least element of the PriorityQueue in constant time. */
@@ -665,9 +649,7 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 			int j = i << 1; // find smaller child
 			int k = j + 1;
 			if(k <= size && lessThan(heap[k], heap[j]))
-			{
 				j = k;
-			}
 			while(j <= size && lessThan(heap[j], node))
 			{
 				heap[i] = heap[j]; // shift up child
@@ -675,9 +657,7 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 				j = i << 1;
 				k = j + 1;
 				if(k <= size && lessThan(heap[k], heap[j]))
-				{
 					j = k;
-				}
 			}
 			heap[i] = node; // install saved node
 		}
@@ -711,7 +691,6 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 		final Iterator<CacheEntry<V>> iter = map.valuesIterator();
 		return new Iterator<V>()
 		{
-
 			@Override
 			public boolean hasNext()
 			{
@@ -817,6 +796,5 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 	/** override this method to get notified about evicted entries*/
 	protected void evictedEntry(long key, V value)
 	{
-
 	}
 }
