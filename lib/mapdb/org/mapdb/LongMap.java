@@ -20,18 +20,21 @@ import java.util.Iterator;
 
 /**
  * Same as 'java.util.Map' but uses primitive 'long' keys to minimise boxing (and GC) overhead.
- *
- * @author Jan Kotek
  */
 public abstract class LongMap<V>
 {
 	/**
-	 * Removes all mappings from this hash map, leaving it empty.
-	 *
-	 * @see #isEmpty
-	 * @see #size
+	 * Returns the number of elements in this map.
 	 */
-	public abstract void clear();
+	public abstract int size();
+
+	/**
+	 * Returns whether this map is empty.
+	 *
+	 * @return {@code true} if this map has no elements, {@code false} otherwise.
+	 * @see #size()
+	 */
+	public abstract boolean isEmpty();
 
 	/**
 	 * Returns the value of the mapping with the specified key.
@@ -41,14 +44,6 @@ public abstract class LongMap<V>
 	 *         if no mapping for the specified key is found.
 	 */
 	public abstract V get(long key);
-
-	/**
-	 * Returns whether this map is empty.
-	 *
-	 * @return {@code true} if this map has no elements, {@code false} otherwise.
-	 * @see #size()
-	 */
-	public abstract boolean isEmpty();
 
 	/**
 	 * Maps the specified key to the specified value.
@@ -69,9 +64,12 @@ public abstract class LongMap<V>
 	public abstract V remove(long key);
 
 	/**
-	 * Returns the number of elements in this map.
+	 * Removes all mappings from this hash map, leaving it empty.
+	 *
+	 * @see #isEmpty
+	 * @see #size
 	 */
-	public abstract int size();
+	public abstract void clear();
 
 	/**
 	 * @return iterator over values in map

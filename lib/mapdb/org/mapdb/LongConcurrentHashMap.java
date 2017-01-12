@@ -25,7 +25,6 @@ package org.mapdb;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.Random;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -50,12 +49,6 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	private static final int DEFAULT_INITIAL_CAPACITY = 16;
 
 	/**
-	 * The default concurrency level for this table, used when not
-	 * otherwise specified in a constructor.
-	 */
-	private static final int DEFAULT_CONCURRENCY_LEVEL = 16;
-
-	/**
 	 * The default load factor for this table, used when not
 	 * otherwise specified in a constructor.
 	 */
@@ -70,6 +63,12 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	private static final int MAXIMUM_CAPACITY = 1 << 30;
 
 	/**
+	 * The default concurrency level for this table, used when not
+	 * otherwise specified in a constructor.
+	 */
+	private static final int DEFAULT_CONCURRENCY_LEVEL = 16;
+
+	/**
 	 * The maximum number of segments to allow; used to bound
 	 * constructor arguments.
 	 */
@@ -82,11 +81,6 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	 * which would make it impossible to obtain an accurate result.
 	 */
 	private static final int RETRIES_BEFORE_LOCK = 2;
-
-	/**
-	 * Salt added to keys before hashing, so it is harder to trigger hash collision attack.
-	 */
-	private static final long hashSalt = new Random().nextLong();
 
 	/* ---------------- Fields -------------- */
 
@@ -230,15 +224,14 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		 * The load factor for the hash table.  Even though this value
 		 * is same for all segments, it is replicated to avoid needing
 		 * links to outer object.
-		 * @serial
 		 */
 		private final float loadFactor;
 
 		private Segment(int initialCapacity, float lf)
 		{
 			super(false); // CC.FAIR_LOCKS
-			loadFactor = lf;
 			setTable(HashEntry.<V> newArray(initialCapacity));
+			loadFactor = lf;
 		}
 
 		@SuppressWarnings("unchecked")
@@ -253,8 +246,8 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		 */
 		private void setTable(HashEntry<V>[] newTable)
 		{
-			threshold = (int)(newTable.length * loadFactor);
 			table = newTable;
+			threshold = (int)(newTable.length * loadFactor);
 		}
 
 		/**
@@ -288,54 +281,45 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 
 		/* Specialized implementations of map methods */
 
-		private V get(final long key, int hash)
+		private V get(long key, int hash)
 		{
-			if(count != 0)
-			{ // read-volatile
-				HashEntry<V> e = getFirst(hash);
-				while(e != null)
+			if(count != 0) // read-volatile
+			{
+				for(HashEntry<V> e = getFirst(hash); e != null; e = e.next)
 				{
 					if(e.hash == hash && key == e.key)
 					{
 						V v = e.value;
-						if(v != null)
-							return v;
-						return readValueUnderLock(e); // recheck
+						return v != null ? v : readValueUnderLock(e); // recheck
 					}
-					e = e.next;
 				}
 			}
 			return null;
 		}
 
-		private boolean containsKey(final long key, int hash)
+		private boolean containsKey(long key, int hash)
 		{
-			if(count != 0)
-			{ // read-volatile
-				HashEntry<V> e = getFirst(hash);
-				while(e != null)
-				{
+			if(count != 0) // read-volatile
+			{
+				for(HashEntry<V> e = getFirst(hash); e != null; e = e.next)
 					if(e.hash == hash && key == e.key)
 						return true;
-					e = e.next;
-				}
 			}
 			return false;
 		}
 
 		private boolean containsValue(Object value)
 		{
-			if(count != 0)
-			{ // read-volatile
-				HashEntry<V>[] tab = table;
-				//int len = tab.length;
-				for(HashEntry<V> aTab : tab)
+			if(count != 0) // read-volatile
+			{
+				HashEntry<V>[] entrys = table;
+				for(HashEntry<V> entry : entrys)
 				{
-					for(HashEntry<V> e = aTab; e != null; e = e.next)
+					for(HashEntry<V> e = entry; e != null; e = e.next)
 					{
 						V v = e.value;
-						if(v == null) // recheck
-							v = readValueUnderLock(e);
+						if(v == null)
+							v = readValueUnderLock(e); // recheck
 						if(value.equals(v))
 							return true;
 					}
@@ -349,17 +333,17 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 			lock();
 			try
 			{
-				HashEntry<V> e = getFirst(hash);
-				while(e != null && (e.hash != hash || key != e.key))
-					e = e.next;
-
-				boolean replaced = false;
-				if(e != null && oldValue.equals(e.value))
+				for(HashEntry<V> e = getFirst(hash); e != null; e = e.next)
 				{
-					replaced = true;
-					e.value = newValue;
+					if(e.hash == hash && key == e.key)
+					{
+						if(!oldValue.equals(e.value))
+							return false;
+						e.value = newValue;
+						return true;
+					}
 				}
-				return replaced;
+				return false;
 			}
 			finally
 			{
@@ -372,17 +356,16 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 			lock();
 			try
 			{
-				HashEntry<V> e = getFirst(hash);
-				while(e != null && (e.hash != hash || key != e.key))
-					e = e.next;
-
-				V oldValue = null;
-				if(e != null)
+				for(HashEntry<V> e = getFirst(hash); e != null; e = e.next)
 				{
-					oldValue = e.value;
-					e.value = newValue;
+					if(e.hash == hash && key == e.key)
+					{
+						V oldValue = e.value;
+						e.value = newValue;
+						return oldValue;
+					}
 				}
-				return oldValue;
+				return null;
 			}
 			finally
 			{
@@ -495,7 +478,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		/**
 		 * Remove; match on key only if value null, else match both.
 		 */
-		private V remove(final long key, int hash, Object value)
+		private V remove(long key, int hash, Object value)
 		{
 			lock();
 			try
@@ -591,7 +574,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		}
 		segmentShift = 32 - sshift;
 		segmentMask = ssize - 1;
-		this.segments = Segment.newArray(ssize);
+		segments = Segment.newArray(ssize);
 
 		if(initialCapacity > MAXIMUM_CAPACITY)
 			initialCapacity = MAXIMUM_CAPACITY;
@@ -602,8 +585,8 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		while(cap < c)
 			cap <<= 1;
 
-		for(int i = 0; i < this.segments.length; ++i)
-			this.segments[i] = new Segment<>(cap, loadFactor);
+		for(int i = 0; i < segments.length; ++i)
+			segments[i] = new Segment<>(cap, loadFactor);
 	}
 
 	/**
@@ -631,8 +614,6 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 
 	/**
 	 * Returns <tt>true</tt> if this map contains no key-value mappings.
-	 *
-	 * @return <tt>true</tt> if this map contains no key-value mappings
 	 */
 	@Override
 	public boolean isEmpty()
@@ -710,8 +691,8 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 			if(check == sum)
 				break;
 		}
-		if(check != sum)
-		{ // Resort to locking all segments
+		if(check != sum) // Resort to locking all segments
+		{
 			sum = 0;
 			for(Segment<V> segment : segs)
 				segment.lock();
@@ -720,21 +701,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 			for(Segment<V> segment : segs)
 				segment.unlock();
 		}
-		if(sum > Integer.MAX_VALUE)
-			return Integer.MAX_VALUE;
-		return (int)sum;
-	}
-
-	@Override
-	public Iterator<V> valuesIterator()
-	{
-		return new ValueIterator();
-	}
-
-	@Override
-	public LongMapIterator<V> longMapIterator()
-	{
-		return new MapIterator();
+		return sum < Integer.MAX_VALUE ? (int)sum : Integer.MAX_VALUE;
 	}
 
 	/**
@@ -751,7 +718,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	@Override
 	public V get(long key)
 	{
-		final int hash = LongHashMap.longHash(key ^ hashSalt);
+		int hash = LongHashMap.longHash(key);
 		return segmentFor(hash).get(key, hash);
 	}
 
@@ -766,7 +733,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	 */
 	public boolean containsKey(long key)
 	{
-		final int hash = LongHashMap.longHash(key ^ hashSalt);
+		int hash = LongHashMap.longHash(key);
 		return segmentFor(hash).containsKey(key, hash);
 	}
 
@@ -794,11 +761,9 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		// Try a few times without locking
 		for(int k = 0; k < RETRIES_BEFORE_LOCK; ++k)
 		{
-			//int sum = 0;
 			int mcsum = 0;
 			for(int i = 0; i < segs.length; ++i)
 			{
-				//int c = segments[i].count;
 				mcsum += mc[i] = segs[i].modCount;
 				if(segs[i].containsValue(value))
 					return true;
@@ -822,24 +787,18 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		// Resort to locking all segments
 		for(Segment<V> segment : segs)
 			segment.lock();
-		boolean found = false;
 		try
 		{
 			for(Segment<V> segment : segs)
-			{
 				if(segment.containsValue(value))
-				{
-					found = true;
-					break;
-				}
-			}
+					return true;
+			return false;
 		}
 		finally
 		{
 			for(Segment<V> segment : segs)
 				segment.unlock();
 		}
-		return found;
 	}
 
 	/**
@@ -860,7 +819,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	{
 		if(value == null)
 			throw new NullPointerException();
-		final int hash = LongHashMap.longHash(key ^ hashSalt);
+		int hash = LongHashMap.longHash(key);
 		return segmentFor(hash).put(key, hash, value, false);
 	}
 
@@ -875,7 +834,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	{
 		if(value == null)
 			throw new NullPointerException();
-		final int hash = LongHashMap.longHash(key ^ hashSalt);
+		int hash = LongHashMap.longHash(key);
 		return segmentFor(hash).put(key, hash, value, true);
 	}
 
@@ -891,7 +850,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	@Override
 	public V remove(long key)
 	{
-		final int hash = LongHashMap.longHash(key ^ hashSalt);
+		int hash = LongHashMap.longHash(key);
 		return segmentFor(hash).remove(key, hash, null);
 	}
 
@@ -900,7 +859,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	 */
 	public boolean remove(long key, Object value)
 	{
-		final int hash = LongHashMap.longHash(key ^ hashSalt);
+		int hash = LongHashMap.longHash(key);
 		return value != null && segmentFor(hash).remove(key, hash, value) != null;
 	}
 
@@ -911,7 +870,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	{
 		if(oldValue == null || newValue == null)
 			throw new NullPointerException();
-		final int hash = LongHashMap.longHash(key ^ hashSalt);
+		int hash = LongHashMap.longHash(key);
 		return segmentFor(hash).replace(key, hash, oldValue, newValue);
 	}
 
@@ -924,7 +883,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	{
 		if(value == null)
 			throw new NullPointerException();
-		final int hash = LongHashMap.longHash(key ^ hashSalt);
+		int hash = LongHashMap.longHash(key);
 		return segmentFor(hash).replace(key, hash, value);
 	}
 
@@ -939,6 +898,18 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	}
 
 	/* ---------------- Iterator Support -------------- */
+
+	@Override
+	public Iterator<V> valuesIterator()
+	{
+		return new ValueIterator();
+	}
+
+	@Override
+	public LongMapIterator<V> longMapIterator()
+	{
+		return new MapIterator();
+	}
 
 	private abstract class HashIterator
 	{
@@ -961,10 +932,8 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 				return;
 
 			while(nextTableIndex >= 0)
-			{
 				if((nextEntry = currentTable[nextTableIndex--]) != null)
 					return;
-			}
 
 			while(nextSegmentIndex >= 0)
 			{
@@ -1024,7 +993,8 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		@Override
 		public boolean moveToNext()
 		{
-			if(!hasNext()) return false;
+			if(!hasNext())
+				return false;
 			HashEntry<V> next = nextEntry();
 			key = next.key;
 			value = next.value;

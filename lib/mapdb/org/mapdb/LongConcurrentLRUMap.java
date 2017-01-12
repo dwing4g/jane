@@ -64,7 +64,7 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 
 	public LongConcurrentLRUMap(int size, int lowerWatermark)
 	{
-		this(size, lowerWatermark, (int)Math.floor((lowerWatermark + size) / 2), (int)Math.ceil(0.75 * size));
+		this(size, lowerWatermark, (int)Math.floor((lowerWatermark + size) / 2), (int)Math.ceil(0.75f * size));
 	}
 
 	@Override
@@ -90,12 +90,10 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 	public V remove(long key)
 	{
 		CacheEntry<V> cacheEntry = map.remove(key);
-		if(cacheEntry != null)
-		{
-			size.decrementAndGet();
-			return cacheEntry.value;
-		}
-		return null;
+		if(cacheEntry == null)
+			return null;
+		size.decrementAndGet();
+		return cacheEntry.value;
 	}
 
 	@Override
@@ -191,9 +189,10 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 					newOldestEntry = Math.min(thisEntry, newOldestEntry);
 				}
 				else if(thisEntry < oldestEntry + wantToRemove)
-				{ // entry in bottom group?
-				  // this entry is guaranteed to be in the bottom group
-				  // so immediately remove it from the map.
+				{
+					// entry in bottom group?
+					// this entry is guaranteed to be in the bottom group
+					// so immediately remove it from the map.
 					evictEntry(ce.key);
 					numRemoved++;
 				}
@@ -297,12 +296,12 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 						// eSize--;
 
 						newOldestEntry = Math.min(thisEntry, newOldestEntry);
-
 					}
 					else if(thisEntry < oldestEntry + wantToRemove)
-					{ // entry in bottom group?
-					  // this entry is guaranteed to be in the bottom group
-					  // so immediately remove it.
+					{
+						// entry in bottom group?
+						// this entry is guaranteed to be in the bottom group
+						// so immediately remove it.
 						evictEntry(ce.key);
 						numRemoved++;
 
@@ -391,15 +390,14 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 				add(element);
 				return null;
 			}
-			else if(size() > 0 && !lessThan(element, (CacheEntry<V>)heap[1]))
+			if(size() > 0 && !lessThan(element, (CacheEntry<V>)heap[1]))
 			{
 				CacheEntry<V> ret = (CacheEntry<V>)heap[1];
 				heap[1] = element;
 				updateTop();
 				return ret;
 			}
-			else
-				return element;
+			return element;
 		}
 	}
 
@@ -432,26 +430,23 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 			int heapSize;
 			if(0 == maxSize)
 				heapSize = 2; // We allocate 1 extra to avoid if statement in top()
+			else if(maxSize == Integer.MAX_VALUE)
+			{
+				// Don't wrap heapSize to -1, in this case, which
+				// causes a confusing NegativeArraySizeException.
+				// Note that very likely this will simply then hit
+				// an OOME, but at least that's more indicative to
+				// caller that this values is too big.  We don't +1
+				// in this case, but it's very unlikely in practice
+				// one will actually insert this many objects into
+				// the PQ:
+				heapSize = Integer.MAX_VALUE;
+			}
 			else
 			{
-				if(maxSize == Integer.MAX_VALUE)
-				{
-					// Don't wrap heapSize to -1, in this case, which
-					// causes a confusing NegativeArraySizeException.
-					// Note that very likely this will simply then hit
-					// an OOME, but at least that's more indicative to
-					// caller that this values is too big.  We don't +1
-					// in this case, but it's very unlikely in practice
-					// one will actually insert this many objects into
-					// the PQ:
-					heapSize = Integer.MAX_VALUE;
-				}
-				else
-				{
-					// NOTE: we add +1 because all access to heap is
-					// 1-based not 0-based.  heap[0] is unused.
-					heapSize = maxSize + 1;
-				}
+				// NOTE: we add +1 because all access to heap is
+				// 1-based not 0-based.  heap[0] is unused.
+				heapSize = maxSize + 1;
 			}
 			heap = (T[])new Object[heapSize]; // T is unbounded type, so this unchecked cast works always
 			this.maxSize = maxSize;
@@ -554,15 +549,14 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 				add(element);
 				return null;
 			}
-			else if(size > 0 && !lessThan(element, heap[1]))
+			if(size > 0 && !lessThan(element, heap[1]))
 			{
 				T ret = heap[1];
 				heap[1] = element;
 				updateTop();
 				return ret;
 			}
-			else
-				return element;
+			return element;
 		}
 
 		/** Returns the least element of the PriorityQueue in constant time. */
@@ -579,16 +573,14 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 		 time. */
 		public final T pop()
 		{
-			if(size > 0)
-			{
-				T result = heap[1]; // save first value
-				heap[1] = heap[size]; // move last to first
-				heap[size] = null; // permit GC of objects
-				size--;
-				downHeap(); // adjust heap
-				return result;
-			}
-			return null;
+			if(size <= 0)
+				return null;
+			T result = heap[1]; // save first value
+			heap[1] = heap[size]; // move last to first
+			heap[size] = null; // permit GC of objects
+			size--;
+			downHeap(); // adjust heap
+			return result;
 		}
 
 		/**
@@ -777,8 +769,8 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 		@Override
 		public int compareTo(CacheEntry<V> that)
 		{
-			if(this.lastAccessedCopy == that.lastAccessedCopy) return 0;
-			return this.lastAccessedCopy < that.lastAccessedCopy ? 1 : -1;
+			if(lastAccessedCopy == that.lastAccessedCopy) return 0;
+			return lastAccessedCopy < that.lastAccessedCopy ? 1 : -1;
 		}
 
 		@Override
