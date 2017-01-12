@@ -17,7 +17,6 @@
 
 package org.mapdb;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
@@ -28,74 +27,67 @@ import java.util.Random;
  * LongHashMap is an implementation of LongMap without concurrency locking.
  * This code is adoption of 'HashMap' from Apache Harmony refactored to support primitive long keys.
  */
-public class LongHashMap<V> extends LongMap<V> implements Serializable
+public final class LongHashMap<V> extends LongMap<V>
 {
-	private static final long serialVersionUID = 362340234235222265L;
-
-	/**
-	 * Actual count of entries
-	 */
-	transient int elementCount;
-
-	/**
-	 * The internal data structure to hold Entries
-	 */
-	transient Entry<V>[] elementData;
-
-	/**
-	 * modification count, to keep track of structural modifications between the HashMap and the iterator
-	 */
-	transient int modCount = 0;
-
 	/**
 	 * default size that an HashMap created using the default constructor would have.
 	 */
 	private static final int DEFAULT_SIZE = 16;
 
 	/**
-	 * maximum ratio of (stored elements)/(storage size) which does not lead to rehash
-	 */
-	final float loadFactor;
-
-	/**
 	 * Salt added to keys before hashing, so it is harder to trigger hash collision attack.
 	 */
-	protected final long hashSalt = hashSaltValue();
+	private static final long hashSalt = new Random().nextLong();
 
-	protected long hashSaltValue()
-	{
-		return new Random().nextLong();
-	}
+	/**
+	 * The internal data structure to hold Entries
+	 */
+	private Entry<V>[] elementData;
+
+	/**
+	 * Actual count of entries
+	 */
+	private int elementCount;
+
+	/**
+	 * modification count, to keep track of structural modifications between the HashMap and the iterator
+	 */
+	private int modCount;
+
+	/**
+	 * maximum ratio of (stored elements)/(storage size) which does not lead to rehash
+	 */
+	private final float loadFactor;
 
 	/**
 	 * maximum number of elements that can be put in this map before having to rehash
 	 */
-	int threshold;
+	private int threshold;
 
-	static class Entry<V>
+	private static final class Entry<V>
 	{
-		final int  origKeyHash;
-		final long key;
-		V		   value;
-		Entry<V>   next;
+		private final int  origKeyHash;
+		private Entry<V>   next;
+		private final long key;
+		private V		   value;
 
 		public Entry(long key, int hash)
 		{
+			origKeyHash = hash;
 			this.key = key;
-			this.origKeyHash = hash;
 		}
 	}
 
-	private static class AbstractMapIterator<V>
+	private static abstract class AbstractMapIterator<V>
 	{
-		private int			 position = 0;
-		int					 expectedModCount;
-		Entry<V>			 futureEntry;
-		Entry<V>			 currentEntry;
-		Entry<V>			 prevEntry;
-		final LongHashMap<V> associatedMap;
+		private int					 position;
+		private int					 expectedModCount;
+		private Entry<V>			 futureEntry;
+		protected Entry<V>			 currentEntry;
+		private Entry<V>			 prevEntry;
+		private final LongHashMap<V> associatedMap;
 
-		AbstractMapIterator(LongHashMap<V> hm)
+		private AbstractMapIterator(LongHashMap<V> hm)
 		{
 			associatedMap = hm;
 			expectedModCount = hm.modCount;
@@ -116,13 +108,13 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 			return false;
 		}
 
-		final void checkConcurrentMod() throws ConcurrentModificationException
+		private final void checkConcurrentMod() throws ConcurrentModificationException
 		{
 			if(expectedModCount != associatedMap.modCount)
 				throw new ConcurrentModificationException();
 		}
 
-		final void makeNext()
+		protected final void makeNext()
 		{
 			checkConcurrentMod();
 			if(!hasNext())
@@ -161,9 +153,9 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 		}
 	}
 
-	private static class EntryIterator<V> extends AbstractMapIterator<V> implements LongMapIterator<V>
+	private static final class EntryIterator<V> extends AbstractMapIterator<V> implements LongMapIterator<V>
 	{
-		EntryIterator(LongHashMap<V> map)
+		private EntryIterator(LongHashMap<V> map)
 		{
 			super(map);
 		}
@@ -189,9 +181,9 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 		}
 	}
 
-	private static class ValueIterator<V> extends AbstractMapIterator<V> implements Iterator<V>
+	private static final class ValueIterator<V> extends AbstractMapIterator<V> implements Iterator<V>
 	{
-		ValueIterator(LongHashMap<V> map)
+		private ValueIterator(LongHashMap<V> map)
 		{
 			super(map);
 		}
@@ -210,7 +202,7 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 	 * @return Reference to the element array
 	 */
 	@SuppressWarnings("unchecked")
-	Entry<V>[] newElementArray(int s)
+	private Entry<V>[] newElementArray(int s)
 	{
 		return new Entry[s];
 	}
@@ -317,14 +309,14 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 		return null;
 	}
 
-	final Entry<V> getEntry(long key)
+	private final Entry<V> getEntry(long key)
 	{
 		int hash = LongHashMap.longHash(key ^ hashSalt);
 		int index = hash & (elementData.length - 1);
 		return findNonNullKeyEntry(key, index, hash);
 	}
 
-	final Entry<V> findNonNullKeyEntry(long key, int index, int keyHash)
+	private final Entry<V> findNonNullKeyEntry(long key, int index, int keyHash)
 	{
 		Entry<V> m = elementData[index];
 		while(m != null && (m.origKeyHash != keyHash || key != m.key))
@@ -372,15 +364,15 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 		return result;
 	}
 
-	Entry<V> createHashedEntry(long key, int index, int hash)
+	private Entry<V> createHashedEntry(long key, int index, int hash)
 	{
-		Entry<V> entry = new Entry<V>(key, hash);
+		Entry<V> entry = new Entry<>(key, hash);
 		entry.next = elementData[index];
 		elementData[index] = entry;
 		return entry;
 	}
 
-	void rehash(int capacity)
+	private void rehash(int capacity)
 	{
 		int length = calculateCapacity((capacity == 0 ? 1 : capacity << 1));
 
@@ -402,7 +394,7 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 		computeThreshold();
 	}
 
-	void rehash()
+	private void rehash()
 	{
 		rehash(elementData.length);
 	}
@@ -423,14 +415,13 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 		return null;
 	}
 
-	final Entry<V> removeEntry(long key)
+	private final Entry<V> removeEntry(long key)
 	{
-		int index = 0;
 		Entry<V> entry;
 		Entry<V> last = null;
 
 		int hash = LongHashMap.longHash(key ^ hashSalt);
-		index = hash & (elementData.length - 1);
+		int index = hash & (elementData.length - 1);
 		entry = elementData[index];
 		while(entry != null && !(entry.origKeyHash == hash && key == entry.key))
 		{
@@ -461,24 +452,18 @@ public class LongHashMap<V> extends LongMap<V> implements Serializable
 	@Override
 	public Iterator<V> valuesIterator()
 	{
-		return new ValueIterator<V>(this);
+		return new ValueIterator<>(this);
 	}
 
 	@Override
 	public LongMapIterator<V> longMapIterator()
 	{
-		return new EntryIterator<V>(this);
+		return new EntryIterator<>(this);
 	}
 
 	public static int longHash(final long key)
 	{
 		int h = (int)(key ^ (key >>> 32));
-		h ^= (h >>> 20) ^ (h >>> 12);
-		return h ^ (h >>> 7) ^ (h >>> 4);
-	}
-
-	public static int intHash(int h)
-	{
 		h ^= (h >>> 20) ^ (h >>> 12);
 		return h ^ (h >>> 7) ^ (h >>> 4);
 	}

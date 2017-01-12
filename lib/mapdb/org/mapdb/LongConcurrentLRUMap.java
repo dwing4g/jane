@@ -37,29 +37,26 @@ import java.util.concurrent.locks.ReentrantLock;
  * MapDB note: reworked to implement LongMap. Original comes from:
  * https://svn.apache.org/repos/asf/lucene/dev/trunk/solr/core/src/java/org/apache/solr/util/ConcurrentLRUCache.java
  */
-public class LongConcurrentLRUMap<V> extends LongMap<V>
+public final class LongConcurrentLRUMap<V> extends LongMap<V>
 {
-	protected final LongConcurrentHashMap<CacheEntry<V>> map;
-	protected final int									 upperWaterMark, lowerWaterMark;
-	protected final ReentrantLock						 markAndSweepLock = new ReentrantLock(true);
-	protected boolean									 isCleaning		  = false;					// not volatile... piggybacked on other volatile vars
+	private final LongConcurrentHashMap<CacheEntry<V>> map;
+	private final int								   upperWaterMark, lowerWaterMark;
+	private final ReentrantLock						   markAndSweepLock	= new ReentrantLock(true);
+	private boolean									   isCleaning;								  // not volatile... piggybacked on other volatile vars
+	private final int								   acceptableWaterMark;
+	private long									   oldestEntry;								  // not volatile, only accessed in the cleaning method
+	private final AtomicLong						   accessCounter	= new AtomicLong();
+	private final AtomicLong						   putCounter		= new AtomicLong();
+	private final AtomicLong						   missCounter		= new AtomicLong();
+	private final AtomicLong						   evictionCounter	= new AtomicLong();
+	private final AtomicInteger						   size				= new AtomicInteger();
 
-	protected final int	acceptableWaterMark;
-	protected long		oldestEntry	= 0;	// not volatile, only accessed in the cleaning method
-
-	protected final AtomicLong	  accessCounter	= new AtomicLong(0),
-			putCounter = new AtomicLong(0),
-			missCounter = new AtomicLong(),
-			evictionCounter = new AtomicLong();
-	protected final AtomicInteger size			= new AtomicInteger();
-
-	public LongConcurrentLRUMap(int upperWaterMark, final int lowerWaterMark, int acceptableWatermark,
-			int initialSize)
+	public LongConcurrentLRUMap(int upperWaterMark, final int lowerWaterMark, int acceptableWatermark, int initialSize)
 	{
 		if(upperWaterMark < 1) throw new IllegalArgumentException("upperWaterMark must be > 0");
 		if(lowerWaterMark >= upperWaterMark)
 			throw new IllegalArgumentException("lowerWaterMark must be  < upperWaterMark");
-		map = new LongConcurrentHashMap<CacheEntry<V>>(initialSize);
+		map = new LongConcurrentHashMap<>(initialSize);
 		this.upperWaterMark = upperWaterMark;
 		this.lowerWaterMark = lowerWaterMark;
 		this.acceptableWaterMark = acceptableWatermark;
@@ -70,6 +67,7 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 		this(size, lowerWatermark, (int)Math.floor((lowerWatermark + size) / 2), (int)Math.ceil(0.75 * size));
 	}
 
+	@Override
 	public V get(long key)
 	{
 		CacheEntry<V> e = map.get(key);
@@ -88,6 +86,7 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 		return map.isEmpty();
 	}
 
+	@Override
 	public V remove(long key)
 	{
 		CacheEntry<V> cacheEntry = map.remove(key);
@@ -99,10 +98,11 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 		return null;
 	}
 
+	@Override
 	public V put(long key, V val)
 	{
 		if(val == null) return null;
-		CacheEntry<V> e = new CacheEntry<V>(key, val, accessCounter.incrementAndGet());
+		CacheEntry<V> e = new CacheEntry<>(key, val, accessCounter.incrementAndGet());
 		CacheEntry<V> oldCacheEntry = map.put(key, e);
 		int currentSize;
 		if(oldCacheEntry == null)
@@ -151,6 +151,7 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 		if(!markAndSweepLock.tryLock()) return;
 		try
 		{
+			@SuppressWarnings("hiding")
 			long oldestEntry = this.oldestEntry;
 			isCleaning = true;
 			this.oldestEntry = oldestEntry; // volatile write to make isCleaning visible
@@ -167,7 +168,8 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 			int wantToKeep = lowerWaterMark;
 			int wantToRemove = sz - lowerWaterMark;
 
-			CacheEntry[] eset = new CacheEntry[sz];
+			@SuppressWarnings("unchecked")
+			CacheEntry<V>[] eset = new CacheEntry[sz];
 			int eSize = 0;
 
 			// System.out.println("newestEntry="+newestEntry + " oldestEntry="+oldestEntry);
@@ -229,7 +231,7 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 				// iterate backward to make it easy to remove items.
 				for(int i = eSize - 1; i >= 0; i--)
 				{
-					CacheEntry ce = eset[i];
+					CacheEntry<V> ce = eset[i];
 					long thisEntry = ce.lastAccessedCopy;
 
 					if(thisEntry > newestEntry - wantToKeep)
@@ -278,7 +280,7 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 				wantToKeep = lowerWaterMark - numKept;
 				wantToRemove = sz - lowerWaterMark - numRemoved;
 
-				PQueue<V> queue = new PQueue<V>(wantToRemove);
+				PQueue<V> queue = new PQueue<>(wantToRemove);
 
 				for(int i = eSize - 1; i >= 0; i--)
 				{
@@ -322,14 +324,14 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 						queue.myMaxSize = sz - lowerWaterMark - numRemoved;
 						while(queue.size() > queue.myMaxSize && queue.size() > 0)
 						{
-							CacheEntry otherEntry = queue.pop();
+							CacheEntry<V> otherEntry = queue.pop();
 							newOldestEntry = Math.min(otherEntry.lastAccessedCopy, newOldestEntry);
 						}
 						if(queue.myMaxSize <= 0) break;
 
-						Object o = queue.myInsertWithOverflow(ce);
+						CacheEntry<V> o = queue.myInsertWithOverflow(ce);
 						if(o != null)
-							newOldestEntry = Math.min(((CacheEntry)o).lastAccessedCopy, newOldestEntry);
+							newOldestEntry = Math.min(o.lastAccessedCopy, newOldestEntry);
 					}
 				}
 
@@ -355,19 +357,20 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 		}
 	}
 
-	private static class PQueue<V> extends PriorityQueue<CacheEntry<V>>
+	private static final class PQueue<V> extends PriorityQueue<CacheEntry<V>>
 	{
-		int			   myMaxSize;
-		final Object[] heap;
+		private int			   myMaxSize;
+		private final Object[] heap;
 
-		PQueue(int maxSz)
+		private PQueue(int maxSz)
 		{
 			super(maxSz);
 			heap = getHeapArray();
 			myMaxSize = maxSz;
 		}
 
-		Iterable<CacheEntry<V>> getValues()
+		@SuppressWarnings({ "unchecked", "rawtypes" })
+		private Iterable<CacheEntry<V>> getValues()
 		{
 			return (Collection)Collections.unmodifiableCollection(Arrays.asList(heap));
 		}
@@ -380,6 +383,7 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 		}
 
 		// necessary because maxSize is private in base class
+		@SuppressWarnings("unchecked")
 		public CacheEntry<V> myInsertWithOverflow(CacheEntry<V> element)
 		{
 			if(size() < myMaxSize)
@@ -421,6 +425,7 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 			this(maxSize, true);
 		}
 
+		@SuppressWarnings("unchecked")
 		public PriorityQueue(int maxSize, boolean prepopulate)
 		{
 			size = 0;
@@ -541,6 +546,7 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 		 * heap and now has been replaced by a larger one, or null
 		 * if the queue wasn't yet full with maxSize elements.
 		 */
+		@SuppressWarnings("unused")
 		public T insertWithOverflow(T element)
 		{
 			if(size < maxSize)
@@ -560,6 +566,7 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 		}
 
 		/** Returns the least element of the PriorityQueue in constant time. */
+		@SuppressWarnings("unused")
 		public final T top()
 		{
 			// We don't need to check size here: if maxSize is 0,
@@ -581,8 +588,7 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 				downHeap(); // adjust heap
 				return result;
 			}
-			else
-				return null;
+			return null;
 		}
 
 		/**
@@ -617,12 +623,11 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 		}
 
 		/** Removes all entries from the PriorityQueue. */
+		@SuppressWarnings("unused")
 		public final void clear()
 		{
 			for(int i = 0; i <= size; i++)
-			{
 				heap[i] = null;
-			}
 			size = 0;
 		}
 
@@ -675,9 +680,10 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 		if(o == null) return;
 		size.decrementAndGet();
 		evictionCounter.incrementAndGet();
-		evictedEntry(o.key, o.value);
+		// evictedEntry(o.key, o.value);
 	}
 
+	@Override
 	public int size()
 	{
 		return size.get();
@@ -686,9 +692,10 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 	@Override
 	public Iterator<V> valuesIterator()
 	{
-		final Iterator<CacheEntry<V>> iter = map.valuesIterator();
 		return new Iterator<V>()
 		{
+			final Iterator<CacheEntry<V>> iter = map.valuesIterator();
+
 			@Override
 			public boolean hasNext()
 			{
@@ -712,9 +719,10 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 	@Override
 	public LongMapIterator<V> longMapIterator()
 	{
-		final LongMapIterator<CacheEntry<V>> iter = map.longMapIterator();
 		return new LongMapIterator<V>()
 		{
+			final LongMapIterator<CacheEntry<V>> iter = map.longMapIterator();
+
 			@Override
 			public boolean moveToNext()
 			{
@@ -741,6 +749,7 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 		};
 	}
 
+	@Override
 	public void clear()
 	{
 		map.clear();
@@ -753,10 +762,10 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 
 	private static final class CacheEntry<V> implements Comparable<CacheEntry<V>>
 	{
-		final long	  key;
-		final V		  value;
-		volatile long lastAccessed	   = 0;
-		long		  lastAccessedCopy = 0;
+		private final long	  key;
+		private final V		  value;
+		private volatile long lastAccessed;
+		private long		  lastAccessedCopy;
 
 		public CacheEntry(long key, V value, long lastAccessed)
 		{
@@ -792,7 +801,5 @@ public class LongConcurrentLRUMap<V> extends LongMap<V>
 	}
 
 	/** override this method to get notified about evicted entries*/
-	protected void evictedEntry(long key, V value)
-	{
-	}
+	// protected void evictedEntry(long key, V value) {}
 }

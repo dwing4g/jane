@@ -6,11 +6,7 @@
 			<attribute name="ignore_optional_problems" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="src" path="lib/mapdb">
-		<attributes>
-			<attribute name="ignore_optional_problems" value="true"/>
-		</attributes>
-	</classpathentry>
+	<classpathentry kind="src" path="lib/mapdb"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
 	<classpathentry kind="lib" path="lib/luaj-jse-2.0.3.jar" sourcepath="lib/src/luaj-sources-2.0.3.jar"/>
 	<classpathentry kind="lib" path="lib/slf4j-api-1.7.22.jar" sourcepath="lib/src/slf4j-api-1.7.22-sources.jar"/>

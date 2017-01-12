@@ -14,8 +14,7 @@
  *  limitations under the License.
  */
 
-/* This code was adopted from JSR 166 group  with following
- * copyright:
+/* This code was adopted from JSR 166 group with following copyright:
  *
  * Written by Doug Lea with assistance from members of JCP JSR-166
  * Expert Group and released to the public domain, as explained at
@@ -24,7 +23,6 @@
 
 package org.mapdb;
 
-import java.io.Serializable;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Random;
@@ -36,10 +34,8 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Jan Kotek
  * @author Doug Lea
  */
-public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
+public final class LongConcurrentHashMap<V> extends LongMap<V>
 {
-	private static final long serialVersionUID = 7249069246763182397L;
-
 	/*
 	 * The basic strategy is to subdivide the table among Segments,
 	 * each of which itself is a concurrently readable hash table.
@@ -51,24 +47,19 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 	 * The default initial capacity for this table,
 	 * used when not otherwise specified in a constructor.
 	 */
-	static final int DEFAULT_INITIAL_CAPACITY = 16;
-
-	/**
-	 * Salt added to keys before hashing, so it is harder to trigger hash collision attack.
-	 */
-	protected final long hashSalt = new Random().nextLong();
-
-	/**
-	 * The default load factor for this table, used when not
-	 * otherwise specified in a constructor.
-	 */
-	static final float DEFAULT_LOAD_FACTOR = 0.75f;
+	private static final int DEFAULT_INITIAL_CAPACITY = 16;
 
 	/**
 	 * The default concurrency level for this table, used when not
 	 * otherwise specified in a constructor.
 	 */
-	static final int DEFAULT_CONCURRENCY_LEVEL = 16;
+	private static final int DEFAULT_CONCURRENCY_LEVEL = 16;
+
+	/**
+	 * The default load factor for this table, used when not
+	 * otherwise specified in a constructor.
+	 */
+	private static final float DEFAULT_LOAD_FACTOR = 0.75f;
 
 	/**
 	 * The maximum capacity, used if a higher value is implicitly
@@ -76,13 +67,13 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 	 * be a power of two <= 1<<30 to ensure that entries are indexable
 	 * using ints.
 	 */
-	static final int MAXIMUM_CAPACITY = 1 << 30;
+	private static final int MAXIMUM_CAPACITY = 1 << 30;
 
 	/**
 	 * The maximum number of segments to allow; used to bound
 	 * constructor arguments.
 	 */
-	static final int MAX_SEGMENTS = 1 << 16; // slightly conservative
+	private static final int MAX_SEGMENTS = 1 << 16; // slightly conservative
 
 	/**
 	 * Number of unsynchronized retries in size and containsValue
@@ -90,7 +81,12 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 	 * unbounded retries if tables undergo continuous modification
 	 * which would make it impossible to obtain an accurate result.
 	 */
-	static final int RETRIES_BEFORE_LOCK = 2;
+	private static final int RETRIES_BEFORE_LOCK = 2;
+
+	/**
+	 * Salt added to keys before hashing, so it is harder to trigger hash collision attack.
+	 */
+	private static final long hashSalt = new Random().nextLong();
 
 	/* ---------------- Fields -------------- */
 
@@ -98,17 +94,17 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 	 * Mask value for indexing into segments. The upper bits of a
 	 * key's hash code are used to choose the segment.
 	 */
-	final int segmentMask;
+	private final int segmentMask;
 
 	/**
 	 * Shift value for indexing within segments.
 	 */
-	final int segmentShift;
+	private final int segmentShift;
 
 	/**
 	 * The segments, each of which is a specialized hash table
 	 */
-	final Segment<V>[] segments;
+	private final Segment<V>[] segments;
 
 	/* ---------------- Small Utilities -------------- */
 
@@ -117,7 +113,7 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 	 * @param hash the hash code for the key
 	 * @return the segment
 	 */
-	final Segment<V> segmentFor(int hash)
+	private final Segment<V> segmentFor(int hash)
 	{
 		return segments[(hash >>> segmentShift) & segmentMask];
 	}
@@ -136,23 +132,23 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 	 * backup in case a null (pre-initialized) value is ever seen in
 	 * an unsynchronized access method.
 	 */
-	static final class HashEntry<V>
+	private static final class HashEntry<V>
 	{
-		final long		   key;
-		final int		   hash;
-		volatile V		   value;
-		final HashEntry<V> next;
+		private final int		   hash;
+		private final HashEntry<V> next;
+		private final long		   key;
+		private volatile V		   value;
 
-		HashEntry(long key, int hash, HashEntry<V> next, V value)
+		private HashEntry(long key, int hash, HashEntry<V> next, V value)
 		{
-			this.key = key;
 			this.hash = hash;
 			this.next = next;
+			this.key = key;
 			this.value = value;
 		}
 
 		@SuppressWarnings("unchecked")
-		static <V> HashEntry<V>[] newArray(int i)
+		private static <V> HashEntry<V>[] newArray(int i)
 		{
 			return new HashEntry[i];
 		}
@@ -163,7 +159,7 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 	 * subclasses from ReentrantLock opportunistically, just to
 	 * simplify some locking and avoid separate construction.
 	 */
-	static final class Segment<V> extends ReentrantLock implements Serializable
+	private static final class Segment<V> extends ReentrantLock
 	{
 		/*
 		 * Segments maintain a table of entry lists that are ALWAYS
@@ -202,12 +198,17 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 		 * count field are marked in code comments.
 		 */
 
-		private static final long serialVersionUID = 2249069246763182397L;
+		private static final long serialVersionUID = 1L;
+
+		/**
+		 * The per-segment table.
+		 */
+		private volatile HashEntry<V>[] table;
 
 		/**
 		 * The number of elements in this segment's region.
 		 */
-		transient volatile int count;
+		private volatile int count;
 
 		/**
 		 * Number of updates that alter the size of the table. This is
@@ -217,18 +218,13 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 		 * we might have an inconsistent view of state so (usually)
 		 * must retry.
 		 */
-		transient int modCount;
+		private int modCount;
 
 		/**
 		 * The table is rehashed when its size exceeds this threshold.
 		 * (The value of this field is always <tt>(int)(capacity * loadFactor)</tt>.)
 		 */
-		transient int threshold;
-
-		/**
-		 * The per-segment table.
-		 */
-		transient volatile HashEntry<V>[] table;
+		private int threshold;
 
 		/**
 		 * The load factor for the hash table.  Even though this value
@@ -236,9 +232,9 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 		 * links to outer object.
 		 * @serial
 		 */
-		final float loadFactor;
+		private final float loadFactor;
 
-		Segment(int initialCapacity, float lf)
+		private Segment(int initialCapacity, float lf)
 		{
 			super(false); // CC.FAIR_LOCKS
 			loadFactor = lf;
@@ -246,7 +242,7 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 		}
 
 		@SuppressWarnings("unchecked")
-		static <V> Segment<V>[] newArray(int i)
+		private static <V> Segment<V>[] newArray(int i)
 		{
 			return new Segment[i];
 		}
@@ -255,7 +251,7 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 		 * Sets table to new HashEntry array.
 		 * Call only while holding lock or in constructor.
 		 */
-		void setTable(HashEntry<V>[] newTable)
+		private void setTable(HashEntry<V>[] newTable)
 		{
 			threshold = (int)(newTable.length * loadFactor);
 			table = newTable;
@@ -264,7 +260,7 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 		/**
 		 * Returns properly casted first entry of bin for given hash.
 		 */
-		HashEntry<V> getFirst(int hash)
+		private HashEntry<V> getFirst(int hash)
 		{
 			HashEntry<V>[] tab = table;
 			return tab[hash & (tab.length - 1)];
@@ -277,7 +273,7 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 		 * its table assignment, which is legal under memory model
 		 * but is not known to ever occur.
 		 */
-		V readValueUnderLock(HashEntry<V> e)
+		private V readValueUnderLock(HashEntry<V> e)
 		{
 			lock();
 			try
@@ -292,7 +288,7 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 
 		/* Specialized implementations of map methods */
 
-		V get(final long key, int hash)
+		private V get(final long key, int hash)
 		{
 			if(count != 0)
 			{ // read-volatile
@@ -312,7 +308,7 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 			return null;
 		}
 
-		boolean containsKey(final long key, int hash)
+		private boolean containsKey(final long key, int hash)
 		{
 			if(count != 0)
 			{ // read-volatile
@@ -327,7 +323,7 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 			return false;
 		}
 
-		boolean containsValue(Object value)
+		private boolean containsValue(Object value)
 		{
 			if(count != 0)
 			{ // read-volatile
@@ -348,7 +344,7 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 			return false;
 		}
 
-		boolean replace(long key, int hash, V oldValue, V newValue)
+		private boolean replace(long key, int hash, V oldValue, V newValue)
 		{
 			lock();
 			try
@@ -371,7 +367,7 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 			}
 		}
 
-		V replace(long key, int hash, V newValue)
+		private V replace(long key, int hash, V newValue)
 		{
 			lock();
 			try
@@ -394,7 +390,7 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 			}
 		}
 
-		V put(long key, int hash, V value, boolean onlyIfAbsent)
+		private V put(long key, int hash, V value, boolean onlyIfAbsent)
 		{
 			lock();
 			try
@@ -420,7 +416,7 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 				{
 					oldValue = null;
 					++modCount;
-					tab[index] = new HashEntry<V>(key, hash, first, value);
+					tab[index] = new HashEntry<>(key, hash, first, value);
 					count = c; // write-volatile
 				}
 				return oldValue;
@@ -431,7 +427,7 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 			}
 		}
 
-		void rehash()
+		private void rehash()
 		{
 			HashEntry<V>[] oldTable = table;
 			int oldCapacity = oldTable.length;
@@ -488,7 +484,7 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 						{
 							int k = p.hash & sizeMask;
 							HashEntry<V> n = newTable[k];
-							newTable[k] = new HashEntry<V>(p.key, p.hash, n, p.value);
+							newTable[k] = new HashEntry<>(p.key, p.hash, n, p.value);
 						}
 					}
 				}
@@ -499,7 +495,7 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 		/**
 		 * Remove; match on key only if value null, else match both.
 		 */
-		V remove(final long key, int hash, Object value)
+		private V remove(final long key, int hash, Object value)
 		{
 			lock();
 			try
@@ -525,8 +521,7 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 						++modCount;
 						HashEntry<V> newFirst = e.next;
 						for(HashEntry<V> p = first; p != e; p = p.next)
-							newFirst = new HashEntry<V>(p.key, p.hash,
-									newFirst, p.value);
+							newFirst = new HashEntry<>(p.key, p.hash, newFirst, p.value);
 						tab[index] = newFirst;
 						count = c; // write-volatile
 					}
@@ -539,7 +534,7 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 			}
 		}
 
-		void clear()
+		private void clear()
 		{
 			if(count != 0)
 			{
@@ -608,7 +603,7 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 			cap <<= 1;
 
 		for(int i = 0; i < this.segments.length; ++i)
-			this.segments[i] = new Segment<V>(cap, loadFactor);
+			this.segments[i] = new Segment<>(cap, loadFactor);
 	}
 
 	/**
@@ -642,7 +637,7 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 	@Override
 	public boolean isEmpty()
 	{
-		final Segment<V>[] segments = this.segments;
+		final Segment<V>[] segs = segments;
 		/*
 		 * We keep track of per-segment modCounts to avoid ABA
 		 * problems in which an element in one segment was added and
@@ -652,23 +647,22 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 		 * methods, which are the only other methods also susceptible
 		 * to ABA problems.
 		 */
-		int[] mc = new int[segments.length];
+		int[] mc = new int[segs.length];
 		int mcsum = 0;
-		for(int i = 0; i < segments.length; ++i)
+		for(int i = 0; i < segs.length; ++i)
 		{
-			if(segments[i].count != 0)
+			if(segs[i].count != 0)
 				return false;
-			else
-				mcsum += mc[i] = segments[i].modCount;
+			mcsum += mc[i] = segs[i].modCount;
 		}
 		// If mcsum happens to be zero, then we know we got a snapshot
 		// before any modifications at all were made.  This is
 		// probably common enough to bother tracking.
 		if(mcsum != 0)
 		{
-			for(int i = 0; i < segments.length; ++i)
+			for(int i = 0; i < segs.length; ++i)
 			{
-				if(segments[i].count != 0 || mc[i] != segments[i].modCount)
+				if(segs[i].count != 0 || mc[i] != segs[i].modCount)
 					return false;
 			}
 		}
@@ -685,10 +679,10 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 	@Override
 	public int size()
 	{
-		final Segment<V>[] segments = this.segments;
+		final Segment<V>[] segs = segments;
 		long sum = 0;
 		long check = 0;
-		int[] mc = new int[segments.length];
+		int[] mc = new int[segs.length];
 		// Try a few times to get accurate count. On failure due to
 		// continuous async changes in table, resort to locking.
 		for(int k = 0; k < RETRIES_BEFORE_LOCK; ++k)
@@ -696,17 +690,17 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 			check = 0;
 			sum = 0;
 			int mcsum = 0;
-			for(int i = 0; i < segments.length; ++i)
+			for(int i = 0; i < segs.length; ++i)
 			{
-				sum += segments[i].count;
-				mcsum += mc[i] = segments[i].modCount;
+				sum += segs[i].count;
+				mcsum += mc[i] = segs[i].modCount;
 			}
 			if(mcsum != 0)
 			{
-				for(int i = 0; i < segments.length; ++i)
+				for(int i = 0; i < segs.length; ++i)
 				{
-					check += segments[i].count;
-					if(mc[i] != segments[i].modCount)
+					check += segs[i].count;
+					if(mc[i] != segs[i].modCount)
 					{
 						check = -1; // force retry
 						break;
@@ -719,17 +713,16 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 		if(check != sum)
 		{ // Resort to locking all segments
 			sum = 0;
-			for(Segment<V> segment : segments)
+			for(Segment<V> segment : segs)
 				segment.lock();
-			for(Segment<V> segment : segments)
+			for(Segment<V> segment : segs)
 				sum += segment.count;
-			for(Segment<V> segment : segments)
+			for(Segment<V> segment : segs)
 				segment.unlock();
 		}
 		if(sum > Integer.MAX_VALUE)
 			return Integer.MAX_VALUE;
-		else
-			return (int)sum;
+		return (int)sum;
 	}
 
 	@Override
@@ -795,28 +788,28 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 
 		// See explanation of modCount use above
 
-		final Segment<V>[] segments = this.segments;
-		int[] mc = new int[segments.length];
+		final Segment<V>[] segs = segments;
+		int[] mc = new int[segs.length];
 
 		// Try a few times without locking
 		for(int k = 0; k < RETRIES_BEFORE_LOCK; ++k)
 		{
 			//int sum = 0;
 			int mcsum = 0;
-			for(int i = 0; i < segments.length; ++i)
+			for(int i = 0; i < segs.length; ++i)
 			{
 				//int c = segments[i].count;
-				mcsum += mc[i] = segments[i].modCount;
-				if(segments[i].containsValue(value))
+				mcsum += mc[i] = segs[i].modCount;
+				if(segs[i].containsValue(value))
 					return true;
 			}
 			boolean cleanSweep = true;
 			if(mcsum != 0)
 			{
-				for(int i = 0; i < segments.length; ++i)
+				for(int i = 0; i < segs.length; ++i)
 				{
 					//int c = segments[i].count;
-					if(mc[i] != segments[i].modCount)
+					if(mc[i] != segs[i].modCount)
 					{
 						cleanSweep = false;
 						break;
@@ -827,12 +820,12 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 				return false;
 		}
 		// Resort to locking all segments
-		for(Segment<V> segment : segments)
+		for(Segment<V> segment : segs)
 			segment.lock();
 		boolean found = false;
 		try
 		{
-			for(Segment<V> segment : segments)
+			for(Segment<V> segment : segs)
 			{
 				if(segment.containsValue(value))
 				{
@@ -843,7 +836,7 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 		}
 		finally
 		{
-			for(Segment<V> segment : segments)
+			for(Segment<V> segment : segs)
 				segment.unlock();
 		}
 		return found;
@@ -947,22 +940,22 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 
 	/* ---------------- Iterator Support -------------- */
 
-	abstract class HashIterator
+	private abstract class HashIterator
 	{
-		int			   nextSegmentIndex;
-		int			   nextTableIndex;
-		HashEntry<V>[] currentTable;
-		HashEntry<V>   nextEntry;
-		HashEntry<V>   lastReturned;
+		private int			   nextSegmentIndex;
+		private int			   nextTableIndex;
+		private HashEntry<V>[] currentTable;
+		private HashEntry<V>   nextEntry;
+		private HashEntry<V>   lastReturned;
 
-		HashIterator()
+		private HashIterator()
 		{
 			nextSegmentIndex = segments.length - 1;
 			nextTableIndex = -1;
 			advance();
 		}
 
-		final void advance()
+		private final void advance()
 		{
 			if(nextEntry != null && (nextEntry = nextEntry.next) != null)
 				return;
@@ -996,7 +989,7 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 			return nextEntry != null;
 		}
 
-		HashEntry<V> nextEntry()
+		protected HashEntry<V> nextEntry()
 		{
 			if(nextEntry == null)
 				throw new NoSuchElementException();
@@ -1014,16 +1007,7 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 		}
 	}
 
-	final class KeyIterator extends HashIterator implements Iterator<Long>
-	{
-		@Override
-		public Long next()
-		{
-			return super.nextEntry().key;
-		}
-	}
-
-	final class ValueIterator extends HashIterator implements Iterator<V>
+	private final class ValueIterator extends HashIterator implements Iterator<V>
 	{
 		@Override
 		public V next()
@@ -1032,7 +1016,7 @@ public class LongConcurrentHashMap<V> extends LongMap<V> implements Serializable
 		}
 	}
 
-	final class MapIterator extends HashIterator implements LongMapIterator<V>
+	private final class MapIterator extends HashIterator implements LongMapIterator<V>
 	{
 		private long key;
 		private V	 value;

@@ -96,8 +96,7 @@ public abstract class LongMap<V>
 	public String toString()
 	{
 		final StringBuilder b = new StringBuilder();
-		b.append(getClass().getSimpleName());
-		b.append('[');
+		b.append(getClass().getSimpleName()).append('[');
 		boolean first = true;
 		LongMapIterator<V> iter = longMapIterator();
 		while(iter.moveToNext())
@@ -110,7 +109,6 @@ public abstract class LongMap<V>
 			b.append(" => ");
 			b.append(iter.value());
 		}
-		b.append(']');
-		return b.toString();
+		return b.append(']').toString();
 	}
 }
