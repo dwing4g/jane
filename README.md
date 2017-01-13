@@ -9,7 +9,7 @@ Feature:
  * embedded database based on LevelDB with extremely fast in-memory cache
  * single process with multi-thread concurrent network and database
  * optimized for high performance (1 million TPS on one core of 3GHz PC)
- * simple implement but powerful (only 13K+ lines of core source code)
+ * simple implement but powerful (only 18K+ lines of core source code)
  * easy to understand and use with code generation for Java bean code
 
 Todo:
@@ -35,7 +35,6 @@ License:
  * 概念和实现简单清晰
 
 依赖库:
- * 基础库: com.googlecode.concurrentlinkedhashmap.\*, org.mapdb.Long\*Map (高速并发HashMap/LinkedHashMap/LRUMap)
  * 日志库: slf4j-1.7.x log4j-2.x
  * 网络库: mina-core-2.0.x
  * 数据库: leveldb-jni

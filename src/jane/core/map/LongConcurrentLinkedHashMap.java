@@ -167,19 +167,19 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
   /**
    * Creates an instance based on the builder's configuration.
    */
-  @SuppressWarnings({"unchecked", "cast"})
+  @SuppressWarnings({"unchecked"})
   private LongConcurrentLinkedHashMap(Builder<V> builder) {
     // The data store and its maximum capacity
     concurrencyLevel = builder.concurrencyLevel;
     capacity = new AtomicLong(Math.min(builder.capacity, MAXIMUM_CAPACITY));
-    data = new LongConcurrentHashMap<Node<V>>(builder.initialCapacity, 0.75f, concurrencyLevel);
+    data = new LongConcurrentHashMap<>(builder.initialCapacity, 0.75f, concurrencyLevel);
 
     // The eviction support
     evictionLock = new ReentrantLock();
     weightedSize = new AtomicLong();
-    evictionDeque = new LinkedDeque<Node<V>>();
-    writeBuffer = new ConcurrentLinkedQueue<Runnable>();
-    drainStatus = new AtomicReference<DrainStatus>(DrainStatus.IDLE);
+    evictionDeque = new LinkedDeque<>();
+    writeBuffer = new ConcurrentLinkedQueue<>();
+    drainStatus = new AtomicReference<>(DrainStatus.IDLE);
 
     readBufferReadCount = new long[NUMBER_OF_READ_BUFFERS];
     readBufferWriteCount = new AtomicLong[NUMBER_OF_READ_BUFFERS];
@@ -190,7 +190,7 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
       readBufferDrainAtWriteCount[i] = new AtomicLong();
       readBuffers[i] = new AtomicReference[READ_BUFFER_SIZE];
       for (int j = 0; j < READ_BUFFER_SIZE; j++) {
-        readBuffers[i][j] = new AtomicReference<Node<V>>();
+        readBuffers[i][j] = new AtomicReference<>();
       }
     }
   }
@@ -434,7 +434,7 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
    */
   boolean tryToRetire(Node<V> node, WeightedValue<V> expect) {
     if (expect.isAlive()) {
-      final WeightedValue<V> retired = new WeightedValue<V>(expect.value, -expect.weight);
+      final WeightedValue<V> retired = new WeightedValue<>(expect.value, -expect.weight);
       return node.compareAndSet(expect, retired);
     }
     return false;
@@ -452,7 +452,7 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
       if (!current.isAlive()) {
         return;
       }
-      final WeightedValue<V> retired = new WeightedValue<V>(current.value, -current.weight);
+      final WeightedValue<V> retired = new WeightedValue<>(current.value, -current.weight);
       if (node.compareAndSet(current, retired)) {
         return;
       }
@@ -469,7 +469,7 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
   void makeDead(Node<V> node) {
     for (;;) {
       WeightedValue<V> current = node.get();
-      WeightedValue<V> dead = new WeightedValue<V>(current.value, 0);
+      WeightedValue<V> dead = new WeightedValue<>(current.value, 0);
       if (node.compareAndSet(current, dead)) {
         weightedSize.lazySet(weightedSize.get() - Math.abs(current.weight));
         return;
@@ -538,10 +538,12 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
 
   /* ---------------- Concurrent Map Support -------------- */
 
+  @Override
   public boolean isEmpty() {
     return data.isEmpty();
   }
 
+  @Override
   public int size() {
     return data.size();
   }
@@ -555,6 +557,7 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
     return Math.max(0, weightedSize.get());
   }
 
+  @Override
   public void clear() {
     evictionLock.lock();
     try {
@@ -586,6 +589,7 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
     return data.containsKey(key);
   }
 
+  @Override
   public V get(long key) {
     final Node<V> node = data.get(key);
     if (node == null) {
@@ -611,6 +615,7 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
     return (node == null) ? null : node.getValue();
   }
 
+  @Override
   public V put(long key, V value) {
     return put(key, value, false);
   }
@@ -634,8 +639,8 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
     checkNotNull(value);
 
     final int weight = 1;
-    final WeightedValue<V> weightedValue = new WeightedValue<V>(value, weight);
-    final Node<V> node = new Node<V>(key, weightedValue);
+    final WeightedValue<V> weightedValue = new WeightedValue<>(value, weight);
+    final Node<V> node = new Node<>(key, weightedValue);
 
     for (;;) {
       final Node<V> prior = data.putIfAbsent(node.key, node);
@@ -665,6 +670,7 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
     }
   }
 
+  @Override
   public V remove(long key) {
     final Node<V> node = data.remove(key);
     if (node == null) {
@@ -708,7 +714,7 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
     checkNotNull(value);
 
     final int weight = 1;
-    final WeightedValue<V> weightedValue = new WeightedValue<V>(value, weight);
+    final WeightedValue<V> weightedValue = new WeightedValue<>(value, weight);
 
     final Node<V> node = data.get(key);
     if (node == null) {
@@ -737,7 +743,7 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
     checkNotNull(newValue);
 
     final int weight = 1;
-    final WeightedValue<V> newWeightedValue = new WeightedValue<V>(newValue, weight);
+    final WeightedValue<V> newWeightedValue = new WeightedValue<>(newValue, weight);
 
     final Node<V> node = data.get(key);
     if (node == null) {
@@ -760,14 +766,17 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
     }
   }
 
+  @Override
   public LongIterator keyIterator() {
     return data.keyIterator();
   }
 
+  @Override
   public Iterator<V> valueIterator() {
     return new ValueIterator();
   }
 
+  @Override
   public MapIterator<V> entryIterator() {
     return new EntryIterator();
   }
@@ -942,7 +951,6 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
     int initialCapacity;
     long capacity;
 
-    @SuppressWarnings("unchecked")
     public Builder() {
       capacity = -1;
       initialCapacity = DEFAULT_INITIAL_CAPACITY;
@@ -954,13 +962,13 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
      * This is the number of key-value pairs that the hash table can hold
      * before a resize operation is required.
      *
-     * @param initialCapacity the initial capacity used to size the hash table
+     * @param cap the initial capacity used to size the hash table
      *     to accommodate this many entries.
      * @throws IllegalArgumentException if the initialCapacity is negative
      */
-    public Builder<V> initialCapacity(int initialCapacity) {
-      checkArgument(initialCapacity >= 0);
-      this.initialCapacity = initialCapacity;
+    public Builder<V> initialCapacity(int cap) {
+      checkArgument(cap >= 0);
+      this.initialCapacity = cap;
       return this;
     }
 
@@ -968,13 +976,13 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
      * Specifies the maximum weighted capacity to coerce the map to and may
      * exceed it temporarily.
      *
-     * @param capacity the weighted threshold to bound the map by
+     * @param cap the weighted threshold to bound the map by
      * @throws IllegalArgumentException if the maximumWeightedCapacity is
      *     negative
      */
-    public Builder<V> maximumWeightedCapacity(long capacity) {
-      checkArgument(capacity >= 0);
-      this.capacity = capacity;
+    public Builder<V> maximumWeightedCapacity(long cap) {
+      checkArgument(cap >= 0);
+      this.capacity = cap;
       return this;
     }
 
@@ -983,14 +991,14 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
      * implementation performs internal sizing to try to accommodate this many
      * threads (default <tt>16</tt>).
      *
-     * @param concurrencyLevel the estimated number of concurrently updating
+     * @param level the estimated number of concurrently updating
      *     threads
      * @throws IllegalArgumentException if the concurrencyLevel is less than or
      *     equal to zero
      */
-    public Builder<V> concurrencyLevel(int concurrencyLevel) {
-      checkArgument(concurrencyLevel > 0);
-      this.concurrencyLevel = concurrencyLevel;
+    public Builder<V> concurrencyLevel(int level) {
+      checkArgument(level > 0);
+      this.concurrencyLevel = level;
       return this;
     }
 
@@ -1002,7 +1010,7 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
      */
     public LongConcurrentLinkedHashMap<V> build() {
       checkState(capacity >= 0);
-      return new LongConcurrentLinkedHashMap<V>(this);
+      return new LongConcurrentLinkedHashMap<>(this);
     }
   }
 }

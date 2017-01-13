@@ -315,19 +315,19 @@ public final class LongHashMap<V> extends LongMap<V>
 	@Override
 	public LongIterator keyIterator()
 	{
-		return new KeyIterator(this);
+		return new KeyIterator<>(this);
 	}
 
 	@Override
 	public Iterator<V> valueIterator()
 	{
-		return new ValueIterator(this);
+		return new ValueIterator<>(this);
 	}
 
 	@Override
 	public MapIterator<V> entryIterator()
 	{
-		return new EntryIterator(this);
+		return new EntryIterator<>(this);
 	}
 
 	private static abstract class AbstractMapIterator<V>
