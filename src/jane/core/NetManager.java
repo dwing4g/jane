@@ -25,8 +25,8 @@ import org.apache.mina.core.write.DefaultWriteRequest;
 import org.apache.mina.transport.socket.SocketSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
-import org.mapdb.LongConcurrentHashMap;
-import org.mapdb.LongMap.LongMapIterator;
+import com.googlecode.concurrentlinkedhashmap.LongConcurrentHashMap;
+import com.googlecode.concurrentlinkedhashmap.LongMap.MapIterator;
 
 /**
  * 网络管理器
@@ -67,7 +67,7 @@ public class NetManager implements IoHandler
 				try
 				{
 					int now = (int)(System.currentTimeMillis() / 1000);
-					for(LongMapIterator<RpcBean<?, ?, ?>> it = _rpcs.longMapIterator(); it.moveToNext();)
+					for(MapIterator<RpcBean<?, ?, ?>> it = _rpcs.entryIterator(); it.moveToNext();)
 					{
 						RpcBean<?, ?, ?> rpcbean = it.value();
 						if(now - rpcbean.getReqTime() > rpcbean.getTimeout() && _rpcs.remove(it.key()) != null)

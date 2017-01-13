@@ -25,8 +25,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import com.googlecode.concurrentlinkedhashmap.LongMap.LongIterator;
-import com.googlecode.concurrentlinkedhashmap.LongMap.MapIterator;
 
 /**
  * A hash table supporting full concurrency of retrievals, adjustable expected
@@ -70,7 +68,7 @@ import com.googlecode.concurrentlinkedhashmap.LongMap.MapIterator;
  *      http://code.google.com/p/concurrentlinkedhashmap/</a>
  */
 // @ThreadSafe
-public final class LongConcurrentLinkedHashMap<V> {
+public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
 
   /*
    * This class performs a best-effort bounding of a ConcurrentHashMap using a

@@ -32,6 +32,9 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.NodeList;
 import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
+import com.googlecode.concurrentlinkedhashmap.LongConcurrentHashMap;
+import com.googlecode.concurrentlinkedhashmap.LongConcurrentLinkedHashMap;
+import com.googlecode.concurrentlinkedhashmap.LongMap;
 
 /**
  * 工具类(静态类)
@@ -59,6 +62,16 @@ public final class Util
 	}
 
 	/**
+	 * 创建LongConcurrentHashMap
+	 * <p>
+	 * 初始hash空间是16,负载因子是0.5,并发级别等于{@link Const#dbThreadCount}<br>
+	 */
+	public static <V> LongConcurrentHashMap<V> newLongConcurrentHashMap()
+	{
+		return new LongConcurrentHashMap<>(16, 0.5f, Const.dbThreadCount);
+	}
+
+	/**
 	 * 创建用于事务线程的Map容器
 	 * <p>
 	 * 使用{@link ConcurrentHashMap}. 初始hash空间是{@link Const#dbThreadCount}的2倍且不小于16,负载因子是0.75,并发级别是1
@@ -75,6 +88,16 @@ public final class Util
 	{
 		if(maxCount <= 0) return newConcurrentHashMap();
 		return new ConcurrentLinkedHashMap.Builder<K, V>().concurrencyLevel(Const.dbThreadCount)
+				.maximumWeightedCapacity(maxCount).initialCapacity(maxCount).build();
+	}
+
+	/**
+	 * 使用{@link LongConcurrentLinkedHashMap}创建可并发带链表的HashMap
+	 */
+	public static <V> LongMap<V> newLongLRUConcurrentHashMap(int maxCount)
+	{
+		if(maxCount <= 0) return newLongConcurrentHashMap();
+		return new LongConcurrentLinkedHashMap.Builder<V>().concurrencyLevel(Const.dbThreadCount)
 				.maximumWeightedCapacity(maxCount).initialCapacity(maxCount).build();
 	}
 

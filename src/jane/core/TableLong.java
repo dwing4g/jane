@@ -2,10 +2,10 @@ package jane.core;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
-import org.mapdb.LongConcurrentHashMap;
-import org.mapdb.LongConcurrentLRUMap;
-import org.mapdb.LongMap;
-import org.mapdb.LongMap.LongMapIterator;
+import com.googlecode.concurrentlinkedhashmap.LongConcurrentHashMap;
+import com.googlecode.concurrentlinkedhashmap.LongMap;
+import com.googlecode.concurrentlinkedhashmap.LongMap.LongIterator;
+import com.googlecode.concurrentlinkedhashmap.LongMap.MapIterator;
 import jane.core.SContext.RecordLong;
 import jane.core.SContext.Safe;
 import jane.core.Storage.Helper;
@@ -39,7 +39,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 		super(tableId, tableName, stubV, (lockName != null && !(lockName = lockName.trim()).isEmpty() ? lockName.hashCode() : tableId) * 0x9e3779b1);
 		_stoTable = stoTable;
 		if(cacheSize < 1) cacheSize = 1;
-		_cache = new LongConcurrentLRUMap<>(cacheSize + (cacheSize + 1) / 2, cacheSize);
+		_cache = Util.newLongLRUConcurrentHashMap(cacheSize);
 		_cacheMod = (stoTable != null ? new LongConcurrentHashMap<V>() : null);
 		if(stoTable != null)
 		{
@@ -98,9 +98,9 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 		long n = 0;
 		try
 		{
-			for(LongMapIterator<V> it = _cacheMod.longMapIterator(); it.moveToNext();)
+			for(LongIterator it = _cacheMod.keyIterator(); it.hasNext();)
 			{
-				long k = it.key();
+				long k = it.next();
 				Lock lock = Procedure.tryLock(lockId(k));
 				if(lock != null)
 				{
@@ -137,7 +137,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	@Override
 	protected int saveModified()
 	{
-		for(LongMapIterator<V> it = _cacheMod.longMapIterator(); it.moveToNext();)
+		for(MapIterator<V> it = _cacheMod.entryIterator(); it.moveToNext();)
 		{
 			long k = it.key();
 			V v = it.value();
@@ -501,8 +501,8 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	 */
 	public boolean walkCache(WalkHandlerLong handler)
 	{
-		for(LongMapIterator<V> it = _cache.longMapIterator(); it.moveToNext();)
-			if(!Helper.onWalkSafe(handler, it.key())) return false;
+		for(LongIterator it = _cache.keyIterator(); it.hasNext();)
+			if(!Helper.onWalkSafe(handler, it.next())) return false;
 		return true;
 	}
 
