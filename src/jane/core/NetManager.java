@@ -25,8 +25,8 @@ import org.apache.mina.core.write.DefaultWriteRequest;
 import org.apache.mina.transport.socket.SocketSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
-import com.googlecode.concurrentlinkedhashmap.LongConcurrentHashMap;
-import com.googlecode.concurrentlinkedhashmap.LongMap.MapIterator;
+import jane.core.map.LongConcurrentHashMap;
+import jane.core.map.LongMap.MapIterator;
 
 /**
  * 网络管理器

@@ -31,10 +31,10 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.NodeList;
-import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
-import com.googlecode.concurrentlinkedhashmap.LongConcurrentHashMap;
-import com.googlecode.concurrentlinkedhashmap.LongConcurrentLinkedHashMap;
-import com.googlecode.concurrentlinkedhashmap.LongMap;
+import jane.core.map.ConcurrentLinkedHashMap;
+import jane.core.map.LongConcurrentHashMap;
+import jane.core.map.LongConcurrentLinkedHashMap;
+import jane.core.map.LongMap;
 
 /**
  * 工具类(静态类)

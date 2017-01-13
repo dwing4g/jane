@@ -32,8 +32,6 @@
 			<!--compilerarg value="-Xlint:unchecked"/-->
 			<compilerarg value="-XDignore.symbol.file"/><!-- suppress "Sun proprietary api" warning -->
 			<src path="${src}/"/>
-			<src path="${lib}/hashmap/"/>
-			<src path="${lib}/mapdb/"/>
 		</javac>
 	</target>
 
@@ -58,8 +56,6 @@
 				<exclude name="**/jane/handler/**"/>
 				<exclude name="**/jane/test/**"/>
 			</fileset>
-			<fileset dir="${lib}/hashmap/"/>
-			<fileset dir="${lib}/mapdb/"/>
 		</jar>
 	</target>
 </project>

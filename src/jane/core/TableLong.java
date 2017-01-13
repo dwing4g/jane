@@ -2,14 +2,14 @@ package jane.core;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
-import com.googlecode.concurrentlinkedhashmap.LongConcurrentHashMap;
-import com.googlecode.concurrentlinkedhashmap.LongMap;
-import com.googlecode.concurrentlinkedhashmap.LongMap.LongIterator;
-import com.googlecode.concurrentlinkedhashmap.LongMap.MapIterator;
 import jane.core.SContext.RecordLong;
 import jane.core.SContext.Safe;
 import jane.core.Storage.Helper;
 import jane.core.Storage.WalkHandlerLong;
+import jane.core.map.LongConcurrentHashMap;
+import jane.core.map.LongMap;
+import jane.core.map.LongMap.LongIterator;
+import jane.core.map.LongMap.MapIterator;
 
 /**
  * 使用ID类型作为key的数据库表类

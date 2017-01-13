@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.googlecode.concurrentlinkedhashmap;
+package jane.core.map;
 
 import java.util.Arrays;
 import java.util.Collection;

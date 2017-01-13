@@ -21,7 +21,7 @@
  * http://creativecommons.org/licenses/publicdomain
  */
 
-package com.googlecode.concurrentlinkedhashmap;
+package jane.core.map;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
