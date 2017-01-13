@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.mapdb;
+package com.googlecode.concurrentlinkedhashmap;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -173,7 +173,7 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 			// System.out.println("newestEntry="+newestEntry + " oldestEntry="+oldestEntry);
 			// System.out.println("items removed:" + numRemoved + " numKept=" + numKept + " esetSz="+ eSize + " sz-numRemoved=" + (sz-numRemoved));
 
-			for(Iterator<CacheEntry<V>> iter = map.valuesIterator(); iter.hasNext();)
+			for(Iterator<CacheEntry<V>> iter = map.valueIterator(); iter.hasNext();)
 			{
 				CacheEntry<V> ce = iter.next();
 				// set lastAccessedCopy to avoid more volatile reads
@@ -682,11 +682,17 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 	}
 
 	@Override
-	public Iterator<V> valuesIterator()
+	public LongIterator keyIterator()
+	{
+		return map.keyIterator();
+	}
+
+	@Override
+	public Iterator<V> valueIterator()
 	{
 		return new Iterator<V>()
 		{
-			final Iterator<CacheEntry<V>> iter = map.valuesIterator();
+			final Iterator<CacheEntry<V>> iter = map.valueIterator();
 
 			@Override
 			public boolean hasNext()
@@ -709,11 +715,11 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 	}
 
 	@Override
-	public LongMapIterator<V> longMapIterator()
+	public MapIterator<V> entryIterator()
 	{
-		return new LongMapIterator<V>()
+		return new MapIterator<V>()
 		{
-			final LongMapIterator<CacheEntry<V>> iter = map.longMapIterator();
+			final MapIterator<CacheEntry<V>> iter = map.entryIterator();
 
 			@Override
 			public boolean moveToNext()
