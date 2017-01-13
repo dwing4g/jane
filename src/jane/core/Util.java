@@ -31,7 +31,6 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.NodeList;
-import com.googlecode.concurrentlinkedhashmap.ConcurrentHashMapV8;
 import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
 
 /**
@@ -53,7 +52,6 @@ public final class Util
 	 * 创建普通的ConcurrentHashMap
 	 * <p>
 	 * 初始hash空间是16,负载因子是0.5,并发级别等于{@link Const#dbThreadCount}<br>
-	 * 这里没有考虑ConcurrentHashMapV8的主要原因是其rehash的效率太低,性能不稳定
 	 */
 	public static <K, V> ConcurrentMap<K, V> newConcurrentHashMap()
 	{
@@ -63,17 +61,15 @@ public final class Util
 	/**
 	 * 创建用于事务线程的Map容器
 	 * <p>
-	 * 使用{@link ConcurrentHashMapV8}. 初始hash空间是{@link Const#dbThreadCount}的2倍且不小于16,负载因子是0.75,并发级别是1
+	 * 使用{@link ConcurrentHashMap}. 初始hash空间是{@link Const#dbThreadCount}的2倍且不小于16,负载因子是0.75,并发级别是1
 	 */
 	public static <K, V> Map<K, V> newProcThreadsMap()
 	{
-		return new ConcurrentHashMapV8<>(Math.max(Const.dbThreadCount * 2, 16));
+		return new ConcurrentHashMap<>(Math.max(Const.dbThreadCount * 2, 16));
 	}
 
 	/**
 	 * 使用{@link ConcurrentLinkedHashMap}创建可并发带链表的HashMap
-	 * <p>
-	 * 内部使用{@link ConcurrentHashMapV8},效率很高
 	 */
 	public static <K, V> Map<K, V> newLRUConcurrentHashMap(int maxCount)
 	{
