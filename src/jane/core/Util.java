@@ -97,8 +97,9 @@ public final class Util
 	public static <V> LongMap<V> newLongLRUConcurrentHashMap(int maxCount)
 	{
 		if(maxCount <= 0) return newLongConcurrentHashMap();
-		return new ConcurrentLinkedHashMap.Builder().concurrencyLevel(Const.dbThreadCount)
-				.maximumWeightedCapacity(maxCount).initialCapacity(maxCount).<V>buildLong();
+		// return new ConcurrentLinkedHashMap.Builder().concurrencyLevel(Const.dbThreadCount)
+		//		.maximumWeightedCapacity(maxCount).initialCapacity(maxCount).<V>buildLong();
+		return new jane.core.map.LongConcurrentLRUMap<>(maxCount + (maxCount + 1) / 2, maxCount);
 	}
 
 	/**
