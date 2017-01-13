@@ -355,7 +355,7 @@ public final class DBManager
 	{
 		if(_storage == null) throw new IllegalArgumentException("call DBManager.startup before open any table");
 		tableName = (tableName != null && !(tableName = tableName.trim()).isEmpty() ? tableName : '[' + String.valueOf(tableId) + ']');
-		Storage.Table<K, V> stoTable = (stubV != null ? _storage.<K, V> openTable(tableId, tableName, stubK, stubV) : null);
+		Storage.Table<K, V> stoTable = (stubV != null ? _storage.<K, V>openTable(tableId, tableName, stubK, stubV) : null);
 		return new Table<>(tableId, tableName, stoTable, lockName, cacheSize, stubV);
 	}
 

@@ -1,4 +1,4 @@
-package jane.core;
+package jane.core.map;
 
 import java.util.Random;
 
@@ -13,9 +13,9 @@ import java.util.Random;
  * the map will have to rehash to the next higher POT size.<br>
  * @author Nathan Sweet
  */
-public final class IntMap<V> implements Cloneable
+public final class IntHashMap<V> implements Cloneable
 {
-	// private static final int PRIME1 = 0xbe1f14b1;
+	// private static final int PRIME1  = 0xbe1f14b1;
 	private static final int	PRIME2	= 0xb4b82e39;
 	private static final int	PRIME3	= 0xced1c241;
 	public static final int		EMPTY	= 0;
@@ -42,12 +42,12 @@ public final class IntMap<V> implements Cloneable
 		return value + 1;
 	}
 
-	public IntMap()
+	public IntHashMap()
 	{
 		this(32, 0.8f);
 	}
 
-	public IntMap(int initialCapacity)
+	public IntHashMap(int initialCapacity)
 	{
 		this(initialCapacity, 0.8f);
 	}
@@ -57,7 +57,7 @@ public final class IntMap<V> implements Cloneable
 	 * This map will hold initialCapacity * loadFactor items before growing the backing table.
 	 */
 	@SuppressWarnings("unchecked")
-	public IntMap(int initialCapacity, float loadFactor)
+	public IntHashMap(int initialCapacity, float loadFactor)
 	{
 		if(initialCapacity < 4) initialCapacity = 4;
 		if(initialCapacity > 0x40000000) initialCapacity = 0x40000000;
@@ -611,10 +611,10 @@ public final class IntMap<V> implements Cloneable
 	}
 
 	@Override
-	public IntMap<V> clone() throws CloneNotSupportedException
+	public IntHashMap<V> clone() throws CloneNotSupportedException
 	{
 		@SuppressWarnings("unchecked")
-		IntMap<V> map = (IntMap<V>)super.clone();
+		IntHashMap<V> map = (IntHashMap<V>)super.clone();
 		map._keyTable = _keyTable.clone();
 		map._valueTable = _valueTable.clone();
 		return map;

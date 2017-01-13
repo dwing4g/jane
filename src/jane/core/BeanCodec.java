@@ -6,17 +6,18 @@ import org.apache.mina.core.filterchain.IoFilterAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.DefaultWriteRequest;
 import org.apache.mina.core.write.WriteRequest;
+import jane.core.map.IntHashMap;
 
 /**
  * bean的mina协议编解码过滤器
  */
 public class BeanCodec extends IoFilterAdapter
 {
-	protected static final IntMap<Integer> _maxSize	= new IntMap<>(65536, 0.5f); // 所有注册beans的最大空间限制
-	protected static final IntMap<Bean<?>> _stubMap	= new IntMap<>(65536, 0.5f); // 所有注册beans的存根对象
-	protected final OctetsStream		   _os		= new OctetsStream();		 // 用于解码器的数据缓存
-	protected int						   _ptype;								 // 当前数据缓存中获得的协议类型
-	protected int						   _psize	= -1;						 // 当前数据缓存中获得的协议大小. -1表示没获取到
+	protected static final IntHashMap<Integer> _maxSize	= new IntHashMap<>(65536, 0.5f); // 所有注册beans的最大空间限制
+	protected static final IntHashMap<Bean<?>> _stubMap	= new IntHashMap<>(65536, 0.5f); // 所有注册beans的存根对象
+	protected final OctetsStream			   _os		= new OctetsStream();			 // 用于解码器的数据缓存
+	protected int							   _ptype;									 // 当前数据缓存中获得的协议类型
+	protected int							   _psize	= -1;							 // 当前数据缓存中获得的协议大小. -1表示没获取到
 
 	/**
 	 * 不带栈信息的解码错误异常

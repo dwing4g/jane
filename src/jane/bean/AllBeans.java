@@ -6,7 +6,7 @@ import java.util.Collection;
 import java.util.List;
 import jane.core.Bean;
 import jane.core.BeanHandler;
-import jane.core.IntMap;
+import jane.core.map.IntHashMap;
 
 /** 全部beans的注册(自动生成的静态类) */
 public final class AllBeans
@@ -24,18 +24,18 @@ public final class AllBeans
 		return r;
 	}
 
-	public static IntMap<BeanHandler<?>> getTestClientHandlers()
+	public static IntHashMap<BeanHandler<?>> getTestClientHandlers()
 	{
-		IntMap<BeanHandler<?>> r = new IntMap<>(3 * 4);
+		IntHashMap<BeanHandler<?>> r = new IntHashMap<>(3 * 4);
 		r.put(1, new jane.handler.testclient.TestBeanHandler());
 		r.put(2, new jane.handler.testclient.TestTypeHandler());
 		r.put(4, new jane.handler.testclient.TestRpcBeanHandler());
 		return r;
 	}
 
-	public static IntMap<BeanHandler<?>> getTestServerHandlers()
+	public static IntHashMap<BeanHandler<?>> getTestServerHandlers()
 	{
-		IntMap<BeanHandler<?>> r = new IntMap<>(4 * 4);
+		IntHashMap<BeanHandler<?>> r = new IntHashMap<>(4 * 4);
 		r.put(1, new jane.handler.testserver.TestBeanHandler());
 		r.put(2, new jane.handler.testserver.TestTypeHandler());
 		r.put(3, new jane.handler.testserver.TestEmptyHandler());

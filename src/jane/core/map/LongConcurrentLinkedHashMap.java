@@ -15,163 +15,53 @@
  */
 package jane.core.map;
 
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import jane.core.map.ConcurrentLinkedHashMap.Builder;
+import jane.core.map.ConcurrentLinkedHashMap.DrainStatus;
+import jane.core.map.ConcurrentLinkedHashMap.WeightedValue;
 
 /**
- * A hash table supporting full concurrency of retrievals, adjustable expected
- * concurrency for updates, and a maximum capacity to bound the map by. This
- * implementation differs from {@link ConcurrentHashMap} in that it maintains a
- * page replacement algorithm that is used to evict an entry when the map has
- * exceeded its capacity. Unlike the <tt>Java Collections Framework</tt>, this
- * map does not have a publicly visible constructor and instances are created
- * through a {@link Builder}.
- * <p>
- * An entry is evicted from the map when the <tt>weighted capacity</tt> exceeds
- * its <tt>maximum weighted capacity</tt> threshold. A {@link EntryWeigher}
- * determines how many units of capacity that an entry consumes. The default
- * weigher assigns each value a weight of <tt>1</tt> to bound the map by the
- * total number of key-value pairs. A map that holds collections may choose to
- * weigh values by the number of elements in the collection and bound the map
- * by the total number of elements that it contains. A change to a value that
- * modifies its weight requires that an update operation is performed on the
- * map.
- * <p>
- * The <tt>concurrency level</tt> determines the number of threads that can
- * concurrently modify the table. Using a significantly higher or lower value
- * than needed can waste space or lead to thread contention, but an estimate
- * within an order of magnitude of the ideal value does not usually have a
- * noticeable impact. Because placement in hash tables is essentially random,
- * the actual concurrency will vary.
- * <p>
- * This class and its views and iterators implement all of the
- * <em>optional</em> methods of the {@link Map} and {@link Iterator}
- * interfaces.
- * <p>
- * Like {@link java.util.Hashtable} but unlike {@link HashMap}, this class
- * does <em>not</em> allow <tt>null</tt> to be used as a key or value. Unlike
- * {@link java.util.LinkedHashMap}, this class does <em>not</em> provide
- * predictable iteration order. A snapshot of the keys and entries may be
- * obtained in ascending and descending order of retention.
- *
- * @author ben.manes@gmail.com (Ben Manes)
- * @param <V> the type of mapped values
- * @see <a href="http://code.google.com/p/concurrentlinkedhashmap/">
- *      http://code.google.com/p/concurrentlinkedhashmap/</a>
+ * @see {@link ConcurrentLinkedHashMap}
  */
 // @ThreadSafe
 public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
-
-  /*
-   * This class performs a best-effort bounding of a ConcurrentHashMap using a
-   * page-replacement algorithm to determine which entries to evict when the
-   * capacity is exceeded.
-   *
-   * The page replacement algorithm's data structures are kept eventually
-   * consistent with the map. An update to the map and recording of reads may
-   * not be immediately reflected on the algorithm's data structures. These
-   * structures are guarded by a lock and operations are applied in batches to
-   * avoid lock contention. The penalty of applying the batches is spread across
-   * threads so that the amortized cost is slightly higher than performing just
-   * the ConcurrentHashMap operation.
-   *
-   * A memento of the reads and writes that were performed on the map are
-   * recorded in buffers. These buffers are drained at the first opportunity
-   * after a write or when the read buffer exceeds a threshold size. The reads
-   * are recorded in a lossy buffer, allowing the reordering operations to be
-   * discarded if the draining process cannot keep up. Due to the concurrent
-   * nature of the read and write operations a strict policy ordering is not
-   * possible, but is observably strict when single threaded.
-   *
-   * Due to a lack of a strict ordering guarantee, a task can be executed
-   * out-of-order, such as a removal followed by its addition. The state of the
-   * entry is encoded within the value's weight.
-   *
-   * Alive: The entry is in both the hash-table and the page replacement policy.
-   * This is represented by a positive weight.
-   *
-   * Retired: The entry is not in the hash-table and is pending removal from the
-   * page replacement policy. This is represented by a negative weight.
-   *
-   * Dead: The entry is not in the hash-table and is not in the page replacement
-   * policy. This is represented by a weight of zero.
-   *
-   * The Least Recently Used page replacement algorithm was chosen due to its
-   * simplicity, high hit rate, and ability to be implemented with O(1) time
-   * complexity.
-   */
-
-  /** The number of CPUs */
-  static final int NCPU = Runtime.getRuntime().availableProcessors();
-
-  /** The maximum weighted capacity of the map. */
-  static final long MAXIMUM_CAPACITY = Long.MAX_VALUE - Integer.MAX_VALUE;
-
-  /** The number of read buffers to use. */
-  static final int NUMBER_OF_READ_BUFFERS = ceilingNextPowerOfTwo(NCPU);
-
-  /** Mask value for indexing into the read buffers. */
-  static final int READ_BUFFERS_MASK = NUMBER_OF_READ_BUFFERS - 1;
-
-  /** The number of pending read operations before attempting to drain. */
-  static final int READ_BUFFER_THRESHOLD = 32;
-
-  /** The maximum number of read operations to perform per amortized drain. */
-  static final int READ_BUFFER_DRAIN_THRESHOLD = 2 * READ_BUFFER_THRESHOLD;
-
-  /** The maximum number of pending reads per buffer. */
-  static final int READ_BUFFER_SIZE = 2 * READ_BUFFER_DRAIN_THRESHOLD;
-
-  /** Mask value for indexing into the read buffer. */
-  static final int READ_BUFFER_INDEX_MASK = READ_BUFFER_SIZE - 1;
-
-  /** The maximum number of write operations to perform per amortized drain. */
-  static final int WRITE_BUFFER_DRAIN_THRESHOLD = 16;
-
-  static int ceilingNextPowerOfTwo(int x) {
-    // From Hacker's Delight, Chapter 3, Harry S. Warren Jr.
-    return 1 << (Integer.SIZE - Integer.numberOfLeadingZeros(x - 1));
-  }
-
   // The backing data store holding the key-value associations
-  final LongConcurrentHashMap<Node<V>> data;
-  final int concurrencyLevel;
+  private final LongConcurrentHashMap<Node<V>> data;
+  private final int concurrencyLevel;
 
   // These fields provide support to bound the map by a maximum capacity
   // @GuardedBy("evictionLock")
-  final long[] readBufferReadCount;
+  private final long[] readBufferReadCount;
   // @GuardedBy("evictionLock")
-  final LinkedDeque<Node<V>> evictionDeque;
+  private final LinkedDeque<Node<V>> evictionDeque;
 
   // @GuardedBy("evictionLock") // must write under lock
-  final AtomicLong weightedSize;
+  private final AtomicLong weightedSize;
   // @GuardedBy("evictionLock") // must write under lock
-  final AtomicLong capacity;
+  private final AtomicLong capacity;
 
-  final Lock evictionLock;
-  final Queue<Runnable> writeBuffer;
-  final AtomicLong[] readBufferWriteCount;
-  final AtomicLong[] readBufferDrainAtWriteCount;
-  final AtomicReference<Node<V>>[][] readBuffers;
+  private final Lock evictionLock;
+  private final Queue<Runnable> writeBuffer;
+  private final AtomicLong[] readBufferWriteCount;
+  private final AtomicLong[] readBufferDrainAtWriteCount;
+  private final AtomicReference<Node<V>>[][] readBuffers;
 
-  final AtomicReference<DrainStatus> drainStatus;
+  private final AtomicReference<DrainStatus> drainStatus;
 
   /**
    * Creates an instance based on the builder's configuration.
    */
   @SuppressWarnings({"unchecked"})
-  private LongConcurrentLinkedHashMap(Builder<V> builder) {
+  LongConcurrentLinkedHashMap(Builder builder) {
     // The data store and its maximum capacity
     concurrencyLevel = builder.concurrencyLevel;
-    capacity = new AtomicLong(Math.min(builder.capacity, MAXIMUM_CAPACITY));
+    capacity = new AtomicLong(Math.min(builder.capacity, ConcurrentLinkedHashMap.MAXIMUM_CAPACITY));
     data = new LongConcurrentHashMap<>(builder.initialCapacity, 0.75f, concurrencyLevel);
 
     // The eviction support
@@ -181,38 +71,17 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
     writeBuffer = new ConcurrentLinkedQueue<>();
     drainStatus = new AtomicReference<>(DrainStatus.IDLE);
 
-    readBufferReadCount = new long[NUMBER_OF_READ_BUFFERS];
-    readBufferWriteCount = new AtomicLong[NUMBER_OF_READ_BUFFERS];
-    readBufferDrainAtWriteCount = new AtomicLong[NUMBER_OF_READ_BUFFERS];
-    readBuffers = new AtomicReference[NUMBER_OF_READ_BUFFERS][READ_BUFFER_SIZE];
-    for (int i = 0; i < NUMBER_OF_READ_BUFFERS; i++) {
+    readBufferReadCount = new long[ConcurrentLinkedHashMap.NUMBER_OF_READ_BUFFERS];
+    readBufferWriteCount = new AtomicLong[ConcurrentLinkedHashMap.NUMBER_OF_READ_BUFFERS];
+    readBufferDrainAtWriteCount = new AtomicLong[ConcurrentLinkedHashMap.NUMBER_OF_READ_BUFFERS];
+    readBuffers = new AtomicReference[ConcurrentLinkedHashMap.NUMBER_OF_READ_BUFFERS][ConcurrentLinkedHashMap.READ_BUFFER_SIZE];
+    for (int i = 0; i < ConcurrentLinkedHashMap.NUMBER_OF_READ_BUFFERS; i++) {
       readBufferWriteCount[i] = new AtomicLong();
       readBufferDrainAtWriteCount[i] = new AtomicLong();
-      readBuffers[i] = new AtomicReference[READ_BUFFER_SIZE];
-      for (int j = 0; j < READ_BUFFER_SIZE; j++) {
+      readBuffers[i] = new AtomicReference[ConcurrentLinkedHashMap.READ_BUFFER_SIZE];
+      for (int j = 0; j < ConcurrentLinkedHashMap.READ_BUFFER_SIZE; j++) {
         readBuffers[i][j] = new AtomicReference<>();
       }
-    }
-  }
-
-  /** Ensures that the object is not null. */
-  static void checkNotNull(Object o) {
-    if (o == null) {
-      throw new NullPointerException();
-    }
-  }
-
-  /** Ensures that the argument expression is true. */
-  static void checkArgument(boolean expression) {
-    if (!expression) {
-      throw new IllegalArgumentException();
-    }
-  }
-
-  /** Ensures that the state expression is true. */
-  static void checkState(boolean expression) {
-    if (!expression) {
-      throw new IllegalStateException();
     }
   }
 
@@ -235,10 +104,10 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
    * @throws IllegalArgumentException if the capacity is negative
    */
   public void setCapacity(long capacity) {
-    checkArgument(capacity >= 0);
+    ConcurrentLinkedHashMap.checkArgument(capacity >= 0);
     evictionLock.lock();
     try {
-      this.capacity.lazySet(Math.min(capacity, MAXIMUM_CAPACITY));
+      this.capacity.lazySet(Math.min(capacity, ConcurrentLinkedHashMap.MAXIMUM_CAPACITY));
       drainBuffers();
       evict();
     } finally {
@@ -248,7 +117,7 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
 
   /** Determines whether the map has exceeded its capacity. */
   // @GuardedBy("evictionLock")
-  boolean hasOverflowed() {
+  private boolean hasOverflowed() {
     return weightedSize.get() > capacity.get();
   }
 
@@ -257,7 +126,7 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
    * evicted entries to the notification queue for processing.
    */
   // @GuardedBy("evictionLock")
-  void evict() {
+  private void evict() {
     // Attempts to evict entries from the map if it exceeds the maximum
     // capacity. If the eviction fails due to a concurrent removal of the
     // victim, that removal may cancel out the addition that triggered this
@@ -286,18 +155,10 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
    *
    * @param node the entry in the page replacement policy
    */
-  void afterRead(Node<V> node) {
-    final int bufferIndex = readBufferIndex();
+  private void afterRead(Node<V> node) {
+    final int bufferIndex = ConcurrentLinkedHashMap.readBufferIndex();
     final long writeCount = recordRead(bufferIndex, node);
     drainOnReadIfNeeded(bufferIndex, writeCount);
-  }
-
-  /** Returns the index to the read buffer to record into. */
-  static int readBufferIndex() {
-    // A buffer is chosen by the thread's id so that tasks are distributed in a
-    // pseudo evenly manner. This helps avoid hot entries causing contention
-    // due to other threads trying to append to the same buffer.
-    return ((int) Thread.currentThread().getId()) & READ_BUFFERS_MASK;
   }
 
   /**
@@ -307,7 +168,7 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
    * @param node the entry in the page replacement policy
    * @return the number of writes on the chosen read buffer
    */
-  long recordRead(int bufferIndex, Node<V> node) {
+  private long recordRead(int bufferIndex, Node<V> node) {
     // The location in the buffer is chosen in a racy fashion as the increment
     // is not atomic with the insertion. This means that concurrent reads can
     // overlap and overwrite one another, resulting in a lossy buffer.
@@ -315,7 +176,7 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
     final long writeCount = counter.get();
     counter.lazySet(writeCount + 1);
 
-    final int index = (int) (writeCount & READ_BUFFER_INDEX_MASK);
+    final int index = (int) (writeCount & ConcurrentLinkedHashMap.READ_BUFFER_INDEX_MASK);
     readBuffers[bufferIndex][index].lazySet(node);
 
     return writeCount;
@@ -328,9 +189,9 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
    * @param bufferIndex the index to the chosen read buffer
    * @param writeCount the number of writes on the chosen read buffer
    */
-  void drainOnReadIfNeeded(int bufferIndex, long writeCount) {
+  private void drainOnReadIfNeeded(int bufferIndex, long writeCount) {
     final long pending = (writeCount - readBufferDrainAtWriteCount[bufferIndex].get());
-    final boolean delayable = (pending < READ_BUFFER_THRESHOLD);
+    final boolean delayable = (pending < ConcurrentLinkedHashMap.READ_BUFFER_THRESHOLD);
     final DrainStatus status = drainStatus.get();
     if (status.shouldDrainBuffers(delayable)) {
       tryToDrainBuffers();
@@ -342,7 +203,7 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
    *
    * @param task the pending operation to be applied
    */
-  void afterWrite(Runnable task) {
+  private void afterWrite(Runnable task) {
     writeBuffer.add(task);
     drainStatus.lazySet(DrainStatus.REQUIRED);
     tryToDrainBuffers();
@@ -352,7 +213,7 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
    * Attempts to acquire the eviction lock and apply the pending operations, up
    * to the amortized threshold, to the page replacement policy.
    */
-  void tryToDrainBuffers() {
+  private void tryToDrainBuffers() {
     if (evictionLock.tryLock()) {
       try {
         drainStatus.lazySet(DrainStatus.PROCESSING);
@@ -366,27 +227,27 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
 
   /** Drains the read and write buffers up to an amortized threshold. */
   // @GuardedBy("evictionLock")
-  void drainBuffers() {
+  private void drainBuffers() {
     drainReadBuffers();
     drainWriteBuffer();
   }
 
   /** Drains the read buffers, each up to an amortized threshold. */
   // @GuardedBy("evictionLock")
-  void drainReadBuffers() {
+  private void drainReadBuffers() {
     final int start = (int) Thread.currentThread().getId();
-    final int end = start + NUMBER_OF_READ_BUFFERS;
+    final int end = start + ConcurrentLinkedHashMap.NUMBER_OF_READ_BUFFERS;
     for (int i = start; i < end; i++) {
-      drainReadBuffer(i & READ_BUFFERS_MASK);
+      drainReadBuffer(i & ConcurrentLinkedHashMap.READ_BUFFERS_MASK);
     }
   }
 
   /** Drains the read buffer up to an amortized threshold. */
   // @GuardedBy("evictionLock")
-  void drainReadBuffer(int bufferIndex) {
+  private void drainReadBuffer(int bufferIndex) {
     final long writeCount = readBufferWriteCount[bufferIndex].get();
-    for (int i = 0; i < READ_BUFFER_DRAIN_THRESHOLD; i++) {
-      final int index = (int) (readBufferReadCount[bufferIndex] & READ_BUFFER_INDEX_MASK);
+    for (int i = 0; i < ConcurrentLinkedHashMap.READ_BUFFER_DRAIN_THRESHOLD; i++) {
+      final int index = (int) (readBufferReadCount[bufferIndex] & ConcurrentLinkedHashMap.READ_BUFFER_INDEX_MASK);
       final AtomicReference<Node<V>> slot = readBuffers[bufferIndex][index];
       final Node<V> node = slot.get();
       if (node == null) {
@@ -402,7 +263,7 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
 
   /** Updates the node's location in the page replacement policy. */
   // @GuardedBy("evictionLock")
-  void applyRead(Node<V> node) {
+  private void applyRead(Node<V> node) {
     // An entry may be scheduled for reordering despite having been removed.
     // This can occur when the entry was concurrently read while a writer was
     // removing it. If the entry is no longer linked then it does not need to
@@ -414,8 +275,8 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
 
   /** Drains the read buffer up to an amortized threshold. */
   // @GuardedBy("evictionLock")
-  void drainWriteBuffer() {
-    for (int i = 0; i < WRITE_BUFFER_DRAIN_THRESHOLD; i++) {
+  private void drainWriteBuffer() {
+    for (int i = 0; i < ConcurrentLinkedHashMap.WRITE_BUFFER_DRAIN_THRESHOLD; i++) {
       final Runnable task = writeBuffer.poll();
       if (task == null) {
         break;
@@ -432,7 +293,7 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
    * @param expect the expected weighted value
    * @return if successful
    */
-  boolean tryToRetire(Node<V> node, WeightedValue<V> expect) {
+  private static <V> boolean tryToRetire(Node<V> node, WeightedValue<V> expect) {
     if (expect.isAlive()) {
       final WeightedValue<V> retired = new WeightedValue<>(expect.value, -expect.weight);
       return node.compareAndSet(expect, retired);
@@ -446,7 +307,7 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
    *
    * @param node the entry in the page replacement policy
    */
-  void makeRetired(Node<V> node) {
+  private static <V> void makeRetired(Node<V> node) {
     for (;;) {
       final WeightedValue<V> current = node.get();
       if (!current.isAlive()) {
@@ -466,7 +327,7 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
    * @param node the entry in the page replacement policy
    */
   // @GuardedBy("evictionLock")
-  void makeDead(Node<V> node) {
+  private void makeDead(Node<V> node) {
     for (;;) {
       WeightedValue<V> current = node.get();
       WeightedValue<V> dead = new WeightedValue<>(current.value, 0);
@@ -478,11 +339,11 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
   }
 
   /** Adds the node to the page replacement policy. */
-  final class AddTask implements Runnable {
-    final Node<V> node;
-    final int weight;
+  private final class AddTask implements Runnable {
+    private final Node<V> node;
+    private final int weight;
 
-    AddTask(Node<V> node, int weight) {
+    private AddTask(Node<V> node, int weight) {
       this.weight = weight;
       this.node = node;
     }
@@ -501,10 +362,10 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
   }
 
   /** Removes a node from the page replacement policy. */
-  final class RemovalTask implements Runnable {
-    final Node<V> node;
+  private final class RemovalTask implements Runnable {
+    private final Node<V> node;
 
-    RemovalTask(Node<V> node) {
+    private RemovalTask(Node<V> node) {
       this.node = node;
     }
 
@@ -518,11 +379,11 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
   }
 
   /** Updates the weighted size and evicts an entry on overflow. */
-  final class UpdateTask implements Runnable {
-    final int weightDifference;
-    final Node<V> node;
+  private final class UpdateTask implements Runnable {
+    private final int weightDifference;
+    private final Node<V> node;
 
-    public UpdateTask(Node<V> node, int weightDifference) {
+    private UpdateTask(Node<V> node, int weightDifference) {
       this.weightDifference = weightDifference;
       this.node = node;
     }
@@ -634,9 +495,9 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
    *     associated with a value
    * @return the prior value in the data store or null if no mapping was found
    */
-  V put(long key, V value, boolean onlyIfAbsent) {
-    checkNotNull(key);
-    checkNotNull(value);
+  private V put(long key, V value, boolean onlyIfAbsent) {
+    ConcurrentLinkedHashMap.checkNotNull(key);
+    ConcurrentLinkedHashMap.checkNotNull(value);
 
     final int weight = 1;
     final WeightedValue<V> weightedValue = new WeightedValue<>(value, weight);
@@ -710,8 +571,8 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
   }
 
   public V replace(long key, V value) {
-    checkNotNull(key);
-    checkNotNull(value);
+    ConcurrentLinkedHashMap.checkNotNull(key);
+    ConcurrentLinkedHashMap.checkNotNull(value);
 
     final int weight = 1;
     final WeightedValue<V> weightedValue = new WeightedValue<>(value, weight);
@@ -738,9 +599,9 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
   }
 
   public boolean replace(long key, V oldValue, V newValue) {
-    checkNotNull(key);
-    checkNotNull(oldValue);
-    checkNotNull(newValue);
+    ConcurrentLinkedHashMap.checkNotNull(key);
+    ConcurrentLinkedHashMap.checkNotNull(oldValue);
+    ConcurrentLinkedHashMap.checkNotNull(newValue);
 
     final int weight = 1;
     final WeightedValue<V> newWeightedValue = new WeightedValue<>(newValue, weight);
@@ -781,77 +642,21 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
     return new EntryIterator();
   }
 
-  /** The draining status of the buffers. */
-  enum DrainStatus {
-
-    /** A drain is not taking place. */
-    IDLE {
-      @Override boolean shouldDrainBuffers(boolean delayable) {
-        return !delayable;
-      }
-    },
-
-    /** A drain is required due to a pending write modification. */
-    REQUIRED {
-      @Override boolean shouldDrainBuffers(boolean delayable) {
-        return true;
-      }
-    },
-
-    /** A drain is in progress. */
-    PROCESSING {
-      @Override boolean shouldDrainBuffers(boolean delayable) {
-        return false;
-      }
-    };
-
-    /**
-     * Determines whether the buffers should be drained.
-     *
-     * @param delayable if a drain should be delayed until required
-     * @return if a drain should be attempted
-     */
-    abstract boolean shouldDrainBuffers(boolean delayable);
-  }
-
-  /** A value, its weight, and the entry's status. */
-  // @Immutable
-  static final class WeightedValue<V> {
-    final int weight;
-    final V value;
-
-    WeightedValue(V value, int weight) {
-      this.weight = weight;
-      this.value = value;
-    }
-
-    boolean contains(Object o) {
-      return (o == value) || value.equals(o);
-    }
-
-    /**
-     * If the entry is available in the hash-table and page replacement policy.
-     */
-    boolean isAlive() {
-      return weight > 0;
-    }
-  }
-
   /**
    * A node contains the key, the weighted value, and the linkage pointers on
    * the page-replacement algorithm's data structures.
    */
   @SuppressWarnings("serial")
-  static final class Node<V> extends AtomicReference<WeightedValue<V>>
+  private static final class Node<V> extends AtomicReference<WeightedValue<V>>
       implements Linked<Node<V>> {
-    final long key;
+    private final long key;
     // @GuardedBy("evictionLock")
-    Node<V> prev;
+    private Node<V> prev;
     // @GuardedBy("evictionLock")
-    Node<V> next;
+    private Node<V> next;
 
     /** Creates a new, unlinked node. */
-    Node(long key, WeightedValue<V> weightedValue) {
+    private Node(long key, WeightedValue<V> weightedValue) {
       super(weightedValue);
       this.key = key;
     }
@@ -881,14 +686,14 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
     }
 
     /** Retrieves the value held by the current <tt>WeightedValue</tt>. */
-    V getValue() {
+    private V getValue() {
       return get().value;
     }
   }
 
   /** An adapter to safely externalize the value iterator. */
-  final class ValueIterator implements Iterator<V> {
-    final Iterator<Node<V>> iterator = data.valueIterator();
+  private final class ValueIterator implements Iterator<V> {
+    private final Iterator<Node<V>> iterator = data.valueIterator();
 
     @Override
     public boolean hasNext() {
@@ -907,8 +712,8 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
   }
 
   /** An adapter to safely externalize the entry iterator. */
-  final class EntryIterator implements MapIterator<V> {
-    final MapIterator<Node<V>> iterator = data.entryIterator();
+  private final class EntryIterator implements MapIterator<V> {
+    private final MapIterator<Node<V>> iterator = data.entryIterator();
 
     @Override
     public boolean moveToNext() {
@@ -928,89 +733,6 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
     @Override
     public void remove() {
       throw new UnsupportedOperationException();
-    }
-  }
-
-  /* ---------------- Builder -------------- */
-
-  /**
-   * A builder that creates {@link LongConcurrentLinkedHashMap} instances. It
-   * provides a flexible approach for constructing customized instances with
-   * a named parameter syntax. It can be used in the following manner:
-   * <pre>{@code
-   * ConcurrentMap<Vertex, Set<Edge>> graph = new Builder<Vertex, Set<Edge>>()
-   *     .maximumWeightedCapacity(5000)
-   *     .build();
-   * }</pre>
-   */
-  public static final class Builder<V> {
-    static final int DEFAULT_CONCURRENCY_LEVEL = 16;
-    static final int DEFAULT_INITIAL_CAPACITY = 16;
-
-    int concurrencyLevel;
-    int initialCapacity;
-    long capacity;
-
-    public Builder() {
-      capacity = -1;
-      initialCapacity = DEFAULT_INITIAL_CAPACITY;
-      concurrencyLevel = DEFAULT_CONCURRENCY_LEVEL;
-    }
-
-    /**
-     * Specifies the initial capacity of the hash table (default <tt>16</tt>).
-     * This is the number of key-value pairs that the hash table can hold
-     * before a resize operation is required.
-     *
-     * @param cap the initial capacity used to size the hash table
-     *     to accommodate this many entries.
-     * @throws IllegalArgumentException if the initialCapacity is negative
-     */
-    public Builder<V> initialCapacity(int cap) {
-      checkArgument(cap >= 0);
-      this.initialCapacity = cap;
-      return this;
-    }
-
-    /**
-     * Specifies the maximum weighted capacity to coerce the map to and may
-     * exceed it temporarily.
-     *
-     * @param cap the weighted threshold to bound the map by
-     * @throws IllegalArgumentException if the maximumWeightedCapacity is
-     *     negative
-     */
-    public Builder<V> maximumWeightedCapacity(long cap) {
-      checkArgument(cap >= 0);
-      this.capacity = cap;
-      return this;
-    }
-
-    /**
-     * Specifies the estimated number of concurrently updating threads. The
-     * implementation performs internal sizing to try to accommodate this many
-     * threads (default <tt>16</tt>).
-     *
-     * @param level the estimated number of concurrently updating
-     *     threads
-     * @throws IllegalArgumentException if the concurrencyLevel is less than or
-     *     equal to zero
-     */
-    public Builder<V> concurrencyLevel(int level) {
-      checkArgument(level > 0);
-      this.concurrencyLevel = level;
-      return this;
-    }
-
-    /**
-     * Creates a new {@link LongConcurrentLinkedHashMap} instance.
-     *
-     * @throws IllegalStateException if the maximum weighted capacity was
-     *     not set
-     */
-    public LongConcurrentLinkedHashMap<V> build() {
-      checkState(capacity >= 0);
-      return new LongConcurrentLinkedHashMap<>(this);
     }
   }
 }

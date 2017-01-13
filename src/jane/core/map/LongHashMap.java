@@ -83,7 +83,7 @@ public final class LongHashMap<V> extends LongMap<V>
 		private final long key;
 		private V		   value;
 
-		public Entry(long key, int hash)
+		private Entry(long key, int hash)
 		{
 			origKeyHash = hash;
 			this.key = key;

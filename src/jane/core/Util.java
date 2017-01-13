@@ -87,8 +87,8 @@ public final class Util
 	public static <K, V> Map<K, V> newLRUConcurrentHashMap(int maxCount)
 	{
 		if(maxCount <= 0) return newConcurrentHashMap();
-		return new ConcurrentLinkedHashMap.Builder<K, V>().concurrencyLevel(Const.dbThreadCount)
-				.maximumWeightedCapacity(maxCount).initialCapacity(maxCount).build();
+		return new ConcurrentLinkedHashMap.Builder().concurrencyLevel(Const.dbThreadCount)
+				.maximumWeightedCapacity(maxCount).initialCapacity(maxCount).<K, V>build();
 	}
 
 	/**
@@ -97,8 +97,8 @@ public final class Util
 	public static <V> LongMap<V> newLongLRUConcurrentHashMap(int maxCount)
 	{
 		if(maxCount <= 0) return newLongConcurrentHashMap();
-		return new LongConcurrentLinkedHashMap.Builder<V>().concurrencyLevel(Const.dbThreadCount)
-				.maximumWeightedCapacity(maxCount).initialCapacity(maxCount).build();
+		return new ConcurrentLinkedHashMap.Builder().concurrencyLevel(Const.dbThreadCount)
+				.maximumWeightedCapacity(maxCount).initialCapacity(maxCount).<V>buildLong();
 	}
 
 	/**

@@ -4,6 +4,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Properties;
+import jane.core.map.IntHashMap;
 
 /**
  * 定义一些可配置的常量(静态类)
@@ -92,7 +93,7 @@ public final class Const
 		maxSessionProcedure = getPropInt("maxSessionProceduer", 65536, 1);
 		maxBatchProceduer = getPropInt("maxBatchProceduer", 256, 1);
 		maxProceduerRedo = getPropInt("maxProceduerRedo", 256, 1);
-		lockPoolSize = IntMap.nextPowerOfTwo(getPropInt("lockPoolSize", 65536, 1, 1073741824));
+		lockPoolSize = IntHashMap.nextPowerOfTwo(getPropInt("lockPoolSize", 65536, 1, 1073741824));
 		maxLockPerProcedure = getPropInt("maxLockPerProcedure", 16, 4, 256);
 		dbCommitResaveCount = getPropInt("dbCommitResaveCount", 200000, 1);
 		dbCommitModCount = getPropInt("dbCommitModCount", 200000, 1);

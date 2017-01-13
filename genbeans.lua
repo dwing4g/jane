@@ -232,7 +232,7 @@ import java.util.Collection;
 import java.util.List;
 import jane.core.Bean;#<#
 import jane.core.BeanHandler;
-import jane.core.IntMap;#>#
+import jane.core.map.IntHashMap;#>#
 
 /** 全部beans的注册(自动生成的静态类) */
 public final class AllBeans
@@ -247,9 +247,9 @@ public final class AllBeans
 #)#		return r;
 	}
 #[#
-	public static IntMap<BeanHandler<?>> get#(hdl.name)Handlers()
+	public static IntHashMap<BeanHandler<?>> get#(hdl.name)Handlers()
 	{
-		IntMap<BeanHandler<?>> r = new IntMap<]=] .. (jdk7 and "" or "BeanHandler<?>") .. [=[>(#(hdl.count) * 4);
+		IntHashMap<BeanHandler<?>> r = new IntHashMap<]=] .. (jdk7 and "" or "BeanHandler<?>") .. [=[>(#(hdl.count) * 4);
 #(#		r.put(#(bean.type), new #(hdl.path).#(bean.name)Handler());
 #)#		return r;
 	}

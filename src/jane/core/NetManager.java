@@ -25,6 +25,7 @@ import org.apache.mina.core.write.DefaultWriteRequest;
 import org.apache.mina.transport.socket.SocketSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
+import jane.core.map.IntHashMap;
 import jane.core.map.LongConcurrentHashMap;
 import jane.core.map.LongMap.MapIterator;
 
@@ -41,7 +42,7 @@ public class NetManager implements IoHandler
 	private static final ScheduledExecutorService				 _rpcThread;													   // 处理重连及RPC和事务超时的线程
 	private final String										 _name			 = getClass().getName();						   // 当前管理器的名字
 	private Class<? extends IoFilter>							 _pcf			 = BeanCodec.class;								   // 协议编码器的类
-	private volatile IntMap<BeanHandler<?>>						 _handlers		 = new IntMap<>(0);								   // bean的处理器
+	private volatile IntHashMap<BeanHandler<?>>					 _handlers		 = new IntHashMap<>(0);							   // bean的处理器
 	private volatile NioSocketAcceptor							 _acceptor;														   // mina的网络监听器
 	private volatile NioSocketConnector							 _connector;													   // mina的网络连接器
 	private int													 _processorCount = Runtime.getRuntime().availableProcessors() + 1; // 监听器或连接器的处理器数量
@@ -177,7 +178,7 @@ public class NetManager implements IoHandler
 	 * 设置后,参数的容器不能再做修改<br>
 	 * 最好在网络连接前设置
 	 */
-	public final void setHandlers(IntMap<BeanHandler<?>> handlers)
+	public final void setHandlers(IntHashMap<BeanHandler<?>> handlers)
 	{
 		if(handlers != null) _handlers = handlers;
 	}
@@ -187,7 +188,7 @@ public class NetManager implements IoHandler
 	 * <p>
 	 * 获取到的容器不能做修改
 	 */
-	public final IntMap<BeanHandler<?>> getHandlers()
+	public final IntHashMap<BeanHandler<?>> getHandlers()
 	{
 		return _handlers;
 	}
