@@ -15,9 +15,6 @@
  */
 package com.googlecode.concurrentlinkedhashmap;
 
-import static com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap.DrainStatus.IDLE;
-import static com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap.DrainStatus.PROCESSING;
-import static com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap.DrainStatus.REQUIRED;
 import java.util.AbstractCollection;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
@@ -194,7 +191,7 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
     weightedSize = new AtomicLong();
     evictionDeque = new LinkedDeque<Node<K, V>>();
     writeBuffer = new ConcurrentLinkedQueue<Runnable>();
-    drainStatus = new AtomicReference<DrainStatus>(IDLE);
+    drainStatus = new AtomicReference<DrainStatus>(DrainStatus.IDLE);
 
     readBufferReadCount = new long[NUMBER_OF_READ_BUFFERS];
     readBufferWriteCount = new AtomicLong[NUMBER_OF_READ_BUFFERS];
@@ -359,7 +356,7 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
    */
   void afterWrite(Runnable task) {
     writeBuffer.add(task);
-    drainStatus.lazySet(REQUIRED);
+    drainStatus.lazySet(DrainStatus.REQUIRED);
     tryToDrainBuffers();
   }
 
@@ -370,10 +367,10 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
   void tryToDrainBuffers() {
     if (evictionLock.tryLock()) {
       try {
-        drainStatus.lazySet(PROCESSING);
+        drainStatus.lazySet(DrainStatus.PROCESSING);
         drainBuffers();
       } finally {
-        drainStatus.compareAndSet(PROCESSING, IDLE);
+        drainStatus.compareAndSet(DrainStatus.PROCESSING, DrainStatus.IDLE);
         evictionLock.unlock();
       }
     }
@@ -1125,7 +1122,6 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
    * <pre>{@code
    * ConcurrentMap<Vertex, Set<Edge>> graph = new Builder<Vertex, Set<Edge>>()
    *     .maximumWeightedCapacity(5000)
-   *     .weigher(Weighers.<Edge>set())
    *     .build();
    * }</pre>
    */

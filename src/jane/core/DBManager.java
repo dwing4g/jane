@@ -128,14 +128,14 @@ public final class DBManager
 					{
 						// 1.首先尝试遍历单个加锁的方式保存已修改的记录. 此时和其它事务可以并发
 						long t0 = System.currentTimeMillis(), t1 = 0;
-						Log.log.info("db-commit saving:{}...", _modCount.get());
+						Log.log.info("db-commit saving: {}...", _modCount.get());
 						_counts[0] = _counts[1] = _counts[2] = 0;
 						_storage.putBegin();
 						TableBase.trySaveModifiedAll(_counts);
 						// 2.如果前一轮遍历之后仍然有过多的修改记录,则再试一轮
 						if(_counts[1] >= _resaveCount)
 						{
-							Log.log.info("db-commit saved:{}=>{}({}), try again...", _counts[0], _counts[1], _counts[2]);
+							Log.log.info("db-commit saved: {}=>{}({}), try again...", _counts[0], _counts[1], _counts[2]);
 							_counts[0] = _counts[1] = 0;
 							TableBase.trySaveModifiedAll(_counts);
 						}
@@ -143,7 +143,7 @@ public final class DBManager
 						if(_counts[2] != 0 || _counts[1] != 0 || _counts[0] != 0)
 						{
 							WriteLock wl = Procedure.getWriteLock();
-							Log.log.info("db-commit saved:{}=>{}({}), flushing...", _counts[0], _counts[1], _counts[2]);
+							Log.log.info("db-commit saved: {}=>{}({}), flushing...", _counts[0], _counts[1], _counts[2]);
 							_storage.putFlush(false);
 							Log.log.info("db-commit procedure pausing...");
 							t1 = System.currentTimeMillis();
@@ -152,7 +152,7 @@ public final class DBManager
 							{
 								_modCount.set(0);
 								Log.log.info("db-commit saving left...");
-								Log.log.info("db-commit saved:{}, flushing left...", TableBase.saveModifiedAll());
+								Log.log.info("db-commit saved: {}, flushing left...", TableBase.saveModifiedAll());
 								_storage.putFlush(true);
 							}
 							finally
@@ -168,7 +168,7 @@ public final class DBManager
 						long t2 = System.currentTimeMillis();
 						_storage.commit();
 						long t3 = System.currentTimeMillis();
-						Log.log.info("db-commit done. ({}/{}/{} ms)", t1, t3 - t2, t3 - t0);
+						Log.log.info("db-commit done ({}/{}/{} ms)", t1, t3 - t2, t3 - t0);
 
 						// 5.判断备份周期并启动备份
 						t = System.currentTimeMillis();
@@ -185,15 +185,15 @@ public final class DBManager
 							long r = _storage.backup(new File(Const.dbBackupPath, new File(Const.dbFilename).getName() +
 									'.' + _storage.getFileSuffix() + '.' + timeStr));
 							if(r >= 0)
-								Log.log.info("db-commit backup end. ({} bytes) ({} ms)", r, System.currentTimeMillis() - t);
+								Log.log.info("db-commit backup end ({} bytes) ({} ms)", r, System.currentTimeMillis() - t);
 							else
-								Log.log.error("db-commit backup error({}). ({} ms)", r, System.currentTimeMillis() - t);
+								Log.log.error("db-commit backup error({}) ({} ms)", r, System.currentTimeMillis() - t);
 						}
 					}
 
 					// 6.清理一遍事务队列
 					collectQueue(_counts);
-					Log.log.info("db-commit collect queue:{}=>{}", _counts[0], _counts[1]);
+					Log.log.info("db-commit collect queue: {}=>{}", _counts[0], _counts[1]);
 				}
 			}
 			catch(Throwable e)
