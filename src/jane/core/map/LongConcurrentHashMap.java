@@ -112,6 +112,11 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		return segments[(hash >>> segmentShift) & segmentMask];
 	}
 
+	private static int longHash(long key)
+	{
+		return (int)key; // for faster inner using (key is multiple of prime number)
+	}
+
 	/* ---------------- Inner Classes -------------- */
 
 	/**
@@ -718,7 +723,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	@Override
 	public V get(long key)
 	{
-		int hash = LongHashMap.longHash(key);
+		int hash = longHash(key);
 		return segmentFor(hash).get(key, hash);
 	}
 
@@ -733,7 +738,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	 */
 	public boolean containsKey(long key)
 	{
-		int hash = LongHashMap.longHash(key);
+		int hash = longHash(key);
 		return segmentFor(hash).containsKey(key, hash);
 	}
 
@@ -819,7 +824,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	{
 		if(value == null)
 			throw new NullPointerException();
-		int hash = LongHashMap.longHash(key);
+		int hash = longHash(key);
 		return segmentFor(hash).put(key, hash, value, false);
 	}
 
@@ -834,7 +839,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	{
 		if(value == null)
 			throw new NullPointerException();
-		int hash = LongHashMap.longHash(key);
+		int hash = longHash(key);
 		return segmentFor(hash).put(key, hash, value, true);
 	}
 
@@ -850,7 +855,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	@Override
 	public V remove(long key)
 	{
-		int hash = LongHashMap.longHash(key);
+		int hash = longHash(key);
 		return segmentFor(hash).remove(key, hash, null);
 	}
 
@@ -859,7 +864,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	 */
 	public boolean remove(long key, Object value)
 	{
-		int hash = LongHashMap.longHash(key);
+		int hash = longHash(key);
 		return value != null && segmentFor(hash).remove(key, hash, value) != null;
 	}
 
@@ -870,7 +875,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	{
 		if(oldValue == null || newValue == null)
 			throw new NullPointerException();
-		int hash = LongHashMap.longHash(key);
+		int hash = longHash(key);
 		return segmentFor(hash).replace(key, hash, oldValue, newValue);
 	}
 
@@ -883,7 +888,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	{
 		if(value == null)
 			throw new NullPointerException();
-		int hash = LongHashMap.longHash(key);
+		int hash = longHash(key);
 		return segmentFor(hash).replace(key, hash, value);
 	}
 

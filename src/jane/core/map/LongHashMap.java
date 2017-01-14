@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Random;
 
 /**
  * LongHashMap is an implementation of LongMap without concurrency locking.
@@ -49,7 +50,7 @@ public final class LongHashMap<V> extends LongMap<V>
 	/**
 	 * Salt added to keys before hashing, so it is harder to trigger hash collision attack.
 	 */
-	// private static final long hashSalt = new Random().nextLong();
+	private static final long hashSalt = new Random().nextLong();
 
 	/**
 	 * The internal data structure to hold Entries
@@ -101,13 +102,21 @@ public final class LongHashMap<V> extends LongMap<V>
 			return MAXIMUM_CAPACITY;
 		if(x <= 0)
 			return 16;
-		x = x - 1;
+		x--;
 		x |= x >> 1;
 		x |= x >> 2;
 		x |= x >> 4;
 		x |= x >> 8;
 		x |= x >> 16;
 		return x + 1;
+	}
+
+	private static int longHash(long key)
+	{
+		key ^= hashSalt;
+		int h = (int)(key ^ (key >>> 32));
+		h ^= (h >>> 20) ^ (h >>> 12);
+		return h ^ (h >>> 7) ^ (h >>> 4);
 	}
 
 	/**
@@ -184,15 +193,6 @@ public final class LongHashMap<V> extends LongMap<V>
 		return elementCount == 0;
 	}
 
-	static int longHash(long key)
-	{
-		return (int)key; // for faster inner using (key is multiple of prime number)
-		// key ^= hashSalt;
-		// int h = (int)(key ^ (key >>> 32));
-		// h ^= (h >>> 20) ^ (h >>> 12);
-		// return h ^ (h >>> 7) ^ (h >>> 4);
-	}
-
 	/**
 	 * Returns the value of the mapping with the specified key.
 	 * @param key the key.
@@ -202,7 +202,7 @@ public final class LongHashMap<V> extends LongMap<V>
 	@Override
 	public V get(long key)
 	{
-		int hash = LongHashMap.longHash(key);
+		int hash = longHash(key);
 		int index = hash & (elementData.length - 1);
 		Entry<V> m = findNonNullKeyEntry(key, index, hash);
 		return m != null ? m.value : null;
@@ -226,7 +226,7 @@ public final class LongHashMap<V> extends LongMap<V>
 	@Override
 	public V put(long key, V value)
 	{
-		int hash = LongHashMap.longHash(key);
+		int hash = longHash(key);
 		int index = hash & (elementData.length - 1);
 		Entry<V> entry = findNonNullKeyEntry(key, index, hash);
 		if(entry == null)
@@ -276,7 +276,7 @@ public final class LongHashMap<V> extends LongMap<V>
 	@Override
 	public V remove(long key)
 	{
-		int hash = LongHashMap.longHash(key);
+		int hash = longHash(key);
 		int index = hash & (elementData.length - 1);
 		Entry<V> entry = elementData[index], last = null;
 		while(entry != null && !(entry.origKeyHash == hash && key == entry.key))

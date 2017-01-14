@@ -99,22 +99,24 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 	@Override
 	public V put(long key, V value)
 	{
-		if(value == null) return null;
-		CacheEntry<V> cacheEntryOld = map.put(key, new CacheEntry<>(key, value, versionCounter.incrementAndGet()));
-		int curSize = (cacheEntryOld != null ? size.get() : size.incrementAndGet());
-		if(curSize > upperSize && !sweepStatus.get())
+		if(value == null)
+			return null;
+		CacheEntry<V> ceOld = map.put(key, new CacheEntry<>(key, value, versionCounter.incrementAndGet()));
+		if(ceOld != null)
+			return ceOld.value;
+		if(size.incrementAndGet() > upperSize && !sweepStatus.get())
 			sweep();
-		return cacheEntryOld != null ? cacheEntryOld.value : null;
+		return null;
 	}
 
 	@Override
 	public V remove(long key)
 	{
-		CacheEntry<V> cacheEntry = map.remove(key);
-		if(cacheEntry == null)
+		CacheEntry<V> ceOld = map.remove(key);
+		if(ceOld == null)
 			return null;
 		size.decrementAndGet();
-		return cacheEntry.value;
+		return ceOld.value;
 	}
 
 	@Override

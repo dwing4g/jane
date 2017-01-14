@@ -33,7 +33,7 @@ import jane.core.Log;
  * Instead it strives to remove least recently used items but when the initial cleanup does not remove enough items
  * to reach the 'acceptSize' limit, it can remove more items forcefully regardless of access order.
  *
- * MapDB note: reworked to implement LongMap. Original comes from:
+ * MapDB note: Original comes from:
  * https://svn.apache.org/repos/asf/lucene/dev/trunk/solr/core/src/java/org/apache/solr/util/ConcurrentLRUCache.java
  */
 public final class ConcurrentLRUMap<K, V> extends AbstractMap<K, V>
@@ -101,22 +101,24 @@ public final class ConcurrentLRUMap<K, V> extends AbstractMap<K, V>
 	@Override
 	public V put(K key, V value)
 	{
-		if(value == null) return null;
-		CacheEntry<K, V> cacheEntryOld = map.put(key, new CacheEntry<>(key, value, versionCounter.incrementAndGet()));
-		int curSize = (cacheEntryOld != null ? size.get() : size.incrementAndGet());
-		if(curSize > upperSize && !sweepStatus.get())
+		if(value == null)
+			return null;
+		CacheEntry<K, V> ceOld = map.put(key, new CacheEntry<>(key, value, versionCounter.incrementAndGet()));
+		if(ceOld != null)
+			return ceOld.value;
+		if(size.incrementAndGet() > upperSize && !sweepStatus.get())
 			sweep();
-		return cacheEntryOld != null ? cacheEntryOld.value : null;
+		return null;
 	}
 
 	@Override
 	public V remove(Object key)
 	{
-		CacheEntry<K, V> cacheEntry = map.remove(key);
-		if(cacheEntry == null)
+		CacheEntry<K, V> ceOld = map.remove(key);
+		if(ceOld == null)
 			return null;
 		size.decrementAndGet();
-		return cacheEntry.value;
+		return ceOld.value;
 	}
 
 	@Override
