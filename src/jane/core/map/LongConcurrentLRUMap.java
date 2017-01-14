@@ -62,12 +62,9 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 		this(lowerSize + (lowerSize + 1) / 2, lowerSize, lowerSize + lowerSize / 4, lowerSize + (lowerSize + 1) / 2 + 256, name);
 	}
 
-	private static final class CacheEntry<V>
+	private static final class CacheEntry<V> extends CacheEntryBase<V>
 	{
-		private final long	  key;
-		private final V		  value;
-		private volatile long version;
-		private long		  versionCopy;
+		private final long key;
 
 		private CacheEntry(long k, V v, long ver)
 		{
@@ -255,7 +252,7 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 				numToKeep = lowerSize - numKept;
 				numToRemove = sizeOld - lowerSize - numRemoved;
 
-				final PQueue queue = new PQueue(numToRemove);
+				final LRUQueue<CacheEntry<?>> queue = new LRUQueue<>(numToRemove, new CacheEntry<?>[LRUQueue.calHeapSize(numToRemove)]);
 
 				for(int i = eSize - 1; i >= 0; --i)
 				{
@@ -314,142 +311,6 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 			sweepStatus.set(false);
 			if(Log.hasDebug)
 				Log.log.debug("LRUMap.sweep({}: {}=>{}, {}ms)", name, sizeOld, size.get(), System.currentTimeMillis() - time);
-		}
-	}
-
-	/**
-	 * A PriorityQueue maintains a partial ordering of its elements such that the least element can always be found in constant time.
-	 * Put()'s and pop()'s require log(size) time.
-	 *
-	 * <p><b>NOTE</b>: This class will pre-allocate a full array of length <code>maxSize+1</code>.
-	 */
-	private static final class PQueue
-	{
-		private final CacheEntry<?>[] heap;
-		private int					  size;	  // the number of elements currently stored in the PriorityQueue
-		private int					  maxSize;
-
-		public PQueue(int maxSize)
-		{
-			int heapSize;
-			if(maxSize == 0)
-				heapSize = 2; // allocate 1 extra to avoid if statement in top()
-			else if(maxSize == Integer.MAX_VALUE)
-				heapSize = Integer.MAX_VALUE;
-			else
-				heapSize = maxSize + 1; // +1 because all access to heap is 1-based. heap[0] is unused.
-			heap = new CacheEntry<?>[heapSize];
-			size = 0;
-			this.maxSize = maxSize;
-		}
-
-		/**
-		 * Adds an Object to a PriorityQueue in log(size) time.
-		 * If one tries to add more objects than maxSize from initialize an {@link ArrayIndexOutOfBoundsException} is thrown.
-		 *
-		 * @return the new 'top' element in the queue.
-		 */
-		public final CacheEntry<?> add(CacheEntry<?> element)
-		{
-			heap[++size] = element;
-			upHeap();
-			return heap[1];
-		}
-
-		/** Removes and returns the least element of the PriorityQueue in log(size) time. */
-		public final CacheEntry<?> pop()
-		{
-			if(size <= 0)
-				return null;
-			CacheEntry<?> result = heap[1]; // save first value
-			heap[1] = heap[size]; // move last to first
-			heap[size--] = null; // permit GC of objects
-			downHeap(); // adjust heap
-			return result;
-		}
-
-		/**
-		 * Should be called when the Object at top changes values. Still log(n) worst
-		 * case, but it's at least twice as fast to
-		 *
-		 * <pre class="prettyprint">
-		 * pq.top().change();
-		 * pq.updateTop();
-		 * </pre>
-		 *
-		 * instead of
-		 *
-		 * <pre class="prettyprint">
-		 * o = pq.pop();
-		 * o.change();
-		 * pq.push(o);
-		 * </pre>
-		 *
-		 * @return the new 'top' element.
-		 */
-		public final CacheEntry<?> updateTop()
-		{
-			downHeap();
-			return heap[1];
-		}
-
-		public CacheEntry<?> insertWithOverflow(CacheEntry<?> element)
-		{
-			if(size < maxSize)
-			{
-				add(element);
-				return null;
-			}
-			if(size <= 0 || lessThan(element, heap[1]))
-				return element;
-			CacheEntry<?> ret = heap[1];
-			heap[1] = element;
-			updateTop();
-			return ret;
-		}
-
-		/**
-		 * Determines the ordering of objects in this priority queue.
-		 * @return <code>true</code> if parameter <tt>a</tt> is less than parameter <tt>b</tt>.
-		 */
-		private static boolean lessThan(CacheEntry<?> a, CacheEntry<?> b)
-		{
-			// reverse the parameter order so that the queue keeps the oldest items
-			return a.versionCopy > b.versionCopy;
-		}
-
-		private void upHeap()
-		{
-			int i = size;
-			CacheEntry<?> node = heap[i]; // save bottom node
-			int j = i >>> 1;
-			while(j > 0 && lessThan(node, heap[j]))
-			{
-				heap[i] = heap[j]; // shift parents down
-				i = j;
-				j = j >>> 1;
-			}
-			heap[i] = node; // install saved node
-		}
-
-		private void downHeap()
-		{
-			int i = 1;
-			CacheEntry<?> node = heap[i]; // save top node
-			int j = i << 1; // find smaller child
-			int k = j + 1;
-			if(k <= size && lessThan(heap[k], heap[j]))
-				j = k;
-			while(j <= size && lessThan(heap[j], node))
-			{
-				heap[i] = heap[j]; // shift up child
-				i = j;
-				j = i << 1;
-				k = j + 1;
-				if(k <= size && lessThan(heap[k], heap[j]))
-					j = k;
-			}
-			heap[i] = node; // install saved node
 		}
 	}
 

@@ -923,7 +923,6 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		private int			   nextTableIndex;
 		private HashEntry<V>[] currentTable;
 		private HashEntry<V>   nextEntry;
-		private HashEntry<V>   lastReturned;
 
 		private HashIterator()
 		{
@@ -968,17 +967,14 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		{
 			if(nextEntry == null)
 				throw new NoSuchElementException();
-			lastReturned = nextEntry;
+			HashEntry<V> ret = nextEntry;
 			advance();
-			return lastReturned;
+			return ret;
 		}
 
 		public void remove()
 		{
-			if(lastReturned == null)
-				throw new IllegalStateException();
-			LongConcurrentHashMap.this.remove(lastReturned.key);
-			lastReturned = null;
+			throw new UnsupportedOperationException();
 		}
 	}
 
