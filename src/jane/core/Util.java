@@ -34,7 +34,6 @@ import org.w3c.dom.NodeList;
 import jane.core.map.ConcurrentLinkedHashMap;
 import jane.core.map.LongConcurrentHashMap;
 import jane.core.map.LongConcurrentLRUMap;
-import jane.core.map.LongConcurrentLinkedHashMap;
 import jane.core.map.LongMap;
 
 /**
@@ -42,10 +41,10 @@ import jane.core.map.LongMap;
  */
 public final class Util
 {
-	private static final Random	 _rand				= new Random();
-	private static final Pattern _patCharset		= Pattern.compile("charset=(\\S+)");
-	private static final int	 CONNECTION_TIMEOUT	= 15 * 1000;
-	private static final int	 BUFFER_SIZE		= 8 * 1024;
+	private static final Random	 _rand						 = new Random();
+	private static final Pattern _patCharset				 = Pattern.compile("charset=(\\S+)");
+	private static final int	 HTTP_REQ_CONNECTION_TIMEOUT = 15 * 1000;
+	private static final int	 HTTP_RES_BUFFER_SIZE		 = 8 * 1024;
 
 	public static Random getRand()
 	{
@@ -93,14 +92,14 @@ public final class Util
 	}
 
 	/**
-	 * 使用{@link LongConcurrentLinkedHashMap}创建可并发带链表的HashMap
+	 * 使用{@link LongConcurrentLRUMap}创建可并发带链表的HashMap
 	 */
 	public static <V> LongMap<V> newLongLRUConcurrentHashMap(int maxCount, String name)
 	{
 		if(maxCount <= 0) return newLongConcurrentHashMap();
 		// return new ConcurrentLinkedHashMap.Builder().concurrencyLevel(Const.dbThreadCount)
 		//		.maximumWeightedCapacity(maxCount).initialCapacity(maxCount).<V>buildLong();
-		return new LongConcurrentLRUMap<>(maxCount + (maxCount + 1) / 2, maxCount, name);
+		return new LongConcurrentLRUMap<>(maxCount, name);
 	}
 
 	/**
@@ -539,8 +538,8 @@ public final class Util
 			conn.setUseCaches(false);
 			conn.setRequestProperty("Accept-Charset", encoding);
 			conn.setRequestProperty("User-Agent", "jane");
-			conn.setConnectTimeout(CONNECTION_TIMEOUT);
-			conn.setReadTimeout(CONNECTION_TIMEOUT);
+			conn.setConnectTimeout(HTTP_REQ_CONNECTION_TIMEOUT);
+			conn.setReadTimeout(HTTP_REQ_CONNECTION_TIMEOUT);
 			if(body != null)
 			{
 				conn.setRequestMethod("POST");
@@ -567,8 +566,8 @@ public final class Util
 			}
 
 			is = conn.getInputStream();
-			byte[] buf = new byte[BUFFER_SIZE];
-			ByteArrayOutputStream bs = new ByteArrayOutputStream(BUFFER_SIZE);
+			byte[] buf = new byte[HTTP_RES_BUFFER_SIZE];
+			ByteArrayOutputStream bs = new ByteArrayOutputStream(HTTP_RES_BUFFER_SIZE);
 			for(;;)
 			{
 				int n = is.read(buf);

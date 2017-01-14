@@ -230,7 +230,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		private Segment(int initialCapacity, float lf)
 		{
 			super(false); // CC.FAIR_LOCKS
-			setTable(HashEntry.<V> newArray(initialCapacity));
+			setTable(HashEntry.<V>newArray(initialCapacity));
 			loadFactor = lf;
 		}
 

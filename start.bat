@@ -3,7 +3,7 @@ setlocal
 pushd %~dp0
 
 set JVM=^
--Xms64m ^
+-Xms128m ^
 -Xmx512m ^
 -server ^
 -XX:+UseConcMarkSweepGC ^
