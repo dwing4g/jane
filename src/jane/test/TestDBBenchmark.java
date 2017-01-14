@@ -3,6 +3,7 @@ package jane.test;
 import static jane.bean.AllTables.Benchmark;
 import java.util.concurrent.atomic.AtomicInteger;
 import jane.core.DBManager;
+import jane.core.Log;
 import jane.core.Procedure;
 import jane.core.Storage;
 import jane.core.StorageLevelDB;
@@ -11,7 +12,7 @@ import jane.bean.AllTables;
 import jane.bean.TestBean;
 
 // JVM: -Xms512M -Xmx512M
-// RUN: start.bat b ld 8 0 150000
+// RUN: start.bat b ld 100000 50000 1000 500000
 public final class TestDBBenchmark
 {
 	@SuppressWarnings("resource")
@@ -24,24 +25,37 @@ public final class TestDBBenchmark
 				sto = StorageLevelDB.instance();
 		}
 		if(sto == null) sto = StorageLevelDB.instance();
-		final int count = (args.length > 1 ? ("u".equals(args[1]) ? Integer.MAX_VALUE : Integer.parseInt(args[1])) : 8);
-		final int from = (args.length > 2 ? Integer.parseInt(args[2]) : 0);
-		final int keys = (args.length > 3 ? Integer.parseInt(args[3]) : 150000);
+		final int keyAllCount = (args.length > 1 ? Integer.parseInt(args[1]) : 100000);
+		final int keyWinCount = Math.min(args.length > 2 ? Integer.parseInt(args[2]) : keyAllCount / 2, keyAllCount);
+		final int countIn = (args.length > 3 ? Integer.parseInt(args[3]) : 100);
+		final int countOut = (args.length > 4 ? ("u".equals(args[4]) ? Integer.MAX_VALUE : Integer.parseInt(args[4])) : (keyAllCount - keyWinCount) * 10);
 
-		System.out.println("begin --- " + sto.getClass().getName() + ": " + count + " * " + from + "-[" + keys + ']');
+		Log.log.info("begin {}: key: {}/{}, count: {}*{}", sto.getClass().getName(), keyWinCount, keyAllCount, countIn, countOut);
 		DBManager.instance().startup(sto);
 		AllTables.register();
 		System.gc();
 		System.runFinalization();
-		System.out.println("start");
+		Log.log.info("start");
 
-		for(int j = 0; j < count; ++j)
+		long t = System.currentTimeMillis();
+		final AtomicInteger checked = new AtomicInteger();
+		int logCount = Math.max(10000000 / countIn, 1);
+		for(int i = 0, keyFrom = 0, keyDelta = -1; i < countOut; keyFrom += keyDelta, ++i)
 		{
-			long t = System.currentTimeMillis();
-			final AtomicInteger checked = new AtomicInteger();
-			for(int i = 0; i < keys; ++i)
+			if(keyFrom < 0)
 			{
-				final long id = from + Util.getRand().nextInt(keys);
+				keyFrom = 0;
+				keyDelta = 1;
+			}
+			else if(keyFrom > keyAllCount - keyWinCount)
+			{
+				keyFrom = keyAllCount - keyWinCount;
+				keyDelta = -1;
+			}
+
+			for(int j = 0; j < countIn; ++j)
+			{
+				final long id = keyFrom + Util.getRand().nextInt(keyWinCount);
 				final long t0 = System.currentTimeMillis();
 				new Procedure()
 				{
@@ -50,9 +64,8 @@ public final class TestDBBenchmark
 					{
 						long t1 = System.currentTimeMillis();
 						long tt = t1 - t0;
-						if(tt >= 250) System.out.println("--- proc delay=" + tt);
-						lock(Benchmark.lockId(id));
-						TestBean.Safe a = Benchmark.get(id);
+						if(tt >= 250) Log.log.info("proc delay={}ms", tt);
+						TestBean.Safe a = Benchmark.lockGet(id);
 						if(a == null)
 						{
 							TestBean aa = new TestBean();
@@ -67,18 +80,24 @@ public final class TestDBBenchmark
 								a.setValue2(id);
 						}
 						tt = System.currentTimeMillis() - t1;
-						if(tt >= 250) System.out.println("--- proc timeout=" + tt);
+						if(tt >= 250) Log.log.info("proc timeout={}ms", tt);
 					}
 				}.run();
-				if(count == Integer.MAX_VALUE && i % 512 == 0) Thread.sleep(1);
 			}
-			System.out.println((System.currentTimeMillis() - t) + " checked=" + checked.get() + '/' + keys);
+			if(i % logCount == logCount - 1)
+			{
+				long rc = Benchmark.getReadCount();
+				long rtc = Benchmark.getReadStoCount();
+				Log.log.info("{}ms checked={}/{} {}%", System.currentTimeMillis() - t, checked.get(), logCount * countIn, (rc - rtc) * 10000 / rc * 0.01);
+				t = System.currentTimeMillis();
+				checked.set(0);
+			}
 		}
 
-		System.out.println("checkpoint");
+		Log.log.info("checkpoint");
 		DBManager.instance().backupNextCheckpoint();
 		DBManager.instance().checkpoint();
-		System.out.println("end");
+		Log.log.info("end");
 		System.exit(0);
 	}
 }

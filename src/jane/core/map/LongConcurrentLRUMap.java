@@ -18,18 +18,18 @@
 package jane.core.map;
 
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantLock;
+import jane.core.Log;
 
 /**
- * A LRU cache implementation based upon ConcurrentHashMap and other techniques to reduce
+ * A LRU cache implementation based upon LongConcurrentHashMap and other techniques to reduce
  * contention and synchronization overhead to utilize multiple CPU cores more effectively.
  * <p/>
- * Note that the implementation does not follow a true LRU (least-recently-used) eviction
- * strategy. Instead it strives to remove least recently used items but when the initial
- * cleanup does not remove enough items to reach the 'acceptableWaterMark' limit, it can
- * remove more items forcefully regardless of access order.
+ * Note that the implementation does not follow a true LRU (least-recently-used) eviction strategy.
+ * Instead it strives to remove least recently used items but when the initial cleanup does not remove enough items
+ * to reach the 'acceptSize' limit, it can remove more items forcefully regardless of access order.
  *
  * MapDB note: reworked to implement LongMap. Original comes from:
  * https://svn.apache.org/repos/asf/lucene/dev/trunk/solr/core/src/java/org/apache/solr/util/ConcurrentLRUCache.java
@@ -37,54 +37,43 @@ import java.util.concurrent.locks.ReentrantLock;
 public final class LongConcurrentLRUMap<V> extends LongMap<V>
 {
 	private final LongConcurrentHashMap<CacheEntry<V>> map;
-	private final int								   upperWaterMark, lowerWaterMark;
-	private final ReentrantLock						   markAndSweepLock	= new ReentrantLock(true);
-	private volatile boolean						   isCleaning;
-	private final int								   acceptableWaterMark;
-	private long									   oldestEntry;
-	private final AtomicLong						   accessCounter	= new AtomicLong();
-	private final AtomicInteger						   size				= new AtomicInteger();
+	private final AtomicLong						   versionCounter = new AtomicLong();
+	private final AtomicInteger						   size			  = new AtomicInteger();
+	private final AtomicBoolean						   sweepStatus	  = new AtomicBoolean();
+	private final int								   upperSize;
+	private final int								   lowerSize;
+	private final int								   acceptSize;
+	private final String							   name;
+	private long									   minVersion;
 
-	public LongConcurrentLRUMap(int upperWaterMark, int lowerWaterMark, int acceptableWatermark, int initialSize)
+	public LongConcurrentLRUMap(int upperSize, int lowerSize, int acceptSize, int initialSize, String name)
 	{
-		if(upperWaterMark <= 0) throw new IllegalArgumentException("upperWaterMark must be > 0");
-		if(lowerWaterMark >= upperWaterMark) throw new IllegalArgumentException("lowerWaterMark must be < upperWaterMark");
+		if(lowerSize <= 0) throw new IllegalArgumentException("lowerSize must be > 0");
+		if(upperSize <= lowerSize) throw new IllegalArgumentException("upperSize must be > lowerSize");
 		map = new LongConcurrentHashMap<>(initialSize);
-		this.upperWaterMark = upperWaterMark;
-		this.lowerWaterMark = lowerWaterMark;
-		this.acceptableWaterMark = acceptableWatermark;
+		this.upperSize = upperSize;
+		this.lowerSize = lowerSize;
+		this.acceptSize = acceptSize;
+		this.name = name;
 	}
 
-	public LongConcurrentLRUMap(int size, int lowerWatermark)
+	public LongConcurrentLRUMap(int upperSize, int lowerSize, String name)
 	{
-		this(size, lowerWatermark, (int)Math.floor((lowerWatermark + size) / 2), (int)Math.ceil(0.75f * size));
+		this(upperSize, lowerSize, lowerSize / 2 + upperSize / 2, upperSize, name);
 	}
 
-	private static final class CacheEntry<V> implements Comparable<CacheEntry<V>>
+	private static final class CacheEntry<V>
 	{
 		private final long	  key;
 		private final V		  value;
 		private volatile long version;
 		private long		  versionCopy;
 
-		public CacheEntry(long k, V v, long ver)
+		private CacheEntry(long k, V v, long ver)
 		{
 			key = k;
 			value = v;
 			version = ver;
-		}
-
-		@Override
-		public int compareTo(CacheEntry<V> that)
-		{
-			long d = that.versionCopy - versionCopy;
-			return d == 0 ? 0 : (int)(d >> 32);
-		}
-
-		@Override
-		public String toString()
-		{
-			return "(" + key + ": " + value + ", " + version;
 		}
 	}
 
@@ -106,31 +95,19 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 		CacheEntry<V> e = map.get(key);
 		if(e == null)
 			return null;
-		e.version = accessCounter.incrementAndGet();
+		e.version = versionCounter.incrementAndGet();
 		return e.value;
 	}
 
 	@Override
-	public V put(long key, V val)
+	public V put(long key, V value)
 	{
-		if(val == null) return null;
-		CacheEntry<V> e = new CacheEntry<>(key, val, accessCounter.incrementAndGet());
-		CacheEntry<V> oldCacheEntry = map.put(key, e);
-		int currentSize = (oldCacheEntry != null ? size.get() : size.incrementAndGet());
-
-		// Check if we need to clear out old entries from the cache.
-		// isCleaning variable is checked instead of markAndSweepLock.isLocked()
-		// for performance because every put invokation will check until
-		// the size is back to an acceptable level.
-		//
-		// There is a race between the check and the call to markAndSweep, but
-		// it's unimportant because markAndSweep actually aquires the lock or returns if it can't.
-		//
-		// Thread safety note: isCleaning read is piggybacked (comes after) other volatile reads
-		// in this method.
-		if(currentSize > upperWaterMark && !isCleaning)
-			markAndSweep();
-		return oldCacheEntry != null ? oldCacheEntry.value : null;
+		if(value == null) return null;
+		CacheEntry<V> cacheEntryOld = map.put(key, new CacheEntry<>(key, value, versionCounter.incrementAndGet()));
+		int curSize = (cacheEntryOld != null ? size.get() : size.incrementAndGet());
+		if(curSize > upperSize && !sweepStatus.get())
+			sweep();
+		return cacheEntryOld != null ? cacheEntryOld.value : null;
 	}
 
 	@Override
@@ -162,268 +139,222 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 	// protected void evictedEntry(long key, V value) {}
 
 	/**
-	 * Removes items from the cache to bring the size down
-	 * to an acceptable value ('acceptableWaterMark').
+	 * Removes items from the cache to bring the size down to 'acceptSize'.
 	 * <p/>
 	 * It is done in two stages. In the first stage, least recently used items are evicted.
-	 * If, after the first stage, the cache size is still greater than 'acceptableSize'
-	 * config parameter, the second stage takes over.
+	 * If after the first stage, the cache size is still greater than 'acceptSize', the second stage takes over.
 	 * <p/>
-	 * The second stage is more intensive and tries to bring down the cache size
-	 * to the 'lowerWaterMark' config parameter.
+	 * The second stage is more intensive and tries to bring down the cache size to the 'lowerSize'.
 	 */
-	private void markAndSweep()
+	private void sweep()
 	{
-		// if we want to keep at least 1000 entries, then timestamps of
-		// current through current-1000 are guaranteed not to be the oldest (but that does
-		// not mean there are 1000 entries in that group... it's acutally anywhere between
-		// 1 and 1000).
-		// Also, if we want to remove 500 entries, then
-		// oldestEntry through oldestEntry+500 are guaranteed to be
-		// removed (however many there are there).
+		// if we want to keep at least 1000 entries, then timestamps of current through current-1000
+		// are guaranteed not to be the oldest (but that does not mean there are 1000 entries in that group...
+		// it's acutally anywhere between 1 and 1000).
+		// Also, if we want to remove 500 entries, then oldestEntry through oldestEntry+500
+		// are guaranteed to be removed (however many there are there).
 
-		if(!markAndSweepLock.tryLock()) return;
+		if(!sweepStatus.compareAndSet(false, true)) return;
+		final long time = System.currentTimeMillis();
+		final int sizeOld = size.get();
 		try
 		{
-			isCleaning = true;
-			long theoldestEntry = oldestEntry;
-			long timeCurrent = accessCounter.get();
-			int sz = size.get();
-			int numRemoved = 0;
+			final long curV = versionCounter.get();
+			long maxV = curV;
+			long minV = minVersion;
+			long maxVNew = -1;
+			long minVNew = Long.MAX_VALUE;
+			int numToKeep = lowerSize;
+			int numToRemove = sizeOld - lowerSize;
 			int numKept = 0;
-			long newestEntry = timeCurrent;
-			long newNewestEntry = -1;
-			long newOldestEntry = Long.MAX_VALUE;
-			int wantToKeep = lowerWaterMark;
-			int wantToRemove = sz - lowerWaterMark;
+			int numRemoved = 0;
 
 			@SuppressWarnings("unchecked")
-			CacheEntry<V>[] eset = new CacheEntry[sz];
+			CacheEntry<V>[] eList = new CacheEntry[sizeOld];
 			int eSize = 0;
-
-			// System.out.println("newestEntry="+newestEntry + " oldestEntry="+theoldestEntry);
-			// System.out.println("items removed:" + numRemoved + " numKept=" + numKept + " esetSz="+ eSize + " sz-numRemoved=" + (sz-numRemoved));
 
 			for(Iterator<CacheEntry<V>> iter = map.valueIterator(); iter.hasNext();)
 			{
 				CacheEntry<V> ce = iter.next();
-				// set lastAccessedCopy to avoid more volatile reads
-				long thisEntry = ce.versionCopy = ce.version;
+				long v = ce.version;
+				ce.versionCopy = v;
 
-				// since the wantToKeep group is likely to be bigger than wantToRemove, check it first
-				if(thisEntry > newestEntry - wantToKeep)
+				// since the numToKeep group is likely to be bigger than numToRemove, check it first
+				if(v > maxV - numToKeep)
 				{
-					// this entry is guaranteed not to be in the bottom
-					// group, so do nothing.
+					// this entry is guaranteed not to be in the bottom group, so do nothing
 					numKept++;
-					newOldestEntry = Math.min(thisEntry, newOldestEntry);
+					if(minVNew > v) minVNew = v;
 				}
-				else if(thisEntry < theoldestEntry + wantToRemove)
+				else if(v < minV + numToRemove)
 				{
 					// entry in bottom group?
-					// this entry is guaranteed to be in the bottom group
-					// so immediately remove it from the map.
+					// this entry is guaranteed to be in the bottom group, so immediately remove it from the map
 					evictEntry(ce.key);
 					numRemoved++;
 				}
-				else
+				else if(eSize < sizeOld - 1)
 				{
 					// This entry *could* be in the bottom group.
-					// Collect these entries to avoid another full pass... this is wasted
-					// effort if enough entries are normally removed in this first pass.
+					// Collect these entries to avoid another full pass...
+					// this is wasted effort if enough entries are normally removed in this first pass.
 					// An alternate impl could make a full second pass.
-					if(eSize < eset.length - 1)
-					{
-						eset[eSize++] = ce;
-						newNewestEntry = Math.max(thisEntry, newNewestEntry);
-						newOldestEntry = Math.min(thisEntry, newOldestEntry);
-					}
+					eList[eSize++] = ce;
+					if(maxVNew < v) maxVNew = v;
+					if(minVNew > v) minVNew = v;
 				}
 			}
-
-			// System.out.println("items removed:" + numRemoved + " numKept=" + numKept + " esetSz="+ eSize + " sz-numRemoved=" + (sz-numRemoved));
 
 			int numPasses = 1; // maximum number of linear passes over the data
 
-			// if we didn't remove enough entries, then make more passes
-			// over the values we collected, with updated min and max values.
-			while(sz - numRemoved > acceptableWaterMark && --numPasses >= 0)
+			// if we didn't remove enough entries, then make more passes over the values we collected, with updated min and max values.
+			while(sizeOld - numRemoved > acceptSize && --numPasses >= 0)
 			{
-				theoldestEntry = newOldestEntry == Long.MAX_VALUE ? theoldestEntry : newOldestEntry;
-				newOldestEntry = Long.MAX_VALUE;
-				newestEntry = newNewestEntry;
-				newNewestEntry = -1;
-				wantToKeep = lowerWaterMark - numKept;
-				wantToRemove = sz - lowerWaterMark - numRemoved;
+				minV = (minVNew == Long.MAX_VALUE ? minV : minVNew);
+				minVNew = Long.MAX_VALUE;
+				maxV = maxVNew;
+				maxVNew = -1;
+				numToKeep = lowerSize - numKept;
+				numToRemove = sizeOld - lowerSize - numRemoved;
 
 				// iterate backward to make it easy to remove items.
-				for(int i = eSize - 1; i >= 0; i--)
+				for(int i = eSize - 1; i >= 0; --i)
 				{
-					CacheEntry<V> ce = eset[i];
-					long thisEntry = ce.versionCopy;
+					CacheEntry<V> ce = eList[i];
+					long v = ce.versionCopy;
 
-					if(thisEntry > newestEntry - wantToKeep)
+					if(v > maxV - numToKeep)
 					{
-						// this entry is guaranteed not to be in the bottom
-						// group, so do nothing but remove it from the eset.
+						// this entry is guaranteed not to be in the bottom group, so do nothing but remove it from the eList
 						numKept++;
-						// remove the entry by moving the last element to it's position
-						eset[i] = eset[eSize - 1];
-						eSize--;
-
-						newOldestEntry = Math.min(thisEntry, newOldestEntry);
-
+						eList[i] = eList[--eSize]; // remove the entry by moving the last element to it's position
+						if(minVNew > v) minVNew = v;
 					}
-					else if(thisEntry < theoldestEntry + wantToRemove)
-					{ // entry in bottom group?
-
-						// this entry is guaranteed to be in the bottom group
-						// so immediately remove it from the map.
-						evictEntry(ce.key);
-						numRemoved++;
-
-						// remove the entry by moving the last element to it's position
-						eset[i] = eset[eSize - 1];
-						eSize--;
-					}
-					else
-					{
-						// This entry *could* be in the bottom group, so keep it in the eset,
-						// and update the stats.
-						newNewestEntry = Math.max(thisEntry, newNewestEntry);
-						newOldestEntry = Math.min(thisEntry, newOldestEntry);
-					}
-				}
-				// System.out.println("items removed:" + numRemoved + " numKept=" + numKept + " esetSz="+ eSize + " sz-numRemoved=" + (sz-numRemoved));
-			}
-
-			// if we still didn't remove enough entries, then make another pass while
-			// inserting into a priority queue
-			if(sz - numRemoved > acceptableWaterMark)
-			{
-				theoldestEntry = newOldestEntry == Long.MAX_VALUE ? theoldestEntry : newOldestEntry;
-				newOldestEntry = Long.MAX_VALUE;
-				newestEntry = newNewestEntry;
-				newNewestEntry = -1;
-				wantToKeep = lowerWaterMark - numKept;
-				wantToRemove = sz - lowerWaterMark - numRemoved;
-
-				PQueue<V> queue = new PQueue<>(wantToRemove);
-
-				for(int i = eSize - 1; i >= 0; i--)
-				{
-					CacheEntry<V> ce = eset[i];
-					long thisEntry = ce.versionCopy;
-
-					if(thisEntry > newestEntry - wantToKeep)
-					{
-						// this entry is guaranteed not to be in the bottom
-						// group, so do nothing but remove it from the eset.
-						numKept++;
-						// removal not necessary on last pass.
-						// eset[i] = eset[eSize-1];
-						// eSize--;
-
-						newOldestEntry = Math.min(thisEntry, newOldestEntry);
-					}
-					else if(thisEntry < theoldestEntry + wantToRemove)
+					else if(v < minV + numToRemove)
 					{
 						// entry in bottom group?
-						// this entry is guaranteed to be in the bottom group
-						// so immediately remove it.
+						// this entry is guaranteed to be in the bottom group, so immediately remove it from the map
 						evictEntry(ce.key);
 						numRemoved++;
-
-						// removal not necessary on last pass.
-						// eset[i] = eset[eSize-1];
-						// eSize--;
+						eList[i] = eList[--eSize]; // remove the entry by moving the last element to it's position
 					}
 					else
 					{
-						// This entry *could* be in the bottom group.
-						// add it to the priority queue
+						// This entry *could* be in the bottom group, so keep it in the eList, and update the stats.
+						if(maxVNew < v) maxVNew = v;
+						if(minVNew > v) minVNew = v;
+					}
+				}
+			}
 
+			// if we still didn't remove enough entries, then make another pass while inserting into a priority queue
+			if(sizeOld - numRemoved > acceptSize)
+			{
+				minV = (minVNew == Long.MAX_VALUE ? minV : minVNew);
+				minVNew = Long.MAX_VALUE;
+				maxV = maxVNew;
+				maxVNew = -1;
+				numToKeep = lowerSize - numKept;
+				numToRemove = sizeOld - lowerSize - numRemoved;
+
+				PQueue<V> queue = new PQueue<>(numToRemove);
+
+				for(int i = eSize - 1; i >= 0; --i)
+				{
+					CacheEntry<V> ce = eList[i];
+					long v = ce.versionCopy;
+
+					if(v > maxV - numToKeep)
+					{
+						// this entry is guaranteed not to be in the bottom group, so do nothing but remove it from the eList
+						numKept++;
+						if(minVNew > v) minVNew = v;
+					}
+					else if(v < minV + numToRemove)
+					{
+						// entry in bottom group?
+						// this entry is guaranteed to be in the bottom group so immediately remove it.
+						evictEntry(ce.key);
+						numRemoved++;
+					}
+					else
+					{
+						// This entry *could* be in the bottom group. add it to the priority queue
 						// everything in the priority queue will be removed, so keep track of
 						// the lowest value that ever comes back out of the queue.
-
 						// first reduce the size of the priority queue to account for
-						// the number of items we have already removed while executing
-						// this loop so far.
-						queue.myMaxSize = sz - lowerWaterMark - numRemoved;
-						while(queue.size() > queue.myMaxSize && queue.size() > 0)
+						// the number of items we have already removed while executing this loop so far.
+						queue.maxSize = sizeOld - lowerSize - numRemoved;
+						while(queue.size > queue.maxSize && queue.size > 0)
 						{
 							CacheEntry<V> otherEntry = queue.pop();
-							newOldestEntry = Math.min(otherEntry.versionCopy, newOldestEntry);
+							if(minVNew > otherEntry.versionCopy) minVNew = otherEntry.versionCopy;
 						}
-						if(queue.myMaxSize <= 0) break;
+						if(queue.maxSize <= 0) break;
 
-						CacheEntry<V> o = queue.myInsertWithOverflow(ce);
-						if(o != null)
-							newOldestEntry = Math.min(o.versionCopy, newOldestEntry);
+						CacheEntry<V> o = queue.insertWithOverflow(ce);
+						if(o != null && minVNew > o.versionCopy)
+							minVNew = o.versionCopy;
 					}
 				}
 
-				// Now delete everything in the priority queue.
-				// avoid using pop() since order doesn't matter anymore
-				for(CacheEntry<V> ce : queue.getHeap())
+				// Now delete everything in the priority queue. avoid using pop() since order doesn't matter anymore
+				for(CacheEntry<V> ce : queue.heap)
 				{
 					if(ce == null) continue;
 					evictEntry(ce.key);
 					numRemoved++;
 				}
 
-				// System.out.println("items removed:" + numRemoved + " numKept=" + numKept + " initialQueueSize="+ wantToRemove + " finalQueueSize=" + queue.size() + " sz-numRemoved=" + (sz-numRemoved));
+				// System.out.println("numRemoved=" + numRemoved + " numKept=" + numKept + " initialQueueSize="+ numToRemove
+				//	+ " finalQueueSize=" + queue.size() + " sizeOld-numRemoved=" + (sizeOld-numRemoved));
 			}
 
-			oldestEntry = (newOldestEntry == Long.MAX_VALUE ? theoldestEntry : newOldestEntry);
+			minVersion = (minVNew == Long.MAX_VALUE ? minV : minVNew);
 		}
 		finally
 		{
-			isCleaning = false; // set before markAndSweep.unlock() for visibility
-			markAndSweepLock.unlock();
+			sweepStatus.set(false);
+			if(Log.hasDebug)
+				Log.log.debug("LRUMap.sweep({}: {}=>{}, {}ms)", name, sizeOld, size.get(), System.currentTimeMillis() - time);
 		}
 	}
 
-	/** A PriorityQueue maintains a partial ordering of its elements such that the
-	 * least element can always be found in constant time.  Put()'s and pop()'s
-	 * require log(size) time.
+	/**
+	 * A PriorityQueue maintains a partial ordering of its elements such that the least element can always be found in constant time.
+	 * Put()'s and pop()'s require log(size) time.
 	 *
-	 * <p><b>NOTE</b>: This class will pre-allocate a full array of
-	 * length <code>maxSize+1</code> if instantiated via the
-	 * {@link #PriorityQueue(int,boolean)} constructor with
-	 * <code>prepopulate</code> set to <code>true</code>.
-	 *
-	 * @lucene.internal
+	 * <p><b>NOTE</b>: This class will pre-allocate a full array of length <code>maxSize+1</code>.
 	 */
 	private static abstract class PriorityQueue<T>
 	{
 		protected final T[]	heap;
-		private int			size;
+		protected int		size; // the number of elements currently stored in the PriorityQueue
 
-		@SuppressWarnings("unchecked")
 		public PriorityQueue(int maxSize)
 		{
 			int heapSize;
 			if(maxSize == 0)
-				heapSize = 2; // We allocate 1 extra to avoid if statement in top()
+				heapSize = 2; // allocate 1 extra to avoid if statement in top()
 			else if(maxSize == Integer.MAX_VALUE)
 				heapSize = Integer.MAX_VALUE;
 			else
-				heapSize = maxSize + 1; // NOTE: we add +1 because all access to heap is 1-based not 0-based. heap[0] is unused.
-			heap = (T[])new Object[heapSize]; // T is unbounded type, so this unchecked cast works always
+				heapSize = maxSize + 1; // +1 because all access to heap is 1-based. heap[0] is unused.
+			heap = allocHeap(heapSize);
 			size = 0;
 		}
 
-		/** Determines the ordering of objects in this priority queue.  Subclasses
-		 *  must define this one method.
-		 *  @return <code>true</code> iff parameter <tt>a</tt> is less than parameter <tt>b</tt>.
+		protected abstract T[] allocHeap(int heapSize);
+
+		/**
+		 * Determines the ordering of objects in this priority queue.
+		 * @return <code>true</code> if parameter <tt>a</tt> is less than parameter <tt>b</tt>.
 		 */
 		protected abstract boolean lessThan(T a, T b);
 
 		/**
-		 * Adds an Object to a PriorityQueue in log(size) time. If one tries to add
-		 * more objects than maxSize from initialize an
-		 * {@link ArrayIndexOutOfBoundsException} is thrown.
+		 * Adds an Object to a PriorityQueue in log(size) time.
+		 * If one tries to add more objects than maxSize from initialize an {@link ArrayIndexOutOfBoundsException} is thrown.
 		 *
 		 * @return the new 'top' element in the queue.
 		 */
@@ -471,12 +402,6 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 			return heap[1];
 		}
 
-		/** Returns the number of elements currently stored in the PriorityQueue. */
-		public final int size()
-		{
-			return size;
-		}
-
 		private void upHeap()
 		{
 			int i = size;
@@ -514,42 +439,41 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 
 	private static final class PQueue<V> extends PriorityQueue<CacheEntry<V>>
 	{
-		private int myMaxSize;
+		private int maxSize;
 
 		private PQueue(int maxSize)
 		{
 			super(maxSize);
-			myMaxSize = maxSize;
+			this.maxSize = maxSize;
 		}
 
-		private CacheEntry<V>[] getHeap()
+		@SuppressWarnings("unchecked")
+		@Override
+		protected CacheEntry<V>[] allocHeap(int heapSize)
 		{
-			return heap;
+			return new CacheEntry[heapSize];
 		}
 
 		@Override
 		protected boolean lessThan(CacheEntry<V> a, CacheEntry<V> b)
 		{
 			// reverse the parameter order so that the queue keeps the oldest items
-			return b.versionCopy < a.versionCopy;
+			return a.versionCopy > b.versionCopy;
 		}
 
-		// necessary because maxSize is private in base class
-		public CacheEntry<V> myInsertWithOverflow(CacheEntry<V> element)
+		public CacheEntry<V> insertWithOverflow(CacheEntry<V> element)
 		{
-			if(size() < myMaxSize)
+			if(size < maxSize)
 			{
 				add(element);
 				return null;
 			}
-			if(size() > 0 && !lessThan(element, heap[1]))
-			{
-				CacheEntry<V> ret = heap[1];
-				heap[1] = element;
-				updateTop();
-				return ret;
-			}
-			return element;
+			if(size <= 0 || lessThan(element, heap[1]))
+				return element;
+			CacheEntry<V> ret = heap[1];
+			heap[1] = element;
+			updateTop();
+			return ret;
 		}
 	}
 

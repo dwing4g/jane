@@ -76,4 +76,4 @@ rpc { name="TestRpcBean2", arg="TestBean", res="TestBean",
 dbt { name="TestTable", id=1, lock="test", key="id", value="TestType", cachesize=65536, comment="数据库表定义. key类型只能是32/64位整数/浮点数或字符串/binary类型或bean类型, id类型表示优化的非负数long类型" }
 dbt { name="BeanTable", id=2, lock="bean", key="TestKeyBean", value="TestBean", cachesize=65536, comment="value类型必须是bean定义的类型" }
 dbt { name="OctetsTable", id=3, lock="bean", key="binary", value="TestEmpty", cachesize=1000, memory=true, comment="注意表名和key类型的对应关系是不能改变的" }
-dbt { name="Benchmark", id=4, lock="bench", key="id", value="TestBean", cachesize=200000, comment="用于测试数据库的表" }
+dbt { name="Benchmark", id=4, lock="bench", key="id", value="TestBean", cachesize=50000, comment="用于测试数据库的表" }

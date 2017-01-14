@@ -33,6 +33,7 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.NodeList;
 import jane.core.map.ConcurrentLinkedHashMap;
 import jane.core.map.LongConcurrentHashMap;
+import jane.core.map.LongConcurrentLRUMap;
 import jane.core.map.LongConcurrentLinkedHashMap;
 import jane.core.map.LongMap;
 
@@ -94,12 +95,12 @@ public final class Util
 	/**
 	 * 使用{@link LongConcurrentLinkedHashMap}创建可并发带链表的HashMap
 	 */
-	public static <V> LongMap<V> newLongLRUConcurrentHashMap(int maxCount)
+	public static <V> LongMap<V> newLongLRUConcurrentHashMap(int maxCount, String name)
 	{
 		if(maxCount <= 0) return newLongConcurrentHashMap();
 		// return new ConcurrentLinkedHashMap.Builder().concurrencyLevel(Const.dbThreadCount)
 		//		.maximumWeightedCapacity(maxCount).initialCapacity(maxCount).<V>buildLong();
-		return new jane.core.map.LongConcurrentLRUMap<>(maxCount + (maxCount + 1) / 2, maxCount);
+		return new LongConcurrentLRUMap<>(maxCount + (maxCount + 1) / 2, maxCount, name);
 	}
 
 	/**

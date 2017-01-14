@@ -35,7 +35,7 @@ public final class AllTables
 	/**
 	 * 用于测试数据库的表
 	 */
-	public static final TableLong<TestBean, TestBean.Safe> Benchmark = _dbm.<TestBean, TestBean.Safe>openTable(4, "Benchmark", "bench", 200000, TestBean.BEAN_STUB);
+	public static final TableLong<TestBean, TestBean.Safe> Benchmark = _dbm.<TestBean, TestBean.Safe>openTable(4, "Benchmark", "bench", 50000, TestBean.BEAN_STUB);
 
 	/**
 	 * 以下内部类可以单独使用,避免初始化前面的表对象,主要用于获取表的键值类型

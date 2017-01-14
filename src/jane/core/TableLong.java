@@ -39,7 +39,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 		super(tableId, tableName, stubV, (lockName != null && !(lockName = lockName.trim()).isEmpty() ? lockName.hashCode() : tableId) * 0x9e3779b1);
 		_stoTable = stoTable;
 		if(cacheSize < 1) cacheSize = 1;
-		_cache = Util.newLongLRUConcurrentHashMap(cacheSize);
+		_cache = Util.newLongLRUConcurrentHashMap(cacheSize, tableName);
 		_cacheMod = (stoTable != null ? new LongConcurrentHashMap<V>() : null);
 		if(stoTable != null)
 		{
