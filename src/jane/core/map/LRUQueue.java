@@ -32,30 +32,33 @@ final class LRUQueue<T extends CacheEntryBase<?>>
 	LRUQueue(int maxSize, T[] heap)
 	{
 		this.heap = heap;
-		size = 0;
 		this.maxSize = maxSize;
 	}
 
 	static int calHeapSize(int maxSize)
 	{
-		if(maxSize == 0)
+		if(maxSize <= 0)
 			return 2; // allocate 1 extra to avoid if statement in top()
 		else if(maxSize == Integer.MAX_VALUE)
-			return Integer.MAX_VALUE;
+			throw new IllegalArgumentException("too big maxSize");
 		return maxSize + 1; // +1 because all access to heap is 1-based. heap[0] is unused.
 	}
 
-	/**
-	 * Adds an Object to a PriorityQueue in log(size) time.
-	 * If one tries to add more objects than maxSize from initialize an {@link ArrayIndexOutOfBoundsException} is thrown.
-	 *
-	 * @return the new 'top' element in the queue.
-	 */
-	private T add(T element)
+	T insertWithOverflow(T element)
 	{
-		heap[++size] = element;
-		upHeap();
-		return heap[1];
+		if(size < maxSize)
+		{
+			int i = ++size; // Adds an Object to a PriorityQueue in log(size) time
+			for(int j = i >>> 1; j > 0 && element.lessThan(heap[j]); i = j, j >>>= 1) // upHeap()
+				heap[i] = heap[j]; // shift parents down
+			heap[i] = element; // install saved node
+			return null;
+		}
+		T ret = heap[1];
+		if(element.lessThan(ret) || size <= 0)
+			return element;
+		downHeap(element);
+		return ret;
 	}
 
 	/** Removes and returns the least element of the PriorityQueue in log(size) time. */
@@ -63,84 +66,34 @@ final class LRUQueue<T extends CacheEntryBase<?>>
 	{
 		if(size <= 0)
 			return null;
-		T result = heap[1]; // save first value
-		heap[1] = heap[size]; // move last to first
-		heap[size--] = null; // permit GC of objects
-		downHeap(); // adjust heap
-		return result;
-	}
-
-	/**
-	 * Should be called when the Object at top changes values. Still log(n) worst
-	 * case, but it's at least twice as fast to
-	 *
-	 * <pre class="prettyprint">
-	 * pq.top().change();
-	 * pq.updateTop();
-	 * </pre>
-	 *
-	 * instead of
-	 *
-	 * <pre class="prettyprint">
-	 * o = pq.pop();
-	 * o.change();
-	 * pq.push(o);
-	 * </pre>
-	 *
-	 * @return the new 'top' element.
-	 */
-	private T updateTop()
-	{
-		downHeap();
-		return heap[1];
-	}
-
-	T insertWithOverflow(T element)
-	{
-		if(size < maxSize)
+		T ret = heap[1]; // save first value
+		if(size == 1)
 		{
-			add(element);
-			return null;
+			heap[1] = null; // permit GC of objects
+			size = 0;
+			return ret;
 		}
-		if(size <= 0 || element.lessThan(heap[1]))
-			return element;
-		T ret = heap[1];
-		heap[1] = element;
-		updateTop();
+		T node = heap[size]; // move last to first
+		heap[size--] = null; // permit GC of objects
+		downHeap(node); // adjust heap
 		return ret;
 	}
 
-	private void upHeap()
+	private void downHeap(T node)
 	{
-		int i = size;
-		T node = heap[i]; // save bottom node
-		int j = i >>> 1;
-		while(j > 0 && node.lessThan(heap[j]))
+		for(int i = 1, j = 2, k = 3;;) // j = i << 1 (find smaller child); k = j + 1;
 		{
-			heap[i] = heap[j]; // shift parents down
-			i = j;
-			j = j >>> 1;
-		}
-		heap[i] = node; // install saved node
-	}
-
-	private void downHeap()
-	{
-		int i = 1;
-		T node = heap[i]; // save top node
-		int j = i << 1; // find smaller child
-		int k = j + 1;
-		if(k <= size && heap[k].lessThan(heap[j]))
-			j = k;
-		while(j <= size && heap[j].lessThan(node))
-		{
+			if(k <= size && heap[k].lessThan(heap[j]))
+				j = k;
+			if(j > size || !heap[j].lessThan(node))
+			{
+				heap[i] = node; // install saved node
+				return;
+			}
 			heap[i] = heap[j]; // shift up child
 			i = j;
 			j = i << 1;
 			k = j + 1;
-			if(k <= size && heap[k].lessThan(heap[j]))
-				j = k;
 		}
-		heap[i] = node; // install saved node
 	}
 }

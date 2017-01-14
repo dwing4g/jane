@@ -163,14 +163,14 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 			long maxVNew = -1;
 			long minVNew = Long.MAX_VALUE;
 			int numToKeep = lowerSize;
-			int numToRemove = sizeOld - lowerSize;
+			int numToRemove = sizeOld - numToKeep;
 			int numKept = 0;
 			int numRemoved = 0;
 
 			CacheEntry<?>[] eList = new CacheEntry<?>[sizeOld];
 			int eSize = 0;
 
-			for(Iterator<CacheEntry<V>> it = map.valueIterator(); it.hasNext();)
+			for(final Iterator<CacheEntry<V>> it = map.valueIterator(); it.hasNext();)
 			{
 				final CacheEntry<V> ce = it.next();
 				final long v = ce.version;
@@ -183,9 +183,8 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 					numKept++;
 					if(minVNew > v) minVNew = v;
 				}
-				else if(v < minV + numToRemove)
+				else if(v < minV + numToRemove) // entry in bottom group?
 				{
-					// entry in bottom group?
 					// this entry is guaranteed to be in the bottom group, so immediately remove it from the map
 					evictEntry(ce.key);
 					numRemoved++;
@@ -202,19 +201,19 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 				}
 			}
 
-			int numPasses = 1; // maximum number of linear passes over the data
+			// int numPasses = 1; // maximum number of linear passes over the data
 
-			// if we didn't remove enough entries, then make more passes over the values we collected, with updated min and max values.
-			while(sizeOld - numRemoved > acceptSize && --numPasses >= 0)
+			// if we didn't remove enough entries, then make more passes over the values we collected, with updated min and max values
+			if(sizeOld - numRemoved > acceptSize) // while(sizeOld - numRemoved > acceptSize && --numPasses >= 0)
 			{
-				minV = (minVNew == Long.MAX_VALUE ? minV : minVNew);
+				if(minVNew != Long.MAX_VALUE) minV = minVNew;
 				minVNew = Long.MAX_VALUE;
 				final long maxV = maxVNew;
 				maxVNew = -1;
 				numToKeep = lowerSize - numKept;
 				numToRemove = sizeOld - lowerSize - numRemoved;
 
-				// iterate backward to make it easy to remove items.
+				// iterate backward to make it easy to remove items
 				for(int i = eSize - 1; i >= 0; --i)
 				{
 					final CacheEntry<?> ce = eList[i];
@@ -224,20 +223,19 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 					{
 						// this entry is guaranteed not to be in the bottom group, so do nothing but remove it from the eList
 						numKept++;
-						eList[i] = eList[--eSize]; // remove the entry by moving the last element to it's position
+						eList[i] = eList[--eSize]; // remove the entry by moving the last element to its position
 						if(minVNew > v) minVNew = v;
 					}
-					else if(v < minV + numToRemove)
+					else if(v < minV + numToRemove) // entry in bottom group?
 					{
-						// entry in bottom group?
 						// this entry is guaranteed to be in the bottom group, so immediately remove it from the map
 						evictEntry(ce.key);
 						numRemoved++;
-						eList[i] = eList[--eSize]; // remove the entry by moving the last element to it's position
+						eList[i] = eList[--eSize]; // remove the entry by moving the last element to its position
 					}
 					else
 					{
-						// This entry *could* be in the bottom group, so keep it in the eList, and update the stats.
+						// This entry *could* be in the bottom group, so keep it in the eList, and update the stats
 						if(maxVNew < v) maxVNew = v;
 						if(minVNew > v) minVNew = v;
 					}
@@ -247,13 +245,12 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 			// if we still didn't remove enough entries, then make another pass while inserting into a priority queue
 			if(sizeOld - numRemoved > acceptSize)
 			{
-				minV = (minVNew == Long.MAX_VALUE ? minV : minVNew);
+				if(minVNew != Long.MAX_VALUE) minV = minVNew;
 				minVNew = Long.MAX_VALUE;
 				final long maxV = maxVNew;
 				maxVNew = -1;
 				numToKeep = lowerSize - numKept;
 				numToRemove = sizeOld - lowerSize - numRemoved;
-
 				final LRUQueue<CacheEntry<?>> queue = new LRUQueue<>(numToRemove, new CacheEntry<?>[LRUQueue.calHeapSize(numToRemove)]);
 
 				for(int i = eSize - 1; i >= 0; --i)
@@ -267,10 +264,9 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 						numKept++;
 						if(minVNew > v) minVNew = v;
 					}
-					else if(v < minV + numToRemove)
+					else if(v < minV + numToRemove) // entry in bottom group?
 					{
-						// entry in bottom group?
-						// this entry is guaranteed to be in the bottom group so immediately remove it.
+						// this entry is guaranteed to be in the bottom group so immediately remove it
 						evictEntry(ce.key);
 						numRemoved++;
 					}
@@ -281,13 +277,14 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 						// the lowest value that ever comes back out of the queue.
 						// first reduce the size of the priority queue to account for
 						// the number of items we have already removed while executing this loop so far.
-						queue.maxSize = sizeOld - lowerSize - numRemoved;
-						while(queue.size > queue.maxSize && queue.size > 0)
+						final int maxSize = sizeOld - lowerSize - numRemoved;
+						queue.maxSize = maxSize;
+						while(queue.size > maxSize && queue.size > 0)
 						{
 							final long otherEntryV = queue.pop().versionCopy;
 							if(minVNew > otherEntryV) minVNew = otherEntryV;
 						}
-						if(queue.maxSize <= 0) break;
+						if(maxSize <= 0) break;
 
 						final CacheEntry<?> o = queue.insertWithOverflow(ce);
 						if(o != null && minVNew > o.versionCopy) minVNew = o.versionCopy;
@@ -295,7 +292,7 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 				}
 
 				// Now delete everything in the priority queue. avoid using pop() since order doesn't matter anymore
-				for(CacheEntry<?> ce : queue.heap)
+				for(final CacheEntry<?> ce : queue.heap)
 				{
 					if(ce == null) continue;
 					evictEntry(ce.key);
@@ -305,7 +302,6 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V>
 				// System.out.println("numRemoved=" + numRemoved + " numKept=" + numKept + " initialQueueSize="+ numToRemove
 				//	+ " finalQueueSize=" + queue.size() + " sizeOld-numRemoved=" + (sizeOld-numRemoved));
 			}
-
 			minVersion = (minVNew == Long.MAX_VALUE ? minV : minVNew);
 		}
 		finally
