@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.Random;
 
 /**
  * LongHashMap is an implementation of LongMap without concurrency locking.
@@ -50,7 +49,7 @@ public final class LongHashMap<V> extends LongMap<V>
 	/**
 	 * Salt added to keys before hashing, so it is harder to trigger hash collision attack.
 	 */
-	private static final long hashSalt = new Random().nextLong();
+	// private static final long hashSalt = new Random().nextLong();
 
 	/**
 	 * The internal data structure to hold Entries
@@ -79,15 +78,13 @@ public final class LongHashMap<V> extends LongMap<V>
 
 	private static final class Entry<V>
 	{
-		private final int  origKeyHash;
-		private Entry<V>   next;
 		private final long key;
+		private Entry<V>   next;
 		private V		   value;
 
-		private Entry(long key, int hash)
+		private Entry(long k)
 		{
-			origKeyHash = hash;
-			this.key = key;
+			key = k;
 		}
 	}
 
@@ -113,10 +110,11 @@ public final class LongHashMap<V> extends LongMap<V>
 
 	private static int longHash(long key)
 	{
-		key ^= hashSalt;
+		// key ^= hashSalt;
 		int h = (int)(key ^ (key >>> 32));
-		h ^= (h >>> 20) ^ (h >>> 12);
-		return h ^ (h >>> 7) ^ (h >>> 4);
+		// h ^= (h >>> 20) ^ (h >>> 12);
+		// return h ^ (h >>> 7) ^ (h >>> 4);
+		return h;
 	}
 
 	/**
@@ -202,16 +200,14 @@ public final class LongHashMap<V> extends LongMap<V>
 	@Override
 	public V get(long key)
 	{
-		int hash = longHash(key);
-		int index = hash & (elementData.length - 1);
-		Entry<V> m = findNonNullKeyEntry(key, index, hash);
+		Entry<V> m = findNonNullKeyEntry(key, longHash(key) & (elementData.length - 1));
 		return m != null ? m.value : null;
 	}
 
-	private final Entry<V> findNonNullKeyEntry(long key, int index, int keyHash)
+	private Entry<V> findNonNullKeyEntry(long key, int index)
 	{
 		Entry<V> m = elementData[index];
-		while(m != null && (m.origKeyHash != keyHash || key != m.key))
+		while(m != null && m.key != key)
 			m = m.next;
 		return m;
 	}
@@ -228,11 +224,11 @@ public final class LongHashMap<V> extends LongMap<V>
 	{
 		int hash = longHash(key);
 		int index = hash & (elementData.length - 1);
-		Entry<V> entry = findNonNullKeyEntry(key, index, hash);
+		Entry<V> entry = findNonNullKeyEntry(key, index);
 		if(entry == null)
 		{
 			modCount++;
-			entry = new Entry<>(key, hash);
+			entry = new Entry<>(key);
 			entry.next = elementData[index];
 			elementData[index] = entry;
 			if(++elementCount > threshold)
@@ -256,7 +252,7 @@ public final class LongHashMap<V> extends LongMap<V>
 			elementData[i] = null;
 			while(entry != null)
 			{
-				int index = entry.origKeyHash & (length - 1);
+				int index = longHash(entry.key) & (length - 1);
 				Entry<V> next = entry.next;
 				entry.next = newData[index];
 				newData[index] = entry;
@@ -279,7 +275,7 @@ public final class LongHashMap<V> extends LongMap<V>
 		int hash = longHash(key);
 		int index = hash & (elementData.length - 1);
 		Entry<V> entry = elementData[index], last = null;
-		while(entry != null && !(entry.origKeyHash == hash && key == entry.key))
+		while(entry != null && entry.key != key)
 		{
 			last = entry;
 			entry = entry.next;
@@ -356,7 +352,7 @@ public final class LongHashMap<V> extends LongMap<V>
 			return false;
 		}
 
-		private final void checkConcurrentMod() throws ConcurrentModificationException
+		private void checkConcurrentMod() throws ConcurrentModificationException
 		{
 			if(expectedModCount != associatedMap.modCount)
 				throw new ConcurrentModificationException();
@@ -389,7 +385,7 @@ public final class LongHashMap<V> extends LongMap<V>
 				throw new IllegalStateException();
 			if(prevEntry == null)
 			{
-				int index = currentEntry.origKeyHash & (associatedMap.elementData.length - 1);
+				int index = longHash(currentEntry.key) & (associatedMap.elementData.length - 1);
 				associatedMap.elementData[index] = associatedMap.elementData[index].next;
 			}
 			else

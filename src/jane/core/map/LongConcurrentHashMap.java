@@ -107,7 +107,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	 * @param hash the hash code for the key
 	 * @return the segment
 	 */
-	private final Segment<V> segmentFor(int hash)
+	private Segment<V> segmentFor(int hash)
 	{
 		return segments[(hash >>> segmentShift) & segmentMask];
 	}
@@ -133,16 +133,14 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	 */
 	private static final class HashEntry<V>
 	{
-		private final int		   hash;
-		private final HashEntry<V> next;
 		private final long		   key;
+		private final HashEntry<V> next;
 		private volatile V		   value;
 
-		private HashEntry(long key, int hash, HashEntry<V> next, V value)
+		private HashEntry(long key, HashEntry<V> next, V value)
 		{
-			this.hash = hash;
-			this.next = next;
 			this.key = key;
+			this.next = next;
 			this.value = value;
 		}
 
@@ -292,7 +290,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 			{
 				for(HashEntry<V> e = getFirst(hash); e != null; e = e.next)
 				{
-					if(e.hash == hash && key == e.key)
+					if(e.key == key)
 					{
 						V v = e.value;
 						return v != null ? v : readValueUnderLock(e); // recheck
@@ -307,7 +305,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 			if(count != 0) // read-volatile
 			{
 				for(HashEntry<V> e = getFirst(hash); e != null; e = e.next)
-					if(e.hash == hash && key == e.key)
+					if(e.key == key)
 						return true;
 			}
 			return false;
@@ -340,7 +338,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 			{
 				for(HashEntry<V> e = getFirst(hash); e != null; e = e.next)
 				{
-					if(e.hash == hash && key == e.key)
+					if(e.key == key)
 					{
 						if(!oldValue.equals(e.value))
 							return false;
@@ -363,7 +361,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 			{
 				for(HashEntry<V> e = getFirst(hash); e != null; e = e.next)
 				{
-					if(e.hash == hash && key == e.key)
+					if(e.key == key)
 					{
 						V oldValue = e.value;
 						e.value = newValue;
@@ -390,7 +388,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 				int index = hash & (tab.length - 1);
 				HashEntry<V> first = tab[index];
 				HashEntry<V> e = first;
-				while(e != null && (e.hash != hash || key != e.key))
+				while(e != null && e.key != key)
 					e = e.next;
 
 				V oldValue;
@@ -404,7 +402,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 				{
 					oldValue = null;
 					++modCount;
-					tab[index] = new HashEntry<>(key, hash, first, value);
+					tab[index] = new HashEntry<>(key, first, value);
 					count = c; // write-volatile
 				}
 				return oldValue;
@@ -446,7 +444,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 				if(e != null)
 				{
 					HashEntry<V> next = e.next;
-					int idx = e.hash & sizeMask;
+					int idx = longHash(e.key) & sizeMask;
 
 					//  Single node on list
 					if(next == null)
@@ -458,7 +456,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 						int lastIdx = idx;
 						for(HashEntry<V> last = next; last != null; last = last.next)
 						{
-							int k = last.hash & sizeMask;
+							int k = longHash(last.key) & sizeMask;
 							if(k != lastIdx)
 							{
 								lastIdx = k;
@@ -470,9 +468,9 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 						// Clone all remaining nodes
 						for(HashEntry<V> p = e; p != lastRun; p = p.next)
 						{
-							int k = p.hash & sizeMask;
+							int k = longHash(p.key) & sizeMask;
 							HashEntry<V> n = newTable[k];
-							newTable[k] = new HashEntry<>(p.key, p.hash, n, p.value);
+							newTable[k] = new HashEntry<>(p.key, n, p.value);
 						}
 					}
 				}
@@ -493,7 +491,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 				int index = hash & (tab.length - 1);
 				HashEntry<V> first = tab[index];
 				HashEntry<V> e = first;
-				while(e != null && (e.hash != hash || key != e.key))
+				while(e != null && e.key != key)
 					e = e.next;
 
 				V oldValue = null;
@@ -509,7 +507,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 						++modCount;
 						HashEntry<V> newFirst = e.next;
 						for(HashEntry<V> p = first; p != e; p = p.next)
-							newFirst = new HashEntry<>(p.key, p.hash, newFirst, p.value);
+							newFirst = new HashEntry<>(p.key, newFirst, p.value);
 						tab[index] = newFirst;
 						count = c; // write-volatile
 					}
@@ -936,7 +934,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 			advance();
 		}
 
-		private final void advance()
+		private void advance()
 		{
 			if(nextEntry != null && (nextEntry = nextEntry.next) != null)
 				return;
