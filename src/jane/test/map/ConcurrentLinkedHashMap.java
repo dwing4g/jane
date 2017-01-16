@@ -1063,7 +1063,7 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
 
   /** An entry that allows updates to write through to the map. */
   private final class WriteThroughEntry extends SimpleEntry<K, V> {
-    private static final long serialVersionUID = 1;
+    private static final long serialVersionUID = 1L;
 
     private WriteThroughEntry(Node<K, V> node) {
       super(node.key, node.getValue());

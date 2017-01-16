@@ -22,9 +22,9 @@ public class BeanCodec extends IoFilterAdapter
 	/**
 	 * 不带栈信息的解码错误异常
 	 */
-	public static class DecodeException extends Exception
+	public static final class DecodeException extends Exception
 	{
-		private static final long serialVersionUID = -1156050363139281675L;
+		private static final long serialVersionUID = 1L;
 
 		public DecodeException(String cause)
 		{

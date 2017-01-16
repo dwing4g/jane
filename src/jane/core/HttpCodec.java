@@ -51,9 +51,9 @@ public final class HttpCodec extends IoFilterAdapter
 	/**
 	 * 不带栈信息的解码错误异常
 	 */
-	public static class DecodeException extends Exception
+	public static final class DecodeException extends Exception
 	{
-		private static final long serialVersionUID = -3397270480347991234L;
+		private static final long serialVersionUID = 1L;
 
 		public DecodeException(String cause)
 		{

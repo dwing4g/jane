@@ -45,7 +45,7 @@ public interface Storage extends Closeable
 		boolean onWalk(long k) throws Exception;
 	}
 
-	public static class Helper
+	public static final class Helper
 	{
 		public static <K> boolean onWalkSafe(WalkHandler<K> handler, K k)
 		{

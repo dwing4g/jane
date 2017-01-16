@@ -11,7 +11,7 @@ public class MarshalException extends Exception
 	/**
 	 * 不带栈信息的MarshalException
 	 */
-	public static class WithoutTrace extends MarshalException
+	public static final class WithoutTrace extends MarshalException
 	{
 		private static final WithoutTrace _instance = new WithoutTrace();
 
@@ -50,7 +50,7 @@ public class MarshalException extends Exception
 	/**
 	 * 不带栈信息的EOF
 	 */
-	public static class EOFWithoutTrace extends EOF
+	public static final class EOFWithoutTrace extends EOF
 	{
 		private static final EOFWithoutTrace _instance = new EOFWithoutTrace();
 

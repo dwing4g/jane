@@ -10,7 +10,7 @@ import org.apache.mina.core.session.IoSession;
  */
 public abstract class RpcBean<A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>> extends Bean<B>
 {
-	private static final long			  serialVersionUID = -1390859818193499717L;
+	private static final long			  serialVersionUID = 1L;
 	private static final AtomicInteger	  RPCID			   = new AtomicInteger();				   // RPC的ID分配器
 	private transient int				  _rpcId		   = RPCID.getAndIncrement() & 0x7fffffff; // RPC的ID. 用于匹配请求和回复的RPC
 	private transient int				  _reqTime;												   // 发送请求的时间戳(秒)

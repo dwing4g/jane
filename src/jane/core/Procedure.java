@@ -228,7 +228,7 @@ public abstract class Procedure implements Runnable
 	}
 
 	@SuppressWarnings("serial")
-	private static class Redo extends Error
+	private static final class Redo extends Error
 	{
 		private static final Redo _instance = new Redo();
 
@@ -241,7 +241,7 @@ public abstract class Procedure implements Runnable
 	}
 
 	@SuppressWarnings("serial")
-	private static class Undo extends Error
+	private static final class Undo extends Error
 	{
 		private static final Undo _instance = new Undo();
 
