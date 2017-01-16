@@ -1,3 +1,4 @@
+//@formatter:off
 /*
  * Copyright 2010 Google Inc. All Rights Reserved.
  *
@@ -13,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package jane.core.map;
+package jane.test.map;
 
 import java.util.Iterator;
 import java.util.Queue;
@@ -22,9 +23,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import jane.core.map.ConcurrentLinkedHashMap.Builder;
-import jane.core.map.ConcurrentLinkedHashMap.DrainStatus;
-import jane.core.map.ConcurrentLinkedHashMap.WeightedValue;
+import jane.core.map.LongConcurrentHashMap;
+import jane.core.map.LongMap;
+import jane.test.map.ConcurrentLinkedHashMap.Builder;
+import jane.test.map.ConcurrentLinkedHashMap.DrainStatus;
+import jane.test.map.ConcurrentLinkedHashMap.WeightedValue;
 
 /**
  * @see {@link ConcurrentLinkedHashMap}

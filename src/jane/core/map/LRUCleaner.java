@@ -6,14 +6,14 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import jane.core.Log;
 
-public final class LRUCleaner
+final class LRUCleaner
 {
 	private static final class Singleton
 	{
 		private static final LRUCleaner instance = new LRUCleaner();
 	}
 
-	public interface Cleanable
+	interface Cleanable
 	{
 		void sweep();
 	}
@@ -35,7 +35,7 @@ public final class LRUCleaner
 		});
 	}
 
-	public static void submit(final AtomicInteger status, final Cleanable c)
+	static void submit(final AtomicInteger status, final Cleanable c)
 	{
 		if(!status.compareAndSet(0, 1)) return;
 		Singleton.instance.cleanerThread.submit(new Runnable()

@@ -1,3 +1,4 @@
+//@formatter:off
 /*
  *  Licensed to the Apache Software Foundation (ASF) under one or more
  *  contributor license agreements.  See the NOTICE file distributed with
@@ -15,12 +16,13 @@
  *  limitations under the License.
  */
 
-package jane.core.map;
+package jane.test.map;
 
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import jane.core.map.LongMap;
 
 /**
  * LongHashMap is an implementation of LongMap without concurrency locking.

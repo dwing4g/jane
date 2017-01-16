@@ -1,9 +1,9 @@
 package jane.test;
 
-import jane.core.map.ConcurrentLinkedHashMap;
 import jane.core.map.LongConcurrentLRUMap;
 import jane.core.map.LongMap;
 import jane.core.map.LongMap.LongIterator;
+import jane.test.map.ConcurrentLinkedHashMap;
 
 public class TestCache
 {

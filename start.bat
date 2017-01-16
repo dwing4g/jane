@@ -12,6 +12,15 @@ set JVM=^
 -XX:+PrintGCDateStamps ^
 -verbose:gc
 
+rem set JVM=^
+rem -Xms128m ^
+rem -Xmx512m ^
+rem -server ^
+rem -XX:+UseG1GC ^
+rem -XX:MaxGCPauseMillis=20 ^
+rem -Xloggc:log/gc.log ^
+rem -XX:+PrintGCDateStamps
+
 set LIB=^
 lib/slf4j-api-1.7.22.jar;^
 lib/log4j-core-2.7.jar;^

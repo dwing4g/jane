@@ -1,3 +1,4 @@
+//@formatter:off
 /*
  * Copyright 2010 Google Inc. All Rights Reserved.
  *
@@ -13,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package jane.core.map;
+package jane.test.map;
 
 import java.util.AbstractCollection;
 import java.util.AbstractMap;
