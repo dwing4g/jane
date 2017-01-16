@@ -20,10 +20,10 @@ package jane.core.map;
 import java.util.AbstractMap;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import jane.core.Log;
+import jane.core.map.LRUCleaner.Cleanable;
 
 /**
  * A LRU cache implementation based upon ConcurrentHashMap and other techniques to reduce
@@ -36,12 +36,12 @@ import jane.core.Log;
  * MapDB note: Original comes from:
  * https://svn.apache.org/repos/asf/lucene/dev/trunk/solr/core/src/java/org/apache/solr/util/ConcurrentLRUCache.java
  */
-public final class ConcurrentLRUMap<K, V> extends AbstractMap<K, V>
+public final class ConcurrentLRUMap<K, V> extends AbstractMap<K, V> implements Cleanable
 {
 	private final ConcurrentHashMap<K, CacheEntry<K, V>> map;
 	private final AtomicLong							 versionCounter	= new AtomicLong();
 	private final AtomicInteger							 size			= new AtomicInteger();
-	private final AtomicBoolean							 sweepStatus	= new AtomicBoolean();
+	private final AtomicInteger							 sweepStatus	= new AtomicInteger();
 	private final int									 upperSize;
 	private final int									 lowerSize;
 	private final int									 acceptSize;
@@ -106,8 +106,8 @@ public final class ConcurrentLRUMap<K, V> extends AbstractMap<K, V>
 		CacheEntry<K, V> ceOld = map.put(key, new CacheEntry<>(key, value, versionCounter.incrementAndGet()));
 		if(ceOld != null)
 			return ceOld.value;
-		if(size.incrementAndGet() > upperSize && !sweepStatus.get())
-			sweep();
+		if(size.incrementAndGet() > upperSize && sweepStatus.get() == 0)
+			LRUCleaner.submit(sweepStatus, this);
 		return null;
 	}
 
@@ -147,7 +147,8 @@ public final class ConcurrentLRUMap<K, V> extends AbstractMap<K, V>
 	 * <p/>
 	 * The second stage is more intensive and tries to bring down the cache size to the 'lowerSize'.
 	 */
-	private void sweep()
+	@Override
+	public void sweep()
 	{
 		// if we want to keep at least 1000 entries, then timestamps of current through current-1000
 		// are guaranteed not to be the oldest (but that does not mean there are 1000 entries in that group...
@@ -155,7 +156,7 @@ public final class ConcurrentLRUMap<K, V> extends AbstractMap<K, V>
 		// Also, if we want to remove 500 entries, then oldestEntry through oldestEntry+500
 		// are guaranteed to be removed (however many there are there).
 
-		if(!sweepStatus.compareAndSet(false, true)) return;
+		if(!sweepStatus.compareAndSet(1, 2)) return;
 		final long time = System.currentTimeMillis();
 		final int sizeOld = size.get();
 		try
@@ -307,7 +308,6 @@ public final class ConcurrentLRUMap<K, V> extends AbstractMap<K, V>
 		}
 		finally
 		{
-			sweepStatus.set(false);
 			if(Log.hasDebug)
 				Log.log.debug("LRUMap.sweep({}: {}=>{}, {}ms)", name, sizeOld, size.get(), System.currentTimeMillis() - time);
 		}

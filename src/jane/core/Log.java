@@ -46,7 +46,7 @@ public final class Log
 			{
 				try
 				{
-					log.error("thread(" + t + "): uncaught fatal exception: ", e);
+					log.error("thread(" + t + "): uncaught fatal exception:", e);
 				}
 				catch(Throwable ex)
 				{
