@@ -63,6 +63,8 @@ public abstract class LongMap<V>
 	 */
 	public abstract V remove(long key);
 
+	public abstract boolean remove(long key, V value);
+
 	/**
 	 * Removes all mappings from this hash map, leaving it empty.
 	 *

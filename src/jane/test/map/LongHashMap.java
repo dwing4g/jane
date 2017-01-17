@@ -224,8 +224,7 @@ public final class LongHashMap<V> extends LongMap<V>
 	@Override
 	public V put(long key, V value)
 	{
-		int hash = longHash(key);
-		int index = hash & (elementData.length - 1);
+		int index = longHash(key) & (elementData.length - 1);
 		Entry<V> entry = findNonNullKeyEntry(key, index);
 		if(entry == null)
 		{
@@ -274,8 +273,7 @@ public final class LongHashMap<V> extends LongMap<V>
 	@Override
 	public V remove(long key)
 	{
-		int hash = longHash(key);
-		int index = hash & (elementData.length - 1);
+		int index = longHash(key) & (elementData.length - 1);
 		Entry<V> entry = elementData[index], last = null;
 		while(entry != null && entry.key != key)
 		{
@@ -292,6 +290,35 @@ public final class LongHashMap<V> extends LongMap<V>
 		modCount++;
 		elementCount--;
 		return entry.value;
+	}
+
+	@Override
+	public boolean remove(long key, V value)
+	{
+		int index = longHash(key) & (elementData.length - 1);
+		Entry<V> entry = elementData[index], last = null;
+		while(entry != null && entry.key != key)
+		{
+			last = entry;
+			entry = entry.next;
+		}
+
+		if(entry == null)
+			return false;
+		if(entry.value == null)
+		{
+			if(value != null)
+				return false;
+		}
+		else if(!entry.value.equals(value))
+			return false;
+		if(last == null)
+			elementData[index] = entry.next;
+		else
+			last.next = entry.next;
+		modCount++;
+		elementCount--;
+		return true;
 	}
 
 	/**

@@ -546,6 +546,7 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
     return node.getValue();
   }
 
+  @Override
   public boolean remove(long key, V value) {
     final Node<V> node = data.get(key);
     if ((node == null) || (value == null)) {

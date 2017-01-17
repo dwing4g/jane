@@ -860,6 +860,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	/**
 	 * @throws NullPointerException if the specified key is null
 	 */
+	@Override
 	public boolean remove(long key, Object value)
 	{
 		int hash = longHash(key);

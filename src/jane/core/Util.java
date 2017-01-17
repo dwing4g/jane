@@ -89,7 +89,7 @@ public final class Util
 		if(maxCount <= 0) return newConcurrentHashMap();
 		// return new ConcurrentLinkedHashMap.Builder().concurrencyLevel(Const.dbThreadCount)
 		//		.maximumWeightedCapacity(maxCount).initialCapacity(maxCount).<K, V>build();
-		return new ConcurrentLRUMap<>(maxCount, name);
+		return new ConcurrentLRUMap<>(maxCount, Const.dbThreadCount, name);
 	}
 
 	/**
@@ -100,7 +100,7 @@ public final class Util
 		if(maxCount <= 0) return newLongConcurrentHashMap();
 		// return new ConcurrentLinkedHashMap.Builder().concurrencyLevel(Const.dbThreadCount)
 		//		.maximumWeightedCapacity(maxCount).initialCapacity(maxCount).<V>buildLong();
-		return new LongConcurrentLRUMap<>(maxCount, name);
+		return new LongConcurrentLRUMap<>(maxCount, Const.dbThreadCount, name);
 	}
 
 	/**

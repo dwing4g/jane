@@ -19,12 +19,12 @@ import jane.core.map.LongMap.MapIterator;
  */
 public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends TableBase<V>
 {
-	private final Storage.TableLong<V>	   _stoTable;						   // 存储引擎的表对象
-	private final LongMap<V>			   _cache;							   // 读缓存. 有大小限制,溢出自动清理
-	private final LongConcurrentHashMap<V> _cacheMod;						   // 写缓存. 不会溢出,保存到数据库存储引擎后清理
-	private final AtomicLong			   _idCounter	 = new AtomicLong();   // 用于自增长ID的统计器, 当前值表示当前表已存在的最大ID值
-	private int							   _autoIdBegin	 = Const.autoIdBegin;  // 自增长ID的初始值, 可运行时指定
-	private int							   _autoIdStride = Const.autoIdStride; // 自增长ID的分配跨度, 可运行时指定
+	private final Storage.TableLong<V> _stoTable;						   // 存储引擎的表对象
+	private final LongMap<V>		   _cache;							   // 读缓存. 有大小限制,溢出自动清理
+	private final LongMap<V>		   _cacheMod;						   // 写缓存. 不会溢出,保存到数据库存储引擎后清理
+	private final AtomicLong		   _idCounter	 = new AtomicLong();   // 用于自增长ID的统计器, 当前值表示当前表已存在的最大ID值
+	private int						   _autoIdBegin	 = Const.autoIdBegin;  // 自增长ID的初始值, 可运行时指定
+	private int						   _autoIdStride = Const.autoIdStride; // 自增长ID的分配跨度, 可运行时指定
 
 	/**
 	 * 创建一个数据库表
