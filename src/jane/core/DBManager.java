@@ -58,7 +58,7 @@ public final class DBManager
 			@Override
 			public Thread newThread(Runnable r)
 			{
-				Thread t = new Thread(r, "ProcThread-" + _num.incrementAndGet());
+				Thread t = new ProcThread("ProcThread-" + _num.incrementAndGet(), r);
 				t.setDaemon(true);
 				t.setPriority(Thread.NORM_PRIORITY);
 				return t;

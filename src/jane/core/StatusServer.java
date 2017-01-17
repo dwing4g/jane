@@ -55,7 +55,7 @@ public class StatusServer extends NetManager
 		list.add(new SimpleEntry<String, Object>("jane.ProcQueueCount", tpe.getQueue().size()));
 		list.add(new SimpleEntry<String, Object>("jane.ProcThreadCount", tpe.getActiveCount() + "/" + tpe.getPoolSize() + "/" + tpe.getLargestPoolSize()));
 		list.add(new SimpleEntry<String, Object>("jane.ProcCompletedCount", tpe.getCompletedTaskCount()));
-		list.add(new SimpleEntry<String, Object>("jane.ProcInterruptCount", Procedure.getInterruptCount()));
+		list.add(new SimpleEntry<String, Object>("jane.ProcInterruptCount", ProcThread.getInterruptCount()));
 
 		return list;
 	}

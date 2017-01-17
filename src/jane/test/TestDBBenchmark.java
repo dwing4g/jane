@@ -4,6 +4,7 @@ import static jane.bean.AllTables.Benchmark;
 import java.util.concurrent.atomic.AtomicInteger;
 import jane.core.DBManager;
 import jane.core.Log;
+import jane.core.ProcThread;
 import jane.core.Procedure;
 import jane.core.Storage;
 import jane.core.StorageLevelDB;
@@ -37,62 +38,72 @@ public final class TestDBBenchmark
 		System.runFinalization();
 		Log.log.info("start");
 
-		long t = System.currentTimeMillis();
-		final AtomicInteger checked = new AtomicInteger();
-		int logCount = Math.max(10000000 / countIn, 1);
-		for(int i = 0, keyFrom = 0, keyDelta = -1; i < countOut; keyFrom += keyDelta, ++i)
+		Thread pt = new ProcThread(null, new Runnable()
 		{
-			if(keyFrom < 0)
+			@Override
+			public void run()
 			{
-				keyFrom = 0;
-				keyDelta = 1;
-			}
-			else if(keyFrom > keyAllCount - keyWinCount)
-			{
-				keyFrom = keyAllCount - keyWinCount;
-				keyDelta = -1;
-			}
-
-			for(int j = 0; j < countIn; ++j)
-			{
-				final long id = keyFrom + Util.getRand().nextInt(keyWinCount);
-				final long t0 = System.currentTimeMillis();
-				new Procedure()
+				long t = System.currentTimeMillis();
+				final AtomicInteger checked = new AtomicInteger();
+				int logCount = Math.max(10000000 / countIn, 1);
+				for(int i = 0, keyFrom = 0, keyDelta = -1; i < countOut; keyFrom += keyDelta, ++i)
 				{
-					@Override
-					protected void onProcess() throws Exception
+					if(keyFrom < 0)
 					{
-						long t1 = System.currentTimeMillis();
-						long tt = t1 - t0;
-						if(tt >= 250) Log.log.info("proc delay={}ms", tt);
-						TestBean.Safe a = Benchmark.lockGet(id);
-						if(a == null)
-						{
-							TestBean aa = new TestBean();
-							aa.setValue2(id);
-							Benchmark.put(id, aa);
-						}
-						else
-						{
-							if(a.getValue2() == id)
-								checked.incrementAndGet();
-							else
-								a.setValue2(id);
-						}
-						tt = System.currentTimeMillis() - t1;
-						if(tt >= 250) Log.log.info("proc timeout={}ms", tt);
+						keyFrom = 0;
+						keyDelta = 1;
 					}
-				}.run();
+					else if(keyFrom > keyAllCount - keyWinCount)
+					{
+						keyFrom = keyAllCount - keyWinCount;
+						keyDelta = -1;
+					}
+
+					for(int j = 0; j < countIn; ++j)
+					{
+						final long id = keyFrom + Util.getRand().nextInt(keyWinCount);
+						final long t0 = System.currentTimeMillis();
+						new Procedure()
+						{
+							@Override
+							protected void onProcess() throws Exception
+							{
+								long t1 = System.currentTimeMillis();
+								long tt = t1 - t0;
+								if(tt >= 250) Log.log.info("proc delay={}ms", tt);
+								TestBean.Safe a = Benchmark.lockGet(id);
+								if(a == null)
+								{
+									TestBean aa = new TestBean();
+									aa.setValue2(id);
+									Benchmark.put(id, aa);
+								}
+								else
+								{
+									if(a.getValue2() == id)
+										checked.incrementAndGet();
+									else
+										a.setValue2(id);
+								}
+								tt = System.currentTimeMillis() - t1;
+								if(tt >= 250) Log.log.info("proc timeout={}ms", tt);
+							}
+						}.run();
+					}
+					if(i % logCount == logCount - 1)
+					{
+						long rc = Benchmark.getReadCount();
+						long rtc = Benchmark.getReadStoCount();
+						Log.log.info("{}ms checked={}/{} {}%", System.currentTimeMillis() - t, checked.get(), logCount * countIn, (rc - rtc) * 10000 / rc * 0.01);
+						t = System.currentTimeMillis();
+						checked.set(0);
+					}
+				}
 			}
-			if(i % logCount == logCount - 1)
-			{
-				long rc = Benchmark.getReadCount();
-				long rtc = Benchmark.getReadStoCount();
-				Log.log.info("{}ms checked={}/{} {}%", System.currentTimeMillis() - t, checked.get(), logCount * countIn, (rc - rtc) * 10000 / rc * 0.01);
-				t = System.currentTimeMillis();
-				checked.set(0);
-			}
-		}
+		});
+
+		pt.start();
+		pt.join();
 
 		Log.log.info("checkpoint");
 		DBManager.instance().backupNextCheckpoint();

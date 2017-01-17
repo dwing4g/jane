@@ -7,7 +7,7 @@ import java.util.List;
  * 安全修改的上下文类
  * <p>
  * 管理当前线程的回滚和提交<br>
- * 由ThreadLocal管理全部的的上下文
+ * 由ProcThread管理上下文
  */
 public final class SContext
 {
@@ -303,28 +303,15 @@ public final class SContext
 		}
 	}
 
-	private static final ThreadLocal<SContext> _tlList;
-	private final List<Record<?, ?, ?>>		   _records		= new ArrayList<>();
-	private final List<RecordLong<?, ?>>	   _recordLongs	= new ArrayList<>();
-	private final List<Runnable>			   _onRollbacks	= new ArrayList<>();
-	private final List<Runnable>			   _onCommits	= new ArrayList<>();
-	private boolean							   _hasDirty;
-
-	static
-	{
-		_tlList = new ThreadLocal<SContext>()
-		{
-			@Override
-			protected SContext initialValue()
-			{
-				return new SContext();
-			}
-		};
-	}
+	private final List<Record<?, ?, ?>>	 _records	  = new ArrayList<>();
+	private final List<RecordLong<?, ?>> _recordLongs = new ArrayList<>();
+	private final List<Runnable>		 _onRollbacks = new ArrayList<>();
+	private final List<Runnable>		 _onCommits	  = new ArrayList<>();
+	private boolean						 _hasDirty;
 
 	public static SContext current()
 	{
-		return _tlList.get();
+		return ((ProcThread)Thread.currentThread()).sCtx;
 	}
 
 	<K, V extends Bean<V>, S extends Safe<V>> S addRecord(Table<K, V, S> table, K key, V value)
