@@ -37,6 +37,10 @@ public final class XlsxExport
 		_strXmlStr['"'] = "&quot;";
 	}
 
+	private XlsxExport()
+	{
+	}
+
 	private static String getColumnName(int id) // 只支持A(1)~ZZ(26*26+26)
 	{
 		if(id < 26) return new String(new char[] { (char)(id + 'A') });
@@ -270,8 +274,8 @@ public final class XlsxExport
 			return;
 		}
 
-		int sheetId = (args.length >= 4 ? Integer.parseInt(args[3].trim()) : 1);
-		int keyCol = (args.length >= 5 ? Integer.parseInt(args[4].trim()) : 1);
+		int sheetId = (args.length > 3 ? Integer.parseInt(args[3].trim()) : 1);
+		int keyCol = (args.length > 4 ? Integer.parseInt(args[4].trim()) : 1);
 		System.err.print("INFO: convert " + args[1] + " <" + sheetId + "> => " + args[2] + " ... ");
 		@SuppressWarnings("resource")
 		InputStream is = (args[1].equals("-") ? System.in : new FileInputStream(args[1].trim()));

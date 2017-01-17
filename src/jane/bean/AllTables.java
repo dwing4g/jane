@@ -42,6 +42,8 @@ public final class AllTables
 	 */
 	public static final class Types
 	{
+		private Types() {}
+
 		public static HashMap<String, Bean<?>> getKeyTypes()
 		{
 			HashMap<String, Bean<?>> r = new HashMap<>(4 * 2);

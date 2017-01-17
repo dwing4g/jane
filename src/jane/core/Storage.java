@@ -47,6 +47,10 @@ public interface Storage extends Closeable
 
 	public static final class Helper
 	{
+		private Helper()
+		{
+		}
+
 		public static <K> boolean onWalkSafe(WalkHandler<K> handler, K k)
 		{
 			try

@@ -4,6 +4,10 @@ import jane.core.StorageLevelDB;
 
 public final class DBCompact
 {
+	private DBCompact()
+	{
+	}
+
 	public static void main(String[] args)
 	{
 		if(args.length < 1)

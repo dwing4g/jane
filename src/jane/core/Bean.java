@@ -165,6 +165,12 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	public abstract B clone();
 
 	@Override
+	public abstract int hashCode();
+
+	@Override
+	public abstract boolean equals(Object o);
+
+	@Override
 	public int compareTo(B b)
 	{
 		throw new UnsupportedOperationException();

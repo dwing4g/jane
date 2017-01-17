@@ -52,7 +52,10 @@ public final class Log
 				{
 					ex.printStackTrace();
 				}
-				e.printStackTrace();
+				finally
+				{
+					e.printStackTrace();
+				}
 			}
 		});
 	}

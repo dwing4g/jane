@@ -26,27 +26,27 @@ public final class StorageLevelDB implements Storage
 		System.load(new File(Const.levelDBNativePath, System.mapLibraryName("leveldbjni" + System.getProperty("sun.arch.data.model"))).getAbsolutePath());
 	}
 
-	public native static long leveldb_open(String path, int writeBufSize, int cacheSize, boolean useSnappy);
+	public static native long leveldb_open(String path, int writeBufSize, int cacheSize, boolean useSnappy);
 
-	public native static void leveldb_close(long handle);
+	public static native void leveldb_close(long handle);
 
-	public native static byte[] leveldb_get(long handle, byte[] key, int keyLen); // return null for not found
+	public static native byte[] leveldb_get(long handle, byte[] key, int keyLen); // return null for not found
 
-	public native static int leveldb_write(long handle, Iterator<Entry<Octets, OctetsStream>> buf); // return 0 for ok
+	public static native int leveldb_write(long handle, Iterator<Entry<Octets, OctetsStream>> buf); // return 0 for ok
 
-	public native static long leveldb_backup(long handle, String srcPath, String dstPath, String dateTime); // return byte-size of copied data
+	public static native long leveldb_backup(long handle, String srcPath, String dstPath, String dateTime); // return byte-size of copied data
 
-	public native static long leveldb_iter_new(long handle, byte[] key, int keyLen, int type); // type=0|1|2|3: <|<=|>=|>key
+	public static native long leveldb_iter_new(long handle, byte[] key, int keyLen, int type); // type=0|1|2|3: <|<=|>=|>key
 
-	public native static void leveldb_iter_delete(long iter);
+	public static native void leveldb_iter_delete(long iter);
 
-	public native static byte[] leveldb_iter_next(long iter); // return cur-key(maybe null) and do next
+	public static native byte[] leveldb_iter_next(long iter); // return cur-key(maybe null) and do next
 
-	public native static byte[] leveldb_iter_prev(long iter); // return cur-key(maybe null) and do prev
+	public static native byte[] leveldb_iter_prev(long iter); // return cur-key(maybe null) and do prev
 
-	public native static byte[] leveldb_iter_value(long iter); // return cur-value(maybe null)
+	public static native byte[] leveldb_iter_value(long iter); // return cur-value(maybe null)
 
-	public native static boolean leveldb_compact(long handle, byte[] keyFrom, int keyFromLen, byte[] keyTo, int keyToLen);
+	public static native boolean leveldb_compact(long handle, byte[] keyFrom, int keyFromLen, byte[] keyTo, int keyToLen);
 
 	private final class TableLong<V extends Bean<V>> implements Storage.TableLong<V>
 	{

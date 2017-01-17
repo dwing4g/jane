@@ -6,6 +6,10 @@ import jane.core.StorageLevelDB;
 
 public final class LevelDBExport
 {
+	private LevelDBExport()
+	{
+	}
+
 	public static void main(String[] args)
 	{
 		if(args.length < 1)

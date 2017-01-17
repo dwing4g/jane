@@ -19,6 +19,10 @@ public final class LevelDBImport
 	private static final Charset	  s_cs88591	= Charset.forName("ISO-8859-1");
 	private static final OctetsStream s_deleted	= OctetsStream.wrap(Octets.EMPTY);
 
+	private LevelDBImport()
+	{
+	}
+
 	private static OctetsStream str2Oct(String str)
 	{
 		String matchStr = "";

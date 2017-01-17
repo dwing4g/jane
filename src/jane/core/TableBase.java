@@ -114,10 +114,10 @@ public abstract class TableBase<V extends Bean<V>>
 	 * <p>
 	 * @param counts 长度必须>=3,用于保存3个统计值,分别是保存前所有修改的记录数,保存后的剩余记录数,保存的记录数
 	 */
-	abstract protected void trySaveModified(long[] counts);
+	protected abstract void trySaveModified(long[] counts);
 
 	/**
 	 * 在所有事务暂停的情况下直接依次保存此表已修改的记录
 	 */
-	abstract protected int saveModified();
+	protected abstract int saveModified();
 }

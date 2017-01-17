@@ -381,7 +381,7 @@ public final class LongHashMap<V> extends LongMap<V>
 			return false;
 		}
 
-		private void checkConcurrentMod() throws ConcurrentModificationException
+		private void checkConcurrentMod()
 		{
 			if(expectedModCount != associatedMap.modCount)
 				throw new ConcurrentModificationException();

@@ -86,7 +86,7 @@ public class NetManager implements IoHandler
 									{
 										onclient.timeout((NetManager)manager, session, rpcbean);
 									}
-									catch(Throwable e)
+									catch(Exception e)
 									{
 										Log.log.error(manager.getClass().getName() + '(' + session.getId() + "): onTimeout exception:", e);
 									}
@@ -146,20 +146,18 @@ public class NetManager implements IoHandler
 	 * 获取监听器管理的当前全部sessions
 	 * @return 返回不可修改的map容器
 	 */
-	@SuppressWarnings("unchecked")
 	public final Map<Long, IoSession> getServerSessions()
 	{
-		return _acceptor != null ? _acceptor.getManagedSessions() : Collections.EMPTY_MAP;
+		return _acceptor != null ? _acceptor.getManagedSessions() : Collections.<Long, IoSession>emptyMap();
 	}
 
 	/**
 	 * 获取连接器管理的当前全部sessions
 	 * @return 返回不可修改的map容器
 	 */
-	@SuppressWarnings("unchecked")
 	public final Map<Long, IoSession> getClientSessions()
 	{
-		return _connector != null ? _connector.getManagedSessions() : Collections.EMPTY_MAP;
+		return _connector != null ? _connector.getManagedSessions() : Collections.<Long, IoSession>emptyMap();
 	}
 
 	/**

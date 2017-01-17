@@ -9,6 +9,10 @@ import jane.core.StorageLevelDB;
 
 public final class LevelDBClear
 {
+	private LevelDBClear()
+	{
+	}
+
 	public static void main(String[] args) throws Exception
 	{
 		if(args.length < 1)

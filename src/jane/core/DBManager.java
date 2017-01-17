@@ -39,33 +39,6 @@ public final class DBManager
 	private volatile ScheduledFuture<?>						   _commitFuture;												   // 数据提交的结果
 	private volatile boolean								   _exit;														   // 是否在退出状态(已经执行了ShutdownHook)
 
-	{
-		_commitThread = Executors.newSingleThreadScheduledExecutor(new ThreadFactory()
-		{
-			@Override
-			public Thread newThread(Runnable r)
-			{
-				Thread t = new Thread(r, "CommitThread");
-				t.setDaemon(true);
-				t.setPriority(Thread.NORM_PRIORITY + 1);
-				return t;
-			}
-		});
-		_procThreads = (ThreadPoolExecutor)Executors.newFixedThreadPool(Const.dbThreadCount, new ThreadFactory()
-		{
-			private final AtomicInteger _num = new AtomicInteger();
-
-			@Override
-			public Thread newThread(Runnable r)
-			{
-				Thread t = new ProcThread("ProcThread-" + _num.incrementAndGet(), r);
-				t.setDaemon(true);
-				t.setPriority(Thread.NORM_PRIORITY);
-				return t;
-			}
-		});
-	}
-
 	/**
 	 * 向数据库存储提交事务性修改的过程(checkpoint)
 	 * <p>
@@ -74,8 +47,6 @@ public final class DBManager
 	private final class CommitTask implements Runnable
 	{
 		private final long[]  _counts		= new long[3];								  // 3个统计数量值,分别是统计前数量,统计后数量,处理过的数量
-		private final long	  _modCountMax	= Const.dbCommitModCount;					  // 数据库记录的修改数量触发提交的阙值
-		private final long	  _resaveCount	= Const.dbCommitResaveCount;				  // 保存一轮记录后需要重试的记录数阙值
 		private final long	  _backupBase;												  // 备份数据的基准时间
 		private final long	  _commitPeriod	= Const.dbCommitPeriod * 1000;				  // 提交数据库的周期
 		private final long	  _backupPeriod	= Const.dbBackupPeriod * 1000;				  // 备份数据库的周期
@@ -116,7 +87,7 @@ public final class DBManager
 		public void run()
 		{
 			long t = System.currentTimeMillis();
-			if(_modCount.get() < _modCountMax && t < _commitTime) return;
+			if(_modCount.get() < Const.dbCommitModCount && t < _commitTime) return;
 			_commitTime += _commitPeriod;
 			if(_commitTime <= t) _commitTime += ((t - _commitTime) / _commitPeriod + 1) * _commitPeriod;
 			try
@@ -133,7 +104,7 @@ public final class DBManager
 						_storage.putBegin();
 						TableBase.trySaveModifiedAll(_counts);
 						// 2.如果前一轮遍历之后仍然有过多的修改记录,则再试一轮
-						if(_counts[1] >= _resaveCount)
+						if(_counts[1] >= Const.dbCommitResaveCount)
 						{
 							Log.log.info("db-commit saved: {}=>{}({}), try again...", _counts[0], _counts[1], _counts[2]);
 							_counts[0] = _counts[1] = 0;
@@ -210,6 +181,30 @@ public final class DBManager
 
 	private DBManager()
 	{
+		_commitThread = Executors.newSingleThreadScheduledExecutor(new ThreadFactory()
+		{
+			@Override
+			public Thread newThread(Runnable r)
+			{
+				Thread t = new Thread(r, "CommitThread");
+				t.setDaemon(true);
+				t.setPriority(Thread.NORM_PRIORITY + 1);
+				return t;
+			}
+		});
+		_procThreads = (ThreadPoolExecutor)Executors.newFixedThreadPool(Const.dbThreadCount, new ThreadFactory()
+		{
+			private final AtomicInteger _num = new AtomicInteger();
+
+			@Override
+			public Thread newThread(Runnable r)
+			{
+				Thread t = new ProcThread("ProcThread-" + _num.incrementAndGet(), r);
+				t.setDaemon(true);
+				t.setPriority(Thread.NORM_PRIORITY);
+				return t;
+			}
+		});
 	}
 
 	/**
