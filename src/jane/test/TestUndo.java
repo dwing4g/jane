@@ -35,8 +35,7 @@ public final class TestUndo
 					@Override
 					protected void onProcess() throws Exception
 					{
-						lock(Benchmark.lockId(id));
-						TestBean.Safe a = Benchmark.get(id);
+						TestBean.Safe a = Benchmark.lockGet(id);
 						if(a == null)
 						{
 							TestBean aa = new TestBean();
@@ -62,8 +61,7 @@ public final class TestUndo
 					@Override
 					protected void onProcess() throws Exception
 					{
-						lock(Benchmark.lockId(id));
-						TestBean.Safe a = Benchmark.get(id);
+						TestBean.Safe a = Benchmark.lockGet(id);
 						System.out.println("get: " + a.getValue1());
 						a.setValue1(v + 1);
 						System.out.println("set: " + a.getValue1());
@@ -77,8 +75,7 @@ public final class TestUndo
 					@Override
 					protected void onProcess() throws Exception
 					{
-						lock(Benchmark.lockId(id));
-						TestBean.Safe a = Benchmark.get(id);
+						TestBean.Safe a = Benchmark.lockGet(id);
 						System.out.println("get: " + a.getValue1());
 						a.setValue1(v + 2);
 						System.out.println("set: " + a.getValue1());
@@ -91,8 +88,7 @@ public final class TestUndo
 					@Override
 					protected void onProcess() throws Exception
 					{
-						lock(Benchmark.lockId(id));
-						TestBean.Safe a = Benchmark.get(id);
+						TestBean.Safe a = Benchmark.lockGet(id);
 						System.out.println("get: " + a.getValue1());
 						System.out.println("=== 4");
 					}
@@ -115,8 +111,7 @@ public final class TestUndo
 					@Override
 					protected void onProcess() throws Exception
 					{
-						lock(TestTable.lockId(1));
-						TestType.Safe a = TestTable.get(1);
+						TestType.Safe a = TestTable.lockGet(1);
 						if(a == null)
 						{
 							a = new TestType().safe();
@@ -135,8 +130,7 @@ public final class TestUndo
 					@Override
 					protected void onProcess() throws Exception
 					{
-						lock(TestTable.lockId(1));
-						TestType.Safe a = TestTable.get(1);
+						TestType.Safe a = TestTable.lockGet(1);
 						Map<Octets, TestBean.Safe> map = a.getV18();
 						map.remove(Octets.wrap("a"));
 						TestBean.Safe b = map.get(Octets.wrap("b"));

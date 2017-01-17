@@ -48,20 +48,20 @@ public final class ConcurrentLRUMap<K, V> extends AbstractMap<K, V> implements C
 	private final String								 name;
 	private long										 minVersion;
 
-	public ConcurrentLRUMap(int upperSize, int lowerSize, int acceptSize, int initialSize, int concurrencyLevel, String name)
+	public ConcurrentLRUMap(int upperSize, int lowerSize, int acceptSize, int initialSize, float loadFactor, int concurrencyLevel, String name)
 	{
 		if(lowerSize <= 0) throw new IllegalArgumentException("lowerSize must be > 0");
 		if(upperSize <= lowerSize) throw new IllegalArgumentException("upperSize must be > lowerSize");
-		map = new ConcurrentHashMap<>(initialSize, 0.5f, concurrencyLevel);
+		map = new ConcurrentHashMap<>(initialSize, loadFactor, concurrencyLevel);
 		this.upperSize = upperSize;
 		this.lowerSize = lowerSize;
 		this.acceptSize = acceptSize;
 		this.name = name;
 	}
 
-	public ConcurrentLRUMap(int lowerSize, int concurrencyLevel, String name)
+	public ConcurrentLRUMap(int lowerSize, float loadFactor, int concurrencyLevel, String name)
 	{
-		this(lowerSize + (lowerSize + 1) / 2, lowerSize, lowerSize + lowerSize / 4, lowerSize + (lowerSize + 1) / 2 + 256, concurrencyLevel, name);
+		this(lowerSize + (lowerSize + 1) / 2, lowerSize, lowerSize + lowerSize / 4, lowerSize + (lowerSize + 1) / 2 + 256, loadFactor, concurrencyLevel, name);
 	}
 
 	private static final class CacheEntry<K, V> extends CacheEntryBase<V>

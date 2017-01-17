@@ -72,16 +72,6 @@ public final class Util
 	}
 
 	/**
-	 * 创建用于事务线程的Map容器
-	 * <p>
-	 * 使用{@link ConcurrentHashMap}. 初始hash空间是{@link Const#dbThreadCount}的2倍且不小于16,负载因子是0.75,并发级别是1
-	 */
-	public static <K, V> Map<K, V> newProcThreadsMap()
-	{
-		return new ConcurrentHashMap<>(Math.max(Const.dbThreadCount * 2, 16));
-	}
-
-	/**
 	 * 使用{@link ConcurrentLRUMap}创建可并发带链表的HashMap
 	 */
 	public static <K, V> Map<K, V> newConcurrentLRUMap(int maxCount, String name)
@@ -89,7 +79,7 @@ public final class Util
 		if(maxCount <= 0) return newConcurrentHashMap();
 		// return new ConcurrentLinkedHashMap.Builder().concurrencyLevel(Const.dbThreadCount)
 		//		.maximumWeightedCapacity(maxCount).initialCapacity(maxCount).<K, V>build();
-		return new ConcurrentLRUMap<>(maxCount, Const.dbThreadCount, name);
+		return new ConcurrentLRUMap<>(maxCount, 0.5f, Const.dbThreadCount, name);
 	}
 
 	/**
@@ -100,7 +90,7 @@ public final class Util
 		if(maxCount <= 0) return newLongConcurrentHashMap();
 		// return new ConcurrentLinkedHashMap.Builder().concurrencyLevel(Const.dbThreadCount)
 		//		.maximumWeightedCapacity(maxCount).initialCapacity(maxCount).<V>buildLong();
-		return new LongConcurrentLRUMap<>(maxCount, Const.dbThreadCount, name);
+		return new LongConcurrentLRUMap<>(maxCount, 0.5f, Const.dbThreadCount, name);
 	}
 
 	/**
