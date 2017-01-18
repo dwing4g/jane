@@ -3,7 +3,7 @@ package jane.test;
 import java.io.FileInputStream;
 import java.security.MessageDigest;
 import java.util.Arrays;
-import jane.core.LZCompressor;
+import jane.tool.LZCompressor;
 
 public final class TestCompressor
 {

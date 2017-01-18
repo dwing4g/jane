@@ -1,4 +1,4 @@
-package jane.core;
+package jane.tool;
 
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.filterchain.IoFilterAdapter;

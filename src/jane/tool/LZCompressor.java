@@ -1,4 +1,4 @@
-package jane.core;
+package jane.tool;
 
 import java.util.Arrays;
 

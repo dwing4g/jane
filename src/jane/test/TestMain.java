@@ -4,9 +4,9 @@ import java.net.InetSocketAddress;
 import jane.core.BeanCodec;
 import jane.core.DBManager;
 import jane.core.Log;
-import jane.core.StatusServer;
 import jane.bean.AllBeans;
 import jane.bean.AllTables;
+import jane.tool.StatusServer;
 
 public final class TestMain
 {

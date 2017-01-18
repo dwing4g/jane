@@ -1,10 +1,17 @@
-package jane.core;
+package jane.tool;
 
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Map.Entry;
 import java.util.concurrent.ThreadPoolExecutor;
 import org.apache.mina.core.session.IoSession;
+import jane.core.Const;
+import jane.core.DBManager;
+import jane.core.HttpCodec;
+import jane.core.NetManager;
+import jane.core.OctetsStream;
+import jane.core.ProcThread;
+import jane.core.TableBase;
 
 public class StatusServer extends NetManager
 {

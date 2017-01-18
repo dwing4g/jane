@@ -4,8 +4,8 @@ import org.apache.mina.core.session.IoSession;
 import jane.core.BeanHandler;
 import jane.core.Log;
 import jane.core.NetManager;
-import jane.core.RC4Filter;
 import jane.bean.TestBean;
+import jane.tool.RC4Filter;
 
 public final class TestBeanHandler extends BeanHandler<TestBean>
 {

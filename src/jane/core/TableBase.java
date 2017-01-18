@@ -14,7 +14,7 @@ public abstract class TableBase<V extends Bean<V>>
 	protected final AtomicLong				  _readCount	= new AtomicLong();	   // 读操作次数统计
 	protected final AtomicLong				  _readStoCount	= new AtomicLong();	   // 读数据库存储的次数统计(即cache-miss的次数统计)
 
-	static List<TableBase<?>> getTables()
+	public static List<TableBase<?>> getTables()
 	{
 		return _tables;
 	}
