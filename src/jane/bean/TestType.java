@@ -400,7 +400,7 @@ public final class TestType extends Bean<TestType>
 	@Override
 	public int type()
 	{
-		return 2;
+		return BEAN_TYPE;
 	}
 
 	@Override

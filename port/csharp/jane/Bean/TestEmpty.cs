@@ -24,7 +24,7 @@ namespace Jane.Bean
 /**/
 		public int Type()
 		{
-			return 3;
+			return BEAN_TYPE;
 		}
 
 		public int InitSize()

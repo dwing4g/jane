@@ -29,7 +29,7 @@ public final class TestEmpty extends Bean<TestEmpty>
 	@Override
 	public int type()
 	{
-		return 3;
+		return BEAN_TYPE;
 	}
 
 	@Override

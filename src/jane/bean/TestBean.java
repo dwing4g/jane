@@ -91,7 +91,7 @@ public final class TestBean extends Bean<TestBean>
 	@Override
 	public int type()
 	{
-		return 1;
+		return BEAN_TYPE;
 	}
 
 	@Override

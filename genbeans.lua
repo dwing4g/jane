@@ -78,7 +78,7 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 	@Override
 	public int type()
 	{
-		return #(bean.type);
+		return BEAN_TYPE;
 	}
 
 	@Override

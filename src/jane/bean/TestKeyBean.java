@@ -51,7 +51,7 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 	@Override
 	public int type()
 	{
-		return 0;
+		return BEAN_TYPE;
 	}
 
 	@Override

@@ -53,7 +53,7 @@ namespace ]=] .. namespace .. [=[.Bean
 #(var.set)#)#*/
 		public int Type()
 		{
-			return #(bean.type);
+			return BEAN_TYPE;
 		}
 
 		public int InitSize()
