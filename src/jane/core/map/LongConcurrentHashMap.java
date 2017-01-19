@@ -17,8 +17,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 @SuppressWarnings("restriction")
 public final class LongConcurrentHashMap<V> extends LongMap<V>
 {
-	/* ---------------- Constants -------------- */
-
 	/**
 	 * The largest possible table capacity.  This value must be
 	 * exactly 1<<30 to stay within Java array allocation and indexing
@@ -60,16 +58,53 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	 */
 	private static final int RESIZE_STAMP_SHIFT = 32 - RESIZE_STAMP_BITS;
 
-	/*
-	 * Encodings for Node hash fields. See above for explanation.
+	/**
+	 *  Number of CPUS, to place bounds on some sizings
 	 */
-	private static final int MOVED	   = -1;		 // hash for forwarding nodes
-	private static final int HASH_BITS = 0x7fffffff; // usable bits of normal node hash
-
-	/** Number of CPUS, to place bounds on some sizings */
 	private static final int NCPU = Runtime.getRuntime().availableProcessors();
 
-	/* ---------------- Nodes -------------- */
+	/**
+	 * The array of bins. Lazily initialized upon first insertion.
+	 * Size is always a power of two. Accessed directly by iterators.
+	 */
+	private volatile Node<V>[] table;
+
+	/**
+	 * The next table to use; non-null only while resizing.
+	 */
+	private volatile Node<V>[] nextTable;
+
+	/**
+	 * Base counter value, used mainly when there is no contention,
+	 * but also as a fallback during table initialization
+	 * races. Updated via CAS.
+	 */
+	private volatile long baseCount;
+
+	/**
+	 * Table initialization and resizing control.  When negative, the
+	 * table is being initialized or resized: -1 for initialization,
+	 * else -(1 + the number of active resizing threads).  Otherwise,
+	 * when table is null, holds the initial table size to use upon
+	 * creation, or 0 for default. After initialization, holds the
+	 * next element count value upon which to resize the table.
+	 */
+	private volatile int sizeCtl;
+
+	/**
+	 * The next table index (plus one) to split while resizing.
+	 */
+	private volatile int transferIndex;
+
+	/**
+	 * Spinlock (locked via CAS) used when resizing and/or creating CounterCells.
+	 */
+	private volatile int cellsBusy;
+
+	/**
+	 * Table of counter cells. When non-null, size is a power of 2.
+	 */
+	private volatile CounterCell[] counterCells;
 
 	/**
 	 * Key-value entry.  This class is never exported out as a
@@ -81,21 +116,55 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	 */
 	private static class Node<V>
 	{
-		private final int		 hash;
 		private final long		 key;
 		private volatile V		 val;
 		private volatile Node<V> next;
 
-		private Node(int hash, long key, V val, Node<V> next)
+		private Node(long key, V val, Node<V> next)
 		{
-			this.hash = hash;
 			this.key = key;
 			this.val = val;
 			this.next = next;
 		}
 	}
 
-	/* ---------------- Static utilities -------------- */
+	/**
+	 * A node inserted at head of bins during transfer operations.
+	 */
+	private static final class ForwardingNode<V> extends Node<V>
+	{
+		private final Node<V>[] nextTable;
+
+		private ForwardingNode(Node<V>[] tab)
+		{
+			super(0, null, null);
+			nextTable = tab;
+		}
+
+		private Node<V> find(int h, long k)
+		{
+			// loop to avoid arbitrarily deep recursion on forwarding nodes
+			for(Node<V>[] tab = nextTable;;)
+			{
+				Node<V> e;
+				int n;
+				if(tab == null || (n = tab.length) == 0 || (e = tabAt(tab, h & (n - 1))) == null)
+					return null;
+				for(;;)
+				{
+					if(e.val == null) // MOVED
+					{
+						tab = ((ForwardingNode<V>)e).nextTable;
+						break;
+					}
+					if(e.key == k)
+						return e;
+					if((e = e.next) == null)
+						return null;
+				}
+			}
+		}
+	}
 
 	/**
 	 * Spreads (XORs) higher bits of hash to lower and also forces top
@@ -116,7 +185,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	private static int spread(long key)
 	{
 		int h = (int)key; // for faster inner using (key is multiple of prime number)
-		return (h ^ (h >>> 16)) & HASH_BITS;
+		return h; // (h ^ (h >>> 16)) & HASH_BITS;
 	}
 
 	/**
@@ -133,8 +202,6 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		n |= n >>> 16;
 		return (n < 0) ? 1 : (n >= MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : n + 1;
 	}
-
-	/* ---------------- Table element access -------------- */
 
 	/*
 	 * Volatile access methods are used for table elements as well as
@@ -168,52 +235,14 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		U.putObjectVolatile(tab, ((long)i << ASHIFT) + ABASE, v);
 	}
 
-	/* ---------------- Fields -------------- */
-
 	/**
-	 * The array of bins. Lazily initialized upon first insertion.
-	 * Size is always a power of two. Accessed directly by iterators.
+	 * Returns the stamp bits for resizing a table of size n.
+	 * Must be negative when shifted left by RESIZE_STAMP_SHIFT.
 	 */
-	private transient volatile Node<V>[] table;
-
-	/**
-	 * The next table to use; non-null only while resizing.
-	 */
-	private transient volatile Node<V>[] nextTable;
-
-	/**
-	 * Base counter value, used mainly when there is no contention,
-	 * but also as a fallback during table initialization
-	 * races. Updated via CAS.
-	 */
-	private transient volatile long baseCount;
-
-	/**
-	 * Table initialization and resizing control.  When negative, the
-	 * table is being initialized or resized: -1 for initialization,
-	 * else -(1 + the number of active resizing threads).  Otherwise,
-	 * when table is null, holds the initial table size to use upon
-	 * creation, or 0 for default. After initialization, holds the
-	 * next element count value upon which to resize the table.
-	 */
-	private transient volatile int sizeCtl;
-
-	/**
-	 * The next table index (plus one) to split while resizing.
-	 */
-	private transient volatile int transferIndex;
-
-	/**
-	 * Spinlock (locked via CAS) used when resizing and/or creating CounterCells.
-	 */
-	private transient volatile int cellsBusy;
-
-	/**
-	 * Table of counter cells. When non-null, size is a power of 2.
-	 */
-	private transient volatile CounterCell[] counterCells;
-
-	/* ---------------- Public operations -------------- */
+	private static int resizeStamp(int n)
+	{
+		return Integer.numberOfLeadingZeros(n) | (1 << (RESIZE_STAMP_BITS - 1));
+	}
 
 	/**
 	 * Creates a new, empty map with the default initial table size (16).
@@ -237,7 +266,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		if(initialCapacity < 0)
 			throw new IllegalArgumentException();
 		int cap = ((initialCapacity >= (MAXIMUM_CAPACITY >>> 1)) ? MAXIMUM_CAPACITY : tableSizeFor(initialCapacity + (initialCapacity >>> 1) + 1));
-		this.sizeCtl = cap;
+		sizeCtl = cap;
 	}
 
 	/**
@@ -284,7 +313,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 			initialCapacity = concurrencyLevel; // as estimated threads
 		long size = (long)(1.0 + initialCapacity / loadFactor);
 		int cap = (size >= MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : tableSizeFor((int)size);
-		this.sizeCtl = cap;
+		sizeCtl = cap;
 	}
 
 	/**
@@ -322,22 +351,21 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	{
 		Node<V>[] tab;
 		Node<V> e, p;
-		int n, eh;
+		int n;
 		int h = spread(key);
-		if((tab = table) != null && (n = tab.length) > 0 && (e = tabAt(tab, (n - 1) & h)) != null)
+		if((tab = table) != null && (n = tab.length) > 0 && (e = tabAt(tab, h & (n - 1))) != null)
 		{
-			if((eh = e.hash) == h)
+			if(e.val != null)
 			{
-				if(e.key == key)
-					return e.val;
+				do
+				{
+					if(e.key == key)
+						return e.val;
+				}
+				while((e = e.next) != null);
 			}
-			else if(eh < 0)
+			else // MOVED
 				return (p = ((ForwardingNode<V>)e).find(h, key)) != null ? p.val : null;
-			while((e = e.next) != null)
-			{
-				if(e.key == key)
-					return e.val;
-			}
 		}
 		return null;
 	}
@@ -366,7 +394,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	 *         specified value
 	 * @throws NullPointerException if the specified value is null
 	 */
-	public boolean containsValue(Object value)
+	public boolean containsValue(V value)
 	{
 		if(value == null)
 			throw new NullPointerException();
@@ -412,15 +440,15 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		for(Node<V>[] tab = table;;)
 		{
 			Node<V> f;
-			int n, i, fh;
+			int n, i;
 			if(tab == null || (n = tab.length) == 0)
 				tab = initTable();
-			else if((f = tabAt(tab, i = (n - 1) & hash)) == null)
+			else if((f = tabAt(tab, i = hash & (n - 1))) == null)
 			{
-				if(casTabAt(tab, i, null, new Node<>(hash, key, value, null)))
+				if(casTabAt(tab, i, null, new Node<>(key, value, null)))
 					break; // no lock when adding to empty bin
 			}
-			else if((fh = f.hash) == MOVED)
+			else if(f.val == null) // MOVED
 				tab = helpTransfer(tab, f);
 			else
 			{
@@ -429,24 +457,21 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 				{
 					if(tabAt(tab, i) == f)
 					{
-						if(fh >= 0)
+						binCount = 1;
+						for(Node<V> e = f;; ++binCount)
 						{
-							binCount = 1;
-							for(Node<V> e = f;; ++binCount)
+							if(e.key == key)
 							{
-								if(e.key == key)
-								{
-									oldVal = e.val;
-									if(!onlyIfAbsent)
-										e.val = value;
-									break;
-								}
-								Node<V> pred = e;
-								if((e = e.next) == null)
-								{
-									pred.next = new Node<>(hash, key, value, null);
-									break;
-								}
+								oldVal = e.val;
+								if(!onlyIfAbsent)
+									e.val = value;
+								break;
+							}
+							Node<V> pred = e;
+							if((e = e.next) == null)
+							{
+								pred.next = new Node<>(key, value, null);
+								break;
 							}
 						}
 					}
@@ -489,10 +514,10 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		for(Node<V>[] tab = table;;)
 		{
 			Node<V> f;
-			int n, i, fh;
-			if(tab == null || (n = tab.length) == 0 || (f = tabAt(tab, i = (n - 1) & hash)) == null)
+			int n, i;
+			if(tab == null || (n = tab.length) == 0 || (f = tabAt(tab, i = hash & (n - 1))) == null)
 				break;
-			else if((fh = f.hash) == MOVED)
+			else if(f.val == null) // MOVED
 				tab = helpTransfer(tab, f);
 			else
 			{
@@ -502,30 +527,27 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 				{
 					if(tabAt(tab, i) == f)
 					{
-						if(fh >= 0)
+						validated = true;
+						for(Node<V> e = f, pred = null;;)
 						{
-							validated = true;
-							for(Node<V> e = f, pred = null;;)
+							if(e.key == key)
 							{
-								if(e.key == key)
+								V ev = e.val;
+								if(cv == null || cv == ev || (ev != null && cv.equals(ev)))
 								{
-									V ev = e.val;
-									if(cv == null || cv == ev || (ev != null && cv.equals(ev)))
-									{
-										oldVal = ev;
-										if(value != null)
-											e.val = value;
-										else if(pred != null)
-											pred.next = e.next;
-										else
-											setTabAt(tab, i, e.next);
-									}
-									break;
+									oldVal = ev;
+									if(value != null)
+										e.val = value;
+									else if(pred != null)
+										pred.next = e.next;
+									else
+										setTabAt(tab, i, e.next);
 								}
-								pred = e;
-								if((e = e.next) == null)
-									break;
+								break;
 							}
+							pred = e;
+							if((e = e.next) == null)
+								break;
 						}
 					}
 				}
@@ -555,11 +577,10 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		Node<V>[] tab = table;
 		while(tab != null && i < tab.length)
 		{
-			int fh;
 			Node<V> f = tabAt(tab, i);
 			if(f == null)
 				++i;
-			else if((fh = f.hash) == MOVED)
+			else if(f.val == null) // MOVED
 			{
 				tab = helpTransfer(tab, f);
 				i = 0; // restart
@@ -570,12 +591,12 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 				{
 					if(tabAt(tab, i) == f)
 					{
-						Node<V> p = (fh >= 0 ? f : null);
-						while(p != null)
+						do
 						{
 							--delta;
-							p = p.next;
+							f = f.next;
 						}
+						while(f != null);
 						setTabAt(tab, i++, null);
 					}
 				}
@@ -583,51 +604,6 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		}
 		if(delta != 0L)
 			addCount(delta, -1);
-	}
-
-	@Override
-	public LongIterator keyIterator()
-	{
-		Node<V>[] t;
-		int f = (t = table) == null ? 0 : t.length;
-		return new KeyIterator<>(t, f, 0);
-	}
-
-	@Override
-	public Iterator<V> valueIterator()
-	{
-		Node<V>[] t;
-		int f = (t = table) == null ? 0 : t.length;
-		return new ValueIterator<>(t, f, 0);
-	}
-
-	@Override
-	public MapIterator<V> entryIterator()
-	{
-		Node<V>[] t;
-		int f = (t = table) == null ? 0 : t.length;
-		return new EntryIterator<>(t, f, 0);
-	}
-
-	/**
-	 * Returns the hash code value for this {@link java.util.Map}, i.e.,
-	 * the sum of, for each key-value pair in the map,
-	 * {@code key.hashCode() ^ value.hashCode()}.
-	 *
-	 * @return the hash code value for this map
-	 */
-	@Override
-	public int hashCode()
-	{
-		int h = 0;
-		Node<V>[] t;
-		if((t = table) != null)
-		{
-			Traverser<V> it = new Traverser<>(t, t.length, 0);
-			for(Node<V> p; (p = it.advance()) != null;)
-				h += (int)p.key ^ p.val.hashCode();
-		}
-		return h;
 	}
 
 	/**
@@ -718,8 +694,6 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		return replaceNode(key, value, null);
 	}
 
-	// Overrides of JDK8+ Map extension method defaults
-
 	/**
 	 * Returns the value to which the specified key is mapped, or the
 	 * given default value if this map contains no mapping for the
@@ -737,30 +711,6 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		return (v = get(key)) == null ? defaultValue : v;
 	}
 
-	// Hashtable legacy methods
-
-	/**
-	 * Legacy method testing if some key maps into the specified value
-	 * in this table.  This method is identical in functionality to
-	 * {@link #containsValue(Object)}, and exists solely to ensure
-	 * full compatibility with class {@link java.util.Hashtable},
-	 * which supported this method prior to introduction of the
-	 * Java Collections framework.
-	 *
-	 * @param  value a value to search for
-	 * @return {@code true} if and only if some key maps to the
-	 *         {@code value} argument in this table as
-	 *         determined by the {@code equals} method;
-	 *         {@code false} otherwise
-	 * @throws NullPointerException if the specified value is null
-	 */
-	public boolean contains(Object value)
-	{
-		return containsValue(value);
-	}
-
-	// LongConcurrentHashMap-only methods
-
 	/**
 	 * Returns the number of mappings. This method should be used
 	 * instead of {@link #size} because a LongConcurrentHashMap may
@@ -774,57 +724,6 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	{
 		long n = sumCount();
 		return (n < 0L) ? 0L : n; // ignore transient negative values
-	}
-
-	/* ---------------- Special Nodes -------------- */
-
-	/**
-	 * A node inserted at head of bins during transfer operations.
-	 */
-	private static final class ForwardingNode<V> extends Node<V>
-	{
-		private final Node<V>[] nextTable;
-
-		private ForwardingNode(Node<V>[] tab)
-		{
-			super(MOVED, 0, null, null);
-			nextTable = tab;
-		}
-
-		private Node<V> find(int h, long k)
-		{
-			// loop to avoid arbitrarily deep recursion on forwarding nodes
-			outer: for(Node<V>[] tab = nextTable;;)
-			{
-				Node<V> e;
-				int n;
-				if(tab == null || (n = tab.length) == 0 || (e = tabAt(tab, h & (n - 1))) == null)
-					return null;
-				for(;;)
-				{
-					if(e.hash < 0)
-					{
-						tab = ((ForwardingNode<V>)e).nextTable;
-						continue outer;
-					}
-					if(e.key == k)
-						return e;
-					if((e = e.next) == null)
-						return null;
-				}
-			}
-		}
-	}
-
-	/* ---------------- Table Initialization and Resizing -------------- */
-
-	/**
-	 * Returns the stamp bits for resizing a table of size n.
-	 * Must be negative when shifted left by RESIZE_STAMP_SHIFT.
-	 */
-	private static int resizeStamp(int n)
-	{
-		return Integer.numberOfLeadingZeros(n) | (1 << (RESIZE_STAMP_BITS - 1));
 	}
 
 	/**
@@ -953,7 +852,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	{
 		Node<V>[] nextTab;
 		int sc;
-		if(tab != null && (f instanceof ForwardingNode) && (nextTab = ((ForwardingNode<V>)f).nextTable) != null)
+		if(tab != null && f.val == null && (nextTab = ((ForwardingNode<V>)f).nextTable) != null) // MOVED
 		{
 			int rs = resizeStamp(tab.length);
 			while(nextTab == nextTable && table == tab && (sc = sizeCtl) < 0)
@@ -1003,7 +902,6 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		for(int i = 0, bound = 0;;)
 		{
 			Node<V> f;
-			int fh;
 			while(advance)
 			{
 				int nextIndex, nextBound;
@@ -1041,7 +939,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 			}
 			else if((f = tabAt(tab, i)) == null)
 				advance = casTabAt(tab, i, null, fwd);
-			else if((fh = f.hash) == MOVED)
+			else if(f.val == null) // MOVED
 				advance = true; // already processed
 			else
 			{
@@ -1050,51 +948,45 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 					if(tabAt(tab, i) == f)
 					{
 						Node<V> ln, hn;
-						if(fh >= 0)
+						int runBit = spread(f.key) & n;
+						Node<V> lastRun = f;
+						for(Node<V> p = f.next; p != null; p = p.next)
 						{
-							int runBit = fh & n;
-							Node<V> lastRun = f;
-							for(Node<V> p = f.next; p != null; p = p.next)
+							int b = spread(p.key) & n;
+							if(b != runBit)
 							{
-								int b = p.hash & n;
-								if(b != runBit)
-								{
-									runBit = b;
-									lastRun = p;
-								}
+								runBit = b;
+								lastRun = p;
 							}
-							if(runBit == 0)
-							{
-								ln = lastRun;
-								hn = null;
-							}
-							else
-							{
-								hn = lastRun;
-								ln = null;
-							}
-							for(Node<V> p = f; p != lastRun; p = p.next)
-							{
-								int ph = p.hash;
-								long pk = p.key;
-								V pv = p.val;
-								if((ph & n) == 0)
-									ln = new Node<>(ph, pk, pv, ln);
-								else
-									hn = new Node<>(ph, pk, pv, hn);
-							}
-							setTabAt(nextTab, i, ln);
-							setTabAt(nextTab, i + n, hn);
-							setTabAt(tab, i, fwd);
-							advance = true;
 						}
+						if(runBit == 0)
+						{
+							ln = lastRun;
+							hn = null;
+						}
+						else
+						{
+							hn = lastRun;
+							ln = null;
+						}
+						for(Node<V> p = f; p != lastRun; p = p.next)
+						{
+							long pk = p.key;
+							V pv = p.val;
+							if((spread(p.key) & n) == 0)
+								ln = new Node<>(pk, pv, ln);
+							else
+								hn = new Node<>(pk, pv, hn);
+						}
+						setTabAt(nextTab, i, ln);
+						setTabAt(nextTab, i + n, hn);
+						setTabAt(tab, i, fwd);
+						advance = true;
 					}
 				}
 			}
 		}
 	}
-
-	/* ---------------- Counter support -------------- */
 
 	/**
 	 * A padded cell for distributing counts.  Adapted from LongAdder
@@ -1118,10 +1010,8 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		if(as != null)
 		{
 			for(CounterCell a : as)
-			{
 				if(a != null)
 					sum += a.value;
-			}
 		}
 		return sum;
 	}
@@ -1145,19 +1035,19 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 			long v;
 			if((as = counterCells) != null && (n = as.length) > 0)
 			{
-				if((a = as[(n - 1) & h]) == null)
+				if((a = as[h & (n - 1)]) == null)
 				{
-					if(cellsBusy == 0)
-					{ // Try to attach new Cell
+					if(cellsBusy == 0) // Try to attach new Cell
+					{
 						CounterCell r = new CounterCell(x); // Optimistic create
 						if(cellsBusy == 0 && U.compareAndSwapInt(this, CELLSBUSY, 0, 1))
 						{
 							boolean created = false;
-							try
-							{ // Recheck under lock
+							try // Recheck under lock
+							{
 								CounterCell[] rs;
 								int m, j;
-								if((rs = counterCells) != null && (m = rs.length) > 0 && rs[j = (m - 1) & h] == null)
+								if((rs = counterCells) != null && (m = rs.length) > 0 && rs[j = h & (m - 1)] == null)
 								{
 									rs[j] = r;
 									created = true;
@@ -1186,8 +1076,8 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 				{
 					try
 					{
-						if(counterCells == as)
-						{// Expand table unless stale
+						if(counterCells == as) // Expand table unless stale
+						{
 							CounterCell[] rs = new CounterCell[n << 1];
 							for(int i = 0; i < n; ++i)
 								rs[i] = as[i];
@@ -1206,8 +1096,8 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 			else if(cellsBusy == 0 && counterCells == as && U.compareAndSwapInt(this, CELLSBUSY, 0, 1))
 			{
 				boolean init = false;
-				try
-				{ // Initialize table
+				try // Initialize table
+				{
 					if(counterCells == as)
 					{
 						CounterCell[] rs = new CounterCell[2];
@@ -1228,7 +1118,29 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		}
 	}
 
-	/* ----------------Table Traversal -------------- */
+	@Override
+	public LongIterator keyIterator()
+	{
+		Node<V>[] t;
+		int f = (t = table) == null ? 0 : t.length;
+		return new KeyIterator<>(t, f, 0);
+	}
+
+	@Override
+	public Iterator<V> valueIterator()
+	{
+		Node<V>[] t;
+		int f = (t = table) == null ? 0 : t.length;
+		return new ValueIterator<>(t, f, 0);
+	}
+
+	@Override
+	public MapIterator<V> entryIterator()
+	{
+		Node<V>[] t;
+		int f = (t = table) == null ? 0 : t.length;
+		return new EntryIterator<>(t, f, 0);
+	}
 
 	/**
 	 * Records the table, its length, and current traversal index for a
@@ -1237,10 +1149,10 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	 */
 	private static final class TableStack<V>
 	{
-		int			  length;
-		int			  index;
-		Node<V>[]	  tab;
-		TableStack<V> next;
+		private int			  length;
+		private int			  index;
+		private Node<V>[]	  tab;
+		private TableStack<V> next;
 	}
 
 	/**
@@ -1276,14 +1188,14 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		private Traverser(Node<V>[] tab, int size, int index)
 		{
 			this.tab = tab;
-			this.baseSize = size;
-			this.baseIndex = this.index = index;
+			baseSize = size;
+			baseIndex = this.index = index;
 		}
 
 		/**
 		 * Advances if possible, returning next valid node, or null if none.
 		 */
-		final Node<V> advance()
+		protected final Node<V> advance()
 		{
 			Node<V> e;
 			if((e = next) != null)
@@ -1296,7 +1208,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 					return next = e;
 				if(baseIndex >= baseSize || (t = tab) == null || (n = t.length) <= (i = index) || i < 0)
 					return next = null;
-				if((e = tabAt(t, i)) != null && e.hash < 0)
+				if((e = tabAt(t, i)) != null && e.val == null) // MOVED
 				{
 					tab = ((ForwardingNode<V>)e).nextTable;
 					e = null;
