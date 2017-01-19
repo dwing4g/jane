@@ -1,710 +1,309 @@
 /*
- *  Copyright (c) 2012 Jan Kotek
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-
-/* This code was adopted from JSR 166 group with following copyright:
- *
  * Written by Doug Lea with assistance from members of JCP JSR-166
  * Expert Group and released to the public domain, as explained at
- * http://creativecommons.org/licenses/publicdomain
+ * http://creativecommons.org/publicdomain/zero/1.0/
  */
 
 package jane.core.map;
 
+import java.lang.reflect.Field;
+import java.security.AccessController;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Thread safe LongMap. Is refactored version of 'ConcurrentHashMap'
- *
- * @author Jan Kotek
- * @author Doug Lea
- */
+@SuppressWarnings("restriction")
 public final class LongConcurrentHashMap<V> extends LongMap<V>
 {
-	/*
-	 * The basic strategy is to subdivide the table among Segments,
-	 * each of which itself is a concurrently readable hash table.
-	 */
-
 	/* ---------------- Constants -------------- */
 
 	/**
-	 * The default initial capacity for this table,
-	 * used when not otherwise specified in a constructor.
-	 */
-	private static final int DEFAULT_INITIAL_CAPACITY = 16;
-
-	/**
-	 * The default load factor for this table, used when not
-	 * otherwise specified in a constructor.
-	 */
-	private static final float DEFAULT_LOAD_FACTOR = 0.75f;
-
-	/**
-	 * The maximum capacity, used if a higher value is implicitly
-	 * specified by either of the constructors with arguments.  MUST
-	 * be a power of two <= 1<<30 to ensure that entries are indexable
-	 * using ints.
+	 * The largest possible table capacity.  This value must be
+	 * exactly 1<<30 to stay within Java array allocation and indexing
+	 * bounds for power of two table sizes, and is further required
+	 * because the top two bits of 32bit hash fields are used for
+	 * control purposes.
 	 */
 	private static final int MAXIMUM_CAPACITY = 1 << 30;
 
 	/**
-	 * The default concurrency level for this table, used when not
-	 * otherwise specified in a constructor.
+	 * The default initial table capacity.  Must be a power of 2
+	 * (i.e., at least 1) and at most MAXIMUM_CAPACITY.
 	 */
-	private static final int DEFAULT_CONCURRENCY_LEVEL = 16;
+	private static final int DEFAULT_CAPACITY = 16;
 
 	/**
-	 * The maximum number of segments to allow; used to bound
-	 * constructor arguments.
+	 * Minimum number of rebinnings per transfer step. Ranges are
+	 * subdivided to allow multiple resizer threads.  This value
+	 * serves as a lower bound to avoid resizers encountering
+	 * excessive memory contention.  The value should be at least
+	 * DEFAULT_CAPACITY.
 	 */
-	private static final int MAX_SEGMENTS = 1 << 16; // slightly conservative
+	private static final int MIN_TRANSFER_STRIDE = 16;
 
 	/**
-	 * Number of unsynchronized retries in size and containsValue
-	 * methods before resorting to locking. This is used to avoid
-	 * unbounded retries if tables undergo continuous modification
-	 * which would make it impossible to obtain an accurate result.
+	 * The number of bits used for generation stamp in sizeCtl.
+	 * Must be at least 6 for 32bit arrays.
 	 */
-	private static final int RETRIES_BEFORE_LOCK = 2;
+	private static final int RESIZE_STAMP_BITS = 16;
+
+	/**
+	 * The maximum number of threads that can help resize.
+	 * Must fit in 32 - RESIZE_STAMP_BITS bits.
+	 */
+	private static final int MAX_RESIZERS = (1 << (32 - RESIZE_STAMP_BITS)) - 1;
+
+	/**
+	 * The bit shift for recording size stamp in sizeCtl.
+	 */
+	private static final int RESIZE_STAMP_SHIFT = 32 - RESIZE_STAMP_BITS;
+
+	/*
+	 * Encodings for Node hash fields. See above for explanation.
+	 */
+	private static final int MOVED	   = -1;		 // hash for forwarding nodes
+	private static final int HASH_BITS = 0x7fffffff; // usable bits of normal node hash
+
+	/** Number of CPUS, to place bounds on some sizings */
+	private static final int NCPU = Runtime.getRuntime().availableProcessors();
+
+	/* ---------------- Nodes -------------- */
+
+	/**
+	 * Key-value entry.  This class is never exported out as a
+	 * user-mutable Map.Entry (i.e., one supporting setValue; see
+	 * MapEntry below), but can be used for read-only traversals used
+	 * in bulk tasks.  Subclasses of Node with a negative hash field
+	 * are special, and contain null keys and values (but are never
+	 * exported).  Otherwise, keys and vals are never null.
+	 */
+	private static class Node<V>
+	{
+		private final int		 hash;
+		private final long		 key;
+		private volatile V		 val;
+		private volatile Node<V> next;
+
+		private Node(int hash, long key, V val, Node<V> next)
+		{
+			this.hash = hash;
+			this.key = key;
+			this.val = val;
+			this.next = next;
+		}
+	}
+
+	/* ---------------- Static utilities -------------- */
+
+	/**
+	 * Spreads (XORs) higher bits of hash to lower and also forces top
+	 * bit to 0. Because the table uses power-of-two masking, sets of
+	 * hashes that vary only in bits above the current mask will
+	 * always collide. (Among known examples are sets of Float keys
+	 * holding consecutive whole numbers in small tables.)  So we
+	 * apply a transform that spreads the impact of higher bits
+	 * downward. There is a tradeoff between speed, utility, and
+	 * quality of bit-spreading. Because many common sets of hashes
+	 * are already reasonably distributed (so don't benefit from
+	 * spreading), and because we use trees to handle large sets of
+	 * collisions in bins, we just XOR some shifted bits in the
+	 * cheapest possible way to reduce systematic lossage, as well as
+	 * to incorporate impact of the highest bits that would otherwise
+	 * never be used in index calculations because of table bounds.
+	 */
+	private static int spread(long key)
+	{
+		int h = (int)key; // for faster inner using (key is multiple of prime number)
+		return (h ^ (h >>> 16)) & HASH_BITS;
+	}
+
+	/**
+	 * Returns a power of two table size for the given desired capacity.
+	 * See Hackers Delight, sec 3.2
+	 */
+	private static int tableSizeFor(int c)
+	{
+		int n = c - 1;
+		n |= n >>> 1;
+		n |= n >>> 2;
+		n |= n >>> 4;
+		n |= n >>> 8;
+		n |= n >>> 16;
+		return (n < 0) ? 1 : (n >= MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : n + 1;
+	}
+
+	/* ---------------- Table element access -------------- */
+
+	/*
+	 * Volatile access methods are used for table elements as well as
+	 * elements of in-progress next table while resizing.  All uses of
+	 * the tab arguments must be null checked by callers.  All callers
+	 * also paranoically precheck that tab's length is not zero (or an
+	 * equivalent check), thus ensuring that any index argument taking
+	 * the form of a hash value anded with (length - 1) is a valid
+	 * index.  Note that, to be correct wrt arbitrary concurrency
+	 * errors by users, these checks must operate on local variables,
+	 * which accounts for some odd-looking inline assignments below.
+	 * Note that calls to setTabAt always occur within locked regions,
+	 * and so in principle require only release ordering, not
+	 * full volatile semantics, but are currently coded as volatile
+	 * writes to be conservative.
+	 */
+
+	@SuppressWarnings("unchecked")
+	private static <V> Node<V> tabAt(Node<V>[] tab, int i)
+	{
+		return (Node<V>)U.getObjectVolatile(tab, ((long)i << ASHIFT) + ABASE);
+	}
+
+	private static <V> boolean casTabAt(Node<V>[] tab, int i, Node<V> c, Node<V> v)
+	{
+		return U.compareAndSwapObject(tab, ((long)i << ASHIFT) + ABASE, c, v);
+	}
+
+	private static <V> void setTabAt(Node<V>[] tab, int i, Node<V> v)
+	{
+		U.putObjectVolatile(tab, ((long)i << ASHIFT) + ABASE, v);
+	}
 
 	/* ---------------- Fields -------------- */
 
 	/**
-	 * Mask value for indexing into segments. The upper bits of a
-	 * key's hash code are used to choose the segment.
+	 * The array of bins. Lazily initialized upon first insertion.
+	 * Size is always a power of two. Accessed directly by iterators.
 	 */
-	private final int segmentMask;
+	private transient volatile Node<V>[] table;
 
 	/**
-	 * Shift value for indexing within segments.
+	 * The next table to use; non-null only while resizing.
 	 */
-	private final int segmentShift;
+	private transient volatile Node<V>[] nextTable;
 
 	/**
-	 * The segments, each of which is a specialized hash table
+	 * Base counter value, used mainly when there is no contention,
+	 * but also as a fallback during table initialization
+	 * races. Updated via CAS.
 	 */
-	private final Segment<V>[] segments;
-
-	/* ---------------- Small Utilities -------------- */
+	private transient volatile long baseCount;
 
 	/**
-	 * Returns the segment that should be used for key with given hash
-	 * @param hash the hash code for the key
-	 * @return the segment
+	 * Table initialization and resizing control.  When negative, the
+	 * table is being initialized or resized: -1 for initialization,
+	 * else -(1 + the number of active resizing threads).  Otherwise,
+	 * when table is null, holds the initial table size to use upon
+	 * creation, or 0 for default. After initialization, holds the
+	 * next element count value upon which to resize the table.
 	 */
-	private Segment<V> segmentFor(int hash)
-	{
-		return segments[(hash >>> segmentShift) & segmentMask];
-	}
-
-	private static int longHash(long key)
-	{
-		return (int)key; // for faster inner using (key is multiple of prime number)
-	}
-
-	/* ---------------- Inner Classes -------------- */
+	private transient volatile int sizeCtl;
 
 	/**
-	 * LongConcurrentHashMap list entry. Note that this is never exported
-	 * out as a user-visible Map.Entry.
-	 *
-	 * Because the value field is volatile, not final, it is legal wrt
-	 * the Java Memory Model for an unsynchronized reader to see null
-	 * instead of initial value when read via a data race.  Although a
-	 * reordering leading to this is not likely to ever actually
-	 * occur, the Segment.readValueUnderLock method is used as a
-	 * backup in case a null (pre-initialized) value is ever seen in
-	 * an unsynchronized access method.
+	 * The next table index (plus one) to split while resizing.
 	 */
-	private static final class HashEntry<V>
-	{
-		private final long		   key;
-		private final HashEntry<V> next;
-		private volatile V		   value;
-
-		private HashEntry(long key, HashEntry<V> next, V value)
-		{
-			this.key = key;
-			this.next = next;
-			this.value = value;
-		}
-
-		@SuppressWarnings("unchecked")
-		private static <V> HashEntry<V>[] newArray(int i)
-		{
-			return new HashEntry[i];
-		}
-	}
+	private transient volatile int transferIndex;
 
 	/**
-	 * Segments are specialized versions of hash tables.  This
-	 * subclasses from ReentrantLock opportunistically, just to
-	 * simplify some locking and avoid separate construction.
+	 * Spinlock (locked via CAS) used when resizing and/or creating CounterCells.
 	 */
-	private static final class Segment<V> extends ReentrantLock
-	{
-		/*
-		 * Segments maintain a table of entry lists that are ALWAYS
-		 * kept in a consistent state, so can be read without locking.
-		 * Next fields of nodes are immutable (final).  All list
-		 * additions are performed at the front of each bin. This
-		 * makes it easy to check changes, and also fast to traverse.
-		 * When nodes would otherwise be changed, new nodes are
-		 * created to replace them. This works well for hash tables
-		 * since the bin lists tend to be short. (The average length
-		 * is less than two for the default load factor threshold.)
-		 *
-		 * Read operations can thus proceed without locking, but rely
-		 * on selected uses of volatiles to ensure that completed
-		 * write operations performed by other threads are
-		 * noticed. For most purposes, the "count" field, tracking the
-		 * number of elements, serves as that volatile variable
-		 * ensuring visibility.  This is convenient because this field
-		 * needs to be read in many read operations anyway:
-		 *
-		 *   - All (unsynchronized) read operations must first read the
-		 *     "count" field, and should not look at table entries if
-		 *     it is 0.
-		 *
-		 *   - All (synchronized) write operations should write to
-		 *     the "count" field after structurally changing any bin.
-		 *     The operations must not take any action that could even
-		 *     momentarily cause a concurrent read operation to see
-		 *     inconsistent data. This is made easier by the nature of
-		 *     the read operations in Map. For example, no operation
-		 *     can reveal that the table has grown but the threshold
-		 *     has not yet been updated, so there are no atomicity
-		 *     requirements for this with respect to reads.
-		 *
-		 * As a guide, all critical volatile reads and writes to the
-		 * count field are marked in code comments.
-		 */
+	private transient volatile int cellsBusy;
 
-		private static final long serialVersionUID = 1L;
-
-		/**
-		 * The per-segment table.
-		 */
-		private volatile HashEntry<V>[] table;
-
-		/**
-		 * The number of elements in this segment's region.
-		 */
-		private volatile int count;
-
-		/**
-		 * Number of updates that alter the size of the table. This is
-		 * used during bulk-read methods to make sure they see a
-		 * consistent snapshot: If modCounts change during a traversal
-		 * of segments computing size or checking containsValue, then
-		 * we might have an inconsistent view of state so (usually)
-		 * must retry.
-		 */
-		private int modCount;
-
-		/**
-		 * The table is rehashed when its size exceeds this threshold.
-		 * (The value of this field is always <tt>(int)(capacity * loadFactor)</tt>.)
-		 */
-		private int threshold;
-
-		/**
-		 * The load factor for the hash table.  Even though this value
-		 * is same for all segments, it is replicated to avoid needing
-		 * links to outer object.
-		 */
-		private final float loadFactor;
-
-		private Segment(int initialCapacity, float lf)
-		{
-			super(false); // CC.FAIR_LOCKS
-			setTable(HashEntry.<V>newArray(initialCapacity));
-			loadFactor = lf;
-		}
-
-		@SuppressWarnings("unchecked")
-		private static <V> Segment<V>[] newArray(int i)
-		{
-			return new Segment[i];
-		}
-
-		/**
-		 * Sets table to new HashEntry array.
-		 * Call only while holding lock or in constructor.
-		 */
-		private void setTable(HashEntry<V>[] newTable)
-		{
-			table = newTable;
-			threshold = (int)(newTable.length * loadFactor);
-		}
-
-		/**
-		 * Returns properly casted first entry of bin for given hash.
-		 */
-		private HashEntry<V> getFirst(int hash)
-		{
-			HashEntry<V>[] tab = table;
-			return tab[hash & (tab.length - 1)];
-		}
-
-		/**
-		 * Reads value field of an entry under lock. Called if value
-		 * field ever appears to be null. This is possible only if a
-		 * compiler happens to reorder a HashEntry initialization with
-		 * its table assignment, which is legal under memory model
-		 * but is not known to ever occur.
-		 */
-		private V readValueUnderLock(HashEntry<V> e)
-		{
-			lock();
-			try
-			{
-				return e.value;
-			}
-			finally
-			{
-				unlock();
-			}
-		}
-
-		/* Specialized implementations of map methods */
-
-		private V get(long key, int hash)
-		{
-			if(count != 0) // read-volatile
-			{
-				for(HashEntry<V> e = getFirst(hash); e != null; e = e.next)
-				{
-					if(e.key == key)
-					{
-						V v = e.value;
-						return v != null ? v : readValueUnderLock(e); // recheck
-					}
-				}
-			}
-			return null;
-		}
-
-		private boolean containsKey(long key, int hash)
-		{
-			if(count != 0) // read-volatile
-			{
-				for(HashEntry<V> e = getFirst(hash); e != null; e = e.next)
-					if(e.key == key)
-						return true;
-			}
-			return false;
-		}
-
-		private boolean containsValue(Object value)
-		{
-			if(count != 0) // read-volatile
-			{
-				HashEntry<V>[] entrys = table;
-				for(HashEntry<V> entry : entrys)
-				{
-					for(HashEntry<V> e = entry; e != null; e = e.next)
-					{
-						V v = e.value;
-						if(v == null)
-							v = readValueUnderLock(e); // recheck
-						if(value.equals(v))
-							return true;
-					}
-				}
-			}
-			return false;
-		}
-
-		private boolean replace(long key, int hash, V oldValue, V newValue)
-		{
-			lock();
-			try
-			{
-				for(HashEntry<V> e = getFirst(hash); e != null; e = e.next)
-				{
-					if(e.key == key)
-					{
-						if(!oldValue.equals(e.value))
-							return false;
-						e.value = newValue;
-						return true;
-					}
-				}
-				return false;
-			}
-			finally
-			{
-				unlock();
-			}
-		}
-
-		private V replace(long key, int hash, V newValue)
-		{
-			lock();
-			try
-			{
-				for(HashEntry<V> e = getFirst(hash); e != null; e = e.next)
-				{
-					if(e.key == key)
-					{
-						V oldValue = e.value;
-						e.value = newValue;
-						return oldValue;
-					}
-				}
-				return null;
-			}
-			finally
-			{
-				unlock();
-			}
-		}
-
-		private V put(long key, int hash, V value, boolean onlyIfAbsent)
-		{
-			lock();
-			try
-			{
-				int c = count;
-				if(c++ > threshold) // ensure capacity
-					rehash();
-				HashEntry<V>[] tab = table;
-				int index = hash & (tab.length - 1);
-				HashEntry<V> first = tab[index];
-				HashEntry<V> e = first;
-				while(e != null && e.key != key)
-					e = e.next;
-
-				V oldValue;
-				if(e != null)
-				{
-					oldValue = e.value;
-					if(!onlyIfAbsent)
-						e.value = value;
-				}
-				else
-				{
-					oldValue = null;
-					++modCount;
-					tab[index] = new HashEntry<>(key, first, value);
-					count = c; // write-volatile
-				}
-				return oldValue;
-			}
-			finally
-			{
-				unlock();
-			}
-		}
-
-		private void rehash()
-		{
-			HashEntry<V>[] oldTable = table;
-			int oldCapacity = oldTable.length;
-			if(oldCapacity >= MAXIMUM_CAPACITY)
-				return;
-
-			/*
-			 * Reclassify nodes in each list to new Map.  Because we are
-			 * using power-of-two expansion, the elements from each bin
-			 * must either stay at same index, or move with a power of two
-			 * offset. We eliminate unnecessary node creation by catching
-			 * cases where old nodes can be reused because their next
-			 * fields won't change. Statistically, at the default
-			 * threshold, only about one-sixth of them need cloning when
-			 * a table doubles. The nodes they replace will be garbage
-			 * collectable as soon as they are no longer referenced by any
-			 * reader thread that may be in the midst of traversing table
-			 * right now.
-			 */
-
-			HashEntry<V>[] newTable = HashEntry.newArray(oldCapacity << 1);
-			threshold = (int)(newTable.length * loadFactor);
-			int sizeMask = newTable.length - 1;
-			for(HashEntry<V> e : oldTable)
-			{
-				// We need to guarantee that any existing reads of old Map can
-				//  proceed. So we cannot yet null out each bin.
-				if(e != null)
-				{
-					HashEntry<V> next = e.next;
-					int idx = longHash(e.key) & sizeMask;
-
-					//  Single node on list
-					if(next == null)
-						newTable[idx] = e;
-					else
-					{
-						// Reuse trailing consecutive sequence at same slot
-						HashEntry<V> lastRun = e;
-						int lastIdx = idx;
-						for(HashEntry<V> last = next; last != null; last = last.next)
-						{
-							int k = longHash(last.key) & sizeMask;
-							if(k != lastIdx)
-							{
-								lastIdx = k;
-								lastRun = last;
-							}
-						}
-						newTable[lastIdx] = lastRun;
-
-						// Clone all remaining nodes
-						for(HashEntry<V> p = e; p != lastRun; p = p.next)
-						{
-							int k = longHash(p.key) & sizeMask;
-							HashEntry<V> n = newTable[k];
-							newTable[k] = new HashEntry<>(p.key, n, p.value);
-						}
-					}
-				}
-			}
-			table = newTable;
-		}
-
-		/**
-		 * Remove; match on key only if value null, else match both.
-		 */
-		private V remove(long key, int hash, Object value)
-		{
-			lock();
-			try
-			{
-				int c = count - 1;
-				HashEntry<V>[] tab = table;
-				int index = hash & (tab.length - 1);
-				HashEntry<V> first = tab[index];
-				HashEntry<V> e = first;
-				while(e != null && e.key != key)
-					e = e.next;
-
-				V oldValue = null;
-				if(e != null)
-				{
-					V v = e.value;
-					if(value == null || value.equals(v))
-					{
-						oldValue = v;
-						// All entries following removed node can stay
-						// in list, but all preceding ones need to be
-						// cloned.
-						++modCount;
-						HashEntry<V> newFirst = e.next;
-						for(HashEntry<V> p = first; p != e; p = p.next)
-							newFirst = new HashEntry<>(p.key, newFirst, p.value);
-						tab[index] = newFirst;
-						count = c; // write-volatile
-					}
-				}
-				return oldValue;
-			}
-			finally
-			{
-				unlock();
-			}
-		}
-
-		private void clear()
-		{
-			if(count != 0)
-			{
-				lock();
-				try
-				{
-					HashEntry<V>[] tab = table;
-					for(int i = 0; i < tab.length; i++)
-						tab[i] = null;
-					++modCount;
-					count = 0; // write-volatile
-				}
-				finally
-				{
-					unlock();
-				}
-			}
-		}
-	}
+	/**
+	 * Table of counter cells. When non-null, size is a power of 2.
+	 */
+	private transient volatile CounterCell[] counterCells;
 
 	/* ---------------- Public operations -------------- */
 
 	/**
-	 * Creates a new, empty map with the specified initial
-	 * capacity, load factor and concurrency level.
-	 *
-	 * @param initialCapacity the initial capacity. The implementation
-	 * performs internal sizing to accommodate this many elements.
-	 * @param loadFactor  the load factor threshold, used to control resizing.
-	 * Resizing may be performed when the average number of elements per
-	 * bin exceeds this threshold.
-	 * @param concurrencyLevel the estimated number of concurrently
-	 * updating threads. The implementation performs internal sizing
-	 * to try to accommodate this many threads.
-	 * @throws IllegalArgumentException if the initial capacity is
-	 * negative or the load factor or concurrencyLevel are
-	 * nonpositive.
-	 */
-	public LongConcurrentHashMap(int initialCapacity, float loadFactor, int concurrencyLevel)
-	{
-		if(!(loadFactor > 0) || initialCapacity < 0 || concurrencyLevel <= 0)
-			throw new IllegalArgumentException();
-
-		if(concurrencyLevel > MAX_SEGMENTS)
-			concurrencyLevel = MAX_SEGMENTS;
-
-		// Find power-of-two sizes best matching arguments
-		int sshift = 0;
-		int ssize = 1;
-		while(ssize < concurrencyLevel)
-		{
-			++sshift;
-			ssize <<= 1;
-		}
-		segmentShift = 32 - sshift;
-		segmentMask = ssize - 1;
-		segments = Segment.newArray(ssize);
-
-		if(initialCapacity > MAXIMUM_CAPACITY)
-			initialCapacity = MAXIMUM_CAPACITY;
-		int c = initialCapacity / ssize;
-		if(c * ssize < initialCapacity)
-			++c;
-		int cap = 1;
-		while(cap < c)
-			cap <<= 1;
-
-		for(int i = 0; i < segments.length; ++i)
-			segments[i] = new Segment<>(cap, loadFactor);
-	}
-
-	/**
-	 * Creates a new, empty map with the specified initial capacity,
-	 * and with default load factor (0.75) and concurrencyLevel (16).
-	 *
-	 * @param initialCapacity the initial capacity. The implementation
-	 * performs internal sizing to accommodate this many elements.
-	 * @throws IllegalArgumentException if the initial capacity of
-	 * elements is negative.
-	 */
-	public LongConcurrentHashMap(int initialCapacity)
-	{
-		this(initialCapacity, DEFAULT_LOAD_FACTOR, DEFAULT_CONCURRENCY_LEVEL);
-	}
-
-	/**
-	 * Creates a new, empty map with a default initial capacity (16),
-	 * load factor (0.75) and concurrencyLevel (16).
+	 * Creates a new, empty map with the default initial table size (16).
 	 */
 	public LongConcurrentHashMap()
 	{
-		this(DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR, DEFAULT_CONCURRENCY_LEVEL);
 	}
 
 	/**
-	 * Returns <tt>true</tt> if this map contains no key-value mappings.
-	 */
-	@Override
-	public boolean isEmpty()
-	{
-		final Segment<V>[] segs = segments;
-		/*
-		 * We keep track of per-segment modCounts to avoid ABA
-		 * problems in which an element in one segment was added and
-		 * in another removed during traversal, in which case the
-		 * table was never actually empty at any point. Note the
-		 * similar use of modCounts in the size() and containsValue()
-		 * methods, which are the only other methods also susceptible
-		 * to ABA problems.
-		 */
-		int[] mc = new int[segs.length];
-		int mcsum = 0;
-		for(int i = 0; i < segs.length; ++i)
-		{
-			if(segs[i].count != 0)
-				return false;
-			mcsum += mc[i] = segs[i].modCount;
-		}
-		// If mcsum happens to be zero, then we know we got a snapshot
-		// before any modifications at all were made.  This is
-		// probably common enough to bother tracking.
-		if(mcsum != 0)
-		{
-			for(int i = 0; i < segs.length; ++i)
-			{
-				if(segs[i].count != 0 || mc[i] != segs[i].modCount)
-					return false;
-			}
-		}
-		return true;
-	}
-
-	/**
-	 * Returns the number of key-value mappings in this map.  If the
-	 * map contains more than <tt>Integer.MAX_VALUE</tt> elements, returns
-	 * <tt>Integer.MAX_VALUE</tt>.
+	 * Creates a new, empty map with an initial table size
+	 * accommodating the specified number of elements without the need
+	 * to dynamically resize.
 	 *
-	 * @return the number of key-value mappings in this map
+	 * @param initialCapacity The implementation performs internal
+	 * sizing to accommodate this many elements.
+	 * @throws IllegalArgumentException if the initial capacity of
+	 * elements is negative
+	 */
+	public LongConcurrentHashMap(int initialCapacity)
+	{
+		if(initialCapacity < 0)
+			throw new IllegalArgumentException();
+		int cap = ((initialCapacity >= (MAXIMUM_CAPACITY >>> 1)) ? MAXIMUM_CAPACITY : tableSizeFor(initialCapacity + (initialCapacity >>> 1) + 1));
+		this.sizeCtl = cap;
+	}
+
+	/**
+	 * Creates a new, empty map with an initial table size based on
+	 * the given number of elements ({@code initialCapacity}) and
+	 * initial table density ({@code loadFactor}).
+	 *
+	 * @param initialCapacity the initial capacity. The implementation
+	 * performs internal sizing to accommodate this many elements,
+	 * given the specified load factor.
+	 * @param loadFactor the load factor (table density) for
+	 * establishing the initial table size
+	 * @throws IllegalArgumentException if the initial capacity of
+	 * elements is negative or the load factor is nonpositive
+	 */
+	public LongConcurrentHashMap(int initialCapacity, float loadFactor)
+	{
+		this(initialCapacity, loadFactor, 1);
+	}
+
+	/**
+	 * Creates a new, empty map with an initial table size based on
+	 * the given number of elements ({@code initialCapacity}), table
+	 * density ({@code loadFactor}), and number of concurrently
+	 * updating threads ({@code concurrencyLevel}).
+	 *
+	 * @param initialCapacity the initial capacity. The implementation
+	 * performs internal sizing to accommodate this many elements,
+	 * given the specified load factor.
+	 * @param loadFactor the load factor (table density) for
+	 * establishing the initial table size
+	 * @param concurrencyLevel the estimated number of concurrently
+	 * updating threads. The implementation may use this value as
+	 * a sizing hint.
+	 * @throws IllegalArgumentException if the initial capacity is
+	 * negative or the load factor or concurrencyLevel are
+	 * nonpositive
+	 */
+	public LongConcurrentHashMap(int initialCapacity, float loadFactor, int concurrencyLevel)
+	{
+		if(!(loadFactor > 0.0f) || initialCapacity < 0 || concurrencyLevel <= 0)
+			throw new IllegalArgumentException();
+		if(initialCapacity < concurrencyLevel) // Use at least as many bins
+			initialCapacity = concurrencyLevel; // as estimated threads
+		long size = (long)(1.0 + initialCapacity / loadFactor);
+		int cap = (size >= MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : tableSizeFor((int)size);
+		this.sizeCtl = cap;
+	}
+
+	/**
+	 * {@inheritDoc}
 	 */
 	@Override
 	public int size()
 	{
-		final Segment<V>[] segs = segments;
-		long sum = 0;
-		long check = 0;
-		int[] mc = new int[segs.length];
-		// Try a few times to get accurate count. On failure due to
-		// continuous async changes in table, resort to locking.
-		for(int k = 0; k < RETRIES_BEFORE_LOCK; ++k)
-		{
-			check = 0;
-			sum = 0;
-			int mcsum = 0;
-			for(int i = 0; i < segs.length; ++i)
-			{
-				sum += segs[i].count;
-				mcsum += mc[i] = segs[i].modCount;
-			}
-			if(mcsum != 0)
-			{
-				for(int i = 0; i < segs.length; ++i)
-				{
-					check += segs[i].count;
-					if(mc[i] != segs[i].modCount)
-					{
-						check = -1; // force retry
-						break;
-					}
-				}
-			}
-			if(check == sum)
-				break;
-		}
-		if(check != sum) // Resort to locking all segments
-		{
-			sum = 0;
-			for(Segment<V> segment : segs)
-				segment.lock();
-			for(Segment<V> segment : segs)
-				sum += segment.count;
-			for(Segment<V> segment : segs)
-				segment.unlock();
-		}
-		return sum < Integer.MAX_VALUE ? (int)sum : Integer.MAX_VALUE;
+		long n = sumCount();
+		return ((n < 0L) ? 0 : (n > Integer.MAX_VALUE) ? Integer.MAX_VALUE : (int)n);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public boolean isEmpty()
+	{
+		return sumCount() <= 0L; // ignore transient negative values
 	}
 
 	/**
@@ -712,8 +311,8 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	 * or {@code null} if this map contains no mapping for the key.
 	 *
 	 * <p>More formally, if this map contains a mapping from a key
-	 * {@code k} to a value {@code keys} such that {@code key.equals(k)},
-	 * then this method returns {@code keys}; otherwise it returns
+	 * {@code k} to a value {@code v} such that {@code key.equals(k)},
+	 * then this method returns {@code v}; otherwise it returns
 	 * {@code null}.  (There can be at most one such mapping.)
 	 *
 	 * @throws NullPointerException if the specified key is null
@@ -721,33 +320,49 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	@Override
 	public V get(long key)
 	{
-		int hash = longHash(key);
-		return segmentFor(hash).get(key, hash);
+		Node<V>[] tab;
+		Node<V> e, p;
+		int n, eh;
+		int h = spread(key);
+		if((tab = table) != null && (n = tab.length) > 0 && (e = tabAt(tab, (n - 1) & h)) != null)
+		{
+			if((eh = e.hash) == h)
+			{
+				if(e.key == key)
+					return e.val;
+			}
+			else if(eh < 0)
+				return (p = ((ForwardingNode<V>)e).find(h, key)) != null ? p.val : null;
+			while((e = e.next) != null)
+			{
+				if(e.key == key)
+					return e.val;
+			}
+		}
+		return null;
 	}
 
 	/**
 	 * Tests if the specified object is a key in this table.
 	 *
-	 * @param  key   possible key
-	 * @return <tt>true</tt> if and only if the specified object
+	 * @param  key possible key
+	 * @return {@code true} if and only if the specified object
 	 *         is a key in this table, as determined by the
-	 *         <tt>equals</tt> method; <tt>false</tt> otherwise.
+	 *         {@code equals} method; {@code false} otherwise
 	 * @throws NullPointerException if the specified key is null
 	 */
 	public boolean containsKey(long key)
 	{
-		int hash = longHash(key);
-		return segmentFor(hash).containsKey(key, hash);
+		return get(key) != null;
 	}
 
 	/**
-	 * Returns <tt>true</tt> if this map maps one or more keys to the
-	 * specified value. Note: This method requires a full internal
-	 * traversal of the hash table, and so is much slower than
-	 * method <tt>containsKey</tt>.
+	 * Returns {@code true} if this map maps one or more keys to the
+	 * specified value. Note: This method may require a full traversal
+	 * of the map, and is much slower than method {@code containsKey}.
 	 *
 	 * @param value value whose presence in this map is to be tested
-	 * @return <tt>true</tt> if this map maps one or more keys to the
+	 * @return {@code true} if this map maps one or more keys to the
 	 *         specified value
 	 * @throws NullPointerException if the specified value is null
 	 */
@@ -755,90 +370,97 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	{
 		if(value == null)
 			throw new NullPointerException();
-
-		// See explanation of modCount use above
-
-		final Segment<V>[] segs = segments;
-		int[] mc = new int[segs.length];
-
-		// Try a few times without locking
-		for(int k = 0; k < RETRIES_BEFORE_LOCK; ++k)
+		Node<V>[] t;
+		if((t = table) != null)
 		{
-			int mcsum = 0;
-			for(int i = 0; i < segs.length; ++i)
+			Traverser<V> it = new Traverser<>(t, t.length, 0);
+			for(Node<V> p; (p = it.advance()) != null;)
 			{
-				mcsum += mc[i] = segs[i].modCount;
-				if(segs[i].containsValue(value))
+				V v;
+				if((v = p.val) == value || (v != null && value.equals(v)))
 					return true;
 			}
-			boolean cleanSweep = true;
-			if(mcsum != 0)
-			{
-				for(int i = 0; i < segs.length; ++i)
-				{
-					//int c = segments[i].count;
-					if(mc[i] != segs[i].modCount)
-					{
-						cleanSweep = false;
-						break;
-					}
-				}
-			}
-			if(cleanSweep)
-				return false;
 		}
-		// Resort to locking all segments
-		for(Segment<V> segment : segs)
-			segment.lock();
-		try
-		{
-			for(Segment<V> segment : segs)
-				if(segment.containsValue(value))
-					return true;
-			return false;
-		}
-		finally
-		{
-			for(Segment<V> segment : segs)
-				segment.unlock();
-		}
+		return false;
 	}
 
 	/**
 	 * Maps the specified key to the specified value in this table.
 	 * Neither the key nor the value can be null.
 	 *
-	 * <p> The value can be retrieved by calling the <tt>get</tt> method
+	 * <p>The value can be retrieved by calling the {@code get} method
 	 * with a key that is equal to the original key.
 	 *
 	 * @param key key with which the specified value is to be associated
 	 * @param value value to be associated with the specified key
-	 * @return the previous value associated with <tt>key</tt>, or
-	 *         <tt>null</tt> if there was no mapping for <tt>key</tt>
+	 * @return the previous value associated with {@code key}, or
+	 *         {@code null} if there was no mapping for {@code key}
 	 * @throws NullPointerException if the specified key or value is null
 	 */
 	@Override
 	public V put(long key, V value)
 	{
-		if(value == null)
-			throw new NullPointerException();
-		int hash = longHash(key);
-		return segmentFor(hash).put(key, hash, value, false);
+		return putVal(key, value, false);
 	}
 
-	/**
-	 *
-	 *
-	 * @return the previous value associated with the specified key,
-	 *         or <tt>null</tt> if there was no mapping for the key
-	 * @throws NullPointerException if the specified key or value is null
-	 */
-	public V putIfAbsent(long key, V value)
+	/** Implementation for put and putIfAbsent */
+	private V putVal(long key, V value, boolean onlyIfAbsent)
 	{
-		if(value == null)
-			throw new NullPointerException();
-		int hash = longHash(key);
-		return segmentFor(hash).put(key, hash, value, true);
+		if(value == null) throw new NullPointerException();
+		int hash = spread(key);
+		int binCount = 0;
+		for(Node<V>[] tab = table;;)
+		{
+			Node<V> f;
+			int n, i, fh;
+			if(tab == null || (n = tab.length) == 0)
+				tab = initTable();
+			else if((f = tabAt(tab, i = (n - 1) & hash)) == null)
+			{
+				if(casTabAt(tab, i, null, new Node<>(hash, key, value, null)))
+					break; // no lock when adding to empty bin
+			}
+			else if((fh = f.hash) == MOVED)
+				tab = helpTransfer(tab, f);
+			else
+			{
+				V oldVal = null;
+				synchronized(f)
+				{
+					if(tabAt(tab, i) == f)
+					{
+						if(fh >= 0)
+						{
+							binCount = 1;
+							for(Node<V> e = f;; ++binCount)
+							{
+								if(e.key == key)
+								{
+									oldVal = e.val;
+									if(!onlyIfAbsent)
+										e.val = value;
+									break;
+								}
+								Node<V> pred = e;
+								if((e = e.next) == null)
+								{
+									pred.next = new Node<>(hash, key, value, null);
+									break;
+								}
+							}
+						}
+					}
+				}
+				if(binCount != 0)
+				{
+					if(oldVal != null)
+						return oldVal;
+					break;
+				}
+			}
+		}
+		addCount(1L, binCount);
+		return null;
 	}
 
 	/**
@@ -846,49 +468,80 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	 * This method does nothing if the key is not in the map.
 	 *
 	 * @param  key the key that needs to be removed
-	 * @return the previous value associated with <tt>key</tt>, or
-	 *         <tt>null</tt> if there was no mapping for <tt>key</tt>
+	 * @return the previous value associated with {@code key}, or
+	 *         {@code null} if there was no mapping for {@code key}
 	 * @throws NullPointerException if the specified key is null
 	 */
 	@Override
 	public V remove(long key)
 	{
-		int hash = longHash(key);
-		return segmentFor(hash).remove(key, hash, null);
+		return replaceNode(key, null, null);
 	}
 
 	/**
-	 * @throws NullPointerException if the specified key is null
+	 * Implementation for the four public remove/replace methods:
+	 * Replaces node value with v, conditional upon match of cv if
+	 * non-null.  If resulting value is null, delete.
 	 */
-	@Override
-	public boolean remove(long key, Object value)
+	private V replaceNode(long key, V value, Object cv)
 	{
-		int hash = longHash(key);
-		return value != null && segmentFor(hash).remove(key, hash, value) != null;
-	}
-
-	/**
-	 * @throws NullPointerException if any of the arguments are null
-	 */
-	public boolean replace(long key, V oldValue, V newValue)
-	{
-		if(oldValue == null || newValue == null)
-			throw new NullPointerException();
-		int hash = longHash(key);
-		return segmentFor(hash).replace(key, hash, oldValue, newValue);
-	}
-
-	/**
-	 * @return the previous value associated with the specified key,
-	 *         or <tt>null</tt> if there was no mapping for the key
-	 * @throws NullPointerException if the specified key or value is null
-	 */
-	public V replace(long key, V value)
-	{
-		if(value == null)
-			throw new NullPointerException();
-		int hash = longHash(key);
-		return segmentFor(hash).replace(key, hash, value);
+		int hash = spread(key);
+		for(Node<V>[] tab = table;;)
+		{
+			Node<V> f;
+			int n, i, fh;
+			if(tab == null || (n = tab.length) == 0 || (f = tabAt(tab, i = (n - 1) & hash)) == null)
+				break;
+			else if((fh = f.hash) == MOVED)
+				tab = helpTransfer(tab, f);
+			else
+			{
+				V oldVal = null;
+				boolean validated = false;
+				synchronized(f)
+				{
+					if(tabAt(tab, i) == f)
+					{
+						if(fh >= 0)
+						{
+							validated = true;
+							for(Node<V> e = f, pred = null;;)
+							{
+								if(e.key == key)
+								{
+									V ev = e.val;
+									if(cv == null || cv == ev || (ev != null && cv.equals(ev)))
+									{
+										oldVal = ev;
+										if(value != null)
+											e.val = value;
+										else if(pred != null)
+											pred.next = e.next;
+										else
+											setTabAt(tab, i, e.next);
+									}
+									break;
+								}
+								pred = e;
+								if((e = e.next) == null)
+									break;
+							}
+						}
+					}
+				}
+				if(validated)
+				{
+					if(oldVal != null)
+					{
+						if(value == null)
+							addCount(-1L, -1);
+						return oldVal;
+					}
+					break;
+				}
+			}
+		}
+		return null;
 	}
 
 	/**
@@ -897,122 +550,889 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	@Override
 	public void clear()
 	{
-		for(Segment<V> segment : segments)
-			segment.clear();
+		long delta = 0L; // negative number of deletions
+		int i = 0;
+		Node<V>[] tab = table;
+		while(tab != null && i < tab.length)
+		{
+			int fh;
+			Node<V> f = tabAt(tab, i);
+			if(f == null)
+				++i;
+			else if((fh = f.hash) == MOVED)
+			{
+				tab = helpTransfer(tab, f);
+				i = 0; // restart
+			}
+			else
+			{
+				synchronized(f)
+				{
+					if(tabAt(tab, i) == f)
+					{
+						Node<V> p = (fh >= 0 ? f : null);
+						while(p != null)
+						{
+							--delta;
+							p = p.next;
+						}
+						setTabAt(tab, i++, null);
+					}
+				}
+			}
+		}
+		if(delta != 0L)
+			addCount(delta, -1);
 	}
-
-	/* ---------------- Iterator Support -------------- */
 
 	@Override
 	public LongIterator keyIterator()
 	{
-		return new KeyIterator();
+		Node<V>[] t;
+		int f = (t = table) == null ? 0 : t.length;
+		return new KeyIterator<>(t, f, 0);
 	}
 
 	@Override
 	public Iterator<V> valueIterator()
 	{
-		return new ValueIterator();
+		Node<V>[] t;
+		int f = (t = table) == null ? 0 : t.length;
+		return new ValueIterator<>(t, f, 0);
 	}
 
 	@Override
 	public MapIterator<V> entryIterator()
 	{
-		return new EntryIterator();
+		Node<V>[] t;
+		int f = (t = table) == null ? 0 : t.length;
+		return new EntryIterator<>(t, f, 0);
 	}
 
-	private abstract class HashIterator
+	/**
+	 * Returns the hash code value for this {@link java.util.Map}, i.e.,
+	 * the sum of, for each key-value pair in the map,
+	 * {@code key.hashCode() ^ value.hashCode()}.
+	 *
+	 * @return the hash code value for this map
+	 */
+	@Override
+	public int hashCode()
 	{
-		private int			   nextSegmentIndex;
-		private int			   nextTableIndex;
-		private HashEntry<V>[] currentTable;
-		private HashEntry<V>   nextEntry;
-
-		private HashIterator()
+		int h = 0;
+		Node<V>[] t;
+		if((t = table) != null)
 		{
-			nextSegmentIndex = segments.length - 1;
-			nextTableIndex = -1;
-			advance();
+			Traverser<V> it = new Traverser<>(t, t.length, 0);
+			for(Node<V> p; (p = it.advance()) != null;)
+				h += (int)p.key ^ p.val.hashCode();
+		}
+		return h;
+	}
+
+	/**
+	 * Returns a string representation of this map.  The string
+	 * representation consists of a list of key-value mappings (in no
+	 * particular order) enclosed in braces ("{@code {}}").  Adjacent
+	 * mappings are separated by the characters {@code ", "} (comma
+	 * and space).  Each key-value mapping is rendered as the key
+	 * followed by an equals sign ("{@code =}") followed by the
+	 * associated value.
+	 *
+	 * @return a string representation of this map
+	 */
+	@Override
+	public String toString()
+	{
+		Node<V>[] t;
+		int f = (t = table) == null ? 0 : t.length;
+		Traverser<V> it = new Traverser<>(t, f, 0);
+		StringBuilder sb = new StringBuilder();
+		sb.append('{');
+		Node<V> p;
+		if((p = it.advance()) != null)
+		{
+			for(;;)
+			{
+				long k = p.key;
+				V v = p.val;
+				sb.append(k);
+				sb.append('=');
+				sb.append(v == this ? "(this Map)" : v);
+				if((p = it.advance()) == null)
+					break;
+				sb.append(',').append(' ');
+			}
+		}
+		return sb.append('}').toString();
+	}
+
+	// ConcurrentMap methods
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return the previous value associated with the specified key,
+	 *         or {@code null} if there was no mapping for the key
+	 * @throws NullPointerException if the specified key or value is null
+	 */
+	public V putIfAbsent(long key, V value)
+	{
+		return putVal(key, value, true);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @throws NullPointerException if the specified key is null
+	 */
+	@Override
+	public boolean remove(long key, Object value)
+	{
+		return value != null && replaceNode(key, null, value) != null;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @throws NullPointerException if any of the arguments are null
+	 */
+	public boolean replace(long key, V oldValue, V newValue)
+	{
+		if(oldValue == null || newValue == null)
+			throw new NullPointerException();
+		return replaceNode(key, newValue, oldValue) != null;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return the previous value associated with the specified key,
+	 *         or {@code null} if there was no mapping for the key
+	 * @throws NullPointerException if the specified key or value is null
+	 */
+	public V replace(long key, V value)
+	{
+		if(value == null)
+			throw new NullPointerException();
+		return replaceNode(key, value, null);
+	}
+
+	// Overrides of JDK8+ Map extension method defaults
+
+	/**
+	 * Returns the value to which the specified key is mapped, or the
+	 * given default value if this map contains no mapping for the
+	 * key.
+	 *
+	 * @param key the key whose associated value is to be returned
+	 * @param defaultValue the value to return if this map contains
+	 * no mapping for the given key
+	 * @return the mapping for the key, if present; else the default value
+	 * @throws NullPointerException if the specified key is null
+	 */
+	public V getOrDefault(long key, V defaultValue)
+	{
+		V v;
+		return (v = get(key)) == null ? defaultValue : v;
+	}
+
+	// Hashtable legacy methods
+
+	/**
+	 * Legacy method testing if some key maps into the specified value
+	 * in this table.  This method is identical in functionality to
+	 * {@link #containsValue(Object)}, and exists solely to ensure
+	 * full compatibility with class {@link java.util.Hashtable},
+	 * which supported this method prior to introduction of the
+	 * Java Collections framework.
+	 *
+	 * @param  value a value to search for
+	 * @return {@code true} if and only if some key maps to the
+	 *         {@code value} argument in this table as
+	 *         determined by the {@code equals} method;
+	 *         {@code false} otherwise
+	 * @throws NullPointerException if the specified value is null
+	 */
+	public boolean contains(Object value)
+	{
+		return containsValue(value);
+	}
+
+	// LongConcurrentHashMap-only methods
+
+	/**
+	 * Returns the number of mappings. This method should be used
+	 * instead of {@link #size} because a LongConcurrentHashMap may
+	 * contain more mappings than can be represented as an int. The
+	 * value returned is an estimate; the actual count may differ if
+	 * there are concurrent insertions or removals.
+	 *
+	 * @return the number of mappings
+	 */
+	public long mappingCount()
+	{
+		long n = sumCount();
+		return (n < 0L) ? 0L : n; // ignore transient negative values
+	}
+
+	/* ---------------- Special Nodes -------------- */
+
+	/**
+	 * A node inserted at head of bins during transfer operations.
+	 */
+	private static final class ForwardingNode<V> extends Node<V>
+	{
+		private final Node<V>[] nextTable;
+
+		private ForwardingNode(Node<V>[] tab)
+		{
+			super(MOVED, 0, null, null);
+			nextTable = tab;
 		}
 
-		private void advance()
+		private Node<V> find(int h, long k)
 		{
-			if(nextEntry != null && (nextEntry = nextEntry.next) != null)
-				return;
-
-			while(nextTableIndex >= 0)
-				if((nextEntry = currentTable[nextTableIndex--]) != null)
-					return;
-
-			while(nextSegmentIndex >= 0)
+			// loop to avoid arbitrarily deep recursion on forwarding nodes
+			outer: for(Node<V>[] tab = nextTable;;)
 			{
-				Segment<V> seg = segments[nextSegmentIndex--];
-				if(seg.count != 0)
+				Node<V> e;
+				int n;
+				if(tab == null || (n = tab.length) == 0 || (e = tabAt(tab, h & (n - 1))) == null)
+					return null;
+				for(;;)
 				{
-					currentTable = seg.table;
-					for(int j = currentTable.length - 1; j >= 0; --j)
+					if(e.hash < 0)
 					{
-						if((nextEntry = currentTable[j]) != null)
+						tab = ((ForwardingNode<V>)e).nextTable;
+						continue outer;
+					}
+					if(e.key == k)
+						return e;
+					if((e = e.next) == null)
+						return null;
+				}
+			}
+		}
+	}
+
+	/* ---------------- Table Initialization and Resizing -------------- */
+
+	/**
+	 * Returns the stamp bits for resizing a table of size n.
+	 * Must be negative when shifted left by RESIZE_STAMP_SHIFT.
+	 */
+	private static int resizeStamp(int n)
+	{
+		return Integer.numberOfLeadingZeros(n) | (1 << (RESIZE_STAMP_BITS - 1));
+	}
+
+	/**
+	 * Initializes table, using the size recorded in sizeCtl.
+	 */
+	private Node<V>[] initTable()
+	{
+		Node<V>[] tab;
+		int sc;
+		while((tab = table) == null || tab.length == 0)
+		{
+			if((sc = sizeCtl) < 0)
+				Thread.yield(); // lost initialization race; just spin
+			else if(U.compareAndSwapInt(this, SIZECTL, sc, -1))
+			{
+				try
+				{
+					if((tab = table) == null || tab.length == 0)
+					{
+						int n = (sc > 0) ? sc : DEFAULT_CAPACITY;
+						@SuppressWarnings("unchecked")
+						Node<V>[] nt = (Node<V>[])new Node<?>[n];
+						table = tab = nt;
+						sc = n - (n >>> 2);
+					}
+				}
+				finally
+				{
+					sizeCtl = sc;
+				}
+				break;
+			}
+		}
+		return tab;
+	}
+
+	private static final class ThreadLocalRandom
+	{
+		private static final class Probe
+		{
+			private int probe;
+		}
+
+		private static final AtomicInteger		probeGenerator = new AtomicInteger();
+		private static final ThreadLocal<Probe>	tlProb		   = new ThreadLocal<>();
+
+		private static void localInit()
+		{
+			int p = probeGenerator.addAndGet(0x9e3779b9);
+			Probe probe = new Probe();
+			probe.probe = (p == 0 ? 1 : p); // skip 0
+			tlProb.set(probe);
+		}
+
+		private static int getProbe()
+		{
+			Probe probe = tlProb.get();
+			return probe != null ? tlProb.get().probe : 0;
+		}
+
+		private static int advanceProbe(int probe)
+		{
+			probe ^= probe << 13; // xorshift
+			probe ^= probe >>> 17;
+			probe ^= probe << 5;
+			tlProb.get().probe = probe;
+			return probe;
+		}
+	}
+
+	/**
+	 * Adds to count, and if table is too small and not already
+	 * resizing, initiates transfer. If already resizing, helps
+	 * perform transfer if work is available.  Rechecks occupancy
+	 * after a transfer to see if another resize is already needed
+	 * because resizings are lagging additions.
+	 *
+	 * @param x the count to add
+	 * @param check if <0, don't check resize, if <= 1 only check if uncontended
+	 */
+	private void addCount(long x, int check)
+	{
+		CounterCell[] as;
+		long b, s;
+		if((as = counterCells) != null || !U.compareAndSwapLong(this, BASECOUNT, b = baseCount, s = b + x))
+		{
+			CounterCell a;
+			long v;
+			int m;
+			boolean uncontended = true;
+			if(as == null || (m = as.length - 1) < 0 || (a = as[ThreadLocalRandom.getProbe() & m]) == null ||
+					!(uncontended = U.compareAndSwapLong(a, CELLVALUE, v = a.value, v + x)))
+			{
+				fullAddCount(x, uncontended);
+				return;
+			}
+			if(check <= 1)
+				return;
+			s = sumCount();
+		}
+		if(check >= 0)
+		{
+			Node<V>[] tab, nt;
+			int n, sc;
+			while(s >= (sc = sizeCtl) && (tab = table) != null && (n = tab.length) < MAXIMUM_CAPACITY)
+			{
+				int rs = resizeStamp(n);
+				if(sc < 0)
+				{
+					if((sc >>> RESIZE_STAMP_SHIFT) != rs || sc == rs + 1 || sc == rs + MAX_RESIZERS || (nt = nextTable) == null || transferIndex <= 0)
+						break;
+					if(U.compareAndSwapInt(this, SIZECTL, sc, sc + 1))
+						transfer(tab, nt);
+				}
+				else if(U.compareAndSwapInt(this, SIZECTL, sc, (rs << RESIZE_STAMP_SHIFT) + 2))
+					transfer(tab, null);
+				s = sumCount();
+			}
+		}
+	}
+
+	/**
+	 * Helps transfer if a resize is in progress.
+	 */
+	private Node<V>[] helpTransfer(Node<V>[] tab, Node<V> f)
+	{
+		Node<V>[] nextTab;
+		int sc;
+		if(tab != null && (f instanceof ForwardingNode) && (nextTab = ((ForwardingNode<V>)f).nextTable) != null)
+		{
+			int rs = resizeStamp(tab.length);
+			while(nextTab == nextTable && table == tab && (sc = sizeCtl) < 0)
+			{
+				if((sc >>> RESIZE_STAMP_SHIFT) != rs || sc == rs + 1 || sc == rs + MAX_RESIZERS || transferIndex <= 0)
+					break;
+				if(U.compareAndSwapInt(this, SIZECTL, sc, sc + 1))
+				{
+					transfer(tab, nextTab);
+					break;
+				}
+			}
+			return nextTab;
+		}
+		return table;
+	}
+
+	/**
+	 * Moves and/or copies the nodes in each bin to new table. See
+	 * above for explanation.
+	 */
+	private void transfer(Node<V>[] tab, Node<V>[] nextTab)
+	{
+		int n = tab.length, stride;
+		if((stride = (NCPU > 1) ? (n >>> 3) / NCPU : n) < MIN_TRANSFER_STRIDE)
+			stride = MIN_TRANSFER_STRIDE; // subdivide range
+		if(nextTab == null) // initiating
+		{
+			try
+			{
+				@SuppressWarnings("unchecked")
+				Node<V>[] nt = (Node<V>[])new Node<?>[n << 1];
+				nextTab = nt;
+			}
+			catch(Throwable ex) // try to cope with OOME
+			{
+				sizeCtl = Integer.MAX_VALUE;
+				return;
+			}
+			nextTable = nextTab;
+			transferIndex = n;
+		}
+		int nextn = nextTab.length;
+		ForwardingNode<V> fwd = new ForwardingNode<>(nextTab);
+		boolean advance = true;
+		boolean finishing = false; // to ensure sweep before committing nextTab
+		for(int i = 0, bound = 0;;)
+		{
+			Node<V> f;
+			int fh;
+			while(advance)
+			{
+				int nextIndex, nextBound;
+				if(--i >= bound || finishing)
+					advance = false;
+				else if((nextIndex = transferIndex) <= 0)
+				{
+					i = -1;
+					advance = false;
+				}
+				else if(U.compareAndSwapInt(this, TRANSFERINDEX, nextIndex, nextBound = (nextIndex > stride ? nextIndex - stride : 0)))
+				{
+					bound = nextBound;
+					i = nextIndex - 1;
+					advance = false;
+				}
+			}
+			if(i < 0 || i >= n || i + n >= nextn)
+			{
+				int sc;
+				if(finishing)
+				{
+					nextTable = null;
+					table = nextTab;
+					sizeCtl = (n << 1) - (n >>> 1);
+					return;
+				}
+				if(U.compareAndSwapInt(this, SIZECTL, sc = sizeCtl, sc - 1))
+				{
+					if((sc - 2) != resizeStamp(n) << RESIZE_STAMP_SHIFT)
+						return;
+					finishing = advance = true;
+					i = n; // recheck before commit
+				}
+			}
+			else if((f = tabAt(tab, i)) == null)
+				advance = casTabAt(tab, i, null, fwd);
+			else if((fh = f.hash) == MOVED)
+				advance = true; // already processed
+			else
+			{
+				synchronized(f)
+				{
+					if(tabAt(tab, i) == f)
+					{
+						Node<V> ln, hn;
+						if(fh >= 0)
 						{
-							nextTableIndex = j - 1;
-							return;
+							int runBit = fh & n;
+							Node<V> lastRun = f;
+							for(Node<V> p = f.next; p != null; p = p.next)
+							{
+								int b = p.hash & n;
+								if(b != runBit)
+								{
+									runBit = b;
+									lastRun = p;
+								}
+							}
+							if(runBit == 0)
+							{
+								ln = lastRun;
+								hn = null;
+							}
+							else
+							{
+								hn = lastRun;
+								ln = null;
+							}
+							for(Node<V> p = f; p != lastRun; p = p.next)
+							{
+								int ph = p.hash;
+								long pk = p.key;
+								V pv = p.val;
+								if((ph & n) == 0)
+									ln = new Node<>(ph, pk, pv, ln);
+								else
+									hn = new Node<>(ph, pk, pv, hn);
+							}
+							setTabAt(nextTab, i, ln);
+							setTabAt(nextTab, i + n, hn);
+							setTabAt(tab, i, fwd);
+							advance = true;
 						}
 					}
 				}
 			}
 		}
+	}
 
-		public boolean hasNext()
+	/* ---------------- Counter support -------------- */
+
+	/**
+	 * A padded cell for distributing counts.  Adapted from LongAdder
+	 * and Striped64.  See their internal docs for explanation.
+	 */
+	@sun.misc.Contended
+	private static final class CounterCell
+	{
+		private volatile long value;
+
+		private CounterCell(long x)
 		{
-			return nextEntry != null;
+			value = x;
+		}
+	}
+
+	private long sumCount()
+	{
+		CounterCell[] as = counterCells;
+		long sum = baseCount;
+		if(as != null)
+		{
+			for(CounterCell a : as)
+			{
+				if(a != null)
+					sum += a.value;
+			}
+		}
+		return sum;
+	}
+
+	// See LongAdder version for explanation
+	private void fullAddCount(long x, boolean wasUncontended)
+	{
+		int h;
+		if((h = ThreadLocalRandom.getProbe()) == 0)
+		{
+			ThreadLocalRandom.localInit(); // force initialization
+			h = ThreadLocalRandom.getProbe();
+			wasUncontended = true;
+		}
+		boolean collide = false; // True if last slot nonempty
+		for(;;)
+		{
+			CounterCell[] as;
+			CounterCell a;
+			int n;
+			long v;
+			if((as = counterCells) != null && (n = as.length) > 0)
+			{
+				if((a = as[(n - 1) & h]) == null)
+				{
+					if(cellsBusy == 0)
+					{ // Try to attach new Cell
+						CounterCell r = new CounterCell(x); // Optimistic create
+						if(cellsBusy == 0 && U.compareAndSwapInt(this, CELLSBUSY, 0, 1))
+						{
+							boolean created = false;
+							try
+							{ // Recheck under lock
+								CounterCell[] rs;
+								int m, j;
+								if((rs = counterCells) != null && (m = rs.length) > 0 && rs[j = (m - 1) & h] == null)
+								{
+									rs[j] = r;
+									created = true;
+								}
+							}
+							finally
+							{
+								cellsBusy = 0;
+							}
+							if(created)
+								break;
+							continue; // Slot is now non-empty
+						}
+					}
+					collide = false;
+				}
+				else if(!wasUncontended) // CAS already known to fail
+					wasUncontended = true; // Continue after rehash
+				else if(U.compareAndSwapLong(a, CELLVALUE, v = a.value, v + x))
+					break;
+				else if(counterCells != as || n >= NCPU)
+					collide = false; // At max size or stale
+				else if(!collide)
+					collide = true;
+				else if(cellsBusy == 0 && U.compareAndSwapInt(this, CELLSBUSY, 0, 1))
+				{
+					try
+					{
+						if(counterCells == as)
+						{// Expand table unless stale
+							CounterCell[] rs = new CounterCell[n << 1];
+							for(int i = 0; i < n; ++i)
+								rs[i] = as[i];
+							counterCells = rs;
+						}
+					}
+					finally
+					{
+						cellsBusy = 0;
+					}
+					collide = false;
+					continue; // Retry with expanded table
+				}
+				h = ThreadLocalRandom.advanceProbe(h);
+			}
+			else if(cellsBusy == 0 && counterCells == as && U.compareAndSwapInt(this, CELLSBUSY, 0, 1))
+			{
+				boolean init = false;
+				try
+				{ // Initialize table
+					if(counterCells == as)
+					{
+						CounterCell[] rs = new CounterCell[2];
+						rs[h & 1] = new CounterCell(x);
+						counterCells = rs;
+						init = true;
+					}
+				}
+				finally
+				{
+					cellsBusy = 0;
+				}
+				if(init)
+					break;
+			}
+			else if(U.compareAndSwapLong(this, BASECOUNT, v = baseCount, v + x))
+				break; // Fall back on using base
+		}
+	}
+
+	/* ----------------Table Traversal -------------- */
+
+	/**
+	 * Records the table, its length, and current traversal index for a
+	 * traverser that must process a region of a forwarded table before
+	 * proceeding with current table.
+	 */
+	private static final class TableStack<V>
+	{
+		int			  length;
+		int			  index;
+		Node<V>[]	  tab;
+		TableStack<V> next;
+	}
+
+	/**
+	 * Encapsulates traversal for methods such as containsValue; also
+	 * serves as a base class for other iterators and spliterators.
+	 *
+	 * Method advance visits once each still-valid node that was
+	 * reachable upon iterator construction. It might miss some that
+	 * were added to a bin after the bin was visited, which is OK wrt
+	 * consistency guarantees. Maintaining this property in the face
+	 * of possible ongoing resizes requires a fair amount of
+	 * bookkeeping state that is difficult to optimize away amidst
+	 * volatile accesses.  Even so, traversal maintains reasonable
+	 * throughput.
+	 *
+	 * Normally, iteration proceeds bin-by-bin traversing lists.
+	 * However, if the table has been resized, then all future steps
+	 * must traverse both the bin at the current index as well as at
+	 * (index + baseSize); and so on for further resizings. To
+	 * paranoically cope with potential sharing by users of iterators
+	 * across threads, iteration terminates if a bounds checks fails
+	 * for a table read.
+	 */
+	private static class Traverser<V>
+	{
+		private Node<V>[]	  tab;			// current table; updated if resized
+		protected Node<V>	  next;			// the next entry to use
+		private TableStack<V> stack, spare;	// to save/restore on ForwardingNodes
+		private int			  index;		// index of bin to use next
+		private int			  baseIndex;	// current index of initial table
+		private final int	  baseSize;		// initial table size
+
+		private Traverser(Node<V>[] tab, int size, int index)
+		{
+			this.tab = tab;
+			this.baseSize = size;
+			this.baseIndex = this.index = index;
 		}
 
-		protected HashEntry<V> nextEntry()
+		/**
+		 * Advances if possible, returning next valid node, or null if none.
+		 */
+		final Node<V> advance()
 		{
-			if(nextEntry == null)
-				throw new NoSuchElementException();
-			HashEntry<V> ret = nextEntry;
+			Node<V> e;
+			if((e = next) != null)
+				e = e.next;
+			for(;;)
+			{
+				Node<V>[] t;
+				int i, n; // must use locals in checks
+				if(e != null)
+					return next = e;
+				if(baseIndex >= baseSize || (t = tab) == null || (n = t.length) <= (i = index) || i < 0)
+					return next = null;
+				if((e = tabAt(t, i)) != null && e.hash < 0)
+				{
+					tab = ((ForwardingNode<V>)e).nextTable;
+					e = null;
+					pushState(t, i, n);
+					continue;
+				}
+				if(stack != null)
+					recoverState(n);
+				else if((index = i + baseSize) >= n)
+					index = ++baseIndex; // visit upper slots if present
+			}
+		}
+
+		/**
+		 * Saves traversal state upon encountering a forwarding node.
+		 */
+		private void pushState(Node<V>[] t, int i, int n)
+		{
+			TableStack<V> s = spare; // reuse if possible
+			if(s != null)
+				spare = s.next;
+			else
+				s = new TableStack<>();
+			s.tab = t;
+			s.length = n;
+			s.index = i;
+			s.next = stack;
+			stack = s;
+		}
+
+		/**
+		 * Possibly pops traversal state.
+		 *
+		 * @param n length of current table
+		 */
+		private void recoverState(int n)
+		{
+			TableStack<V> s;
+			int len;
+			while((s = stack) != null && (index += (len = s.length)) >= n)
+			{
+				n = len;
+				index = s.index;
+				tab = s.tab;
+				s.tab = null;
+				TableStack<V> next2 = s.next;
+				s.next = spare; // save for reuse
+				stack = next2;
+				spare = s;
+			}
+			if(s == null && (index += baseSize) >= n)
+				index = ++baseIndex;
+		}
+	}
+
+	/**
+	 * Base of key, value, and entry Iterators. Adds fields to
+	 * Traverser to support iterator.remove.
+	 */
+	private static abstract class BaseIterator<V> extends Traverser<V>
+	{
+		private BaseIterator(Node<V>[] tab, int size, int index)
+		{
+			super(tab, size, index);
 			advance();
-			return ret;
 		}
 
-		public void remove()
+		public final boolean hasNext()
+		{
+			return next != null;
+		}
+
+		@SuppressWarnings("static-method")
+		public final void remove()
 		{
 			throw new UnsupportedOperationException();
 		}
 	}
 
-	private final class KeyIterator extends HashIterator implements LongIterator
+	private static final class KeyIterator<V> extends BaseIterator<V> implements LongIterator
 	{
+		private KeyIterator(Node<V>[] tab, int index, int size)
+		{
+			super(tab, index, size);
+		}
+
 		@Override
 		public long next()
 		{
-			return nextEntry().key;
+			Node<V> p;
+			if((p = next) == null)
+				throw new NoSuchElementException();
+			long k = p.key;
+			advance();
+			return k;
 		}
 	}
 
-	private final class ValueIterator extends HashIterator implements Iterator<V>
+	private static final class ValueIterator<V> extends BaseIterator<V> implements Iterator<V>
 	{
+		private ValueIterator(Node<V>[] tab, int index, int size)
+		{
+			super(tab, index, size);
+		}
+
 		@Override
 		public V next()
 		{
-			return nextEntry().value;
+			Node<V> p;
+			if((p = next) == null)
+				throw new NoSuchElementException();
+			V v = p.val;
+			advance();
+			return v;
 		}
 	}
 
-	private final class EntryIterator extends HashIterator implements MapIterator<V>
+	private static final class EntryIterator<V> extends BaseIterator<V> implements MapIterator<V>
 	{
 		private long key;
 		private V	 value;
 
+		private EntryIterator(Node<V>[] tab, int index, int size)
+		{
+			super(tab, index, size);
+		}
+
 		@Override
 		public boolean moveToNext()
 		{
-			if(!hasNext())
+			Node<V> p;
+			if((p = next) == null)
 				return false;
-			HashEntry<V> next = nextEntry();
-			key = next.key;
-			value = next.value;
+			key = p.key;
+			value = p.val;
+			advance();
 			return true;
 		}
 
@@ -1026,6 +1446,81 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		public V value()
 		{
 			return value;
+		}
+	}
+
+	// Unsafe mechanics
+	private static final sun.misc.Unsafe U;
+	private static final long			 SIZECTL;
+	private static final long			 TRANSFERINDEX;
+	private static final long			 BASECOUNT;
+	private static final long			 CELLSBUSY;
+	private static final long			 CELLVALUE;
+	private static final long			 ABASE;
+	private static final int			 ASHIFT;
+
+	/**
+	 * Returns a sun.misc.Unsafe.  Suitable for use in a 3rd party package.
+	 * Replace with a simple call to Unsafe.getUnsafe when integrating into a jdk.
+	 *
+	 * @return a sun.misc.Unsafe
+	 */
+	private static sun.misc.Unsafe getUnsafe()
+	{
+		try
+		{
+			return sun.misc.Unsafe.getUnsafe();
+		}
+		catch(SecurityException tryReflectionInstead)
+		{
+		}
+		try
+		{
+			return AccessController.doPrivileged(new PrivilegedExceptionAction<sun.misc.Unsafe>()
+			{
+				@Override
+				public sun.misc.Unsafe run() throws Exception
+				{
+					Class<sun.misc.Unsafe> k = sun.misc.Unsafe.class;
+					for(Field f : k.getDeclaredFields())
+					{
+						f.setAccessible(true);
+						Object x = f.get(null);
+						if(k.isInstance(x))
+							return k.cast(x);
+					}
+					throw new NoSuchFieldError("the Unsafe");
+				}
+			});
+		}
+		catch(PrivilegedActionException e)
+		{
+			throw new RuntimeException("Could not initialize intrinsics", e.getCause());
+		}
+	}
+
+	static
+	{
+		try
+		{
+			U = getUnsafe();
+			Class<?> k = LongConcurrentHashMap.class;
+			SIZECTL = U.objectFieldOffset(k.getDeclaredField("sizeCtl"));
+			TRANSFERINDEX = U.objectFieldOffset(k.getDeclaredField("transferIndex"));
+			BASECOUNT = U.objectFieldOffset(k.getDeclaredField("baseCount"));
+			CELLSBUSY = U.objectFieldOffset(k.getDeclaredField("cellsBusy"));
+			Class<?> ck = CounterCell.class;
+			CELLVALUE = U.objectFieldOffset(ck.getDeclaredField("value"));
+			Class<?> ak = Node[].class;
+			ABASE = U.arrayBaseOffset(ak);
+			int scale = U.arrayIndexScale(ak);
+			if((scale & (scale - 1)) != 0)
+				throw new Error("data type scale not a power of two");
+			ASHIFT = 31 - Integer.numberOfLeadingZeros(scale);
+		}
+		catch(Exception e)
+		{
+			throw new Error(e);
 		}
 	}
 }

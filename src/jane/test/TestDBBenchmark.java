@@ -30,6 +30,7 @@ public final class TestDBBenchmark
 		final int keyWinCount = Math.min(args.length > 2 ? Integer.parseInt(args[2]) : keyAllCount / 2, keyAllCount);
 		final int countIn = (args.length > 3 ? Integer.parseInt(args[3]) : 100);
 		final int countOut = (args.length > 4 ? ("u".equals(args[4]) ? Integer.MAX_VALUE : Integer.parseInt(args[4])) : (keyAllCount - keyWinCount) * 10);
+		final int KEY_BEGIN = -keyAllCount / 2;
 
 		Log.log.info("begin {}: key: {}/{}, count: {}*{}", sto.getClass().getName(), keyWinCount, keyAllCount, countIn, countOut);
 		DBManager.instance().startup(sto);
@@ -46,16 +47,16 @@ public final class TestDBBenchmark
 				long t = System.currentTimeMillis();
 				final AtomicInteger checked = new AtomicInteger();
 				int logCount = Math.max(10000000 / countIn, 1);
-				for(int i = 0, keyFrom = 0, keyDelta = -1; i < countOut; keyFrom += keyDelta, ++i)
+				for(int i = 0, keyFrom = KEY_BEGIN, keyDelta = -1; i < countOut; keyFrom += keyDelta, ++i)
 				{
-					if(keyFrom < 0)
+					if(keyFrom < KEY_BEGIN)
 					{
-						keyFrom = 0;
+						keyFrom = KEY_BEGIN;
 						keyDelta = 1;
 					}
-					else if(keyFrom > keyAllCount - keyWinCount)
+					else if(keyFrom > KEY_BEGIN + keyAllCount - keyWinCount)
 					{
-						keyFrom = keyAllCount - keyWinCount;
+						keyFrom = KEY_BEGIN + keyAllCount - keyWinCount;
 						keyDelta = -1;
 					}
 

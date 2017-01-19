@@ -102,7 +102,7 @@ public final class Const
 		dbBackupPeriod = getPropLong("dbBackupPeriod", 3600, 1, Long.MAX_VALUE / 1000);
 		procedureTimeout = getPropInt("procedureTimeout", 60, 1);
 		procedureDeadlockTimeout = getPropInt("procedureDeadlockTimeout", 5, 1);
-		autoIdBegin = getPropInt("autoIdBegin", 0, 0);
+		autoIdBegin = getPropInt("autoIdBegin", 1, 1);
 		autoIdStride = getPropInt("autoIdStride", 1, 1);
 		levelDBNativePath = getPropStr("levelDBNativePath", "lib");
 		levelDBWriteBufferSize = getPropInt("levelDBWriteBufferSize", 32, 0);

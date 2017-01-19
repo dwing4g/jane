@@ -53,13 +53,13 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	 * <p>
 	 * 表的自增长参数默认由配置决定<br>
 	 * 每个表的自增长参数应该保证始终不变,否则可能因记录ID冲突而导致记录覆盖,所以此方法只适合在初始化表后立即调用一次
-	 * @param begin 自增长ID的初始值. 范围:[0,)
+	 * @param begin 自增长ID的初始值. 范围:[1,]
 	 * @param stride 自增长ID的分配跨度. 范围:[1,]
 	 */
 	public void setAutoId(int begin, int stride)
 	{
-		if(begin < 0)
-			begin = 0;
+		if(begin < 1)
+			begin = 1;
 		if(stride < 1)
 			stride = 1;
 		_autoIdBegin = begin;

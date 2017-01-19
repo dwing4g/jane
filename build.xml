@@ -30,7 +30,7 @@
 			<compilerarg value="-nowarn"/>
 			<!--compilerarg value="-Xlint:deprecation"/-->
 			<!--compilerarg value="-Xlint:unchecked"/-->
-			<!--compilerarg value="-XDignore.symbol.file"/--><!-- suppress "Sun proprietary api" warning -->
+			<compilerarg value="-XDignore.symbol.file"/><!-- suppress "Sun proprietary api" warning -->
 			<src path="${src}/"/>
 		</javac>
 	</target>
