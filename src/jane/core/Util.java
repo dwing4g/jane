@@ -62,35 +62,25 @@ public final class Util
 	}
 
 	/**
-	 * 创建LongConcurrentHashMap
-	 * <p>
-	 * 初始hash空间是16,负载因子是0.5,并发级别等于{@link Const#dbThreadCount}<br>
-	 */
-	public static <V> LongConcurrentHashMap<V> newLongConcurrentHashMap()
-	{
-		return new LongConcurrentHashMap<>(16, 0.5f, Const.dbThreadCount);
-	}
-
-	/**
-	 * 使用{@link ConcurrentLRUMap}创建可并发带链表的HashMap
+	 * 使用{@link ConcurrentLRUMap}创建可并发带LRU自动丢弃的HashMap
 	 */
 	public static <K, V> Map<K, V> newConcurrentLRUMap(int maxCount, String name)
 	{
 		if(maxCount <= 0) return newConcurrentHashMap();
+		return new ConcurrentLRUMap<>(maxCount, 0.5f, Const.dbThreadCount, name);
 		// return new ConcurrentLinkedHashMap.Builder().concurrencyLevel(Const.dbThreadCount)
 		//		.maximumWeightedCapacity(maxCount).initialCapacity(maxCount).<K, V>build();
-		return new ConcurrentLRUMap<>(maxCount, 0.5f, Const.dbThreadCount, name);
 	}
 
 	/**
-	 * 使用{@link LongConcurrentLRUMap}创建可并发带链表的HashMap
+	 * 使用{@link LongConcurrentLRUMap}创建可并发带LRU自动丢弃的HashMap
 	 */
 	public static <V> LongMap<V> newLongConcurrentLRUMap(int maxCount, String name)
 	{
-		if(maxCount <= 0) return newLongConcurrentHashMap();
+		if(maxCount <= 0) return new LongConcurrentHashMap<>(16, 0.5f, Const.dbThreadCount);
+		return new LongConcurrentLRUMap<>(maxCount, 0.5f, Const.dbThreadCount, name);
 		// return new ConcurrentLinkedHashMap.Builder().concurrencyLevel(Const.dbThreadCount)
 		//		.maximumWeightedCapacity(maxCount).initialCapacity(maxCount).<V>buildLong();
-		return new LongConcurrentLRUMap<>(maxCount, 0.5f, Const.dbThreadCount, name);
 	}
 
 	/**

@@ -992,10 +992,14 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	 * A padded cell for distributing counts.  Adapted from LongAdder
 	 * and Striped64.  See their internal docs for explanation.
 	 */
-	@sun.misc.Contended
+	// @sun.misc.Contended
 	private static final class CounterCell
 	{
+		@SuppressWarnings("unused")
+		private volatile long p0, p1, p2, p3, p4, p5, p6;
 		private volatile long value;
+		@SuppressWarnings("unused")
+		private volatile long q0, q1, q2, q3, q4, q5, q6;
 
 		private CounterCell(long x)
 		{
