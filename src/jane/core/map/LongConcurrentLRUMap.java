@@ -164,7 +164,7 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 		// are guaranteed to be removed (however many there are there).
 
 		if(!sweepStatus.compareAndSet(1, 2)) return;
-		final long time = System.currentTimeMillis();
+		final long time = (Log.hasDebug ? System.currentTimeMillis() : 0);
 		final int sizeOld = size.get();
 		try
 		{
@@ -330,60 +330,76 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 	@Override
 	public Iterator<V> valueIterator()
 	{
-		return new Iterator<V>()
-		{
-			final Iterator<CacheEntry<V>> it = map.valueIterator();
-
-			@Override
-			public boolean hasNext()
-			{
-				return it.hasNext();
-			}
-
-			@Override
-			public V next()
-			{
-				return it.next().value;
-			}
-
-			@Override
-			public void remove()
-			{
-				throw new UnsupportedOperationException();
-			}
-		};
+		return new ValueIterator<>(map);
 	}
 
 	@Override
 	public MapIterator<V> entryIterator()
 	{
-		return new MapIterator<V>()
+		return new EntryIterator<>(map);
+	}
+
+	private static final class ValueIterator<V> implements Iterator<V>
+	{
+		private final Iterator<CacheEntry<V>> it;
+
+		private ValueIterator(LongConcurrentHashMap<CacheEntry<V>> map)
 		{
-			final MapIterator<CacheEntry<V>> it = map.entryIterator();
+			it = map.valueIterator();
+		}
 
-			@Override
-			public boolean moveToNext()
-			{
-				return it.moveToNext();
-			}
+		@Override
+		public boolean hasNext()
+		{
+			return it.hasNext();
+		}
 
-			@Override
-			public long key()
-			{
-				return it.key();
-			}
+		@Override
+		public V next()
+		{
+			return it.next().value;
+		}
 
-			@Override
-			public V value()
-			{
-				return it.value().value;
-			}
+		@Deprecated
+		@Override
+		public void remove()
+		{
+			throw new UnsupportedOperationException();
+		}
+	}
 
-			@Override
-			public void remove()
-			{
-				throw new UnsupportedOperationException();
-			}
-		};
+	private static final class EntryIterator<V> implements MapIterator<V>
+	{
+		private final MapIterator<CacheEntry<V>> it;
+
+		private EntryIterator(LongConcurrentHashMap<CacheEntry<V>> map)
+		{
+			it = map.entryIterator();
+		}
+
+		@Override
+		public boolean moveToNext()
+		{
+			return it.moveToNext();
+		}
+
+		@Override
+		public long key()
+		{
+			return it.key();
+		}
+
+		@Override
+		public V value()
+		{
+			return it.value().value;
+		}
+
+		@Deprecated
+		@Override
+		public void remove()
+		{
+			throw new UnsupportedOperationException();
+		}
 	}
 }

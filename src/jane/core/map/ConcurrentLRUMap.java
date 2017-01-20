@@ -17,7 +17,10 @@
 
 package jane.core.map;
 
-import java.util.AbstractMap;
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,7 +39,7 @@ import jane.core.map.LRUCleaner.Cleanable;
  * MapDB note: Original comes from:
  * https://svn.apache.org/repos/asf/lucene/dev/trunk/solr/core/src/java/org/apache/solr/util/ConcurrentLRUCache.java
  */
-public final class ConcurrentLRUMap<K, V> extends AbstractMap<K, V> implements Cleanable
+public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 {
 	private final ConcurrentHashMap<K, CacheEntry<K, V>> map;
 	private final AtomicLong							 versionCounter	= new AtomicLong();
@@ -89,6 +92,19 @@ public final class ConcurrentLRUMap<K, V> extends AbstractMap<K, V> implements C
 	}
 
 	@Override
+	public boolean containsKey(Object key)
+	{
+		return map.containsKey(key);
+	}
+
+	@Deprecated
+	@Override
+	public boolean containsValue(Object value)
+	{
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public V get(Object key)
 	{
 		CacheEntry<K, V> e = map.get(key);
@@ -109,6 +125,13 @@ public final class ConcurrentLRUMap<K, V> extends AbstractMap<K, V> implements C
 		if(size.incrementAndGet() > upperSize && sweepStatus.get() == 0)
 			LRUCleaner.submit(sweepStatus, this);
 		return null;
+	}
+
+	@Override
+	public void putAll(Map<? extends K, ? extends V> m)
+	{
+		for(Entry<? extends K, ? extends V> e : m.entrySet())
+			put(e.getKey(), e.getValue());
 	}
 
 	@Override
@@ -319,9 +342,96 @@ public final class ConcurrentLRUMap<K, V> extends AbstractMap<K, V> implements C
 		return map.keySet();
 	}
 
+	/**
+	 * use {@link #valueIterator} instead
+	 */
+	@Deprecated
+	@Override
+	public Collection<V> values()
+	{
+		throw new UnsupportedOperationException();
+	}
+
+	/**
+	 * use {@link #entryIterator} instead
+	 */
+	@Deprecated
 	@Override
 	public Set<Entry<K, V>> entrySet()
 	{
 		throw new UnsupportedOperationException();
+	}
+
+	public Enumeration<K> keyIterator()
+	{
+		return map.keys();
+	}
+
+	public Iterator<V> valueIterator()
+	{
+		return new ValueIterator<>(map);
+	}
+
+	public EntryIterator<K, V> entryIterator()
+	{
+		return new EntryIterator<>(map);
+	}
+
+	private static final class ValueIterator<K, V> implements Iterator<V>
+	{
+		private final Enumeration<CacheEntry<K, V>> it;
+
+		private ValueIterator(ConcurrentHashMap<K, CacheEntry<K, V>> map)
+		{
+			it = map.elements();
+		}
+
+		@Override
+		public boolean hasNext()
+		{
+			return it.hasMoreElements();
+		}
+
+		@Override
+		public V next()
+		{
+			return it.nextElement().value;
+		}
+
+		@Deprecated
+		@Override
+		public void remove()
+		{
+			throw new UnsupportedOperationException();
+		}
+	}
+
+	public static final class EntryIterator<K, V>
+	{
+		private final Iterator<Entry<K, CacheEntry<K, V>>> it;
+		private Entry<K, CacheEntry<K, V>>				   entry;
+
+		private EntryIterator(ConcurrentHashMap<K, CacheEntry<K, V>> map)
+		{
+			it = map.entrySet().iterator();
+		}
+
+		public boolean moveToNext()
+		{
+			if(!it.hasNext())
+				return false;
+			entry = it.next();
+			return true;
+		}
+
+		public K key()
+		{
+			return entry.getKey();
+		}
+
+		public V value()
+		{
+			return entry.getValue().value;
+		}
 	}
 }

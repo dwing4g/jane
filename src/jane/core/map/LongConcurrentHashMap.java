@@ -1286,6 +1286,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		}
 
 		@SuppressWarnings("static-method")
+		@Deprecated
 		public final void remove()
 		{
 			throw new UnsupportedOperationException();
@@ -1332,8 +1333,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 
 	private static final class EntryIterator<V> extends BaseIterator<V> implements MapIterator<V>
 	{
-		private long key;
-		private V	 value;
+		private Node<V> node;
 
 		private EntryIterator(Node<V>[] tab, int index, int size)
 		{
@@ -1343,11 +1343,8 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		@Override
 		public boolean moveToNext()
 		{
-			Node<V> p;
-			if((p = next) == null)
+			if((node = next) == null)
 				return false;
-			key = p.key;
-			value = p.val;
 			advance();
 			return true;
 		}
@@ -1355,13 +1352,13 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		@Override
 		public long key()
 		{
-			return key;
+			return node.key;
 		}
 
 		@Override
 		public V value()
 		{
-			return value;
+			return node.val;
 		}
 	}
 
