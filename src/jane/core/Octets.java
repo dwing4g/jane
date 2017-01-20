@@ -489,6 +489,18 @@ public class Octets implements Cloneable, Comparable<Octets>
 		return true;
 	}
 
+	public final boolean equals(Octets oct)
+	{
+		if(this == oct) return true;
+		if(oct == null) return false;
+		if(_count != oct._count) return false;
+		byte[] buf = _buffer;
+		byte[] data = oct._buffer;
+		for(int i = 0, n = _count; i < n; ++i)
+			if(buf[i] != data[i]) return false;
+		return true;
+	}
+
 	@Override
 	public String toString()
 	{

@@ -165,6 +165,36 @@ public abstract class Procedure implements Runnable
 		throw Undo._instance;
 	}
 
+	public static void check(boolean a, boolean b)
+	{
+		if(a != b) throw Redo._instance;
+	}
+
+	public static void check(int a, int b)
+	{
+		if(a != b) throw Redo._instance;
+	}
+
+	public static void check(long a, long b)
+	{
+		if(a != b) throw Redo._instance;
+	}
+
+	public static void check(float a, float b)
+	{
+		if(a != b) throw Redo._instance;
+	}
+
+	public static void check(double a, double b)
+	{
+		if(a != b) throw Redo._instance;
+	}
+
+	public static void check(Object a, Object b)
+	{
+		if(!a.equals(b)) throw Redo._instance;
+	}
+
 	/**
 	 * 解锁当前事务所加的全部锁
 	 * <p>
@@ -616,7 +646,7 @@ public abstract class Procedure implements Runnable
 		{
 			try
 			{
-				if(e != undoException())
+				if(e != Undo._instance)
 					onException(e);
 			}
 			catch(Throwable ex)
