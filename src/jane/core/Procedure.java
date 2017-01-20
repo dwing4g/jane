@@ -8,6 +8,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
+import jane.core.SContext.Safe;
 
 /**
  * 事务的基类(抽象类)
@@ -163,6 +164,18 @@ public abstract class Procedure implements Runnable
 	public static void undo()
 	{
 		throw Undo._instance;
+	}
+
+	public <V extends Bean<V>, S extends Safe<V>> S lockGet(TableLong<V, S> t, long k) throws InterruptedException
+	{
+		lock(t.lockId(k));
+		return t.getNoLock(k);
+	}
+
+	public <K, V extends Bean<V>, S extends Safe<V>> S lockGet(Table<K, V, S> t, K k) throws InterruptedException
+	{
+		lock(t.lockId(k));
+		return t.getNoLock(k);
 	}
 
 	public static void check(boolean a, boolean b)

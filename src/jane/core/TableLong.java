@@ -83,7 +83,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	 */
 	public int lockId(long k)
 	{
-		return _lockId ^ ((int)k ^ (int)(k >> 32));
+		return _lockId ^ (int)k ^ (int)(k >> 32);
 	}
 
 	/**

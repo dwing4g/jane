@@ -5,14 +5,14 @@
 1.0.0 (2016-11-05) => git HEAD (2017-01-20)
 
 * 移除了MapDB,MVStore,以及开发中放弃的limax_edb的数据存储支持, 目前只支持LevelDB(功能及性能均最佳选择)
-* 移除了google的ConcurrentHashMapV8, 改用JRE自带版本(同JDK8自带的,因此推荐运行环境使用JDK8)
+* 移除了google的ConcurrentHashMapV8, 改用JRE内置版本(V8同Java8内置的,因此推荐运行环境使用Java8)
 * 移除了google的ConcurrentLinkedHashMap, 所有读cache的实现均使用LRUMap(虽然LRU的自动清理不是很及时,但性能好很多)
 * 内置并进一步优化了LongConcurrentHash/LRUMap, LRUMap的自动清理改为后台线程并发执行
-* 事务运行的线程要求创建/继承自新加的ProcThread类(为了少量优化及便于管理)
+* 运行事务的线程类要求是新加的ProcThread类或子类(为了少量优化及便于管理,内置事务线程池已是ProcThread类线程)
 * Long表的自增长ID要求至少从1开始分配(0经常用于其它目的,不适合当自增长的key,可以手动访问key=0的字段)
-* (Long)Table类增加了lockGet, Procedure类增加了check等方便开发的辅助方法
-* 大量代码细节改进(接口兼容,不影响原功能)
+* (Long)Table类增加了lockGet, Procedure类增加了lockGet和check等方便开发的辅助方法
+* 大量改进代码细节(接口兼容,不影响原功能)
 * 少量调整src及lib的包/目录结构
 * 生成的jane-src.jar只包含jane-core.jar的源码,不包括测试代码
-* .NET port的网络部分重构,同时支持.NET 4.0(桌面), .NET Core 1.0(服务器), Mono 2.6(Unity)
+* .NET port的网络部分重构,同时支持.NET Framework 4.0(Windows/Mono), .NET Core 1.0, Mono 2.6(Unity)
 * 更新文档细节(主体大部分内容依然有效)

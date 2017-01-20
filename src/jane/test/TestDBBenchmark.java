@@ -72,7 +72,7 @@ public final class TestDBBenchmark
 								long t1 = System.currentTimeMillis();
 								long tt = t1 - t0;
 								if(tt >= 250) Log.log.info("proc delay={}ms", tt);
-								TestBean.Safe a = Benchmark.lockGet(id);
+								TestBean.Safe a = lockGet(Benchmark, id);
 								if(a == null)
 								{
 									TestBean aa = new TestBean();
