@@ -26,7 +26,7 @@ public abstract class Procedure implements Runnable
 	static final class Context
 	{
 		private final ReentrantLock[] locks	= new ReentrantLock[Const.maxLockPerProcedure];	// 当前线程已经加过的锁
-		private volatile int		  lockCount;											// 当前进程已经加过锁的数量
+		private int					  lockCount;											// 当前进程已经加过锁的数量
 		volatile Procedure			  proc;													// 当前运行的事务
 	}
 

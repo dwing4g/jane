@@ -35,8 +35,8 @@ public final class DBManager
 	private final AtomicLong								   _modCount		  = new AtomicLong();						   // 当前缓存修改的记录数
 	private final CommitTask								   _commitTask		  = new CommitTask();						   // 数据提交的任务
 	private final ArrayList<Runnable>						   _shutdownCallbacks = new ArrayList<>();						   // 退出时的用户回调列表
-	private volatile Storage								   _storage;													   // 存储引擎
-	private volatile ScheduledFuture<?>						   _commitFuture;												   // 数据提交的结果
+	private Storage											   _storage;													   // 存储引擎
+	private ScheduledFuture<?>								   _commitFuture;												   // 数据提交的结果
 	private volatile boolean								   _exit;														   // 是否在退出状态(已经执行了ShutdownHook)
 
 	/**
@@ -129,8 +129,8 @@ public final class DBManager
 							finally
 							{
 								wl.unlock();
-								t1 = System.currentTimeMillis() - t1;
 							}
+							t1 = System.currentTimeMillis() - t1;
 							Log.log.info("db-commit procedure continued, committing...");
 						}
 						else

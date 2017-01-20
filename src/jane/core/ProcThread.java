@@ -8,7 +8,7 @@ import jane.core.Procedure.Context;
 public final class ProcThread extends Thread
 {
 	private static final ConcurrentLinkedQueue<ProcThread> _procThreads	   = new ConcurrentLinkedQueue<>();	// 当前运行的全部事务线程. 用于判断是否超时
-	private static final AtomicLong						   _interruptCount = new AtomicLong();				// 事务被打断的次数统计;
+	private static volatile long						   _interruptCount;									// 事务被打断的次数统计
 
 	final Context  ctx	= new Context();
 	final SContext sCtx	= new SContext();
@@ -25,7 +25,7 @@ public final class ProcThread extends Thread
 	 */
 	public static long getInterruptCount()
 	{
-		return _interruptCount.get();
+		return _interruptCount;
 	}
 
 	static
@@ -64,7 +64,7 @@ public final class ProcThread extends Thread
 												for(StackTraceElement ste : t.getStackTrace())
 													sb.append("\tat ").append(ste).append('\n');
 												Log.log.error(sb.toString(), p.getClass().getName(), t, timeout, p._sid);
-												_interruptCount.incrementAndGet();
+												++_interruptCount;
 												t.interrupt();
 											}
 											else if(timeout > procDeadlockTimeout)
@@ -86,7 +86,7 @@ public final class ProcThread extends Thread
 															for(StackTraceElement ste : t.getStackTrace())
 																sb.append("\tat ").append(ste).append('\n');
 															Log.log.error(sb.toString(), p.getClass().getName(), t, timeout, p._sid);
-															_interruptCount.incrementAndGet();
+															++_interruptCount;
 															t.interrupt();
 															break;
 														}
