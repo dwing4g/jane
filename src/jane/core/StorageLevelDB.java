@@ -28,6 +28,8 @@ public final class StorageLevelDB implements Storage
 
 	public static native long leveldb_open(String path, int writeBufSize, int cacheSize, boolean useSnappy);
 
+	public native static long leveldb_open2(String path, int writeBufSize, int cacheSize, int fileSize, boolean useSnappy);
+
 	public static native void leveldb_close(long handle);
 
 	public static native byte[] leveldb_get(long handle, byte[] key, int keyLen); // return null for not found
