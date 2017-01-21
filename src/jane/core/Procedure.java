@@ -634,8 +634,8 @@ public abstract class Procedure implements Runnable
 		{
 			rl = _rwlCommit.readLock();
 			rl.lock();
-			ctx.proc = this;
 			_beginTime = System.currentTimeMillis();
+			ctx.proc = this;
 			_sctx = pt.sCtx;
 			for(int n = Const.maxProceduerRedo;;)
 			{
