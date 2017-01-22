@@ -2,13 +2,12 @@ package jane.core;
 
 import java.lang.management.ManagementFactory;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicLong;
 import jane.core.Procedure.Context;
 
 public final class ProcThread extends Thread
 {
-	private static final ConcurrentLinkedQueue<ProcThread> _procThreads	   = new ConcurrentLinkedQueue<>();	// 当前运行的全部事务线程. 用于判断是否超时
-	private static volatile long						   _interruptCount;									// 事务被打断的次数统计
+	private static final ConcurrentLinkedQueue<ProcThread> _procThreads	= new ConcurrentLinkedQueue<>(); // 当前运行的全部事务线程. 用于判断是否超时
+	private static volatile long						   _interruptCount;								 // 事务被打断的次数统计
 
 	final Context  ctx	= new Context();
 	final SContext sCtx	= new SContext();

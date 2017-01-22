@@ -582,7 +582,7 @@ public final class StorageLevelDB implements Storage
 		long period = Const.levelDBFullBackupPeriod * 1000;
 		long basetime = DBManager.instance().getBackupBaseTime();
 		long time = System.currentTimeMillis();
-		Date backupDate = new Date(basetime + (time - basetime) / period * period);
+		Date backupDate = new Date(basetime + (long)Math.floor((double)(time - basetime) / period) * period);
 		dstPath += '.' + DBManager.instance().getBackupDateStr(backupDate);
 		File path = new File(dstPath).getParentFile();
 		if(path != null && !path.isDirectory() && !path.mkdirs())

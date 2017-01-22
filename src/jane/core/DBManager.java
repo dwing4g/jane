@@ -86,12 +86,12 @@ public final class DBManager
 		@Override
 		public void run()
 		{
-			long t = System.currentTimeMillis();
-			if(_modCount.get() < Const.dbCommitModCount && t < _commitTime) return;
-			_commitTime += _commitPeriod;
-			if(_commitTime <= t) _commitTime += ((t - _commitTime) / _commitPeriod + 1) * _commitPeriod;
 			try
 			{
+				long t = System.currentTimeMillis();
+				if(t < _commitTime && _modCount.get() < Const.dbCommitModCount) return;
+				_commitTime = (_commitTime <= t ? _commitTime : t) + _commitPeriod;
+				if(_commitTime <= t) _commitTime = t + _commitPeriod;
 				synchronized(DBManager.this)
 				{
 					if(Thread.interrupted()) return;
@@ -380,7 +380,7 @@ public final class DBManager
 	 */
 	public synchronized void startCommitThread()
 	{
-		if(_commitFuture == null)
+		if(_commitFuture == null || _commitFuture.isDone())
 			_commitFuture = _commitThread.scheduleWithFixedDelay(_commitTask, 1, 1, TimeUnit.SECONDS);
 	}
 

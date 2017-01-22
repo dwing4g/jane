@@ -1,7 +1,7 @@
 package jane.core.map;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import jane.core.Log;
@@ -18,11 +18,11 @@ final class LRUCleaner
 		void sweep();
 	}
 
-	private final ScheduledExecutorService cleanerThread;
+	private final ExecutorService cleanerThread;
 
 	private LRUCleaner()
 	{
-		cleanerThread = Executors.newSingleThreadScheduledExecutor(new ThreadFactory()
+		cleanerThread = Executors.newSingleThreadExecutor(new ThreadFactory()
 		{
 			@Override
 			public Thread newThread(Runnable r)
