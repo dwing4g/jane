@@ -36,6 +36,7 @@ import jane.core.map.LRUCleaner.Cleanable;
  */
 public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanable
 {
+	private static final int						   UPPERSIZE_MIN  = 1024;
 	private final LongConcurrentHashMap<CacheEntry<V>> map;
 	private final AtomicLong						   versionCounter = new AtomicLong();
 	private final AtomicInteger						   size			  = new AtomicInteger();
@@ -59,7 +60,8 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 
 	public LongConcurrentLRUMap(int lowerSize, float loadFactor, int concurrencyLevel, String name)
 	{
-		this(lowerSize + (lowerSize + 1) / 2, lowerSize, lowerSize + lowerSize / 4, lowerSize + (lowerSize + 1) / 2 + 256, loadFactor, concurrencyLevel, name);
+		this(Math.max(lowerSize + (lowerSize + 1) / 2, UPPERSIZE_MIN), lowerSize, lowerSize + lowerSize / 4,
+				Math.max(lowerSize + (lowerSize + 1) / 2, UPPERSIZE_MIN) + 256, loadFactor, concurrencyLevel, name);
 	}
 
 	private static final class CacheEntry<V> extends CacheEntryBase<V>

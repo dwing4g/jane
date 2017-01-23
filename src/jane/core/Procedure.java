@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
@@ -32,13 +33,14 @@ public abstract class Procedure implements Runnable
 		volatile long				  beginTime;											// 当前/上个事务运行的起始时间. 用于判断是否超时
 	}
 
-	private static final ReentrantLock[]		_lockPool  = new ReentrantLock[Const.lockPoolSize];	// 全局共享的锁池
-	private static final int					_lockMask  = Const.lockPoolSize - 1;				// 锁池下标的掩码
-	private static final ReentrantReadWriteLock	_rwlCommit = new ReentrantReadWriteLock();			// 用于数据提交的读写锁
-	private static ExceptionHandler				_defaultEh;											// 默认的全局异常处理
-	private final AtomicInteger					_running   = new AtomicInteger();					// 事务是否在运行中(不能同时并发运行)
-	private volatile Object						_sid;												// 事务所属的SessionId
-	private Context								_ctx;												// 事务所属的线程上下文. 只在事务运行中有效
+	private static final ReentrantLock[]					 _lockPool	  = new ReentrantLock[Const.lockPoolSize]; // 全局共享的锁池
+	private static final AtomicReferenceArray<ReentrantLock> _lockCreator = new AtomicReferenceArray<>(_lockPool); // 锁池中锁的线程安全创造器(副本)
+	private static final int								 _lockMask	  = Const.lockPoolSize - 1;				   // 锁池下标的掩码
+	private static final ReentrantReadWriteLock				 _rwlCommit	  = new ReentrantReadWriteLock();		   // 用于数据提交的读写锁
+	private static ExceptionHandler							 _defaultEh;										   // 默认的全局异常处理
+	private final AtomicInteger								 _running	  = new AtomicInteger();				   // 事务是否在运行中(不能同时并发运行)
+	private volatile Object									 _sid;												   // 事务所属的SessionId
+	private Context											 _ctx;												   // 事务所属的线程上下文. 只在事务运行中有效
 
 	/**
 	 * 获取提交的写锁
@@ -237,19 +239,10 @@ public abstract class Procedure implements Runnable
 	{
 		ReentrantLock lock = _lockPool[lockIdx];
 		if(lock != null) return lock;
-		synchronized(_lockPool)
-		{
-			lock = _lockPool[lockIdx];
-			if(lock == null)
-			{
-				lock = new ReentrantLock();
-				synchronized(Procedure.class) // memory barrier for out of order problem
-				{
-					_lockPool[lockIdx] = lock;
-				}
-			}
-			return lock;
-		}
+		if(!_lockCreator.compareAndSet(lockIdx, null, lock = new ReentrantLock())) // ensure init lock object only once
+			lock = _lockCreator.get(lockIdx); // should not be null
+		_lockPool[lockIdx] = lock; // still safe when overwritten
+		return lock;
 	}
 
 	/**
