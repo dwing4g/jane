@@ -44,6 +44,7 @@ public final class Const
 	public static final String		levelDBNativePath;
 	public static final int			levelDBWriteBufferSize;
 	public static final int			levelDBCacheSize;
+	public static final int			levelDBFileSize;
 	public static final long		levelDBFullBackupPeriod;
 
 	static
@@ -105,8 +106,9 @@ public final class Const
 		autoIdBegin = getPropInt("autoIdBegin", 1, 1);
 		autoIdStride = getPropInt("autoIdStride", 1, 1);
 		levelDBNativePath = getPropStr("levelDBNativePath", "lib");
-		levelDBWriteBufferSize = getPropInt("levelDBWriteBufferSize", 32, 0);
-		levelDBCacheSize = getPropInt("levelDBCacheSize", 32, 0);
+		levelDBWriteBufferSize = getPropInt("levelDBWriteBufferSize", 32, 1, 1024);
+		levelDBCacheSize = getPropInt("levelDBCacheSize", 32, 1, 1024);
+		levelDBFileSize = getPropInt("levelDBFileSize", 2, 1, 1024);
 		levelDBFullBackupPeriod = getPropLong("levelDBFullBackupPeriod", 604800, 1, Long.MAX_VALUE / 1000);
 	}
 
@@ -123,8 +125,7 @@ public final class Const
 	public static boolean getPropBoolean(String key, boolean def)
 	{
 		String value = _property.getProperty(key);
-		if(value == null) return def;
-		return Boolean.parseBoolean(value.trim());
+		return value != null ? Boolean.parseBoolean(value.trim()) : def;
 	}
 
 	public static boolean getPropBoolean(String key)

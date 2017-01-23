@@ -77,8 +77,6 @@ public abstract class Procedure implements Runnable
 
 	/**
 	 * 获取当前事务绑定的sid
-	 * <p>
-	 * 事务完成后会自动清掉此绑定
 	 */
 	public final Object getSid()
 	{
@@ -88,7 +86,7 @@ public abstract class Procedure implements Runnable
 	/**
 	 * 设置当前事务绑定的sid
 	 * <p>
-	 * 为了安全只能由内部类调用
+	 * 为了安全只能由内部类设置
 	 */
 	final void setSid(Object sid)
 	{

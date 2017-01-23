@@ -503,7 +503,7 @@ public final class StorageLevelDB implements Storage
 	public void openDB(File file) throws IOException
 	{
 		close();
-		_db = leveldb_open(file.getAbsolutePath(), Const.levelDBWriteBufferSize << 20, Const.levelDBCacheSize << 20, true);
+		_db = leveldb_open2(file.getAbsolutePath(), Const.levelDBWriteBufferSize << 20, Const.levelDBCacheSize << 20, Const.levelDBFileSize << 20, true);
 		if(_db == 0) throw new IOException("StorageLevelDB.openDB: leveldb_open failed");
 		_dbFile = file;
 	}
@@ -518,13 +518,19 @@ public final class StorageLevelDB implements Storage
 			return (Storage.Table<K, V>)new TableString<>(tableId, tableName, stubV);
 		if(stubK instanceof Bean)
 			return new TableBean<>(tableId, tableName, (K)stubK, stubV);
-		throw new UnsupportedOperationException("unsupported key type: " + (stubK != null ? stubK.getClass().getName() : "null") + " for table: " + tableName);
+		throw new UnsupportedOperationException("unsupported key type: " +
+				(stubK != null ? stubK.getClass().getName() : "null") + " for table: " + tableName);
 	}
 
 	@Override
 	public <V extends Bean<V>> Storage.TableLong<V> openTable(int tableId, String tableName, V stubV)
 	{
 		return new TableLong<>(tableId, tableName, stubV);
+	}
+
+	public int getPutSize()
+	{
+		return _writeBuf.size();
 	}
 
 	@Override

@@ -261,10 +261,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 		if(_cacheMod == null) return null;
 		v = _cacheMod.get(k);
 		if(v != null)
-		{
-			if(v == _deleted) return null;
-			return v;
-		}
+			return v != _deleted ? v : null;
 		_readStoCount.incrementAndGet();
 		return _stoTable.get(k);
 	}
@@ -326,8 +323,8 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 			else if(vOld != v)
 			{
 				_cacheMod.put(k, vOld);
-				throw new IllegalStateException("modify unmatched record: t=" + _tableName +
-						",k=" + k + ",vOld=" + vOld + ",v=" + v);
+				throw new IllegalStateException("modify unmatched record: t=" +
+						_tableName + ",k=" + k + ",vOld=" + vOld + ",v=" + v);
 			}
 		}
 	}
@@ -385,8 +382,8 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 					_cache.put(k, vOld);
 				else
 					_cache.remove(k);
-				throw new IllegalStateException("put shared record: t=" + _tableName +
-						",k=" + k + ",vOld=" + vOld + ",v=" + v);
+				throw new IllegalStateException("put shared record: t=" +
+						_tableName + ",k=" + k + ",vOld=" + vOld + ",v=" + v);
 			}
 		}
 	}
@@ -522,9 +519,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	 */
 	public boolean walk(WalkHandlerLong handler, long from, long to, boolean inclusive, boolean reverse)
 	{
-		if(_stoTable != null)
-			return _stoTable.walk(handler, from, to, inclusive, reverse);
-		return walkCache(handler);
+		return _stoTable != null ? _stoTable.walk(handler, from, to, inclusive, reverse) : walkCache(handler);
 	}
 
 	public boolean walk(WalkHandlerLong handler, boolean reverse)
