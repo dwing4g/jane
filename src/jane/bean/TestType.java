@@ -823,7 +823,7 @@ public final class TestType extends Bean<TestType>
 		/** @param v1 1字节布尔,0表示假,1表示真,其它默认表示真 */
 		public void setV1(boolean v1)
 		{
-			if(initSContext()) _sCtx.addOnRollback(new SBase.SBoolean(_bean, FIELD_v1, _bean.v1));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SBoolean(_bean, FIELD_v1, _bean.v1));
 			_bean.v1 = v1;
 		}
 
@@ -836,7 +836,7 @@ public final class TestType extends Bean<TestType>
 		/** @param v2 1字节整数 */
 		public void setV2(byte v2)
 		{
-			if(initSContext()) _sCtx.addOnRollback(new SBase.SByte(_bean, FIELD_v2, _bean.v2));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SByte(_bean, FIELD_v2, _bean.v2));
 			_bean.v2 = v2;
 		}
 
@@ -849,7 +849,7 @@ public final class TestType extends Bean<TestType>
 		/** @param v3 2字节整数 */
 		public void setV3(short v3)
 		{
-			if(initSContext()) _sCtx.addOnRollback(new SBase.SShort(_bean, FIELD_v3, _bean.v3));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SShort(_bean, FIELD_v3, _bean.v3));
 			_bean.v3 = v3;
 		}
 
@@ -862,7 +862,7 @@ public final class TestType extends Bean<TestType>
 		/** @param v4 4字节整数 */
 		public void setV4(int v4)
 		{
-			if(initSContext()) _sCtx.addOnRollback(new SBase.SInteger(_bean, FIELD_v4, _bean.v4));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SInteger(_bean, FIELD_v4, _bean.v4));
 			_bean.v4 = v4;
 		}
 
@@ -875,7 +875,7 @@ public final class TestType extends Bean<TestType>
 		/** @param v5 8字节整数 */
 		public void setV5(long v5)
 		{
-			if(initSContext()) _sCtx.addOnRollback(new SBase.SLong(_bean, FIELD_v5, _bean.v5));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SLong(_bean, FIELD_v5, _bean.v5));
 			_bean.v5 = v5;
 		}
 
@@ -888,7 +888,7 @@ public final class TestType extends Bean<TestType>
 		/** @param v6 4字节浮点数 */
 		public void setV6(float v6)
 		{
-			if(initSContext()) _sCtx.addOnRollback(new SBase.SFloat(_bean, FIELD_v6, _bean.v6));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SFloat(_bean, FIELD_v6, _bean.v6));
 			_bean.v6 = v6;
 		}
 
@@ -901,7 +901,7 @@ public final class TestType extends Bean<TestType>
 		/** @param v7 8字节浮点数 */
 		public void setV7(double v7)
 		{
-			if(initSContext()) _sCtx.addOnRollback(new SBase.SDouble(_bean, FIELD_v7, _bean.v7));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SDouble(_bean, FIELD_v7, _bean.v7));
 			_bean.v7 = v7;
 		}
 
@@ -914,7 +914,7 @@ public final class TestType extends Bean<TestType>
 		/** @param v8 二进制数据(Octets) */
 		public void setV8(Octets v8)
 		{
-			if(initSContext()) _sCtx.addOnRollback(new SBase.SOctets(_bean, FIELD_v8, _bean.v8, false));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_v8, _bean.v8, false));
 			_bean.v8 = (v8 != null ? v8.clone() : new Octets(5));
 		}
 
@@ -927,7 +927,7 @@ public final class TestType extends Bean<TestType>
 		/** 二进制数据(Octets) */
 		public <B extends Bean<B>> void marshalV8(Bean<B> b)
 		{
-			if(initSContext()) _sCtx.addOnRollback(new SBase.SOctets(_bean, FIELD_v8, _bean.v8, false));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_v8, _bean.v8, false));
 			_bean.v8 = b.marshal(new OctetsStream(b.initSize()));
 		}
 
@@ -959,7 +959,7 @@ public final class TestType extends Bean<TestType>
 		/** @param v9 字符串(String) */
 		public void setV9(String v9)
 		{
-			if(initSContext()) _sCtx.addOnRollback(new SBase.SObject(_bean, FIELD_v9, _bean.v9));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SObject(_bean, FIELD_v9, _bean.v9));
 			_bean.v9 = (v9 != null ? v9 : "");
 		}
 
@@ -1144,7 +1144,7 @@ public final class TestType extends Bean<TestType>
 		/** @param v20 非序列化字段 */
 		public void setV20(java.lang.String v20)
 		{
-			if(initSContext()) _sCtx.addOnRollback(new SBase.SObject(_bean, FIELD_v20, _bean.v20));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SObject(_bean, FIELD_v20, _bean.v20));
 			_bean.v20 = v20;
 		}
 	}

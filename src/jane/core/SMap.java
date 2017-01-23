@@ -28,7 +28,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 
 	protected final Safe<?>	  _owner;
 	protected final Map<K, V> _map;
-	private SContext		  _sCtx;
+	private SContext		  _sctx;
 	protected Map<K, V>		  _changed;
 
 	public SMap(Safe<?> owner, Map<K, V> map, final SMapListener<K, V> listener)
@@ -64,9 +64,9 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	protected SContext sContext()
 	{
 		_owner.checkLock();
-		if(_sCtx != null) return _sCtx;
+		if(_sctx != null) return _sctx;
 		_owner.dirty();
-		return _sCtx = SContext.current();
+		return _sctx = SContext.current();
 	}
 
 	@SuppressWarnings("unchecked")

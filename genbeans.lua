@@ -465,7 +465,7 @@ typedef.byte =
 		/** @param #(var.name) #(var.comment1) */
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			if(initSContext()) _sCtx.addOnRollback(new SBase.S#(var.type_o)(_bean, FIELD_#(var.name), _bean.#(var.name)));
+			if(initSContext()) _sctx.addOnRollback(new SBase.S#(var.type_o)(_bean, FIELD_#(var.name), _bean.#(var.name)));
 			_bean.#(var.name) = #(var.name);
 		}
 ]],
@@ -567,7 +567,7 @@ typedef.string = merge(typedef.byte,
 		/** @param #(var.name) #(var.comment1) */
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			if(initSContext()) _sCtx.addOnRollback(new SBase.SObject(_bean, FIELD_#(var.name), _bean.#(var.name)));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SObject(_bean, FIELD_#(var.name), _bean.#(var.name)));
 			_bean.#(var.name) = (#(var.name) != null ? #(var.name) : "");
 		}
 ]],
@@ -636,7 +636,7 @@ typedef.octets = merge(typedef.string,
 		/** @param #(var.name) #(var.comment1) */
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			if(initSContext()) _sCtx.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.#(var.name), false));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.#(var.name), false));
 			_bean.#(var.name) = (#(var.name) != null ? #(var.name).clone() : new Octets(#(var.cap)));
 		}
 
@@ -649,7 +649,7 @@ typedef.octets = merge(typedef.string,
 		/** #(var.comment1) */
 		public <B extends Bean<B>> void marshal#(var.name_u)(Bean<B> b)
 		{
-			if(initSContext()) _sCtx.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.#(var.name), false));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.#(var.name), false));
 			_bean.#(var.name) = b.marshal(new OctetsStream(b.initSize()));
 		}
 
@@ -983,7 +983,7 @@ typedef.ref = merge(typedef.bean,
 		/** @param #(var.name) #(var.comment1) */
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			if(initSContext()) _sCtx.addOnRollback(new SBase.SObject(_bean, FIELD_#(var.name), _bean.#(var.name)));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SObject(_bean, FIELD_#(var.name), _bean.#(var.name)));
 			_bean.#(var.name) = #(var.name);
 		}
 ]] end,

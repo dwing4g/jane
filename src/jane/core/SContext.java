@@ -15,7 +15,7 @@ public final class SContext
 	{
 		protected final B	  _bean;
 		private final Safe<?> _parent;
-		protected SContext	  _sCtx;
+		protected SContext	  _sctx;
 		private Rec			  _rec;
 		private Runnable	  _onDirty;
 		protected boolean	  _fullUndo;
@@ -97,7 +97,7 @@ public final class SContext
 		{
 			if(_rec != null) _rec.checkLock();
 			if(_fullUndo) return false;
-			if(_sCtx == null)
+			if(_sctx == null)
 			{
 				if(_onDirty != null)
 				{
@@ -105,7 +105,7 @@ public final class SContext
 					_onDirty = null;
 				}
 				_parent.dirty();
-				_sCtx = current();
+				_sctx = current();
 			}
 			return true;
 		}
@@ -113,7 +113,7 @@ public final class SContext
 		public void addFullUndo()
 		{
 			if(!initSContext()) return;
-			_sCtx.addOnRollback(new Runnable()
+			_sctx.addOnRollback(new Runnable()
 			{
 				private final B _saved = _bean.clone();
 

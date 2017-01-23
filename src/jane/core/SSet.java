@@ -25,7 +25,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 
 	protected final Safe<?>	_owner;
 	protected final Set<V>	_set;
-	private SContext		_sCtx;
+	private SContext		_sctx;
 	protected Set<V>		_added;
 	protected Set<V>		_removed;
 
@@ -56,9 +56,9 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	protected SContext sContext()
 	{
 		_owner.checkLock();
-		if(_sCtx != null) return _sCtx;
+		if(_sctx != null) return _sctx;
 		_owner.dirty();
-		return _sCtx = SContext.current();
+		return _sctx = SContext.current();
 	}
 
 	@SuppressWarnings("unchecked")

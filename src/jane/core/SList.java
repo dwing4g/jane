@@ -14,7 +14,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 {
 	private final Safe<?> _owner;
 	private final List<V> _list;
-	private SContext	  _sCtx;
+	private SContext	  _sctx;
 
 	public SList(Safe<?> owner, List<V> list)
 	{
@@ -25,9 +25,9 @@ public final class SList<V, S> implements List<S>, Cloneable
 	private SContext sContext()
 	{
 		_owner.checkLock();
-		if(_sCtx != null) return _sCtx;
+		if(_sctx != null) return _sctx;
 		_owner.dirty();
-		return _sCtx = SContext.current();
+		return _sctx = SContext.current();
 	}
 
 	@SuppressWarnings("unchecked")

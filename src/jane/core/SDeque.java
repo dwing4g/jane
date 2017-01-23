@@ -14,7 +14,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 {
 	private final Safe<?>  _owner;
 	private final Deque<V> _deque;
-	private SContext	   _sCtx;
+	private SContext	   _sctx;
 
 	public SDeque(Safe<?> owner, Deque<V> queue)
 	{
@@ -25,9 +25,9 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	private SContext sContext()
 	{
 		_owner.checkLock();
-		if(_sCtx != null) return _sCtx;
+		if(_sctx != null) return _sctx;
 		_owner.dirty();
-		return _sCtx = SContext.current();
+		return _sctx = SContext.current();
 	}
 
 	@SuppressWarnings("unchecked")
