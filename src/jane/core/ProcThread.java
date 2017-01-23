@@ -10,7 +10,7 @@ public final class ProcThread extends Thread
 	private static volatile long						   _interruptCount;								 // 事务被打断的次数统计
 
 	final Context  ctx	= new Context();
-	final SContext sCtx	= new SContext();
+	final SContext sctx	= ctx.sctx;
 
 	public ProcThread(String name, Runnable r)
 	{
@@ -48,21 +48,22 @@ public final class ProcThread extends Thread
 						{
 							if(t.isAlive())
 							{
-								Procedure p = t.ctx.proc;
-								if(p != null && now - p._beginTime > procTimoutMin)
+								Context ctx = t.ctx;
+								Procedure p = ctx.proc;
+								if(p != null && now - ctx.beginTime > procTimoutMin)
 								{
 									synchronized(p)
 									{
 										if(p == t.ctx.proc)
 										{
-											long timeout = now - p._beginTime;
+											long timeout = now - ctx.beginTime;
 											if(timeout > procTimeout)
 											{
 												StringBuilder sb = new StringBuilder(4096);
 												sb.append("procedure({}) in {} interrupted for timeout ({} ms): sid={}\n");
 												for(StackTraceElement ste : t.getStackTrace())
 													sb.append("\tat ").append(ste).append('\n');
-												Log.log.error(sb.toString(), p.getClass().getName(), t, timeout, p._sid);
+												Log.log.error(sb.toString(), p.getClass().getName(), t, timeout, p.getSid());
 												++_interruptCount;
 												t.interrupt();
 											}
@@ -84,7 +85,7 @@ public final class ProcThread extends Thread
 															sb.append("procedure({}) in {} interrupted for deadlock timeout({} ms): sid={}\n");
 															for(StackTraceElement ste : t.getStackTrace())
 																sb.append("\tat ").append(ste).append('\n');
-															Log.log.error(sb.toString(), p.getClass().getName(), t, timeout, p._sid);
+															Log.log.error(sb.toString(), p.getClass().getName(), t, timeout, p.getSid());
 															++_interruptCount;
 															t.interrupt();
 															break;

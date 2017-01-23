@@ -311,7 +311,7 @@ public final class SContext
 
 	public static SContext current()
 	{
-		return ((ProcThread)Thread.currentThread()).sCtx;
+		return ((ProcThread)Thread.currentThread()).sctx;
 	}
 
 	<K, V extends Bean<V>, S extends Safe<V>> S addRecord(Table<K, V, S> table, K key, V value)

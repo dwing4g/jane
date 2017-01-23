@@ -3,7 +3,7 @@ package jane.core;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
@@ -27,17 +27,18 @@ public abstract class Procedure implements Runnable
 	{
 		private final ReentrantLock[] locks	= new ReentrantLock[Const.maxLockPerProcedure];	// 当前线程已经加过的锁
 		private int					  lockCount;											// 当前进程已经加过锁的数量
+		final SContext				  sctx	= new SContext();								// 当前线程上的安全修改的上下文
 		volatile Procedure			  proc;													// 当前运行的事务
+		volatile long				  beginTime;											// 当前/上个事务运行的起始时间. 用于判断是否超时
 	}
 
 	private static final ReentrantLock[]		_lockPool  = new ReentrantLock[Const.lockPoolSize];	// 全局共享的锁池
 	private static final int					_lockMask  = Const.lockPoolSize - 1;				// 锁池下标的掩码
 	private static final ReentrantReadWriteLock	_rwlCommit = new ReentrantReadWriteLock();			// 用于数据提交的读写锁
 	private static ExceptionHandler				_defaultEh;											// 默认的全局异常处理
-	private final AtomicReference<Context>		_ctx	   = new AtomicReference<>();				// 事务所属的线程上下文. 只在事务运行中有效
-	private SContext							_sctx;												// 安全修改的上下文
-	volatile Object								_sid;												// 事务所属的SessionId
-	volatile long								_beginTime;											// 事务运行的起始时间. 用于判断是否超时
+	private final AtomicInteger					_running   = new AtomicInteger();					// 事务是否在运行中(不能同时并发运行)
+	private volatile Object						_sid;												// 事务所属的SessionId
+	private Context								_ctx;												// 事务所属的线程上下文. 只在事务运行中有效
 
 	/**
 	 * 获取提交的写锁
@@ -96,28 +97,25 @@ public abstract class Procedure implements Runnable
 
 	protected final void addOnCommit(Runnable r)
 	{
-		_sctx.addOnCommit(r);
+		_ctx.sctx.addOnCommit(r);
 	}
 
 	protected final void addOnRollback(Runnable r)
 	{
-		_sctx.addOnRollback(r);
+		_ctx.sctx.addOnRollback(r);
 	}
 
 	/**
-	 * 设置当前线程的事务不可被打断
+	 * 设置当前事务不可被打断
 	 * <p>
-	 * 可以避免事务超时时被打断,一般用于事务可能会运行较久的情况,但一般不推荐这样做
+	 * 可以避免事务超时时被打断,只能在事务运行中设置,会使getBeginTime()结果失效<br>
+	 * 一般用于事务可能会运行较久的情况,但一般不推荐这样做
 	 */
 	protected final void setUnintterrupted()
 	{
-		Context ctx = _ctx.get();
+		Context ctx = _ctx;
 		if(ctx != null)
-		{
-			Procedure p = ctx.proc;
-			if(p != null)
-				p._beginTime = Long.MAX_VALUE;
-		}
+			ctx.beginTime = Long.MAX_VALUE;
 	}
 
 	@SuppressWarnings("serial")
@@ -215,11 +213,12 @@ public abstract class Procedure implements Runnable
 	 */
 	protected final void unlock()
 	{
-		Context ctx = _ctx.get();
+		Context ctx = _ctx;
 		if(ctx == null) throw new IllegalStateException("invalid lock/unlock out of procedure");
-		if(_sctx.hasDirty()) throw new IllegalStateException("invalid unlock after any dirty record");
-		if(ctx.lockCount == 0) return;
-		for(int i = ctx.lockCount - 1; i >= 0; --i)
+		int lockCount = ctx.lockCount;
+		if(lockCount == 0) return;
+		if(ctx.sctx.hasDirty()) throw new IllegalStateException("invalid unlock after any dirty record");
+		for(int i = lockCount - 1; i >= 0; --i)
 		{
 			try
 			{
@@ -291,7 +290,7 @@ public abstract class Procedure implements Runnable
 	protected final void lock(int lockId) throws InterruptedException
 	{
 		unlock();
-		Context ctx = _ctx.get();
+		Context ctx = _ctx;
 		(ctx.locks[0] = getLock(lockId & _lockMask)).lockInterruptibly();
 		ctx.lockCount = 1;
 	}
@@ -312,7 +311,7 @@ public abstract class Procedure implements Runnable
 		for(int i = 0; i < n; ++i)
 			lockIds[i] &= _lockMask;
 		Arrays.sort(lockIds);
-		Context ctx = _ctx.get();
+		Context ctx = _ctx;
 		for(int i = 0; i < n;)
 		{
 			(ctx.locks[i] = getLock(lockIds[i])).lockInterruptibly();
@@ -347,7 +346,7 @@ public abstract class Procedure implements Runnable
 				idxes[i++] = lockId & _lockMask;
 		}
 		Arrays.sort(idxes);
-		Context ctx = _ctx.get();
+		Context ctx = _ctx;
 		for(i = 0; i < n;)
 		{
 			(ctx.locks[i] = getLock(idxes[i])).lockInterruptibly();
@@ -380,7 +379,7 @@ public abstract class Procedure implements Runnable
 	 */
 	private void lock2(int lockIdx0, int lockIdx1) throws InterruptedException
 	{
-		Context ctx = _ctx.get();
+		Context ctx = _ctx;
 		int i = ctx.lockCount;
 		if(lockIdx0 < lockIdx1)
 		{
@@ -404,7 +403,7 @@ public abstract class Procedure implements Runnable
 	 */
 	private void lock3(int lockIdx0, int lockIdx1, int lockIdx2) throws InterruptedException
 	{
-		Context ctx = _ctx.get();
+		Context ctx = _ctx;
 		int i = ctx.lockCount;
 		if(lockIdx0 <= lockIdx1)
 		{
@@ -484,7 +483,7 @@ public abstract class Procedure implements Runnable
 		lockId1 &= _lockMask;
 		lockId2 &= _lockMask;
 		lockId3 &= _lockMask;
-		Context ctx = _ctx.get();
+		Context ctx = _ctx;
 		int i = 0;
 		if(lockId0 <= lockId1)
 		{
@@ -616,12 +615,9 @@ public abstract class Procedure implements Runnable
 	 */
 	public boolean execute() throws Exception
 	{
-		ProcThread pt = (ProcThread)Thread.currentThread();
-		Context ctx = pt.ctx;
-		if(!_ctx.compareAndSet(null, ctx))
+		if(!_running.compareAndSet(0, 1))
 		{
 			Log.log.error("procedure already running: " + toString());
-			_sid = null;
 			return false;
 		}
 		if(DBManager.instance().isExit())
@@ -629,17 +625,22 @@ public abstract class Procedure implements Runnable
 			Thread.sleep(Long.MAX_VALUE); // 如果有退出信号则线程睡死等待终结
 			throw new IllegalStateException();
 		}
+		Context ctx = null;
+		SContext sctx = null;
 		ReadLock rl = null;
 		try
 		{
+			ProcThread pt = (ProcThread)Thread.currentThread();
 			rl = _rwlCommit.readLock();
 			rl.lock();
-			_beginTime = System.currentTimeMillis();
+			_ctx = ctx = pt.ctx;
+			sctx = ctx.sctx;
+			ctx.beginTime = System.currentTimeMillis();
 			ctx.proc = this;
-			_sctx = pt.sCtx;
 			for(int n = Const.maxProceduerRedo;;)
 			{
-				if(Thread.interrupted()) throw new InterruptedException();
+				if(Thread.interrupted())
+					throw new InterruptedException();
 				try
 				{
 					onProcess();
@@ -648,11 +649,12 @@ public abstract class Procedure implements Runnable
 				catch(Redo e)
 				{
 				}
-				_sctx.rollback();
+				sctx.rollback();
 				unlock();
-				if(--n <= 0) throw new Exception("procedure redo too many times=" + Const.maxProceduerRedo + ": " + toString());
+				if(--n <= 0)
+					throw new Exception("procedure redo too many times=" + Const.maxProceduerRedo + ": " + toString());
 			}
-			_sctx.commit();
+			sctx.commit();
 			return true;
 		}
 		catch(Throwable e)
@@ -668,23 +670,25 @@ public abstract class Procedure implements Runnable
 			}
 			finally
 			{
-				if(_sctx != null)
-					_sctx.rollback();
+				if(sctx != null)
+					sctx.rollback();
 			}
 			return false;
 		}
 		finally
 		{
-			unlock();
+			if(ctx != null)
+				unlock();
 			synchronized(this)
 			{
-				ctx.proc = null;
+				if(ctx != null)
+					ctx.proc = null;
 				Thread.interrupted(); // 清除interrupted标识
 			}
-			_sctx = null;
-			if(rl != null) rl.unlock();
-			_sid = null;
-			_ctx.set(null);
+			if(rl != null)
+				rl.unlock();
+			_ctx = null;
+			_running.set(0);
 		}
 	}
 
