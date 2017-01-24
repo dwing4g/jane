@@ -44,7 +44,7 @@ public class TestRpcBeanHandler extends RpcHandler<TestBean, TestType, TestRpcBe
 	{
 		final TestBean arg = rpcBean.getArg();
 		//final TestType res = rpcBean.getRes();
-		Log.log.debug("{}: onServer: {}", getClass().getName(), arg);
+		if(Log.hasDebug) Log.log.debug("{}: onServer: {}", getClass().getName(), arg);
 		return true;
 	}
 
@@ -53,7 +53,7 @@ public class TestRpcBeanHandler extends RpcHandler<TestBean, TestType, TestRpcBe
 	{
 		final TestBean arg = rpcBean.getArg();
 		final TestType res = rpcBean.getRes();
-		Log.log.debug("{}: onClient: arg={},res={}", getClass().getName(), arg, res);
+		if(Log.hasDebug) Log.log.debug("{}: onClient: arg={},res={}", getClass().getName(), arg, res);
 	}
 
 	@Override

@@ -57,7 +57,7 @@ public final class Const
 			janeProp = System.getProperty("jane.prop");
 			if(janeProp == null || (janeProp = janeProp.trim()).isEmpty())
 				janeProp = "jane.properties";
-			Log.log.debug("{}: load {}", Const.class.getName(), janeProp);
+			if(Log.hasDebug) Log.log.debug("{}: load {}", Const.class.getName(), janeProp);
 			fis = new FileInputStream(janeProp);
 			_property.load(fis);
 		}

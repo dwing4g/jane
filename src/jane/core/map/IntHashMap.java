@@ -64,7 +64,7 @@ public final class IntHashMap<V> implements Cloneable
 		if(loadFactor <= 0) loadFactor = 0.8f;
 
 		_capacity = nextPowerOfTwo(initialCapacity);
-		this._loadFactor = loadFactor;
+		_loadFactor = loadFactor;
 		_threshold = (int)(_capacity * loadFactor);
 		_mask = _capacity - 1;
 		_hashShift = 31 - Integer.numberOfTrailingZeros(_capacity);

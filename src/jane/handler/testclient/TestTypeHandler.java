@@ -34,6 +34,6 @@ public final class TestTypeHandler extends BeanHandler<TestType>
 	@Override
 	public void onProcess(final NetManager manager, final IoSession session, final TestType arg)
 	{
-		Log.log.debug("{}.onProcess: arg={}", getClass().getName(), arg);
+		if(Log.hasDebug) Log.log.debug("{}.onProcess: arg={}", getClass().getName(), arg);
 	}
 }

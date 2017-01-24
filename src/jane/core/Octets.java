@@ -146,9 +146,10 @@ public class Octets implements Cloneable, Comparable<Octets>
 
 	public byte[] getBytes()
 	{
-		if(_count <= 0) return EMPTY;
-		byte[] buf = new byte[_count];
-		System.arraycopy(_buffer, 0, buf, 0, _count);
+		int n = _count;
+		if(n <= 0) return EMPTY;
+		byte[] buf = new byte[n];
+		System.arraycopy(_buffer, 0, buf, 0, n);
 		return buf;
 	}
 
@@ -173,15 +174,17 @@ public class Octets implements Cloneable, Comparable<Octets>
 	 */
 	public void shrink(int size)
 	{
-		if(_count <= 0)
+		int n = _count;
+		if(n <= 0)
 		{
 			reset();
 			return;
 		}
-		if(size < _count) size = _count;
-		if(size >= _buffer.length) return;
+		if(size < n) size = n;
+		byte[] buffer = _buffer;
+		if(size >= buffer.length) return;
 		byte[] buf = new byte[size];
-		System.arraycopy(_buffer, 0, buf, 0, _count);
+		System.arraycopy(buffer, 0, buf, 0, n);
 		_buffer = buf;
 	}
 
@@ -192,12 +195,14 @@ public class Octets implements Cloneable, Comparable<Octets>
 
 	public void reserve(int size)
 	{
-		if(size > _buffer.length)
+		byte[] buffer = _buffer;
+		if(size > buffer.length)
 		{
 			int cap = DEFAULT_SIZE;
 			while(size > cap) cap <<= 1;
 			byte[] buf = new byte[cap];
-			if(_count > 0) System.arraycopy(_buffer, 0, buf, 0, _count);
+			int n = _count;
+			if(n > 0) System.arraycopy(buffer, 0, buf, 0, n);
 			_buffer = buf;
 		}
 	}
@@ -253,8 +258,10 @@ public class Octets implements Cloneable, Comparable<Octets>
 
 	public Octets append(byte b)
 	{
-		reserve(_count + 1);
-		_buffer[_count++] = b;
+		int n = _count;
+		reserve(n + 1);
+		_buffer[n] = b;
+		_count = n + 1;
 		return this;
 	}
 
@@ -266,9 +273,10 @@ public class Octets implements Cloneable, Comparable<Octets>
 		if(pos >= len) return this;
 		len -= pos;
 		if(size > len) size = len;
-		reserve(_count + size);
-		System.arraycopy(data, pos, _buffer, _count, size);
-		_count += size;
+		int n = _count;
+		reserve(n + size);
+		System.arraycopy(data, pos, _buffer, n, size);
+		_count = n + size;
 		return this;
 	}
 
@@ -284,18 +292,20 @@ public class Octets implements Cloneable, Comparable<Octets>
 
 	public Octets insert(int from, byte[] data, int pos, int size)
 	{
+		int n = _count;
 		if(from < 0) from = 0;
-		if(from >= _count) return append(data, pos, size);
+		if(from >= n) return append(data, pos, size);
 		if(size <= 0) return this;
 		int len = data.length;
 		if(pos < 0) pos = 0;
 		if(pos >= len) return this;
 		len -= pos;
 		if(size > len) size = len;
-		reserve(_count + size);
-		System.arraycopy(_buffer, from, _buffer, from + size, _count - from);
-		System.arraycopy(data, pos, _buffer, from, size);
-		_count += size;
+		reserve(n + size);
+		byte[] buf = _buffer;
+		System.arraycopy(buf, from, buf, from + size, n - from);
+		System.arraycopy(data, pos, buf, from, size);
+		_count = n + size;
 		return this;
 	}
 
@@ -311,25 +321,28 @@ public class Octets implements Cloneable, Comparable<Octets>
 
 	public Octets erase(int from, int to)
 	{
+		int n = _count;
 		if(from < 0) from = 0;
-		if(from >= _count || from >= to) return this;
-		if(to >= _count) _count = from;
+		if(from >= n || from >= to) return this;
+		if(to >= n) _count = from;
 		else
 		{
-			_count -= to;
-			System.arraycopy(_buffer, to, _buffer, from, _count);
-			_count += from;
+			n -= to;
+			System.arraycopy(_buffer, to, _buffer, from, n);
+			_count = n + from;
 		}
 		return this;
 	}
 
 	public Octets eraseFront(int size)
 	{
-		if(size >= _count) _count = 0;
+		int n = _count;
+		if(size >= n) _count = 0;
 		else if(size > 0)
 		{
-			_count -= size;
-			System.arraycopy(_buffer, size, _buffer, 0, _count);
+			n -= size;
+			System.arraycopy(_buffer, size, _buffer, 0, n);
+			_count = n;
 		}
 		return this;
 	}
@@ -337,7 +350,8 @@ public class Octets implements Cloneable, Comparable<Octets>
 	public int find(int pos, int end, byte b)
 	{
 		if(pos < 0) pos = 0;
-		if(end > _count) end = _count;
+		int n = _count;
+		if(end > n) end = n;
 		byte[] buf = _buffer;
 		for(; pos < end; ++pos)
 			if(buf[pos] == b) return pos;
@@ -360,7 +374,8 @@ public class Octets implements Cloneable, Comparable<Octets>
 		if(p + s > b.length) s = b.length - p;
 		if(s <= 0) return 0;
 		if(pos < 0) pos = 0;
-		if(end > _count - s + 1) end = _count - s + 1;
+		int e = _count - s + 1;
+		if(end > e) end = e;
 		byte[] buf = _buffer;
 		byte c = b[0];
 		for(; pos < end; ++pos)
@@ -404,20 +419,23 @@ public class Octets implements Cloneable, Comparable<Octets>
 
 	public void setString(String str)
 	{
-		_buffer = str.getBytes(_defaultCharset);
-		_count = _buffer.length;
+		byte[] buf;
+		_buffer = buf = str.getBytes(_defaultCharset);
+		_count = buf.length;
 	}
 
 	public void setString(String str, Charset charset)
 	{
-		_buffer = str.getBytes(charset);
-		_count = _buffer.length;
+		byte[] buf;
+		_buffer = buf = str.getBytes(charset);
+		_count = buf.length;
 	}
 
 	public void setString(String str, String encoding) throws UnsupportedEncodingException
 	{
-		_buffer = str.getBytes(encoding);
-		_count = _buffer.length;
+		byte[] buf;
+		_buffer = buf = str.getBytes(encoding);
+		_count = buf.length;
 	}
 
 	public String getString()
@@ -444,18 +462,20 @@ public class Octets implements Cloneable, Comparable<Octets>
 	@Override
 	public int hashCode()
 	{
-		int result = _count;
-		if(_count <= 32)
+		byte[] buf = _buffer;
+		int n = _count;
+		int result = n;
+		if(n <= 32)
 		{
-			for(int i = 0; i < _count; ++i)
-				result = 31 * result + _buffer[i];
+			for(int i = 0; i < n; ++i)
+				result = 31 * result + buf[i];
 		}
 		else
 		{
 			for(int i = 0; i < 16; ++i)
-				result = 31 * result + _buffer[i];
-			for(int i = _count - 16; i < _count; ++i)
-				result = 31 * result + _buffer[i];
+				result = 31 * result + buf[i];
+			for(int i = n - 16; i < n; ++i)
+				result = 31 * result + buf[i];
 		}
 		return result;
 	}
@@ -464,7 +484,8 @@ public class Octets implements Cloneable, Comparable<Octets>
 	public int compareTo(Octets o)
 	{
 		if(o == null) return 1;
-		int n = (_count <= o._count ? _count : o._count);
+		int n0 = _count, n1 = o._count;
+		int n = (n0 <= n1 ? n0 : n1);
 		byte[] buf = _buffer;
 		byte[] data = o._buffer;
 		for(int i = 0; i < n; ++i)
@@ -472,7 +493,7 @@ public class Octets implements Cloneable, Comparable<Octets>
 			int v = ((buf[i] & 0xff) - (data[i] & 0xff));
 			if(v != 0) return v;
 		}
-		return _count - o._count;
+		return n0 - n1;
 	}
 
 	@Override
@@ -481,10 +502,11 @@ public class Octets implements Cloneable, Comparable<Octets>
 		if(this == o) return true;
 		if(!(o instanceof Octets)) return false;
 		Octets oct = (Octets)o;
-		if(_count != oct._count) return false;
+		int n = _count;
+		if(n != oct._count) return false;
 		byte[] buf = _buffer;
 		byte[] data = oct._buffer;
-		for(int i = 0, n = _count; i < n; ++i)
+		for(int i = 0; i < n; ++i)
 			if(buf[i] != data[i]) return false;
 		return true;
 	}
@@ -493,10 +515,11 @@ public class Octets implements Cloneable, Comparable<Octets>
 	{
 		if(this == oct) return true;
 		if(oct == null) return false;
-		if(_count != oct._count) return false;
+		int n = _count;
+		if(n != oct._count) return false;
 		byte[] buf = _buffer;
 		byte[] data = oct._buffer;
-		for(int i = 0, n = _count; i < n; ++i)
+		for(int i = 0; i < n; ++i)
 			if(buf[i] != data[i]) return false;
 		return true;
 	}
@@ -509,15 +532,17 @@ public class Octets implements Cloneable, Comparable<Octets>
 
 	public StringBuilder dump(StringBuilder s)
 	{
-		if(s == null) s = new StringBuilder(_count * 3 + 4);
+		int n = _count;
+		if(s == null) s = new StringBuilder(n * 3 + 4);
 		s.append('[');
-		if(_count <= 0) return s.append(']');
+		if(n <= 0) return s.append(']');
+		byte[] buf = _buffer;
 		for(int i = 0;;)
 		{
-			int b = _buffer[i];
+			int b = buf[i];
 			s.append(HEX[(b >> 4) & 15]);
 			s.append(HEX[b & 15]);
-			if(++i >= _count) return s.append(']');
+			if(++i >= n) return s.append(']');
 			s.append(' ');
 		}
 	}
@@ -529,16 +554,18 @@ public class Octets implements Cloneable, Comparable<Octets>
 
 	public StringBuilder dumpJStr(StringBuilder s)
 	{
-		if(s == null) s = new StringBuilder(_count * 4 + 4);
+		int n = _count;
+		if(s == null) s = new StringBuilder(n * 4 + 4);
 		s.append('"');
-		if(_count <= 0) return s.append('"');
+		if(n <= 0) return s.append('"');
+		byte[] buf = _buffer;
 		for(int i = 0;;)
 		{
-			int b = _buffer[i];
+			int b = buf[i];
 			s.append('\\').append('x');
 			s.append(HEX[(b >> 4) & 15]);
 			s.append(HEX[b & 15]);
-			if(++i >= _count) return s.append('"');
+			if(++i >= n) return s.append('"');
 		}
 	}
 

@@ -19,7 +19,7 @@ public final class TestBeanHandler extends BeanHandler<TestBean>
 	@Override
 	public void onProcess(final NetManager manager, final IoSession session, final TestBean arg)
 	{
-		Log.log.debug("{}: arg={}", getClass().getName(), arg);
+		if(Log.hasDebug) Log.log.debug("{}: arg={}", getClass().getName(), arg);
 		manager.sendRpc(session, new TestRpcBean(arg), new TestRpcBeanHandler()
 		{
 			@Override

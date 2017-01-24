@@ -13,6 +13,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import org.apache.mina.core.filterchain.IoFilter;
+import org.apache.mina.core.filterchain.IoFilterChain;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.future.DefaultWriteFuture;
 import org.apache.mina.core.future.IoFuture;
@@ -41,11 +42,11 @@ public class NetManager implements IoHandler
 	private static final LongConcurrentHashMap<RpcBean<?, ?, ?>> _rpcs			 = new LongConcurrentHashMap<>();				   // 当前管理器等待回复的RPC
 	private static final ScheduledExecutorService				 _rpcThread;													   // 处理重连及RPC和事务超时的线程
 	private final String										 _name			 = getClass().getName();						   // 当前管理器的名字
-	private Class<? extends IoFilter>							 _pcf			 = BeanCodec.class;								   // 协议编码器的类
+	private volatile Class<? extends IoFilter>					 _pcf			 = BeanCodec.class;								   // 协议编码器的类
 	private volatile IntHashMap<BeanHandler<?>>					 _handlers		 = new IntHashMap<>(0);							   // bean的处理器
 	private volatile NioSocketAcceptor							 _acceptor;														   // mina的网络监听器
 	private volatile NioSocketConnector							 _connector;													   // mina的网络连接器
-	private int													 _processorCount = Runtime.getRuntime().availableProcessors() + 1; // 监听器或连接器的处理器数量
+	private volatile int										 _processorCount = Runtime.getRuntime().availableProcessors() + 1; // 监听器或连接器的处理器数量
 
 	static
 	{
@@ -392,9 +393,11 @@ public class NetManager implements IoHandler
 	{
 		if(session.isClosing() || obj == null) return null;
 		WriteFuture wf = new DefaultWriteFuture(session);
+		DefaultWriteRequest dwr = new DefaultWriteRequest(obj, wf, null);
+		IoFilterChain ifc = session.getFilterChain();
 		synchronized(session)
 		{
-			session.getFilterChain().fireFilterWrite(new DefaultWriteRequest(obj, wf, null));
+			ifc.fireFilterWrite(dwr);
 		}
 		return wf;
 	}
@@ -407,9 +410,11 @@ public class NetManager implements IoHandler
 		if(session.isClosing() || obj == null) return null;
 		WriteFuture wf = new DefaultWriteFuture(session);
 		if(listener != null) wf.addListener(listener);
+		DefaultWriteRequest dwr = new DefaultWriteRequest(obj, wf, null);
+		IoFilterChain ifc = session.getFilterChain();
 		synchronized(session)
 		{
-			session.getFilterChain().fireFilterWrite(new DefaultWriteRequest(obj, wf, null));
+			ifc.fireFilterWrite(dwr);
 		}
 		return wf;
 	}

@@ -192,15 +192,15 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	 * Returns a power of two table size for the given desired capacity.
 	 * See Hackers Delight, sec 3.2
 	 */
-	private static int tableSizeFor(int c)
+	private static int tableSizeFor(int n)
 	{
-		int n = c - 1;
+		n--;
 		n |= n >>> 1;
 		n |= n >>> 2;
 		n |= n >>> 4;
 		n |= n >>> 8;
 		n |= n >>> 16;
-		return (n < 0) ? 1 : (n >= MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : n + 1;
+		return n < 0 ? 1 : (n >= MAXIMUM_CAPACITY ? MAXIMUM_CAPACITY : n + 1);
 	}
 
 	/*
