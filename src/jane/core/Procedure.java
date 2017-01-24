@@ -21,26 +21,15 @@ public abstract class Procedure implements Runnable
 		void onException(Throwable e);
 	}
 
-	/**
-	 * 工作线程绑定的上下文对象
-	 */
-	static final class Context
-	{
-		private final ReentrantLock[] locks	= new ReentrantLock[Const.maxLockPerProcedure];	// 当前线程已经加过的锁
-		private int					  lockCount;											// 当前进程已经加过锁的数量
-		final SContext				  sctx	= new SContext();								// 当前线程上的安全修改的上下文
-		volatile Procedure			  proc;													// 当前运行的事务
-		volatile long				  beginTime;											// 当前/上个事务运行的起始时间. 用于判断是否超时
-	}
-
 	private static final ReentrantLock[]					 _lockPool	  = new ReentrantLock[Const.lockPoolSize]; // 全局共享的锁池
 	private static final AtomicReferenceArray<ReentrantLock> _lockCreator = new AtomicReferenceArray<>(_lockPool); // 锁池中锁的线程安全创造器(副本)
 	private static final int								 _lockMask	  = Const.lockPoolSize - 1;				   // 锁池下标的掩码
 	private static final ReentrantReadWriteLock				 _rwlCommit	  = new ReentrantReadWriteLock();		   // 用于数据提交的读写锁
 	private static ExceptionHandler							 _defaultEh;										   // 默认的全局异常处理
-	private final AtomicInteger								 _running	  = new AtomicInteger();				   // 事务是否在运行中(不能同时并发运行)
-	private volatile Object									 _sid;												   // 事务所属的SessionId
-	private Context											 _ctx;												   // 事务所属的线程上下文. 只在事务运行中有效
+
+	private ProcThread			_pt;							// 事务所属的线程上下文. 只在事务运行中有效
+	private final AtomicInteger	_running = new AtomicInteger();	// 事务是否在运行中(不能同时并发运行)
+	private volatile Object		_sid;							// 事务所属的SessionId
 
 	/**
 	 * 获取提交的写锁
@@ -66,7 +55,7 @@ public abstract class Procedure implements Runnable
 	public static Procedure getCurProcedure()
 	{
 		Thread t = Thread.currentThread();
-		return t instanceof ProcThread ? ((ProcThread)t).ctx.proc : null;
+		return t instanceof ProcThread ? ((ProcThread)t).proc : null;
 	}
 
 	/**
@@ -97,12 +86,12 @@ public abstract class Procedure implements Runnable
 
 	protected final void addOnCommit(Runnable r)
 	{
-		_ctx.sctx.addOnCommit(r);
+		_pt.sctx.addOnCommit(r);
 	}
 
 	protected final void addOnRollback(Runnable r)
 	{
-		_ctx.sctx.addOnRollback(r);
+		_pt.sctx.addOnRollback(r);
 	}
 
 	/**
@@ -113,9 +102,9 @@ public abstract class Procedure implements Runnable
 	 */
 	protected final void setUnintterrupted()
 	{
-		Context ctx = _ctx;
-		if(ctx != null)
-			ctx.beginTime = Long.MAX_VALUE;
+		ProcThread pt = _pt;
+		if(pt != null)
+			pt.beginTime = Long.MAX_VALUE;
 	}
 
 	@SuppressWarnings("serial")
@@ -213,23 +202,24 @@ public abstract class Procedure implements Runnable
 	 */
 	protected final void unlock()
 	{
-		Context ctx = _ctx;
-		if(ctx == null) throw new IllegalStateException("invalid lock/unlock out of procedure");
-		int lockCount = ctx.lockCount;
+		ProcThread pt = _pt;
+		if(pt == null) throw new IllegalStateException("invalid lock/unlock out of procedure");
+		int lockCount = pt.lockCount;
 		if(lockCount == 0) return;
-		if(ctx.sctx.hasDirty()) throw new IllegalStateException("invalid unlock after any dirty record");
+		if(pt.sctx.hasDirty()) throw new IllegalStateException("invalid unlock after any dirty record");
+		ReentrantLock[] locks = pt.locks;
 		for(int i = lockCount - 1; i >= 0; --i)
 		{
 			try
 			{
-				ctx.locks[i].unlock();
+				locks[i].unlock();
 			}
 			catch(Throwable e)
 			{
 				Log.log.fatal("UNLOCK FAILED!!!", e);
 			}
 		}
-		ctx.lockCount = 0;
+		pt.lockCount = 0;
 	}
 
 	/**
@@ -281,9 +271,9 @@ public abstract class Procedure implements Runnable
 	protected final void lock(int lockId) throws InterruptedException
 	{
 		unlock();
-		Context ctx = _ctx;
-		(ctx.locks[0] = getLock(lockId & _lockMask)).lockInterruptibly();
-		ctx.lockCount = 1;
+		ProcThread pt = _pt;
+		(pt.locks[0] = getLock(lockId & _lockMask)).lockInterruptibly();
+		pt.lockCount = 1;
 	}
 
 	/**
@@ -302,11 +292,12 @@ public abstract class Procedure implements Runnable
 		for(int i = 0; i < n; ++i)
 			lockIds[i] &= _lockMask;
 		Arrays.sort(lockIds);
-		Context ctx = _ctx;
+		ProcThread pt = _pt;
+		ReentrantLock[] locks = pt.locks;
 		for(int i = 0; i < n;)
 		{
-			(ctx.locks[i] = getLock(lockIds[i])).lockInterruptibly();
-			ctx.lockCount = ++i;
+			(locks[i] = getLock(lockIds[i])).lockInterruptibly();
+			pt.lockCount = ++i;
 		}
 	}
 
@@ -337,11 +328,12 @@ public abstract class Procedure implements Runnable
 				idxes[i++] = lockId & _lockMask;
 		}
 		Arrays.sort(idxes);
-		Context ctx = _ctx;
+		ProcThread pt = _pt;
+		ReentrantLock[] locks = pt.locks;
 		for(i = 0; i < n;)
 		{
-			(ctx.locks[i] = getLock(idxes[i])).lockInterruptibly();
-			ctx.lockCount = ++i;
+			(locks[i] = getLock(idxes[i])).lockInterruptibly();
+			pt.lockCount = ++i;
 		}
 	}
 
@@ -370,21 +362,22 @@ public abstract class Procedure implements Runnable
 	 */
 	private void lock2(int lockIdx0, int lockIdx1) throws InterruptedException
 	{
-		Context ctx = _ctx;
-		int i = ctx.lockCount;
+		ProcThread pt = _pt;
+		ReentrantLock[] locks = pt.locks;
+		int i = pt.lockCount;
 		if(lockIdx0 < lockIdx1)
 		{
-			(ctx.locks[i] = getLock(lockIdx0)).lockInterruptibly();
-			ctx.lockCount = ++i;
-			(ctx.locks[i] = getLock(lockIdx1)).lockInterruptibly();
-			ctx.lockCount = ++i;
+			(locks[i] = getLock(lockIdx0)).lockInterruptibly();
+			pt.lockCount = ++i;
+			(locks[i] = getLock(lockIdx1)).lockInterruptibly();
+			pt.lockCount = ++i;
 		}
 		else
 		{
-			(ctx.locks[i] = getLock(lockIdx1)).lockInterruptibly();
-			ctx.lockCount = ++i;
-			(ctx.locks[i] = getLock(lockIdx0)).lockInterruptibly();
-			ctx.lockCount = ++i;
+			(locks[i] = getLock(lockIdx1)).lockInterruptibly();
+			pt.lockCount = ++i;
+			(locks[i] = getLock(lockIdx0)).lockInterruptibly();
+			pt.lockCount = ++i;
 		}
 	}
 
@@ -394,42 +387,43 @@ public abstract class Procedure implements Runnable
 	 */
 	private void lock3(int lockIdx0, int lockIdx1, int lockIdx2) throws InterruptedException
 	{
-		Context ctx = _ctx;
-		int i = ctx.lockCount;
+		ProcThread pt = _pt;
+		ReentrantLock[] locks = pt.locks;
+		int i = pt.lockCount;
 		if(lockIdx0 <= lockIdx1)
 		{
 			if(lockIdx0 < lockIdx2)
 			{
-				(ctx.locks[i] = getLock(lockIdx0)).lockInterruptibly();
-				ctx.lockCount = ++i;
+				(locks[i] = getLock(lockIdx0)).lockInterruptibly();
+				pt.lockCount = ++i;
 				lock2(lockIdx1, lockIdx2);
 			}
 			else
 			{
-				(ctx.locks[i] = getLock(lockIdx2)).lockInterruptibly();
-				ctx.lockCount = ++i;
-				(ctx.locks[i] = getLock(lockIdx0)).lockInterruptibly();
-				ctx.lockCount = ++i;
-				(ctx.locks[i] = getLock(lockIdx1)).lockInterruptibly();
-				ctx.lockCount = ++i;
+				(locks[i] = getLock(lockIdx2)).lockInterruptibly();
+				pt.lockCount = ++i;
+				(locks[i] = getLock(lockIdx0)).lockInterruptibly();
+				pt.lockCount = ++i;
+				(locks[i] = getLock(lockIdx1)).lockInterruptibly();
+				pt.lockCount = ++i;
 			}
 		}
 		else
 		{
 			if(lockIdx1 < lockIdx2)
 			{
-				(ctx.locks[i] = getLock(lockIdx1)).lockInterruptibly();
-				ctx.lockCount = ++i;
+				(locks[i] = getLock(lockIdx1)).lockInterruptibly();
+				pt.lockCount = ++i;
 				lock2(lockIdx0, lockIdx2);
 			}
 			else
 			{
-				(ctx.locks[i] = getLock(lockIdx2)).lockInterruptibly();
-				ctx.lockCount = ++i;
-				(ctx.locks[i] = getLock(lockIdx1)).lockInterruptibly();
-				ctx.lockCount = ++i;
-				(ctx.locks[i] = getLock(lockIdx0)).lockInterruptibly();
-				ctx.lockCount = ++i;
+				(locks[i] = getLock(lockIdx2)).lockInterruptibly();
+				pt.lockCount = ++i;
+				(locks[i] = getLock(lockIdx1)).lockInterruptibly();
+				pt.lockCount = ++i;
+				(locks[i] = getLock(lockIdx0)).lockInterruptibly();
+				pt.lockCount = ++i;
 			}
 		}
 	}
@@ -474,7 +468,8 @@ public abstract class Procedure implements Runnable
 		lockId1 &= _lockMask;
 		lockId2 &= _lockMask;
 		lockId3 &= _lockMask;
-		Context ctx = _ctx;
+		ProcThread pt = _pt;
+		ReentrantLock[] locks = pt.locks;
 		int i = 0;
 		if(lockId0 <= lockId1)
 		{
@@ -482,49 +477,49 @@ public abstract class Procedure implements Runnable
 			{
 				if(lockId0 < lockId3)
 				{
-					(ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
-					ctx.lockCount = ++i;
+					(locks[i] = getLock(lockId0)).lockInterruptibly();
+					pt.lockCount = ++i;
 					lock3(lockId1, lockId2, lockId3);
 				}
 				else
 				{
-					(ctx.locks[i] = getLock(lockId3)).lockInterruptibly();
-					ctx.lockCount = ++i;
-					(ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
-					ctx.lockCount = ++i;
+					(locks[i] = getLock(lockId3)).lockInterruptibly();
+					pt.lockCount = ++i;
+					(locks[i] = getLock(lockId0)).lockInterruptibly();
+					pt.lockCount = ++i;
 					lock2(lockId1, lockId2);
 				}
 			}
 			else if(lockId2 < lockId3)
 			{
-				(ctx.locks[i] = getLock(lockId2)).lockInterruptibly();
-				ctx.lockCount = ++i;
+				(locks[i] = getLock(lockId2)).lockInterruptibly();
+				pt.lockCount = ++i;
 				if(lockId0 < lockId3)
 				{
-					(ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
-					ctx.lockCount = ++i;
+					(locks[i] = getLock(lockId0)).lockInterruptibly();
+					pt.lockCount = ++i;
 					lock2(lockId1, lockId3);
 				}
 				else
 				{
-					(ctx.locks[i] = getLock(lockId3)).lockInterruptibly();
-					ctx.lockCount = ++i;
-					(ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
-					ctx.lockCount = ++i;
-					(ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
-					ctx.lockCount = ++i;
+					(locks[i] = getLock(lockId3)).lockInterruptibly();
+					pt.lockCount = ++i;
+					(locks[i] = getLock(lockId0)).lockInterruptibly();
+					pt.lockCount = ++i;
+					(locks[i] = getLock(lockId1)).lockInterruptibly();
+					pt.lockCount = ++i;
 				}
 			}
 			else
 			{
-				(ctx.locks[i] = getLock(lockId3)).lockInterruptibly();
-				ctx.lockCount = ++i;
-				(ctx.locks[i] = getLock(lockId2)).lockInterruptibly();
-				ctx.lockCount = ++i;
-				(ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
-				ctx.lockCount = ++i;
-				(ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
-				ctx.lockCount = ++i;
+				(locks[i] = getLock(lockId3)).lockInterruptibly();
+				pt.lockCount = ++i;
+				(locks[i] = getLock(lockId2)).lockInterruptibly();
+				pt.lockCount = ++i;
+				(locks[i] = getLock(lockId0)).lockInterruptibly();
+				pt.lockCount = ++i;
+				(locks[i] = getLock(lockId1)).lockInterruptibly();
+				pt.lockCount = ++i;
 			}
 		}
 		else
@@ -533,49 +528,49 @@ public abstract class Procedure implements Runnable
 			{
 				if(lockId1 < lockId3)
 				{
-					(ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
-					ctx.lockCount = ++i;
+					(locks[i] = getLock(lockId1)).lockInterruptibly();
+					pt.lockCount = ++i;
 					lock3(lockId0, lockId2, lockId3);
 				}
 				else
 				{
-					(ctx.locks[i] = getLock(lockId3)).lockInterruptibly();
-					ctx.lockCount = ++i;
-					(ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
-					ctx.lockCount = ++i;
+					(locks[i] = getLock(lockId3)).lockInterruptibly();
+					pt.lockCount = ++i;
+					(locks[i] = getLock(lockId1)).lockInterruptibly();
+					pt.lockCount = ++i;
 					lock2(lockId0, lockId2);
 				}
 			}
 			else if(lockId2 < lockId3)
 			{
-				(ctx.locks[i] = getLock(lockId2)).lockInterruptibly();
-				ctx.lockCount = ++i;
+				(locks[i] = getLock(lockId2)).lockInterruptibly();
+				pt.lockCount = ++i;
 				if(lockId1 < lockId3)
 				{
-					(ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
-					ctx.lockCount = ++i;
+					(locks[i] = getLock(lockId1)).lockInterruptibly();
+					pt.lockCount = ++i;
 					lock2(lockId0, lockId3);
 				}
 				else
 				{
-					(ctx.locks[i] = getLock(lockId3)).lockInterruptibly();
-					ctx.lockCount = ++i;
-					(ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
-					ctx.lockCount = ++i;
-					(ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
-					ctx.lockCount = ++i;
+					(locks[i] = getLock(lockId3)).lockInterruptibly();
+					pt.lockCount = ++i;
+					(locks[i] = getLock(lockId1)).lockInterruptibly();
+					pt.lockCount = ++i;
+					(locks[i] = getLock(lockId0)).lockInterruptibly();
+					pt.lockCount = ++i;
 				}
 			}
 			else
 			{
-				(ctx.locks[i] = getLock(lockId3)).lockInterruptibly();
-				ctx.lockCount = ++i;
-				(ctx.locks[i] = getLock(lockId2)).lockInterruptibly();
-				ctx.lockCount = ++i;
-				(ctx.locks[i] = getLock(lockId1)).lockInterruptibly();
-				ctx.lockCount = ++i;
-				(ctx.locks[i] = getLock(lockId0)).lockInterruptibly();
-				ctx.lockCount = ++i;
+				(locks[i] = getLock(lockId3)).lockInterruptibly();
+				pt.lockCount = ++i;
+				(locks[i] = getLock(lockId2)).lockInterruptibly();
+				pt.lockCount = ++i;
+				(locks[i] = getLock(lockId1)).lockInterruptibly();
+				pt.lockCount = ++i;
+				(locks[i] = getLock(lockId0)).lockInterruptibly();
+				pt.lockCount = ++i;
 			}
 		}
 	}
@@ -616,18 +611,17 @@ public abstract class Procedure implements Runnable
 			Thread.sleep(Long.MAX_VALUE); // 如果有退出信号则线程睡死等待终结
 			throw new IllegalStateException();
 		}
-		Context ctx = null;
+		ProcThread pt = null;
 		SContext sctx = null;
 		ReadLock rl = null;
 		try
 		{
-			ProcThread pt = (ProcThread)Thread.currentThread();
+			_pt = pt = (ProcThread)Thread.currentThread();
 			rl = _rwlCommit.readLock();
 			rl.lock();
-			_ctx = ctx = pt.ctx;
-			sctx = ctx.sctx;
-			ctx.beginTime = System.currentTimeMillis();
-			ctx.proc = this;
+			sctx = pt.sctx;
+			pt.beginTime = System.currentTimeMillis();
+			pt.proc = this;
 			for(int n = Const.maxProceduerRedo;;)
 			{
 				if(Thread.interrupted())
@@ -668,17 +662,17 @@ public abstract class Procedure implements Runnable
 		}
 		finally
 		{
-			if(ctx != null)
+			if(pt != null)
 				unlock();
 			synchronized(this)
 			{
-				if(ctx != null)
-					ctx.proc = null;
+				if(pt != null)
+					pt.proc = null;
 				Thread.interrupted(); // 清除interrupted标识
 			}
 			if(rl != null)
 				rl.unlock();
-			_ctx = null;
+			_pt = null;
 			_running.set(0);
 		}
 	}

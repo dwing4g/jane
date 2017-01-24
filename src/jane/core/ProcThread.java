@@ -2,15 +2,18 @@ package jane.core;
 
 import java.lang.management.ManagementFactory;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import jane.core.Procedure.Context;
+import java.util.concurrent.locks.ReentrantLock;
 
 public final class ProcThread extends Thread
 {
 	private static final ConcurrentLinkedQueue<ProcThread> _procThreads	= new ConcurrentLinkedQueue<>(); // 当前运行的全部事务线程. 用于判断是否超时
 	private static volatile long						   _interruptCount;								 // 事务被打断的次数统计
 
-	final Context  ctx	= new Context();
-	final SContext sctx	= ctx.sctx;
+	final ReentrantLock[] locks	= new ReentrantLock[Const.maxLockPerProcedure];	// 当前线程已经加过的锁
+	int					  lockCount;											// 当前进程已经加过锁的数量
+	final SContext		  sctx	= new SContext();								// 当前线程上的安全修改的上下文
+	volatile Procedure	  proc;													// 当前运行的事务
+	volatile long		  beginTime;											// 当前/上个事务运行的起始时间. 用于判断是否超时
 
 	public ProcThread(String name, Runnable r)
 	{
@@ -44,28 +47,27 @@ public final class ProcThread extends Thread
 						long procTimeout = (long)Const.procedureTimeout * 1000;
 						long procDeadlockTimeout = (long)Const.procedureDeadlockTimeout * 1000;
 						long procTimoutMin = Math.min(procTimeout, procDeadlockTimeout);
-						for(ProcThread t : _procThreads)
+						for(ProcThread pt : _procThreads)
 						{
-							if(t.isAlive())
+							if(pt.isAlive())
 							{
-								Context ctx = t.ctx;
-								Procedure p = ctx.proc;
-								if(p != null && now - ctx.beginTime > procTimoutMin)
+								Procedure p = pt.proc;
+								if(p != null && now - pt.beginTime > procTimoutMin)
 								{
 									synchronized(p)
 									{
-										if(p == t.ctx.proc)
+										if(p == pt.proc)
 										{
-											long timeout = now - ctx.beginTime;
+											long timeout = now - pt.beginTime;
 											if(timeout > procTimeout)
 											{
-												StringBuilder sb = new StringBuilder(4096);
+												StringBuilder sb = new StringBuilder(2000);
 												sb.append("procedure({}) in {} interrupted for timeout ({} ms): sid={}\n");
-												for(StackTraceElement ste : t.getStackTrace())
+												for(StackTraceElement ste : pt.getStackTrace())
 													sb.append("\tat ").append(ste).append('\n');
-												Log.log.error(sb.toString(), p.getClass().getName(), t, timeout, p.getSid());
+												Log.log.error(sb.toString(), p.getClass().getName(), pt, timeout, p.getSid());
 												++_interruptCount;
-												t.interrupt();
+												pt.interrupt();
 											}
 											else if(timeout > procDeadlockTimeout)
 											{
@@ -76,18 +78,18 @@ public final class ProcThread extends Thread
 												}
 												if(tids != null)
 												{
-													long tid = t.getId();
+													long tid = pt.getId();
 													for(int i = tids.length - 1; i >= 0; --i)
 													{
 														if(tids[i] == tid)
 														{
-															StringBuilder sb = new StringBuilder(4096);
+															StringBuilder sb = new StringBuilder(2000);
 															sb.append("procedure({}) in {} interrupted for deadlock timeout({} ms): sid={}\n");
-															for(StackTraceElement ste : t.getStackTrace())
+															for(StackTraceElement ste : pt.getStackTrace())
 																sb.append("\tat ").append(ste).append('\n');
-															Log.log.error(sb.toString(), p.getClass().getName(), t, timeout, p.getSid());
+															Log.log.error(sb.toString(), p.getClass().getName(), pt, timeout, p.getSid());
 															++_interruptCount;
-															t.interrupt();
+															pt.interrupt();
 															break;
 														}
 													}
@@ -98,7 +100,7 @@ public final class ProcThread extends Thread
 								}
 							}
 							else
-								_procThreads.remove(t);
+								_procThreads.remove(pt);
 						}
 					}
 					catch(Throwable e)
