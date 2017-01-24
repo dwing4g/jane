@@ -72,11 +72,12 @@ public final class StorageLevelDB implements Storage
 
 		private OctetsStream getKey(long k)
 		{
-			OctetsStream key = new OctetsStream(14);
-			if(_tableIdLen == 1)
-				key.append(_tableIdBuf[0]);
+			int tableIdLen = _tableIdLen;
+			OctetsStream key = new OctetsStream(tableIdLen + 9);
+			if(tableIdLen == 1)
+				key.append((byte)_tableId);
 			else
-				key.append(_tableIdBuf, 0, _tableIdLen);
+				key.append(_tableIdBuf, 0, tableIdLen);
 			key.marshal(k);
 			return key;
 		}
@@ -98,23 +99,23 @@ public final class StorageLevelDB implements Storage
 		{
 			OctetsStream val = dbget(getKey(k));
 			if(val == null) return null;
-			val.setExceptionInfo(true);
-			V v = _stubV.create();
 			try
 			{
+				val.setExceptionInfo(true);
 				int format = val.unmarshalInt1();
 				if(format != 0)
 				{
 					throw new IllegalStateException("unknown record value format(" + format + ") in table("
-							+ _tableName + ',' + _tableId + "),key=(" + k + ')');
+							+ _tableName + ',' + _tableId + "),key=" + k);
 				}
+				V v = _stubV.create();
 				v.unmarshal(val);
+				return v;
 			}
 			catch(MarshalException e)
 			{
 				throw new RuntimeException(e);
 			}
-			return v;
 		}
 
 		@Override
@@ -323,11 +324,12 @@ public final class StorageLevelDB implements Storage
 		@Override
 		protected OctetsStream getKey(Octets k)
 		{
-			OctetsStream key = new OctetsStream(_tableIdLen + k.size());
-			if(_tableIdLen == 1)
-				key.append(_tableIdBuf[0]);
+			int tableIdLen = _tableIdLen;
+			OctetsStream key = new OctetsStream(tableIdLen + k.size());
+			if(tableIdLen == 1)
+				key.append((byte)_tableId);
 			else
-				key.append(_tableIdBuf, 0, _tableIdLen);
+				key.append(_tableIdBuf, 0, tableIdLen);
 			key.append(k);
 			return key;
 		}
@@ -337,23 +339,23 @@ public final class StorageLevelDB implements Storage
 		{
 			OctetsStream val = dbget(getKey(k));
 			if(val == null) return null;
-			val.setExceptionInfo(true);
-			V v = _stubV.create();
 			try
 			{
+				val.setExceptionInfo(true);
 				int format = val.unmarshalInt1();
 				if(format != 0)
 				{
 					throw new IllegalStateException("unknown record value format(" + format + ") in table("
-							+ _tableName + ',' + _tableId + "),key=(" + k + ')');
+							+ _tableName + ',' + _tableId + "),key=" + k);
 				}
+				V v = _stubV.create();
 				v.unmarshal(val);
+				return v;
 			}
 			catch(MarshalException e)
 			{
 				throw new RuntimeException(e);
 			}
-			return v;
 		}
 
 		@Override
@@ -373,12 +375,13 @@ public final class StorageLevelDB implements Storage
 		@Override
 		protected OctetsStream getKey(String k)
 		{
+			int tableIdLen = _tableIdLen;
 			int n = k.length();
-			OctetsStream key = new OctetsStream(_tableIdLen + n * 3);
-			if(_tableIdLen == 1)
-				key.append(_tableIdBuf[0]);
+			OctetsStream key = new OctetsStream(tableIdLen + n * 3);
+			if(tableIdLen == 1)
+				key.append((byte)_tableId);
 			else
-				key.append(_tableIdBuf, 0, _tableIdLen);
+				key.append(_tableIdBuf, 0, tableIdLen);
 			for(int i = 0; i < n; ++i)
 				key.marshalUTF8(k.charAt(i));
 			return key;
@@ -389,23 +392,23 @@ public final class StorageLevelDB implements Storage
 		{
 			OctetsStream val = dbget(getKey(k));
 			if(val == null) return null;
-			val.setExceptionInfo(true);
-			V v = _stubV.create();
 			try
 			{
+				val.setExceptionInfo(true);
 				int format = val.unmarshalInt1();
 				if(format != 0)
 				{
 					throw new IllegalStateException("unknown record value format(" + format + ") in table("
-							+ _tableName + ',' + _tableId + "),key=(" + k + ')');
+							+ _tableName + ',' + _tableId + "),key=\"" + k + '"');
 				}
+				V v = _stubV.create();
 				v.unmarshal(val);
+				return v;
 			}
 			catch(MarshalException e)
 			{
 				throw new RuntimeException(e);
 			}
-			return v;
 		}
 
 		@Override
@@ -429,11 +432,12 @@ public final class StorageLevelDB implements Storage
 		@Override
 		protected OctetsStream getKey(K k)
 		{
-			OctetsStream key = new OctetsStream(_tableIdLen + ((Bean<V>)k).initSize());
-			if(_tableIdLen == 1)
-				key.append(_tableIdBuf[0]);
+			int tableIdLen = _tableIdLen;
+			OctetsStream key = new OctetsStream(tableIdLen + ((Bean<V>)k).initSize());
+			if(tableIdLen == 1)
+				key.append((byte)_tableId);
 			else
-				key.append(_tableIdBuf, 0, _tableIdLen);
+				key.append(_tableIdBuf, 0, tableIdLen);
 			return ((Bean<V>)k).marshal(key);
 		}
 
@@ -442,23 +446,23 @@ public final class StorageLevelDB implements Storage
 		{
 			OctetsStream val = dbget(getKey(k));
 			if(val == null) return null;
-			val.setExceptionInfo(true);
-			V v = _stubV.create();
 			try
 			{
+				val.setExceptionInfo(true);
 				int format = val.unmarshalInt1();
 				if(format != 0)
 				{
 					throw new IllegalStateException("unknown record value format(" + format + ") in table("
 							+ _tableName + ',' + _tableId + "),key=" + k);
 				}
+				V v = _stubV.create();
 				v.unmarshal(val);
+				return v;
 			}
 			catch(MarshalException e)
 			{
 				throw new RuntimeException(e);
 			}
-			return v;
 		}
 
 		@SuppressWarnings("unchecked")
