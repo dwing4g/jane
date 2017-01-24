@@ -38,4 +38,6 @@ if "%MAIN%" equ "b" set MAIN=jane.test.TestDBBenchmark
 md log 2>nul
 md db  2>nul
 
+move /y log\gc.log log\gc.old.log 1>nul 2>nul
+
 java %JVM% -cp %LIB%;. %MAIN% %2 %3 %4 %5 %6 %7 %8 %9
