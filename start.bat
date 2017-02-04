@@ -10,7 +10,9 @@ set JVM=^
 -Xloggc:log/gc.log ^
 -XX:+PrintGCDetails ^
 -XX:+PrintGCDateStamps ^
--verbose:gc
+-verbose:gc ^
+-Dsun.stdout.encoding=gbk ^
+-Dsun.stderr.encoding=gbk
 
 rem set JVM=^
 rem -Xms128m ^
@@ -23,9 +25,9 @@ rem -XX:+PrintGCDateStamps
 
 set LIB=^
 lib/slf4j-api-1.7.22.jar;^
-lib/log4j-core-2.7.jar;^
-lib/log4j-api-2.7.jar;^
-lib/log4j-slf4j-impl-2.7.jar;^
+lib/log4j-core-2.8.jar;^
+lib/log4j-api-2.8.jar;^
+lib/log4j-slf4j-impl-2.8.jar;^
 lib/mina-core-2.0.16.jar;^
 lib/luaj-jse-2.0.3.jar;^
 jane-core.jar;^
