@@ -4,18 +4,18 @@
  make_linux.sh                   |   26 +
  make_mingw.bat                  |   34 +
  port/endian.h                   |    5 +
- snappy/snappy-internal.h        |  212 ++++++
+ snappy/snappy-internal.h        |  227 ++++++
  snappy/snappy-sinksource.cc     |  104 +++
  snappy/snappy-sinksource.h      |  182 +++++
  snappy/snappy-stubs-internal.cc |   42 ++
- snappy/snappy-stubs-internal.h  |  528 +++++++++++++++
- snappy/snappy-stubs-public.h    |   98 +++
- snappy/snappy.cc                | 1400 +++++++++++++++++++++++++++++++++++++++
+ snappy/snappy-stubs-internal.h  |  528 ++++++++++++++
+ snappy/snappy-stubs-public.h    |  100 +++
+ snappy/snappy.cc                | 1464 +++++++++++++++++++++++++++++++++++++++
  snappy/snappy.h                 |  203 ++++++
  util/env_windows.cc             |  390 +++++++++++
- util/jni.cc                     |  429 ++++++++++++
+ util/jni.cc                     |  453 ++++++++++++
  util/logging.cc                 |    2 +-
- 17 files changed, 3665 insertions(+), 1 deletion(-)
+ 17 files changed, 3770 insertions(+), 1 deletion(-)
 
 diff --git a/.gitignore b/.gitignore
 index 0630251..e690ecf 100644
@@ -33,7 +33,7 @@ index 0630251..e690ecf 100644
  leveldbutil
 +/tmp/
 diff --git a/db/db_impl.cc b/db/db_impl.cc
-index 60f4e66..3f02da2 100644
+index f43ad76..3a158e2 100644
 --- a/db/db_impl.cc
 +++ b/db/db_impl.cc
 @@ -35,6 +35,8 @@
@@ -45,7 +45,7 @@ index 60f4e66..3f02da2 100644
  const int kNumNonTableCacheFiles = 10;
  
  // Information kept for every waiting writer
-@@ -660,7 +662,9 @@ void DBImpl::MaybeScheduleCompaction() {
+@@ -661,7 +663,9 @@ void DBImpl::MaybeScheduleCompaction() {
  }
  
  void DBImpl::BGWork(void* db) {
@@ -154,10 +154,10 @@ index 0000000..7f808fb
 +#endif
 diff --git a/snappy/snappy-internal.h b/snappy/snappy-internal.h
 new file mode 100644
-index 0000000..c4d1f6d
+index 0000000..b8355c0
 --- /dev/null
 +++ b/snappy/snappy-internal.h
-@@ -0,0 +1,212 @@
+@@ -0,0 +1,227 @@
 +// Copyright 2008 Google Inc. All Rights Reserved.
 +//
 +// Redistribution and use in source and binary forms, with or without
@@ -230,11 +230,12 @@ index 0000000..c4d1f6d
 +                       uint16* table,
 +                       const int table_size);
 +
-+// Return the largest n such that
++// Find the largest n such that
 +//
 +//   s1[0,n-1] == s2[0,n-1]
 +//   and n <= (s2_limit - s2).
 +//
++// Return make_pair(n, n < 8).
 +// Does not read *s2_limit or beyond.
 +// Does not read *(s1 + (s2_limit - s2)) or beyond.
 +// Requires that s2_limit >= s2.
@@ -242,11 +243,28 @@ index 0000000..c4d1f6d
 +// Separate implementation for x86_64, for speed.  Uses the fact that
 +// x86_64 is little endian.
 +#if defined(ARCH_K8)
-+static inline int FindMatchLength(const char* s1,
-+                                  const char* s2,
-+                                  const char* s2_limit) {
++static inline std::pair<size_t, bool> FindMatchLength(const char* s1,
++                                                      const char* s2,
++                                                      const char* s2_limit) {
 +  assert(s2_limit >= s2);
-+  int matched = 0;
++  size_t matched = 0;
++
++  // This block isn't necessary for correctness; we could just start looping
++  // immediately.  As an optimization though, it is useful.  It creates some not
++  // uncommon code paths that determine, without extra effort, whether the match
++  // length is less than 8.  In short, we are hoping to avoid a conditional
++  // branch, and perhaps get better code layout from the C++ compiler.
++  if (PREDICT_TRUE(s2 <= s2_limit - 8)) {
++    uint64 a1 = UNALIGNED_LOAD64(s1);
++    uint64 a2 = UNALIGNED_LOAD64(s2);
++    if (a1 != a2) {
++      return std::pair<size_t, bool>(Bits::FindLSBSetNonZero64(a1 ^ a2) >> 3,
++                                     true);
++    } else {
++      matched = 8;
++      s2 += 8;
++    }
++  }
 +
 +  // Find out how long the match is. We loop over the data 64 bits at a
 +  // time until we find a 64-bit block that doesn't match; then we find
@@ -257,14 +275,11 @@ index 0000000..c4d1f6d
 +      s2 += 8;
 +      matched += 8;
 +    } else {
-+      // On current (mid-2008) Opteron models there is a 3% more
-+      // efficient code sequence to find the first non-matching byte.
-+      // However, what follows is ~10% better on Intel Core 2 and newer,
-+      // and we expect AMD's bsf instruction to improve.
 +      uint64 x = UNALIGNED_LOAD64(s2) ^ UNALIGNED_LOAD64(s1 + matched);
 +      int matching_bits = Bits::FindLSBSetNonZero64(x);
 +      matched += matching_bits >> 3;
-+      return matched;
++      assert(matched >= 8);
++      return std::pair<size_t, bool>(matched, false);
 +    }
 +  }
 +  while (PREDICT_TRUE(s2 < s2_limit)) {
@@ -272,15 +287,15 @@ index 0000000..c4d1f6d
 +      ++s2;
 +      ++matched;
 +    } else {
-+      return matched;
++      return std::pair<size_t, bool>(matched, matched < 8);
 +    }
 +  }
-+  return matched;
++  return std::pair<size_t, bool>(matched, matched < 8);
 +}
 +#else
-+static inline int FindMatchLength(const char* s1,
-+                                  const char* s2,
-+                                  const char* s2_limit) {
++static inline std::pair<size_t, bool> FindMatchLength(const char* s1,
++                                                      const char* s2,
++                                                      const char* s2_limit) {
 +  // Implementation based on the x86-64 version, above.
 +  assert(s2_limit >= s2);
 +  int matched = 0;
@@ -300,7 +315,7 @@ index 0000000..c4d1f6d
 +      ++matched;
 +    }
 +  }
-+  return matched;
++  return std::pair<size_t, bool>(matched, matched < 8);
 +}
 +#endif
 +
@@ -1252,10 +1267,10 @@ index 0000000..1954c63
 +#endif  // THIRD_PARTY_SNAPPY_OPENSOURCE_SNAPPY_STUBS_INTERNAL_H_
 diff --git a/snappy/snappy-stubs-public.h b/snappy/snappy-stubs-public.h
 new file mode 100644
-index 0000000..c156ba4
+index 0000000..564e422
 --- /dev/null
 +++ b/snappy/snappy-stubs-public.h
-@@ -0,0 +1,98 @@
+@@ -0,0 +1,100 @@
 +// Copyright 2011 Google Inc. All Rights Reserved.
 +// Author: sesse@google.com (Steinar H. Gunderson)
 +//
@@ -1308,7 +1323,7 @@ index 0000000..c156ba4
 +
 +#define SNAPPY_MAJOR 1
 +#define SNAPPY_MINOR 1
-+#define SNAPPY_PATCHLEVEL 3
++#define SNAPPY_PATCHLEVEL 4
 +#define SNAPPY_VERSION \
 +    ((SNAPPY_MAJOR << 16) | (SNAPPY_MINOR << 8) | SNAPPY_PATCHLEVEL)
 +
@@ -1338,9 +1353,11 @@ index 0000000..c156ba4
 +
 +typedef std::string string;
 +
++#ifndef DISALLOW_COPY_AND_ASSIGN
 +#define DISALLOW_COPY_AND_ASSIGN(TypeName) \
 +  TypeName(const TypeName&);               \
 +  void operator=(const TypeName&)
++#endif
 +
 +#if !0
 +// Windows does not have an iovec type, yet the concept is universally useful.
@@ -1356,10 +1373,10 @@ index 0000000..c156ba4
 +#endif  // THIRD_PARTY_SNAPPY_OPENSOURCE_SNAPPY_STUBS_PUBLIC_H_
 diff --git a/snappy/snappy.cc b/snappy/snappy.cc
 new file mode 100644
-index 0000000..8a3668c
+index 0000000..4bcea0b
 --- /dev/null
 +++ b/snappy/snappy.cc
-@@ -0,0 +1,1400 @@
+@@ -0,0 +1,1464 @@
 +// Copyright 2005 Google Inc. All Rights Reserved.
 +//
 +// Redistribution and use in source and binary forms, with or without
@@ -1392,6 +1409,9 @@ index 0000000..8a3668c
 +#include "snappy-internal.h"
 +#include "snappy-sinksource.h"
 +
++#if defined(__x86_64__) || defined(_M_X64)
++#include <emmintrin.h>
++#endif
 +#include <stdio.h>
 +
 +#include <algorithm>
@@ -1403,7 +1423,6 @@ index 0000000..8a3668c
 +
 +using internal::COPY_1_BYTE_OFFSET;
 +using internal::COPY_2_BYTE_OFFSET;
-+using internal::COPY_4_BYTE_OFFSET;
 +using internal::LITERAL;
 +using internal::char_table;
 +using internal::kMaximumTagLength;
@@ -1446,71 +1465,125 @@ index 0000000..8a3668c
 +  return 32 + source_len + source_len/6;
 +}
 +
-+// Copy "len" bytes from "src" to "op", one byte at a time.  Used for
-+// handling COPY operations where the input and output regions may
-+// overlap.  For example, suppose:
-+//    src    == "ab"
-+//    op     == src + 2
-+//    len    == 20
-+// After IncrementalCopy(src, op, len), the result will have
-+// eleven copies of "ab"
-+//    ababababababababababab
-+// Note that this does not match the semantics of either memcpy()
-+// or memmove().
-+static inline void IncrementalCopy(const char* src, char* op, ssize_t len) {
-+  assert(len > 0);
-+  do {
-+    *op++ = *src++;
-+  } while (--len > 0);
-+}
-+
-+// Equivalent to IncrementalCopy except that it can write up to ten extra
-+// bytes after the end of the copy, and that it is faster.
-+//
-+// The main part of this loop is a simple copy of eight bytes at a time until
-+// we've copied (at least) the requested amount of bytes.  However, if op and
-+// src are less than eight bytes apart (indicating a repeating pattern of
-+// length < 8), we first need to expand the pattern in order to get the correct
-+// results. For instance, if the buffer looks like this, with the eight-byte
-+// <src> and <op> patterns marked as intervals:
-+//
-+//    abxxxxxxxxxxxx
-+//    [------]           src
-+//      [------]         op
-+//
-+// a single eight-byte copy from <src> to <op> will repeat the pattern once,
-+// after which we can move <op> two bytes without moving <src>:
-+//
-+//    ababxxxxxxxxxx
-+//    [------]           src
-+//        [------]       op
-+//
-+// and repeat the exercise until the two no longer overlap.
-+//
-+// This allows us to do very well in the special case of one single byte
-+// repeated many times, without taking a big hit for more general cases.
-+//
-+// The worst case of extra writing past the end of the match occurs when
-+// op - src == 1 and len == 1; the last copy will read from byte positions
-+// [0..7] and write to [4..11], whereas it was only supposed to write to
-+// position 1. Thus, ten excess bytes.
-+
 +namespace {
 +
-+const int kMaxIncrementCopyOverflow = 10;
++void UnalignedCopy64(const void* src, void* dst) {
++  memcpy(dst, src, 8);
++}
 +
-+inline void IncrementalCopyFastPath(const char* src, char* op, ssize_t len) {
-+  while (PREDICT_FALSE(op - src < 8)) {
-+    UnalignedCopy64(src, op);
-+    len -= op - src;
-+    op += op - src;
++void UnalignedCopy128(const void* src, void* dst) {
++  // TODO(alkis): Remove this when we upgrade to a recent compiler that emits
++  // SSE2 moves for memcpy(dst, src, 16).
++#ifdef __SSE2__
++  __m128i x = _mm_loadu_si128(static_cast<const __m128i*>(src));
++  _mm_storeu_si128(static_cast<__m128i*>(dst), x);
++#else
++  memcpy(dst, src, 16);
++#endif
++}
++
++// Copy [src, src+(op_limit-op)) to [op, (op_limit-op)) a byte at a time. Used
++// for handling COPY operations where the input and output regions may overlap.
++// For example, suppose:
++//    src       == "ab"
++//    op        == src + 2
++//    op_limit  == op + 20
++// After IncrementalCopySlow(src, op, op_limit), the result will have eleven
++// copies of "ab"
++//    ababababababababababab
++// Note that this does not match the semantics of either memcpy() or memmove().
++inline char* IncrementalCopySlow(const char* src, char* op,
++                                 char* const op_limit) {
++  while (op < op_limit) {
++    *op++ = *src++;
 +  }
-+  while (len > 0) {
++  return op_limit;
++}
++
++// Copy [src, src+(op_limit-op)) to [op, (op_limit-op)) but faster than
++// IncrementalCopySlow. buf_limit is the address past the end of the writable
++// region of the buffer.
++inline char* IncrementalCopy(const char* src, char* op, char* const op_limit,
++                             char* const buf_limit) {
++  // Terminology:
++  //
++  // slop = buf_limit - op
++  // pat  = op - src
++  // len  = limit - op
++  assert(src < op);
++  assert(op_limit <= buf_limit);
++  // NOTE: The compressor always emits 4 <= len <= 64. It is ok to assume that
++  // to optimize this function but we have to also handle these cases in case
++  // the input does not satisfy these conditions.
++
++  size_t pattern_size = op - src;
++  // The cases are split into different branches to allow the branch predictor,
++  // FDO, and static prediction hints to work better. For each input we list the
++  // ratio of invocations that match each condition.
++  //
++  // input        slop < 16   pat < 8  len > 16
++  // ------------------------------------------
++  // html|html4|cp   0%         1.01%    27.73%
++  // urls            0%         0.88%    14.79%
++  // jpg             0%        64.29%     7.14%
++  // pdf             0%         2.56%    58.06%
++  // txt[1-4]        0%         0.23%     0.97%
++  // pb              0%         0.96%    13.88%
++  // bin             0.01%     22.27%    41.17%
++  //
++  // It is very rare that we don't have enough slop for doing block copies. It
++  // is also rare that we need to expand a pattern. Small patterns are common
++  // for incompressible formats and for those we are plenty fast already.
++  // Lengths are normally not greater than 16 but they vary depending on the
++  // input. In general if we always predict len <= 16 it would be an ok
++  // prediction.
++  //
++  // In order to be fast we want a pattern >= 8 bytes and an unrolled loop
++  // copying 2x 8 bytes at a time.
++
++  // Handle the uncommon case where pattern is less than 8 bytes.
++  if (PREDICT_FALSE(pattern_size < 8)) {
++    // Expand pattern to at least 8 bytes. The worse case scenario in terms of
++    // buffer usage is when the pattern is size 3. ^ is the original position
++    // of op. x are irrelevant bytes copied by the last UnalignedCopy64.
++    //
++    // abc
++    // abcabcxxxxx
++    // abcabcabcabcxxxxx
++    //    ^
++    // The last x is 14 bytes after ^.
++    if (PREDICT_TRUE(op <= buf_limit - 14)) {
++      while (pattern_size < 8) {
++        UnalignedCopy64(src, op);
++        op += pattern_size;
++        pattern_size *= 2;
++      }
++      if (PREDICT_TRUE(op >= op_limit)) return op_limit;
++    } else {
++      return IncrementalCopySlow(src, op, op_limit);
++    }
++  }
++  assert(pattern_size >= 8);
++
++  // Copy 2x 8 bytes at a time. Because op - src can be < 16, a single
++  // UnalignedCopy128 might overwrite data in op. UnalignedCopy64 is safe
++  // because expanding the pattern to at least 8 bytes guarantees that
++  // op - src >= 8.
++  while (op <= buf_limit - 16) {
++    UnalignedCopy64(src, op);
++    UnalignedCopy64(src + 8, op + 8);
++    src += 16;
++    op += 16;
++    if (PREDICT_TRUE(op >= op_limit)) return op_limit;
++  }
++  // We only take this branch if we didn't have enough slop and we can do a
++  // single 8 byte copy.
++  if (PREDICT_FALSE(op <= buf_limit - 8)) {
 +    UnalignedCopy64(src, op);
 +    src += 8;
 +    op += 8;
-+    len -= 8;
 +  }
++  return IncrementalCopySlow(src, op, op_limit);
 +}
 +
 +}  // namespace
@@ -1519,26 +1592,29 @@ index 0000000..8a3668c
 +                                const char* literal,
 +                                int len,
 +                                bool allow_fast_path) {
-+  int n = len - 1;      // Zero-length literals are disallowed
-+  if (n < 60) {
++  // The vast majority of copies are below 16 bytes, for which a
++  // call to memcpy is overkill. This fast path can sometimes
++  // copy up to 15 bytes too much, but that is okay in the
++  // main loop, since we have a bit to go on for both sides:
++  //
++  //   - The input will always have kInputMarginBytes = 15 extra
++  //     available bytes, as long as we're in the main loop, and
++  //     if not, allow_fast_path = false.
++  //   - The output will always have 32 spare bytes (see
++  //     MaxCompressedLength).
++  assert(len > 0);      // Zero-length literals are disallowed
++  int n = len - 1;
++  if (allow_fast_path && len <= 16) {
 +    // Fits in tag byte
 +    *op++ = LITERAL | (n << 2);
 +
-+    // The vast majority of copies are below 16 bytes, for which a
-+    // call to memcpy is overkill. This fast path can sometimes
-+    // copy up to 15 bytes too much, but that is okay in the
-+    // main loop, since we have a bit to go on for both sides:
-+    //
-+    //   - The input will always have kInputMarginBytes = 15 extra
-+    //     available bytes, as long as we're in the main loop, and
-+    //     if not, allow_fast_path = false.
-+    //   - The output will always have 32 spare bytes (see
-+    //     MaxCompressedLength).
-+    if (allow_fast_path && len <= 16) {
-+      UnalignedCopy64(literal, op);
-+      UnalignedCopy64(literal + 8, op + 8);
-+      return op + len;
-+    }
++    UnalignedCopy128(literal, op);
++    return op + len;
++  }
++
++  if (n < 60) {
++    // Fits in tag byte
++    *op++ = LITERAL | (n << 2);
 +  } else {
 +    // Encode in upcoming bytes
 +    char* base = op;
@@ -1557,42 +1633,54 @@ index 0000000..8a3668c
 +  return op + len;
 +}
 +
-+static inline char* EmitCopyLessThan64(char* op, size_t offset, int len) {
++static inline char* EmitCopyAtMost64(char* op, size_t offset, size_t len,
++                                     bool len_less_than_12) {
 +  assert(len <= 64);
 +  assert(len >= 4);
 +  assert(offset < 65536);
++  assert(len_less_than_12 == (len < 12));
 +
-+  if ((len < 12) && (offset < 2048)) {
-+    size_t len_minus_4 = len - 4;
-+    assert(len_minus_4 < 8);            // Must fit in 3 bits
-+    *op++ = COPY_1_BYTE_OFFSET + ((len_minus_4) << 2) + ((offset >> 8) << 5);
++  if (len_less_than_12 && PREDICT_TRUE(offset < 2048)) {
++    // offset fits in 11 bits.  The 3 highest go in the top of the first byte,
++    // and the rest go in the second byte.
++    *op++ = COPY_1_BYTE_OFFSET + ((len - 4) << 2) + ((offset >> 3) & 0xe0);
 +    *op++ = offset & 0xff;
 +  } else {
-+    *op++ = COPY_2_BYTE_OFFSET + ((len-1) << 2);
-+    LittleEndian::Store16(op, offset);
-+    op += 2;
++    // Write 4 bytes, though we only care about 3 of them.  The output buffer
++    // is required to have some slack, so the extra byte won't overrun it.
++    uint32 u = COPY_2_BYTE_OFFSET + ((len - 1) << 2) + (offset << 8);
++    LittleEndian::Store32(op, u);
++    op += 3;
 +  }
 +  return op;
 +}
 +
-+static inline char* EmitCopy(char* op, size_t offset, int len) {
-+  // Emit 64 byte copies but make sure to keep at least four bytes reserved
-+  while (PREDICT_FALSE(len >= 68)) {
-+    op = EmitCopyLessThan64(op, offset, 64);
-+    len -= 64;
-+  }
++static inline char* EmitCopy(char* op, size_t offset, size_t len,
++                             bool len_less_than_12) {
++  assert(len_less_than_12 == (len < 12));
++  if (len_less_than_12) {
++    return EmitCopyAtMost64(op, offset, len, true);
++  } else {
++    // A special case for len <= 64 might help, but so far measurements suggest
++    // it's in the noise.
 +
-+  // Emit an extra 60 byte copy if have too much data to fit in one copy
-+  if (len > 64) {
-+    op = EmitCopyLessThan64(op, offset, 60);
-+    len -= 60;
-+  }
++    // Emit 64 byte copies but make sure to keep at least four bytes reserved.
++    while (PREDICT_FALSE(len >= 68)) {
++      op = EmitCopyAtMost64(op, offset, 64, false);
++      len -= 64;
++    }
 +
-+  // Emit remainder
-+  op = EmitCopyLessThan64(op, offset, len);
-+  return op;
++    // One or two copies will now finish the job.
++    if (len > 64) {
++      op = EmitCopyAtMost64(op, offset, 60, false);
++      len -= 60;
++    }
++
++    // Emit remainder.
++    op = EmitCopyAtMost64(op, offset, len, len < 12);
++    return op;
++  }
 +}
-+
 +
 +bool GetUncompressedLength(const char* start, size_t n, size_t* result) {
 +  uint32 v = 0;
@@ -1780,19 +1868,21 @@ index 0000000..8a3668c
 +        // We have a 4-byte match at ip, and no need to emit any
 +        // "literal bytes" prior to ip.
 +        const char* base = ip;
-+        int matched = 4 + FindMatchLength(candidate + 4, ip + 4, ip_end);
++        std::pair<size_t, bool> p =
++            FindMatchLength(candidate + 4, ip + 4, ip_end);
++        size_t matched = 4 + p.first;
 +        ip += matched;
 +        size_t offset = base - candidate;
 +        assert(0 == memcmp(base, candidate, matched));
-+        op = EmitCopy(op, offset, matched);
-+        // We could immediately start working at ip now, but to improve
-+        // compression we first update table[Hash(ip - 1, ...)].
-+        const char* insert_tail = ip - 1;
++        op = EmitCopy(op, offset, matched, p.second);
 +        next_emit = ip;
 +        if (PREDICT_FALSE(ip >= ip_limit)) {
 +          goto emit_remainder;
 +        }
-+        input_bytes = GetEightBytesAt(insert_tail);
++        // We are now looking for a 4-byte match again.  We read
++        // table[Hash(ip, shift)] for that.  To improve compression,
++        // we also update table[Hash(ip - 1, shift)] and table[Hash(ip, shift)].
++        input_bytes = GetEightBytesAt(ip - 1);
 +        uint32 prev_hash = HashBytes(GetUint32AtOffset(input_bytes, 0), shift);
 +        table[prev_hash] = ip - base_ip - 1;
 +        uint32 cur_hash = HashBytes(GetUint32AtOffset(input_bytes, 1), shift);
@@ -1924,6 +2014,10 @@ index 0000000..8a3668c
 +  template <class Writer>
 +  void DecompressAllTags(Writer* writer) {
 +    const char* ip = ip_;
++    // For position-independent executables, accessing global arrays can be
++    // slow.  Move wordmask array onto the stack to mitigate this.
++    uint32 wordmask[sizeof(internal::wordmask)/sizeof(uint32)];
++    memcpy(wordmask, internal::wordmask, sizeof(wordmask));
 +
 +    // We could have put this refill fragment only at the beginning of the loop.
 +    // However, duplicating it at the end of each branch gives the compiler more
@@ -1940,7 +2034,19 @@ index 0000000..8a3668c
 +    for ( ;; ) {
 +      const unsigned char c = *(reinterpret_cast<const unsigned char*>(ip++));
 +
-+      if ((c & 0x3) == LITERAL) {
++      // Ratio of iterations that have LITERAL vs non-LITERAL for different
++      // inputs.
++      //
++      // input          LITERAL  NON_LITERAL
++      // -----------------------------------
++      // html|html4|cp   23%        77%
++      // urls            36%        64%
++      // jpg             47%        53%
++      // pdf             19%        81%
++      // txt[1-4]        25%        75%
++      // pb              24%        76%
++      // bin             24%        76%
++      if (PREDICT_FALSE((c & 0x3) == LITERAL)) {
 +        size_t literal_length = (c >> 2) + 1u;
 +        if (writer->TryFastAppend(ip, ip_limit_ - ip, literal_length)) {
 +          assert(literal_length < 61);
@@ -1976,15 +2082,15 @@ index 0000000..8a3668c
 +        ip += literal_length;
 +        MAYBE_REFILL();
 +      } else {
-+        const uint32 entry = char_table[c];
-+        const uint32 trailer = LittleEndian::Load32(ip) & wordmask[entry >> 11];
-+        const uint32 length = entry & 0xff;
++        const size_t entry = char_table[c];
++        const size_t trailer = LittleEndian::Load32(ip) & wordmask[entry >> 11];
++        const size_t length = entry & 0xff;
 +        ip += entry >> 11;
 +
 +        // copy_offset/256 is encoded in bits 8..10.  By just fetching
 +        // those bits, we get copy_offset (since the bit-field starts at
 +        // bit 8).
-+        const uint32 copy_offset = entry & 0x700;
++        const size_t copy_offset = entry & 0x700;
 +        if (!writer->AppendFromSelf(copy_offset + trailer, length)) {
 +          return;
 +        }
@@ -2004,10 +2110,8 @@ index 0000000..8a3668c
 +    size_t n;
 +    ip = reader_->Peek(&n);
 +    peeked_ = n;
-+    if (n == 0) {
-+      eof_ = true;
-+      return false;
-+    }
++    eof_ = (n == 0);
++    if (eof_) return false;
 +    ip_limit_ = ip + n;
 +  }
 +
@@ -2247,8 +2351,7 @@ index 0000000..8a3668c
 +        output_iov_[curr_iov_index_].iov_len - curr_iov_written_ >= 16) {
 +      // Fast path, used for the majority (about 95%) of invocations.
 +      char* ptr = GetIOVecPointer(curr_iov_index_, curr_iov_written_);
-+      UnalignedCopy64(ip, ptr);
-+      UnalignedCopy64(ip + 8, ptr + 8);
++      UnalignedCopy128(ip, ptr);
 +      curr_iov_written_ += len;
 +      total_written_ += len;
 +      return true;
@@ -2312,9 +2415,10 @@ index 0000000..8a3668c
 +        if (to_copy > len) {
 +          to_copy = len;
 +        }
-+        IncrementalCopy(GetIOVecPointer(from_iov_index, from_iov_offset),
-+                        GetIOVecPointer(curr_iov_index_, curr_iov_written_),
-+                        to_copy);
++        IncrementalCopySlow(
++            GetIOVecPointer(from_iov_index, from_iov_offset),
++            GetIOVecPointer(curr_iov_index_, curr_iov_written_),
++            GetIOVecPointer(curr_iov_index_, curr_iov_written_) + to_copy);
 +        curr_iov_written_ += to_copy;
 +        from_iov_offset += to_copy;
 +        total_written_ += to_copy;
@@ -2384,8 +2488,7 @@ index 0000000..8a3668c
 +    const size_t space_left = op_limit_ - op;
 +    if (len <= 16 && available >= 16 + kMaximumTagLength && space_left >= 16) {
 +      // Fast path, used for the majority (about 95%) of invocations.
-+      UnalignedCopy64(ip, op);
-+      UnalignedCopy64(ip + 8, op + 8);
++      UnalignedCopy128(ip, op);
 +      op_ = op + len;
 +      return true;
 +    } else {
@@ -2394,8 +2497,7 @@ index 0000000..8a3668c
 +  }
 +
 +  inline bool AppendFromSelf(size_t offset, size_t len) {
-+    char* op = op_;
-+    const size_t space_left = op_limit_ - op;
++    char* const op_end = op_ + len;
 +
 +    // Check if we try to append from before the start of the buffer.
 +    // Normally this would just be a check for "produced < offset",
@@ -2404,30 +2506,13 @@ index 0000000..8a3668c
 +    // to a very big number. This is convenient, as offset==0 is another
 +    // invalid case that we also want to catch, so that we do not go
 +    // into an infinite loop.
-+    assert(op >= base_);
-+    size_t produced = op - base_;
-+    if (produced <= offset - 1u) {
-+      return false;
-+    }
-+    if (len <= 16 && offset >= 8 && space_left >= 16) {
-+      // Fast path, used for the majority (70-80%) of dynamic invocations.
-+      UnalignedCopy64(op - offset, op);
-+      UnalignedCopy64(op - offset + 8, op + 8);
-+    } else {
-+      if (space_left >= len + kMaxIncrementCopyOverflow) {
-+        IncrementalCopyFastPath(op - offset, op, len);
-+      } else {
-+        if (space_left < len) {
-+          return false;
-+        }
-+        IncrementalCopy(op - offset, op, len);
-+      }
-+    }
++    if (Produced() <= offset - 1u || op_end > op_limit_) return false;
++    op_ = IncrementalCopy(op_ - offset, op_, op_end, op_limit_);
 +
-+    op_ = op + len;
 +    return true;
 +  }
 +  inline size_t Produced() const {
++    assert(op_ >= base_);
 +    return op_ - base_;
 +  }
 +  inline void Flush() {}
@@ -2513,7 +2598,7 @@ index 0000000..8a3668c
 +
 +size_t Compress(const char* input, size_t input_length, string* compressed) {
 +  // Pre-grow the buffer to the max length of the compressed output
-+  compressed->resize(MaxCompressedLength(input_length));
++  STLStringResizeUninitialized(compressed, MaxCompressedLength(input_length));
 +
 +  size_t compressed_length;
 +  RawCompress(input, input_length, string_as_array(compressed),
@@ -2536,7 +2621,7 @@ index 0000000..8a3668c
 +  // We need random access into the data generated so far.  Therefore
 +  // we keep track of all of the generated data as an array of blocks.
 +  // All of the blocks except the last have length kBlockSize.
-+  vector<char*> blocks_;
++  std::vector<char*> blocks_;
 +  size_t expected_;
 +
 +  // Total size of all fully generated blocks so far
@@ -2595,8 +2680,7 @@ index 0000000..8a3668c
 +    if (length <= 16 && available >= 16 + kMaximumTagLength &&
 +        space_left >= 16) {
 +      // Fast path, used for the majority (about 95%) of invocations.
-+      UNALIGNED_STORE64(op, UNALIGNED_LOAD64(ip));
-+      UNALIGNED_STORE64(op + 8, UNALIGNED_LOAD64(ip + 8));
++      UnalignedCopy128(ip, op);
 +      op_ptr_ = op + length;
 +      return true;
 +    } else {
@@ -2605,16 +2689,13 @@ index 0000000..8a3668c
 +  }
 +
 +  inline bool AppendFromSelf(size_t offset, size_t len) {
++    char* const op_end = op_ptr_ + len;
 +    // See SnappyArrayWriter::AppendFromSelf for an explanation of
 +    // the "offset - 1u" trick.
-+    if (offset - 1u < op_ptr_ - op_base_) {
-+      const size_t space_left = op_limit_ - op_ptr_;
-+      if (space_left >= len + kMaxIncrementCopyOverflow) {
-+        // Fast path: src and dst in current block.
-+        IncrementalCopyFastPath(op_ptr_ - offset, op_ptr_, len);
-+        op_ptr_ += len;
-+        return true;
-+      }
++    if (PREDICT_TRUE(offset - 1u < op_ptr_ - op_base_ && op_end <= op_limit_)) {
++      // Fast path: src and dst in current block.
++      op_ptr_ = IncrementalCopy(op_ptr_ - offset, op_ptr_, op_end, op_limit_);
++      return true;
 +    }
 +    return SlowAppendFromSelf(offset, len);
 +  }
@@ -2719,7 +2800,7 @@ index 0000000..8a3668c
 +  }
 +
 +  Sink* dest_;
-+  vector<Datablock> blocks_;
++  std::vector<Datablock> blocks_;
 +
 +  // Note: copying this object is allowed
 +};
@@ -3367,10 +3448,10 @@ index 0000000..499a007
 +#endif
 diff --git a/util/jni.cc b/util/jni.cc
 new file mode 100644
-index 0000000..f510e96
+index 0000000..f5d52ee
 --- /dev/null
 +++ b/util/jni.cc
-@@ -0,0 +1,429 @@
+@@ -0,0 +1,453 @@
 +// Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file. See the AUTHORS file for names of contributors.
@@ -3398,6 +3479,7 @@ index 0000000..f510e96
 +
 +static const jint	WRITE_BUFSIZE_MIN	= 1 << 20;
 +static const jint	CACHE_SIZE_MIN		= 1 << 20;
++static const jint	FILE_SIZE_MIN		= 1 << 20;
 +static const int	BLOOM_FILTER_BITS	= 10;
 +static const size_t	FILE_BUF_SIZE		= 1 << 16;
 +
@@ -3421,6 +3503,29 @@ index 0000000..f510e96
 +	opt.create_if_missing = true;
 +	opt.write_buffer_size = (write_bufsize > WRITE_BUFSIZE_MIN ? write_bufsize : WRITE_BUFSIZE_MIN);
 +	opt.block_cache = NewLRUCache(cache_size > CACHE_SIZE_MIN ? cache_size : CACHE_SIZE_MIN);
++	opt.compression = (use_snappy ? kSnappyCompression : kNoCompression);
++	opt.filter_policy = (g_fp ? g_fp : (g_fp = NewBloomFilterPolicy(BLOOM_FILTER_BITS)));
++	g_ro_nocached.fill_cache = false;
++	g_wo_sync.sync = true;
++	DB* db = 0;
++	Status s = DB::Open(opt, pathstr, &db);
++	return s.ok() ? (jlong)db : 0;
++}
++
++// public native static long leveldb_open2(String path, int write_bufsize, int cache_size, int file_size, boolean use_snappy);
++extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open2
++	(JNIEnv* jenv, jclass jcls, jstring path, jint write_bufsize, jint cache_size, jint file_size, jboolean use_snappy)
++{
++	if(!path) return 0;
++	const char* pathptr = jenv->GetStringUTFChars(path, 0);
++	if(!pathptr) return 0;
++	std::string pathstr(pathptr);
++	jenv->ReleaseStringUTFChars(path, pathptr);
++	Options opt;
++	opt.create_if_missing = true;
++	opt.write_buffer_size = (write_bufsize > WRITE_BUFSIZE_MIN ? write_bufsize : WRITE_BUFSIZE_MIN);
++	opt.block_cache = NewLRUCache(cache_size > CACHE_SIZE_MIN ? cache_size : CACHE_SIZE_MIN);
++	opt.max_file_size = (file_size > FILE_SIZE_MIN ? file_size : FILE_SIZE_MIN);
 +	opt.compression = (use_snappy ? kSnappyCompression : kNoCompression);
 +	opt.filter_policy = (g_fp ? g_fp : (g_fp = NewBloomFilterPolicy(BLOOM_FILTER_BITS)));
 +	g_ro_nocached.fill_cache = false;
