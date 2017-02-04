@@ -1268,17 +1268,19 @@ local function checksave(fn, d, change_count, pattern, typename)
 	end
 end
 
-local saved = {}
-local function savebean(beanname)
-	if saved[beanname] then return end
-	saved[beanname] = true
-	if not name_code[beanname] then error("ERROR: unknown bean: " .. beanname) end
-	checksave(outpath .. namespace .. "/bean/" .. beanname .. ".java", name_code[beanname], 0)
+local need_save = {}
+local function savebean(beanname, safe)
+	local s = need_save[beanname]
+	if s ~= nil then
+		if safe and not s then need_save[beanname] = true end
+		return
+	end
+	need_save[beanname] = safe or false
 	bean_order[beanname] = true
 	for _, var in ipairs(name_bean[beanname]) do
-		if name_bean[var.type] then savebean(var.type) end
-		if name_bean[var.k] then savebean(var.k) end
-		if name_bean[var.v] then savebean(var.v) end
+		if name_bean[var.type] then savebean(var.type, safe) end
+		if name_bean[var.k] then savebean(var.k, safe) end
+		if name_bean[var.v] then savebean(var.v, safe) end
 	end
 end
 function rpc(bean)
@@ -1290,6 +1292,7 @@ end
 
 local key_conv = { int = "Integer", integer = "Integer", Integer = "Integer", long = "Long", Long = "Long", float = "Float", Float = "Float", double = "Double", Double = "Double",
 					string = "String", String = "String", binary = "Octets", bytes = "Octets", data = "Octets", octets = "Octets", Octets = "Octets" }
+local need_save_dbt = {}
 function dbt(table)
 	if not handlers.dbt or not table.handler ~= handlers.dbt and table.handler ~= handlers.dbt then return end
 	local key_type = key_conv[table.key]
@@ -1317,17 +1320,21 @@ function dbt(table)
 		table.keyg = table.keys
 		table.comma = ", "
 		tables.imports["jane.core.Table"] = true
-		savebean(table.key)
+		need_save_dbt[table.key] = true
 	end
 	table.values = table.memory and "null" or "#(table.value).BEAN_STUB"
 	table.lock = table.lock or ""
 	if table.comment and #table.comment > 0 then table.comment = "/**\n\t * " .. table.comment:gsub("\n", "<br>\n\t * ") .. "\n\t */\n\t" end
 	tables[#tables + 1] = table
-	savebean(table.value)
+	need_save_dbt[table.value] = true
 end
 
 if not arg[3] then error("ERROR: arg[3] must be input allbeans.lua") end
 dofile(arg[3])
+
+for beanname in pairs(need_save_dbt) do
+	savebean(beanname, true)
+end
 
 local bean_count = 0
 checksave(outpath .. namespace .. "/bean/AllBeans.java", (template_allbeans:gsub("#%[#(.-)#%]#", function(body)
@@ -1409,5 +1416,12 @@ checksave(outpath .. namespace .. "/bean/AllTables.java", (code_conv(template_al
 	end
 	return concat(subcode)
 end), "tables", tables):gsub(#tables > 0 and "#[<>]#" or "#<#(.-)#>#", ""):gsub("\r", "")), 0)
+
+for beanname, safe in spairs(need_save) do
+	local code = name_code[beanname]
+	if not code then error("ERROR: unknown bean: " .. beanname) end
+	if not safe then code = code:gsub("\n\t@Override\n\tpublic Safe safe%(.*", "}\n") end
+	checksave(outpath .. namespace .. "/bean/" .. beanname .. ".java", code, 0)
+end
 
 print "done!"
