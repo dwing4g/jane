@@ -55,7 +55,6 @@ public final class StorageLevelDB implements Storage
 		private final String	   _tableName;
 		private final int		   _tableId;
 		private final int		   _tableIdLen;
-		private final byte[]	   _tableIdBuf	   = new byte[5];
 		private final OctetsStream _tableIdCounter = new OctetsStream(6);
 		private final V			   _stubV;
 
@@ -63,10 +62,8 @@ public final class StorageLevelDB implements Storage
 		{
 			_tableName = tableName;
 			_tableId = tableId;
-			OctetsStream os = OctetsStream.wrap(_tableIdBuf, 0);
-			_tableIdLen = os.marshalUInt(tableId).size();
-			_tableIdCounter.append((byte)0xf1); // 0xf1前缀用于idcounter
-			_tableIdCounter.append(_tableIdBuf, 0, _tableIdLen);
+			_tableIdLen = OctetsStream.marshalUIntLen(tableId);
+			_tableIdCounter.marshal1((byte)0xf1).marshalUInt(tableId); // 0xf1前缀用于idcounter
 			_stubV = stubV;
 		}
 
@@ -77,7 +74,7 @@ public final class StorageLevelDB implements Storage
 			if(tableIdLen == 1)
 				key.append((byte)_tableId);
 			else
-				key.append(_tableIdBuf, 0, tableIdLen);
+				key.marshalUInt(_tableId);
 			key.marshal(k);
 			return key;
 		}
@@ -214,7 +211,6 @@ public final class StorageLevelDB implements Storage
 		protected final String		 _tableName;
 		protected final int			 _tableId;
 		protected final int			 _tableIdLen;
-		protected final byte[]		 _tableIdBuf  = new byte[5];
 		protected final OctetsStream _tableIdNext = new OctetsStream(5);
 		protected final V			 _stubV;
 
@@ -222,8 +218,7 @@ public final class StorageLevelDB implements Storage
 		{
 			_tableName = tableName;
 			_tableId = tableId;
-			OctetsStream os = OctetsStream.wrap(_tableIdBuf, 0);
-			_tableIdLen = os.marshalUInt(tableId).size();
+			_tableIdLen = OctetsStream.marshalUIntLen(tableId);
 			if(tableId < Integer.MAX_VALUE)
 				_tableIdNext.marshalUInt(tableId + 1);
 			else
@@ -262,7 +257,7 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public boolean walk(WalkHandler<K> handler, K from, K to, boolean inclusive, boolean reverse)
 		{
-			Octets keyFrom = (from != null ? getKey(from) : Octets.wrap(_tableIdBuf, _tableIdLen));
+			Octets keyFrom = (from != null ? getKey(from) : new OctetsStream(5).marshalUInt(_tableId));
 			Octets keyTo = (to != null ? getKey(to) : _tableIdNext);
 			if(keyFrom.compareTo(keyTo) > 0)
 			{
@@ -329,7 +324,7 @@ public final class StorageLevelDB implements Storage
 			if(tableIdLen == 1)
 				key.append((byte)_tableId);
 			else
-				key.append(_tableIdBuf, 0, tableIdLen);
+				key.marshalUInt(_tableId);
 			key.append(k);
 			return key;
 		}
@@ -381,7 +376,7 @@ public final class StorageLevelDB implements Storage
 			if(tableIdLen == 1)
 				key.append((byte)_tableId);
 			else
-				key.append(_tableIdBuf, 0, tableIdLen);
+				key.marshalUInt(_tableId);
 			for(int i = 0; i < n; ++i)
 				key.marshalUTF8(k.charAt(i));
 			return key;
@@ -437,7 +432,7 @@ public final class StorageLevelDB implements Storage
 			if(tableIdLen == 1)
 				key.append((byte)_tableId);
 			else
-				key.append(_tableIdBuf, 0, tableIdLen);
+				key.marshalUInt(_tableId);
 			return ((Bean<V>)k).marshal(key);
 		}
 

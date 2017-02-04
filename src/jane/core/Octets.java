@@ -259,9 +259,10 @@ public class Octets implements Cloneable, Comparable<Octets>
 	public Octets append(byte b)
 	{
 		int n = _count;
-		reserve(n + 1);
+		int nNew = n + 1;
+		reserve(nNew);
 		_buffer[n] = b;
-		_count = n + 1;
+		_count = nNew;
 		return this;
 	}
 
