@@ -5,11 +5,10 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.Enumeration;
 import java.util.jar.Manifest;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.config.Configurator;
-import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.util.ContextInitializer;
 
 /**
  * 日志相关(静态类)
@@ -19,18 +18,13 @@ public final class Log
 	static
 	{
 		System.setProperty("line.separator", "\n");
-		String prop = System.getProperty("log4j2.prop");
-		if(prop == null || (prop = prop.trim()).isEmpty())
-			prop = "log4j2.xml";
-		logCtx = Configurator.initialize("jane", log4j2Prop = prop);
 	}
 
 	/**
 	 * public给外面方便写日志
 	 */
-	public static final LoggerContext logCtx;
-	public static final Logger		  log	   = LogManager.getRootLogger();
-	public static final String		  log4j2Prop;
+	public static final Logger		  log	   = LoggerFactory.getLogger("jane");
+	public static final LoggerContext logCtx   = (LoggerContext)LoggerFactory.getILoggerFactory();
 	public static final boolean		  hasTrace = log.isTraceEnabled();
 	public static final boolean		  hasDebug = log.isDebugEnabled();
 	public static final boolean		  hasInfo  = log.isInfoEnabled();
@@ -70,7 +64,7 @@ public final class Log
 		log.info("java.class.path = {}", System.getProperty("java.class.path"));
 		log.info("user.name = {}", System.getProperty("user.name"));
 		log.info("user.dir = {}", System.getProperty("user.dir"));
-		log.info("log4j2.prop = {}", log4j2Prop);
+		log.info("logback.path = {}", new ContextInitializer(logCtx).findURLOfDefaultConfigurationFile(true).getPath());
 		log.info("debug = {}, charset = {}, file.encoding = {}", Const.debug, Const.stringCharset, System.getProperty("file.encoding"));
 		if(args != null)
 		{
@@ -102,8 +96,8 @@ public final class Log
 	 */
 	public static void removeAppender(String name)
 	{
-		for(LoggerConfig lc : logCtx.getConfiguration().getLoggers().values())
-			lc.removeAppender(name);
+		for(ch.qos.logback.classic.Logger lc : logCtx.getLoggerList())
+			lc.detachAppender(name);
 	}
 
 	/**
@@ -125,7 +119,7 @@ public final class Log
 	 */
 	public static void shutdown()
 	{
-		Configurator.shutdown(logCtx);
+		logCtx.stop();
 	}
 
 	private Log()

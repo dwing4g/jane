@@ -35,7 +35,7 @@ License:
  * 概念和实现简单清晰
 
 依赖库:
- * 日志库: slf4j-1.7.x log4j-2.x
+ * 日志库: slf4j-1.7.x logback-1.1.x
  * 网络库: mina-core-2.0.x
  * 数据库: leveldb-jni
  * 脚本库: luaj-jse-2.0.x
@@ -53,8 +53,8 @@ License:
   * org.cliffc.high_scale_lib: http://sourceforge.net/projects/high-scale-lib/
  * 日志库:
   * slf4j:          http://www.slf4j.org/
-  * log4j:          http://logging.apache.org/log4j/2.x/
   * logback:        http://logback.qos.ch/
+  * log4j:          http://logging.apache.org/log4j/2.x/
  * 网络库:
   * mina:           http://mina.apache.org/
   * netty:          http://netty.io/

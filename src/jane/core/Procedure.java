@@ -216,7 +216,7 @@ public abstract class Procedure implements Runnable
 			}
 			catch(Throwable e)
 			{
-				Log.log.fatal("UNLOCK FAILED!!!", e);
+				Log.log.error("UNLOCK FAILED!!!", e);
 			}
 		}
 		pt.lockCount = 0;

@@ -231,7 +231,7 @@ start.sh (仅Linux平台需要)
 start.bat (仅Windows平台需要)
 stop.sh (仅Linux平台需要)
 jane.properties (jane框架配置)
-log4j2.xml (Log4J2的配置)
+logback.xml (Logback的配置)
 gameserver.jar (构建的结果)
 lib/*.jar,*.dll,*.so (不包含带源码的*.jar)
 启动命令:
