@@ -13,7 +13,7 @@ Feature:
  * easy to understand and use with code generation for Java bean code
 
 Todo:
- * unit test
+ * more tests
  * more optimization for speed, memory and I/O throughput
 
 License:
@@ -21,21 +21,21 @@ License:
 
 平台:
  * Oracle/Open JDK 7+ (需要ant作为构建环境, 推荐最新版本)
- * Linux 2.6+/Windows 2000+ (运行环境, 推荐64位4核4GB内存以上, 开发可使用32位)
+ * Linux 2.6+(64-bit)/Windows 2000+(32/64-bit) (运行环境, 推荐64位4核4GB内存以上, 32位平台仅用于开发)
  * Eclipse 4.4+ (主要的Java开发环境, 推荐最新版本)
  * Visual Studio 2015+ (C#的开发环境, 推荐最新版本)
 
 语言:
  * Java 7+ (框架和逻辑编写的主语言)
  * Lua 5.1 (基于Luaj的实现, 目前主要用于代码生成的脚本, 也可作为逻辑调用的脚本, 也用于客户端及工具程序)
- * C# 4.0+ (和Java版本兼容的bean部分实现和代码生成脚本)
+ * C# 4.0+ (和Java版本兼容的bean部分实现和代码生成脚本, 以及网络模块实现)
 
 原则:
  * 以bean为核心
  * 概念和实现简单清晰
 
 依赖库:
- * 日志库: slf4j-1.7.x logback-1.1.x
+ * 日志库: slf4j-1.7.x logback-1.2.x
  * 网络库: mina-core-2.0.x
  * 数据库: leveldb-jni
  * 脚本库: luaj-jse-2.0.x
@@ -91,6 +91,5 @@ License:
  * 透明的基于文件和内存的面向对象数据库的操作、缓存、事务型持久化、热备份和增量备份, 基于记录加锁，支持死锁超时打断
 
 TODO:
- * 网络: 并发/吞吐量调优
- * 数据库: 内存优化
- * 全面的测试
+ * 更多的测试
+ * 更多的性能、内存、IO优化

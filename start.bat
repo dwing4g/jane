@@ -25,8 +25,8 @@ rem -XX:+PrintGCDateStamps
 
 set LIB=^
 lib/slf4j-api-1.7.22.jar;^
-lib/logback-core-1.1.10.jar;^
-lib/logback-classic-1.1.10.jar;^
+lib/logback-core-1.2.0.jar;^
+lib/logback-classic-1.2.0.jar;^
 lib/mina-core-2.0.16.jar;^
 lib/luaj-jse-2.0.3.jar;^
 jane-core.jar;^
