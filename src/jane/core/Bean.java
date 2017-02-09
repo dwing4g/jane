@@ -180,7 +180,11 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	 * 把bean的数据格式化成JSON格式返回
 	 * @param s 可提供一个StringBuilder对象. 如果传入null,则自动创建一个新的StringBuilder
 	 */
-	public abstract StringBuilder toJson(StringBuilder s);
+	@SuppressWarnings("static-method")
+	public StringBuilder toJson(StringBuilder s)
+	{
+		throw new UnsupportedOperationException();
+	}
 
 	/**
 	 * 把bean的数据格式化成JSON格式返回
@@ -194,7 +198,11 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	 * 把bean的数据格式化成Lua格式返回
 	 * @param s 可提供一个StringBuilder对象. 如果传入null,则自动创建一个新的StringBuilder
 	 */
-	public abstract StringBuilder toLua(StringBuilder s);
+	@SuppressWarnings("static-method")
+	public StringBuilder toLua(StringBuilder s)
+	{
+		throw new UnsupportedOperationException();
+	}
 
 	/**
 	 * 把bean的数据格式化成Lua格式返回

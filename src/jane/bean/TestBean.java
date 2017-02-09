@@ -198,28 +198,6 @@ public final class TestBean extends Bean<TestBean>
 	}
 
 	@Override
-	public StringBuilder toJson(StringBuilder s)
-	{
-		if(s == null) s = new StringBuilder(1024);
-		s.append('{');
-		s.append("\"value1\":").append(this.value1).append(',');
-		s.append("\"value2\":").append(this.value2).append(',');
-		s.setLength(s.length() - 1);
-		return s.append('}');
-	}
-
-	@Override
-	public StringBuilder toLua(StringBuilder s)
-	{
-		if(s == null) s = new StringBuilder(1024);
-		s.append('{');
-		s.append("value1=").append(this.value1).append(',');
-		s.append("value2=").append(this.value2).append(',');
-		s.setLength(s.length() - 1);
-		return s.append('}');
-	}
-
-	@Override
 	public Safe safe(SContext.Safe<?> parent)
 	{
 		return new Safe(this, parent);

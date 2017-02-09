@@ -733,62 +733,6 @@ public final class TestType extends Bean<TestType>
 	}
 
 	@Override
-	public StringBuilder toJson(StringBuilder s)
-	{
-		if(s == null) s = new StringBuilder(1024);
-		s.append('{');
-		s.append("\"v1\":").append(this.v1).append(',');
-		s.append("\"v2\":").append(this.v2).append(',');
-		s.append("\"v3\":").append(this.v3).append(',');
-		s.append("\"v4\":").append(this.v4).append(',');
-		s.append("\"v5\":").append(this.v5).append(',');
-		s.append("\"v6\":").append(this.v6).append(',');
-		s.append("\"v7\":").append(this.v7).append(',');
-		this.v8.dumpJStr(s.append("\"v8\":")).append(',');
-		Util.toJStr(s.append("\"v9\":"), this.v9).append(',');
-		Util.appendJson(s.append("\"v10\":"), this.v10);
-		Util.appendJson(s.append("\"v11\":"), this.v11);
-		Util.appendJson(s.append("\"v12\":"), this.v12);
-		Util.appendJson(s.append("\"v13\":"), this.v13);
-		Util.appendJson(s.append("\"v14\":"), this.v14);
-		Util.appendJson(s.append("\"v15\":"), this.v15);
-		Util.appendJson(s.append("\"v16\":"), this.v16);
-		Util.appendJson(s.append("\"v17\":"), this.v17);
-		Util.appendJson(s.append("\"v18\":"), this.v18);
-		this.v19.toJson(s.append("\"v19\":")).append(',');
-		s.setLength(s.length() - 1);
-		return s.append('}');
-	}
-
-	@Override
-	public StringBuilder toLua(StringBuilder s)
-	{
-		if(s == null) s = new StringBuilder(1024);
-		s.append('{');
-		s.append("v1=").append(this.v1).append(',');
-		s.append("v2=").append(this.v2).append(',');
-		s.append("v3=").append(this.v3).append(',');
-		s.append("v4=").append(this.v4).append(',');
-		s.append("v5=").append(this.v5).append(',');
-		s.append("v6=").append(this.v6).append(',');
-		s.append("v7=").append(this.v7).append(',');
-		this.v8.dumpJStr(s.append("v8=")).append(',');
-		Util.toJStr(s.append("v9="), this.v9).append(',');
-		Util.appendLua(s.append("v10="), this.v10);
-		Util.appendLua(s.append("v11="), this.v11);
-		Util.appendLua(s.append("v12="), this.v12);
-		Util.appendLua(s.append("v13="), this.v13);
-		Util.appendLua(s.append("v14="), this.v14);
-		Util.appendLua(s.append("v15="), this.v15);
-		Util.appendLua(s.append("v16="), this.v16);
-		Util.appendLua(s.append("v17="), this.v17);
-		Util.appendLua(s.append("v18="), this.v18);
-		this.v19.toLua(s.append("v19=")).append(',');
-		s.setLength(s.length() - 1);
-		return s.append('}');
-	}
-
-	@Override
 	public Safe safe(SContext.Safe<?> parent)
 	{
 		return new Safe(this, parent);

@@ -108,22 +108,6 @@ public final class TestEmpty extends Bean<TestEmpty>
 	}
 
 	@Override
-	public StringBuilder toJson(StringBuilder s)
-	{
-		if(s == null) s = new StringBuilder(1024);
-		s.append('{');
-		return s.append('}');
-	}
-
-	@Override
-	public StringBuilder toLua(StringBuilder s)
-	{
-		if(s == null) s = new StringBuilder(1024);
-		s.append('{');
-		return s.append('}');
-	}
-
-	@Override
 	public Safe safe(SContext.Safe<?> parent)
 	{
 		return new Safe(this, parent);

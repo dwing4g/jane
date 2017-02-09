@@ -4,7 +4,6 @@ package jane.bean;
 import jane.core.Bean;
 import jane.core.MarshalException;
 import jane.core.OctetsStream;
-import jane.core.Util;
 
 /**
  * 作为key或配置的bean
@@ -138,27 +137,5 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 		s.append(this.key2).append(',');
 		s.setLength(s.length() - 1);
 		return s.append('}').toString();
-	}
-
-	@Override
-	public StringBuilder toJson(StringBuilder s)
-	{
-		if(s == null) s = new StringBuilder(1024);
-		s.append('{');
-		s.append("\"key1\":").append(this.key1).append(',');
-		Util.toJStr(s.append("\"key2\":"), this.key2).append(',');
-		s.setLength(s.length() - 1);
-		return s.append('}');
-	}
-
-	@Override
-	public StringBuilder toLua(StringBuilder s)
-	{
-		if(s == null) s = new StringBuilder(1024);
-		s.append('{');
-		s.append("key1=").append(this.key1).append(',');
-		Util.toJStr(s.append("key2="), this.key2).append(',');
-		s.setLength(s.length() - 1);
-		return s.append('}');
 	}
 }

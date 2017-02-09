@@ -14,6 +14,8 @@ local tostring = tostring
 local arg = {...}
 
 local jdk7 = true -- false for jdk6
+local genToJson = false
+local genToLua = false
 namespace = arg[1] -- for bean namespace
 local namespace = namespace
 if not namespace then error("ERROR: arg[1] must be namespace") end
@@ -1420,7 +1422,17 @@ end), "tables", tables):gsub(#tables > 0 and "#[<>]#" or "#<#(.-)#>#", ""):gsub(
 for beanname, safe in spairs(need_save) do
 	local code = name_code[beanname]
 	if not code then error("ERROR: unknown bean: " .. beanname) end
-	if not safe then code = code:gsub("\n\t@Override\n\tpublic Safe safe%(.*", "}\n") end
+	if not safe then
+		code = code:gsub("\n\t@Override\n\tpublic Safe safe%(.*", "}\n")
+				   :gsub("import java%.lang%.reflect%.Field;\n", "")
+				   :gsub("import jane%.core%.S.-\n", "")
+				   :gsub("\tprivate static Field FIELD_.-\n", "")
+				   :gsub("\tprivate static S...Listener<.-\n", "")
+				   :gsub("\n\tstatic\n\t{.-\n\t}\n", "")
+	end
+	if not genToJson then code = code:gsub("\n\t@Override\n\tpublic StringBuilder toJson%(.-\n\t}\n", "") end
+	if not genToJson then code = code:gsub("\n\t@Override\n\tpublic StringBuilder toLua%(.-\n\t}\n", "") end
+	if not code:find("Util.", 1, true) then code = code:gsub("import jane%.core%.Util;\n", "") end
 	checksave(outpath .. namespace .. "/bean/" .. beanname .. ".java", code, 0)
 end
 
