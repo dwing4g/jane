@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- put this file in java classpath and ensure the filename: logback.xml -->
-<configuration>
+<configuration debug="false">
 	<appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
 		<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
 			<level>TRACE</level>
@@ -12,9 +12,9 @@
 		</rollingPolicy>
 		<encoder>
 			<charset>UTF-8</charset>
-			<immediateFlush>false</immediateFlush>
 			<pattern>%d{yy-MM-dd HH:mm:ss.SSS} %-5level [%t] %msg%n</pattern>
 		</encoder>
+		<immediateFlush>false</immediateFlush>
 	</appender>
 	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
 		<target>System.out</target>
@@ -22,9 +22,9 @@
 			<level>TRACE</level>
 		</filter>
 		<encoder>
-			<immediateFlush>false</immediateFlush>
 			<pattern>%d{yy-MM-dd HH:mm:ss.SSS} %-5level [%t] %msg%n</pattern>
 		</encoder>
+		<immediateFlush>false</immediateFlush>
 	</appender>
 	<appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
 		<queueSize>65536</queueSize>
