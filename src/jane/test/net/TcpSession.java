@@ -66,6 +66,19 @@ public final class TcpSession
 			_channel.write(bb, null, _sendHandler);
 	}
 
+	public void close()
+	{
+		if(!_channel.isOpen()) return;
+		try
+		{
+			_channel.close();
+		}
+		catch(Throwable e)
+		{
+			_manager.onException(this, e);
+		}
+	}
+
 	private final class RecvHandler implements CompletionHandler<Integer, Object>
 	{
 		@Override
@@ -120,7 +133,7 @@ public final class TcpSession
 			ByteBuffer bb;
 			synchronized(_sendBuf)
 			{
-				bb = _sendBuf.pollFirst();
+				bb = _sendBuf.peekFirst();
 				int left = bb.remaining();
 				if(size < left)
 				{
@@ -129,8 +142,9 @@ public final class TcpSession
 				}
 				else
 				{
-					bb = _sendBuf.peekFirst();
+					_sendBuf.pollFirst();
 					_sendBufSize -= left;
+					bb = _sendBuf.peekFirst();
 				}
 			}
 			if(bb != null)

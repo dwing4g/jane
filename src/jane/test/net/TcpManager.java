@@ -2,6 +2,7 @@ package jane.test.net;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
@@ -17,6 +18,7 @@ public class TcpManager
 	{
 		if(_acceptor == null)
 			_acceptor = AsynchronousServerSocketChannel.open();
+		_acceptor.setOption(StandardSocketOptions.SO_REUSEADDR, true);
 		_acceptor.bind(addr);
 		_acceptor.accept(this, _acceptHandler);
 	}
