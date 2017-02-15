@@ -1,11 +1,15 @@
 package jane.test.net;
 
+import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.Channel;
 import java.nio.channels.CompletionHandler;
 import java.util.ArrayDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-public final class TcpSession
+public final class TcpSession implements Channel
 {
 	public static final int	RECV_BUF_SIZE	 = 8192;
 	public static final int	SEND_BUF_MAXSIZE = 1024576;
@@ -16,6 +20,8 @@ public final class TcpSession
 	private final ArrayDeque<ByteBuffer>	_sendBuf	 = new ArrayDeque<>();
 	private final RecvHandler				_recvHandler = new RecvHandler();
 	private final SendHandler				_sendHandler = new SendHandler();
+	private final AtomicBoolean				_closed		 = new AtomicBoolean();
+	private volatile Object					_userObject;
 	private int								_sendBufSize;
 
 	TcpSession(TcpManager manager, AsynchronousSocketChannel channel)
@@ -23,13 +29,19 @@ public final class TcpSession
 		_manager = manager;
 		_channel = channel;
 		_recvBuf = ByteBuffer.allocateDirect(RECV_BUF_SIZE);
+	}
+
+	void beginRecv()
+	{
+		if(!_channel.isOpen()) return;
 		try
 		{
-			channel.read(_recvBuf, null, _recvHandler);
+			_channel.read(_recvBuf, null, _recvHandler);
 		}
 		catch(Throwable e)
 		{
-			manager.onException(this, e);
+			_manager.doException(this, e);
+			close();
 		}
 	}
 
@@ -46,8 +58,42 @@ public final class TcpSession
 		return _sendBufSize;
 	}
 
-	public void send(ByteBuffer bb)
+	@Override
+	public boolean isOpen()
 	{
+		return _channel.isOpen();
+	}
+
+	public AsynchronousSocketChannel getChannel()
+	{
+		return _channel;
+	}
+
+	public SocketAddress getRemoteAddr()
+	{
+		try
+		{
+			return _channel.isOpen() ? _channel.getRemoteAddress() : null;
+		}
+		catch(IOException e)
+		{
+			return null;
+		}
+	}
+
+	public Object getUserObject()
+	{
+		return _userObject;
+	}
+
+	public void setUserObject(Object obj)
+	{
+		_userObject = obj;
+	}
+
+	public boolean send(ByteBuffer bb)
+	{
+		if(!_channel.isOpen()) return false;
 		int size = bb.remaining();
 		boolean isEmpty;
 		synchronized(_sendBuf)
@@ -55,27 +101,49 @@ public final class TcpSession
 			int newSize = _sendBufSize + size;
 			if(newSize > SEND_BUF_MAXSIZE || newSize < 0)
 			{
-				_manager.onException(TcpSession.this, new Exception(String.format("send overflow(%d=>%d)", size, _sendBufSize)));
-				return;
+				_manager.doException(this, new Exception(String.format("send overflow(%d=>%d)", size, _sendBufSize)));
+				close();
+				return false;
 			}
 			_sendBufSize = newSize;
 			isEmpty = _sendBuf.isEmpty();
 			_sendBuf.addLast(bb);
 		}
 		if(isEmpty)
-			_channel.write(bb, null, _sendHandler);
+		{
+			try
+			{
+				_channel.write(bb, null, _sendHandler);
+			}
+			catch(Throwable e)
+			{
+				_manager.doException(this, e);
+				close();
+				return false;
+			}
+		}
+		return true;
 	}
 
+	@Override
 	public void close()
 	{
-		if(!_channel.isOpen()) return;
-		try
+		_manager.closeChannel(_channel);
+		synchronized(_sendBuf)
 		{
-			_channel.close();
+			_sendBuf.clear();
+			_sendBufSize = 0;
 		}
-		catch(Throwable e)
+		if(_closed.compareAndSet(false, true))
 		{
-			_manager.onException(this, e);
+			try
+			{
+				_manager.onDelSession(this);
+			}
+			catch(Throwable e)
+			{
+				_manager.doException(this, e);
+			}
 		}
 	}
 
@@ -90,37 +158,22 @@ public final class TcpSession
 				try
 				{
 					_manager.onReceive(TcpSession.this, _recvBuf, size);
-				}
-				catch(Throwable e)
-				{
-					_manager.onException(TcpSession.this, e);
-				}
-				try
-				{
 					_channel.read(_recvBuf, null, this);
+					return;
 				}
 				catch(Throwable e)
 				{
-					_manager.onException(TcpSession.this, e);
+					_manager.doException(TcpSession.this, e);
 				}
 			}
-			else
-			{
-				try
-				{
-					_manager.onDelSession(TcpSession.this);
-				}
-				catch(Throwable e)
-				{
-					_manager.onException(TcpSession.this, e);
-				}
-			}
+			close();
 		}
 
 		@Override
 		public void failed(Throwable ex, Object attachment)
 		{
-			_manager.onException(TcpSession.this, ex);
+			_manager.doException(TcpSession.this, ex);
+			close();
 		}
 	}
 
@@ -134,6 +187,7 @@ public final class TcpSession
 			synchronized(_sendBuf)
 			{
 				bb = _sendBuf.peekFirst();
+				if(bb == null) return; // should be closed
 				int left = bb.remaining();
 				if(size < left)
 				{
@@ -148,13 +202,24 @@ public final class TcpSession
 				}
 			}
 			if(bb != null)
-				_channel.write(bb, null, _sendHandler);
+			{
+				try
+				{
+					_channel.write(bb, null, _sendHandler);
+				}
+				catch(Throwable e)
+				{
+					_manager.doException(TcpSession.this, e);
+					close();
+				}
+			}
 		}
 
 		@Override
 		public void failed(Throwable ex, Object attachment)
 		{
-			_manager.onException(TcpSession.this, ex);
+			_manager.doException(TcpSession.this, ex);
+			close();
 		}
 	}
 }
