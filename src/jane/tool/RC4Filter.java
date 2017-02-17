@@ -112,7 +112,19 @@ public final class RC4Filter extends IoFilterAdapter
 		if(message instanceof IoBuffer)
 		{
 			IoBuffer ioBuf = (IoBuffer)message;
-			updateInput(ioBuf.array(), ioBuf.position(), ioBuf.remaining());
+			if(ioBuf.hasArray())
+				updateInput(ioBuf.array(), ioBuf.position(), ioBuf.remaining());
+			else
+			{
+				int len = ioBuf.remaining();
+				byte[] buf = new byte[len];
+				int pos = ioBuf.position();
+				ioBuf.get(buf, 0, len);
+				ioBuf.position(pos);
+				updateInput(buf, 0, len);
+				ioBuf.put(buf, 0, len);
+				ioBuf.position(pos);
+			}
 		}
 		nextFilter.messageReceived(session, message);
 	}
@@ -124,7 +136,19 @@ public final class RC4Filter extends IoFilterAdapter
 		if(message instanceof IoBuffer)
 		{
 			IoBuffer ioBuf = (IoBuffer)message;
-			updateOutput(ioBuf.array(), ioBuf.position(), ioBuf.remaining());
+			if(ioBuf.hasArray())
+				updateOutput(ioBuf.array(), ioBuf.position(), ioBuf.remaining());
+			else
+			{
+				int len = ioBuf.remaining();
+				byte[] buf = new byte[len];
+				int pos = ioBuf.position();
+				ioBuf.get(buf, 0, len);
+				ioBuf.position(pos);
+				updateOutput(buf, 0, len);
+				ioBuf.put(buf, 0, len);
+				ioBuf.position(pos);
+			}
 		}
 		nextFilter.filterWrite(session, writeRequest);
 	}

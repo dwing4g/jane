@@ -17,6 +17,17 @@ public class OctetsStream extends Octets
 	protected transient int     _pos;       // 当前的读写位置
 	protected transient boolean _hasExInfo; // 是否需要详细的异常信息(默认不需要,可以加快unmarshal失败的性能)
 
+	public static OctetsStream wrap(byte[] data, int pos, int size)
+	{
+		OctetsStream os = new OctetsStream();
+		os._buffer = data;
+		if(size > data.length) os._count = data.length;
+		else if(size < 0)      os._count = 0;
+		else                   os._count = size;
+		os._pos = pos;
+		return os;
+	}
+
 	public static OctetsStream wrap(byte[] data, int size)
 	{
 		OctetsStream os = new OctetsStream();

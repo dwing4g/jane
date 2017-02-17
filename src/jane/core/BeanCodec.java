@@ -122,7 +122,7 @@ public class BeanCodec extends IoFilterAdapter
 			}
 			int maxSize = beanMaxSize(_ptype);
 			if(maxSize < 0) maxSize = Const.maxRawBeanSize;
-			if(_psize < 0 || _psize > maxSize)
+			if(_psize > maxSize)
 				throw new DecodeException("bean maxSize overflow: type=" + _ptype + ",size=" + _psize + ",maxSize=" + maxSize);
 		}
 		if(_psize > os.remain()) return false;
@@ -135,11 +135,11 @@ public class BeanCodec extends IoFilterAdapter
 			if(realSize > _psize)
 				throw new DecodeException("bean realSize overflow: type=" + _ptype + ",size=" + _psize + ",realSize=" + realSize);
 			os.setPosition(pos + _psize);
-			next.messageReceived(session, bean);
 		}
 		else
-			next.messageReceived(session, new RawBean(_ptype, os.unmarshalRaw(_psize)));
+			bean = new RawBean(_ptype, os.unmarshalRaw(_psize));
 		_psize = -1;
+		next.messageReceived(session, bean);
 		return true;
 	}
 
@@ -147,48 +147,65 @@ public class BeanCodec extends IoFilterAdapter
 	public void messageReceived(NextFilter next, IoSession session, Object message) throws Exception
 	{
 		IoBuffer in = (IoBuffer)message;
-		if(!_os.empty())
+		try
 		{
-			int r = in.remaining();
-			int s = _os.size();
-			int n = Math.min(_psize < 0 ? 10 - s : _psize, r); // 前者情况因两个unmarshalUInt不会超过10字节,所以s肯定是<10的
-			_os.resize(s + n);
-			in.get(_os.array(), s, n);
-			r -= n;
-			s += n;
-			if(!decodeProtocol(_os, next, session)) // 能正好解出一个协议,或者因之前无法解出头部或者in的数据还不够导致失败
+			if(!_os.empty())
 			{
-				if(r <= 0) return; // 如果in已经无数据可取就直接等下次,之前无法解出头部的话,in也肯定无数据了
-				n = _psize - _os.remain();
-				if(r < n) // 如果数据不够多就先累积到缓存里
-				{
-					_os.resize(s + r);
-					in.get(_os.array(), s, r);
-					return;
-				}
+				int r = in.remaining();
+				int s = _os.size();
+				int n = Math.min(_psize < 0 ? 10 - s : _psize, r); // 前者情况因两个unmarshalUInt不会超过10字节,所以s肯定是<10的
 				_os.resize(s + n);
 				in.get(_os.array(), s, n);
-				decodeProtocol(_os, next, session); // 应该能正好解出一个协议
-				_os.clear();
-				if(r <= n) return;
+				r -= n;
+				s += n;
+				if(!decodeProtocol(_os, next, session)) // 能正好解出一个协议,或者因之前无法解出头部或者in的数据还不够导致失败
+				{
+					if(r <= 0) return; // 如果in已经无数据可取就直接等下次,之前无法解出头部的话,in也肯定无数据了
+					n = _psize - _os.remain();
+					if(r < n) // 如果数据不够多就先累积到缓存里
+					{
+						_os.resize(s + r);
+						in.get(_os.array(), s, r);
+						return;
+					}
+					_os.resize(s + n);
+					in.get(_os.array(), s, n);
+					decodeProtocol(_os, next, session); // 应该能正好解出一个协议
+					_os.clear();
+					if(r <= n) return;
+				}
+				else
+				{
+					n = _os.remain();
+					_os.clear();
+					if(n > 0) // 有很小的可能因为之前无法解出头部,而补足10字节却过多的情况,可以调整in的位置
+						in.position(in.position() - n);
+					else if(r <= 0) return;
+				}
+			}
+			int n = in.limit();
+			OctetsStream os;
+			if(in.hasArray())
+			{
+				os = OctetsStream.wrap(in.array(), in.position(), n);
+				in.position(n);
 			}
 			else
 			{
-				n = _os.remain();
-				_os.clear();
-				if(n > 0) // 有很小的可能因为之前无法解出头部,而补足10字节却过多的情况,可以调整in的位置
-					in.position(in.position() - n);
-				else if(r <= 0) return;
+				n = in.remaining();
+				byte[] buf = new byte[n];
+				in.get(buf, 0, n);
+				os = OctetsStream.wrap(buf);
 			}
+			while(decodeProtocol(os, next, session))
+				if(os.remain() <= 0) return;
+			if(os.remain() <= 0) return; // 正好只解出头部的情况
+			_os.replace(os.array(), os.position(), os.remain());
+			_os.setPosition(0);
 		}
-		int n = in.limit();
-		OctetsStream os = OctetsStream.wrap(in.array(), n);
-		os.setPosition(in.position());
-		in.position(n);
-		while(decodeProtocol(os, next, session))
-			if(os.remain() <= 0) return;
-		if(os.remain() <= 0) return;
-		_os.replace(os.array(), os.position(), os.remain());
-		_os.setPosition(0);
+		finally
+		{
+			in.free();
+		}
 	}
 }

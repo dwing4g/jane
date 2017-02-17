@@ -408,66 +408,74 @@ public final class HttpCodec extends IoFilterAdapter
 	public void messageReceived(NextFilter next, IoSession session, Object message) throws Exception
 	{
 		IoBuffer in = (IoBuffer)message;
-		begin_: for(;;)
+		try
 		{
-			if(_bodySize <= 0)
+			begin_: for(;;)
 			{
-				int r = in.remaining();
-				int s = (r < 1024 ? r : 1024); // 最多一次取1024字节来查找HTTP头
-				int p = _buf.size();
-				if(s > 0)
+				if(_bodySize <= 0)
 				{
-					_buf.resize(p + s);
-					in.get(_buf.array(), p, s);
-				}
-				for(;;)
-				{
-					p = _buf.find(p - 3, HEAD_END_MARK);
-					if(p < 0)
+					int r = in.remaining();
+					if(r <= 0) return;
+					int s = (r < 1024 ? r : 1024); // 最多一次取1024字节来查找HTTP头
+					int p = _buf.size();
+					if(s > 0)
 					{
-						if(_buf.size() > Const.maxHttpHeadSize)
-							throw new DecodeException("http head size overflow: bufsize=" + _buf.size() + ",maxsize=" + Const.maxHttpHeadSize);
-						if(!in.hasRemaining()) return;
-						continue begin_;
+						_buf.resize(p + s);
+						in.get(_buf.array(), p, s);
 					}
-					p += HEAD_END_MARK.length;
-					if(p < 18) // 最小的可能是"GET / HTTP/1.1\r\n\r\n"
-						throw new DecodeException("http head size too short: headsize=" + p);
-					_buf.setPosition(p);
-					_bodySize = getHeadLong(_buf, CONT_LEN_MARK); // 从HTTP头中找到内容长度
-					if(_bodySize > 0) break; // 有内容则跳到下半部分的处理
-					OctetsStream os = new OctetsStream(_buf.array(), p, _buf.remain()); // 切割出尾部当作下次缓存(不会超过1024字节)
-					_buf.resize(p);
-					next.messageReceived(session, _buf);
-					_buf = os;
-					p = 0;
+					for(;;)
+					{
+						p = _buf.find(p - (HEAD_END_MARK.length - 1), HEAD_END_MARK);
+						if(p < 0)
+						{
+							if(_buf.size() > Const.maxHttpHeadSize)
+								throw new DecodeException("http head size overflow: bufsize=" + _buf.size() + ",maxsize=" + Const.maxHttpHeadSize);
+							if(!in.hasRemaining()) return;
+							continue begin_;
+						}
+						p += HEAD_END_MARK.length;
+						if(p < 18) // 最小的可能是"GET / HTTP/1.1\r\n\r\n"
+							throw new DecodeException("http head size too short: headsize=" + p);
+						_buf.setPosition(p);
+						_bodySize = getHeadLong(_buf, CONT_LEN_MARK); // 从HTTP头中找到内容长度(目前不支持请求的chunk)
+						if(_bodySize > 0) break; // 有内容则跳到下半部分的处理
+						OctetsStream os = new OctetsStream(_buf.array(), p, _buf.remain()); // 切割出尾部当作下次缓存(不会超过1024字节)
+						_buf.resize(p);
+						next.messageReceived(session, _buf);
+						_buf = os;
+						p = 0;
+					}
+					if(_bodySize > Const.maxHttpBodySize)
+						throw new DecodeException("http body size overflow: bodysize=" + _bodySize + ",maxsize=" + Const.maxHttpBodySize);
 				}
-				if(_bodySize > Const.maxHttpBodySize)
-					throw new DecodeException("http body size overflow: bodysize=" + _bodySize + ",maxsize=" + Const.maxHttpBodySize);
-			}
-			int r = in.remaining();
-			int s = (int)_bodySize - _buf.remain();
-			int p = _buf.size();
-			OctetsStream os;
-			if(s > r) s = r; // 只取能取到的大小
-			if(s >= 0) // 缓存数据不足或正好
-			{
-				if(s > 0) // 不足且有数据就尽量补足
+				int r = in.remaining();
+				int s = (int)_bodySize - _buf.remain();
+				int p = _buf.size();
+				OctetsStream os;
+				if(s > r) s = r; // 只取能取到的大小
+				if(s >= 0) // 缓存数据不足或正好
 				{
-					_buf.resize(p + s);
-					in.get(_buf.array(), p, s);
+					if(s > 0) // 不足且有数据就尽量补足
+					{
+						_buf.resize(p + s);
+						in.get(_buf.array(), p, s);
+					}
+					if(_buf.remain() < _bodySize) return; // 再不足就等下次
+					os = new OctetsStream(1024); // 正好满足了,申请新的缓存
 				}
-				if(_buf.remain() < _bodySize) return; // 再不足就等下次
-				os = new OctetsStream(1024); // 正好满足了,申请新的缓存
+				else
+				{
+					os = new OctetsStream(_buf.array(), p += s, -s); // 缓存数据过剩就切割出尾部当作下次缓存(不会超过1024字节)
+					_buf.resize(p);
+				}
+				next.messageReceived(session, _buf);
+				_buf = os;
+				_bodySize = 0; // 下次从HTTP头部开始匹配
 			}
-			else
-			{
-				os = new OctetsStream(_buf.array(), p += s, -s); // 缓存数据过剩就切割出尾部当作下次缓存(不会超过1024字节)
-				_buf.resize(p);
-			}
-			next.messageReceived(session, _buf);
-			_buf = os;
-			_bodySize = 0; // 下次从HTTP头部开始匹配
+		}
+		finally
+		{
+			in.free();
 		}
 	}
 }
