@@ -1,7 +1,7 @@
 package jane.core;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -39,14 +39,17 @@ import jane.core.map.LongMap.MapIterator;
  */
 public class NetManager implements IoHandler
 {
-	private static final LongConcurrentHashMap<RpcBean<?, ?, ?>> _rpcs			 = new LongConcurrentHashMap<>();				   // 当前管理器等待回复的RPC
-	private static final ScheduledExecutorService				 _rpcThread;													   // 处理重连及RPC和事务超时的线程
-	private final String										 _name			 = getClass().getName();						   // 当前管理器的名字
-	private volatile Class<? extends IoFilter>					 _pcf			 = BeanCodec.class;								   // 协议编码器的类
-	private volatile IntHashMap<BeanHandler<?>>					 _handlers		 = new IntHashMap<>(0);							   // bean的处理器
-	private volatile NioSocketAcceptor							 _acceptor;														   // mina的网络监听器
-	private volatile NioSocketConnector							 _connector;													   // mina的网络连接器
-	private volatile int										 _processorCount = Runtime.getRuntime().availableProcessors() + 1; // 监听器或连接器的处理器数量
+	public static final int	DEFAULT_SERVER_IO_THREAD_COUNT = Runtime.getRuntime().availableProcessors() + 1;
+	public static final int	DEFAULT_CLIENT_IO_THREAD_COUNT = 1;
+
+	private static final LongConcurrentHashMap<RpcBean<?, ?, ?>> _rpcs	   = new LongConcurrentHashMap<>();	// 当前管理器等待回复的RPC
+	private static final ScheduledExecutorService				 _rpcThread;								// 处理重连及RPC和事务超时的线程
+	private final String										 _name	   = getClass().getName();			// 当前管理器的名字
+	private volatile Class<? extends IoFilter>					 _pcf	   = BeanCodec.class;				// 协议编码器的类
+	private volatile IntHashMap<BeanHandler<?>>					 _handlers = new IntHashMap<>(0);			// bean的处理器
+	private volatile NioSocketAcceptor							 _acceptor;									// mina的网络监听器
+	private volatile NioSocketConnector							 _connector;								// mina的网络连接器
+	private int													 _ioThreadCount;							// IO线程池的最大数量(<=0表示默认值)
 
 	static
 	{
@@ -193,13 +196,13 @@ public class NetManager implements IoHandler
 	}
 
 	/**
-	 * 设置监听器或连接器的处理器数量
+	 * 设置IO线程池的最大数量
 	 * <p>
-	 * 必须在创建连接器和监听器之前修改
+	 * 必须在创建连接器和监听器之前修改. <=0表示使用默认值(作为服务器时是CPU核数+1,作为客户端时为1)
 	 */
-	public final void setProcessorCount(int count)
+	public final synchronized void setIoThreadCount(int count)
 	{
-		_processorCount = count;
+		_ioThreadCount = count;
 	}
 
 	/**
@@ -213,7 +216,7 @@ public class NetManager implements IoHandler
 			{
 				if(_acceptor == null || _acceptor.isDisposed())
 				{
-					NioSocketAcceptor t = new NioSocketAcceptor(_processorCount);
+					NioSocketAcceptor t = new NioSocketAcceptor(_ioThreadCount > 0 ? _ioThreadCount : DEFAULT_SERVER_IO_THREAD_COUNT);
 					t.setReuseAddress(true);
 					t.setHandler(this);
 					_acceptor = t;
@@ -234,7 +237,7 @@ public class NetManager implements IoHandler
 			{
 				if(_connector == null || _connector.isDisposed())
 				{
-					NioSocketConnector t = new NioSocketConnector(_processorCount);
+					NioSocketConnector t = new NioSocketConnector(_ioThreadCount > 0 ? _ioThreadCount : DEFAULT_CLIENT_IO_THREAD_COUNT);
 					t.setHandler(this);
 					t.setConnectTimeoutMillis(Const.connectTimeout * 1000);
 					_connector = t;
@@ -265,7 +268,7 @@ public class NetManager implements IoHandler
 	 * <p>
 	 * 监听的参数要提前设置. 此操作是异步的,失败会抛出IOException异常
 	 */
-	public void startServer(InetSocketAddress addr) throws IOException
+	public void startServer(SocketAddress addr) throws IOException
 	{
 		getAcceptor();
 		Log.log.info("{}: listening addr={}", _name, addr);
@@ -278,7 +281,7 @@ public class NetManager implements IoHandler
 	 * 此操作是异步的,失败会在另一线程回调onConnectFailed
 	 * @param ctx 此次连接的用户对象,用于传回onConnectFailed的回调中
 	 */
-	public ConnectFuture startClient(final InetSocketAddress addr, final Object ctx)
+	public ConnectFuture startClient(final SocketAddress addr, final Object ctx)
 	{
 		getConnector();
 		Log.log.info("{}: connecting addr={}", _name, addr);
@@ -336,7 +339,7 @@ public class NetManager implements IoHandler
 	 * <p>
 	 * 此操作是异步的,失败会在另一线程回调onConnectFailed
 	 */
-	public ConnectFuture startClient(final InetSocketAddress addr)
+	public ConnectFuture startClient(final SocketAddress addr)
 	{
 		return startClient(addr, null);
 	}
@@ -345,7 +348,7 @@ public class NetManager implements IoHandler
 	 * 停止服务器端的监听并断开相关的连接
 	 * @param addr 指定停止的地址/端口. 如果为null则停止全部监听地址/端口
 	 */
-	public void stopServer(InetSocketAddress addr)
+	public void stopServer(SocketAddress addr)
 	{
 		getAcceptor();
 		if(addr != null)
@@ -674,7 +677,7 @@ public class NetManager implements IoHandler
 	 * @return 返回下次重连的时间间隔(秒)
 	 */
 	@SuppressWarnings("static-method")
-	protected int onConnectFailed(InetSocketAddress addr, int count, Object ctx)
+	protected int onConnectFailed(SocketAddress addr, int count, Object ctx)
 	{
 		return -1;
 	}
