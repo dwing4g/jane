@@ -12,10 +12,10 @@ import org.apache.mina.core.session.IoSession;
 import jane.core.Log;
 import jane.core.NetManager;
 
-// start.bat jane.test.TestEcho 32 100000 1 256
+// start.bat jane.test.TestEcho 32 100000 1 8
 public final class TestEcho extends NetManager
 {
-	private static int TEST_ECHO_SIZE  = 64;
+	private static int TEST_ECHO_SIZE  = 32;
 	private static int TEST_ECHO_COUNT = 100000;
 
 	private static final CountDownLatch	_closedCount = new CountDownLatch(2);
