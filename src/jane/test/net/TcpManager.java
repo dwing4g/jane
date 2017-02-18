@@ -18,11 +18,12 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * 简单封装Java NIO.2(AIO)的网络管理器(目前实验中)
  * 所有公开方法都不会抛出异常(除了有throws标识的), 异常统一由onException处理
  */
 public class TcpManager implements Closeable
 {
-	public static final int TCP_THREADS = 2;
+	public static final int TCP_THREADS = 2; // Runtime.getRuntime().availableProcessors() + 1;
 
 	private static AsynchronousChannelGroup	  _group;
 	private AsynchronousServerSocketChannel	  _acceptor;
@@ -279,8 +280,10 @@ public class TcpManager implements Closeable
 	 * @param session 可能为null
 	 * @param ex
 	 */
+	@SuppressWarnings("static-method")
 	public void onException(TcpSession session, Throwable ex)
 	{
+		ex.printStackTrace();
 	}
 
 	private final class AcceptHandler implements CompletionHandler<AsynchronousSocketChannel, Object>
