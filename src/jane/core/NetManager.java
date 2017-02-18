@@ -392,29 +392,28 @@ public class NetManager implements IoHandler
 	/**
 	 * 发送bean的底层入口
 	 */
-	protected static WriteFuture write(IoSession session, Object obj)
+	protected static boolean write(IoSession session, Object obj)
 	{
-		if(session.isClosing() || obj == null) return null;
-		WriteFuture wf = new DefaultWriteFuture(session);
-		DefaultWriteRequest dwr = new DefaultWriteRequest(obj, wf, null);
+		if(session.isClosing() || obj == null) return false;
 		IoFilterChain ifc = session.getFilterChain();
+		DefaultWriteRequest dwr = new DefaultWriteRequest(obj, null, null);
 		synchronized(session)
 		{
 			ifc.fireFilterWrite(dwr);
 		}
-		return wf;
+		return true;
 	}
 
 	/**
-	 * 发送bean的底层入口. 可带监听器
+	 * 发送bean的底层入口. 可带监听器,并返回WriteFuture
 	 */
 	protected static WriteFuture write(IoSession session, Object obj, IoFutureListener<?> listener)
 	{
 		if(session.isClosing() || obj == null) return null;
+		IoFilterChain ifc = session.getFilterChain();
 		WriteFuture wf = new DefaultWriteFuture(session);
 		if(listener != null) wf.addListener(listener);
 		DefaultWriteRequest dwr = new DefaultWriteRequest(obj, wf, null);
-		IoFilterChain ifc = session.getFilterChain();
 		synchronized(session)
 		{
 			ifc.fireFilterWrite(dwr);
@@ -431,7 +430,7 @@ public class NetManager implements IoHandler
 	 */
 	public boolean sendRaw(IoSession session, Object obj)
 	{
-		if(write(session, obj) == null) return false;
+		if(!write(session, obj)) return false;
 		if(Log.hasTrace) Log.log.trace("{}({}): send: raw: {}", _name, session.getId(), obj);
 		return true;
 	}
@@ -445,14 +444,14 @@ public class NetManager implements IoHandler
 	 */
 	public boolean send(IoSession session, Bean<?> bean)
 	{
-		if(write(session, bean) == null) return false;
+		if(!write(session, bean)) return false;
 		if(Log.hasTrace) Log.log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.getClass().getSimpleName(), bean);
 		return true;
 	}
 
 	public boolean sendSafe(final IoSession session, final Bean<?> bean)
 	{
-		if(session.isClosing()) return false;
+		if(session.isClosing() || bean == null) return false;
 		final RawBean rawbean = new RawBean(bean);
 		SContext.current().addOnCommit(new Runnable()
 		{
@@ -476,12 +475,13 @@ public class NetManager implements IoHandler
 	public <A extends Bean<A>> boolean send(final IoSession session, final A bean, final BeanHandler<A> callback)
 	{
 		if(session.isClosing() || bean == null) return false;
-		WriteFuture wf;
 		if(callback == null)
-			wf = write(session, bean);
+		{
+			if(!write(session, bean)) return false;
+		}
 		else
 		{
-			wf = write(session, bean, new IoFutureListener<IoFuture>()
+			if(write(session, bean, new IoFutureListener<IoFuture>()
 			{
 				@Override
 				public void operationComplete(IoFuture future)
@@ -495,16 +495,15 @@ public class NetManager implements IoHandler
 						Log.log.error(_name + '(' + session.getId() + "): callback exception: " + bean.getClass().getSimpleName(), e);
 					}
 				}
-			});
+			}) == null) return false;
 		}
-		if(wf == null) return false;
 		if(Log.hasTrace) Log.log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.getClass().getSimpleName(), bean);
 		return true;
 	}
 
 	public <A extends Bean<A>> boolean sendSafe(final IoSession session, final A bean, final BeanHandler<A> callback)
 	{
-		if(session.isClosing()) return false;
+		if(session.isClosing() || bean == null) return false;
 		SContext.current().addOnCommit(new Runnable()
 		{
 			@Override
@@ -619,7 +618,7 @@ public class NetManager implements IoHandler
 	 */
 	public <A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>> boolean sendRpcSafe(final IoSession session, final RpcBean<A, R, B> rpcBean, final RpcHandler<A, R, B> handler)
 	{
-		if(session.isClosing()) return false;
+		if(session.isClosing() || rpcBean == null) return false;
 		SContext.current().addOnCommit(new Runnable()
 		{
 			@Override
@@ -638,6 +637,7 @@ public class NetManager implements IoHandler
 	 */
 	public void clientBroadcast(Bean<?> bean)
 	{
+		if(bean == null) return;
 		for(IoSession session : getClientSessions().values())
 			write(session, bean);
 	}
@@ -649,6 +649,7 @@ public class NetManager implements IoHandler
 	 */
 	public void serverBroadcast(Bean<?> bean)
 	{
+		if(bean == null) return;
 		for(IoSession session : getServerSessions().values())
 			write(session, bean);
 	}

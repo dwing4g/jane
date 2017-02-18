@@ -328,23 +328,23 @@ public final class HttpCodec extends IoFilterAdapter
 		byte[] out = new byte[n];
 		for(int i = 0; i < n; ++i)
 			out[i] = (byte)sb.charAt(i);
-		return NetManager.write(session, out) != null;
+		return NetManager.write(session, out);
 	}
 
 	public static boolean send(IoSession session, byte[] data)
 	{
-		return NetManager.write(session, data) != null;
+		return NetManager.write(session, data);
 	}
 
 	public static boolean send(IoSession session, Octets data)
 	{
-		return NetManager.write(session, data) != null;
+		return NetManager.write(session, data);
 	}
 
 	public static boolean sendChunk(IoSession session, byte[] chunk)
 	{
 		int n = chunk.length;
-		return n <= 0 || NetManager.write(session, ByteBuffer.wrap(chunk, 0, n)) != null;
+		return n <= 0 || NetManager.write(session, ByteBuffer.wrap(chunk, 0, n));
 	}
 
 	public static boolean sendChunk(IoSession session, Octets chunk)
@@ -352,7 +352,7 @@ public final class HttpCodec extends IoFilterAdapter
 		int n = chunk.remain();
 		if(n <= 0) return true;
 		ByteBuffer buf = ByteBuffer.wrap(chunk.array(), chunk.position(), n);
-		return NetManager.write(session, buf) != null;
+		return NetManager.write(session, buf);
 	}
 
 	public static boolean sendChunk(IoSession session, String chunk)
@@ -362,7 +362,7 @@ public final class HttpCodec extends IoFilterAdapter
 
 	public static boolean sendChunkEnd(IoSession session)
 	{
-		return NetManager.write(session, CHUNK_END_MARK) != null;
+		return NetManager.write(session, CHUNK_END_MARK);
 	}
 
 	@Override
