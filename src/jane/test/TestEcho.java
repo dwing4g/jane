@@ -74,9 +74,10 @@ public final class TestEcho extends NetManager
 			IoBuffer.setAllocator(count > 0 ? new TestCachedBufferAllocator(count, 64 * 1024) : new SimpleBufferAllocator());
 			System.gc();
 			long time = System.currentTimeMillis();
-			new TestEcho().startServer(new InetSocketAddress("0.0.0.0", 9123));
+			TestEcho mgr = new TestEcho();
+			mgr.startServer(new InetSocketAddress("0.0.0.0", 9123));
 			for(int i = 0; i < TEST_CLIENT_COUNT; ++i)
-				new TestEcho().startClient(new InetSocketAddress("127.0.0.1", 9123));
+				mgr.startClient(new InetSocketAddress("127.0.0.1", 9123));
 			_closedCount.await();
 			Log.log.info("TestEcho: end ({} ms)", System.currentTimeMillis() - time);
 			Log.shutdown();
