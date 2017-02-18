@@ -15,10 +15,11 @@ import jane.core.NetManager;
 // start.bat jane.test.TestEcho 32 100000 1 8
 public final class TestEcho extends NetManager
 {
-	private static int TEST_ECHO_SIZE  = 32;
-	private static int TEST_ECHO_COUNT = 100000;
+	private static int TEST_ECHO_SIZE	 = 32;
+	private static int TEST_ECHO_COUNT	 = 100000;
+	private static int TEST_CLIENT_COUNT = 1;
 
-	private static final CountDownLatch	_closedCount = new CountDownLatch(2);
+	private static final CountDownLatch	_closedCount = new CountDownLatch(TEST_CLIENT_COUNT * 2);
 	private static final AtomicInteger	_recvCount	 = new AtomicInteger();
 
 	@Override
@@ -74,7 +75,8 @@ public final class TestEcho extends NetManager
 			System.gc();
 			long time = System.currentTimeMillis();
 			new TestEcho().startServer(new InetSocketAddress("0.0.0.0", 9123));
-			new TestEcho().startClient(new InetSocketAddress("127.0.0.1", 9123));
+			for(int i = 0; i < TEST_CLIENT_COUNT; ++i)
+				new TestEcho().startClient(new InetSocketAddress("127.0.0.1", 9123));
 			_closedCount.await();
 			Log.log.info("TestEcho: end ({} ms)", System.currentTimeMillis() - time);
 			Log.shutdown();
