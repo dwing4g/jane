@@ -71,6 +71,8 @@ License:
   * mvstore:        http://www.h2database.com/html/mvstore.html
   * berkeleydb/je:  http://www.oracle.com/technetwork/products/berkeleydb/downloads/index.html
   * perst:          http://www.mcobject.com/perst/
+  * WiredTiger:     https://github.com/wiredtiger/wiredtiger
+  * TerarkDB:       https://github.com/Terark/terark-db
  * 脚本库:
   * luaj:           http://luaj.org/luaj/README.html
 

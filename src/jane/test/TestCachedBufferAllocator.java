@@ -53,7 +53,7 @@ public final class TestCachedBufferAllocator implements IoBufferAllocator
 
 	private static int getIdx(int cap) // cap=2^n:[0,0x40000000] => [0,31]
 	{
-		return (int)((4719556544L * cap) >> 32) & 31;
+		return (int)((4719556544L * cap) >> 32) & 31; // minimal perfect hash function
 	}
 
 	@Override
