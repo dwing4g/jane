@@ -2,7 +2,7 @@
 ■ jane更新说明 ■
 ==================
 
-1.0.0 (2016-11-05) => git HEAD (2017-02-06)
+1.0.0 (2016-11-05) => git HEAD (2017-03-02)
 
 * 日志库使用Logback(1.2.x)代替了Log4j2, lib体积更小,性能更高,没有使用Log4j2遇到的一些bugs
 * 移除了MapDB,MVStore,以及开发中放弃的limax_edb的数据存储支持, 目前只支持LevelDB(功能及性能均最佳选择)
@@ -12,9 +12,11 @@
 * 运行事务的线程类要求是新加的ProcThread类或子类(为了少量优化及便于管理,内置事务线程池已是ProcThread类线程)
 * Long表的自增长ID要求至少从1开始分配(0经常用于其它目的,不适合当自增长的key,可以手动访问key=0的字段)
 * (Long)Table类增加了lockGet, Procedure类增加了lockGet和check等方便开发的辅助方法
+* 网络部分的IoBuffer支持DirectByteBuffer及回收池
 * genbeans不再生成bean代码中不需要的Safe类等代码, toJson和toLua方法的生成改为可选
 * 大量改进代码细节(接口兼容,不影响原功能,性能略有提升)
-* 更新了LevelDB(支持调整分片大小的配置)及LuaJIT
+* test中增加了简单的AIO封装实现(manager&session)
+* 更新了LevelDB(支持调整分片大小的配置,提升压缩/解压和CRC32的性能)及LuaJIT
 * gc.log会自动保留一个最近的备份到gc.old.log
 * 少量调整src及lib的包/目录结构
 * 生成的jane-src.jar只包含jane-core.jar的源码,不包括测试代码
