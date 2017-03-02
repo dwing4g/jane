@@ -49,6 +49,8 @@ License:
  * 基础库:
   * com.googlecode.concurrentlinkedhashmap: https://github.com/ben-manes/concurrentlinkedhashmap
   * kryo:           https://github.com/EsotericSoftware/kryo
+  * snappy:         https://github.com/google/snappy
+  * lz4:            https://github.com/lz4/lz4
   * gnu.trove.map:  http://trove.starlight-systems.com/
   * org.cliffc.high_scale_lib: http://sourceforge.net/projects/high-scale-lib/
  * 日志库:
@@ -59,20 +61,19 @@ License:
   * mina:           http://mina.apache.org/
   * netty:          http://netty.io/
   * rupy:           https://github.com/tinspin/rupy
-  * tjws:           http://tjws.sourceforge.net/
  * 数据库:
   * leveldb:        https://github.com/google/leveldb
   * leveldb-jni:    https://github.com/dwing4g/leveldb
   * leveldb-jni:    https://code.google.com/r/bgrainger-leveldb/
   * leveldb-jni:    https://github.com/fusesource/leveldbjni
   * leveldb-java:   https://github.com/dain/leveldb
+  * WiredTiger:     https://github.com/wiredtiger/wiredtiger
+  * TerarkDB:       https://github.com/Terark/terark-db
   * edb:            http://limax-project.org
   * mapdb:          http://www.mapdb.org/
   * mvstore:        http://www.h2database.com/html/mvstore.html
   * berkeleydb/je:  http://www.oracle.com/technetwork/products/berkeleydb/downloads/index.html
   * perst:          http://www.mcobject.com/perst/
-  * WiredTiger:     https://github.com/wiredtiger/wiredtiger
-  * TerarkDB:       https://github.com/Terark/terark-db
  * 脚本库:
   * luaj:           http://luaj.org/luaj/README.html
 
