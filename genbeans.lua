@@ -1124,8 +1124,11 @@ local function bean_const(code)
 		gsub("import jane%.core%.SContext;\n", ""):
 		gsub("\tprivate static Field .-\n", ""):
 		gsub("\tstatic\n.-\n\t}\n\n", ""):
-		gsub("%*/ String ", "*/ final String "):
-		gsub("%*/ Octets ", "*/ final Octets "):
+--		gsub("\n\tpublic [%w_]+%(%).-\n\t}\n", ""):
+--		gsub("(\n\tprivate /%*[ %d]+%*/)", "%1 final"):
+--		gsub("\n\tpublic  static final [%w_]+ BEAN_STUB = new [%w_]+%(%);\n", ""):
+--		gsub("return BEAN_STUB", "throw new UnsupportedOperationException()"):
+--		gsub("return new [%w_]+%(%)", "throw new UnsupportedOperationException()"):
 		gsub("\tpublic <B extends Bean<B>> void marshal.-\n\t}\n\n", ""):
 		gsub("\tpublic <B extends Bean<B>> Bean<B> unmarshal.-\n\t}\n\n", ""):
 		gsub("\tpublic DynBean unmarshal.-\n\t}\n\n", ""):
@@ -1137,13 +1140,7 @@ local function bean_const(code)
 	{
 		throw new UnsupportedOperationException();
 	}]]):
-		gsub("\t@Override\n\tpublic OctetsStream unmarshal%(.-\n\t}", [[
-	@Deprecated
-	@Override
-	public OctetsStream unmarshal(OctetsStream s) throws MarshalException
-	{
-		throw new UnsupportedOperationException();
-	}]])
+		gsub("\t@Override\n\tpublic OctetsStream unmarshal%(", "\t@Deprecated\n\t@Override\n\tpublic OctetsStream unmarshal%(")
 end
 local function get_imports(import)
 	local imports = {}

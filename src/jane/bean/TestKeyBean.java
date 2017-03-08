@@ -15,7 +15,7 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 	public  static final TestKeyBean BEAN_STUB = new TestKeyBean();
 
 	private /*  1*/ int key1; // KEY-1
-	private /*  2*/ final String key2; // KEY-2
+	private /*  2*/ String key2; // KEY-2
 
 	public TestKeyBean()
 	{
@@ -89,7 +89,13 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 	@Override
 	public OctetsStream unmarshal(OctetsStream s) throws MarshalException
 	{
-		throw new UnsupportedOperationException();
+		for(;;) { int i = s.unmarshalInt1() & 0xff, t = i & 3; if(i > 251) i += s.unmarshalInt1() << 2; switch(i >> 2)
+		{
+			case 0: return s;
+			case 1: this.key1 = s.unmarshalInt(t); break;
+			case 2: this.key2 = s.unmarshalString(t); break;
+			default: s.unmarshalSkipVar(t);
+		}}
 	}
 
 	@Override
