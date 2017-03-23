@@ -26,9 +26,9 @@ JVM="\
 # -Dsun.stderr.encoding=utf-8"
 
 LIB="\
-lib/slf4j-api-1.7.24.jar:\
-lib/logback-core-1.2.1.jar:\
-lib/logback-classic-1.2.1.jar:\
+lib/slf4j-api-1.7.25.jar:\
+lib/logback-core-1.2.2.jar:\
+lib/logback-classic-1.2.2.jar:\
 lib/mina-core-2.0.16.jar:\
 lib/luaj-jse-2.0.3.jar:\
 jane-core.jar:\
