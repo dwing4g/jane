@@ -21,6 +21,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import jane.core.Util;
 
 public final class XlsxExport
 {
@@ -70,15 +71,15 @@ public final class XlsxExport
 	{
 		byte[] xmlStr = null, xmlSheet = null;
 		String fileSheet = "xl/worksheets/sheet" + sheetId + ".xml";
-		try(ZipInputStream zis = new ZipInputStream(isXlsx))
+		try(ZipInputStream zis = new ZipInputStream(new BufferedInputStream(isXlsx)))
 		{
-			BufferedInputStream bis = new BufferedInputStream(zis);
 			for(ZipEntry ze; (ze = zis.getNextEntry()) != null;)
 			{
+				int len = (int)ze.getSize();
 				if(ze.getName().equals("xl/sharedStrings.xml"))
-					bis.read(xmlStr = new byte[(int)ze.getSize()]);
+					Util.readStream(zis, ze.getName(), xmlStr = new byte[len], len);
 				else if(ze.getName().equals(fileSheet))
-					bis.read(xmlSheet = new byte[(int)ze.getSize()]);
+					Util.readStream(zis, ze.getName(), xmlSheet = new byte[len], len);
 			}
 		}
 		if(xmlStr == null) throw new IOException("ERROR: not found xl/sharedStrings.xml");

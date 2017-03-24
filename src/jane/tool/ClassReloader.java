@@ -1,11 +1,17 @@
 package jane.tool;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.instrument.ClassDefinition;
 import java.lang.instrument.Instrumentation;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import jane.core.Util;
 
 /*
 MANIFEST.MF
@@ -65,14 +71,14 @@ public final class ClassReloader
 		return strings[classes[(dis.readShort() & 0xffff) - 1] - 1].replace('/', '.');
 	}
 
-	public static void reloadClass(byte[] classData) throws Exception
+	public static void reloadClass(byte[] classData) throws Exception, Error
 	{
 		if(_inst == null)
 			throw new NullPointerException("Instrumentation not initialized");
 		_inst.redefineClasses(new ClassDefinition(Class.forName(getClassPathFromData(classData)), classData));
 	}
 
-	public static void reloadClasses(List<byte[]> classDatas) throws Exception
+	public static void reloadClasses(List<byte[]> classDatas) throws Exception, Error
 	{
 		if(_inst == null)
 			throw new NullPointerException("Instrumentation not initialized");
@@ -81,5 +87,26 @@ public final class ClassReloader
 		for(byte[] classData : classDatas)
 			clsDefs[i++] = new ClassDefinition(Class.forName(getClassPathFromData(classData)), classData);
 		_inst.redefineClasses(clsDefs);
+	}
+
+	public static void reloadClasses(InputStream zipStream) throws Exception, Error
+	{
+		if(_inst == null)
+			throw new NullPointerException("Instrumentation not initialized");
+		List<byte[]> classDatas = new ArrayList<>();
+		try(ZipInputStream zis = new ZipInputStream(new BufferedInputStream(zipStream)))
+		{
+			for(ZipEntry ze; (ze = zis.getNextEntry()) != null;)
+			{
+				if(ze.getName().endsWith(".class"))
+				{
+					int len = (int)ze.getSize();
+					byte[] classData = new byte[len];
+					Util.readStream(zis, ze.getName(), classData, len);
+					classDatas.add(classData);
+				}
+			}
+		}
+		reloadClasses(classDatas);
 	}
 }

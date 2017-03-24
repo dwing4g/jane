@@ -8,7 +8,7 @@ import jane.tool.ClassReloader;
 // java -javaagent:jane-core.jar -cp bin jane.test.TestReload
 public final class TestReload
 {
-	private int a = 123;
+	private final int a = 123;
 
 	public void test()
 	{

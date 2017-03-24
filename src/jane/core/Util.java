@@ -287,6 +287,20 @@ public final class Util
 	}
 
 	/**
+	 * 持续从输入流中读取指定长度的数据
+	 */
+	public static void readStream(InputStream is, String isName, byte[] buf, int len) throws IOException
+	{
+		for(int n = 0; n < len;)
+		{
+			int r = is.read(buf, n, len - n);
+			if(r < 0)
+				throw new IOException(String.format("read interrupt(%s:%d)", isName, n));
+			n += r;
+		}
+	}
+
+	/**
 	 * 读取整个文件内容
 	 * @param fileName 文件名
 	 * @return 返回完整的文件内容
