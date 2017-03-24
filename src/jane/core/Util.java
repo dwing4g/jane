@@ -291,7 +291,7 @@ public final class Util
 	 * @param fileName 文件名
 	 * @return 返回完整的文件内容
 	 */
-	public static byte[] readAllFile(String fileName) throws IOException
+	public static byte[] readFileData(String fileName) throws IOException
 	{
 		try(InputStream is = new FileInputStream(fileName))
 		{

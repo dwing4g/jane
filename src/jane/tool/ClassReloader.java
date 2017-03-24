@@ -22,6 +22,10 @@ public final class ClassReloader
 {
 	private static Instrumentation _inst;
 
+	private ClassReloader()
+	{
+	}
+
 	public static Instrumentation getInstrumentation()
 	{
 		return _inst;
@@ -33,7 +37,7 @@ public final class ClassReloader
 		_inst = inst;
 	}
 
-	private static String getClassPathFromData(byte[] classData) throws IOException
+	public static String getClassPathFromData(byte[] classData) throws IOException
 	{
 		DataInputStream dis = new DataInputStream(new ByteArrayInputStream(classData));
 		dis.readLong(); // skip magic[4] and version[4]
@@ -65,8 +69,7 @@ public final class ClassReloader
 	{
 		if(_inst == null)
 			throw new NullPointerException("Instrumentation not initialized");
-		Class<?> cls = Class.forName(getClassPathFromData(classData));
-		_inst.redefineClasses(new ClassDefinition(cls, classData));
+		_inst.redefineClasses(new ClassDefinition(Class.forName(getClassPathFromData(classData)), classData));
 	}
 
 	public static void reloadClasses(List<byte[]> classDatas) throws Exception

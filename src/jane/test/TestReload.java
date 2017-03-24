@@ -1,5 +1,7 @@
 package jane.test;
 
+import java.util.ArrayList;
+import java.util.List;
 import jane.core.Util;
 import jane.tool.ClassReloader;
 
@@ -17,7 +19,7 @@ public final class TestReload
 			@Override
 			public void run()
 			{
-				System.out.println("inner1: " + a);
+				System.out.println("inner-1: " + a);
 			}
 		}.run();
 	}
@@ -27,11 +29,13 @@ public final class TestReload
 		TestReload a = new TestReload();
 		a.test();
 
-		String classPath = "bin/jane/test/TestReload.class";
-		System.out.println("now modify the file and press enter: " + classPath);
+		System.out.print("now modify TestReload classes and press enter ... ");
 		System.in.read();
 
-		ClassReloader.reloadClass(Util.readAllFile(classPath));
+		List<byte[]> classes = new ArrayList<>();
+		classes.add(Util.readFileData("bin/jane/test/TestReload.class"));
+		classes.add(Util.readFileData("bin/jane/test/TestReload$1.class"));
+		ClassReloader.reloadClasses(classes);
 
 		a.test();
 		new TestReload().test();

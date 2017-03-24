@@ -110,7 +110,7 @@ public final class HttpCodec extends IoFilterAdapter
 
 	public static SslFilter getSslFilter(String keyFile, String keyPw) throws Exception
 	{
-		byte[] key = Util.readAllFile(keyFile);
+		byte[] key = Util.readFileData(keyFile);
 		char[] pw = keyPw.toCharArray();
 		return getSslFilter(new ByteArrayInputStream(key), pw, new ByteArrayInputStream(key), pw);
 	}
