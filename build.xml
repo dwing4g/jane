@@ -39,6 +39,8 @@
 		<jar jarfile="jane-core.jar" basedir="${classes}" excludes="**/jane/bean/**,**/jane/handler/**,**/jane/test/**" level="9">
 			<manifest>
 				<attribute name="Created-Time" value="${time}"/>
+				<attribute name="Premain-Class" value="jane.tool.ClassReloader"/>
+				<attribute name="Can-Redefine-Classes" value="true"/>
 			</manifest>
 			<fileset file="${src}/*.properties"/>
 		</jar>
