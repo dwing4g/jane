@@ -8,47 +8,60 @@ import java.nio.channels.AsynchronousSocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import jane.core.Log;
+import jane.test.net.ByteBufferPool;
 import jane.test.net.TcpManager;
 import jane.test.net.TcpSession;
 
-// start.bat jane.test.TestEchoAio 32 100000
+// start.bat jane.test.TestEchoAio 32 32000000 64
 public final class TestEchoAio extends TcpManager
 {
 	private static int TEST_ECHO_SIZE	 = 32;
-	private static int TEST_ECHO_COUNT	 = 100000;
+	private static int TEST_ECHO_COUNT	 = 32000000;
 	private static int TEST_CLIENT_COUNT = 64;
 
-	private static final CountDownLatch	_closedCount = new CountDownLatch(TEST_CLIENT_COUNT * 2);
-	private static final AtomicInteger	_recvCount	 = new AtomicInteger();
+	private static CountDownLatch	   _closedCount;
+	private static final AtomicInteger _recvSize = new AtomicInteger();
 
 	@Override
-	public boolean onCreateChannel(AsynchronousSocketChannel channel, Object attachment) throws IOException
+	public int onChannelCreated(AsynchronousSocketChannel channel, Object attachment) throws IOException
 	{
+		super.onChannelCreated(channel, attachment);
 		channel.setOption(StandardSocketOptions.TCP_NODELAY, true);
-		channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-		channel.setOption(StandardSocketOptions.SO_KEEPALIVE, false);
-		channel.setOption(StandardSocketOptions.SO_RCVBUF, TcpSession.RECV_SOBUF_SIZE);
-		channel.setOption(StandardSocketOptions.SO_SNDBUF, TcpSession.SEND_SOBUF_SIZE);
-		return true;
+		return 0;
 	}
 
 	@Override
-	public void onAddSession(TcpSession session)
+	public void onSessionCreated(TcpSession session)
 	{
-		session.send(ByteBuffer.allocateDirect(TEST_ECHO_SIZE));
+		byte[] buf = new byte[TEST_ECHO_SIZE];
+		for(int i = 0; i < 100; ++i)
+		{
+			ByteBuffer bb = ByteBufferPool.def().allocateDirect(TEST_ECHO_SIZE);
+			bb.put(buf);
+			bb.flip();
+			session.send(bb);
+		}
 	}
 
 	@Override
-	public void onDelSession(TcpSession session, int reason)
+	public void onSessionClosed(TcpSession session, int reason)
 	{
 		_closedCount.countDown();
 	}
 
 	@Override
-	public void onReceive(TcpSession session, ByteBuffer bb, int size)
+	public void onReceived(TcpSession session, ByteBuffer bb, int size)
 	{
-		if(_recvCount.incrementAndGet() <= TEST_ECHO_COUNT)
-			session.send(bb.duplicate()); //TODO: should from pool
+		int recvSize = _recvSize.addAndGet(size);
+		if(recvSize < TEST_ECHO_COUNT)
+		{
+			int left = Math.min(TEST_ECHO_COUNT - recvSize, size);
+			ByteBuffer bbSend = ByteBufferPool.def().allocateDirect(left);
+			bb.limit(left);
+			bbSend.put(bb);
+			bbSend.flip();
+			session.send(bbSend);
+		}
 		else
 			session.close();
 	}
@@ -57,10 +70,12 @@ public final class TestEchoAio extends TcpManager
 	{
 		try
 		{
-			Log.log.info("TestEchoAio: start({})", TEST_CLIENT_COUNT);
 			if(args.length > 0) TEST_ECHO_SIZE = Integer.parseInt(args[0]);
 			if(args.length > 1) TEST_ECHO_COUNT = Integer.parseInt(args[1]);
-			System.gc();
+			if(args.length > 2) TEST_CLIENT_COUNT = Integer.parseInt(args[2]);
+			Log.log.info("TestEchoAio: start({})", TEST_CLIENT_COUNT);
+			_closedCount = new CountDownLatch(TEST_CLIENT_COUNT * 2);
+			// System.gc();
 			long time = System.currentTimeMillis();
 			@SuppressWarnings("resource")
 			TestEchoAio mgr = new TestEchoAio();
@@ -70,9 +85,9 @@ public final class TestEchoAio extends TcpManager
 			_closedCount.await();
 			Log.log.info("TestEchoAio: end ({} ms)", System.currentTimeMillis() - time);
 			Log.shutdown();
-			// System.out.println(TestCachedBufferAllocator.allocCount.get());
-			// System.out.println(TestCachedBufferAllocator.cacheCount.get());
-			// System.out.println(TestCachedBufferAllocator.offerCount.get());
+			// System.out.println(ByteBufferPool.allocCount.get());
+			// System.out.println(ByteBufferPool.cacheCount.get());
+			// System.out.println(ByteBufferPool.offerCount.get());
 			System.exit(0);
 		}
 		catch(Throwable e)

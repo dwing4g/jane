@@ -2,6 +2,7 @@ package jane.test.net;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.Channel;
@@ -10,10 +11,10 @@ import java.util.ArrayDeque;
 
 public final class TcpSession implements Channel
 {
-	public static final int	RECV_SOBUF_SIZE	 = 8192;	// socket的接收缓冲区大小
-	public static final int	SEND_SOBUF_SIZE	 = 8192;	// socket的发送缓冲区大小
-	public static final int	RECV_BUF_SIZE	 = 8192;	// 每次接收的缓冲区大小
-	public static final int	SEND_BUF_MAXSIZE = 1024576;	// 发送累积数据量的上限(超过则触发异常导致断开)
+	public static final int	DEF_RECV_SOBUF_SIZE	 = 8192;	// socket的接收缓冲区大小
+	public static final int	DEF_SEND_SOBUF_SIZE	 = 8192;	// socket的发送缓冲区大小
+	public static final int	DEF_RECV_BUF_SIZE	 = 8192;	// 每次接收的缓冲区大小
+	public static final int	DEF_SEND_BUF_MAXSIZE = 1024576;	// 发送累积数据量的上限(超过则触发异常导致断开)
 
 	public static final int	CLOSE_ACTIVE		= 0; // 调用close()主动断开
 	public static final int	CLOSE_RECV			= 1; // 无法接收数据而断开
@@ -27,12 +28,18 @@ public final class TcpSession implements Channel
 	private final RecvHandler				_recvHandler = new RecvHandler();
 	private final SendHandler				_sendHandler = new SendHandler();
 	private volatile Object					_userObject;
+	private final int						_recvBufSize;
+	private final int						_sendSoBufSize;
+	private int								_sendBufMaxSize;
 	private int								_sendBufSize;
 
-	TcpSession(TcpManager manager, AsynchronousSocketChannel channel)
+	TcpSession(TcpManager manager, AsynchronousSocketChannel channel, int recvBufSize) throws IOException
 	{
 		_manager = manager;
 		_channel = channel;
+		_recvBufSize = (recvBufSize > 0 ? recvBufSize : DEF_RECV_BUF_SIZE);
+		_sendSoBufSize = channel.getOption(StandardSocketOptions.SO_SNDBUF);
+		_sendBufMaxSize = DEF_SEND_BUF_MAXSIZE;
 	}
 
 	void beginRecv()
@@ -40,7 +47,7 @@ public final class TcpSession implements Channel
 		if(!_channel.isOpen()) return;
 		try
 		{
-			ByteBuffer bb = ByteBuffer.allocateDirect(RECV_BUF_SIZE);
+			ByteBuffer bb = ByteBufferPool.def().allocateDirect(_recvBufSize);
 			_channel.read(bb, bb, _recvHandler);
 		}
 		catch(Throwable e)
@@ -60,7 +67,17 @@ public final class TcpSession implements Channel
 
 	public int getSendBufSize()
 	{
-		return _sendBufSize;
+		return _sendBufSize; // dirty read
+	}
+
+	public int getSendBufMaxSize()
+	{
+		return _sendBufMaxSize;
+	}
+
+	public void setSendBufMaxSize(int sendBufMaxSize)
+	{
+		_sendBufMaxSize = sendBufMaxSize;
 	}
 
 	@Override
@@ -80,7 +97,7 @@ public final class TcpSession implements Channel
 		{
 			return _channel.isOpen() ? _channel.getRemoteAddress() : null;
 		}
-		catch(IOException e)
+		catch(Exception e)
 		{
 			return null;
 		}
@@ -98,40 +115,49 @@ public final class TcpSession implements Channel
 
 	/**
 	 * 异步发送数据
-	 * @param bb 发送内容是缓冲区的[position,limit]部分. 调用此方法后不能再修改,直到此缓冲区发送完成(position会被修改)
+	 * @param bb 发送内容是缓冲区的[position,limit]部分. 调用此方法以后会被回收,不能再使用
 	 * @return 是否异步发送成功(不能确保真的发送出去,更无法确保对方收到)
 	 */
 	public boolean send(ByteBuffer bb)
 	{
-		if(!_channel.isOpen()) return false;
+		if(!_channel.isOpen())
+		{
+			ByteBufferPool.def().free(bb);
+			return false;
+		}
 		int size = bb.remaining();
-		if(size <= 0) return true;
-		boolean isEmpty;
+		if(size <= 0)
+		{
+			ByteBufferPool.def().free(bb);
+			return true;
+		}
 		synchronized(_sendBuf)
 		{
 			int newSize = _sendBufSize + size;
-			if(newSize > SEND_BUF_MAXSIZE || newSize < 0)
+			if(newSize > _sendBufMaxSize || newSize < 0)
 			{
-				_manager.doException(this, new IllegalStateException(String.format("send overflow(%d=>%d)", size, _sendBufSize)));
+				ByteBufferPool.def().free(bb);
+				_manager.doException(this, new IllegalStateException(String.format("send overflow(%d+%d)", _sendBufSize, size)));
 				close(CLOSE_SEND_OVERFLOW);
 				return false;
 			}
 			_sendBufSize = newSize;
-			isEmpty = _sendBuf.isEmpty();
-			_sendBuf.addLast(bb);
+			if(newSize != size)
+			{
+				_sendBuf.addLast(bb);
+				return true;
+			}
 		}
-		if(isEmpty)
+		try
 		{
-			try
-			{
-				_channel.write(bb, bb, _sendHandler);
-			}
-			catch(Throwable e)
-			{
-				_manager.doException(this, e);
-				close(CLOSE_EXCEPTION);
-				return false;
-			}
+			_channel.write(bb, bb, _sendHandler);
+		}
+		catch(Throwable e)
+		{
+			ByteBufferPool.def().free(bb);
+			_manager.doException(this, e);
+			close(CLOSE_EXCEPTION);
+			return false;
 		}
 		return true;
 	}
@@ -141,7 +167,8 @@ public final class TcpSession implements Channel
 		_manager.closeChannel(_channel);
 		synchronized(_sendBuf)
 		{
-			_sendBuf.clear();
+			for(ByteBuffer bb; (bb = _sendBuf.pollFirst()) != null;)
+				ByteBufferPool.def().free(bb);
 			_sendBufSize = 0;
 		}
 		_manager.removeSession(this, reason);
@@ -161,18 +188,20 @@ public final class TcpSession implements Channel
 			int size = result.intValue();
 			if(size <= 0)
 			{
+				ByteBufferPool.def().free(bb);
 				close(CLOSE_RECV);
 				return;
 			}
 			try
 			{
 				bb.flip();
-				_manager.onReceive(TcpSession.this, bb, size);
+				_manager.onReceived(TcpSession.this, bb, size);
 				bb.clear();
 				_channel.read(bb, bb, this);
 			}
 			catch(Throwable e)
 			{
+				ByteBufferPool.def().free(bb);
 				_manager.doException(TcpSession.this, e);
 				close(CLOSE_EXCEPTION);
 			}
@@ -181,6 +210,7 @@ public final class TcpSession implements Channel
 		@Override
 		public void failed(Throwable ex, ByteBuffer bb)
 		{
+			ByteBufferPool.def().free(bb);
 			_manager.doException(TcpSession.this, ex);
 			close(CLOSE_RECV);
 		}
@@ -192,9 +222,10 @@ public final class TcpSession implements Channel
 		public void completed(Integer result, ByteBuffer bb)
 		{
 			int size = result.intValue();
-			if(size == 0)
+			if(size <= 0)
 			{
 				close(CLOSE_SEND);
+				ByteBufferPool.def().free(bb);
 				return;
 			}
 			int left = bb.remaining();
@@ -202,6 +233,8 @@ public final class TcpSession implements Channel
 			synchronized(_sendBuf)
 			{
 				_sendBufSize -= size;
+				if(_sendBufSize < 0) // 以防清过buf后又处理到回调
+					_sendBufSize = 0;
 				if(left > 0)
 				{
 					bbNext = bb;
@@ -209,23 +242,44 @@ public final class TcpSession implements Channel
 				}
 				else
 				{
-					_sendBuf.pollFirst(); // == bb
-					bbNext = _sendBuf.peekFirst();
+					bbNext = _sendBuf.pollFirst();
+					if(bbNext != null && (left = bbNext.remaining()) < _sendSoBufSize) // 尝试合并小缓存,以提升发送效率
+					{
+						ByteBuffer bbNext2 = _sendBuf.peekFirst();
+						if(bbNext2 != null && (left += bbNext2.remaining()) <= _sendSoBufSize)
+						{
+							ByteBuffer bbTemp = bbNext;
+							bbNext = ByteBufferPool.def().allocateDirect(_sendSoBufSize).put(bbNext);
+							ByteBufferPool.def().free(bbTemp);
+							do
+							{
+								_sendBuf.pollFirst();
+								bbNext.put(bbNext2);
+								ByteBufferPool.def().free(bbNext2);
+							}
+							while((bbNext2 = _sendBuf.peekFirst()) != null && (left += bbNext2.remaining()) <= _sendSoBufSize);
+							bbNext.flip();
+						}
+					}
 				}
 			}
-			if(_manager._enableOnSend && bb != null)
+			if(bb != null)
 			{
-				try
+				if(_manager._enableOnSend)
 				{
-					_manager.onSend(TcpSession.this, bb, bbNext);
+					try
+					{
+						_manager.onSent(TcpSession.this, bb, bbNext);
+					}
+					catch(Throwable e)
+					{
+						_manager.doException(TcpSession.this, e);
+						close(CLOSE_EXCEPTION);
+					}
 				}
-				catch(Throwable e)
-				{
-					_manager.doException(TcpSession.this, e);
-					close(CLOSE_EXCEPTION);
-				}
+				ByteBufferPool.def().free(bb);
 			}
-			if(bbNext != null)
+			if(bbNext != null && _channel.isOpen())
 			{
 				try
 				{
@@ -242,6 +296,7 @@ public final class TcpSession implements Channel
 		@Override
 		public void failed(Throwable ex, ByteBuffer bb)
 		{
+			ByteBufferPool.def().free(bb);
 			_manager.doException(TcpSession.this, ex);
 			close(CLOSE_SEND);
 		}
