@@ -18,6 +18,11 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import jane.core.Util;
 
+/**
+ * 对比jar1和jar2两个文件,生成一个新的jar文件,其中包含jar2中有但jar1中没有,以及jar2中有jar1里不同内容但文件路径名相同的文件
+ * 一般用于给出原版jar和新版jar,生成新版的补丁jar,空目录会被忽略
+ * 也可用于zip格式
+ */
 public final class DiffJars
 {
 	private final MessageDigest md5;
@@ -44,6 +49,7 @@ public final class DiffJars
 		{
 			for(ZipEntry ze; (ze = zis.getNextEntry()) != null;)
 			{
+				if(ze.isDirectory()) continue;
 				int len = (int)ze.getSize();
 				if(len > buf.length)
 					buf = new byte[len];
@@ -60,6 +66,7 @@ public final class DiffJars
 				zos.setLevel(Deflater.BEST_COMPRESSION);
 				for(ZipEntry ze; (ze = zis.getNextEntry()) != null;)
 				{
+					if(ze.isDirectory()) continue;
 					int len = (int)ze.getSize();
 					if(len > buf.length)
 						buf = new byte[len];
@@ -84,7 +91,7 @@ public final class DiffJars
 	{
 		if(args.length < 3)
 		{
-			System.err.println("USAGE: java jane.tool.DiffJars <file1.jar> <file2.jar> <diff.jar>");
+			System.err.println("USAGE: java -cp jane-core.jar jane.tool.DiffJars <file1.jar> <file2.jar> <diff.jar>");
 			return;
 		}
 
