@@ -12,15 +12,20 @@ import jane.test.net.ByteBufferPool;
 import jane.test.net.TcpManager;
 import jane.test.net.TcpSession;
 
-// start.bat jane.test.TestEchoAio 32 32000000 64
+// start.bat jane.test.TestEchoAio 32 3200000 10
 public final class TestEchoAio extends TcpManager
 {
-	private static int TEST_ECHO_SIZE	 = 32;
-	private static int TEST_ECHO_COUNT	 = 32000000;
-	private static int TEST_CLIENT_COUNT = 64;
+	private static int TEST_ECHO_SIZE	  = 32;
+	private static int TEST_ECHO_SIZE_ALL = 3200000;
+	private static int TEST_CLIENT_COUNT  = 10;
 
-	private static CountDownLatch	   _closedCount;
-	private static final AtomicInteger _recvSize = new AtomicInteger();
+	private static CountDownLatch _closedCount;
+
+	public static final class SessionContext
+	{
+		public final AtomicInteger recvSize	= new AtomicInteger();
+		public final AtomicInteger sendSize	= new AtomicInteger();
+	}
 
 	@Override
 	public int onChannelCreated(AsynchronousSocketChannel channel, Object attachment) throws IOException
@@ -33,6 +38,8 @@ public final class TestEchoAio extends TcpManager
 	@Override
 	public void onSessionCreated(TcpSession session)
 	{
+		SessionContext ctx = new SessionContext();
+		session.setUserObject(ctx);
 		byte[] buf = new byte[TEST_ECHO_SIZE];
 		for(int i = 0; i < 100; ++i)
 		{
@@ -40,6 +47,7 @@ public final class TestEchoAio extends TcpManager
 			bb.put(buf);
 			bb.flip();
 			session.send(bb);
+			ctx.sendSize.addAndGet(TEST_ECHO_SIZE);
 		}
 	}
 
@@ -52,17 +60,19 @@ public final class TestEchoAio extends TcpManager
 	@Override
 	public void onReceived(TcpSession session, ByteBuffer bb, int size)
 	{
-		int recvSize = _recvSize.addAndGet(size);
-		if(recvSize < TEST_ECHO_COUNT)
+		SessionContext ctx = (SessionContext)session.getUserObject();
+		int recvSize = ctx.recvSize.addAndGet(size);
+		int sendSize = ctx.sendSize.get();
+		if(sendSize < TEST_ECHO_SIZE_ALL)
 		{
-			int left = Math.min(TEST_ECHO_COUNT - recvSize, size);
-			ByteBuffer bbSend = ByteBufferPool.def().allocateDirect(left);
-			bb.limit(left);
+			ByteBuffer bbSend = ByteBufferPool.def().allocateDirect(size);
+			bb.limit(size);
 			bbSend.put(bb);
 			bbSend.flip();
+			ctx.sendSize.addAndGet(size);
 			session.send(bbSend);
 		}
-		else
+		else if(recvSize >= sendSize)
 			session.close();
 	}
 
@@ -71,7 +81,7 @@ public final class TestEchoAio extends TcpManager
 		try
 		{
 			if(args.length > 0) TEST_ECHO_SIZE = Integer.parseInt(args[0]);
-			if(args.length > 1) TEST_ECHO_COUNT = Integer.parseInt(args[1]);
+			if(args.length > 1) TEST_ECHO_SIZE_ALL = Integer.parseInt(args[1]);
 			if(args.length > 2) TEST_CLIENT_COUNT = Integer.parseInt(args[2]);
 			Log.log.info("TestEchoAio: start({})", TEST_CLIENT_COUNT);
 			_closedCount = new CountDownLatch(TEST_CLIENT_COUNT * 2);
