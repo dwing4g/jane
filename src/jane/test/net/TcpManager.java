@@ -253,18 +253,17 @@ public class TcpManager implements Closeable
 	/**
 	 * 已连接的TcpSession接收一次数据的响应
 	 * @param session
-	 * @param bb 接收的数据缓冲区,只在函数内有效,里面的数据在函数调用后失效
-	 * @param size 本次接收的数据大小
+	 * @param bb 接收的数据缓冲区,有效范围是[0,limit]部分,只在函数内有效,里面的数据在函数调用后失效
 	 */
-	public void onReceived(TcpSession session, ByteBuffer bb, int size)
+	public void onReceived(TcpSession session, ByteBuffer bb)
 	{
 	}
 
 	/**
 	 * 已成功发送数据到本地网络待发缓冲区时的响应. 需要开启_enableOnSend时才会响应
 	 * @param session
-	 * @param bb 已经发送到TCP协议栈的缓冲区的数据. 可能跟TcpSession.send传入的对象不同
-	 * @param bbNext 下一个待发送的缓冲区,禁止修改. 可能为null
+	 * @param bb 已经发送到TCP协议栈的缓冲区的数据,已发送的是[0,position]部分. 可能跟TcpSession.send传入的对象不同
+	 * @param bbNext 下一个待发送的缓冲区,有效数据是[0,limit]部分,禁止改动. 可能为null(暂时没有待发数据)
 	 */
 	public void onSent(TcpSession session, ByteBuffer bb, ByteBuffer bbNext)
 	{

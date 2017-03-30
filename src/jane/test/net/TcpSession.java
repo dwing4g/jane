@@ -131,22 +131,28 @@ public final class TcpSession implements Channel
 			ByteBufferPool.def().free(bb);
 			return true;
 		}
+		int overflowOldSize = Integer.MIN_VALUE;
 		synchronized(_sendBuf)
 		{
 			int newSize = _sendBufSize + size;
-			if(newSize > _sendBufMaxSize || newSize < 0)
+			if(newSize <= _sendBufMaxSize && newSize >= 0)
 			{
-				ByteBufferPool.def().free(bb);
-				_manager.doException(this, new IllegalStateException(String.format("send overflow(%d+%d)", _sendBufSize, size)));
-				close(CLOSE_SEND_OVERFLOW);
-				return false;
+				_sendBufSize = newSize;
+				if(newSize != size) // 尚未完成上次发送
+				{
+					_sendBuf.addLast(bb);
+					return true;
+				}
 			}
-			_sendBufSize = newSize;
-			if(newSize != size)
-			{
-				_sendBuf.addLast(bb);
-				return true;
-			}
+			else
+				overflowOldSize = _sendBufSize;
+		}
+		if(overflowOldSize != Integer.MIN_VALUE)
+		{
+			ByteBufferPool.def().free(bb);
+			_manager.doException(this, new IllegalStateException(String.format("send overflow(%d+%d)", overflowOldSize, size)));
+			close(CLOSE_SEND_OVERFLOW);
+			return false;
 		}
 		try
 		{
@@ -165,10 +171,11 @@ public final class TcpSession implements Channel
 	public void close(int reason)
 	{
 		_manager.closeChannel(_channel);
+		ByteBufferPool bbp = ByteBufferPool.def();
 		synchronized(_sendBuf)
 		{
 			for(ByteBuffer bb; (bb = _sendBuf.pollFirst()) != null;)
-				ByteBufferPool.def().free(bb);
+				bbp.free(bb);
 			_sendBufSize = 0;
 		}
 		_manager.removeSession(this, reason);
@@ -195,7 +202,7 @@ public final class TcpSession implements Channel
 			try
 			{
 				bb.flip();
-				_manager.onReceived(TcpSession.this, bb, size);
+				_manager.onReceived(TcpSession.this, bb);
 				bb.clear();
 				_channel.read(bb, bb, this);
 			}

@@ -58,8 +58,9 @@ public final class TestEchoAio extends TcpManager
 	}
 
 	@Override
-	public void onReceived(TcpSession session, ByteBuffer bb, int size)
+	public void onReceived(TcpSession session, ByteBuffer bb)
 	{
+		int size = bb.limit();
 		SessionContext ctx = (SessionContext)session.getUserObject();
 		int recvSize = ctx.recvSize.addAndGet(size);
 		int sendSize = ctx.sendSize.get();
