@@ -140,6 +140,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		return _map.isEmpty();
 	}
 
+	@SuppressWarnings("unlikely-arg-type")
 	@Override
 	public boolean containsKey(Object k)
 	{
@@ -202,7 +203,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		}
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "unlikely-arg-type" })
 	public V removeDirect(Object k)
 	{
 		SContext ctx = sContext();
