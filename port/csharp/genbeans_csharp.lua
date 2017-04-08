@@ -93,7 +93,7 @@ namespace ]=] .. namespace .. [=[.Bean
 		public OctetsStream Unmarshal(OctetsStream s)
 		{
 			Init();
-			for(;;) { int i = s.UnmarshalUInt1(), t = i & 3; if(i > 251) i += s.UnmarshalUInt1() << 2; switch(i >> 2)
+			for(;;) { int i = s.UnmarshalUInt1(), t = i & 3; if((i >>= 2) == 63) i += s.UnmarshalUInt1(); switch(i)
 			{
 				case 0: return s;
 #(#				#(var.unmarshal) break;

@@ -65,7 +65,7 @@ public final class TestEmpty extends Bean<TestEmpty>
 	@Override
 	public OctetsStream unmarshal(OctetsStream s) throws MarshalException
 	{
-		for(;;) { int i = s.unmarshalInt1() & 0xff, t = i & 3; if(i > 251) i += s.unmarshalInt1() << 2; switch(i >> 2)
+		for(;;) { int i = s.unmarshalInt1() & 0xff, t = i & 3; if((i >>= 2) == 63) i += s.unmarshalInt1(); switch(i)
 		{
 			case 0: return s;
 			default: s.unmarshalSkipVar(t);

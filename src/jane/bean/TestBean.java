@@ -141,7 +141,7 @@ public final class TestBean extends Bean<TestBean>
 	@Override
 	public OctetsStream unmarshal(OctetsStream s) throws MarshalException
 	{
-		for(;;) { int i = s.unmarshalInt1() & 0xff, t = i & 3; if(i > 251) i += s.unmarshalInt1() << 2; switch(i >> 2)
+		for(;;) { int i = s.unmarshalInt1() & 0xff, t = i & 3; if((i >>= 2) == 63) i += s.unmarshalInt1(); switch(i)
 		{
 			case 0: return s;
 			case 1: this.value1 = s.unmarshalInt(t); break;
