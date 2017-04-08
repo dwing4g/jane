@@ -14,9 +14,10 @@
 
 	<target name="clean">
 		<delete dir="${classes}"/>
-		<delete file="jane-core.jar"/>
-		<delete file="jane-test.jar"/>
-		<delete file="jane-src.jar"/>
+		<delete file="${root}/jane-core.jar"/>
+		<delete file="${root}/jane-core-src.jar"/>
+		<delete file="${root}/jane-test.jar"/>
+		<delete file="${root}/jane-test-all.jar"/>
 	</target>
 
 	<target name="compile">
@@ -36,20 +37,14 @@
 	</target>
 
 	<target name="jar" depends="clean, compile">
-		<jar jarfile="jane-core.jar" basedir="${classes}" excludes="**/jane/bean/**,**/jane/handler/**,**/jane/test/**" level="9">
+		<jar jarfile="${root}/jane-core.jar" basedir="${classes}" excludes="**/jane/bean/**,**/jane/handler/**,**/jane/test/**" level="9">
 			<manifest>
 				<attribute name="Created-Time" value="${time}"/>
 				<attribute name="Premain-Class" value="jane.tool.ClassReloader"/>
 				<attribute name="Can-Redefine-Classes" value="true"/>
 			</manifest>
-			<fileset file="${src}/*.properties"/>
 		</jar>
-		<jar jarfile="jane-test.jar" basedir="${classes}" includes="**/jane/bean/**,**/jane/handler/**,**/jane/test/**" level="9">
-			<manifest>
-				<attribute name="Created-Time" value="${time}"/>
-			</manifest>
-		</jar>
-		<jar jarfile="jane-src.jar" level="9">
+		<jar jarfile="${root}/jane-core-src.jar" level="9">
 			<manifest>
 				<attribute name="Created-Time" value="${time}"/>
 			</manifest>
@@ -57,6 +52,31 @@
 				<exclude name="**/jane/bean/**"/>
 				<exclude name="**/jane/handler/**"/>
 				<exclude name="**/jane/test/**"/>
+			</fileset>
+		</jar>
+		<jar jarfile="${root}/jane-test.jar" basedir="${classes}" includes="**/jane/bean/**,**/jane/handler/**,**/jane/test/**" level="9">
+			<manifest>
+				<attribute name="Created-Time" value="${time}"/>
+				<attribute name="Main-Class" value="jane.test.TestMain"/>
+			</manifest>
+		</jar>
+		<jar jarfile="${root}/jane-test-all.jar" basedir="${classes}" includes="**/jane/bean/**,**/jane/handler/**,**/jane/test/**" level="9">
+			<manifest>
+				<attribute name="Created-Time" value="${time}"/>
+				<attribute name="Main-Class" value="jane.test.TestMain"/>
+			</manifest>
+			<zipfileset src="${lib}/slf4j-api-1.7.25.jar"/>
+			<zipfileset src="${lib}/logback-core-1.2.3.jar"/>
+			<zipfileset src="${lib}/logback-classic-1.2.3.jar"/>
+			<zipfileset src="${lib}/mina-core-2.0.16.jar"/>
+			<zipfileset src="${root}/jane-core.jar"/>
+			<fileset dir="${lib}">
+				<include name="*.dll"/>
+				<include name="*.so"/>
+			</fileset>
+			<fileset dir="${root}">
+				<include name="logback.xml"/>
+				<include name="jane.properties"/>
 			</fileset>
 		</jar>
 	</target>

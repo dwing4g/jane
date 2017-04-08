@@ -1,7 +1,9 @@
 package jane.core;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Properties;
 import jane.core.map.IntHashMap;
@@ -51,15 +53,18 @@ public final class Const
 	{
 		String janeProp = null;
 		@SuppressWarnings("resource")
-		FileInputStream fis = null;
+		InputStream isProp = null;
 		try
 		{
 			janeProp = System.getProperty("jane.prop");
 			if(janeProp == null || (janeProp = janeProp.trim()).isEmpty())
 				janeProp = "jane.properties";
 			if(Log.hasDebug) Log.log.debug("{}: load {}", Const.class.getName(), janeProp);
-			fis = new FileInputStream(janeProp);
-			_property.load(fis);
+			if(new File(janeProp).exists())
+				isProp = new FileInputStream(janeProp);
+			else
+				isProp = Util.createStreamInJar(Const.class, janeProp);
+			_property.load(isProp);
 		}
 		catch(Exception e)
 		{
@@ -67,11 +72,11 @@ public final class Const
 		}
 		finally
 		{
-			if(fis != null)
+			if(isProp != null)
 			{
 				try
 				{
-					fis.close();
+					isProp.close();
 				}
 				catch(IOException e)
 				{

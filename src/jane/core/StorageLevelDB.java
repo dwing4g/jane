@@ -1,11 +1,13 @@
 package jane.core;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.zip.CRC32;
 
 /**
  * LevelDB存储引擎的实现(单件)
@@ -23,12 +25,38 @@ public final class StorageLevelDB implements Storage
 
 	static
 	{
-		System.load(new File(Const.levelDBNativePath, System.mapLibraryName("leveldbjni" + System.getProperty("sun.arch.data.model"))).getAbsolutePath());
+		String nativeLibName = System.mapLibraryName("leveldbjni" + System.getProperty("sun.arch.data.model"));
+		File file = new File(Const.levelDBNativePath, nativeLibName);
+		if(!file.exists())
+		{
+			try
+			{
+				byte[] data = Util.readStreamData(Util.createStreamInJar(StorageLevelDB.class, nativeLibName));
+				if(data != null)
+				{
+					CRC32 crc32 = new CRC32();
+					crc32.update(data);
+					file = new File(System.getProperty("java.io.tmpdir") + "/" + crc32.getValue() + "_" + nativeLibName);
+					if(file.length() != data.length)
+					{
+						try(FileOutputStream fos = new FileOutputStream(file))
+						{
+							fos.write(data);
+						}
+					}
+				}
+			}
+			catch(Exception e)
+			{
+				throw new Error("create temp library failed: " + file.getAbsolutePath(), e);
+			}
+		}
+		System.load(file.getAbsolutePath());
 	}
 
 	public static native long leveldb_open(String path, int writeBufSize, int cacheSize, boolean useSnappy);
 
-	public native static long leveldb_open2(String path, int writeBufSize, int cacheSize, int fileSize, boolean useSnappy);
+	public static native long leveldb_open2(String path, int writeBufSize, int cacheSize, int fileSize, boolean useSnappy);
 
 	public static native void leveldb_close(long handle);
 
@@ -49,6 +77,8 @@ public final class StorageLevelDB implements Storage
 	public static native byte[] leveldb_iter_value(long iter); // return cur-value(maybe null)
 
 	public static native boolean leveldb_compact(long handle, byte[] keyFrom, int keyFromLen, byte[] keyTo, int keyToLen);
+
+	public static native String leveldb_getProperty(long handle, String property);
 
 	private final class TableLong<V extends Bean<V>> implements Storage.TableLong<V>
 	{

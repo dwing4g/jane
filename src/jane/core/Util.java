@@ -18,6 +18,7 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -27,6 +28,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
@@ -300,6 +303,15 @@ public final class Util
 		}
 	}
 
+	public static byte[] readStreamData(InputStream is) throws IOException
+	{
+		if(is == null) return null;
+		int len = is.available();
+		byte[] data = new byte[len];
+		readStream(is, "", data, len);
+		return data;
+	}
+
 	/**
 	 * 读取整个文件内容
 	 * @param fileName 文件名
@@ -309,10 +321,7 @@ public final class Util
 	{
 		try(InputStream is = new FileInputStream(fileName))
 		{
-			int n = is.available();
-			byte[] data = new byte[n];
-			is.read(data);
-			return data;
+			return readStreamData(is);
 		}
 	}
 
@@ -392,6 +401,42 @@ public final class Util
 		public int find(Octets src, int srcPos)
 		{
 			return find(src.array(), srcPos, src.size());
+		}
+	}
+
+	public static InputStream createStreamInZip(ZipFile zipFile, String path) throws IOException
+	{
+		ZipEntry ze = zipFile.getEntry(path);
+		return ze != null ? zipFile.getInputStream(ze) : null;
+	}
+
+	public static byte[] readDataInZip(ZipFile zipFile, String path) throws IOException
+	{
+		try(InputStream is = createStreamInZip(zipFile, path))
+		{
+			return readStreamData(is);
+		}
+	}
+
+	public static byte[] readDataInZip(String zipPath, String path) throws IOException
+	{
+		try(ZipFile zf = new ZipFile(zipPath))
+		{
+			return readDataInZip(zf, path);
+		}
+	}
+
+	public static InputStream createStreamInJar(Class<?> cls, String path) throws IOException
+	{
+		Enumeration<URL> urls = cls.getClassLoader().getResources(path);
+		return urls.hasMoreElements() ? urls.nextElement().openStream() : null;
+	}
+
+	public static byte[] readDataInJar(Class<?> cls, String path) throws IOException
+	{
+		try(InputStream is = createStreamInJar(cls, path))
+		{
+			return readStreamData(is);
 		}
 	}
 

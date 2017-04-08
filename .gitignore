@@ -14,7 +14,8 @@
 /port/.vs/
 /port/lua/bin/
 jane-core.jar
+jane-core-src.jar
 jane-test.jar
-jane-src.jar
+jane-test-all.jar
 *.keystore
 .eclipse-pmd
