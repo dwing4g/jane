@@ -3,6 +3,8 @@ package jane.core;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
@@ -17,11 +19,13 @@ import java.util.zip.CRC32;
 public final class StorageLevelDB implements Storage
 {
 	private static final StorageLevelDB		_instance = new StorageLevelDB();
-	private static final OctetsStream		_deleted  = OctetsStream.wrap(Octets.EMPTY); // 表示已删除的值
-	private final Map<Octets, OctetsStream>	_writeBuf = Util.newConcurrentHashMap();	 // 提交过程中临时的写缓冲区
-	private long							_db;										 // LevelDB的数据库对象句柄
-	private File							_dbFile;									 // 当前数据库的文件
-	private volatile boolean				_writing;									 // 是否正在执行写操作
+	private static final OctetsStream		_deleted  = OctetsStream.wrap(Octets.EMPTY);		   // 表示已删除的值
+	private final Map<Octets, OctetsStream>	_writeBuf = Util.newConcurrentHashMap();			   // 提交过程中临时的写缓冲区
+	private long							_db;												   // LevelDB的数据库对象句柄
+	private File							_dbFile;											   // 当前数据库的文件
+	private final SimpleDateFormat			_sdf	  = new SimpleDateFormat("yy-MM-dd-HH-mm-ss"); // 备份文件后缀名的时间格式
+	private final long						_backupBase;										   // 备份数据的基准时间
+	private volatile boolean				_writing;											   // 是否正在执行写操作
 
 	static
 	{
@@ -78,7 +82,7 @@ public final class StorageLevelDB implements Storage
 
 	public static native boolean leveldb_compact(long handle, byte[] keyFrom, int keyFromLen, byte[] keyTo, int keyToLen);
 
-	public static native String leveldb_getProperty(long handle, String property);
+	public static native String leveldb_property(long handle, String property);
 
 	private final class TableLong<V extends Bean<V>> implements Storage.TableLong<V>
 	{
@@ -507,6 +511,22 @@ public final class StorageLevelDB implements Storage
 
 	public StorageLevelDB()
 	{
+		long now = System.currentTimeMillis();
+		long base = now;
+		try
+		{
+			base = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(Const.dbBackupBase).getTime();
+		}
+		catch(ParseException e)
+		{
+			throw new IllegalStateException("parse dbBackupBase(" + Const.dbBackupBase + ") failed", e);
+		}
+		finally
+		{
+			long backupPeriod = Const.dbBackupPeriod * 1000; // 备份数据库的周期
+			if(base > now) base -= ((base - now) / backupPeriod + 1) * backupPeriod;
+			_backupBase = base;
+		}
 	}
 
 	private OctetsStream dbget(Octets k)
@@ -607,7 +627,7 @@ public final class StorageLevelDB implements Storage
 	}
 
 	@Override
-	public long backup(File fdst) throws IOException
+	public synchronized long backup(File fdst) throws IOException
 	{
 		if(_dbFile == null) throw new IllegalStateException("current db is not opened");
 		String dstPath = fdst.getAbsolutePath();
@@ -615,13 +635,12 @@ public final class StorageLevelDB implements Storage
 		if(pos <= 0) throw new IOException("invalid db backup path: " + dstPath);
 		dstPath = dstPath.substring(0, pos);
 		long period = Const.levelDBFullBackupPeriod * 1000;
-		long basetime = DBManager.instance().getBackupBaseTime();
 		long time = System.currentTimeMillis();
-		Date backupDate = new Date(basetime + (long)Math.floor((double)(time - basetime) / period) * period);
-		dstPath += '.' + DBManager.instance().getBackupDateStr(backupDate);
+		Date backupDate = new Date(_backupBase + (long)Math.floor((double)(time - _backupBase) / period) * period);
+		dstPath += '.' + _sdf.format(backupDate);
 		File path = new File(dstPath).getParentFile();
 		if(path != null && !path.isDirectory() && !path.mkdirs())
 			throw new IOException("create db backup path failed: " + dstPath);
-		return leveldb_backup(_db, _dbFile.getAbsolutePath(), dstPath, DBManager.instance().getBackupDateStr(new Date(time)));
+		return leveldb_backup(_db, _dbFile.getAbsolutePath(), dstPath, _sdf.format(new Date(time)));
 	}
 }

@@ -47,7 +47,6 @@ public final class DBManager
 	private final class CommitTask implements Runnable
 	{
 		private final long[]  _counts		= new long[3];								  // 3个统计数量值,分别是统计前数量,统计后数量,处理过的数量
-		private final long	  _backupBase;												  // 备份数据的基准时间
 		private final long	  _commitPeriod	= Const.dbCommitPeriod * 1000;				  // 提交数据库的周期
 		private final long	  _backupPeriod	= Const.dbBackupPeriod * 1000;				  // 备份数据库的周期
 		private volatile long _commitTime	= System.currentTimeMillis() + _commitPeriod; // 下次提交数据库的时间
@@ -69,7 +68,6 @@ public final class DBManager
 			{
 				if(base > now) base -= ((base - now) / _backupPeriod + 1) * _backupPeriod;
 				_backupTime = base + ((now - base) / _backupPeriod + 1) * _backupPeriod;
-				_backupBase = base;
 			}
 		}
 
@@ -216,14 +214,6 @@ public final class DBManager
 		{
 			return _sdf.format(date);
 		}
-	}
-
-	/**
-	 * 获取备份数据库的基准时间
-	 */
-	public long getBackupBaseTime()
-	{
-		return _commitTask._backupBase;
 	}
 
 	/**
