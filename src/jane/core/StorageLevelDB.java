@@ -18,14 +18,14 @@ import java.util.zip.CRC32;
  */
 public final class StorageLevelDB implements Storage
 {
-	private static final StorageLevelDB		_instance = new StorageLevelDB();
-	private static final OctetsStream		_deleted  = OctetsStream.wrap(Octets.EMPTY);		   // 表示已删除的值
-	private final Map<Octets, OctetsStream>	_writeBuf = Util.newConcurrentHashMap();			   // 提交过程中临时的写缓冲区
-	private long							_db;												   // LevelDB的数据库对象句柄
-	private File							_dbFile;											   // 当前数据库的文件
-	private final SimpleDateFormat			_sdf	  = new SimpleDateFormat("yy-MM-dd-HH-mm-ss"); // 备份文件后缀名的时间格式
-	private final long						_backupBase;										   // 备份数据的基准时间
-	private volatile boolean				_writing;											   // 是否正在执行写操作
+	private static final StorageLevelDB	_instance = new StorageLevelDB();
+	private static final Octets			_deleted  = Octets.wrap(Octets.EMPTY);				   // 表示已删除的值
+	private final Map<Octets, Octets>	_writeBuf = Util.newConcurrentHashMap();			   // 提交过程中临时的写缓冲区
+	private long						_db;												   // LevelDB的数据库对象句柄
+	private File						_dbFile;											   // 当前数据库的文件
+	private final SimpleDateFormat		_sdf	  = new SimpleDateFormat("yy-MM-dd-HH-mm-ss"); // 备份文件后缀名的时间格式
+	private final long					_backupBase;										   // 备份数据的基准时间
+	private volatile boolean			_writing;											   // 是否正在执行写操作
 
 	static
 	{
@@ -66,7 +66,7 @@ public final class StorageLevelDB implements Storage
 
 	public static native byte[] leveldb_get(long handle, byte[] key, int keyLen); // return null for not found
 
-	public static native int leveldb_write(long handle, Iterator<Entry<Octets, OctetsStream>> buf); // return 0 for ok
+	public static native int leveldb_write(long handle, Iterator<Entry<Octets, Octets>> it); // return 0 for ok
 
 	public static native long leveldb_backup(long handle, String srcPath, String dstPath, String dateTime); // return byte-size of copied data
 
@@ -529,17 +529,30 @@ public final class StorageLevelDB implements Storage
 		}
 	}
 
-	private OctetsStream dbget(Octets k)
+	OctetsStream dbget(Octets k)
 	{
 		if(_writing)
 		{
-			OctetsStream v = _writeBuf.get(k);
+			Octets v = _writeBuf.get(k);
 			if(v == _deleted) return null;
 			if(v != null) return OctetsStream.wrap(v);
 		}
 		if(_db == 0) throw new IllegalStateException("db closed. key=" + k.dump());
 		byte[] v = leveldb_get(_db, k.array(), k.size());
 		return v != null ? OctetsStream.wrap(v) : null;
+	}
+
+	void dbcommit(Map<Octets, Octets> map)
+	{
+		if(_db == 0) throw new IllegalStateException("db closed");
+		leveldb_write(_db, map.entrySet().iterator());
+		int r = leveldb_write(_db, _writeBuf.entrySet().iterator());
+		if(r != 0) Log.log.error("StorageLevelDB.commit: leveldb_write failed({})", r);
+	}
+
+	static Octets deleted()
+	{
+		return _deleted;
 	}
 
 	@Override

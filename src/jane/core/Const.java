@@ -34,6 +34,7 @@ public final class Const
 	public static final int			maxProceduerRedo;
 	public static final int			lockPoolSize;
 	public static final int			maxLockPerProcedure;
+	public static final int			dbSimpleCacheSize;
 	public static final int			dbCommitResaveCount;
 	public static final int			dbCommitModCount;
 	public static final long		dbCommitPeriod;
@@ -101,6 +102,7 @@ public final class Const
 		maxProceduerRedo = getPropInt("maxProceduerRedo", 256, 1);
 		lockPoolSize = IntHashMap.nextPowerOfTwo(getPropInt("lockPoolSize", 65536, 1, 1073741824));
 		maxLockPerProcedure = getPropInt("maxLockPerProcedure", 16, 4, 256);
+		dbSimpleCacheSize = getPropInt("dbSimpleCacheSize", 10000, 1);
 		dbCommitResaveCount = getPropInt("dbCommitResaveCount", 200000, 1);
 		dbCommitModCount = getPropInt("dbCommitModCount", 200000, 1);
 		dbCommitPeriod = getPropLong("dbCommitPeriod", 60, 1, Long.MAX_VALUE / 1000);

@@ -7,6 +7,7 @@ import jane.core.DBManager;
 import jane.core.Octets;
 import jane.core.Table;
 import jane.core.TableLong;
+import jane.core.map.IntHashMap;
 
 /** 全部的数据库表的注册和使用类(自动生成的静态类) */
 public final class AllTables
@@ -38,30 +39,51 @@ public final class AllTables
 	public static final TableLong<TestBean, TestBean.Safe> Benchmark = _dbm.<TestBean, TestBean.Safe>openTable(4, "Benchmark", "bench", 50000, TestBean.BEAN_STUB);
 
 	/**
-	 * 以下内部类可以单独使用,避免初始化前面的表对象,主要用于获取表的键值类型
+	 * 以下内部类可以单独使用,避免初始化前面的表对象,主要用于获取表的ID和键值类型
 	 */
 	public static final class Types
 	{
-		private Types() {}
+		private static final IntHashMap<Types> idTypes = new IntHashMap<>(4 * 2);
+		private static final HashMap<String, Types> nameTypes = new HashMap<>(4 * 2);
 
-		public static HashMap<String, Bean<?>> getKeyTypes()
+		public final int tableId;
+		public final String tableName;
+		public final Bean<?> keyBeanStub;
+		public final Bean<?> valueBeanStub;
+
+		private Types(int id, String name, Bean<?> kbs, Bean<?> vbs)
 		{
-			HashMap<String, Bean<?>> r = new HashMap<>(4 * 2);
-			r.put("TestTable", null);
-			r.put("BeanTable", TestKeyBean.BEAN_STUB);
-			r.put("OctetsTable", null);
-			r.put("Benchmark", null);
-			return r;
+			tableId = id;
+			tableName = name;
+			keyBeanStub = kbs;
+			valueBeanStub = vbs;
 		}
 
-		public static HashMap<String, Bean<?>> getValueTypes()
+		static
 		{
-			HashMap<String, Bean<?>> r = new HashMap<>(4 * 2);
-			r.put("TestTable", TestType.BEAN_STUB);
-			r.put("BeanTable", TestBean.BEAN_STUB);
-			r.put("OctetsTable", null);
-			r.put("Benchmark", TestBean.BEAN_STUB);
-			return r;
+			Types types;
+			types = new Types(1, "TestTable", null, TestType.BEAN_STUB);
+			idTypes.put(1, types);
+			nameTypes.put("TestTable", types);
+			types = new Types(2, "BeanTable", TestKeyBean.BEAN_STUB, TestBean.BEAN_STUB);
+			idTypes.put(2, types);
+			nameTypes.put("BeanTable", types);
+			types = new Types(3, "OctetsTable", null, TestEmpty.BEAN_STUB);
+			idTypes.put(3, types);
+			nameTypes.put("OctetsTable", types);
+			types = new Types(4, "Benchmark", null, TestBean.BEAN_STUB);
+			idTypes.put(4, types);
+			nameTypes.put("Benchmark", types);
+		}
+
+		public static Types getTypes(int tableId)
+		{
+			return idTypes.get(tableId);
+		}
+
+		public static Types getTypes(String tableName)
+		{
+			return nameTypes.get(tableName);
 		}
 	}
 }

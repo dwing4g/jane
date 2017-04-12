@@ -347,24 +347,42 @@ public final class AllTables
 #(#	#(table.comment)public static final #(table.table)<#(table.key)#(table.comma)#(table.value), #(table.value).Safe> #(table.name) = _dbm.<#(table.key)#(table.comma)#(table.value), #(table.value).Safe>openTable(#(table.id), "#(table.name)", "#(table.lock)", #(table.cachesize)#(table.comma)#(table.keys), #(table.values));
 #)#
 	/**
-	 * 以下内部类可以单独使用,避免初始化前面的表对象,主要用于获取表的键值类型
+	 * 以下内部类可以单独使用,避免初始化前面的表对象,主要用于获取表的ID和键值类型
 	 */
 	public static final class Types
 	{
-		private Types() {}
+		private static final IntHashMap<Types> idTypes = new IntHashMap<]=] .. (jdk7 and "" or "Types") .. [=[>(#(tables.count) * 2);
+		private static final HashMap<String, Types> nameTypes = new HashMap<]=] .. (jdk7 and "" or "String, Types") .. [=[>(#(tables.count) * 2);
 
-		public static HashMap<String, Bean<?>> getKeyTypes()
+		public final int tableId;
+		public final String tableName;
+		public final Bean<?> keyBeanStub;
+		public final Bean<?> valueBeanStub;
+
+		private Types(int id, String name, Bean<?> kbs, Bean<?> vbs)
 		{
-			HashMap<String, Bean<?>> r = new HashMap<]=] .. (jdk7 and "" or "String, Bean<?>") .. [=[>(#(tables.count) * 2);
-#(#			r.put("#(table.name)", #(table.keyg));
-#)#			return r;
+			tableId = id;
+			tableName = name;
+			keyBeanStub = kbs;
+			valueBeanStub = vbs;
 		}
 
-		public static HashMap<String, Bean<?>> getValueTypes()
+		static
 		{
-			HashMap<String, Bean<?>> r = new HashMap<]=] .. (jdk7 and "" or "String, Bean<?>") .. [=[>(#(tables.count) * 2);
-#(#			r.put("#(table.name)", #(table.values));
-#)#			return r;
+			Types types;
+#(#			types = new Types(#(table.id), "#(table.name)", #(table.keyg), #(table.value).BEAN_STUB);
+			idTypes.put(#(table.id), types);
+			nameTypes.put("#(table.name)", types);
+#)#		}
+
+		public static Types getTypes(int tableId)
+		{
+			return idTypes.get(tableId);
+		}
+
+		public static Types getTypes(String tableName)
+		{
+			return nameTypes.get(tableName);
 		}
 	}
 }
@@ -1400,6 +1418,7 @@ end)):gsub(has_handler and "#[<>]#" or "#%<#(.-)#%>#", ""):gsub("#%(bean.count%)
 
 tables.count = #tables
 tables.imports["jane.core.DBManager"] = true
+tables.imports["jane.core.map.IntHashMap"] = true
 tables.imports = get_imports(tables.imports)
 checksave(outpath .. namespace .. "/bean/AllTables.java", (code_conv(template_alltables:gsub("#%(#(.-)#%)#", function(body)
 	local subcode = {}

@@ -101,9 +101,12 @@ public final class ClassReloader
 				if(ze.getName().endsWith(".class"))
 				{
 					int len = (int)ze.getSize();
-					byte[] classData = new byte[len];
-					Util.readStream(zis, ze.getName(), classData, len);
-					classDatas.add(classData);
+					if(len > 0)
+					{
+						byte[] classData = new byte[len];
+						Util.readStream(zis, ze.getName(), classData, len);
+						classDatas.add(classData);
+					}
 				}
 			}
 		}

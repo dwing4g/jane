@@ -44,6 +44,7 @@ public final class MergeJars
 						if(mergedPathes.contains(ze.getName())) continue;
 						mergedPathes.add(ze.getName());
 						int len = (int)ze.getSize();
+						if(len < 0) continue;
 						if(len > buf.length)
 							buf = new byte[len];
 						Util.readStream(zis, ze.getName(), buf, len);

@@ -48,7 +48,7 @@ public final class LevelDBClear
 		}
 
 		System.err.println("INFO: clearing " + (tableId >= 0 ? "table:" + tableId : "db") + " ...");
-		ArrayList<Entry<Octets, OctetsStream>> buf = new ArrayList<>(10000);
+		ArrayList<Entry<Octets, Octets>> buf = new ArrayList<>(10000);
 		long count = 0;
 
 		OctetsStream deleted = OctetsStream.wrap(Octets.EMPTY);
@@ -67,7 +67,7 @@ public final class LevelDBClear
 			if(key == null) break;
 			OctetsStream keyOs = OctetsStream.wrap(key);
 			if(keyTo != null && keyOs.compareTo(keyTo) >= 0) break;
-			buf.add(new SimpleEntry<Octets, OctetsStream>(keyOs, deleted));
+			buf.add(new SimpleEntry<Octets, Octets>(keyOs, deleted));
 			if(buf.size() >= 10000)
 			{
 				count += buf.size();

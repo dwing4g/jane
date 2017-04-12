@@ -76,6 +76,7 @@ public final class XlsxExport
 			for(ZipEntry ze; (ze = zis.getNextEntry()) != null;)
 			{
 				int len = (int)ze.getSize();
+				if(len < 0) continue;
 				if(ze.getName().equals("xl/sharedStrings.xml"))
 					Util.readStream(zis, ze.getName(), xmlStr = new byte[len], len);
 				else if(ze.getName().equals(fileSheet))

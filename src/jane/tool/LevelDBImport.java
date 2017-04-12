@@ -59,7 +59,7 @@ public final class LevelDBImport
 		long t = System.currentTimeMillis();
 		long count = 0;
 		long db;
-		ArrayList<Entry<Octets, OctetsStream>> buf = new ArrayList<>(10000);
+		ArrayList<Entry<Octets, Octets>> buf = new ArrayList<>(10000);
 		try(BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(dumpname), s_cs88591)))
 		{
 			System.err.println("INFO: opening " + pathname + " ...");
@@ -95,7 +95,7 @@ public final class LevelDBImport
 				else
 					continue;
 
-				buf.add(new SimpleEntry<Octets, OctetsStream>(str2Oct(mat.group(1)), v));
+				buf.add(new SimpleEntry<Octets, Octets>(str2Oct(mat.group(1)), v));
 				if(buf.size() >= 10000)
 				{
 					count += buf.size();

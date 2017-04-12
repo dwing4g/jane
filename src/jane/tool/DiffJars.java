@@ -51,6 +51,7 @@ public final class DiffJars
 			{
 				if(ze.isDirectory()) continue;
 				int len = (int)ze.getSize();
+				if(len < 0) continue;
 				if(len > buf.length)
 					buf = new byte[len];
 				Util.readStream(zis, ze.getName(), buf, len);

@@ -1,6 +1,26 @@
 -- dump global var for R/W in luajit script
 -- usage: luajit dumpg.lua <filename.lua>
 
+--[[
+REGEDIT4
+
+[HKEY_CLASSES_ROOT\*\shell\dumpg]
+@="dumpg"
+
+[HKEY_CLASSES_ROOT\*\shell\dumpg\command]
+@="C:\\tool\\dumpg.bat %1"
+--]]
+
+--[[
+@echo off
+setlocal
+pushd %~dp0
+
+luajit.exe dumpg.lua "%1"
+
+pause
+--]]
+
 local sort = table.sort
 local print = print
 local ipairs = ipairs
