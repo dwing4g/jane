@@ -44,35 +44,40 @@ public final class DBSimpleManager
 		private final long	  _commitPeriod	= Const.dbCommitPeriod * 1000;				  // 提交数据库的周期
 		private final long	  _backupPeriod	= Const.dbBackupPeriod * 1000;				  // 备份数据库的周期
 		private volatile long _commitTime	= System.currentTimeMillis() + _commitPeriod; // 下次提交数据库的时间
-		private volatile long _backupTime;												  // 下次备份数据库的时间
-
-		private CommitTask()
-		{
-			long now = System.currentTimeMillis();
-			long base = now;
-			try
-			{
-				base = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(Const.dbBackupBase).getTime();
-			}
-			catch(ParseException e)
-			{
-				throw new IllegalStateException("parse dbBackupBase(" + Const.dbBackupBase + ") failed", e);
-			}
-			finally
-			{
-				if(base > now) base -= ((base - now) / _backupPeriod + 1) * _backupPeriod;
-				_backupTime = base + ((now - base) / _backupPeriod + 1) * _backupPeriod;
-			}
-		}
+		private volatile long _backupTime	= Long.MAX_VALUE;							  // 下次备份数据库的时间(默认不备份)
 
 		private void commitNext()
 		{
 			_commitTime = System.currentTimeMillis();
 		}
 
+		private void enableBackup(boolean enabled)
+		{
+			if(enabled)
+			{
+				long now = System.currentTimeMillis();
+				long base = now;
+				try
+				{
+					base = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(Const.dbBackupBase).getTime();
+				}
+				catch(ParseException e)
+				{
+					throw new IllegalStateException("parse dbBackupBase(" + Const.dbBackupBase + ") failed", e);
+				}
+				finally
+				{
+					if(base > now) base -= ((base - now) / _backupPeriod + 1) * _backupPeriod;
+					_backupTime = base + ((now - base) / _backupPeriod + 1) * _backupPeriod;
+				}
+			}
+			else
+				_backupTime = Long.MAX_VALUE;
+		}
+
 		private void backupNextCommit()
 		{
-			_backupTime = System.currentTimeMillis();
+			_backupTime = -1;
 		}
 
 		@Override
@@ -106,8 +111,13 @@ public final class DBSimpleManager
 						// 2.判断备份周期并启动备份
 						if(_backupTime <= t1)
 						{
-							_backupTime += _backupPeriod;
-							if(_backupTime <= t1) _backupTime += ((t1 - _backupTime) / _backupPeriod + 1) * _backupPeriod;
+							if(_backupTime >= 0)
+							{
+								_backupTime += _backupPeriod;
+								if(_backupTime <= t1) _backupTime += ((t1 - _backupTime) / _backupPeriod + 1) * _backupPeriod;
+							}
+							else
+								_backupTime = Long.MAX_VALUE;
 							Log.log.info("db-commit backup begin...");
 							String timeStr;
 							synchronized(_sdf)
@@ -405,7 +415,15 @@ public final class DBSimpleManager
 	}
 
 	/**
-	 * 手动设置下次数据提交后备份数据库
+	 * 设置是否启用备份(开启会根据配置自动周期备份)
+	 */
+	public void enableBackup(boolean enabled)
+	{
+		_commitTask.enableBackup(enabled);
+	}
+
+	/**
+	 * 手动设置下次数据提交后备份数据库(此次备份后会取消自动周期备份)
 	 */
 	public void backupNextCheckpoint()
 	{
