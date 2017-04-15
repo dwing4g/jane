@@ -17,6 +17,7 @@ public final class TestServer extends NetManager
 
 	private TestServer()
 	{
+		setIoThreadCount(1);
 		setHandlers(AllBeans.getTestServerHandlers());
 	}
 

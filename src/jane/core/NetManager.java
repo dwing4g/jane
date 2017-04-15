@@ -44,7 +44,7 @@ public class NetManager implements IoHandler
 
 	private static final LongConcurrentHashMap<RpcBean<?, ?, ?>> _rpcs	   = new LongConcurrentHashMap<>();	// 当前管理器等待回复的RPC
 	private static final ScheduledExecutorService				 _rpcThread;								// 处理重连及RPC和事务超时的线程
-	private final String										 _name	   = getClass().getName();			// 当前管理器的名字
+	private final String										 _name	   = getClass().getSimpleName();	// 当前管理器的名字
 	private volatile Class<? extends IoFilter>					 _pcf	   = BeanCodec.class;				// 协议编码器的类
 	private volatile IntHashMap<BeanHandler<?>>					 _handlers = new IntHashMap<>(0);			// bean的处理器
 	private volatile NioSocketAcceptor							 _acceptor;									// mina的网络监听器
@@ -64,7 +64,7 @@ public class NetManager implements IoHandler
 				return t;
 			}
 		});
-		scheduleWithFixedDelay(Const.rpcCheckInterval, new Runnable()
+		scheduleWithFixedDelay(Const.rpcCheckInterval, Const.rpcCheckInterval, new Runnable()
 		{
 			@Override
 			public void run()
@@ -101,7 +101,7 @@ public class NetManager implements IoHandler
 				}
 				catch(Throwable e)
 				{
-					Log.log.error("BeanManager: RPC timeout thread fatal exception:", e);
+					Log.log.error("NetManager: RPC timeout thread fatal exception:", e);
 				}
 			}
 		});
@@ -319,7 +319,7 @@ public class NetManager implements IoHandler
 									}
 									catch(Throwable e)
 									{
-										Log.log.error("BeanManager.startClient.operationComplete: scheduled exception:", e);
+										Log.log.error("NetManager.startClient.operationComplete: scheduled exception:", e);
 									}
 								}
 							});
@@ -327,7 +327,7 @@ public class NetManager implements IoHandler
 					}
 					catch(Throwable e)
 					{
-						Log.log.error("BeanManager.startClient.operationComplete: exception:", e);
+						Log.log.error("NetManager.startClient.operationComplete: exception:", e);
 					}
 				}
 			}
@@ -384,13 +384,13 @@ public class NetManager implements IoHandler
 	 * 向网络工作线程调度一个定时任务
 	 * @param periodSec 定时周期的秒数
 	 */
-	static void scheduleWithFixedDelay(int periodSec, Runnable runnable)
+	public static ScheduledFuture<?> scheduleWithFixedDelay(int delaySec, int periodSec, Runnable runnable)
 	{
-		_rpcThread.scheduleWithFixedDelay(runnable, periodSec, periodSec, TimeUnit.SECONDS);
+		return _rpcThread.scheduleWithFixedDelay(runnable, delaySec, periodSec, TimeUnit.SECONDS);
 	}
 
 	/**
-	 * 发送bean的底层入口
+	 * 发送对象的底层入口
 	 */
 	protected static boolean write(IoSession session, Object obj)
 	{
@@ -405,7 +405,7 @@ public class NetManager implements IoHandler
 	}
 
 	/**
-	 * 发送bean的底层入口. 可带监听器,并返回WriteFuture
+	 * 发送对象的底层入口. 可带监听器,并返回WriteFuture
 	 */
 	protected static WriteFuture write(IoSession session, Object obj, IoFutureListener<?> listener)
 	{

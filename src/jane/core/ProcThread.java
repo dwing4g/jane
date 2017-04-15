@@ -34,7 +34,7 @@ public final class ProcThread extends Thread
 	{
 		if(!Const.debug)
 		{
-			NetManager.scheduleWithFixedDelay(5, new Runnable()
+			NetManager.scheduleWithFixedDelay(Const.deadlockCheckInterval, Const.deadlockCheckInterval, new Runnable()
 			{
 				@Override
 				public void run()

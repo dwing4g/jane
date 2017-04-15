@@ -29,6 +29,7 @@ public final class Const
 	public static final String		dbFilename;
 	public static final String		dbBackupPath;
 	public static final int			dbThreadCount;
+	public static final int			deadlockCheckInterval;
 	public static final int			maxSessionProcedure;
 	public static final int			maxBatchProceduer;
 	public static final int			maxProceduerRedo;
@@ -97,6 +98,7 @@ public final class Const
 		dbFilename = getPropStr("dbFilename", "db/database");
 		dbBackupPath = getPropStr("dbBackupPath", "db");
 		dbThreadCount = getPropInt("dbThreadCount", 1, 1, 1000);
+		deadlockCheckInterval = getPropInt("deadlockCheckInterval", 5, 1);
 		maxSessionProcedure = getPropInt("maxSessionProceduer", 65536, 1);
 		maxBatchProceduer = getPropInt("maxBatchProceduer", 256, 1);
 		maxProceduerRedo = getPropInt("maxProceduerRedo", 256, 1);

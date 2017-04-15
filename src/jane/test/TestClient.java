@@ -18,6 +18,7 @@ public final class TestClient extends NetManager
 
 	private TestClient()
 	{
+		setIoThreadCount(1);
 		setHandlers(AllBeans.getTestClientHandlers());
 	}
 

@@ -12,7 +12,7 @@ public final class ExitManager
 
 	static
 	{
-		Runtime.getRuntime().addShutdownHook(new Thread("ExitManager")
+		Runtime.getRuntime().addShutdownHook(new Thread("ExitHook")
 		{
 			@Override
 			public void run()

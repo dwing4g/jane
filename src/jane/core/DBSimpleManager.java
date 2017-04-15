@@ -8,11 +8,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 数据库管理器(单件)的简单版
@@ -24,27 +19,30 @@ import java.util.concurrent.TimeUnit;
  */
 public final class DBSimpleManager
 {
-	private static final DBSimpleManager   _instance   = new DBSimpleManager();
-	private final SimpleDateFormat		   _sdf		   = new SimpleDateFormat("yy-MM-dd-HH-mm-ss");						   // 备份文件后缀名的时间格式
-	private final Map<Octets, Octets>	   _readCache  = Util.newConcurrentLRUMap(Const.dbSimpleCacheSize, "SimpleCache"); // 读缓冲区
-	private final Map<Octets, Octets>	   _writeCache = Util.newConcurrentHashMap();									   // 写缓冲区
-	private final ScheduledExecutorService _commitThread;																   // 处理数据提交的线程
-	private final CommitTask			   _commitTask = new CommitTask();												   // 数据提交的任务
-	private StorageLevelDB				   _storage;																	   // 存储引擎
-	private ScheduledFuture<?>			   _commitFuture;																   // 数据提交的结果
-	private volatile boolean			   _exit;																		   // 是否在退出状态(已经执行了ShutdownHook)
+	private static final DBSimpleManager _instance	   = new DBSimpleManager();
+	private final SimpleDateFormat		 _sdf		   = new SimpleDateFormat("yy-MM-dd-HH-mm-ss");						   // 备份文件后缀名的时间格式
+	private final CommitThread			 _commitThread = new CommitThread();											   // 处理数据提交的线程
+	private final Map<Octets, Octets>	 _readCache	   = Util.newConcurrentLRUMap(Const.dbSimpleCacheSize, "SimpleCache"); // 读缓冲区
+	private final Map<Octets, Octets>	 _writeCache   = Util.newConcurrentHashMap();									   // 写缓冲区
+	private StorageLevelDB				 _storage;																		   // 存储引擎
+	private volatile boolean			 _exit;																			   // 是否在退出状态(已经执行了ShutdownHook)
 
 	/**
-	 * 向数据库存储提交事务性修改的过程(checkpoint)
-	 * <p>
-	 * 不断定时地跑在一个数据库管理器中的提交线程上
+	 * 周期向数据库存储提交事务性修改的线程(checkpoint)
 	 */
-	private final class CommitTask implements Runnable
+	private final class CommitThread extends Thread
 	{
 		private final long	  _commitPeriod	= Const.dbCommitPeriod * 1000;				  // 提交数据库的周期
 		private final long	  _backupPeriod	= Const.dbBackupPeriod * 1000;				  // 备份数据库的周期
 		private volatile long _commitTime	= System.currentTimeMillis() + _commitPeriod; // 下次提交数据库的时间
 		private volatile long _backupTime	= Long.MAX_VALUE;							  // 下次备份数据库的时间(默认不备份)
+
+		private CommitThread()
+		{
+			super("CommitThread");
+			setDaemon(true);
+			setPriority(Thread.NORM_PRIORITY + 1);
+		}
 
 		private void commitNext()
 		{
@@ -83,15 +81,32 @@ public final class DBSimpleManager
 		@Override
 		public void run()
 		{
+			for(;;)
+			{
+				try
+				{
+					Thread.sleep(1000);
+				}
+				catch(InterruptedException e)
+				{
+					break;
+				}
+				if(!tryCommit(false))
+					break;
+			}
+		}
+
+		private boolean tryCommit(boolean force)
+		{
 			try
 			{
 				long t = System.currentTimeMillis();
-				if(t < _commitTime && _writeCache.size() < Const.dbCommitModCount) return;
-				_commitTime = (_commitTime <= t ? _commitTime : t) + _commitPeriod;
-				if(_commitTime <= t) _commitTime = t + _commitPeriod;
+				if(t < _commitTime && _writeCache.size() < Const.dbCommitModCount) return true;
 				synchronized(DBSimpleManager.this)
 				{
-					if(Thread.interrupted()) return;
+					_commitTime = (_commitTime <= t ? _commitTime : t) + _commitPeriod;
+					if(_commitTime <= t) _commitTime = t + _commitPeriod;
+					if(Thread.interrupted() && !force) return false;
 					if(_storage != null)
 					{
 						// 1.首先尝试遍历单个加锁的方式保存已修改的记录. 此时和其它事务可以并发
@@ -138,6 +153,7 @@ public final class DBSimpleManager
 			{
 				Log.log.error("db-commit fatal exception:", e);
 			}
+			return true;
 		}
 	}
 
@@ -148,17 +164,6 @@ public final class DBSimpleManager
 
 	private DBSimpleManager()
 	{
-		_commitThread = Executors.newSingleThreadScheduledExecutor(new ThreadFactory()
-		{
-			@Override
-			public Thread newThread(Runnable r)
-			{
-				Thread t = new Thread(r, "CommitThread");
-				t.setDaemon(true);
-				t.setPriority(Thread.NORM_PRIORITY + 1);
-				return t;
-			}
-		});
 	}
 
 	/**
@@ -172,7 +177,7 @@ public final class DBSimpleManager
 	/**
 	 * 启动数据库系统
 	 * <p>
-	 * 必须在注册数据库表和操作数据库之前启动
+	 * 必须在操作数据库之前启动
 	 * @param sto 数据库使用的存储引擎实例. 如: StorageLevelDB.instance()
 	 */
 	public synchronized void startup(StorageLevelDB sto) throws IOException
@@ -194,14 +199,7 @@ public final class DBSimpleManager
 				synchronized(DBSimpleManager.this)
 				{
 					_exit = true;
-					try
-					{
-						_commitThread.shutdown();
-					}
-					finally
-					{
-						shutdown();
-					}
+					shutdown();
 				}
 				Log.log.info("DBSimpleManager.OnJVMShutDown: db closed");
 			}
@@ -211,7 +209,7 @@ public final class DBSimpleManager
 	/**
 	 * 启动数据库系统
 	 * <p>
-	 * 必须在注册数据库表和操作数据库之前启动<br>
+	 * 必须在操作数据库之前启动<br>
 	 * 默认使用StorageLevelDB.instance()作为存储引擎
 	 */
 	public void startup() throws IOException
@@ -391,8 +389,8 @@ public final class DBSimpleManager
 	 */
 	public synchronized void startCommitThread()
 	{
-		if(_commitFuture == null || _commitFuture.isDone())
-			_commitFuture = _commitThread.scheduleWithFixedDelay(_commitTask, 1, 1, TimeUnit.SECONDS);
+		if(!_commitThread.isAlive())
+			_commitThread.start();
 	}
 
 	/**
@@ -400,8 +398,8 @@ public final class DBSimpleManager
 	 */
 	public void checkpoint()
 	{
-		_commitTask.commitNext();
-		_commitTask.run();
+		_commitThread.commitNext();
+		_commitThread.tryCommit(true);
 	}
 
 	/**
@@ -411,7 +409,7 @@ public final class DBSimpleManager
 	 */
 	public void checkpointAsync()
 	{
-		_commitTask.commitNext();
+		_commitThread.commitNext();
 	}
 
 	/**
@@ -419,7 +417,7 @@ public final class DBSimpleManager
 	 */
 	public void enableBackup(boolean enabled)
 	{
-		_commitTask.enableBackup(enabled);
+		_commitThread.enableBackup(enabled);
 	}
 
 	/**
@@ -427,34 +425,42 @@ public final class DBSimpleManager
 	 */
 	public void backupNextCheckpoint()
 	{
-		_commitTask.backupNextCommit();
+		_commitThread.backupNextCommit();
 	}
 
 	/**
 	 * 停止数据库系统
 	 * <p>
-	 * 停止后不能再操作任何数据库表. 下次启动应再调用startup<br>
+	 * 停止后不能再操作任何数据库表. 下次启动应再重新调用startup,startCommitThread<br>
 	 * 注意不能和数据库启动过程并发
 	 */
 	public synchronized void shutdown()
 	{
 		try
 		{
-			ScheduledFuture<?> future = _commitFuture;
-			if(future != null)
+			synchronized(this)
 			{
-				_commitFuture = null;
-				future.cancel(false);
+				if(_commitThread.isAlive())
+					_commitThread.interrupt();
+				if(_storage != null)
+					checkpoint();
 			}
-			if(_storage != null) checkpoint();
+			_commitThread.join();
+		}
+		catch(InterruptedException e)
+		{
+			Log.log.error("DBSimpleManager.shutdown: exception:", e);
 		}
 		finally
 		{
-			Storage sto = _storage;
-			if(sto != null)
+			synchronized(this)
 			{
-				_storage = null;
-				sto.close();
+				Storage sto = _storage;
+				if(sto != null)
+				{
+					_storage = null;
+					sto.close();
+				}
 			}
 		}
 	}
