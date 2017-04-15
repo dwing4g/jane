@@ -153,6 +153,17 @@ public class Octets implements Cloneable, Comparable<Octets>
 		return buf;
 	}
 
+	public byte[] getBytes(int pos, int len)
+	{
+		if(pos < 0) pos = 0;
+		if(pos >= _count || len <= 0) return EMPTY;
+		int n = pos + len;
+		n = (n < 0 || n > _count ? _count - pos : len);
+		byte[] buf = new byte[n];
+		System.arraycopy(_buffer, pos, buf, 0, n);
+		return buf;
+	}
+
 	public Octets wraps(byte[] data, int size)
 	{
 		_buffer = data;
@@ -486,13 +497,13 @@ public class Octets implements Cloneable, Comparable<Octets>
 	{
 		if(o == null) return 1;
 		int n0 = _count, n1 = o._count;
-		int n = (n0 <= n1 ? n0 : n1);
+		int n = (n0 < n1 ? n0 : n1);
 		byte[] buf = _buffer;
 		byte[] data = o._buffer;
 		for(int i = 0; i < n; ++i)
 		{
-			int v = ((buf[i] & 0xff) - (data[i] & 0xff));
-			if(v != 0) return v;
+			int c = ((buf[i] & 0xff) - (data[i] & 0xff));
+			if(c != 0) return c;
 		}
 		return n0 - n1;
 	}

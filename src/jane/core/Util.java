@@ -87,6 +87,21 @@ public final class Util
 	}
 
 	/**
+	 * 逐字节比较两个字节数组
+	 */
+	public static int compareBytes(byte[] data1, byte[] data2)
+	{
+		int n1 = data1.length, n2 = data2.length;
+		int n = (n1 < n2 ? n1 : n2);
+		for(int i = 0; i < n; ++i)
+		{
+			int c = (data1[i] & 0xff) - (data2[i] & 0xff);
+			if(c != 0) return c;
+		}
+		return n1 - n2;
+	}
+
+	/**
 	 * 比较两个序列容器里的元素是否完全相同(包括顺序相同)
 	 */
 	public static <T extends Comparable<T>> int compareTo(Collection<T> a, Collection<T> b)

@@ -8,13 +8,15 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicBoolean;
+import jane.core.StorageLevelDB.DBWalkHandler;
 
 /**
  * 数据库管理器(单件)的简单版
  * <p>
  * 可直接对bean的存取,没有事务性,存取均有缓存,定期存库和备份. 目前仅支持StorageLevelDB,记录格式与DBManager兼容. 不能与DBManager同时访问同一个数据库.<br>
  * 对同一个记录并发访问不会出错,但顺序不能保证. 一般只在单线程环境下访问此类,或者用户自行处理同一记录的互斥访问.<br>
- * 只依赖Log, Const, Util, Octets, OctetsStream, MarshalException, ExitManager, Bean, BeanCodec, Storage, StorageLevelDB.<br>
+ * 只依赖Log, Const, Util, Octets, OctetsStream, MarshalException, ExitManager, Bean, StorageLevelDB.<br>
  * 一般不再使用DBManager,Proc*,Table*,S*; 不生成dbt,只生成bean
  */
 public final class DBSimpleManager
@@ -183,7 +185,7 @@ public final class DBSimpleManager
 	 */
 	public synchronized void startup(StorageLevelDB sto) throws IOException
 	{
-		if(sto == null) throw new IllegalArgumentException("no Storage specified");
+		if(sto == null) throw new IllegalArgumentException("no StorageLevelDB specified");
 		shutdown();
 		File dbfile = new File(Const.dbFilename + '.' + sto.getFileSuffix());
 		File dbpath = dbfile.getParentFile();
@@ -226,18 +228,18 @@ public final class DBSimpleManager
 
 	private static Octets toKey(int tableId, long key)
 	{
-		return new OctetsStream(5 + 9).marshal(tableId).marshal(key);
+		return new OctetsStream(5 + 9).marshalUInt(tableId).marshal(key);
 	}
 
 	private static Octets toKey(int tableId, Octets key)
 	{
-		return new OctetsStream(5 + key.size()).marshal(tableId).append(key);
+		return new OctetsStream(5 + key.size()).marshalUInt(tableId).append(key);
 	}
 
 	private static Octets toKey(int tableId, String key)
 	{
 		int n = key.length();
-		OctetsStream os = new OctetsStream(5 + n * 3).marshal(tableId);
+		OctetsStream os = new OctetsStream(5 + n * 3).marshalUInt(tableId);
 		for(int i = 0; i < n; ++i)
 			os.marshalUTF8(key.charAt(i));
 		return os;
@@ -245,23 +247,33 @@ public final class DBSimpleManager
 
 	private static Octets toKey(int tableId, Bean<?> key)
 	{
-		return new OctetsStream(5 + key.initSize()).marshal(tableId).marshal(key);
+		return new OctetsStream(5 + key.initSize()).marshalUInt(tableId).marshal(key);
 	}
 
-	private static Bean<?> toBean(Octets data, int type) throws MarshalException
+	private static <K extends Bean<K>> K toKeyBean(Octets data, K keyStub) throws MarshalException
+	{
+		if(data == null || data == StorageLevelDB.deleted()) return null;
+		OctetsStream val = (data instanceof OctetsStream ? (OctetsStream)data : OctetsStream.wrap(data));
+		val.setExceptionInfo(true);
+		K keyBean = keyStub.create();
+		keyBean.unmarshal(val);
+		return keyBean;
+	}
+
+	private static <B extends Bean<B>> B toBean(Octets data, B beanStub) throws MarshalException
 	{
 		if(data == null || data == StorageLevelDB.deleted()) return null;
 		OctetsStream val = (data instanceof OctetsStream ? (OctetsStream)data : OctetsStream.wrap(data));
 		val.setExceptionInfo(true);
 		int format = val.unmarshalInt1();
 		if(format != 0)
-			throw new IllegalStateException("unknown record value format(" + format + ") in type(" + type + ")");
-		Bean<?> bean = BeanCodec.createBean(type);
+			throw new IllegalStateException("unknown record value format(" + format + ") for type(" + beanStub.typeName() + ")");
+		B bean = beanStub.create();
 		bean.unmarshal(val);
 		return bean;
 	}
 
-	private Bean<?> get0(Octets key, int type) throws MarshalException
+	private <B extends Bean<B>> B get0(Octets key, B beanStub) throws MarshalException
 	{
 		Octets val = (_enableReadCache ? _readCache.get(key) : null);
 		if(val == null)
@@ -281,7 +293,7 @@ public final class DBSimpleManager
 			else if(val.size() <= 0)
 				return null;
 		}
-		return toBean(val, type);
+		return toBean(val, beanStub);
 	}
 
 	private void put0(Octets key, Octets value)
@@ -298,58 +310,54 @@ public final class DBSimpleManager
 			_readCache.remove(key);
 	}
 
-	@SuppressWarnings("unchecked")
-	public <B extends Bean<B>> B get(int tableId, long key, int beanType)
+	public <B extends Bean<B>> B get(int tableId, long key, B beanStub)
 	{
 		try
 		{
-			return (B)get0(toKey(tableId, key), beanType);
+			return get0(toKey(tableId, key), beanStub);
 		}
 		catch(Exception e)
 		{
-			Log.log.error("get record exception: tableId=" + tableId + ", key=" + key + ", beanType=" + beanType, e);
+			Log.log.error("get record exception: tableId=" + tableId + ", key=" + key + ", type=" + beanStub.typeName(), e);
 			return null;
 		}
 	}
 
-	@SuppressWarnings("unchecked")
-	public <B extends Bean<B>> B get(int tableId, Octets key, int beanType)
+	public <B extends Bean<B>> B get(int tableId, Octets key, B beanStub)
 	{
 		try
 		{
-			return (B)get0(toKey(tableId, key), beanType);
+			return get0(toKey(tableId, key), beanStub);
 		}
 		catch(Exception e)
 		{
-			Log.log.error("get record exception: tableId=" + tableId + ", key=" + key.dump() + ", beanType=" + beanType, e);
+			Log.log.error("get record exception: tableId=" + tableId + ", key=" + key.dump() + ", type=" + beanStub.typeName(), e);
 			return null;
 		}
 	}
 
-	@SuppressWarnings("unchecked")
-	public <B extends Bean<B>> B get(int tableId, String key, int beanType)
+	public <B extends Bean<B>> B get(int tableId, String key, B beanStub)
 	{
 		try
 		{
-			return (B)get0(toKey(tableId, key), beanType);
+			return get0(toKey(tableId, key), beanStub);
 		}
 		catch(Exception e)
 		{
-			Log.log.error("get record exception: tableId=" + tableId + ", key='" + key + "', beanType=" + beanType, e);
+			Log.log.error("get record exception: tableId=" + tableId + ", key='" + key + "', type=" + beanStub.typeName(), e);
 			return null;
 		}
 	}
 
-	@SuppressWarnings("unchecked")
-	public <B extends Bean<B>> B get(int tableId, Bean<?> key, int beanType)
+	public <B extends Bean<B>> B get(int tableId, Bean<?> key, B beanStub)
 	{
 		try
 		{
-			return (B)get0(toKey(tableId, key), beanType);
+			return get0(toKey(tableId, key), beanStub);
 		}
 		catch(Exception e)
 		{
-			Log.log.error("get record exception: tableId=" + tableId + ", key=" + key + ", beanType=" + beanType, e);
+			Log.log.error("get record exception: tableId=" + tableId + ", key=" + key + ", type=" + beanStub.typeName(), e);
 			return null;
 		}
 	}
@@ -392,6 +400,134 @@ public final class DBSimpleManager
 	public void remove(int tableId, Bean<?> key)
 	{
 		remove0(toKey(tableId, key));
+	}
+
+	public interface WalkHandlerLongValue<B extends Bean<B>>
+	{
+		/**
+		 * 每次遍历一个记录都会调用此接口
+		 * @return 返回true表示继续遍历, 返回false表示中断遍历
+		 */
+		boolean onWalk(long key, B value) throws Exception;
+	}
+
+	public <B extends Bean<B>> boolean walkTable(final int tableId, long keyFrom, long keyTo, final B beanStub, final WalkHandlerLongValue<B> handler)
+	{
+		return _storage.dbwalk(toKey(tableId, keyFrom), toKey(tableId, keyTo), true, false, new DBWalkHandler()
+		{
+			private final OctetsStream _os		   = new OctetsStream();
+			private final int		   _tableIdLen = OctetsStream.marshalUIntLen(tableId);
+
+			@Override
+			public boolean onWalk(byte[] key, byte[] value) throws Exception
+			{
+				_os.setPosition(0);
+				_os.wraps(key).setPosition(_tableIdLen);
+				long k = _os.unmarshalLong();
+				_os.setPosition(0);
+				return handler.onWalk(k, toBean(_os.wraps(value), beanStub));
+			}
+		});
+	}
+
+	public interface WalkHandlerOctetsValue<B extends Bean<B>>
+	{
+		/**
+		 * 每次遍历一个记录都会调用此接口
+		 * @return 返回true表示继续遍历, 返回false表示中断遍历
+		 */
+		boolean onWalk(byte[] key, B value) throws Exception;
+	}
+
+	public <B extends Bean<B>> boolean walkTable(final int tableId, final B beanStub, final WalkHandlerOctetsValue<B> handler)
+	{
+		final AtomicBoolean finished = new AtomicBoolean();
+		return _storage.dbwalk(toKey(tableId, new Octets()), null, true, false, new DBWalkHandler()
+		{
+			private final OctetsStream _os		   = new OctetsStream();
+			private final int		   _tableIdLen = OctetsStream.marshalUIntLen(tableId);
+
+			@Override
+			public boolean onWalk(byte[] key, byte[] value) throws Exception
+			{
+				_os.setPosition(0);
+				int tid = _os.wraps(key).unmarshalUInt();
+				if(tid != tableId)
+				{
+					finished.set(true);
+					return false;
+				}
+				byte[] k = _os.getBytes(_tableIdLen, Integer.MAX_VALUE);
+				_os.setPosition(0);
+				return handler.onWalk(k, toBean(_os.wraps(value), beanStub));
+			}
+		}) || finished.get();
+	}
+
+	public interface WalkHandlerStringValue<B extends Bean<B>>
+	{
+		/**
+		 * 每次遍历一个记录都会调用此接口
+		 * @return 返回true表示继续遍历, 返回false表示中断遍历
+		 */
+		boolean onWalk(String key, B value) throws Exception;
+	}
+
+	public <B extends Bean<B>> boolean walkTable(final int tableId, final B beanStub, final WalkHandlerStringValue<B> handler)
+	{
+		final AtomicBoolean finished = new AtomicBoolean();
+		return _storage.dbwalk(null, null, true, false, new DBWalkHandler()
+		{
+			private final OctetsStream _os = new OctetsStream();
+
+			@Override
+			public boolean onWalk(byte[] key, byte[] value) throws Exception
+			{
+				_os.setPosition(0);
+				int tid = _os.wraps(key).unmarshalUInt();
+				if(tid != tableId)
+				{
+					finished.set(true);
+					return false;
+				}
+				byte[] keyData = _os.getBytes(_os.position(), Integer.MAX_VALUE);
+				_os.setPosition(0);
+				return handler.onWalk(new String(keyData, Const.stringCharsetUTF8), toBean(_os.wraps(value), beanStub));
+			}
+		}) || finished.get();
+	}
+
+	public interface WalkHandlerBeanValue<K extends Bean<K>, B extends Bean<B>>
+	{
+		/**
+		 * 每次遍历一个记录都会调用此接口
+		 * @return 返回true表示继续遍历, 返回false表示中断遍历
+		 */
+		boolean onWalk(K key, B value) throws Exception;
+	}
+
+	public <K extends Bean<K>, B extends Bean<B>> boolean walkTable(final int tableId, final K keyStub, final B beanStub, final WalkHandlerBeanValue<K, B> handler)
+	{
+		final AtomicBoolean finished = new AtomicBoolean();
+		return _storage.dbwalk(null, null, true, false, new DBWalkHandler()
+		{
+			private final OctetsStream _os = new OctetsStream();
+
+			@Override
+			public boolean onWalk(byte[] key, byte[] value) throws Exception
+			{
+				_os.setPosition(0);
+				int tid = _os.wraps(key).unmarshalUInt();
+				if(tid != tableId)
+				{
+					finished.set(true);
+					return false;
+				}
+				K k = toKeyBean(_os, keyStub);
+				_os.setPosition(0);
+				return handler.onWalk(k, toBean(_os.wraps(value), beanStub));
+			}
+		}) || finished.get();
 	}
 
 	/**
@@ -467,7 +603,7 @@ public final class DBSimpleManager
 		{
 			synchronized(this)
 			{
-				Storage sto = _storage;
+				StorageLevelDB sto = _storage;
 				if(sto != null)
 				{
 					_storage = null;

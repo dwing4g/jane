@@ -53,6 +53,11 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	public abstract int type();
 
 	/**
+	 * bean的类型名
+	 */
+	public abstract String typeName();
+
+	/**
 	 * 获取此bean类唯一的stub对象
 	 */
 	public abstract B stub();

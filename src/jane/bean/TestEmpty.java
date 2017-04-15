@@ -13,6 +13,7 @@ public final class TestEmpty extends Bean<TestEmpty>
 {
 	private static final long serialVersionUID = 0xbeac245da40b43f8L;
 	public  static final int BEAN_TYPE = 3;
+	public  static final String BEAN_TYPENAME = "TestEmpty";
 	public  static final TestEmpty BEAN_STUB = new TestEmpty();
 
 	@Override
@@ -30,6 +31,12 @@ public final class TestEmpty extends Bean<TestEmpty>
 	public int type()
 	{
 		return BEAN_TYPE;
+	}
+
+	@Override
+	public String typeName()
+	{
+		return BEAN_TYPENAME;
 	}
 
 	@Override

@@ -63,6 +63,12 @@ public final class DynBean extends Bean<DynBean>
 	}
 
 	@Override
+	public String typeName()
+	{
+		return "DynBean";
+	}
+
+	@Override
 	public DynBean stub()
 	{
 		return BEAN_STUB;

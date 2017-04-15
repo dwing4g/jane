@@ -550,6 +550,88 @@ public final class StorageLevelDB implements Storage
 		if(r != 0) Log.log.error("StorageLevelDB.commit: leveldb_write failed({})", r);
 	}
 
+	interface DBWalkHandler
+	{
+		/**
+		 * 每次遍历一个记录都会调用此接口
+		 * @return 返回true表示继续遍历, 返回false表示中断遍历
+		 */
+		boolean onWalk(byte[] key, byte[] value) throws Exception;
+	}
+
+	public boolean dbwalk(Octets keyFrom, Octets keyTo, boolean inclusive, boolean reverse, DBWalkHandler handler)
+	{
+		if(keyFrom != null && keyTo != null && keyFrom.compareTo(keyTo) > 0)
+		{
+			Octets t = keyFrom;
+			keyFrom = keyTo;
+			keyTo = t;
+		}
+		long iter = 0;
+		try
+		{
+			if(!reverse)
+			{
+				byte[] keyToData = (keyTo != null ? keyTo.getBytes() : null);
+				iter = leveldb_iter_new(_db, keyFrom != null ? keyFrom.array() : null, keyFrom != null ? keyFrom.size() : 0, inclusive ? 2 : 3);
+				for(;;)
+				{
+					byte[] value = leveldb_iter_value(iter);
+					if(value == null) break;
+					byte[] key = leveldb_iter_next(iter);
+					if(key == null) break;
+					if(keyToData != null)
+					{
+						int comp = Util.compareBytes(key, keyToData);
+						if(comp >= 0 && (comp > 0 || !inclusive)) break;
+					}
+					try
+					{
+						if(!handler.onWalk(key, value))
+							return false;
+					}
+					catch(Exception e)
+					{
+						Log.log.error("walk exception:", e);
+						return false;
+					}
+				}
+			}
+			else
+			{
+				byte[] keyFromData = (keyFrom != null ? keyFrom.getBytes() : null);
+				iter = leveldb_iter_new(_db, keyTo != null ? keyTo.array() : null, keyTo != null ? keyTo.size() : 0, inclusive ? 1 : 0);
+				for(;;)
+				{
+					byte[] value = leveldb_iter_value(iter);
+					if(value == null) break;
+					byte[] key = leveldb_iter_prev(iter);
+					if(key == null) break;
+					if(keyFromData != null)
+					{
+						int comp = Util.compareBytes(key, keyFromData);
+						if(comp <= 0 && (comp < 0 || !inclusive)) break;
+					}
+					try
+					{
+						if(!handler.onWalk(key, value))
+							return false;
+					}
+					catch(Exception e)
+					{
+						Log.log.error("walk exception:", e);
+						return false;
+					}
+				}
+			}
+		}
+		finally
+		{
+			if(iter != 0) leveldb_iter_delete(iter);
+		}
+		return true;
+	}
+
 	static Octets deleted()
 	{
 		return _deleted;

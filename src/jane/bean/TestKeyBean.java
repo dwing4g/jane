@@ -12,6 +12,7 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 {
 	private static final long serialVersionUID = 0xbeac0364a4241981L;
 	public  static final int BEAN_TYPE = 0;
+	public  static final String BEAN_TYPENAME = "TestKeyBean";
 	public  static final TestKeyBean BEAN_STUB = new TestKeyBean();
 
 	private /*  1*/ int key1; // KEY-1
@@ -51,6 +52,12 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 	public int type()
 	{
 		return BEAN_TYPE;
+	}
+
+	@Override
+	public String typeName()
+	{
+		return BEAN_TYPENAME;
 	}
 
 	@Override

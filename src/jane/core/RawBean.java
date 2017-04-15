@@ -51,6 +51,12 @@ public final class RawBean extends Bean<RawBean>
 	}
 
 	@Override
+	public String typeName()
+	{
+		return "RawBean";
+	}
+
+	@Override
 	public RawBean stub()
 	{
 		return BEAN_STUB;

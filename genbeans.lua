@@ -31,6 +31,7 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 {
 	private static final long serialVersionUID = #(bean.uid);
 	public  static final int BEAN_TYPE = #(bean.type);
+	public  static final String BEAN_TYPENAME = "#(bean.name)";
 	public  static final #(bean.name) BEAN_STUB = new #(bean.name)();#(bean.pool_def)
 #{#	public  static final #(var.type) #(var.name)#(var.value);#(var.comment2)
 #}##(##(var.field)#)#
@@ -81,6 +82,12 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 	public int type()
 	{
 		return BEAN_TYPE;
+	}
+
+	@Override
+	public String typeName()
+	{
+		return BEAN_TYPENAME;
 	}
 
 	@Override
@@ -215,10 +222,13 @@ import jane.core.RpcBean;
 public final class #(bean.name) extends RpcBean<#(bean.arg), #(bean.res), #(bean.name)>
 {
 	private static final long serialVersionUID = #(bean.uid);
+	public  static final int BEAN_TYPE = #(bean.type);
+	public  static final String BEAN_TYPENAME = "#(bean.name)";
 	public  static final #(bean.name) BEAN_STUB = new #(bean.name)();
 	public #(bean.name)() {}
 	public #(bean.name)(#(bean.arg) a) { _arg = a; }
-	@Override public int type() { return #(bean.type); }
+	@Override public int type() { return BEAN_TYPE; }
+	@Override public String typeName() { return BEAN_TYPENAME; }
 	@Override public #(bean.name) stub() { return BEAN_STUB; }
 	@Override public #(bean.name) create() { return new #(bean.name)(); }
 	@Override public #(bean.arg) createArg() { return new #(bean.arg)(); }
