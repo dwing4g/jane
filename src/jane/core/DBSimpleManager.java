@@ -19,13 +19,14 @@ import java.util.Map.Entry;
  */
 public final class DBSimpleManager
 {
-	private static final DBSimpleManager _instance	   = new DBSimpleManager();
-	private final SimpleDateFormat		 _sdf		   = new SimpleDateFormat("yy-MM-dd-HH-mm-ss");						   // 备份文件后缀名的时间格式
-	private final CommitThread			 _commitThread = new CommitThread();											   // 处理数据提交的线程
-	private final Map<Octets, Octets>	 _readCache	   = Util.newConcurrentLRUMap(Const.dbSimpleCacheSize, "SimpleCache"); // 读缓冲区
-	private final Map<Octets, Octets>	 _writeCache   = Util.newConcurrentHashMap();									   // 写缓冲区
-	private StorageLevelDB				 _storage;																		   // 存储引擎
-	private volatile boolean			 _exit;																			   // 是否在退出状态(已经执行了ShutdownHook)
+	private static final DBSimpleManager _instance		  = new DBSimpleManager();
+	private final SimpleDateFormat		 _sdf			  = new SimpleDateFormat("yy-MM-dd-HH-mm-ss");						  // 备份文件后缀名的时间格式
+	private final CommitThread			 _commitThread	  = new CommitThread();												  // 处理数据提交的线程
+	private final Map<Octets, Octets>	 _readCache		  = Util.newConcurrentLRUMap(Const.dbSimpleCacheSize, "SimpleCache"); // 读缓冲区
+	private final Map<Octets, Octets>	 _writeCache	  = Util.newConcurrentHashMap();									  // 写缓冲区
+	private StorageLevelDB				 _storage;																			  // 存储引擎
+	private boolean						 _enableReadCache = true;															  // 是否开启读缓存
+	private volatile boolean			 _exit;																				  // 是否在退出状态(已经执行了ShutdownHook)
 
 	/**
 	 * 周期向数据库存储提交事务性修改的线程(checkpoint)
@@ -217,6 +218,12 @@ public final class DBSimpleManager
 		startup(StorageLevelDB.instance());
 	}
 
+	public void enableReadCache(boolean enabled)
+	{
+		_enableReadCache = enabled;
+		_readCache.clear();
+	}
+
 	private static Octets toKey(int tableId, long key)
 	{
 		return new OctetsStream(5 + 9).marshal(tableId).marshal(key);
@@ -256,7 +263,7 @@ public final class DBSimpleManager
 
 	private Bean<?> get0(Octets key, int type) throws MarshalException
 	{
-		Octets val = _readCache.get(key);
+		Octets val = (_enableReadCache ? _readCache.get(key) : null);
 		if(val == null)
 		{
 			val = _writeCache.get(key);
@@ -264,7 +271,10 @@ public final class DBSimpleManager
 			{
 				val = _storage.dbget(key);
 				if(val != null)
-					_readCache.put(key, val);
+				{
+					if(_enableReadCache)
+						_readCache.put(key, val);
+				}
 				else
 					return null;
 			}
@@ -277,13 +287,15 @@ public final class DBSimpleManager
 	private void put0(Octets key, Octets value)
 	{
 		_writeCache.put(key, value);
-		_readCache.put(key, value);
+		if(_enableReadCache)
+			_readCache.put(key, value);
 	}
 
 	private void remove0(Octets key)
 	{
 		_writeCache.put(key, StorageLevelDB.deleted());
-		_readCache.remove(key);
+		if(_enableReadCache)
+			_readCache.remove(key);
 	}
 
 	@SuppressWarnings("unchecked")
