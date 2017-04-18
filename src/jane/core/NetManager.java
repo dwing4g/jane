@@ -392,7 +392,7 @@ public class NetManager implements IoHandler
 	/**
 	 * 发送对象的底层入口
 	 */
-	protected static boolean write(IoSession session, Object obj)
+	public static boolean write(IoSession session, Object obj)
 	{
 		if(session.isClosing() || obj == null) return false;
 		IoFilterChain ifc = session.getFilterChain();
@@ -407,7 +407,7 @@ public class NetManager implements IoHandler
 	/**
 	 * 发送对象的底层入口. 可带监听器,并返回WriteFuture
 	 */
-	protected static WriteFuture write(IoSession session, Object obj, IoFutureListener<?> listener)
+	public static WriteFuture write(IoSession session, Object obj, IoFutureListener<?> listener)
 	{
 		if(session.isClosing() || obj == null) return null;
 		IoFilterChain ifc = session.getFilterChain();
