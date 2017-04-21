@@ -12,6 +12,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -39,10 +40,30 @@ public final class DiffJars
 		return md5.digest();
 	}
 
+	public static void ensurePath(ZipOutputStream zos, HashSet<String> pathes, String path) throws IOException
+	{
+		int p = path.lastIndexOf('/');
+		if(p < 0 || pathes.contains(path.substring(0, p + 1)))
+			return;
+		for(p = 0;;)
+		{
+			p = path.indexOf('/', p);
+			if(p < 0) break;
+			String subPath = path.substring(0, p + 1);
+			if(!pathes.contains(subPath))
+			{
+				pathes.add(subPath);
+				zos.putNextEntry(new ZipEntry(subPath));
+				zos.closeEntry();
+			}
+		}
+	}
+
 	public int diffJars(InputStream isJar1, InputStream isJar2, OutputStream osJar, PrintStream osLog) throws IOException
 	{
 		int count = 0;
 		HashMap<String, byte[]> jar1Md5s = new HashMap<>();
+		HashSet<String> pathes = new HashSet<>();
 		byte[] buf = new byte[0x10000];
 
 		try(ZipInputStream zis = new ZipInputStream(new BufferedInputStream(isJar1)))
@@ -71,12 +92,14 @@ public final class DiffJars
 					int len = (int)ze.getSize();
 					if(len > buf.length)
 						buf = new byte[len];
-					Util.readStream(zis, ze.getName(), buf, len);
-					if(Arrays.equals(getMd5(buf, 0, len), jar1Md5s.get(ze.getName())))
+					String name = ze.getName();
+					Util.readStream(zis, name, buf, len);
+					if(Arrays.equals(getMd5(buf, 0, len), jar1Md5s.get(name)))
 						continue;
 					if(osLog != null)
-						osLog.println(ze.getName());
-					zos.putNextEntry(new ZipEntry(ze.getName()));
+						osLog.println(name);
+					ensurePath(zos, pathes, name);
+					zos.putNextEntry(new ZipEntry(name));
 					zos.write(buf, 0, len);
 					zos.closeEntry();
 					++count;

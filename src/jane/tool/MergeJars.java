@@ -39,10 +39,16 @@ public final class MergeJars
 				{
 					for(ZipEntry ze; (ze = zis.getNextEntry()) != null;)
 					{
-						if(ze.isDirectory()) continue;
-						++count0;
+						if(!ze.isDirectory())
+							++count0;
 						if(mergedPathes.contains(ze.getName())) continue;
 						mergedPathes.add(ze.getName());
+						if(ze.isDirectory())
+						{
+							zos.putNextEntry(new ZipEntry(ze.getName()));
+							zos.closeEntry();
+							continue;
+						}
 						int len = (int)ze.getSize();
 						if(len < 0) continue;
 						if(len > buf.length)
