@@ -27,6 +27,7 @@ public final class DBSimpleManager
 	private final Map<Octets, Octets>	 _readCache		  = Util.newConcurrentLRUMap(Const.dbSimpleCacheSize, "SimpleCache"); // 读缓冲区
 	private final Map<Octets, Octets>	 _writeCache	  = Util.newConcurrentHashMap();									  // 写缓冲区
 	private StorageLevelDB				 _storage;																			  // 存储引擎
+	private String						 _dbFilename;																		  // 数据库保存的路径
 	private boolean						 _enableReadCache = true;															  // 是否开启读缓存
 	private volatile boolean			 _exit;																				  // 是否在退出状态(已经执行了ShutdownHook)
 
@@ -143,7 +144,7 @@ public final class DBSimpleManager
 								timeStr = _sdf.format(new Date());
 							}
 							long r = _storage.backup(new File(Const.dbBackupPath,
-									new File(Const.dbFilename).getName() + '.' + _storage.getFileSuffix() + '.' + timeStr));
+									new File(_dbFilename).getName() + '.' + _storage.getFileSuffix() + '.' + timeStr));
 							if(r >= 0)
 								Log.log.info("db-commit backup end ({} bytes) ({} ms)", r, System.currentTimeMillis() - t1);
 							else
@@ -165,10 +166,6 @@ public final class DBSimpleManager
 		return _instance;
 	}
 
-	private DBSimpleManager()
-	{
-	}
-
 	/**
 	 * 判断是否在退出前的shutdown状态下
 	 */
@@ -183,14 +180,15 @@ public final class DBSimpleManager
 	 * 必须在操作数据库之前启动
 	 * @param sto 数据库使用的存储引擎实例. 如: StorageLevelDB.instance()
 	 */
-	public synchronized void startup(StorageLevelDB sto) throws IOException
+	public synchronized void startup(StorageLevelDB sto, String dbFilename) throws IOException
 	{
 		if(sto == null) throw new IllegalArgumentException("no StorageLevelDB specified");
 		shutdown();
-		File dbfile = new File(Const.dbFilename + '.' + sto.getFileSuffix());
+		File dbfile = new File(dbFilename + '.' + sto.getFileSuffix());
 		File dbpath = dbfile.getParentFile();
 		if(dbpath != null && !dbpath.isDirectory() && !dbpath.mkdirs())
-			throw new IOException("create db path failed: " + Const.dbFilename);
+			throw new IOException("create db path failed: " + dbFilename);
+		_dbFilename = dbFilename;
 		_storage = sto;
 		_storage.openDB(dbfile);
 		ExitManager.getShutdownSystemCallbacks().add(new Runnable()
@@ -217,7 +215,7 @@ public final class DBSimpleManager
 	 */
 	public void startup() throws IOException
 	{
-		startup(StorageLevelDB.instance());
+		startup(StorageLevelDB.instance(), Const.dbFilename);
 	}
 
 	public void enableReadCache(boolean enabled)
@@ -253,23 +251,23 @@ public final class DBSimpleManager
 	private static <K extends Bean<K>> K toKeyBean(Octets data, K keyStub) throws MarshalException
 	{
 		if(data == null || data == StorageLevelDB.deleted()) return null;
-		OctetsStream val = (data instanceof OctetsStream ? (OctetsStream)data : OctetsStream.wrap(data));
-		val.setExceptionInfo(true);
+		OctetsStream os = (data instanceof OctetsStream ? (OctetsStream)data : OctetsStream.wrap(data));
+		os.setExceptionInfo(true);
 		K keyBean = keyStub.create();
-		keyBean.unmarshal(val);
+		keyBean.unmarshal(os);
 		return keyBean;
 	}
 
 	private static <B extends Bean<B>> B toBean(Octets data, B beanStub) throws MarshalException
 	{
 		if(data == null || data == StorageLevelDB.deleted()) return null;
-		OctetsStream val = (data instanceof OctetsStream ? (OctetsStream)data : OctetsStream.wrap(data));
-		val.setExceptionInfo(true);
-		int format = val.unmarshalInt1();
+		OctetsStream os = (data instanceof OctetsStream ? (OctetsStream)data : OctetsStream.wrap(data));
+		os.setExceptionInfo(true);
+		int format = os.unmarshalInt1();
 		if(format != 0)
 			throw new IllegalStateException("unknown record value format(" + format + ") for type(" + beanStub.typeName() + ")");
 		B bean = beanStub.create();
-		bean.unmarshal(val);
+		bean.unmarshal(os);
 		return bean;
 	}
 
@@ -282,13 +280,10 @@ public final class DBSimpleManager
 			if(val == null)
 			{
 				val = _storage.dbget(key);
-				if(val != null)
-				{
-					if(_enableReadCache)
-						_readCache.put(key, val);
-				}
-				else
+				if(val == null)
 					return null;
+				if(_enableReadCache)
+					_readCache.put(key, val);
 			}
 			else if(val.size() <= 0)
 				return null;
