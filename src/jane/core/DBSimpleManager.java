@@ -29,7 +29,7 @@ public final class DBSimpleManager
 	private StorageLevelDB				 _storage;																			  // 存储引擎
 	private String						 _dbFilename;																		  // 数据库保存的路径
 	private boolean						 _enableReadCache = true;															  // 是否开启读缓存
-	private volatile boolean			 _exit;																				  // 是否在退出状态(已经执行了ShutdownHook)
+	private volatile boolean			 _exiting;																			  // 是否在退出状态(已经执行了ShutdownHook)
 
 	/**
 	 * 周期向数据库存储提交事务性修改的线程(checkpoint)
@@ -169,9 +169,9 @@ public final class DBSimpleManager
 	/**
 	 * 判断是否在退出前的shutdown状态下
 	 */
-	public boolean isExit()
+	public boolean isExiting()
 	{
-		return _exit;
+		return _exiting;
 	}
 
 	/**
@@ -179,9 +179,11 @@ public final class DBSimpleManager
 	 * <p>
 	 * 必须在操作数据库之前启动
 	 * @param sto 数据库使用的存储引擎实例. 如: StorageLevelDB.instance()
+	 * @param dbFilename 数据库文件名(对StorageLevelDB来说是目录名)
 	 */
 	public synchronized void startup(StorageLevelDB sto, String dbFilename) throws IOException
 	{
+		if(_exiting) throw new IllegalArgumentException("can not startup when exiting");
 		if(sto == null) throw new IllegalArgumentException("no StorageLevelDB specified");
 		shutdown();
 		File dbfile = new File(dbFilename + '.' + sto.getFileSuffix());
@@ -190,7 +192,7 @@ public final class DBSimpleManager
 			throw new IOException("create db path failed: " + dbFilename);
 		_dbFilename = dbFilename;
 		_storage = sto;
-		_storage.openDB(dbfile);
+		sto.openDB(dbfile);
 		ExitManager.getShutdownSystemCallbacks().add(new Runnable()
 		{
 			@Override
@@ -199,9 +201,9 @@ public final class DBSimpleManager
 				Log.log.info("DBSimpleManager.OnJVMShutDown: db shutdown");
 				synchronized(DBSimpleManager.this)
 				{
-					_exit = true;
-					shutdown();
+					_exiting = true;
 				}
+				shutdown();
 				Log.log.info("DBSimpleManager.OnJVMShutDown: db closed");
 			}
 		});
@@ -577,34 +579,27 @@ public final class DBSimpleManager
 	 * 停止后不能再操作任何数据库表. 下次启动应再重新调用startup,startCommitThread<br>
 	 * 注意不能和数据库启动过程并发
 	 */
-	public synchronized void shutdown()
+	public void shutdown()
 	{
+		synchronized(this)
+		{
+			if(_commitThread.isAlive())
+				_commitThread.interrupt();
+			StorageLevelDB sto = _storage;
+			if(sto != null)
+			{
+				checkpoint();
+				_storage = null;
+				sto.close();
+			}
+		}
 		try
 		{
-			synchronized(this)
-			{
-				if(_commitThread.isAlive())
-					_commitThread.interrupt();
-				if(_storage != null)
-					checkpoint();
-			}
 			_commitThread.join();
 		}
 		catch(InterruptedException e)
 		{
 			Log.log.error("DBSimpleManager.shutdown: exception:", e);
-		}
-		finally
-		{
-			synchronized(this)
-			{
-				StorageLevelDB sto = _storage;
-				if(sto != null)
-				{
-					_storage = null;
-					sto.close();
-				}
-			}
 		}
 	}
 }

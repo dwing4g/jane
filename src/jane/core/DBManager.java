@@ -30,7 +30,7 @@ public final class DBManager
 	private final AtomicLong								   _procCount	 = new AtomicLong();						  // 绑定过sid的在队列中未运行的事务数量
 	private final AtomicLong								   _modCount	 = new AtomicLong();						  // 当前缓存修改的记录数
 	private Storage											   _storage;												  // 存储引擎
-	private volatile boolean								   _exit;													  // 是否在退出状态(已经执行了ShutdownHook)
+	private volatile boolean								   _exiting;												  // 是否在退出状态(已经执行了ShutdownHook)
 
 	/**
 	 * 周期向数据库存储提交事务性修改的线程(checkpoint)
@@ -225,9 +225,9 @@ public final class DBManager
 	/**
 	 * 判断是否在退出前的shutdown状态下
 	 */
-	public boolean isExit()
+	public boolean isExiting()
 	{
-		return _exit;
+		return _exiting;
 	}
 
 	/**
@@ -245,24 +245,24 @@ public final class DBManager
 		if(dbpath != null && !dbpath.isDirectory() && !dbpath.mkdirs())
 			throw new IOException("create db path failed: " + Const.dbFilename);
 		_storage = sto;
-		_storage.openDB(dbfile);
+		sto.openDB(dbfile);
 		ExitManager.getShutdownSystemCallbacks().add(new Runnable()
 		{
 			@Override
 			public void run()
 			{
 				Log.log.info("DBManager.OnJVMShutDown: db shutdown");
-				synchronized(DBManager.this)
+				try
 				{
-					_exit = true;
-					try
+					synchronized(DBManager.this)
 					{
+						_exiting = true;
 						_procThreads.shutdownNow();
 					}
-					finally
-					{
-						shutdown();
-					}
+				}
+				finally
+				{
+					shutdown();
 				}
 				Log.log.info("DBManager.OnJVMShutDown: db closed");
 			}
@@ -364,32 +364,25 @@ public final class DBManager
 	 */
 	public void shutdown()
 	{
+		synchronized(this)
+		{
+			if(_commitThread.isAlive())
+				_commitThread.interrupt();
+			Storage sto = _storage;
+			if(sto != null)
+			{
+				checkpoint();
+				_storage = null;
+				sto.close();
+			}
+		}
 		try
 		{
-			synchronized(this)
-			{
-				if(_commitThread.isAlive())
-					_commitThread.interrupt();
-				if(_storage != null)
-					checkpoint();
-			}
 			_commitThread.join();
 		}
 		catch(InterruptedException e)
 		{
 			Log.log.error("DBManager.shutdown: exception:", e);
-		}
-		finally
-		{
-			synchronized(this)
-			{
-				Storage sto = _storage;
-				if(sto != null)
-				{
-					_storage = null;
-					sto.close();
-				}
-			}
 		}
 	}
 

@@ -606,7 +606,7 @@ public abstract class Procedure implements Runnable
 			Log.log.error("procedure already running: " + toString());
 			return false;
 		}
-		if(DBManager.instance().isExit())
+		if(DBManager.instance().isExiting())
 		{
 			Thread.sleep(Long.MAX_VALUE); // 如果有退出信号则线程睡死等待终结
 			throw new IllegalStateException();
