@@ -1109,7 +1109,9 @@ function handler(hdls)
 		for hdlname, hdlpath in pairs(hdl) do
 			if type(handlers[hdlname]) ~= "string" then
 				handlers[hdlname] = hdlpath
-				has_handler = true
+				if hdlname ~= "dbt" then
+					has_handler = true
+				end
 			end
 		end
 	end
@@ -1363,8 +1365,9 @@ for beanname in pairs(need_save_dbt) do
 	savebean(beanname, true)
 end
 
+local namespace_path = namespace:gsub("%.", "/")
 local bean_count = 0
-checksave(outpath .. namespace .. "/bean/AllBeans.java", (template_allbeans:gsub("#%[#(.-)#%]#", function(body)
+checksave(outpath .. namespace_path .. "/bean/AllBeans.java", (template_allbeans:gsub("#%[#(.-)#%]#", function(body)
 	local subcode = {}
 	for hdlname, hdlpath in spairs(handlers) do
 		local names = hdl_names[hdlname] or {}
@@ -1430,7 +1433,7 @@ tables.count = #tables
 tables.imports["jane.core.DBManager"] = true
 tables.imports["jane.core.map.IntHashMap"] = true
 tables.imports = get_imports(tables.imports)
-checksave(outpath .. namespace .. "/bean/AllTables.java", (code_conv(template_alltables:gsub("#%(#(.-)#%)#", function(body)
+checksave(outpath .. namespace_path .. "/bean/AllTables.java", (code_conv(template_alltables:gsub("#%(#(.-)#%)#", function(body)
 	local subcode = {}
 	local names = {}
 	local ids = {}
@@ -1459,7 +1462,7 @@ for beanname, safe in spairs(need_save) do
 	if not genToJson then code = code:gsub("\n\t@Override\n\tpublic StringBuilder toJson%(.-\n\t}\n", "") end
 	if not genToJson then code = code:gsub("\n\t@Override\n\tpublic StringBuilder toLua%(.-\n\t}\n", "") end
 	if not code:find("Util.", 1, true) then code = code:gsub("import jane%.core%.Util;\n", "") end
-	checksave(outpath .. namespace .. "/bean/" .. beanname .. ".java", code, 0)
+	checksave(outpath .. namespace_path .. "/bean/" .. beanname .. ".java", code, 0)
 end
 
 print "done!"
