@@ -105,7 +105,7 @@ public final class ProcThread extends Thread
 					}
 					catch(Throwable e)
 					{
-						Log.log.error("procedure timeout thread fatal exception:", e);
+						Log.log.error("procedure timeout fatal exception:", e);
 					}
 				}
 			});

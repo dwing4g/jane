@@ -5,6 +5,7 @@ import java.net.SocketAddress;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
@@ -43,6 +44,7 @@ public class NetManager implements IoHandler
 	public static final int	DEFAULT_CLIENT_IO_THREAD_COUNT = 1;
 
 	private static final LongConcurrentHashMap<RpcBean<?, ?, ?>> _rpcs	   = new LongConcurrentHashMap<>();	// 当前管理器等待回复的RPC
+	private static final ConcurrentLinkedQueue<IoSession>		 _closings = new ConcurrentLinkedQueue<>();	// 已经closeOnFlush的session队列,超时则closeNow
 	private static final ScheduledExecutorService				 _rpcThread;								// 处理重连及RPC和事务超时的线程
 	private final String										 _name	   = getClass().getSimpleName();	// 当前管理器的名字
 	private volatile Class<? extends IoFilter>					 _pcf	   = BeanCodec.class;				// 协议编码器的类
@@ -101,7 +103,35 @@ public class NetManager implements IoHandler
 				}
 				catch(Throwable e)
 				{
-					Log.log.error("NetManager: RPC timeout thread fatal exception:", e);
+					Log.log.error("NetManager: RPC timeout fatal exception:", e);
+				}
+			}
+		});
+		scheduleWithFixedDelay(1, 1, new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				try
+				{
+					IoSession session = _closings.peek();
+					if(session == null) return;
+					long now = System.currentTimeMillis();
+					do
+					{
+						if(!session.isClosing())
+						{
+							Object v = session.getAttribute("closeOnFlushTime");
+							if(v != null && v instanceof Long && now < (long)v) break;
+							session.closeNow();
+						}
+						_closings.poll();
+					}
+					while((session = _closings.peek()) != null);
+				}
+				catch(Throwable e)
+				{
+					Log.log.error("NetManager: IoSession timeout fatal exception:", e);
 				}
 			}
 		});
@@ -652,6 +682,20 @@ public class NetManager implements IoHandler
 		if(bean == null) return;
 		for(IoSession session : getServerSessions().values())
 			write(session, bean);
+	}
+
+	/**
+	 * 安全地关闭session
+	 * <p>
+	 * 主要适合刚发送最后消息后即关闭连接时. 如果最后的消息发送超时则强制关闭
+	 */
+	public static boolean closeOnFlush(IoSession session)
+	{
+		if(session.setAttributeIfAbsent("closeOnFlushTime", System.currentTimeMillis() + Const.closeOnFlushTimeout * 1000L) != null)
+			return false;
+		_closings.offer(session);
+		session.closeOnFlush();
+		return true;
 	}
 
 	/**

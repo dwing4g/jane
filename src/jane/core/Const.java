@@ -22,6 +22,7 @@ public final class Const
 	public static final Charset		stringCharsetGBK  = Charset.forName("gbk");
 	public static final Charset		stringCharset;
 	public static final int			connectTimeout;
+	public static final int			closeOnFlushTimeout;
 	public static final int			rpcCheckInterval;
 	public static final int			maxRawBeanSize;
 	public static final int			maxHttpHeadSize;
@@ -91,6 +92,7 @@ public final class Const
 		debug = (str != null && str.trim().equalsIgnoreCase("true") || getPropBoolean("debug"));
 		stringCharset = Charset.forName(getPropStr("stringCharset", "utf-8"));
 		connectTimeout = getPropInt("connectTimeout", 5, 1);
+		closeOnFlushTimeout = getPropInt("closeOnFlushTimeout", 5, 1);
 		rpcCheckInterval = getPropInt("rpcCheckInterval", 3, 1);
 		maxRawBeanSize = getPropInt("maxRawBeanSize", 65536, 0);
 		maxHttpHeadSize = getPropInt("maxHttpHeadSize", 4096, 0);
