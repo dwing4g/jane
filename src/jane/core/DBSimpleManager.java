@@ -113,19 +113,28 @@ public final class DBSimpleManager
 					if(Thread.interrupted() && !force) return false;
 					if(_storage != null)
 					{
-						// 1.首先尝试遍历单个加锁的方式保存已修改的记录. 此时和其它事务可以并发
-						long t0 = System.currentTimeMillis();
-						Log.log.info("db-commit saving: {}...", _writeCache.size());
-						HashMap<Octets, Octets> writeBuf = new HashMap<>(_writeCache);
-						Log.log.info("db-commit committing: {}...", writeBuf.size());
-						_storage.dbcommit(writeBuf);
-						Log.log.info("db-commit cleaning...");
-						int n = _writeCache.size();
-						for(Entry<Octets, Octets> e : writeBuf.entrySet())
-							_writeCache.remove(e.getKey(), e.getValue());
-						writeBuf.clear();
-						long t1 = System.currentTimeMillis();
-						Log.log.info("db-commit done: {}=>{} ({} ms)", n, _writeCache.size(), t1 - t0);
+						long t1, modCount = _writeCache.size();
+						if(modCount == 0)
+						{
+							Log.log.info("db-commit not found modified record");
+							t1 = System.currentTimeMillis();
+						}
+						else
+						{
+							// 1.首先尝试遍历单个加锁的方式保存已修改的记录. 此时和其它事务可以并发
+							long t0 = System.currentTimeMillis();
+							Log.log.info("db-commit saving: {}...", modCount);
+							HashMap<Octets, Octets> writeBuf = new HashMap<>(_writeCache);
+							Log.log.info("db-commit committing: {}...", writeBuf.size());
+							_storage.dbcommit(writeBuf);
+							Log.log.info("db-commit cleaning...");
+							int n = _writeCache.size();
+							for(Entry<Octets, Octets> e : writeBuf.entrySet())
+								_writeCache.remove(e.getKey(), e.getValue());
+							writeBuf.clear();
+							t1 = System.currentTimeMillis();
+							Log.log.info("db-commit done: {}=>{} ({} ms)", n, _writeCache.size(), t1 - t0);
+						}
 
 						// 2.判断备份周期并启动备份
 						if(_backupTime <= t1)

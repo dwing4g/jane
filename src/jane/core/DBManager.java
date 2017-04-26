@@ -106,53 +106,61 @@ public final class DBManager
 					if(Thread.interrupted() && !force) return false;
 					if(_storage != null)
 					{
-						// 1.首先尝试遍历单个加锁的方式保存已修改的记录. 此时和其它事务可以并发
-						long t0 = System.currentTimeMillis(), t1 = 0;
-						Log.log.info("db-commit saving: {}...", _modCount.get());
-						_counts[0] = _counts[1] = _counts[2] = 0;
-						_storage.putBegin();
-						TableBase.trySaveModifiedAll(_counts);
-						// 2.如果前一轮遍历之后仍然有过多的修改记录,则再试一轮
-						if(_counts[1] >= Const.dbCommitResaveCount)
+						long t3, modCount = _modCount.get();
+						if(modCount == 0)
 						{
-							Log.log.info("db-commit saved: {}=>{}({}), try again...", _counts[0], _counts[1], _counts[2]);
-							_counts[0] = _counts[1] = 0;
-							TableBase.trySaveModifiedAll(_counts);
-						}
-						// 3.然后加全局事务锁,待其它事务都停止等待时,保存剩余已修改的记录. 只有此步骤不能和其它事务并发
-						if(_counts[2] != 0 || _counts[1] != 0 || _counts[0] != 0)
-						{
-							WriteLock wl = Procedure.getWriteLock();
-							Log.log.info("db-commit saved: {}=>{}({}), flushing...", _counts[0], _counts[1], _counts[2]);
-							_storage.putFlush(false);
-							Log.log.info("db-commit procedure pausing...");
-							t1 = System.currentTimeMillis();
-							wl.lock();
-							try
-							{
-								_modCount.set(0);
-								Log.log.info("db-commit saving left...");
-								Log.log.info("db-commit saved: {}, flushing left...", TableBase.saveModifiedAll());
-								_storage.putFlush(true);
-							}
-							finally
-							{
-								wl.unlock();
-							}
-							t1 = System.currentTimeMillis() - t1;
-							Log.log.info("db-commit procedure continued, committing...");
+							Log.log.info("db-commit not found modified record");
+							t3 = System.currentTimeMillis();
 						}
 						else
-							Log.log.info("db-commit not found modified record");
-						// 4.最后恢复其它事务的运行,并对数据库存储系统做提交操作,完成一整轮的事务性持久化
-						long t2 = System.currentTimeMillis();
-						_storage.commit();
-						long t3 = System.currentTimeMillis();
-						Log.log.info("db-commit done ({}/{}/{} ms)", t1, t3 - t2, t3 - t0);
+						{
+							// 1.首先尝试遍历单个加锁的方式保存已修改的记录. 此时和其它事务可以并发
+							long t0 = System.currentTimeMillis(), t1 = 0;
+							Log.log.info("db-commit saving: {}...", modCount);
+							_counts[0] = _counts[1] = _counts[2] = 0;
+							_storage.putBegin();
+							TableBase.trySaveModifiedAll(_counts);
+							// 2.如果前一轮遍历之后仍然有过多的修改记录,则再试一轮
+							if(_counts[1] >= Const.dbCommitResaveCount)
+							{
+								Log.log.info("db-commit saved: {}=>{}({}), try again...", _counts[0], _counts[1], _counts[2]);
+								_counts[0] = _counts[1] = 0;
+								TableBase.trySaveModifiedAll(_counts);
+							}
+							// 3.然后加全局事务锁,待其它事务都停止等待时,保存剩余已修改的记录. 只有此步骤不能和其它事务并发
+							if(_counts[2] != 0 || _counts[1] != 0 || _counts[0] != 0)
+							{
+								WriteLock wl = Procedure.getWriteLock();
+								Log.log.info("db-commit saved: {}=>{}({}), flushing...", _counts[0], _counts[1], _counts[2]);
+								_storage.putFlush(false);
+								Log.log.info("db-commit procedure pausing...");
+								t1 = System.currentTimeMillis();
+								wl.lock();
+								try
+								{
+									_modCount.set(0);
+									Log.log.info("db-commit saving left...");
+									Log.log.info("db-commit saved: {}, flushing left...", TableBase.saveModifiedAll());
+									_storage.putFlush(true);
+								}
+								finally
+								{
+									wl.unlock();
+								}
+								t1 = System.currentTimeMillis() - t1;
+								Log.log.info("db-commit procedure continued, committing...");
+							}
+							else
+								Log.log.info("db-commit not found modified record");
+							// 4.最后恢复其它事务的运行,并对数据库存储系统做提交操作,完成一整轮的事务性持久化
+							long t2 = System.currentTimeMillis();
+							_storage.commit();
+							t3 = System.currentTimeMillis();
+							Log.log.info("db-commit done ({}/{}/{} ms)", t1, t3 - t2, t3 - t0);
+						}
 
 						// 5.判断备份周期并启动备份
-						t = System.currentTimeMillis();
-						if(_backupTime <= t)
+						if(_backupTime <= t3)
 						{
 							_backupTime += _backupPeriod;
 							if(_backupTime <= t) _backupTime += ((t - _backupTime) / _backupPeriod + 1) * _backupPeriod;
@@ -173,7 +181,8 @@ public final class DBManager
 
 					// 6.清理一遍事务队列
 					collectQueue(_counts);
-					Log.log.info("db-commit collect queue: {}=>{}", _counts[0], _counts[1]);
+					if(_counts[0] != 0 || _counts[1] != 0)
+						Log.log.info("db-commit collect queue: {}=>{}", _counts[0], _counts[1]);
 				}
 			}
 			catch(Throwable e)
