@@ -389,13 +389,19 @@ public class NetManager implements IoHandler
 
 	/**
 	 * 停止全部相关客户端的连接
+	 * @param force 是否立即强制关闭(丢弃当前的发送缓存)
 	 */
-	public void stopAllClients()
+	public void stopAllClients(boolean force)
 	{
 		if(_connector != null)
 		{
 			for(IoSession session : _connector.getManagedSessions().values())
-				session.closeOnFlush();
+			{
+				if(force)
+					session.closeNow();
+				else
+					closeOnFlush(session);
+			}
 		}
 	}
 
@@ -693,8 +699,8 @@ public class NetManager implements IoHandler
 	{
 		if(session.setAttributeIfAbsent("closeOnFlushTime", System.currentTimeMillis() + Const.closeOnFlushTimeout * 1000L) != null)
 			return false;
-		_closings.offer(session);
 		session.closeOnFlush();
+		_closings.offer(session);
 		return true;
 	}
 
@@ -733,7 +739,7 @@ public class NetManager implements IoHandler
 	protected void onUnhandledBean(IoSession session, Bean<?> bean)
 	{
 		Log.log.warn("{}({}): unhandled bean: {}:{}", _name, session.getId(), bean.getClass().getSimpleName(), bean);
-		// session.close(false);
+		// session.closeNow();
 	}
 
 	/**

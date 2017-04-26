@@ -26,14 +26,14 @@ public final class TestBeanHandler extends BeanHandler<TestBean>
 			public void onClient(NetManager mgr, IoSession ses, TestRpcBean rpcBean)
 			{
 				Log.log.info("{}: onClient: a={},r={}", getClass().getName(), rpcBean.getArg(), rpcBean.getRes());
-				ses.closeOnFlush();
+				ses.closeNow();
 			}
 
 			@Override
 			public void onTimeout(NetManager mgr, IoSession ses, TestRpcBean rpcBean)
 			{
 				Log.log.error("{}: onTimeout: {}", getClass().getName(), rpcBean.getArg());
-				ses.closeOnFlush();
+				ses.closeNow();
 			}
 		});
 	}

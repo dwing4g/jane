@@ -13,9 +13,9 @@
  snappy/snappy.cc                | 1464 +++++++++++++++++++++++++++++++++++++++
  snappy/snappy.h                 |  203 ++++++
  util/env_windows.cc             |  390 +++++++++++
- util/jni.cc                     |  453 ++++++++++++
+ util/jni.cc                     |  471 +++++++++++++
  util/logging.cc                 |    2 +-
- 17 files changed, 3777 insertions(+), 1 deletion(-)
+ 17 files changed, 3795 insertions(+), 1 deletion(-)
 
 diff --git a/.gitignore b/.gitignore
 index 0630251..e690ecf 100644
@@ -105,7 +105,7 @@ index 0000000..b45e695
 +$COMPILE -o leveldbutil db/leveldbutil.cc libleveldb.a
 diff --git a/make_mingw.bat b/make_mingw.bat
 new file mode 100644
-index 0000000..0b6343f
+index 0000000..107b7a6
 --- /dev/null
 +++ b/make_mingw.bat
 @@ -0,0 +1,39 @@
@@ -115,7 +115,7 @@ index 0000000..0b6343f
 +
 +rem install mingw-gcc 4.8+ and append PATH with mingw/bin
 +rem install jdk6+ and set JAVA_HOME
-+if "%JAVA_HOME%" equ "" set JAVA_HOME=C:/Program Files/Java/jdk1.8.0_66
++if "%JAVA_HOME%" equ "" set JAVA_HOME=C:/Program Files/Java/jdk1.8.0_121
 +
 +set CORE_FILES=db/builder.cc db/c.cc db/dumpfile.cc db/db_impl.cc db/db_iter.cc db/dbformat.cc db/filename.cc db/log_reader.cc db/log_writer.cc db/memtable.cc db/repair.cc db/table_cache.cc db/version_edit.cc db/version_set.cc db/write_batch.cc table/block.cc table/block_builder.cc table/filter_block.cc table/format.cc table/iterator.cc table/merger.cc table/table.cc table/table_builder.cc table/two_level_iterator.cc util/arena.cc util/bloom.cc util/cache.cc util/coding.cc util/comparator.cc util/crc32c.cc util/env.cc util/env_windows.cc util/filter_policy.cc util/hash.cc util/histogram.cc util/jni.cc util/logging.cc util/options.cc util/status.cc port/port_posix.cc snappy/snappy.cc snappy/snappy-sinksource.cc snappy/snappy-stubs-internal.cc
 +
@@ -3455,10 +3455,10 @@ index 0000000..499a007
 +#endif
 diff --git a/util/jni.cc b/util/jni.cc
 new file mode 100644
-index 0000000..f5d52ee
+index 0000000..e570a7d
 --- /dev/null
 +++ b/util/jni.cc
-@@ -0,0 +1,453 @@
+@@ -0,0 +1,471 @@
 +// Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file. See the AUTHORS file for names of contributors.
@@ -3484,6 +3484,7 @@ index 0000000..f5d52ee
 +
 +using namespace leveldb;
 +
++static const int	MAX_OPEN_FILES		= 10000;
 +static const jint	WRITE_BUFSIZE_MIN	= 1 << 20;
 +static const jint	CACHE_SIZE_MIN		= 1 << 20;
 +static const jint	FILE_SIZE_MIN		= 1 << 20;
@@ -3508,6 +3509,8 @@ index 0000000..f5d52ee
 +	jenv->ReleaseStringUTFChars(path, pathptr);
 +	Options opt;
 +	opt.create_if_missing = true;
++	opt.reuse_logs = true;
++	opt.max_open_files = MAX_OPEN_FILES;
 +	opt.write_buffer_size = (write_bufsize > WRITE_BUFSIZE_MIN ? write_bufsize : WRITE_BUFSIZE_MIN);
 +	opt.block_cache = NewLRUCache(cache_size > CACHE_SIZE_MIN ? cache_size : CACHE_SIZE_MIN);
 +	opt.compression = (use_snappy ? kSnappyCompression : kNoCompression);
@@ -3530,6 +3533,8 @@ index 0000000..f5d52ee
 +	jenv->ReleaseStringUTFChars(path, pathptr);
 +	Options opt;
 +	opt.create_if_missing = true;
++	opt.reuse_logs = true;
++	opt.max_open_files = MAX_OPEN_FILES;
 +	opt.write_buffer_size = (write_bufsize > WRITE_BUFSIZE_MIN ? write_bufsize : WRITE_BUFSIZE_MIN);
 +	opt.block_cache = NewLRUCache(cache_size > CACHE_SIZE_MIN ? cache_size : CACHE_SIZE_MIN);
 +	opt.max_file_size = (file_size > FILE_SIZE_MIN ? file_size : FILE_SIZE_MIN);
@@ -3577,7 +3582,7 @@ index 0000000..f5d52ee
 +	return val;
 +}
 +
-+// public native static int leveldb_write(long handle, Iterator<Entry<Octets, OctetsStream>> buf); // return 0 for ok
++// public native static int leveldb_write(long handle, Iterator<Entry<Octets, Octets>> it); // return 0 for ok
 +extern "C" JNIEXPORT jint JNICALL Java_jane_core_StorageLevelDB_leveldb_1write
 +	(JNIEnv* jenv, jclass jcls, jlong handle, jobject it)
 +{
@@ -3831,7 +3836,7 @@ index 0000000..f5d52ee
 +	delete (Iterator*)iter;
 +}
 +
-+// public native static byte[] leveldb_iter_next(long iter); // return cur-key (maybe null) and do next
++// public native static byte[] leveldb_iter_next(long iter); // return cur-key(maybe null) and do next
 +extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1iter_1next
 +	(JNIEnv* jenv, jclass jcls, jlong iter)
 +{
@@ -3844,7 +3849,7 @@ index 0000000..f5d52ee
 +	return key;
 +}
 +
-+// public native static byte[] leveldb_iter_prev(long iter); // return cur-key (maybe null) and do prev
++// public native static byte[] leveldb_iter_prev(long iter); // return cur-key(maybe null) and do prev
 +extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1iter_1prev
 +	(JNIEnv* jenv, jclass jcls, jlong iter)
 +{
@@ -3864,9 +3869,9 @@ index 0000000..f5d52ee
 +	Iterator* it = (Iterator*)iter;
 +	if(!it || !it->Valid()) return 0;
 +	const Slice& slice = it->value();
-+	jbyteArray key = jenv->NewByteArray(slice.size());
-+	jenv->SetByteArrayRegion(key, 0, slice.size(), (const jbyte*)slice.data());
-+	return key;
++	jbyteArray val = jenv->NewByteArray(slice.size());
++	jenv->SetByteArrayRegion(val, 0, slice.size(), (const jbyte*)slice.data());
++	return val;
 +}
 +
 +// public native static boolean leveldb_compact(long handle, byte[] key_from, int key_from_len, byte[] key_to, int key_to_len);
@@ -3909,6 +3914,19 @@ index 0000000..f5d52ee
 +	}
 +	db->CompactRange((from.size() > 0 ? &from : 0), (to.size() > 0 ? &to : 0));
 +	return JNI_TRUE;
++}
++
++// public native static String leveldb_property(long handle, String property);
++extern "C" JNIEXPORT jstring JNICALL Java_jane_core_StorageLevelDB_leveldb_1property
++	(JNIEnv* jenv, jclass jcls, jlong handle, jstring property)
++{
++	DB* db = (DB*)handle;
++	if(!db) return 0;
++	std::string result;
++	const char* propptr = jenv->GetStringUTFChars(property, 0);
++	bool r = db->GetProperty(Slice(propptr), &result);
++	jenv->ReleaseStringUTFChars(property, propptr);
++	return r ? jenv->NewStringUTF(result.c_str()) : 0;
 +}
 +
 +#endif
