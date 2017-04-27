@@ -327,7 +327,7 @@ public class NetManager implements IoHandler
 					try
 					{
 						++_count;
-						Log.log.info("{}: connect failed: addr={},count={}", _name, addr, _count);
+						Log.log.warn("{}: connect failed: addr={},count={}", _name, addr, _count);
 						int delaySec = onConnectFailed(addr, _count, ctx);
 						if(delaySec == 0)
 						{
