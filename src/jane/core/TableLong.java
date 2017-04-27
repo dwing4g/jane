@@ -1,5 +1,6 @@
 package jane.core;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import jane.core.SContext.RecordLong;
@@ -19,12 +20,13 @@ import jane.core.map.LongMap.MapIterator;
  */
 public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends TableBase<V>
 {
-	private final Storage.TableLong<V> _stoTable;						   // 存储引擎的表对象
-	private final LongMap<V>		   _cache;							   // 读缓存. 有大小限制,溢出自动清理
-	private final LongMap<V>		   _cacheMod;						   // 写缓存. 不会溢出,保存到数据库存储引擎后清理
-	private final AtomicLong		   _idCounter	 = new AtomicLong();   // 用于自增长ID的统计器, 当前值表示当前表已存在的最大ID值
-	private int						   _autoIdBegin	 = Const.autoIdBegin;  // 自增长ID的初始值, 可运行时指定
-	private int						   _autoIdStride = Const.autoIdStride; // 自增长ID的分配跨度, 可运行时指定
+	private final Storage.TableLong<V> _stoTable;							// 存储引擎的表对象
+	private final LongMap<V>		   _cache;								// 读缓存. 有大小限制,溢出自动清理
+	private final LongMap<V>		   _cacheMod;							// 写缓存. 不会溢出,保存到数据库存储引擎后清理
+	private final AtomicLong		   _idCounter	 = new AtomicLong();	// 用于自增长ID的统计器, 当前值表示当前表已存在的最大ID值
+	private final AtomicBoolean		   _idCounterMod = new AtomicBoolean();	// idCounter是否待存状态(有修改未存库)
+	private int						   _autoIdBegin	 = Const.autoIdBegin;	// 自增长ID的初始值, 可运行时指定
+	private int						   _autoIdStride = Const.autoIdStride;	// 自增长ID的分配跨度, 可运行时指定
 
 	/**
 	 * 创建一个数据库表
@@ -152,6 +154,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 		int m = _cacheMod.size();
 		_cacheMod.clear();
 		_stoTable.setIdCounter(_idCounter.get());
+		_idCounterMod.set(false);
 		return m;
 	}
 
@@ -433,6 +436,8 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	 */
 	public long allocId()
 	{
+		if(_idCounterMod.compareAndSet(false, true))
+			DBManager.instance().incModCount();
 		for(;;)
 		{
 			long k = _idCounter.getAndIncrement() * _autoIdStride + _autoIdBegin;

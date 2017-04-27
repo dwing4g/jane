@@ -107,7 +107,7 @@ public final class DBManager
 					if(_storage != null)
 					{
 						long t3, modCount = _modCount.get();
-						if(modCount == 0)
+						if(modCount == 0 && !force)
 						{
 							Log.log.info("db-commit not found modified record");
 							t3 = System.currentTimeMillis();
@@ -128,7 +128,7 @@ public final class DBManager
 								TableBase.trySaveModifiedAll(_counts);
 							}
 							// 3.然后加全局事务锁,待其它事务都停止等待时,保存剩余已修改的记录. 只有此步骤不能和其它事务并发
-							if(_counts[2] != 0 || _counts[1] != 0 || _counts[0] != 0)
+							if(_counts[2] != 0 || _counts[1] != 0 || _counts[0] != 0 || force)
 							{
 								WriteLock wl = Procedure.getWriteLock();
 								Log.log.info("db-commit saved: {}=>{}({}), flushing...", _counts[0], _counts[1], _counts[2]);
