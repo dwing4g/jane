@@ -195,6 +195,46 @@ public abstract class Procedure implements Runnable
 		if(!a.equals(b)) throw Redo._instance;
 	}
 
+	public static void check(Object a)
+	{
+		if(a == null) throw Redo._instance;
+	}
+
+	public static void checkNot(boolean a, boolean b)
+	{
+		if(a == b) throw Redo._instance;
+	}
+
+	public static void checkNot(int a, int b)
+	{
+		if(a == b) throw Redo._instance;
+	}
+
+	public static void checkNot(long a, long b)
+	{
+		if(a == b) throw Redo._instance;
+	}
+
+	public static void checkNot(float a, float b)
+	{
+		if(a == b) throw Redo._instance;
+	}
+
+	public static void checkNot(double a, double b)
+	{
+		if(a == b) throw Redo._instance;
+	}
+
+	public static void checkNot(Object a, Object b)
+	{
+		if(a.equals(b)) throw Redo._instance;
+	}
+
+	public static void checkNull(Object a)
+	{
+		if(a != null) throw Redo._instance;
+	}
+
 	/**
 	 * 解锁当前事务所加的全部锁
 	 * <p>
