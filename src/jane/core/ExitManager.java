@@ -1,5 +1,6 @@
 package jane.core;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 /**
@@ -70,6 +71,24 @@ public final class ExitManager
 	static ArrayList<Runnable> getShutdownSystemCallbacks()
 	{
 		return _shutdownSystemCallbacks;
+	}
+
+	/**
+	 * 线程挂起并一直读标准输入. 遇到一行标准输入以"!@#$"开头则退出程序
+	 * <p>
+	 * 适合在Eclipse等IDE运行环境下正常退出而不是强制结束进程
+	 */
+	public static void waitStdInToExit() throws IOException
+	{
+		for(byte[] inbuf = new byte[4];;)
+		{
+			if(System.in.read(inbuf) == 4 && inbuf[0] == '!' && inbuf[1] == '@' && inbuf[2] == '#' && inbuf[3] == '$')
+			{
+				System.err.println("!!!STDIN TRIGGERED EXIT!!!");
+				System.exit(1);
+			}
+			System.in.skip(Integer.MAX_VALUE); // 尽可能忽略行后的内容. 但传入Long.MAX_VALUE可能导致IOException
+		}
 	}
 
 	private ExitManager()
