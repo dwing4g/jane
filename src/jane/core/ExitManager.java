@@ -82,7 +82,23 @@ public final class ExitManager
 	{
 		for(byte[] inbuf = new byte[4];;)
 		{
-			if(System.in.read(inbuf) == 4 && inbuf[0] == '!' && inbuf[1] == '@' && inbuf[2] == '#' && inbuf[3] == '$')
+			int n;
+			IOException ex = null;
+			try
+			{
+				n = System.in.read(inbuf);
+			}
+			catch(IOException e)
+			{
+				n = -1;
+				ex = e;
+			}
+			if(n < 0)
+			{
+				System.err.println("!!!STDIN TRIGGER DISABLED!!! (" + n + (ex != null ? ", " + ex.getMessage() : "") + ')');
+				return;
+			}
+			if(n == 4 && inbuf[0] == '!' && inbuf[1] == '@' && inbuf[2] == '#' && inbuf[3] == '$')
 			{
 				System.err.println("!!!STDIN TRIGGERED EXIT!!!");
 				System.exit(1);

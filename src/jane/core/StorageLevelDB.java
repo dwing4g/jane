@@ -648,7 +648,7 @@ public final class StorageLevelDB implements Storage
 	{
 		close();
 		_db = leveldb_open2(file.getAbsolutePath(), Const.levelDBWriteBufferSize << 20, Const.levelDBCacheSize << 20, Const.levelDBFileSize << 20, true);
-		if(_db == 0) throw new IOException("StorageLevelDB.openDB: leveldb_open failed");
+		if(_db == 0) throw new IOException("StorageLevelDB.openDB: leveldb_open failed: " + file.getAbsolutePath());
 		_dbFile = file;
 	}
 
