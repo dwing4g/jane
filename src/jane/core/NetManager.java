@@ -66,7 +66,7 @@ public class NetManager implements IoHandler
 				return t;
 			}
 		});
-		scheduleWithFixedDelay(Const.rpcCheckInterval, Const.rpcCheckInterval, new Runnable()
+		scheduleAtFixedRate(Const.rpcCheckInterval, Const.rpcCheckInterval, new Runnable()
 		{
 			@Override
 			public void run()
@@ -107,7 +107,7 @@ public class NetManager implements IoHandler
 				}
 			}
 		});
-		scheduleWithFixedDelay(1, 1, new Runnable()
+		scheduleAtFixedRate(1, 1, new Runnable()
 		{
 			@Override
 			public void run()
@@ -417,12 +417,21 @@ public class NetManager implements IoHandler
 	}
 
 	/**
-	 * 向网络工作线程调度一个定时任务
-	 * @param periodSec 定时周期的秒数
+	 * 向网络工作线程调度一个定时间隔任务
+	 * @param periodSec 定时间隔周期的秒数
 	 */
 	public static ScheduledFuture<?> scheduleWithFixedDelay(int delaySec, int periodSec, Runnable runnable)
 	{
 		return _rpcThread.scheduleWithFixedDelay(runnable, delaySec, periodSec, TimeUnit.SECONDS);
+	}
+
+	/**
+	 * 向网络工作线程调度一个定时触发任务(同一任务不会并发)
+	 * @param periodSec 定时触发周期的秒数
+	 */
+	public static ScheduledFuture<?> scheduleAtFixedRate(int delaySec, int periodSec, Runnable runnable)
+	{
+		return _rpcThread.scheduleAtFixedRate(runnable, delaySec, periodSec, TimeUnit.SECONDS);
 	}
 
 	/**
