@@ -191,7 +191,7 @@ namespace ]=] .. namespace .. [=[.Bean
 		}
 #endif
 	}
-}
+#(bean.attach_csharp)}
 ]=]
 
 local template_allbeans = template_hint .. [=[
@@ -678,6 +678,7 @@ local function bean_common(bean)
 	type_bean[bean.type] = bean
 	name_bean[bean.name] = bean
 	bean.comment = bean.comment and #bean.comment > 0 and "\n\t/**\n\t * " .. bean.comment:gsub("\n", "<br>\n\t * ") .. ";\n\t */" or ""
+	if not bean.attach_csharp then bean.attach_csharp = "" end
 end
 local function bean_const(code)
 	return code:gsub("public  /%*", "private /*"):

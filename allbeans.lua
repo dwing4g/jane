@@ -60,6 +60,14 @@ bean{ name="TestType", type=2, initsize=256, maxsize=65536, comment="测试生�
 	{ id=19,    name="v19", type="TestBean",                    comment="嵌入其它bean" },
 	{ id=0,     name="v20", type="java.lang.String",            comment="非序列化字段" },
 	handlers="TestServer,TestClient",
+attach_java=
+[[
+	// attach java code here
+]],
+attach_csharp=
+[[
+	// attach c# code here
+]],
 }
 
 bean{ name="TestEmpty", type=3, initsize=0, maxsize=0, comment="测试空bean",

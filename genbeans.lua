@@ -211,7 +211,7 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 			super(bean, parent);
 		}
 #(##(var.getsafe)#(var.setsafe)#)#	}
-}
+#(bean.attach_java)}
 ]=]
 
 local template_rpcbean = template_hint .. [=[
@@ -1224,6 +1224,7 @@ function bean(bean)
 	if type(bean.initsize) == "number" and bean.initsize > 0x10000 then print("WARNING: bean.initsize = " .. bean.initsize .. " > 64KB (bean.name:" .. bean.name .. ")") end
 	bean.imports = get_imports(bean.import)
 	bean.uid = gen_uid(bean.name, concat(vartypes))
+	if not bean.attach_java then bean.attach_java = "" end
 
 	local code = template_bean:gsub("#{#(.-)#}#", function(body)
 		local subcode = {}

@@ -1099,4 +1099,5 @@ public final class TestType extends Bean<TestType>
 			_bean.v20 = v20;
 		}
 	}
+	// attach java code here
 }
