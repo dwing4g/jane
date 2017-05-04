@@ -1284,7 +1284,8 @@ local function checksave(fn, d, change_count, pattern, typename)
 		local s = f:read "*a"
 		f:close()
 		if change_count > 0 then
-			d = s:gsub("\n\t/%*\\.-\n\t\\%*/", d:gmatch("\n\t/%*\\.-\n\t\\%*/"), change_count):gsub(pattern, typename, 1)
+			d = s:gsub("\n\t/%*\\.-\n\t\\%*/", d:gmatch("\n\t/%*\\.-\n\t\\%*/"), change_count)
+			if pattern then d = d:gsub(pattern, typename, 1) end
 		end
 		if s == d then d = nil else print(" * " .. fn) end
 	else
@@ -1393,7 +1394,7 @@ checksave(outpath .. namespace_path .. "/bean/AllBeans.java", (template_allbeans
 										subcode3[#subcode3 + 1] = code_conv(body, "var", var)
 									end
 									return concat(subcode3)
-								end), "hdl", hdl), "bean", bean):gsub("\r", ""), 1, "(%s+class%s+" .. bean.name .. "Handler%s+extends%s+BeanHandler%s*<)[%w_%.%s]+>", "%1" .. bean.name .. ">")
+								end), "hdl", hdl), "bean", bean):gsub("\r", ""), 1)
 							else
 								local bean_sub
 								local bean_arg, bean_res = name_bean[bean.arg], name_bean[bean.res]

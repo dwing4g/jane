@@ -733,13 +733,13 @@ dofile(arg[3])
 
 local outpath = (arg[4] or "."):gsub("\\", "/")
 if outpath:sub(-1, -1) ~= "/" then outpath = outpath .. "/" end
-local function checksave(fn, d, change_count, pattern, typename)
+local function checksave(fn, d, change_count)
 	local f = open(fn, "rb")
 	if f then
 		local s = f:read "*a"
 		f:close()
 		if change_count > 0 then
-			d = s:gsub("\n\t\t/%*\\.-\n\t\t\\%*/", d:gmatch("\n\t\t/%*\\.-\n\t\t\\%*/"), change_count):gsub(pattern, typename, 1)
+			d = s:gsub("\n\t\t/%*\\.-\n\t\t\\%*/", d:gmatch("\n\t\t/%*\\.-\n\t\t\\%*/"), change_count)
 		end
 		if s == d then d = nil else print(" * " .. fn) end
 	else
@@ -788,7 +788,7 @@ checksave(outpath .. namespace .. "/Bean/AllBeans.cs", (template_allbeans:gsub("
 								if var.id > 0 or var.id == -1 then subcode3[#subcode3 + 1] = code_conv(body, "var", var) end
 							end
 							return concat(subcode3)
-						end), "hdl", hdl), "bean", bean):gsub("\r", ""), 1, "(%s+class%s+" .. bean.name .. "Handler%s+extends%s+BeanHandler%s*<)[%w_%.%s]+>", "%1" .. bean.name .. ">")
+						end), "hdl", hdl), "bean", bean):gsub("\r", ""), 1)
 					else
 						error("ERROR: not support rpc for c# port")
 					end

@@ -20,8 +20,7 @@ public class StatusServer extends NetManager
 		setCodec(HttpCodec.class);
 	}
 
-	@SuppressWarnings("static-method")
-	public ArrayList<Object> genStatusList()
+	public static ArrayList<Object> genStatusList()
 	{
 		ArrayList<Object> list = new ArrayList<>();
 
@@ -68,12 +67,9 @@ public class StatusServer extends NetManager
 	}
 
 	@SuppressWarnings("unchecked")
-	public String genStatus()
+	public static void genStatus(StringBuilder sb)
 	{
-		StringBuilder sb = new StringBuilder(4000);
-		sb.append("<html><head><meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\"/><title>Jane Status</title></head><body>\n");
 		ArrayList<Object> list = genStatusList();
-
 		sb.append("<table border=1 style=border-collapse:collapse><tr bgcolor=silver><td>Table<td>RCacheSize<td>WCacheSize<td>RCount<td>RCacheMissCount<td>RCacheRatio\n");
 		for(Object obj : list)
 		{
@@ -100,9 +96,6 @@ public class StatusServer extends NetManager
 			}
 		}
 		sb.append("</table>\n");
-
-		sb.append("</body></html>\n");
-		return sb.toString();
 	}
 
 	@Override
@@ -117,7 +110,13 @@ public class StatusServer extends NetManager
 			param.add("Content-Type: text/html; charset=utf-8");
 			param.add("Cache-Control: no-cache");
 			param.add("Pragma: no-cache");
-			byte[] data = genStatus().getBytes(Const.stringCharsetUTF8);
+
+			StringBuilder sb = new StringBuilder(4000);
+			sb.append("<html><head><meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\"/><title>Jane Status</title></head><body>\n");
+			genStatus(sb);
+			sb.append("</body></html>\n");
+			byte[] data = sb.toString().getBytes(Const.stringCharsetUTF8);
+
 			HttpCodec.sendHead(session, "200 OK", data.length, param);
 			HttpCodec.send(session, data);
 		}

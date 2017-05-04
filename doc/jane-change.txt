@@ -17,7 +17,7 @@
 * NetManager可方便地配置IO线程数量
 * 网络部分的IoBuffer支持DirectByteBuffer及回收池
 * genbeans不再生成bean代码中不需要的Safe类等代码, toJson和toLua方法的生成改为可选
-* 增加热更class的工具类,支持热更单个类,多个类,jar包中的所有类, 并增加对比2个jar包输出差异jar包
+* 增加热更class的工具类,支持热更单个类,多个类,jar包中的所有类
 * 增加jar/zip文件的差异和合并工具类
 * 大量改进代码细节(接口兼容,不影响原功能,性能略有提升)
 * test中增加了简单的AIO封装实现(manager&session)
