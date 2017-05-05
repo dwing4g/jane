@@ -11,6 +11,7 @@ import jane.core.HttpCodec;
 import jane.core.NetManager;
 import jane.core.OctetsStream;
 import jane.core.ProcThread;
+import jane.core.StorageLevelDB;
 import jane.core.TableBase;
 
 public class StatusServer extends NetManager
@@ -45,7 +46,7 @@ public class StatusServer extends NetManager
 			list.add(strs);
 		}
 		ArrayList<Object> strs = new ArrayList<>();
-		strs.add("ALL");
+		strs.add("<b>ALL</b>");
 		strs.add(v1);
 		strs.add(v2);
 		strs.add(v3);
@@ -70,7 +71,7 @@ public class StatusServer extends NetManager
 	public static void genStatus(StringBuilder sb)
 	{
 		ArrayList<Object> list = genStatusList();
-		sb.append("<table border=1 style=border-collapse:collapse><tr bgcolor=silver><td>Table<td>RCacheSize<td>WCacheSize<td>RCount<td>RCacheMissCount<td>RCacheRatio\n");
+		sb.append("<table border=1 style=border-collapse:collapse><tr bgcolor=silver><td><b>Table</b><td><b>RCacheSize</b><td><b>WCacheSize</b><td><b>RCount</b><td><b>RCacheMissCount</b><td><b>RCacheRatio</b>\n");
 		for(Object obj : list)
 		{
 			if(obj instanceof ArrayList)
@@ -98,6 +99,23 @@ public class StatusServer extends NetManager
 		sb.append("</table>\n");
 	}
 
+	public static void genLevelDBInfo(StringBuilder sb)
+	{
+		sb.append("<table border=1 style=border-collapse:collapse><tr bgcolor=silver><td><b>property</b><td><b>value</b>\n");
+		for(int i = 0; i < 7; ++i)
+		{
+			sb.append("<tr><td bgcolor=silver>").append("num-files-at-level" + i);
+			sb.append("<td align=right>").append(StorageLevelDB.instance().getProperty("leveldb.num-files-at-level" + i)).append('\n');
+		}
+		sb.append("<tr><td bgcolor=silver>").append("approximate-memory-usage");
+		sb.append("<td align=right>").append(StorageLevelDB.instance().getProperty("leveldb.approximate-memory-usage")).append('\n');
+		sb.append("</table>\n");
+		sb.append("<b>stats</b><br><pre>");
+		sb.append(StorageLevelDB.instance().getProperty("leveldb.stats")).append("</pre>\n");
+		// sb.append("<b>sstables</b><br><pre>");
+		// sb.append(StorageLevelDB.instance().getProperty("leveldb.sstables")).append("</pre>\n");
+	}
+
 	@Override
 	public void messageReceived(IoSession session, Object message)
 	{
@@ -114,6 +132,8 @@ public class StatusServer extends NetManager
 			StringBuilder sb = new StringBuilder(4000);
 			sb.append("<html><head><meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\"/><title>Jane Status</title></head><body>\n");
 			genStatus(sb);
+			sb.append("<p>\n");
+			genLevelDBInfo(sb);
 			sb.append("</body></html>\n");
 			byte[] data = sb.toString().getBytes(Const.stringCharsetUTF8);
 

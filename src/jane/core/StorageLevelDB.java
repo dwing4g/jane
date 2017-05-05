@@ -529,6 +529,13 @@ public final class StorageLevelDB implements Storage
 		}
 	}
 
+	public synchronized String getProperty(String prop)
+	{
+		if(_db == 0) return "";
+		String value = leveldb_property(_db, prop);
+		return value != null ? value : "";
+	}
+
 	OctetsStream dbget(Octets k)
 	{
 		if(_writing)
@@ -644,7 +651,7 @@ public final class StorageLevelDB implements Storage
 	}
 
 	@Override
-	public void openDB(File file) throws IOException
+	public synchronized void openDB(File file) throws IOException
 	{
 		close();
 		_db = leveldb_open2(file.getAbsolutePath(), Const.levelDBWriteBufferSize << 20, Const.levelDBCacheSize << 20, Const.levelDBFileSize << 20, true);
@@ -689,7 +696,7 @@ public final class StorageLevelDB implements Storage
 	}
 
 	@Override
-	public void commit()
+	public synchronized void commit()
 	{
 		if(_writeBuf.isEmpty())
 		{
@@ -708,7 +715,7 @@ public final class StorageLevelDB implements Storage
 	}
 
 	@Override
-	public void close()
+	public synchronized void close()
 	{
 		commit();
 		_writing = false;

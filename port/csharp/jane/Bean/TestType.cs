@@ -738,5 +738,6 @@ namespace Jane.Bean
 		}
 #endif
 	}
+
 	// attach c# code here
 }

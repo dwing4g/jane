@@ -739,6 +739,8 @@ public final class TestType extends Bean<TestType>
 		return s.append('}').toString();
 	}
 
+	// attach java code here
+
 	@Override
 	public Safe safe(SContext.Safe<?> parent)
 	{
@@ -1099,5 +1101,4 @@ public final class TestType extends Bean<TestType>
 			_bean.v20 = v20;
 		}
 	}
-	// attach java code here
 }

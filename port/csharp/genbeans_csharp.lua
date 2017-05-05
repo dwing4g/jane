@@ -21,7 +21,8 @@ using System;
 using System.Text;
 using System.Collections.Generic;
 
-namespace ]=] .. namespace .. [=[.Bean
+namespace ]=] .. namespace .. [=[
+
 {#(bean.comment)
 	[Serializable]
 	public struct #(bean.name) : IBean, IEquatable<#(bean.name)>, IComparable<#(bean.name)>
@@ -197,7 +198,8 @@ namespace ]=] .. namespace .. [=[.Bean
 local template_allbeans = template_hint .. [=[
 using System.Collections.Generic;
 
-namespace ]=] .. namespace .. [=[.Bean
+namespace ]=] .. namespace .. [=[
+
 {
 	/** 全部bean集合(自动生成的静态类) */
 	public struct AllBeans
@@ -221,7 +223,7 @@ namespace ]=] .. namespace .. [=[.Bean
 ]=]
 
 local template_bean_handler = [=[
-using ]=] .. namespace .. [=[.Bean;
+using ]=] .. namespace .. [=[;
 
 namespace #(hdl.path)
 {
@@ -753,12 +755,13 @@ local function checksave(fn, d, change_count)
 	end
 end
 
+local namespace_path = namespace:gsub("%.", "/")
 local saved = {}
 local function savebean(beanname)
 	if saved[beanname] then return end
 	saved[beanname] = true
 	if not name_code[beanname] then error("ERROR: unknown bean: " .. beanname) end
-	checksave(outpath .. namespace .. "/Bean/" .. beanname .. ".cs", name_code[beanname], 0)
+	checksave(outpath .. namespace_path .. "/" .. beanname .. ".cs", name_code[beanname], 0)
 	bean_order[beanname] = true
 	for _, var in ipairs(name_bean[beanname]) do
 		if name_bean[var.type] then savebean(var.type) end
@@ -768,7 +771,7 @@ local function savebean(beanname)
 end
 
 local bean_count = 0
-checksave(outpath .. namespace .. "/Bean/AllBeans.cs", (template_allbeans:gsub("#%[#(.-)#%]#", function(body)
+checksave(outpath .. namespace_path .. "/AllBeans.cs", (template_allbeans:gsub("#%[#(.-)#%]#", function(body)
 	local subcode = {}
 	for hdlname, hdlpath in pairs(handlers) do
 		local names = hdl_names[hdlname] or {}

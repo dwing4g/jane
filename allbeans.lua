@@ -9,18 +9,18 @@ handler
 {
 	Server = -- 定义handler组,在生成脚本的命令参数中指定组名即生成该组中manangers引用的beans和handlers
 	{
-		TestServer = namespace .. ".handler.testserver", -- 服务器需要处理的beans及输出目录/命名空间
+		TestServer = "jane.handler.testserver", -- 服务器需要处理的beans及输出目录/命名空间
 		TestClient = true, -- 服务器引用的beans,只生成beans,不生成handler框架
 		dbt = true, -- 引用数据库表(dbt)的定义
 	},
 	Client =
 	{
-		TestClient = namespace .. ".handler.testclient", -- 客户端需要处理的beans及输出目录/命名空间
+		TestClient = "jane.handler.testclient", -- 客户端需要处理的beans及输出目录/命名空间
 		TestServer = true, -- 客户端引用的beans,只生成beans,不生成handler框架
 	},
 	ClientCS =
 	{
-		TestClient = namespace .. ".Handler", -- C#客户端需要处理的beans及输出目录/命名空间
+		TestClient = "Jane.Handler", -- C#客户端需要处理的beans及输出目录/命名空间
 		TestServer = true, -- C#客户端引用的beans,只生成beans,不生成handler框架
 	},
 }
@@ -62,10 +62,12 @@ bean{ name="TestType", type=2, initsize=256, maxsize=65536, comment="测试生�
 	handlers="TestServer,TestClient",
 attach_java=
 [[
+
 	// attach java code here
 ]],
 attach_csharp=
 [[
+
 	// attach c# code here
 ]],
 }
