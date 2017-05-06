@@ -645,12 +645,6 @@ public final class StorageLevelDB implements Storage
 	}
 
 	@Override
-	public String getFileSuffix()
-	{
-		return "ld";
-	}
-
-	@Override
 	public synchronized void openDB(File file) throws IOException
 	{
 		close();

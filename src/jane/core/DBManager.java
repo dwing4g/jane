@@ -171,7 +171,7 @@ public final class DBManager
 								timeStr = _sdf.format(new Date());
 							}
 							long r = _storage.backup(new File(Const.dbBackupPath,
-									new File(Const.dbFilename).getName() + '.' + _storage.getFileSuffix() + '.' + timeStr));
+									new File(Const.dbFilename).getName() + '.' + timeStr));
 							if(r >= 0)
 								Log.log.info("db-commit backup end ({} bytes) ({} ms)", r, System.currentTimeMillis() - t);
 							else
@@ -249,7 +249,7 @@ public final class DBManager
 	{
 		if(sto == null) throw new IllegalArgumentException("no Storage specified");
 		shutdown();
-		File dbfile = new File(Const.dbFilename + '.' + sto.getFileSuffix());
+		File dbfile = new File(Const.dbFilename);
 		File dbpath = dbfile.getParentFile();
 		if(dbpath != null && !dbpath.isDirectory() && !dbpath.mkdirs())
 			throw new IOException("create db path failed: " + Const.dbFilename);

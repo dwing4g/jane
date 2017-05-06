@@ -153,7 +153,7 @@ public final class DBSimpleManager
 								timeStr = _sdf.format(new Date());
 							}
 							long r = _storage.backup(new File(Const.dbBackupPath,
-									new File(_dbFilename).getName() + '.' + _storage.getFileSuffix() + '.' + timeStr));
+									new File(_dbFilename).getName() + '.' + timeStr));
 							if(r >= 0)
 								Log.log.info("db-commit backup end ({} bytes) ({} ms)", r, System.currentTimeMillis() - t1);
 							else
@@ -195,7 +195,7 @@ public final class DBSimpleManager
 		if(_exiting) throw new IllegalArgumentException("can not startup when exiting");
 		if(sto == null) throw new IllegalArgumentException("no StorageLevelDB specified");
 		shutdown();
-		File dbfile = new File(dbFilename + '.' + sto.getFileSuffix());
+		File dbfile = new File(dbFilename);
 		File dbpath = dbfile.getParentFile();
 		if(dbpath != null && !dbpath.isDirectory() && !dbpath.mkdirs())
 			throw new IOException("create db path failed: " + dbFilename);

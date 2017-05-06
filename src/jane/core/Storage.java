@@ -183,11 +183,6 @@ public interface Storage extends Closeable
 	}
 
 	/**
-	 * 返回数据库文件名后缀(用于区分数据库格式)
-	 */
-	String getFileSuffix();
-
-	/**
 	 * 打开数据库
 	 * <p>
 	 * 打开失败会抛出IOException或Error或RuntimeException异常
