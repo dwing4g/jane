@@ -208,11 +208,74 @@ public final class Util
 	}
 
 	/**
+	 * 把字符串转化成Lua字符串输出到{@link StringBuilder}中
+	 */
+	public static StringBuilder toLuaStr(StringBuilder sb, String str)
+	{
+		int n = str.length();
+		if(sb == null)
+			sb = new StringBuilder(n + 4);
+		sb.append('"');
+		for(int i = 0; i < n; ++i)
+		{
+			char c = str.charAt(i);
+			switch(c)
+			{
+				case '\\':
+				case '"':
+					sb.append('\\').append(c);
+					break;
+				default:
+					if(c < ' ') // 0x20
+						sb.append('\\').append('x').append(Octets.toHexNumber(c >> 4)).append(Octets.toHexNumber(c));
+					else
+						sb.append(c);
+			}
+		}
+		return sb.append('"');
+	}
+
+	/**
 	 * 把字符串转化成Java/JSON字符串输出到{@link StringBuilder}中
 	 */
-	public static StringBuilder toJStr(StringBuilder s, String str)
+	public static StringBuilder toJStr(StringBuilder sb, String str)
 	{
-		return s.append('"').append(str.replaceAll("\\\\", "\\\\\\\\").replaceAll("\"", "\\\\\"")).append('"');
+		int n = str.length();
+		if(sb == null)
+			sb = new StringBuilder(n + 4);
+		sb.append('"');
+		for(int i = 0; i < n; ++i)
+		{
+			char c = str.charAt(i);
+			switch(c)
+			{
+				case '\\':
+				case '"':
+					sb.append('\\').append(c);
+					break;
+				case '\b':
+					sb.append('\\').append('b');
+					break;
+				case '\t':
+					sb.append('\\').append('t');
+					break;
+				case '\n':
+					sb.append('\\').append('n');
+					break;
+				case '\f':
+					sb.append('\\').append('f');
+					break;
+				case '\r':
+					sb.append('\\').append('r');
+					break;
+				default:
+					if(c < ' ') // 0x20
+						sb.append(c < 0x10 ? "\\u000" : "\\u001").append(Octets.toHexNumber(c));
+					else
+						sb.append(c);
+			}
+		}
+		return sb.append('"');
 	}
 
 	/**

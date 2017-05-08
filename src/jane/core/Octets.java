@@ -542,6 +542,11 @@ public class Octets implements Cloneable, Comparable<Octets>
 		return "[" + _count + '/' + _buffer.length + ']';
 	}
 
+	public static char toHexNumber(int v)
+	{
+		return HEX[v & 15];
+	}
+
 	public StringBuilder dump(StringBuilder s)
 	{
 		int n = _count;

@@ -612,7 +612,7 @@ typedef.string = merge(typedef.byte,
 	equals = "!this.#(var.name).equals(b.#(var.name))",
 	compareto = "this.#(var.name).compareTo(b.#(var.name))",
 	tojson = "\t\tUtil.toJStr(s.append(\"\\\"#(var.name)\\\":\"), this.#(var.name)).append(',');\n",
-	tolua = "\t\tUtil.toJStr(s.append(\"#(var.name)=\"), this.#(var.name)).append(',');\n",
+	tolua = "\t\tUtil.toLuaStr(s.append(\"#(var.name)=\"), this.#(var.name)).append(',');\n",
 })
 typedef.octets = merge(typedef.string,
 {
