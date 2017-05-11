@@ -272,7 +272,7 @@ public final class DBSimpleManager
 	private static <B extends Bean<B>> B toBean(Octets data, B beanStub) throws MarshalException
 	{
 		if(data == null || data == StorageLevelDB.deleted()) return null;
-		OctetsStream os = (data instanceof OctetsStream ? (OctetsStream)data : OctetsStream.wrap(data));
+		OctetsStream os = OctetsStream.wrap(data);
 		os.setExceptionInfo(true);
 		int format = os.unmarshalInt1();
 		if(format != 0)
