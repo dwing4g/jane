@@ -259,16 +259,6 @@ public final class DBSimpleManager
 		return new OctetsStream(5 + key.initSize()).marshalUInt(tableId).marshal(key);
 	}
 
-	private static <K extends Bean<K>> K toKeyBean(Octets data, K keyStub) throws MarshalException
-	{
-		if(data == null || data == StorageLevelDB.deleted()) return null;
-		OctetsStream os = (data instanceof OctetsStream ? (OctetsStream)data : OctetsStream.wrap(data));
-		os.setExceptionInfo(true);
-		K keyBean = keyStub.create();
-		keyBean.unmarshal(os);
-		return keyBean;
-	}
-
 	private static <B extends Bean<B>> B toBean(Octets data, B beanStub) throws MarshalException
 	{
 		if(data == null || data == StorageLevelDB.deleted()) return null;
@@ -424,6 +414,10 @@ public final class DBSimpleManager
 			private final OctetsStream _os		   = new OctetsStream();
 			private final int		   _tableIdLen = OctetsStream.marshalUIntLen(tableId);
 
+			{
+				_os.setExceptionInfo(true);
+			}
+
 			@Override
 			public boolean onWalk(byte[] key, byte[] value) throws Exception
 			{
@@ -452,6 +446,10 @@ public final class DBSimpleManager
 		{
 			private final OctetsStream _os		   = new OctetsStream();
 			private final int		   _tableIdLen = OctetsStream.marshalUIntLen(tableId);
+
+			{
+				_os.setExceptionInfo(true);
+			}
 
 			@Override
 			public boolean onWalk(byte[] key, byte[] value) throws Exception
@@ -486,6 +484,10 @@ public final class DBSimpleManager
 		{
 			private final OctetsStream _os = new OctetsStream();
 
+			{
+				_os.setExceptionInfo(true);
+			}
+
 			@Override
 			public boolean onWalk(byte[] key, byte[] value) throws Exception
 			{
@@ -519,6 +521,10 @@ public final class DBSimpleManager
 		{
 			private final OctetsStream _os = new OctetsStream();
 
+			{
+				_os.setExceptionInfo(true);
+			}
+
 			@Override
 			public boolean onWalk(byte[] key, byte[] value) throws Exception
 			{
@@ -529,7 +535,8 @@ public final class DBSimpleManager
 					finished.set(true);
 					return false;
 				}
-				K k = toKeyBean(_os, keyStub);
+				K k = keyStub.create();
+				k.unmarshal(_os);
 				_os.setPosition(0);
 				return handler.onWalk(k, toBean(_os.wraps(value), beanStub));
 			}

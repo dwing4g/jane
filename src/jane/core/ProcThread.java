@@ -31,7 +31,7 @@ public final class ProcThread extends Thread
 		{
 			if(pt.nowLock != checkLock) continue;
 			ReentrantLock[] ls = pt.locks;
-			for(int j = pt.lockCount - 2; j >= 0; --j)
+			for(int j = pt.lockCount - 1; j >= 0; --j)
 			{
 				ReentrantLock lk = ls[j];
 				if(lk != null && lk != checkLock && (lk == nowLock || mayDeadLock0(otherLockingThreads, lk, nowLock)))
@@ -43,7 +43,7 @@ public final class ProcThread extends Thread
 
 	private boolean mayDeadLock()
 	{
-		if(lockCount < 2) return false;
+		if(lockCount < 1) return false;
 		java.util.ArrayList<ProcThread> otherLockingThreads = new java.util.ArrayList<>();
 		for(ProcThread pt : _procThreads)
 		{
@@ -52,7 +52,7 @@ public final class ProcThread extends Thread
 		}
 		ReentrantLock[] ls = locks;
 		ReentrantLock nl = nowLock;
-		for(int i = lockCount - 2; i >= 0; --i)
+		for(int i = lockCount - 1; i >= 0; --i)
 		{
 			if(mayDeadLock0(otherLockingThreads, ls[i], nl))
 				return true;
@@ -75,6 +75,7 @@ public final class ProcThread extends Thread
 
 	void safeLock(ReentrantLock lock, int i) throws InterruptedException
 	{
+		lockCount = i;
 		nowLock = lock;
 		if(!lock.tryLock())
 		{
@@ -86,7 +87,7 @@ public final class ProcThread extends Thread
 		locks[i] = lock;
 		lockCount = i + 1;
 	}
-*/
+//*/
 
 	/**
 	 * 获取事务被打断的次数统计
