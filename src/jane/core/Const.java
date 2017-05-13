@@ -100,7 +100,7 @@ public final class Const
 		dbFilename = getPropStr("dbFilename", "db/database");
 		dbBackupPath = getPropStr("dbBackupPath", "db");
 		dbThreadCount = getPropInt("dbThreadCount", 1, 1, 1000);
-		deadlockCheckInterval = getPropInt("deadlockCheckInterval", 5, 1);
+		deadlockCheckInterval = getPropInt("deadlockCheckInterval", 5, 0);
 		maxSessionProcedure = getPropInt("maxSessionProceduer", 65536, 1);
 		maxBatchProceduer = getPropInt("maxBatchProceduer", 256, 1);
 		maxProceduerRedo = getPropInt("maxProceduerRedo", 256, 1);

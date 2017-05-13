@@ -19,8 +19,7 @@ public final class ProcThread extends Thread
 	public ProcThread(String name, Runnable r)
 	{
 		super(r, name != null ? name : "ProcThread");
-		if(!Const.debug)
-			_procThreads.add(this);
+		_procThreads.add(this);
 	}
 
 /*
@@ -100,7 +99,7 @@ public final class ProcThread extends Thread
 
 	static
 	{
-		if(!Const.debug)
+		if(!Const.debug && Const.deadlockCheckInterval > 0)
 		{
 			NetManager.scheduleAtFixedRate(Const.deadlockCheckInterval, Const.deadlockCheckInterval, new Runnable()
 			{
