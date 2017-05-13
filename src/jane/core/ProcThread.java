@@ -2,18 +2,19 @@ package jane.core;
 
 import java.lang.management.ManagementFactory;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.locks.ReentrantLock;
+import jane.core.Procedure.IndexLock;
 
 public final class ProcThread extends Thread
 {
 	private static final ConcurrentLinkedQueue<ProcThread> _procThreads	= new ConcurrentLinkedQueue<>(); // 当前运行的全部事务线程. 用于判断是否超时
 	private static volatile long						   _interruptCount;								 // 事务被打断的次数统计
 
-	final ReentrantLock[] locks	= new ReentrantLock[Const.maxLockPerProcedure];	// 当前线程已经加过的锁
-	int					  lockCount;											// 当前进程已经加过锁的数量
-	final SContext		  sctx	= new SContext();								// 当前线程上的安全修改的上下文
-	volatile Procedure	  proc;													// 当前运行的事务
-	volatile long		  beginTime;											// 当前/上个事务运行的起始时间. 用于判断是否超时
+	final IndexLock[]  locks	= new IndexLock[Const.maxLockPerProcedure];	// 当前线程已经加过的锁
+	int				   lockCount;											// 当前进程已经加过锁的数量
+	final SContext	   sctx		= new SContext();							// 当前线程上的安全修改的上下文
+	volatile Procedure proc;												// 当前运行的事务
+	volatile long	   beginTime;											// 当前/上个事务运行的起始时间. 用于判断是否超时
+	final int[]		   versions	= new int[Const.maxLockPerProcedure];		// 当前线程已经加过的锁版本号(只在需要时临时设置,这里只是为了避免反复分配)
 
 	public ProcThread(String name, Runnable r)
 	{
@@ -23,17 +24,17 @@ public final class ProcThread extends Thread
 	}
 
 /*
-	volatile ReentrantLock nowLock;
+	volatile IndexLock nowLock;
 
-	private static boolean mayDeadLock0(java.util.ArrayList<ProcThread> otherLockingThreads, ReentrantLock checkLock, ReentrantLock nowLock)
+	private static boolean mayDeadLock0(java.util.ArrayList<ProcThread> otherLockingThreads, IndexLock checkLock, IndexLock nowLock)
 	{
 		for(ProcThread pt : otherLockingThreads)
 		{
 			if(pt.nowLock != checkLock) continue;
-			ReentrantLock[] ls = pt.locks;
+			IndexLock[] ls = pt.locks;
 			for(int j = pt.lockCount - 1; j >= 0; --j)
 			{
-				ReentrantLock lk = ls[j];
+				IndexLock lk = ls[j];
 				if(lk != null && lk != checkLock && (lk == nowLock || mayDeadLock0(otherLockingThreads, lk, nowLock)))
 					return true;
 			}
@@ -50,8 +51,8 @@ public final class ProcThread extends Thread
 			if(pt != this && pt.nowLock != null)
 				otherLockingThreads.add(pt);
 		}
-		ReentrantLock[] ls = locks;
-		ReentrantLock nl = nowLock;
+		IndexLock[] ls = locks;
+		IndexLock nl = nowLock;
 		for(int i = lockCount - 1; i >= 0; --i)
 		{
 			if(mayDeadLock0(otherLockingThreads, ls[i], nl))
@@ -60,7 +61,7 @@ public final class ProcThread extends Thread
 		return false;
 	}
 
-	void safeLock(ReentrantLock lock) throws InterruptedException
+	void safeLock(IndexLock lock) throws InterruptedException
 	{
 		nowLock = lock;
 		if(!lock.tryLock())
@@ -73,7 +74,7 @@ public final class ProcThread extends Thread
 		locks[++lockCount] = lock;
 	}
 
-	void safeLock(ReentrantLock lock, int i) throws InterruptedException
+	void safeLock(IndexLock lock, int i) throws InterruptedException
 	{
 		lockCount = i;
 		nowLock = lock;

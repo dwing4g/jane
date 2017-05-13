@@ -193,13 +193,13 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	}
 
 	/**
-	 * 加锁获取字段,会失去当前事务其它的锁
+	 * 追加一个锁并获取其字段. 有可能因重锁而导致有记录被其它事务修改而抛出Redo异常
 	 */
 	public S lockGet(K k) throws InterruptedException
 	{
 		Procedure proc = Procedure.getCurProcedure();
 		if(proc == null) throw new IllegalStateException("invalid lockGet out of procedure");
-		proc.lock(lockId(k));
+		proc.appendLock(lockId(k));
 		return getNoLock(k);
 	}
 
@@ -270,6 +270,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	 */
 	public void modify(K k, V v)
 	{
+		Procedure.incVersion(lockId(k));
 		if(!v.modified() && _cacheMod != null)
 		{
 			V vOld = _cacheMod.put(k, v);
@@ -292,6 +293,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	{
 		K k = (K)ko;
 		V v = (V)vo;
+		Procedure.incVersion(lockId(k));
 		if(!v.modified() && _cacheMod != null)
 		{
 			V vOld = _cacheMod.put(k, v);
@@ -322,6 +324,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 			modify(k, v);
 		else
 		{
+			Procedure.incVersion(lockId(k));
 			if(!v.stored())
 			{
 				if(_cacheMod != null)
@@ -389,6 +392,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	@Deprecated
 	public void removeUnsafe(K k)
 	{
+		Procedure.incVersion(lockId(k));
 		_cache.remove(k);
 		if(_cacheMod != null && _cacheMod.put(k, _deleted) == null)
 			DBManager.instance().incModCount();

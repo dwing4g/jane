@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -21,11 +22,24 @@ public abstract class Procedure implements Runnable
 		void onException(Throwable e);
 	}
 
-	private static final ReentrantLock[]					 _lockPool	  = new ReentrantLock[Const.lockPoolSize]; // 全局共享的锁池
-	private static final AtomicReferenceArray<ReentrantLock> _lockCreator = new AtomicReferenceArray<>(_lockPool); // 锁池中锁的线程安全创造器(副本)
-	private static final int								 _lockMask	  = Const.lockPoolSize - 1;				   // 锁池下标的掩码
-	private static final ReentrantReadWriteLock				 _rwlCommit	  = new ReentrantReadWriteLock();		   // 用于数据提交的读写锁
-	private static ExceptionHandler							 _defaultEh;										   // 默认的全局异常处理
+	static final class IndexLock extends ReentrantLock
+	{
+		private static final long serialVersionUID = 1L;
+
+		public final int index;
+
+		IndexLock(int i)
+		{
+			index = i;
+		}
+	}
+
+	private static final IndexLock[]					 _lockPool	   = new IndexLock[Const.lockPoolSize];			 // 全局共享的锁池
+	private static final AtomicIntegerArray				 _lockVersions = new AtomicIntegerArray(Const.lockPoolSize); // 全局共享的锁版本号池
+	private static final AtomicReferenceArray<IndexLock> _lockCreator  = new AtomicReferenceArray<>(_lockPool);		 // 锁池中锁的线程安全创造器(副本)
+	private static final int							 _lockMask	   = Const.lockPoolSize - 1;					 // 锁池下标的掩码
+	private static final ReentrantReadWriteLock			 _rwlCommit	   = new ReentrantReadWriteLock();				 // 用于数据提交的读写锁
+	private static ExceptionHandler						 _defaultEh;												 // 默认的全局异常处理
 
 	private ProcThread			_pt;							// 事务所属的线程上下文. 只在事务运行中有效
 	private final AtomicInteger	_running = new AtomicInteger();	// 事务是否在运行中(不能同时并发运行)
@@ -64,6 +78,11 @@ public abstract class Procedure implements Runnable
 	public static boolean inProcedure()
 	{
 		return getCurProcedure() != null;
+	}
+
+	static void incVersion(int lockId)
+	{
+		_lockVersions.incrementAndGet(lockId & _lockMask);
 	}
 
 	/**
@@ -155,13 +174,13 @@ public abstract class Procedure implements Runnable
 
 	public <V extends Bean<V>, S extends Safe<V>> S lockGet(TableLong<V, S> t, long k) throws InterruptedException
 	{
-		lock(t.lockId(k));
+		appendLock(t.lockId(k));
 		return t.getNoLock(k);
 	}
 
 	public <K, V extends Bean<V>, S extends Safe<V>> S lockGet(Table<K, V, S> t, K k) throws InterruptedException
 	{
-		lock(t.lockId(k));
+		appendLock(t.lockId(k));
 		return t.getNoLock(k);
 	}
 
@@ -247,7 +266,7 @@ public abstract class Procedure implements Runnable
 		int lockCount = pt.lockCount;
 		if(lockCount == 0) return;
 		if(pt.sctx.hasDirty()) throw new IllegalStateException("invalid unlock after any dirty record");
-		ReentrantLock[] locks = pt.locks;
+		IndexLock[] locks = pt.locks;
 		for(int i = lockCount - 1; i >= 0; --i)
 		{
 			try
@@ -265,11 +284,11 @@ public abstract class Procedure implements Runnable
 	/**
 	 * 根据lockId获取实际的锁对象
 	 */
-	private static ReentrantLock getLock(int lockIdx)
+	private static IndexLock getLock(int lockIdx)
 	{
-		ReentrantLock lock = _lockPool[lockIdx];
+		IndexLock lock = _lockPool[lockIdx];
 		if(lock != null) return lock;
-		if(!_lockCreator.compareAndSet(lockIdx, null, lock = new ReentrantLock())) // ensure init lock object only once
+		if(!_lockCreator.compareAndSet(lockIdx, null, lock = new IndexLock(lockIdx))) // ensure init lock object only once
 			lock = _lockCreator.get(lockIdx); // should not be null
 		_lockPool[lockIdx] = lock; // still safe when overwritten
 		return lock;
@@ -296,9 +315,9 @@ public abstract class Procedure implements Runnable
 	 * <p>
 	 * 只用于内部提交数据
 	 */
-	static ReentrantLock tryLock(int lockId)
+	static IndexLock tryLock(int lockId)
 	{
-		ReentrantLock lock = getLock(lockId & _lockMask);
+		IndexLock lock = getLock(lockId & _lockMask);
 		return lock.tryLock() ? lock : null;
 	}
 
@@ -314,6 +333,68 @@ public abstract class Procedure implements Runnable
 		ProcThread pt = _pt;
 		(pt.locks[0] = getLock(lockId & _lockMask)).lockInterruptibly();
 		pt.lockCount = 1;
+	}
+
+	/**
+	 * 追加一个lockId的锁
+	 * <p>
+	 * 会引发已加锁的重排序并重锁,并检测两次锁之间是否有修改的序列号变化,如果有则抛出Redo异常<br>
+	 * 只能在事务中调用. 且此调用之前的事务不能有写操作
+	 */
+	protected final void appendLock(int lockId) throws InterruptedException
+	{
+		final ProcThread pt = _pt;
+		if(pt == null) throw new IllegalStateException("invalid appendLock out of procedure");
+		final IndexLock[] locks = pt.locks;
+		final int lockIdx = lockId & _lockMask;
+		final int n = pt.lockCount;
+		if(n == 0)
+		{
+			(locks[0] = getLock(lockIdx)).lockInterruptibly();
+			pt.lockCount = 1;
+			return;
+		}
+		if(pt.sctx.hasDirty()) throw new IllegalStateException("invalid appendLock after any dirty record");
+		IndexLock lastLock = locks[n - 1];
+		int lastLockIdx = lastLock.index;
+		if(lastLockIdx == lockIdx) return;
+		if(lastLockIdx < lockIdx)
+		{
+			if(n >= Const.maxLockPerProcedure)
+				throw new IllegalStateException("appendLock exceed: " + (n + 1) + '>' + Const.maxLockPerProcedure);
+			(locks[n] = getLock(lockIdx)).lockInterruptibly();
+			pt.lockCount = n + 1;
+			return;
+		}
+		int i = n - 1;
+		for(; i > 0; --i) // 算出需要插入锁的下标位置i时跳出循环
+		{
+			lastLockIdx = locks[i - 1].index;
+			if(lastLockIdx == lockIdx) return;
+			if(lastLockIdx < lockIdx) break;
+		}
+		if(n >= Const.maxLockPerProcedure)
+			throw new IllegalStateException("appendLock exceed: " + (n + 1) + '>' + Const.maxLockPerProcedure);
+		final int[] versions = pt.versions;
+		for(int j = n - 1; j >= i; --j)
+		{
+			lastLock = locks[j];
+			versions[j] = _lockVersions.get(lastLock.index);
+			lastLock.unlock();
+		}
+		pt.lockCount = i;
+		(locks[i] = getLock(lockIdx)).lockInterruptibly();
+		pt.lockCount = ++i;
+		for(;;)
+		{
+			final IndexLock lock = locks[i];
+			(locks[i] = lastLock).lockInterruptibly();
+			pt.lockCount = ++i;
+			if(_lockVersions.get(lastLock.index) != versions[i - 2])
+				redo();
+			if(i > n) return;
+			lastLock = lock;
+		}
 	}
 
 	/**
@@ -333,7 +414,7 @@ public abstract class Procedure implements Runnable
 			lockIds[i] &= _lockMask;
 		Arrays.sort(lockIds);
 		ProcThread pt = _pt;
-		ReentrantLock[] locks = pt.locks;
+		IndexLock[] locks = pt.locks;
 		for(int i = 0; i < n;)
 		{
 			(locks[i] = getLock(lockIds[i])).lockInterruptibly();
@@ -369,7 +450,7 @@ public abstract class Procedure implements Runnable
 		}
 		Arrays.sort(idxes);
 		ProcThread pt = _pt;
-		ReentrantLock[] locks = pt.locks;
+		IndexLock[] locks = pt.locks;
 		for(i = 0; i < n;)
 		{
 			(locks[i] = getLock(idxes[i])).lockInterruptibly();
@@ -403,7 +484,7 @@ public abstract class Procedure implements Runnable
 	private void lock2(int lockIdx0, int lockIdx1) throws InterruptedException
 	{
 		ProcThread pt = _pt;
-		ReentrantLock[] locks = pt.locks;
+		IndexLock[] locks = pt.locks;
 		int i = pt.lockCount;
 		if(lockIdx0 < lockIdx1)
 		{
@@ -428,7 +509,7 @@ public abstract class Procedure implements Runnable
 	private void lock3(int lockIdx0, int lockIdx1, int lockIdx2) throws InterruptedException
 	{
 		ProcThread pt = _pt;
-		ReentrantLock[] locks = pt.locks;
+		IndexLock[] locks = pt.locks;
 		int i = pt.lockCount;
 		if(lockIdx0 <= lockIdx1)
 		{
@@ -509,7 +590,7 @@ public abstract class Procedure implements Runnable
 		lockId2 &= _lockMask;
 		lockId3 &= _lockMask;
 		ProcThread pt = _pt;
-		ReentrantLock[] locks = pt.locks;
+		IndexLock[] locks = pt.locks;
 		int i = 0;
 		if(lockId0 <= lockId1)
 		{
