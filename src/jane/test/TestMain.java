@@ -3,6 +3,7 @@ package jane.test;
 import java.net.InetSocketAddress;
 import jane.core.BeanCodec;
 import jane.core.DBManager;
+import jane.core.ExitManager;
 import jane.core.Log;
 import jane.bean.AllBeans;
 import jane.bean.AllTables;
@@ -25,6 +26,7 @@ public final class TestMain
 			TestClient.instance().startClient(new InetSocketAddress("127.0.0.1", 9123));
 			new StatusServer().startServer(new InetSocketAddress("0.0.0.0", 80));
 			Log.log.info("================================ startup: end");
+			ExitManager.waitStdInToExit();
 		}
 		catch(Throwable e)
 		{

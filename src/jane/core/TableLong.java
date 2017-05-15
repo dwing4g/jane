@@ -43,11 +43,8 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 		if(cacheSize < 1) cacheSize = 1;
 		_cache = Util.newLongConcurrentLRUMap(cacheSize, tableName);
 		_cacheMod = (stoTable != null ? new LongConcurrentHashMap<V>() : null);
-		if(stoTable != null)
-		{
-			_idCounter.set(_stoTable.getIdCounter());
-			_tables.add(this);
-		}
+		if(stoTable != null) _idCounter.set(_stoTable.getIdCounter());
+		_tables.add(this);
 	}
 
 	/**
@@ -96,6 +93,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	@Override
 	protected void trySaveModified(long[] counts)
 	{
+		if(_cacheMod == null) return;
 		counts[0] += _cacheMod.size();
 		long n = 0;
 		try
@@ -139,6 +137,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	@Override
 	protected int saveModified()
 	{
+		if(_cacheMod == null) return 0;
 		for(MapIterator<V> it = _cacheMod.entryIterator(); it.moveToNext();)
 		{
 			long k = it.key();
@@ -173,7 +172,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	@Override
 	public int getCacheModSize()
 	{
-		return _cacheMod.size();
+		return _cacheMod != null ? _cacheMod.size() : 0;
 	}
 
 	/**

@@ -33,7 +33,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 		if(cacheSize < 1) cacheSize = 1;
 		_cache = Util.newConcurrentLRUMap(cacheSize, tableName);
 		_cacheMod = (stoTable != null ? Util.<K, V>newConcurrentHashMap() : null);
-		if(stoTable != null) _tables.add(this);
+		_tables.add(this);
 	}
 
 	/**
@@ -54,6 +54,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	@Override
 	protected void trySaveModified(long[] counts)
 	{
+		if(_cacheMod == null) return;
 		counts[0] += _cacheMod.size();
 		long n = 0;
 		try
@@ -96,6 +97,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	@Override
 	protected int saveModified()
 	{
+		if(_cacheMod == null) return 0;
 		for(Entry<K, V> e : _cacheMod.entrySet())
 		{
 			K k = e.getKey();
@@ -128,7 +130,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	@Override
 	public int getCacheModSize()
 	{
-		return _cacheMod.size();
+		return _cacheMod != null ? _cacheMod.size() : 0;
 	}
 
 	/**

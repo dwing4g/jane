@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class TableBase<V extends Bean<V>>
 {
-	protected static final List<TableBase<?>> _tables		= new ArrayList<>(16); // 所有持久化表的容器
+	protected static final List<TableBase<?>> _tables		= new ArrayList<>(16); // 所有表的容器
 	protected final String					  _tableName;						   // 表名
 	protected final int						  _tableId;							   // 表ID
 	protected final int						  _lockId;							   // 当前表的锁ID. 即锁名的hash值,一般和记录key的hash值计算得出记录的lockId
