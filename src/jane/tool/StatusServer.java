@@ -7,6 +7,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import org.apache.mina.core.session.IoSession;
 import jane.core.Const;
 import jane.core.DBManager;
+import jane.core.DBSimpleManager;
 import jane.core.HttpCodec;
 import jane.core.NetManager;
 import jane.core.OctetsStream;
@@ -45,6 +46,26 @@ public class StatusServer extends NetManager
 			strs.add(rc > 0 ? String.format("%.2f%%", (double)(rc - rtc) * 100 / rc) : "-.--%");
 			list.add(strs);
 		}
+		if(DBSimpleManager.hasCreated())
+		{
+			DBSimpleManager mgr = DBSimpleManager.instance();
+			ArrayList<Object> strs = new ArrayList<>();
+			strs.add("<b>DBSimple</b>");
+			int v = mgr.getReadCacheSize();
+			v1 += v;
+			strs.add(v);
+			v = mgr.getWriteCacheSize();
+			v2 += v;
+			strs.add(v);
+			long rc = mgr.getReadCount();
+			long rtc = mgr.getReadStoCount();
+			v3 += rc;
+			v4 += rtc;
+			strs.add(rc);
+			strs.add(rtc);
+			strs.add(rc > 0 ? String.format("%.2f%%", (double)(rc - rtc) * 100 / rc) : "-.--%");
+			list.add(strs);
+		}
 		ArrayList<Object> strs = new ArrayList<>();
 		strs.add("<b>ALL</b>");
 		strs.add(v1);
@@ -54,15 +75,18 @@ public class StatusServer extends NetManager
 		strs.add(v3 > 0 ? String.format("%.2f%%", (double)(v3 - v4) * 100 / v3) : "-.--%");
 		list.add(strs);
 
-		DBManager dbMgr = DBManager.instance();
-		ThreadPoolExecutor tpe = dbMgr.getProcThreads();
-		list.add(new SimpleEntry<String, Object>("jane.RpcWaitingCount", NetManager.getRpcCount()));
-		list.add(new SimpleEntry<String, Object>("jane.ProcSessionCount", dbMgr.getSessionCount()));
-		list.add(new SimpleEntry<String, Object>("jane.ProcWaitingCount", dbMgr.getProcQueuedCount()));
-		list.add(new SimpleEntry<String, Object>("jane.ProcQueueCount", tpe.getQueue().size()));
-		list.add(new SimpleEntry<String, Object>("jane.ProcThreadCount", tpe.getActiveCount() + "/" + tpe.getPoolSize() + "/" + tpe.getLargestPoolSize()));
-		list.add(new SimpleEntry<String, Object>("jane.ProcCompletedCount", tpe.getCompletedTaskCount()));
+		if(DBManager.hasCreated())
+		{
+			DBManager dbMgr = DBManager.instance();
+			ThreadPoolExecutor tpe = dbMgr.getProcThreads();
+			list.add(new SimpleEntry<String, Object>("jane.ProcSessionCount", dbMgr.getSessionCount()));
+			list.add(new SimpleEntry<String, Object>("jane.ProcWaitingCount", dbMgr.getProcQueuedCount()));
+			list.add(new SimpleEntry<String, Object>("jane.ProcQueueCount", tpe.getQueue().size()));
+			list.add(new SimpleEntry<String, Object>("jane.ProcThreadCount", tpe.getActiveCount() + "/" + tpe.getPoolSize() + "/" + tpe.getLargestPoolSize()));
+			list.add(new SimpleEntry<String, Object>("jane.ProcCompletedCount", tpe.getCompletedTaskCount()));
+		}
 		list.add(new SimpleEntry<String, Object>("jane.ProcInterruptCount", ProcThread.getInterruptCount()));
+		list.add(new SimpleEntry<String, Object>("jane.RpcWaitingCount", NetManager.getRpcCount()));
 
 		return list;
 	}

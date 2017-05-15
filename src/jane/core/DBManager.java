@@ -22,7 +22,13 @@ import jane.core.SContext.Safe;
  */
 public final class DBManager
 {
-	private static final DBManager							   _instance	 = new DBManager();
+	private static final class InstanceHolder
+	{
+		public static final DBManager instance = new DBManager();
+	}
+
+	private static volatile boolean _hasCreated; // 是否创建过此类的对象
+
 	private final SimpleDateFormat							   _sdf			 = new SimpleDateFormat("yy-MM-dd-HH-mm-ss"); // 备份文件后缀名的时间格式
 	private final CommitThread								   _commitThread = new CommitThread();						  // 处理数据提交的线程
 	private final ThreadPoolExecutor						   _procThreads;											  // 事务线程池
@@ -195,11 +201,17 @@ public final class DBManager
 
 	public static DBManager instance()
 	{
-		return _instance;
+		return InstanceHolder.instance;
+	}
+
+	public static boolean hasCreated()
+	{
+		return _hasCreated;
 	}
 
 	private DBManager()
 	{
+		_hasCreated = true;
 		_procThreads = (ThreadPoolExecutor)Executors.newFixedThreadPool(Const.dbThreadCount, new ThreadFactory()
 		{
 			private final AtomicInteger _num = new AtomicInteger();
