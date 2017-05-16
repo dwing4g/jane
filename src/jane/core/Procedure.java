@@ -354,7 +354,6 @@ public abstract class Procedure implements Runnable
 			pt.lockCount = 1;
 			return;
 		}
-		if(pt.sctx.hasDirty()) throw new IllegalStateException("invalid appendLock after any dirty record");
 		IndexLock lastLock = locks[n - 1];
 		int lastLockIdx = lastLock.index;
 		if(lastLockIdx == lockIdx) return;
@@ -373,6 +372,8 @@ public abstract class Procedure implements Runnable
 			if(lastLockIdx == lockIdx) return;
 			if(lastLockIdx < lockIdx) break;
 		}
+		if(pt.sctx.hasDirty())
+			throw new IllegalStateException("invalid appendLock after any dirty record");
 		if(n >= Const.maxLockPerProcedure)
 			throw new IllegalStateException("appendLock exceed: " + (n + 1) + '>' + Const.maxLockPerProcedure);
 		final int[] versions = pt.versions;
