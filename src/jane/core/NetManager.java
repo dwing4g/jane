@@ -476,7 +476,7 @@ public class NetManager implements IoHandler
 	public boolean sendRaw(IoSession session, Object obj)
 	{
 		if(!write(session, obj)) return false;
-		Log.trace("{}({}): send: raw: {}", _name, session.getId(), obj);
+		if(Log.hasTrace) Log.trace("{}({}): send: raw: {}", _name, session.getId(), obj);
 		return true;
 	}
 
@@ -490,7 +490,7 @@ public class NetManager implements IoHandler
 	public boolean send(IoSession session, Bean<?> bean)
 	{
 		if(!write(session, bean)) return false;
-		Log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.getClass().getSimpleName(), bean);
+		if(Log.hasTrace) Log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.getClass().getSimpleName(), bean);
 		return true;
 	}
 
@@ -542,7 +542,7 @@ public class NetManager implements IoHandler
 				}
 			}) == null) return false;
 		}
-		Log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.getClass().getSimpleName(), bean);
+		if(Log.hasTrace) Log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.getClass().getSimpleName(), bean);
 		return true;
 	}
 
@@ -770,14 +770,14 @@ public class NetManager implements IoHandler
 	@Override
 	public void sessionOpened(IoSession session)
 	{
-		Log.debug("{}({}): open: {}", _name, session.getId(), session.getRemoteAddress());
+		if(Log.hasDebug) Log.debug("{}({}): open: {}", _name, session.getId(), session.getRemoteAddress());
 		onAddSession(session);
 	}
 
 	@Override
 	public void sessionClosed(IoSession session)
 	{
-		Log.debug("{}({}): close: {}", _name, session.getId(), session.getRemoteAddress());
+		if(Log.hasDebug) Log.debug("{}({}): close: {}", _name, session.getId(), session.getRemoteAddress());
 		onDelSession(session);
 	}
 
@@ -790,7 +790,7 @@ public class NetManager implements IoHandler
 	@Override
 	public void messageReceived(IoSession session, Object message)
 	{
-		Log.trace("{}({}): recv: {}:{}", _name, session.getId(), message.getClass().getSimpleName(), message);
+		if(Log.hasTrace) Log.trace("{}({}): recv: {}:{}", _name, session.getId(), message.getClass().getSimpleName(), message);
 		Bean<?> bean = (Bean<?>)message;
 		BeanHandler<?> handler = _handlers.get(bean.type());
 		if(handler != null)
@@ -816,7 +816,7 @@ public class NetManager implements IoHandler
 	@Override
 	public void sessionIdle(IoSession session, IdleStatus status)
 	{
-		Log.trace("{}({}): idle: {}", _name, session.getId(), status);
+		if(Log.hasTrace) Log.trace("{}({}): idle: {}", _name, session.getId(), status);
 		onIdleSession(session);
 	}
 

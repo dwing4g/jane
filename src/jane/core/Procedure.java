@@ -760,7 +760,7 @@ public abstract class Procedure implements Runnable
 				unlock();
 				if(--n <= 0)
 					throw new Exception("procedure redo too many times=" + Const.maxProceduerRedo + ": " + toString());
-				Log.debug("procedure redo({}): {}", Const.maxProceduerRedo - n, toString());
+				Log.info("procedure redo({}): {}", Const.maxProceduerRedo - n, toString());
 			}
 			sctx.commit();
 			return true;

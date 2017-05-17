@@ -398,12 +398,12 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	 */
 	public void put(final long k, V v)
 	{
+		if(!Procedure.isLockedByCurrentThread(lockId(k)))
+			throw new IllegalAccessError("put unlocked record! table=" + _tableName + ",key=" + k);
 		final V vOld = getNoCacheUnsafe(k);
 		if(vOld == v) return;
 		if(v.stored())
 			throw new IllegalStateException("put shared record: t=" + _tableName + ",k=" + k + ",v=" + v);
-		if(!Procedure.isLockedByCurrentThread(lockId(k)))
-			throw new IllegalAccessError("put unlocked record! table=" + _tableName + ",key=" + k);
 		SContext.current().addOnRollbackDirty(new Runnable()
 		{
 			@Override
@@ -484,10 +484,10 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	 */
 	public void remove(final long k)
 	{
-		final V vOld = getNoCacheUnsafe(k);
-		if(vOld == null) return;
 		if(!Procedure.isLockedByCurrentThread(lockId(k)))
 			throw new IllegalAccessError("remove unlocked record! table=" + _tableName + ",key=" + k);
+		final V vOld = getNoCacheUnsafe(k);
+		if(vOld == null) return;
 		SContext.current().addOnRollbackDirty(new Runnable()
 		{
 			@Override

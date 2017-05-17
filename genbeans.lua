@@ -286,7 +286,7 @@ public final class #(bean.name)Handler extends BeanHandler<#(bean.name)>
 	@Override
 	public void onProcess(final NetManager manager, final IoSession session, final #(bean.name) arg)
 	{
-		if(Log.hasDebug) Log.log.debug("{}.onProcess: arg={}", getClass().getName(), arg);
+		Log.debug("{}.onProcess: arg={}", getClass().getName(), arg);
 	}
 }
 ]=]
@@ -316,7 +316,7 @@ public final class #(bean.name)Handler extends RpcHandler<#(bean_arg.name), #(be
 	{
 		final #(bean_arg.name) arg = rpcBean.getArg();
 		//final #(bean_res.name) res = rpcBean.getRes();
-		if(Log.hasDebug) Log.log.debug("{}: onServer: {}", getClass().getName(), arg);
+		Log.debug("{}: onServer: {}", getClass().getName(), arg);
 		return true;
 	}
 
@@ -325,14 +325,14 @@ public final class #(bean.name)Handler extends RpcHandler<#(bean_arg.name), #(be
 	{
 		final #(bean_arg.name) arg = rpcBean.getArg();
 		final #(bean_res.name) res = rpcBean.getRes();
-		if(Log.hasDebug) Log.log.debug("{}: onClient: arg={},res={}", getClass().getName(), arg, res);
+		Log.debug("{}: onClient: arg={},res={}", getClass().getName(), arg, res);
 	}
 
 	@Override
 	public void onTimeout(final NetManager manager, final IoSession session, final #(bean.name) rpcBean)
 	{
 		final #(bean_arg.name) arg = rpcBean.getArg();
-		Log.log.error("{}: onTimeout: {}", getClass().getName(), arg);
+		Log.error("{}: onTimeout: {}", getClass().getName(), arg);
 	}
 }
 ]=]

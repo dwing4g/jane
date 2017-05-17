@@ -318,7 +318,8 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 		}
 		finally
 		{
-			Log.debug("LRUMap.sweep({}: {}=>{}, {}ms)", name, sizeOld, size.get(), System.currentTimeMillis() - time);
+			if(Log.hasDebug)
+				Log.debug("LRUMap.sweep({}: {}=>{}, {}ms)", name, sizeOld, size.get(), System.currentTimeMillis() - time);
 		}
 	}
 
