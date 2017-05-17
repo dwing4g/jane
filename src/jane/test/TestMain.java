@@ -16,7 +16,7 @@ public final class TestMain
 		try
 		{
 			Log.removeAppendersFromArgs(args);
-			Log.log.info("================================ startup: begin");
+			Log.info("================================ startup: begin");
 			Log.logSystemProperties(args);
 			Log.logJarCreateTime();
 			DBManager.instance().startup();
@@ -25,12 +25,12 @@ public final class TestMain
 			TestServer.instance().startServer(new InetSocketAddress("0.0.0.0", 9123));
 			TestClient.instance().startClient(new InetSocketAddress("127.0.0.1", 9123));
 			new StatusServer().startServer(new InetSocketAddress("0.0.0.0", 80));
-			Log.log.info("================================ startup: end");
+			Log.info("================================ startup: end");
 			ExitManager.waitStdInToExit();
 		}
 		catch(Throwable e)
 		{
-			Log.log.error("startup exception:", e);
+			Log.error("startup exception:", e);
 			e.printStackTrace(System.err);
 		}
 	}

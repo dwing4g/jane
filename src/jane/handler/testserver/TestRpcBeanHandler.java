@@ -44,7 +44,7 @@ public class TestRpcBeanHandler extends RpcHandler<TestBean, TestType, TestRpcBe
 	{
 		final TestBean arg = rpcBean.getArg();
 		//final TestType res = rpcBean.getRes();
-		if(Log.hasDebug) Log.log.debug("{}: onServer: {}", getClass().getName(), arg);
+		Log.debug("{}: onServer: {}", getClass().getName(), arg);
 		return true;
 	}
 
@@ -53,13 +53,13 @@ public class TestRpcBeanHandler extends RpcHandler<TestBean, TestType, TestRpcBe
 	{
 		final TestBean arg = rpcBean.getArg();
 		final TestType res = rpcBean.getRes();
-		if(Log.hasDebug) Log.log.debug("{}: onClient: arg={},res={}", getClass().getName(), arg, res);
+		Log.debug("{}: onClient: arg={},res={}", getClass().getName(), arg, res);
 	}
 
 	@Override
 	public void onTimeout(final NetManager manager, final IoSession session, final TestRpcBean rpcBean)
 	{
 		final TestBean arg = rpcBean.getArg();
-		Log.log.error("{}: onTimeout: {}", getClass().getName(), arg);
+		Log.error("{}: onTimeout: {}", getClass().getName(), arg);
 	}
 }

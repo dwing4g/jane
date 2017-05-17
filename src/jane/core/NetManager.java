@@ -94,7 +94,7 @@ public class NetManager implements IoHandler
 									}
 									catch(Exception e)
 									{
-										Log.log.error(manager.getClass().getName() + '(' + session.getId() + "): onTimeout exception:", e);
+										Log.error(manager.getClass().getName() + '(' + session.getId() + "): onTimeout exception:", e);
 									}
 								}
 							}
@@ -103,7 +103,7 @@ public class NetManager implements IoHandler
 				}
 				catch(Throwable e)
 				{
-					Log.log.error("NetManager: RPC timeout fatal exception:", e);
+					Log.error("NetManager: RPC timeout fatal exception:", e);
 				}
 			}
 		});
@@ -131,7 +131,7 @@ public class NetManager implements IoHandler
 				}
 				catch(Throwable e)
 				{
-					Log.log.error("NetManager: IoSession timeout fatal exception:", e);
+					Log.error("NetManager: IoSession timeout fatal exception:", e);
 				}
 			}
 		});
@@ -301,7 +301,7 @@ public class NetManager implements IoHandler
 	public void startServer(SocketAddress addr) throws IOException
 	{
 		getAcceptor();
-		Log.log.info("{}: listening addr={}", _name, addr);
+		Log.info("{}: listening addr={}", _name, addr);
 		_acceptor.bind(addr);
 	}
 
@@ -314,7 +314,7 @@ public class NetManager implements IoHandler
 	public ConnectFuture startClient(final SocketAddress addr, final Object ctx)
 	{
 		getConnector();
-		Log.log.info("{}: connecting addr={}", _name, addr);
+		Log.info("{}: connecting addr={}", _name, addr);
 		return _connector.connect(addr).addListener(new IoFutureListener<ConnectFuture>()
 		{
 			private int _count;
@@ -327,11 +327,11 @@ public class NetManager implements IoHandler
 					try
 					{
 						++_count;
-						Log.log.warn("{}: connect failed: addr={},count={}", _name, addr, _count);
+						Log.warn("{}: connect failed: addr={},count={}", _name, addr, _count);
 						int delaySec = onConnectFailed(addr, _count, ctx);
 						if(delaySec == 0)
 						{
-							Log.log.info("{}: reconnecting addr={},count={}", _name, addr, _count);
+							Log.info("{}: reconnecting addr={},count={}", _name, addr, _count);
 							_connector.connect(addr).addListener(this);
 						}
 						else if(delaySec > 0)
@@ -344,12 +344,12 @@ public class NetManager implements IoHandler
 								{
 									try
 									{
-										Log.log.info("{}: reconnecting addr={},count={}", _name, addr, _count);
+										Log.info("{}: reconnecting addr={},count={}", _name, addr, _count);
 										_connector.connect(addr).addListener(listener);
 									}
 									catch(Throwable e)
 									{
-										Log.log.error("NetManager.startClient.operationComplete: scheduled exception:", e);
+										Log.error("NetManager.startClient.operationComplete: scheduled exception:", e);
 									}
 								}
 							});
@@ -357,7 +357,7 @@ public class NetManager implements IoHandler
 					}
 					catch(Throwable e)
 					{
-						Log.log.error("NetManager.startClient.operationComplete: exception:", e);
+						Log.error("NetManager.startClient.operationComplete: exception:", e);
 					}
 				}
 			}
@@ -476,7 +476,7 @@ public class NetManager implements IoHandler
 	public boolean sendRaw(IoSession session, Object obj)
 	{
 		if(!write(session, obj)) return false;
-		if(Log.hasTrace) Log.log.trace("{}({}): send: raw: {}", _name, session.getId(), obj);
+		Log.trace("{}({}): send: raw: {}", _name, session.getId(), obj);
 		return true;
 	}
 
@@ -490,7 +490,7 @@ public class NetManager implements IoHandler
 	public boolean send(IoSession session, Bean<?> bean)
 	{
 		if(!write(session, bean)) return false;
-		if(Log.hasTrace) Log.log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.getClass().getSimpleName(), bean);
+		Log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.getClass().getSimpleName(), bean);
 		return true;
 	}
 
@@ -537,12 +537,12 @@ public class NetManager implements IoHandler
 					}
 					catch(Throwable e)
 					{
-						Log.log.error(_name + '(' + session.getId() + "): callback exception: " + bean.getClass().getSimpleName(), e);
+						Log.error(_name + '(' + session.getId() + "): callback exception: " + bean.getClass().getSimpleName(), e);
 					}
 				}
 			}) == null) return false;
 		}
-		if(Log.hasTrace) Log.log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.getClass().getSimpleName(), bean);
+		Log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.getClass().getSimpleName(), bean);
 		return true;
 	}
 
@@ -747,7 +747,7 @@ public class NetManager implements IoHandler
 	 */
 	protected void onUnhandledBean(IoSession session, Bean<?> bean)
 	{
-		Log.log.warn("{}({}): unhandled bean: {}:{}", _name, session.getId(), bean.getClass().getSimpleName(), bean);
+		Log.warn("{}({}): unhandled bean: {}:{}", _name, session.getId(), bean.getClass().getSimpleName(), bean);
 		// session.closeNow();
 	}
 
@@ -770,14 +770,14 @@ public class NetManager implements IoHandler
 	@Override
 	public void sessionOpened(IoSession session)
 	{
-		if(Log.hasDebug) Log.log.debug("{}({}): open: {}", _name, session.getId(), session.getRemoteAddress());
+		Log.debug("{}({}): open: {}", _name, session.getId(), session.getRemoteAddress());
 		onAddSession(session);
 	}
 
 	@Override
 	public void sessionClosed(IoSession session)
 	{
-		if(Log.hasDebug) Log.log.debug("{}({}): close: {}", _name, session.getId(), session.getRemoteAddress());
+		Log.debug("{}({}): close: {}", _name, session.getId(), session.getRemoteAddress());
 		onDelSession(session);
 	}
 
@@ -790,7 +790,7 @@ public class NetManager implements IoHandler
 	@Override
 	public void messageReceived(IoSession session, Object message)
 	{
-		if(Log.hasTrace) Log.log.trace("{}({}): recv: {}:{}", _name, session.getId(), message.getClass().getSimpleName(), message);
+		Log.trace("{}({}): recv: {}:{}", _name, session.getId(), message.getClass().getSimpleName(), message);
 		Bean<?> bean = (Bean<?>)message;
 		BeanHandler<?> handler = _handlers.get(bean.type());
 		if(handler != null)
@@ -801,7 +801,7 @@ public class NetManager implements IoHandler
 			}
 			catch(Throwable e)
 			{
-				Log.log.error(_name + '(' + session.getId() + "): process exception: " + message.getClass().getSimpleName(), e);
+				Log.error(_name + '(' + session.getId() + "): process exception: " + message.getClass().getSimpleName(), e);
 			}
 		}
 		else
@@ -816,7 +816,7 @@ public class NetManager implements IoHandler
 	@Override
 	public void sessionIdle(IoSession session, IdleStatus status)
 	{
-		if(Log.hasTrace) Log.log.trace("{}({}): idle: {}", _name, session.getId(), status);
+		Log.trace("{}({}): idle: {}", _name, session.getId(), status);
 		onIdleSession(session);
 	}
 
@@ -824,9 +824,9 @@ public class NetManager implements IoHandler
 	public void exceptionCaught(IoSession session, Throwable cause)
 	{
 		if(cause instanceof IOException)
-			Log.log.error(_name + '(' + session.getId() + ',' + session.getRemoteAddress() + "): exception: {}", cause.getMessage());
+			Log.error(_name + '(' + session.getId() + ',' + session.getRemoteAddress() + "): exception: {}", cause.getMessage());
 		else
-			Log.log.error(_name + '(' + session.getId() + ',' + session.getRemoteAddress() + "): exception:", cause);
+			Log.error(_name + '(' + session.getId() + ',' + session.getRemoteAddress() + "): exception:", cause);
 		session.closeNow();
 	}
 }

@@ -36,7 +36,7 @@ public final class TestClient extends NetManager
 	@Override
 	protected int onConnectFailed(SocketAddress address, int count, Object ctx)
 	{
-		Log.log.error("{}: onConnectFailed: addr={},count={}", getName(), address, count);
+		Log.error("{}: onConnectFailed: addr={},count={}", getName(), address, count);
 		int sec = 1 << count;
 		return sec < MAX_CONNECT_DELAY_SEC ? sec : MAX_CONNECT_DELAY_SEC;
 	}

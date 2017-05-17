@@ -132,7 +132,7 @@ public final class ProcThread extends Thread
 												sb.append("procedure({}) in {} interrupted for timeout ({} ms): sid={}\n");
 												for(StackTraceElement ste : pt.getStackTrace())
 													sb.append("\tat ").append(ste).append('\n');
-												Log.log.error(sb.toString(), p.getClass().getName(), pt, timeout, p.getSid());
+												Log.error(sb.toString(), p.getClass().getName(), pt, timeout, p.getSid());
 												++_interruptCount;
 												pt.interrupt();
 											}
@@ -154,7 +154,7 @@ public final class ProcThread extends Thread
 															sb.append("procedure({}) in {} interrupted for deadlock timeout({} ms): sid={}\n");
 															for(StackTraceElement ste : pt.getStackTrace())
 																sb.append("\tat ").append(ste).append('\n');
-															Log.log.error(sb.toString(), p.getClass().getName(), pt, timeout, p.getSid());
+															Log.error(sb.toString(), p.getClass().getName(), pt, timeout, p.getSid());
 															++_interruptCount;
 															pt.interrupt();
 															break;
@@ -172,7 +172,7 @@ public final class ProcThread extends Thread
 					}
 					catch(Throwable e)
 					{
-						Log.log.error("procedure timeout fatal exception:", e);
+						Log.error("procedure timeout fatal exception:", e);
 					}
 				}
 			});

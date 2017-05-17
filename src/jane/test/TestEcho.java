@@ -66,7 +66,7 @@ public final class TestEcho extends NetManager
 	{
 		try
 		{
-			Log.log.info("TestEcho: start: " + TEST_CLIENT_COUNT);
+			Log.info("TestEcho: start: " + TEST_CLIENT_COUNT);
 			if(args.length > 0) TEST_ECHO_SIZE = Integer.parseInt(args[0]);
 			if(args.length > 1) TEST_ECHO_COUNT = Integer.parseInt(args[1]);
 			IoBuffer.setUseDirectBuffer((args.length > 2 ? Integer.parseInt(args[2]) : 0) > 0);
@@ -80,7 +80,7 @@ public final class TestEcho extends NetManager
 			for(int i = 0; i < TEST_CLIENT_COUNT; ++i)
 				mgr.startClient(new InetSocketAddress("127.0.0.1", 9123));
 			_closedCount.await();
-			Log.log.info("TestEcho: end ({} ms)", System.currentTimeMillis() - time);
+			Log.info("TestEcho: end ({} ms)", System.currentTimeMillis() - time);
 			Log.shutdown();
 			// System.out.println(TestCachedBufferAllocator.allocCount.get());
 			// System.out.println(TestCachedBufferAllocator.cacheCount.get());
@@ -89,7 +89,7 @@ public final class TestEcho extends NetManager
 		}
 		catch(Throwable e)
 		{
-			Log.log.error("startup exception:", e);
+			Log.error("startup exception:", e);
 			e.printStackTrace(System.err);
 		}
 	}

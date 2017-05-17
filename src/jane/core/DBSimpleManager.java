@@ -125,24 +125,24 @@ public final class DBSimpleManager
 						long t1, modCount = _writeCache.size();
 						if(modCount == 0)
 						{
-							Log.log.info("db-commit not found modified record");
+							Log.info("db-commit not found modified record");
 							t1 = System.currentTimeMillis();
 						}
 						else
 						{
 							// 1.首先尝试遍历单个加锁的方式保存已修改的记录. 此时和其它事务可以并发
 							long t0 = System.currentTimeMillis();
-							Log.log.info("db-commit saving: {}...", modCount);
+							Log.info("db-commit saving: {}...", modCount);
 							HashMap<Octets, Octets> writeBuf = new HashMap<>(_writeCache);
-							Log.log.info("db-commit committing: {}...", writeBuf.size());
+							Log.info("db-commit committing: {}...", writeBuf.size());
 							_storage.dbcommit(writeBuf);
-							Log.log.info("db-commit cleaning...");
+							Log.info("db-commit cleaning...");
 							int n = _writeCache.size();
 							for(Entry<Octets, Octets> e : writeBuf.entrySet())
 								_writeCache.remove(e.getKey(), e.getValue());
 							writeBuf.clear();
 							t1 = System.currentTimeMillis();
-							Log.log.info("db-commit done: {}=>{} ({} ms)", n, _writeCache.size(), t1 - t0);
+							Log.info("db-commit done: {}=>{} ({} ms)", n, _writeCache.size(), t1 - t0);
 						}
 
 						// 2.判断备份周期并启动备份
@@ -155,7 +155,7 @@ public final class DBSimpleManager
 							}
 							else
 								_backupTime = Long.MAX_VALUE;
-							Log.log.info("db-commit backup begin...");
+							Log.info("db-commit backup begin...");
 							String timeStr;
 							synchronized(_sdf)
 							{
@@ -164,16 +164,16 @@ public final class DBSimpleManager
 							long r = _storage.backup(new File(Const.dbBackupPath,
 									new File(_dbFilename).getName() + '.' + timeStr));
 							if(r >= 0)
-								Log.log.info("db-commit backup end ({} bytes) ({} ms)", r, System.currentTimeMillis() - t1);
+								Log.info("db-commit backup end ({} bytes) ({} ms)", r, System.currentTimeMillis() - t1);
 							else
-								Log.log.error("db-commit backup error({}) ({} ms)", r, System.currentTimeMillis() - t1);
+								Log.error("db-commit backup error({}) ({} ms)", r, System.currentTimeMillis() - t1);
 						}
 					}
 				}
 			}
 			catch(Throwable e)
 			{
-				Log.log.error("db-commit fatal exception:", e);
+				Log.error("db-commit fatal exception:", e);
 			}
 			return true;
 		}
@@ -226,13 +226,13 @@ public final class DBSimpleManager
 			@Override
 			public void run()
 			{
-				Log.log.info("DBSimpleManager.OnJVMShutDown: db shutdown");
+				Log.info("DBSimpleManager.OnJVMShutDown: db shutdown");
 				synchronized(DBSimpleManager.this)
 				{
 					_exiting = true;
 				}
 				shutdown();
-				Log.log.info("DBSimpleManager.OnJVMShutDown: db closed");
+				Log.info("DBSimpleManager.OnJVMShutDown: db closed");
 			}
 		});
 	}
@@ -355,7 +355,7 @@ public final class DBSimpleManager
 		}
 		catch(Exception e)
 		{
-			Log.log.error("get record exception: tableId=" + tableId + ", key=" + key + ", type=" + beanStub.typeName(), e);
+			Log.error("get record exception: tableId=" + tableId + ", key=" + key + ", type=" + beanStub.typeName(), e);
 			return null;
 		}
 	}
@@ -368,7 +368,7 @@ public final class DBSimpleManager
 		}
 		catch(Exception e)
 		{
-			Log.log.error("get record exception: tableId=" + tableId + ", key=" + key.dump() + ", type=" + beanStub.typeName(), e);
+			Log.error("get record exception: tableId=" + tableId + ", key=" + key.dump() + ", type=" + beanStub.typeName(), e);
 			return null;
 		}
 	}
@@ -381,7 +381,7 @@ public final class DBSimpleManager
 		}
 		catch(Exception e)
 		{
-			Log.log.error("get record exception: tableId=" + tableId + ", key='" + key + "', type=" + beanStub.typeName(), e);
+			Log.error("get record exception: tableId=" + tableId + ", key='" + key + "', type=" + beanStub.typeName(), e);
 			return null;
 		}
 	}
@@ -394,7 +394,7 @@ public final class DBSimpleManager
 		}
 		catch(Exception e)
 		{
-			Log.log.error("get record exception: tableId=" + tableId + ", key=" + key + ", type=" + beanStub.typeName(), e);
+			Log.error("get record exception: tableId=" + tableId + ", key=" + key + ", type=" + beanStub.typeName(), e);
 			return null;
 		}
 	}
@@ -656,7 +656,7 @@ public final class DBSimpleManager
 		}
 		catch(InterruptedException e)
 		{
-			Log.log.error("DBSimpleManager.shutdown: exception:", e);
+			Log.error("DBSimpleManager.shutdown: exception:", e);
 		}
 	}
 }

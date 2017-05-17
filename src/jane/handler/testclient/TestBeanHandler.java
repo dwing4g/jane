@@ -19,7 +19,7 @@ public final class TestBeanHandler extends BeanHandler<TestBean>
 	@Override
 	public void onProcess(NetManager manager, IoSession session, TestBean arg)
 	{
-		if(Log.hasDebug) Log.log.debug("{}: arg={}", getClass().getName(), arg);
+		Log.debug("{}: arg={}", getClass().getName(), arg);
 
 		RC4Filter filter = new RC4Filter();
 		filter.setInputKey(new byte[] { 1, 2, 3 }, 3);

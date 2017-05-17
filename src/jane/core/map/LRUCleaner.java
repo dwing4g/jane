@@ -49,7 +49,7 @@ final class LRUCleaner
 				}
 				catch(Throwable e)
 				{
-					Log.log.error("LRUCleaner fatal exception:", e);
+					Log.error("LRUCleaner fatal exception:", e);
 				}
 				finally
 				{

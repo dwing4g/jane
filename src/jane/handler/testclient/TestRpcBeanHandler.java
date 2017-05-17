@@ -44,7 +44,7 @@ public final class TestRpcBeanHandler extends RpcHandler<TestBean, TestType, Tes
 	{
 		final TestBean arg = rpcBean.getArg();
 		final TestType res = rpcBean.getRes();
-		if(Log.hasDebug) Log.log.debug("{}: onServer: {}", getClass().getName(), toString());
+		Log.debug("{}: onServer: {}", getClass().getName(), toString());
 		res.setV4(arg.getValue1());
 		res.setV5(arg.getValue2());
 		return true;

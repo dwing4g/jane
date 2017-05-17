@@ -333,8 +333,7 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 		}
 		finally
 		{
-			if(Log.hasDebug)
-				Log.log.debug("LRUMap.sweep({}: {}=>{}, {}ms)", name, sizeOld, size.get(), System.currentTimeMillis() - time);
+			Log.debug("LRUMap.sweep({}: {}=>{}, {}ms)", name, sizeOld, size.get(), System.currentTimeMillis() - time);
 		}
 	}
 

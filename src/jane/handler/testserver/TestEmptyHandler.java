@@ -14,6 +14,6 @@ public final class TestEmptyHandler extends BeanHandler<TestEmpty>
 	@Override
 	public void onProcess(final NetManager manager, final IoSession session, final TestEmpty arg)
 	{
-		if(Log.hasDebug) Log.log.debug("{}.onProcess: arg={}", getClass().getName(), arg);
+		Log.debug("{}.onProcess: arg={}", getClass().getName(), arg);
 	}
 }

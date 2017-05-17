@@ -7,6 +7,7 @@ import java.util.Enumeration;
 import java.util.jar.Manifest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.helpers.MessageFormatter;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.util.ContextInitializer;
 
@@ -86,7 +87,7 @@ public final class Log
 			try(InputStream is = url.openStream())
 			{
 				String time = new Manifest(is).getMainAttributes().getValue(TAG);
-				if(time != null) Log.log.info("{}#{} = {}", url.getPath(), TAG, time);
+				if(time != null) info("{}#{} = {}", url.getPath(), TAG, time);
 			}
 		}
 	}
@@ -120,6 +121,136 @@ public final class Log
 	public static void shutdown()
 	{
 		logCtx.stop();
+	}
+
+	public static void trace(String msg)
+	{
+		if(hasTrace) log.trace(msg);
+	}
+
+	public static void trace(String msg, Object arg)
+	{
+		if(hasTrace) log.trace(msg, arg);
+	}
+
+	public static void trace(String msg, Object arg1, Object arg2)
+	{
+		if(hasTrace) log.trace(msg, arg1, arg2);
+	}
+
+	public static void trace(String msg, Object... args)
+	{
+		if(hasTrace) log.trace(msg, args);
+	}
+
+	public static void trace(String msg, Throwable t)
+	{
+		if(hasTrace) log.trace(msg, t);
+	}
+
+	public static void debug(String msg)
+	{
+		if(hasDebug) log.debug(msg);
+	}
+
+	public static void debug(String msg, Object arg)
+	{
+		if(hasDebug) log.debug(msg, arg);
+	}
+
+	public static void debug(String msg, Object arg1, Object arg2)
+	{
+		if(hasDebug) log.debug(msg, arg1, arg2);
+	}
+
+	public static void debug(String msg, Object... args)
+	{
+		if(hasDebug) log.debug(msg, args);
+	}
+
+	public static void debug(String msg, Throwable t)
+	{
+		if(hasDebug) log.debug(msg, t);
+	}
+
+	public static void info(String msg)
+	{
+		if(hasInfo) log.info(msg);
+	}
+
+	public static void info(String msg, Object arg)
+	{
+		if(hasInfo) log.info(msg, arg);
+	}
+
+	public static void info(String msg, Object arg1, Object arg2)
+	{
+		if(hasInfo) log.info(msg, arg1, arg2);
+	}
+
+	public static void info(String msg, Object... args)
+	{
+		if(hasInfo) log.info(msg, args);
+	}
+
+	public static void info(String msg, Throwable t)
+	{
+		if(hasInfo) log.info(msg, t);
+	}
+
+	public static void warn(String msg)
+	{
+		if(hasWarn) log.warn(msg);
+	}
+
+	public static void warn(String msg, Object arg)
+	{
+		if(hasWarn) log.warn(msg, arg);
+	}
+
+	public static void warn(String msg, Object arg1, Object arg2)
+	{
+		if(hasWarn) log.warn(msg, arg1, arg2);
+	}
+
+	public static void warn(String msg, Object... args)
+	{
+		if(hasWarn) log.warn(msg, args);
+	}
+
+	public static void warn(String msg, Throwable t)
+	{
+		if(hasWarn) log.warn(msg, t);
+	}
+
+	public static void error(String msg)
+	{
+		log.error(msg);
+	}
+
+	public static void error(String msg, Object arg)
+	{
+		log.error(msg, arg);
+	}
+
+	public static void error(String msg, Object arg1, Object arg2)
+	{
+		log.error(msg, arg1, arg2);
+	}
+
+	public static void error(String msg, Object... args)
+	{
+		log.error(msg, args);
+	}
+
+	public static void error(String msg, Throwable t)
+	{
+		log.error(msg, t);
+	}
+
+	public static void error(Throwable t, String msg, Object... args)
+	{
+		if(hasError) log.error(MessageFormatter.arrayFormat(msg, args).getMessage(), t);
 	}
 
 	private Log()

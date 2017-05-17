@@ -32,12 +32,12 @@ public final class TestDBBenchmark
 		final int countOut = (args.length > 4 ? ("u".equals(args[4]) ? Integer.MAX_VALUE : Integer.parseInt(args[4])) : (keyAllCount - keyWinCount) * 10);
 		final int KEY_BEGIN = -keyAllCount / 2;
 
-		Log.log.info("begin {}: key: {}/{}, count: {}*{}", sto.getClass().getName(), keyWinCount, keyAllCount, countIn, countOut);
+		Log.info("begin {}: key: {}/{}, count: {}*{}", sto.getClass().getName(), keyWinCount, keyAllCount, countIn, countOut);
 		DBManager.instance().startup(sto);
 		AllTables.register();
 		System.gc();
 		System.runFinalization();
-		Log.log.info("start");
+		Log.info("start");
 
 		Thread pt = new ProcThread(null, new Runnable()
 		{
@@ -71,7 +71,7 @@ public final class TestDBBenchmark
 							{
 								long t1 = System.currentTimeMillis();
 								long tt = t1 - t0;
-								if(tt >= 250) Log.log.info("proc delay={}ms", tt);
+								if(tt >= 250) Log.info("proc delay={}ms", tt);
 								TestBean.Safe a = lockGet(Benchmark, id);
 								if(a == null)
 								{
@@ -87,7 +87,7 @@ public final class TestDBBenchmark
 										a.setValue2(id);
 								}
 								tt = System.currentTimeMillis() - t1;
-								if(tt >= 250) Log.log.info("proc timeout={}ms", tt);
+								if(tt >= 250) Log.info("proc timeout={}ms", tt);
 							}
 						}.run();
 					}
@@ -95,7 +95,7 @@ public final class TestDBBenchmark
 					{
 						long rc = Benchmark.getReadCount();
 						long rtc = Benchmark.getReadStoCount();
-						Log.log.info("{}ms checked={}/{} {}%", System.currentTimeMillis() - t, checked.get(), logCount * countIn, (rc - rtc) * 10000 / rc * 0.01);
+						Log.info("{}ms checked={}/{} {}%", System.currentTimeMillis() - t, checked.get(), logCount * countIn, (rc - rtc) * 10000 / rc * 0.01);
 						t = System.currentTimeMillis();
 						checked.set(0);
 					}
@@ -106,10 +106,10 @@ public final class TestDBBenchmark
 		pt.start();
 		pt.join();
 
-		Log.log.info("checkpoint");
+		Log.info("checkpoint");
 		DBManager.instance().backupNextCheckpoint();
 		DBManager.instance().checkpoint();
-		Log.log.info("end");
+		Log.info("end");
 		System.exit(0);
 	}
 }

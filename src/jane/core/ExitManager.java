@@ -20,7 +20,7 @@ public final class ExitManager
 			{
 				try
 				{
-					Log.log.info("ExitManager: shutdown begin");
+					Log.info("ExitManager: shutdown begin");
 					for(Runnable r : _shutdownUserCallbacks)
 					{
 						try
@@ -29,7 +29,7 @@ public final class ExitManager
 						}
 						catch(Throwable e)
 						{
-							Log.log.error("ExitManager: user callback exception:", e);
+							Log.error("ExitManager: user callback exception:", e);
 						}
 					}
 					_shutdownUserCallbacks.clear();
@@ -41,14 +41,14 @@ public final class ExitManager
 						}
 						catch(Throwable e)
 						{
-							Log.log.error("ExitManager: system callback exception:", e);
+							Log.error("ExitManager: system callback exception:", e);
 						}
 					}
 					_shutdownSystemCallbacks.clear();
 				}
 				catch(Throwable e)
 				{
-					Log.log.error("ExitManager: fatal exception:", e);
+					Log.error("ExitManager: fatal exception:", e);
 				}
 				finally
 				{

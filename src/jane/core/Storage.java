@@ -59,7 +59,7 @@ public interface Storage extends Closeable
 			}
 			catch(Exception e)
 			{
-				Log.log.error("walk exception:", e);
+				Log.error("walk exception:", e);
 				return false;
 			}
 		}
@@ -72,7 +72,7 @@ public interface Storage extends Closeable
 			}
 			catch(Exception e)
 			{
-				Log.log.error("walk exception:", e);
+				Log.error("walk exception:", e);
 				return false;
 			}
 		}

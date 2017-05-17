@@ -84,7 +84,7 @@ public final class TestEchoAio extends TcpManager
 			if(args.length > 0) TEST_ECHO_SIZE = Integer.parseInt(args[0]);
 			if(args.length > 1) TEST_ECHO_SIZE_ALL = Integer.parseInt(args[1]);
 			if(args.length > 2) TEST_CLIENT_COUNT = Integer.parseInt(args[2]);
-			Log.log.info("TestEchoAio: start({})", TEST_CLIENT_COUNT);
+			Log.info("TestEchoAio: start({})", TEST_CLIENT_COUNT);
 			_closedCount = new CountDownLatch(TEST_CLIENT_COUNT * 2);
 			// System.gc();
 			long time = System.currentTimeMillis();
@@ -94,7 +94,7 @@ public final class TestEchoAio extends TcpManager
 			for(int i = 0; i < TEST_CLIENT_COUNT; ++i)
 				mgr.startClient(new InetSocketAddress("127.0.0.1", 9123));
 			_closedCount.await();
-			Log.log.info("TestEchoAio: end ({} ms)", System.currentTimeMillis() - time);
+			Log.info("TestEchoAio: end ({} ms)", System.currentTimeMillis() - time);
 			Log.shutdown();
 			// System.out.println(ByteBufferPool.allocCount.get());
 			// System.out.println(ByteBufferPool.cacheCount.get());
@@ -103,7 +103,7 @@ public final class TestEchoAio extends TcpManager
 		}
 		catch(Throwable e)
 		{
-			Log.log.error("startup exception:", e);
+			Log.error("startup exception:", e);
 			e.printStackTrace(System.err);
 		}
 	}

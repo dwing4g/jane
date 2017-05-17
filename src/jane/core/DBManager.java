@@ -115,21 +115,21 @@ public final class DBManager
 						long t3, modCount = _modCount.get();
 						if(modCount == 0 && !force)
 						{
-							Log.log.info("db-commit not found modified record");
+							Log.info("db-commit not found modified record");
 							t3 = System.currentTimeMillis();
 						}
 						else
 						{
 							// 1.首先尝试遍历单个加锁的方式保存已修改的记录. 此时和其它事务可以并发
 							long t0 = System.currentTimeMillis(), t1 = 0;
-							Log.log.info("db-commit saving: {}...", modCount);
+							Log.info("db-commit saving: {}...", modCount);
 							_counts[0] = _counts[1] = _counts[2] = 0;
 							_storage.putBegin();
 							TableBase.trySaveModifiedAll(_counts);
 							// 2.如果前一轮遍历之后仍然有过多的修改记录,则再试一轮
 							if(_counts[1] >= Const.dbCommitResaveCount)
 							{
-								Log.log.info("db-commit saved: {}=>{}({}), try again...", _counts[0], _counts[1], _counts[2]);
+								Log.info("db-commit saved: {}=>{}({}), try again...", _counts[0], _counts[1], _counts[2]);
 								_counts[0] = _counts[1] = 0;
 								TableBase.trySaveModifiedAll(_counts);
 							}
@@ -137,16 +137,16 @@ public final class DBManager
 							if(_counts[2] != 0 || _counts[1] != 0 || _counts[0] != 0 || force)
 							{
 								WriteLock wl = Procedure.getWriteLock();
-								Log.log.info("db-commit saved: {}=>{}({}), flushing...", _counts[0], _counts[1], _counts[2]);
+								Log.info("db-commit saved: {}=>{}({}), flushing...", _counts[0], _counts[1], _counts[2]);
 								_storage.putFlush(false);
-								Log.log.info("db-commit procedure pausing...");
+								Log.info("db-commit procedure pausing...");
 								t1 = System.currentTimeMillis();
 								wl.lock();
 								try
 								{
 									_modCount.set(0);
-									Log.log.info("db-commit saving left...");
-									Log.log.info("db-commit saved: {}, flushing left...", TableBase.saveModifiedAll());
+									Log.info("db-commit saving left...");
+									Log.info("db-commit saved: {}, flushing left...", TableBase.saveModifiedAll());
 									_storage.putFlush(true);
 								}
 								finally
@@ -154,15 +154,15 @@ public final class DBManager
 									wl.unlock();
 								}
 								t1 = System.currentTimeMillis() - t1;
-								Log.log.info("db-commit procedure continued, committing...");
+								Log.info("db-commit procedure continued, committing...");
 							}
 							else
-								Log.log.info("db-commit not found modified record");
+								Log.info("db-commit not found modified record");
 							// 4.最后恢复其它事务的运行,并对数据库存储系统做提交操作,完成一整轮的事务性持久化
 							long t2 = System.currentTimeMillis();
 							_storage.commit();
 							t3 = System.currentTimeMillis();
-							Log.log.info("db-commit done ({}/{}/{} ms)", t1, t3 - t2, t3 - t0);
+							Log.info("db-commit done ({}/{}/{} ms)", t1, t3 - t2, t3 - t0);
 						}
 
 						// 5.判断备份周期并启动备份
@@ -170,7 +170,7 @@ public final class DBManager
 						{
 							_backupTime += _backupPeriod;
 							if(_backupTime <= t) _backupTime += ((t - _backupTime) / _backupPeriod + 1) * _backupPeriod;
-							Log.log.info("db-commit backup begin...");
+							Log.info("db-commit backup begin...");
 							String timeStr;
 							synchronized(_sdf)
 							{
@@ -179,21 +179,21 @@ public final class DBManager
 							long r = _storage.backup(new File(Const.dbBackupPath,
 									new File(Const.dbFilename).getName() + '.' + timeStr));
 							if(r >= 0)
-								Log.log.info("db-commit backup end ({} bytes) ({} ms)", r, System.currentTimeMillis() - t);
+								Log.info("db-commit backup end ({} bytes) ({} ms)", r, System.currentTimeMillis() - t);
 							else
-								Log.log.error("db-commit backup error({}) ({} ms)", r, System.currentTimeMillis() - t);
+								Log.error("db-commit backup error({}) ({} ms)", r, System.currentTimeMillis() - t);
 						}
 					}
 
 					// 6.清理一遍事务队列
 					collectQueue(_counts);
 					if(_counts[0] != 0 || _counts[1] != 0)
-						Log.log.info("db-commit collect queue: {}=>{}", _counts[0], _counts[1]);
+						Log.info("db-commit collect queue: {}=>{}", _counts[0], _counts[1]);
 				}
 			}
 			catch(Throwable e)
 			{
-				Log.log.error("db-commit fatal exception:", e);
+				Log.error("db-commit fatal exception:", e);
 			}
 			return true;
 		}
@@ -272,7 +272,7 @@ public final class DBManager
 			@Override
 			public void run()
 			{
-				Log.log.info("DBManager.OnJVMShutDown: db shutdown");
+				Log.info("DBManager.OnJVMShutDown: db shutdown");
 				try
 				{
 					synchronized(DBManager.this)
@@ -285,7 +285,7 @@ public final class DBManager
 				{
 					shutdown();
 				}
-				Log.log.info("DBManager.OnJVMShutDown: db closed");
+				Log.info("DBManager.OnJVMShutDown: db closed");
 			}
 		});
 	}
@@ -403,7 +403,7 @@ public final class DBManager
 		}
 		catch(InterruptedException e)
 		{
-			Log.log.error("DBManager.shutdown: exception:", e);
+			Log.error("DBManager.shutdown: exception:", e);
 		}
 	}
 
@@ -584,7 +584,7 @@ public final class DBManager
 						}
 						catch(Throwable e)
 						{
-							Log.log.error("procedure(sid=" + sid + ") exception:", e);
+							Log.error("procedure(sid=" + sid + ") exception:", e);
 						}
 						synchronized(_q)
 						{
@@ -600,7 +600,7 @@ public final class DBManager
 				}
 				catch(Throwable e)
 				{
-					Log.log.error("procedure(sid=" + sid + ") fatal exception:", e);
+					Log.error("procedure(sid=" + sid + ") fatal exception:", e);
 				}
 			}
 		});

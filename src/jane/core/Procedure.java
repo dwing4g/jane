@@ -275,7 +275,7 @@ public abstract class Procedure implements Runnable
 			}
 			catch(Throwable e)
 			{
-				Log.log.error("UNLOCK FAILED!!!", e);
+				Log.error("UNLOCK FAILED!!!", e);
 			}
 		}
 		pt.lockCount = 0;
@@ -711,7 +711,7 @@ public abstract class Procedure implements Runnable
 		}
 		catch(Throwable e)
 		{
-			Log.log.error("procedure fatal exception: " + toString(), e);
+			Log.error("procedure fatal exception: " + toString(), e);
 		}
 	}
 
@@ -725,7 +725,7 @@ public abstract class Procedure implements Runnable
 	{
 		if(!_running.compareAndSet(0, 1))
 		{
-			Log.log.error("procedure already running: " + toString());
+			Log.error("procedure already running: " + toString());
 			return false;
 		}
 		if(DBManager.instance().isExiting())
@@ -760,7 +760,7 @@ public abstract class Procedure implements Runnable
 				unlock();
 				if(--n <= 0)
 					throw new Exception("procedure redo too many times=" + Const.maxProceduerRedo + ": " + toString());
-				Log.log.debug("procedure redo({}): {}", Const.maxProceduerRedo - n, toString());
+				Log.debug("procedure redo({}): {}", Const.maxProceduerRedo - n, toString());
 			}
 			sctx.commit();
 			return true;
@@ -774,7 +774,7 @@ public abstract class Procedure implements Runnable
 			}
 			catch(Throwable ex)
 			{
-				Log.log.error("procedure.onException exception: " + toString(), ex);
+				Log.error("procedure.onException exception: " + toString(), ex);
 			}
 			finally
 			{
@@ -813,7 +813,7 @@ public abstract class Procedure implements Runnable
 		if(_defaultEh != null)
 			_defaultEh.onException(e);
 		else
-			Log.log.error("procedure exception: " + toString(), e);
+			Log.error("procedure exception: " + toString(), e);
 	}
 
 	@Override

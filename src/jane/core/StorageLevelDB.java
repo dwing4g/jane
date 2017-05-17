@@ -227,7 +227,7 @@ public final class StorageLevelDB implements Storage
 			}
 			catch(MarshalException e)
 			{
-				Log.log.error("unmarshal idcounter failed", e);
+				Log.error("unmarshal idcounter failed", e);
 				return 0;
 			}
 		}
@@ -554,7 +554,7 @@ public final class StorageLevelDB implements Storage
 		if(_db == 0) throw new IllegalStateException("db closed");
 		leveldb_write(_db, map.entrySet().iterator());
 		int r = leveldb_write(_db, _writeBuf.entrySet().iterator());
-		if(r != 0) Log.log.error("StorageLevelDB.commit: leveldb_write failed({})", r);
+		if(r != 0) Log.error("StorageLevelDB.commit: leveldb_write failed({})", r);
 	}
 
 	interface DBWalkHandler
@@ -599,7 +599,7 @@ public final class StorageLevelDB implements Storage
 					}
 					catch(Exception e)
 					{
-						Log.log.error("walk exception:", e);
+						Log.error("walk exception:", e);
 						return false;
 					}
 				}
@@ -626,7 +626,7 @@ public final class StorageLevelDB implements Storage
 					}
 					catch(Exception e)
 					{
-						Log.log.error("walk exception:", e);
+						Log.error("walk exception:", e);
 						return false;
 					}
 				}
@@ -699,11 +699,11 @@ public final class StorageLevelDB implements Storage
 		}
 		if(_db == 0)
 		{
-			Log.log.error("StorageLevelDB.commit: db is closed");
+			Log.error("StorageLevelDB.commit: db is closed");
 			return;
 		}
 		int r = leveldb_write(_db, _writeBuf.entrySet().iterator());
-		if(r != 0) Log.log.error("StorageLevelDB.commit: leveldb_write failed({})", r);
+		if(r != 0) Log.error("StorageLevelDB.commit: leveldb_write failed({})", r);
 		_writeBuf.clear();
 		_writing = false;
 	}

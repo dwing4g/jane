@@ -62,7 +62,7 @@ public final class Const
 			janeProp = System.getProperty("jane.prop");
 			if(janeProp == null || (janeProp = janeProp.trim()).isEmpty())
 				janeProp = "jane.properties";
-			if(Log.hasDebug) Log.log.debug("{}: load {}", Const.class.getName(), janeProp);
+			Log.debug("{}: load {}", Const.class.getName(), janeProp);
 			if(new File(janeProp).exists())
 				isProp = new FileInputStream(janeProp);
 			else
@@ -71,7 +71,7 @@ public final class Const
 		}
 		catch(Exception e)
 		{
-			Log.log.error("{}: load {} failed, use all default properties", Const.class.getName(), janeProp);
+			Log.error("{}: load {} failed, use all default properties", Const.class.getName(), janeProp);
 		}
 		finally
 		{
@@ -83,7 +83,7 @@ public final class Const
 				}
 				catch(IOException e)
 				{
-					Log.log.error("close jane.prop=" + janeProp + " file failed", e);
+					Log.error("close jane.prop=" + janeProp + " file failed", e);
 				}
 			}
 		}

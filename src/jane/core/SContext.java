@@ -414,7 +414,7 @@ public final class SContext
 			}
 			catch(Throwable e)
 			{
-				Log.log.error("oncommit exception:", e);
+				Log.error("oncommit exception:", e);
 			}
 		}
 		_onCommits.clear();
@@ -435,7 +435,7 @@ public final class SContext
 			}
 			catch(Throwable e)
 			{
-				Log.log.error("rollback exception:", e);
+				Log.error("rollback exception:", e);
 			}
 		}
 		_onRollbacks.clear();
