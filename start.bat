@@ -14,6 +14,18 @@ set JVM=^
 -Dsun.stdout.encoding=gbk ^
 -Dsun.stderr.encoding=gbk
 
+rem -Djava.rmi.server.hostname=127.0.0.1 ^
+rem -Djava.net.preferIPv4Stack=true ^
+rem -Dcom.sun.management.jmxremote.port=1100 ^
+rem -Dcom.sun.management.jmxremote.rmi.port=1099 ^
+rem -Dcom.sun.management.jmxremote.ssl=false ^
+rem -Dcom.sun.management.jmxremote.local.only=false ^
+rem -Dcom.sun.management.jmxremote.authenticate=true ^
+rem -Dcom.sun.management.jmxremote.password.file=jmxremote.password ^
+rem -Dcom.sun.management.jmxremote.access.file=jmxremote.access
+
+rem -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1234
+
 rem set JVM=^
 rem -Xms128m ^
 rem -Xmx512m ^

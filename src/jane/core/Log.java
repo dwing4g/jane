@@ -65,7 +65,10 @@ public final class Log
 		log.info("java.class.path = {}", System.getProperty("java.class.path"));
 		log.info("user.name = {}", System.getProperty("user.name"));
 		log.info("user.dir = {}", System.getProperty("user.dir"));
-		log.info("logback.path = {}", new ContextInitializer(logCtx).findURLOfDefaultConfigurationFile(true).getPath());
+		URL url = new ContextInitializer(logCtx).findURLOfDefaultConfigurationFile(true);
+		if(url == null)
+			throw new Error("not found logback.xml from classpath");
+		log.info("logback.path = {}", url.getPath());
 		log.info("debug = {}, charset = {}, file.encoding = {}", Const.debug, Const.stringCharset, System.getProperty("file.encoding"));
 		if(args != null)
 		{

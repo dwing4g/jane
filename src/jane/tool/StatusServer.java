@@ -1,5 +1,6 @@
 package jane.tool;
 
+import java.text.DecimalFormat;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Map.Entry;
@@ -74,6 +75,16 @@ public class StatusServer extends NetManager
 		strs.add(v4);
 		strs.add(v3 > 0 ? String.format("%.2f%%", (double)(v3 - v4) * 100 / v3) : "-.--%");
 		list.add(strs);
+
+		Runtime runtime = Runtime.getRuntime();
+		long totalMem = runtime.totalMemory();
+		long freeMem = runtime.freeMemory();
+		DecimalFormat formatter = new DecimalFormat("#,###");
+		list.add(new SimpleEntry<String, Object>("availableProcessors", runtime.availableProcessors()));
+		list.add(new SimpleEntry<String, Object>("maxMemory", formatter.format(runtime.maxMemory())));
+		list.add(new SimpleEntry<String, Object>("totalMemory", formatter.format(totalMem)));
+		list.add(new SimpleEntry<String, Object>("usedMemory", formatter.format(totalMem - freeMem)));
+		list.add(new SimpleEntry<String, Object>("freeMemory", formatter.format(freeMem)));
 
 		if(DBManager.hasCreated())
 		{

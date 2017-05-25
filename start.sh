@@ -14,6 +14,18 @@ JVM="\
 -Dsun.stdout.encoding=utf-8 \
 -Dsun.stderr.encoding=utf-8"
 
+# -Djava.rmi.server.hostname=127.0.0.1 \
+# -Djava.net.preferIPv4Stack=true \
+# -Dcom.sun.management.jmxremote.port=1100 \
+# -Dcom.sun.management.jmxremote.rmi.port=1099 \
+# -Dcom.sun.management.jmxremote.ssl=false \
+# -Dcom.sun.management.jmxremote.local.only=false \
+# -Dcom.sun.management.jmxremote.authenticate=true \
+# -Dcom.sun.management.jmxremote.password.file=jmxremote.password \
+# -Dcom.sun.management.jmxremote.access.file=jmxremote.access"
+
+# -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1234
+
 # JVM="\
 # -Xms512m \
 # -Xmx512m \
