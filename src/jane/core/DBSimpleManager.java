@@ -8,6 +8,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import jane.core.StorageLevelDB.DBWalkHandler;
@@ -29,16 +30,16 @@ public final class DBSimpleManager
 
 	private static volatile boolean _hasCreated; // 是否创建过此类的对象
 
-	private final SimpleDateFormat	  _sdf			   = new SimpleDateFormat("yy-MM-dd-HH-mm-ss");						   // 备份文件后缀名的时间格式
-	private final CommitThread		  _commitThread	   = new CommitThread();											   // 处理数据提交的线程
-	private final Map<Octets, Octets> _readCache	   = Util.newConcurrentLRUMap(Const.dbSimpleCacheSize, "SimpleCache"); // 读缓冲区
-	private final Map<Octets, Octets> _writeCache	   = Util.newConcurrentHashMap();									   // 写缓冲区
-	private StorageLevelDB			  _storage;																			   // 存储引擎
-	private String					  _dbFilename;																		   // 数据库保存的路径
-	protected final AtomicLong		  _readCount	   = new AtomicLong();												   // 读操作次数统计
-	protected final AtomicLong		  _readStoCount	   = new AtomicLong();												   // 读数据库存储的次数统计(即cache-miss的次数统计)
-	private boolean					  _enableReadCache = true;															   // 是否开启读缓存
-	private volatile boolean		  _exiting;																			   // 是否在退出状态(已经执行了ShutdownHook)
+	private final SimpleDateFormat				_sdf			 = new SimpleDateFormat("yy-MM-dd-HH-mm-ss");						 // 备份文件后缀名的时间格式
+	private final CommitThread					_commitThread	 = new CommitThread();												 // 处理数据提交的线程
+	private final Map<Octets, Octets>			_readCache		 = Util.newConcurrentLRUMap(Const.dbSimpleCacheSize, "SimpleCache"); // 读缓冲区
+	private final ConcurrentMap<Octets, Octets>	_writeCache		 = Util.newConcurrentHashMap();										 // 写缓冲区
+	private StorageLevelDB						_storage;																			 // 存储引擎
+	private String								_dbFilename;																		 // 数据库保存的路径
+	protected final AtomicLong					_readCount		 = new AtomicLong();												 // 读操作次数统计
+	protected final AtomicLong					_readStoCount	 = new AtomicLong();												 // 读数据库存储的次数统计(即cache-miss的次数统计)
+	private boolean								_enableReadCache = true;															 // 是否开启读缓存
+	private volatile boolean					_exiting;																			 // 是否在退出状态(已经执行了ShutdownHook)
 
 	/**
 	 * 周期向数据库存储提交事务性修改的线程(checkpoint)
