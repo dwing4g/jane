@@ -15,6 +15,7 @@ import jane.core.map.IntHashMap;
  */
 public final class Const
 {
+	public static final long		startupTime		  = System.currentTimeMillis();
 	private static final Properties	_property		  = new Properties();
 	public static final boolean		debug;
 	public static final Charset		stringCharsetISO  = Charset.forName("iso-8859-1");
