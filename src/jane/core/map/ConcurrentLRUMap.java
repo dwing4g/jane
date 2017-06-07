@@ -179,7 +179,7 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 	}
 
 	@Override
-	public void sweep(int newLowerSize, int newAcceptSize)
+	public synchronized void sweep(int newLowerSize, int newAcceptSize)
 	{
 		// if we want to keep at least 1000 entries, then timestamps of current through current-1000
 		// are guaranteed not to be the oldest (but that does not mean there are 1000 entries in that group...
@@ -187,9 +187,9 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 		// Also, if we want to remove 500 entries, then oldestEntry through oldestEntry+500
 		// are guaranteed to be removed (however many there are there).
 
-		if(!sweepStatus.compareAndSet(1, 2)) return;
 		final long time = System.currentTimeMillis();
 		final int sizeOld = size.get();
+		if(sizeOld <= newLowerSize) return;
 		try
 		{
 			final long curV = versionCounter.get();
