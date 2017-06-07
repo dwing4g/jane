@@ -16,6 +16,8 @@ final class LRUCleaner
 	interface Cleanable
 	{
 		void sweep();
+
+		void sweep(int newLowerSize, int newAcceptSize);
 	}
 
 	private final ExecutorService cleanerThread;

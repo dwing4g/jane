@@ -159,6 +159,12 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 	@Override
 	public void sweep()
 	{
+		sweep(lowerSize, acceptSize);
+	}
+
+	@Override
+	public void sweep(int newLowerSize, int newAcceptSize)
+	{
 		// if we want to keep at least 1000 entries, then timestamps of current through current-1000
 		// are guaranteed not to be the oldest (but that does not mean there are 1000 entries in that group...
 		// it's acutally anywhere between 1 and 1000).
@@ -174,7 +180,7 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 			long minV = minVersion;
 			long maxVNew = -1;
 			long minVNew = Long.MAX_VALUE;
-			int numToKeep = lowerSize;
+			int numToKeep = newLowerSize;
 			int numToRemove = sizeOld - numToKeep;
 			int numKept = 0;
 			int numRemoved = 0;
@@ -216,14 +222,14 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 			// int numPasses = 1; // maximum number of linear passes over the data
 
 			// if we didn't remove enough entries, then make more passes over the values we collected, with updated min and max values
-			if(sizeOld - numRemoved > acceptSize) // while(sizeOld - numRemoved > acceptSize && --numPasses >= 0)
+			if(sizeOld - numRemoved > newAcceptSize) // while(sizeOld - numRemoved > newAcceptSize && --numPasses >= 0)
 			{
 				if(minVNew != Long.MAX_VALUE) minV = minVNew;
 				minVNew = Long.MAX_VALUE;
 				final long maxV = maxVNew;
 				maxVNew = -1;
-				numToKeep = lowerSize - numKept;
-				numToRemove = sizeOld - lowerSize - numRemoved;
+				numToKeep = newLowerSize - numKept;
+				numToRemove = sizeOld - newLowerSize - numRemoved;
 
 				// iterate backward to make it easy to remove items
 				for(int i = eSize - 1; i >= 0; --i)
@@ -255,14 +261,14 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 			}
 
 			// if we still didn't remove enough entries, then make another pass while inserting into a priority queue
-			if(sizeOld - numRemoved > acceptSize)
+			if(sizeOld - numRemoved > newAcceptSize)
 			{
 				if(minVNew != Long.MAX_VALUE) minV = minVNew;
 				minVNew = Long.MAX_VALUE;
 				final long maxV = maxVNew;
 				maxVNew = -1;
-				numToKeep = lowerSize - numKept;
-				numToRemove = sizeOld - lowerSize - numRemoved;
+				numToKeep = newLowerSize - numKept;
+				numToRemove = sizeOld - newLowerSize - numRemoved;
 				final LRUQueue<CacheEntry<?>> queue = new LRUQueue<>(numToRemove, new CacheEntry<?>[LRUQueue.calHeapSize(numToRemove)]);
 
 				for(int i = eSize - 1; i >= 0; --i)
@@ -289,7 +295,7 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 						// the lowest value that ever comes back out of the queue.
 						// first reduce the size of the priority queue to account for
 						// the number of items we have already removed while executing this loop so far.
-						final int maxSize = sizeOld - lowerSize - numRemoved;
+						final int maxSize = sizeOld - newLowerSize - numRemoved;
 						queue.maxSize = maxSize;
 						while(queue.size > maxSize && queue.size > 0)
 						{
