@@ -4,20 +4,19 @@
 
 ● LevelDB
 jane运行时读写的数据库存储在配置文件(默认是jane.properties)中"dbFilename"项所指的目录.
-默认时dbFilename = db/database, 此时数据库存储在当前目录/db/database.ld/目录中,
-其中后缀ld表示当前使用LevelDB存储引擎,避免改换存储引擎导致数据库文件混乱.
+默认时dbFilename = db/database, 此时数据库存储在当前目录/db/database/目录中.
 
 这个目录中有如下若干文件:
-??????.ldb 若干个存储数据的文件,包括各级冷热的数据
-??????.log 最近写入的数据,只有一个文件,以上两种文件名是不断增长的序号,有些文件随着数据库的自动整理而被删除
+??????.ldb      若干个存储数据的文件,包括各级冷热的数据
+??????.log      最近写入的数据,只有一个文件,以上两种文件名是不断增长的序号,有些文件随着数据库的自动整理而被删除
 MANIFEST-?????? 当前数据库的MANIFEST文件,很重要,类似文件系统的根目录
-CURRENT    指示当前数据库MANIFEST文件的文件名
-LOG        数据库日志文件,记录数据库运行时的日志信息,删除不影响数据库中的数据
-LOG.old    上次运行的数据库日志文件,每次启动数据库都会把旧的LOG文件改名为LOG.old
+CURRENT         指示当前数据库MANIFEST文件的文件名
+LOG             数据库日志文件,记录数据库运行时的日志信息,删除不影响数据库中的数据
+LOG.old         上次运行的数据库日志文件,每次启动数据库都会把旧的LOG文件改名为LOG.old
 
 数据库的备份存储在配置文件中"dbBackupPath"项所指的目录.
 默认时dbBackupPath = db, 此时数据库备份在当前目录/db/中的各个子目录,
-子目录名为运行时数据库目录名(默认是database.ld)加后缀日期时间,如: database.ld.14-06-16-04-00-00,
+子目录名为运行时数据库目录名(默认是database)加后缀日期时间,如: database.14-06-16-04-00-00,
 后缀的日期和时间是完整备份的定时时间,见配置文件中的"levelDBFullBackupBase"和"levelDBFullBackupPeriod".
 
 备份的子目录中有如下若干文件:
