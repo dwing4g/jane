@@ -89,7 +89,7 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 	{
 		if(this.key1 != 0) s.marshal1((byte)0x04).marshal(this.key1);
 		if(!this.key2.isEmpty()) s.marshal1((byte)0x09).marshal(this.key2);
-		return s.marshal1((byte)0);
+		return s.marshalZero();
 	}
 
 	@Deprecated

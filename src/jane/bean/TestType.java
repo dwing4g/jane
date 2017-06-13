@@ -505,7 +505,7 @@ public final class TestType extends Bean<TestType>
 			this.v19.marshal(s.marshal1((byte)0x4e));
 			if(s.size() - n < 3) s.resize(n);
 		}
-		return s.marshal1((byte)0);
+		return s.marshalZero();
 	}
 
 	@Override

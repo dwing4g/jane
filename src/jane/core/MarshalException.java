@@ -15,13 +15,9 @@ public class MarshalException extends Exception
 	{
 		private static final WithoutTrace _instance = new WithoutTrace();
 
-		public WithoutTrace()
+		public static WithoutTrace instance()
 		{
-		}
-
-		public WithoutTrace(Throwable e)
-		{
-			super(e);
+			return _instance;
 		}
 
 		@SuppressWarnings("sync-override")
@@ -37,14 +33,6 @@ public class MarshalException extends Exception
 	 */
 	public static class EOF extends MarshalException
 	{
-		public EOF()
-		{
-		}
-
-		public EOF(Throwable e)
-		{
-			super(e);
-		}
 	}
 
 	/**
@@ -54,13 +42,9 @@ public class MarshalException extends Exception
 	{
 		private static final EOFWithoutTrace _instance = new EOFWithoutTrace();
 
-		public EOFWithoutTrace()
+		public static EOFWithoutTrace instance()
 		{
-		}
-
-		public EOFWithoutTrace(Throwable e)
-		{
-			super(e);
+			return _instance;
 		}
 
 		@SuppressWarnings("sync-override")
@@ -69,34 +53,5 @@ public class MarshalException extends Exception
 		{
 			return this;
 		}
-	}
-
-	public static MarshalException create(boolean withTrace)
-	{
-		return withTrace ? new MarshalException() : WithoutTrace._instance;
-	}
-
-	public static MarshalException create(Throwable e, boolean withTrace)
-	{
-		return withTrace ? new MarshalException(e) : new WithoutTrace(e);
-	}
-
-	public static EOF createEOF(boolean withTrace)
-	{
-		return withTrace ? new EOF() : EOFWithoutTrace._instance;
-	}
-
-	public static EOF createEOF(Throwable e, boolean withTrace)
-	{
-		return withTrace ? new EOF(e) : new EOFWithoutTrace(e);
-	}
-
-	public MarshalException()
-	{
-	}
-
-	public MarshalException(Throwable e)
-	{
-		super(e);
 	}
 }

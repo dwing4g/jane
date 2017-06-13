@@ -142,7 +142,7 @@ public final class TestBean extends Bean<TestBean>
 	{
 		if(this.value1 != 0) s.marshal1((byte)0x04).marshal(this.value1);
 		if(this.value2 != 0) s.marshal1((byte)0x08).marshal(this.value2);
-		return s.marshal1((byte)0);
+		return s.marshalZero();
 	}
 
 	@Override

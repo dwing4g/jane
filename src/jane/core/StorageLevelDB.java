@@ -128,11 +128,10 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public V get(long k)
 		{
-			OctetsStream val = dbget(getKey(k));
+			OctetsStreamEx val = dbget(getKey(k));
 			if(val == null) return null;
 			try
 			{
-				val.setExceptionInfo(true);
 				int format = val.unmarshalInt1();
 				if(format != 0)
 				{
@@ -218,11 +217,10 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public long getIdCounter()
 		{
-			OctetsStream val = dbget(_tableIdCounter);
+			OctetsStreamEx val = dbget(_tableIdCounter);
 			if(val == null) return 0;
 			try
 			{
-				val.setExceptionInfo(true);
 				return val.unmarshalLong();
 			}
 			catch(MarshalException e)
@@ -366,11 +364,10 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public V get(Octets k)
 		{
-			OctetsStream val = dbget(getKey(k));
+			OctetsStreamEx val = dbget(getKey(k));
 			if(val == null) return null;
 			try
 			{
-				val.setExceptionInfo(true);
 				int format = val.unmarshalInt1();
 				if(format != 0)
 				{
@@ -419,11 +416,10 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public V get(String k)
 		{
-			OctetsStream val = dbget(getKey(k));
+			OctetsStreamEx val = dbget(getKey(k));
 			if(val == null) return null;
 			try
 			{
-				val.setExceptionInfo(true);
 				int format = val.unmarshalInt1();
 				if(format != 0)
 				{
@@ -473,11 +469,10 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public V get(K k)
 		{
-			OctetsStream val = dbget(getKey(k));
+			OctetsStreamEx val = dbget(getKey(k));
 			if(val == null) return null;
 			try
 			{
-				val.setExceptionInfo(true);
 				int format = val.unmarshalInt1();
 				if(format != 0)
 				{
@@ -536,17 +531,17 @@ public final class StorageLevelDB implements Storage
 		return value != null ? value : "";
 	}
 
-	OctetsStream dbget(Octets k)
+	OctetsStreamEx dbget(Octets k)
 	{
 		if(_writing)
 		{
 			Octets v = _writeBuf.get(k);
 			if(v == _deleted) return null;
-			if(v != null) return OctetsStream.wrap(v);
+			if(v != null) return OctetsStreamEx.wrap(v);
 		}
 		if(_db == 0) throw new IllegalStateException("db closed. key=" + k.dump());
 		byte[] v = leveldb_get(_db, k.array(), k.size());
-		return v != null ? OctetsStream.wrap(v) : null;
+		return v != null ? OctetsStreamEx.wrap(v) : null;
 	}
 
 	void dbcommit(Map<Octets, Octets> map)

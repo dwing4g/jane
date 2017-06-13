@@ -117,7 +117,7 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 	@Override
 	public OctetsStream marshal(OctetsStream s)
 	{
-#(##(var.marshal)#)#		return s.marshal1((byte)0);
+#(##(var.marshal)#)#		return s.marshalZero();
 	}
 
 	@Override

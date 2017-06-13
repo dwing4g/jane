@@ -302,8 +302,7 @@ public final class DBSimpleManager
 	private static <B extends Bean<B>> B toBean(Octets data, B beanStub) throws MarshalException
 	{
 		if(data == null || data == StorageLevelDB.deleted()) return null;
-		OctetsStream os = OctetsStream.wrap(data);
-		os.setExceptionInfo(true);
+		OctetsStreamEx os = OctetsStreamEx.wrap(data);
 		int format = os.unmarshalInt1();
 		if(format != 0)
 			throw new IllegalStateException("unknown record value format(" + format + ") for type(" + beanStub.typeName() + ")");
@@ -453,12 +452,8 @@ public final class DBSimpleManager
 	{
 		return _storage.dbwalk(toKey(tableId, keyFrom), toKey(tableId, keyTo), true, false, new DBWalkHandler()
 		{
-			private final OctetsStream _os		   = new OctetsStream();
-			private final int		   _tableIdLen = OctetsStream.marshalUIntLen(tableId);
-
-			{
-				_os.setExceptionInfo(true);
-			}
+			private final OctetsStreamEx _os		 = new OctetsStreamEx();
+			private final int			 _tableIdLen = OctetsStream.marshalUIntLen(tableId);
 
 			@Override
 			public boolean onWalk(byte[] key, byte[] value) throws Exception
@@ -486,12 +481,8 @@ public final class DBSimpleManager
 		final AtomicBoolean finished = new AtomicBoolean();
 		return _storage.dbwalk(toKey(tableId, new Octets()), null, true, false, new DBWalkHandler()
 		{
-			private final OctetsStream _os		   = new OctetsStream();
-			private final int		   _tableIdLen = OctetsStream.marshalUIntLen(tableId);
-
-			{
-				_os.setExceptionInfo(true);
-			}
+			private final OctetsStreamEx _os		 = new OctetsStreamEx();
+			private final int			 _tableIdLen = OctetsStream.marshalUIntLen(tableId);
 
 			@Override
 			public boolean onWalk(byte[] key, byte[] value) throws Exception
@@ -524,11 +515,7 @@ public final class DBSimpleManager
 		final AtomicBoolean finished = new AtomicBoolean();
 		return _storage.dbwalk(null, null, true, false, new DBWalkHandler()
 		{
-			private final OctetsStream _os = new OctetsStream();
-
-			{
-				_os.setExceptionInfo(true);
-			}
+			private final OctetsStreamEx _os = new OctetsStreamEx();
 
 			@Override
 			public boolean onWalk(byte[] key, byte[] value) throws Exception
@@ -561,11 +548,7 @@ public final class DBSimpleManager
 		final AtomicBoolean finished = new AtomicBoolean();
 		return _storage.dbwalk(null, null, true, false, new DBWalkHandler()
 		{
-			private final OctetsStream _os = new OctetsStream();
-
-			{
-				_os.setExceptionInfo(true);
-			}
+			private final OctetsStreamEx _os = new OctetsStreamEx();
 
 			@Override
 			public boolean onWalk(byte[] key, byte[] value) throws Exception

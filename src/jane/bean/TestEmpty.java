@@ -66,7 +66,7 @@ public final class TestEmpty extends Bean<TestEmpty>
 	@Override
 	public OctetsStream marshal(OctetsStream s)
 	{
-		return s.marshal1((byte)0);
+		return s.marshalZero();
 	}
 
 	@Override
