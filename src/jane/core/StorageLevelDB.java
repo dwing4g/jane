@@ -12,7 +12,7 @@ import java.util.Map.Entry;
 import java.util.zip.CRC32;
 
 /**
- * LevelDB存储引擎的实现(单件)
+ * LevelDB存储引擎的实现
  * <p>
  * 此类也可非单件实例化使用
  */
@@ -531,7 +531,7 @@ public final class StorageLevelDB implements Storage
 		return value != null ? value : "";
 	}
 
-	OctetsStreamEx dbget(Octets k)
+	public OctetsStreamEx dbget(Octets k)
 	{
 		if(_writing)
 		{
@@ -544,7 +544,7 @@ public final class StorageLevelDB implements Storage
 		return v != null ? OctetsStreamEx.wrap(v) : null;
 	}
 
-	void dbcommit(Map<Octets, Octets> map)
+	public void dbcommit(Map<Octets, Octets> map)
 	{
 		if(_db == 0) throw new IllegalStateException("db closed");
 		leveldb_write(_db, map.entrySet().iterator());
@@ -552,7 +552,7 @@ public final class StorageLevelDB implements Storage
 		if(r != 0) Log.error("StorageLevelDB.commit: leveldb_write failed({})", r);
 	}
 
-	interface DBWalkHandler
+	public interface DBWalkHandler
 	{
 		/**
 		 * 每次遍历一个记录都会调用此接口
@@ -634,7 +634,7 @@ public final class StorageLevelDB implements Storage
 		return true;
 	}
 
-	static Octets deleted()
+	public static Octets deleted()
 	{
 		return _deleted;
 	}
