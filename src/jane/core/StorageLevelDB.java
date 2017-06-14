@@ -544,12 +544,21 @@ public final class StorageLevelDB implements Storage
 		return v != null ? OctetsStreamEx.wrap(v) : null;
 	}
 
-	public void dbcommit(Map<Octets, Octets> map)
+	public void dbput(Octets key, Octets value)
 	{
-		if(_db == 0) throw new IllegalStateException("db closed");
-		leveldb_write(_db, map.entrySet().iterator());
-		int r = leveldb_write(_db, _writeBuf.entrySet().iterator());
-		if(r != 0) Log.error("StorageLevelDB.commit: leveldb_write failed({})", r);
+		_writing = true;
+		_writeBuf.put(key, value);
+	}
+
+	public void dbcommit(Iterator<Entry<Octets, Octets>> it)
+	{
+		if(it != null)
+		{
+			if(_db == 0) throw new IllegalStateException("db closed");
+			int r = leveldb_write(_db, it);
+			if(r != 0) Log.error("StorageLevelDB.dbcommit: leveldb_write failed({})", r);
+		}
+		commit();
 	}
 
 	public interface DBWalkHandler
@@ -698,7 +707,11 @@ public final class StorageLevelDB implements Storage
 			return;
 		}
 		int r = leveldb_write(_db, _writeBuf.entrySet().iterator());
-		if(r != 0) Log.error("StorageLevelDB.commit: leveldb_write failed({})", r);
+		if(r != 0)
+		{
+			Log.error("StorageLevelDB.commit: leveldb_write failed({})", r);
+			return;
+		}
 		_writeBuf.clear();
 		_writing = false;
 	}
@@ -707,7 +720,6 @@ public final class StorageLevelDB implements Storage
 	public synchronized void close()
 	{
 		commit();
-		_writing = false;
 		_dbFile = null;
 		if(_db != 0)
 		{
@@ -715,6 +727,7 @@ public final class StorageLevelDB implements Storage
 			_db = 0;
 		}
 		_writeBuf.clear();
+		_writing = false;
 	}
 
 	@Override

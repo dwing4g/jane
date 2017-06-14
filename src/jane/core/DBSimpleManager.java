@@ -4,8 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
@@ -134,12 +135,14 @@ public final class DBSimpleManager
 							// 1.首先尝试遍历单个加锁的方式保存已修改的记录. 此时和其它事务可以并发
 							long t0 = System.currentTimeMillis();
 							Log.info("db-commit saving: {}...", modCount);
-							HashMap<Octets, Octets> writeBuf = new HashMap<>(_writeCache);
+							ArrayList<Entry<Octets, Octets>> writeBuf = new ArrayList<>(_writeCache.size());
+							for(Entry<Octets, Octets> e : _writeCache.entrySet())
+								writeBuf.add(new SimpleImmutableEntry<>(e.getKey(), e.getValue()));
 							Log.info("db-commit committing: {}...", writeBuf.size());
-							_storage.dbcommit(writeBuf);
+							_storage.dbcommit(writeBuf.iterator());
 							Log.info("db-commit cleaning...");
 							int n = _writeCache.size();
-							for(Entry<Octets, Octets> e : writeBuf.entrySet())
+							for(Entry<Octets, Octets> e : writeBuf)
 								_writeCache.remove(e.getKey(), e.getValue());
 							writeBuf.clear();
 							t1 = System.currentTimeMillis();
@@ -149,6 +152,7 @@ public final class DBSimpleManager
 						// 2.判断备份周期并启动备份
 						if(_backupTime <= t1)
 						{
+							Log.info("db-commit backup begin...");
 							if(_backupTime >= 0)
 							{
 								_backupTime += _backupPeriod;
@@ -156,18 +160,14 @@ public final class DBSimpleManager
 							}
 							else
 								_backupTime = Long.MAX_VALUE;
-							Log.info("db-commit backup begin...");
 							String timeStr;
 							synchronized(_sdf)
 							{
 								timeStr = _sdf.format(new Date());
 							}
-							long r = _storage.backup(new File(Const.dbBackupPath,
-									new File(_dbFilename).getName() + '.' + timeStr));
-							if(r >= 0)
-								Log.info("db-commit backup end ({} bytes) ({} ms)", r, System.currentTimeMillis() - t1);
-							else
-								Log.error("db-commit backup error({}) ({} ms)", r, System.currentTimeMillis() - t1);
+							long r = _storage.backup(new File(Const.dbBackupPath, new File(_dbFilename).getName() + '.' + timeStr));
+							Log.info(r >= 0 ? "db-commit backup end ({} bytes) ({} ms)" : "db-commit backup error({}) ({} ms)",
+									r, System.currentTimeMillis() - t1);
 						}
 					}
 				}

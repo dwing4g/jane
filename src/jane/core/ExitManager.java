@@ -68,7 +68,7 @@ public final class ExitManager
 		return _shutdownUserCallbacks;
 	}
 
-	static ArrayList<Runnable> getShutdownSystemCallbacks()
+	public static ArrayList<Runnable> getShutdownSystemCallbacks()
 	{
 		return _shutdownSystemCallbacks;
 	}
