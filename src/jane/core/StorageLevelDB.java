@@ -18,14 +18,15 @@ import java.util.zip.CRC32;
  */
 public final class StorageLevelDB implements Storage
 {
-	private static final StorageLevelDB	_instance = new StorageLevelDB();
-	private static final Octets			_deleted  = Octets.wrap(Octets.EMPTY);				   // 表示已删除的值
-	private final Map<Octets, Octets>	_writeBuf = Util.newConcurrentHashMap();			   // 提交过程中临时的写缓冲区
-	private long						_db;												   // LevelDB的数据库对象句柄
-	private File						_dbFile;											   // 当前数据库的文件
-	private final SimpleDateFormat		_sdf	  = new SimpleDateFormat("yy-MM-dd-HH-mm-ss"); // 备份文件后缀名的时间格式
-	private final long					_backupBase;										   // 备份数据的基准时间
-	private volatile boolean			_writing;											   // 是否正在执行写操作
+	private static final StorageLevelDB	_instance  = new StorageLevelDB();
+	private static final Octets			_deleted   = Octets.wrap(Octets.EMPTY);					// 表示已删除的值
+	private final Map<Octets, Octets>	_writeBuf  = Util.newConcurrentHashMap();				// 提交过程中临时的写缓冲区
+	private long						_db;													// LevelDB的数据库对象句柄
+	private File						_dbFile;												// 当前数据库的文件
+	private final SimpleDateFormat		_sdf	   = new SimpleDateFormat("yy-MM-dd-HH-mm-ss");	// 备份文件后缀名的时间格式
+	private final long					_backupBase;											// 备份数据的基准时间
+	private volatile boolean			_writing;												// 是否正在执行写操作
+	private boolean						_useSnappy = true;										// 是否使用LevelDB内置的snappy压缩
 
 	static
 	{
@@ -524,6 +525,11 @@ public final class StorageLevelDB implements Storage
 		}
 	}
 
+	public void setUseSnappy(boolean useSnappy)
+	{
+		_useSnappy = useSnappy;
+	}
+
 	public synchronized String getProperty(String prop)
 	{
 		if(_db == 0) return "";
@@ -531,6 +537,10 @@ public final class StorageLevelDB implements Storage
 		return value != null ? value : "";
 	}
 
+	/**
+	 * 先尝试从_writeBuf取
+	 * @return 数据部分不能改动, 而pos和count可以改动
+	 */
 	public OctetsStreamEx dbget(Octets k)
 	{
 		if(_writing)
@@ -544,12 +554,18 @@ public final class StorageLevelDB implements Storage
 		return v != null ? OctetsStreamEx.wrap(v) : null;
 	}
 
+	/**
+	 * @param value 调用后就不能再修改value了
+	 */
 	public void dbput(Octets key, Octets value)
 	{
 		_writing = true;
 		_writeBuf.put(key, value);
 	}
 
+	/**
+	 * 除了it遍历的所有entry外, _writeBuf也会全部提交后清空
+	 */
 	public void dbcommit(Iterator<Entry<Octets, Octets>> it)
 	{
 		if(it != null)
@@ -652,7 +668,7 @@ public final class StorageLevelDB implements Storage
 	public synchronized void openDB(File file) throws IOException
 	{
 		close();
-		_db = leveldb_open2(file.getAbsolutePath(), Const.levelDBWriteBufferSize << 20, Const.levelDBCacheSize << 20, Const.levelDBFileSize << 20, true);
+		_db = leveldb_open2(file.getAbsolutePath(), Const.levelDBWriteBufferSize << 20, Const.levelDBCacheSize << 20, Const.levelDBFileSize << 20, _useSnappy);
 		if(_db == 0) throw new IOException("StorageLevelDB.openDB: leveldb_open failed: " + file.getAbsolutePath());
 		_dbFile = file;
 	}

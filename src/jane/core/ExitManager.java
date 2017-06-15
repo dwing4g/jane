@@ -61,13 +61,16 @@ public final class ExitManager
 	/**
 	 * 获取进程退出前的回调列表(shutdown之前可修改)
 	 * <p>
-	 * 在关闭数据库前按顺序调用,每次回调的异常会记录日志并忽略
+	 * 在关闭数据库前按顺序调用,每次回调的异常会记录日志并忽略,严禁出现死循环,不要出现较长(>1秒)的IO等待
 	 */
 	public static ArrayList<Runnable> getShutdownUserCallbacks()
 	{
 		return _shutdownUserCallbacks;
 	}
 
+	/**
+	 * 同getShutdownUserCallbacks, 但会在所有user级回调全部执行完后再执行system级, 没有特殊需要不要使用system级
+	 */
 	public static ArrayList<Runnable> getShutdownSystemCallbacks()
 	{
 		return _shutdownSystemCallbacks;

@@ -28,7 +28,7 @@ public class Octets implements Cloneable, Comparable<Octets>
 		Octets o = new Octets();
 		o._buffer = data;
 		if(size > data.length) o._count = data.length;
-		else if(size < 0)      o._count = 0;
+		else if(size <= 0)     o._count = 0;
 		else                   o._count = size;
 		return o;
 	}
@@ -168,7 +168,7 @@ public class Octets implements Cloneable, Comparable<Octets>
 	{
 		_buffer = data;
 		if(size > data.length) _count = data.length;
-		else if(size < 0)      _count = 0;
+		else if(size <= 0)     _count = 0;
 		else                   _count = size;
 		return this;
 	}
@@ -233,7 +233,7 @@ public class Octets implements Cloneable, Comparable<Octets>
 
 	public void resize(int size)
 	{
-		if(size < 0) size = 0;
+		if(size <= 0) size = 0;
 		else reserve(size);
 		_count = size;
 	}
