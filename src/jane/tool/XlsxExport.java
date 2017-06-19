@@ -1,6 +1,7 @@
 package jane.tool;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -157,13 +158,20 @@ public final class XlsxExport
 	/**
 	 * 把xlsx类型的excel文件中的某一页转换成xml格式
 	 * <p>
-	 * 此调用在发现错误时会抛出异常,注意检查
+	 * 此调用在发现错误时会抛出异常,注意检查<br>
+	 * 对xlsx文件的要求:<br>
+	 * <li>第一行必须是各字段的名称,且每个名称后面必须有括号包含的程序字段名,以字母数字或下划线(不能以数字开头)构成
+	 * <li>第一列必须是表的主键,全表唯一
+	 * <li>没有字段名的列会被忽略
+	 * <li>第一列为空的整行都会被忽略
+	 * <li>如果非第一列为空,则没有此字段的输出,默认表示数值0或空字符串
 	 * @param isXlsx 输入xlsx文件的输入流
 	 * @param sheetId 指定输入xlsx文件中的页ID
 	 * @param keyCol 指定的key列号. A,B,C...列分别为1,2,3
 	 * @param outXml 输出xml的输出流
 	 * @param tableName 表名. 一般就是输入的文件名,会记录到xml中便于以后查询之用,可以为null
 	 */
+	@Deprecated
 	public static void xlsx2Xml(InputStream isXlsx, int sheetId, int keyCol, OutputStream outXml, String tableName) throws Exception
 	{
 		Map<Integer, Map<Integer, String>> maps = xlsx2Maps(isXlsx, sheetId);
@@ -259,14 +267,6 @@ public final class XlsxExport
 		}
 	}
 
-	/**
-	 * 对xlsx文件的要求:<br>
-	 * <li>第一行必须是各字段的名称,且每个名称后面必须有括号包含的程序字段名,以字母数字或下划线(不能以数字开头)构成
-	 * <li>第一列必须是表的主键,全表唯一
-	 * <li>没有字段名的列会被忽略
-	 * <li>第一列为空的整行都会被忽略
-	 * <li>如果非第一列为空,则没有此字段的输出,默认表示数值0或空字符串
-	 */
 	public static void main(String[] args) throws Exception
 	{
 		if(args.length < 3)
@@ -279,13 +279,9 @@ public final class XlsxExport
 		int sheetId = (args.length > 3 ? Integer.parseInt(args[3].trim()) : 1);
 		int keyCol = (args.length > 4 ? Integer.parseInt(args[4].trim()) : 1);
 		System.err.print("INFO: convert " + args[1] + " <" + sheetId + "> => " + args[2] + " ... ");
-		@SuppressWarnings("resource")
-		InputStream is = (args[1].equals("-") ? System.in : new FileInputStream(args[1].trim()));
-		try
+		try(InputStream is = (args[1].equals("-") ? System.in : new FileInputStream(args[1].trim())))
 		{
-			@SuppressWarnings("resource")
-			OutputStream os = (args[2].equals("-") ? System.out : new FileOutputStream(args[2].trim()));
-			try
+			try(OutputStream os = new BufferedOutputStream(args[2].equals("-") ? System.out : new FileOutputStream(args[2].trim()), 0x10000))
 			{
 				if(args[0].equals("xml"))
 					xlsx2Xml(is, sheetId, keyCol, os, args[0]);
@@ -293,14 +289,6 @@ public final class XlsxExport
 					xlsx2Txt(is, sheetId, os);
 
 			}
-			finally
-			{
-				if(os != System.out) os.close();
-			}
-		}
-		finally
-		{
-			if(is != System.in) is.close();
 		}
 		System.err.println("OK!");
 
