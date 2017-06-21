@@ -85,23 +85,23 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 	}
 
 	@Override
-	public OctetsStream marshal(OctetsStream s)
+	public OctetsStream marshal(OctetsStream _s_)
 	{
-		if(this.key1 != 0) s.marshal1((byte)0x04).marshal(this.key1);
-		if(!this.key2.isEmpty()) s.marshal1((byte)0x09).marshal(this.key2);
-		return s.marshalZero();
+		if(this.key1 != 0) _s_.marshal1((byte)0x04).marshal(this.key1);
+		if(!this.key2.isEmpty()) _s_.marshal1((byte)0x09).marshal(this.key2);
+		return _s_.marshalZero();
 	}
 
 	@Deprecated
 	@Override
-	public OctetsStream unmarshal(OctetsStream s) throws MarshalException
+	public OctetsStream unmarshal(OctetsStream _s_) throws MarshalException
 	{
-		for(;;) { int i = s.unmarshalInt1() & 0xff, t = i & 3; if((i >>= 2) == 63) i += s.unmarshalInt1(); switch(i)
+		for(;;) { int _i_ = _s_.unmarshalInt1() & 0xff, _t_ = _i_ & 3; if((_i_ >>= 2) == 63) _i_ += _s_.unmarshalInt1(); switch(_i_)
 		{
-			case 0: return s;
-			case 1: this.key1 = s.unmarshalInt(t); break;
-			case 2: this.key2 = s.unmarshalString(t); break;
-			default: s.unmarshalSkipVar(t);
+			case 0: return _s_;
+			case 1: this.key1 = _s_.unmarshalInt(_t_); break;
+			case 2: this.key2 = _s_.unmarshalString(_t_); break;
+			default: _s_.unmarshalSkipVar(_t_);
 		}}
 	}
 
@@ -114,10 +114,10 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 	@Override
 	public int hashCode()
 	{
-		int h = (int)serialVersionUID;
-		h = h * 31 + 1 + this.key1;
-		h = h * 31 + 1 + this.key2.hashCode();
-		return h;
+		int _h_ = (int)serialVersionUID;
+		_h_ = _h_ * 31 + 1 + this.key1;
+		_h_ = _h_ * 31 + 1 + this.key2.hashCode();
+		return _h_;
 	}
 
 	@Override
@@ -125,30 +125,30 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 	{
 		if(o == this) return true;
 		if(!(o instanceof TestKeyBean)) return false;
-		TestKeyBean b = (TestKeyBean)o;
-		if(this.key1 != b.key1) return false;
-		if(!this.key2.equals(b.key2)) return false;
+		TestKeyBean _b_ = (TestKeyBean)o;
+		if(this.key1 != _b_.key1) return false;
+		if(!this.key2.equals(_b_.key2)) return false;
 		return true;
 	}
 
 	@Override
-	public int compareTo(TestKeyBean b)
+	public int compareTo(TestKeyBean _b_)
 	{
-		if(b == this) return 0;
-		if(b == null) return 1;
-		int c;
-		c = this.key1 - b.key1; if(c != 0) return c;
-		c = this.key2.compareTo(b.key2); if(c != 0) return c;
+		if(_b_ == this) return 0;
+		if(_b_ == null) return 1;
+		int _c_;
+		_c_ = this.key1 - _b_.key1; if(_c_ != 0) return _c_;
+		_c_ = this.key2.compareTo(_b_.key2); if(_c_ != 0) return _c_;
 		return 0;
 	}
 
 	@Override
 	public String toString()
 	{
-		StringBuilder s = new StringBuilder(16 + 16 * 2).append('{');
-		s.append(this.key1).append(',');
-		s.append(this.key2).append(',');
-		s.setLength(s.length() - 1);
-		return s.append('}').toString();
+		StringBuilder _s_ = new StringBuilder(16 + 16 * 2).append('{');
+		_s_.append(this.key1).append(',');
+		_s_.append(this.key2).append(',');
+		_s_.setLength(_s_.length() - 1);
+		return _s_.append('}').toString();
 	}
 }

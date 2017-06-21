@@ -82,17 +82,17 @@ public final class TestType extends Bean<TestType>
 	{
 		try
 		{
-			Class<TestType> c = TestType.class;
-			FIELD_v1 = c.getDeclaredField("v1"); FIELD_v1.setAccessible(true);
-			FIELD_v2 = c.getDeclaredField("v2"); FIELD_v2.setAccessible(true);
-			FIELD_v3 = c.getDeclaredField("v3"); FIELD_v3.setAccessible(true);
-			FIELD_v4 = c.getDeclaredField("v4"); FIELD_v4.setAccessible(true);
-			FIELD_v5 = c.getDeclaredField("v5"); FIELD_v5.setAccessible(true);
-			FIELD_v6 = c.getDeclaredField("v6"); FIELD_v6.setAccessible(true);
-			FIELD_v7 = c.getDeclaredField("v7"); FIELD_v7.setAccessible(true);
-			FIELD_v8 = c.getDeclaredField("v8"); FIELD_v8.setAccessible(true);
-			FIELD_v9 = c.getDeclaredField("v9"); FIELD_v9.setAccessible(true);
-			FIELD_v20 = c.getDeclaredField("v20"); FIELD_v20.setAccessible(true);
+			Class<TestType> _c_ = TestType.class;
+			FIELD_v1 = _c_.getDeclaredField("v1"); FIELD_v1.setAccessible(true);
+			FIELD_v2 = _c_.getDeclaredField("v2"); FIELD_v2.setAccessible(true);
+			FIELD_v3 = _c_.getDeclaredField("v3"); FIELD_v3.setAccessible(true);
+			FIELD_v4 = _c_.getDeclaredField("v4"); FIELD_v4.setAccessible(true);
+			FIELD_v5 = _c_.getDeclaredField("v5"); FIELD_v5.setAccessible(true);
+			FIELD_v6 = _c_.getDeclaredField("v6"); FIELD_v6.setAccessible(true);
+			FIELD_v7 = _c_.getDeclaredField("v7"); FIELD_v7.setAccessible(true);
+			FIELD_v8 = _c_.getDeclaredField("v8"); FIELD_v8.setAccessible(true);
+			FIELD_v9 = _c_.getDeclaredField("v9"); FIELD_v9.setAccessible(true);
+			FIELD_v20 = _c_.getDeclaredField("v20"); FIELD_v20.setAccessible(true);
 		}
 		catch(Exception e)
 		{
@@ -167,30 +167,30 @@ public final class TestType extends Bean<TestType>
 	}
 
 	@Override
-	public void assign(TestType b)
+	public void assign(TestType _b_)
 	{
-		if(b == this) return;
-		if(b == null) { reset(); return; }
-		this.v1 = b.v1;
-		this.v2 = b.v2;
-		this.v3 = b.v3;
-		this.v4 = b.v4;
-		this.v5 = b.v5;
-		this.v6 = b.v6;
-		this.v7 = b.v7;
-		if(b.v8 != null) this.v8.replace(b.v8); else this.v8.clear();
-		this.v9 = (b.v9 != null ? b.v9 : "");
-		this.v10.clear(); Util.appendDeep(b.v10, this.v10);
-		this.v11.clear(); Util.appendDeep(b.v11, this.v11);
-		this.v12.clear(); Util.appendDeep(b.v12, this.v12);
-		this.v13.clear(); Util.appendDeep(b.v13, this.v13);
-		this.v14.clear(); Util.appendDeep(b.v14, this.v14);
-		this.v15.clear(); Util.appendDeep(b.v15, this.v15);
-		this.v16.clear(); Util.appendDeep(b.v16, this.v16);
-		this.v17.clear(); Util.appendDeep(b.v17, this.v17);
-		this.v18.clear(); Util.appendDeep(b.v18, this.v18);
-		this.v19.assign(b.v19);
-		this.v20 = b.v20;
+		if(_b_ == this) return;
+		if(_b_ == null) { reset(); return; }
+		this.v1 = _b_.v1;
+		this.v2 = _b_.v2;
+		this.v3 = _b_.v3;
+		this.v4 = _b_.v4;
+		this.v5 = _b_.v5;
+		this.v6 = _b_.v6;
+		this.v7 = _b_.v7;
+		if(_b_.v8 != null) this.v8.replace(_b_.v8); else this.v8.clear();
+		this.v9 = (_b_.v9 != null ? _b_.v9 : "");
+		this.v10.clear(); Util.appendDeep(_b_.v10, this.v10);
+		this.v11.clear(); Util.appendDeep(_b_.v11, this.v11);
+		this.v12.clear(); Util.appendDeep(_b_.v12, this.v12);
+		this.v13.clear(); Util.appendDeep(_b_.v13, this.v13);
+		this.v14.clear(); Util.appendDeep(_b_.v14, this.v14);
+		this.v15.clear(); Util.appendDeep(_b_.v15, this.v15);
+		this.v16.clear(); Util.appendDeep(_b_.v16, this.v16);
+		this.v17.clear(); Util.appendDeep(_b_.v17, this.v17);
+		this.v18.clear(); Util.appendDeep(_b_.v18, this.v18);
+		this.v19.assign(_b_.v19);
+		this.v20 = _b_.v20;
 	}
 
 	/** @return 1字节布尔,0表示假,1表示真,其它默认表示真 */
@@ -290,28 +290,28 @@ public final class TestType extends Bean<TestType>
 	}
 
 	/** 二进制数据(Octets) */
-	public <B extends Bean<B>> void marshalV8(Bean<B> b)
+	public <B extends Bean<B>> void marshalV8(Bean<B> _b_)
 	{
-		OctetsStream os = OctetsStream.wrap(this.v8);
-		os.resize(0);
-		os.reserve(b.initSize());
-		this.v8 = os;
-		b.marshal(os);
+		OctetsStream _os_ = OctetsStream.wrap(this.v8);
+		_os_.resize(0);
+		_os_.reserve(_b_.initSize());
+		this.v8 = _os_;
+		_b_.marshal(_os_);
 	}
 
 	/** 二进制数据(Octets) */
-	public <B extends Bean<B>> Bean<B> unmarshalV8(Bean<B> b) throws MarshalException
+	public <B extends Bean<B>> Bean<B> unmarshalV8(Bean<B> _b_) throws MarshalException
 	{
-		b.unmarshal(OctetsStream.wrap(this.v8));
-		return b;
+		_b_.unmarshal(OctetsStream.wrap(this.v8));
+		return _b_;
 	}
 
 	/** 二进制数据(Octets) */
 	public DynBean unmarshalV8() throws MarshalException
 	{
-		DynBean b = new DynBean();
-		b.unmarshal(OctetsStream.wrap(this.v8));
-		return b;
+		DynBean _b_ = new DynBean();
+		_b_.unmarshal(OctetsStream.wrap(this.v8));
+		return _b_;
 	}
 
 	/** @return 字符串(String) */
@@ -435,188 +435,188 @@ public final class TestType extends Bean<TestType>
 	}
 
 	@Override
-	public OctetsStream marshal(OctetsStream s)
+	public OctetsStream marshal(OctetsStream _s_)
 	{
-		if(this.v1) s.marshal2(0x0401);
-		if(this.v2 != 0) s.marshal1((byte)0x08).marshal(this.v2);
-		if(this.v3 != 0) s.marshal1((byte)0x0c).marshal(this.v3);
-		if(this.v4 != 0) s.marshal1((byte)0x10).marshal(this.v4);
-		if(this.v5 != 0) s.marshal1((byte)0x14).marshal(this.v5);
-		if(this.v6 != 0) s.marshal2(0x1b08).marshal(this.v6);
-		if(this.v7 != 0) s.marshal2(0x1f09).marshal(this.v7);
-		if(!this.v8.empty()) s.marshal1((byte)0x21).marshal(this.v8);
-		if(!this.v9.isEmpty()) s.marshal1((byte)0x25).marshal(this.v9);
+		if(this.v1) _s_.marshal2(0x0401);
+		if(this.v2 != 0) _s_.marshal1((byte)0x08).marshal(this.v2);
+		if(this.v3 != 0) _s_.marshal1((byte)0x0c).marshal(this.v3);
+		if(this.v4 != 0) _s_.marshal1((byte)0x10).marshal(this.v4);
+		if(this.v5 != 0) _s_.marshal1((byte)0x14).marshal(this.v5);
+		if(this.v6 != 0) _s_.marshal2(0x1b08).marshal(this.v6);
+		if(this.v7 != 0) _s_.marshal2(0x1f09).marshal(this.v7);
+		if(!this.v8.empty()) _s_.marshal1((byte)0x21).marshal(this.v8);
+		if(!this.v9.isEmpty()) _s_.marshal1((byte)0x25).marshal(this.v9);
 		if(!this.v10.isEmpty())
 		{
-			s.marshal2(0x2b00).marshalUInt(this.v10.size());
+			_s_.marshal2(0x2b00).marshalUInt(this.v10.size());
 			for(Boolean v : this.v10)
-				s.marshal(v);
+				_s_.marshal(v);
 		}
 		if(!this.v11.isEmpty())
 		{
-			s.marshal2(0x2f00).marshalUInt(this.v11.size());
+			_s_.marshal2(0x2f00).marshalUInt(this.v11.size());
 			for(Byte v : this.v11)
-				s.marshal(v);
+				_s_.marshal(v);
 		}
 		if(!this.v12.isEmpty())
 		{
-			s.marshal2(0x3300).marshalUInt(this.v12.size());
+			_s_.marshal2(0x3300).marshalUInt(this.v12.size());
 			for(Integer v : this.v12)
-				s.marshal(v);
+				_s_.marshal(v);
 		}
 		if(!this.v13.isEmpty())
 		{
-			s.marshal2(0x3700).marshalUInt(this.v13.size());
+			_s_.marshal2(0x3700).marshalUInt(this.v13.size());
 			for(Long v : this.v13)
-				s.marshal(v);
+				_s_.marshal(v);
 		}
 		if(!this.v14.isEmpty())
 		{
-			s.marshal2(0x3b04).marshalUInt(this.v14.size());
+			_s_.marshal2(0x3b04).marshalUInt(this.v14.size());
 			for(Float v : this.v14)
-				s.marshal(v);
+				_s_.marshal(v);
 		}
 		if(!this.v15.isEmpty())
 		{
-			s.marshal2(0x3f05).marshalUInt(this.v15.size());
+			_s_.marshal2(0x3f05).marshalUInt(this.v15.size());
 			for(Double v : this.v15)
-				s.marshal(v);
+				_s_.marshal(v);
 		}
 		if(!this.v16.isEmpty())
 		{
-			s.marshal2(0x4341).marshalUInt(this.v16.size());
+			_s_.marshal2(0x4341).marshalUInt(this.v16.size());
 			for(Entry<Long, String> e : this.v16.entrySet())
-				s.marshal(e.getKey()).marshal(e.getValue());
+				_s_.marshal(e.getKey()).marshal(e.getValue());
 		}
 		if(!this.v17.isEmpty())
 		{
-			s.marshal2(0x4750).marshalUInt(this.v17.size());
+			_s_.marshal2(0x4750).marshalUInt(this.v17.size());
 			for(Entry<TestBean, Boolean> e : this.v17.entrySet())
-				s.marshal(e.getKey()).marshal(e.getValue());
+				_s_.marshal(e.getKey()).marshal(e.getValue());
 		}
 		if(!this.v18.isEmpty())
 		{
-			s.marshal2(0x4b4a).marshalUInt(this.v18.size());
+			_s_.marshal2(0x4b4a).marshalUInt(this.v18.size());
 			for(Entry<Octets, TestBean> e : this.v18.entrySet())
-				s.marshal(e.getKey()).marshal(e.getValue());
+				_s_.marshal(e.getKey()).marshal(e.getValue());
 		}
 		{
-			int n = s.size();
-			this.v19.marshal(s.marshal1((byte)0x4e));
-			if(s.size() - n < 3) s.resize(n);
+			int _n_ = _s_.size();
+			this.v19.marshal(_s_.marshal1((byte)0x4e));
+			if(_s_.size() - _n_ < 3) _s_.resize(_n_);
 		}
-		return s.marshalZero();
+		return _s_.marshalZero();
 	}
 
 	@Override
-	public OctetsStream unmarshal(OctetsStream s) throws MarshalException
+	public OctetsStream unmarshal(OctetsStream _s_) throws MarshalException
 	{
-		for(;;) { int i = s.unmarshalInt1() & 0xff, t = i & 3; if((i >>= 2) == 63) i += s.unmarshalInt1(); switch(i)
+		for(;;) { int _i_ = _s_.unmarshalInt1() & 0xff, _t_ = _i_ & 3; if((_i_ >>= 2) == 63) _i_ += _s_.unmarshalInt1(); switch(_i_)
 		{
-			case 0: return s;
-			case 1: this.v1 = (s.unmarshalInt(t) != 0); break;
-			case 2: this.v2 = (byte)s.unmarshalInt(t); break;
-			case 3: this.v3 = (short)s.unmarshalInt(t); break;
-			case 4: this.v4 = s.unmarshalInt(t); break;
-			case 5: this.v5 = s.unmarshalLong(t); break;
-			case 6: this.v6 = s.unmarshalFloat(t); break;
-			case 7: this.v7 = s.unmarshalDouble(t); break;
-			case 8: s.unmarshal(this.v8, t); break;
-			case 9: this.v9 = s.unmarshalString(t); break;
+			case 0: return _s_;
+			case 1: this.v1 = (_s_.unmarshalInt(_t_) != 0); break;
+			case 2: this.v2 = (byte)_s_.unmarshalInt(_t_); break;
+			case 3: this.v3 = (short)_s_.unmarshalInt(_t_); break;
+			case 4: this.v4 = _s_.unmarshalInt(_t_); break;
+			case 5: this.v5 = _s_.unmarshalLong(_t_); break;
+			case 6: this.v6 = _s_.unmarshalFloat(_t_); break;
+			case 7: this.v7 = _s_.unmarshalDouble(_t_); break;
+			case 8: _s_.unmarshal(this.v8, _t_); break;
+			case 9: this.v9 = _s_.unmarshalString(_t_); break;
 			case 10:
 			{
 				this.v10.clear();
-				if(t != 3) { s.unmarshalSkipVar(t); break; }
-				t = s.unmarshalInt1();
-				if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
-				t &= 7;
-				int n = s.unmarshalUInt();
-				this.v10.ensureCapacity(n < 1000 ? n : 1000);
-				for(; n > 0; --n)
-					this.v10.add((s.unmarshalIntKV(t) != 0));
+				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
+				_t_ = _s_.unmarshalInt1();
+				if((_t_ >> 3) != 0) { _s_.unmarshalSkipVarSub(_t_); break; }
+				_t_ &= 7;
+				int _n_ = _s_.unmarshalUInt();
+				this.v10.ensureCapacity(_n_ < 1000 ? _n_ : 1000);
+				for(; _n_ > 0; --_n_)
+					this.v10.add((_s_.unmarshalIntKV(_t_) != 0));
 			} break;
 			case 11:
 			{
 				this.v11.clear();
-				if(t != 3) { s.unmarshalSkipVar(t); break; }
-				t = s.unmarshalInt1();
-				if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
-				t &= 7;
-				for(int n = s.unmarshalUInt(); n > 0; --n)
-					this.v11.add((byte)s.unmarshalIntKV(t));
+				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
+				_t_ = _s_.unmarshalInt1();
+				if((_t_ >> 3) != 0) { _s_.unmarshalSkipVarSub(_t_); break; }
+				_t_ &= 7;
+				for(int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
+					this.v11.add((byte)_s_.unmarshalIntKV(_t_));
 			} break;
 			case 12:
 			{
 				this.v12.clear();
-				if(t != 3) { s.unmarshalSkipVar(t); break; }
-				t = s.unmarshalInt1();
-				if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
-				t &= 7;
-				for(int n = s.unmarshalUInt(); n > 0; --n)
-					this.v12.add(s.unmarshalIntKV(t));
+				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
+				_t_ = _s_.unmarshalInt1();
+				if((_t_ >> 3) != 0) { _s_.unmarshalSkipVarSub(_t_); break; }
+				_t_ &= 7;
+				for(int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
+					this.v12.add(_s_.unmarshalIntKV(_t_));
 			} break;
 			case 13:
 			{
 				this.v13.clear();
-				if(t != 3) { s.unmarshalSkipVar(t); break; }
-				t = s.unmarshalInt1();
-				if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
-				t &= 7;
-				for(int n = s.unmarshalUInt(); n > 0; --n)
-					this.v13.add(s.unmarshalLongKV(t));
+				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
+				_t_ = _s_.unmarshalInt1();
+				if((_t_ >> 3) != 0) { _s_.unmarshalSkipVarSub(_t_); break; }
+				_t_ &= 7;
+				for(int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
+					this.v13.add(_s_.unmarshalLongKV(_t_));
 			} break;
 			case 14:
 			{
 				this.v14.clear();
-				if(t != 3) { s.unmarshalSkipVar(t); break; }
-				t = s.unmarshalInt1();
-				if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
-				t &= 7;
-				for(int n = s.unmarshalUInt(); n > 0; --n)
-					this.v14.add(s.unmarshalFloatKV(t));
+				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
+				_t_ = _s_.unmarshalInt1();
+				if((_t_ >> 3) != 0) { _s_.unmarshalSkipVarSub(_t_); break; }
+				_t_ &= 7;
+				for(int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
+					this.v14.add(_s_.unmarshalFloatKV(_t_));
 			} break;
 			case 15:
 			{
 				this.v15.clear();
-				if(t != 3) { s.unmarshalSkipVar(t); break; }
-				t = s.unmarshalInt1();
-				if((t >> 3) != 0) { s.unmarshalSkipVarSub(t); break; }
-				t &= 7;
-				for(int n = s.unmarshalUInt(); n > 0; --n)
-					this.v15.add(s.unmarshalDoubleKV(t));
+				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
+				_t_ = _s_.unmarshalInt1();
+				if((_t_ >> 3) != 0) { _s_.unmarshalSkipVarSub(_t_); break; }
+				_t_ &= 7;
+				for(int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
+					this.v15.add(_s_.unmarshalDoubleKV(_t_));
 			} break;
 			case 16:
 			{
 				this.v16.clear();
-				if(t != 3) { s.unmarshalSkipVar(t); break; }
-				t = s.unmarshalInt1();
-				if((t >> 6) != 1) { s.unmarshalSkipVarSub(t); break; }
-				int k = (t >> 3) & 7; t &= 7;
-				for(int n = s.unmarshalUInt(); n > 0; --n)
-					this.v16.put(s.unmarshalLongKV(k), s.unmarshalStringKV(t));
+				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
+				_t_ = _s_.unmarshalInt1();
+				if((_t_ >> 6) != 1) { _s_.unmarshalSkipVarSub(_t_); break; }
+				int _k_ = (_t_ >> 3) & 7; _t_ &= 7;
+				for(int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
+					this.v16.put(_s_.unmarshalLongKV(_k_), _s_.unmarshalStringKV(_t_));
 			} break;
 			case 17:
 			{
 				this.v17.clear();
-				if(t != 3) { s.unmarshalSkipVar(t); break; }
-				t = s.unmarshalInt1();
-				if((t >> 6) != 1) { s.unmarshalSkipVarSub(t); break; }
-				int k = (t >> 3) & 7; t &= 7;
-				for(int n = s.unmarshalUInt(); n > 0; --n)
-					this.v17.put(s.unmarshalBeanKV(new TestBean(), k), (s.unmarshalIntKV(t) != 0));
+				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
+				_t_ = _s_.unmarshalInt1();
+				if((_t_ >> 6) != 1) { _s_.unmarshalSkipVarSub(_t_); break; }
+				int _k_ = (_t_ >> 3) & 7; _t_ &= 7;
+				for(int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
+					this.v17.put(_s_.unmarshalBeanKV(new TestBean(), _k_), (_s_.unmarshalIntKV(_t_) != 0));
 			} break;
 			case 18:
 			{
 				this.v18.clear();
-				if(t != 3) { s.unmarshalSkipVar(t); break; }
-				t = s.unmarshalInt1();
-				if((t >> 6) != 1) { s.unmarshalSkipVarSub(t); break; }
-				int k = (t >> 3) & 7; t &= 7;
-				for(int n = s.unmarshalUInt(); n > 0; --n)
-					this.v18.put(s.unmarshalOctetsKV(k), s.unmarshalBeanKV(new TestBean(), t));
+				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
+				_t_ = _s_.unmarshalInt1();
+				if((_t_ >> 6) != 1) { _s_.unmarshalSkipVarSub(_t_); break; }
+				int _k_ = (_t_ >> 3) & 7; _t_ &= 7;
+				for(int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
+					this.v18.put(_s_.unmarshalOctetsKV(_k_), _s_.unmarshalBeanKV(new TestBean(), _t_));
 			} break;
-			case 19: s.unmarshalBean(this.v19, t); break;
-			default: s.unmarshalSkipVar(t);
+			case 19: _s_.unmarshalBean(this.v19, _t_); break;
+			default: _s_.unmarshalSkipVar(_t_);
 		}}
 	}
 
@@ -629,28 +629,28 @@ public final class TestType extends Bean<TestType>
 	@Override
 	public int hashCode()
 	{
-		int h = (int)serialVersionUID;
-		h = h * 31 + 1 + (this.v1 ? 0xcafebabe : 0xdeadbeef);
-		h = h * 31 + 1 + this.v2;
-		h = h * 31 + 1 + this.v3;
-		h = h * 31 + 1 + this.v4;
-		h = h * 31 + 1 + (int)this.v5;
-		h = h * 31 + 1 + Float.floatToRawIntBits(this.v6);
-		h = h * 31 + 1 + (int)((Double.doubleToRawLongBits(this.v7) * 0x100000001L) >> 32);
-		h = h * 31 + 1 + this.v8.hashCode();
-		h = h * 31 + 1 + this.v9.hashCode();
-		h = h * 31 + 1 + this.v10.hashCode();
-		h = h * 31 + 1 + this.v11.hashCode();
-		h = h * 31 + 1 + this.v12.hashCode();
-		h = h * 31 + 1 + this.v13.hashCode();
-		h = h * 31 + 1 + this.v14.hashCode();
-		h = h * 31 + 1 + this.v15.hashCode();
-		h = h * 31 + 1 + this.v16.hashCode();
-		h = h * 31 + 1 + this.v17.hashCode();
-		h = h * 31 + 1 + this.v18.hashCode();
-		h = h * 31 + 1 + this.v19.hashCode();
-		h = h * 31 + 1 + 0;
-		return h;
+		int _h_ = (int)serialVersionUID;
+		_h_ = _h_ * 31 + 1 + (this.v1 ? 0xcafebabe : 0xdeadbeef);
+		_h_ = _h_ * 31 + 1 + this.v2;
+		_h_ = _h_ * 31 + 1 + this.v3;
+		_h_ = _h_ * 31 + 1 + this.v4;
+		_h_ = _h_ * 31 + 1 + (int)this.v5;
+		_h_ = _h_ * 31 + 1 + Float.floatToRawIntBits(this.v6);
+		_h_ = _h_ * 31 + 1 + (int)((Double.doubleToRawLongBits(this.v7) * 0x100000001L) >> 32);
+		_h_ = _h_ * 31 + 1 + this.v8.hashCode();
+		_h_ = _h_ * 31 + 1 + this.v9.hashCode();
+		_h_ = _h_ * 31 + 1 + this.v10.hashCode();
+		_h_ = _h_ * 31 + 1 + this.v11.hashCode();
+		_h_ = _h_ * 31 + 1 + this.v12.hashCode();
+		_h_ = _h_ * 31 + 1 + this.v13.hashCode();
+		_h_ = _h_ * 31 + 1 + this.v14.hashCode();
+		_h_ = _h_ * 31 + 1 + this.v15.hashCode();
+		_h_ = _h_ * 31 + 1 + this.v16.hashCode();
+		_h_ = _h_ * 31 + 1 + this.v17.hashCode();
+		_h_ = _h_ * 31 + 1 + this.v18.hashCode();
+		_h_ = _h_ * 31 + 1 + this.v19.hashCode();
+		_h_ = _h_ * 31 + 1 + 0;
+		return _h_;
 	}
 
 	@Override
@@ -658,93 +658,93 @@ public final class TestType extends Bean<TestType>
 	{
 		if(o == this) return true;
 		if(!(o instanceof TestType)) return false;
-		TestType b = (TestType)o;
-		if(this.v1 != b.v1) return false;
-		if(this.v2 != b.v2) return false;
-		if(this.v3 != b.v3) return false;
-		if(this.v4 != b.v4) return false;
-		if(this.v5 != b.v5) return false;
-		if(this.v6 != b.v6) return false;
-		if(this.v7 != b.v7) return false;
-		if(!this.v8.equals(b.v8)) return false;
-		if(!this.v9.equals(b.v9)) return false;
-		if(!this.v10.equals(b.v10)) return false;
-		if(!this.v11.equals(b.v11)) return false;
-		if(!this.v12.equals(b.v12)) return false;
-		if(!this.v13.equals(b.v13)) return false;
-		if(!this.v14.equals(b.v14)) return false;
-		if(!this.v15.equals(b.v15)) return false;
-		if(!this.v16.equals(b.v16)) return false;
-		if(!this.v17.equals(b.v17)) return false;
-		if(!this.v18.equals(b.v18)) return false;
-		if(!this.v19.equals(b.v19)) return false;
-		if(!this.v20.equals(b.v20)) return false;
+		TestType _b_ = (TestType)o;
+		if(this.v1 != _b_.v1) return false;
+		if(this.v2 != _b_.v2) return false;
+		if(this.v3 != _b_.v3) return false;
+		if(this.v4 != _b_.v4) return false;
+		if(this.v5 != _b_.v5) return false;
+		if(this.v6 != _b_.v6) return false;
+		if(this.v7 != _b_.v7) return false;
+		if(!this.v8.equals(_b_.v8)) return false;
+		if(!this.v9.equals(_b_.v9)) return false;
+		if(!this.v10.equals(_b_.v10)) return false;
+		if(!this.v11.equals(_b_.v11)) return false;
+		if(!this.v12.equals(_b_.v12)) return false;
+		if(!this.v13.equals(_b_.v13)) return false;
+		if(!this.v14.equals(_b_.v14)) return false;
+		if(!this.v15.equals(_b_.v15)) return false;
+		if(!this.v16.equals(_b_.v16)) return false;
+		if(!this.v17.equals(_b_.v17)) return false;
+		if(!this.v18.equals(_b_.v18)) return false;
+		if(!this.v19.equals(_b_.v19)) return false;
+		if(!this.v20.equals(_b_.v20)) return false;
 		return true;
 	}
 
 	@Override
-	public int compareTo(TestType b)
+	public int compareTo(TestType _b_)
 	{
-		if(b == this) return 0;
-		if(b == null) return 1;
-		int c;
-		c = (this.v1 == b.v1 ? 0 : (this.v1 ? 1 : -1)); if(c != 0) return c;
-		c = this.v2 - b.v2; if(c != 0) return c;
-		c = this.v3 - b.v3; if(c != 0) return c;
-		c = this.v4 - b.v4; if(c != 0) return c;
-		c = Long.signum(this.v5 - b.v5); if(c != 0) return c;
-		c = Float.compare(this.v6, b.v6); if(c != 0) return c;
-		c = Double.compare(this.v7, b.v7); if(c != 0) return c;
-		c = this.v8.compareTo(b.v8); if(c != 0) return c;
-		c = this.v9.compareTo(b.v9); if(c != 0) return c;
-		c = Util.compareTo(this.v10, b.v10); if(c != 0) return c;
-		c = Util.compareTo(this.v11, b.v11); if(c != 0) return c;
-		c = Util.compareTo(this.v12, b.v12); if(c != 0) return c;
-		c = Util.compareTo(this.v13, b.v13); if(c != 0) return c;
-		c = Util.compareTo(this.v14, b.v14); if(c != 0) return c;
-		c = Util.compareTo(this.v15, b.v15); if(c != 0) return c;
-		c = Util.compareTo(this.v16, b.v16); if(c != 0) return c;
-		c = Util.compareTo(this.v17, b.v17); if(c != 0) return c;
-		c = Util.compareTo(this.v18, b.v18); if(c != 0) return c;
-		c = this.v19.compareTo(b.v19); if(c != 0) return c;
-		c = 0; if(c != 0) return c;
+		if(_b_ == this) return 0;
+		if(_b_ == null) return 1;
+		int _c_;
+		_c_ = (this.v1 == _b_.v1 ? 0 : (this.v1 ? 1 : -1)); if(_c_ != 0) return _c_;
+		_c_ = this.v2 - _b_.v2; if(_c_ != 0) return _c_;
+		_c_ = this.v3 - _b_.v3; if(_c_ != 0) return _c_;
+		_c_ = this.v4 - _b_.v4; if(_c_ != 0) return _c_;
+		_c_ = Long.signum(this.v5 - _b_.v5); if(_c_ != 0) return _c_;
+		_c_ = Float.compare(this.v6, _b_.v6); if(_c_ != 0) return _c_;
+		_c_ = Double.compare(this.v7, _b_.v7); if(_c_ != 0) return _c_;
+		_c_ = this.v8.compareTo(_b_.v8); if(_c_ != 0) return _c_;
+		_c_ = this.v9.compareTo(_b_.v9); if(_c_ != 0) return _c_;
+		_c_ = Util.compareTo(this.v10, _b_.v10); if(_c_ != 0) return _c_;
+		_c_ = Util.compareTo(this.v11, _b_.v11); if(_c_ != 0) return _c_;
+		_c_ = Util.compareTo(this.v12, _b_.v12); if(_c_ != 0) return _c_;
+		_c_ = Util.compareTo(this.v13, _b_.v13); if(_c_ != 0) return _c_;
+		_c_ = Util.compareTo(this.v14, _b_.v14); if(_c_ != 0) return _c_;
+		_c_ = Util.compareTo(this.v15, _b_.v15); if(_c_ != 0) return _c_;
+		_c_ = Util.compareTo(this.v16, _b_.v16); if(_c_ != 0) return _c_;
+		_c_ = Util.compareTo(this.v17, _b_.v17); if(_c_ != 0) return _c_;
+		_c_ = Util.compareTo(this.v18, _b_.v18); if(_c_ != 0) return _c_;
+		_c_ = this.v19.compareTo(_b_.v19); if(_c_ != 0) return _c_;
+		_c_ = 0; if(_c_ != 0) return _c_;
 		return 0;
 	}
 
 	@Override
 	public String toString()
 	{
-		StringBuilder s = new StringBuilder(16 + 256 * 2).append('{');
-		s.append(this.v1).append(',');
-		s.append(this.v2).append(',');
-		s.append(this.v3).append(',');
-		s.append(this.v4).append(',');
-		s.append(this.v5).append(',');
-		s.append(this.v6).append(',');
-		s.append(this.v7).append(',');
-		s.append(this.v8).append(',');
-		s.append(this.v9).append(',');
-		Util.append(s, this.v10);
-		Util.append(s, this.v11);
-		Util.append(s, this.v12);
-		Util.append(s, this.v13);
-		Util.append(s, this.v14);
-		Util.append(s, this.v15);
-		Util.append(s, this.v16);
-		Util.append(s, this.v17);
-		Util.append(s, this.v18);
-		s.append(this.v19).append(',');
-		s.append(this.v20).append(',');
-		s.setLength(s.length() - 1);
-		return s.append('}').toString();
+		StringBuilder _s_ = new StringBuilder(16 + 256 * 2).append('{');
+		_s_.append(this.v1).append(',');
+		_s_.append(this.v2).append(',');
+		_s_.append(this.v3).append(',');
+		_s_.append(this.v4).append(',');
+		_s_.append(this.v5).append(',');
+		_s_.append(this.v6).append(',');
+		_s_.append(this.v7).append(',');
+		_s_.append(this.v8).append(',');
+		_s_.append(this.v9).append(',');
+		Util.append(_s_, this.v10);
+		Util.append(_s_, this.v11);
+		Util.append(_s_, this.v12);
+		Util.append(_s_, this.v13);
+		Util.append(_s_, this.v14);
+		Util.append(_s_, this.v15);
+		Util.append(_s_, this.v16);
+		Util.append(_s_, this.v17);
+		Util.append(_s_, this.v18);
+		_s_.append(this.v19).append(',');
+		_s_.append(this.v20).append(',');
+		_s_.setLength(_s_.length() - 1);
+		return _s_.append('}').toString();
 	}
 
 	// attach java code here
 
 	@Override
-	public Safe safe(SContext.Safe<?> parent)
+	public Safe safe(SContext.Safe<?> _parent_)
 	{
-		return new Safe(this, parent);
+		return new Safe(this, _parent_);
 	}
 
 	@Override
@@ -762,9 +762,9 @@ public final class TestType extends Bean<TestType>
 		private SSMap<TestBean, Boolean, Boolean> CACHE_v17;
 		private SMap<Octets, TestBean, TestBean.Safe> CACHE_v18;
 
-		private Safe(TestType bean, SContext.Safe<?> parent)
+		private Safe(TestType bean, SContext.Safe<?> _parent_)
 		{
-			super(bean, parent);
+			super(bean, _parent_);
 		}
 
 		/** @return 1字节布尔,0表示假,1表示真,其它默认表示真 */
@@ -878,16 +878,16 @@ public final class TestType extends Bean<TestType>
 		}
 
 		/** 二进制数据(Octets) */
-		public <B extends Bean<B>> void marshalV8(Bean<B> b)
+		public <B extends Bean<B>> void marshalV8(Bean<B> _b_)
 		{
 			if(initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_v8, _bean.v8, false));
-			_bean.v8 = b.marshal(new OctetsStream(b.initSize()));
+			_bean.v8 = _b_.marshal(new OctetsStream(_b_.initSize()));
 		}
 
 		/** 二进制数据(Octets) */
-		public <B extends Bean<B>> Bean<B> unmarshalV8(Bean<B> b) throws MarshalException
+		public <B extends Bean<B>> Bean<B> unmarshalV8(Bean<B> _b_) throws MarshalException
 		{
-			return _bean.unmarshalV8(b);
+			return _bean.unmarshalV8(_b_);
 		}
 
 		/** 二进制数据(Octets) */
@@ -956,9 +956,9 @@ public final class TestType extends Bean<TestType>
 		}
 
 		/** 无序集合容器(HashSet) */
-		public static void onListenerV13(SSetListener<Long> listener)
+		public static void onListenerV13(SSetListener<Long> _listener_)
 		{
-			LISTENER_v13 = listener;
+			LISTENER_v13 = _listener_;
 		}
 
 		/** @return 无序集合容器(HashSet) */
@@ -976,9 +976,9 @@ public final class TestType extends Bean<TestType>
 		}
 
 		/** 排序集合容器(TreeSet) */
-		public static void onListenerV14(SSetListener<Float> listener)
+		public static void onListenerV14(SSetListener<Float> _listener_)
 		{
-			LISTENER_v14 = listener;
+			LISTENER_v14 = _listener_;
 		}
 
 		/** @return 排序集合容器(TreeSet) */
@@ -996,9 +996,9 @@ public final class TestType extends Bean<TestType>
 		}
 
 		/** 有序集合容器(LinkedHashSet) */
-		public static void onListenerV15(SSetListener<Double> listener)
+		public static void onListenerV15(SSetListener<Double> _listener_)
 		{
-			LISTENER_v15 = listener;
+			LISTENER_v15 = _listener_;
 		}
 
 		/** @return 有序集合容器(LinkedHashSet) */
@@ -1016,9 +1016,9 @@ public final class TestType extends Bean<TestType>
 		}
 
 		/** 无序映射容器(HashMap) */
-		public static void onListenerV16(SMapListener<Long, String> listener)
+		public static void onListenerV16(SMapListener<Long, String> _listener_)
 		{
-			LISTENER_v16 = listener;
+			LISTENER_v16 = _listener_;
 		}
 
 		/** @return 无序映射容器(HashMap) */
@@ -1036,9 +1036,9 @@ public final class TestType extends Bean<TestType>
 		}
 
 		/** 排序映射容器(TreeMap) */
-		public static void onListenerV17(SMapListener<TestBean, Boolean> listener)
+		public static void onListenerV17(SMapListener<TestBean, Boolean> _listener_)
 		{
-			LISTENER_v17 = listener;
+			LISTENER_v17 = _listener_;
 		}
 
 		/** @return 排序映射容器(TreeMap) */
@@ -1056,9 +1056,9 @@ public final class TestType extends Bean<TestType>
 		}
 
 		/** 有序映射容器(LinkedHashMap) */
-		public static void onListenerV18(SMapListener<Octets, TestBean> listener)
+		public static void onListenerV18(SMapListener<Octets, TestBean> _listener_)
 		{
-			LISTENER_v18 = listener;
+			LISTENER_v18 = _listener_;
 		}
 
 		/** @return 有序映射容器(LinkedHashMap) */

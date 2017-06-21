@@ -31,9 +31,9 @@ public final class TestBean extends Bean<TestBean>
 	{
 		try
 		{
-			Class<TestBean> c = TestBean.class;
-			FIELD_value1 = c.getDeclaredField("value1"); FIELD_value1.setAccessible(true);
-			FIELD_value2 = c.getDeclaredField("value2"); FIELD_value2.setAccessible(true);
+			Class<TestBean> _c_ = TestBean.class;
+			FIELD_value1 = _c_.getDeclaredField("value1"); FIELD_value1.setAccessible(true);
+			FIELD_value2 = _c_.getDeclaredField("value2"); FIELD_value2.setAccessible(true);
 		}
 		catch(Exception e)
 		{
@@ -59,12 +59,12 @@ public final class TestBean extends Bean<TestBean>
 	}
 
 	@Override
-	public void assign(TestBean b)
+	public void assign(TestBean _b_)
 	{
-		if(b == this) return;
-		if(b == null) { reset(); return; }
-		this.value1 = b.value1;
-		this.value2 = b.value2;
+		if(_b_ == this) return;
+		if(_b_ == null) { reset(); return; }
+		this.value1 = _b_.value1;
+		this.value2 = _b_.value2;
 	}
 
 	/** @return 字段的注释 */
@@ -138,22 +138,22 @@ public final class TestBean extends Bean<TestBean>
 	}
 
 	@Override
-	public OctetsStream marshal(OctetsStream s)
+	public OctetsStream marshal(OctetsStream _s_)
 	{
-		if(this.value1 != 0) s.marshal1((byte)0x04).marshal(this.value1);
-		if(this.value2 != 0) s.marshal1((byte)0x08).marshal(this.value2);
-		return s.marshalZero();
+		if(this.value1 != 0) _s_.marshal1((byte)0x04).marshal(this.value1);
+		if(this.value2 != 0) _s_.marshal1((byte)0x08).marshal(this.value2);
+		return _s_.marshalZero();
 	}
 
 	@Override
-	public OctetsStream unmarshal(OctetsStream s) throws MarshalException
+	public OctetsStream unmarshal(OctetsStream _s_) throws MarshalException
 	{
-		for(;;) { int i = s.unmarshalInt1() & 0xff, t = i & 3; if((i >>= 2) == 63) i += s.unmarshalInt1(); switch(i)
+		for(;;) { int _i_ = _s_.unmarshalInt1() & 0xff, _t_ = _i_ & 3; if((_i_ >>= 2) == 63) _i_ += _s_.unmarshalInt1(); switch(_i_)
 		{
-			case 0: return s;
-			case 1: this.value1 = s.unmarshalInt(t); break;
-			case 2: this.value2 = s.unmarshalLong(t); break;
-			default: s.unmarshalSkipVar(t);
+			case 0: return _s_;
+			case 1: this.value1 = _s_.unmarshalInt(_t_); break;
+			case 2: this.value2 = _s_.unmarshalLong(_t_); break;
+			default: _s_.unmarshalSkipVar(_t_);
 		}}
 	}
 
@@ -166,10 +166,10 @@ public final class TestBean extends Bean<TestBean>
 	@Override
 	public int hashCode()
 	{
-		int h = (int)serialVersionUID;
-		h = h * 31 + 1 + this.value1;
-		h = h * 31 + 1 + (int)this.value2;
-		return h;
+		int _h_ = (int)serialVersionUID;
+		_h_ = _h_ * 31 + 1 + this.value1;
+		_h_ = _h_ * 31 + 1 + (int)this.value2;
+		return _h_;
 	}
 
 	@Override
@@ -177,37 +177,37 @@ public final class TestBean extends Bean<TestBean>
 	{
 		if(o == this) return true;
 		if(!(o instanceof TestBean)) return false;
-		TestBean b = (TestBean)o;
-		if(this.value1 != b.value1) return false;
-		if(this.value2 != b.value2) return false;
+		TestBean _b_ = (TestBean)o;
+		if(this.value1 != _b_.value1) return false;
+		if(this.value2 != _b_.value2) return false;
 		return true;
 	}
 
 	@Override
-	public int compareTo(TestBean b)
+	public int compareTo(TestBean _b_)
 	{
-		if(b == this) return 0;
-		if(b == null) return 1;
-		int c;
-		c = this.value1 - b.value1; if(c != 0) return c;
-		c = Long.signum(this.value2 - b.value2); if(c != 0) return c;
+		if(_b_ == this) return 0;
+		if(_b_ == null) return 1;
+		int _c_;
+		_c_ = this.value1 - _b_.value1; if(_c_ != 0) return _c_;
+		_c_ = Long.signum(this.value2 - _b_.value2); if(_c_ != 0) return _c_;
 		return 0;
 	}
 
 	@Override
 	public String toString()
 	{
-		StringBuilder s = new StringBuilder(16 + 16 * 2).append('{');
-		s.append(this.value1).append(',');
-		s.append(this.value2).append(',');
-		s.setLength(s.length() - 1);
-		return s.append('}').toString();
+		StringBuilder _s_ = new StringBuilder(16 + 16 * 2).append('{');
+		_s_.append(this.value1).append(',');
+		_s_.append(this.value2).append(',');
+		_s_.setLength(_s_.length() - 1);
+		return _s_.append('}').toString();
 	}
 
 	@Override
-	public Safe safe(SContext.Safe<?> parent)
+	public Safe safe(SContext.Safe<?> _parent_)
 	{
-		return new Safe(this, parent);
+		return new Safe(this, _parent_);
 	}
 
 	@Override
@@ -218,9 +218,9 @@ public final class TestBean extends Bean<TestBean>
 
 	public static final class Safe extends SContext.Safe<TestBean>
 	{
-		private Safe(TestBean bean, SContext.Safe<?> parent)
+		private Safe(TestBean bean, SContext.Safe<?> _parent_)
 		{
-			super(bean, parent);
+			super(bean, _parent_);
 		}
 
 		/** @return 字段的注释 */
