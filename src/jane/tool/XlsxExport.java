@@ -11,17 +11,16 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamReader;
 import jane.core.Util;
 
 public final class XlsxExport
@@ -78,69 +77,96 @@ public final class XlsxExport
 			{
 				int len = (int)ze.getSize();
 				if(len < 0) continue;
-				if(ze.getName().equals("xl/sharedStrings.xml"))
-					Util.readStream(zis, ze.getName(), xmlStr = new byte[len], len);
-				else if(ze.getName().equals(fileSheet))
-					Util.readStream(zis, ze.getName(), xmlSheet = new byte[len], len);
+				String name = ze.getName();
+				if(name.equals("xl/sharedStrings.xml"))
+					Util.readStream(zis, name, xmlStr = new byte[len], len);
+				else if(name.equals(fileSheet))
+					Util.readStream(zis, name, xmlSheet = new byte[len], len);
 			}
 		}
 		if(xmlStr == null) throw new IOException("ERROR: not found xl/sharedStrings.xml");
 		if(xmlSheet == null) throw new IOException("ERROR: not found " + fileSheet);
 
-		DocumentBuilder db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-		NodeList nl = db.parse(new ByteArrayInputStream(xmlStr)).getDocumentElement().getElementsByTagName("si");
-		String[] strTable = new String[nl.getLength()]; // <si><t>string</t></si>
-		for(int i = 0, n = nl.getLength(); i < n; ++i)
+		ArrayList<String> strTable = new ArrayList<>(65536);
+		XMLInputFactory xmlFactory = XMLInputFactory.newInstance();
+		XMLStreamReader xmlReader = xmlFactory.createXMLStreamReader(new ByteArrayInputStream(xmlStr));
+		while(xmlReader.hasNext()) // <si><t>string</t></si>
 		{
-			NodeList ts = ((Element)nl.item(i)).getElementsByTagName("t");
-			int tn = ts.getLength();
-			if(tn == 1)
-				strTable[i] = ts.item(0).getTextContent().trim();
-			else
+			if(xmlReader.next() == XMLStreamConstants.START_ELEMENT && xmlReader.getLocalName().equals("si"))
 			{
-				StringBuilder sb = new StringBuilder();
-				for(int j = 0; j < tn; ++j)
-					sb.append(ts.item(j).getTextContent().trim());
-				strTable[i] = sb.toString();
+				String text = null;
+				while(xmlReader.hasNext())
+				{
+					int type = xmlReader.next();
+					if(type == XMLStreamConstants.START_ELEMENT && xmlReader.getLocalName().charAt(0) == 't')
+					{
+						String t = xmlReader.getElementText().trim();
+						text = (text == null ? t : text + t);
+					}
+					else if(type == XMLStreamConstants.END_ELEMENT && xmlReader.getLocalName().charAt(0) == 's')
+						break;
+				}
+				strTable.add(text != null ? text : "");
 			}
 		}
 
 		Map<Integer, Map<Integer, String>> res = new TreeMap<>();
-		nl = db.parse(new ByteArrayInputStream(xmlSheet)).getDocumentElement().getElementsByTagName("c");
-		for(int i = 0, n = nl.getLength(); i < n; ++i)
+		xmlReader = xmlFactory.createXMLStreamReader(new ByteArrayInputStream(xmlSheet));
+		while(xmlReader.hasNext()) // <c r="A1" s="1" t="s/b"><v>0</v></c>
 		{
-			Element elem = (Element)nl.item(i); // <c r="A1" s="1" t="s/b"><v>0</v></c>
-			Node node = elem.getElementsByTagName("v").item(0);
-			if(node != null)
+			if(xmlReader.next() == XMLStreamConstants.START_ELEMENT && xmlReader.getLocalName().equals("c"))
 			{
-				String v = node.getTextContent().trim();
-				String t = elem.getAttribute("t").trim();
-				if(t.equals("s"))
-					v = strTable[Integer.parseInt(v)];
-				else if(t.equals("b"))
-					v = (v.equals("1") ? "TRUE" : "FALSE");
-				if(v != null && !v.isEmpty())
+				String r = null, t = null;
+				for(int i = 0, n = xmlReader.getAttributeCount(); i < n; ++i)
 				{
-					t = elem.getAttribute("r");
-					if(!t.isEmpty())
+					switch(xmlReader.getAttributeLocalName(i).charAt(0))
 					{
-						char a = t.charAt(0);
-						char b = (t.length() > 1 ? t.charAt(1) : '1');
+						case 'r':
+							r = xmlReader.getAttributeValue(i);
+							break;
+						case 't':
+							t = xmlReader.getAttributeValue(i);
+							break;
+					}
+				}
+				if(r == null || r.isEmpty()) continue;
+				while(xmlReader.hasNext())
+				{
+					int type = xmlReader.next();
+					if(type == XMLStreamConstants.START_ELEMENT && xmlReader.getLocalName().charAt(0) == 'v')
+					{
+						String v = xmlReader.getElementText().trim();
+						if(t != null)
+						{
+							switch(t.charAt(0))
+							{
+								case 's':
+									v = strTable.get(Integer.parseInt(v));
+									break;
+								case 'b':
+									v = (v.charAt(0) == '1' ? "TRUE" : "FALSE");
+									break;
+							}
+						}
+						char a = r.charAt(0);
+						char b = (r.length() > 1 ? r.charAt(1) : '1');
 						int x = (b - 'A') & 0xffff, y;
 						if(x >= 26) // A(1)~Z(26)
 						{
 							x = a - 'A' + 1;
-							y = Integer.parseInt(t.substring(1));
+							y = Integer.parseInt(r.substring(1));
 						}
 						else
 						{ // AA(27)~ZZ(26*26+27), 暂不支持更多的列
 							x += (a - 'A') * 26 + 27;
-							y = Integer.parseInt(t.substring(2));
+							y = Integer.parseInt(r.substring(2));
 						}
 						Map<Integer, String> map = res.get(y);
 						if(map == null) res.put(y, map = new TreeMap<>());
 						map.put(x, v);
 					}
+					else if(type == XMLStreamConstants.END_ELEMENT && xmlReader.getLocalName().charAt(0) == 'c')
+						break;
 				}
 			}
 		}
