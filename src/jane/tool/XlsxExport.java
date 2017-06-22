@@ -148,6 +148,7 @@ public final class XlsxExport
 									break;
 							}
 						}
+						if(v.isEmpty()) continue;
 						char a = r.charAt(0);
 						char b = (r.length() > 1 ? r.charAt(1) : '1');
 						int x = (b - 'A') & 0xffff, y;
