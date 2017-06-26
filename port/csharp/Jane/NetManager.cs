@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
@@ -15,12 +15,12 @@ namespace Jane
 		{
 			public readonly NetManager manager;
 			public readonly Socket socket;
-			public readonly IPEndPoint peer;
+			public readonly EndPoint peer;
 			public readonly OctetsStream recvBuf = new OctetsStream(); // 接收数据未处理部分的缓冲区(也用于接收事件的对象);
 			public object userdata; // 完全由用户使用
 			public bool Closed { get; internal set; }
 
-			internal NetSession(NetManager m, Socket s, IPEndPoint p)
+			internal NetSession(NetManager m, Socket s, EndPoint p)
 			{
 				manager = m;
 				socket = s;
@@ -112,7 +112,7 @@ namespace Jane
 
 		protected virtual void OnAddSession(NetSession session) {} // 执行Listen/Connect后,异步由Tick方法回调,异常会触发Close(CLOSE_READ);
 		protected virtual void OnDelSession(NetSession session, int code, Exception e) {} // 由Close(主动/Listen/Connect/Tick)方法调用,异常会抛出;
-		protected virtual void OnAbortSession(IPEndPoint peer, Exception e) {} // 由Listen/Connect/Tick方法调用,异常会抛出;
+		protected virtual void OnAbortSession(EndPoint peer, Exception e) {} // 由Listen/Connect/Tick方法调用,异常会抛出;
 		protected virtual void OnSent(NetSession session, object userdata) {} // 由Tick方法调用,异常会抛出;
 		protected virtual OctetsStream OnEncode(NetSession session, byte[] buf, int pos, int len) { return null; } // 由SendDirect方法回调,异常会触发Close(CLOSE_WRITE);
 		protected virtual OctetsStream OnDecode(NetSession session, byte[] buf, int pos, int len) { return null; } // 由Tick方法回调,异常会调Close(CLOSE_DECODE,e);
@@ -204,7 +204,7 @@ namespace Jane
 
 		void OnEventAccept(SocketAsyncEventArgs arg)
 		{
-			IPEndPoint peer = (IPEndPoint)arg.RemoteEndPoint;
+			EndPoint peer = arg.RemoteEndPoint;
 			arg.RemoteEndPoint = null;
 			SocketError errCode = arg.SocketError;
 			if(errCode != SocketError.Success)
@@ -253,7 +253,7 @@ namespace Jane
 
 		void OnEventConnect(SocketAsyncEventArgs arg)
 		{
-			IPEndPoint peer = (IPEndPoint)arg.RemoteEndPoint;
+			EndPoint peer = arg.RemoteEndPoint;
 			arg.RemoteEndPoint = null;
 			SocketError errCode = arg.SocketError;
 			if(errCode != SocketError.Success)
@@ -379,11 +379,11 @@ namespace Jane
 
 		public void Listen(string addr, int port, int backlog = 100)
 		{
-			IPEndPoint host = new IPEndPoint(string.IsNullOrEmpty(addr) ? IPAddress.Any : IPAddress.Parse(addr), port);
+			EndPoint host = (string.IsNullOrEmpty(addr) ? (EndPoint)new IPEndPoint(IPAddress.Any, port) : new DnsEndPoint(addr, port));
 			SocketAsyncEventArgs arg = null;
 			try
 			{
-				Socket soc = new Socket(host.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+				Socket soc = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 				soc.Bind(host);
 				soc.Listen(backlog);
 				arg = AllocArg();
@@ -401,11 +401,11 @@ namespace Jane
 		// 开始异步连接,如果已经连接,则会先主动断开旧连接再重新连接,但在回调OnAddSession或OnAbortSession前不能再次调用此对象的此方法;
 		public void Connect(string addr, int port)
 		{
-			IPEndPoint peer = new IPEndPoint(IPAddress.Parse(addr), port);
+			EndPoint peer = new DnsEndPoint(addr, port);
 			SocketAsyncEventArgs arg = null;
 			try
 			{
-				Socket soc = new Socket(peer.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+				Socket soc = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 				// soc.NoDelay = false;
 				// soc.LingerState = new LingerOption(true, 1);
 				arg = AllocArg();

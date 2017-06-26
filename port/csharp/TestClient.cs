@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading;
@@ -110,7 +110,7 @@ namespace Jane
 		/**
 		 * 网络未连接成功并放弃本次连接后调用;
 		 */
-		protected override void OnAbortSession(IPEndPoint peer, Exception e)
+		protected override void OnAbortSession(EndPoint peer, Exception e)
 		{
 			LogInfo("onAbortSession: {0} {1}", peer, e);
 			AddTask(1000, Connect);
