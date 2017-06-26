@@ -20,7 +20,8 @@ return require "util".initBeans {
 #}##(#		[#(var.id3)] = { name = "#(var.name)", type = #(var.btype)#(var.keyval) },
 #)#	}},
 #]#}
-
+]=]
+--[=[
 ---@module bean
 #[#
 ---#(bean.comment)

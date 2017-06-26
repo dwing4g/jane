@@ -42,21 +42,21 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="jane\bean\AllBeans.cs" />
-    <Compile Include="jane\bean\TestBean.cs" />
-    <Compile Include="jane\bean\TestEmpty.cs" />
-    <Compile Include="jane\bean\TestType.cs" />
-    <Compile Include="jane\handler\TestBeanHandler.cs" />
-    <Compile Include="jane\handler\TestTypeHandler.cs" />
-    <Compile Include="jane\IBean.cs" />
-    <Compile Include="jane\NetManager.cs" />
-    <Compile Include="jane\DynBean.cs" />
-    <Compile Include="jane\LZCompressor.cs" />
-    <Compile Include="jane\MarshalException.cs" />
-    <Compile Include="jane\Octets.cs" />
-    <Compile Include="jane\OctetsStream.cs" />
-    <Compile Include="jane\RC4Filter.cs" />
-    <Compile Include="jane\Util.cs" />
+    <Compile Include="Jane\bean\AllBeans.cs" />
+    <Compile Include="Jane\bean\TestBean.cs" />
+    <Compile Include="Jane\bean\TestEmpty.cs" />
+    <Compile Include="Jane\bean\TestType.cs" />
+    <Compile Include="Jane\handler\TestBeanHandler.cs" />
+    <Compile Include="Jane\handler\TestTypeHandler.cs" />
+    <Compile Include="Jane\IBean.cs" />
+    <Compile Include="Jane\NetManager.cs" />
+    <Compile Include="Jane\DynBean.cs" />
+    <Compile Include="Jane\LZCompressor.cs" />
+    <Compile Include="Jane\MarshalException.cs" />
+    <Compile Include="Jane\Octets.cs" />
+    <Compile Include="Jane\OctetsStream.cs" />
+    <Compile Include="Jane\RC4Filter.cs" />
+    <Compile Include="Jane\Util.cs" />
     <Compile Include="TestClient.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

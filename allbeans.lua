@@ -3,7 +3,6 @@ local handler   = handler or function() end -- 可以单独运行此文件来检
 local bean      = bean    or function() end
 local rpc       = rpc     or function() end
 local dbt       = dbt     or function() end
-local namespace = namespace or ""
 
 handler
 {
