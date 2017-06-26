@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
@@ -113,7 +113,7 @@ namespace Jane
 		protected virtual void OnAddSession(NetSession session) {} // 执行Listen/Connect后,异步由Tick方法回调,异常会触发Close(CLOSE_READ);
 		protected virtual void OnDelSession(NetSession session, int code, Exception e) {} // 由Close(主动/Listen/Connect/Tick)方法调用,异常会抛出;
 		protected virtual void OnAbortSession(IPEndPoint peer, Exception e) {} // 由Listen/Connect/Tick方法调用,异常会抛出;
-		protected virtual void OnSent(NetSession session, object obj) {} // 由Tick方法调用,异常会抛出;
+		protected virtual void OnSent(NetSession session, object userdata) {} // 由Tick方法调用,异常会抛出;
 		protected virtual OctetsStream OnEncode(NetSession session, byte[] buf, int pos, int len) { return null; } // 由SendDirect方法回调,异常会触发Close(CLOSE_WRITE);
 		protected virtual OctetsStream OnDecode(NetSession session, byte[] buf, int pos, int len) { return null; } // 由Tick方法回调,异常会调Close(CLOSE_DECODE,e);
 

@@ -171,18 +171,19 @@ namespace Jane
 		public override void Send(NetSession session, IBean bean)
 		{
 			_sendBeanQueue.Enqueue(bean);
-			if(_sendBeanQueue.Count == 1 && !SendDirect(session, _sendBeanQueue.Peek()))
+			if(_sendBeanQueue.Count == 1 && !SendDirect(session, bean))
 				_sendBeanQueue.Clear();
 		}
 
 		/**
 		 * 对已发送完bean的回调, 触发发送队列中协议的顺序发送;
 		 */
-		protected override void OnSent(NetSession session, object obj)
+		protected override void OnSent(NetSession session, object userdata)
 		{
-			if(_sendBeanQueue.Count <= 0) return;
+			if(_sendBeanQueue.Count <= 0) return; // 以防意外;
 			_sendBeanQueue.Dequeue();
-			if(_sendBeanQueue.Count > 0 && !SendDirect(session, _sendBeanQueue.Peek()))
+			if(_sendBeanQueue.Count <= 0) return;
+			if(!SendDirect(session, _sendBeanQueue.Peek()))
 				_sendBeanQueue.Clear();
 		}
 
