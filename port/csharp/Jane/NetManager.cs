@@ -133,17 +133,20 @@ namespace Jane
 					int ptype = recvBuf.UnmarshalUInt();
 					int psize = recvBuf.UnmarshalUInt();
 					if(psize > recvBuf.Remain()) break;
+					int p = recvBuf.Position();
+					pos = p + psize;
 					BeanDelegate create;
 					if(BeanMap == null || !BeanMap.TryGetValue(ptype, out create))
-						throw new Exception("unknown bean: type=" + ptype + ",size=" + psize);
-					IBean bean = create();
-					int p = recvBuf.Position();
-					bean.Unmarshal(recvBuf);
-					int realsize = recvBuf.Position() - p;
-					if(realsize > psize)
-						throw new Exception("bean realsize overflow: type=" + ptype + ",size=" + psize + ",realsize=" + realsize);
-					pos = p + psize;
-					OnRecvBean(session, bean);
+						OnRecvUnknownBean(session, ptype, psize);
+					else
+					{
+						IBean bean = create();
+						bean.Unmarshal(recvBuf);
+						int realsize = recvBuf.Position() - p;
+						if(realsize > psize)
+							throw new Exception("bean realsize overflow: type=" + ptype + ",size=" + psize + ",realsize=" + realsize);
+						OnRecvBean(session, bean);
+					}
 				}
 			}
 			catch(MarshalEOFException)
@@ -173,6 +176,11 @@ namespace Jane
 			if(HandlerMap == null || !HandlerMap.TryGetValue(bean.Type(), out handler)) return false;
 			handler(session, bean);
 			return true;
+		}
+
+		protected virtual void OnRecvUnknownBean(NetSession session, int ptype, int psize) // 在Tick解协议过程中解出一个bean时回调,默认会抛出异常;
+		{
+			throw new Exception("unknown bean: type=" + ptype + ",size=" + psize);
 		}
 
 		SocketAsyncEventArgs AllocArg()

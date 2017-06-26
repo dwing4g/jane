@@ -10,8 +10,9 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Jane</RootNamespace>
     <AssemblyName>Jane</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-    <TargetFrameworkProfile>Unity Subset v3.5</TargetFrameworkProfile>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
@@ -42,12 +43,12 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Jane\bean\AllBeans.cs" />
-    <Compile Include="Jane\bean\TestBean.cs" />
-    <Compile Include="Jane\bean\TestEmpty.cs" />
-    <Compile Include="Jane\bean\TestType.cs" />
-    <Compile Include="Jane\handler\TestBeanHandler.cs" />
-    <Compile Include="Jane\handler\TestTypeHandler.cs" />
+    <Compile Include="Jane\Bean\AllBeans.cs" />
+    <Compile Include="Jane\Bean\TestBean.cs" />
+    <Compile Include="Jane\Bean\TestEmpty.cs" />
+    <Compile Include="Jane\Bean\TestType.cs" />
+    <Compile Include="Jane\Handler\TestBeanHandler.cs" />
+    <Compile Include="Jane\Handler\TestTypeHandler.cs" />
     <Compile Include="Jane\IBean.cs" />
     <Compile Include="Jane\NetManager.cs" />
     <Compile Include="Jane\DynBean.cs" />

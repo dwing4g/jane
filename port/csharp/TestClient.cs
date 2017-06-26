@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading;
@@ -11,10 +11,28 @@ namespace Jane
 		const string DEFAULT_SERVER_ADDR = "127.0.0.1";
 		const int DEFAULT_SERVER_PORT = 9123;
 
+		public delegate void Task();
+
+		readonly SortedDictionary<long, Task> _timerTaskMap = new SortedDictionary<long, Task>(); // 简单的时间调度处理容器;
 		readonly Queue<IBean> _sendBeanQueue = new Queue<IBean>(); // 待发送协议的缓冲区;
 		string _serverAddr = DEFAULT_SERVER_ADDR; // 连接服务器的地址;
 		int _serverPort = DEFAULT_SERVER_PORT; // 连接服务器的端口;
 		RC4Filter _filter;
+
+		static void LogInfo(string str)
+		{
+			Console.WriteLine(str);
+		}
+
+		static void LogInfo(string format, params object[] objs)
+		{
+			Console.WriteLine(format, objs);
+		}
+
+		static void LogException(Exception e)
+		{
+			Console.Error.WriteLine(e);
+		}
 
 		public TestClient()
 		{
@@ -37,12 +55,47 @@ namespace Jane
 			_filter = filter;
 		}
 
+		public void AddTask(int delayMs, Task task)
+		{
+			for(long time = DateTime.Now.Ticks + delayMs * 10000;; ++time)
+			{
+				if(!_timerTaskMap.ContainsKey(time))
+				{
+					_timerTaskMap.Add(time, task);
+					break;
+				}
+			}
+		}
+
+		void DoTask()
+		{
+			long now = DateTime.Now.Ticks;
+			while(_timerTaskMap.Count > 0)
+			{
+				var en = _timerTaskMap.GetEnumerator();
+				en.MoveNext();
+				var p = en.Current;
+				long time = p.Key;
+				if(now < time) break;
+				Task task = p.Value;
+				_timerTaskMap.Remove(time);
+				try
+				{
+					task();
+				}
+				catch(Exception e)
+				{
+					LogException(e);
+				}
+			}
+		}
+
 		/**
 		 * 网络刚连接成功后调用;
 		 */
 		protected override void OnAddSession(NetSession session)
 		{
-			Console.WriteLine("onAddSession: {0}", session.peer);
+			LogInfo("onAddSession: {0}", session.peer);
 		}
 
 		/**
@@ -50,8 +103,8 @@ namespace Jane
 		 */
 		protected override void OnDelSession(NetSession session, int code, Exception e)
 		{
-			Console.WriteLine("onDelSession: {0}: {1}: {2}", session.peer, code, e);
-			Connect();
+			LogInfo("onDelSession: {0}: {1}: {2}", session.peer, code, e);
+			AddTask(1000, Connect);
 		}
 
 		/**
@@ -59,8 +112,8 @@ namespace Jane
 		 */
 		protected override void OnAbortSession(IPEndPoint peer, Exception e)
 		{
-			Console.WriteLine("onAbortSession: {0} {1}", peer, e);
-			Connect();
+			LogInfo("onAbortSession: {0} {1}", peer, e);
+			AddTask(1000, Connect);
 		}
 
 		/**
@@ -97,7 +150,7 @@ namespace Jane
 			}
 			catch(Exception e)
 			{
-				Console.WriteLine(e);
+				LogException(e);
 			}
 		}
 
@@ -141,16 +194,22 @@ namespace Jane
 			_sendBeanQueue.Clear();
 		}
 
+		public new void Tick()
+		{
+			base.Tick();
+			DoTask();
+		}
+
 		/**
 		 * 独立程序测试用的入口, 展示如何使用此类;
 		 */
 		public static void Main(string[] args)
 		{
 			TestClient mgr = new TestClient(); // 没有特殊情况可以不调用Dispose销毁;
-			Console.WriteLine("connecting ...");
+			LogInfo("connecting ...");
 			mgr.SetServerAddr(DEFAULT_SERVER_ADDR, DEFAULT_SERVER_PORT); // 连接前先设置好服务器的地址和端口;
 			mgr.Connect(); // 开始异步连接,成功或失败反馈到回调方法;
-			Console.WriteLine("press CTRL+C or close this window to exit ...");
+			LogInfo("press CTRL+C or close this window to exit ...");
 			for(;;) // 工作线程的主循环;
 			{
 				mgr.Tick(); // 在当前线程处理网络事件,很多回调方法在此同步执行;
