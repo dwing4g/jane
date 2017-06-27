@@ -457,7 +457,7 @@ namespace Jane
 			}
 		}
 
-		protected bool SendDirect(NetSession session, IBean bean)
+		protected virtual bool SendDirect(NetSession session, IBean bean)
 		{
 			OctetsStream os = new OctetsStream(10 + bean.InitSize());
 			os.Resize(10);

@@ -305,6 +305,16 @@ public class NetManager implements IoHandler
 		_acceptor.bind(addr);
 	}
 
+	public void startServer(SocketAddress... addrs) throws IOException
+	{
+		getAcceptor();
+		StringBuilder sb = new StringBuilder();
+		for(SocketAddress addr : addrs)
+			sb.append(addr).append(';');
+		Log.info("{}: listening addr={}", _name, sb);
+		_acceptor.bind(addrs);
+	}
+
 	/**
 	 * 启动客户端的连接
 	 * <p>
