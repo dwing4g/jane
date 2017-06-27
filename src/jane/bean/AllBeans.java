@@ -26,7 +26,12 @@ public final class AllBeans
 
 	public static IntHashMap<BeanHandler<?>> getTestClientHandlers()
 	{
-		IntHashMap<BeanHandler<?>> r = new IntHashMap<>(3 * 4);
+		return getTestClientHandlers(null);
+	}
+
+	public static IntHashMap<BeanHandler<?>> getTestClientHandlers(IntHashMap<BeanHandler<?>> r)
+	{
+		if(r == null) r = new IntHashMap<>(3 * 4);
 		r.put(1, new jane.handler.testclient.TestBeanHandler());
 		r.put(2, new jane.handler.testclient.TestTypeHandler());
 		r.put(4, new jane.handler.testclient.TestRpcBeanHandler());
@@ -35,7 +40,12 @@ public final class AllBeans
 
 	public static IntHashMap<BeanHandler<?>> getTestServerHandlers()
 	{
-		IntHashMap<BeanHandler<?>> r = new IntHashMap<>(4 * 4);
+		return getTestServerHandlers(null);
+	}
+
+	public static IntHashMap<BeanHandler<?>> getTestServerHandlers(IntHashMap<BeanHandler<?>> r)
+	{
+		if(r == null) r = new IntHashMap<>(4 * 4);
 		r.put(1, new jane.handler.testserver.TestBeanHandler());
 		r.put(2, new jane.handler.testserver.TestTypeHandler());
 		r.put(3, new jane.handler.testserver.TestEmptyHandler());

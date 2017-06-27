@@ -260,7 +260,12 @@ public final class AllBeans
 #[#
 	public static IntHashMap<BeanHandler<?>> get#(hdl.name)Handlers()
 	{
-		IntHashMap<BeanHandler<?>> r = new IntHashMap<]=] .. (jdk7 and "" or "BeanHandler<?>") .. [=[>(#(hdl.count) * 4);
+		return get#(hdl.name)Handlers(null);
+	}
+
+	public static IntHashMap<BeanHandler<?>> get#(hdl.name)Handlers(IntHashMap<BeanHandler<?>> r)
+	{
+		if(r == null) r = new IntHashMap<]=] .. (jdk7 and "" or "BeanHandler<?>") .. [=[>(#(hdl.count) * 4);
 #(#		r.put(#(bean.type), new #(hdl.path).#(bean.name)Handler());
 #)#		return r;
 	}
