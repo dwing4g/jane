@@ -63,10 +63,18 @@ public class BeanCodec extends IoFilterAdapter
 	/**
 	 * 获取某个类型bean的最大空间限制(字节)
 	 */
-	public static int beanMaxSize(int type)
+	public static int getBeanMaxSize(int type)
 	{
 		Integer size = _maxSize.get(type);
 		return size != null ? size : -1;
+	}
+
+	/**
+	 * 获取一个类型的bean存根对象(只能读)
+	 */
+	public static Bean<?> getBeanStub(int type)
+	{
+		return _stubMap.get(type);
 	}
 
 	/**
@@ -120,7 +128,7 @@ public class BeanCodec extends IoFilterAdapter
 				os.setPosition(pos);
 				return false;
 			}
-			int maxSize = beanMaxSize(_ptype);
+			int maxSize = getBeanMaxSize(_ptype);
 			if(maxSize < 0) maxSize = Const.maxRawBeanSize;
 			if(_psize > maxSize)
 				throw new DecodeException("bean maxSize overflow: type=" + _ptype + ",size=" + _psize + ",maxSize=" + maxSize);
