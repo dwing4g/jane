@@ -2,8 +2,8 @@
 setlocal
 pushd %~dp0
 
-luajit fixcodec.lua ..\src
-luajit fixcodec.lua ..\port\csharp\jane
-luajit fixcodec.lua ..\port\lua\src
+luajit fixcodec.lua *.java ..\
+luajit fixcodec.lua *.cs   ..\
+luajit fixcodec.lua *.lua  ..\
 
 pause

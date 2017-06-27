@@ -81,7 +81,7 @@ end
 local wildcard = arg[1]
 table.remove(arg, 1)
 for _, path in ipairs(arg) do
-	print(path)
+	print(path, wildcard)
 	FixDir(path, wildcard)
 end
 

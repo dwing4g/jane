@@ -8,14 +8,14 @@ namespace Jane
 {
 	public sealed class TestClient : NetManager
 	{
-		const string DEFAULT_SERVER_ADDR = "127.0.0.1";
+		static readonly IPAddress DEFAULT_SERVER_IP = IPAddress.Parse("127.0.0.1");
 		const int DEFAULT_SERVER_PORT = 9123;
 
 		public delegate void Task();
 
 		readonly SortedDictionary<long, Task> _timerTaskMap = new SortedDictionary<long, Task>(); // 简单的时间调度处理容器;
 		readonly Queue<IBean> _sendBeanQueue = new Queue<IBean>(); // 待发送协议的缓冲区;
-		string _serverAddr = DEFAULT_SERVER_ADDR; // 连接服务器的地址;
+		IPAddress _serverIp = DEFAULT_SERVER_IP; // 连接服务器的地址;
 		int _serverPort = DEFAULT_SERVER_PORT; // 连接服务器的端口;
 		RC4Filter _filter;
 
@@ -44,9 +44,9 @@ namespace Jane
 		 * 设置连接服务器的地址和端口;
 		 * 要在连接网络前设置;
 		 */
-		public void SetServerAddr(string addr, int port)
+		public void SetServerAddr(IPAddress ip, int port)
 		{
-			_serverAddr = addr ?? DEFAULT_SERVER_ADDR;
+			_serverIp = ip ?? DEFAULT_SERVER_IP;
 			_serverPort = port > 0 ? port : DEFAULT_SERVER_PORT;
 		}
 
@@ -161,7 +161,7 @@ namespace Jane
 		{
 			_sendBeanQueue.Clear();
 			_filter = null;
-			Connect(_serverAddr, _serverPort);
+			Connect(_serverIp, _serverPort);
 		}
 
 		/**
@@ -206,9 +206,10 @@ namespace Jane
 		 */
 		public static void Main(string[] args)
 		{
-			TestClient mgr = new TestClient(); // 没有特殊情况可以不调用Dispose销毁;
+			IPAddress ip = Dns.GetHostAddresses("127.0.0.1")[0]; // or BeginGetHostAddresses for async
+			TestClient mgr = new TestClient();
 			LogInfo("connecting ...");
-			mgr.SetServerAddr(DEFAULT_SERVER_ADDR, DEFAULT_SERVER_PORT); // 连接前先设置好服务器的地址和端口;
+			mgr.SetServerAddr(ip, 9123); // 连接前先设置好服务器的地址和端口;
 			mgr.Connect(); // 开始异步连接,成功或失败反馈到回调方法;
 			LogInfo("press CTRL+C or close this window to exit ...");
 			for(;;) // 工作线程的主循环;

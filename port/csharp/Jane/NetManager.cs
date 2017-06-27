@@ -377,13 +377,13 @@ namespace Jane
 			}
 		}
 
-		public void Listen(string addr, int port, int backlog = 100)
+		public void Listen(IPAddress ip, int port, int backlog = 100)
 		{
-			EndPoint host = (string.IsNullOrEmpty(addr) ? (EndPoint)new IPEndPoint(IPAddress.Any, port) : new DnsEndPoint(addr, port));
+			EndPoint host = new IPEndPoint(ip, port);
 			SocketAsyncEventArgs arg = null;
 			try
 			{
-				Socket soc = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+				Socket soc = new Socket(host.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 				soc.Bind(host);
 				soc.Listen(backlog);
 				arg = AllocArg();
@@ -399,13 +399,13 @@ namespace Jane
 		}
 
 		// 开始异步连接,如果已经连接,则会先主动断开旧连接再重新连接,但在回调OnAddSession或OnAbortSession前不能再次调用此对象的此方法;
-		public void Connect(string addr, int port)
+		public void Connect(IPAddress ip, int port)
 		{
-			EndPoint peer = new DnsEndPoint(addr, port);
+			EndPoint peer = new IPEndPoint(ip, port);
 			SocketAsyncEventArgs arg = null;
 			try
 			{
-				Socket soc = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+				Socket soc = new Socket(peer.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 				// soc.NoDelay = false;
 				// soc.LingerState = new LingerOption(true, 1);
 				arg = AllocArg();
