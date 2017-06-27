@@ -1472,7 +1472,7 @@ for beanname, safe in spairs(need_save) do
 				   :gsub("\n\tstatic\n\t{.-\n\t}\n", "")
 	end
 	if not genToJson then code = code:gsub("\n\t@Override\n\tpublic StringBuilder toJson%(.-\n\t}\n", "") end
-	if not genToJson then code = code:gsub("\n\t@Override\n\tpublic StringBuilder toLua%(.-\n\t}\n", "") end
+	if not genToLua  then code = code:gsub("\n\t@Override\n\tpublic StringBuilder toLua%(.-\n\t}\n", "") end
 	if not code:find("Util.", 1, true) then code = code:gsub("import jane%.core%.Util;\n", "") end
 	checksave(outpath .. namespace_path .. "/" .. beanname .. ".java", code, 0)
 end
