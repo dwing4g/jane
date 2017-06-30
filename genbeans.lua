@@ -1477,4 +1477,4 @@ for beanname, safe in spairs(need_save) do
 	checksave(outpath .. namespace_path .. "/" .. beanname .. ".java", code, 0)
 end
 
-print "done!"
+print((arg[2] or "") .. " ... done!")

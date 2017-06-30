@@ -175,4 +175,4 @@ checksave(outpath .. "bean.lua", (template_bean:gsub("#%[#(.-)#%]#", function(bo
 	return concat(subcode)
 end)):gsub("\r", ""), 0)
 
-print "done!"
+print((arg[1] or "") .. " ... done!")
