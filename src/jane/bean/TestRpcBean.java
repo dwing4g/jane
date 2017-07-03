@@ -18,6 +18,7 @@ public final class TestRpcBean extends RpcBean<TestBean, TestType, TestRpcBean>
 	@Override public String typeName() { return BEAN_TYPENAME; }
 	@Override public TestRpcBean stub() { return BEAN_STUB; }
 	@Override public TestRpcBean create() { return new TestRpcBean(); }
+	@Override public int initSize() { return 0; }
 	@Override public TestBean createArg() { return new TestBean(); }
 	@Override public TestType createRes() { return new TestType(); }
 }

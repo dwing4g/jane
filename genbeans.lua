@@ -230,6 +230,7 @@ public final class #(bean.name) extends RpcBean<#(bean.arg), #(bean.res), #(bean
 	@Override public String typeName() { return BEAN_TYPENAME; }
 	@Override public #(bean.name) stub() { return BEAN_STUB; }
 	@Override public #(bean.name) create() { return new #(bean.name)(); }
+	@Override public int initSize() { return #(bean.initsize); }
 	@Override public #(bean.arg) createArg() { return new #(bean.arg)(); }
 	@Override public #(bean.res) createRes() { return new #(bean.res)(); }
 }
@@ -1134,7 +1135,8 @@ local function bean_common(bean)
 	if bean.name:find("[^%w_]") or typedef[bean.name] or bean.name == "AllBeans" or bean.name == "AllTables" then error("ERROR: invalid bean.name: " .. bean.name) end
 	if name_code[lower(bean.name)] then error("ERROR: duplicated bean.name: " .. bean.name) end
 	if bean.handlers and type_bean[bean.type] then error("ERROR: duplicated bean.type: " .. bean.type) end
-	if type(bean.type) ~= "number" then bean.type = 0 end
+	if type(bean.type) ~= "number" or not bean.handlers then bean.type = 0 end
+	if not bean.initsize then bean.initsize = 0 end
 	for name in (bean.handlers or ""):gmatch("([%w_%.]+)") do
 		if not all_handlers[name] then error("ERROR: not defined handler: " .. name) end
 		hdl_names[name] = hdl_names[name] or {}
@@ -1228,7 +1230,6 @@ function bean(bean)
 	end
 
 	if not bean.maxsize then bean.maxsize = 0x7fffffff end
-	if not bean.initsize then bean.initsize = 0 end
 	if type(bean.initsize) == "number" and bean.initsize > 0x10000 then print("WARNING: bean.initsize = " .. bean.initsize .. " > 64KB (bean.name:" .. bean.name .. ")") end
 	bean.imports = get_imports(bean.import)
 	bean.uid = gen_uid(bean.name, concat(vartypes))
