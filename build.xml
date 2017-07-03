@@ -54,6 +54,15 @@
 				<exclude name="**/jane/test/**"/>
 			</fileset>
 		</jar>
+		<jar jarfile="${root}/jane-native.jar" level="9">
+			<manifest>
+				<attribute name="Created-Time" value="${time}"/>
+			</manifest>
+			<fileset dir="${lib}">
+				<include name="*.dll"/>
+				<include name="*.so"/>
+			</fileset>
+		</jar>
 		<jar jarfile="${root}/jane-test.jar" basedir="${classes}" includes="**/jane/bean/**,**/jane/handler/**,**/jane/test/**" level="9">
 			<manifest>
 				<attribute name="Created-Time" value="${time}"/>

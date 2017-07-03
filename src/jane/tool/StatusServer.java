@@ -161,6 +161,7 @@ public class StatusServer extends NetManager
 		else
 		{
 			param.add("Content-Type: text/html; charset=utf-8");
+			param.add("Connection: keep-alive");
 			param.add("Cache-Control: no-cache");
 			param.add("Pragma: no-cache");
 
