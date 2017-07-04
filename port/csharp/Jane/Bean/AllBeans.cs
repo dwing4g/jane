@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace Jane.Bean
 {
 	/** 全部bean集合(自动生成的静态类) */
-	public struct AllBeans
+	public class AllBeans
 	{
 		/** 获取全部bean的创建代理 */
 		public static IDictionary<int, NetManager.BeanDelegate> GetAllBeans()

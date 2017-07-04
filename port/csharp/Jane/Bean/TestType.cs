@@ -9,7 +9,7 @@ namespace Jane.Bean
 	 * 测试生成所有支持的类型;
 	 */
 	[Serializable]
-	public struct TestType : IBean, IEquatable<TestType>, IComparable<TestType>
+	public class TestType : IBean, IEquatable<TestType>, IComparable<TestType>
 	{
 		public const int BEAN_TYPE = 2;
 
@@ -32,6 +32,10 @@ namespace Jane.Bean
 		public  /* 17*/ SortedDictionary<TestBean, bool> v17; // 排序映射容器(TreeMap);
 		public  /* 18*/ Dictionary<Octets, TestBean> v18; // 有序映射容器(LinkedHashMap);
 		public  /* 19*/ TestBean v19; // 嵌入其它bean;
+
+		public TestType()
+		{
+		}
 
 		public TestType(bool v1, sbyte v2, short v3, int v4, long v5, float v6, double v7, Octets v8, string v9, ICollection<bool> v10, ICollection<sbyte> v11, ICollection<int> v12, ICollection<long> v13, ICollection<float> v14, ICollection<double> v15, IDictionary<long, string> v16, IDictionary<TestBean, bool> v17, IDictionary<Octets, TestBean> v18, TestBean v19)
 		{

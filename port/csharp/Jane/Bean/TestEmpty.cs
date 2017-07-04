@@ -9,7 +9,7 @@ namespace Jane.Bean
 	 * 测试空bean;
 	 */
 	[Serializable]
-	public struct TestEmpty : IBean, IEquatable<TestEmpty>, IComparable<TestEmpty>
+	public class TestEmpty : IBean, IEquatable<TestEmpty>, IComparable<TestEmpty>
 	{
 		public const int BEAN_TYPE = 3;
 

@@ -9,7 +9,7 @@ namespace Jane.Bean
 	 * bean的注释;
 	 */
 	[Serializable]
-	public struct TestBean : IBean, IEquatable<TestBean>, IComparable<TestBean>
+	public class TestBean : IBean, IEquatable<TestBean>, IComparable<TestBean>
 	{
 		public const int BEAN_TYPE = 1;
 		public const int TEST_CONST1 = 5; // 测试类静态常量;
@@ -17,6 +17,10 @@ namespace Jane.Bean
 
 		public  /*  1*/ int value1; // 字段的注释;
 		public  /*  2*/ long value2;
+
+		public TestBean()
+		{
+		}
 
 		public TestBean(int value1, long value2)
 		{
