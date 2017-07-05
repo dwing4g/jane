@@ -72,8 +72,8 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 							_stoTable.remove(k);
 						else
 						{
-							v.setSaveState(1);
 							_stoTable.put(k, v);
+							v.setSaveState(1);
 						}
 						_cacheMod.remove(k, v);
 					}
@@ -106,8 +106,8 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 				_stoTable.remove(k);
 			else
 			{
-				v.setSaveState(1);
 				_stoTable.put(k, v);
+				v.setSaveState(1);
 			}
 		}
 		int m = _cacheMod.size();
@@ -277,16 +277,14 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 		{
 			V vOld = _cacheMod.put(k, v);
 			if(vOld == null)
-			{
-				v.setSaveState(2);
 				DBManager.instance().incModCount();
-			}
 			else if(vOld != v)
 			{
 				_cacheMod.put(k, vOld);
 				throw new IllegalStateException("modify unmatched record: t=" +
 						_tableName + ",k=" + k + ",vOld=" + vOld + ",v=" + v);
 			}
+			v.setSaveState(2);
 		}
 	}
 
@@ -300,15 +298,14 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 		{
 			V vOld = _cacheMod.put(k, v);
 			if(vOld == null)
-			{
-				v.setSaveState(2);
 				DBManager.instance().incModCount();
-			}
 			else if(vOld != v)
 			{
 				// 可能之前已经覆盖或删除过记录,然后再modify的话,就忽略本次modify了,因为SContext.commit无法识别这种情况
 				_cacheMod.put(k, vOld);
+				return;
 			}
+			v.setSaveState(2);
 		}
 	}
 
@@ -333,10 +330,8 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 				{
 					vOld = _cacheMod.put(k, v);
 					if(vOld == null)
-					{
-						v.setSaveState(2);
 						DBManager.instance().incModCount();
-					}
+					v.setSaveState(2);
 				}
 			}
 			else
@@ -369,7 +364,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 			{
 				if(vOld != null)
 				{
-					vOld.setSaveState(0);
+					vOld.setSaveState(0); // 确保可写入
 					putUnsafe(k, vOld);
 				}
 				else
@@ -377,6 +372,8 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 			}
 		});
 		putUnsafe(k, v);
+		if(vOld != null)
+			vOld.setSaveState(0);
 	}
 
 	@SuppressWarnings("deprecation")
@@ -414,11 +411,12 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 			@Override
 			public void run()
 			{
-				vOld.setSaveState(0);
+				vOld.setSaveState(0); // 确保可写入
 				putUnsafe(k, vOld);
 			}
 		});
 		removeUnsafe(k);
+		vOld.setSaveState(0);
 	}
 
 	/**
