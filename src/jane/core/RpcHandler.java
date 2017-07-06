@@ -63,11 +63,7 @@ public abstract class RpcHandler<A extends Bean<A>, R extends Bean<R>, B extends
 			R res = rpcBean.getRes();
 			if(res == null) rpcBean.setRes(rpcBean.createRes());
 			if(onServer(manager, session, rpcBean))
-			{
-				rpcBean.setArg(null);
-				rpcBean.setResponse();
-				manager.send(session, rpcBean);
-			}
+				manager.replyRpc(session, rpcBean);
 		}
 		else
 		{

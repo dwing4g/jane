@@ -379,7 +379,7 @@ public class NetManager implements IoHandler
 	 * <p>
 	 * 此操作是异步的,失败会在另一线程回调onConnectFailed
 	 */
-	public ConnectFuture startClient(final SocketAddress addr)
+	public ConnectFuture startClient(SocketAddress addr)
 	{
 		return startClient(addr, null);
 	}
@@ -504,7 +504,7 @@ public class NetManager implements IoHandler
 		return true;
 	}
 
-	public boolean sendSafe(final IoSession session, final Bean<?> bean)
+	public boolean sendSafe(final IoSession session, Bean<?> bean)
 	{
 		if(session.isClosing() || bean == null) return false;
 		final RawBean rawbean = new RawBean(bean);
@@ -578,7 +578,7 @@ public class NetManager implements IoHandler
 	 * @return 如果连接已经失效则返回false且不会有回复和超时的回调, 否则返回true
 	 */
 	@SuppressWarnings("unchecked")
-	public <A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>> boolean sendRpc(final IoSession session, final RpcBean<A, R, B> rpcBean, RpcHandler<A, R, B> handler)
+	public <A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>> boolean sendRpc(IoSession session, RpcBean<A, R, B> rpcBean, RpcHandler<A, R, B> handler)
 	{
 		if(session.isClosing() || rpcBean == null) return false;
 		rpcBean.setRequest();
@@ -599,6 +599,19 @@ public class NetManager implements IoHandler
 			return false;
 		}
 		return true;
+	}
+
+	/**
+	 * 向某个连接回复RPC
+	 * <p>
+	 * 此操作是异步的
+	 * @return 如果连接已经失效则返回false, 否则返回true
+	 */
+	public <A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>> boolean replyRpc(IoSession session, RpcBean<A, R, B> rpcBean)
+	{
+		rpcBean.setArg(null);
+		rpcBean.setResponse();
+		return send(session, rpcBean);
 	}
 
 	private static final class FutureRPC<R> extends FutureTask<R>
@@ -631,7 +644,7 @@ public class NetManager implements IoHandler
 	 * 此操作是异步的
 	 * @return 如果连接已经失效则返回null, 如果RPC超时则对返回的Future对象调用get方法时返回null
 	 */
-	public <A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>> Future<R> sendRpcSync(final IoSession session, final RpcBean<A, R, B> rpcBean)
+	public <A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>> Future<R> sendRpcAsync(IoSession session, RpcBean<A, R, B> rpcBean)
 	{
 		if(session.isClosing() || rpcBean == null) return null;
 		rpcBean.setRequest();
@@ -680,6 +693,23 @@ public class NetManager implements IoHandler
 			public void run()
 			{
 				sendRpc(session, rpcBean, handler);
+			}
+		});
+		return true;
+	}
+
+	/**
+	 * 同replyRpc, 区别仅仅是在事务成功后回复RPC
+	 */
+	public <A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>> boolean replyRpcSafe(final IoSession session, final RpcBean<A, R, B> rpcBean)
+	{
+		if(session.isClosing() || rpcBean == null) return false;
+		SContext.current().addOnCommit(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				replyRpc(session, rpcBean);
 			}
 		});
 		return true;
