@@ -515,8 +515,8 @@ typedef.byte =
 	equals = "this.#(var.name) != _b_.#(var.name)",
 	compareto = "this.#(var.name) - _b_.#(var.name)",
 	tostring = "_s_.append(this.#(var.name)).append(',')",
-	tojson = "\t\ts.append(\"\\\"#(var.name)\\\":\").append(this.#(var.name)).append(',');\n",
-	tolua = "\t\ts.append(\"#(var.name)=\").append(this.#(var.name)).append(',');\n",
+	tojson = "\t\t_s_.append(\"\\\"#(var.name)\\\":\").append(this.#(var.name)).append(',');\n",
+	tolua = "\t\t_s_.append(\"#(var.name)=\").append(this.#(var.name)).append(',');\n",
 }
 typedef.char  = merge(typedef.byte, { type = "char",  type_i = "char",  type_o = "Char"  })
 typedef.short = merge(typedef.byte, { type = "short", type_i = "short", type_o = "Short" })
