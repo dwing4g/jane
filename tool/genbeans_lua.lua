@@ -42,7 +42,7 @@ local typemap = { byte = n, char = n, short = n, int = n, long = n, float = n, d
 local ltypemap = { num = "number", str = "string", bool = "boolean", vec = "list", map = "map" }
 
 local function trim(s)
-	return s:gsub("[%c ]+", "")
+	return s:gsub("[%c%s]+", "")
 end
 local function code_conv(code, prefix, t)
 	return code:gsub("#%(" .. prefix .. "%.([%w_]+)%)", function(name) return t[name] end)

@@ -14,7 +14,7 @@ end
 
 for _, path in ipairs({...}) do
 	print(path)
-	for fn in io.popen("dir/a-d/b/o/s " .. path .. "\\*.*"):read"*a":gmatch"%C+" do
+	for fn in io.popen("dir/a-d/b/o/s " .. path .. "\\*.*"):read"*a":gmatch"[%C\t]+" do
 		CountFile(fn)
 	end
 end

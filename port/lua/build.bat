@@ -3,9 +3,9 @@ setlocal
 pushd %~dp0
 
 md bin 2> nul
-cd src
-for %%a in (*.lua) do luac -s -o ..\bin\%%~na.lc %%a & luajit -b %%a ..\bin\%%~na.lj
+cd ..\..\tool
+for %%a in (..\port\lua\src\*.lua) do luajit.exe -b %%a ..\port\lua\bin\%%~na.lj
 
-dir ..\bin\*.*
+dir ..\port\lua\bin\*.*
 
 pause

@@ -72,7 +72,7 @@ local function FixFile()
 end
 
 local function FixDir(dirname, wildcard)
-	for fn in io.popen("dir/a-d/b/o/s " .. dirname .. "\\" .. (wildcard or "*.*")):read"*a":gmatch"%C+" do
+	for fn in io.popen("dir/a-d/b/o/s " .. dirname .. "\\" .. (wildcard or "*.*")):read"*a":gmatch"[%C\t]+" do
 		filename = fn
 		if CheckFile() then FixFile() end
 	end

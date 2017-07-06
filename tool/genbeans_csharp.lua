@@ -613,7 +613,7 @@ typedef.map = typedef.hashmap
 typedef.linkedmap = typedef.linkedhashmap
 
 local function trim(s)
-	return s:gsub("[%c ]+", "")
+	return s:gsub("[%c%s]+", "")
 end
 local function do_var(var)
 	if type(var.id) ~= "number" then var.id = -1 end
