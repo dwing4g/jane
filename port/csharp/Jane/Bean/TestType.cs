@@ -83,7 +83,7 @@ namespace Jane.Bean
 			v19.Reset();
 		}
 
-		public void Assign(ref TestType b)
+		public void Assign(TestType b)
 		{
 			this.v1 = b.v1;
 			this.v2 = b.v2;
@@ -103,7 +103,7 @@ namespace Jane.Bean
 			this.v16.Clear(); if(b.v16 != null) Util.AddAll(this.v16, b.v16);
 			this.v17.Clear(); if(b.v17 != null) Util.AddAll(this.v17, b.v17);
 			this.v18.Clear(); if(b.v18 != null) Util.AddAll(this.v18, b.v18);
-			this.v19.Assign(ref b.v19);
+			this.v19.Assign(b.v19);
 		}
 /*
 		public bool GetV1()
@@ -521,7 +521,7 @@ namespace Jane.Bean
 					for(int n = s.UnmarshalUInt(); n > 0; --n)
 						this.v18.Add(s.UnmarshalOctetsKV(k), (TestBean)s.UnmarshalBeanKV(TestBean.Create(), t));
 				} break;
-				case 19: s.UnmarshalBean(ref this.v19, t); break;
+				case 19: s.UnmarshalBean(this.v19, t); break;
 				default: s.UnmarshalSkipVar(t); break;
 			}}
 		}

@@ -34,7 +34,7 @@ namespace Jane.Bean
 			value2 = 0;
 		}
 
-		public void Assign(ref TestBean b)
+		public void Assign(TestBean b)
 		{
 			this.value1 = b.value1;
 			this.value2 = b.value2;

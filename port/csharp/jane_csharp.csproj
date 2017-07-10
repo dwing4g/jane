@@ -46,19 +46,19 @@
     <Compile Include="Jane\Bean\TestBean.cs" />
     <Compile Include="Jane\Bean\TestEmpty.cs" />
     <Compile Include="Jane\Bean\TestType.cs" />
+    <Compile Include="Jane\DynBean.cs" />
     <Compile Include="Jane\Handler\TestBeanHandler.cs" />
     <Compile Include="Jane\Handler\TestTypeHandler.cs" />
     <Compile Include="Jane\IBean.cs" />
-    <Compile Include="Jane\NetManager.cs" />
-    <Compile Include="Jane\DynBean.cs" />
     <Compile Include="Jane\LZCompressor.cs" />
     <Compile Include="Jane\MarshalException.cs" />
+    <Compile Include="Jane\NetManager.cs" />
     <Compile Include="Jane\Octets.cs" />
     <Compile Include="Jane\OctetsStream.cs" />
     <Compile Include="Jane\RC4Filter.cs" />
     <Compile Include="Jane\Util.cs" />
-    <Compile Include="TestClient.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TestClient.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

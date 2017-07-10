@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
@@ -427,11 +427,6 @@ namespace Jane
 		}
 
 		public OctetsStream Marshal<T>(T b) where T : IBean
-		{
-			return b != null ? b.Marshal(this) : Marshal1((byte)0);
-		}
-
-		public OctetsStream Marshal<T>(ref T b) where T : IBean
 		{
 			return b != null ? b.Marshal(this) : Marshal1((byte)0);
 		}
@@ -1135,12 +1130,12 @@ namespace Jane
 			return o;
 		}
 
-		public OctetsStream Unmarshal<T>(ref T b) where T : IBean
+		public OctetsStream Unmarshal<T>(T b) where T : IBean
 		{
 			return b.Unmarshal(this);
 		}
 
-		public OctetsStream UnmarshalBean<T>(ref T b, int type) where T : IBean
+		public OctetsStream UnmarshalBean<T>(T b, int type) where T : IBean
 		{
 			if(type == 2) return b.Unmarshal(this);
 			UnmarshalSkipVar(type);

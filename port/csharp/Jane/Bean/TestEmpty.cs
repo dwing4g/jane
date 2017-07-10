@@ -17,8 +17,7 @@ namespace Jane.Bean
 		{
 		}
 
-		/** @param b unused */
-		public void Assign(ref TestEmpty b)
+		public void Assign(TestEmpty b)
 		{
 		}
 /**/

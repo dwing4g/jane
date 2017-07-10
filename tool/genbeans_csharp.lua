@@ -45,7 +45,7 @@ namespace ]=] .. namespace .. [=[
 #(#			#(var.reset);
 #)#		}
 
-		#(bean.param_warning)public void Assign(ref #(bean.name) b)
+		public void Assign(#(bean.name) b)
 		{
 #(#			#(var.assign);
 #)#		}
@@ -578,7 +578,7 @@ typedef.bean = merge(typedef.octets,
 	new = function(var) return "\t\t\t#(var.name) = " .. var.type .. ".Create();\n" end,
 	init = function(var) return "this.#(var.name) = " .. var.type .. ".Create()" end,
 	reset = "#(var.name).Reset()",
-	assign = "this.#(var.name).Assign(ref b.#(var.name))",
+	assign = "this.#(var.name).Assign(b.#(var.name))",
 	marshal = function(var)
 		return var.id < 63 and
 			string.format([[{
@@ -592,7 +592,7 @@ typedef.bean = merge(typedef.octets,
 				if(s.Size() - n < 3) s.Resize(n);
 			}]], 0xfe00 + var.id - 63)
 	end,
-	unmarshal = "case #(var.id): s.UnmarshalBean(ref this.#(var.name), t);",
+	unmarshal = "case #(var.id): s.UnmarshalBean(this.#(var.name), t);",
 	unmarshal_kv = function(var, kv, t) if kv then return "(" .. typename(var, var[kv]) .. ")s.UnmarshalBeanKV(" .. typename(var, var[kv]) .. ".Create(), " .. t .. ")" end end,
 	compareto = "this.#(var.name).CompareTo(b.#(var.name))",
 	tojson = "this.#(var.name).ToJson(s.Append(\"\\\"#(var.name)\\\":\")).Append(',')",
@@ -728,7 +728,6 @@ function bean(bean)
 
 	if not bean.maxsize then bean.maxsize = 0x7fffffff end
 	if not bean.initsize then bean.initsize = 0 end
-	bean.param_warning = (#vartypes > 1 and "" or "/** @param b unused */\n\t\t")
 	name_code[bean.name] = code_conv(code, "bean", bean):gsub(#vartypes > 1 and "#[<>]#" or "#<#(.-)#>#", ""):gsub("\r", "")
 	bean_order[#bean_order + 1] = bean.name
 	if bean.const then name_code[bean.name] = bean_const(name_code[bean.name]) end
