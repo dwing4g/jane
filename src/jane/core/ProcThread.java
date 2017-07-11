@@ -16,6 +16,11 @@ public final class ProcThread extends Thread
 	volatile long	   beginTime;											// 当前/上个事务运行的起始时间. 用于判断是否超时
 	final int[]		   versions	= new int[Const.maxLockPerProcedure];		// 当前线程已经加过的锁版本号(只在需要时临时设置,这里只是为了避免反复分配)
 
+	public ProcThread(String name)
+	{
+		this(name, null);
+	}
+
 	public ProcThread(String name, Runnable r)
 	{
 		super(r, name != null ? name : "ProcThread");
