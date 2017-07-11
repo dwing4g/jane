@@ -4,7 +4,7 @@ import java.lang.management.ManagementFactory;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import jane.core.Procedure.IndexLock;
 
-public final class ProcThread extends Thread
+public class ProcThread extends Thread
 {
 	private static final ConcurrentLinkedQueue<ProcThread> _procThreads	= new ConcurrentLinkedQueue<>(); // 当前运行的全部事务线程. 用于判断是否超时
 	private static volatile long						   _interruptCount;								 // 事务被打断的次数统计
