@@ -500,7 +500,7 @@ public class NetManager implements IoHandler
 	public boolean send(IoSession session, Bean<?> bean)
 	{
 		if(!write(session, bean)) return false;
-		if(Log.hasTrace) Log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.getClass().getSimpleName(), bean);
+		if(Log.hasTrace) Log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.typeName(), bean);
 		return true;
 	}
 
@@ -547,12 +547,12 @@ public class NetManager implements IoHandler
 					}
 					catch(Throwable e)
 					{
-						Log.error(_name + '(' + session.getId() + "): callback exception: " + bean.getClass().getSimpleName(), e);
+						Log.error(_name + '(' + session.getId() + "): callback exception: " + bean.typeName(), e);
 					}
 				}
 			}) == null) return false;
 		}
-		if(Log.hasTrace) Log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.getClass().getSimpleName(), bean);
+		if(Log.hasTrace) Log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.typeName(), bean);
 		return true;
 	}
 
@@ -787,7 +787,7 @@ public class NetManager implements IoHandler
 	 */
 	protected void onUnhandledBean(IoSession session, Bean<?> bean)
 	{
-		Log.warn("{}({}): unhandled bean: {}:{}", _name, session.getId(), bean.getClass().getSimpleName(), bean);
+		Log.warn("{}({}): unhandled bean: {}:{}", _name, session.getId(), bean.typeName(), bean);
 		// session.closeNow();
 	}
 
@@ -830,8 +830,8 @@ public class NetManager implements IoHandler
 	@Override
 	public void messageReceived(IoSession session, Object message)
 	{
-		if(Log.hasTrace) Log.trace("{}({}): recv: {}:{}", _name, session.getId(), message.getClass().getSimpleName(), message);
 		Bean<?> bean = (Bean<?>)message;
+		if(Log.hasTrace) Log.trace("{}({}): recv: {}:{}", _name, session.getId(), bean.typeName(), message);
 		BeanHandler<?> handler = _handlers.get(bean.type());
 		if(handler != null)
 		{
@@ -841,7 +841,7 @@ public class NetManager implements IoHandler
 			}
 			catch(Throwable e)
 			{
-				Log.error(_name + '(' + session.getId() + "): process exception: " + message.getClass().getSimpleName(), e);
+				Log.error(_name + '(' + session.getId() + "): process exception: " + bean.typeName(), e);
 			}
 		}
 		else

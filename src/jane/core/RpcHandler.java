@@ -43,10 +43,10 @@ public abstract class RpcHandler<A extends Bean<A>, R extends Bean<R>, B extends
 	 * 如果调用了此回调,则即使之后收到该RPC的回复也不会有任何回调处理
 	 * @param manager
 	 * @param session
-	 * @param rpcBean
 	 */
 	public void onTimeout(NetManager manager, IoSession session, B rpcBean) throws Exception
 	{
+		Log.error("{}: onTimeout: {}", getClass().getName(), rpcBean.getArg());
 	}
 
 	@SuppressWarnings("unchecked")

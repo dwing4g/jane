@@ -145,7 +145,7 @@ public class StatusServer extends NetManager
 		sb.append("<tr><td bgcolor=silver>").append("approximate-memory-usage");
 		sb.append("<td align=right>").append(StorageLevelDB.instance().getProperty("leveldb.approximate-memory-usage")).append('\n');
 		sb.append("</table>\n");
-		sb.append("<b>stats</b><br><pre>");
+		sb.append("<p><b>stats</b><br><pre>");
 		sb.append(StorageLevelDB.instance().getProperty("leveldb.stats")).append("</pre>\n");
 		// sb.append("<b>sstables</b><br><pre>");
 		// sb.append(StorageLevelDB.instance().getProperty("leveldb.sstables")).append("</pre>\n");
