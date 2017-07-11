@@ -1,7 +1,6 @@
 -- UTF-8 without BOM
 local handler   = handler or function() end -- 可以单独运行此文件来检查词法和基本语法
 local bean      = bean    or function() end
-local rpc       = rpc     or function() end
 local dbt       = dbt     or function() end
 
 handler
@@ -73,13 +72,6 @@ attach_csharp=
 
 bean{ name="TestEmpty", type=3, initsize=0, maxsize=0, comment="测试空bean",
 	handlers="TestServer",
-}
-
-rpc { name="TestRpcBean", type=4, arg="TestBean", res="TestType", comment="RPC的注释",
-	handlers="TestServer,TestClient",
-}
-
-rpc { name="TestRpcBean2", arg="TestBean", res="TestBean",
 }
 
 dbt { name="TestTable", id=1, lock="test", key="id", value="TestType", cachesize=65536, comment="数据库表定义. key类型只能是32/64位整数/浮点数或字符串/binary类型或bean类型, id类型表示优化的非负数long类型" }

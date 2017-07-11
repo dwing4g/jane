@@ -213,29 +213,6 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 }
 ]=]
 
-local template_rpcbean = template_hint .. [=[
-package ]=] .. namespace .. [=[;
-
-import jane.core.RpcBean;
-#(bean.comment)
-public final class #(bean.name) extends RpcBean<#(bean.arg), #(bean.res), #(bean.name)>
-{
-	private static final long serialVersionUID = #(bean.uid);
-	public  static final int BEAN_TYPE = #(bean.type);
-	public  static final String BEAN_TYPENAME = "#(bean.name)";
-	public  static final #(bean.name) BEAN_STUB = new #(bean.name)();
-	public #(bean.name)() {}
-	public #(bean.name)(#(bean.arg) a) { _arg = a; }
-	@Override public int type() { return BEAN_TYPE; }
-	@Override public String typeName() { return BEAN_TYPENAME; }
-	@Override public #(bean.name) stub() { return BEAN_STUB; }
-	@Override public #(bean.name) create() { return new #(bean.name)(); }
-	@Override public int initSize() { return #(bean.initsize); }
-	@Override public #(bean.arg) createArg() { return new #(bean.arg)(); }
-	@Override public #(bean.res) createRes() { return new #(bean.res)(); }
-}
-]=]
-
 local template_allbeans = template_hint .. [=[
 package ]=] .. namespace .. [=[;
 
@@ -292,52 +269,6 @@ public final class #(bean.name)Handler extends BeanHandler<#(bean.name)>
 	public void onProcess(final NetManager manager, final IoSession session, final #(bean.name) arg)
 	{
 		Log.debug("{}.onProcess: arg={}", getClass().getName(), arg);
-	}
-}
-]=]
-
-local template_rpc_handler = [=[
-package #(hdl.path);
-
-import org.apache.mina.core.session.IoSession;
-import jane.core.Log;
-import jane.core.NetManager;
-import jane.core.RpcHandler;
-import ]=] .. namespace .. [=[.#(bean_arg.name);#<#
-import ]=] .. namespace .. [=[.#(bean_res.name);#>#
-import ]=] .. namespace .. [=[.#(bean.name);#>#
-
-public final class #(bean.name)Handler extends RpcHandler<#(bean_arg.name), #(bean_res.name), #(bean.name)>
-{
-	/*\
-#(#	|*| #(var.type) #(var.name)#(var.value);#(var.comment2)
-#)#	\*/
-	/*\
-#(#	|*| #(var.type) #(var.name)#(var.value);#(var.comment2)
-#)#	\*/
-
-	@Override
-	public boolean onServer(final NetManager manager, final IoSession session, final #(bean.name) rpcBean)
-	{
-		final #(bean_arg.name) arg = rpcBean.getArg();
-		//final #(bean_res.name) res = rpcBean.getRes();
-		Log.debug("{}: onServer: {}", getClass().getName(), arg);
-		return true;
-	}
-
-	@Override
-	public void onClient(final NetManager manager, final IoSession session, final #(bean.name) rpcBean)
-	{
-		final #(bean_arg.name) arg = rpcBean.getArg();
-		final #(bean_res.name) res = rpcBean.getRes();
-		Log.debug("{}: onClient: arg={},res={}", getClass().getName(), arg, res);
-	}
-
-	@Override
-	public void onTimeout(final NetManager manager, final IoSession session, final #(bean.name) rpcBean)
-	{
-		final #(bean_arg.name) arg = rpcBean.getArg();
-		Log.error("{}: onTimeout: {}", getClass().getName(), arg);
 	}
 }
 ]=]
@@ -1141,12 +1072,6 @@ local function bean_common(bean)
 		if not all_handlers[name] then error("ERROR: not defined handler: " .. name) end
 		hdl_names[name] = hdl_names[name] or {}
 		hdl_names[name][#hdl_names[name] + 1] = bean.name
-		if bean.arg then
-			hdl_names[name][#hdl_names[name] + 1] = bean.arg
-		end
-		if bean.res then
-			hdl_names[name][#hdl_names[name] + 1] = bean.res
-		end
 	end
 	type_bean[bean.type] = bean
 	name_bean[bean.name] = bean
@@ -1323,12 +1248,6 @@ local function savebean(beanname, safe)
 		if name_bean[var.v] then savebean(var.v, safe) end
 	end
 end
-function rpc(bean)
-	bean_common(bean)
-	bean.uid = gen_uid(bean.name, name_bean[bean.arg].uid .. name_bean[bean.res].uid)
-	name_code[bean.name] = code_conv(template_rpcbean, "bean", bean):gsub("\r", "")
-	name_code[lower(bean.name)] = name_code[bean.name]
-end
 
 local key_conv = { int = "Integer", integer = "Integer", Integer = "Integer", long = "Long", Long = "Long", float = "Float", Float = "Float", double = "Double", Double = "Double",
 					string = "String", String = "String", binary = "Octets", bytes = "Octets", data = "Octets", octets = "Octets", Octets = "Octets" }
@@ -1396,27 +1315,13 @@ checksave(outpath .. namespace_path .. "/AllBeans.java", (template_allbeans:gsub
 						subcode2[#subcode2 + 1] = code_conv(body, "bean", bean)
 						if type(hdlpath) == "string" then
 							if bean.type < 0 or bean.type > 0x7fffffff then error("ERROR: invalid bean.type: " .. tostring(bean.type) .. " (bean.name: " .. bean.name .. ")") end
-							if not bean.arg then
-								checksave(outpath .. hdlpath:gsub("%.", "/") .. "/" .. bean.name .. "Handler.java", code_conv(code_conv(template_bean_handler:gsub("#%(#(.-)#%)#", function(body)
-									local subcode3 = {}
-									for _, var in ipairs(bean) do
-										subcode3[#subcode3 + 1] = code_conv(body, "var", var)
-									end
-									return concat(subcode3)
-								end), "hdl", hdl), "bean", bean):gsub("\r", ""), 1)
-							else
-								local bean_sub
-								local bean_arg, bean_res = name_bean[bean.arg], name_bean[bean.res]
-								checksave(outpath .. hdlpath:gsub("%.", "/") .. "/" .. bean.name .. "Handler.java", code_conv(code_conv(code_conv(code_conv(template_rpc_handler:gsub("#%(#(.-)#%)#", function(body)
-									bean_sub = bean_sub and bean_res or bean_arg
-									local subcode3 = {}
-									for _, var in ipairs(bean_sub) do
-										subcode3[#subcode3 + 1] = code_conv(body, "var", var)
-									end
-									return concat(subcode3)
-								end), "hdl", hdl), "bean", bean), "bean_arg", bean_arg), "bean_res", bean_res):gsub(bean_arg ~= bean_res and "#[<>]#" or "#%<#(.-)#%>#", ""):
-									gsub("\r", ""), 2, "(%s+class%s+" .. bean.name .. "Handler%s+extends%s+RpcHandler%s*<)[%w_%.%s]+,[%w_%.%s]+>", "%1" .. bean_arg.name .. ", " .. bean_res.name .. ">")
-							end
+							checksave(outpath .. hdlpath:gsub("%.", "/") .. "/" .. bean.name .. "Handler.java", code_conv(code_conv(template_bean_handler:gsub("#%(#(.-)#%)#", function(body)
+								local subcode3 = {}
+								for _, var in ipairs(bean) do
+									subcode3[#subcode3 + 1] = code_conv(body, "var", var)
+								end
+								return concat(subcode3)
+							end), "hdl", hdl), "bean", bean):gsub("\r", ""), 1)
 						end
 					end
 				end

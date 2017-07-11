@@ -1,11 +1,13 @@
 package jane.handler.testserver;
 
 import org.apache.mina.core.session.IoSession;
+import jane.core.Bean;
 import jane.core.BeanHandler;
 import jane.core.Log;
 import jane.core.NetManager;
+import jane.core.NetManager.AnswerHandler;
 import jane.bean.TestBean;
-import jane.bean.TestRpcBean;
+import jane.bean.TestType;
 
 public final class TestBeanHandler extends BeanHandler<TestBean>
 {
@@ -20,20 +22,14 @@ public final class TestBeanHandler extends BeanHandler<TestBean>
 	public void onProcess(final NetManager manager, final IoSession session, final TestBean arg)
 	{
 		Log.debug("{}: arg={}", getClass().getName(), arg);
-		manager.sendRpc(session, new TestRpcBean(arg), new TestRpcBeanHandler()
+		final TestType bean = new TestType();
+		manager.ask(session, bean, new AnswerHandler()
 		{
 			@Override
-			public void onClient(NetManager mgr, IoSession ses, TestRpcBean rpcBean)
+			public void onAnswer(Bean<?> res)
 			{
-				Log.info("{}: onClient: a={},r={}", getClass().getName(), rpcBean.getArg(), rpcBean.getRes());
-				ses.closeNow();
-			}
-
-			@Override
-			public void onTimeout(NetManager mgr, IoSession ses, TestRpcBean rpcBean)
-			{
-				Log.error("{}: onTimeout: {}", getClass().getName(), rpcBean.getArg());
-				ses.closeNow();
+				Log.info("{}: onAnswer: ask={},answer={}", getClass().getName(), bean, res);
+				session.closeNow();
 			}
 		});
 	}

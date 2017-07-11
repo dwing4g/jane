@@ -12,6 +12,7 @@ namespace Jane.Bean
 	public class TestType : IBean, IEquatable<TestType>, IComparable<TestType>
 	{
 		public const int BEAN_TYPE = 2;
+		public int Serial { get; set; }
 
 		public  /*  1*/ bool v1; // 1字节布尔,0表示假,1表示真,其它默认表示真;
 		public  /*  2*/ sbyte v2; // 1字节整数;

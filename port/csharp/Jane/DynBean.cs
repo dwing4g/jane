@@ -9,15 +9,19 @@ namespace Jane
 	 * 用于表示动态字段的bean;
 	 */
 	[Serializable]
-	public struct DynBean : IBean
+	public class DynBean : IBean
 	{
 		int _type; // bean的类型(可用可不用,不影响序列化/反序列化);
+		public int Serial { get; set; }
 		SortedDictionary<int, object> _fields; // key是字段ID. 为了方便格式化成字符串,使用有序的容器;
+
+		public DynBean()
+		{
+		}
 
 		public DynBean(int type)
 		{
 			_type = type;
-			_fields = new SortedDictionary<int, object>();
 		}
 
 		public void SetType(int type)

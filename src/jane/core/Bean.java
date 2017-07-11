@@ -12,7 +12,23 @@ import jane.core.SContext.Safe;
 public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneable, Serializable
 {
 	private static final long serialVersionUID = 1L;
-	private transient int	  _saveState;			// 存储状态: 0:未存储,1:已存储但未修改,2:已存储且已修改
+	private transient int	  _serial;				// 用作协议时的序列号;也用于存储时的状态(0:未存储,1:已存储但未修改,2:已存储且已修改)
+
+	/**
+	 * 获取协议的序列号
+	 */
+	public final int serial()
+	{
+		return _serial;
+	}
+
+	/**
+	 * 设置协议的序列号
+	 */
+	final void serial(int s)
+	{
+		_serial = s;
+	}
 
 	/**
 	 * 获取存储标记
@@ -22,7 +38,7 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	 */
 	public final boolean stored()
 	{
-		return _saveState > 0;
+		return _serial > 0;
 	}
 
 	/**
@@ -32,7 +48,7 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	 */
 	public final boolean modified()
 	{
-		return _saveState == 2;
+		return _serial == 2;
 	}
 
 	/**
@@ -42,7 +58,7 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	 */
 	final void setSaveState(int saveState)
 	{
-		_saveState = saveState;
+		_serial = saveState;
 	}
 
 	/**

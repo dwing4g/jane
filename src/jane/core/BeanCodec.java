@@ -17,6 +17,7 @@ public class BeanCodec extends IoFilterAdapter
 	protected static final IntHashMap<Bean<?>> _stubMap	= new IntHashMap<>(65536, 0.5f); // 所有注册beans的存根对象
 	protected final OctetsStream			   _os		= new OctetsStream();			 // 用于解码器的数据缓存
 	protected int							   _ptype;									 // 当前数据缓存中获得的协议类型
+	protected int							   _pserial;								 // 当前数据缓存中获得的协议序列号
 	protected int							   _psize	= -1;							 // 当前数据缓存中获得的协议大小. -1表示没获取到
 
 	/**
@@ -103,12 +104,15 @@ public class BeanCodec extends IoFilterAdapter
 		}
 		else
 		{
-			OctetsStream os = new OctetsStream(bean.initSize() + 10);
-			os.resize(10);
-			bean.marshalProtocol(os);
-			int p = os.marshalUIntBack(10, os.size() - 10);
-			p = 10 - (p + os.marshalUIntBack(10 - p, type));
-			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(os.array(), p, os.size() - p),
+			int serial = bean.serial();
+			int reserveLen = OctetsStream.marshalUIntLen(type) + OctetsStream.marshalLen(serial) + 5;
+			OctetsStream os = new OctetsStream(reserveLen + bean.initSize());
+			os.resize(reserveLen);
+			int len = bean.marshalProtocol(os).size();
+			int pos = 5 - os.marshalUIntBack(reserveLen, len - reserveLen);
+			os.resize(pos);
+			os.marshalUInt(type).marshal(serial);
+			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(os.array(), pos, len - pos),
 					writeRequest.getFuture(), null));
 		}
 	}
@@ -121,6 +125,7 @@ public class BeanCodec extends IoFilterAdapter
 			try
 			{
 				_ptype = os.unmarshalUInt();
+				_pserial = os.unmarshalInt();
 				_psize = os.unmarshalUInt();
 			}
 			catch(MarshalException.EOF e)
@@ -131,7 +136,7 @@ public class BeanCodec extends IoFilterAdapter
 			int maxSize = getBeanMaxSize(_ptype);
 			if(maxSize < 0) maxSize = Const.maxRawBeanSize;
 			if(_psize > maxSize)
-				throw new DecodeException("bean maxSize overflow: type=" + _ptype + ",size=" + _psize + ",maxSize=" + maxSize);
+				throw new DecodeException("bean maxSize overflow: type=" + _ptype + ",serial=" + _pserial + ",size=" + _psize + ",maxSize=" + maxSize);
 		}
 		if(_psize > os.remain()) return false;
 		Bean<?> bean = createBean(_ptype);
@@ -141,11 +146,12 @@ public class BeanCodec extends IoFilterAdapter
 			bean.unmarshalProtocol(os);
 			int realSize = os.position() - pos;
 			if(realSize > _psize)
-				throw new DecodeException("bean realSize overflow: type=" + _ptype + ",size=" + _psize + ",realSize=" + realSize);
+				throw new DecodeException("bean realSize overflow: type=" + _ptype + ",serial=" + _pserial + ",size=" + _psize + ",realSize=" + realSize);
 			os.setPosition(pos + _psize);
 		}
 		else
 			bean = new RawBean(_ptype, os.unmarshalRaw(_psize));
+		bean.serial(_pserial);
 		_psize = -1;
 		next.messageReceived(session, bean);
 		return true;
@@ -161,7 +167,7 @@ public class BeanCodec extends IoFilterAdapter
 			{
 				int r = in.remaining();
 				int s = _os.size();
-				int n = Math.min(_psize < 0 ? 10 - s : _psize, r); // 前者情况因两个unmarshalUInt不会超过10字节,所以s肯定是<10的
+				int n = Math.min(_psize < 0 ? 15 - s : _psize, r); // 前者情况因3个int/uint整数unmarshal不会超过15字节,所以s肯定是<15的
 				_os.resize(s + n);
 				in.get(_os.array(), s, n);
 				r -= n;
@@ -186,7 +192,7 @@ public class BeanCodec extends IoFilterAdapter
 				{
 					n = _os.remain();
 					_os.clear();
-					if(n > 0) // 有很小的可能因为之前无法解出头部,而补足10字节却过多的情况,可以调整in的位置
+					if(n > 0) // 有很小的可能因为之前无法解出头部,而补足15字节却过多的情况,可以调整in的位置
 						in.position(in.position() - n);
 					else if(r <= 0) return;
 				}

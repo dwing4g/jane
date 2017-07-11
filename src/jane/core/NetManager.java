@@ -13,6 +13,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.mina.core.filterchain.IoFilter;
 import org.apache.mina.core.filterchain.IoFilterChain;
 import org.apache.mina.core.future.ConnectFuture;
@@ -43,30 +44,47 @@ public class NetManager implements IoHandler
 	public static final int	DEFAULT_SERVER_IO_THREAD_COUNT = Runtime.getRuntime().availableProcessors() + 1;
 	public static final int	DEFAULT_CLIENT_IO_THREAD_COUNT = 1;
 
-	private static final LongConcurrentHashMap<RpcBean<?, ?, ?>> _rpcs	   = new LongConcurrentHashMap<>();	// 当前管理器等待回复的RPC
-	private static final ConcurrentLinkedQueue<IoSession>		 _closings = new ConcurrentLinkedQueue<>();	// 已经closeOnFlush的session队列,超时则closeNow
-	private static final ScheduledExecutorService				 _rpcThread;								// 处理重连及RPC和事务超时的线程
-	private final String										 _name	   = getClass().getSimpleName();	// 当前管理器的名字
-	private volatile Class<? extends IoFilter>					 _pcf	   = BeanCodec.class;				// 协议编码器的类
-	private volatile IntHashMap<BeanHandler<?>>					 _handlers = new IntHashMap<>(0);			// bean的处理器
-	private volatile NioSocketAcceptor							 _acceptor;									// mina的网络监听器
-	private volatile NioSocketConnector							 _connector;								// mina的网络连接器
-	private int													 _ioThreadCount;							// IO线程池的最大数量(<=0表示默认值)
+	public static interface AnswerHandler
+	{
+		public static final int DEFAULT_ANSWER_TIME_OUT = 10; // 默认的回复等待超时时间
+
+		void onAnswer(Bean<?> bean); // 如果超时无回复,会回调null
+	}
+
+	static final class BeanContext
+	{
+		private final int	  askTime = (int)(System.currentTimeMillis() / 1000); // 发送请求的时间戳(秒)
+		private int			  timeOut = Integer.MAX_VALUE;						  // 超时时间(秒)
+		private IoSession	  session;											  // 请求时绑定的session
+		private Bean<?>		  arg;												  // 请求的bean
+		private AnswerHandler answerHandler;									  // 接收回复的回调,超时也会回调(传入的bean为null)
+	}
+
+	private static final LongConcurrentHashMap<BeanContext>	_beanCtxMap	   = new LongConcurrentHashMap<>();	// 当前等待回复的所有请求上下文
+	private static final ConcurrentLinkedQueue<IoSession>	_closings	   = new ConcurrentLinkedQueue<>();	// 已经closeOnFlush的session队列,超时则closeNow
+	private static final ScheduledExecutorService			_scheduledThread;								// NetManager自带的单线程调度器(处理重连,请求和事务超时)
+	private static final AtomicInteger						_serialCounter = new AtomicInteger();			// 协议序列号的分配器
+	private final String									_name		   = getClass().getSimpleName();	// 当前管理器的名字
+	private volatile Class<? extends IoFilter>				_pcf		   = BeanCodec.class;				// 协议编码器的类
+	private volatile IntHashMap<BeanHandler<?>>				_handlers	   = new IntHashMap<>(0);			// bean的处理器
+	private volatile NioSocketAcceptor						_acceptor;										// mina的网络监听器
+	private volatile NioSocketConnector						_connector;										// mina的网络连接器
+	private int												_ioThreadCount;									// IO线程池的最大数量(<=0表示默认值)
 
 	static
 	{
-		_rpcThread = Executors.newSingleThreadScheduledExecutor(new ThreadFactory()
+		_scheduledThread = Executors.newSingleThreadScheduledExecutor(new ThreadFactory()
 		{
 			@Override
 			public Thread newThread(Runnable r)
 			{
-				Thread t = new Thread(r, "RpcThread");
+				Thread t = new Thread(r, "ScheduledThread");
 				t.setDaemon(true);
 				t.setPriority(Thread.NORM_PRIORITY);
 				return t;
 			}
 		});
-		scheduleAtFixedRate(Const.rpcCheckInterval, Const.rpcCheckInterval, new Runnable()
+		scheduleWithFixedDelay(Const.askCheckInterval, Const.askCheckInterval, new Runnable()
 		{
 			@Override
 			public void run()
@@ -74,28 +92,29 @@ public class NetManager implements IoHandler
 				try
 				{
 					int now = (int)(System.currentTimeMillis() / 1000);
-					for(MapIterator<RpcBean<?, ?, ?>> it = _rpcs.entryIterator(); it.moveToNext();)
+					for(MapIterator<BeanContext> it = _beanCtxMap.entryIterator(); it.moveToNext();)
 					{
-						RpcBean<?, ?, ?> rpcbean = it.value();
-						if(now - rpcbean.getReqTime() > rpcbean.getTimeout() && _rpcs.remove(it.key()) != null)
+						BeanContext beanCtx = it.value();
+						if(now - beanCtx.askTime > beanCtx.timeOut && _beanCtxMap.remove(it.key(), beanCtx))
 						{
-							RpcHandler<?, ?, ?> onclient = rpcbean.getOnClient();
-							IoSession session = rpcbean.getSession();
-							rpcbean.setSession(null); // 绑定期已过,清除对session的引用
-							if(onclient != null)
+							IoSession session = beanCtx.session;
+							beanCtx.session = null; // 绑定期已过,清除对session的引用
+							Bean<?> arg = beanCtx.arg;
+							beanCtx.arg = null;
+							AnswerHandler handler = beanCtx.answerHandler;
+							beanCtx.answerHandler = null;
+							if(session != null && arg != null)
+								Log.warn("{}({}): ask timeout: {} {}", session.getHandler().getClass().getName(), session.getId(), arg.typeName(), arg);
+							if(handler != null)
 							{
-								rpcbean.setOnClient(null);
-								if(session != null)
+								try
 								{
-									IoHandler manager = session.getHandler();
-									try
-									{
-										onclient.timeout((NetManager)manager, session, rpcbean);
-									}
-									catch(Exception e)
-									{
-										Log.error(manager.getClass().getName() + '(' + session.getId() + "): onTimeout exception:", e);
-									}
+									handler.onAnswer(null);
+								}
+								catch(Exception e)
+								{
+									Log.error((session != null ? session.getHandler().getClass().getName() + '(' + session.getId() + ')' : "?") +
+											": onAnswer(" + (arg != null ? arg.typeName() + ' ' + arg : "?") + ") exception:", e);
 								}
 							}
 						}
@@ -103,11 +122,11 @@ public class NetManager implements IoHandler
 				}
 				catch(Throwable e)
 				{
-					Log.error("NetManager: RPC timeout fatal exception:", e);
+					Log.error("NetManager: ask check fatal exception:", e);
 				}
 			}
 		});
-		scheduleAtFixedRate(1, 1, new Runnable()
+		scheduleWithFixedDelay(1, 1, new Runnable()
 		{
 			@Override
 			public void run()
@@ -131,28 +150,18 @@ public class NetManager implements IoHandler
 				}
 				catch(Throwable e)
 				{
-					Log.error("NetManager: IoSession timeout fatal exception:", e);
+					Log.error("NetManager: close check fatal exception:", e);
 				}
 			}
 		});
 	}
 
 	/**
-	 * 获取当前通信中的RPC数量
+	 * 获取当前通信中请求的数量
 	 */
-	public static int getRpcCount()
+	public static int getAskCount()
 	{
-		return _rpcs.size();
-	}
-
-	/**
-	 * 在当前的RPC调用记录中移除某个RPC
-	 * <p>
-	 * 只在RPC得到回复时调用
-	 */
-	static RpcBean<?, ?, ?> removeRpc(int rpcId)
-	{
-		return _rpcs.remove(rpcId);
+		return _beanCtxMap.size();
 	}
 
 	/**
@@ -163,66 +172,6 @@ public class NetManager implements IoHandler
 	public final String getName()
 	{
 		return _name;
-	}
-
-	/**
-	 * 判断某个session是否在连接状态
-	 */
-	public final boolean hasSession(IoSession session)
-	{
-		long sid = session.getId();
-		if(_acceptor != null && _acceptor.getManagedSessions().containsKey(sid)) return true;
-		if(_connector != null && _connector.getManagedSessions().containsKey(sid)) return true;
-		return false;
-	}
-
-	/**
-	 * 获取监听器管理的当前全部sessions
-	 * @return 返回不可修改的map容器
-	 */
-	public final Map<Long, IoSession> getServerSessions()
-	{
-		return _acceptor != null ? _acceptor.getManagedSessions() : Collections.<Long, IoSession>emptyMap();
-	}
-
-	/**
-	 * 获取连接器管理的当前全部sessions
-	 * @return 返回不可修改的map容器
-	 */
-	public final Map<Long, IoSession> getClientSessions()
-	{
-		return _connector != null ? _connector.getManagedSessions() : Collections.<Long, IoSession>emptyMap();
-	}
-
-	/**
-	 * 设置当前的协议编码器
-	 * <p>
-	 * 必须在连接或监听之前设置
-	 */
-	public final void setCodec(Class<? extends IoFilter> pcf)
-	{
-		_pcf = (pcf != null ? pcf : BeanCodec.class);
-	}
-
-	/**
-	 * 设置能够响应beans的处理器
-	 * <p>
-	 * 设置后,参数的容器不能再做修改<br>
-	 * 最好在网络连接前设置
-	 */
-	public final void setHandlers(IntHashMap<BeanHandler<?>> handlers)
-	{
-		if(handlers != null) _handlers = handlers;
-	}
-
-	/**
-	 * 获取当前响应beans的处理器
-	 * <p>
-	 * 获取到的容器不能做修改
-	 */
-	public final IntHashMap<BeanHandler<?>> getHandlers()
-	{
-		return _handlers;
 	}
 
 	/**
@@ -291,6 +240,66 @@ public class NetManager implements IoHandler
 	public final SocketSessionConfig getClientConfig()
 	{
 		return getConnector().getSessionConfig();
+	}
+
+	/**
+	 * 判断某个session是否在连接状态
+	 */
+	public final boolean hasSession(IoSession session)
+	{
+		long sid = session.getId();
+		if(_acceptor != null && _acceptor.getManagedSessions().containsKey(sid)) return true;
+		if(_connector != null && _connector.getManagedSessions().containsKey(sid)) return true;
+		return false;
+	}
+
+	/**
+	 * 获取监听器管理的当前全部sessions
+	 * @return 返回不可修改的map容器
+	 */
+	public final Map<Long, IoSession> getServerSessions()
+	{
+		return _acceptor != null ? _acceptor.getManagedSessions() : Collections.<Long, IoSession>emptyMap();
+	}
+
+	/**
+	 * 获取连接器管理的当前全部sessions
+	 * @return 返回不可修改的map容器
+	 */
+	public final Map<Long, IoSession> getClientSessions()
+	{
+		return _connector != null ? _connector.getManagedSessions() : Collections.<Long, IoSession>emptyMap();
+	}
+
+	/**
+	 * 设置当前的协议编码器
+	 * <p>
+	 * 必须在连接或监听之前设置
+	 */
+	public final void setCodec(Class<? extends IoFilter> pcf)
+	{
+		_pcf = (pcf != null ? pcf : BeanCodec.class);
+	}
+
+	/**
+	 * 获取当前响应beans的处理器
+	 * <p>
+	 * 获取到的容器不能做修改
+	 */
+	public final IntHashMap<BeanHandler<?>> getHandlers()
+	{
+		return _handlers;
+	}
+
+	/**
+	 * 设置能够响应beans的处理器
+	 * <p>
+	 * 设置后,参数的容器不能再做修改<br>
+	 * 最好在网络连接前设置
+	 */
+	public final void setHandlers(IntHashMap<BeanHandler<?>> handlers)
+	{
+		if(handlers != null) _handlers = handlers;
 	}
 
 	/**
@@ -416,14 +425,14 @@ public class NetManager implements IoHandler
 	}
 
 	/**
-	 * 使用网络工作线程调度一个延迟处理
+	 * 使用调度线程调度一个延迟处理
 	 * <p>
-	 * 所有的网络管理器共用一个工作线程,同时运行RPC超时处理,因此只适合简单的处理,运行时间不要过长
+	 * 所有的网络管理器共用一个调度线程,同时运行请求超时处理,因此只适合简单的处理,运行时间不要过长
 	 * @param delaySec 延迟调度的秒数
 	 */
 	public static ScheduledFuture<?> schedule(long delaySec, Runnable runnable)
 	{
-		return _rpcThread.schedule(runnable, delaySec, TimeUnit.SECONDS);
+		return _scheduledThread.schedule(runnable, delaySec, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -432,16 +441,16 @@ public class NetManager implements IoHandler
 	 */
 	public static ScheduledFuture<?> scheduleWithFixedDelay(int delaySec, int periodSec, Runnable runnable)
 	{
-		return _rpcThread.scheduleWithFixedDelay(runnable, delaySec, periodSec, TimeUnit.SECONDS);
+		return _scheduledThread.scheduleWithFixedDelay(runnable, delaySec, periodSec, TimeUnit.SECONDS);
 	}
 
 	/**
-	 * 向网络工作线程调度一个定时触发任务(同一任务不会并发)
+	 * 向网络工作线程调度一个定时触发任务(同一任务不会并发,即使延迟过大也会保证触发的次数)
 	 * @param periodSec 定时触发周期的秒数
 	 */
 	public static ScheduledFuture<?> scheduleAtFixedRate(int delaySec, int periodSec, Runnable runnable)
 	{
-		return _rpcThread.scheduleAtFixedRate(runnable, delaySec, periodSec, TimeUnit.SECONDS);
+		return _scheduledThread.scheduleAtFixedRate(runnable, delaySec, periodSec, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -499,6 +508,7 @@ public class NetManager implements IoHandler
 	 */
 	public boolean send(IoSession session, Bean<?> bean)
 	{
+		bean.serial(0);
 		if(!write(session, bean)) return false;
 		if(Log.hasTrace) Log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.typeName(), bean);
 		return true;
@@ -527,15 +537,17 @@ public class NetManager implements IoHandler
 	 * @param callback 可设置一个回调对象,用于在发送成功后回调. null表示不回调
 	 * @return 如果连接已经失效则返回false, 否则返回true
 	 */
-	public <A extends Bean<A>> boolean send(final IoSession session, final A bean, final BeanHandler<A> callback)
+	public <B extends Bean<B>> boolean send(final IoSession session, final B bean, final Runnable callback)
 	{
-		if(session.isClosing() || bean == null) return false;
+		if(bean == null) return false;
+		bean.serial(0);
 		if(callback == null)
 		{
 			if(!write(session, bean)) return false;
 		}
 		else
 		{
+			if(session.isClosing()) return false;
 			if(write(session, bean, new IoFutureListener<IoFuture>()
 			{
 				@Override
@@ -543,7 +555,7 @@ public class NetManager implements IoHandler
 				{
 					try
 					{
-						callback.process(NetManager.this, session, bean);
+						callback.run();
 					}
 					catch(Throwable e)
 					{
@@ -556,7 +568,7 @@ public class NetManager implements IoHandler
 		return true;
 	}
 
-	public <A extends Bean<A>> boolean sendSafe(final IoSession session, final A bean, final BeanHandler<A> callback)
+	public <B extends Bean<B>> boolean sendSafe(final IoSession session, final B bean, final Runnable callback)
 	{
 		if(session.isClosing() || bean == null) return false;
 		SContext.current().addOnCommit(new Runnable()
@@ -570,146 +582,164 @@ public class NetManager implements IoHandler
 		return true;
 	}
 
-	/**
-	 * 向某个连接发送RPC
-	 * <p>
-	 * 此操作是异步的
-	 * @param handler 可设置一个回调对象,用于在RPC回复和超时时回调. null表示使用注册的处理器处理回复和超时(RpcHandler.onClient/onTimeout)
-	 * @return 如果连接已经失效则返回false且不会有回复和超时的回调, 否则返回true
-	 */
-	@SuppressWarnings("unchecked")
-	public <A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>> boolean sendRpc(IoSession session, RpcBean<A, R, B> rpcBean, RpcHandler<A, R, B> handler)
+	private static BeanContext allocBeanContext(Bean<?> bean, IoSession session, AnswerHandler handler)
 	{
-		if(session.isClosing() || rpcBean == null) return false;
-		rpcBean.setRequest();
-		rpcBean.setReqTime((int)(System.currentTimeMillis() / 1000));
-		rpcBean.setSession(session);
-		rpcBean.setOnClient(handler != null ? handler : (RpcHandler<A, R, B>)_handlers.get(rpcBean.type()));
-		if(_rpcs.putIfAbsent(rpcBean.getRpcId(), rpcBean) != null)
+		BeanContext beanCtx = new BeanContext();
+		beanCtx.session = session;
+		beanCtx.arg = bean;
+		beanCtx.answerHandler = handler;
+		for(;;)
 		{
-			rpcBean.setSession(null);
-			rpcBean.setOnClient(null);
-			throw new RuntimeException("do not send the same RPC in the same time");
+			int serial = _serialCounter.incrementAndGet();
+			if(serial > 0 && _beanCtxMap.putIfAbsent(serial, beanCtx) == null)
+			{
+				bean.serial(serial);
+				return beanCtx;
+			}
+			_serialCounter.set(0);
 		}
-		if(!send(session, rpcBean))
-		{
-			rpcBean.setSession(null);
-			rpcBean.setOnClient(null);
-			_rpcs.remove(rpcBean.getRpcId());
-			return false;
-		}
+	}
+
+	private boolean send0(IoSession session, Bean<?> bean)
+	{
+		if(!write(session, bean)) return false;
+		if(Log.hasTrace) Log.trace("{}({}): send: {}({}):{}", _name, session.getId(), bean.typeName(), bean.serial(), bean);
 		return true;
 	}
 
 	/**
-	 * 向某个连接回复RPC
+	 * 向某个连接发送请求
+	 * <p>
+	 * 此操作是异步的
+	 * @param handler 回调对象,不能为null,用于在回复和超时时回调(超时则回复bean的参数为null)
+	 * @param timeout 超时时间(秒)
+	 * @return 如果连接已经失效则返回false且不会有回复和超时的回调, 否则返回true
+	 */
+	public boolean ask(IoSession session, Bean<?> bean, int timeout, AnswerHandler handler)
+	{
+		if(session.isClosing() || bean == null) return false;
+		BeanContext beanCtx = allocBeanContext(bean, session, handler);
+		if(!send0(session, bean))
+		{
+			if(_beanCtxMap.remove(bean.serial(), beanCtx))
+			{
+				beanCtx.session = null;
+				beanCtx.arg = null;
+				beanCtx.answerHandler = null;
+			}
+			return false;
+		}
+		beanCtx.timeOut = timeout;
+		return true;
+	}
+
+	public boolean ask(IoSession session, Bean<?> bean, AnswerHandler handler)
+	{
+		return ask(session, bean, AnswerHandler.DEFAULT_ANSWER_TIME_OUT, handler);
+	}
+
+	/**
+	 * 向某个连接回复请求
 	 * <p>
 	 * 此操作是异步的
 	 * @return 如果连接已经失效则返回false, 否则返回true
 	 */
-	public <A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>> boolean replyRpc(IoSession session, RpcBean<A, R, B> rpcBean)
+	public boolean answer(IoSession session, Bean<?> askBean, Bean<?> answerBean)
 	{
-		rpcBean.setArg(null);
-		rpcBean.setResponse();
-		return send(session, rpcBean);
+		int serial = askBean.serial();
+		answerBean.serial(serial > 0 ? -serial : 0);
+		return send0(session, answerBean);
 	}
 
-	private static final class FutureRPC<R> extends FutureTask<R>
+	private static final class AnswerFuture extends FutureTask<Bean<?>>
 	{
-		private static final Callable<?> _dummy = new Callable<Object>()
+		private static final Callable<Bean<?>> _dummy = new Callable<Bean<?>>()
 		{
 			@Override
-			public Object call()
+			public Bean<?> call()
 			{
 				return null;
 			}
 		};
 
-		@SuppressWarnings("unchecked")
-		public FutureRPC()
+		public AnswerFuture()
 		{
-			super((Callable<R>)_dummy);
+			super(_dummy);
 		}
 
 		@Override
-		public void set(R v)
+		public void set(Bean<?> v)
 		{
 			super.set(v);
 		}
 	}
 
 	/**
-	 * 向某个连接发送RPC请求并返回Future对象
+	 * 向某个连接发送请求并返回Future对象
 	 * <p>
 	 * 此操作是异步的
-	 * @return 如果连接已经失效则返回null, 如果RPC超时则对返回的Future对象调用get方法时返回null
+	 * @return 如果连接已经失效则返回null, 如果请求超时则对返回的Future对象调用get方法时返回null
 	 */
-	public <A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>> Future<R> sendRpcAsync(IoSession session, RpcBean<A, R, B> rpcBean)
+	public Future<Bean<?>> askAsync(IoSession session, Bean<?> bean, int timeout)
 	{
-		if(session.isClosing() || rpcBean == null) return null;
-		rpcBean.setRequest();
-		rpcBean.setReqTime((int)(System.currentTimeMillis() / 1000));
-		rpcBean.setSession(session);
-		final FutureRPC<R> ft = new FutureRPC<>();
-		rpcBean.setOnClient(new RpcHandler<A, R, B>()
+		if(session.isClosing() || bean == null) return null;
+		final AnswerFuture ft = new AnswerFuture();
+		BeanContext beanCtx = allocBeanContext(bean, session, new AnswerHandler()
 		{
 			@Override
-			public void onClient(NetManager m, IoSession s, B b)
+			public void onAnswer(Bean<?> answerBean)
 			{
-				ft.set(b.getRes());
-			}
-
-			@Override
-			public void onTimeout(NetManager m, IoSession s, B b)
-			{
-				ft.set(null);
+				ft.set(answerBean);
 			}
 		});
-		if(_rpcs.putIfAbsent(rpcBean.getRpcId(), rpcBean) != null)
+		if(!send0(session, bean))
 		{
-			rpcBean.setSession(null);
-			rpcBean.setOnClient(null);
-			throw new RuntimeException("do not send the same RPC in the same time");
-		}
-		if(!send(session, rpcBean))
-		{
-			rpcBean.setSession(null);
-			rpcBean.setOnClient(null);
-			_rpcs.remove(rpcBean.getRpcId());
+			if(_beanCtxMap.remove(bean.serial(), beanCtx))
+			{
+				beanCtx.session = null;
+				beanCtx.arg = null;
+				beanCtx.answerHandler = null;
+			}
 			return null;
 		}
+		beanCtx.timeOut = timeout;
 		return ft;
 	}
 
-	/**
-	 * 同sendRpc, 区别仅仅是在事务成功后发送RPC
-	 */
-	public <A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>> boolean sendRpcSafe(final IoSession session, final RpcBean<A, R, B> rpcBean, final RpcHandler<A, R, B> handler)
+	public Future<Bean<?>> askAsync(IoSession session, Bean<?> bean)
 	{
-		if(session.isClosing() || rpcBean == null) return false;
+		return askAsync(session, bean, AnswerHandler.DEFAULT_ANSWER_TIME_OUT);
+	}
+
+	/**
+	 * 同ask, 区别仅仅是在事务成功后发送请求
+	 */
+	public boolean askSafe(final IoSession session, final Bean<?> bean, final AnswerHandler handler)
+	{
+		if(session.isClosing() || bean == null) return false;
 		SContext.current().addOnCommit(new Runnable()
 		{
 			@Override
 			public void run()
 			{
-				sendRpc(session, rpcBean, handler);
+				ask(session, bean, handler);
 			}
 		});
 		return true;
 	}
 
 	/**
-	 * 同replyRpc, 区别仅仅是在事务成功后回复RPC
+	 * 同answer, 区别仅仅是在事务成功后回复
 	 */
-	public <A extends Bean<A>, R extends Bean<R>, B extends RpcBean<A, R, B>> boolean replyRpcSafe(final IoSession session, final RpcBean<A, R, B> rpcBean)
+	public boolean answerSafe(final IoSession session, final Bean<?> askBean, final Bean<?> answerBean)
 	{
-		if(session.isClosing() || rpcBean == null) return false;
+		if(session.isClosing() || askBean == null || answerBean == null) return false;
 		SContext.current().addOnCommit(new Runnable()
 		{
 			@Override
 			public void run()
 			{
-				replyRpc(session, rpcBean);
+				answer(session, askBean, answerBean);
 			}
 		});
 		return true;
@@ -718,11 +748,12 @@ public class NetManager implements IoHandler
 	/**
 	 * 对连接器管理的全部连接广播bean
 	 * <p>
-	 * 警告: 不能广播RPC. 连接数很大的情况下慎用,必要时应自己在某一工作线程中即时或定时地逐一发送
+	 * 警告: 连接数很大的情况下慎用,必要时应自己在某一工作线程中即时或定时地逐一发送
 	 */
 	public void clientBroadcast(Bean<?> bean)
 	{
 		if(bean == null) return;
+		bean.serial(0);
 		for(IoSession session : getClientSessions().values())
 			write(session, bean);
 	}
@@ -730,11 +761,12 @@ public class NetManager implements IoHandler
 	/**
 	 * 对监听器管理的全部连接广播bean
 	 * <p>
-	 * 警告: 不能广播RPC. 连接数很大的情况下慎用,必要时应自己在某一工作线程中即时或定时地逐一发送
+	 * 警告: 连接数很大的情况下慎用,必要时应自己在某一工作线程中即时或定时地逐一发送
 	 */
 	public void serverBroadcast(Bean<?> bean)
 	{
 		if(bean == null) return;
+		bean.serial(0);
 		for(IoSession session : getServerSessions().values())
 			write(session, bean);
 	}
@@ -787,7 +819,7 @@ public class NetManager implements IoHandler
 	 */
 	protected void onUnhandledBean(IoSession session, Bean<?> bean)
 	{
-		Log.warn("{}({}): unhandled bean: {}:{}", _name, session.getId(), bean.typeName(), bean);
+		Log.warn("{}({}): unhandled bean: {}({}):{}", _name, session.getId(), bean.typeName(), bean.serial(), bean);
 		// session.closeNow();
 	}
 
@@ -831,7 +863,31 @@ public class NetManager implements IoHandler
 	public void messageReceived(IoSession session, Object message)
 	{
 		Bean<?> bean = (Bean<?>)message;
-		if(Log.hasTrace) Log.trace("{}({}): recv: {}:{}", _name, session.getId(), bean.typeName(), message);
+		int serial = bean.serial();
+		if(Log.hasTrace) Log.trace("{}({}): recv: {}({}):{}", _name, session.getId(), bean.typeName(), serial, bean);
+		if(serial < 0)
+		{
+			BeanContext beanCtx = _beanCtxMap.remove(-serial);
+			if(beanCtx != null)
+			{
+				beanCtx.session = null; // 绑定期已过,清除对session的引用
+				beanCtx.arg = null;
+				AnswerHandler handler = beanCtx.answerHandler;
+				beanCtx.answerHandler = null;
+				if(handler != null)
+				{
+					try
+					{
+						handler.onAnswer(bean);
+					}
+					catch(Throwable e)
+					{
+						Log.error(_name + '(' + session.getId() + "): onAnswer exception: " + bean.typeName(), e);
+					}
+					return;
+				}
+			}
+		}
 		BeanHandler<?> handler = _handlers.get(bean.type());
 		if(handler != null)
 		{

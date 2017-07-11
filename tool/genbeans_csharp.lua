@@ -28,7 +28,8 @@ namespace ]=] .. namespace .. [=[
 	{
 		public const int BEAN_TYPE = #(bean.type);
 #{#		public const #(var.type) #(var.name)#(var.value);#(var.comment)
-#}#
+#}#		public int Serial { get; set; }
+
 #(#		#(var.public) /*#(var.id3)*/ #(var.final)#(var.type) #(var.name);#(var.comment)
 #)##<#
 		public #(bean.name)()

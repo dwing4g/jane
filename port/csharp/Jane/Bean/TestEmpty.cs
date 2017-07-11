@@ -12,6 +12,7 @@ namespace Jane.Bean
 	public class TestEmpty : IBean, IEquatable<TestEmpty>, IComparable<TestEmpty>
 	{
 		public const int BEAN_TYPE = 3;
+		public int Serial { get; set; }
 
 		public void Reset()
 		{

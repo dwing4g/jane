@@ -14,6 +14,7 @@ namespace Jane.Bean
 		public const int BEAN_TYPE = 1;
 		public const int TEST_CONST1 = 5; // 测试类静态常量;
 		public const string TEST_CONST2 = "test_const2";
+		public int Serial { get; set; }
 
 		public  /*  1*/ int value1; // 字段的注释;
 		public  /*  2*/ long value2;

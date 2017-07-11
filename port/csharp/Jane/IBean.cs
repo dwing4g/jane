@@ -13,6 +13,11 @@ namespace Jane
 	public interface IBean : ICloneable, IComparable<IBean>, IComparable
 	{
 		/**
+		 * 获取/设置序列号;
+		 */
+		int Serial { get; set; }
+
+		/**
 		 * bean的初始预计序列化长度;
 		 * 用于序列化此bean前预留的空间大小(字节). 子类应该实现这个方法返回合适的值;
 		 */

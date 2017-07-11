@@ -376,6 +376,25 @@ public class OctetsStream extends Octets
 		return x != null ? marshal(x.intValue()) : marshalZero();
 	}
 
+	public int marshalIntBack(int p, int x)
+	{
+		int t = _count;
+		if(p < 5 || p > t) throw new IllegalArgumentException("p=" + p + ", _count=" + t);
+		if(x >= 0)
+		{
+		    if(x < 0x40)      { _count = p - 1; marshal1((byte)x);        _count = t; return 1; }
+		    if(x < 0x2000)    { _count = p - 2; marshal2(x + 0x4000);     _count = t; return 2; }
+		    if(x < 0x100000)  { _count = p - 3; marshal3(x + 0x600000);   _count = t; return 3; }
+		    if(x < 0x8000000) { _count = p - 4; marshal4(x + 0x70000000); _count = t; return 4; }
+		                      { _count = p - 5; marshal5((byte)0x78, x);  _count = t; return 5; }
+		}
+		if(x >= -0x40)        { _count = p - 1; marshal1((byte)x);        _count = t; return 1; }
+		if(x >= -0x2000)      { _count = p - 2; marshal2(x - 0x4000);     _count = t; return 2; }
+		if(x >= -0x100000)    { _count = p - 3; marshal3(x - 0x600000);   _count = t; return 3; }
+		if(x >= -0x8000000)   { _count = p - 4; marshal4(x - 0x70000000); _count = t; return 4; }
+		                      { _count = p - 5; marshal5((byte)0x87, x);  _count = t; return 5; }
+	}
+
 	public static int marshalLen(int x)
 	{
 		if(x >= 0)

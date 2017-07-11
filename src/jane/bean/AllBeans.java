@@ -16,11 +16,10 @@ public final class AllBeans
 	/** 获取全部的bean实例 */
 	public static Collection<Bean<?>> getAllBeans()
 	{
-		List<Bean<?>> r = new ArrayList<>(4);
+		List<Bean<?>> r = new ArrayList<>(3);
 		r.add(TestBean.BEAN_STUB);
 		r.add(TestType.BEAN_STUB);
 		r.add(TestEmpty.BEAN_STUB);
-		r.add(TestRpcBean.BEAN_STUB);
 		return r;
 	}
 
@@ -31,10 +30,9 @@ public final class AllBeans
 
 	public static IntHashMap<BeanHandler<?>> getTestClientHandlers(IntHashMap<BeanHandler<?>> r)
 	{
-		if(r == null) r = new IntHashMap<>(3 * 4);
+		if(r == null) r = new IntHashMap<>(2 * 4);
 		r.put(1, new jane.handler.testclient.TestBeanHandler());
 		r.put(2, new jane.handler.testclient.TestTypeHandler());
-		r.put(4, new jane.handler.testclient.TestRpcBeanHandler());
 		return r;
 	}
 
@@ -45,11 +43,10 @@ public final class AllBeans
 
 	public static IntHashMap<BeanHandler<?>> getTestServerHandlers(IntHashMap<BeanHandler<?>> r)
 	{
-		if(r == null) r = new IntHashMap<>(4 * 4);
+		if(r == null) r = new IntHashMap<>(3 * 4);
 		r.put(1, new jane.handler.testserver.TestBeanHandler());
 		r.put(2, new jane.handler.testserver.TestTypeHandler());
 		r.put(3, new jane.handler.testserver.TestEmptyHandler());
-		r.put(4, new jane.handler.testserver.TestRpcBeanHandler());
 		return r;
 	}
 }

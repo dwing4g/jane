@@ -106,7 +106,7 @@ public class ProcThread extends Thread
 	{
 		if(!Const.debug && Const.deadlockCheckInterval > 0)
 		{
-			NetManager.scheduleAtFixedRate(Const.deadlockCheckInterval, Const.deadlockCheckInterval, new Runnable()
+			NetManager.scheduleWithFixedDelay(Const.deadlockCheckInterval, Const.deadlockCheckInterval, new Runnable()
 			{
 				@Override
 				public void run()

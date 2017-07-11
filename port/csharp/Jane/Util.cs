@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Jane
@@ -11,9 +12,14 @@ namespace Jane
 	{
 		static readonly Random _rand = new Random();
 
-		public static Random getRand()
+		public static Random GetRand()
 		{
 			return _rand;
+		}
+
+		public static byte[] GetOctetsMd5(Octets o)
+		{
+			return new MD5CryptoServiceProvider().ComputeHash(o.Array(), 0, o.Size());
 		}
 
 		public struct ListEnumerator<T>

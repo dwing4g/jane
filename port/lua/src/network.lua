@@ -91,7 +91,7 @@ function Network:send(bean)
 		self.wbuf = wbuf
 	end
 	local buf, bbuf = Stream(), Stream():marshal(bean):flush()
-	buf:marshalUInt(bean.__type):marshalUInt(bbuf:limit()):append(bbuf):flush()
+	buf:marshalUInt(bean.__type):marshalInt(bean.__serial or 0):marshalUInt(bbuf:limit()):append(bbuf):flush()
 	local onEncode = self.onEncode
 	if onEncode then buf = onEncode(self, buf) end
 	wbuf:append(buf)
@@ -121,6 +121,7 @@ local function decode(self, s)
 	log("decode:", s:remain())
 	if s:remain() <= 0 then return end
 	local type = s:unmarshalUInt()
+	local serial = s:unmarshalInt()
 	local size = s:unmarshalUInt()
 	if size > s:remain() then return end
 	local epos = s:pos() + size
@@ -128,6 +129,7 @@ local function decode(self, s)
 	log("decode.type:", type, epos)
 	local bean = s:unmarshal(cls)
 	s:pos(epos)
+	bean.__serial = serial
 	return bean
 end
 
