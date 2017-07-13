@@ -42,22 +42,22 @@ xml => bean: xml文件即为服务器启动时所需加载的文件, 可临时�
 需要持久化存储指定结构的数据, 一般要指定读cache的限制, 超出后读cache会被自动清理, 写cache会在定时持久化时事务性批量存储到数据库中并清空写cache
 需要定义bean结构作为数据库表的值, table定义数据库表的主键和引用的值bean
 
-4.协议/RPC结构(定义bean,rpc,handler)
-bean即为协议, RPC的定义需要引用两个bean作为请求/回应, 还需要定义handler指定哪些NetManager子类会处理
+4.协议结构(定义bean,handler)
+bean即为协议, 还需要定义handler指定哪些NetManager子类会处理
 
 ● 逻辑处理
 
 1.生成框架代码
-定义的bean,rpc,table会生成代码到项目的根命名空间下的bean命名空间中, 这个空间只用于放生成代码, 不能修改和存放其它代码, 不用提交到版本管理中
+定义的bean,table会生成代码到项目的根命名空间下的bean命名空间中, 这个空间只用于放生成代码, 不能修改和存放其它代码, 不用提交到版本管理中
 定义的handler会生成处理框架代码到定义handler指定的命名空间中, 如果文件已存在, 则只修改其中的字段注释部分
 目前jane框架只能生成Java和C#的代码
 
-2.协议/RPC处理
+2.协议处理
 在生成的handler框架中编写逻辑, 简单的逻辑可直接在其中onProcess()中编写, 一般都需要编写存储过程并提交到DBManager内置的事务线程池去执行, 特殊情况可使用自定义的线程池
-RPC的处理框架一般用于编写接收请求的部分onServer(), 而onClient()由于很多时候缺少上下文信息, 建议在发送请求RPC的时候附带回调匿名类来处理onClient和onTimeout
+RPC(ask/answer)的处理框架一般建议在发送时附带回调匿名类来处理回复协议和超时, 此时可以很方便地获取上下文信息
 
 3.定时逻辑
-可使用框架自带的定时调度线程池, 如NetManager自带的RPC检测用的单线程定时调度器, DBManager的存储提交用的单线程定时调度器
+可使用框架自带的定时调度线程池, 如NetManager自带的RPC(ask)超时检测用的单线程定时调度器, DBManager的存储提交用的单线程定时调度器
 如果定时事务逻辑复杂或执行繁忙, 推荐使用自定义的定时调度线程池
 
 4.其它触发逻辑
@@ -122,17 +122,7 @@ bean{ name="PropAdd", type=1, initsize=16, maxsize=16, const=false, comment="增
 处理器(handler): 定义协议处理器, 在整个定义文件的最前面定义, 其中只需定义处理器的名称和生成代码所在的路径(包)名, 服务器有几个NetManager子类, 就应该定义几个handler(仅用于引用的除外)
 引用处理器(handlers): 定义协议时要引用处理器名, 可以写多个, 用逗号分隔
 协议ID(type): 大于1的int类型整数, 较小的数值更推荐常用的结构, 最好根据不同类别的结构分配不同的范围, 如Mail类规定ID在600到699之间, 可写成: type = 600 + 11
-最大大小(maxsize): 用于接收协议/RPC时最大的允许空间, 字节大小, 建议使用较为宽松的值, 较大的值要谨慎考虑设计是否恰当
-
-如果要定义RPC, 则定义如下:
-rpc { name="PropRpc", type=2, arg="PropAdd", res="PropAdd", comment="RPC的注释",
-    handlers="GameServer,GameClient",
-}
-
-解释:
-请求Bean(arg): 引用用于请求的Bean结构名
-回复Bean(res): 引用用于回复的Bean结构名
-引用处理器(handlers): 定义RPC时要引用处理器名, 请求方和回复方都要写
+最大大小(maxsize): 用于接收协议时最大的允许空间, 字节大小, 建议使用较为宽松的值, 较大的值要谨慎考虑设计是否恰当
 
 5.生成代码
 使用genbeans.lua脚本, 就可以生成代码和框架了
