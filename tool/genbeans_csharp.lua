@@ -745,7 +745,13 @@ local function checksave(fn, d, change_count)
 		local s = f:read "*a"
 		f:close()
 		if change_count > 0 then
-			d = s:gsub("\n\t\t/%*\\.-\n\t\t\\%*/", d:gmatch("\n\t\t/%*\\.-\n\t\t\\%*/"), change_count)
+			local s1 = s:match("\n\t\t/%*\\.-\n\t\t\\%*/"):gsub("\r", "") -- compare without \r
+			local d1 = d:match("\n\t\t/%*\\.-\n\t\t\\%*/")
+			if s1 ~= d1 then
+				d = s:gsub("\n\t\t/%*\\.-\n\t\t\\%*/", d1, change_count)
+			else
+				d = s
+			end
 		end
 		if s == d then d = nil else print(" * " .. fn) end
 	else

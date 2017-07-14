@@ -112,14 +112,11 @@ end
 if not arg[2] then error("ERROR: arg[2] must be input allbeans.lua") end
 dofile(arg[2])
 
-local function checksave(fn, d, change_count)
+local function checksave(fn, d)
 	local f = open(fn, "rb")
 	if f then
 		local s = f:read "*a"
 		f:close()
-		if change_count > 0 then
-			d = s:gsub("\n\t/%*\\.-\n\t\\%*/", d:gmatch("\n\t/%*\\.-\n\t\\%*/"), change_count)
-		end
 		if s == d then d = nil else print(" * " .. fn) end
 	else
 		print("+  " .. fn)
@@ -173,6 +170,6 @@ checksave(outpath .. "bean.lua", (template_bean:gsub("#%[#(.-)#%]#", function(bo
 		end
 	end
 	return concat(subcode)
-end)):gsub("\r", ""), 0)
+end)):gsub("\r", ""))
 
 print((arg[1] or "") .. " ... done!")

@@ -1212,14 +1212,13 @@ end
 
 local outpath = (arg[4] or "."):gsub("\\", "/")
 if outpath:sub(-1, -1) ~= "/" then outpath = outpath .. "/" end
-local function checksave(fn, d, change_count, pattern, typename)
+local function checksave(fn, d, change_count)
 	local f = open(fn, "rb")
 	if f then
 		local s = f:read "*a"
 		f:close()
 		if change_count > 0 then
-			d = s:gsub("\n\t/%*\\.-\n\t\\%*/", d:gmatch("\n\t/%*\\.-\n\t\\%*/"), change_count)
-			if pattern then d = d:gsub(pattern, typename, 1) end
+			d = s:gsub("\n\t/%*\\.-\n\t\\%*/", d:match("\n\t/%*\\.-\n\t\\%*/"), change_count)
 		end
 		if s == d then d = nil else print(" * " .. fn) end
 	else
