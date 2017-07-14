@@ -1,3 +1,5 @@
+local io = io
+local ipairs = ipairs
 local print = print
 
 local clses = {}

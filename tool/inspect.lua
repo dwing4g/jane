@@ -1,3 +1,8 @@
+local io = io
+local print = print
+local string = string
+local require = require
+local package = package
 package.path = package.path .. ";metalualib/?.lua;luainspect/?.lua"
 
 local LA = require "luainspect.ast"

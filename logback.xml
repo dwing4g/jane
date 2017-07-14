@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- put this file in java classpath and ensure the filename: logback.xml -->
 <configuration debug="false">
+	<property name="log_path" value="${log.path:-log}"/>
+	<property name="log_name" value="${log.name:-jane}"/>
+
 	<appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
 		<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
 			<level>TRACE</level>
 		</filter>
-		<file>log/jane.log</file>
+		<file>${log_path}/${log_name}.log</file>
 		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-			<fileNamePattern>log/jane.%d{yy-MM-dd}.log</fileNamePattern>
+			<fileNamePattern>${log_path}/${log_name}.%d{yy-MM-dd}.log</fileNamePattern>
 			<maxHistory>500</maxHistory>
 		</rollingPolicy>
 		<encoder>

@@ -1,8 +1,11 @@
+local io = io
 local open = io.open
 local popen = io.popen
 local write = io.write
+local string = string
 local format = string.format
 local byte = string.byte
+local print = print
 local arg = {...}
 
 local filename, i, line, col, c, state

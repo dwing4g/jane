@@ -103,6 +103,7 @@ public final class ExitManager
 			}
 			if(n == 4 && inbuf[0] == '!' && inbuf[1] == '@' && inbuf[2] == '#' && inbuf[3] == '$')
 			{
+				Log.info("STDIN TRIGGERED EXIT");
 				System.err.println("!!!STDIN TRIGGERED EXIT!!!");
 				System.exit(1);
 			}

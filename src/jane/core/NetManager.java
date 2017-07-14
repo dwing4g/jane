@@ -534,14 +534,14 @@ public class NetManager implements IoHandler
 	 * <p>
 	 * 此操作是异步的
 	 * @param bean 如果是RawBean类型,考虑到性能问题,在发送完成前不能修改其中的data对象
-	 * @param callback 可设置一个回调对象,用于在发送成功后回调. null表示不回调
+	 * @param onSent 可设置一个回调对象,用于在发送成功后回调. null表示不回调
 	 * @return 如果连接已经失效则返回false, 否则返回true
 	 */
-	public <B extends Bean<B>> boolean send(final IoSession session, final B bean, final Runnable callback)
+	public <B extends Bean<B>> boolean send(final IoSession session, final B bean, final Runnable onSent)
 	{
 		if(bean == null) return false;
 		bean.serial(0);
-		if(callback == null)
+		if(onSent == null)
 		{
 			if(!write(session, bean)) return false;
 		}
@@ -555,7 +555,7 @@ public class NetManager implements IoHandler
 				{
 					try
 					{
-						callback.run();
+						onSent.run();
 					}
 					catch(Throwable e)
 					{
@@ -582,12 +582,12 @@ public class NetManager implements IoHandler
 		return true;
 	}
 
-	private static BeanContext allocBeanContext(Bean<?> bean, IoSession session, AnswerHandler handler)
+	private static BeanContext allocBeanContext(Bean<?> bean, IoSession session, AnswerHandler onAnswer)
 	{
 		BeanContext beanCtx = new BeanContext();
 		beanCtx.session = session;
 		beanCtx.arg = bean;
-		beanCtx.answerHandler = handler;
+		beanCtx.answerHandler = onAnswer;
 		for(;;)
 		{
 			int serial = _serialCounter.incrementAndGet();
@@ -611,14 +611,14 @@ public class NetManager implements IoHandler
 	 * 向某个连接发送请求
 	 * <p>
 	 * 此操作是异步的
-	 * @param handler 回调对象,不能为null,用于在回复和超时时回调(超时则回复bean的参数为null)
+	 * @param onAnswer 回调对象,不能为null,用于在回复和超时时回调(超时则回复bean的参数为null)
 	 * @param timeout 超时时间(秒)
 	 * @return 如果连接已经失效则返回false且不会有回复和超时的回调, 否则返回true
 	 */
-	public boolean ask(IoSession session, Bean<?> bean, int timeout, AnswerHandler handler)
+	public boolean ask(IoSession session, Bean<?> bean, int timeout, AnswerHandler onAnswer)
 	{
 		if(session.isClosing() || bean == null) return false;
-		BeanContext beanCtx = allocBeanContext(bean, session, handler);
+		BeanContext beanCtx = allocBeanContext(bean, session, onAnswer);
 		if(!send0(session, bean))
 		{
 			if(_beanCtxMap.remove(bean.serial(), beanCtx))
@@ -633,9 +633,9 @@ public class NetManager implements IoHandler
 		return true;
 	}
 
-	public boolean ask(IoSession session, Bean<?> bean, AnswerHandler handler)
+	public boolean ask(IoSession session, Bean<?> bean, AnswerHandler onAnswer)
 	{
-		return ask(session, bean, AnswerHandler.DEFAULT_ANSWER_TIME_OUT, handler);
+		return ask(session, bean, AnswerHandler.DEFAULT_ANSWER_TIME_OUT, onAnswer);
 	}
 
 	/**
@@ -714,7 +714,7 @@ public class NetManager implements IoHandler
 	/**
 	 * 同ask, 区别仅仅是在事务成功后发送请求
 	 */
-	public boolean askSafe(final IoSession session, final Bean<?> bean, final AnswerHandler handler)
+	public boolean askSafe(final IoSession session, final Bean<?> bean, final AnswerHandler onAnswer)
 	{
 		if(session.isClosing() || bean == null) return false;
 		SContext.current().addOnCommit(new Runnable()
@@ -722,7 +722,7 @@ public class NetManager implements IoHandler
 			@Override
 			public void run()
 			{
-				ask(session, bean, handler);
+				ask(session, bean, onAnswer);
 			}
 		});
 		return true;

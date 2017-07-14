@@ -65,4 +65,4 @@ mkdir -p db  2> /dev/null
 mv -f log/gc.log log/gc.old.log
 
 if [ -z $NOHUP ]; then java $JVM -cp $LIB:. $MAIN ${@:2:9}
-else             nohup java $JVM -cp $LIB:. $MAIN removeAppender=STDOUT ${@:3:9} 1>> log/stdout.log 2>> log/stderr.log & fi
+else             nohup java $JVM -cp $LIB:. $MAIN removeAppender=ASYNC_STDOUT ${@:3:9} 1>> log/stdout.log 2>> log/stderr.log & fi
