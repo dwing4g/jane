@@ -1252,7 +1252,9 @@ local key_conv = { int = "Integer", integer = "Integer", Integer = "Integer", lo
 					string = "String", String = "String", binary = "Octets", bytes = "Octets", data = "Octets", octets = "Octets", Octets = "Octets" }
 local need_save_dbt = {}
 function dbt(table)
-	if not handlers.dbt or not table.handler ~= handlers.dbt and table.handler ~= handlers.dbt then return end
+	if not handlers.dbt or handlers.dbt ~= true and table.handler ~= handlers.dbt then return end
+	if not table.id then table.id = 0 end
+	if table.id == 0 then table.memory = true end
 	local key_type = key_conv[table.key]
 	if key_type then
 		if key_type == "Octets" then tables.imports["jane.core.Octets"] = true end
@@ -1299,35 +1301,37 @@ local bean_count = 0
 checksave(outpath .. namespace_path .. "/AllBeans.java", (template_allbeans:gsub("#%[#(.-)#%]#", function(body)
 	local subcode = {}
 	for hdlname, hdlpath in spairs(handlers) do
-		local names = hdl_names[hdlname] or {}
-		local hdl = { name = hdlname, path = tostring(hdlpath), count = 0 }
-		subcode[#subcode + 1] = code_conv(body:gsub("#%(#(.-)#%)#", function(body)
-			local subcode2 = {}
-			local saved = {}
-			for _, name in ipairs(names) do
-				if not saved[name] then
-					saved[name] = true
-					local bean = name_bean[name]
-					savebean(bean.name)
-					if bean.type ~= 0 then
-						hdl.count = hdl.count + 1
-						subcode2[#subcode2 + 1] = code_conv(body, "bean", bean)
-						if type(hdlpath) == "string" then
-							if bean.type < 0 or bean.type > 0x7fffffff then error("ERROR: invalid bean.type: " .. tostring(bean.type) .. " (bean.name: " .. bean.name .. ")") end
-							checksave(outpath .. hdlpath:gsub("%.", "/") .. "/" .. bean.name .. "Handler.java", code_conv(code_conv(template_bean_handler:gsub("#%(#(.-)#%)#", function(body)
-								local subcode3 = {}
-								for _, var in ipairs(bean) do
-									subcode3[#subcode3 + 1] = code_conv(body, "var", var)
-								end
-								return concat(subcode3)
-							end), "hdl", hdl), "bean", bean):gsub("\r", ""), 1)
+		if hdlname ~= "dbt" then
+			local names = hdl_names[hdlname] or {}
+			local hdl = { name = hdlname, path = tostring(hdlpath), count = 0 }
+			subcode[#subcode + 1] = code_conv(body:gsub("#%(#(.-)#%)#", function(body)
+				local subcode2 = {}
+				local saved = {}
+				for _, name in ipairs(names) do
+					if not saved[name] then
+						saved[name] = true
+						local bean = name_bean[name]
+						savebean(bean.name)
+						if bean.type ~= 0 then
+							hdl.count = hdl.count + 1
+							subcode2[#subcode2 + 1] = code_conv(body, "bean", bean)
+							if type(hdlpath) == "string" then
+								if bean.type < 0 or bean.type > 0x7fffffff then error("ERROR: invalid bean.type: " .. tostring(bean.type) .. " (bean.name: " .. bean.name .. ")") end
+								checksave(outpath .. hdlpath:gsub("%.", "/") .. "/" .. bean.name .. "Handler.java", code_conv(code_conv(template_bean_handler:gsub("#%(#(.-)#%)#", function(body)
+									local subcode3 = {}
+									for _, var in ipairs(bean) do
+										subcode3[#subcode3 + 1] = code_conv(body, "var", var)
+									end
+									return concat(subcode3)
+								end), "hdl", hdl), "bean", bean):gsub("\r", ""), 1)
+							end
 						end
 					end
 				end
-			end
-			return concat(subcode2)
-		end), "hdl", hdl)
-		if type(hdlpath) ~= "string" then subcode[#subcode] = "" end
+				return concat(subcode2)
+			end), "hdl", hdl)
+			if type(hdlpath) ~= "string" then subcode[#subcode] = "" end
+		end
 	end
 	return concat(subcode)
 end):gsub("#%(#(.-)#%)#", function(body)
@@ -1355,8 +1359,8 @@ if tables.count > 0 then
 		local ids = {}
 		for _, table in ipairs(tables) do
 			if names[table.name] then error("ERROR: duplicated table.name: " .. table.name) end
-			if ids[table.id] then error("ERROR: duplicated table.id: " .. table.id) end
-			if table.id < 1 or table.id > 0x7fffffff then error("ERROR: invalid table.id: " .. table.id) end
+			if ids[table.id] and table.id ~= 0 then error("ERROR: duplicated table.id: " .. table.id) end
+			if table.id < 0 or table.id > 0x7fffffff then error("ERROR: invalid table.id: " .. table.id) end
 			names[table.name] = true
 			ids[table.id] = true
 			subcode[#subcode + 1] = code_conv(code_conv(body, "table", table), "table", table)

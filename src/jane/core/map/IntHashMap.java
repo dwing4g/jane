@@ -116,7 +116,7 @@ public final class IntHashMap<V> implements Cloneable
 
 	public V put(int key, V value)
 	{
-		if(key == 0)
+		if(key == EMPTY)
 		{
 			V oldValue = _zeroValue;
 			_zeroValue = value;
@@ -201,7 +201,7 @@ public final class IntHashMap<V> implements Cloneable
 	/** Skips checks for existing keys. */
 	private void putResize(int key, V value)
 	{
-		if(key == 0)
+		if(key == EMPTY)
 		{
 			_zeroValue = value;
 			_hasZeroValue = true;
@@ -337,7 +337,7 @@ public final class IntHashMap<V> implements Cloneable
 
 	public V get(int key)
 	{
-		if(key == 0) return _hasZeroValue ? _zeroValue : null;
+		if(key == EMPTY) return _hasZeroValue ? _zeroValue : null;
 		int index = key & _mask;
 		if(_keyTable[index] != key)
 		{
@@ -353,7 +353,7 @@ public final class IntHashMap<V> implements Cloneable
 
 	public V get(int key, V defaultValue)
 	{
-		if(key == 0) return _hasZeroValue ? _zeroValue : defaultValue;
+		if(key == EMPTY) return _hasZeroValue ? _zeroValue : defaultValue;
 		int index = key & _mask;
 		if(_keyTable[index] != key)
 		{
@@ -377,7 +377,7 @@ public final class IntHashMap<V> implements Cloneable
 
 	public V remove(int key)
 	{
-		if(key == 0)
+		if(key == EMPTY)
 		{
 			if(!_hasZeroValue) return null;
 			V oldValue = _zeroValue;
@@ -514,7 +514,7 @@ public final class IntHashMap<V> implements Cloneable
 
 	public boolean containsKey(int key)
 	{
-		if(key == 0) return _hasZeroValue;
+		if(key == EMPTY) return _hasZeroValue;
 		int index = key & _mask;
 		if(_keyTable[index] != key)
 		{
@@ -541,20 +541,20 @@ public final class IntHashMap<V> implements Cloneable
 		V[] vt = _valueTable;
 		if(value == null)
 		{
-			if(_hasZeroValue && _zeroValue == null) return 0;
+			if(_hasZeroValue && _zeroValue == null) return EMPTY;
 			int[] kt = _keyTable;
 			for(int i = _capacity + _stashSize; i-- > 0;)
 				if(kt[i] != EMPTY && vt[i] == null) return kt[i];
 		}
 		else if(identity)
 		{
-			if(value == _zeroValue) return 0;
+			if(value == _zeroValue) return EMPTY;
 			for(int i = _capacity + _stashSize; i-- > 0;)
 				if(vt[i] == value) return _keyTable[i];
 		}
 		else
 		{
-			if(_hasZeroValue && value.equals(_zeroValue)) return 0;
+			if(_hasZeroValue && value.equals(_zeroValue)) return EMPTY;
 			for(int i = _capacity + _stashSize; i-- > 0;)
 				if(value.equals(vt[i])) return _keyTable[i];
 		}
@@ -629,7 +629,7 @@ public final class IntHashMap<V> implements Cloneable
 		V[] vt = _valueTable;
 		int i = kt.length;
 		if(_hasZeroValue)
-			s.append('0').append('=').append(_zeroValue);
+			s.append(EMPTY).append('=').append(_zeroValue);
 		else
 		{
 			while(i > 0)

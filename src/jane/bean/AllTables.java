@@ -30,13 +30,13 @@ public final class AllTables
 	 */
 	public static final Table<TestKeyBean, TestBean, TestBean.Safe> BeanTable = _dbm.<TestKeyBean, TestBean, TestBean.Safe>openTable(2, "BeanTable", "bean", 65536, TestKeyBean.BEAN_STUB, TestBean.BEAN_STUB);
 	/**
-	 * 注意表名和key类型的对应关系是不能改变的
+	 * 没有定义id的是内存表. 注意表名和key类型的对应关系是不能改变的
 	 */
-	public static final Table<Octets, TestEmpty, TestEmpty.Safe> OctetsTable = _dbm.<Octets, TestEmpty, TestEmpty.Safe>openTable(3, "OctetsTable", "bean", 1000, null, null);
+	public static final Table<Octets, TestEmpty, TestEmpty.Safe> OctetsTable = _dbm.<Octets, TestEmpty, TestEmpty.Safe>openTable(0, "OctetsTable", "bean", 1000, null, null);
 	/**
 	 * 用于测试数据库的表
 	 */
-	public static final TableLong<TestBean, TestBean.Safe> Benchmark = _dbm.<TestBean, TestBean.Safe>openTable(4, "Benchmark", "bench", 50000, TestBean.BEAN_STUB);
+	public static final TableLong<TestBean, TestBean.Safe> Benchmark = _dbm.<TestBean, TestBean.Safe>openTable(3, "Benchmark", "bench", 50000, TestBean.BEAN_STUB);
 
 	/**
 	 * 以下内部类可以单独使用,避免初始化前面的表对象,主要用于获取表的ID和键值类型
@@ -68,11 +68,11 @@ public final class AllTables
 			types = new Types(2, "BeanTable", TestKeyBean.BEAN_STUB, TestBean.BEAN_STUB);
 			idTypes.put(2, types);
 			nameTypes.put("BeanTable", types);
-			types = new Types(3, "OctetsTable", null, TestEmpty.BEAN_STUB);
-			idTypes.put(3, types);
+			types = new Types(0, "OctetsTable", null, TestEmpty.BEAN_STUB);
+			idTypes.put(0, types);
 			nameTypes.put("OctetsTable", types);
-			types = new Types(4, "Benchmark", null, TestBean.BEAN_STUB);
-			idTypes.put(4, types);
+			types = new Types(3, "Benchmark", null, TestBean.BEAN_STUB);
+			idTypes.put(3, types);
 			nameTypes.put("Benchmark", types);
 		}
 
