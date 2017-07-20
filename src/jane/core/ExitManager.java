@@ -98,13 +98,13 @@ public final class ExitManager
 			}
 			if(n < 0)
 			{
-				System.err.println("!!!STDIN TRIGGER DISABLED!!! (" + n + (ex != null ? ", " + ex.getMessage() : "") + ')');
+				System.out.println("!!!STDIN TRIGGER DISABLED!!! (" + n + (ex != null ? ", " + ex.getMessage() : "") + ')');
 				return;
 			}
 			if(n == 4 && inbuf[0] == '!' && inbuf[1] == '@' && inbuf[2] == '#' && inbuf[3] == '$')
 			{
 				Log.info("STDIN TRIGGERED EXIT");
-				System.err.println("!!!STDIN TRIGGERED EXIT!!!");
+				System.out.println("!!!STDIN TRIGGERED EXIT!!!");
 				System.exit(1);
 			}
 			System.in.skip(Integer.MAX_VALUE); // 尽可能忽略行后的内容. 但传入Long.MAX_VALUE可能导致IOException

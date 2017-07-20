@@ -84,7 +84,7 @@ public final class IntHashMap<V> implements Cloneable
 		return _keyTable;
 	}
 
-	public V[] getValueTable()
+	public Object[] getValueTable()
 	{
 		return _valueTable;
 	}
