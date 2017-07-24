@@ -103,7 +103,7 @@ public final class XlsxExport
 						String t = xmlReader.getElementText().trim();
 						text = (text == null ? t : text + t);
 					}
-					else if(type == XMLStreamConstants.END_ELEMENT && xmlReader.getLocalName().charAt(0) == 's')
+					else if(type == XMLStreamConstants.END_ELEMENT && xmlReader.getLocalName().equals("si"))
 						break;
 				}
 				strTable.add(text != null ? text : "");
