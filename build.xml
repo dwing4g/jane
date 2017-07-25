@@ -33,6 +33,7 @@
 			<!--compilerarg value="-Xlint:unchecked"/-->
 			<compilerarg value="-XDignore.symbol.file"/><!-- suppress "Sun proprietary api" warning -->
 			<src path="${src}/"/>
+			<src path="${lib}/mina/"/>
 		</javac>
 	</target>
 
@@ -53,6 +54,7 @@
 				<exclude name="**/jane/handler/**"/>
 				<exclude name="**/jane/test/**"/>
 			</fileset>
+			<fileset dir="${lib}/mina/"/>
 		</jar>
 		<jar jarfile="${root}/jane-native.jar" level="9">
 			<manifest>
@@ -77,7 +79,6 @@
 			<zipfileset src="${lib}/slf4j-api-1.7.25.jar"/>
 			<zipfileset src="${lib}/logback-core-1.2.3.jar"/>
 			<zipfileset src="${lib}/logback-classic-1.2.3.jar"/>
-			<zipfileset src="${lib}/mina-core-2.0.16.jar"/>
 			<zipfileset src="${root}/jane-core.jar"/>
 			<fileset dir="${lib}">
 				<include name="*.dll"/>
