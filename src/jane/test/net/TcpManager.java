@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class TcpManager implements Closeable
 {
-	public static final int					DEF_TCP_THREAD_COUNT = 2; // Runtime.getRuntime().availableProcessors() + 1;
+	public static final int					DEF_TCP_THREAD_COUNT = Runtime.getRuntime().availableProcessors() * 2;
 	private static AsynchronousChannelGroup	_defGroup;
 
 	private AsynchronousServerSocketChannel	  _acceptor;

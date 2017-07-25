@@ -3,6 +3,7 @@ package jane.test;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayDeque;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.mina.core.buffer.AbstractIoBuffer;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.buffer.IoBufferAllocator;
@@ -12,9 +13,9 @@ public final class TestCachedBufferAllocator implements IoBufferAllocator
 	private static final int DEFAULT_MAX_POOL_SIZE			= 8;
 	private static final int DEFAULT_MAX_CACHED_BUFFER_SIZE	= 1 << 16; // 64KB
 
-	// public static final AtomicInteger allocCount = new AtomicInteger();
-	// public static final AtomicInteger cacheCount = new AtomicInteger();
-	// public static final AtomicInteger offerCount = new AtomicInteger();
+	public static final AtomicInteger allocCount = new AtomicInteger();
+	public static final AtomicInteger cacheCount = new AtomicInteger();
+	public static final AtomicInteger offerCount = new AtomicInteger();
 
 	private final int									  maxPoolSize;
 	private final int									  maxCachedBufferSize;
@@ -72,12 +73,12 @@ public final class TestCachedBufferAllocator implements IoBufferAllocator
 		{
 			buf.clear();
 			buf.order(ByteOrder.BIG_ENDIAN);
-			// cacheCount.incrementAndGet();
+			cacheCount.incrementAndGet();
 		}
 		else
 		{
 			buf = wrap(direct ? ByteBuffer.allocateDirect(actualCapacity) : ByteBuffer.allocate(actualCapacity));
-			// allocCount.incrementAndGet();
+			allocCount.incrementAndGet();
 		}
 		buf.limit(requestedCapacity);
 		return buf;
@@ -129,7 +130,7 @@ public final class TestCachedBufferAllocator implements IoBufferAllocator
 			if(pool.size() < maxPoolSize)
 			{
 				pool.addFirst(new CachedBuffer(oldBuf));
-				// offerCount.incrementAndGet();
+				offerCount.incrementAndGet();
 			}
 		}
 
