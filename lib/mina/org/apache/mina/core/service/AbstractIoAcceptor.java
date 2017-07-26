@@ -20,6 +20,7 @@
 package org.apache.mina.core.service;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,8 +29,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executor;
-
+import java.util.concurrent.Executors;
 import org.apache.mina.core.RuntimeIoException;
+import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.session.IoSessionConfig;
 
 /**
@@ -442,20 +444,14 @@ public final void bind(Iterable<? extends SocketAddress> localAddresses) throws 
 
 	@Override
 	public String toString() {
-		TransportMetadata m = getTransportMetadata();
-		return '('
-				+ m.getProviderName()
-				+ ' '
-				+ m.getName()
-				+ " acceptor: "
+		return "(nio socket acceptor: "
 				+ (isActive() ? "localAddress(es): " + getLocalAddresses() + ", managedSessionCount: "
 						+ getManagedSessionCount() : "not bound") + ')';
 	}
 
-	private void checkAddressType(SocketAddress a) {
-		if (a != null && !getTransportMetadata().getAddressType().isAssignableFrom(a.getClass())) {
-			throw new IllegalArgumentException("localAddress type: " + a.getClass().getSimpleName() + " (expected: "
-					+ getTransportMetadata().getAddressType().getSimpleName() + ")");
+	private static void checkAddressType(SocketAddress a) {
+		if (a != null && !InetSocketAddress.class.isAssignableFrom(a.getClass())) {
+			throw new IllegalArgumentException("localAddress type: " + a.getClass().getSimpleName() + " (expected: InetSocketAddress)");
 		}
 	}
 

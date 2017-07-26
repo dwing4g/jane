@@ -33,17 +33,22 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.apache.mina.core.RuntimeIoException;
+import org.apache.mina.core.filterchain.IoFilter;
 import org.apache.mina.core.service.AbstractIoAcceptor;
+import org.apache.mina.core.service.AbstractIoService;
+import org.apache.mina.core.service.IoAcceptor;
+import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.SimpleIoProcessorPool;
 import org.apache.mina.core.session.AbstractIoSession;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.session.IoSessionConfig;
 import org.apache.mina.transport.socket.SocketSessionConfig;
+import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.mina.util.ExceptionMonitor;
 
 /**
@@ -108,7 +113,7 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 	 *            type.
 	 */
 	protected AbstractPollingIoAcceptor(IoSessionConfig sessionConfig, Class<? extends IoProcessor<S>> processorClass) {
-		this(sessionConfig, null, new SimpleIoProcessorPool<S>(processorClass), true, null);
+		this(sessionConfig, null, new SimpleIoProcessorPool<>(processorClass), true, null);
 	}
 
 	/**
@@ -127,7 +132,7 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 	 */
 	protected AbstractPollingIoAcceptor(IoSessionConfig sessionConfig, Class<? extends IoProcessor<S>> processorClass,
 			int processorCount) {
-		this(sessionConfig, null, new SimpleIoProcessorPool<S>(processorClass, processorCount), true, null);
+		this(sessionConfig, null, new SimpleIoProcessorPool<>(processorClass, processorCount), true, null);
 	}
 
 	/**
@@ -147,7 +152,7 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 	 */
 	protected AbstractPollingIoAcceptor(IoSessionConfig sessionConfig, Class<? extends IoProcessor<S>> processorClass,
 			int processorCount, SelectorProvider selectorProvider ) {
-		this(sessionConfig, null, new SimpleIoProcessorPool<S>(processorClass, processorCount, selectorProvider), true, selectorProvider);
+		this(sessionConfig, null, new SimpleIoProcessorPool<>(processorClass, processorCount, selectorProvider), true, selectorProvider);
 	}
 
 	/**
@@ -304,12 +309,12 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 	/**
 	 * Accept a client connection for a server socket and return a new {@link IoSession}
 	 * associated with the given {@link IoProcessor}
-	 * @param processor the {@link IoProcessor} to associate with the {@link IoSession}
+	 * @param processor1 the {@link IoProcessor} to associate with the {@link IoSession}
 	 * @param handle the server handle
 	 * @return the created {@link IoSession}
 	 * @throws Exception any exception thrown by the underlying systems calls
 	 */
-	protected abstract S accept(IoProcessor<S> processor, H handle) throws Exception;
+	protected abstract S accept(IoProcessor<S> processor1, H handle) throws Exception;
 
 	/**
 	 * Close a server socket.

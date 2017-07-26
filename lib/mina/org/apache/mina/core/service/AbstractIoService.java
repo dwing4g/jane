@@ -29,7 +29,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.mina.core.IoUtil;
 import org.apache.mina.core.filterchain.DefaultIoFilterChain;
 import org.apache.mina.core.filterchain.DefaultIoFilterChainBuilder;
@@ -46,6 +45,7 @@ import org.apache.mina.core.session.IoSessionConfig;
 import org.apache.mina.core.session.IoSessionDataStructureFactory;
 import org.apache.mina.core.session.IoSessionInitializationException;
 import org.apache.mina.core.session.IoSessionInitializer;
+import org.apache.mina.transport.socket.SocketSessionConfig;
 import org.apache.mina.util.ExceptionMonitor;
 import org.apache.mina.util.NamePreservingRunnable;
 import org.slf4j.Logger;
@@ -196,13 +196,8 @@ public abstract class AbstractIoService implements IoService {
 			throw new IllegalArgumentException("sessionConfig");
 		}
 
-		if (getTransportMetadata() == null) {
-			throw new IllegalArgumentException("TransportMetadata");
-		}
-
-		if (!getTransportMetadata().getSessionConfigType().isAssignableFrom(sessionConfig.getClass())) {
-			throw new IllegalArgumentException("sessionConfig type: " + sessionConfig.getClass() + " (expected: "
-					+ getTransportMetadata().getSessionConfigType() + ")");
+		if (!SocketSessionConfig.class.isAssignableFrom(sessionConfig.getClass())) {
+			throw new IllegalArgumentException("sessionConfig type: " + sessionConfig.getClass() + " (expected: SocketSessionConfig)");
 		}
 
 		// Create the listeners, and add a first listener : a activation listener

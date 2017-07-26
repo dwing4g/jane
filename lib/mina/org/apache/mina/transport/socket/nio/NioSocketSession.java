@@ -26,16 +26,12 @@ import java.net.SocketException;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-
 import org.apache.mina.core.RuntimeIoException;
-import org.apache.mina.core.buffer.IoBuffer;
-import org.apache.mina.core.file.FileRegion;
 import org.apache.mina.core.filterchain.IoFilter;
 import org.apache.mina.core.filterchain.IoFilterChain;
-import org.apache.mina.core.service.DefaultTransportMetadata;
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.IoService;
-import org.apache.mina.core.service.TransportMetadata;
+import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.ssl.SslFilter;
 import org.apache.mina.transport.socket.AbstractSocketSessionConfig;
 import org.apache.mina.transport.socket.SocketSessionConfig;
@@ -46,9 +42,6 @@ import org.apache.mina.transport.socket.SocketSessionConfig;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 class NioSocketSession extends NioSession {
-	static final TransportMetadata METADATA = new DefaultTransportMetadata("nio", "socket", false, true,
-			InetSocketAddress.class, SocketSessionConfig.class, IoBuffer.class, FileRegion.class);
-
 	/**
 	 *
 	 * Creates a new instance of NioSocketSession.
@@ -65,14 +58,6 @@ class NioSocketSession extends NioSession {
 
 	private Socket getSocket() {
 		return ((SocketChannel) channel).socket();
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public TransportMetadata getTransportMetadata() {
-		return METADATA;
 	}
 
 	/**
@@ -127,7 +112,7 @@ class NioSocketSession extends NioSession {
 		return (InetSocketAddress) socket.getLocalSocketAddress();
 	}
 
-	protected void destroy(NioSession session) throws IOException {
+	protected static void destroy(NioSession session) throws IOException {
 		ByteChannel ch = session.getChannel();
 		SelectionKey key = session.getSelectionKey();
 		if (key != null) {

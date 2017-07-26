@@ -132,7 +132,7 @@ public class CachedBufferAllocator implements IoBufferAllocator {
 		return maxCachedBufferSize;
 	}
 
-	Map<Integer, Queue<CachedBuffer>> newPoolMap() {
+	static Map<Integer, Queue<CachedBuffer>> newPoolMap() {
 		Map<Integer, Queue<CachedBuffer>> poolMap = new HashMap<>();
 
 		for (int i = 0; i < 31; i++) {
@@ -239,9 +239,9 @@ public class CachedBufferAllocator implements IoBufferAllocator {
 		}
 
 		@Override
-		protected void buf(ByteBuffer buf) {
-			ByteBuffer oldBuf = this.buf;
-			this.buf = buf;
+		protected void buf(ByteBuffer buf1) {
+			ByteBuffer oldBuf = buf;
+			buf = buf1;
 			free(oldBuf);
 		}
 

@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.file.FileRegion;
@@ -284,10 +283,9 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 		if (key.isValid()) {
 			// The session is opened
 			return SessionState.OPENED;
-		} else {
-			// The session still as to be closed
-			return SessionState.CLOSING;
 		}
+		// The session still as to be closed
+		return SessionState.CLOSING;
 	}
 
 	@Override

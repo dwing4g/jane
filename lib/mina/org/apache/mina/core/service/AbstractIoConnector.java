@@ -19,9 +19,10 @@
  */
 package org.apache.mina.core.service;
 
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.Executor;
-
+import java.util.concurrent.Executors;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.future.IoFuture;
 import org.apache.mina.core.future.IoFutureListener;
@@ -162,9 +163,9 @@ public abstract class AbstractIoConnector extends AbstractIoService implements I
 			throw new IllegalArgumentException("defaultRemoteAddress");
 		}
 
-		if (!getTransportMetadata().getAddressType().isAssignableFrom(defaultRemoteAddress.getClass())) {
+		if (!InetSocketAddress.class.isAssignableFrom(defaultRemoteAddress.getClass())) {
 			throw new IllegalArgumentException("defaultRemoteAddress type: " + defaultRemoteAddress.getClass()
-					+ " (expected: " + getTransportMetadata().getAddressType() + ")");
+					+ " (expected: InetSocketAddress)");
 		}
 		this.defaultRemoteAddress = defaultRemoteAddress;
 	}
@@ -236,14 +237,12 @@ public abstract class AbstractIoConnector extends AbstractIoService implements I
 			throw new IllegalArgumentException("remoteAddress");
 		}
 
-		if (!getTransportMetadata().getAddressType().isAssignableFrom(remoteAddress.getClass())) {
-			throw new IllegalArgumentException("remoteAddress type: " + remoteAddress.getClass() + " (expected: "
-					+ getTransportMetadata().getAddressType() + ")");
+		if (!InetSocketAddress.class.isAssignableFrom(remoteAddress.getClass())) {
+			throw new IllegalArgumentException("remoteAddress type: " + remoteAddress.getClass() + " (expected: InetSocketAddress)");
 		}
 
-		if (localAddress != null && !getTransportMetadata().getAddressType().isAssignableFrom(localAddress.getClass())) {
-			throw new IllegalArgumentException("localAddress type: " + localAddress.getClass() + " (expected: "
-					+ getTransportMetadata().getAddressType() + ")");
+		if (localAddress != null && !InetSocketAddress.class.isAssignableFrom(localAddress.getClass())) {
+			throw new IllegalArgumentException("localAddress type: " + localAddress.getClass() + " (expected: InetSocketAddress)");
 		}
 
 		if (getHandler() == null) {
@@ -348,8 +347,8 @@ public abstract class AbstractIoConnector extends AbstractIoService implements I
 			 * {@inheritDoc}
 			 */
 			@Override
-			public void operationComplete(ConnectFuture future) {
-				if (future.isCanceled()) {
+			public void operationComplete(ConnectFuture future1) {
+				if (future1.isCanceled()) {
 					session.closeNow();
 				}
 			}
@@ -361,8 +360,6 @@ public abstract class AbstractIoConnector extends AbstractIoService implements I
 	 */
 	@Override
 	public String toString() {
-		TransportMetadata m = getTransportMetadata();
-		return '(' + m.getProviderName() + ' ' + m.getName() + " connector: " + "managedSessionCount: "
-		+ getManagedSessionCount() + ')';
+		return "(nio socket connector: managedSessionCount: " + getManagedSessionCount() + ')';
 	}
 }

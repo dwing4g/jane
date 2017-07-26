@@ -146,11 +146,11 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public final IoBuffer minimumCapacity(int minimumCapacity) {
-		if (minimumCapacity < 0) {
-			throw new IllegalArgumentException("minimumCapacity: " + minimumCapacity);
+	public final IoBuffer minimumCapacity(int minimumCapacity1) {
+		if (minimumCapacity1 < 0) {
+			throw new IllegalArgumentException("minimumCapacity: " + minimumCapacity1);
 		}
-		this.minimumCapacity = minimumCapacity;
+		this.minimumCapacity = minimumCapacity1;
 		return this;
 	}
 
@@ -255,8 +255,8 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return expand(position(), expectedRemaining, false);
 	}
 
-	private IoBuffer expand(int expectedRemaining, boolean autoExpand) {
-		return expand(position(), expectedRemaining, autoExpand);
+	private IoBuffer expand(int expectedRemaining, boolean autoExpand1) {
+		return expand(position(), expectedRemaining, autoExpand1);
 	}
 
 	/**
@@ -267,7 +267,7 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return expand(pos, expectedRemaining, false);
 	}
 
-	private IoBuffer expand(int pos, int expectedRemaining, boolean autoExpand) {
+	private IoBuffer expand(int pos, int expectedRemaining, boolean autoExpand1) {
 		if (!recapacityAllowed) {
 			throw new IllegalStateException("Derived buffers and their parent can't be expanded.");
 		}
@@ -275,7 +275,7 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		int end = pos + expectedRemaining;
 		int newCapacity;
 
-		if (autoExpand) {
+		if (autoExpand1) {
 			newCapacity = IoBuffer.normalizeCapacity(end);
 		} else {
 			newCapacity = end;
@@ -1447,7 +1447,7 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return b3 << 16 | b2 << 8 | b1;
 	}
 
-	private int getMediumInt(byte b1, byte b2, byte b3) {
+	private static int getMediumInt(byte b1, byte b2, byte b3) {
 		int ret = b1 << 16 & 0xff0000 | b2 << 8 & 0xff00 | b3 & 0xff;
 		// Check to see if the medium int is negative (high bit in b1 set)
 		if ((b1 & 0x80) == 0x80) {
@@ -2205,9 +2205,8 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 						} catch (ClassNotFoundException ex) {
 							return super.resolveClass(desc);
 						}
-					} else {
-						return clazz;
 					}
+					return clazz;
 				}
 			}) {
 			return in.readObject();
@@ -2547,7 +2546,7 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return putInt(index, e.ordinal());
 	}
 
-	private <E> E toEnum(Class<E> enumClass, int i) {
+	private static <E> E toEnum(Class<E> enumClass, int i) {
 		E[] enumConstants = enumClass.getEnumConstants();
 		if (i > enumConstants.length) {
 			throw new IndexOutOfBoundsException(String.format(
@@ -2556,7 +2555,7 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return enumConstants[i];
 	}
 
-	private String enumConversionErrorMessage(Enum<?> e, String type) {
+	private static String enumConversionErrorMessage(Enum<?> e, String type) {
 		return String.format("%s.%s has an ordinal value too large for a %s", e.getClass().getName(), e.name(), type);
 	}
 
@@ -2624,7 +2623,7 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return toEnumSet(enumClass, getLong(index));
 	}
 
-	private <E extends Enum<E>> EnumSet<E> toEnumSet(Class<E> clazz, long vector) {
+	private static <E extends Enum<E>> EnumSet<E> toEnumSet(Class<E> clazz, long vector) {
 		EnumSet<E> set = EnumSet.noneOf(clazz);
 		long mask = 1;
 		for (E e : clazz.getEnumConstants()) {
@@ -2724,7 +2723,7 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return putLong(index, toLong(set));
 	}
 
-	private <E extends Enum<E>> long toLong(Set<E> set) {
+	private static <E extends Enum<E>> long toLong(Set<E> set) {
 		long vector = 0;
 		for (E e : set) {
 			if (e.ordinal() >= Long.SIZE) {

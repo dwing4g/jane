@@ -80,9 +80,8 @@ public class DefaultConnectFuture extends DefaultIoFuture implements ConnectFutu
 
 		if (v instanceof Throwable) {
 			return (Throwable) v;
-		} else {
-			return null;
 		}
+		return null;
 	}
 
 	/**

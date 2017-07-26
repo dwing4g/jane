@@ -19,10 +19,12 @@
  */
 package org.apache.mina.core.service;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-
+import org.apache.mina.core.IoUtil;
 import org.apache.mina.core.filterchain.DefaultIoFilterChainBuilder;
+import org.apache.mina.core.filterchain.IoFilterChain;
 import org.apache.mina.core.filterchain.IoFilterChainBuilder;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.session.IoSession;
@@ -36,10 +38,6 @@ import org.apache.mina.core.session.IoSessionDataStructureFactory;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface IoService {
-	/**
-	 * @return the {@link TransportMetadata} that this service runs on.
-	 */
-	TransportMetadata getTransportMetadata();
 
 	/**
 	 * Adds an {@link IoServiceListener} that listens any events related with

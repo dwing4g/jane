@@ -52,6 +52,7 @@ public class NamePreservingRunnable implements Runnable {
 	 * to the new name. When the runnable has completed, set back the
 	 * current thread name back to its origin.
 	 */
+	@Override
 	public void run() {
 		Thread currentThread = Thread.currentThread();
 		String oldName = currentThread.getName();
@@ -71,7 +72,7 @@ public class NamePreservingRunnable implements Runnable {
 	 * Wraps {@link Thread#setName(String)} to catch a possible {@link Exception}s such as
 	 * {@link SecurityException} in sandbox environments, such as applets
 	 */
-	private void setName(Thread thread, String name) {
+	private static void setName(Thread thread, String name) {
 		try {
 			thread.setName(name);
 		} catch (SecurityException se) {

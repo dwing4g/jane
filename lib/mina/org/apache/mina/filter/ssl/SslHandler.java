@@ -25,14 +25,12 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLEngineResult.Status;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
-
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.filterchain.IoFilter.NextFilter;
 import org.apache.mina.core.filterchain.IoFilterEvent;
@@ -144,7 +142,7 @@ class SslHandler {
 			return;
 		}
 
-		LOGGER.debug("{} Initializing the SSL Handler", sslFilter.getSessionInfo(session));
+		LOGGER.debug("{} Initializing the SSL Handler", SslFilter.getSessionInfo(session));
 
 		InetSocketAddress peer = (InetSocketAddress) session.getAttribute(SslFilter.PEER_ADDRESS);
 
@@ -195,7 +193,7 @@ class SslHandler {
 		handshakeComplete = false;
 
 		if (LOGGER.isDebugEnabled()) {
-			LOGGER.debug("{} SSL Handler Initialization done.", sslFilter.getSessionInfo(session));
+			LOGGER.debug("{} SSL Handler Initialization done.", SslFilter.getSessionInfo(session));
 		}
 	}
 
@@ -343,9 +341,9 @@ class SslHandler {
 	/* no qualifier */void messageReceived(NextFilter nextFilter, ByteBuffer buf) throws SSLException {
 		if (LOGGER.isDebugEnabled()) {
 			if (!isOutboundDone()) {
-				LOGGER.debug("{} Processing the received message", sslFilter.getSessionInfo(session));
+				LOGGER.debug("{} Processing the received message", SslFilter.getSessionInfo(session));
 			} else {
-				LOGGER.debug("{} Processing the received message", sslFilter.getSessionInfo(session));
+				LOGGER.debug("{} Processing the received message", SslFilter.getSessionInfo(session));
 			}
 		}
 
@@ -402,12 +400,11 @@ class SslHandler {
 	/* no qualifier */IoBuffer fetchAppBuffer() {
 		if (appBuffer == null) {
 			return IoBuffer.allocate(0);
-		} else {
-			IoBuffer newAppBuffer = appBuffer.flip();
-			appBuffer = null;
-
-			return newAppBuffer.shrink();
 		}
+		IoBuffer newAppBuffer = appBuffer.flip();
+		appBuffer = null;
+
+		return newAppBuffer.shrink();
 	}
 
 	/**
@@ -538,7 +535,7 @@ class SslHandler {
 			case FINISHED:
 			case NOT_HANDSHAKING:
 				if (LOGGER.isDebugEnabled()) {
-					LOGGER.debug("{} processing the FINISHED state", sslFilter.getSessionInfo(session));
+					LOGGER.debug("{} processing the FINISHED state", SslFilter.getSessionInfo(session));
 				}
 
 				session.setAttribute(SslFilter.SSL_SESSION, sslEngine.getSession());
@@ -553,9 +550,9 @@ class SslHandler {
 
 				if (LOGGER.isDebugEnabled()) {
 					if (!isOutboundDone()) {
-						LOGGER.debug("{} is now secured", sslFilter.getSessionInfo(session));
+						LOGGER.debug("{} is now secured", SslFilter.getSessionInfo(session));
 					} else {
-						LOGGER.debug("{} is not secured yet", sslFilter.getSessionInfo(session));
+						LOGGER.debug("{} is not secured yet", SslFilter.getSessionInfo(session));
 					}
 				}
 
@@ -563,7 +560,7 @@ class SslHandler {
 
 			case NEED_TASK:
 				if (LOGGER.isDebugEnabled()) {
-					LOGGER.debug("{} processing the NEED_TASK state", sslFilter.getSessionInfo(session));
+					LOGGER.debug("{} processing the NEED_TASK state", SslFilter.getSessionInfo(session));
 				}
 
 				handshakeStatus = doTasks();
@@ -571,7 +568,7 @@ class SslHandler {
 
 			case NEED_UNWRAP:
 				if (LOGGER.isDebugEnabled()) {
-					LOGGER.debug("{} processing the NEED_UNWRAP state", sslFilter.getSessionInfo(session));
+					LOGGER.debug("{} processing the NEED_UNWRAP state", SslFilter.getSessionInfo(session));
 				}
 				// we need more data read
 				SSLEngineResult.Status status = unwrapHandshake(nextFilter);
@@ -586,7 +583,7 @@ class SslHandler {
 
 			case NEED_WRAP:
 				if (LOGGER.isDebugEnabled()) {
-					LOGGER.debug("{} processing the NEED_WRAP state", sslFilter.getSessionInfo(session));
+					LOGGER.debug("{} processing the NEED_WRAP state", SslFilter.getSessionInfo(session));
 				}
 
 				// First make sure that the out buffer is completely empty.
@@ -751,7 +748,7 @@ class SslHandler {
 		SSLEngineResult res;
 
 		Status status;
-		HandshakeStatus handshakeStatus;
+		HandshakeStatus handshakeStatus1;
 
 		do {
 			// Decode the incoming data
@@ -759,7 +756,7 @@ class SslHandler {
 			status = res.getStatus();
 
 			// We can be processing the Handshake
-			handshakeStatus = res.getHandshakeStatus();
+			handshakeStatus1 = res.getHandshakeStatus();
 
 			if (status == SSLEngineResult.Status.BUFFER_OVERFLOW) {
 				// We have to grow the target buffer, it's too small.
@@ -776,8 +773,8 @@ class SslHandler {
 				continue;
 			}
 		} while (((status == SSLEngineResult.Status.OK) || (status == SSLEngineResult.Status.BUFFER_OVERFLOW))
-				&& ((handshakeStatus == SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING) ||
-						(handshakeStatus == SSLEngineResult.HandshakeStatus.NEED_UNWRAP)));
+				&& ((handshakeStatus1 == SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING) ||
+						(handshakeStatus1 == SSLEngineResult.HandshakeStatus.NEED_UNWRAP)));
 
 		return res;
 	}

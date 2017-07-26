@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.SocketAddress;
+import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -31,10 +32,11 @@ import java.nio.channels.spi.SelectorProvider;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.Executor;
-
 import org.apache.mina.core.polling.AbstractPollingIoAcceptor;
+import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoProcessor;
-import org.apache.mina.core.service.TransportMetadata;
+import org.apache.mina.core.service.IoService;
+import org.apache.mina.core.service.SimpleIoProcessorPool;
 import org.apache.mina.transport.socket.DefaultSocketSessionConfig;
 import org.apache.mina.transport.socket.SocketAcceptor;
 
@@ -120,13 +122,13 @@ implements SocketAcceptor {
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected void init(SelectorProvider selectorProvider) throws Exception {
-		this.selectorProvider = selectorProvider;
+	protected void init(SelectorProvider selectorProvider1) throws Exception {
+		this.selectorProvider = selectorProvider1;
 
-		if (selectorProvider == null) {
+		if (selectorProvider1 == null) {
 			selector = Selector.open();
 		} else {
-			selector = selectorProvider.openSelector();
+			selector = selectorProvider1.openSelector();
 		}
 	}
 
@@ -138,13 +140,6 @@ implements SocketAcceptor {
 		if (selector != null) {
 			selector.close();
 		}
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	public TransportMetadata getTransportMetadata() {
-		return NioSocketSession.METADATA;
 	}
 
 	/**
@@ -166,6 +161,7 @@ implements SocketAcceptor {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public void setDefaultLocalAddress(InetSocketAddress localAddress) {
 		setDefaultLocalAddress((SocketAddress) localAddress);
 	}
@@ -330,6 +326,7 @@ implements SocketAcceptor {
 		 * @return <tt>true</tt> if there is at least one more
 		 * SockectChannel object to read
 		 */
+		@Override
 		public boolean hasNext() {
 			return iterator.hasNext();
 		}
@@ -340,6 +337,7 @@ implements SocketAcceptor {
 		 *
 		 * @return The next SocketChannel in the iterator
 		 */
+		@Override
 		public ServerSocketChannel next() {
 			SelectionKey key = iterator.next();
 
@@ -353,6 +351,7 @@ implements SocketAcceptor {
 		/**
 		 * Remove the current SocketChannel from the iterator
 		 */
+		@Override
 		public void remove() {
 			iterator.remove();
 		}

@@ -22,13 +22,11 @@ package org.apache.mina.filter.ssl;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSession;
-
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.filterchain.IoFilter;
 import org.apache.mina.core.filterchain.IoFilterAdapter;
@@ -204,7 +202,7 @@ public class SslFilter extends IoFilterAdapter {
 	 * @param session The current session
 	 * @return <tt>null</tt> if no {@link SSLSession} is initialized yet.
 	 */
-	public SSLSession getSslSession(IoSession session) {
+	public static SSLSession getSslSession(IoSession session) {
 		return (SSLSession) session.getAttribute(SSL_SESSION);
 	}
 
@@ -248,7 +246,7 @@ public class SslFilter extends IoFilterAdapter {
 	 * is not yet completed, we will print (ssl) in small caps. Once it's
 	 * completed, we will use SSL capitalized.
 	 */
-	/* no qualifier */String getSessionInfo(IoSession session) {
+	/* no qualifier */static String getSessionInfo(IoSession session) {
 		StringBuilder sb = new StringBuilder();
 
 		if (session.getService() instanceof IoAcceptor) {
@@ -283,7 +281,7 @@ public class SslFilter extends IoFilterAdapter {
 	 *
 	 * @param session the session we want to check
 	 */
-	public boolean isSslStarted(IoSession session) {
+	public static boolean isSslStarted(IoSession session) {
 		SslHandler sslHandler = (SslHandler) session.getAttribute(SSL_HANDLER);
 
 		if (sslHandler == null) {
@@ -588,7 +586,7 @@ public class SslFilter extends IoFilterAdapter {
 		nextFilter.exceptionCaught(session, cause);
 	}
 
-	private boolean isCloseNotify(Object message) {
+	private static boolean isCloseNotify(Object message) {
 		if (!(message instanceof IoBuffer)) {
 			return false;
 		}
@@ -677,7 +675,7 @@ public class SslFilter extends IoFilterAdapter {
 					future = initiateClosure(nextFilter, session);
 					future.addListener(new IoFutureListener<IoFuture>() {
 						@Override
-						public void operationComplete(IoFuture future) {
+						public void operationComplete(IoFuture future1) {
 							nextFilter.filterClose(session);
 						}
 					});
@@ -768,7 +766,7 @@ public class SslFilter extends IoFilterAdapter {
 	}
 
 	// Utilities
-	private void handleSslData(NextFilter nextFilter, SslHandler sslHandler) throws SSLException {
+	private static void handleSslData(NextFilter nextFilter, SslHandler sslHandler) throws SSLException {
 		if (LOGGER.isDebugEnabled()) {
 			LOGGER.debug("{}: Processing the SSL Data ", getSessionInfo(sslHandler.getSession()));
 		}
@@ -785,7 +783,7 @@ public class SslFilter extends IoFilterAdapter {
 		handleAppDataRead(nextFilter, sslHandler);
 	}
 
-	private void handleAppDataRead(NextFilter nextFilter, SslHandler sslHandler) {
+	private static void handleAppDataRead(NextFilter nextFilter, SslHandler sslHandler) {
 		// forward read app data
 		IoBuffer readBuffer = sslHandler.fetchAppBuffer();
 

@@ -88,6 +88,7 @@ public abstract class AbstractSocketSessionConfig extends AbstractIoSessionConfi
 	 * default, this method always returns <tt>true</tt> to simplify implementation
 	 * of subclasses, but overriding the default behavior is always encouraged.
 	 */
+	@SuppressWarnings("static-method")
 	protected boolean isKeepAliveChanged() {
 		return true;
 	}
@@ -99,6 +100,7 @@ public abstract class AbstractSocketSessionConfig extends AbstractIoSessionConfi
 	 * default, this method always returns <tt>true</tt> to simplify implementation
 	 * of subclasses, but overriding the default behavior is always encouraged.
 	 */
+	@SuppressWarnings("static-method")
 	protected boolean isOobInlineChanged() {
 		return true;
 	}
@@ -110,6 +112,7 @@ public abstract class AbstractSocketSessionConfig extends AbstractIoSessionConfi
 	 * default, this method always returns <tt>true</tt> to simplify implementation
 	 * of subclasses, but overriding the default behavior is always encouraged.
 	 */
+	@SuppressWarnings("static-method")
 	protected boolean isReceiveBufferSizeChanged() {
 		return true;
 	}
@@ -121,6 +124,7 @@ public abstract class AbstractSocketSessionConfig extends AbstractIoSessionConfi
 	 * default, this method always returns <tt>true</tt> to simplify implementation
 	 * of subclasses, but overriding the default behavior is always encouraged.
 	 */
+	@SuppressWarnings("static-method")
 	protected boolean isReuseAddressChanged() {
 		return true;
 	}
@@ -132,6 +136,7 @@ public abstract class AbstractSocketSessionConfig extends AbstractIoSessionConfi
 	 * default, this method always returns <tt>true</tt> to simplify implementation
 	 * of subclasses, but overriding the default behavior is always encouraged.
 	 */
+	@SuppressWarnings("static-method")
 	protected boolean isSendBufferSizeChanged() {
 		return true;
 	}
@@ -143,6 +148,7 @@ public abstract class AbstractSocketSessionConfig extends AbstractIoSessionConfi
 	 * default, this method always returns <tt>true</tt> to simplify implementation
 	 * of subclasses, but overriding the default behavior is always encouraged.
 	 */
+	@SuppressWarnings("static-method")
 	protected boolean isSoLingerChanged() {
 		return true;
 	}
@@ -154,6 +160,7 @@ public abstract class AbstractSocketSessionConfig extends AbstractIoSessionConfi
 	 * default, this method always returns <tt>true</tt> to simplify implementation
 	 * of subclasses, but overriding the default behavior is always encouraged.
 	 */
+	@SuppressWarnings("static-method")
 	protected boolean isTcpNoDelayChanged() {
 		return true;
 	}
@@ -165,6 +172,7 @@ public abstract class AbstractSocketSessionConfig extends AbstractIoSessionConfi
 	 * default, this method always returns <tt>true</tt> to simplify implementation
 	 * of subclasses, but overriding the default behavior is always encouraged.
 	 */
+	@SuppressWarnings("static-method")
 	protected boolean isTrafficClassChanged() {
 		return true;
 	}

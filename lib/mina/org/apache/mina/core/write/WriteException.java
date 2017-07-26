@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.mina.util.MapBackedSet;
 
 /**
@@ -161,7 +160,7 @@ public class WriteException extends IOException {
 			newRequests.add(r.getOriginalRequest());
 		}
 
-		return Collections.unmodifiableList(new ArrayList<WriteRequest>(newRequests));
+		return Collections.unmodifiableList(new ArrayList<>(newRequests));
 	}
 
 	private static List<WriteRequest> asRequestList(WriteRequest request) {

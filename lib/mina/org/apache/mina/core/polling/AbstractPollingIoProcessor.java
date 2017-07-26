@@ -20,7 +20,6 @@
 package org.apache.mina.core.polling;
 
 import java.io.IOException;
-import java.net.PortUnreachableException;
 import java.nio.channels.ClosedSelectorException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -32,7 +31,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.file.FileRegion;
 import org.apache.mina.core.filterchain.IoFilterChain;
@@ -48,7 +46,6 @@ import org.apache.mina.core.session.SessionState;
 import org.apache.mina.core.write.WriteRequest;
 import org.apache.mina.core.write.WriteRequestQueue;
 import org.apache.mina.core.write.WriteToClosedSessionException;
-import org.apache.mina.transport.socket.AbstractDatagramSessionConfig;
 import org.apache.mina.util.ExceptionMonitor;
 import org.apache.mina.util.NamePreservingRunnable;
 import org.slf4j.Logger;
@@ -500,7 +497,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 		int bufferSize = config.getReadBufferSize();
 		IoBuffer buf = IoBuffer.allocate(bufferSize);
 
-		final boolean hasFragmentation = session.getTransportMetadata().hasFragmentation();
+		final boolean hasFragmentation = true;
 
 		try {
 			int readBytes = 0;
@@ -549,10 +546,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 				filterChain.fireInputClosed();
 			}
 		} catch (Exception e) {
-			if ((e instanceof IOException) &&
-				(!(e instanceof PortUnreachableException)
-						|| !AbstractDatagramSessionConfig.class.isAssignableFrom(config.getClass())
-						|| ((AbstractDatagramSessionConfig) config).isCloseOnPortUnreachable())) {
+			if (e instanceof IOException) {
 				scheduleRemove(session);
 			}
 
@@ -952,7 +946,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 				return false;
 			}
 
-			final boolean hasFragmentation = session.getTransportMetadata().hasFragmentation();
+			final boolean hasFragmentation = true;
 
 			final WriteRequestQueue writeRequestQueue = session.getWriteRequestQueue();
 

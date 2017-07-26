@@ -31,7 +31,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.file.DefaultFileRegion;
 import org.apache.mina.core.file.FilenameFileRegion;
@@ -48,7 +47,6 @@ import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.IoService;
-import org.apache.mina.core.service.TransportMetadata;
 import org.apache.mina.core.write.DefaultWriteRequest;
 import org.apache.mina.core.write.WriteException;
 import org.apache.mina.core.write.WriteRequest;
@@ -79,6 +77,7 @@ public abstract class AbstractIoSession implements IoSession {
 			"waitingReadFutures");
 
 	private static final IoFutureListener<CloseFuture> SCHEDULED_COUNTER_RESETTER = new IoFutureListener<CloseFuture>() {
+		@Override
 		public void operationComplete(CloseFuture future) {
 			AbstractIoSession session = (AbstractIoSession) future.getSession();
 			session.scheduledWriteBytes.set(0);
@@ -211,6 +210,7 @@ public abstract class AbstractIoSession implements IoSession {
 	 *
 	 * We use an AtomicLong to guarantee that the session ID are unique.
 	 */
+	@Override
 	public final long getId() {
 		return sessionId;
 	}
@@ -223,6 +223,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final boolean isConnected() {
 		return !closeFuture.isClosed();
 	}
@@ -230,6 +231,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public boolean isActive() {
 		// Return true by default
 		return true;
@@ -238,6 +240,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final boolean isClosing() {
 		return closing || closeFuture.isClosed();
 	}
@@ -245,6 +248,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public boolean isSecured() {
 		// Always false...
 		return false;
@@ -253,6 +257,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final CloseFuture getCloseFuture() {
 		return closeFuture;
 	}
@@ -304,17 +309,18 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final CloseFuture close(boolean rightNow) {
 		if (rightNow) {
 			return closeNow();
-		} else {
-			return closeOnFlush();
 		}
+		return closeOnFlush();
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final CloseFuture close() {
 		return closeNow();
 	}
@@ -322,6 +328,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final CloseFuture closeOnFlush() {
 		if (!isClosing()) {
 			getWriteRequestQueue().offer(this, CLOSE_REQUEST);
@@ -334,6 +341,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final CloseFuture closeNow() {
 		synchronized (lock) {
 			if (isClosing()) {
@@ -379,6 +387,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public IoHandler getHandler() {
 		return handler;
 	}
@@ -386,6 +395,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public IoSessionConfig getConfig() {
 		return config;
 	}
@@ -393,6 +403,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final ReadFuture read() {
 		if (!getConfig().isUseReadOperation()) {
 			throw new IllegalStateException("useReadOperation is not enabled.");
@@ -511,6 +522,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public WriteFuture write(Object message) {
 		return write(message, null);
 	}
@@ -518,6 +530,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public WriteFuture write(Object message, SocketAddress remoteAddress) {
 		if (message == null) {
 			throw new IllegalArgumentException("Trying to write a null message : not allowed");
@@ -525,7 +538,7 @@ public abstract class AbstractIoSession implements IoSession {
 
 		// We can't send a message to a connected session if we don't have
 		// the remote address
-		if (!getTransportMetadata().isConnectionless() && (remoteAddress != null)) {
+		if (remoteAddress != null) {
 			throw new UnsupportedOperationException();
 		}
 
@@ -577,6 +590,7 @@ public abstract class AbstractIoSession implements IoSession {
 			// has completed
 			final FileChannel finalChannel = openedFileChannel;
 			writeFuture.addListener(new IoFutureListener<WriteFuture>() {
+				@Override
 				public void operationComplete(WriteFuture future) {
 					try {
 						finalChannel.close();
@@ -594,6 +608,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final Object getAttachment() {
 		return getAttribute("");
 	}
@@ -601,6 +616,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final Object setAttachment(Object attachment) {
 		return setAttribute("", attachment);
 	}
@@ -608,6 +624,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final Object getAttribute(Object key) {
 		return getAttribute(key, null);
 	}
@@ -615,6 +632,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final Object getAttribute(Object key, Object defaultValue) {
 		return attributes.getAttribute(this, key, defaultValue);
 	}
@@ -622,6 +640,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final Object setAttribute(Object key, Object value) {
 		return attributes.setAttribute(this, key, value);
 	}
@@ -629,6 +648,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final Object setAttribute(Object key) {
 		return setAttribute(key, Boolean.TRUE);
 	}
@@ -636,6 +656,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final Object setAttributeIfAbsent(Object key, Object value) {
 		return attributes.setAttributeIfAbsent(this, key, value);
 	}
@@ -643,6 +664,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final Object setAttributeIfAbsent(Object key) {
 		return setAttributeIfAbsent(key, Boolean.TRUE);
 	}
@@ -650,6 +672,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final Object removeAttribute(Object key) {
 		return attributes.removeAttribute(this, key);
 	}
@@ -657,6 +680,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final boolean removeAttribute(Object key, Object value) {
 		return attributes.removeAttribute(this, key, value);
 	}
@@ -664,6 +688,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final boolean replaceAttribute(Object key, Object oldValue, Object newValue) {
 		return attributes.replaceAttribute(this, key, oldValue, newValue);
 	}
@@ -671,6 +696,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final boolean containsAttribute(Object key) {
 		return attributes.containsAttribute(this, key);
 	}
@@ -678,6 +704,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final Set<Object> getAttributeKeys() {
 		return attributes.getAttributeKeys(this);
 	}
@@ -710,6 +737,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final void suspendRead() {
 		readSuspended = true;
 		if (isClosing() || !isConnected()) {
@@ -721,6 +749,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final void suspendWrite() {
 		writeSuspended = true;
 		if (isClosing() || !isConnected()) {
@@ -732,6 +761,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	@SuppressWarnings("unchecked")
 	public final void resumeRead() {
 		readSuspended = false;
@@ -744,6 +774,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	@SuppressWarnings("unchecked")
 	public final void resumeWrite() {
 		writeSuspended = false;
@@ -756,6 +787,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public boolean isReadSuspended() {
 		return readSuspended;
 	}
@@ -763,6 +795,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public boolean isWriteSuspended() {
 		return writeSuspended;
 	}
@@ -770,6 +803,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final long getReadBytes() {
 		return readBytes;
 	}
@@ -777,6 +811,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final long getWrittenBytes() {
 		return writtenBytes;
 	}
@@ -784,6 +819,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final long getReadMessages() {
 		return readMessages;
 	}
@@ -791,6 +827,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final long getWrittenMessages() {
 		return writtenMessages;
 	}
@@ -798,6 +835,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final double getReadBytesThroughput() {
 		return readBytesThroughput;
 	}
@@ -805,6 +843,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final double getWrittenBytesThroughput() {
 		return writtenBytesThroughput;
 	}
@@ -812,6 +851,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final double getReadMessagesThroughput() {
 		return readMessagesThroughput;
 	}
@@ -819,6 +859,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final double getWrittenMessagesThroughput() {
 		return writtenMessagesThroughput;
 	}
@@ -826,6 +867,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final void updateThroughput(long currentTime, boolean force) {
 		int interval = (int) (currentTime - lastThroughputCalculationTime);
 
@@ -851,6 +893,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final long getScheduledWriteBytes() {
 		return scheduledWriteBytes.get();
 	}
@@ -858,6 +901,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final int getScheduledWriteMessages() {
 		return scheduledWriteMessages.get();
 	}
@@ -1024,6 +1068,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final WriteRequestQueue getWriteRequestQueue() {
 		if (writeRequestQueue == null) {
 			throw new IllegalStateException();
@@ -1035,6 +1080,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final WriteRequest getCurrentWriteRequest() {
 		return currentWriteRequest;
 	}
@@ -1042,6 +1088,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final Object getCurrentWriteMessage() {
 		WriteRequest req = getCurrentWriteRequest();
 
@@ -1054,6 +1101,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final void setCurrentWriteRequest(WriteRequest currentWriteRequest) {
 		this.currentWriteRequest = currentWriteRequest;
 	}
@@ -1091,6 +1139,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final long getCreationTime() {
 		return creationTime;
 	}
@@ -1098,6 +1147,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final long getLastIoTime() {
 		return Math.max(lastReadTime, lastWriteTime);
 	}
@@ -1105,6 +1155,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final long getLastReadTime() {
 		return lastReadTime;
 	}
@@ -1112,6 +1163,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final long getLastWriteTime() {
 		return lastWriteTime;
 	}
@@ -1119,6 +1171,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final boolean isIdle(IdleStatus status) {
 		if (status == IdleStatus.BOTH_IDLE) {
 			return idleCountForBoth.get() > 0;
@@ -1138,6 +1191,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final boolean isBothIdle() {
 		return isIdle(IdleStatus.BOTH_IDLE);
 	}
@@ -1145,6 +1199,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final boolean isReaderIdle() {
 		return isIdle(IdleStatus.READER_IDLE);
 	}
@@ -1152,6 +1207,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final boolean isWriterIdle() {
 		return isIdle(IdleStatus.WRITER_IDLE);
 	}
@@ -1159,6 +1215,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final int getIdleCount(IdleStatus status) {
 		if (getConfig().getIdleTime(status) == 0) {
 			if (status == IdleStatus.BOTH_IDLE) {
@@ -1192,6 +1249,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final long getLastIdleTime(IdleStatus status) {
 		if (status == IdleStatus.BOTH_IDLE) {
 			return lastIdleTimeForBoth;
@@ -1232,6 +1290,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final int getBothIdleCount() {
 		return getIdleCount(IdleStatus.BOTH_IDLE);
 	}
@@ -1239,6 +1298,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final long getLastBothIdleTime() {
 		return getLastIdleTime(IdleStatus.BOTH_IDLE);
 	}
@@ -1246,6 +1306,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final long getLastReaderIdleTime() {
 		return getLastIdleTime(IdleStatus.READER_IDLE);
 	}
@@ -1253,6 +1314,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final long getLastWriterIdleTime() {
 		return getLastIdleTime(IdleStatus.WRITER_IDLE);
 	}
@@ -1260,6 +1322,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final int getReaderIdleCount() {
 		return getIdleCount(IdleStatus.READER_IDLE);
 	}
@@ -1267,6 +1330,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final int getWriterIdleCount() {
 		return getIdleCount(IdleStatus.WRITER_IDLE);
 	}
@@ -1274,6 +1338,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public SocketAddress getServiceAddress() {
 		IoService service = getService();
 		if (service instanceof IoAcceptor) {
@@ -1346,18 +1411,14 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * TGet the Service name
 	 */
-	private String getServiceName() {
-		TransportMetadata tm = getTransportMetadata();
-		if (tm == null) {
-			return "null";
-		}
-
-		return tm.getProviderName() + ' ' + tm.getName();
+	private static String getServiceName() {
+		return "nio socket";
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public IoService getService() {
 		return service;
 	}

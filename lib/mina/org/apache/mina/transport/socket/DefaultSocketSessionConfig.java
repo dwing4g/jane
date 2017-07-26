@@ -71,12 +71,12 @@ public class DefaultSocketSessionConfig extends AbstractSocketSessionConfig {
 	/**
 	 * Initialize this configuration.
 	 *
-	 * @param parent The parent IoService.
+	 * @param parent1 The parent IoService.
 	 */
-	public void init(IoService parent) {
-		this.parent = parent;
+	public void init(IoService parent1) {
+		this.parent = parent1;
 
-		if (parent instanceof SocketAcceptor) {
+		if (parent1 instanceof SocketAcceptor) {
 			defaultReuseAddress = true;
 		} else {
 			defaultReuseAddress = DEFAULT_REUSE_ADDRESS;

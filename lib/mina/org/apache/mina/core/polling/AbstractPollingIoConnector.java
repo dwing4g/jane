@@ -26,17 +26,23 @@ import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.apache.mina.core.RuntimeIoException;
+import org.apache.mina.core.filterchain.IoFilter;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.future.DefaultConnectFuture;
 import org.apache.mina.core.service.AbstractIoConnector;
+import org.apache.mina.core.service.AbstractIoService;
+import org.apache.mina.core.service.IoConnector;
+import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.SimpleIoProcessorPool;
 import org.apache.mina.core.session.AbstractIoSession;
+import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.session.IoSessionConfig;
 import org.apache.mina.core.session.IoSessionInitializer;
+import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.apache.mina.util.ExceptionMonitor;
 
 /**
@@ -89,7 +95,7 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 	 *            {@link IoSession} type.
 	 */
 	protected AbstractPollingIoConnector(IoSessionConfig sessionConfig, Class<? extends IoProcessor<S>> processorClass) {
-		this(sessionConfig, null, new SimpleIoProcessorPool<S>(processorClass), true);
+		this(sessionConfig, null, new SimpleIoProcessorPool<>(processorClass), true);
 	}
 
 	/**
@@ -110,7 +116,7 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 	 */
 	protected AbstractPollingIoConnector(IoSessionConfig sessionConfig, Class<? extends IoProcessor<S>> processorClass,
 			int processorCount) {
-		this(sessionConfig, null, new SimpleIoProcessorPool<S>(processorClass, processorCount), true);
+		this(sessionConfig, null, new SimpleIoProcessorPool<>(processorClass, processorCount), true);
 	}
 
 	/**
@@ -266,7 +272,7 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 	 * Will assign the created {@link IoSession} to the given
 	 * {@link IoProcessor} for managing future I/O events.
 	 *
-	 * @param processor
+	 * @param processor1
 	 *            the processor in charge of this session
 	 * @param handle
 	 *            the newly connected client socket handle
@@ -274,7 +280,7 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 	 * @throws Exception
 	 *             any exception thrown by the underlying systems calls
 	 */
-	protected abstract S newSession(IoProcessor<S> processor, H handle) throws Exception;
+	protected abstract S newSession(IoProcessor<S> processor1, H handle) throws Exception;
 
 	/**
 	 * Close a client socket.

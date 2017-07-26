@@ -30,10 +30,12 @@ import java.nio.ByteOrder;
  */
 public class SimpleBufferAllocator implements IoBufferAllocator {
 
+	@Override
 	public IoBuffer allocate(int capacity, boolean direct) {
 		return wrap(allocateNioBuffer(capacity, direct));
 	}
 
+	@Override
 	public ByteBuffer allocateNioBuffer(int capacity, boolean direct) {
 		ByteBuffer nioBuffer;
 		if (direct) {
@@ -44,10 +46,12 @@ public class SimpleBufferAllocator implements IoBufferAllocator {
 		return nioBuffer;
 	}
 
+	@Override
 	public IoBuffer wrap(ByteBuffer nioBuffer) {
 		return new SimpleBuffer(nioBuffer);
 	}
 
+	@Override
 	public void dispose() {
 		// Do nothing
 	}
@@ -72,8 +76,8 @@ public class SimpleBufferAllocator implements IoBufferAllocator {
 		}
 
 		@Override
-		protected void buf(ByteBuffer buf) {
-			this.buf = buf;
+		protected void buf(ByteBuffer buf1) {
+			buf = buf1;
 		}
 
 		@Override

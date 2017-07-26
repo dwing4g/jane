@@ -28,9 +28,9 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.apache.mina.core.filterchain.IoFilter.NextFilter;
 import org.apache.mina.core.filterchain.IoFilterChain.Entry;
+import org.apache.mina.core.session.IoSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -449,7 +449,7 @@ public class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 	}
 
 	@SuppressWarnings("unchecked")
-	private boolean isOrderedMap(Map<String,? extends IoFilter> map) {
+	private static boolean isOrderedMap(Map<String,? extends IoFilter> map) {
 		Class<?> mapType = map.getClass();
 
 		if (LinkedHashMap.class.isAssignableFrom(mapType)) {
@@ -651,16 +651,16 @@ public class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 		 * {@inheritDoc}
 		 */
 		@Override
-		public void addAfter(String name, IoFilter filter) {
-			DefaultIoFilterChainBuilder.this.addAfter(getName(), name, filter);
+		public void addAfter(String name1, IoFilter filter1) {
+			DefaultIoFilterChainBuilder.this.addAfter(getName(), name1, filter1);
 		}
 
 		/**
 		 * {@inheritDoc}
 		 */
 		@Override
-		public void addBefore(String name, IoFilter filter) {
-			DefaultIoFilterChainBuilder.this.addBefore(getName(), name, filter);
+		public void addBefore(String name1, IoFilter filter1) {
+			DefaultIoFilterChainBuilder.this.addBefore(getName(), name1, filter1);
 		}
 
 		/**

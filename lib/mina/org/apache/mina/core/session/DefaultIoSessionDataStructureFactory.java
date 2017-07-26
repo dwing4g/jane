@@ -19,12 +19,12 @@
  */
 package org.apache.mina.core.session;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
 import org.apache.mina.core.write.WriteRequest;
 import org.apache.mina.core.write.WriteRequestQueue;
 
@@ -80,9 +80,8 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 
 			if (object == null) {
 				return defaultValue;
-			} else {
-				return object;
 			}
+			return object;
 		}
 
 		/**
