@@ -3,12 +3,16 @@ package jane.test;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.ArrayDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.buffer.SimpleBufferAllocator;
 import org.apache.mina.core.future.ConnectFuture;
+import org.apache.mina.core.session.DefaultIoSessionDataStructureFactory;
 import org.apache.mina.core.session.IoSession;
+import org.apache.mina.core.write.WriteRequest;
+import org.apache.mina.core.write.WriteRequestQueue;
 import jane.core.Log;
 import jane.core.NetManager;
 
@@ -22,7 +26,6 @@ public final class TestEcho extends NetManager
 	private static final CountDownLatch	_closedCount = new CountDownLatch(TEST_CLIENT_COUNT * 2);
 	private static final AtomicInteger	_recvCount	 = new AtomicInteger();
 
-/*
 	private static final AtomicInteger _wrqCount = new AtomicInteger();
 
 	private static final DefaultIoSessionDataStructureFactory _dsFactory = new DefaultIoSessionDataStructureFactory()
@@ -72,13 +75,21 @@ public final class TestEcho extends NetManager
 			};
 		}
 	};
-*/
+
+	public static final TestPerf[] perf = new TestPerf[20];
+
+	static
+	{
+		for(int i = 0; i < perf.length; ++i)
+			perf[i] = new TestPerf();
+	}
+
 	@Override
 	public void startServer(SocketAddress addr) throws IOException
 	{
 		setIoThreadCount(1);
-//		if(getAcceptor().getSessionDataStructureFactory() != _dsFactory)
-//			getAcceptor().setSessionDataStructureFactory(_dsFactory);
+		if(getAcceptor().getSessionDataStructureFactory() != _dsFactory)
+			getAcceptor().setSessionDataStructureFactory(_dsFactory);
 		getServerConfig().setReuseAddress(true);
 		getServerConfig().setTcpNoDelay(true);
 		super.startServer(addr);
@@ -88,8 +99,8 @@ public final class TestEcho extends NetManager
 	public ConnectFuture startClient(SocketAddress addr)
 	{
 		setIoThreadCount(1);
-//		if(getConnector().getSessionDataStructureFactory() != _dsFactory)
-//			getConnector().setSessionDataStructureFactory(_dsFactory);
+		if(getConnector().getSessionDataStructureFactory() != _dsFactory)
+			getConnector().setSessionDataStructureFactory(_dsFactory);
 		getClientConfig().setTcpNoDelay(true);
 		return super.startClient(addr);
 	}
@@ -102,7 +113,9 @@ public final class TestEcho extends NetManager
 	@Override
 	protected void onAddSession(IoSession session)
 	{
+		perf[6].begin();
 		write(session, IoBuffer.allocate(TEST_ECHO_SIZE).sweep());
+		perf[6].end();
 	}
 
 	@Override
@@ -115,7 +128,11 @@ public final class TestEcho extends NetManager
 	public void messageReceived(IoSession session, Object message)
 	{
 		if(_recvCount.incrementAndGet() <= TEST_ECHO_COUNT)
+		{
+			perf[6].begin();
 			write(session, message);
+			perf[6].end();
+		}
 		else
 			session.closeNow();
 	}
@@ -130,16 +147,24 @@ public final class TestEcho extends NetManager
 		int count = (args.length > 3 ? Integer.parseInt(args[3]) : 0);
 		IoBuffer.setAllocator(count > 0 ? new TestCachedBufferAllocator(count, 64 * 1024) : new SimpleBufferAllocator());
 		long time = System.currentTimeMillis();
+		perf[2].begin();
+		perf[0].begin();
 		TestEcho mgr = new TestEcho();
 		mgr.startServer(new InetSocketAddress("0.0.0.0", 9123));
 		for(int i = 0; i < TEST_CLIENT_COUNT; ++i)
 			mgr.startClient(new InetSocketAddress("127.0.0.1", 9123));
+		perf[0].end();
+		perf[1].begin();
 		_closedCount.await();
+		perf[1].end();
+		perf[2].end();
 		System.out.println("TestEcho: end (" + (System.currentTimeMillis() - time) + " ms)");
 		System.out.println(TestCachedBufferAllocator.allocCount.get());
 		System.out.println(TestCachedBufferAllocator.cacheCount.get());
 		System.out.println(TestCachedBufferAllocator.offerCount.get());
-		// System.out.println(_wrqCount.get());
+		System.out.println(_wrqCount.get());
+//		for(int i = 0; i < perf.length; ++i)
+//			System.out.println("perf[" + i + "]: " + perf[i].getAllMs() + ", " + perf[i].getAllCount());
 		System.exit(0);
 	}
 }
