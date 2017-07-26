@@ -1340,9 +1340,9 @@ public abstract class AbstractIoSession implements IoSession {
 	 */
 	@Override
 	public SocketAddress getServiceAddress() {
-		IoService service = getService();
-		if (service instanceof IoAcceptor) {
-			return ((IoAcceptor) service).getLocalAddress();
+		IoService service1 = getService();
+		if (service1 instanceof IoAcceptor) {
+			return ((IoAcceptor) service1).getLocalAddress();
 		}
 
 		return getRemoteAddress();

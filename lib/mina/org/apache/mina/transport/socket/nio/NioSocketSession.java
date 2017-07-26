@@ -346,8 +346,7 @@ class NioSocketSession extends NioSession {
 		if (sslFilter != null) {
 		// Get the SslHandler from the SslFilter
 			return ((SslFilter)sslFilter).isSslStarted(this);
-		} else {
-			return false;
 		}
+		return false;
 	}
 }
