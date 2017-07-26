@@ -35,143 +35,143 @@ import org.apache.mina.util.MapBackedSet;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public class WriteException extends IOException {
-    /** The mandatory serialVersionUUID */
-    private static final long serialVersionUID = -4174407422754524197L;
+	/** The mandatory serialVersionUUID */
+	private static final long serialVersionUID = -4174407422754524197L;
 
-    /** The list of WriteRequest stored in this exception */
-    private final List<WriteRequest> requests;
+	/** The list of WriteRequest stored in this exception */
+	private final List<WriteRequest> requests;
 
-    /**
-     * Creates a new WriteException instance.
-     * 
-     * @param request The associated {@link WriteRequest}
-     */
-    public WriteException(WriteRequest request) {
-        super();
-        this.requests = asRequestList(request);
-    }
+	/**
+	 * Creates a new WriteException instance.
+	 *
+	 * @param request The associated {@link WriteRequest}
+	 */
+	public WriteException(WriteRequest request) {
+		super();
+		this.requests = asRequestList(request);
+	}
 
-    /**
-     * Creates a new WriteException instance.
-     * 
-     * @param request The associated {@link WriteRequest}
-     * @param message The detail message
-     */
-    public WriteException(WriteRequest request, String message) {
-        super(message);
-        this.requests = asRequestList(request);
-    }
+	/**
+	 * Creates a new WriteException instance.
+	 *
+	 * @param request The associated {@link WriteRequest}
+	 * @param message The detail message
+	 */
+	public WriteException(WriteRequest request, String message) {
+		super(message);
+		this.requests = asRequestList(request);
+	}
 
-    /**
-     * Creates a new WriteException instance.
-     * 
-     * @param request The associated {@link WriteRequest}
-     * @param message The detail message
-     * @param cause The Exception's cause
-     */
-    public WriteException(WriteRequest request, String message, Throwable cause) {
-        super(message);
-        initCause(cause);
-        this.requests = asRequestList(request);
-    }
+	/**
+	 * Creates a new WriteException instance.
+	 *
+	 * @param request The associated {@link WriteRequest}
+	 * @param message The detail message
+	 * @param cause The Exception's cause
+	 */
+	public WriteException(WriteRequest request, String message, Throwable cause) {
+		super(message);
+		initCause(cause);
+		this.requests = asRequestList(request);
+	}
 
-    /**
-     * Creates a new WriteException instance.
-     * 
-     * @param request The associated {@link WriteRequest}
-     * @param cause The Exception's cause
-     */
-    public WriteException(WriteRequest request, Throwable cause) {
-        initCause(cause);
-        this.requests = asRequestList(request);
-    }
+	/**
+	 * Creates a new WriteException instance.
+	 *
+	 * @param request The associated {@link WriteRequest}
+	 * @param cause The Exception's cause
+	 */
+	public WriteException(WriteRequest request, Throwable cause) {
+		initCause(cause);
+		this.requests = asRequestList(request);
+	}
 
-    /**
-     * Creates a new WriteException instance.
-     * 
-     * @param requests The collection of {@link WriteRequest}s
-     */
-    public WriteException(Collection<WriteRequest> requests) {
-        super();
-        this.requests = asRequestList(requests);
-    }
+	/**
+	 * Creates a new WriteException instance.
+	 *
+	 * @param requests The collection of {@link WriteRequest}s
+	 */
+	public WriteException(Collection<WriteRequest> requests) {
+		super();
+		this.requests = asRequestList(requests);
+	}
 
-    /**
-     * Creates a new WriteException instance.
-     * 
-     * @param requests The collection of {@link WriteRequest}s
-     * @param message The detail message
-     */
-    public WriteException(Collection<WriteRequest> requests, String message) {
-        super(message);
-        this.requests = asRequestList(requests);
-    }
+	/**
+	 * Creates a new WriteException instance.
+	 *
+	 * @param requests The collection of {@link WriteRequest}s
+	 * @param message The detail message
+	 */
+	public WriteException(Collection<WriteRequest> requests, String message) {
+		super(message);
+		this.requests = asRequestList(requests);
+	}
 
-    /**
-     * Creates a new WriteException instance.
-     * 
-     * @param requests The collection of {@link WriteRequest}s
-     * @param message The detail message
-     * @param cause The Exception's cause
-     */
-    public WriteException(Collection<WriteRequest> requests, String message, Throwable cause) {
-        super(message);
-        initCause(cause);
-        this.requests = asRequestList(requests);
-    }
+	/**
+	 * Creates a new WriteException instance.
+	 *
+	 * @param requests The collection of {@link WriteRequest}s
+	 * @param message The detail message
+	 * @param cause The Exception's cause
+	 */
+	public WriteException(Collection<WriteRequest> requests, String message, Throwable cause) {
+		super(message);
+		initCause(cause);
+		this.requests = asRequestList(requests);
+	}
 
-    /**
-     * Creates a new WriteException instance.
-     * 
-     * @param requests The collection of {@link WriteRequest}s
-     * @param cause The Exception's cause
-     */
-    public WriteException(Collection<WriteRequest> requests, Throwable cause) {
-        initCause(cause);
-        this.requests = asRequestList(requests);
-    }
+	/**
+	 * Creates a new WriteException instance.
+	 *
+	 * @param requests The collection of {@link WriteRequest}s
+	 * @param cause The Exception's cause
+	 */
+	public WriteException(Collection<WriteRequest> requests, Throwable cause) {
+		initCause(cause);
+		this.requests = asRequestList(requests);
+	}
 
-    /**
-     * @return the list of the failed {@link WriteRequest}, in the order of occurrence.
-     */
-    public List<WriteRequest> getRequests() {
-        return requests;
-    }
+	/**
+	 * @return the list of the failed {@link WriteRequest}, in the order of occurrence.
+	 */
+	public List<WriteRequest> getRequests() {
+		return requests;
+	}
 
-    /**
-     * @return the firstly failed {@link WriteRequest}. 
-     */
-    public WriteRequest getRequest() {
-        return requests.get(0);
-    }
+	/**
+	 * @return the firstly failed {@link WriteRequest}.
+	 */
+	public WriteRequest getRequest() {
+		return requests.get(0);
+	}
 
-    private static List<WriteRequest> asRequestList(Collection<WriteRequest> requests) {
-        if (requests == null) {
-            throw new IllegalArgumentException("requests");
-        }
-        
-        if (requests.isEmpty()) {
-            throw new IllegalArgumentException("requests is empty.");
-        }
+	private static List<WriteRequest> asRequestList(Collection<WriteRequest> requests) {
+		if (requests == null) {
+			throw new IllegalArgumentException("requests");
+		}
 
-        // Create a list of requests removing duplicates.
-        Set<WriteRequest> newRequests = new MapBackedSet<>(new LinkedHashMap<WriteRequest, Boolean>());
-        
-        for (WriteRequest r : requests) {
-            newRequests.add(r.getOriginalRequest());
-        }
+		if (requests.isEmpty()) {
+			throw new IllegalArgumentException("requests is empty.");
+		}
 
-        return Collections.unmodifiableList(new ArrayList<WriteRequest>(newRequests));
-    }
+		// Create a list of requests removing duplicates.
+		Set<WriteRequest> newRequests = new MapBackedSet<>(new LinkedHashMap<WriteRequest, Boolean>());
 
-    private static List<WriteRequest> asRequestList(WriteRequest request) {
-        if (request == null) {
-            throw new IllegalArgumentException("request");
-        }
+		for (WriteRequest r : requests) {
+			newRequests.add(r.getOriginalRequest());
+		}
 
-        List<WriteRequest> requests = new ArrayList<>(1);
-        requests.add(request.getOriginalRequest());
-        
-        return Collections.unmodifiableList(requests);
-    }
+		return Collections.unmodifiableList(new ArrayList<WriteRequest>(newRequests));
+	}
+
+	private static List<WriteRequest> asRequestList(WriteRequest request) {
+		if (request == null) {
+			throw new IllegalArgumentException("request");
+		}
+
+		List<WriteRequest> requests = new ArrayList<>(1);
+		requests.add(request.getOriginalRequest());
+
+		return Collections.unmodifiableList(requests);
+	}
 }

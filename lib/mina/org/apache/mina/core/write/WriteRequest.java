@@ -29,33 +29,33 @@ import org.apache.mina.core.future.WriteFuture;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface WriteRequest {
-    /**
-     * @return the {@link WriteRequest} which was requested originally,
-     * which is not transformed by any {@link IoFilter}.
-     */
-    WriteRequest getOriginalRequest();
+	/**
+	 * @return the {@link WriteRequest} which was requested originally,
+	 * which is not transformed by any {@link IoFilter}.
+	 */
+	WriteRequest getOriginalRequest();
 
-    /**
-     * @return {@link WriteFuture} that is associated with this write request.
-     */
-    WriteFuture getFuture();
+	/**
+	 * @return {@link WriteFuture} that is associated with this write request.
+	 */
+	WriteFuture getFuture();
 
-    /**
-     * @return a message object to be written.
-     */
-    Object getMessage();
+	/**
+	 * @return a message object to be written.
+	 */
+	Object getMessage();
 
-    /**
-     * Returns the destination of this write request.
-     *
-     * @return <tt>null</tt> for the default destination
-     */
-    SocketAddress getDestination();
+	/**
+	 * Returns the destination of this write request.
+	 *
+	 * @return <tt>null</tt> for the default destination
+	 */
+	SocketAddress getDestination();
 
-    /**
-     * Tells if the current message has been encoded
-     *
-     * @return true if the message has already been encoded
-     */
-    boolean isEncoded();
+	/**
+	 * Tells if the current message has been encoded
+	 *
+	 * @return true if the message has already been encoded
+	 */
+	boolean isEncoded();
 }

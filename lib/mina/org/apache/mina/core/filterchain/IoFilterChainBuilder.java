@@ -35,31 +35,31 @@ package org.apache.mina.core.filterchain;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface IoFilterChainBuilder {
-    /**
-     * An implementation which does nothing.
-     */
-    IoFilterChainBuilder NOOP = new IoFilterChainBuilder() {
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void buildFilterChain(IoFilterChain chain) throws Exception {
-        }
+	/**
+	 * An implementation which does nothing.
+	 */
+	IoFilterChainBuilder NOOP = new IoFilterChainBuilder() {
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
+		public void buildFilterChain(IoFilterChain chain) throws Exception {
+		}
 
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public String toString() {
-            return "NOOP";
-        }
-    };
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
+		public String toString() {
+			return "NOOP";
+		}
+	};
 
-    /**
-     * Modifies the specified <tt>chain</tt>.
-     * 
-     * @param chain The chain to modify
-     * @throws Exception If the chain modification failed
-     */
-    void buildFilterChain(IoFilterChain chain) throws Exception;
+	/**
+	 * Modifies the specified <tt>chain</tt>.
+	 *
+	 * @param chain The chain to modify
+	 * @throws Exception If the chain modification failed
+	 */
+	void buildFilterChain(IoFilterChain chain) throws Exception;
 }

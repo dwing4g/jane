@@ -31,42 +31,42 @@ import org.apache.mina.core.session.IoSessionConfig;
  */
 public interface TransportMetadata {
 
-    /**
-     * @return the name of the service provider (e.g. "nio", "apr" and "rxtx").
-     */
-    String getProviderName();
+	/**
+	 * @return the name of the service provider (e.g. "nio", "apr" and "rxtx").
+	 */
+	String getProviderName();
 
-    /**
-     * @return the name of the service.
-     */
-    String getName();
+	/**
+	 * @return the name of the service.
+	 */
+	String getName();
 
-    /**
-     * @return <tt>true</tt> if the session of this transport type is
-     * <a href="http://en.wikipedia.org/wiki/Connectionless">connectionless</a>.
-     */
-    boolean isConnectionless();
+	/**
+	 * @return <tt>true</tt> if the session of this transport type is
+	 * <a href="http://en.wikipedia.org/wiki/Connectionless">connectionless</a>.
+	 */
+	boolean isConnectionless();
 
-    /**
-     * @return {@code true} if the messages exchanged by the service can be
-     * <a href="http://en.wikipedia.org/wiki/IPv4#Fragmentation_and_reassembly">fragmented
-     * or reassembled</a> by its underlying transport.
-     */
-    boolean hasFragmentation();
+	/**
+	 * @return {@code true} if the messages exchanged by the service can be
+	 * <a href="http://en.wikipedia.org/wiki/IPv4#Fragmentation_and_reassembly">fragmented
+	 * or reassembled</a> by its underlying transport.
+	 */
+	boolean hasFragmentation();
 
-    /**
-     * @return the address type of the service.
-     */
-    Class<? extends SocketAddress> getAddressType();
+	/**
+	 * @return the address type of the service.
+	 */
+	Class<? extends SocketAddress> getAddressType();
 
-    /**
-     * @return the set of the allowed message type when you write to an
-     * {@link IoSession} that is managed by the service.
-     */
-    Set<Class<? extends Object>> getEnvelopeTypes();
+	/**
+	 * @return the set of the allowed message type when you write to an
+	 * {@link IoSession} that is managed by the service.
+	 */
+	Set<Class<? extends Object>> getEnvelopeTypes();
 
-    /**
-     * @return the type of the {@link IoSessionConfig} of the service
-     */
-    Class<? extends IoSessionConfig> getSessionConfigType();
+	/**
+	 * @return the type of the {@link IoSessionConfig} of the service
+	 */
+	Class<? extends IoSessionConfig> getSessionConfigType();
 }

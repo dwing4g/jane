@@ -30,72 +30,72 @@ import org.apache.mina.core.future.WriteFuture;
  */
 public class WriteRequestWrapper implements WriteRequest {
 
-    private final WriteRequest parentRequest;
+	private final WriteRequest parentRequest;
 
-    /**
-     * Creates a new instance that wraps the specified request.
-     * 
-     * @param parentRequest The parent's request
-     */
-    public WriteRequestWrapper(WriteRequest parentRequest) {
-        if (parentRequest == null) {
-            throw new IllegalArgumentException("parentRequest");
-        }
-        this.parentRequest = parentRequest;
-    }
+	/**
+	 * Creates a new instance that wraps the specified request.
+	 *
+	 * @param parentRequest The parent's request
+	 */
+	public WriteRequestWrapper(WriteRequest parentRequest) {
+		if (parentRequest == null) {
+			throw new IllegalArgumentException("parentRequest");
+		}
+		this.parentRequest = parentRequest;
+	}
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public SocketAddress getDestination() {
-        return parentRequest.getDestination();
-    }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public SocketAddress getDestination() {
+		return parentRequest.getDestination();
+	}
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public WriteFuture getFuture() {
-        return parentRequest.getFuture();
-    }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public WriteFuture getFuture() {
+		return parentRequest.getFuture();
+	}
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Object getMessage() {
-        return parentRequest.getMessage();
-    }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public Object getMessage() {
+		return parentRequest.getMessage();
+	}
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public WriteRequest getOriginalRequest() {
-        return parentRequest.getOriginalRequest();
-    }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public WriteRequest getOriginalRequest() {
+		return parentRequest.getOriginalRequest();
+	}
 
-    /**
-     * @return the wrapped request object.
-     */
-    public WriteRequest getParentRequest() {
-        return parentRequest;
-    }
+	/**
+	 * @return the wrapped request object.
+	 */
+	public WriteRequest getParentRequest() {
+		return parentRequest;
+	}
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String toString() {
-        return "WR Wrapper" + parentRequest.toString();
-    }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public String toString() {
+		return "WR Wrapper" + parentRequest.toString();
+	}
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isEncoded() {
-        return false;
-    }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public boolean isEncoded() {
+		return false;
+	}
 }

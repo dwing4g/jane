@@ -45,405 +45,405 @@ import org.apache.mina.core.session.SessionState;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
-    /** The selector associated with this processor */
-    private Selector selector;
-    
-    /** A lock used to protect concurent access to the selector */
-    private ReadWriteLock selectorLock = new ReentrantReadWriteLock();
+	/** The selector associated with this processor */
+	private Selector selector;
 
-    private SelectorProvider selectorProvider = null;
+	/** A lock used to protect concurent access to the selector */
+	private ReadWriteLock selectorLock = new ReentrantReadWriteLock();
 
-    /**
-     *
-     * Creates a new instance of NioProcessor.
-     *
-     * @param executor The executor to use
-     */
-    public NioProcessor(Executor executor) {
-        super(executor);
+	private SelectorProvider selectorProvider = null;
 
-        try {
-            // Open a new selector
-            selector = Selector.open();
-        } catch (IOException e) {
-            throw new RuntimeIoException("Failed to open a selector.", e);
-        }
-    }
+	/**
+	 *
+	 * Creates a new instance of NioProcessor.
+	 *
+	 * @param executor The executor to use
+	 */
+	public NioProcessor(Executor executor) {
+		super(executor);
 
-    /**
-     *
-     * Creates a new instance of NioProcessor.
-     *
-     * @param executor The executor to use
-     * @param selectorProvider The Selector provider to use
-     */
-    public NioProcessor(Executor executor, SelectorProvider selectorProvider) {
-        super(executor);
+		try {
+			// Open a new selector
+			selector = Selector.open();
+		} catch (IOException e) {
+			throw new RuntimeIoException("Failed to open a selector.", e);
+		}
+	}
 
-        try {
-            // Open a new selector
-            if (selectorProvider == null) {
-                selector = Selector.open();
-            } else {
-                this.selectorProvider = selectorProvider;
-                selector = selectorProvider.openSelector();
-            }
-        } catch (IOException e) {
-            throw new RuntimeIoException("Failed to open a selector.", e);
-        }
-    }
+	/**
+	 *
+	 * Creates a new instance of NioProcessor.
+	 *
+	 * @param executor The executor to use
+	 * @param selectorProvider The Selector provider to use
+	 */
+	public NioProcessor(Executor executor, SelectorProvider selectorProvider) {
+		super(executor);
 
-    @Override
-    protected void doDispose() throws Exception {
-        selectorLock.readLock().lock();
-        
-        try {
-            selector.close();
-        } finally {
-            selectorLock.readLock().unlock();
-        }
-    }
+		try {
+			// Open a new selector
+			if (selectorProvider == null) {
+				selector = Selector.open();
+			} else {
+				this.selectorProvider = selectorProvider;
+				selector = selectorProvider.openSelector();
+			}
+		} catch (IOException e) {
+			throw new RuntimeIoException("Failed to open a selector.", e);
+		}
+	}
 
-    @Override
-    protected int select(long timeout) throws Exception {
-        selectorLock.readLock().lock();
-        
-        try {
-            return selector.select(timeout);
-        } finally {
-            selectorLock.readLock().unlock();
-        }
-    }
+	@Override
+	protected void doDispose() throws Exception {
+		selectorLock.readLock().lock();
 
-    @Override
-    protected int select() throws Exception {
-        selectorLock.readLock().lock();
-        
-        try {
-            return selector.select();
-        } finally {
-            selectorLock.readLock().unlock();
-        }
-    }
+		try {
+			selector.close();
+		} finally {
+			selectorLock.readLock().unlock();
+		}
+	}
 
-    @Override
-    protected boolean isSelectorEmpty() {
-        selectorLock.readLock().lock();
-        
-        try {
-            return selector.keys().isEmpty();
-        } finally {
-            selectorLock.readLock().unlock();
-        }
-    }
+	@Override
+	protected int select(long timeout) throws Exception {
+		selectorLock.readLock().lock();
 
-    @Override
-    protected void wakeup() {
-        wakeupCalled.getAndSet(true);
-        selectorLock.readLock().lock();
-        
-        try {
-            selector.wakeup();
-        } finally {
-            selectorLock.readLock().unlock();
-        }
-    }
+		try {
+			return selector.select(timeout);
+		} finally {
+			selectorLock.readLock().unlock();
+		}
+	}
 
-    @Override
-    protected Iterator<NioSession> allSessions() {
-        selectorLock.readLock().lock();
-        
-        try {
-            return new IoSessionIterator(selector.keys());
-        } finally {
-            selectorLock.readLock().unlock();
-        }
-    }
+	@Override
+	protected int select() throws Exception {
+		selectorLock.readLock().lock();
 
-    @SuppressWarnings("synthetic-access")
-    @Override
-    protected Iterator<NioSession> selectedSessions() {
-        return new IoSessionIterator(selector.selectedKeys());
-    }
+		try {
+			return selector.select();
+		} finally {
+			selectorLock.readLock().unlock();
+		}
+	}
 
-    @Override
-    protected void init(NioSession session) throws Exception {
-        SelectableChannel ch = (SelectableChannel) session.getChannel();
-        ch.configureBlocking(false);
-        selectorLock.readLock().lock();
-        
-        try {
-            session.setSelectionKey(ch.register(selector, SelectionKey.OP_READ, session));
-        } finally {
-            selectorLock.readLock().unlock();
-        }
-    }
+	@Override
+	protected boolean isSelectorEmpty() {
+		selectorLock.readLock().lock();
 
-    @Override
-    protected void destroy(NioSession session) throws Exception {
-        ByteChannel ch = session.getChannel();
-        
-        SelectionKey key = session.getSelectionKey();
-        
-        if (key != null) {
-            key.cancel();
-        }
-        
-        if ( ch.isOpen() ) {
-            ch.close();
-        }
-    }
+		try {
+			return selector.keys().isEmpty();
+		} finally {
+			selectorLock.readLock().unlock();
+		}
+	}
 
-    /**
-     * In the case we are using the java select() method, this method is used to
-     * trash the buggy selector and create a new one, registering all the
-     * sockets on it.
-     */
-    @Override
-    protected void registerNewSelector() throws IOException {
-        selectorLock.writeLock().lock();
-        
-        try {
-            Set<SelectionKey> keys = selector.keys();
-            Selector newSelector;
+	@Override
+	protected void wakeup() {
+		wakeupCalled.getAndSet(true);
+		selectorLock.readLock().lock();
 
-            // Open a new selector
-            if (selectorProvider == null) {
-                newSelector = Selector.open();
-            } else {
-                newSelector = selectorProvider.openSelector();
-            }
+		try {
+			selector.wakeup();
+		} finally {
+			selectorLock.readLock().unlock();
+		}
+	}
 
-            // Loop on all the registered keys, and register them on the new selector
-            for (SelectionKey key : keys) {
-                SelectableChannel ch = key.channel();
+	@Override
+	protected Iterator<NioSession> allSessions() {
+		selectorLock.readLock().lock();
 
-                // Don't forget to attache the session, and back !
-                NioSession session = (NioSession) key.attachment();
-                SelectionKey newKey = ch.register(newSelector, key.interestOps(), session);
-                session.setSelectionKey(newKey);
-            }
+		try {
+			return new IoSessionIterator(selector.keys());
+		} finally {
+			selectorLock.readLock().unlock();
+		}
+	}
 
-            // Now we can close the old selector and switch it
-            selector.close();
-            selector = newSelector;
-        } finally {
-            selectorLock.writeLock().unlock();
-        }
+	@SuppressWarnings("synthetic-access")
+	@Override
+	protected Iterator<NioSession> selectedSessions() {
+		return new IoSessionIterator(selector.selectedKeys());
+	}
 
-    }
+	@Override
+	protected void init(NioSession session) throws Exception {
+		SelectableChannel ch = (SelectableChannel) session.getChannel();
+		ch.configureBlocking(false);
+		selectorLock.readLock().lock();
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected boolean isBrokenConnection() throws IOException {
-        // A flag set to true if we find a broken session
-        boolean brokenSession = false;
+		try {
+			session.setSelectionKey(ch.register(selector, SelectionKey.OP_READ, session));
+		} finally {
+			selectorLock.readLock().unlock();
+		}
+	}
 
-        selectorLock.readLock().lock();
-        
-        try {
-            // Get the selector keys
-            Set<SelectionKey> keys = selector.keys();
+	@Override
+	protected void destroy(NioSession session) throws Exception {
+		ByteChannel ch = session.getChannel();
 
-            // Loop on all the keys to see if one of them
-            // has a closed channel
-            for (SelectionKey key : keys) {
-                SelectableChannel channel = key.channel();
+		SelectionKey key = session.getSelectionKey();
 
-                if (((channel instanceof DatagramChannel) && !((DatagramChannel) channel).isConnected())
-                        || ((channel instanceof SocketChannel) && !((SocketChannel) channel).isConnected())) {
-                    // The channel is not connected anymore. Cancel
-                    // the associated key then.
-                    key.cancel();
+		if (key != null) {
+			key.cancel();
+		}
 
-                    // Set the flag to true to avoid a selector switch
-                    brokenSession = true;
-                }
-            }
-        } finally {
-            selectorLock.readLock().unlock();
-        }
+		if ( ch.isOpen() ) {
+			ch.close();
+		}
+	}
 
-        return brokenSession;
-    }
+	/**
+	 * In the case we are using the java select() method, this method is used to
+	 * trash the buggy selector and create a new one, registering all the
+	 * sockets on it.
+	 */
+	@Override
+	protected void registerNewSelector() throws IOException {
+		selectorLock.writeLock().lock();
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected SessionState getState(NioSession session) {
-        SelectionKey key = session.getSelectionKey();
+		try {
+			Set<SelectionKey> keys = selector.keys();
+			Selector newSelector;
 
-        if (key == null) {
-            // The channel is not yet registred to a selector
-            return SessionState.OPENING;
-        }
+			// Open a new selector
+			if (selectorProvider == null) {
+				newSelector = Selector.open();
+			} else {
+				newSelector = selectorProvider.openSelector();
+			}
 
-        if (key.isValid()) {
-            // The session is opened
-            return SessionState.OPENED;
-        } else {
-            // The session still as to be closed
-            return SessionState.CLOSING;
-        }
-    }
+			// Loop on all the registered keys, and register them on the new selector
+			for (SelectionKey key : keys) {
+				SelectableChannel ch = key.channel();
 
-    @Override
-    protected boolean isReadable(NioSession session) {
-        SelectionKey key = session.getSelectionKey();
+				// Don't forget to attache the session, and back !
+				NioSession session = (NioSession) key.attachment();
+				SelectionKey newKey = ch.register(newSelector, key.interestOps(), session);
+				session.setSelectionKey(newKey);
+			}
 
-        return (key != null) && key.isValid() && key.isReadable();
-    }
+			// Now we can close the old selector and switch it
+			selector.close();
+			selector = newSelector;
+		} finally {
+			selectorLock.writeLock().unlock();
+		}
 
-    @Override
-    protected boolean isWritable(NioSession session) {
-        SelectionKey key = session.getSelectionKey();
+	}
 
-        return (key != null) && key.isValid() && key.isWritable();
-    }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	protected boolean isBrokenConnection() throws IOException {
+		// A flag set to true if we find a broken session
+		boolean brokenSession = false;
 
-    @Override
-    protected boolean isInterestedInRead(NioSession session) {
-        SelectionKey key = session.getSelectionKey();
+		selectorLock.readLock().lock();
 
-        return (key != null) && key.isValid() && ((key.interestOps() & SelectionKey.OP_READ) != 0);
-    }
+		try {
+			// Get the selector keys
+			Set<SelectionKey> keys = selector.keys();
 
-    @Override
-    protected boolean isInterestedInWrite(NioSession session) {
-        SelectionKey key = session.getSelectionKey();
+			// Loop on all the keys to see if one of them
+			// has a closed channel
+			for (SelectionKey key : keys) {
+				SelectableChannel channel = key.channel();
 
-        return (key != null) && key.isValid() && ((key.interestOps() & SelectionKey.OP_WRITE) != 0);
-    }
+				if (((channel instanceof DatagramChannel) && !((DatagramChannel) channel).isConnected())
+						|| ((channel instanceof SocketChannel) && !((SocketChannel) channel).isConnected())) {
+					// The channel is not connected anymore. Cancel
+					// the associated key then.
+					key.cancel();
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void setInterestedInRead(NioSession session, boolean isInterested) throws Exception {
-        SelectionKey key = session.getSelectionKey();
+					// Set the flag to true to avoid a selector switch
+					brokenSession = true;
+				}
+			}
+		} finally {
+			selectorLock.readLock().unlock();
+		}
 
-        if ((key == null) || !key.isValid()) {
-            return;
-        }
+		return brokenSession;
+	}
 
-        int oldInterestOps = key.interestOps();
-        int newInterestOps = oldInterestOps;
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	protected SessionState getState(NioSession session) {
+		SelectionKey key = session.getSelectionKey();
 
-        if (isInterested) {
-            newInterestOps |= SelectionKey.OP_READ;
-        } else {
-            newInterestOps &= ~SelectionKey.OP_READ;
-        }
+		if (key == null) {
+			// The channel is not yet registred to a selector
+			return SessionState.OPENING;
+		}
 
-        if (oldInterestOps != newInterestOps) {
-            key.interestOps(newInterestOps);
-        }
-    }
+		if (key.isValid()) {
+			// The session is opened
+			return SessionState.OPENED;
+		} else {
+			// The session still as to be closed
+			return SessionState.CLOSING;
+		}
+	}
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void setInterestedInWrite(NioSession session, boolean isInterested) throws Exception {
-        SelectionKey key = session.getSelectionKey();
+	@Override
+	protected boolean isReadable(NioSession session) {
+		SelectionKey key = session.getSelectionKey();
 
-        if ((key == null) || !key.isValid()) {
-            return;
-        }
+		return (key != null) && key.isValid() && key.isReadable();
+	}
 
-        int newInterestOps = key.interestOps();
+	@Override
+	protected boolean isWritable(NioSession session) {
+		SelectionKey key = session.getSelectionKey();
 
-        if (isInterested) {
-            newInterestOps |= SelectionKey.OP_WRITE;
-        } else {
-            newInterestOps &= ~SelectionKey.OP_WRITE;
-        }
+		return (key != null) && key.isValid() && key.isWritable();
+	}
 
-        key.interestOps(newInterestOps);
-    }
+	@Override
+	protected boolean isInterestedInRead(NioSession session) {
+		SelectionKey key = session.getSelectionKey();
 
-    @Override
-    protected int read(NioSession session, IoBuffer buf) throws Exception {
-        ByteChannel channel = session.getChannel();
+		return (key != null) && key.isValid() && ((key.interestOps() & SelectionKey.OP_READ) != 0);
+	}
 
-        return channel.read(buf.buf());
-    }
+	@Override
+	protected boolean isInterestedInWrite(NioSession session) {
+		SelectionKey key = session.getSelectionKey();
 
-    @Override
-    protected int write(NioSession session, IoBuffer buf, int length) throws IOException {
-        if (buf.remaining() <= length) {
-            return session.getChannel().write(buf.buf());
-        }
+		return (key != null) && key.isValid() && ((key.interestOps() & SelectionKey.OP_WRITE) != 0);
+	}
 
-        int oldLimit = buf.limit();
-        buf.limit(buf.position() + length);
-        try {
-            return session.getChannel().write(buf.buf());
-        } finally {
-            buf.limit(oldLimit);
-        }
-    }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	protected void setInterestedInRead(NioSession session, boolean isInterested) throws Exception {
+		SelectionKey key = session.getSelectionKey();
 
-    @Override
-    protected int transferFile(NioSession session, FileRegion region, int length) throws Exception {
-        try {
-            return (int) region.getFileChannel().transferTo(region.getPosition(), length, session.getChannel());
-        } catch (IOException e) {
-            // Check to see if the IOException is being thrown due to
-            // http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=5103988
-            String message = e.getMessage();
-            if ((message != null) && message.contains("temporarily unavailable")) {
-                return 0;
-            }
+		if ((key == null) || !key.isValid()) {
+			return;
+		}
 
-            throw e;
-        }
-    }
+		int oldInterestOps = key.interestOps();
+		int newInterestOps = oldInterestOps;
 
-    /**
-     * An encapsulating iterator around the {@link Selector#selectedKeys()} or
-     * the {@link Selector#keys()} iterator;
-     */
-    protected static class IoSessionIterator<NioSession> implements Iterator<NioSession> {
-        private final Iterator<SelectionKey> iterator;
+		if (isInterested) {
+			newInterestOps |= SelectionKey.OP_READ;
+		} else {
+			newInterestOps &= ~SelectionKey.OP_READ;
+		}
 
-        /**
-         * Create this iterator as a wrapper on top of the selectionKey Set.
-         *
-         * @param keys
-         *            The set of selected sessions
-         */
-        private IoSessionIterator(Set<SelectionKey> keys) {
-            iterator = keys.iterator();
-        }
+		if (oldInterestOps != newInterestOps) {
+			key.interestOps(newInterestOps);
+		}
+	}
 
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public boolean hasNext() {
-            return iterator.hasNext();
-        }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	protected void setInterestedInWrite(NioSession session, boolean isInterested) throws Exception {
+		SelectionKey key = session.getSelectionKey();
 
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public NioSession next() {
-            SelectionKey key = iterator.next();
-            
-            return (NioSession) key.attachment();
-        }
+		if ((key == null) || !key.isValid()) {
+			return;
+		}
 
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void remove() {
-            iterator.remove();
-        }
-    }
+		int newInterestOps = key.interestOps();
+
+		if (isInterested) {
+			newInterestOps |= SelectionKey.OP_WRITE;
+		} else {
+			newInterestOps &= ~SelectionKey.OP_WRITE;
+		}
+
+		key.interestOps(newInterestOps);
+	}
+
+	@Override
+	protected int read(NioSession session, IoBuffer buf) throws Exception {
+		ByteChannel channel = session.getChannel();
+
+		return channel.read(buf.buf());
+	}
+
+	@Override
+	protected int write(NioSession session, IoBuffer buf, int length) throws IOException {
+		if (buf.remaining() <= length) {
+			return session.getChannel().write(buf.buf());
+		}
+
+		int oldLimit = buf.limit();
+		buf.limit(buf.position() + length);
+		try {
+			return session.getChannel().write(buf.buf());
+		} finally {
+			buf.limit(oldLimit);
+		}
+	}
+
+	@Override
+	protected int transferFile(NioSession session, FileRegion region, int length) throws Exception {
+		try {
+			return (int) region.getFileChannel().transferTo(region.getPosition(), length, session.getChannel());
+		} catch (IOException e) {
+			// Check to see if the IOException is being thrown due to
+			// http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=5103988
+			String message = e.getMessage();
+			if ((message != null) && message.contains("temporarily unavailable")) {
+				return 0;
+			}
+
+			throw e;
+		}
+	}
+
+	/**
+	 * An encapsulating iterator around the {@link Selector#selectedKeys()} or
+	 * the {@link Selector#keys()} iterator;
+	 */
+	protected static class IoSessionIterator<NioSession> implements Iterator<NioSession> {
+		private final Iterator<SelectionKey> iterator;
+
+		/**
+		 * Create this iterator as a wrapper on top of the selectionKey Set.
+		 *
+		 * @param keys
+		 *            The set of selected sessions
+		 */
+		private IoSessionIterator(Set<SelectionKey> keys) {
+			iterator = keys.iterator();
+		}
+
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
+		public boolean hasNext() {
+			return iterator.hasNext();
+		}
+
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
+		public NioSession next() {
+			SelectionKey key = iterator.next();
+
+			return (NioSession) key.attachment();
+		}
+
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
+		public void remove() {
+			iterator.remove();
+		}
+	}
 }

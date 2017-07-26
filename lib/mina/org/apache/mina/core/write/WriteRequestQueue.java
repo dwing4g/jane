@@ -23,47 +23,47 @@ import org.apache.mina.core.session.IoSession;
 
 /**
  * Stores {@link WriteRequest}s which are queued to an {@link IoSession}.
- * 
+ *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface WriteRequestQueue {
 
-    /**
-     * Get the first request available in the queue for a session.
-     * @param session The session
-     * @return The first available request, if any.
-     */
-    WriteRequest poll(IoSession session);
+	/**
+	 * Get the first request available in the queue for a session.
+	 * @param session The session
+	 * @return The first available request, if any.
+	 */
+	WriteRequest poll(IoSession session);
 
-    /**
-     * Add a new WriteRequest to the session write's queue
-     * @param session The session
-     * @param writeRequest The writeRequest to add
-     */
-    void offer(IoSession session, WriteRequest writeRequest);
+	/**
+	 * Add a new WriteRequest to the session write's queue
+	 * @param session The session
+	 * @param writeRequest The writeRequest to add
+	 */
+	void offer(IoSession session, WriteRequest writeRequest);
 
-    /**
-     * Tells if the WriteRequest queue is empty or not for a session
-     * @param session The session to check
-     * @return <tt>true</tt> if the writeRequest is empty
-     */
-    boolean isEmpty(IoSession session);
+	/**
+	 * Tells if the WriteRequest queue is empty or not for a session
+	 * @param session The session to check
+	 * @return <tt>true</tt> if the writeRequest is empty
+	 */
+	boolean isEmpty(IoSession session);
 
-    /**
-     * Removes all the requests from this session's queue.
-     * @param session The associated session
-     */
-    void clear(IoSession session);
+	/**
+	 * Removes all the requests from this session's queue.
+	 * @param session The associated session
+	 */
+	void clear(IoSession session);
 
-    /**
-     * Disposes any releases associated with the specified session.
-     * This method is invoked on disconnection.
-     * @param session The associated session
-     */
-    void dispose(IoSession session);
+	/**
+	 * Disposes any releases associated with the specified session.
+	 * This method is invoked on disconnection.
+	 * @param session The associated session
+	 */
+	void dispose(IoSession session);
 
-    /**
-     * @return the number of objects currently stored in the queue.
-     */
-    int size();
+	/**
+	 * @return the number of objects currently stored in the queue.
+	 */
+	int size();
 }

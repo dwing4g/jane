@@ -31,81 +31,81 @@ import org.apache.mina.core.session.AbstractIoSession;
 
 /**
  * An {@link IoSession} which is managed by the NIO transport.
- *  
+ *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public abstract class NioSession extends AbstractIoSession {
-    /** The NioSession processor */
-    protected final IoProcessor<NioSession> processor;
+	/** The NioSession processor */
+	protected final IoProcessor<NioSession> processor;
 
-    /** The communication channel */
-    protected final Channel channel;
+	/** The communication channel */
+	protected final Channel channel;
 
-    /** The SelectionKey used for this session */
-    private SelectionKey key;
+	/** The SelectionKey used for this session */
+	private SelectionKey key;
 
-    /** The FilterChain created for this session */
-    private final IoFilterChain filterChain;
+	/** The FilterChain created for this session */
+	private final IoFilterChain filterChain;
 
-    /**
-     * 
-     * Creates a new instance of NioSession, with its associated IoProcessor.
-     * <br>
-     * This method is only called by the inherited class.
-     *
-     * @param processor The associated {@link IoProcessor}
-     * @param service The associated {@link IoService}
-     * @param channel The associated {@link Channel}
-     */
-    protected NioSession(IoProcessor<NioSession> processor, IoService service, Channel channel) {
-        super(service);
-        this.channel = channel;
-        this.processor = processor;
-        filterChain = new DefaultIoFilterChain(this);
-    }
+	/**
+	 *
+	 * Creates a new instance of NioSession, with its associated IoProcessor.
+	 * <br>
+	 * This method is only called by the inherited class.
+	 *
+	 * @param processor The associated {@link IoProcessor}
+	 * @param service The associated {@link IoService}
+	 * @param channel The associated {@link Channel}
+	 */
+	protected NioSession(IoProcessor<NioSession> processor, IoService service, Channel channel) {
+		super(service);
+		this.channel = channel;
+		this.processor = processor;
+		filterChain = new DefaultIoFilterChain(this);
+	}
 
-    /**
-     * @return The ByteChannel associated with this {@link IoSession} 
-     */
-    abstract ByteChannel getChannel();
+	/**
+	 * @return The ByteChannel associated with this {@link IoSession}
+	 */
+	abstract ByteChannel getChannel();
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public IoFilterChain getFilterChain() {
-        return filterChain;
-    }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public IoFilterChain getFilterChain() {
+		return filterChain;
+	}
 
-    /**
-     * @return The {@link SelectionKey} associated with this {@link IoSession}
-     */
-    /* No qualifier*/SelectionKey getSelectionKey() {
-        return key;
-    }
+	/**
+	 * @return The {@link SelectionKey} associated with this {@link IoSession}
+	 */
+	/* No qualifier*/SelectionKey getSelectionKey() {
+		return key;
+	}
 
-    /**
-     * Sets the {@link SelectionKey} for this {@link IoSession}
-     *
-     * @param key The new {@link SelectionKey}
-     */
-    /* No qualifier*/void setSelectionKey(SelectionKey key) {
-        this.key = key;
-    }
+	/**
+	 * Sets the {@link SelectionKey} for this {@link IoSession}
+	 *
+	 * @param key The new {@link SelectionKey}
+	 */
+	/* No qualifier*/void setSelectionKey(SelectionKey key) {
+		this.key = key;
+	}
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public IoProcessor<NioSession> getProcessor() {
-        return processor;
-    }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public IoProcessor<NioSession> getProcessor() {
+		return processor;
+	}
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public final boolean isActive() {
-        return key.isValid();
-    }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public final boolean isActive() {
+		return key.isValid();
+	}
 }

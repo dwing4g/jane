@@ -36,83 +36,83 @@ import org.apache.mina.core.session.IoSession;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface ConnectFuture extends IoFuture {
-    /**
-     * Returns {@link IoSession} which is the result of connect operation.
-     *
-     * @return The {link IoSession} instance that has been associated with the connection,
-     * if the connection was successful, {@code null} otherwise
-     */
-    @Override
-    IoSession getSession();
+	/**
+	 * Returns {@link IoSession} which is the result of connect operation.
+	 *
+	 * @return The {link IoSession} instance that has been associated with the connection,
+	 * if the connection was successful, {@code null} otherwise
+	 */
+	@Override
+	IoSession getSession();
 
-    /**
-     * Returns the cause of the connection failure.
-     *
-     * @return <tt>null</tt> if the connect operation is not finished yet,
-     *         or if the connection attempt is successful, otherwise returns
-     *         the cause of the exception
-     */
-    Throwable getException();
+	/**
+	 * Returns the cause of the connection failure.
+	 *
+	 * @return <tt>null</tt> if the connect operation is not finished yet,
+	 *         or if the connection attempt is successful, otherwise returns
+	 *         the cause of the exception
+	 */
+	Throwable getException();
 
-    /**
-     * @return {@code true} if the connect operation is finished successfully.
-     */
-    boolean isConnected();
+	/**
+	 * @return {@code true} if the connect operation is finished successfully.
+	 */
+	boolean isConnected();
 
-    /**
-     * @return {@code true} if the connect operation has been canceled by
-     * {@link #cancel()} method.
-     */
-    boolean isCanceled();
+	/**
+	 * @return {@code true} if the connect operation has been canceled by
+	 * {@link #cancel()} method.
+	 */
+	boolean isCanceled();
 
-    /**
-     * Sets the newly connected session and notifies all threads waiting for
-     * this future.  This method is invoked by MINA internally.  Please do not
-     * call this method directly.
-     * 
-     * @param session The created session to store in the ConnectFuture insteance
-     */
-    void setSession(IoSession session);
+	/**
+	 * Sets the newly connected session and notifies all threads waiting for
+	 * this future.  This method is invoked by MINA internally.  Please do not
+	 * call this method directly.
+	 *
+	 * @param session The created session to store in the ConnectFuture insteance
+	 */
+	void setSession(IoSession session);
 
-    /**
-     * Sets the exception caught due to connection failure and notifies all
-     * threads waiting for this future.  This method is invoked by MINA
-     * internally.  Please do not call this method directly.
-     * 
-     * @param exception The exception to store in the ConnectFuture instance
-     */
-    void setException(Throwable exception);
+	/**
+	 * Sets the exception caught due to connection failure and notifies all
+	 * threads waiting for this future.  This method is invoked by MINA
+	 * internally.  Please do not call this method directly.
+	 *
+	 * @param exception The exception to store in the ConnectFuture instance
+	 */
+	void setException(Throwable exception);
 
-    /**
-     * Cancels the connection attempt and notifies all threads waiting for
-     * this future.
-     * 
-     * @return {@code true} if the future has been cancelled by this call, {@code false}
-     * if the future was already cancelled.
-     */
-    boolean cancel();
+	/**
+	 * Cancels the connection attempt and notifies all threads waiting for
+	 * this future.
+	 *
+	 * @return {@code true} if the future has been cancelled by this call, {@code false}
+	 * if the future was already cancelled.
+	 */
+	boolean cancel();
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    ConnectFuture await() throws InterruptedException;
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	ConnectFuture await() throws InterruptedException;
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    ConnectFuture awaitUninterruptibly();
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	ConnectFuture awaitUninterruptibly();
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    ConnectFuture addListener(IoFutureListener<?> listener);
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	ConnectFuture addListener(IoFutureListener<?> listener);
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    ConnectFuture removeListener(IoFutureListener<?> listener);
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	ConnectFuture removeListener(IoFutureListener<?> listener);
 }

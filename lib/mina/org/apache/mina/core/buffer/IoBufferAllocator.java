@@ -28,36 +28,36 @@ import java.nio.ByteBuffer;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface IoBufferAllocator {
-    /**
-     * Returns the buffer which is capable of the specified size.
-     *
-     * @param capacity the capacity of the buffer
-     * @param direct <tt>true</tt> to get a direct buffer,
-     *               <tt>false</tt> to get a heap buffer.
-     * @return The allocated {@link IoBuffer}
-     */
-    IoBuffer allocate(int capacity, boolean direct);
+	/**
+	 * Returns the buffer which is capable of the specified size.
+	 *
+	 * @param capacity the capacity of the buffer
+	 * @param direct <tt>true</tt> to get a direct buffer,
+	 *               <tt>false</tt> to get a heap buffer.
+	 * @return The allocated {@link IoBuffer}
+	 */
+	IoBuffer allocate(int capacity, boolean direct);
 
-    /**
-     * Returns the NIO buffer which is capable of the specified size.
-     *
-     * @param capacity the capacity of the buffer
-     * @param direct <tt>true</tt> to get a direct buffer,
-     *               <tt>false</tt> to get a heap buffer.
-     * @return The allocated {@link ByteBuffer}
-     */
-    ByteBuffer allocateNioBuffer(int capacity, boolean direct);
+	/**
+	 * Returns the NIO buffer which is capable of the specified size.
+	 *
+	 * @param capacity the capacity of the buffer
+	 * @param direct <tt>true</tt> to get a direct buffer,
+	 *               <tt>false</tt> to get a heap buffer.
+	 * @return The allocated {@link ByteBuffer}
+	 */
+	ByteBuffer allocateNioBuffer(int capacity, boolean direct);
 
-    /**
-     * Wraps the specified NIO {@link ByteBuffer} into MINA buffer.
-     * 
-     * @param nioBuffer The {@link ByteBuffer} to wrap
-     * @return The {@link IoBuffer} wrapping the {@link ByteBuffer}
-     */
-    IoBuffer wrap(ByteBuffer nioBuffer);
+	/**
+	 * Wraps the specified NIO {@link ByteBuffer} into MINA buffer.
+	 *
+	 * @param nioBuffer The {@link ByteBuffer} to wrap
+	 * @return The {@link IoBuffer} wrapping the {@link ByteBuffer}
+	 */
+	IoBuffer wrap(ByteBuffer nioBuffer);
 
-    /**
-     * Dispose of this allocator.
-     */
-    void dispose();
+	/**
+	 * Dispose of this allocator.
+	 */
+	void dispose();
 }

@@ -23,33 +23,33 @@ import java.util.EventListener;
 
 /**
  * Something interested in being notified when the completion
- * of an asynchronous I/O operation : {@link IoFuture}. 
- * 
+ * of an asynchronous I/O operation : {@link IoFuture}.
+ *
  * @param <F> The Future type
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface IoFutureListener<F extends IoFuture> extends EventListener {
-    /**
-     * An {@link IoFutureListener} that closes the {@link IoSession} which is
-     * associated with the specified {@link IoFuture}.
-     */
-    IoFutureListener<IoFuture> CLOSE = new IoFutureListener<IoFuture>() {
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void operationComplete(IoFuture future) {
-            future.getSession().closeNow();
-        }
-    };
+	/**
+	 * An {@link IoFutureListener} that closes the {@link IoSession} which is
+	 * associated with the specified {@link IoFuture}.
+	 */
+	IoFutureListener<IoFuture> CLOSE = new IoFutureListener<IoFuture>() {
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
+		public void operationComplete(IoFuture future) {
+			future.getSession().closeNow();
+		}
+	};
 
-    /**
-     * Invoked when the operation associated with the {@link IoFuture}
-     * has been completed even if you add the listener after the completion.
-     *
-     * @param future  The source {@link IoFuture} which called this
-     *                callback.
-     */
-    void operationComplete(F future);
+	/**
+	 * Invoked when the operation associated with the {@link IoFuture}
+	 * has been completed even if you add the listener after the completion.
+	 *
+	 * @param future  The source {@link IoFuture} which called this
+	 *                callback.
+	 */
+	void operationComplete(F future);
 }

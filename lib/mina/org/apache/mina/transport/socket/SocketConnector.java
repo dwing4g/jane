@@ -29,27 +29,27 @@ import org.apache.mina.core.service.IoConnector;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface SocketConnector extends IoConnector {
-    /**
-     * @return the default remote InetSocketAddress to connect to when no argument
-     * is specified in {@link #connect()} method.
-     * This method overrides the {@link IoConnector#getDefaultRemoteAddress()} method.
-     */
-    @Override
-    InetSocketAddress getDefaultRemoteAddress();
+	/**
+	 * @return the default remote InetSocketAddress to connect to when no argument
+	 * is specified in {@link #connect()} method.
+	 * This method overrides the {@link IoConnector#getDefaultRemoteAddress()} method.
+	 */
+	@Override
+	InetSocketAddress getDefaultRemoteAddress();
 
-    /**
-     * @return the default configuration of the new SocketSessions created by 
-     * this connect service.
-     */
-    @Override
-    SocketSessionConfig getSessionConfig();
-    
-    /**
-     * Sets the default remote InetSocketAddress to connect to when no argument is
-     * specified in {@link #connect()} method.
-     * This method overrides the {@link IoConnector#setDefaultRemoteAddress(java.net.SocketAddress)} method.
-     * 
-     * @param remoteAddress The remote address to set
-     */
-    void setDefaultRemoteAddress(InetSocketAddress remoteAddress);
+	/**
+	 * @return the default configuration of the new SocketSessions created by
+	 * this connect service.
+	 */
+	@Override
+	SocketSessionConfig getSessionConfig();
+
+	/**
+	 * Sets the default remote InetSocketAddress to connect to when no argument is
+	 * specified in {@link #connect()} method.
+	 * This method overrides the {@link IoConnector#setDefaultRemoteAddress(java.net.SocketAddress)} method.
+	 *
+	 * @param remoteAddress The remote address to set
+	 */
+	void setDefaultRemoteAddress(InetSocketAddress remoteAddress);
 }

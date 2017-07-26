@@ -43,136 +43,136 @@ import org.apache.mina.core.session.IoSessionInitializer;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface IoConnector extends IoService {
-    /**
-     * @return the connect timeout in seconds.  The default value is 1 minute.
-     * 
-     * @deprecated
-     */
-    @Deprecated
-    int getConnectTimeout();
+	/**
+	 * @return the connect timeout in seconds.  The default value is 1 minute.
+	 *
+	 * @deprecated
+	 */
+	@Deprecated
+	int getConnectTimeout();
 
-    /**
-     * @return the connect timeout in milliseconds.  The default value is 1 minute.
-     */
-    long getConnectTimeoutMillis();
+	/**
+	 * @return the connect timeout in milliseconds.  The default value is 1 minute.
+	 */
+	long getConnectTimeoutMillis();
 
-    /**
-     * Sets the connect timeout in seconds.  The default value is 1 minute.
-     * 
-     * @deprecated
-     * @param connectTimeout The time out for the connection
-     */
-    @Deprecated
-    void setConnectTimeout(int connectTimeout);
+	/**
+	 * Sets the connect timeout in seconds.  The default value is 1 minute.
+	 *
+	 * @deprecated
+	 * @param connectTimeout The time out for the connection
+	 */
+	@Deprecated
+	void setConnectTimeout(int connectTimeout);
 
-    /**
-     * Sets the connect timeout in milliseconds.  The default value is 1 minute.
-     * 
-     * @param connectTimeoutInMillis The time out for the connection
-     */
-    void setConnectTimeoutMillis(long connectTimeoutInMillis);
+	/**
+	 * Sets the connect timeout in milliseconds.  The default value is 1 minute.
+	 *
+	 * @param connectTimeoutInMillis The time out for the connection
+	 */
+	void setConnectTimeoutMillis(long connectTimeoutInMillis);
 
-    /**
-     * @return the default remote address to connect to when no argument
-     * is specified in {@link #connect()} method.
-     */
-    SocketAddress getDefaultRemoteAddress();
+	/**
+	 * @return the default remote address to connect to when no argument
+	 * is specified in {@link #connect()} method.
+	 */
+	SocketAddress getDefaultRemoteAddress();
 
-    /**
-     * Sets the default remote address to connect to when no argument is
-     * specified in {@link #connect()} method.
-     * 
-     * @param defaultRemoteAddress The default remote address
-     */
-    void setDefaultRemoteAddress(SocketAddress defaultRemoteAddress);
+	/**
+	 * Sets the default remote address to connect to when no argument is
+	 * specified in {@link #connect()} method.
+	 *
+	 * @param defaultRemoteAddress The default remote address
+	 */
+	void setDefaultRemoteAddress(SocketAddress defaultRemoteAddress);
 
-    /**
-     * @return the default local address
-     */
-    SocketAddress getDefaultLocalAddress();
+	/**
+	 * @return the default local address
+	 */
+	SocketAddress getDefaultLocalAddress();
 
-    /**
-     * Sets the default local address
-     * 
-     * @param defaultLocalAddress The default local address
-     */
-    void setDefaultLocalAddress(SocketAddress defaultLocalAddress);
+	/**
+	 * Sets the default local address
+	 *
+	 * @param defaultLocalAddress The default local address
+	 */
+	void setDefaultLocalAddress(SocketAddress defaultLocalAddress);
 
-    /**
-     * Connects to the {@link #setDefaultRemoteAddress(SocketAddress) default
-     * remote address}.
-     * 
-     * @return the {@link ConnectFuture} instance which is completed when the
-     *         connection attempt initiated by this call succeeds or fails.
-     * @throws IllegalStateException
-     *             if no default remoted address is set.
-     */
-    ConnectFuture connect();
+	/**
+	 * Connects to the {@link #setDefaultRemoteAddress(SocketAddress) default
+	 * remote address}.
+	 *
+	 * @return the {@link ConnectFuture} instance which is completed when the
+	 *         connection attempt initiated by this call succeeds or fails.
+	 * @throws IllegalStateException
+	 *             if no default remoted address is set.
+	 */
+	ConnectFuture connect();
 
-    /**
-     * Connects to the {@link #setDefaultRemoteAddress(SocketAddress) default
-     * remote address} and invokes the <code>ioSessionInitializer</code> when
-     * the IoSession is created but before {@link IoHandler#sessionCreated(IoSession)}
-     * is invoked.  There is <em>no</em> guarantee that the <code>ioSessionInitializer</code>
-     * will be invoked before this method returns.
-     * 
-     * @param sessionInitializer  the callback to invoke when the {@link IoSession} object is created
-     * @return the {@link ConnectFuture} instance which is completed when the
-     *         connection attempt initiated by this call succeeds or fails.
-     * 
-     * @throws IllegalStateException if no default remote address is set.
-     */
-    ConnectFuture connect(IoSessionInitializer<? extends ConnectFuture> sessionInitializer);
+	/**
+	 * Connects to the {@link #setDefaultRemoteAddress(SocketAddress) default
+	 * remote address} and invokes the <code>ioSessionInitializer</code> when
+	 * the IoSession is created but before {@link IoHandler#sessionCreated(IoSession)}
+	 * is invoked.  There is <em>no</em> guarantee that the <code>ioSessionInitializer</code>
+	 * will be invoked before this method returns.
+	 *
+	 * @param sessionInitializer  the callback to invoke when the {@link IoSession} object is created
+	 * @return the {@link ConnectFuture} instance which is completed when the
+	 *         connection attempt initiated by this call succeeds or fails.
+	 *
+	 * @throws IllegalStateException if no default remote address is set.
+	 */
+	ConnectFuture connect(IoSessionInitializer<? extends ConnectFuture> sessionInitializer);
 
-    /**
-     * Connects to the specified remote address.
-     * 
-     * @param remoteAddress The remote address to connect to
-     * @return the {@link ConnectFuture} instance which is completed when the
-     *         connection attempt initiated by this call succeeds or fails.
-     */
-    ConnectFuture connect(SocketAddress remoteAddress);
+	/**
+	 * Connects to the specified remote address.
+	 *
+	 * @param remoteAddress The remote address to connect to
+	 * @return the {@link ConnectFuture} instance which is completed when the
+	 *         connection attempt initiated by this call succeeds or fails.
+	 */
+	ConnectFuture connect(SocketAddress remoteAddress);
 
-    /**
-     * Connects to the specified remote address and invokes
-     * the <code>ioSessionInitializer</code> when the IoSession is created but before
-     * {@link IoHandler#sessionCreated(IoSession)} is invoked.  There is <em>no</em>
-     * guarantee that the <code>ioSessionInitializer</code> will be invoked before
-     * this method returns.
-     * 
-     * @param remoteAddress  the remote address to connect to
-     * @param sessionInitializer  the callback to invoke when the {@link IoSession} object is created
-     * 
-     * @return the {@link ConnectFuture} instance which is completed when the
-     *         connection attempt initiated by this call succeeds or fails.
-     */
-    ConnectFuture connect(SocketAddress remoteAddress, IoSessionInitializer<? extends ConnectFuture> sessionInitializer);
+	/**
+	 * Connects to the specified remote address and invokes
+	 * the <code>ioSessionInitializer</code> when the IoSession is created but before
+	 * {@link IoHandler#sessionCreated(IoSession)} is invoked.  There is <em>no</em>
+	 * guarantee that the <code>ioSessionInitializer</code> will be invoked before
+	 * this method returns.
+	 *
+	 * @param remoteAddress  the remote address to connect to
+	 * @param sessionInitializer  the callback to invoke when the {@link IoSession} object is created
+	 *
+	 * @return the {@link ConnectFuture} instance which is completed when the
+	 *         connection attempt initiated by this call succeeds or fails.
+	 */
+	ConnectFuture connect(SocketAddress remoteAddress, IoSessionInitializer<? extends ConnectFuture> sessionInitializer);
 
-    /**
-     * Connects to the specified remote address binding to the specified local address.
-     *
-     * @param remoteAddress The remote address to connect
-     * @param localAddress The local address to bind
-     * 
-     * @return the {@link ConnectFuture} instance which is completed when the
-     *         connection attempt initiated by this call succeeds or fails.
-     */
-    ConnectFuture connect(SocketAddress remoteAddress, SocketAddress localAddress);
+	/**
+	 * Connects to the specified remote address binding to the specified local address.
+	 *
+	 * @param remoteAddress The remote address to connect
+	 * @param localAddress The local address to bind
+	 *
+	 * @return the {@link ConnectFuture} instance which is completed when the
+	 *         connection attempt initiated by this call succeeds or fails.
+	 */
+	ConnectFuture connect(SocketAddress remoteAddress, SocketAddress localAddress);
 
-    /**
-     * Connects to the specified remote address binding to the specified local
-     * address and and invokes the <code>ioSessionInitializer</code> when the
-     * IoSession is created but before {@link IoHandler#sessionCreated(IoSession)}
-     * is invoked.  There is <em>no</em> guarantee that the <code>ioSessionInitializer</code>
-     * will be invoked before this method returns.
-     * 
-     * @param remoteAddress  the remote address to connect to
-     * @param localAddress  the local interface to bind to
-     * @param sessionInitializer  the callback to invoke when the {@link IoSession} object is created
-     *
-     * @return the {@link ConnectFuture} instance which is completed when the
-     *         connection attempt initiated by this call succeeds or fails.
-     */
-    ConnectFuture connect(SocketAddress remoteAddress, SocketAddress localAddress,
-            IoSessionInitializer<? extends ConnectFuture> sessionInitializer);
+	/**
+	 * Connects to the specified remote address binding to the specified local
+	 * address and and invokes the <code>ioSessionInitializer</code> when the
+	 * IoSession is created but before {@link IoHandler#sessionCreated(IoSession)}
+	 * is invoked.  There is <em>no</em> guarantee that the <code>ioSessionInitializer</code>
+	 * will be invoked before this method returns.
+	 *
+	 * @param remoteAddress  the remote address to connect to
+	 * @param localAddress  the local interface to bind to
+	 * @param sessionInitializer  the callback to invoke when the {@link IoSession} object is created
+	 *
+	 * @return the {@link ConnectFuture} instance which is completed when the
+	 *         connection attempt initiated by this call succeeds or fails.
+	 */
+	ConnectFuture connect(SocketAddress remoteAddress, SocketAddress localAddress,
+			IoSessionInitializer<? extends ConnectFuture> sessionInitializer);
 }

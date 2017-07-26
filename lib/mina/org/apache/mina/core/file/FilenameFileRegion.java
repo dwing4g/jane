@@ -26,48 +26,48 @@ import java.nio.channels.FileChannel;
 /**
  * Manage a File to be sent to a remote host. We keep a track on the current
  * position, and the number of already written bytes.
- * 
+ *
  * @author The Apache MINA Project (dev@mina.apache.org)
  * @version $Rev$, $Date$
  */
 public class FilenameFileRegion extends DefaultFileRegion {
 
-    private final File file;
+	private final File file;
 
-    /**
-     * Create a new FilenameFileRegion instance
-     * 
-     * @param file The file to manage
-     * @param channel The channel over the file
-     * @throws IOException If we got an IO error
-     */
-    public FilenameFileRegion(File file, FileChannel channel) throws IOException {
-        this(file, channel, 0, file.length());
-    }
+	/**
+	 * Create a new FilenameFileRegion instance
+	 *
+	 * @param file The file to manage
+	 * @param channel The channel over the file
+	 * @throws IOException If we got an IO error
+	 */
+	public FilenameFileRegion(File file, FileChannel channel) throws IOException {
+		this(file, channel, 0, file.length());
+	}
 
-    /**
-     * Create a new FilenameFileRegion instance
-     * 
-     * @param file The file to manage
-     * @param channel The channel over the file
-     * @param position The position in teh file
-     * @param remainingBytes The remaining bytes
-     */
-    public FilenameFileRegion(File file, FileChannel channel, long position, long remainingBytes) {
-        super(channel, position, remainingBytes);
+	/**
+	 * Create a new FilenameFileRegion instance
+	 *
+	 * @param file The file to manage
+	 * @param channel The channel over the file
+	 * @param position The position in teh file
+	 * @param remainingBytes The remaining bytes
+	 */
+	public FilenameFileRegion(File file, FileChannel channel, long position, long remainingBytes) {
+		super(channel, position, remainingBytes);
 
-        if (file == null) {
-            throw new IllegalArgumentException("file can not be null");
-        }
-        
-        this.file = file;
-    }
+		if (file == null) {
+			throw new IllegalArgumentException("file can not be null");
+		}
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String getFilename() {
-        return file.getAbsolutePath();
-    }
+		this.file = file;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public String getFilename() {
+		return file.getAbsolutePath();
+	}
 }

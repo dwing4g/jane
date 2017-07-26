@@ -28,82 +28,82 @@ import java.util.Set;
 
 /**
  * A {@link Map}-backed {@link Set}.
- * 
+ *
  * @param <E> The element stored in the set
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public class MapBackedSet<E> extends AbstractSet<E> implements Serializable {
 
-    private static final long serialVersionUID = -8347878570391674042L;
+	private static final long serialVersionUID = -8347878570391674042L;
 
-    protected final Map<E, Boolean> map;
+	protected final Map<E, Boolean> map;
 
-    /**
-     * Creates a new MapBackedSet instance
-     * 
-     * @param map The map that we want to back
-     */
-    public MapBackedSet(Map<E, Boolean> map) {
-        this.map = map;
-    }
+	/**
+	 * Creates a new MapBackedSet instance
+	 *
+	 * @param map The map that we want to back
+	 */
+	public MapBackedSet(Map<E, Boolean> map) {
+		this.map = map;
+	}
 
-    /**
-     * Creates a new MapBackedSet instance
-     * 
-     * @param map The map that we want to back
-     * @param c The elements we want to add in the map
-     */
-    public MapBackedSet(Map<E, Boolean> map, Collection<E> c) {
-        this.map = map;
-        addAll(c);
-    }
+	/**
+	 * Creates a new MapBackedSet instance
+	 *
+	 * @param map The map that we want to back
+	 * @param c The elements we want to add in the map
+	 */
+	public MapBackedSet(Map<E, Boolean> map, Collection<E> c) {
+		this.map = map;
+		addAll(c);
+	}
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int size() {
-        return map.size();
-    }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public int size() {
+		return map.size();
+	}
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean contains(Object o) {
-        return map.containsKey(o);
-    }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public boolean contains(Object o) {
+		return map.containsKey(o);
+	}
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Iterator<E> iterator() {
-        return map.keySet().iterator();
-    }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public Iterator<E> iterator() {
+		return map.keySet().iterator();
+	}
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean add(E o) {
-        return map.put(o, Boolean.TRUE) == null;
-    }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public boolean add(E o) {
+		return map.put(o, Boolean.TRUE) == null;
+	}
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean remove(Object o) {
-        return map.remove(o) != null;
-    }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public boolean remove(Object o) {
+		return map.remove(o) != null;
+	}
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void clear() {
-        map.clear();
-    }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void clear() {
+		map.clear();
+	}
 }

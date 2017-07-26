@@ -26,10 +26,10 @@ package org.apache.mina.core.future;
  * <pre>
  * IoSession session = ...;
  * CloseFuture future = session.close(true);
- * 
+ *
  * // Wait until the connection is closed
  * future.awaitUninterruptibly();
- * 
+ *
  * // Now connection should be closed.
  * assert future.isClosed();
  * </pre>
@@ -37,39 +37,39 @@ package org.apache.mina.core.future;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface CloseFuture extends IoFuture {
-    /**
-     * @return <tt>true</tt> if the close request is finished and the session is closed.
-     */
-    boolean isClosed();
+	/**
+	 * @return <tt>true</tt> if the close request is finished and the session is closed.
+	 */
+	boolean isClosed();
 
-    /**
-     * Marks this future as closed and notifies all threads waiting for this
-     * future. This method is invoked by MINA internally.  Please do not call
-     * this method directly.
-     */
-    void setClosed();
+	/**
+	 * Marks this future as closed and notifies all threads waiting for this
+	 * future. This method is invoked by MINA internally.  Please do not call
+	 * this method directly.
+	 */
+	void setClosed();
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    CloseFuture await() throws InterruptedException;
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	CloseFuture await() throws InterruptedException;
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    CloseFuture awaitUninterruptibly();
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	CloseFuture awaitUninterruptibly();
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    CloseFuture addListener(IoFutureListener<?> listener);
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	CloseFuture addListener(IoFutureListener<?> listener);
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    CloseFuture removeListener(IoFutureListener<?> listener);
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	CloseFuture removeListener(IoFutureListener<?> listener);
 }

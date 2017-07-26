@@ -32,63 +32,63 @@ import org.apache.mina.core.service.IoAcceptor;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface SocketAcceptor extends IoAcceptor {
-    /**
-     * @return the local InetSocketAddress which is bound currently.  If more than one
-     * address are bound, only one of them will be returned, but it's not
-     * necessarily the firstly bound address.
-     * This method overrides the {@link IoAcceptor#getLocalAddress()} method.
-     */
-    @Override
-    InetSocketAddress getLocalAddress();
+	/**
+	 * @return the local InetSocketAddress which is bound currently.  If more than one
+	 * address are bound, only one of them will be returned, but it's not
+	 * necessarily the firstly bound address.
+	 * This method overrides the {@link IoAcceptor#getLocalAddress()} method.
+	 */
+	@Override
+	InetSocketAddress getLocalAddress();
 
-    /**
-     * @return a {@link Set} of the local InetSocketAddress which are bound currently.
-     * This method overrides the {@link IoAcceptor#getDefaultLocalAddress()} method.
-     */
-    @Override
-    InetSocketAddress getDefaultLocalAddress();
+	/**
+	 * @return a {@link Set} of the local InetSocketAddress which are bound currently.
+	 * This method overrides the {@link IoAcceptor#getDefaultLocalAddress()} method.
+	 */
+	@Override
+	InetSocketAddress getDefaultLocalAddress();
 
-    /**
-     * Sets the default local InetSocketAddress to bind when no argument is specified in
-     * {@link #bind()} method. Please note that the default will not be used
-     * if any local InetSocketAddress is specified.
-     * This method overrides the {@link IoAcceptor#setDefaultLocalAddress(java.net.SocketAddress)} method.
-     * 
-     * @param localAddress The local address
-     */
-    void setDefaultLocalAddress(InetSocketAddress localAddress);
+	/**
+	 * Sets the default local InetSocketAddress to bind when no argument is specified in
+	 * {@link #bind()} method. Please note that the default will not be used
+	 * if any local InetSocketAddress is specified.
+	 * This method overrides the {@link IoAcceptor#setDefaultLocalAddress(java.net.SocketAddress)} method.
+	 *
+	 * @param localAddress The local address
+	 */
+	void setDefaultLocalAddress(InetSocketAddress localAddress);
 
-    /**
-     * @see ServerSocket#getReuseAddress()
-     * 
-     * @return <tt>true</tt> if the <tt>SO_REUSEADDR</tt> is enabled
-     */
-    boolean isReuseAddress();
+	/**
+	 * @see ServerSocket#getReuseAddress()
+	 *
+	 * @return <tt>true</tt> if the <tt>SO_REUSEADDR</tt> is enabled
+	 */
+	boolean isReuseAddress();
 
-    /**
-     * @see ServerSocket#setReuseAddress(boolean)
-     * 
-     * @param reuseAddress tells if the <tt>SO_REUSEADDR</tt> is to be enabled
-     */
-    void setReuseAddress(boolean reuseAddress);
+	/**
+	 * @see ServerSocket#setReuseAddress(boolean)
+	 *
+	 * @param reuseAddress tells if the <tt>SO_REUSEADDR</tt> is to be enabled
+	 */
+	void setReuseAddress(boolean reuseAddress);
 
-    /**
-     * @return the size of the backlog.
-     */
-    int getBacklog();
+	/**
+	 * @return the size of the backlog.
+	 */
+	int getBacklog();
 
-    /**
-     * Sets the size of the backlog.  This can only be done when this
-     * class is not bound
-     * 
-     * @param backlog The backlog's size
-     */
-    void setBacklog(int backlog);
+	/**
+	 * Sets the size of the backlog.  This can only be done when this
+	 * class is not bound
+	 *
+	 * @param backlog The backlog's size
+	 */
+	void setBacklog(int backlog);
 
-    /**
-     * @return the default configuration of the new SocketSessions created by 
-     * this acceptor service.
-     */
-    @Override
-    SocketSessionConfig getSessionConfig();
+	/**
+	 * @return the default configuration of the new SocketSessions created by
+	 * this acceptor service.
+	 */
+	@Override
+	SocketSessionConfig getSessionConfig();
 }

@@ -33,17 +33,17 @@ import org.slf4j.LoggerFactory;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public class DefaultExceptionMonitor extends ExceptionMonitor {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultExceptionMonitor.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(DefaultExceptionMonitor.class);
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void exceptionCaught(Throwable cause) {
-        if (cause instanceof Error) {
-            throw (Error) cause;
-        }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void exceptionCaught(Throwable cause) {
+		if (cause instanceof Error) {
+			throw (Error) cause;
+		}
 
-        LOGGER.warn("Unexpected exception.", cause);
-    }
+		LOGGER.warn("Unexpected exception.", cause);
+	}
 }
