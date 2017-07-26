@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.file.FileRegion;
-import org.apache.mina.core.filterchain.IoFilterChain;
 import org.apache.mina.core.filterchain.IoFilterChainBuilder;
 import org.apache.mina.core.future.DefaultIoFuture;
 import org.apache.mina.core.service.AbstractIoService;
@@ -41,7 +40,6 @@ import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.IoServiceListenerSupport;
 import org.apache.mina.core.session.AbstractIoSession;
 import org.apache.mina.core.session.IoSession;
-import org.apache.mina.core.session.IoSessionConfig;
 import org.apache.mina.core.session.SessionState;
 import org.apache.mina.core.write.WriteRequest;
 import org.apache.mina.core.write.WriteRequestQueue;
@@ -206,15 +204,6 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 	 *             if some low level IO error occurs
 	 */
 	protected abstract int select(long timeout) throws Exception;
-
-	/**
-	 * poll those sessions forever
-	 *
-	 * @return The number of session ready for read or for write
-	 * @throws Exception
-	 *             if some low level IO error occurs
-	 */
-	protected abstract int select() throws Exception;
 
 	/**
 	 * Say if the list of {@link IoSession} polled by this {@link IoProcessor}
@@ -493,52 +482,33 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 	protected abstract boolean isBrokenConnection() throws IOException;
 
 	private void read(S session) {
-		IoSessionConfig config = session.getConfig();
-		int bufferSize = config.getReadBufferSize();
-		IoBuffer buf = IoBuffer.allocate(bufferSize);
-
 		try {
-			int readBytes = 0;
-			int ret;
-
-			try {
-				while ((ret = read(session, buf)) > 0) {
-					readBytes += ret;
-
-					if (!buf.hasRemaining()) {
-						break;
-					}
-				}
-			} finally {
-				buf.flip();
-			}
+			int readBufferSize = session.getConfig().getReadBufferSize();
+			IoBuffer buf = IoBuffer.allocate(readBufferSize);
+			int readBytes = read(session, buf);
 
 			if (readBytes > 0) {
-				IoFilterChain filterChain = session.getFilterChain();
-				filterChain.fireMessageReceived(buf);
-				buf = null;
+				session.getFilterChain().fireMessageReceived(buf.flip());
 
-				if (readBytes << 1 < config.getReadBufferSize()) {
+				if ((readBytes << 1) < readBufferSize) {
 					session.decreaseReadBufferSize();
-				} else if (readBytes == config.getReadBufferSize()) {
+				} else if (readBytes >= readBufferSize) {
 					session.increaseReadBufferSize();
 				}
 			} else {
 				// release temporary buffer when read nothing
 				buf.free();
+				if (readBytes < 0) {
+					session.getFilterChain().fireInputClosed();
+				}
 			}
 
-			if (ret < 0) {
-				IoFilterChain filterChain = session.getFilterChain();
-				filterChain.fireInputClosed();
-			}
 		} catch (Exception e) {
 			if (e instanceof IOException) {
 				scheduleRemove(session);
 			}
 
-			IoFilterChain filterChain = session.getFilterChain();
-			filterChain.fireExceptionCaught(e);
+			session.getFilterChain().fireExceptionCaught(e);
 		}
 	}
 
@@ -551,16 +521,14 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 		try {
 			setInterestedInRead(session, !session.isReadSuspended());
 		} catch (Exception e) {
-			IoFilterChain filterChain = session.getFilterChain();
-			filterChain.fireExceptionCaught(e);
+			session.getFilterChain().fireExceptionCaught(e);
 		}
 
 		try {
 			setInterestedInWrite(session,
 					!session.getWriteRequestQueue().isEmpty(session) && !session.isWriteSuspended());
 		} catch (Exception e) {
-			IoFilterChain filterChain = session.getFilterChain();
-			filterChain.fireExceptionCaught(e);
+			session.getFilterChain().fireExceptionCaught(e);
 		}
 	}
 
@@ -897,8 +865,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 					} catch (Exception e) {
 						scheduleRemove(session);
 						session.closeNow();
-						IoFilterChain filterChain = session.getFilterChain();
-						filterChain.fireExceptionCaught(e);
+						session.getFilterChain().fireExceptionCaught(e);
 					}
 
 					break;
@@ -1010,8 +977,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 					req.getFuture().setException(e);
 				}
 
-				IoFilterChain filterChain = session.getFilterChain();
-				filterChain.fireExceptionCaught(e);
+				session.getFilterChain().fireExceptionCaught(e);
 				return false;
 			}
 
@@ -1099,8 +1065,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 				destroy(session);
 				return true;
 			} catch (Exception e) {
-				IoFilterChain filterChain = session.getFilterChain();
-				filterChain.fireExceptionCaught(e);
+				session.getFilterChain().fireExceptionCaught(e);
 			} finally {
 				try {
 					clearWriteRequestQueue(session);
@@ -1110,8 +1075,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 					// We do not want any exception thrown from this "cleanup" code
 					// to change
 					// the return value by bubbling up.
-					IoFilterChain filterChain = session.getFilterChain();
-					filterChain.fireExceptionCaught(e);
+					session.getFilterChain().fireExceptionCaught(e);
 				}
 			}
 
@@ -1136,8 +1100,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 						buf.reset();
 						failedRequests.add(req);
 					} else {
-						IoFilterChain filterChain = session.getFilterChain();
-						filterChain.fireMessageSent(req);
+						session.getFilterChain().fireMessageSent(req);
 					}
 				} else {
 					failedRequests.add(req);
@@ -1158,21 +1121,18 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 					r.getFuture().setException(cause);
 				}
 
-				IoFilterChain filterChain = session.getFilterChain();
-				filterChain.fireExceptionCaught(cause);
+				session.getFilterChain().fireExceptionCaught(cause);
 			}
 		}
 
 		private void fireMessageSent(S session, WriteRequest req) {
 			session.setCurrentWriteRequest(null);
-			IoFilterChain filterChain = session.getFilterChain();
-			filterChain.fireMessageSent(req);
+			session.getFilterChain().fireMessageSent(req);
 		}
 
 		private void process() throws Exception {
 			for (Iterator<S> i = selectedSessions(); i.hasNext();) {
-				S session = i.next();
-				process(session);
+				process(i.next());
 				i.remove();
 			}
 		}

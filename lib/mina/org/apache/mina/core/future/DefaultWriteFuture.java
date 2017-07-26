@@ -26,7 +26,7 @@ import org.apache.mina.core.session.IoSession;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class DefaultWriteFuture extends DefaultIoFuture implements WriteFuture {
+public final class DefaultWriteFuture extends DefaultIoFuture implements WriteFuture {
 	/**
 	 * Creates a new instance.
 	 *

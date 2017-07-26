@@ -39,7 +39,6 @@ import org.apache.mina.core.future.IoFuture;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.session.AbstractIoSession;
 import org.apache.mina.core.session.DefaultIoSessionDataStructureFactory;
-import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.session.IoSessionConfig;
 import org.apache.mina.core.session.IoSessionDataStructureFactory;
@@ -99,62 +98,6 @@ public abstract class AbstractIoService implements IoService {
 	 */
 	protected final IoSessionConfig sessionConfig;
 
-	private final IoServiceListener serviceActivationListener = new IoServiceListener() {
-		IoServiceStatistics serviceStats;
-
-		/**
-		 * {@inheritDoc}
-		 */
-		@Override
-		public void serviceActivated(IoService service) {
-			// Update lastIoTime.
-			serviceStats = service.getStatistics();
-			serviceStats.setLastReadTime(service.getActivationTime());
-			serviceStats.setLastWriteTime(service.getActivationTime());
-			serviceStats.setLastThroughputCalculationTime(service.getActivationTime());
-		}
-
-		/**
-		 * {@inheritDoc}
-		 */
-		@Override
-		public void serviceDeactivated(IoService service) throws Exception {
-			// Empty handler
-		}
-
-		/**
-		 * {@inheritDoc}
-		 */
-		@Override
-		public void serviceIdle(IoService service, IdleStatus idleStatus) throws Exception {
-			// Empty handler
-		}
-
-		/**
-		 * {@inheritDoc}
-		 */
-		@Override
-		public void sessionCreated(IoSession session) throws Exception {
-			// Empty handler
-		}
-
-		/**
-		 * {@inheritDoc}
-		 */
-		@Override
-		public void sessionClosed(IoSession session) throws Exception {
-			// Empty handler
-		}
-
-		/**
-		 * {@inheritDoc}
-		 */
-		@Override
-		public void sessionDestroyed(IoSession session) throws Exception {
-			// Empty handler
-		}
-	};
-
 	/**
 	 * Current filter chain builder.
 	 */
@@ -176,8 +119,6 @@ public abstract class AbstractIoService implements IoService {
 	private volatile boolean disposing;
 
 	private volatile boolean disposed;
-
-	private IoServiceStatistics stats = new IoServiceStatistics(this);
 
 	/**
 	 * Constructor for {@link AbstractIoService}. You need to provide a default
@@ -203,7 +144,6 @@ public abstract class AbstractIoService implements IoService {
 		// Create the listeners, and add a first listener : a activation listener
 		// for this service, which will give information on the service state.
 		listeners = new IoServiceListenerSupport(this);
-		listeners.add(serviceActivationListener);
 
 		// Stores the given session configuration
 		this.sessionConfig = sessionConfig;
@@ -419,14 +359,6 @@ public abstract class AbstractIoService implements IoService {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public IoServiceStatistics getStatistics() {
-		return stats;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
 	public final long getActivationTime() {
 		return listeners.getActivationTime();
 	}
@@ -474,15 +406,6 @@ public abstract class AbstractIoService implements IoService {
 
 	@SuppressWarnings("unchecked")
 	protected final void initSession(IoSession session, IoFuture future, @SuppressWarnings("rawtypes") IoSessionInitializer sessionInitializer) {
-		// Update lastIoTime if needed.
-		if (stats.getLastReadTime() == 0) {
-			stats.setLastReadTime(getActivationTime());
-		}
-
-		if (stats.getLastWriteTime() == 0) {
-			stats.setLastWriteTime(getActivationTime());
-		}
-
 		// Every property but attributeMap should be set now.
 		// Now initialize the attributeMap.  The reason why we initialize
 		// the attributeMap at last is to make sure all session properties
@@ -567,21 +490,5 @@ public abstract class AbstractIoService implements IoService {
 
 			setValue(exception);
 		}
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public int getScheduledWriteBytes() {
-		return stats.getScheduledWriteBytes();
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public int getScheduledWriteMessages() {
-		return stats.getScheduledWriteMessages();
 	}
 }

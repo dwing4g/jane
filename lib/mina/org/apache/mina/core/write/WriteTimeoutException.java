@@ -20,7 +20,7 @@
 package org.apache.mina.core.write;
 
 import java.util.Collection;
-
+import org.apache.mina.core.session.IoSessionConfig;
 
 /**
  * An exception which is thrown when write buffer is not flushed for
@@ -28,7 +28,7 @@ import java.util.Collection;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class WriteTimeoutException extends WriteException {
+public final class WriteTimeoutException extends WriteException {
 	private static final long serialVersionUID = 3906931157944579121L;
 
 	/**

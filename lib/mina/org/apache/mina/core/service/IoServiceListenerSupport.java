@@ -27,7 +27,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.mina.core.filterchain.IoFilterChain;
 import org.apache.mina.core.future.IoFuture;
 import org.apache.mina.core.future.IoFutureListener;
@@ -40,7 +39,7 @@ import org.apache.mina.util.ExceptionMonitor;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class IoServiceListenerSupport {
+public final class IoServiceListenerSupport {
 	/** The {@link IoService} that this instance manages. */
 	private final IoService service;
 

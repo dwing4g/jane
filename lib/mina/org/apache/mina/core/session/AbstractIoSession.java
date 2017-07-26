@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.file.DefaultFileRegion;
 import org.apache.mina.core.file.FilenameFileRegion;
-import org.apache.mina.core.filterchain.IoFilterChain;
 import org.apache.mina.core.future.CloseFuture;
 import org.apache.mina.core.future.DefaultCloseFuture;
 import org.apache.mina.core.future.DefaultReadFuture;
@@ -42,7 +41,6 @@ import org.apache.mina.core.future.DefaultWriteFuture;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.future.ReadFuture;
 import org.apache.mina.core.future.WriteFuture;
-import org.apache.mina.core.service.AbstractIoService;
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoProcessor;
@@ -82,10 +80,6 @@ public abstract class AbstractIoSession implements IoSession {
 			AbstractIoSession session = (AbstractIoSession) future.getSession();
 			session.scheduledWriteBytes.set(0);
 			session.scheduledWriteMessages.set(0);
-			session.readBytesThroughput = 0;
-			session.readMessagesThroughput = 0;
-			session.writtenBytesThroughput = 0;
-			session.writtenMessagesThroughput = 0;
 		}
 	};
 
@@ -102,6 +96,7 @@ public abstract class AbstractIoSession implements IoSession {
 	private final Object lock = new Object();
 
 	private IoSessionAttributeMap attributes;
+	private Object attachment;
 
 	private WriteRequestQueue writeRequestQueue;
 
@@ -147,24 +142,6 @@ public abstract class AbstractIoSession implements IoSession {
 
 	private long lastWriteTime;
 
-	private long lastThroughputCalculationTime;
-
-	private long lastReadBytes;
-
-	private long lastWrittenBytes;
-
-	private long lastReadMessages;
-
-	private long lastWrittenMessages;
-
-	private double readBytesThroughput;
-
-	private double writtenBytesThroughput;
-
-	private double readMessagesThroughput;
-
-	private double writtenMessagesThroughput;
-
 	private AtomicInteger idleCountForBoth = new AtomicInteger();
 
 	private AtomicInteger idleCountForRead = new AtomicInteger();
@@ -191,7 +168,6 @@ public abstract class AbstractIoSession implements IoSession {
 		// Initialize all the Session counters to the current time
 		long currentTime = System.currentTimeMillis();
 		creationTime = currentTime;
-		lastThroughputCalculationTime = currentTime;
 		lastReadTime = currentTime;
 		lastWriteTime = currentTime;
 		lastIdleTimeForBoth = currentTime;
@@ -310,25 +286,6 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
-	@Override
-	public final CloseFuture close(boolean rightNow) {
-		if (rightNow) {
-			return closeNow();
-		}
-		return closeOnFlush();
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final CloseFuture close() {
-		return closeNow();
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
 	@SuppressWarnings("unchecked")
 	@Override
 	public final CloseFuture closeOnFlush() {
@@ -355,8 +312,7 @@ public abstract class AbstractIoSession implements IoSession {
 			try {
 				destroy();
 			} catch (Exception e) {
-				IoFilterChain filterChain = getFilterChain();
-				filterChain.fireExceptionCaught(e);
+				getFilterChain().fireExceptionCaught(e);
 			}
 		}
 
@@ -586,8 +542,7 @@ public abstract class AbstractIoSession implements IoSession {
 		WriteRequest writeRequest = new DefaultWriteRequest(message, writeFuture, remoteAddress);
 
 		// Then, get the chain and inject the WriteRequest into it
-		IoFilterChain filterChain = getFilterChain();
-		filterChain.fireFilterWrite(writeRequest);
+		getFilterChain().fireFilterWrite(writeRequest);
 
 		// TODO : This is not our business ! The caller has created a
 		// FileChannel,
@@ -617,7 +572,7 @@ public abstract class AbstractIoSession implements IoSession {
 	 */
 	@Override
 	public final Object getAttachment() {
-		return getAttribute("");
+		return attachment;
 	}
 
 	/**
@@ -625,7 +580,9 @@ public abstract class AbstractIoSession implements IoSession {
 	 */
 	@Override
 	public final Object setAttachment(Object attachment) {
-		return setAttribute("", attachment);
+		Object old = this.attachment;
+		this.attachment = attachment;
+		return old;
 	}
 
 	/**
@@ -845,64 +802,6 @@ public abstract class AbstractIoSession implements IoSession {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public final double getReadBytesThroughput() {
-		return readBytesThroughput;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final double getWrittenBytesThroughput() {
-		return writtenBytesThroughput;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final double getReadMessagesThroughput() {
-		return readMessagesThroughput;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final double getWrittenMessagesThroughput() {
-		return writtenMessagesThroughput;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final void updateThroughput(long currentTime, boolean force) {
-		int interval = (int) (currentTime - lastThroughputCalculationTime);
-
-		long minInterval = getConfig().getThroughputCalculationIntervalInMillis();
-
-		if (((minInterval == 0) || (interval < minInterval)) && !force) {
-			return;
-		}
-
-		readBytesThroughput = (readBytes - lastReadBytes) * 1000.0 / interval;
-		writtenBytesThroughput = (writtenBytes - lastWrittenBytes) * 1000.0 / interval;
-		readMessagesThroughput = (readMessages - lastReadMessages) * 1000.0 / interval;
-		writtenMessagesThroughput = (writtenMessages - lastWrittenMessages) * 1000.0 / interval;
-
-		lastReadBytes = readBytes;
-		lastWrittenBytes = writtenBytes;
-		lastReadMessages = readMessages;
-		lastWrittenMessages = writtenMessages;
-
-		lastThroughputCalculationTime = currentTime;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
 	public final long getScheduledWriteBytes() {
 		return scheduledWriteBytes.get();
 	}
@@ -948,10 +847,6 @@ public abstract class AbstractIoSession implements IoSession {
 		lastReadTime = currentTime;
 		idleCountForBoth.set(0);
 		idleCountForRead.set(0);
-
-		if (getService() instanceof AbstractIoService) {
-			((AbstractIoService) getService()).getStatistics().increaseReadBytes(increment, currentTime);
-		}
 	}
 
 	/**
@@ -964,10 +859,6 @@ public abstract class AbstractIoSession implements IoSession {
 		lastReadTime = currentTime;
 		idleCountForBoth.set(0);
 		idleCountForRead.set(0);
-
-		if (getService() instanceof AbstractIoService) {
-			((AbstractIoService) getService()).getStatistics().increaseReadMessages(currentTime);
-		}
 	}
 
 	/**
@@ -985,10 +876,6 @@ public abstract class AbstractIoSession implements IoSession {
 		lastWriteTime = currentTime;
 		idleCountForBoth.set(0);
 		idleCountForWrite.set(0);
-
-		if (getService() instanceof AbstractIoService) {
-			((AbstractIoService) getService()).getStatistics().increaseWrittenBytes(increment, currentTime);
-		}
 
 		increaseScheduledWriteBytes(-increment);
 	}
@@ -1013,10 +900,6 @@ public abstract class AbstractIoSession implements IoSession {
 		writtenMessages++;
 		lastWriteTime = currentTime;
 
-		if (getService() instanceof AbstractIoService) {
-			((AbstractIoService) getService()).getStatistics().increaseWrittenMessages(currentTime);
-		}
-
 		decreaseScheduledWriteMessages();
 	}
 
@@ -1027,9 +910,6 @@ public abstract class AbstractIoSession implements IoSession {
 	 */
 	public final void increaseScheduledWriteBytes(int increment) {
 		scheduledWriteBytes.addAndGet(increment);
-		if (getService() instanceof AbstractIoService) {
-			((AbstractIoService) getService()).getStatistics().increaseScheduledWriteBytes(increment);
-		}
 	}
 
 	/**
@@ -1037,10 +917,6 @@ public abstract class AbstractIoSession implements IoSession {
 	 */
 	public final void increaseScheduledWriteMessages() {
 		scheduledWriteMessages.incrementAndGet();
-
-		if (getService() instanceof AbstractIoService) {
-			((AbstractIoService) getService()).getStatistics().increaseScheduledWriteMessages();
-		}
 	}
 
 	/**
@@ -1048,9 +924,6 @@ public abstract class AbstractIoSession implements IoSession {
 	 */
 	private void decreaseScheduledWriteMessages() {
 		scheduledWriteMessages.decrementAndGet();
-		if (getService() instanceof AbstractIoService) {
-			((AbstractIoService) getService()).getStatistics().decreaseScheduledWriteMessages();
-		}
 	}
 
 	/**
@@ -1119,11 +992,10 @@ public abstract class AbstractIoSession implements IoSession {
 	 * Increase the ReadBuffer size (it will double)
 	 */
 	public final void increaseReadBufferSize() {
-		int newReadBufferSize = getConfig().getReadBufferSize() << 1;
-		if (newReadBufferSize <= getConfig().getMaxReadBufferSize()) {
-			getConfig().setReadBufferSize(newReadBufferSize);
-		} else {
-			getConfig().setReadBufferSize(getConfig().getMaxReadBufferSize());
+		IoSessionConfig cfg = getConfig();
+		int readBufferSize = cfg.getReadBufferSize() << 1;
+		if (readBufferSize <= cfg.getMaxReadBufferSize()) {
+			cfg.setReadBufferSize(readBufferSize);
 		}
 
 		deferDecreaseReadBuffer = true;
@@ -1138,8 +1010,10 @@ public abstract class AbstractIoSession implements IoSession {
 			return;
 		}
 
-		if (getConfig().getReadBufferSize() > getConfig().getMinReadBufferSize()) {
-			getConfig().setReadBufferSize(getConfig().getReadBufferSize() >>> 1);
+		IoSessionConfig cfg = getConfig();
+		int readBufferSize = cfg.getReadBufferSize() >> 1;
+		if (readBufferSize >= cfg.getMinReadBufferSize()) {
+			cfg.setReadBufferSize(readBufferSize);
 		}
 
 		deferDecreaseReadBuffer = true;

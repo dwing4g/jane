@@ -161,22 +161,6 @@ public interface IoSession {
 	WriteFuture write(Object message, SocketAddress destination);
 
 	/**
-	 * Closes this session immediately or after all queued write requests
-	 * are flushed.  This operation is asynchronous.  Wait for the returned
-	 * {@link CloseFuture} if you want to wait for the session actually closed.
-	 *
-	 * @param immediately {@code true} to close this session immediately
-	 *                    . The pending write requests
-	 *                    will simply be discarded.
-	 *                    {@code false} to close this session after all queued
-	 *                    write requests are flushed.
-	 * @return The associated CloseFuture
-	 * @deprecated Use either the closeNow() or the flushAndClose() methods
-	 */
-	@Deprecated
-	CloseFuture close(boolean immediately);
-
-	/**
 	 * Closes this session immediately.  This operation is asynchronous, it
 	 * returns a {@link CloseFuture}.
 	 *
@@ -194,35 +178,18 @@ public interface IoSession {
 	CloseFuture closeOnFlush();
 
 	/**
-	 * Closes this session after all queued write requests
-	 * are flushed. This operation is asynchronous.  Wait for the returned
-	 * {@link CloseFuture} if you want to wait for the session actually closed.
-	 * @deprecated use {@link #close(boolean)}
-	 *
-	 * @return The associated CloseFuture
-	 */
-	@Deprecated
-	CloseFuture close();
-
-	/**
 	 * Returns an attachment of this session.
-	 * This method is identical with <tt>getAttribute( "" )</tt>.
 	 *
 	 * @return The attachment
-	 * @deprecated Use {@link #getAttribute(Object)} instead.
 	 */
-	@Deprecated
 	Object getAttachment();
 
 	/**
 	 * Sets an attachment of this session.
-	 * This method is identical with <tt>setAttribute( "", attachment )</tt>.
 	 *
 	 * @param attachment The attachment
 	 * @return Old attachment. <tt>null</tt> if it is new.
-	 * @deprecated Use {@link #setAttribute(Object, Object)} instead.
 	 */
-	@Deprecated
 	Object setAttachment(Object attachment);
 
 	/**
@@ -464,20 +431,6 @@ public interface IoSession {
 	boolean isWriteSuspended();
 
 	/**
-	 * Update all statistical properties related with throughput assuming
-	 * the specified time is the current time.  By default this method returns
-	 * silently without updating the throughput properties if they were
-	 * calculated already within last
-	 * {@link IoSessionConfig#getThroughputCalculationInterval() calculation interval}.
-	 * If, however, <tt>force</tt> is specified as <tt>true</tt>, this method
-	 * updates the throughput properties immediately.
-
-	 * @param currentTime the current time in milliseconds
-	 * @param force Force the update if <tt>true</tt>
-	 */
-	void updateThroughput(long currentTime, boolean force);
-
-	/**
 	 * @return the total number of bytes which were read from this session.
 	 */
 	long getReadBytes();
@@ -496,26 +449,6 @@ public interface IoSession {
 	 * @return the total number of messages which were written and encoded by this session.
 	 */
 	long getWrittenMessages();
-
-	/**
-	 * @return the number of read bytes per second.
-	 */
-	double getReadBytesThroughput();
-
-	/**
-	 * @return the number of written bytes per second.
-	 */
-	double getWrittenBytesThroughput();
-
-	/**
-	 * @return the number of read messages per second.
-	 */
-	double getReadMessagesThroughput();
-
-	/**
-	 * @return the number of written messages per second.
-	 */
-	double getWrittenMessagesThroughput();
 
 	/**
 	 * @return the number of messages which are scheduled to be written to this session.

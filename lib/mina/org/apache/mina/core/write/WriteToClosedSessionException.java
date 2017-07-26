@@ -27,7 +27,7 @@ import java.util.Collection;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class WriteToClosedSessionException extends WriteException {
+public final class WriteToClosedSessionException extends WriteException {
 
 	private static final long serialVersionUID = 5550204573739301393L;
 

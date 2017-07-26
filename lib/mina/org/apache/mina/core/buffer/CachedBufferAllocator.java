@@ -57,7 +57,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class CachedBufferAllocator implements IoBufferAllocator {
+public final class CachedBufferAllocator implements IoBufferAllocator {
 
 	private static final int DEFAULT_MAX_POOL_SIZE = 8;
 

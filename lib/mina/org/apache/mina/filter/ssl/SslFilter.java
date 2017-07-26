@@ -84,7 +84,7 @@ import org.slf4j.LoggerFactory;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  * @org.apache.xbean.XBean
  */
-public class SslFilter extends IoFilterAdapter {
+public final class SslFilter extends IoFilterAdapter {
 	/** The logger */
 	private static final Logger LOGGER = LoggerFactory.getLogger(SslFilter.class);
 
@@ -812,7 +812,7 @@ public class SslFilter extends IoFilterAdapter {
 	 *
 	 * @author <a href="http://mina.apache.org">Apache MINA Project</a>
 	 */
-	public static class SslFilterMessage {
+	public static final class SslFilterMessage {
 		private final String name;
 
 		private SslFilterMessage(String name) {
@@ -825,7 +825,7 @@ public class SslFilter extends IoFilterAdapter {
 		}
 	}
 
-	private static class EncryptedWriteRequest extends WriteRequestWrapper {
+	private static final class EncryptedWriteRequest extends WriteRequestWrapper {
 		private final IoBuffer encryptedMessage;
 
 		private EncryptedWriteRequest(WriteRequest writeRequest, IoBuffer encryptedMessage) {

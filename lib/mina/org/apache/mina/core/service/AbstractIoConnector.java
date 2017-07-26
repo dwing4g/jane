@@ -91,31 +91,11 @@ public abstract class AbstractIoConnector extends AbstractIoService implements I
 	}
 
 	/**
-	 * @deprecated Take a look at <tt>getConnectTimeoutMillis()</tt>
-	 */
-	@Deprecated
-	@Override
-	public final int getConnectTimeout() {
-		return (int) connectTimeoutInMillis / 1000;
-	}
-
-	/**
 	 * {@inheritDoc}
 	 */
 	@Override
 	public final long getConnectTimeoutMillis() {
 		return connectTimeoutInMillis;
-	}
-
-	/**
-	 * @deprecated
-	 *  Take a look at <tt>setConnectTimeoutMillis(long)</tt>
-	 */
-	@Deprecated
-	@Override
-	public final void setConnectTimeout(int connectTimeout) {
-
-		setConnectTimeoutMillis(connectTimeout * 1000L);
 	}
 
 	/**

@@ -78,24 +78,6 @@ public class DefaultIoFuture implements IoFuture {
 	}
 
 	/**
-	 * @deprecated Replaced with {@link #awaitUninterruptibly()}.
-	 */
-	@Override
-	@Deprecated
-	public void join() {
-		awaitUninterruptibly();
-	}
-
-	/**
-	 * @deprecated Replaced with {@link #awaitUninterruptibly(long)}.
-	 */
-	@Override
-	@Deprecated
-	public boolean join(long timeoutMillis) {
-		return awaitUninterruptibly(timeoutMillis);
-	}
-
-	/**
 	 * {@inheritDoc}
 	 */
 	@Override

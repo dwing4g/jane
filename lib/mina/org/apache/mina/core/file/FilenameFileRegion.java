@@ -30,7 +30,7 @@ import java.nio.channels.FileChannel;
  * @author The Apache MINA Project (dev@mina.apache.org)
  * @version $Rev$, $Date$
  */
-public class FilenameFileRegion extends DefaultFileRegion {
+public final class FilenameFileRegion extends DefaultFileRegion {
 
 	private final File file;
 

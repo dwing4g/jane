@@ -112,17 +112,6 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	}
 
 	@Override
-	protected int select() throws Exception {
-		selectorLock.readLock().lock();
-
-		try {
-			return selector.select();
-		} finally {
-			selectorLock.readLock().unlock();
-		}
-	}
-
-	@Override
 	protected boolean isSelectorEmpty() {
 		selectorLock.readLock().lock();
 

@@ -28,7 +28,7 @@ import java.nio.ByteOrder;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class SimpleBufferAllocator implements IoBufferAllocator {
+public final class SimpleBufferAllocator implements IoBufferAllocator {
 
 	@Override
 	public IoBuffer allocate(int capacity, boolean direct) {

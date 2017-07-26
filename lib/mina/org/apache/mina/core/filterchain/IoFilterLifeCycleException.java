@@ -26,7 +26,7 @@ package org.apache.mina.core.filterchain;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class IoFilterLifeCycleException extends RuntimeException {
+public final class IoFilterLifeCycleException extends RuntimeException {
 	private static final long serialVersionUID = -5542098881633506449L;
 
 	/**

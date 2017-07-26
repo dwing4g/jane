@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class DefaultExceptionMonitor extends ExceptionMonitor {
+public final class DefaultExceptionMonitor extends ExceptionMonitor {
 	private static final Logger LOGGER = LoggerFactory.getLogger(DefaultExceptionMonitor.class);
 
 	/**

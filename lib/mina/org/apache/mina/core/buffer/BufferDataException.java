@@ -26,7 +26,7 @@ package org.apache.mina.core.buffer;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  *
  */
-public class BufferDataException extends RuntimeException {
+public final class BufferDataException extends RuntimeException {
 	private static final long serialVersionUID = -4138189188602563502L;
 
 	/**

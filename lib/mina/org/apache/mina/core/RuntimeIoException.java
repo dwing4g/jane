@@ -19,6 +19,8 @@
  */
 package org.apache.mina.core;
 
+import java.io.IOException;
+
 /**
  * A unchecked version of {@link IOException}.
  * <p>
@@ -28,7 +30,7 @@ package org.apache.mina.core;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class RuntimeIoException extends RuntimeException {
+public final class RuntimeIoException extends RuntimeException {
 	private static final long serialVersionUID = 9029092241311939548L;
 
 	/**

@@ -26,7 +26,7 @@ import org.apache.mina.core.session.IoSession;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class DefaultCloseFuture extends DefaultIoFuture implements CloseFuture {
+public final class DefaultCloseFuture extends DefaultIoFuture implements CloseFuture {
 	/**
 	 * Creates a new instance.
 	 *

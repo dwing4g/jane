@@ -20,7 +20,6 @@
 package org.apache.mina.core.future;
 
 import java.util.concurrent.TimeUnit;
-
 import org.apache.mina.core.session.IoSession;
 
 /**
@@ -92,21 +91,6 @@ public interface IoFuture {
 	 * @return <tt>true</tt> if the operation is finished.
 	 */
 	boolean awaitUninterruptibly(long timeoutMillis);
-
-	/**
-	 * @deprecated Replaced with {@link #awaitUninterruptibly()}.
-	 */
-	@Deprecated
-	void join();
-
-	/**
-	 * @deprecated Replaced with {@link #awaitUninterruptibly(long)}.
-	 *
-	 * @param timeoutMillis The time to wait for the join before bailing out
-	 * @return <tt>true</tt> if the join was successful
-	 */
-	@Deprecated
-	boolean join(long timeoutMillis);
 
 	/**
 	 * @return <tt>true</tt> if the operation is completed.

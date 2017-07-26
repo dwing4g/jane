@@ -25,7 +25,7 @@ package org.apache.mina.core.session;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class IoSessionInitializationException extends RuntimeException {
+public final class IoSessionInitializationException extends RuntimeException {
 	private static final long serialVersionUID = -1205810145763696189L;
 
 	/**

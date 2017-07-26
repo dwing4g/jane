@@ -58,7 +58,7 @@ import org.slf4j.LoggerFactory;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  * @org.apache.xbean.XBean
  */
-public class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
+public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 	/** The logger */
 	private static final Logger LOGGER = LoggerFactory.getLogger(DefaultIoFilterChainBuilder.class);
 

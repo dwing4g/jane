@@ -24,7 +24,7 @@ package org.apache.mina.core.buffer;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-class IoBufferHexDumper {
+final class IoBufferHexDumper {
 
 	/**
 	 * The high digits lookup table.

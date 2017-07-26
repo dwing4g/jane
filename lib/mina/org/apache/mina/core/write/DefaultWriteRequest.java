@@ -21,7 +21,6 @@ package org.apache.mina.core.write;
 
 import java.net.SocketAddress;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.session.IoSession;
@@ -31,7 +30,7 @@ import org.apache.mina.core.session.IoSession;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class DefaultWriteRequest implements WriteRequest {
+public final class DefaultWriteRequest implements WriteRequest {
 	/** An empty message */
 	public static final byte[] EMPTY_MESSAGE = new byte[] {};
 
@@ -59,22 +58,6 @@ public class DefaultWriteRequest implements WriteRequest {
 		@Override
 		public IoSession getSession() {
 			return null;
-		}
-
-		/**
-		 * {@inheritDoc}
-		 */
-		@Override
-		public void join() {
-			// Do nothing
-		}
-
-		/**
-		 * {@inheritDoc}
-		 */
-		@Override
-		public boolean join(long timeoutInMillis) {
-			return true;
 		}
 
 		/**

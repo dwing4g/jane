@@ -57,8 +57,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-/** No qualifier*/
-class SslHandler {
+public final class SslHandler {
 	/** A logger for this class */
 	private static final Logger LOGGER = LoggerFactory.getLogger(SslHandler.class);
 

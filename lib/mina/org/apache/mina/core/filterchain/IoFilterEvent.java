@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class IoFilterEvent extends IoEvent {
+public final class IoFilterEvent extends IoEvent {
 	/** A logger for this class */
 	private static final Logger LOGGER = LoggerFactory.getLogger(IoFilterEvent.class);
 

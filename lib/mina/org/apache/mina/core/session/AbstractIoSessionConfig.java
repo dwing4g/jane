@@ -137,7 +137,6 @@ public abstract class AbstractIoSessionConfig implements IoSessionConfig {
 		if (maxReadBufferSize <= 0) {
 			throw new IllegalArgumentException("maxReadBufferSize: " + maxReadBufferSize + " (expected: 1+)");
 		}
-
 		if (maxReadBufferSize < minReadBufferSize) {
 			throw new IllegalArgumentException("maxReadBufferSize: " + maxReadBufferSize + " (expected: greater than "
 					+ minReadBufferSize + ')');

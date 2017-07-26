@@ -20,7 +20,6 @@
 package org.apache.mina.core.future;
 
 import java.io.IOException;
-
 import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.session.IoSession;
 
@@ -29,7 +28,7 @@ import org.apache.mina.core.session.IoSession;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class DefaultReadFuture extends DefaultIoFuture implements ReadFuture {
+public final class DefaultReadFuture extends DefaultIoFuture implements ReadFuture {
 	/** A static object used when the session is closed */
 	private static final Object CLOSED = new Object();
 

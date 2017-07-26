@@ -280,7 +280,7 @@ SocketConnector {
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected int select(int timeout) throws Exception {
+	protected int select(long timeout) throws Exception {
 		return selector.select(timeout);
 	}
 

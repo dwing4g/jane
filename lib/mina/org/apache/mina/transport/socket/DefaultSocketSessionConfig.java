@@ -26,7 +26,7 @@ import org.apache.mina.core.service.IoService;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class DefaultSocketSessionConfig extends AbstractSocketSessionConfig {
+public final class DefaultSocketSessionConfig extends AbstractSocketSessionConfig {
 	private static final boolean DEFAULT_REUSE_ADDRESS = false;
 
 	private static final int DEFAULT_TRAFFIC_CLASS = 0;

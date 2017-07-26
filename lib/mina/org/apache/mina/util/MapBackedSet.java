@@ -33,7 +33,7 @@ import java.util.Set;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class MapBackedSet<E> extends AbstractSet<E> implements Serializable {
+public final class MapBackedSet<E> extends AbstractSet<E> implements Serializable {
 
 	private static final long serialVersionUID = -8347878570391674042L;
 

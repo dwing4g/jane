@@ -183,19 +183,4 @@ public interface IoService {
 	 * @param sessionDataStructureFactory The factory to use
 	 */
 	void setSessionDataStructureFactory(IoSessionDataStructureFactory sessionDataStructureFactory);
-
-	/**
-	 * @return The number of bytes scheduled to be written
-	 */
-	int getScheduledWriteBytes();
-
-	/**
-	 * @return The number of messages scheduled to be written
-	 */
-	int getScheduledWriteMessages();
-
-	/**
-	 * @return The statistics object for this service.
-	 */
-	IoServiceStatistics getStatistics();
 }

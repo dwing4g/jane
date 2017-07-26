@@ -33,7 +33,7 @@ package org.apache.mina.core.session;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class IdleStatus {
+public final class IdleStatus {
 	/**
 	 * Represents the session status that no data is coming from the remote
 	 * peer.

@@ -26,10 +26,10 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
-
 import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.session.AbstractIoSession;
 import org.apache.mina.core.session.AttributeKey;
+import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,7 +76,7 @@ import org.slf4j.LoggerFactory;
  * @param <S> the type of the {@link IoSession} to be managed by the specified
  *            {@link IoProcessor}.
  */
-public class SimpleIoProcessorPool<S extends AbstractIoSession> implements IoProcessor<S> {
+public final class SimpleIoProcessorPool<S extends AbstractIoSession> implements IoProcessor<S> {
 	/** A logger for this class */
 	private static final Logger LOGGER = LoggerFactory.getLogger(SimpleIoProcessorPool.class);
 

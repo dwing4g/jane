@@ -307,7 +307,7 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 	 * @return The number of socket having received some data
 	 * @throws Exception any exception thrown by the underlying systems calls
 	 */
-	protected abstract int select(int timeout) throws Exception;
+	protected abstract int select(long timeout) throws Exception;
 
 	/**
 	 * {@link Iterator} for the set of client sockets found connected or failed
@@ -428,7 +428,7 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 				try {
 					// the timeout for select shall be smaller of the connect
 					// timeout or 1 second...
-					int timeout = (int) Math.min(getConnectTimeoutMillis(), 1000L);
+					long timeout = Math.min(getConnectTimeoutMillis(), 1000L);
 					int selected = select(timeout);
 
 					nHandles += registerNew();

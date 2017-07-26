@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class NamePreservingRunnable implements Runnable {
+public final class NamePreservingRunnable implements Runnable {
 	private final static Logger LOGGER = LoggerFactory.getLogger(NamePreservingRunnable.class);
 
 	/** The runnable name */
