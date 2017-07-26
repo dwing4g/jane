@@ -169,6 +169,7 @@ implements SocketAcceptor {
 	/**
 	 * {@inheritDoc}
 	 */
+	@SuppressWarnings("resource")
 	@Override
 	protected NioSession accept(IoProcessor<NioSession> processor, ServerSocketChannel handle) throws Exception {
 
@@ -183,7 +184,7 @@ implements SocketAcceptor {
 		}
 
 		// accept the connection from the client
-		SocketChannel ch = handle.accept();
+		SocketChannel ch = (handle != null ? handle.accept() : null);
 
 		if (ch == null) {
 			return null;
@@ -195,6 +196,7 @@ implements SocketAcceptor {
 	/**
 	 * {@inheritDoc}
 	 */
+	@SuppressWarnings("resource")
 	@Override
 	protected ServerSocketChannel open(SocketAddress localAddress) throws Exception {
 		// Creates the listening ServerSocket

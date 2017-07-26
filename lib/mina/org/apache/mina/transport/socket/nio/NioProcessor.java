@@ -21,7 +21,6 @@ package org.apache.mina.transport.socket.nio;
 
 import java.io.IOException;
 import java.nio.channels.ByteChannel;
-import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -53,7 +52,6 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	private SelectorProvider selectorProvider = null;
 
 	/**
-	 *
 	 * Creates a new instance of NioProcessor.
 	 *
 	 * @param executor The executor to use
@@ -70,7 +68,6 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	}
 
 	/**
-	 *
 	 * Creates a new instance of NioProcessor.
 	 *
 	 * @param executor The executor to use
@@ -159,7 +156,6 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 		}
 	}
 
-	@SuppressWarnings("synthetic-access")
 	@Override
 	protected Iterator<NioSession> selectedSessions() {
 		return new IoSessionIterator(selector.selectedKeys());
@@ -167,6 +163,7 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 
 	@Override
 	protected void init(NioSession session) throws Exception {
+		@SuppressWarnings("resource")
 		SelectableChannel ch = (SelectableChannel) session.getChannel();
 		ch.configureBlocking(false);
 		selectorLock.readLock().lock();
@@ -180,6 +177,7 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 
 	@Override
 	protected void destroy(NioSession session) throws Exception {
+		@SuppressWarnings("resource")
 		ByteChannel ch = session.getChannel();
 
 		SelectionKey key = session.getSelectionKey();
@@ -188,7 +186,7 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 			key.cancel();
 		}
 
-		if ( ch.isOpen() ) {
+		if (ch.isOpen()) {
 			ch.close();
 		}
 	}
@@ -198,6 +196,7 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	 * trash the buggy selector and create a new one, registering all the
 	 * sockets on it.
 	 */
+	@SuppressWarnings("resource")
 	@Override
 	protected void registerNewSelector() throws IOException {
 		selectorLock.writeLock().lock();
@@ -249,10 +248,10 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 			// Loop on all the keys to see if one of them
 			// has a closed channel
 			for (SelectionKey key : keys) {
+				@SuppressWarnings("resource")
 				SelectableChannel channel = key.channel();
 
-				if (((channel instanceof DatagramChannel) && !((DatagramChannel) channel).isConnected())
-						|| ((channel instanceof SocketChannel) && !((SocketChannel) channel).isConnected())) {
+				if (channel instanceof SocketChannel && !((SocketChannel) channel).isConnected()) {
 					// The channel is not connected anymore. Cancel
 					// the associated key then.
 					key.cancel();
@@ -292,28 +291,28 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	protected boolean isReadable(NioSession session) {
 		SelectionKey key = session.getSelectionKey();
 
-		return (key != null) && key.isValid() && key.isReadable();
+		return key != null && key.isValid() && key.isReadable();
 	}
 
 	@Override
 	protected boolean isWritable(NioSession session) {
 		SelectionKey key = session.getSelectionKey();
 
-		return (key != null) && key.isValid() && key.isWritable();
+		return key != null && key.isValid() && key.isWritable();
 	}
 
 	@Override
 	protected boolean isInterestedInRead(NioSession session) {
 		SelectionKey key = session.getSelectionKey();
 
-		return (key != null) && key.isValid() && ((key.interestOps() & SelectionKey.OP_READ) != 0);
+		return key != null && key.isValid() && ((key.interestOps() & SelectionKey.OP_READ) != 0);
 	}
 
 	@Override
 	protected boolean isInterestedInWrite(NioSession session) {
 		SelectionKey key = session.getSelectionKey();
 
-		return (key != null) && key.isValid() && ((key.interestOps() & SelectionKey.OP_WRITE) != 0);
+		return key != null && key.isValid() && ((key.interestOps() & SelectionKey.OP_WRITE) != 0);
 	}
 
 	/**
@@ -323,7 +322,7 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	protected void setInterestedInRead(NioSession session, boolean isInterested) throws Exception {
 		SelectionKey key = session.getSelectionKey();
 
-		if ((key == null) || !key.isValid()) {
+		if (key == null || !key.isValid()) {
 			return;
 		}
 
@@ -348,7 +347,7 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	protected void setInterestedInWrite(NioSession session, boolean isInterested) throws Exception {
 		SelectionKey key = session.getSelectionKey();
 
-		if ((key == null) || !key.isValid()) {
+		if (key == null || !key.isValid()) {
 			return;
 		}
 
@@ -365,9 +364,7 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 
 	@Override
 	protected int read(NioSession session, IoBuffer buf) throws Exception {
-		ByteChannel channel = session.getChannel();
-
-		return channel.read(buf.buf());
+		return session.getChannel().read(buf.buf());
 	}
 
 	@Override
@@ -405,14 +402,13 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	 * An encapsulating iterator around the {@link Selector#selectedKeys()} or
 	 * the {@link Selector#keys()} iterator;
 	 */
-	protected static class IoSessionIterator<NioSession> implements Iterator<NioSession> {
+	private static class IoSessionIterator implements Iterator<NioSession> {
 		private final Iterator<SelectionKey> iterator;
 
 		/**
 		 * Create this iterator as a wrapper on top of the selectionKey Set.
 		 *
-		 * @param keys
-		 *            The set of selected sessions
+		 * @param keys The set of selected sessions
 		 */
 		private IoSessionIterator(Set<SelectionKey> keys) {
 			iterator = keys.iterator();
@@ -431,9 +427,7 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 		 */
 		@Override
 		public NioSession next() {
-			SelectionKey key = iterator.next();
-
-			return (NioSession) key.attachment();
+			return (NioSession) iterator.next().attachment();
 		}
 
 		/**

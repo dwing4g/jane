@@ -472,7 +472,8 @@ public abstract class AbstractIoService implements IoService {
 		executor.execute(new NamePreservingRunnable(worker, actualThreadName));
 	}
 
-	protected final void initSession(IoSession session, IoFuture future, IoSessionInitializer sessionInitializer) {
+	@SuppressWarnings("unchecked")
+	protected final void initSession(IoSession session, IoFuture future, @SuppressWarnings("rawtypes") IoSessionInitializer sessionInitializer) {
 		// Update lastIoTime if needed.
 		if (stats.getLastReadTime() == 0) {
 			stats.setLastReadTime(getActivationTime());

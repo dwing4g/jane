@@ -22,7 +22,6 @@ package org.apache.mina.core.future;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.mina.core.polling.AbstractPollingIoProcessor;
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.session.IoSession;
@@ -224,10 +223,9 @@ public class DefaultIoFuture implements IoFuture {
 
 					if (ready || (endTime < System.currentTimeMillis())) {
 						return ready;
-					} else {
-						// Take a chance, detect a potential deadlock
-						checkDeadLock();
 					}
+					// Take a chance, detect a potential deadlock
+					checkDeadLock();
 				}
 			} finally {
 				// We get here for 3 possible reasons :
@@ -418,7 +416,7 @@ public class DefaultIoFuture implements IoFuture {
 	}
 
 	@SuppressWarnings("unchecked")
-	private void notifyListener(IoFutureListener listener) {
+	private void notifyListener(@SuppressWarnings("rawtypes") IoFutureListener listener) {
 		try {
 			listener.operationComplete(this);
 		} catch (Exception e) {

@@ -180,6 +180,7 @@ SocketConnector {
 	/**
 	 * {@inheritDoc}
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	protected ConnectionRequest getConnectionRequest(SocketChannel handle) {
 		SelectionKey key = handle.keyFor(selector);
@@ -228,6 +229,7 @@ SocketConnector {
 	 */
 	@Override
 	protected SocketChannel newHandle(SocketAddress localAddress) throws Exception {
+		@SuppressWarnings("resource")
 		SocketChannel ch = SocketChannel.open();
 
 		int receiveBufferSize = (getSessionConfig()).getReceiveBufferSize();

@@ -79,6 +79,7 @@ class NioSocketSession extends NioSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@SuppressWarnings("resource")
 	@Override
 	public InetSocketAddress getRemoteAddress() {
 		if (channel == null) {
@@ -97,6 +98,7 @@ class NioSocketSession extends NioSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@SuppressWarnings("resource")
 	@Override
 	public InetSocketAddress getLocalAddress() {
 		if (channel == null) {
@@ -113,6 +115,7 @@ class NioSocketSession extends NioSession {
 	}
 
 	protected static void destroy(NioSession session) throws IOException {
+		@SuppressWarnings("resource")
 		ByteChannel ch = session.getChannel();
 		SelectionKey key = session.getSelectionKey();
 		if (key != null) {
@@ -345,7 +348,7 @@ class NioSocketSession extends NioSession {
 
 		if (sslFilter != null) {
 		// Get the SslHandler from the SslFilter
-			return ((SslFilter)sslFilter).isSslStarted(this);
+			return SslFilter.isSslStarted(this);
 		}
 		return false;
 	}

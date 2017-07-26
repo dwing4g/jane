@@ -22,12 +22,12 @@ package org.apache.mina.transport.socket.nio;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.Channel;
 import java.nio.channels.SelectionKey;
-
 import org.apache.mina.core.filterchain.DefaultIoFilterChain;
 import org.apache.mina.core.filterchain.IoFilterChain;
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.IoService;
 import org.apache.mina.core.session.AbstractIoSession;
+import org.apache.mina.core.session.IoSession;
 
 /**
  * An {@link IoSession} which is managed by the NIO transport.

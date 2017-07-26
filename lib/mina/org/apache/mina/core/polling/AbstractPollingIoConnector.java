@@ -551,6 +551,7 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 		 * Process the incoming connections, creating a new session for each valid
 		 * connection.
 		 */
+		@SuppressWarnings("unchecked")
 		private int processConnections(Iterator<H> handlers) {
 			int nHandles = 0;
 

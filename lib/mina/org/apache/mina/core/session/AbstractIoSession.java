@@ -218,6 +218,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * @return The associated IoProcessor for this session
 	 */
+	@SuppressWarnings("rawtypes")
 	public abstract IoProcessor getProcessor();
 
 	/**
@@ -328,6 +329,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	public final CloseFuture closeOnFlush() {
 		if (!isClosing()) {
@@ -483,11 +485,13 @@ public abstract class AbstractIoSession implements IoSession {
 	 * @return a queue of ReadFuture
 	 */
 	private Queue<ReadFuture> getReadyReadFutures() {
+		@SuppressWarnings("unchecked")
 		Queue<ReadFuture> readyReadFutures = (Queue<ReadFuture>) getAttribute(READY_READ_FUTURES_KEY);
 
 		if (readyReadFutures == null) {
 			readyReadFutures = new ConcurrentLinkedQueue<>();
 
+			@SuppressWarnings("unchecked")
 			Queue<ReadFuture> oldReadyReadFutures = (Queue<ReadFuture>) setAttributeIfAbsent(READY_READ_FUTURES_KEY,
 					readyReadFutures);
 
@@ -503,11 +507,13 @@ public abstract class AbstractIoSession implements IoSession {
 	 * @return the queue of waiting ReadFuture
 	 */
 	private Queue<ReadFuture> getWaitingReadFutures() {
+		@SuppressWarnings("unchecked")
 		Queue<ReadFuture> waitingReadyReadFutures = (Queue<ReadFuture>) getAttribute(WAITING_READ_FUTURES_KEY);
 
 		if (waitingReadyReadFutures == null) {
 			waitingReadyReadFutures = new ConcurrentLinkedQueue<>();
 
+			@SuppressWarnings("unchecked")
 			Queue<ReadFuture> oldWaitingReadyReadFutures = (Queue<ReadFuture>) setAttributeIfAbsent(
 					WAITING_READ_FUTURES_KEY, waitingReadyReadFutures);
 
@@ -530,6 +536,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@SuppressWarnings("resource")
 	@Override
 	public WriteFuture write(Object message, SocketAddress remoteAddress) {
 		if (message == null) {
@@ -737,6 +744,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	public final void suspendRead() {
 		readSuspended = true;
@@ -749,6 +757,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	public final void suspendWrite() {
 		writeSuspended = true;
@@ -1403,9 +1412,8 @@ public abstract class AbstractIoSession implements IoSession {
 
 		if (id.length() <= 8) {
 			return "0x00000000".substring(0, 10 - id.length()) + id;
-		} else {
-			return "0x" + id;
 		}
+		return "0x" + id;
 	}
 
 	/**

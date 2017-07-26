@@ -497,27 +497,16 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 		int bufferSize = config.getReadBufferSize();
 		IoBuffer buf = IoBuffer.allocate(bufferSize);
 
-		final boolean hasFragmentation = true;
-
 		try {
 			int readBytes = 0;
 			int ret;
 
 			try {
-				if (hasFragmentation) {
+				while ((ret = read(session, buf)) > 0) {
+					readBytes += ret;
 
-					while ((ret = read(session, buf)) > 0) {
-						readBytes += ret;
-
-						if (!buf.hasRemaining()) {
-							break;
-						}
-					}
-				} else {
-					ret = read(session, buf);
-
-					if (ret > 0) {
-						readBytes = ret;
+					if (!buf.hasRemaining()) {
+						break;
 					}
 				}
 			} finally {
@@ -529,12 +518,10 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 				filterChain.fireMessageReceived(buf);
 				buf = null;
 
-				if (hasFragmentation) {
-					if (readBytes << 1 < config.getReadBufferSize()) {
-						session.decreaseReadBufferSize();
-					} else if (readBytes == config.getReadBufferSize()) {
-						session.increaseReadBufferSize();
-					}
+				if (readBytes << 1 < config.getReadBufferSize()) {
+					session.decreaseReadBufferSize();
+				} else if (readBytes == config.getReadBufferSize()) {
+					session.increaseReadBufferSize();
 				}
 			} else {
 				// release temporary buffer when read nothing
@@ -687,10 +674,10 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 						boolean hasKeys = false;
 
 						for (Iterator<S> i = allSessions(); i.hasNext();) {
-							IoSession session = i.next();
+							S session = i.next();
 
 							if (session.isActive()) {
-								scheduleRemove((S) session);
+								scheduleRemove(session);
 								hasKeys = true;
 							}
 						}
@@ -885,16 +872,10 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 		 * Write all the pending messages
 		 */
 		private void flush(long currentTime) {
-			if (flushingSessions.isEmpty()) {
-				return;
-			}
-
-			do {
-				S session = flushingSessions.poll(); // the same one with
-													 // firstSession
+			for(;;) {
+				S session = flushingSessions.poll(); // the same one with firstSession
 
 				if (session == null) {
-					// Just in case ... It should not happen.
 					break;
 				}
 
@@ -936,8 +917,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 				default:
 					throw new IllegalStateException(String.valueOf(state));
 				}
-
-			} while (!flushingSessions.isEmpty());
+			}
 		}
 
 		private boolean flushNow(S session, long currentTime) {
@@ -945,8 +925,6 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 				scheduleRemove(session);
 				return false;
 			}
-
-			final boolean hasFragmentation = true;
 
 			final WriteRequestQueue writeRequestQueue = session.getWriteRequestQueue();
 
@@ -980,8 +958,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 					Object message = req.getMessage();
 
 					if (message instanceof IoBuffer) {
-						localWrittenBytes = writeBuffer(session, req, hasFragmentation, maxWrittenBytes - writtenBytes,
-								currentTime);
+						localWrittenBytes = writeBuffer(session, req, maxWrittenBytes - writtenBytes, currentTime);
 
 						if ((localWrittenBytes > 0) && ((IoBuffer) message).hasRemaining()) {
 							// the buffer isn't empty, we re-interest it in writing
@@ -990,8 +967,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 							return false;
 						}
 					} else if (message instanceof FileRegion) {
-						localWrittenBytes = writeFile(session, req, hasFragmentation, maxWrittenBytes - writtenBytes,
-								currentTime);
+						localWrittenBytes = writeFile(session, req, maxWrittenBytes - writtenBytes, currentTime);
 
 						// Fix for Java bug on Linux
 						// http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=5103988
@@ -1050,20 +1026,13 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			}
 		}
 
-		private int writeFile(S session, WriteRequest req, boolean hasFragmentation, int maxLength, long currentTime)
+		private int writeFile(S session, WriteRequest req, int maxLength, long currentTime)
 				throws Exception {
 			int localWrittenBytes;
 			FileRegion region = (FileRegion) req.getMessage();
 
 			if (region.getRemainingBytes() > 0) {
-				int length;
-
-				if (hasFragmentation) {
-					length = (int) Math.min(region.getRemainingBytes(), maxLength);
-				} else {
-					length = (int) Math.min(Integer.MAX_VALUE, region.getRemainingBytes());
-				}
-
+				int length = (int) Math.min(region.getRemainingBytes(), maxLength);
 				localWrittenBytes = transferFile(session, region, length);
 				region.update(localWrittenBytes);
 			} else {
@@ -1072,26 +1041,20 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 
 			session.increaseWrittenBytes(localWrittenBytes, currentTime);
 
-			if ((region.getRemainingBytes() <= 0) || (!hasFragmentation && (localWrittenBytes != 0))) {
+			if (region.getRemainingBytes() <= 0) {
 				fireMessageSent(session, req);
 			}
 
 			return localWrittenBytes;
 		}
 
-		private int writeBuffer(S session, WriteRequest req, boolean hasFragmentation, int maxLength, long currentTime)
+		private int writeBuffer(S session, WriteRequest req, int maxLength, long currentTime)
 				throws Exception {
 			IoBuffer buf = (IoBuffer) req.getMessage();
 			int localWrittenBytes = 0;
 
 			if (buf.hasRemaining()) {
-				int length;
-
-				if (hasFragmentation) {
-					length = Math.min(buf.remaining(), maxLength);
-				} else {
-					length = buf.remaining();
-				}
+				int length = Math.min(buf.remaining(), maxLength);
 
 				try {
 					localWrittenBytes = write(session, buf, length);
@@ -1109,7 +1072,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			session.increaseWrittenBytes(localWrittenBytes, currentTime);
 
 			// Now, forward the original message
-			if (!buf.hasRemaining() || (!hasFragmentation && (localWrittenBytes != 0))) {
+			if (!buf.hasRemaining()) {
 				// Buffer has been sent, clear the current request.
 				Object originalMessage = req.getOriginalRequest().getMessage();
 
