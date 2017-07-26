@@ -149,7 +149,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	private static IoBufferAllocator allocator = new SimpleBufferAllocator();
 
 	/** A flag indicating which type of buffer we are using : heap or direct */
-	private static boolean useDirectBuffer = false;
+	private static boolean useDirectBuffer;
 
 	/**
 	 * Creates a new instance. This is an empty constructor. It's protected,

@@ -97,10 +97,7 @@ public class BeanCodec extends IoFilterAdapter
 			Octets rawdata = ((RawBean)bean).getData();
 			int n = rawdata.remain();
 			if(n > 0)
-			{
-				next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(rawdata.array(), rawdata.position(), n),
-						writeRequest.getFuture(), null));
-			}
+				next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(rawdata.array(), rawdata.position(), n), writeRequest.getFuture()));
 		}
 		else
 		{
@@ -112,8 +109,7 @@ public class BeanCodec extends IoFilterAdapter
 			int pos = 5 - os.marshalUIntBack(reserveLen, len - reserveLen);
 			os.resize(pos);
 			os.marshalUInt(type).marshal(serial);
-			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(os.array(), pos, len - pos),
-					writeRequest.getFuture(), null));
+			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(os.array(), pos, len - pos), writeRequest.getFuture()));
 		}
 	}
 

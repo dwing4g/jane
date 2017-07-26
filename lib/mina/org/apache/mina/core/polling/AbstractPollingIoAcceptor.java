@@ -91,7 +91,7 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 	/** The thread responsible of accepting incoming requests */
 	private AtomicReference<Acceptor> acceptorRef = new AtomicReference<>();
 
-	protected boolean reuseAddress = false;
+	protected boolean reuseAddress;
 
 	/**
 	 * Define the number of socket that can wait to be accepted. Default

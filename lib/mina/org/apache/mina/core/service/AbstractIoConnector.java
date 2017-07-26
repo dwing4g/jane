@@ -26,7 +26,6 @@ import java.util.concurrent.Executors;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.future.IoFuture;
 import org.apache.mina.core.future.IoFutureListener;
-import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.session.IoSessionConfig;
 import org.apache.mina.core.session.IoSessionInitializer;
@@ -226,75 +225,7 @@ public abstract class AbstractIoConnector extends AbstractIoService implements I
 		}
 
 		if (getHandler() == null) {
-			if (getSessionConfig().isUseReadOperation()) {
-				setHandler(new IoHandler() {
-					/**
-					 * {@inheritDoc}
-					 */
-					@Override
-					public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
-						// Empty handler
-					}
-
-					/**
-					 * {@inheritDoc}
-					 */
-					@Override
-					public void messageReceived(IoSession session, Object message) throws Exception {
-						// Empty handler
-					}
-
-					/**
-					 * {@inheritDoc}
-					 */
-					@Override
-					public void messageSent(IoSession session, Object message) throws Exception {
-						// Empty handler
-					}
-
-					/**
-					 * {@inheritDoc}
-					 */
-					@Override
-					public void sessionClosed(IoSession session) throws Exception {
-						// Empty handler
-					}
-
-					/**
-					 * {@inheritDoc}
-					 */
-					@Override
-					public void sessionCreated(IoSession session) throws Exception {
-						// Empty handler
-					}
-
-					/**
-					 * {@inheritDoc}
-					 */
-					@Override
-					public void sessionIdle(IoSession session, IdleStatus status) throws Exception {
-						// Empty handler
-					}
-
-					/**
-					 * {@inheritDoc}
-					 */
-					@Override
-					public void sessionOpened(IoSession session) throws Exception {
-						// Empty handler
-					}
-
-					/**
-					 * {@inheritDoc}
-					 */
-					@Override
-					public void inputClosed(IoSession session) throws Exception {
-						// Empty handler
-					}
-				});
-			} else {
-				throw new IllegalStateException("handler is not set.");
-			}
+			throw new IllegalStateException("handler is not set.");
 		}
 
 		return connect0(remoteAddress, localAddress, sessionInitializer);

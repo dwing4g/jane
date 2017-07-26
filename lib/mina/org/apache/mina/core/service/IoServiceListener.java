@@ -20,8 +20,6 @@
 package org.apache.mina.core.service;
 
 import java.util.EventListener;
-
-import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
 
 /**
@@ -37,15 +35,6 @@ public interface IoServiceListener extends EventListener {
 	 * @throws Exception if an error occurred while the service is being activated
 	 */
 	void serviceActivated(IoService service) throws Exception;
-
-	/**
-	 * Invoked when a service is idle.
-	 *
-	 * @param service the {@link IoService}
-	 * @param idleStatus The idle status
-	 * @throws Exception if an error occurred while the service is being idled
-	 */
-	void serviceIdle(IoService service, IdleStatus idleStatus) throws Exception;
 
 	/**
 	 * Invoked when a service is deactivated by an {@link IoService}.

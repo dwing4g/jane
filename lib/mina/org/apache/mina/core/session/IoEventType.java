@@ -42,9 +42,6 @@ public enum IoEventType {
 	/** A message has been sent */
 	MESSAGE_SENT,
 
-	/** The session is idle */
-	SESSION_IDLE,
-
 	/** An exception has been caught */
 	EXCEPTION_CAUGHT,
 

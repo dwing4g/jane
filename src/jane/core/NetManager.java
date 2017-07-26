@@ -22,7 +22,6 @@ import org.apache.mina.core.future.IoFuture;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.service.IoHandler;
-import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.DefaultWriteRequest;
 import org.apache.mina.transport.socket.SocketSessionConfig;
@@ -460,7 +459,7 @@ public class NetManager implements IoHandler
 	{
 		if(session.isClosing() || obj == null) return false;
 		IoFilterChain ifc = session.getFilterChain();
-		DefaultWriteRequest dwr = new DefaultWriteRequest(obj, null, null);
+		DefaultWriteRequest dwr = new DefaultWriteRequest(obj, null);
 		synchronized(session)
 		{
 			ifc.fireFilterWrite(dwr);
@@ -477,7 +476,7 @@ public class NetManager implements IoHandler
 		IoFilterChain ifc = session.getFilterChain();
 		WriteFuture wf = new DefaultWriteFuture(session);
 		if(listener != null) wf.addListener(listener);
-		DefaultWriteRequest dwr = new DefaultWriteRequest(obj, wf, null);
+		DefaultWriteRequest dwr = new DefaultWriteRequest(obj, wf);
 		synchronized(session)
 		{
 			ifc.fireFilterWrite(dwr);
@@ -823,16 +822,6 @@ public class NetManager implements IoHandler
 		// session.closeNow();
 	}
 
-	/**
-	 * 当连接在最近一段时间内没有任何通信时的回调
-	 * <p>
-	 * 默认情况不会执行此回调. 需要自己设置mina的网络配置(getServerConfig, getClientConfig)
-	 * @param session 指定的地址
-	 */
-	protected void onIdleSession(IoSession session)
-	{
-	}
-
 	@Override
 	public void sessionCreated(IoSession session) throws Exception
 	{
@@ -907,13 +896,6 @@ public class NetManager implements IoHandler
 	@Override
 	public void messageSent(IoSession session, Object message)
 	{
-	}
-
-	@Override
-	public void sessionIdle(IoSession session, IdleStatus status)
-	{
-		if(Log.hasTrace) Log.trace("{}({}): idle: {}", _name, session.getId(), status);
-		onIdleSession(session);
 	}
 
 	@Override

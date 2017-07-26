@@ -373,34 +373,28 @@ public final class HttpCodec extends IoFilterAdapter
 		{
 			byte[] bytes = (byte[])message;
 			if(bytes.length > 0)
-				next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(bytes), writeRequest.getFuture(), null));
+				next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(bytes), writeRequest.getFuture()));
 		}
 		else if(message instanceof ByteBuffer)
 		{
 			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(String.format("%x\r\n",
-					((ByteBuffer)message).remaining()).getBytes(Const.stringCharsetUTF8)), null, null));
-			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap((ByteBuffer)message), null, null));
-			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(CHUNK_OVER_MARK), writeRequest.getFuture(), null));
+					((ByteBuffer)message).remaining()).getBytes(Const.stringCharsetUTF8)), null));
+			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap((ByteBuffer)message), null));
+			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(CHUNK_OVER_MARK), writeRequest.getFuture()));
 		}
 		else if(message instanceof OctetsStream)
 		{
 			OctetsStream os = (OctetsStream)message;
 			int n = os.remain();
 			if(n > 0)
-			{
-				next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(os.array(), os.position(), n),
-						writeRequest.getFuture(), null));
-			}
+				next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(os.array(), os.position(), n), writeRequest.getFuture()));
 		}
 		else if(message instanceof Octets)
 		{
 			Octets oct = (Octets)message;
 			int n = oct.size();
 			if(n > 0)
-			{
-				next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(oct.array(), 0, n),
-						writeRequest.getFuture(), null));
-			}
+				next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(oct.array(), 0, n), writeRequest.getFuture()));
 		}
 	}
 

@@ -24,7 +24,6 @@ import java.util.Set;
 import org.apache.mina.core.filterchain.IoFilter;
 import org.apache.mina.core.filterchain.IoFilterChain;
 import org.apache.mina.core.future.CloseFuture;
-import org.apache.mina.core.future.ReadFuture;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoConnector;
@@ -107,26 +106,6 @@ public interface IoSession {
 	WriteRequestQueue getWriteRequestQueue();
 
 	/**
-	 * TODO This javadoc is wrong. The return tag should be short.
-	 *
-	 * @return a {@link ReadFuture} which is notified when a new message is
-	 * received, the connection is closed or an exception is caught.  This
-	 * operation is especially useful when you implement a client application.
-	 * TODO : Describe here how we enable this feature.
-	 * However, please note that this operation is disabled by default and
-	 * throw {@link IllegalStateException} because all received events must be
-	 * queued somewhere to support this operation, possibly leading to memory
-	 * leak.  This means you have to keep calling {@link #read()} once you
-	 * enabled this operation.  To enable this operation, please call
-	 * {@link IoSessionConfig#setUseReadOperation(boolean)} with <tt>true</tt>.
-	 *
-	 * @throws IllegalStateException if
-	 * {@link IoSessionConfig#setUseReadOperation(boolean) useReadOperation}
-	 * option has not been enabled.
-	 */
-	ReadFuture read();
-
-	/**
 	 * Writes the specified <code>message</code> to remote peer.  This
 	 * operation is asynchronous; {@link IoHandler#messageSent(IoSession,Object)}
 	 * will be invoked when the message is actually sent to remote peer.
@@ -137,28 +116,6 @@ public interface IoSession {
 	 * @return The associated WriteFuture
 	 */
 	WriteFuture write(Object message);
-
-	/**
-	 * (Optional) Writes the specified <tt>message</tt> to the specified <tt>destination</tt>.
-	 * This operation is asynchronous; {@link IoHandler#messageSent(IoSession, Object)}
-	 * will be invoked when the message is actually sent to remote peer. You can
-	 * also wait for the returned {@link WriteFuture} if you want to wait for
-	 * the message actually written.
-	 * <p>
-	 * When you implement a client that receives a broadcast message from a server
-	 * such as DHCP server, the client might need to send a response message for the
-	 * broadcast message the server sent.  Because the remote address of the session
-	 * is not the address of the server in case of broadcasting, there should be a
-	 * way to specify the destination when you write the response message.
-	 * This interface provides {@link #write(Object, SocketAddress)} method so you
-	 * can specify the destination.
-	 *
-	 * @param message The message to write
-	 * @param destination <tt>null</tt> if you want the message sent to the
-	 *                    default remote address
-	 * @return The associated WriteFuture
-	 */
-	WriteFuture write(Object message, SocketAddress destination);
 
 	/**
 	 * Closes this session immediately.  This operation is asynchronous, it
@@ -431,37 +388,6 @@ public interface IoSession {
 	boolean isWriteSuspended();
 
 	/**
-	 * @return the total number of bytes which were read from this session.
-	 */
-	long getReadBytes();
-
-	/**
-	 * @return the total number of bytes which were written to this session.
-	 */
-	long getWrittenBytes();
-
-	/**
-	 * @return the total number of messages which were read and decoded from this session.
-	 */
-	long getReadMessages();
-
-	/**
-	 * @return the total number of messages which were written and encoded by this session.
-	 */
-	long getWrittenMessages();
-
-	/**
-	 * @return the number of messages which are scheduled to be written to this session.
-	 */
-	int getScheduledWriteMessages();
-
-	/**
-	 * @return the number of bytes which are scheduled to be written to this
-	 * session.
-	 */
-	long getScheduledWriteBytes();
-
-	/**
 	 * Returns the message which is being written by {@link IoService}.
 	 * @return <tt>null</tt> if and if only no message is being written
 	 */
@@ -474,111 +400,4 @@ public interface IoSession {
 	 * @return <tt>null</tt> if and if only no message is being written
 	 */
 	WriteRequest getCurrentWriteRequest();
-
-	/**
-	 * @return the session's creation time in milliseconds
-	 */
-	long getCreationTime();
-
-	/**
-	 * @return the time in millis when I/O occurred lastly.
-	 */
-	long getLastIoTime();
-
-	/**
-	 * @return the time in millis when read operation occurred lastly.
-	 */
-	long getLastReadTime();
-
-	/**
-	 * @return the time in millis when write operation occurred lastly.
-	 */
-	long getLastWriteTime();
-
-	/**
-	 * @param status The researched idle status
-	 * @return <tt>true</tt> if this session is idle for the specified
-	 * {@link IdleStatus}.
-	 */
-	boolean isIdle(IdleStatus status);
-
-	/**
-	 * @return <tt>true</tt> if this session is {@link IdleStatus#READER_IDLE}.
-	 * @see #isIdle(IdleStatus)
-	 */
-	boolean isReaderIdle();
-
-	/**
-	 * @return <tt>true</tt> if this session is {@link IdleStatus#WRITER_IDLE}.
-	 * @see #isIdle(IdleStatus)
-	 */
-	boolean isWriterIdle();
-
-	/**
-	 * @return <tt>true</tt> if this session is {@link IdleStatus#BOTH_IDLE}.
-	 * @see #isIdle(IdleStatus)
-	 */
-	boolean isBothIdle();
-
-	/**
-	 * @param status The researched idle status
-	 * @return the number of the fired continuous <tt>sessionIdle</tt> events
-	 * for the specified {@link IdleStatus}.
-	 * <p>
-	 * If <tt>sessionIdle</tt> event is fired first after some time after I/O,
-	 * <tt>idleCount</tt> becomes <tt>1</tt>.  <tt>idleCount</tt> resets to
-	 * <tt>0</tt> if any I/O occurs again, otherwise it increases to
-	 * <tt>2</tt> and so on if <tt>sessionIdle</tt> event is fired again without
-	 * any I/O between two (or more) <tt>sessionIdle</tt> events.
-	 */
-	int getIdleCount(IdleStatus status);
-
-	/**
-	 * @return the number of the fired continuous <tt>sessionIdle</tt> events
-	 * for {@link IdleStatus#READER_IDLE}.
-	 * @see #getIdleCount(IdleStatus)
-	 */
-	int getReaderIdleCount();
-
-	/**
-	 * @return the number of the fired continuous <tt>sessionIdle</tt> events
-	 * for {@link IdleStatus#WRITER_IDLE}.
-	 * @see #getIdleCount(IdleStatus)
-	 */
-	int getWriterIdleCount();
-
-	/**
-	 * @return the number of the fired continuous <tt>sessionIdle</tt> events
-	 * for {@link IdleStatus#BOTH_IDLE}.
-	 * @see #getIdleCount(IdleStatus)
-	 */
-	int getBothIdleCount();
-
-	/**
-	 * @param status The researched idle status
-	 * @return the time in milliseconds when the last <tt>sessionIdle</tt> event
-	 * is fired for the specified {@link IdleStatus}.
-	 */
-	long getLastIdleTime(IdleStatus status);
-
-	/**
-	 * @return the time in milliseconds when the last <tt>sessionIdle</tt> event
-	 * is fired for {@link IdleStatus#READER_IDLE}.
-	 * @see #getLastIdleTime(IdleStatus)
-	 */
-	long getLastReaderIdleTime();
-
-	/**
-	 * @return the time in milliseconds when the last <tt>sessionIdle</tt> event
-	 * is fired for {@link IdleStatus#WRITER_IDLE}.
-	 * @see #getLastIdleTime(IdleStatus)
-	 */
-	long getLastWriterIdleTime();
-
-	/**
-	 * @return the time in milliseconds when the last <tt>sessionIdle</tt> event
-	 * is fired for {@link IdleStatus#BOTH_IDLE}.
-	 * @see #getLastIdleTime(IdleStatus)
-	 */
-	long getLastBothIdleTime();
 }

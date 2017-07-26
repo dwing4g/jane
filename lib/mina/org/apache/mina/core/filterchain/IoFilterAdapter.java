@@ -19,7 +19,6 @@
  */
 package org.apache.mina.core.filterchain;
 
-import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequest;
 
@@ -95,14 +94,6 @@ public class IoFilterAdapter implements IoFilter {
 	@Override
 	public void sessionClosed(NextFilter nextFilter, IoSession session) throws Exception {
 		nextFilter.sessionClosed(session);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void sessionIdle(NextFilter nextFilter, IoSession session, IdleStatus status) throws Exception {
-		nextFilter.sessionIdle(session, status);
 	}
 
 	/**

@@ -117,7 +117,7 @@ public final class SslHandler {
 	private ReentrantLock sslLock = new ReentrantLock();
 
 	/** A counter of schedules events */
-	private final AtomicInteger scheduled_events = new AtomicInteger(0);
+	private final AtomicInteger scheduled_events = new AtomicInteger();
 
 	/**
 	 * Create a new SSL Handler, and initialize it.

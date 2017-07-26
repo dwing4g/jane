@@ -61,7 +61,7 @@ public final class IoServiceListenerSupport {
 	private volatile int largestManagedSessionCount = 0;
 
 	/** A global counter to count the number of sessions managed since the start */
-	private AtomicLong cumulativeManagedSessionCount = new AtomicLong(0);
+	private AtomicLong cumulativeManagedSessionCount = new AtomicLong();
 
 	/**
 	 * Creates a new instance of the listenerSupport.
@@ -197,9 +197,7 @@ public final class IoServiceListenerSupport {
 		boolean firstSession = false;
 
 		if (session.getService() instanceof IoConnector) {
-			synchronized (managedSessions) {
-				firstSession = managedSessions.isEmpty();
-			}
+			firstSession = managedSessions.isEmpty();
 		}
 
 		// If already registered, ignore.
@@ -261,13 +259,7 @@ public final class IoServiceListenerSupport {
 		} finally {
 			// Fire a virtual service deactivation event for the last session of the connector.
 			if (session.getService() instanceof IoConnector) {
-				boolean lastSession = false;
-
-				synchronized (managedSessions) {
-					lastSession = managedSessions.isEmpty();
-				}
-
-				if (lastSession) {
+				if (managedSessions.isEmpty()) {
 					fireServiceDeactivated();
 				}
 			}

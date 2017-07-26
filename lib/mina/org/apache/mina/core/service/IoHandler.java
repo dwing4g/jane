@@ -19,7 +19,7 @@
  */
 package org.apache.mina.core.service;
 
-import org.apache.mina.core.session.IdleStatus;
+import java.io.IOException;
 import org.apache.mina.core.session.IoSession;
 
 /**
@@ -60,17 +60,6 @@ public interface IoHandler {
 	 * @throws Exception If we get an exception while processing the close event
 	 */
 	void sessionClosed(IoSession session) throws Exception;
-
-	/**
-	 * Invoked with the related {@link IdleStatus} when a connection becomes idle.
-	 * This method is not invoked if the transport type is UDP; it's a known bug,
-	 * and will be fixed in 2.0.
-	 *
-	 * @param session The idling session
-	 * @param status The session's status
-	 * @throws Exception If we get an exception while processing the idle event
-	 */
-	void sessionIdle(IoSession session, IdleStatus status) throws Exception;
 
 	/**
 	 * Invoked when any exception is thrown by user {@link IoHandler}

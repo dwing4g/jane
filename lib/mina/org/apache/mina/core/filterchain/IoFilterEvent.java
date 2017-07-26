@@ -20,7 +20,6 @@
 package org.apache.mina.core.filterchain;
 
 import org.apache.mina.core.filterchain.IoFilter.NextFilter;
-import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoEvent;
 import org.apache.mina.core.session.IoEventType;
 import org.apache.mina.core.session.IoSession;
@@ -104,10 +103,6 @@ public final class IoFilterEvent extends IoEvent {
 			case EXCEPTION_CAUGHT:
 				Throwable throwable = (Throwable) getParameter();
 				nextFilter.exceptionCaught(session, throwable);
-				break;
-
-			case SESSION_IDLE:
-				nextFilter.sessionIdle(session, (IdleStatus) getParameter());
 				break;
 
 			case SESSION_OPENED:

@@ -113,10 +113,6 @@ public class IoEvent implements Runnable {
 				session.getFilterChain().fireExceptionCaught((Throwable) getParameter());
 				break;
 
-			case SESSION_IDLE:
-				session.getFilterChain().fireSessionIdle((IdleStatus) getParameter());
-				break;
-
 			case SESSION_OPENED:
 				session.getFilterChain().fireSessionOpened();
 				break;

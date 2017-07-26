@@ -65,8 +65,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 	private static final Logger LOG = LoggerFactory.getLogger(IoProcessor.class);
 
 	/**
-	 * A timeout used for the select, as we need to get out to deal with idle
-	 * sessions
+	 * A timeout used for the select
 	 */
 	private static final long SELECT_TIMEOUT = 1000L;
 
@@ -97,8 +96,6 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 	/** The processor thread : it handles the incoming messages */
 	private final AtomicReference<Processor> processorRef = new AtomicReference<>();
 
-	private long lastIdleCheckTime;
-
 	private final Object disposalLock = new Object();
 
 	private volatile boolean disposing;
@@ -107,7 +104,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 
 	private final DefaultIoFuture disposalFuture = new DefaultIoFuture(null);
 
-	protected AtomicBoolean wakeupCalled = new AtomicBoolean(false);
+	protected AtomicBoolean wakeupCalled = new AtomicBoolean();
 
 	/**
 	 * Create an {@link AbstractPollingIoProcessor} with the given
@@ -546,7 +543,6 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			assert processorRef.get() == this;
 
 			int nSessions = 0;
-			lastIdleCheckTime = System.currentTimeMillis();
 			int nbTries = 10;
 
 			for (;;) {
@@ -605,14 +601,10 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 					}
 
 					// Write the pending requests
-					long currentTime = System.currentTimeMillis();
-					flush(currentTime);
+					flush();
 
 					// And manage removed sessions
 					nSessions -= removeSessions();
-
-					// Last, not least, send Idle events to the idle sessions
-					notifyIdleSessions(currentTime);
 
 					// Get a chance to exit the infinite loop if there are no
 					// more sessions on this Processor
@@ -700,14 +692,6 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			}
 
 			return addedSessions;
-		}
-
-		private void notifyIdleSessions(long currentTime) throws Exception {
-			// process idle sessions
-			if (currentTime - lastIdleCheckTime >= SELECT_TIMEOUT) {
-				lastIdleCheckTime = currentTime;
-				AbstractIoSession.notifyIdleness(allSessions(), currentTime);
-			}
 		}
 
 		/**
@@ -839,7 +823,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 		/**
 		 * Write all the pending messages
 		 */
-		private void flush(long currentTime) {
+		private void flush() {
 			for(;;) {
 				S session = flushingSessions.poll(); // the same one with firstSession
 
@@ -856,7 +840,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 				switch (state) {
 				case OPENED:
 					try {
-						boolean flushedAll = flushNow(session, currentTime);
+						boolean flushedAll = flushNow(session);
 
 						if (flushedAll && !session.getWriteRequestQueue().isEmpty(session)
 								&& !session.isScheduledForFlush()) {
@@ -887,7 +871,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			}
 		}
 
-		private boolean flushNow(S session, long currentTime) {
+		private boolean flushNow(S session) {
 			if (!session.isConnected()) {
 				scheduleRemove(session);
 				return false;
@@ -925,7 +909,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 					Object message = req.getMessage();
 
 					if (message instanceof IoBuffer) {
-						localWrittenBytes = writeBuffer(session, req, maxWrittenBytes - writtenBytes, currentTime);
+						localWrittenBytes = writeBuffer(session, req, maxWrittenBytes - writtenBytes);
 
 						if ((localWrittenBytes > 0) && ((IoBuffer) message).hasRemaining()) {
 							// the buffer isn't empty, we re-interest it in writing
@@ -934,7 +918,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 							return false;
 						}
 					} else if (message instanceof FileRegion) {
-						localWrittenBytes = writeFile(session, req, maxWrittenBytes - writtenBytes, currentTime);
+						localWrittenBytes = writeFile(session, req, maxWrittenBytes - writtenBytes);
 
 						// Fix for Java bug on Linux
 						// http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=5103988
@@ -992,7 +976,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			}
 		}
 
-		private int writeFile(S session, WriteRequest req, int maxLength, long currentTime)
+		private int writeFile(S session, WriteRequest req, int maxLength)
 				throws Exception {
 			int localWrittenBytes;
 			FileRegion region = (FileRegion) req.getMessage();
@@ -1005,8 +989,6 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 				localWrittenBytes = 0;
 			}
 
-			session.increaseWrittenBytes(localWrittenBytes, currentTime);
-
 			if (region.getRemainingBytes() <= 0) {
 				fireMessageSent(session, req);
 			}
@@ -1014,7 +996,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			return localWrittenBytes;
 		}
 
-		private int writeBuffer(S session, WriteRequest req, int maxLength, long currentTime)
+		private int writeBuffer(S session, WriteRequest req, int maxLength)
 				throws Exception {
 			IoBuffer buf = (IoBuffer) req.getMessage();
 			int localWrittenBytes = 0;
@@ -1034,8 +1016,6 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 					return 0;
 				}
 			}
-
-			session.increaseWrittenBytes(localWrittenBytes, currentTime);
 
 			// Now, forward the original message
 			if (!buf.hasRemaining()) {
@@ -1117,7 +1097,6 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 				WriteToClosedSessionException cause = new WriteToClosedSessionException(failedRequests);
 
 				for (WriteRequest r : failedRequests) {
-					session.decreaseScheduledBytesAndMessages(r);
 					r.getFuture().setException(cause);
 				}
 

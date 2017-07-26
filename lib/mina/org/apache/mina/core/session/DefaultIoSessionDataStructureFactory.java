@@ -20,7 +20,6 @@
 package org.apache.mina.core.session;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -174,9 +173,7 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 		 */
 		@Override
 		public Set<Object> getAttributeKeys(IoSession session) {
-			synchronized (attributes) {
-				return new HashSet<>(attributes.keySet());
-			}
+			return attributes.keySet();
 		}
 
 		/**

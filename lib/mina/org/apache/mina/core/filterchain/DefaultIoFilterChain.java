@@ -29,7 +29,6 @@ import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.future.IoFuture;
 import org.apache.mina.core.session.AbstractIoSession;
 import org.apache.mina.core.session.AttributeKey;
-import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequest;
 import org.apache.mina.core.write.WriteRequestQueue;
@@ -537,9 +536,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 
 	private void callNextSessionCreated(Entry entry, IoSession session1) {
 		try {
-			IoFilter filter = entry.getFilter();
-			NextFilter nextFilter = entry.getNextFilter();
-			filter.sessionCreated(nextFilter, session1);
+			entry.getFilter().sessionCreated(entry.getNextFilter(), session1);
 		} catch (Exception e) {
 			fireExceptionCaught(e);
 		} catch (Error e) {
@@ -558,9 +555,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 
 	private void callNextSessionOpened(Entry entry, IoSession session1) {
 		try {
-			IoFilter filter = entry.getFilter();
-			NextFilter nextFilter = entry.getNextFilter();
-			filter.sessionOpened(nextFilter, session1);
+			entry.getFilter().sessionOpened(entry.getNextFilter(), session1);
 		} catch (Exception e) {
 			fireExceptionCaught(e);
 		} catch (Error e) {
@@ -590,9 +585,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 
 	private void callNextSessionClosed(Entry entry, IoSession session1) {
 		try {
-			IoFilter filter = entry.getFilter();
-			NextFilter nextFilter = entry.getNextFilter();
-			filter.sessionClosed(nextFilter, session1);
+			entry.getFilter().sessionClosed(entry.getNextFilter(), session1);
 		} catch (Exception | Error e) {
 			fireExceptionCaught(e);
 		}
@@ -602,41 +595,13 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void fireSessionIdle(IdleStatus status) {
-		session.increaseIdleCount(status, System.currentTimeMillis());
-		callNextSessionIdle(head, session, status);
-	}
-
-	private void callNextSessionIdle(Entry entry, IoSession session1, IdleStatus status) {
-		try {
-			IoFilter filter = entry.getFilter();
-			NextFilter nextFilter = entry.getNextFilter();
-			filter.sessionIdle(nextFilter, session1, status);
-		} catch (Exception e) {
-			fireExceptionCaught(e);
-		} catch (Error e) {
-			fireExceptionCaught(e);
-			throw e;
-		}
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
 	public void fireMessageReceived(Object message) {
-		if (message instanceof IoBuffer) {
-			session.increaseReadBytes(((IoBuffer) message).remaining(), System.currentTimeMillis());
-		}
-
 		callNextMessageReceived(head, session, message);
 	}
 
 	private void callNextMessageReceived(Entry entry, IoSession session1, Object message) {
 		try {
-			IoFilter filter = entry.getFilter();
-			NextFilter nextFilter = entry.getNextFilter();
-			filter.messageReceived(nextFilter, session1, message);
+			entry.getFilter().messageReceived(entry.getNextFilter(), session1, message);
 		} catch (Exception e) {
 			fireExceptionCaught(e);
 		} catch (Error e) {
@@ -666,9 +631,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 
 	private void callNextMessageSent(Entry entry, IoSession session1, WriteRequest writeRequest) {
 		try {
-			IoFilter filter = entry.getFilter();
-			NextFilter nextFilter = entry.getNextFilter();
-			filter.messageSent(nextFilter, session1, writeRequest);
+			entry.getFilter().messageSent(entry.getNextFilter(), session1, writeRequest);
 		} catch (Exception e) {
 			fireExceptionCaught(e);
 		} catch (Error e) {
@@ -690,9 +653,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		ConnectFuture future = (ConnectFuture) session1.removeAttribute(SESSION_CREATED_FUTURE);
 		if (future == null) {
 			try {
-				IoFilter filter = entry.getFilter();
-				NextFilter nextFilter = entry.getNextFilter();
-				filter.exceptionCaught(nextFilter, session1, cause);
+				entry.getFilter().exceptionCaught(entry.getNextFilter(), session1, cause);
 			} catch (Throwable e) {
 				LOGGER.warn("Unexpected exception from exceptionCaught handler.", e);
 			}
@@ -718,9 +679,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 
 	private void callNextInputClosed(Entry entry, IoSession session1) {
 		try {
-			IoFilter filter = entry.getFilter();
-			NextFilter nextFilter = entry.getNextFilter();
-			filter.inputClosed(nextFilter, session1);
+			entry.getFilter().inputClosed(entry.getNextFilter(), session1);
 		} catch (Throwable e) {
 			fireExceptionCaught(e);
 		}
@@ -730,15 +689,13 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 	 * {@inheritDoc}
 	 */
 	@Override
-public void fireFilterWrite(WriteRequest writeRequest) {
+	public void fireFilterWrite(WriteRequest writeRequest) {
 		callPreviousFilterWrite(tail, session, writeRequest);
 	}
 
 	private void callPreviousFilterWrite(Entry entry, IoSession session1, WriteRequest writeRequest) {
 		try {
-			IoFilter filter = entry.getFilter();
-			NextFilter nextFilter = entry.getNextFilter();
-			filter.filterWrite(nextFilter, session1, writeRequest);
+			entry.getFilter().filterWrite(entry.getNextFilter(), session1, writeRequest);
 		} catch (Exception e) {
 			writeRequest.getFuture().setException(e);
 			fireExceptionCaught(e);
@@ -759,9 +716,7 @@ public void fireFilterWrite(WriteRequest writeRequest) {
 
 	private void callPreviousFilterClose(Entry entry, IoSession session1) {
 		try {
-			IoFilter filter = entry.getFilter();
-			NextFilter nextFilter = entry.getNextFilter();
-			filter.filterClose(nextFilter, session1);
+			entry.getFilter().filterClose(entry.getNextFilter(), session1);
 		} catch (Exception e) {
 			fireExceptionCaught(e);
 		} catch (Error e) {
@@ -874,13 +829,6 @@ public void fireFilterWrite(WriteRequest writeRequest) {
 				// it after the write operation is finished, because
 				// the buffer will be specified with messageSent event.
 				buffer.mark();
-				int remaining = buffer.remaining();
-
-				if (remaining > 0) {
-					s.increaseScheduledWriteBytes(remaining);
-				}
-			} else {
-				s.increaseScheduledWriteMessages();
 			}
 
 			WriteRequestQueue writeRequestQueue = s.getWriteRequestQueue();
@@ -938,35 +886,17 @@ public void fireFilterWrite(WriteRequest writeRequest) {
 					try {
 						s.getAttributeMap().dispose(session);
 					} finally {
-						try {
-							// Remove all filters.
-							session.getFilterChain().clear();
-						} finally {
-							if (s.getConfig().isUseReadOperation()) {
-								s.offerClosedReadFuture();
-							}
-						}
+						// Remove all filters.
+						session.getFilterChain().clear();
 					}
 				}
 			}
 		}
 
 		@Override
-		public void sessionIdle(NextFilter nextFilter, IoSession session, IdleStatus status) throws Exception {
-			session.getHandler().sessionIdle(session, status);
-		}
-
-		@Override
 		public void exceptionCaught(NextFilter nextFilter, IoSession session, Throwable cause) throws Exception {
 			AbstractIoSession s = (AbstractIoSession) session;
-
-			try {
-				s.getHandler().exceptionCaught(s, cause);
-			} finally {
-				if (s.getConfig().isUseReadOperation()) {
-					s.offerFailedReadFuture(cause);
-				}
-			}
+			s.getHandler().exceptionCaught(s, cause);
 		}
 
 		@Override
@@ -978,24 +908,12 @@ public void fireFilterWrite(WriteRequest writeRequest) {
 		public void messageReceived(NextFilter nextFilter, IoSession session, Object message) throws Exception {
 			AbstractIoSession s = (AbstractIoSession) session;
 
-			if (!(message instanceof IoBuffer) || !((IoBuffer) message).hasRemaining()) {
-				s.increaseReadMessages(System.currentTimeMillis());
-			}
-
 			// Propagate the message
-			try {
-				session.getHandler().messageReceived(s, message);
-			} finally {
-				if (s.getConfig().isUseReadOperation()) {
-					s.offerReadFuture(message);
-				}
-			}
+			session.getHandler().messageReceived(s, message);
 		}
 
 		@Override
 		public void messageSent(NextFilter nextFilter, IoSession session, WriteRequest writeRequest) throws Exception {
-			((AbstractIoSession) session).increaseWrittenMessages(writeRequest, System.currentTimeMillis());
-
 			// Propagate the message
 			session.getHandler().messageSent(session, writeRequest.getMessage());
 		}
@@ -1058,14 +976,6 @@ public void fireFilterWrite(WriteRequest writeRequest) {
 				@Override
 				public void sessionClosed(IoSession session1) {
 					callNextSessionClosed(EntryImpl.this.nextEntry, session1);
-				}
-
-				/**
-				 * {@inheritDoc}
-				 */
-				@Override
-				public void sessionIdle(IoSession session1, IdleStatus status) {
-					callNextSessionIdle(EntryImpl.this.nextEntry, session1, status);
 				}
 
 				/**

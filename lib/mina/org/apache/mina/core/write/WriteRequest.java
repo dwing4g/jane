@@ -19,9 +19,9 @@
  */
 package org.apache.mina.core.write;
 
-import java.net.SocketAddress;
-
+import org.apache.mina.core.filterchain.IoFilter;
 import org.apache.mina.core.future.WriteFuture;
+import org.apache.mina.core.session.IoSession;
 
 /**
  * Represents write request fired by {@link IoSession#write(Object)}.
@@ -44,13 +44,6 @@ public interface WriteRequest {
 	 * @return a message object to be written.
 	 */
 	Object getMessage();
-
-	/**
-	 * Returns the destination of this write request.
-	 *
-	 * @return <tt>null</tt> for the default destination
-	 */
-	SocketAddress getDestination();
 
 	/**
 	 * Tells if the current message has been encoded

@@ -19,7 +19,6 @@
  */
 package org.apache.mina.core.service;
 
-import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,14 +54,6 @@ public class IoHandlerAdapter implements IoHandler {
 	 */
 	@Override
 	public void sessionClosed(IoSession session) throws Exception {
-		// Empty handler
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void sessionIdle(IoSession session, IdleStatus status) throws Exception {
 		// Empty handler
 	}
 

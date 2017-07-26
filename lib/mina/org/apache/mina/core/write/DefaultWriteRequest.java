@@ -19,7 +19,6 @@
  */
 package org.apache.mina.core.write;
 
-import java.net.SocketAddress;
 import java.util.concurrent.TimeUnit;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.future.WriteFuture;
@@ -30,7 +29,7 @@ import org.apache.mina.core.session.IoSession;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public final class DefaultWriteRequest implements WriteRequest {
+public class DefaultWriteRequest implements WriteRequest {
 	/** An empty message */
 	public static final byte[] EMPTY_MESSAGE = new byte[] {};
 
@@ -153,8 +152,6 @@ public final class DefaultWriteRequest implements WriteRequest {
 
 	private final WriteFuture future;
 
-	private final SocketAddress destination;
-
 	/**
 	 * Creates a new instance without {@link WriteFuture}.  You'll get
 	 * an instance of {@link WriteFuture} even if you called this constructor
@@ -163,17 +160,7 @@ public final class DefaultWriteRequest implements WriteRequest {
 	 * @param message The message that will be written
 	 */
 	public DefaultWriteRequest(Object message) {
-		this(message, null, null);
-	}
-
-	/**
-	 * Creates a new instance with {@link WriteFuture}.
-	 *
-	 * @param message The message that will be written
-	 * @param future The associated {@link WriteFuture}
-	 */
-	public DefaultWriteRequest(Object message, WriteFuture future) {
-		this(message, future, null);
+		this(message, null);
 	}
 
 	/**
@@ -181,10 +168,8 @@ public final class DefaultWriteRequest implements WriteRequest {
 	 *
 	 * @param message a message to write
 	 * @param future a future that needs to be notified when an operation is finished
-	 * @param destination the destination of the message.  This property will be
-	 *                    ignored unless the transport supports it.
 	 */
-	public DefaultWriteRequest(Object message, WriteFuture future, SocketAddress destination) {
+	public DefaultWriteRequest(Object message, WriteFuture future) {
 		if (message == null) {
 			throw new IllegalArgumentException("message");
 		}
@@ -195,14 +180,13 @@ public final class DefaultWriteRequest implements WriteRequest {
 
 		this.message = message;
 		this.future = future;
-		this.destination = destination;
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public WriteFuture getFuture() {
+	public final WriteFuture getFuture() {
 		return future;
 	}
 
@@ -210,7 +194,7 @@ public final class DefaultWriteRequest implements WriteRequest {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Object getMessage() {
+	public final Object getMessage() {
 		return message;
 	}
 
@@ -218,16 +202,8 @@ public final class DefaultWriteRequest implements WriteRequest {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public WriteRequest getOriginalRequest() {
+	public final WriteRequest getOriginalRequest() {
 		return this;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public SocketAddress getDestination() {
-		return destination;
 	}
 
 	@Override
@@ -241,13 +217,7 @@ public final class DefaultWriteRequest implements WriteRequest {
 		if (message.getClass().getName().equals(Object.class.getName())) {
 			sb.append("CLOSE_REQUEST");
 		} else {
-			if (getDestination() == null) {
-				sb.append(message);
-			} else {
-				sb.append(message);
-				sb.append(" => ");
-				sb.append(getDestination());
-			}
+			sb.append(message);
 		}
 
 		return sb.toString();

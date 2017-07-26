@@ -19,8 +19,6 @@
  */
 package org.apache.mina.core.write;
 
-import java.net.SocketAddress;
-
 import org.apache.mina.core.future.WriteFuture;
 
 /**
@@ -42,14 +40,6 @@ public class WriteRequestWrapper implements WriteRequest {
 			throw new IllegalArgumentException("parentRequest");
 		}
 		this.parentRequest = parentRequest;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public SocketAddress getDestination() {
-		return parentRequest.getDestination();
 	}
 
 	/**

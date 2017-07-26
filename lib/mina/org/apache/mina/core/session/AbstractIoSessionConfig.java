@@ -34,24 +34,6 @@ public abstract class AbstractIoSessionConfig implements IoSessionConfig {
 	/** The maximum size of the buffer used to read incoming data */
 	private int maxReadBufferSize = 65536;
 
-	/** The delay before we notify a session that it has been idle on read. Default to infinite */
-	private int idleTimeForRead;
-
-	/** The delay before we notify a session that it has been idle on write. Default to infinite */
-	private int idleTimeForWrite;
-
-	/**
-	 * The delay before we notify a session that it has been idle on read and write.
-	 * Default to infinite
-	 **/
-	private int idleTimeForBoth;
-
-	/** The delay to wait for a write operation to complete before bailing out */
-	private int writeTimeout = 60;
-
-	/** A flag set to true when weallow the application to do a session.read(). Default to false */
-	private boolean useReadOperation;
-
 	private int throughputCalculationInterval = 3;
 
 	protected AbstractIoSessionConfig() {
@@ -70,11 +52,6 @@ public abstract class AbstractIoSessionConfig implements IoSessionConfig {
 		setReadBufferSize(config.getReadBufferSize());
 		setMaxReadBufferSize(config.getMaxReadBufferSize());
 		setMinReadBufferSize(config.getMinReadBufferSize());
-		setIdleTime(IdleStatus.BOTH_IDLE, config.getIdleTime(IdleStatus.BOTH_IDLE));
-		setIdleTime(IdleStatus.READER_IDLE, config.getIdleTime(IdleStatus.READER_IDLE));
-		setIdleTime(IdleStatus.WRITER_IDLE, config.getIdleTime(IdleStatus.WRITER_IDLE));
-		setWriteTimeout(config.getWriteTimeout());
-		setUseReadOperation(config.isUseReadOperation());
 		setThroughputCalculationInterval(config.getThroughputCalculationInterval());
 	}
 
@@ -143,169 +120,6 @@ public abstract class AbstractIoSessionConfig implements IoSessionConfig {
 
 		}
 		this.maxReadBufferSize = maxReadBufferSize;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public int getIdleTime(IdleStatus status) {
-		if (status == IdleStatus.BOTH_IDLE) {
-			return idleTimeForBoth;
-		}
-
-		if (status == IdleStatus.READER_IDLE) {
-			return idleTimeForRead;
-		}
-
-		if (status == IdleStatus.WRITER_IDLE) {
-			return idleTimeForWrite;
-		}
-
-		throw new IllegalArgumentException("Unknown idle status: " + status);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public long getIdleTimeInMillis(IdleStatus status) {
-		return getIdleTime(status) * 1000L;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setIdleTime(IdleStatus status, int idleTime) {
-		if (idleTime < 0) {
-			throw new IllegalArgumentException("Illegal idle time: " + idleTime);
-		}
-
-		if (status == IdleStatus.BOTH_IDLE) {
-			idleTimeForBoth = idleTime;
-		} else if (status == IdleStatus.READER_IDLE) {
-			idleTimeForRead = idleTime;
-		} else if (status == IdleStatus.WRITER_IDLE) {
-			idleTimeForWrite = idleTime;
-		} else {
-			throw new IllegalArgumentException("Unknown idle status: " + status);
-		}
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final int getBothIdleTime() {
-		return getIdleTime(IdleStatus.BOTH_IDLE);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final long getBothIdleTimeInMillis() {
-		return getIdleTimeInMillis(IdleStatus.BOTH_IDLE);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final int getReaderIdleTime() {
-		return getIdleTime(IdleStatus.READER_IDLE);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final long getReaderIdleTimeInMillis() {
-		return getIdleTimeInMillis(IdleStatus.READER_IDLE);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final int getWriterIdleTime() {
-		return getIdleTime(IdleStatus.WRITER_IDLE);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final long getWriterIdleTimeInMillis() {
-		return getIdleTimeInMillis(IdleStatus.WRITER_IDLE);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setBothIdleTime(int idleTime) {
-		setIdleTime(IdleStatus.BOTH_IDLE, idleTime);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setReaderIdleTime(int idleTime) {
-		setIdleTime(IdleStatus.READER_IDLE, idleTime);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setWriterIdleTime(int idleTime) {
-		setIdleTime(IdleStatus.WRITER_IDLE, idleTime);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public int getWriteTimeout() {
-		return writeTimeout;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public long getWriteTimeoutInMillis() {
-		return writeTimeout * 1000L;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setWriteTimeout(int writeTimeout) {
-		if (writeTimeout < 0) {
-			throw new IllegalArgumentException("Illegal write timeout: " + writeTimeout);
-		}
-		this.writeTimeout = writeTimeout;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean isUseReadOperation() {
-		return useReadOperation;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setUseReadOperation(boolean useReadOperation) {
-		this.useReadOperation = useReadOperation;
 	}
 
 	/**

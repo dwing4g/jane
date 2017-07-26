@@ -20,9 +20,8 @@
 package org.apache.mina.core.filterchain;
 
 import java.util.List;
-
 import org.apache.mina.core.filterchain.IoFilter.NextFilter;
-import org.apache.mina.core.session.IdleStatus;
+import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequest;
 
@@ -262,15 +261,6 @@ public interface IoFilterChain {
 	 * fire a virtual event.
 	 */
 	void fireSessionClosed();
-
-	/**
-	 * Fires a {@link IoHandler#sessionIdle(IoSession, IdleStatus)} event. Most users don't
-	 * need to call this method at all. Please use this method only when you implement a new
-	 * transport or fire a virtual event.
-	 *
-	 * @param status The current status to propagate
-	 */
-	void fireSessionIdle(IdleStatus status);
 
 	/**
 	 * Fires a {@link IoHandler#messageReceived(IoSession, Object)} event. Most

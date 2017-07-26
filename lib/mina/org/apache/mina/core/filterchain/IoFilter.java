@@ -19,7 +19,7 @@
  */
 package org.apache.mina.core.filterchain;
 
-import org.apache.mina.core.session.IdleStatus;
+import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequest;
 
@@ -185,18 +185,6 @@ public interface IoFilter {
 	void sessionClosed(NextFilter nextFilter, IoSession session) throws Exception;
 
 	/**
-	 * Filters {@link IoHandler#sessionIdle(IoSession,IdleStatus)} event.
-	 *
-	 * @param nextFilter
-	 *            the {@link NextFilter} for this filter. You can reuse this
-	 *            object until this filter is removed from the chain.
-	 * @param session The {@link IoSession} which has received this event
-	 * @param status The {@link IdleStatus} type
-	 * @throws Exception If an error occurred while processing the event
-	 */
-	void sessionIdle(NextFilter nextFilter, IoSession session, IdleStatus status) throws Exception;
-
-	/**
 	 * Filters {@link IoHandler#exceptionCaught(IoSession,Throwable)} event.
 	 *
 	 * @param nextFilter
@@ -294,14 +282,6 @@ public interface IoFilter {
 		void sessionClosed(IoSession session);
 
 		/**
-		 * Forwards <tt>sessionIdle</tt> event to next filter.
-		 *
-		 * @param session The {@link IoSession} which has to process this invocation
-		 * @param status The {@link IdleStatus} type
-		 */
-		void sessionIdle(IoSession session, IdleStatus status);
-
-		/**
 		 * Forwards <tt>exceptionCaught</tt> event to next filter.
 		 *
 		 * @param session The {@link IoSession} which has to process this invocation
@@ -345,6 +325,5 @@ public interface IoFilter {
 		 * @param session The {@link IoSession} which has to process this invocation
 		 */
 		void filterClose(IoSession session);
-
 	}
 }
