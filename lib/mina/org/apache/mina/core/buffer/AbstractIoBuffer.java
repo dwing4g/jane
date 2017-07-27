@@ -65,7 +65,7 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	private boolean autoShrink;
 
 	/** Tells if a buffer can be expanded */
-	private boolean recapacityAllowed = true;
+	private boolean recapacityAllowed;
 
 	/** The minimum number of bytes the IoBuffer can hold */
 	private int minimumCapacity;
@@ -88,27 +88,24 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	/**
 	 * Creates a new parent buffer.
 	 *
-	 * @param allocator The allocator to use to create new buffers
 	 * @param initialCapacity The initial buffer capacity when created
 	 */
-	protected AbstractIoBuffer(IoBufferAllocator allocator, int initialCapacity) {
-		setAllocator(allocator);
-		this.recapacityAllowed = true;
-		this.derived = false;
-		this.minimumCapacity = initialCapacity;
+	protected AbstractIoBuffer(int initialCapacity) {
+		recapacityAllowed = true;
+		derived = false;
+		minimumCapacity = initialCapacity;
 	}
 
 	/**
 	 * Creates a new derived buffer. A derived buffer uses an existing
-	 * buffer properties - the allocator and capacity -.
+	 * buffer properties - capacity -.
 	 *
 	 * @param parent The buffer we get the properties from
 	 */
 	protected AbstractIoBuffer(AbstractIoBuffer parent) {
-		setAllocator(IoBuffer.getAllocator());
-		this.recapacityAllowed = false;
-		this.derived = true;
-		this.minimumCapacity = parent.minimumCapacity;
+		recapacityAllowed = false;
+		derived = true;
+		minimumCapacity = parent.minimumCapacity;
 	}
 
 	/**
@@ -117,14 +114,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	@Override
 	public final boolean isDirect() {
 		return buf().isDirect();
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final boolean isReadOnly() {
-		return buf().isReadOnly();
 	}
 
 	/**
@@ -1147,23 +1136,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	public final DoubleBuffer asDoubleBuffer() {
 		return buf().asDoubleBuffer();
 	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final IoBuffer asReadOnlyBuffer() {
-		recapacityAllowed = false;
-		return asReadOnlyBuffer0();
-	}
-
-	/**
-	 * Implement this method to return the unexpandable read only version of
-	 * this buffer.
-	 *
-	 * @return the IoBoffer instance
-	 */
-	protected abstract IoBuffer asReadOnlyBuffer0();
 
 	/**
 	 * {@inheritDoc}

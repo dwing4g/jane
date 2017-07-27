@@ -1,4 +1,4 @@
-package jane.test;
+package jane.core;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -7,8 +7,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.mina.core.buffer.AbstractIoBuffer;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.buffer.IoBufferAllocator;
+import org.apache.mina.core.buffer.SimpleBufferAllocator;
 
-public final class TestCachedBufferAllocator implements IoBufferAllocator
+public final class CachedIoBufferAllocator implements IoBufferAllocator
 {
 	private static final int DEFAULT_MAX_POOL_SIZE			= 8;
 	private static final int DEFAULT_MAX_CACHED_BUFFER_SIZE	= 1 << 16; // 64KB
@@ -19,11 +20,11 @@ public final class TestCachedBufferAllocator implements IoBufferAllocator
 
 	private final int									  maxPoolSize;
 	private final int									  maxCachedBufferSize;
-	private final ThreadLocal<ArrayDeque<CachedBuffer>[]> heapBuffers	= new TestThreadLocal();
-	private final ThreadLocal<ArrayDeque<CachedBuffer>[]> directBuffers	= new TestThreadLocal();
+	private final ThreadLocal<ArrayDeque<CachedBuffer>[]> heapBuffers	= new CacheThreadLocal();
+	private final ThreadLocal<ArrayDeque<CachedBuffer>[]> directBuffers	= new CacheThreadLocal();
 	private final int[]									  checkPoolSize	= new int[32];
 
-	private final class TestThreadLocal extends ThreadLocal<ArrayDeque<CachedBuffer>[]>
+	private final class CacheThreadLocal extends ThreadLocal<ArrayDeque<CachedBuffer>[]>
 	{
 		@Override
 		protected ArrayDeque<CachedBuffer>[] initialValue()
@@ -41,20 +42,26 @@ public final class TestCachedBufferAllocator implements IoBufferAllocator
 		}
 	}
 
-	public TestCachedBufferAllocator()
+	public static void globalSet(boolean useDirectBuffer, int maxPoolSize, int maxCachedBufferSize)
 	{
-		this(DEFAULT_MAX_POOL_SIZE, DEFAULT_MAX_CACHED_BUFFER_SIZE);
-	}
-
-	public TestCachedBufferAllocator(int maxPoolSize, int maxCachedBufferSize) // maxCachedBufferSize must be 2^n
-	{
-		this.maxPoolSize = maxPoolSize;
-		this.maxCachedBufferSize = maxCachedBufferSize;
+		IoBuffer.setUseDirectBuffer(useDirectBuffer);
+		IoBuffer.setAllocator(maxPoolSize > 0 && maxCachedBufferSize > 0 ? new CachedIoBufferAllocator(maxPoolSize, maxCachedBufferSize) : new SimpleBufferAllocator());
 	}
 
 	private static int getIdx(int cap) // cap=2^n:[0,0x40000000] => [0,31]
 	{
 		return (int)((4719556544L * cap) >> 32) & 31; // minimal perfect hash function
+	}
+
+	public CachedIoBufferAllocator()
+	{
+		this(DEFAULT_MAX_POOL_SIZE, DEFAULT_MAX_CACHED_BUFFER_SIZE);
+	}
+
+	public CachedIoBufferAllocator(int maxPoolSize, int maxCachedBufferSize) // maxCachedBufferSize must be 2^n
+	{
+		this.maxPoolSize = maxPoolSize;
+		this.maxCachedBufferSize = maxCachedBufferSize;
 	}
 
 	@Override
@@ -103,94 +110,79 @@ public final class TestCachedBufferAllocator implements IoBufferAllocator
 
 	private final class CachedBuffer extends AbstractIoBuffer
 	{
-		private final Thread ownerThread = Thread.currentThread();
-		private ByteBuffer	 buf;
+		private ByteBuffer buf;
 
 		private CachedBuffer(ByteBuffer bb)
 		{
-			super(TestCachedBufferAllocator.this, bb.capacity());
+			super(bb.capacity());
 			buf = bb;
-			bb.order(ByteOrder.BIG_ENDIAN);
 		}
 
 		private CachedBuffer(CachedBuffer parent, ByteBuffer bb)
 		{
 			super(parent);
+			if(bb == null)
+				throw new NullPointerException();
 			buf = bb;
-		}
-
-		private void free(ByteBuffer oldBuf)
-		{
-			if(oldBuf == null || oldBuf.capacity() > maxCachedBufferSize || oldBuf.isReadOnly() || isDerived() || Thread.currentThread() != ownerThread)
-				return;
-			int cap = oldBuf.capacity();
-			int i = getIdx(cap);
-			if(checkPoolSize[i] != cap) return;
-			ArrayDeque<CachedBuffer> pool = (oldBuf.isDirect() ? directBuffers : heapBuffers).get()[i];
-			if(pool.size() < maxPoolSize)
-			{
-				pool.addFirst(new CachedBuffer(oldBuf));
-				offerCount.incrementAndGet();
-			}
 		}
 
 		@Override
 		public ByteBuffer buf()
 		{
-			if(buf == null)
-				throw new IllegalStateException("Buffer has been freed already.");
 			return buf;
 		}
 
 		@Override
 		protected void buf(ByteBuffer bb)
 		{
-			ByteBuffer oldBuf = buf;
+			if(bb == null)
+				throw new NullPointerException();
 			buf = bb;
-			free(oldBuf);
 		}
 
 		@Override
 		protected IoBuffer duplicate0()
 		{
-			return new CachedBuffer(this, buf().duplicate());
+			return new CachedBuffer(this, buf.duplicate());
 		}
 
 		@Override
 		protected IoBuffer slice0()
 		{
-			return new CachedBuffer(this, buf().slice());
-		}
-
-		@Override
-		protected IoBuffer asReadOnlyBuffer0()
-		{
-			return new CachedBuffer(this, buf().asReadOnlyBuffer());
+			return new CachedBuffer(this, buf.slice());
 		}
 
 		@Override
 		public byte[] array()
 		{
-			return buf().array();
+			return buf.array();
 		}
 
 		@Override
 		public int arrayOffset()
 		{
-			return buf().arrayOffset();
+			return buf.arrayOffset();
 		}
 
 		@Override
 		public boolean hasArray()
 		{
-			return buf().hasArray();
+			return buf.hasArray();
 		}
 
 		@Override
 		public void free()
 		{
-			free(buf);
-			buf = null;
+			if(buf == null || buf.capacity() > maxCachedBufferSize || buf.isReadOnly() || isDerived()) return;
+			int cap = buf.capacity();
+			int i = getIdx(cap);
+			if(checkPoolSize[i] != cap) return;
+			ArrayDeque<CachedBuffer> pool = (buf.isDirect() ? directBuffers : heapBuffers).get()[i];
+			if(pool.size() < maxPoolSize)
+			{
+				pool.addFirst(this);
+				offerCount.incrementAndGet();
+			}
 		}
 	}
 }

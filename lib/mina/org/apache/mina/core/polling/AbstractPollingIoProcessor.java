@@ -64,9 +64,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 	/** A logger for this class */
 	private static final Logger LOG = LoggerFactory.getLogger(IoProcessor.class);
 
-	/**
-	 * A timeout used for the select
-	 */
+	/** A timeout used for the select */
 	private static final long SELECT_TIMEOUT = 1000L;
 
 	/** A map containing the last Thread ID for each class */
@@ -87,10 +85,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 	/** A queue used to store the sessions to be flushed */
 	private final Queue<S> flushingSessions = new ConcurrentLinkedQueue<>();
 
-	/**
-	 * A queue used to store the sessions which have a trafficControl to be
-	 * updated
-	 */
+	/** A queue used to store the sessions which have a trafficControl to be updated */
 	private final Queue<S> trafficControllingSessions = new ConcurrentLinkedQueue<>();
 
 	/** The processor thread : it handles the incoming messages */
@@ -485,13 +480,12 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			int readBytes = read(session, buf);
 
 			if (readBytes > 0) {
-				session.getFilterChain().fireMessageReceived(buf.flip());
-
 				if ((readBytes << 1) < readBufferSize) {
 					session.decreaseReadBufferSize();
 				} else if (readBytes >= readBufferSize) {
 					session.increaseReadBufferSize();
 				}
+				session.getFilterChain().fireMessageReceived(buf.flip());
 			} else {
 				// release temporary buffer when read nothing
 				buf.free();
@@ -499,12 +493,10 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 					session.getFilterChain().fireInputClosed();
 				}
 			}
-
+		} catch (IOException e) {
+			scheduleRemove(session);
+			session.getFilterChain().fireExceptionCaught(e);
 		} catch (Exception e) {
-			if (e instanceof IOException) {
-				scheduleRemove(session);
-			}
-
 			session.getFilterChain().fireExceptionCaught(e);
 		}
 	}
@@ -562,17 +554,13 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 						if (isBrokenConnection()) {
 							LOG.warn("Broken connection");
 						} else {
-							// Ok, we are hit by the nasty epoll
-							// spinning.
+							// Ok, we are hit by the nasty epoll spinning.
 							// Basically, there is a race condition
 							// which causes a closing file descriptor not to be
 							// considered as available as a selected channel,
-							// but
-							// it stopped the select. The next time we will
+							// but it stopped the select. The next time we will
 							// call select(), it will exit immediately for the
-							// same
-							// reason, and do so forever, consuming 100%
-							// CPU.
+							// same reason, and do so forever, consuming 100% CPU.
 							// We have to destroy the selector, and
 							// register all the socket on a new one.
 							if (nbTries == 0) {
@@ -996,8 +984,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			return localWrittenBytes;
 		}
 
-		private int writeBuffer(S session, WriteRequest req, int maxLength)
-				throws Exception {
+		private int writeBuffer(S session, WriteRequest req, int maxLength) throws Exception {
 			IoBuffer buf = (IoBuffer) req.getMessage();
 			int localWrittenBytes = 0;
 

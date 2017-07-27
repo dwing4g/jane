@@ -20,7 +20,6 @@
 package org.apache.mina.core.buffer;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 /**
  * A simplistic {@link IoBufferAllocator} which simply allocates a new
@@ -29,7 +28,6 @@ import java.nio.ByteOrder;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class SimpleBufferAllocator implements IoBufferAllocator {
-
 	@Override
 	public IoBuffer allocate(int capacity, boolean direct) {
 		return wrap(allocateNioBuffer(capacity, direct));
@@ -37,13 +35,7 @@ public final class SimpleBufferAllocator implements IoBufferAllocator {
 
 	@Override
 	public ByteBuffer allocateNioBuffer(int capacity, boolean direct) {
-		ByteBuffer nioBuffer;
-		if (direct) {
-			nioBuffer = ByteBuffer.allocateDirect(capacity);
-		} else {
-			nioBuffer = ByteBuffer.allocate(capacity);
-		}
-		return nioBuffer;
+		return direct ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity);
 	}
 
 	@Override
@@ -56,18 +48,17 @@ public final class SimpleBufferAllocator implements IoBufferAllocator {
 		// Do nothing
 	}
 
-	private class SimpleBuffer extends AbstractIoBuffer {
+	private static final class SimpleBuffer extends AbstractIoBuffer {
 		private ByteBuffer buf;
 
-		protected SimpleBuffer(ByteBuffer buf) {
-			super(SimpleBufferAllocator.this, buf.capacity());
-			this.buf = buf;
-			buf.order(ByteOrder.BIG_ENDIAN);
+		private SimpleBuffer(ByteBuffer bb) {
+			super(bb.capacity());
+			this.buf = bb;
 		}
 
-		protected SimpleBuffer(SimpleBuffer parent, ByteBuffer buf) {
+		private SimpleBuffer(SimpleBuffer parent, ByteBuffer bb) {
 			super(parent);
-			this.buf = buf;
+			this.buf = bb;
 		}
 
 		@Override
@@ -76,23 +67,18 @@ public final class SimpleBufferAllocator implements IoBufferAllocator {
 		}
 
 		@Override
-		protected void buf(ByteBuffer buf1) {
-			buf = buf1;
+		protected void buf(ByteBuffer bb) {
+			buf = bb;
 		}
 
 		@Override
 		protected IoBuffer duplicate0() {
-			return new SimpleBuffer(this, this.buf.duplicate());
+			return new SimpleBuffer(this, buf.duplicate());
 		}
 
 		@Override
 		protected IoBuffer slice0() {
-			return new SimpleBuffer(this, this.buf.slice());
-		}
-
-		@Override
-		protected IoBuffer asReadOnlyBuffer0() {
-			return new SimpleBuffer(this, this.buf.asReadOnlyBuffer());
+			return new SimpleBuffer(this, buf.slice());
 		}
 
 		@Override

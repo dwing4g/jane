@@ -7,12 +7,12 @@ import java.util.ArrayDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.mina.core.buffer.IoBuffer;
-import org.apache.mina.core.buffer.SimpleBufferAllocator;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.session.DefaultIoSessionDataStructureFactory;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequest;
 import org.apache.mina.core.write.WriteRequestQueue;
+import jane.core.CachedIoBufferAllocator;
 import jane.core.Log;
 import jane.core.NetManager;
 
@@ -143,9 +143,8 @@ public final class TestEcho extends NetManager
 		System.out.println("TestEcho: start: " + TEST_CLIENT_COUNT);
 		if(args.length > 0) TEST_ECHO_SIZE = Integer.parseInt(args[0]);
 		if(args.length > 1) TEST_ECHO_COUNT = Integer.parseInt(args[1]);
-		IoBuffer.setUseDirectBuffer((args.length > 2 ? Integer.parseInt(args[2]) : 0) > 0);
-		int count = (args.length > 3 ? Integer.parseInt(args[3]) : 0);
-		IoBuffer.setAllocator(count > 0 ? new TestCachedBufferAllocator(count, 64 * 1024) : new SimpleBufferAllocator());
+		CachedIoBufferAllocator.globalSet((args.length > 2 ? Integer.parseInt(args[2]) : 0) > 0,
+				args.length > 3 ? Integer.parseInt(args[3]) : 0, 64 * 1024);
 		long time = System.currentTimeMillis();
 		perf[2].begin();
 		perf[0].begin();
@@ -159,9 +158,9 @@ public final class TestEcho extends NetManager
 		perf[1].end();
 		perf[2].end();
 		System.out.println("TestEcho: end (" + (System.currentTimeMillis() - time) + " ms)");
-		System.out.println(TestCachedBufferAllocator.allocCount.get());
-		System.out.println(TestCachedBufferAllocator.cacheCount.get());
-		System.out.println(TestCachedBufferAllocator.offerCount.get());
+		System.out.println(CachedIoBufferAllocator.allocCount.get());
+		System.out.println(CachedIoBufferAllocator.cacheCount.get());
+		System.out.println(CachedIoBufferAllocator.offerCount.get());
 		System.out.println(_wrqCount.get());
 //		for(int i = 0; i < perf.length; ++i)
 //			System.out.println("perf[" + i + "]: " + perf[i].getAllMs() + ", " + perf[i].getAllCount());

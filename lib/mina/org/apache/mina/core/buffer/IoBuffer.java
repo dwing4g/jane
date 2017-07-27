@@ -30,7 +30,6 @@ import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
-import java.nio.ReadOnlyBufferException;
 import java.nio.ShortBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
@@ -123,8 +122,8 @@ import org.apache.mina.core.session.IoSession;
  *
  * <h2>Derived Buffers</h2>
  * <p>
- *   Derived buffers are the buffers which were created by the {@link #duplicate()},
- *   {@link #slice()}, or {@link #asReadOnlyBuffer()} methods. They are useful especially
+ *   Derived buffers are the buffers which were created by the {@link #duplicate()} or
+ *   {@link #slice()} methods. They are useful especially
  *   when you broadcast the same messages to multiple {@link IoSession}s. Please
  *   note that the buffer derived from and its derived buffers are not
  *   auto-expandable nor auto-shrinkable. Trying to call
@@ -134,10 +133,9 @@ import org.apache.mina.core.session.IoSession;
  * <h2>Changing Buffer Allocation Policy</h2>
  * <p>
  *   The {@link IoBufferAllocator} interface lets you override the default buffer
- *   management behavior. There are two allocators provided out-of-the-box:
+ *   management behavior. There is only one allocator provided out-of-the-box:
  *   <ul>
  *     <li>{@link SimpleBufferAllocator} (default)</li>
- *     <li>{@link CachedBufferAllocator}</li>
  *   </ul>
  *   You can implement your own allocator and use it by calling
  *   {@link #setAllocator(IoBufferAllocator)}.
@@ -312,17 +310,9 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 
 	/**
 	 * @return <tt>true</tt> if and only if this buffer is derived from another
-	 * buffer via one of the {@link #duplicate()}, {@link #slice()} or
-	 * {@link #asReadOnlyBuffer()} methods.
+	 * buffer via one of the {@link #duplicate()} or {@link #slice()} methods.
 	 */
 	public abstract boolean isDerived();
-
-	/**
-	 * @see ByteBuffer#isReadOnly()
-	 *
-	 * @return <tt>true</tt> if the buffer is readOnly
-	 */
-	public abstract boolean isReadOnly();
 
 	/**
 	 * @return the minimum capacity of this buffer which is used to determine
@@ -745,14 +735,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	public abstract IoBuffer slice();
 
 	/**
-	 * @see ByteBuffer#asReadOnlyBuffer()
-	 *
-	 * @return the modified IoBuffer
-
-	 */
-	public abstract IoBuffer asReadOnlyBuffer();
-
-	/**
 	 * @see ByteBuffer#hasArray()
 	 *
 	 * @return <tt>true</tt> if the {@link #array()} method will return a byte[]
@@ -1089,7 +1071,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	 * @return the modified IoBuffer
 	 *
 	 * @throws BufferOverflowException If there are fewer than three bytes remaining in this buffer
-	 * @throws ReadOnlyBufferException If this buffer is read-only
 	 */
 	public abstract IoBuffer putMediumInt(int value);
 
@@ -1109,8 +1090,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	 * @throws IndexOutOfBoundsException
 	 *             If <tt>index</tt> is negative or not smaller than the
 	 *             buffer's limit, minus three
-	 *
-	 * @throws ReadOnlyBufferException If this buffer is read-only
 	 */
 	public abstract IoBuffer putMediumInt(int index, int value);
 
