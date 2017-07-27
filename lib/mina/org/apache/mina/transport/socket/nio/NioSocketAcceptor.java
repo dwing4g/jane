@@ -50,7 +50,7 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor<NioSessio
 implements SocketAcceptor {
 
 	private volatile Selector selector;
-	private volatile SelectorProvider selectorProvider = null;
+	private volatile SelectorProvider selectorProvider;
 
 	/**
 	 * Constructor for {@link NioSocketAcceptor} using default parameters (multiple thread model).

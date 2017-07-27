@@ -526,7 +526,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 	 * process the active sessions. It's done in - handle the newly created
 	 * sessions -
 	 */
-	private class Processor implements Runnable {
+	private final class Processor implements Runnable {
 		/**
 		 * {@inheritDoc}
 		 */
@@ -545,10 +545,21 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 					// a dedicated thread).
 					long t0 = System.currentTimeMillis();
 					int selected = select(SELECT_TIMEOUT);
-					long t1 = System.currentTimeMillis();
-					long delta = t1 - t0;
 
-					if (!wakeupCalled.getAndSet(false) && (selected == 0) && (delta < 100)) {
+					long delta;
+					if (!wakeupCalled.getAndSet(false) && selected == 0 && (delta = System.currentTimeMillis() - t0) < 100) {
+						if (Thread.interrupted()) {
+							// Thread was interrupted so reset selected keys and break so we not run into a busy loop.
+							// As this is most likely a bug in the handler of the user or it's client library we will
+							// also log it.
+							//
+							// See https://github.com/netty/netty/issues/2426
+							if (LOG.isDebugEnabled()) {
+								LOG.error("Selector.select() returned prematurely because Thread.interrupted()");
+							}
+							break;
+						}
+
 						// Last chance : the select() may have been
 						// interrupted because we have had an closed channel.
 						if (isBrokenConnection()) {

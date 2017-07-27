@@ -29,8 +29,6 @@ import java.nio.channels.spi.SelectorProvider;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.Executor;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.file.FileRegion;
@@ -46,10 +44,7 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	/** The selector associated with this processor */
 	private Selector selector;
 
-	/** A lock used to protect concurent access to the selector */
-	private ReadWriteLock selectorLock = new ReentrantReadWriteLock();
-
-	private SelectorProvider selectorProvider = null;
+	private SelectorProvider selectorProvider;
 
 	/**
 	 * Creates a new instance of NioProcessor.
@@ -91,58 +86,28 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 
 	@Override
 	protected void doDispose() throws Exception {
-		selectorLock.readLock().lock();
-
-		try {
-			selector.close();
-		} finally {
-			selectorLock.readLock().unlock();
-		}
+		selector.close();
 	}
 
 	@Override
 	protected int select(long timeout) throws Exception {
-		selectorLock.readLock().lock();
-
-		try {
-			return selector.select(timeout);
-		} finally {
-			selectorLock.readLock().unlock();
-		}
+		return selector.select(timeout);
 	}
 
 	@Override
 	protected boolean isSelectorEmpty() {
-		selectorLock.readLock().lock();
-
-		try {
-			return selector.keys().isEmpty();
-		} finally {
-			selectorLock.readLock().unlock();
-		}
+		return selector.keys().isEmpty();
 	}
 
 	@Override
 	protected void wakeup() {
-		wakeupCalled.getAndSet(true);
-		selectorLock.readLock().lock();
-
-		try {
-			selector.wakeup();
-		} finally {
-			selectorLock.readLock().unlock();
-		}
+		wakeupCalled.set(true);
+		selector.wakeup();
 	}
 
 	@Override
 	protected Iterator<NioSession> allSessions() {
-		selectorLock.readLock().lock();
-
-		try {
-			return new IoSessionIterator(selector.keys());
-		} finally {
-			selectorLock.readLock().unlock();
-		}
+		return new IoSessionIterator(selector.keys());
 	}
 
 	@Override
@@ -155,13 +120,7 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 		@SuppressWarnings("resource")
 		SelectableChannel ch = (SelectableChannel) session.getChannel();
 		ch.configureBlocking(false);
-		selectorLock.readLock().lock();
-
-		try {
-			session.setSelectionKey(ch.register(selector, SelectionKey.OP_READ, session));
-		} finally {
-			selectorLock.readLock().unlock();
-		}
+		session.setSelectionKey(ch.register(selector, SelectionKey.OP_READ, session));
 	}
 
 	@Override
@@ -188,36 +147,29 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	@SuppressWarnings("resource")
 	@Override
 	protected void registerNewSelector() throws IOException {
-		selectorLock.writeLock().lock();
+		Set<SelectionKey> keys = selector.keys();
+		Selector newSelector;
 
-		try {
-			Set<SelectionKey> keys = selector.keys();
-			Selector newSelector;
-
-			// Open a new selector
-			if (selectorProvider == null) {
-				newSelector = Selector.open();
-			} else {
-				newSelector = selectorProvider.openSelector();
-			}
-
-			// Loop on all the registered keys, and register them on the new selector
-			for (SelectionKey key : keys) {
-				SelectableChannel ch = key.channel();
-
-				// Don't forget to attache the session, and back !
-				NioSession session = (NioSession) key.attachment();
-				SelectionKey newKey = ch.register(newSelector, key.interestOps(), session);
-				session.setSelectionKey(newKey);
-			}
-
-			// Now we can close the old selector and switch it
-			selector.close();
-			selector = newSelector;
-		} finally {
-			selectorLock.writeLock().unlock();
+		// Open a new selector
+		if (selectorProvider == null) {
+			newSelector = Selector.open();
+		} else {
+			newSelector = selectorProvider.openSelector();
 		}
 
+		// Loop on all the registered keys, and register them on the new selector
+		for (SelectionKey key : keys) {
+			SelectableChannel ch = key.channel();
+
+			// Don't forget to attache the session, and back !
+			NioSession session = (NioSession) key.attachment();
+			SelectionKey newKey = ch.register(newSelector, key.interestOps(), session);
+			session.setSelectionKey(newKey);
+		}
+
+		// Now we can close the old selector and switch it
+		selector.close();
+		selector = newSelector;
 	}
 
 	/**
@@ -228,29 +180,23 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 		// A flag set to true if we find a broken session
 		boolean brokenSession = false;
 
-		selectorLock.readLock().lock();
+		// Get the selector keys
+		Set<SelectionKey> keys = selector.keys();
 
-		try {
-			// Get the selector keys
-			Set<SelectionKey> keys = selector.keys();
+		// Loop on all the keys to see if one of them
+		// has a closed channel
+		for (SelectionKey key : keys) {
+			@SuppressWarnings("resource")
+			SelectableChannel channel = key.channel();
 
-			// Loop on all the keys to see if one of them
-			// has a closed channel
-			for (SelectionKey key : keys) {
-				@SuppressWarnings("resource")
-				SelectableChannel channel = key.channel();
+			if (channel instanceof SocketChannel && !((SocketChannel) channel).isConnected()) {
+				// The channel is not connected anymore. Cancel
+				// the associated key then.
+				key.cancel();
 
-				if (channel instanceof SocketChannel && !((SocketChannel) channel).isConnected()) {
-					// The channel is not connected anymore. Cancel
-					// the associated key then.
-					key.cancel();
-
-					// Set the flag to true to avoid a selector switch
-					brokenSession = true;
-				}
+				// Set the flag to true to avoid a selector switch
+				brokenSession = true;
 			}
-		} finally {
-			selectorLock.readLock().unlock();
 		}
 
 		return brokenSession;
