@@ -56,7 +56,7 @@ public final class AttributeKey implements Serializable {
 	 * @param name The Attribute name
 	 */
 	public AttributeKey(Class<?> source, String name) {
-		this.name = source.getName() + '.' + name + '@' + Integer.toHexString(this.hashCode());
+		this.name = source.getName() + '.' + name + '@' + Integer.toHexString(hashCode());
 	}
 
 	/**

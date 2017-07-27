@@ -123,7 +123,7 @@ implements SocketAcceptor {
 	 */
 	@Override
 	protected void init(SelectorProvider selectorProvider1) throws Exception {
-		this.selectorProvider = selectorProvider1;
+		selectorProvider = selectorProvider1;
 
 		if (selectorProvider1 == null) {
 			selector = Selector.open();

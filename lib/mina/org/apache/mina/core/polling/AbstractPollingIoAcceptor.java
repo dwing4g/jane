@@ -89,7 +89,7 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 	private volatile boolean selectable;
 
 	/** The thread responsible of accepting incoming requests */
-	private AtomicReference<Acceptor> acceptorRef = new AtomicReference<>();
+	private final AtomicReference<Acceptor> acceptorRef = new AtomicReference<>();
 
 	protected boolean reuseAddress;
 

@@ -74,7 +74,7 @@ public final class DefaultSocketSessionConfig extends AbstractSocketSessionConfi
 	 * @param parent1 The parent IoService.
 	 */
 	public void init(IoService parent1) {
-		this.parent = parent1;
+		parent = parent1;
 
 		if (parent1 instanceof SocketAcceptor) {
 			defaultReuseAddress = true;

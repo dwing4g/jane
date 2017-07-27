@@ -139,7 +139,7 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		if (minimumCapacity1 < 0) {
 			throw new IllegalArgumentException("minimumCapacity: " + minimumCapacity1);
 		}
-		this.minimumCapacity = minimumCapacity1;
+		minimumCapacity = minimumCapacity1;
 		return this;
 	}
 

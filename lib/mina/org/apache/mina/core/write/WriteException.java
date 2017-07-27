@@ -47,7 +47,7 @@ public class WriteException extends IOException {
 	 */
 	public WriteException(WriteRequest request) {
 		super();
-		this.requests = asRequestList(request);
+		requests = asRequestList(request);
 	}
 
 	/**
@@ -58,7 +58,7 @@ public class WriteException extends IOException {
 	 */
 	public WriteException(WriteRequest request, String message) {
 		super(message);
-		this.requests = asRequestList(request);
+		requests = asRequestList(request);
 	}
 
 	/**
@@ -71,7 +71,7 @@ public class WriteException extends IOException {
 	public WriteException(WriteRequest request, String message, Throwable cause) {
 		super(message);
 		initCause(cause);
-		this.requests = asRequestList(request);
+		requests = asRequestList(request);
 	}
 
 	/**
@@ -82,7 +82,7 @@ public class WriteException extends IOException {
 	 */
 	public WriteException(WriteRequest request, Throwable cause) {
 		initCause(cause);
-		this.requests = asRequestList(request);
+		requests = asRequestList(request);
 	}
 
 	/**

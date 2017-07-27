@@ -66,7 +66,7 @@ public class DefaultIoFuture implements IoFuture {
 	 */
 	public DefaultIoFuture(IoSession session) {
 		this.session = session;
-		this.lock = this;
+		lock = this;
 	}
 
 	/**

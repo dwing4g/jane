@@ -49,8 +49,8 @@ public final class ByteBufferPool
 
 	public ByteBufferPool(int maxPoolSize, int maxCachedBufferSize) // maxCachedBufferSize must be 2^n
 	{
-		this._maxPoolSize = maxPoolSize;
-		this._maxCachedBufferSize = maxCachedBufferSize;
+		_maxPoolSize = maxPoolSize;
+		_maxCachedBufferSize = maxCachedBufferSize;
 	}
 
 	private static int getIdx(int cap) // cap=2^n:[0,0x40000000] => [0,31]

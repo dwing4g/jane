@@ -124,7 +124,7 @@ SocketConnector {
 	 */
 	@Override
 	protected void init() throws Exception {
-		this.selector = Selector.open();
+		selector = Selector.open();
 	}
 
 	/**
@@ -305,7 +305,7 @@ SocketConnector {
 		private final Iterator<SelectionKey> i;
 
 		private SocketChannelIterator(Collection<SelectionKey> selectedKeys) {
-			this.i = selectedKeys.iterator();
+			i = selectedKeys.iterator();
 		}
 
 		/**

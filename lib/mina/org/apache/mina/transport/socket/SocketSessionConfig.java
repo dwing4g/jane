@@ -20,7 +20,6 @@
 package org.apache.mina.transport.socket;
 
 import java.net.Socket;
-
 import org.apache.mina.core.session.IoSessionConfig;
 
 /**

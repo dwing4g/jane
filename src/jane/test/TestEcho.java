@@ -36,7 +36,7 @@ public final class TestEcho extends NetManager
 			_wrqCount.incrementAndGet();
 			return new WriteRequestQueue()
 			{
-				private ArrayDeque<WriteRequest> _wrq = new ArrayDeque<>();
+				private final ArrayDeque<WriteRequest> _wrq = new ArrayDeque<>();
 
 				@Override
 				public synchronized WriteRequest poll(@SuppressWarnings("hiding") IoSession session)

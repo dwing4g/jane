@@ -61,7 +61,7 @@ public final class IoServiceListenerSupport {
 	private volatile int largestManagedSessionCount = 0;
 
 	/** A global counter to count the number of sessions managed since the start */
-	private AtomicLong cumulativeManagedSessionCount = new AtomicLong();
+	private final AtomicLong cumulativeManagedSessionCount = new AtomicLong();
 
 	/**
 	 * Creates a new instance of the listenerSupport.

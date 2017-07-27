@@ -83,10 +83,10 @@ public abstract class AbstractIoConnector extends AbstractIoService implements I
 	 */
 	public void setConnectTimeoutCheckInterval(long minimumConnectTimeout) {
 		if (getConnectTimeoutMillis() < minimumConnectTimeout) {
-			this.connectTimeoutInMillis = minimumConnectTimeout;
+			connectTimeoutInMillis = minimumConnectTimeout;
 		}
 
-		this.connectTimeoutCheckInterval = minimumConnectTimeout;
+		connectTimeoutCheckInterval = minimumConnectTimeout;
 	}
 
 	/**
@@ -104,7 +104,7 @@ public abstract class AbstractIoConnector extends AbstractIoService implements I
 	@Override
 	public final void setConnectTimeoutMillis(long connectTimeoutInMillis) {
 		if (connectTimeoutInMillis <= connectTimeoutCheckInterval) {
-			this.connectTimeoutCheckInterval = connectTimeoutInMillis;
+			connectTimeoutCheckInterval = connectTimeoutInMillis;
 		}
 		this.connectTimeoutInMillis = connectTimeoutInMillis;
 	}

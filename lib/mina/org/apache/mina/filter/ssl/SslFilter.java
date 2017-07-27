@@ -334,7 +334,7 @@ public final class SslFilter extends IoFilterAdapter {
 	 * @param clientMode <tt>true</tt> when we are in client mode, <tt>false</tt> when in server mode
 	 */
 	public void setUseClientMode(boolean clientMode) {
-		this.client = clientMode;
+		client = clientMode;
 	}
 
 	/**
@@ -388,7 +388,7 @@ public final class SslFilter extends IoFilterAdapter {
 	 * @param cipherSuites <tt>null</tt> means 'use {@link SSLEngine}'s default.'
 	 */
 	public void setEnabledCipherSuites(String[] cipherSuites) {
-		this.enabledCipherSuites = cipherSuites;
+		enabledCipherSuites = cipherSuites;
 	}
 
 	/**
@@ -406,7 +406,7 @@ public final class SslFilter extends IoFilterAdapter {
 	 * @param protocols <tt>null</tt> means 'use {@link SSLEngine}'s default.'
 	 */
 	public void setEnabledProtocols(String[] protocols) {
-		this.enabledProtocols = protocols;
+		enabledProtocols = protocols;
 	}
 
 	/**

@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.mina.core.session.IoSession;
 
 /**

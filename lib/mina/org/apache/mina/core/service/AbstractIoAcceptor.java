@@ -169,8 +169,8 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 					throw new IllegalArgumentException("empty localAddresses");
 				}
 
-				this.defaultLocalAddresses.clear();
-				this.defaultLocalAddresses.addAll(newLocalAddresses);
+				defaultLocalAddresses.clear();
+				defaultLocalAddresses.addAll(newLocalAddresses);
 			}
 		}
 	}
@@ -209,7 +209,7 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 	 */
 	@Override
 	public final void setCloseOnDeactivation(boolean disconnectClientsOnUnbind) {
-		this.disconnectOnUnbind = disconnectClientsOnUnbind;
+		disconnectOnUnbind = disconnectClientsOnUnbind;
 	}
 
 	/**

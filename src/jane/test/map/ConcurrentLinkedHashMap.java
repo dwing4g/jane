@@ -1113,7 +1113,7 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
      */
     public Builder initialCapacity(int cap) {
       checkArgument(cap >= 0);
-      this.initialCapacity = cap;
+      initialCapacity = cap;
       return this;
     }
 
@@ -1127,7 +1127,7 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
      */
     public Builder maximumWeightedCapacity(long cap) {
       checkArgument(cap >= 0);
-      this.capacity = cap;
+      capacity = cap;
       return this;
     }
 
@@ -1143,7 +1143,7 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
      */
     public Builder concurrencyLevel(int level) {
       checkArgument(level > 0);
-      this.concurrencyLevel = level;
+      concurrencyLevel = level;
       return this;
     }
 

@@ -114,7 +114,7 @@ public final class SslHandler {
 	private boolean writingEncryptedData;
 
 	/** A lock to protect the SSL flush of events */
-	private ReentrantLock sslLock = new ReentrantLock();
+	private final ReentrantLock sslLock = new ReentrantLock();
 
 	/** A counter of schedules events */
 	private final AtomicInteger scheduled_events = new AtomicInteger();

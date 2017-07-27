@@ -20,6 +20,7 @@
 package org.apache.mina.core.future;
 
 import java.util.EventListener;
+import org.apache.mina.core.session.IoSession;
 
 /**
  * Something interested in being notified when the completion

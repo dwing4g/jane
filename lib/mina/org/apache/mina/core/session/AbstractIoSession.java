@@ -84,7 +84,7 @@ public abstract class AbstractIoSession implements IoSession {
 	private static AtomicLong idGenerator = new AtomicLong();
 
 	/** The session ID */
-	private long sessionId;
+	private final long sessionId;
 
 	/**
 	 * A future that will be set 'closed' when the connection is closed.

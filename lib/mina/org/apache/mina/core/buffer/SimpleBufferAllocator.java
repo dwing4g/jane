@@ -53,12 +53,12 @@ public final class SimpleBufferAllocator implements IoBufferAllocator {
 
 		private SimpleBuffer(ByteBuffer bb) {
 			super(bb.capacity());
-			this.buf = bb;
+			buf = bb;
 		}
 
 		private SimpleBuffer(SimpleBuffer parent, ByteBuffer bb) {
 			super(parent);
-			this.buf = bb;
+			buf = bb;
 		}
 
 		@Override
