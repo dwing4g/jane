@@ -4,7 +4,7 @@ simple, fast, powerful application server framework based on tcp and embedded da
 
 Feature:
  * application server framework in Java7
- * TCP server and client framework based on Apache Mina
+ * TCP server and client framework based on custom optimized Apache Mina
  * simple, extensible and compact protocol on TCP
  * embedded database based on LevelDB with extremely fast in-memory cache
  * single process with multi-thread concurrent network and database
@@ -27,8 +27,8 @@ License:
 
 语言:
  * Java 7+ (框架和逻辑编写的主语言)
- * Lua 5.1 (基于Luaj的实现, 目前主要用于代码生成的脚本, 也可作为逻辑调用的脚本, 也用于客户端及工具程序)
- * C# 4.0+ (和Java版本兼容的bean部分实现和代码生成脚本, 以及网络模块实现)
+ * Lua 5.1 (Lua版本的bean和网络部分实现, 也用于代码生成等工具脚本)
+ * C# 4.0+ (C#版本的bean和网络部分实现)
 
 原则:
  * 以bean为核心
@@ -36,9 +36,8 @@ License:
 
 依赖库:
  * 日志库: slf4j-1.7.x logback-1.2.x
- * 网络库: mina-core-2.0.x
+ * 网络库: mina-core-2.0.x (已内置到jane中)
  * 数据库: leveldb-jni
- * 脚本库: luaj-jse-2.0.x
 
 托管站点:
  * https://github.com/dwing4g/jane
