@@ -91,7 +91,7 @@ public final class IntHashMap<V> implements Cloneable
 
 	public int getTableSize()
 	{
-		return _keyTable.length;
+		return _capacity + _stashSize;
 	}
 
 	public int getIndexKey(int index)
@@ -380,9 +380,9 @@ public final class IntHashMap<V> implements Cloneable
 		if(key == EMPTY)
 		{
 			if(!_hasZeroValue) return null;
+			_hasZeroValue = false;
 			V oldValue = _zeroValue;
 			_zeroValue = null;
-			_hasZeroValue = false;
 			_size--;
 			return oldValue;
 		}
@@ -466,8 +466,8 @@ public final class IntHashMap<V> implements Cloneable
 			clear();
 			return;
 		}
-		_zeroValue = null;
 		_hasZeroValue = false;
+		_zeroValue = null;
 		_size = 0;
 		resize(maximumCapacity);
 	}
@@ -476,15 +476,14 @@ public final class IntHashMap<V> implements Cloneable
 	{
 		int[] kt = _keyTable;
 		V[] vt = _valueTable;
-		for(int i = _capacity + _stashSize; i-- > 0;)
-		{
+		for(int i = 0, n = _capacity; i < n; ++i)
 			kt[i] = EMPTY;
+		for(int i = 0, n = _capacity + _stashSize; i < n; ++i)
 			vt[i] = null;
-		}
 		_size = 0;
 		_stashSize = 0;
-		_zeroValue = null;
 		_hasZeroValue = false;
+		_zeroValue = null;
 	}
 
 	public boolean containsValue(Object value, boolean identity)
