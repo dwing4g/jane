@@ -52,7 +52,7 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 		return new DefaultWriteRequestQueue(session);
 	}
 
-	private static class DefaultIoSessionAttributeMap implements IoSessionAttributeMap {
+	private static final class DefaultIoSessionAttributeMap implements IoSessionAttributeMap {
 		private final ConcurrentHashMap<Object, Object> attributes = new ConcurrentHashMap<>(4);
 
 		/**
@@ -137,7 +137,7 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 		}
 	}
 
-	private static class DefaultWriteRequestQueue implements WriteRequestQueue {
+	private static final class DefaultWriteRequestQueue implements WriteRequestQueue {
 		/** A queue to store incoming write requests */
 		private final Queue<WriteRequest> q = new ConcurrentLinkedQueue<>();
 		private final IoSession s;

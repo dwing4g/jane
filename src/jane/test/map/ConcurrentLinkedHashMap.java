@@ -1088,7 +1088,7 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
    *     .<Vertex, Set<Edge>>build();
    * }</pre>
    */
-  public static class Builder {
+  public static final class Builder {
     private static final int DEFAULT_CONCURRENCY_LEVEL = 16;
     private static final int DEFAULT_INITIAL_CAPACITY = 16;
 

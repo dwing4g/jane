@@ -458,7 +458,7 @@ public final void bind(Iterable<? extends SocketAddress> localAddresses) throws 
 	/**
 	 * A {@Link IoFuture}
 	 */
-	public static class AcceptorOperationFuture extends ServiceOperationFuture {
+	public static final class AcceptorOperationFuture extends ServiceOperationFuture {
 		private final List<SocketAddress> localAddresses;
 
 		/**

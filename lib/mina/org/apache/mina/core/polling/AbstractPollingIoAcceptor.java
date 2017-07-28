@@ -309,12 +309,12 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 	/**
 	 * Accept a client connection for a server socket and return a new {@link IoSession}
 	 * associated with the given {@link IoProcessor}
-	 * @param processor1 the {@link IoProcessor} to associate with the {@link IoSession}
+	 * @param ioProcessor the {@link IoProcessor} to associate with the {@link IoSession}
 	 * @param handle the server handle
 	 * @return the created {@link IoSession}
 	 * @throws Exception any exception thrown by the underlying systems calls
 	 */
-	protected abstract S accept(IoProcessor<S> processor1, H handle) throws Exception;
+	protected abstract S accept(IoProcessor<S> ioProcessor, H handle) throws Exception;
 
 	/**
 	 * Close a server socket.
@@ -435,7 +435,7 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 	 * It's a thread accepting incoming connections from clients.
 	 * The loop is stopped when all the bound handlers are unbound.
 	 */
-	private class Acceptor implements Runnable {
+	private final class Acceptor implements Runnable {
 		/**
 		 * {@inheritDoc}
 		 */

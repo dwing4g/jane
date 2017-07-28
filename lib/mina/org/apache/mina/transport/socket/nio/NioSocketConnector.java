@@ -300,7 +300,7 @@ SocketConnector {
 		selector.wakeup();
 	}
 
-	private static class SocketChannelIterator implements Iterator<SocketChannel> {
+	private static final class SocketChannelIterator implements Iterator<SocketChannel> {
 
 		private final Iterator<SelectionKey> i;
 

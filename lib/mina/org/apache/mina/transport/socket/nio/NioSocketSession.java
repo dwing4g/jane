@@ -130,7 +130,7 @@ public final class NioSocketSession extends NioSession {
 	 * is created. That allows the session to have its own configuration setting, over
 	 * the IoService default one.
 	 */
-	private class SessionConfigImpl extends AbstractSocketSessionConfig {
+	private final class SessionConfigImpl extends AbstractSocketSessionConfig {
 		/**
 		 * {@inheritDoc}
 		 */

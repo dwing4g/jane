@@ -534,9 +534,9 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		callNextSessionCreated(head, session);
 	}
 
-	private void callNextSessionCreated(Entry entry, IoSession session1) {
+	private void callNextSessionCreated(Entry entry, IoSession ioSession) {
 		try {
-			entry.getFilter().sessionCreated(entry.getNextFilter(), session1);
+			entry.getFilter().sessionCreated(entry.getNextFilter(), ioSession);
 		} catch (Exception e) {
 			fireExceptionCaught(e);
 		} catch (Error e) {
@@ -553,9 +553,9 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		callNextSessionOpened(head, session);
 	}
 
-	private void callNextSessionOpened(Entry entry, IoSession session1) {
+	private void callNextSessionOpened(Entry entry, IoSession ioSession) {
 		try {
-			entry.getFilter().sessionOpened(entry.getNextFilter(), session1);
+			entry.getFilter().sessionOpened(entry.getNextFilter(), ioSession);
 		} catch (Exception e) {
 			fireExceptionCaught(e);
 		} catch (Error e) {
@@ -583,9 +583,9 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		callNextSessionClosed(head, session);
 	}
 
-	private void callNextSessionClosed(Entry entry, IoSession session1) {
+	private void callNextSessionClosed(Entry entry, IoSession ioSession) {
 		try {
-			entry.getFilter().sessionClosed(entry.getNextFilter(), session1);
+			entry.getFilter().sessionClosed(entry.getNextFilter(), ioSession);
 		} catch (Exception | Error e) {
 			fireExceptionCaught(e);
 		}
@@ -599,9 +599,9 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		callNextMessageReceived(head, session, message);
 	}
 
-	private void callNextMessageReceived(Entry entry, IoSession session1, Object message) {
+	private void callNextMessageReceived(Entry entry, IoSession ioSession, Object message) {
 		try {
-			entry.getFilter().messageReceived(entry.getNextFilter(), session1, message);
+			entry.getFilter().messageReceived(entry.getNextFilter(), ioSession, message);
 		} catch (Exception e) {
 			fireExceptionCaught(e);
 		} catch (Error e) {
@@ -629,9 +629,9 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		}
 	}
 
-	private void callNextMessageSent(Entry entry, IoSession session1, WriteRequest writeRequest) {
+	private void callNextMessageSent(Entry entry, IoSession ioSession, WriteRequest writeRequest) {
 		try {
-			entry.getFilter().messageSent(entry.getNextFilter(), session1, writeRequest);
+			entry.getFilter().messageSent(entry.getNextFilter(), ioSession, writeRequest);
 		} catch (Exception e) {
 			fireExceptionCaught(e);
 		} catch (Error e) {
@@ -648,21 +648,21 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		callNextExceptionCaught(head, session, cause);
 	}
 
-	private static void callNextExceptionCaught(Entry entry, IoSession session1, Throwable cause) {
+	private static void callNextExceptionCaught(Entry entry, IoSession ioSession, Throwable cause) {
 		// Notify the related future.
-		ConnectFuture future = (ConnectFuture) session1.removeAttribute(SESSION_CREATED_FUTURE);
+		ConnectFuture future = (ConnectFuture) ioSession.removeAttribute(SESSION_CREATED_FUTURE);
 		if (future == null) {
 			try {
-				entry.getFilter().exceptionCaught(entry.getNextFilter(), session1, cause);
+				entry.getFilter().exceptionCaught(entry.getNextFilter(), ioSession, cause);
 			} catch (Throwable e) {
 				LOGGER.warn("Unexpected exception from exceptionCaught handler.", e);
 			}
 		} else {
 			// Please note that this place is not the only place that
 			// calls ConnectFuture.setException().
-			if (!session1.isClosing()) {
+			if (!ioSession.isClosing()) {
 				// Call the closeNow method only if needed
-				session1.closeNow();
+				ioSession.closeNow();
 			}
 
 			future.setException(cause);
@@ -677,9 +677,9 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		callNextInputClosed(head, session);
 	}
 
-	private void callNextInputClosed(Entry entry, IoSession session1) {
+	private void callNextInputClosed(Entry entry, IoSession ioSession) {
 		try {
-			entry.getFilter().inputClosed(entry.getNextFilter(), session1);
+			entry.getFilter().inputClosed(entry.getNextFilter(), ioSession);
 		} catch (Throwable e) {
 			fireExceptionCaught(e);
 		}
@@ -693,9 +693,9 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		callPreviousFilterWrite(tail, session, writeRequest);
 	}
 
-	private void callPreviousFilterWrite(Entry entry, IoSession session1, WriteRequest writeRequest) {
+	private void callPreviousFilterWrite(Entry entry, IoSession ioSession, WriteRequest writeRequest) {
 		try {
-			entry.getFilter().filterWrite(entry.getNextFilter(), session1, writeRequest);
+			entry.getFilter().filterWrite(entry.getNextFilter(), ioSession, writeRequest);
 		} catch (Exception e) {
 			writeRequest.getFuture().setException(e);
 			fireExceptionCaught(e);
@@ -714,9 +714,9 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		callPreviousFilterClose(tail, session);
 	}
 
-	private void callPreviousFilterClose(Entry entry, IoSession session1) {
+	private void callPreviousFilterClose(Entry entry, IoSession ioSession) {
 		try {
-			entry.getFilter().filterClose(entry.getNextFilter(), session1);
+			entry.getFilter().filterClose(entry.getNextFilter(), ioSession);
 		} catch (Exception e) {
 			fireExceptionCaught(e);
 		} catch (Error e) {
@@ -815,7 +815,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		return buf.toString();
 	}
 
-	private class HeadFilter extends IoFilterAdapter {
+	private static final class HeadFilter extends IoFilterAdapter {
 		@SuppressWarnings("unchecked")
 		@Override
 		public void filterWrite(NextFilter nextFilter, IoSession ioSession, WriteRequest writeRequest) throws Exception {
@@ -845,12 +845,12 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 
 		@SuppressWarnings("unchecked")
 		@Override
-		public void filterClose(NextFilter nextFilter, IoSession session1) throws Exception {
-			((AbstractIoSession) session1).getProcessor().remove(session1);
+		public void filterClose(NextFilter nextFilter, IoSession ioSession) throws Exception {
+			((AbstractIoSession) ioSession).getProcessor().remove(ioSession);
 		}
 	}
 
-	private static class TailFilter extends IoFilterAdapter {
+	private static final class TailFilter extends IoFilterAdapter {
 		@Override
 		public void sessionCreated(NextFilter nextFilter, IoSession session) throws Exception {
 			try {
@@ -955,72 +955,72 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 				 * {@inheritDoc}
 				 */
 				@Override
-				public void sessionCreated(IoSession session1) {
-					callNextSessionCreated(EntryImpl.this.nextEntry, session1);
+				public void sessionCreated(IoSession ioSession) {
+					callNextSessionCreated(EntryImpl.this.nextEntry, ioSession);
 				}
 
 				/**
 				 * {@inheritDoc}
 				 */
 				@Override
-				public void sessionOpened(IoSession session1) {
-					callNextSessionOpened(EntryImpl.this.nextEntry, session1);
+				public void sessionOpened(IoSession ioSession) {
+					callNextSessionOpened(EntryImpl.this.nextEntry, ioSession);
 				}
 
 				/**
 				 * {@inheritDoc}
 				 */
 				@Override
-				public void sessionClosed(IoSession session1) {
-					callNextSessionClosed(EntryImpl.this.nextEntry, session1);
+				public void sessionClosed(IoSession ioSession) {
+					callNextSessionClosed(EntryImpl.this.nextEntry, ioSession);
 				}
 
 				/**
 				 * {@inheritDoc}
 				 */
 				@Override
-				public void exceptionCaught(IoSession session1, Throwable cause) {
-					callNextExceptionCaught(EntryImpl.this.nextEntry, session1, cause);
+				public void exceptionCaught(IoSession ioSession, Throwable cause) {
+					callNextExceptionCaught(EntryImpl.this.nextEntry, ioSession, cause);
 				}
 
 				/**
 				 * {@inheritDoc}
 				 */
 				@Override
-				public void inputClosed(IoSession session1) {
-					callNextInputClosed(EntryImpl.this.nextEntry, session1);
+				public void inputClosed(IoSession ioSession) {
+					callNextInputClosed(EntryImpl.this.nextEntry, ioSession);
 				}
 
 				/**
 				 * {@inheritDoc}
 				 */
 				@Override
-				public void messageReceived(IoSession session1, Object message) {
-					callNextMessageReceived(EntryImpl.this.nextEntry, session1, message);
+				public void messageReceived(IoSession ioSession, Object message) {
+					callNextMessageReceived(EntryImpl.this.nextEntry, ioSession, message);
 				}
 
 				/**
 				 * {@inheritDoc}
 				 */
 				@Override
-				public void messageSent(IoSession session1, WriteRequest writeRequest) {
-					callNextMessageSent(EntryImpl.this.nextEntry, session1, writeRequest);
+				public void messageSent(IoSession ioSession, WriteRequest writeRequest) {
+					callNextMessageSent(EntryImpl.this.nextEntry, ioSession, writeRequest);
 				}
 
 				/**
 				 * {@inheritDoc}
 				 */
 				@Override
-				public void filterWrite(IoSession session1, WriteRequest writeRequest) {
-					callPreviousFilterWrite(EntryImpl.this.prevEntry, session1, writeRequest);
+				public void filterWrite(IoSession ioSession, WriteRequest writeRequest) {
+					callPreviousFilterWrite(EntryImpl.this.prevEntry, ioSession, writeRequest);
 				}
 
 				/**
 				 * {@inheritDoc}
 				 */
 				@Override
-				public void filterClose(IoSession session1) {
-					callPreviousFilterClose(EntryImpl.this.prevEntry, session1);
+				public void filterClose(IoSession ioSession) {
+					callPreviousFilterClose(EntryImpl.this.prevEntry, ioSession);
 				}
 
 				/**

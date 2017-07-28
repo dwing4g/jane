@@ -217,16 +217,16 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	 * Returns a direct or heap IoBuffer which can contain the specified number of bytes.
 	 *
 	 * @param capacity the capacity of the buffer
-	 * @param useDirectBuffer1 <tt>true</tt> to get a direct buffer, <tt>false</tt> to get a
+	 * @param isDirectBuffer <tt>true</tt> to get a direct buffer, <tt>false</tt> to get a
 	 *            heap buffer.
 	 * @return a direct or heap  IoBuffer which can hold up to capacity bytes
 	 */
-	public static IoBuffer allocate(int capacity, boolean useDirectBuffer1) {
+	public static IoBuffer allocate(int capacity, boolean isDirectBuffer) {
 		if (capacity < 0) {
 			throw new IllegalArgumentException("capacity: " + capacity);
 		}
 
-		return allocator.allocate(capacity, useDirectBuffer1);
+		return allocator.allocate(capacity, isDirectBuffer);
 	}
 
 	/**

@@ -337,7 +337,7 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	 * An encapsulating iterator around the {@link Selector#selectedKeys()} or
 	 * the {@link Selector#keys()} iterator;
 	 */
-	private static class IoSessionIterator implements Iterator<NioSession> {
+	private static final class IoSessionIterator implements Iterator<NioSession> {
 		private final Iterator<SelectionKey> iterator;
 
 		/**

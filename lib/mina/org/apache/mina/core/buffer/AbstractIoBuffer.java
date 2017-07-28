@@ -124,11 +124,11 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public final IoBuffer minimumCapacity(int minimumCapacity1) {
-		if (minimumCapacity1 < 0) {
-			throw new IllegalArgumentException("minimumCapacity: " + minimumCapacity1);
+	public final IoBuffer minimumCapacity(int capacity) {
+		if (capacity < 0) {
+			throw new IllegalArgumentException("capacity: " + capacity);
 		}
-		minimumCapacity = minimumCapacity1;
+		minimumCapacity = capacity;
 		return this;
 	}
 
@@ -233,8 +233,8 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return expand(position(), expectedRemaining, false);
 	}
 
-	private IoBuffer expand(int expectedRemaining, boolean autoExpand1) {
-		return expand(position(), expectedRemaining, autoExpand1);
+	private IoBuffer expand(int expectedRemaining, boolean isAutoExpand) {
+		return expand(position(), expectedRemaining, isAutoExpand);
 	}
 
 	/**
@@ -245,7 +245,7 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return expand(pos, expectedRemaining, false);
 	}
 
-	private IoBuffer expand(int pos, int expectedRemaining, boolean autoExpand1) {
+	private IoBuffer expand(int pos, int expectedRemaining, boolean isAutoExpand) {
 		if (!recapacityAllowed) {
 			throw new IllegalStateException("Derived buffers and their parent can't be expanded.");
 		}
@@ -253,7 +253,7 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		int end = pos + expectedRemaining;
 		int newCapacity;
 
-		if (autoExpand1) {
+		if (isAutoExpand) {
 			newCapacity = IoBuffer.normalizeCapacity(end);
 		} else {
 			newCapacity = end;

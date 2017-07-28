@@ -747,7 +747,7 @@ public final class SslHandler {
 		SSLEngineResult res;
 
 		Status status;
-		HandshakeStatus handshakeStatus1;
+		HandshakeStatus hs;
 
 		do {
 			// Decode the incoming data
@@ -755,7 +755,7 @@ public final class SslHandler {
 			status = res.getStatus();
 
 			// We can be processing the Handshake
-			handshakeStatus1 = res.getHandshakeStatus();
+			hs = res.getHandshakeStatus();
 
 			if (status == SSLEngineResult.Status.BUFFER_OVERFLOW) {
 				// We have to grow the target buffer, it's too small.
@@ -772,8 +772,8 @@ public final class SslHandler {
 				continue;
 			}
 		} while (((status == SSLEngineResult.Status.OK) || (status == SSLEngineResult.Status.BUFFER_OVERFLOW))
-				&& ((handshakeStatus1 == SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING) ||
-						(handshakeStatus1 == SSLEngineResult.HandshakeStatus.NEED_UNWRAP)));
+				&& ((hs == SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING) ||
+						(hs == SSLEngineResult.HandshakeStatus.NEED_UNWRAP)));
 
 		return res;
 	}

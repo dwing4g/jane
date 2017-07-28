@@ -414,7 +414,7 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 		}
 	}
 
-	private class Connector implements Runnable {
+	private final class Connector implements Runnable {
 		/**
 		 * {@inheritDoc}
 		 */

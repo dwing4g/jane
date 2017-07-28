@@ -122,13 +122,13 @@ implements SocketAcceptor {
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected void init(SelectorProvider selectorProvider1) throws Exception {
-		selectorProvider = selectorProvider1;
+	protected void init(SelectorProvider provider) throws Exception {
+		selectorProvider = provider;
 
-		if (selectorProvider1 == null) {
+		if (provider == null) {
 			selector = Selector.open();
 		} else {
-			selector = selectorProvider1.openSelector();
+			selector = provider.openSelector();
 		}
 	}
 
@@ -309,7 +309,7 @@ implements SocketAcceptor {
 	 * Defines an iterator for the selected-key Set returned by the
 	 * selector.selectedKeys(). It replaces the SelectionKey operator.
 	 */
-	private static class ServerSocketChannelIterator implements Iterator<ServerSocketChannel> {
+	private static final class ServerSocketChannelIterator implements Iterator<ServerSocketChannel> {
 		/** The selected-key iterator */
 		private final Iterator<SelectionKey> iterator;
 

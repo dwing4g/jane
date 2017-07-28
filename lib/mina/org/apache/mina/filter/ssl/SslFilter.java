@@ -675,7 +675,7 @@ public final class SslFilter extends IoFilterAdapter {
 					future = initiateClosure(nextFilter, session);
 					future.addListener(new IoFutureListener<IoFuture>() {
 						@Override
-						public void operationComplete(IoFuture future1) {
+						public void operationComplete(IoFuture ioFuture) {
 							nextFilter.filterClose(session);
 						}
 					});

@@ -301,7 +301,7 @@ public final class IoServiceListenerSupport {
 	/**
 	 * A listener in charge of releasing the lock when the close has been completed
 	 */
-	private static class LockNotifyingListener implements IoFutureListener<IoFuture> {
+	private static final class LockNotifyingListener implements IoFutureListener<IoFuture> {
 		private final Object lock;
 
 		public LockNotifyingListener(Object lock) {
