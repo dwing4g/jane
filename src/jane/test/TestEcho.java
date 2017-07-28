@@ -8,6 +8,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.future.ConnectFuture;
+import org.apache.mina.core.session.AbstractIoSession;
 import org.apache.mina.core.session.DefaultIoSessionDataStructureFactory;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequest;
@@ -31,7 +32,7 @@ public final class TestEcho extends NetManager
 	private static final DefaultIoSessionDataStructureFactory _dsFactory = new DefaultIoSessionDataStructureFactory()
 	{
 		@Override
-		public WriteRequestQueue getWriteRequestQueue(IoSession session) throws Exception
+		public WriteRequestQueue getWriteRequestQueue(final IoSession session) throws Exception
 		{
 			_wrqCount.incrementAndGet();
 			return new WriteRequestQueue()
@@ -39,38 +40,55 @@ public final class TestEcho extends NetManager
 				private final ArrayDeque<WriteRequest> _wrq = new ArrayDeque<>();
 
 				@Override
-				public synchronized WriteRequest poll(@SuppressWarnings("hiding") IoSession session)
+				public synchronized int size()
 				{
-					return _wrq.pollFirst();
+					return _wrq.size();
 				}
 
 				@Override
-				public synchronized void offer(@SuppressWarnings("hiding") IoSession session, WriteRequest writeRequest)
-				{
-					_wrq.addLast(writeRequest);
-				}
-
-				@Override
-				public synchronized boolean isEmpty(@SuppressWarnings("hiding") IoSession session)
+				public synchronized boolean isEmpty()
 				{
 					return _wrq.isEmpty();
 				}
 
 				@Override
-				public synchronized void clear(@SuppressWarnings("hiding") IoSession session)
+				public synchronized void clear()
 				{
 					_wrq.clear();
 				}
 
 				@Override
-				public void dispose(@SuppressWarnings("hiding") IoSession session)
+				public WriteRequest poll()
+				{
+					WriteRequest wr;
+					synchronized(this)
+					{
+						wr = _wrq.pollFirst();
+					}
+					if(wr == AbstractIoSession.CLOSE_REQUEST)
+					{
+						wr = null;
+						session.closeNow();
+						dispose();
+					}
+					return wr;
+				}
+
+				@Override
+				public synchronized void offer(WriteRequest writeRequest) // message must be IoBuffer or FileRegion
+				{
+					_wrq.addLast(writeRequest);
+				}
+
+				@Override
+				public void dispose()
 				{
 				}
 
 				@Override
-				public synchronized int size()
+				public synchronized String toString()
 				{
-					return _wrq.size();
+					return _wrq.toString();
 				}
 			};
 		}
@@ -113,9 +131,9 @@ public final class TestEcho extends NetManager
 	@Override
 	protected void onAddSession(IoSession session)
 	{
-		perf[6].begin();
+//		perf[6].begin();
 		write(session, IoBuffer.allocate(TEST_ECHO_SIZE).sweep());
-		perf[6].end();
+//		perf[6].end();
 	}
 
 	@Override
@@ -129,9 +147,9 @@ public final class TestEcho extends NetManager
 	{
 		if(_recvCount.incrementAndGet() <= TEST_ECHO_COUNT)
 		{
-			perf[6].begin();
+//			perf[6].begin();
 			write(session, message);
-			perf[6].end();
+//			perf[6].end();
 		}
 		else
 			session.closeNow();
@@ -146,17 +164,17 @@ public final class TestEcho extends NetManager
 		CachedIoBufferAllocator.globalSet((args.length > 2 ? Integer.parseInt(args[2]) : 0) > 0,
 				args.length > 3 ? Integer.parseInt(args[3]) : 0, 64 * 1024);
 		long time = System.currentTimeMillis();
-		perf[2].begin();
-		perf[0].begin();
+//		perf[2].begin();
+//		perf[0].begin();
 		TestEcho mgr = new TestEcho();
 		mgr.startServer(new InetSocketAddress("0.0.0.0", 9123));
 		for(int i = 0; i < TEST_CLIENT_COUNT; ++i)
 			mgr.startClient(new InetSocketAddress("127.0.0.1", 9123));
-		perf[0].end();
-		perf[1].begin();
+//		perf[0].end();
+//		perf[1].begin();
 		_closedCount.await();
-		perf[1].end();
-		perf[2].end();
+//		perf[1].end();
+//		perf[2].end();
 		System.out.println("TestEcho: end (" + (System.currentTimeMillis() - time) + " ms)");
 		System.out.println(CachedIoBufferAllocator.allocCount.get());
 		System.out.println(CachedIoBufferAllocator.cacheCount.get());

@@ -151,7 +151,7 @@ public final class SslFilter extends IoFilterAdapter {
 	private static final AttributeKey SSL_HANDLER = new AttributeKey(SslFilter.class, "handler");
 
 	/** The SslContext used */
-	/* No qualifier */final SSLContext sslContext;
+	final SSLContext sslContext;
 
 	/** A flag used to tell the filter to start the handshake immediately */
 	private final boolean autoStart;

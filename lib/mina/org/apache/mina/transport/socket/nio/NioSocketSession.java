@@ -30,7 +30,6 @@ import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.IoService;
 import org.apache.mina.core.session.IoSession;
-import org.apache.mina.filter.ssl.SslFilter;
 import org.apache.mina.transport.socket.AbstractSocketSessionConfig;
 import org.apache.mina.transport.socket.SocketSessionConfig;
 
@@ -41,7 +40,6 @@ import org.apache.mina.transport.socket.SocketSessionConfig;
  */
 public final class NioSocketSession extends NioSession {
 	/**
-	 *
 	 * Creates a new instance of NioSocketSession.
 	 *
 	 * @param service the associated IoService
@@ -332,18 +330,5 @@ public final class NioSocketSession extends NioSession {
 				throw new RuntimeIoException(e);
 			}
 		}
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final boolean isSecured() {
-		// If the session does not have a SslFilter, we can return false
-		if (getFilterChain().get(SslFilter.class) != null) {
-			// Get the SslHandler from the SslFilter
-			return SslFilter.isSslStarted(this);
-		}
-		return false;
 	}
 }

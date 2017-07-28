@@ -49,49 +49,26 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 	 */
 	@Override
 	public WriteRequestQueue getWriteRequestQueue(IoSession session) throws Exception {
-		return new DefaultWriteRequestQueue();
+		return new DefaultWriteRequestQueue(session);
 	}
 
 	private static class DefaultIoSessionAttributeMap implements IoSessionAttributeMap {
 		private final ConcurrentHashMap<Object, Object> attributes = new ConcurrentHashMap<>(4);
 
 		/**
-		 * Default constructor
+		 * {@inheritDoc}
 		 */
-		public DefaultIoSessionAttributeMap() {
-			super();
+		@Override
+		public Object getAttribute(Object key, Object defaultValue) {
+			Object value = attributes.get(key);
+			return value != null ? value : defaultValue;
 		}
 
 		/**
 		 * {@inheritDoc}
 		 */
 		@Override
-		public Object getAttribute(IoSession session, Object key, Object defaultValue) {
-			if (key == null) {
-				throw new IllegalArgumentException("key");
-			}
-
-			if (defaultValue == null) {
-				return attributes.get(key);
-			}
-
-			Object object = attributes.putIfAbsent(key, defaultValue);
-
-			if (object == null) {
-				return defaultValue;
-			}
-			return object;
-		}
-
-		/**
-		 * {@inheritDoc}
-		 */
-		@Override
-		public Object setAttribute(IoSession session, Object key, Object value) {
-			if (key == null) {
-				throw new IllegalArgumentException("key");
-			}
-
+		public Object setAttribute(Object key, Object value) {
 			if (value == null) {
 				return attributes.remove(key);
 			}
@@ -103,11 +80,7 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 		 * {@inheritDoc}
 		 */
 		@Override
-		public Object setAttributeIfAbsent(IoSession session, Object key, Object value) {
-			if (key == null) {
-				throw new IllegalArgumentException("key");
-			}
-
+		public Object setAttributeIfAbsent(Object key, Object value) {
 			if (value == null) {
 				return null;
 			}
@@ -119,11 +92,7 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 		 * {@inheritDoc}
 		 */
 		@Override
-		public Object removeAttribute(IoSession session, Object key) {
-			if (key == null) {
-				throw new IllegalArgumentException("key");
-			}
-
+		public Object removeAttribute(Object key) {
 			return attributes.remove(key);
 		}
 
@@ -131,40 +100,23 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 		 * {@inheritDoc}
 		 */
 		@Override
-		public boolean removeAttribute(IoSession session, Object key, Object value) {
-			if (key == null) {
-				throw new IllegalArgumentException("key");
-			}
-
-			if (value == null) {
-				return false;
-			}
-
-			try {
-				return attributes.remove(key, value);
-			} catch (NullPointerException e) {
-				return false;
-			}
+		public boolean removeAttribute(Object key, Object value) {
+			return attributes.remove(key, value);
 		}
 
 		/**
 		 * {@inheritDoc}
 		 */
 		@Override
-		public boolean replaceAttribute(IoSession session, Object key, Object oldValue, Object newValue) {
-			try {
-				return attributes.replace(key, oldValue, newValue);
-			} catch (NullPointerException e) {
-			}
-
-			return false;
+		public boolean replaceAttribute(Object key, Object oldValue, Object newValue) {
+			return attributes.replace(key, oldValue, newValue);
 		}
 
 		/**
 		 * {@inheritDoc}
 		 */
 		@Override
-		public boolean containsAttribute(IoSession session, Object key) {
+		public boolean containsAttribute(Object key) {
 			return attributes.containsKey(key);
 		}
 
@@ -172,7 +124,7 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 		 * {@inheritDoc}
 		 */
 		@Override
-		public Set<Object> getAttributeKeys(IoSession session) {
+		public Set<Object> getAttributeKeys() {
 			return attributes.keySet();
 		}
 
@@ -180,7 +132,7 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 		 * {@inheritDoc}
 		 */
 		@Override
-		public void dispose(IoSession session) throws Exception {
+		public void dispose() throws Exception {
 			// Do nothing
 		}
 	}
@@ -188,12 +140,17 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 	private static class DefaultWriteRequestQueue implements WriteRequestQueue {
 		/** A queue to store incoming write requests */
 		private final Queue<WriteRequest> q = new ConcurrentLinkedQueue<>();
+		private final IoSession s;
+
+		private DefaultWriteRequestQueue(IoSession session) {
+			s = session;
+		}
 
 		/**
 		 * {@inheritDoc}
 		 */
 		@Override
-		public void dispose(IoSession session) {
+		public void dispose() {
 			// Do nothing
 		}
 
@@ -201,7 +158,7 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 		 * {@inheritDoc}
 		 */
 		@Override
-		public void clear(IoSession session) {
+		public void clear() {
 			q.clear();
 		}
 
@@ -209,7 +166,7 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 		 * {@inheritDoc}
 		 */
 		@Override
-		public boolean isEmpty(IoSession session) {
+		public boolean isEmpty() {
 			return q.isEmpty();
 		}
 
@@ -217,7 +174,7 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 		 * {@inheritDoc}
 		 */
 		@Override
-		public void offer(IoSession session, WriteRequest writeRequest) {
+		public void offer(WriteRequest writeRequest) {
 			q.offer(writeRequest);
 		}
 
@@ -225,16 +182,16 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 		 * {@inheritDoc}
 		 */
 		@Override
-		public WriteRequest poll(IoSession session) {
-			WriteRequest answer = q.poll();
+		public WriteRequest poll() {
+			WriteRequest wr = q.poll();
 
-			if (answer == AbstractIoSession.CLOSE_REQUEST) {
-				session.closeNow();
-				dispose(session);
-				answer = null;
+			if (wr == AbstractIoSession.CLOSE_REQUEST) {
+				s.closeNow();
+				dispose();
+				wr = null;
 			}
 
-			return answer;
+			return wr;
 		}
 
 		/**

@@ -59,16 +59,17 @@ public class NetManager implements IoHandler
 		private AnswerHandler answerHandler;									  // 接收回复的回调,超时也会回调(传入的bean为null)
 	}
 
-	private static final LongConcurrentHashMap<BeanContext>	_beanCtxMap	   = new LongConcurrentHashMap<>();	// 当前等待回复的所有请求上下文
-	private static final ConcurrentLinkedQueue<IoSession>	_closings	   = new ConcurrentLinkedQueue<>();	// 已经closeOnFlush的session队列,超时则closeNow
-	private static final ScheduledExecutorService			_scheduledThread;								// NetManager自带的单线程调度器(处理重连,请求和事务超时)
-	private static final AtomicInteger						_serialCounter = new AtomicInteger();			// 协议序列号的分配器
-	private final String									_name		   = getClass().getSimpleName();	// 当前管理器的名字
-	private volatile Class<? extends IoFilter>				_pcf		   = BeanCodec.class;				// 协议编码器的类
-	private volatile IntHashMap<BeanHandler<?>>				_handlers	   = new IntHashMap<>(0);			// bean的处理器
-	private volatile NioSocketAcceptor						_acceptor;										// mina的网络监听器
-	private volatile NioSocketConnector						_connector;										// mina的网络连接器
-	private int												_ioThreadCount;									// IO线程池的最大数量(<=0表示默认值)
+	private static final LongConcurrentHashMap<BeanContext>	_beanCtxMap	   = new LongConcurrentHashMap<>();		// 当前等待回复的所有请求上下文
+	private static final ConcurrentLinkedQueue<IoSession>	_closings	   = new ConcurrentLinkedQueue<>();		// 已经closeOnFlush的session队列,超时则closeNow
+	private static final ScheduledExecutorService			_scheduledThread;									// NetManager自带的单线程调度器(处理重连,请求和事务超时)
+	private static final AtomicInteger						_serialCounter = new AtomicInteger();				// 协议序列号的分配器
+	private static long										_timeSec	   = System.currentTimeMillis() / 1000;	// NetManager的秒级时间戳值,可以快速获取
+	private final String									_name		   = getClass().getSimpleName();		// 当前管理器的名字
+	private volatile Class<? extends IoFilter>				_pcf		   = BeanCodec.class;					// 协议编码器的类
+	private volatile IntHashMap<BeanHandler<?>>				_handlers	   = new IntHashMap<>(0);				// bean的处理器
+	private volatile NioSocketAcceptor						_acceptor;											// mina的网络监听器
+	private volatile NioSocketConnector						_connector;											// mina的网络连接器
+	private int												_ioThreadCount;										// IO线程池的最大数量(<=0表示默认值)
 
 	static
 	{
@@ -103,7 +104,7 @@ public class NetManager implements IoHandler
 							AnswerHandler handler = beanCtx.answerHandler;
 							beanCtx.answerHandler = null;
 							if(session != null && arg != null)
-								Log.warn("{}({}): ask timeout: {} {}", session.getHandler().getClass().getName(), session.getId(), arg.typeName(), arg);
+								Log.warn("{}({}): ask timeout: {}:{}", session.getHandler().getClass().getName(), session.getId(), arg.typeName(), arg);
 							if(handler != null)
 							{
 								try
@@ -132,9 +133,10 @@ public class NetManager implements IoHandler
 			{
 				try
 				{
+					long now = System.currentTimeMillis();
+					_timeSec = now / 1000;
 					IoSession session = _closings.peek();
 					if(session == null) return;
-					long now = System.currentTimeMillis();
 					do
 					{
 						if(!session.isClosing())
@@ -161,6 +163,16 @@ public class NetManager implements IoHandler
 	public static int getAskCount()
 	{
 		return _beanCtxMap.size();
+	}
+
+	/**
+	 * 获取秒级时间戳
+	 * <p>
+	 * 用于非精确的频繁获取
+	 */
+	public static long getTimeSec()
+	{
+		return _timeSec;
 	}
 
 	/**
@@ -277,7 +289,7 @@ public class NetManager implements IoHandler
 	 */
 	public final void setCodec(Class<? extends IoFilter> pcf)
 	{
-		_pcf = (pcf != null ? pcf : BeanCodec.class);
+		_pcf = pcf;
 	}
 
 	/**
@@ -494,7 +506,7 @@ public class NetManager implements IoHandler
 	public boolean sendRaw(IoSession session, Object obj)
 	{
 		if(!write(session, obj)) return false;
-		if(Log.hasTrace) Log.trace("{}({}): send: raw: {}", _name, session.getId(), obj);
+		if(Log.hasTrace) Log.trace("{}({}): send: raw:{}", _name, session.getId(), obj);
 		return true;
 	}
 
@@ -825,7 +837,9 @@ public class NetManager implements IoHandler
 	@Override
 	public void sessionCreated(IoSession session) throws Exception
 	{
-		session.getFilterChain().addLast("codec", _pcf.newInstance());
+		Class<? extends IoFilter> pcf = _pcf;
+		if(pcf != null)
+			session.getFilterChain().addLast("codec", pcf.newInstance());
 	}
 
 	@Override

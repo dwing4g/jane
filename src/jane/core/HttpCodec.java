@@ -44,7 +44,7 @@ public final class HttpCodec extends IoFilterAdapter
 	private static final Pattern	PATTERN_CHARSET	 = Pattern.compile("charset=([\\w-]+)");
 	private static final DateFormat	_sdf			 = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
 	private static String			_dateStr;
-	private static volatile long	_lastSec;
+	private static long				_lastSec;
 	private OctetsStream			_buf			 = new OctetsStream(1024);										  // 用于解码器的数据缓存
 	private long					_bodySize;																		  // 当前请求所需的内容大小
 
@@ -75,15 +75,15 @@ public final class HttpCodec extends IoFilterAdapter
 
 	private static String getDate()
 	{
-		long t = System.currentTimeMillis();
-		long sec = t / 1000;
+		long sec = NetManager.getTimeSec();
 		if(sec != _lastSec)
 		{
+			Date date = new Date(sec * 1000);
 			synchronized(_sdf)
 			{
 				if(sec != _lastSec)
 				{
-					_dateStr = _sdf.format(new Date(t));
+					_dateStr = _sdf.format(date);
 					_lastSec = sec;
 				}
 			}

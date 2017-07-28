@@ -36,8 +36,6 @@ import org.apache.mina.core.session.IoSession;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class IoUtil {
-	private static final IoSession[] EMPTY_SESSIONS = new IoSession[0];
-
 	private IoUtil() {
 		// Do nothing
 	}
@@ -98,7 +96,7 @@ public final class IoUtil {
 	 */
 	public static List<WriteFuture> broadcast(Object message, IoSession... sessions) {
 		if (sessions == null) {
-			sessions = EMPTY_SESSIONS;
+			return new ArrayList<>(0);
 		}
 
 		List<WriteFuture> answer = new ArrayList<>(sessions.length);

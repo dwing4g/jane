@@ -48,7 +48,6 @@ public abstract class NioSession extends AbstractIoSession {
 	private final IoFilterChain filterChain;
 
 	/**
-	 *
 	 * Creates a new instance of NioSession, with its associated IoProcessor.
 	 * <br>
 	 * This method is only called by the inherited class.
@@ -80,7 +79,7 @@ public abstract class NioSession extends AbstractIoSession {
 	/**
 	 * @return The {@link SelectionKey} associated with this {@link IoSession}
 	 */
-	/* No qualifier*/SelectionKey getSelectionKey() {
+	SelectionKey getSelectionKey() {
 		return key;
 	}
 
@@ -89,7 +88,7 @@ public abstract class NioSession extends AbstractIoSession {
 	 *
 	 * @param key The new {@link SelectionKey}
 	 */
-	/* No qualifier*/void setSelectionKey(SelectionKey key) {
+	void setSelectionKey(SelectionKey key) {
 		this.key = key;
 	}
 

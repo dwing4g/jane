@@ -40,7 +40,7 @@ public final class SimpleBufferAllocator implements IoBufferAllocator {
 
 	@Override
 	public IoBuffer wrap(ByteBuffer nioBuffer) {
-		return new SimpleBuffer(nioBuffer);
+		return new SimpleIoBuffer(nioBuffer);
 	}
 
 	@Override
@@ -48,15 +48,15 @@ public final class SimpleBufferAllocator implements IoBufferAllocator {
 		// Do nothing
 	}
 
-	private static final class SimpleBuffer extends AbstractIoBuffer {
+	private static final class SimpleIoBuffer extends AbstractIoBuffer {
 		private ByteBuffer buf;
 
-		private SimpleBuffer(ByteBuffer bb) {
+		private SimpleIoBuffer(ByteBuffer bb) {
 			super(bb.capacity());
 			buf = bb;
 		}
 
-		private SimpleBuffer(SimpleBuffer parent, ByteBuffer bb) {
+		private SimpleIoBuffer(SimpleIoBuffer parent, ByteBuffer bb) {
 			super(parent);
 			buf = bb;
 		}
@@ -73,12 +73,12 @@ public final class SimpleBufferAllocator implements IoBufferAllocator {
 
 		@Override
 		protected IoBuffer duplicate0() {
-			return new SimpleBuffer(this, buf.duplicate());
+			return new SimpleIoBuffer(this, buf.duplicate());
 		}
 
 		@Override
 		protected IoBuffer slice0() {
-			return new SimpleBuffer(this, buf.slice());
+			return new SimpleIoBuffer(this, buf.slice());
 		}
 
 		@Override

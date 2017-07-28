@@ -67,10 +67,6 @@ public interface IoSession {
 	/**
 	 * @return a unique identifier for this session.  Every session has its own
 	 * ID which is different from each other.
-	 *
-	 * TODO : The way it's implemented does not guarantee that the contract is
-	 * respected. It uses the HashCode() method which don't guarantee the key
-	 * unicity.
 	 */
 	long getId();
 
@@ -312,13 +308,6 @@ public interface IoSession {
 	boolean isClosing();
 
 	/**
-	 * @return <tt>true</tt> if the session has started and initialized a SslEngine,
-	 * <tt>false</tt> if the session is not yet secured (the handshake is not completed)
-	 * or if SSL is not set for this session, or if SSL is not even an option.
-	 */
-	boolean isSecured();
-
-	/**
 	 * @return the {@link CloseFuture} of this session.  This method returns
 	 * the same instance whenever user calls it.
 	 */
@@ -346,7 +335,14 @@ public interface IoSession {
 	SocketAddress getServiceAddress();
 
 	/**
+	 * Returns the {@link WriteRequest} which is being processed by
+	 * {@link IoService}.
 	 *
+	 * @return <tt>null</tt> if and if only no message is being written
+	 */
+	WriteRequest getCurrentWriteRequest();
+
+	/**
 	 * Associate the current write request with the session
 	 *
 	 * @param currentWriteRequest the current write request to associate
@@ -386,18 +382,4 @@ public interface IoSession {
 	 * @return <tt>true</tt> if suspended
 	 */
 	boolean isWriteSuspended();
-
-	/**
-	 * Returns the message which is being written by {@link IoService}.
-	 * @return <tt>null</tt> if and if only no message is being written
-	 */
-	Object getCurrentWriteMessage();
-
-	/**
-	 * Returns the {@link WriteRequest} which is being processed by
-	 * {@link IoService}.
-	 *
-	 * @return <tt>null</tt> if and if only no message is being written
-	 */
-	WriteRequest getCurrentWriteRequest();
 }

@@ -42,8 +42,6 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
-import java.util.EnumSet;
-import java.util.Set;
 
 /**
  * A base implementation of {@link IoBuffer}.  This implementation
@@ -69,15 +67,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 
 	/** The minimum number of bytes the IoBuffer can hold */
 	private int minimumCapacity;
-
-	/** A mask for a byte */
-	private static final long BYTE_MASK = 0xFFL;
-
-	/** A mask for a short */
-	private static final long SHORT_MASK = 0xFFFFL;
-
-	/** A mask for an int */
-	private static final long INT_MASK = 0xFFFFFFFFL;
 
 	/**
 	 * We don't have any access to Buffer.markValue(), so we need to track it down,
@@ -1797,18 +1786,18 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 			if (cr.isOverflow()) {
 				if (isAutoExpand()) {
 					switch (expandedState) {
-					case 0:
-						autoExpand((int) Math.ceil(in.remaining() * encoder.averageBytesPerChar()));
-						expandedState++;
-						break;
-					case 1:
-						autoExpand((int) Math.ceil(in.remaining() * encoder.maxBytesPerChar()));
-						expandedState++;
-						break;
-					default:
-						throw new RuntimeException("Expanded by "
-								+ (int) Math.ceil(in.remaining() * encoder.maxBytesPerChar())
-								+ " but that wasn't enough for '" + val + "'");
+						case 0:
+							autoExpand((int) Math.ceil(in.remaining() * encoder.averageBytesPerChar()));
+							expandedState++;
+							break;
+						case 1:
+							autoExpand((int) Math.ceil(in.remaining() * encoder.maxBytesPerChar()));
+							expandedState++;
+							break;
+						default:
+							throw new RuntimeException("Expanded by "
+									+ (int) Math.ceil(in.remaining() * encoder.maxBytesPerChar())
+									+ " but that wasn't enough for '" + val + "'");
 					}
 					continue;
 				}
@@ -1917,15 +1906,15 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		int fieldSize = 0;
 
 		switch (prefixLength) {
-		case 1:
-			fieldSize = getUnsigned();
-			break;
-		case 2:
-			fieldSize = getUnsignedShort();
-			break;
-		case 4:
-			fieldSize = getInt();
-			break;
+			case 1:
+				fieldSize = getUnsigned();
+				break;
+			case 2:
+				fieldSize = getUnsignedShort();
+				break;
+			case 4:
+				fieldSize = getInt();
+				break;
 		}
 
 		if (fieldSize == 0) {
@@ -2012,17 +2001,17 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 			CharsetEncoder encoder) throws CharacterCodingException {
 		int maxLength;
 		switch (prefixLength) {
-		case 1:
-			maxLength = 255;
-			break;
-		case 2:
-			maxLength = 65535;
-			break;
-		case 4:
-			maxLength = Integer.MAX_VALUE;
-			break;
-		default:
-			throw new IllegalArgumentException("prefixLength: " + prefixLength);
+			case 1:
+				maxLength = 255;
+				break;
+			case 2:
+				maxLength = 65535;
+				break;
+			case 4:
+				maxLength = Integer.MAX_VALUE;
+				break;
+			default:
+				throw new IllegalArgumentException("prefixLength: " + prefixLength);
 		}
 
 		if (val.length() > maxLength) {
@@ -2045,18 +2034,18 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 
 		int padMask;
 		switch (padding) {
-		case 0:
-		case 1:
-			padMask = 0;
-			break;
-		case 2:
-			padMask = 1;
-			break;
-		case 4:
-			padMask = 3;
-			break;
-		default:
-			throw new IllegalArgumentException("padding: " + padding);
+			case 0:
+			case 1:
+				padMask = 0;
+				break;
+			case 2:
+				padMask = 1;
+				break;
+			case 4:
+				padMask = 3;
+				break;
+			default:
+				throw new IllegalArgumentException("padding: " + padding);
 		}
 
 		CharBuffer in = CharBuffer.wrap(val);
@@ -2084,18 +2073,18 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 			if (cr.isOverflow()) {
 				if (isAutoExpand()) {
 					switch (expandedState) {
-					case 0:
-						autoExpand((int) Math.ceil(in.remaining() * encoder.averageBytesPerChar()));
-						expandedState++;
-						break;
-					case 1:
-						autoExpand((int) Math.ceil(in.remaining() * encoder.maxBytesPerChar()));
-						expandedState++;
-						break;
-					default:
-						throw new RuntimeException("Expanded by "
-								+ (int) Math.ceil(in.remaining() * encoder.maxBytesPerChar())
-								+ " but that wasn't enough for '" + val + "'");
+						case 0:
+							autoExpand((int) Math.ceil(in.remaining() * encoder.averageBytesPerChar()));
+							expandedState++;
+							break;
+						case 1:
+							autoExpand((int) Math.ceil(in.remaining() * encoder.maxBytesPerChar()));
+							expandedState++;
+							break;
+						default:
+							throw new RuntimeException("Expanded by "
+									+ (int) Math.ceil(in.remaining() * encoder.maxBytesPerChar())
+									+ " but that wasn't enough for '" + val + "'");
 					}
 					continue;
 				}
@@ -2109,15 +2098,15 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		fill(padValue, padding - (position() - oldPos & padMask));
 		int length = position() - oldPos;
 		switch (prefixLength) {
-		case 1:
-			put(oldPos - 1, (byte) length);
-			break;
-		case 2:
-			putShort(oldPos - 2, (short) length);
-			break;
-		case 4:
-			putInt(oldPos - 4, length);
-			break;
+			case 1:
+				put(oldPos - 1, (byte) length);
+				break;
+			case 2:
+				putShort(oldPos - 2, (short) length);
+				break;
+			case 4:
+				putInt(oldPos - 4, length);
+				break;
 		}
 		return this;
 	}
@@ -2155,14 +2144,14 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 						throw new EOFException();
 					}
 					switch (type) {
-					case 0: // NON-Serializable class or Primitive types
-						return super.readClassDescriptor();
-					case 1: // Serializable class
-						String className = readUTF();
-						Class<?> clazz = Class.forName(className, true, classLoader);
-						return ObjectStreamClass.lookup(clazz);
-					default:
-						throw new StreamCorruptedException("Unexpected class descriptor type: " + type);
+						case 0: // NON-Serializable class or Primitive types
+							return super.readClassDescriptor();
+						case 1: // Serializable class
+							String className = readUTF();
+							Class<?> clazz = Class.forName(className, true, classLoader);
+							return ObjectStreamClass.lookup(clazz);
+						default:
+							throw new StreamCorruptedException("Unexpected class descriptor type: " + type);
 					}
 				}
 
@@ -2245,17 +2234,17 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 
 		int dataLength;
 		switch (prefixLength) {
-		case 1:
-			dataLength = getUnsigned(position());
-			break;
-		case 2:
-			dataLength = getUnsignedShort(position());
-			break;
-		case 4:
-			dataLength = getInt(position());
-			break;
-		default:
-			throw new IllegalArgumentException("prefixLength: " + prefixLength);
+			case 1:
+				dataLength = getUnsigned(position());
+				break;
+			case 2:
+				dataLength = getUnsignedShort(position());
+				break;
+			case 4:
+				dataLength = getInt(position());
+				break;
+			default:
+				throw new IllegalArgumentException("prefixLength: " + prefixLength);
 		}
 
 		if (dataLength < 0 || dataLength > maxDataLength) {
@@ -2311,38 +2300,38 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	public IoBuffer fill(byte value, int size) {
 		autoExpand(size);
 		int q = size >>> 3;
-			int r = size & 7;
+		int r = size & 7;
 
-			if (q > 0) {
-				int intValue = value & 0x000000FF | ( value << 8 ) & 0x0000FF00 | ( value << 16 ) & 0x00FF0000 | value << 24;
-				long longValue = intValue & 0x00000000FFFFFFFFL | (long)intValue << 32;
+		if (q > 0) {
+			int intValue = value & 0x000000FF | ( value << 8 ) & 0x0000FF00 | ( value << 16 ) & 0x00FF0000 | value << 24;
+			long longValue = intValue & 0x00000000FFFFFFFFL | (long)intValue << 32;
 
-				for (int i = q; i > 0; i--) {
-					putLong(longValue);
-				}
+			for (int i = q; i > 0; i--) {
+				putLong(longValue);
 			}
+		}
 
-			q = r >>> 2;
-				r = r & 3;
+		q = r >>> 2;
+		r = r & 3;
 
-				if (q > 0) {
-					int intValue = value & 0x000000FF | ( value << 8 ) & 0x0000FF00 | ( value << 16 ) & 0x00FF0000 | value << 24;
-					putInt(intValue);
-				}
+		if (q > 0) {
+			int intValue = value & 0x000000FF | ( value << 8 ) & 0x0000FF00 | ( value << 16 ) & 0x00FF0000 | value << 24;
+			putInt(intValue);
+		}
 
-				q = r >> 1;
-					r = r & 1;
+		q = r >> 1;
+		r = r & 1;
 
-					if (q > 0) {
-						short shortValue = (short) (value & 0x000FF | value << 8);
-						putShort(shortValue);
-					}
+		if (q > 0) {
+			short shortValue = (short) (value & 0x000FF | value << 8);
+			putShort(shortValue);
+		}
 
-					if (r > 0) {
-						put(value);
-					}
+		if (r > 0) {
+			put(value);
+		}
 
-					return this;
+		return this;
 	}
 
 	/**
@@ -2367,31 +2356,31 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	public IoBuffer fill(int size) {
 		autoExpand(size);
 		int q = size >>> 3;
-					int r = size & 7;
+		int r = size & 7;
 
-					for (int i = q; i > 0; i--) {
-						putLong(0L);
-					}
+		for (int i = q; i > 0; i--) {
+			putLong(0L);
+		}
 
-					q = r >>> 2;
-				r = r & 3;
+		q = r >>> 2;
+		r = r & 3;
 
-				if (q > 0) {
-					putInt(0);
-				}
+		if (q > 0) {
+			putInt(0);
+		}
 
-				q = r >> 1;
-			r = r & 1;
+		q = r >> 1;
+		r = r & 1;
 
-			if (q > 0) {
-				putShort((short) 0);
-			}
+		if (q > 0) {
+			putShort((short) 0);
+		}
 
-			if (r > 0) {
-				put((byte) 0);
-			}
+		if (r > 0) {
+			put((byte) 0);
+		}
 
-			return this;
+		return this;
 	}
 
 	/**
@@ -2408,302 +2397,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		}
 
 		return this;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public <E extends Enum<E>> E getEnum(Class<E> enumClass) {
-		return toEnum(enumClass, getUnsigned());
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public <E extends Enum<E>> E getEnum(int index, Class<E> enumClass) {
-		return toEnum(enumClass, getUnsigned(index));
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public <E extends Enum<E>> E getEnumShort(Class<E> enumClass) {
-		return toEnum(enumClass, getUnsignedShort());
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public <E extends Enum<E>> E getEnumShort(int index, Class<E> enumClass) {
-		return toEnum(enumClass, getUnsignedShort(index));
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public <E extends Enum<E>> E getEnumInt(Class<E> enumClass) {
-		return toEnum(enumClass, getInt());
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public <E extends Enum<E>> E getEnumInt(int index, Class<E> enumClass) {
-		return toEnum(enumClass, getInt(index));
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public IoBuffer putEnum(Enum<?> e) {
-		if (e.ordinal() > BYTE_MASK) {
-			throw new IllegalArgumentException(enumConversionErrorMessage(e, "byte"));
-		}
-		return put((byte) e.ordinal());
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public IoBuffer putEnum(int index, Enum<?> e) {
-		if (e.ordinal() > BYTE_MASK) {
-			throw new IllegalArgumentException(enumConversionErrorMessage(e, "byte"));
-		}
-		return put(index, (byte) e.ordinal());
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public IoBuffer putEnumShort(Enum<?> e) {
-		if (e.ordinal() > SHORT_MASK) {
-			throw new IllegalArgumentException(enumConversionErrorMessage(e, "short"));
-		}
-		return putShort((short) e.ordinal());
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public IoBuffer putEnumShort(int index, Enum<?> e) {
-		if (e.ordinal() > SHORT_MASK) {
-			throw new IllegalArgumentException(enumConversionErrorMessage(e, "short"));
-		}
-		return putShort(index, (short) e.ordinal());
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public IoBuffer putEnumInt(Enum<?> e) {
-		return putInt(e.ordinal());
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public IoBuffer putEnumInt(int index, Enum<?> e) {
-		return putInt(index, e.ordinal());
-	}
-
-	private static <E> E toEnum(Class<E> enumClass, int i) {
-		E[] enumConstants = enumClass.getEnumConstants();
-		if (i > enumConstants.length) {
-			throw new IndexOutOfBoundsException(String.format(
-					"%d is too large of an ordinal to convert to the enum %s", i, enumClass.getName()));
-		}
-		return enumConstants[i];
-	}
-
-	private static String enumConversionErrorMessage(Enum<?> e, String type) {
-		return String.format("%s.%s has an ordinal value too large for a %s", e.getClass().getName(), e.name(), type);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public <E extends Enum<E>> EnumSet<E> getEnumSet(Class<E> enumClass) {
-		return toEnumSet(enumClass, get() & BYTE_MASK);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public <E extends Enum<E>> EnumSet<E> getEnumSet(int index, Class<E> enumClass) {
-		return toEnumSet(enumClass, get(index) & BYTE_MASK);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public <E extends Enum<E>> EnumSet<E> getEnumSetShort(Class<E> enumClass) {
-		return toEnumSet(enumClass, getShort() & SHORT_MASK);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public <E extends Enum<E>> EnumSet<E> getEnumSetShort(int index, Class<E> enumClass) {
-		return toEnumSet(enumClass, getShort(index) & SHORT_MASK);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public <E extends Enum<E>> EnumSet<E> getEnumSetInt(Class<E> enumClass) {
-		return toEnumSet(enumClass, getInt() & INT_MASK);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public <E extends Enum<E>> EnumSet<E> getEnumSetInt(int index, Class<E> enumClass) {
-		return toEnumSet(enumClass, getInt(index) & INT_MASK);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public <E extends Enum<E>> EnumSet<E> getEnumSetLong(Class<E> enumClass) {
-		return toEnumSet(enumClass, getLong());
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public <E extends Enum<E>> EnumSet<E> getEnumSetLong(int index, Class<E> enumClass) {
-		return toEnumSet(enumClass, getLong(index));
-	}
-
-	private static <E extends Enum<E>> EnumSet<E> toEnumSet(Class<E> clazz, long vector) {
-		EnumSet<E> set = EnumSet.noneOf(clazz);
-		long mask = 1;
-		for (E e : clazz.getEnumConstants()) {
-			if ((mask & vector) == mask) {
-				set.add(e);
-			}
-			mask <<= 1;
-		}
-		return set;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public <E extends Enum<E>> IoBuffer putEnumSet(Set<E> set) {
-		long vector = toLong(set);
-		if ((vector & ~BYTE_MASK) != 0) {
-			throw new IllegalArgumentException("The enum set is too large to fit in a byte: " + set);
-		}
-		return put((byte) vector);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public <E extends Enum<E>> IoBuffer putEnumSet(int index, Set<E> set) {
-		long vector = toLong(set);
-		if ((vector & ~BYTE_MASK) != 0) {
-			throw new IllegalArgumentException("The enum set is too large to fit in a byte: " + set);
-		}
-		return put(index, (byte) vector);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public <E extends Enum<E>> IoBuffer putEnumSetShort(Set<E> set) {
-		long vector = toLong(set);
-		if ((vector & ~SHORT_MASK) != 0) {
-			throw new IllegalArgumentException("The enum set is too large to fit in a short: " + set);
-		}
-		return putShort((short) vector);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public <E extends Enum<E>> IoBuffer putEnumSetShort(int index, Set<E> set) {
-		long vector = toLong(set);
-		if ((vector & ~SHORT_MASK) != 0) {
-			throw new IllegalArgumentException("The enum set is too large to fit in a short: " + set);
-		}
-		return putShort(index, (short) vector);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public <E extends Enum<E>> IoBuffer putEnumSetInt(Set<E> set) {
-		long vector = toLong(set);
-		if ((vector & ~INT_MASK) != 0) {
-			throw new IllegalArgumentException("The enum set is too large to fit in an int: " + set);
-		}
-		return putInt((int) vector);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public <E extends Enum<E>> IoBuffer putEnumSetInt(int index, Set<E> set) {
-		long vector = toLong(set);
-		if ((vector & ~INT_MASK) != 0) {
-			throw new IllegalArgumentException("The enum set is too large to fit in an int: " + set);
-		}
-		return putInt(index, (int) vector);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public <E extends Enum<E>> IoBuffer putEnumSetLong(Set<E> set) {
-		return putLong(toLong(set));
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public <E extends Enum<E>> IoBuffer putEnumSetLong(int index, Set<E> set) {
-		return putLong(index, toLong(set));
-	}
-
-	private static <E extends Enum<E>> long toLong(Set<E> set) {
-		long vector = 0;
-		for (E e : set) {
-			if (e.ordinal() >= Long.SIZE) {
-				throw new IllegalArgumentException("The enum set is too large to fit in a bit vector: " + set);
-			}
-			vector |= 1L << e.ordinal();
-		}
-		return vector;
 	}
 
 	/**

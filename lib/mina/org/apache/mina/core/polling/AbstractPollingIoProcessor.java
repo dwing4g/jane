@@ -113,7 +113,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			throw new IllegalArgumentException("executor");
 		}
 
-		this.threadName = nextThreadName();
+		threadName = nextThreadName();
 		this.executor = executor;
 	}
 
@@ -399,12 +399,10 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 	 */
 	@Override
 	public void write(S session, WriteRequest writeRequest) {
-		WriteRequestQueue writeRequestQueue = session.getWriteRequestQueue();
-
-		writeRequestQueue.offer(session, writeRequest);
+		session.getWriteRequestQueue().offer(writeRequest);
 
 		if (!session.isWriteSuspended()) {
-			this.flush(session);
+			flush(session);
 		}
 	}
 
@@ -515,7 +513,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 
 		try {
 			setInterestedInWrite(session,
-					!session.getWriteRequestQueue().isEmpty(session) && !session.isWriteSuspended());
+					!session.getWriteRequestQueue().isEmpty() && !session.isWriteSuspended());
 		} catch (Exception e) {
 			session.getFilterChain().fireExceptionCaught(e);
 		}
@@ -839,9 +837,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 				switch (state) {
 				case OPENED:
 					try {
-						boolean flushedAll = flushNow(session);
-
-						if (flushedAll && !session.getWriteRequestQueue().isEmpty(session)
+						if (flushNow(session) && !session.getWriteRequestQueue().isEmpty()
 								&& !session.isScheduledForFlush()) {
 							scheduleFlush(session);
 						}
@@ -895,7 +891,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 					req = session.getCurrentWriteRequest();
 
 					if (req == null) {
-						req = writeRequestQueue.poll(session);
+						req = writeRequestQueue.poll();
 
 						if (req == null) {
 							break;
@@ -930,12 +926,11 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 							return false;
 						}
 					} else {
-						throw new IllegalStateException("Don't know how to handle message of type '"
-								+ message.getClass().getName() + "'.  Are you missing a protocol encoder?");
+						throw new IllegalStateException("unknown message type for writting: "
+								+ message.getClass().getName());
 					}
 
 					if (localWrittenBytes == 0) {
-
 						// Kernel buffer is full.
 						if (!req.equals(AbstractIoSession.MESSAGE_SENT_REQUEST)) {
 							setInterestedInWrite(session, true);
@@ -975,8 +970,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			}
 		}
 
-		private int writeFile(S session, WriteRequest req, int maxLength)
-				throws Exception {
+		private int writeFile(S session, WriteRequest req, int maxLength) throws Exception {
 			int localWrittenBytes;
 			FileRegion region = (FileRegion) req.getMessage();
 
@@ -1066,7 +1060,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 
 			List<WriteRequest> failedRequests = new ArrayList<>();
 
-			if ((req = writeRequestQueue.poll(session)) != null) {
+			if ((req = writeRequestQueue.poll()) != null) {
 				Object message = req.getMessage();
 
 				if (message instanceof IoBuffer) {
@@ -1085,7 +1079,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 				}
 
 				// Discard others.
-				while ((req = writeRequestQueue.poll(session)) != null) {
+				while ((req = writeRequestQueue.poll()) != null) {
 					failedRequests.add(req);
 				}
 			}

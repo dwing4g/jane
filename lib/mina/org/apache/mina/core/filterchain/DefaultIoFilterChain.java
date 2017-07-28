@@ -818,31 +818,28 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 	private class HeadFilter extends IoFilterAdapter {
 		@SuppressWarnings("unchecked")
 		@Override
-		public void filterWrite(NextFilter nextFilter, IoSession session1, WriteRequest writeRequest) throws Exception {
-
-			AbstractIoSession s = (AbstractIoSession) session1;
-
-			// Maintain counters.
-			if (writeRequest.getMessage() instanceof IoBuffer) {
-				IoBuffer buffer = (IoBuffer) writeRequest.getMessage();
+		public void filterWrite(NextFilter nextFilter, IoSession ioSession, WriteRequest writeRequest) throws Exception {
+			Object message = writeRequest.getMessage();
+			if (message instanceof IoBuffer) {
 				// I/O processor implementation will call buffer.reset()
 				// it after the write operation is finished, because
 				// the buffer will be specified with messageSent event.
-				buffer.mark();
+				((IoBuffer)message).mark();
 			}
 
+			AbstractIoSession s = (AbstractIoSession)ioSession;
 			WriteRequestQueue writeRequestQueue = s.getWriteRequestQueue();
 
 			if (!s.isWriteSuspended()) {
-				if (writeRequestQueue.isEmpty(session1)) {
+				if (writeRequestQueue.isEmpty()) {
 					// We can write directly the message
 					s.getProcessor().write(s, writeRequest);
 				} else {
-					s.getWriteRequestQueue().offer(s, writeRequest);
+					s.getWriteRequestQueue().offer(writeRequest);
 					s.getProcessor().flush(s);
 				}
 			} else {
-				s.getWriteRequestQueue().offer(s, writeRequest);
+				s.getWriteRequestQueue().offer(writeRequest);
 			}
 		}
 
@@ -881,10 +878,10 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 				s.getHandler().sessionClosed(session);
 			} finally {
 				try {
-					s.getWriteRequestQueue().dispose(session);
+					s.getWriteRequestQueue().dispose();
 				} finally {
 					try {
-						s.getAttributeMap().dispose(session);
+						s.getAttributeMap().dispose();
 					} finally {
 						// Remove all filters.
 						session.getFilterChain().clear();

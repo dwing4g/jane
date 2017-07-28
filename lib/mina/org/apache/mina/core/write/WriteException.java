@@ -23,10 +23,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
-import org.apache.mina.util.MapBackedSet;
 
 /**
  * An exception which is thrown when one or more write operations failed.
@@ -154,7 +152,7 @@ public class WriteException extends IOException {
 		}
 
 		// Create a list of requests removing duplicates.
-		Set<WriteRequest> newRequests = new MapBackedSet<>(new LinkedHashMap<WriteRequest, Boolean>());
+		LinkedHashSet<WriteRequest> newRequests = new LinkedHashSet<>();
 
 		for (WriteRequest r : requests) {
 			newRequests.add(r.getOriginalRequest());

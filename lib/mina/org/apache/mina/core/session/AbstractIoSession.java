@@ -61,17 +61,11 @@ public abstract class AbstractIoSession implements IoSession {
 	/** The service which will manage this session */
 	private final IoService service;
 
-	/**
-	 * An internal write request object that triggers session close.
-	 */
-	public static final WriteRequest CLOSE_REQUEST = new DefaultWriteRequest(new Object());
+	/** An internal write request object that triggers session close */
+	public static final WriteRequest CLOSE_REQUEST = new DefaultWriteRequest(DefaultWriteRequest.EMPTY_MESSAGE);
 
-	/**
-	 * An internal write request object that triggers message sent events.
-	 */
+	/** An internal write request object that triggers message sent events */
 	public static final WriteRequest MESSAGE_SENT_REQUEST = new DefaultWriteRequest(DefaultWriteRequest.EMPTY_MESSAGE);
-
-	private final Object lock = new Object();
 
 	private IoSessionAttributeMap attributes;
 	private Object attachment;
@@ -81,14 +75,12 @@ public abstract class AbstractIoSession implements IoSession {
 	private WriteRequest currentWriteRequest;
 
 	/** An id generator guaranteed to generate unique IDs for the session */
-	private static AtomicLong idGenerator = new AtomicLong();
+	private static final AtomicLong idGenerator = new AtomicLong();
 
 	/** The session ID */
 	private final long sessionId;
 
-	/**
-	 * A future that will be set 'closed' when the connection is closed.
-	 */
+	/** A future that will be set 'closed' when the connection is closed */
 	private final CloseFuture closeFuture = new DefaultCloseFuture(this);
 
 	// Status variables
@@ -161,15 +153,6 @@ public abstract class AbstractIoSession implements IoSession {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public boolean isSecured() {
-		// Always false...
-		return false;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
 	public final CloseFuture getCloseFuture() {
 		return closeFuture;
 	}
@@ -225,7 +208,7 @@ public abstract class AbstractIoSession implements IoSession {
 	@Override
 	public final CloseFuture closeOnFlush() {
 		if (!isClosing()) {
-			getWriteRequestQueue().offer(this, CLOSE_REQUEST);
+			getWriteRequestQueue().offer(CLOSE_REQUEST);
 			getProcessor().flush(this);
 		}
 
@@ -237,7 +220,7 @@ public abstract class AbstractIoSession implements IoSession {
 	 */
 	@Override
 	public final CloseFuture closeNow() {
-		synchronized (lock) {
+		synchronized (scheduledForFlush) {
 			if (isClosing()) {
 				return closeFuture;
 			}
@@ -261,8 +244,8 @@ public abstract class AbstractIoSession implements IoSession {
 	 */
 	protected void destroy() {
 		if (writeRequestQueue != null) {
-			while (!writeRequestQueue.isEmpty(this)) {
-				WriteRequest writeRequest = writeRequestQueue.poll(this);
+			while (!writeRequestQueue.isEmpty()) {
+				WriteRequest writeRequest = writeRequestQueue.poll();
 
 				if (writeRequest != null) {
 					WriteFuture writeFuture = writeRequest.getFuture();
@@ -396,7 +379,7 @@ public abstract class AbstractIoSession implements IoSession {
 	 */
 	@Override
 	public final Object getAttribute(Object key, Object defaultValue) {
-		return attributes.getAttribute(this, key, defaultValue);
+		return attributes.getAttribute(key, defaultValue);
 	}
 
 	/**
@@ -404,7 +387,7 @@ public abstract class AbstractIoSession implements IoSession {
 	 */
 	@Override
 	public final Object setAttribute(Object key, Object value) {
-		return attributes.setAttribute(this, key, value);
+		return attributes.setAttribute(key, value);
 	}
 
 	/**
@@ -420,7 +403,7 @@ public abstract class AbstractIoSession implements IoSession {
 	 */
 	@Override
 	public final Object setAttributeIfAbsent(Object key, Object value) {
-		return attributes.setAttributeIfAbsent(this, key, value);
+		return attributes.setAttributeIfAbsent(key, value);
 	}
 
 	/**
@@ -436,7 +419,7 @@ public abstract class AbstractIoSession implements IoSession {
 	 */
 	@Override
 	public final Object removeAttribute(Object key) {
-		return attributes.removeAttribute(this, key);
+		return attributes.removeAttribute(key);
 	}
 
 	/**
@@ -444,7 +427,7 @@ public abstract class AbstractIoSession implements IoSession {
 	 */
 	@Override
 	public final boolean removeAttribute(Object key, Object value) {
-		return attributes.removeAttribute(this, key, value);
+		return attributes.removeAttribute(key, value);
 	}
 
 	/**
@@ -452,7 +435,7 @@ public abstract class AbstractIoSession implements IoSession {
 	 */
 	@Override
 	public final boolean replaceAttribute(Object key, Object oldValue, Object newValue) {
-		return attributes.replaceAttribute(this, key, oldValue, newValue);
+		return attributes.replaceAttribute(key, oldValue, newValue);
 	}
 
 	/**
@@ -460,7 +443,7 @@ public abstract class AbstractIoSession implements IoSession {
 	 */
 	@Override
 	public final boolean containsAttribute(Object key) {
-		return attributes.containsAttribute(this, key);
+		return attributes.containsAttribute(key);
 	}
 
 	/**
@@ -468,7 +451,7 @@ public abstract class AbstractIoSession implements IoSession {
 	 */
 	@Override
 	public final Set<Object> getAttributeKeys() {
-		return attributes.getAttributeKeys(this);
+		return attributes.getAttributeKeys();
 	}
 
 	/**
@@ -588,19 +571,6 @@ public abstract class AbstractIoSession implements IoSession {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public final Object getCurrentWriteMessage() {
-		WriteRequest req = getCurrentWriteRequest();
-
-		if (req == null) {
-			return null;
-		}
-		return req.getMessage();
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
 	public final void setCurrentWriteRequest(WriteRequest currentWriteRequest) {
 		this.currentWriteRequest = currentWriteRequest;
 	}
@@ -672,7 +642,7 @@ public abstract class AbstractIoSession implements IoSession {
 	@Override
 	public String toString() {
 		if (isConnected() || isClosing()) {
-			String remote = null;
+			String remote;
 			String local = null;
 
 			try {
@@ -687,10 +657,10 @@ public abstract class AbstractIoSession implements IoSession {
 			}
 
 			if (getService() instanceof IoAcceptor) {
-				return "(" + getIdAsString() + ": " + getServiceName() + ", server, " + remote + " => " + local + ')';
+				return "(" + getIdAsString() + ": nio socket, server, " + remote + " => " + local + ')';
 			}
 
-			return "(" + getIdAsString() + ": " + getServiceName() + ", client, " + local + " => " + remote + ')';
+			return "(" + getIdAsString() + ": nio socket, client, " + local + " => " + remote + ')';
 		}
 
 		return "(" + getIdAsString() + ") Session disconnected ...";
@@ -706,13 +676,6 @@ public abstract class AbstractIoSession implements IoSession {
 			return "0x00000000".substring(0, 10 - id.length()) + id;
 		}
 		return "0x" + id;
-	}
-
-	/**
-	 * TGet the Service name
-	 */
-	private static String getServiceName() {
-		return "nio socket";
 	}
 
 	/**
