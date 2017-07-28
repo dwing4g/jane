@@ -94,7 +94,7 @@ public final class TestUndo
 					}
 				}.run();
 
-				TestType.Safe.onListenerV18(new SMapListener<Octets, TestBean>()
+				TestType.Safe.onListenV18(new SMapListener<Octets, TestBean>()
 				{
 					@Override
 					public void onChanged(Rec rec, Map<Octets, TestBean> changed)

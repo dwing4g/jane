@@ -192,7 +192,7 @@ public final class SimpleIoProcessorPool<S extends AbstractIoSession> implements
 				} catch (NoSuchMethodException e1) {
 					// To the next step...
 					try {
-						if(selectorProvider==null) {
+						if(selectorProvider == null) {
 							processorConstructor = processorType.getConstructor(Executor.class);
 							pool[0] = processorConstructor.newInstance(this.executor);
 						} else {
@@ -232,7 +232,7 @@ public final class SimpleIoProcessorPool<S extends AbstractIoSession> implements
 			for (int i = 1; i < pool.length; i++) {
 				try {
 					if (usesExecutorArg) {
-						if(selectorProvider==null) {
+						if(selectorProvider == null) {
 							pool[i] = processorConstructor.newInstance(this.executor);
 						} else {
 							pool[i] = processorConstructor.newInstance(this.executor, selectorProvider);

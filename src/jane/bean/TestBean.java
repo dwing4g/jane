@@ -21,8 +21,8 @@ public final class TestBean extends Bean<TestBean>
 	public  static final BeanPool<TestBean> BEAN_POOL = new BeanPool<>(BEAN_STUB, 1000);
 	public  static final int TEST_CONST1 = 5; // 测试类静态常量
 	public  static final String TEST_CONST2 = "test_const2";
-	private static Field FIELD_value1;
-	private static Field FIELD_value2;
+	private static final Field FIELD_value1;
+	private static final Field FIELD_value2;
 
 	private /*  1*/ int value1; // 字段的注释
 	private /*  2*/ long value2;

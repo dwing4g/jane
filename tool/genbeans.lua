@@ -403,7 +403,7 @@ typedef.byte =
 	type = "byte", type_i = "byte", type_o = "Byte",
 	subtypeid = 0,
 	final = "",
-	field = "\tprivate static Field FIELD_#(var.name);\n",
+	field = "\tprivate static final Field FIELD_#(var.name);\n",
 	fieldget = "\t\t\tFIELD_#(var.name) = _c_.getDeclaredField(\"#(var.name)\"); FIELD_#(var.name).setAccessible(true);\n",
 	safecache = "",
 	new = "",
@@ -752,7 +752,7 @@ typedef.hashset = merge(typedef.list,
 	getsafe = function(var) return [[
 
 		/** #(var.comment1) */
-		public static void onListener#(var.name_u)(SSetListener<]] .. subtypename(var, var.k) .. [[> _listener_)
+		public static void onListen#(var.name_u)(SSetListener<]] .. subtypename(var, var.k) .. [[> _listener_)
 		{
 			LISTENER_#(var.name) = _listener_;
 		}
@@ -802,7 +802,7 @@ typedef.hashmap = merge(typedef.list,
 	getsafe = function(var) return [[
 
 		/** #(var.comment1) */
-		public static void onListener#(var.name_u)(SMapListener<]] .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. [[> _listener_)
+		public static void onListen#(var.name_u)(SMapListener<]] .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. [[> _listener_)
 		{
 			LISTENER_#(var.name) = _listener_;
 		}
@@ -922,7 +922,7 @@ typedef.bean = merge(typedef.octets,
 typedef.ref = merge(typedef.bean,
 {
 	final = "",
-	field = "\tprivate static Field FIELD_#(var.name);\n",
+	field = "\tprivate static final Field FIELD_#(var.name);\n",
 	fieldget = "\t\t\tFIELD_#(var.name) = _c_.getDeclaredField(\"#(var.name)\"); FIELD_#(var.name).setAccessible(true);\n",
 	new = "\t\t#(var.name) = null;\n",
 	init = "this.#(var.name) = #(var.name)",
@@ -1087,7 +1087,7 @@ local function bean_const(code)
 		gsub("import jane%.core%.DynBean;\n", ""):
 		gsub("import jane%.core%.SBase;\n", ""):
 		gsub("import jane%.core%.SContext;\n", ""):
-		gsub("\tprivate static Field .-\n", ""):
+		gsub("\tprivate static final Field .-\n", ""):
 		gsub("\tstatic\n.-\n\t}\n\n", ""):
 --		gsub("\n\tpublic [%w_]+%(%).-\n\t}\n", ""):
 --		gsub("(\n\tprivate /%*[ %d]+%*/)", "%1 final"):
@@ -1188,7 +1188,7 @@ function bean(bean)
 	if jdk7 then
 		code = code:gsub("( new %w+)<.->", "%1<>")
 	end
-	if not code:find("\tprivate static Field ") then
+	if not code:find("\tprivate static final Field ") then
 		code = code:gsub("import java.lang.reflect.Field;\n", "")
 	end
 	if bean.const then code = bean_const(code) end
@@ -1376,7 +1376,7 @@ for beanname, safe in spairs(need_save) do
 		code = code:gsub("\n\t@Override\n\tpublic Safe safe%(.*", "}\n")
 				   :gsub("import java%.lang%.reflect%.Field;\n", "")
 				   :gsub("import jane%.core%.S.-\n", "")
-				   :gsub("\tprivate static Field FIELD_.-\n", "")
+				   :gsub("\tprivate static final Field FIELD_.-\n", "")
 				   :gsub("\tprivate static S...Listener<.-\n", "")
 				   :gsub("\n\tstatic\n\t{.-\n\t}\n", "")
 	end

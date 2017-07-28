@@ -40,22 +40,22 @@ public final class TestType extends Bean<TestType>
 	public  static final int BEAN_TYPE = 2;
 	public  static final String BEAN_TYPENAME = "TestType";
 	public  static final TestType BEAN_STUB = new TestType();
-	private static Field FIELD_v1;
-	private static Field FIELD_v2;
-	private static Field FIELD_v3;
-	private static Field FIELD_v4;
-	private static Field FIELD_v5;
-	private static Field FIELD_v6;
-	private static Field FIELD_v7;
-	private static Field FIELD_v8;
-	private static Field FIELD_v9;
+	private static final Field FIELD_v1;
+	private static final Field FIELD_v2;
+	private static final Field FIELD_v3;
+	private static final Field FIELD_v4;
+	private static final Field FIELD_v5;
+	private static final Field FIELD_v6;
+	private static final Field FIELD_v7;
+	private static final Field FIELD_v8;
+	private static final Field FIELD_v9;
 	private static SSetListener<Long> LISTENER_v13;
 	private static SSetListener<Float> LISTENER_v14;
 	private static SSetListener<Double> LISTENER_v15;
 	private static SMapListener<Long, String> LISTENER_v16;
 	private static SMapListener<TestBean, Boolean> LISTENER_v17;
 	private static SMapListener<Octets, TestBean> LISTENER_v18;
-	private static Field FIELD_v20;
+	private static final Field FIELD_v20;
 
 	private /*  1*/ boolean v1; // 1字节布尔,0表示假,1表示真,其它默认表示真
 	private /*  2*/ byte v2; // 1字节整数
@@ -956,7 +956,7 @@ public final class TestType extends Bean<TestType>
 		}
 
 		/** 无序集合容器(HashSet) */
-		public static void onListenerV13(SSetListener<Long> _listener_)
+		public static void onListenV13(SSetListener<Long> _listener_)
 		{
 			LISTENER_v13 = _listener_;
 		}
@@ -976,7 +976,7 @@ public final class TestType extends Bean<TestType>
 		}
 
 		/** 排序集合容器(TreeSet) */
-		public static void onListenerV14(SSetListener<Float> _listener_)
+		public static void onListenV14(SSetListener<Float> _listener_)
 		{
 			LISTENER_v14 = _listener_;
 		}
@@ -996,7 +996,7 @@ public final class TestType extends Bean<TestType>
 		}
 
 		/** 有序集合容器(LinkedHashSet) */
-		public static void onListenerV15(SSetListener<Double> _listener_)
+		public static void onListenV15(SSetListener<Double> _listener_)
 		{
 			LISTENER_v15 = _listener_;
 		}
@@ -1016,7 +1016,7 @@ public final class TestType extends Bean<TestType>
 		}
 
 		/** 无序映射容器(HashMap) */
-		public static void onListenerV16(SMapListener<Long, String> _listener_)
+		public static void onListenV16(SMapListener<Long, String> _listener_)
 		{
 			LISTENER_v16 = _listener_;
 		}
@@ -1036,7 +1036,7 @@ public final class TestType extends Bean<TestType>
 		}
 
 		/** 排序映射容器(TreeMap) */
-		public static void onListenerV17(SMapListener<TestBean, Boolean> _listener_)
+		public static void onListenV17(SMapListener<TestBean, Boolean> _listener_)
 		{
 			LISTENER_v17 = _listener_;
 		}
@@ -1056,7 +1056,7 @@ public final class TestType extends Bean<TestType>
 		}
 
 		/** 有序映射容器(LinkedHashMap) */
-		public static void onListenerV18(SMapListener<Octets, TestBean> _listener_)
+		public static void onListenV18(SMapListener<Octets, TestBean> _listener_)
 		{
 			LISTENER_v18 = _listener_;
 		}

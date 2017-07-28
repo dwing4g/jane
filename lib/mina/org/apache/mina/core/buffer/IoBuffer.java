@@ -761,11 +761,11 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	public abstract byte get();
 
 	/**
-	 * Reads one unsigned byte as a short integer.
+	 * Reads one unsigned byte as a integer.
 	 *
-	 * @return the unsigned short at the current position
+	 * @return the unsigned byte at the current position
 	 */
-	public abstract short getUnsigned();
+	public abstract int getUnsigned();
 
 	/**
 	 * @see ByteBuffer#put(byte)
@@ -785,12 +785,12 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	public abstract byte get(int index);
 
 	/**
-	 * Reads one byte as an unsigned short integer.
+	 * Reads one byte as an unsigned integer.
 	 *
 	 * @param index The position for which we want to read an unsigned byte
 	 * @return the unsigned byte at the given position
 	 */
-	public abstract short getUnsigned(int index);
+	public abstract int getUnsigned(int index);
 
 	/**
 	 * @see ByteBuffer#put(int, byte)
@@ -1100,82 +1100,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	public abstract IoBuffer putInt(int value);
 
 	/**
-	 * Writes an unsigned byte into the ByteBuffer
-	 *
-	 * @param value the byte to write
-	 *
-	 * @return the modified IoBuffer
-	 */
-	public abstract IoBuffer putUnsigned(byte value);
-
-	/**
-	 * Writes an unsigned byte into the ByteBuffer at a specified position
-	 *
-	 * @param index the position in the buffer to write the value
-	 * @param value the byte to write
-	 *
-	 * @return the modified IoBuffer
-	 */
-	public abstract IoBuffer putUnsigned(int index, byte value);
-
-	/**
-	 * Writes an unsigned byte into the ByteBuffer
-	 *
-	 * @param value the short to write
-	 *
-	 * @return the modified IoBuffer
-	 */
-	public abstract IoBuffer putUnsigned(short value);
-
-	/**
-	 * Writes an unsigned byte into the ByteBuffer at a specified position
-	 *
-	 * @param index the position in the buffer to write the value
-	 * @param value the short to write
-	 *
-	 * @return the modified IoBuffer
-	 */
-	public abstract IoBuffer putUnsigned(int index, short value);
-
-	/**
-	 * Writes an unsigned byte into the ByteBuffer
-	 *
-	 * @param value the int to write
-	 *
-	 * @return the modified IoBuffer
-	 */
-	public abstract IoBuffer putUnsigned(int value);
-
-	/**
-	 * Writes an unsigned byte into the ByteBuffer at a specified position
-	 *
-	 * @param index the position in the buffer to write the value
-	 * @param value the int to write
-	 *
-	 * @return the modified IoBuffer
-	 */
-	public abstract IoBuffer putUnsigned(int index, int value);
-
-	/**
-	 * Writes an unsigned byte into the ByteBuffer
-	 *
-	 * @param value the long to write
-	 *
-	 * @return the modified IoBuffer
-	 */
-	public abstract IoBuffer putUnsigned(long value);
-
-	/**
-	 * Writes an unsigned byte into the ByteBuffer at a specified position
-	 *
-	 * @param index the position in the buffer to write the value
-	 * @param value the long to write
-	 *
-	 * @return the modified IoBuffer
-	 */
-	public abstract IoBuffer putUnsigned(int index, long value);
-
-	/**
 	 * Writes an unsigned int into the ByteBuffer
 	 * @param value the byte to write
 	 *
@@ -1213,44 +1137,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	public abstract IoBuffer putUnsignedInt(int index, short value);
 
 	/**
-	 * Writes an unsigned int into the ByteBuffer
-	 *
-	 * @param value the int to write
-	 *
-	 * @return the modified IoBuffer
-	 */
-	public abstract IoBuffer putUnsignedInt(int value);
-
-	/**
-	 * Writes an unsigned int into the ByteBuffer at a specified position
-	 *
-	 * @param index the position in the buffer to write the value
-	 * @param value the int to write
-	 *
-	 * @return the modified IoBuffer
-	 */
-	public abstract IoBuffer putUnsignedInt(int index, int value);
-
-	/**
-	 * Writes an unsigned int into the ByteBuffer
-	 *
-	 * @param value the long to write
-	 *
-	 * @return the modified IoBuffer
-	 */
-	public abstract IoBuffer putUnsignedInt(long value);
-
-	/**
-	 * Writes an unsigned int into the ByteBuffer at a specified position
-	 *
-	 * @param index the position in the buffer to write the value
-	 * @param value the long to write
-	 *
-	 * @return the modified IoBuffer
-	 */
-	public abstract IoBuffer putUnsignedInt(int index, long value);
-
-	/**
 	 * Writes an unsigned short into the ByteBuffer
 	 *
 	 * @param value the byte to write
@@ -1268,62 +1154,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	 * @return the modified IoBuffer
 	 */
 	public abstract IoBuffer putUnsignedShort(int index, byte value);
-
-	/**
-	 * Writes an unsigned Short into the ByteBuffer
-	 *
-	 * @param value the short to write
-	 *
-	 * @return the modified IoBuffer
-	 */
-	public abstract IoBuffer putUnsignedShort(short value);
-
-	/**
-	 * Writes an unsigned Short into the ByteBuffer at a specified position
-	 *
-	 * @param index the position in the buffer to write the unsigned short
-	 * @param value the unsigned short to write
-	 *
-	 * @return the modified IoBuffer
-	 */
-	public abstract IoBuffer putUnsignedShort(int index, short value);
-
-	/**
-	 * Writes an unsigned Short into the ByteBuffer
-	 *
-	 * @param value the int to write
-	 *
-	 * @return the modified IoBuffer
-	 */
-	public abstract IoBuffer putUnsignedShort(int value);
-
-	/**
-	 * Writes an unsigned Short into the ByteBuffer at a specified position
-	 *
-	 * @param index the position in the buffer to write the value
-	 * @param value the int to write
-	 * @return the modified IoBuffer
-	 */
-	public abstract IoBuffer putUnsignedShort(int index, int value);
-
-	/**
-	 * Writes an unsigned Short into the ByteBuffer
-	 *
-	 * @param value the long to write
-	 *
-	 * @return the modified IoBuffer
-	 */
-	public abstract IoBuffer putUnsignedShort(long value);
-
-	/**
-	 * Writes an unsigned Short into the ByteBuffer at a specified position
-	 *
-	 * @param index the position in the buffer to write the short
-	 * @param value the long to write
-	 *
-	 * @return the modified IoBuffer
-	 */
-	public abstract IoBuffer putUnsignedShort(int index, long value);
 
 	/**
 	 * @see ByteBuffer#getInt(int)

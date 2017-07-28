@@ -28,6 +28,8 @@ import java.io.ObjectStreamClass;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.io.StreamCorruptedException;
+import java.lang.reflect.Field;
+import java.nio.Buffer;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
@@ -68,11 +70,16 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	/** The minimum number of bytes the IoBuffer can hold */
 	private int minimumCapacity;
 
-	/**
-	 * We don't have any access to Buffer.markValue(), so we need to track it down,
-	 * which will cause small extra overhead.
-	 */
-	private int mark = -1;
+	private static final Field markField;
+
+	static {
+		try {
+			markField = Buffer.class.getDeclaredField("mark");
+			markField.setAccessible(true);
+		} catch(Exception e) {
+			throw new Error(e);
+		}
+	}
 
 	/**
 	 * Creates a new parent buffer.
@@ -155,6 +162,7 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 			//// Save the state.
 			int pos = position();
 			int limit = limit();
+			int mark = markValue();
 			ByteOrder bo = order();
 
 			//// Reallocate.
@@ -325,7 +333,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		buf().position(position);
 		buf().limit(limit);
 		buf().order(bo);
-		mark = -1;
 
 		return this;
 	}
@@ -345,11 +352,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	public final IoBuffer position(int newPosition) {
 		autoExpand(newPosition, 0);
 		buf().position(newPosition);
-
-		if (mark > newPosition) {
-			mark = -1;
-		}
-
 		return this;
 	}
 
@@ -368,9 +370,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	public final IoBuffer limit(int newLimit) {
 		autoExpand(newLimit, 0);
 		buf().limit(newLimit);
-		if (mark > newLimit) {
-			mark = -1;
-		}
 		return this;
 	}
 
@@ -381,8 +380,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	public final IoBuffer mark() {
 		ByteBuffer byteBuffer = buf();
 		byteBuffer.mark();
-		mark = byteBuffer.position();
-
 		return this;
 	}
 
@@ -391,7 +388,11 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	 */
 	@Override
 	public final int markValue() {
-		return mark;
+		try {
+			return markField.getInt(buf());
+		} catch(Exception e) {
+			throw new Error(e);
+		}
 	}
 
 	/**
@@ -409,7 +410,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	@Override
 	public final IoBuffer clear() {
 		buf().clear();
-		mark = -1;
 		return this;
 	}
 
@@ -437,7 +437,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	@Override
 	public final IoBuffer flip() {
 		buf().flip();
-		mark = -1;
 		return this;
 	}
 
@@ -447,7 +446,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	@Override
 	public final IoBuffer rewind() {
 		buf().rewind();
-		mark = -1;
 		return this;
 	}
 
@@ -483,8 +481,8 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public final short getUnsigned() {
-		return (short) (get() & 0xff);
+	public final int getUnsigned() {
+		return get() & 0xff;
 	}
 
 	/**
@@ -501,86 +499,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public IoBuffer putUnsigned(byte value) {
-		autoExpand(1);
-		buf().put((byte) (value & 0xff));
-		return this;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public IoBuffer putUnsigned(int index, byte value) {
-		autoExpand(index, 1);
-		buf().put(index, (byte) (value & 0xff));
-		return this;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public IoBuffer putUnsigned(short value) {
-		autoExpand(1);
-		buf().put((byte) (value & 0x00ff));
-		return this;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public IoBuffer putUnsigned(int index, short value) {
-		autoExpand(index, 1);
-		buf().put(index, (byte) (value & 0x00ff));
-		return this;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public IoBuffer putUnsigned(int value) {
-		autoExpand(1);
-		buf().put((byte) (value & 0x000000ff));
-		return this;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public IoBuffer putUnsigned(int index, int value) {
-		autoExpand(index, 1);
-		buf().put(index, (byte) (value & 0x000000ff));
-		return this;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public IoBuffer putUnsigned(long value) {
-		autoExpand(1);
-		buf().put((byte) (value & 0x00000000000000ffL));
-		return this;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public IoBuffer putUnsigned(int index, long value) {
-		autoExpand(index, 1);
-		buf().put(index, (byte) (value & 0x00000000000000ffL));
-		return this;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
 	public final byte get(int index) {
 		return buf().get(index);
 	}
@@ -589,8 +507,8 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public final short getUnsigned(int index) {
-		return (short) (get(index) & 0xff);
+	public final int getUnsigned(int index) {
+		return get(index) & 0xff;
 	}
 
 	/**
@@ -681,7 +599,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		} else {
 			buf().compact();
 		}
-		mark = -1;
 		return this;
 	}
 
@@ -852,46 +769,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public final IoBuffer putUnsignedInt(int value) {
-		autoExpand(4);
-		buf().putInt(value);
-		return this;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final IoBuffer putUnsignedInt(int index, int value) {
-		autoExpand(index, 4);
-		buf().putInt(index, value);
-		return this;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final IoBuffer putUnsignedInt(long value) {
-		autoExpand(4);
-		buf().putInt((int) (value & 0x00000000ffffffff));
-		return this;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final IoBuffer putUnsignedInt(int index, long value) {
-		autoExpand(index, 4);
-		buf().putInt(index, (int) (value & 0x00000000ffffffffL));
-		return this;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
 	public final IoBuffer putUnsignedShort(byte value) {
 		autoExpand(2);
 		buf().putShort((short) (value & 0x00ff));
@@ -905,66 +782,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	public final IoBuffer putUnsignedShort(int index, byte value) {
 		autoExpand(index, 2);
 		buf().putShort(index, (short) (value & 0x00ff));
-		return this;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final IoBuffer putUnsignedShort(short value) {
-		autoExpand(2);
-		buf().putShort(value);
-		return this;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final IoBuffer putUnsignedShort(int index, short value) {
-		autoExpand(index, 2);
-		buf().putShort(index, value);
-		return this;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final IoBuffer putUnsignedShort(int value) {
-		autoExpand(2);
-		buf().putShort((short) value);
-		return this;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final IoBuffer putUnsignedShort(int index, int value) {
-		autoExpand(index, 2);
-		buf().putShort(index, (short) value);
-		return this;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final IoBuffer putUnsignedShort(long value) {
-		autoExpand(2);
-		buf().putShort((short) (value));
-		return this;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final IoBuffer putUnsignedShort(int index, long value) {
-		autoExpand(index, 2);
-		buf().putShort(index, (short) (value));
 		return this;
 	}
 
@@ -2323,7 +2140,7 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		r = r & 1;
 
 		if (q > 0) {
-			short shortValue = (short) (value & 0x000FF | value << 8);
+			short shortValue = (short) (value & 0x00FF | value << 8);
 			putShort(shortValue);
 		}
 
