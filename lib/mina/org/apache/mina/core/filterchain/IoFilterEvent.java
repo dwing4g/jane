@@ -86,13 +86,8 @@ public final class IoFilterEvent extends IoEvent {
 				nextFilter.messageReceived(session, parameter);
 				break;
 
-			case MESSAGE_SENT:
-				WriteRequest writeRequest = (WriteRequest) getParameter();
-				nextFilter.messageSent(session, writeRequest);
-				break;
-
 			case WRITE:
-				writeRequest = (WriteRequest) getParameter();
+				WriteRequest writeRequest = (WriteRequest) getParameter();
 				nextFilter.filterWrite(session, writeRequest);
 				break;
 

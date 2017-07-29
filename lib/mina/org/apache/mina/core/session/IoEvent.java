@@ -97,10 +97,6 @@ public class IoEvent implements Runnable {
 				session.getFilterChain().fireMessageReceived(getParameter());
 				break;
 
-			case MESSAGE_SENT:
-				session.getFilterChain().fireMessageSent((WriteRequest) getParameter());
-				break;
-
 			case WRITE:
 				session.getFilterChain().fireFilterWrite((WriteRequest) getParameter());
 				break;

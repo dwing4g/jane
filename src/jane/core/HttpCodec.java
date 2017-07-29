@@ -396,6 +396,8 @@ public final class HttpCodec extends IoFilterAdapter
 			if(n > 0)
 				next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(oct.array(), 0, n), writeRequest.getFuture()));
 		}
+		else
+			next.filterWrite(session, writeRequest);
 	}
 
 	@Override

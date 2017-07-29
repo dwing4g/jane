@@ -28,7 +28,6 @@ import org.apache.mina.core.future.IoFuture;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.session.IoSessionConfig;
-import org.apache.mina.core.session.IoSessionInitializer;
 
 /**
  * A base implementation of {@link IoConnector}.
@@ -160,21 +159,7 @@ public abstract class AbstractIoConnector extends AbstractIoService implements I
 			throw new IllegalStateException("defaultRemoteAddress is not set.");
 		}
 
-		return connect(remoteAddress, null, null);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public ConnectFuture connect(IoSessionInitializer<? extends ConnectFuture> sessionInitializer) {
-		SocketAddress remoteAddress = getDefaultRemoteAddress();
-
-		if (remoteAddress == null) {
-			throw new IllegalStateException("defaultRemoteAddress is not set.");
-		}
-
-		return connect(remoteAddress, null, sessionInitializer);
+		return connect(remoteAddress, null);
 	}
 
 	/**
@@ -182,32 +167,14 @@ public abstract class AbstractIoConnector extends AbstractIoService implements I
 	 */
 	@Override
 	public final ConnectFuture connect(SocketAddress remoteAddress) {
-		return connect(remoteAddress, null, null);
+		return connect(remoteAddress, null);
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public ConnectFuture connect(SocketAddress remoteAddress,
-			IoSessionInitializer<? extends ConnectFuture> sessionInitializer) {
-		return connect(remoteAddress, null, sessionInitializer);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public ConnectFuture connect(SocketAddress remoteAddress, SocketAddress localAddress) {
-		return connect(remoteAddress, localAddress, null);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final ConnectFuture connect(SocketAddress remoteAddress, SocketAddress localAddress,
-			IoSessionInitializer<? extends ConnectFuture> sessionInitializer) {
+	public final ConnectFuture connect(SocketAddress remoteAddress, SocketAddress localAddress) {
 		if (isDisposing()) {
 			throw new IllegalStateException("The connector is being disposed.");
 		}
@@ -228,7 +195,7 @@ public abstract class AbstractIoConnector extends AbstractIoService implements I
 			throw new IllegalStateException("handler is not set.");
 		}
 
-		return connect0(remoteAddress, localAddress, sessionInitializer);
+		return connect0(remoteAddress, localAddress);
 	}
 
 	/**
@@ -236,12 +203,10 @@ public abstract class AbstractIoConnector extends AbstractIoService implements I
 	 *
 	 * @param remoteAddress The remote address to connect from
 	 * @param localAddress <tt>null</tt> if no local address is specified
-	 * @param sessionInitializer The IoSessionInitializer to use when the connection s successful
 	 * @return The ConnectFuture associated with this asynchronous operation
 	 *
 	 */
-	protected abstract ConnectFuture connect0(SocketAddress remoteAddress, SocketAddress localAddress,
-			IoSessionInitializer<? extends ConnectFuture> sessionInitializer);
+	protected abstract ConnectFuture connect0(SocketAddress remoteAddress, SocketAddress localAddress);
 
 	/**
 	 * Adds required internal attributes and {@link IoFutureListener}s

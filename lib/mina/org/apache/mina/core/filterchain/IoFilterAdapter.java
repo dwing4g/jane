@@ -116,14 +116,6 @@ public class IoFilterAdapter implements IoFilter {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void messageSent(NextFilter nextFilter, IoSession session, WriteRequest writeRequest) throws Exception {
-		nextFilter.messageSent(session, writeRequest);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
 	public void filterWrite(NextFilter nextFilter, IoSession session, WriteRequest writeRequest) throws Exception {
 		nextFilter.filterWrite(session, writeRequest);
 	}

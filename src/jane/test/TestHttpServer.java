@@ -12,6 +12,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import org.apache.mina.core.file.DefaultFileRegion;
 import org.apache.mina.core.file.FileRegion;
+import org.apache.mina.core.future.IoFuture;
+import org.apache.mina.core.future.IoFutureListener;
+import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.ssl.SslFilter;
 import jane.core.HttpCodec;
@@ -43,6 +46,7 @@ public final class TestHttpServer extends NetManager
 		System.out.println("onDelSession");
 	}
 
+	@SuppressWarnings("resource")
 	@Override
 	public void messageReceived(IoSession session, Object message)
 	{
@@ -62,26 +66,41 @@ public final class TestHttpServer extends NetManager
 			System.out.println("cookie: " + e.getKey() + ": " + e.getValue());
 		List<String> param = new ArrayList<>();
 		param.add("Server: jane");
-		param.add("Content-Type: text/html; charset=utf-8");
+		param.add("Connection: keep-alive");
 		param.add("Cache-Control: no-cache");
 		param.add("Pragma: no-cache");
 		if(params.containsKey("file"))
 		{
 			try
 			{
-				try(FileInputStream fis = new FileInputStream('.' + path))
+				param.add("Content-Type: application/octet-stream");
+				final FileInputStream fis = new FileInputStream('.' + path);
+				final FileChannel fc = fis.getChannel();
+				FileRegion fr = new DefaultFileRegion(fc);
+				HttpCodec.sendHead(session, "200 OK", fr.getRemainingBytes(), param);
+				WriteFuture wf = session.write(fr);
+				Throwable e = wf.getException();
+				if(e != null) throw e;
+				wf.addListener(new IoFutureListener<IoFuture>()
 				{
-					try(FileChannel fc = fis.getChannel())
+					@Override
+					public void operationComplete(IoFuture future)
 					{
-						FileRegion fr = new DefaultFileRegion(fc);
-						HttpCodec.sendHead(session, "200 OK", fc.size(), param);
-						Throwable e = session.write(fr).getException();
-						if(e != null) throw e;
+						try
+						{
+							fc.close();
+							fis.close();
+						}
+						catch(IOException ex)
+						{
+							ex.printStackTrace();
+						}
 					}
-				}
+				});
 			}
 			catch(Throwable e)
 			{
+				param.add("Content-Type: text/html; charset=utf-8");
 				HttpCodec.sendHead(session, "404 Not Found", -1, param);
 				HttpCodec.sendChunk(session, "<html><body><pre>" + e + "</pre></body></html>");
 				HttpCodec.sendChunkEnd(session);
@@ -89,26 +108,10 @@ public final class TestHttpServer extends NetManager
 		}
 		else
 		{
+			param.add("Content-Type: text/html; charset=utf-8");
 			HttpCodec.sendHead(session, "200", -1, param);
 			HttpCodec.sendChunk(session, "<html><body>TestHttpServer OK</body></html>");
 			HttpCodec.sendChunkEnd(session);
-		}
-	}
-
-	@Override
-	public void messageSent(IoSession session, Object message)
-	{
-//		System.out.println("messageSent");
-		if(message instanceof DefaultFileRegion)
-		{
-			try
-			{
-				((DefaultFileRegion)message).getFileChannel().close();
-			}
-			catch(IOException e)
-			{
-				e.printStackTrace();
-			}
 		}
 	}
 

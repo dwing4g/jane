@@ -26,8 +26,6 @@ import org.apache.mina.core.session.IoSession;
  * Handles all I/O events fired by MINA.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
- *
- * @see IoHandlerAdapter
  */
 public interface IoHandler {
 	/**
@@ -62,15 +60,12 @@ public interface IoHandler {
 	void sessionClosed(IoSession session) throws Exception;
 
 	/**
-	 * Invoked when any exception is thrown by user {@link IoHandler}
-	 * implementation or by MINA.  If <code>cause</code> is an instance of
-	 * {@link IOException}, MINA will close the connection automatically.
+	 * Handle the closure of an half-duplex TCP channel
 	 *
-	 * @param session The session for which we have got an exception
-	 * @param cause The exception that has been caught
-	 * @throws Exception If we get an exception while processing the caught exception
+	 * @param session The session which input is being closed
+	 * @throws Exception If we get an exception while closing the input
 	 */
-	void exceptionCaught(IoSession session, Throwable cause) throws Exception;
+	void inputClosed(IoSession session) throws Exception;
 
 	/**
 	 * Invoked when a message is received.
@@ -82,20 +77,13 @@ public interface IoHandler {
 	void messageReceived(IoSession session, Object message) throws Exception;
 
 	/**
-	 * Invoked when a message written by {@link IoSession#write(Object)} is
-	 * sent out.
+	 * Invoked when any exception is thrown by user {@link IoHandler}
+	 * implementation or by MINA.  If <code>cause</code> is an instance of
+	 * {@link IOException}, MINA will close the connection automatically.
 	 *
-	 * @param session The session that has sent a full message
-	 * @param message The sent message
-	 * @throws Exception If we get an exception while processing the sent message
+	 * @param session The session for which we have got an exception
+	 * @param cause The exception that has been caught
+	 * @throws Exception If we get an exception while processing the caught exception
 	 */
-	void messageSent(IoSession session, Object message) throws Exception;
-
-	/**
-	 * Handle the closure of an half-duplex TCP channel
-	 *
-	 * @param session The session which input is being closed
-	 * @throws Exception If we get an exception while closing the input
-	 */
-	void inputClosed(IoSession session) throws Exception;
+	void exceptionCaught(IoSession session, Throwable cause) throws Exception;
 }

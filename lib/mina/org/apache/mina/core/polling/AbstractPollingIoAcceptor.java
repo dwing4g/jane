@@ -552,7 +552,7 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 					continue;
 				}
 
-				initSession(session, null, null);
+				initSession(session, null);
 
 				// add the session to the SocketIoProcessor
 				session.getProcessor().add(session);

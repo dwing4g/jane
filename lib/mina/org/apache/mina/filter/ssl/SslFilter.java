@@ -534,16 +534,6 @@ public final class SslFilter extends IoFilterAdapter {
 	}
 
 	@Override
-	public void messageSent(NextFilter nextFilter, IoSession session, WriteRequest writeRequest) {
-		if (writeRequest instanceof EncryptedWriteRequest) {
-			EncryptedWriteRequest wrappedRequest = (EncryptedWriteRequest) writeRequest;
-			nextFilter.messageSent(session, wrappedRequest.getParentRequest());
-		} else {
-			// ignore extra buffers used for handshaking
-		}
-	}
-
-	@Override
 	public void exceptionCaught(NextFilter nextFilter, IoSession session, Throwable cause) throws Exception {
 
 		if (cause instanceof WriteToClosedSessionException) {

@@ -43,7 +43,6 @@ import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.session.IoSessionConfig;
 import org.apache.mina.core.session.IoSessionDataStructureFactory;
 import org.apache.mina.core.session.IoSessionInitializationException;
-import org.apache.mina.core.session.IoSessionInitializer;
 import org.apache.mina.transport.socket.SocketSessionConfig;
 import org.apache.mina.util.ExceptionMonitor;
 import org.apache.mina.util.NamePreservingRunnable;
@@ -404,8 +403,7 @@ public abstract class AbstractIoService implements IoService {
 		executor.execute(new NamePreservingRunnable(worker, actualThreadName));
 	}
 
-	@SuppressWarnings("unchecked")
-	protected final void initSession(IoSession session, IoFuture future, @SuppressWarnings("rawtypes") IoSessionInitializer sessionInitializer) {
+	protected final void initSession(IoSession session, IoFuture future) {
 		// Every property but attributeMap should be set now.
 		// Now initialize the attributeMap.  The reason why we initialize
 		// the attributeMap at last is to make sure all session properties
@@ -433,22 +431,17 @@ public abstract class AbstractIoService implements IoService {
 			session.setAttribute(DefaultIoFilterChain.SESSION_CREATED_FUTURE, future);
 		}
 
-		if (sessionInitializer != null) {
-			sessionInitializer.initializeSession(session, future);
-		}
-
 		finishSessionInitialization0(session, future);
 	}
 
 	/**
 	 * Implement this method to perform additional tasks required for session
 	 * initialization. Do not call this method directly;
-	 * {@link #initSession(IoSession, IoFuture, IoSessionInitializer)} will call
+	 * {@link #initSession(IoSession, IoFuture)} will call
 	 * this method instead.
 	 *
 	 * @param session The session to initialize
 	 * @param future The Future to use
-	 *
 	 */
 	protected void finishSessionInitialization0(IoSession session, IoFuture future) {
 		// Do nothing. Extended class might add some specific code
@@ -456,7 +449,6 @@ public abstract class AbstractIoService implements IoService {
 
 	/**
 	 * A  {@link IoFuture} dedicated class for
-	 *
 	 */
 	protected static class ServiceOperationFuture extends DefaultIoFuture {
 		public ServiceOperationFuture() {

@@ -44,11 +44,4 @@ public interface WriteRequest {
 	 * @return a message object to be written.
 	 */
 	Object getMessage();
-
-	/**
-	 * Tells if the current message has been encoded
-	 *
-	 * @return true if the message has already been encoded
-	 */
-	boolean isEncoded();
 }

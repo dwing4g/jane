@@ -1366,12 +1366,45 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this.getHexDump(Integer.MAX_VALUE);
 	}
 
+	/** The getHexdump digits lookup table */
+	private static final byte[] digits = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
 	public String getHexDump(int lengthLimit) {
-		return IoBufferHexDumper.getHexdump(this, lengthLimit);
+		if (lengthLimit == 0) {
+			throw new IllegalArgumentException("lengthLimit: " + lengthLimit + " (expected: 1+)");
+		}
+
+		boolean truncate = (remaining() > lengthLimit);
+		int size = (truncate ? lengthLimit : remaining());
+		if (size <= 0) {
+			return "empty";
+		}
+
+		StringBuilder out = new StringBuilder(size * 3 + 2);
+
+		int mark = position();
+
+		for (;;) {
+			int byteValue = get() & 0xFF;
+			out.append((char) digits[byteValue >> 4]);
+			out.append((char) digits[byteValue & 15]);
+			if (--size <= 0) {
+				break;
+			}
+			out.append(' ');
+		}
+
+		position(mark);
+
+		if (truncate) {
+			out.append("...");
+		}
+
+		return out.toString();
 	}
 
 	/**

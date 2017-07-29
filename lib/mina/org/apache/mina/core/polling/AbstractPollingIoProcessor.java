@@ -1015,7 +1015,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 				Object originalMessage = req.getOriginalRequest().getMessage();
 
 				if (originalMessage instanceof IoBuffer) {
-					buf = (IoBuffer) req.getOriginalRequest().getMessage();
+					buf = (IoBuffer)originalMessage;
 
 					int pos = buf.position();
 					buf.reset();

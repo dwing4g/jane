@@ -39,9 +39,6 @@ public enum IoEventType {
 	/** A message has been received */
 	MESSAGE_RECEIVED,
 
-	/** A message has been sent */
-	MESSAGE_SENT,
-
 	/** An exception has been caught */
 	EXCEPTION_CAUGHT,
 

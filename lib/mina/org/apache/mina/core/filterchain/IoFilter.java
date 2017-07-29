@@ -220,18 +220,6 @@ public interface IoFilter {
 	void messageReceived(NextFilter nextFilter, IoSession session, Object message) throws Exception;
 
 	/**
-	 * Filters {@link IoHandler#messageSent(IoSession,Object)} event.
-	 *
-	 * @param nextFilter
-	 *            the {@link NextFilter} for this filter. You can reuse this
-	 *            object until this filter is removed from the chain.
-	 * @param session The {@link IoSession} which has received this event
-	 * @param writeRequest The {@link WriteRequest} that contains the sent message
-	 * @throws Exception If an error occurred while processing the event
-	 */
-	void messageSent(NextFilter nextFilter, IoSession session, WriteRequest writeRequest) throws Exception;
-
-	/**
 	 * Filters {@link IoSession#closeNow()} or a {@link IoSession#closeOnFlush()} method invocations.
 	 *
 	 * @param nextFilter
@@ -302,14 +290,6 @@ public interface IoFilter {
 		 * @param message The received message
 		 */
 		void messageReceived(IoSession session, Object message);
-
-		/**
-		 * Forwards <tt>messageSent</tt> event to next filter.
-		 *
-		 * @param session The {@link IoSession} which has to process this invocation
-		 * @param writeRequest The {@link WriteRequest} to process
-		 */
-		void messageSent(IoSession session, WriteRequest writeRequest);
 
 		/**
 		 * Forwards <tt>filterWrite</tt> event to next filter.

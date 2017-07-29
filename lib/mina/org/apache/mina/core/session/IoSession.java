@@ -103,9 +103,8 @@ public interface IoSession {
 
 	/**
 	 * Writes the specified <code>message</code> to remote peer.  This
-	 * operation is asynchronous; {@link IoHandler#messageSent(IoSession,Object)}
-	 * will be invoked when the message is actually sent to remote peer.
-	 * You can also wait for the returned {@link WriteFuture} if you want
+	 * operation is asynchronous.
+	 * You can wait for the returned {@link WriteFuture} if you want
 	 * to wait for the message actually written.
 	 *
 	 * @param message The message to write

@@ -62,5 +62,4 @@ public final class BufferDataException extends RuntimeException {
 	public BufferDataException(Throwable cause) {
 		super(cause);
 	}
-
 }

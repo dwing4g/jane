@@ -222,12 +222,4 @@ public class DefaultWriteRequest implements WriteRequest {
 
 		return sb.toString();
 	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean isEncoded() {
-		return false;
-	}
 }

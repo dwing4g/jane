@@ -41,9 +41,6 @@ public class DefaultIoFuture implements IoFuture {
 	/** The associated session */
 	private final IoSession session;
 
-	/** A lock used by the wait() method */
-	private final Object lock;
-
 	/** The first listener. This is easier to have this variable
 	 * when we most of the time have one single listener */
 	private IoFutureListener<?> firstListener;
@@ -66,7 +63,6 @@ public class DefaultIoFuture implements IoFuture {
 	 */
 	public DefaultIoFuture(IoSession session) {
 		this.session = session;
-		lock = this;
 	}
 
 	/**
@@ -82,7 +78,7 @@ public class DefaultIoFuture implements IoFuture {
 	 */
 	@Override
 	public IoFuture await() throws InterruptedException {
-		synchronized (lock) {
+		synchronized (this) {
 			while (!ready) {
 				waiters++;
 
@@ -90,7 +86,7 @@ public class DefaultIoFuture implements IoFuture {
 					// Wait for a notify, or if no notify is called,
 					// assume that we have a deadlock and exit the
 					// loop to check for a potential deadlock.
-					lock.wait(DEAD_LOCK_CHECK_INTERVAL);
+					wait(DEAD_LOCK_CHECK_INTERVAL);
 				} finally {
 					waiters--;
 
@@ -100,7 +96,6 @@ public class DefaultIoFuture implements IoFuture {
 				}
 			}
 		}
-
 		return this;
 	}
 
@@ -178,10 +173,10 @@ public class DefaultIoFuture implements IoFuture {
 			endTime = Long.MAX_VALUE;
 		}
 
-		synchronized (lock) {
+		synchronized (this) {
 			// We can quit if the ready flag is set to true, or if
 			// the timeout is set to 0 or below : we don't wait in this case.
-			if (ready||(timeoutMillis <= 0)) {
+			if (ready || timeoutMillis <= 0) {
 				return ready;
 			}
 
@@ -196,7 +191,7 @@ public class DefaultIoFuture implements IoFuture {
 						// Wait for the requested period of time,
 						// but every DEAD_LOCK_CHECK_INTERVAL seconds, we will
 						// check that we aren't blocked.
-						lock.wait(timeOut);
+						wait(timeOut);
 					} catch (InterruptedException e) {
 						if (interruptable) {
 							throw e;
@@ -275,7 +270,7 @@ public class DefaultIoFuture implements IoFuture {
 	 */
 	@Override
 	public boolean isDone() {
-		synchronized (lock) {
+		synchronized (this) {
 			return ready;
 		}
 	}
@@ -288,7 +283,7 @@ public class DefaultIoFuture implements IoFuture {
 	 * the future already has a value (thus is in ready state)
 	 */
 	public boolean setValue(Object newValue) {
-		synchronized (lock) {
+		synchronized (this) {
 			// Allowed only once.
 			if (ready) {
 				return false;
@@ -299,7 +294,7 @@ public class DefaultIoFuture implements IoFuture {
 
 			// Now, if we have waiters, notify them that the operation has completed
 			if (waiters > 0) {
-				lock.notifyAll();
+				notifyAll();
 			}
 		}
 
@@ -312,10 +307,8 @@ public class DefaultIoFuture implements IoFuture {
 	/**
 	 * @return the result of the asynchronous operation.
 	 */
-	protected Object getValue() {
-		synchronized (lock) {
-			return result;
-		}
+	protected synchronized Object getValue() {
+		return result;
 	}
 
 	/**
@@ -327,7 +320,7 @@ public class DefaultIoFuture implements IoFuture {
 			throw new IllegalArgumentException("listener");
 		}
 
-		synchronized (lock) {
+		synchronized (this) {
 			if (ready) {
 				// Shortcut : if the operation has completed, no need to
 				// add a new listener, we just have to notify it. The existing
@@ -359,7 +352,7 @@ public class DefaultIoFuture implements IoFuture {
 			throw new IllegalArgumentException("listener");
 		}
 
-		synchronized (lock) {
+		synchronized (this) {
 			if (!ready) {
 				if (listener == firstListener) {
 					if ((otherListeners != null) && !otherListeners.isEmpty()) {

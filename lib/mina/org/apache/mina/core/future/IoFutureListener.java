@@ -35,7 +35,7 @@ public interface IoFutureListener<F extends IoFuture> extends EventListener {
 	 * An {@link IoFutureListener} that closes the {@link IoSession} which is
 	 * associated with the specified {@link IoFuture}.
 	 */
-	IoFutureListener<IoFuture> CLOSE = new IoFutureListener<IoFuture>() {
+	public static final IoFutureListener<IoFuture> CLOSE = new IoFutureListener<IoFuture>() {
 		/**
 		 * {@inheritDoc}
 		 */

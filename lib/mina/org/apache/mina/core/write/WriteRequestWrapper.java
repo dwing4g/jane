@@ -80,12 +80,4 @@ public class WriteRequestWrapper implements WriteRequest {
 	public String toString() {
 		return "WR Wrapper" + parentRequest.toString();
 	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean isEncoded() {
-		return false;
-	}
 }

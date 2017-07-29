@@ -21,8 +21,6 @@ package org.apache.mina.core.service;
 
 import java.net.SocketAddress;
 import org.apache.mina.core.future.ConnectFuture;
-import org.apache.mina.core.session.IoSession;
-import org.apache.mina.core.session.IoSessionInitializer;
 
 /**
  * Connects to endpoint, communicates with the server, and fires events to
@@ -93,21 +91,6 @@ public interface IoConnector extends IoService {
 	ConnectFuture connect();
 
 	/**
-	 * Connects to the {@link #setDefaultRemoteAddress(SocketAddress) default
-	 * remote address} and invokes the <code>ioSessionInitializer</code> when
-	 * the IoSession is created but before {@link IoHandler#sessionCreated(IoSession)}
-	 * is invoked.  There is <em>no</em> guarantee that the <code>ioSessionInitializer</code>
-	 * will be invoked before this method returns.
-	 *
-	 * @param sessionInitializer  the callback to invoke when the {@link IoSession} object is created
-	 * @return the {@link ConnectFuture} instance which is completed when the
-	 *         connection attempt initiated by this call succeeds or fails.
-	 *
-	 * @throws IllegalStateException if no default remote address is set.
-	 */
-	ConnectFuture connect(IoSessionInitializer<? extends ConnectFuture> sessionInitializer);
-
-	/**
 	 * Connects to the specified remote address.
 	 *
 	 * @param remoteAddress The remote address to connect to
@@ -115,21 +98,6 @@ public interface IoConnector extends IoService {
 	 *         connection attempt initiated by this call succeeds or fails.
 	 */
 	ConnectFuture connect(SocketAddress remoteAddress);
-
-	/**
-	 * Connects to the specified remote address and invokes
-	 * the <code>ioSessionInitializer</code> when the IoSession is created but before
-	 * {@link IoHandler#sessionCreated(IoSession)} is invoked.  There is <em>no</em>
-	 * guarantee that the <code>ioSessionInitializer</code> will be invoked before
-	 * this method returns.
-	 *
-	 * @param remoteAddress  the remote address to connect to
-	 * @param sessionInitializer  the callback to invoke when the {@link IoSession} object is created
-	 *
-	 * @return the {@link ConnectFuture} instance which is completed when the
-	 *         connection attempt initiated by this call succeeds or fails.
-	 */
-	ConnectFuture connect(SocketAddress remoteAddress, IoSessionInitializer<? extends ConnectFuture> sessionInitializer);
 
 	/**
 	 * Connects to the specified remote address binding to the specified local address.
@@ -141,21 +109,4 @@ public interface IoConnector extends IoService {
 	 *         connection attempt initiated by this call succeeds or fails.
 	 */
 	ConnectFuture connect(SocketAddress remoteAddress, SocketAddress localAddress);
-
-	/**
-	 * Connects to the specified remote address binding to the specified local
-	 * address and and invokes the <code>ioSessionInitializer</code> when the
-	 * IoSession is created but before {@link IoHandler#sessionCreated(IoSession)}
-	 * is invoked.  There is <em>no</em> guarantee that the <code>ioSessionInitializer</code>
-	 * will be invoked before this method returns.
-	 *
-	 * @param remoteAddress  the remote address to connect to
-	 * @param localAddress  the local interface to bind to
-	 * @param sessionInitializer  the callback to invoke when the {@link IoSession} object is created
-	 *
-	 * @return the {@link ConnectFuture} instance which is completed when the
-	 *         connection attempt initiated by this call succeeds or fails.
-	 */
-	ConnectFuture connect(SocketAddress remoteAddress, SocketAddress localAddress,
-			IoSessionInitializer<? extends ConnectFuture> sessionInitializer);
 }

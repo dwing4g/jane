@@ -623,21 +623,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 			fireExceptionCaught(e);
 			throw e;
 		}
-
-		if (!request.isEncoded()) {
-			callNextMessageSent(head, session, request);
-		}
-	}
-
-	private void callNextMessageSent(Entry entry, IoSession ioSession, WriteRequest writeRequest) {
-		try {
-			entry.getFilter().messageSent(entry.getNextFilter(), ioSession, writeRequest);
-		} catch (Exception e) {
-			fireExceptionCaught(e);
-		} catch (Error e) {
-			fireExceptionCaught(e);
-			throw e;
-		}
 	}
 
 	/**
@@ -910,12 +895,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		}
 
 		@Override
-		public void messageSent(NextFilter nextFilter, IoSession session, WriteRequest writeRequest) throws Exception {
-			// Propagate the message
-			session.getHandler().messageSent(session, writeRequest.getMessage());
-		}
-
-		@Override
 		public void filterWrite(NextFilter nextFilter, IoSession session, WriteRequest writeRequest) throws Exception {
 			nextFilter.filterWrite(session, writeRequest);
 		}
@@ -997,14 +976,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 				@Override
 				public void messageReceived(IoSession ioSession, Object message) {
 					callNextMessageReceived(EntryImpl.this.nextEntry, ioSession, message);
-				}
-
-				/**
-				 * {@inheritDoc}
-				 */
-				@Override
-				public void messageSent(IoSession ioSession, WriteRequest writeRequest) {
-					callNextMessageSent(EntryImpl.this.nextEntry, ioSession, writeRequest);
 				}
 
 				/**

@@ -19,8 +19,6 @@
  */
 package org.apache.mina.core.session;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.channels.FileChannel;
@@ -29,11 +27,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.file.DefaultFileRegion;
-import org.apache.mina.core.file.FilenameFileRegion;
 import org.apache.mina.core.future.CloseFuture;
 import org.apache.mina.core.future.DefaultCloseFuture;
 import org.apache.mina.core.future.DefaultWriteFuture;
-import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandler;
@@ -279,7 +275,6 @@ public abstract class AbstractIoSession implements IoSession {
 	/**
 	 * {@inheritDoc}
 	 */
-	@SuppressWarnings("resource")
 	@Override
 	public WriteFuture write(Object message) {
 		if (message == null) {
@@ -297,10 +292,6 @@ public abstract class AbstractIoSession implements IoSession {
 			return future;
 		}
 
-		FileChannel openedFileChannel = null;
-
-		// TODO: remove this code as soon as we use InputStream
-		// instead of Object for the message.
 		try {
 			if ((message instanceof IoBuffer) && !((IoBuffer) message).hasRemaining()) {
 				// Nothing to write : probably an error in the user code
@@ -308,10 +299,6 @@ public abstract class AbstractIoSession implements IoSession {
 			} else if (message instanceof FileChannel) {
 				FileChannel fileChannel = (FileChannel) message;
 				message = new DefaultFileRegion(fileChannel, 0, fileChannel.size());
-			} else if (message instanceof File) {
-				File file = (File) message;
-				openedFileChannel = new FileInputStream(file).getChannel();
-				message = new FilenameFileRegion(file, openedFileChannel, 0, openedFileChannel.size());
 			}
 		} catch (IOException e) {
 			ExceptionMonitor.getInstance().exceptionCaught(e);
@@ -324,25 +311,6 @@ public abstract class AbstractIoSession implements IoSession {
 
 		// Then, get the chain and inject the WriteRequest into it
 		getFilterChain().fireFilterWrite(writeRequest);
-
-		// TODO : This is not our business ! The caller has created a
-		// FileChannel,
-		// he has to close it !
-		if (openedFileChannel != null) {
-			// If we opened a FileChannel, it needs to be closed when the write
-			// has completed
-			final FileChannel finalChannel = openedFileChannel;
-			writeFuture.addListener(new IoFutureListener<WriteFuture>() {
-				@Override
-				public void operationComplete(WriteFuture future) {
-					try {
-						finalChannel.close();
-					} catch (IOException e) {
-						ExceptionMonitor.getInstance().exceptionCaught(e);
-					}
-				}
-			});
-		}
 
 		// Return the WriteFuture.
 		return writeFuture;

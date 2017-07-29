@@ -908,11 +908,6 @@ public class NetManager implements IoHandler
 	}
 
 	@Override
-	public void messageSent(IoSession session, Object message)
-	{
-	}
-
-	@Override
 	public void exceptionCaught(IoSession session, Throwable cause)
 	{
 		if(cause instanceof IOException)
