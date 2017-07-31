@@ -286,7 +286,8 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 			return;
 		}
 
-		int newInterestOps = key.interestOps();
+		int oldInterestOps = key.interestOps();
+		int newInterestOps = oldInterestOps;
 
 		if (isInterested) {
 			newInterestOps |= SelectionKey.OP_WRITE;
@@ -294,7 +295,9 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 			newInterestOps &= ~SelectionKey.OP_WRITE;
 		}
 
-		key.interestOps(newInterestOps);
+		if (oldInterestOps != newInterestOps) {
+			key.interestOps(newInterestOps);
+		}
 	}
 
 	@Override

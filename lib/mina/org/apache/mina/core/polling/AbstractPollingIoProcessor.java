@@ -879,9 +879,6 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			WriteRequest req = null;
 
 			try {
-				// Clear OP_WRITE
-				setInterestedInWrite(session, false);
-
 				do {
 					// Check for pending writes.
 					req = session.getCurrentWriteRequest();
@@ -905,7 +902,6 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 						if ((localWrittenBytes > 0) && ((IoBuffer) message).hasRemaining()) {
 							// the buffer isn't empty, we re-interest it in writing
 							setInterestedInWrite(session, true);
-
 							return false;
 						}
 					} else if (message instanceof FileRegion) {
@@ -918,35 +914,40 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 						// to pause until writing may resume.
 						if ((localWrittenBytes > 0) && (((FileRegion) message).getRemainingBytes() > 0)) {
 							setInterestedInWrite(session, true);
-
 							return false;
 						}
 					} else {
 						throw new IllegalStateException("unknown message type for writting: "
-								+ message.getClass().getName());
+								+ message.getClass().getName() + ": " + message);
 					}
 
 					if (localWrittenBytes == 0) {
 						// Kernel buffer is full.
-						if (!req.equals(AbstractIoSession.MESSAGE_SENT_REQUEST)) {
-							setInterestedInWrite(session, true);
-							return false;
-						}
-					} else {
-						writtenBytes += localWrittenBytes;
+						setInterestedInWrite(session, true);
+						return false;
+					}
 
-						if (writtenBytes >= maxWrittenBytes) {
-							// Wrote too much
-							scheduleFlush(session);
-							return false;
-						}
+					writtenBytes += localWrittenBytes;
+					if (writtenBytes >= maxWrittenBytes) {
+						// Wrote too much
+						scheduleFlush(session);
+						setInterestedInWrite(session, false);
+						return false;
 					}
 
 					if (message instanceof IoBuffer) {
 						((IoBuffer) message).free();
 					}
 				} while (writtenBytes < maxWrittenBytes);
+
+				setInterestedInWrite(session, false);
+				return true;
 			} catch (Exception e) {
+				try {
+					setInterestedInWrite(session, false);
+				} catch(Exception ex) {
+					session.getFilterChain().fireExceptionCaught(ex);
+				}
 				if (req != null) {
 					req.getFuture().setException(e);
 				}
@@ -954,8 +955,6 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 				session.getFilterChain().fireExceptionCaught(e);
 				return false;
 			}
-
-			return true;
 		}
 
 		private void scheduleFlush(S session) {

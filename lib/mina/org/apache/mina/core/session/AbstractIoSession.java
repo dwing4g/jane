@@ -58,10 +58,7 @@ public abstract class AbstractIoSession implements IoSession {
 	private final IoService service;
 
 	/** An internal write request object that triggers session close */
-	public static final WriteRequest CLOSE_REQUEST = new DefaultWriteRequest(DefaultWriteRequest.EMPTY_MESSAGE);
-
-	/** An internal write request object that triggers message sent events */
-	public static final WriteRequest MESSAGE_SENT_REQUEST = new DefaultWriteRequest(DefaultWriteRequest.EMPTY_MESSAGE);
+	public static final WriteRequest CLOSE_REQUEST = new DefaultWriteRequest("CLOSE_REQUEST");
 
 	private IoSessionAttributeMap attributes;
 	private Object attachment;

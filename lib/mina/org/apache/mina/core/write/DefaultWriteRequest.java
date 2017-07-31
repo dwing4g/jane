@@ -29,10 +29,7 @@ import org.apache.mina.core.session.IoSession;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class DefaultWriteRequest implements WriteRequest {
-	/** An empty message */
-	public static final byte[] EMPTY_MESSAGE = new byte[] {};
-
+public final class DefaultWriteRequest implements WriteRequest {
 	/** An empty FUTURE */
 	private static final WriteFuture UNUSED_FUTURE = new WriteFuture() {
 		/**
@@ -174,12 +171,8 @@ public class DefaultWriteRequest implements WriteRequest {
 			throw new IllegalArgumentException("message");
 		}
 
-		if (future == null) {
-			future = UNUSED_FUTURE;
-		}
-
 		this.message = message;
-		this.future = future;
+		this.future = (future != null ? future : UNUSED_FUTURE);
 	}
 
 	/**
