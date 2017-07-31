@@ -37,7 +37,6 @@ import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandler;
-import org.apache.mina.core.session.AttributeKey;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequest;
 import org.apache.mina.core.write.WriteRequestWrapper;
@@ -92,7 +91,7 @@ public final class SslFilter extends IoFilterAdapter {
 	 * A session attribute key that stores underlying {@link SSLSession}
 	 * for each session.
 	 */
-	public static final AttributeKey SSL_SESSION = new AttributeKey(SslFilter.class, "session");
+	public static final String SSL_SESSION = "SslFilter.session";
 
 	/**
 	 * A session attribute key that makes next one write request bypass
@@ -104,7 +103,7 @@ public final class SslFilter extends IoFilterAdapter {
 	 * bypass this filter.  This is especially useful when you implement
 	 * StartTLS.
 	 */
-	public static final AttributeKey DISABLE_ENCRYPTION_ONCE = new AttributeKey(SslFilter.class, "disableOnce");
+	public static final String DISABLE_ENCRYPTION_ONCE = "SslFilter.disableOnce";
 
 	/**
 	 * A session attribute key that makes this filter to emit a
@@ -114,7 +113,7 @@ public final class SslFilter extends IoFilterAdapter {
 	 * value. ({@link Boolean#TRUE} is preferred.)  By default, this filter
 	 * doesn't emit any events related with SSL session flow control.
 	 */
-	public static final AttributeKey USE_NOTIFICATION = new AttributeKey(SslFilter.class, "useNotification");
+	public static final String USE_NOTIFICATION = "SslFilter.useNotification";
 
 	/**
 	 * A session attribute key that should be set to an {@link InetSocketAddress}.
@@ -129,7 +128,7 @@ public final class SslFilter extends IoFilterAdapter {
 	 *
 	 * @see SSLContext#createSSLEngine(String, int)
 	 */
-	public static final AttributeKey PEER_ADDRESS = new AttributeKey(SslFilter.class, "peerAddress");
+	public static final String PEER_ADDRESS = "SslFilter.peerAddress";
 
 	/**
 	 * A special message object which is emitted with a {@link IoHandler#messageReceived(IoSession, Object)}
@@ -146,9 +145,9 @@ public final class SslFilter extends IoFilterAdapter {
 	public static final SslFilterMessage SESSION_UNSECURED = new SslFilterMessage("SESSION_UNSECURED");
 
 	/** An attribute containing the next filter */
-	private static final AttributeKey NEXT_FILTER = new AttributeKey(SslFilter.class, "nextFilter");
+	private static final String NEXT_FILTER = "SslFilter.nextFilter";
 
-	private static final AttributeKey SSL_HANDLER = new AttributeKey(SslFilter.class, "handler");
+	private static final String SSL_HANDLER = "SslFilter.handler";
 
 	/** The SslContext used */
 	final SSLContext sslContext;
@@ -427,7 +426,9 @@ public final class SslFilter extends IoFilterAdapter {
 			throw new IllegalStateException(msg);
 		}
 
-		LOGGER.debug("Adding the SSL Filter {} to the chain", name);
+		if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug("Adding the SSL Filter {} to the chain", name);
+		}
 
 		IoSession session = parent.getSession();
 		session.setAttribute(NEXT_FILTER, nextFilter);
@@ -707,7 +708,9 @@ public final class SslFilter extends IoFilterAdapter {
 	}
 
 	private void initiateHandshake(NextFilter nextFilter, IoSession session) throws SSLException {
-		LOGGER.debug("{} : Starting the first handshake", getSessionInfo(session));
+		if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug("{} : Starting the first handshake", getSessionInfo(session));
+		}
 		SslHandler sslHandler = getSslSessionHandler(session);
 
 		try {

@@ -33,11 +33,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.file.FileRegion;
-import org.apache.mina.core.filterchain.IoFilterChainBuilder;
 import org.apache.mina.core.future.DefaultIoFuture;
 import org.apache.mina.core.service.AbstractIoService;
 import org.apache.mina.core.service.IoProcessor;
-import org.apache.mina.core.service.IoServiceListenerSupport;
 import org.apache.mina.core.session.AbstractIoSession;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.session.SessionState;
@@ -753,14 +751,12 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 				registered = true;
 
 				// Build the filter chain of this session.
-				IoFilterChainBuilder chainBuilder = session.getService().getFilterChainBuilder();
-				chainBuilder.buildFilterChain(session.getFilterChain());
+				session.getService().getFilterChainBuilder().buildFilterChain(session.getFilterChain());
 
 				// DefaultIoFilterChain.CONNECT_FUTURE is cleared inside here
 				// in AbstractIoFilterChain.fireSessionOpened().
 				// Propagate the SESSION_CREATED event up to the chain
-				IoServiceListenerSupport listeners = ((AbstractIoService) session.getService()).getListeners();
-				listeners.fireSessionCreated(session);
+				((AbstractIoService) session.getService()).getListeners().fireSessionCreated(session);
 			} catch (Exception e) {
 				ExceptionMonitor.getInstance().exceptionCaught(e);
 
@@ -1012,19 +1008,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			// Now, forward the original message
 			if (!buf.hasRemaining()) {
 				// Buffer has been sent, clear the current request.
-				Object originalMessage = req.getOriginalRequest().getMessage();
-
-				if (originalMessage instanceof IoBuffer) {
-					buf = (IoBuffer)originalMessage;
-
-					int pos = buf.position();
-					buf.reset();
-					fireMessageSent(session, req);
-					// And set it back to its position
-					buf.position(pos);
-				} else {
-					fireMessageSent(session, req);
-				}
+				fireMessageSent(session, req);
 			}
 
 			return localWrittenBytes;
@@ -1069,7 +1053,6 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 					// The first unwritten empty buffer must be
 					// forwarded to the filter chain.
 					if (buf.hasRemaining()) {
-						buf.reset();
 						failedRequests.add(req);
 					} else {
 						session.getFilterChain().fireMessageSent(req);

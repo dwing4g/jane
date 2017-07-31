@@ -3,7 +3,7 @@ package jane.core;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayDeque;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.mina.core.buffer.AbstractIoBuffer;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.buffer.IoBufferAllocator;
@@ -14,9 +14,9 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 	private static final int DEFAULT_MAX_POOL_SIZE			= 8;
 	private static final int DEFAULT_MAX_CACHED_BUFFER_SIZE	= 1 << 16; // 64KB
 
-	public static final AtomicInteger allocCount = new AtomicInteger();
-	public static final AtomicInteger cacheCount = new AtomicInteger();
-	public static final AtomicInteger offerCount = new AtomicInteger();
+	private static final AtomicLong	allocCount = new AtomicLong();
+	private static final AtomicLong	reuseCount = new AtomicLong();
+	private static final AtomicLong	freeCount  = new AtomicLong();
 
 	private final int									  maxPoolSize;
 	private final int									  maxCachedBufferSize;
@@ -46,6 +46,21 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 	{
 		IoBuffer.setUseDirectBuffer(useDirectBuffer);
 		IoBuffer.setAllocator(maxPoolSize > 0 && maxCachedBufferSize > 0 ? new CachedIoBufferAllocator(maxPoolSize, maxCachedBufferSize) : new SimpleBufferAllocator());
+	}
+
+	public static long getAllocCount()
+	{
+		return allocCount.get();
+	}
+
+	public static long getReuseCount()
+	{
+		return reuseCount.get();
+	}
+
+	public static long getFreeCount()
+	{
+		return freeCount.get();
 	}
 
 	private static int getIdx(int cap) // cap=2^n:[0,0x40000000] => [0,31]
@@ -80,7 +95,7 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 		{
 			buf.clear();
 			buf.order(ByteOrder.BIG_ENDIAN);
-			cacheCount.incrementAndGet();
+			reuseCount.incrementAndGet();
 		}
 		else
 		{
@@ -181,7 +196,7 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 			if(pool.size() < maxPoolSize)
 			{
 				pool.addFirst(this);
-				offerCount.incrementAndGet();
+				freeCount.incrementAndGet();
 			}
 		}
 	}

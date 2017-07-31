@@ -28,7 +28,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.session.AbstractIoSession;
-import org.apache.mina.core.session.AttributeKey;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequest;
 import org.slf4j.Logger;
@@ -84,7 +83,7 @@ public final class SimpleIoProcessorPool<S extends AbstractIoSession> implements
 	private static final int DEFAULT_SIZE = Runtime.getRuntime().availableProcessors() + 1;
 
 	/** A key used to store the processor pool in the session's Attributes */
-	private static final AttributeKey PROCESSOR = new AttributeKey(SimpleIoProcessorPool.class, "processor");
+	private static final String PROCESSOR = "SimpleIoProcessorPool.processor";
 
 	/** The pool table */
 	private final IoProcessor<S>[] pool;
@@ -335,7 +334,7 @@ public final class SimpleIoProcessorPool<S extends AbstractIoSession> implements
 					try {
 						ioProcessor.dispose();
 					} catch (Exception e) {
-						LOGGER.warn("Failed to dispose the {} IoProcessor.", ioProcessor.getClass().getSimpleName(), e);
+						LOGGER.error("Failed to dispose the {} IoProcessor.", ioProcessor.getClass().getSimpleName(), e);
 					}
 				}
 

@@ -141,7 +141,9 @@ public final class SslHandler {
 			return;
 		}
 
-		LOGGER.debug("{} Initializing the SSL Handler", SslFilter.getSessionInfo(session));
+		if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug("{} Initializing the SSL Handler", SslFilter.getSessionInfo(session));
+		}
 
 		InetSocketAddress peer = (InetSocketAddress) session.getAttribute(SslFilter.PEER_ADDRESS);
 
@@ -209,7 +211,7 @@ public final class SslHandler {
 		try {
 			sslEngine.closeInbound();
 		} catch (SSLException e) {
-			LOGGER.debug("Unexpected exception from SSLEngine.closeInbound().", e);
+			LOGGER.error("Unexpected exception from SSLEngine.closeInbound().", e);
 		}
 
 		if (outNetBuffer != null) {

@@ -103,7 +103,7 @@ public final class TestEcho extends NetManager
 	}
 
 	@Override
-	public void startServer(SocketAddress addr) throws IOException
+	public synchronized void startServer(SocketAddress addr) throws IOException
 	{
 		setIoThreadCount(1);
 		if(getAcceptor().getSessionDataStructureFactory() != _dsFactory)
@@ -114,7 +114,7 @@ public final class TestEcho extends NetManager
 	}
 
 	@Override
-	public ConnectFuture startClient(SocketAddress addr)
+	public synchronized ConnectFuture startClient(SocketAddress addr)
 	{
 		setIoThreadCount(1);
 		if(getConnector().getSessionDataStructureFactory() != _dsFactory)
@@ -176,9 +176,9 @@ public final class TestEcho extends NetManager
 //		perf[1].end();
 //		perf[2].end();
 		System.out.println("TestEcho: end (" + (System.currentTimeMillis() - time) + " ms)");
-		System.out.println(CachedIoBufferAllocator.allocCount.get());
-		System.out.println(CachedIoBufferAllocator.cacheCount.get());
-		System.out.println(CachedIoBufferAllocator.offerCount.get());
+		System.out.println(CachedIoBufferAllocator.getAllocCount());
+		System.out.println(CachedIoBufferAllocator.getReuseCount());
+		System.out.println(CachedIoBufferAllocator.getFreeCount());
 		System.out.println(_wrqCount.get());
 //		for(int i = 0; i < perf.length; ++i)
 //			System.out.println("perf[" + i + "]: " + perf[i].getAllMs() + ", " + perf[i].getAllCount());
