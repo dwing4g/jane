@@ -140,7 +140,7 @@ public abstract class AbstractIoService implements IoService {
 			throw new IllegalArgumentException("sessionConfig type: " + sessionConfig.getClass() + " (expected: SocketSessionConfig)");
 		}
 
-		// Create the listeners, and add a first listener : a activation listener
+		// Create the listeners, and add a first listener: a activation listener
 		// for this service, which will give information on the service state.
 		listeners = new IoServiceListenerSupport(this);
 
@@ -175,11 +175,7 @@ public abstract class AbstractIoService implements IoService {
 	 */
 	@Override
 	public final void setFilterChainBuilder(IoFilterChainBuilder builder) {
-		if (builder == null) {
-			filterChainBuilder = new DefaultIoFilterChainBuilder();
-		} else {
-			filterChainBuilder = builder;
-		}
+		filterChainBuilder = (builder != null ? builder : new DefaultIoFilterChainBuilder());
 	}
 
 	/**
@@ -468,11 +464,7 @@ public abstract class AbstractIoService implements IoService {
 		}
 
 		public final Exception getException() {
-			if (getValue() instanceof Exception) {
-				return (Exception) getValue();
-			}
-
-			return null;
+			return getValue() instanceof Exception ? (Exception) getValue() : null;
 		}
 
 		public final void setException(Exception exception) {

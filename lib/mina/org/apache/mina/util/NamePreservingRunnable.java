@@ -28,13 +28,13 @@ import org.slf4j.LoggerFactory;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class NamePreservingRunnable implements Runnable {
-	private final static Logger LOGGER = LoggerFactory.getLogger(NamePreservingRunnable.class);
-
-	/** The runnable name */
-	private final String newName;
+	private static final Logger LOGGER = LoggerFactory.getLogger(NamePreservingRunnable.class);
 
 	/** The runnable task */
 	private final Runnable runnable;
+
+	/** The runnable name */
+	private final String newName;
 
 	/**
 	 * Creates a new instance of NamePreservingRunnable.

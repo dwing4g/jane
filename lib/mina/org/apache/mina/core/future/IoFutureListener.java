@@ -24,7 +24,7 @@ import org.apache.mina.core.session.IoSession;
 
 /**
  * Something interested in being notified when the completion
- * of an asynchronous I/O operation : {@link IoFuture}.
+ * of an asynchronous I/O operation: {@link IoFuture}.
  *
  * @param <F> The Future type
  *

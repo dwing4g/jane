@@ -62,13 +62,6 @@ public final class DefaultSocketSessionConfig extends AbstractSocketSessionConfi
 	private boolean tcpNoDelay = DEFAULT_TCP_NO_DELAY;
 
 	/**
-	 * Creates a new instance.
-	 */
-	public DefaultSocketSessionConfig() {
-		// Do nothing
-	}
-
-	/**
 	 * Initialize this configuration.
 	 *
 	 * @param p The parent IoService.
@@ -76,12 +69,7 @@ public final class DefaultSocketSessionConfig extends AbstractSocketSessionConfi
 	public void init(IoService p) {
 		parent = p;
 
-		if (p instanceof SocketAcceptor) {
-			defaultReuseAddress = true;
-		} else {
-			defaultReuseAddress = DEFAULT_REUSE_ADDRESS;
-		}
-
+		defaultReuseAddress = p instanceof SocketAcceptor || DEFAULT_REUSE_ADDRESS;
 		reuseAddress = defaultReuseAddress;
 	}
 

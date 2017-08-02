@@ -131,12 +131,7 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 	 */
 	public IoFilter get(String name) {
 		Entry e = getEntry(name);
-
-		if (e == null) {
-			return null;
-		}
-
-		return e.getFilter();
+		return e != null ? e.getFilter() : null;
 	}
 
 	/**
@@ -147,12 +142,7 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 	 */
 	public IoFilter get(Class<? extends IoFilter> filterType) {
 		Entry e = getEntry(filterType);
-
-		if (e == null) {
-			return null;
-		}
-
-		return e.getFilter();
+		return e != null ? e.getFilter() : null;
 	}
 
 	/**
@@ -237,9 +227,7 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 		checkBaseName(baseName);
 
 		for (ListIterator<Entry> i = entries.listIterator(); i.hasNext();) {
-			Entry base = i.next();
-
-			if (base.getName().equals(baseName)) {
+			if (i.next().getName().equals(baseName)) {
 				register(i.previousIndex(), new EntryImpl(name, filter));
 				break;
 			}
@@ -257,9 +245,7 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 		checkBaseName(baseName);
 
 		for (ListIterator<Entry> i = entries.listIterator(); i.hasNext();) {
-			Entry base = i.next();
-
-			if (base.getName().equals(baseName)) {
+			if (i.next().getName().equals(baseName)) {
 				register(i.nextIndex(), new EntryImpl(name, filter));
 				break;
 			}
@@ -427,9 +413,7 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 			}
 
 			buf.append('(');
-			buf.append(e.getName());
-			buf.append(':');
-			buf.append(e.getFilter());
+			buf.append(e.getName()).append(':').append(e.getFilter());
 			buf.append(')');
 		}
 
@@ -508,7 +492,7 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 
 		@Override
 		public String toString() {
-			return "(" + getName() + ':' + filter + ')';
+			return '(' + getName() + ':' + filter + ')';
 		}
 
 		/**

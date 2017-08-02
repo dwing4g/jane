@@ -56,7 +56,7 @@ import org.apache.mina.core.write.WriteRequestQueue;
  *   {@link IoFilter} implementations you're using are thread-safe, too.
  * </p>
  * <h3>Equality of Sessions</h3>
- * TODO : The getId() method is totally wrong. We can't base
+ * TODO: The getId() method is totally wrong. We can't base
  * a method which is designed to create a unique ID on the hashCode method.
  * {@link Object#equals(Object)} and {@link Object#hashCode()} shall not be overriden
  * to the default behavior that is defined in {@link Object}.

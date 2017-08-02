@@ -148,14 +148,9 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	@Override
 	protected void registerNewSelector() throws IOException {
 		Set<SelectionKey> keys = selector.keys();
-		Selector newSelector;
 
 		// Open a new selector
-		if (selectorProvider == null) {
-			newSelector = Selector.open();
-		} else {
-			newSelector = selectorProvider.openSelector();
-		}
+		Selector newSelector = (selectorProvider != null ? selectorProvider.openSelector() : Selector.open());
 
 		// Loop on all the registered keys, and register them on the new selector
 		for (SelectionKey key : keys) {
@@ -218,6 +213,7 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 			// The session is opened
 			return SessionState.OPENED;
 		}
+
 		// The session still as to be closed
 		return SessionState.CLOSING;
 	}

@@ -178,9 +178,9 @@ public final class SimpleIoProcessorPool<S extends AbstractIoSession> implements
 
 		pool = new IoProcessor[size];
 
-		boolean success = false;
 		Constructor<? extends IoProcessor<S>> processorConstructor = null;
 		boolean usesExecutorArg = true;
+		boolean success = false;
 
 		try {
 			// We create at least one processor
@@ -210,10 +210,10 @@ public final class SimpleIoProcessorPool<S extends AbstractIoSession> implements
 					}
 				}
 			} catch (RuntimeException re) {
-				LOGGER.error("Cannot create an IoProcessor :{}", re.getMessage());
+				LOGGER.error("Cannot create an IoProcessor: {}", re.getMessage());
 				throw re;
 			} catch (Exception e) {
-				String msg = "Failed to create a new instance of " + processorType.getName() + ":" + e.getMessage();
+				String msg = "Failed to create a new instance of " + processorType.getName() + ": " + e.getMessage();
 				LOGGER.error(msg, e);
 				throw new RuntimeIoException(msg, e);
 			}

@@ -70,14 +70,14 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 
 	private final IoProcessor<S> processor;
 
-	private final boolean createdProcessor;
-
 	private final ServiceOperationFuture disposalFuture = new ServiceOperationFuture();
-
-	private volatile boolean selectable;
 
 	/** The connector thread */
 	private final AtomicReference<Connector> connectorRef = new AtomicReference<>();
+
+	private final boolean createdProcessor;
+
+	private volatile boolean selectable;
 
 	/**
 	 * Constructor for {@link AbstractPollingIoConnector}. You need to provide a
@@ -519,16 +519,13 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 
 		private int cancelKeys() {
 			int nHandles = 0;
-
 			for (;;) {
 				ConnectionRequest req = cancelQueue.poll();
-
 				if (req == null) {
 					break;
 				}
 
 				H handle = req.handle;
-
 				try {
 					close(handle);
 				} catch (Exception e) {
@@ -620,12 +617,7 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 		public ConnectionRequest(H handle) {
 			this.handle = handle;
 			long timeout = getConnectTimeoutMillis();
-
-			if (timeout <= 0L) {
-				this.deadline = Long.MAX_VALUE;
-			} else {
-				this.deadline = System.currentTimeMillis() + timeout;
-			}
+			deadline = (timeout > 0L ? System.currentTimeMillis() + timeout : Long.MAX_VALUE);
 		}
 
 		/**

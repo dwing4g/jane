@@ -48,6 +48,12 @@ import org.apache.mina.util.ExceptionMonitor;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public abstract class AbstractIoSession implements IoSession {
+	/** An internal write request object that triggers session close */
+	public static final WriteRequest CLOSE_REQUEST = new DefaultWriteRequest("CLOSE_REQUEST");
+
+	/** An id generator guaranteed to generate unique IDs for the session */
+	private static final AtomicLong idGenerator = new AtomicLong();
+
 	/** The associated handler */
 	private final IoHandler handler;
 
@@ -57,18 +63,12 @@ public abstract class AbstractIoSession implements IoSession {
 	/** The service which will manage this session */
 	private final IoService service;
 
-	/** An internal write request object that triggers session close */
-	public static final WriteRequest CLOSE_REQUEST = new DefaultWriteRequest("CLOSE_REQUEST");
-
 	private IoSessionAttributeMap attributes;
 	private Object attachment;
 
 	private WriteRequestQueue writeRequestQueue;
 
 	private WriteRequest currentWriteRequest;
-
-	/** An id generator guaranteed to generate unique IDs for the session */
-	private static final AtomicLong idGenerator = new AtomicLong();
 
 	/** The session ID */
 	private final long sessionId;
@@ -167,7 +167,7 @@ public abstract class AbstractIoSession implements IoSession {
 	}
 
 	/**
-	 * Change the session's status : it's not anymore scheduled for flush
+	 * Change the session's status: it's not anymore scheduled for flush
 	 */
 	public final void unscheduledForFlush() {
 		scheduledForFlush.set(false);
@@ -185,7 +185,7 @@ public abstract class AbstractIoSession implements IoSession {
 	public final boolean setScheduledForFlush(boolean schedule) {
 		if (schedule) {
 			// If the current tag is set to false, switch it to true,
-			// otherwise, we do nothing but return false : the session
+			// otherwise, we do nothing but return false: the session
 			// is already scheduled for flush
 			return scheduledForFlush.compareAndSet(false, schedule);
 		}
@@ -243,7 +243,7 @@ public abstract class AbstractIoSession implements IoSession {
 				if (writeRequest != null) {
 					WriteFuture writeFuture = writeRequest.getFuture();
 
-					// The WriteRequest may not always have a future : The CLOSE_REQUEST
+					// The WriteRequest may not always have a future: The CLOSE_REQUEST
 					// and MESSAGE_SENT_REQUEST don't.
 					if (writeFuture != null) {
 						writeFuture.setWritten();
@@ -275,7 +275,7 @@ public abstract class AbstractIoSession implements IoSession {
 	@Override
 	public WriteFuture write(Object message) {
 		if (message == null) {
-			throw new IllegalArgumentException("Trying to write a null message : not allowed");
+			throw new IllegalArgumentException("Trying to write a null message: not allowed");
 		}
 
 		// If the session has been closed or is closing, we can't either
@@ -291,7 +291,7 @@ public abstract class AbstractIoSession implements IoSession {
 
 		try {
 			if ((message instanceof IoBuffer) && !((IoBuffer) message).hasRemaining()) {
-				// Nothing to write : probably an error in the user code
+				// Nothing to write: probably an error in the user code
 				throw new IllegalArgumentException("message is empty. Forgot to call flip()?");
 			} else if (message instanceof FileChannel) {
 				FileChannel fileChannel = (FileChannel) message;
@@ -577,11 +577,8 @@ public abstract class AbstractIoSession implements IoSession {
 	@Override
 	public SocketAddress getServiceAddress() {
 		IoService ioService = getService();
-		if (ioService instanceof IoAcceptor) {
-			return ((IoAcceptor)ioService).getLocalAddress();
-		}
-
-		return getRemoteAddress();
+		return ioService instanceof IoAcceptor ? ((IoAcceptor)ioService).getLocalAddress() :
+				getRemoteAddress();
 	}
 
 	/**
@@ -622,13 +619,13 @@ public abstract class AbstractIoSession implements IoSession {
 			}
 
 			if (getService() instanceof IoAcceptor) {
-				return "(" + getIdAsString() + ": nio socket, server, " + remote + " => " + local + ')';
+				return '(' + getIdAsString() + ": nio socket, server, " + remote + " => " + local + ')';
 			}
 
-			return "(" + getIdAsString() + ": nio socket, client, " + local + " => " + remote + ')';
+			return '(' + getIdAsString() + ": nio socket, client, " + local + " => " + remote + ')';
 		}
 
-		return "(" + getIdAsString() + ") Session disconnected ...";
+		return '(' + getIdAsString() + ") Session disconnected ...";
 	}
 
 	/**
@@ -636,11 +633,7 @@ public abstract class AbstractIoSession implements IoSession {
 	 */
 	private String getIdAsString() {
 		String id = Long.toHexString(getId()).toUpperCase();
-
-		if (id.length() <= 8) {
-			return "0x00000000".substring(0, 10 - id.length()) + id;
-		}
-		return "0x" + id;
+		return id.length() <= 8 ? "0x00000000".substring(0, 10 - id.length()) + id : "0x" + id;
 	}
 
 	/**

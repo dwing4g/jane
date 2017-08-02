@@ -69,11 +69,7 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 		 */
 		@Override
 		public Object setAttribute(Object key, Object value) {
-			if (value == null) {
-				return attributes.remove(key);
-			}
-
-			return attributes.put(key, value);
+			return value != null ? attributes.put(key, value) : attributes.remove(key);
 		}
 
 		/**
@@ -81,11 +77,7 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 		 */
 		@Override
 		public Object setAttributeIfAbsent(Object key, Object value) {
-			if (value == null) {
-				return null;
-			}
-
-			return attributes.putIfAbsent(key, value);
+			return value != null ? attributes.putIfAbsent(key, value) : null;
 		}
 
 		/**

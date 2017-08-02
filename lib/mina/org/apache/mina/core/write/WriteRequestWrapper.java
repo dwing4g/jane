@@ -78,6 +78,6 @@ public class WriteRequestWrapper implements WriteRequest {
 	 */
 	@Override
 	public String toString() {
-		return "WR Wrapper" + parentRequest.toString();
+		return "(Wrapper)" + parentRequest.toString();
 	}
 }

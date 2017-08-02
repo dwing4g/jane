@@ -39,7 +39,7 @@ public interface ConnectFuture extends IoFuture {
 	/**
 	 * Returns {@link IoSession} which is the result of connect operation.
 	 *
-	 * @return The {link IoSession} instance that has been associated with the connection,
+	 * @return The {@link IoSession} instance that has been associated with the connection,
 	 * if the connection was successful, {@code null} otherwise
 	 */
 	@Override

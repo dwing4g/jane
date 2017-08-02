@@ -77,11 +77,7 @@ public class DefaultConnectFuture extends DefaultIoFuture implements ConnectFutu
 	@Override
 	public Throwable getException() {
 		Object v = getValue();
-
-		if (v instanceof Throwable) {
-			return (Throwable) v;
-		}
-		return null;
+		return (v instanceof Throwable) ? (Throwable) v : null;
 	}
 
 	/**

@@ -40,9 +40,7 @@
 		<appender-ref ref="STDOUT"/>
 	</appender>
 
-	<logger name="org.apache.mina.filter.codec.ProtocolCodecFilter" level="INFO"/>
-	<logger name="org.apache.mina.filter.ssl.SslFilter" level="INFO"/>
-	<logger name="org.apache.mina.filter.ssl.SslHandler" level="INFO"/>
+	<logger name="org.apache" level="INFO"/>
 
 	<root level="ALL"><!-- level: ALL <= TRACE < DEBUG < INFO < WARN < ERROR < OFF -->
 		<appender-ref ref="ASYNC_FILE"/>

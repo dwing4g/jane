@@ -83,12 +83,7 @@ public final class NioSocketSession extends NioSession {
 		}
 
 		Socket socket = getSocket();
-
-		if (socket == null) {
-			return null;
-		}
-
-		return (InetSocketAddress) socket.getRemoteSocketAddress();
+		return socket != null ? (InetSocketAddress) socket.getRemoteSocketAddress() : null;
 	}
 
 	/**
@@ -102,12 +97,7 @@ public final class NioSocketSession extends NioSession {
 		}
 
 		Socket socket = getSocket();
-
-		if (socket == null) {
-			return null;
-		}
-
-		return (InetSocketAddress) socket.getLocalSocketAddress();
+		return socket != null ? (InetSocketAddress) socket.getLocalSocketAddress() : null;
 	}
 
 	protected static void destroy(NioSession session) throws IOException {

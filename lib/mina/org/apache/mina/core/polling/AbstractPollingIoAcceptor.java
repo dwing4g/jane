@@ -75,8 +75,6 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 
 	private final IoProcessor<S> processor;
 
-	private final boolean createdProcessor;
-
 	private final Queue<AcceptorOperationFuture> registerQueue = new ConcurrentLinkedQueue<>();
 
 	private final Queue<AcceptorOperationFuture> cancelQueue = new ConcurrentLinkedQueue<>();
@@ -85,11 +83,13 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 
 	private final ServiceOperationFuture disposalFuture = new ServiceOperationFuture();
 
-	/** A flag set when the acceptor has been created and initialized */
-	private volatile boolean selectable;
-
 	/** The thread responsible of accepting incoming requests */
 	private final AtomicReference<Acceptor> acceptorRef = new AtomicReference<>();
+
+	private final boolean createdProcessor;
+
+	/** A flag set when the acceptor has been created and initialized */
+	private volatile boolean selectable;
 
 	protected boolean reuseAddress;
 
@@ -391,7 +391,7 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 	 */
 	private void startupAcceptor() throws InterruptedException {
 		// If the acceptor is not ready, clear the queues
-		// TODO : they should already be clean : do we have to do that ?
+		// TODO: they should already be clean: do we have to do that ?
 		if (!selectable) {
 			registerQueue.clear();
 			cancelQueue.clear();

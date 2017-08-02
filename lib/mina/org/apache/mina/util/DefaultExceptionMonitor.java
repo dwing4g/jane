@@ -44,6 +44,6 @@ public final class DefaultExceptionMonitor extends ExceptionMonitor {
 			throw (Error) cause;
 		}
 
-		LOGGER.error("Unexpected exception.", cause);
+		LOGGER.error("Unexpected exception:", cause);
 	}
 }

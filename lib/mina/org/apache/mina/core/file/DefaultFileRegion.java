@@ -118,12 +118,4 @@ public class DefaultFileRegion implements FileRegion {
 		position += value;
 		remainingBytes -= value;
 	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public String getFilename() {
-		return null;
-	}
 }

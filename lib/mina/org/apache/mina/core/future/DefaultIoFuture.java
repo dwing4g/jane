@@ -123,7 +123,7 @@ public class DefaultIoFuture implements IoFuture {
 		try {
 			await0(Long.MAX_VALUE, false);
 		} catch (InterruptedException ie) {
-			// Do nothing : this catch is just mandatory by contract
+			// Do nothing: this catch is just mandatory by contract
 		}
 
 		return this;
@@ -175,12 +175,12 @@ public class DefaultIoFuture implements IoFuture {
 
 		synchronized (this) {
 			// We can quit if the ready flag is set to true, or if
-			// the timeout is set to 0 or below : we don't wait in this case.
+			// the timeout is set to 0 or below: we don't wait in this case.
 			if (ready || timeoutMillis <= 0) {
 				return ready;
 			}
 
-			// The operation is not completed : we have to wait
+			// The operation is not completed: we have to wait
 			waiters++;
 
 			try {
@@ -240,10 +240,9 @@ public class DefaultIoFuture implements IoFuture {
 		// Simple and quick check.
 		for (StackTraceElement stackElement : stackTrace) {
 			if (AbstractPollingIoProcessor.class.getName().equals(stackElement.getClassName())) {
-				IllegalStateException e = new IllegalStateException("t");
-				e.getStackTrace();
+				// new IllegalStateException("t").getStackTrace();
 				throw new IllegalStateException("DEAD LOCK: " + IoFuture.class.getSimpleName()
-						+ ".await() was invoked from an I/O processor thread.  " + "Please use "
+						+ ".await() was invoked from an I/O processor thread. Please use "
 						+ IoFutureListener.class.getSimpleName() + " or configure a proper thread model alternatively.");
 			}
 		}
@@ -255,7 +254,7 @@ public class DefaultIoFuture implements IoFuture {
 
 				if (IoProcessor.class.isAssignableFrom(cls)) {
 					throw new IllegalStateException("DEAD LOCK: " + IoFuture.class.getSimpleName()
-							+ ".await() was invoked from an I/O processor thread.  " + "Please use "
+							+ ".await() was invoked from an I/O processor thread. Please use "
 							+ IoFutureListener.class.getSimpleName()
 							+ " or configure a proper thread model alternatively.");
 				}
@@ -322,7 +321,7 @@ public class DefaultIoFuture implements IoFuture {
 
 		synchronized (this) {
 			if (ready) {
-				// Shortcut : if the operation has completed, no need to
+				// Shortcut: if the operation has completed, no need to
 				// add a new listener, we just have to notify it. The existing
 				// listeners have already been notified anyway, when the
 				// 'ready' flag has been set.

@@ -115,13 +115,11 @@ public final class IoUtil {
 	private static void broadcast(Object message, Iterator<IoSession> sessions, Collection<WriteFuture> answer) {
 		if (message instanceof IoBuffer) {
 			while (sessions.hasNext()) {
-				IoSession s = sessions.next();
-				answer.add(s.write(((IoBuffer) message).duplicate()));
+				answer.add(sessions.next().write(((IoBuffer) message).duplicate()));
 			}
 		} else {
 			while (sessions.hasNext()) {
-				IoSession s = sessions.next();
-				answer.add(s.write(message));
+				answer.add(sessions.next().write(message));
 			}
 		}
 	}
@@ -208,7 +206,7 @@ public final class IoUtil {
 
 	private static boolean await0(Iterable<? extends IoFuture> futures, long timeoutMillis, boolean interruptable)
 			throws InterruptedException {
-		long startTime = timeoutMillis <= 0 ? 0 : System.currentTimeMillis();
+		long startTime = (timeoutMillis <= 0 ? 0 : System.currentTimeMillis());
 		long waitTime = timeoutMillis;
 
 		boolean lastComplete = true;
@@ -218,18 +216,10 @@ public final class IoUtil {
 			IoFuture f = i.next();
 
 			do {
-				if (interruptable) {
-					lastComplete = f.await(waitTime);
-				} else {
-					lastComplete = f.awaitUninterruptibly(waitTime);
-				}
+				lastComplete = (interruptable ? f.await(waitTime) : f.awaitUninterruptibly(waitTime));
 
 				waitTime = timeoutMillis - (System.currentTimeMillis() - startTime);
-
-				if (waitTime <= 0) {
-					break;
-				}
-			} while (!lastComplete);
+			} while (waitTime > 0 && !lastComplete);
 
 			if (waitTime <= 0) {
 				break;

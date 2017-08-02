@@ -21,6 +21,7 @@ package org.apache.mina.core.service;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import org.apache.mina.core.session.IoSession;
@@ -57,7 +58,7 @@ public interface IoAcceptor extends IoService {
 	 *
 	 * @return The Set of bound LocalAddresses
 	 */
-	Set<SocketAddress> getLocalAddresses();
+	ArrayList<SocketAddress> getLocalAddresses();
 
 	/**
 	 * Returns the default local address to bind when no argument is specified

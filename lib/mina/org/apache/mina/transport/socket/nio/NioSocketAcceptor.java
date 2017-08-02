@@ -47,7 +47,7 @@ import org.apache.mina.transport.socket.SocketAcceptor;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class NioSocketAcceptor extends AbstractPollingIoAcceptor<NioSession, ServerSocketChannel>
-implements SocketAcceptor {
+		implements SocketAcceptor {
 
 	private volatile Selector selector;
 	private volatile SelectorProvider selectorProvider;
@@ -124,12 +124,7 @@ implements SocketAcceptor {
 	@Override
 	protected void init(SelectorProvider provider) throws Exception {
 		selectorProvider = provider;
-
-		if (provider == null) {
-			selector = Selector.open();
-		} else {
-			selector = provider.openSelector();
-		}
+		selector = (provider != null ? provider.openSelector() : Selector.open());
 	}
 
 	/**
@@ -186,11 +181,7 @@ implements SocketAcceptor {
 		// accept the connection from the client
 		SocketChannel ch = (handle != null ? handle.accept() : null);
 
-		if (ch == null) {
-			return null;
-		}
-
-		return new NioSocketSession(this, processor, ch);
+		return ch != null ? new NioSocketSession(this, processor, ch) : null;
 	}
 
 	/**
@@ -201,13 +192,8 @@ implements SocketAcceptor {
 	protected ServerSocketChannel open(SocketAddress localAddress) throws Exception {
 		// Creates the listening ServerSocket
 
-		ServerSocketChannel channel = null;
-
-		if (selectorProvider != null) {
-			channel = selectorProvider.openServerSocketChannel();
-		} else {
-			channel = ServerSocketChannel.open();
-		}
+		ServerSocketChannel channel = (selectorProvider != null ?
+				selectorProvider.openServerSocketChannel() : ServerSocketChannel.open());
 
 		boolean success = false;
 
@@ -225,16 +211,13 @@ implements SocketAcceptor {
 			try {
 				socket.bind(localAddress, getBacklog());
 			} catch (IOException ioe) {
-				// Add some info regarding the address we try to bind to the
-				// message
-				String newMessage = "Error while binding on " + localAddress + "\n" + "original message : "
-						+ ioe.getMessage();
+				// Add some info regarding the address we try to bind to the message
+				String newMessage = "Error while binding on " + localAddress + "\noriginal message: " + ioe.getMessage();
 				Exception e = new IOException(newMessage);
 				e.initCause(ioe.getCause());
 
 				// And close the channel
 				channel.close();
-
 				throw e;
 			}
 
@@ -342,12 +325,7 @@ implements SocketAcceptor {
 		@Override
 		public ServerSocketChannel next() {
 			SelectionKey key = iterator.next();
-
-			if (key.isValid() && key.isAcceptable()) {
-				return (ServerSocketChannel) key.channel();
-			}
-
-			return null;
+			return key.isValid() && key.isAcceptable() ? (ServerSocketChannel) key.channel() : null;
 		}
 
 		/**

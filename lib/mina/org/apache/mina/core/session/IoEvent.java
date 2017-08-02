@@ -133,14 +133,10 @@ public class IoEvent implements Runnable {
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 
-		sb.append('[');
-		sb.append(session);
-		sb.append(']');
-		sb.append(type.name());
+		sb.append('[').append(session).append(']').append(type.name());
 
 		if (parameter != null) {
-			sb.append(':');
-			sb.append(parameter);
+			sb.append(':').append(parameter);
 		}
 
 		return sb.toString();

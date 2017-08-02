@@ -42,14 +42,12 @@ import org.apache.mina.core.session.IoSessionConfig;
  */
 public abstract class AbstractIoAcceptor extends AbstractIoService implements IoAcceptor {
 
-	private final List<SocketAddress> defaultLocalAddresses = new ArrayList<>();
+	private final ArrayList<SocketAddress> defaultLocalAddresses = new ArrayList<>();
 
 	private final List<SocketAddress> unmodifiableDefaultLocalAddresses = Collections
 			.unmodifiableList(defaultLocalAddresses);
 
 	private final Set<SocketAddress> boundAddresses = new HashSet<>();
-
-	private boolean disconnectOnUnbind = true;
 
 	/**
 	 * The lock object which is acquired while bind or unbind operation is performed.
@@ -57,6 +55,8 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 	 * the service is bound.
 	 */
 	protected final Object bindLock = new Object();
+
+	private boolean disconnectOnUnbind = true;
 
 	/**
 	 * Constructor for {@link AbstractIoAcceptor}. You need to provide a default
@@ -82,20 +82,16 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 	 */
 	@Override
 	public SocketAddress getLocalAddress() {
-		Set<SocketAddress> localAddresses = getLocalAddresses();
-		if (localAddresses.isEmpty()) {
-			return null;
-		}
-
-		return localAddresses.iterator().next();
+		ArrayList<SocketAddress> localAddresses = getLocalAddresses();
+		return localAddresses.isEmpty() ? null : localAddresses.get(0);
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public final Set<SocketAddress> getLocalAddresses() {
-		Set<SocketAddress> localAddresses = new HashSet<>();
+	public final ArrayList<SocketAddress> getLocalAddresses() {
+		ArrayList<SocketAddress> localAddresses = new ArrayList<>();
 
 		synchronized (boundAddresses) {
 			localAddresses.addAll(boundAddresses);
@@ -109,10 +105,7 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 	 */
 	@Override
 	public SocketAddress getDefaultLocalAddress() {
-		if (defaultLocalAddresses.isEmpty()) {
-			return null;
-		}
-		return defaultLocalAddresses.iterator().next();
+		return defaultLocalAddresses.isEmpty() ? null : defaultLocalAddresses.get(0);
 	}
 
 	/**
@@ -281,7 +274,7 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 	 * {@inheritDoc}
 	 */
 	@Override
-public final void bind(Iterable<? extends SocketAddress> localAddresses) throws IOException {
+	public final void bind(Iterable<? extends SocketAddress> localAddresses) throws IOException {
 		if (isDisposing()) {
 			throw new IllegalStateException("The Accpetor disposed is being disposed.");
 		}
@@ -444,9 +437,8 @@ public final void bind(Iterable<? extends SocketAddress> localAddresses) throws 
 
 	@Override
 	public String toString() {
-		return "(nio socket acceptor: "
-				+ (isActive() ? "localAddress(es): " + getLocalAddresses() + ", managedSessionCount: "
-						+ getManagedSessionCount() : "not bound") + ')';
+		return "(nio socket acceptor: " + (isActive() ?
+				"localAddress(es): " + getLocalAddresses() + ", managedSessionCount: " + getManagedSessionCount() : "not bound") + ')';
 	}
 
 	private static void checkAddressType(SocketAddress a) {
@@ -484,7 +476,7 @@ public final void bind(Iterable<? extends SocketAddress> localAddresses) throws 
 		public String toString() {
 			StringBuilder sb = new StringBuilder();
 
-			sb.append("Acceptor operation : ");
+			sb.append("Acceptor operation: ");
 
 			if (localAddresses != null) {
 				boolean isFirst = true;

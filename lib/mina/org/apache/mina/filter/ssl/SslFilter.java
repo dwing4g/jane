@@ -149,14 +149,14 @@ public final class SslFilter extends IoFilterAdapter {
 
 	private static final String SSL_HANDLER = "SslFilter.handler";
 
+	/** A flag used to determinate if the handshake should start immediately */
+	private static final boolean START_HANDSHAKE = true;
+
 	/** The SslContext used */
 	final SSLContext sslContext;
 
 	/** A flag used to tell the filter to start the handshake immediately */
 	private final boolean autoStart;
-
-	/** A flag used to determinate if the handshake should start immediately */
-	private static final boolean START_HANDSHAKE = true;
 
 	private boolean client;
 
@@ -245,12 +245,11 @@ public final class SslFilter extends IoFilterAdapter {
 	 * is not yet completed, we will print (ssl) in small caps. Once it's
 	 * completed, we will use SSL capitalized.
 	 */
-	/* no qualifier */static String getSessionInfo(IoSession session) {
+	static String getSessionInfo(IoSession session) {
 		StringBuilder sb = new StringBuilder();
 
 		if (session.getService() instanceof IoAcceptor) {
 			sb.append("Session Server");
-
 		} else {
 			sb.append("Session Client");
 		}
@@ -265,7 +264,7 @@ public final class SslFilter extends IoFilterAdapter {
 			if (sslHandler.isHandshakeComplete()) {
 				sb.append("(SSL)");
 			} else {
-				sb.append("(ssl...)");
+				sb.append("(SSL...)");
 			}
 		}
 
@@ -480,7 +479,7 @@ public final class SslFilter extends IoFilterAdapter {
 	@Override
 	public void messageReceived(NextFilter nextFilter, IoSession session, Object message) throws SSLException {
 		if (LOGGER.isDebugEnabled()) {
-			LOGGER.debug("{}: Message received : {}", getSessionInfo(session), message);
+			LOGGER.debug("{}: Message received: {}", getSessionInfo(session), message);
 		}
 
 		SslHandler sslHandler = getSslSessionHandler(session);
@@ -588,16 +587,16 @@ public final class SslFilter extends IoFilterAdapter {
 		return (buf.get(offset + 0) == 0x15) /* Alert */
 				&& (buf.get(offset + 1) == 0x03) /* TLS/SSL */
 				&& ((buf.get(offset + 2) == 0x00) /* SSL 3.0 */
-						|| (buf.get(offset + 2) == 0x01) /* TLS 1.0 */
-						|| (buf.get(offset + 2) == 0x02) /* TLS 1.1 */
-						|| (buf.get(offset + 2) == 0x03)) /* TLS 1.2 */
-						&& (buf.get(offset + 3) == 0x00); /* close_notify */
+					|| (buf.get(offset + 2) == 0x01) /* TLS 1.0 */
+					|| (buf.get(offset + 2) == 0x02) /* TLS 1.1 */
+					|| (buf.get(offset + 2) == 0x03)) /* TLS 1.2 */
+					&& (buf.get(offset + 3) == 0x00); /* close_notify */
 	}
 
 	@Override
 	public void filterWrite(NextFilter nextFilter, IoSession session, WriteRequest writeRequest) throws SSLException {
 		if (LOGGER.isDebugEnabled()) {
-			LOGGER.debug("{}: Writing Message : {}", getSessionInfo(session), writeRequest);
+			LOGGER.debug("{}: Writing Message: {}", getSessionInfo(session), writeRequest);
 		}
 
 		boolean needsFlush = true;
@@ -709,7 +708,7 @@ public final class SslFilter extends IoFilterAdapter {
 
 	private void initiateHandshake(NextFilter nextFilter, IoSession session) throws SSLException {
 		if (LOGGER.isDebugEnabled()) {
-			LOGGER.debug("{} : Starting the first handshake", getSessionInfo(session));
+			LOGGER.debug("{}: Starting the first handshake", getSessionInfo(session));
 		}
 		SslHandler sslHandler = getSslSessionHandler(session);
 

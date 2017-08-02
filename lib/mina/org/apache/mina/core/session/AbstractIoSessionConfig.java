@@ -93,7 +93,6 @@ public abstract class AbstractIoSessionConfig implements IoSessionConfig {
 		if (minReadBufferSize > maxReadBufferSize) {
 			throw new IllegalArgumentException("minReadBufferSize: " + minReadBufferSize + " (expected: smaller than "
 					+ maxReadBufferSize + ')');
-
 		}
 		this.minReadBufferSize = minReadBufferSize;
 	}
@@ -117,7 +116,6 @@ public abstract class AbstractIoSessionConfig implements IoSessionConfig {
 		if (maxReadBufferSize < minReadBufferSize) {
 			throw new IllegalArgumentException("maxReadBufferSize: " + maxReadBufferSize + " (expected: greater than "
 					+ minReadBufferSize + ')');
-
 		}
 		this.maxReadBufferSize = maxReadBufferSize;
 	}

@@ -25,12 +25,6 @@ import java.io.OutputStream;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.CharBuffer;
-import java.nio.DoubleBuffer;
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
-import java.nio.LongBuffer;
-import java.nio.ShortBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
@@ -144,7 +138,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	/** The allocator used to create new buffers */
 	private static IoBufferAllocator allocator = new SimpleBufferAllocator();
 
-	/** A flag indicating which type of buffer we are using : heap or direct */
+	/** A flag indicating which type of buffer we are using: heap or direct */
 	private static boolean useDirectBuffer;
 
 	/**
@@ -176,7 +170,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 
 		allocator = newAllocator;
 
-		if (null != oldAllocator) {
+		if (oldAllocator != null) {
 			oldAllocator.dispose();
 		}
 	}
@@ -926,13 +920,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	public abstract IoBuffer putChar(int index, char value);
 
 	/**
-	 * @see ByteBuffer#asCharBuffer()
-	 *
-	 * @return a new CharBuffer
-	 */
-	public abstract CharBuffer asCharBuffer();
-
-	/**
 	 * @see ByteBuffer#getShort()
 	 *
 	 * @return The read short
@@ -978,13 +965,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	 * @return the modified IoBuffer
 	 */
 	public abstract IoBuffer putShort(int index, short value);
-
-	/**
-	 * @see ByteBuffer#asShortBuffer()
-	 *
-	 * @return A ShortBuffer from this IoBuffer
-	 */
-	public abstract ShortBuffer asShortBuffer();
 
 	/**
 	 * @see ByteBuffer#getInt()
@@ -1179,13 +1159,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	public abstract IoBuffer putInt(int index, int value);
 
 	/**
-	 * @see ByteBuffer#asIntBuffer()
-	 *
-	 * @return the modified IoBuffer
-	 */
-	public abstract IntBuffer asIntBuffer();
-
-	/**
 	 * @see ByteBuffer#getLong()
 	 *
 	 * @return The long at the current position
@@ -1216,13 +1189,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	 * @return the modified IoBuffer
 	 */
 	public abstract IoBuffer putLong(int index, long value);
-
-	/**
-	 * @see ByteBuffer#asLongBuffer()
-	 *
-	 * @return a LongBuffer from this IoBffer
-	 */
-	public abstract LongBuffer asLongBuffer();
 
 	/**
 	 * @see ByteBuffer#getFloat()
@@ -1257,13 +1223,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	public abstract IoBuffer putFloat(int index, float value);
 
 	/**
-	 * @see ByteBuffer#asFloatBuffer()
-	 *
-	 * @return A FloatBuffer from this IoBuffer
-	 */
-	public abstract FloatBuffer asFloatBuffer();
-
-	/**
 	 * @see ByteBuffer#getDouble()
 	 *
 	 * @return the double at the current position
@@ -1294,13 +1253,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	 * @return the modified IoBuffer
 	 */
 	public abstract IoBuffer putDouble(int index, double value);
-
-	/**
-	 * @see ByteBuffer#asDoubleBuffer()
-	 *
-	 * @return A buffer containing Double
-	 */
-	public abstract DoubleBuffer asDoubleBuffer();
 
 	/**
 	 * @return an {@link InputStream} that reads the data from this buffer.
@@ -1395,148 +1347,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	 */
 	public abstract IoBuffer putString(CharSequence val, int fieldSize, CharsetEncoder encoder)
 			throws CharacterCodingException;
-
-	/**
-	 * Reads a string which has a 16-bit length field before the actual encoded
-	 * string, using the specified <code>decoder</code> and returns it. This
-	 * method is a shortcut for <tt>getPrefixedString(2, decoder)</tt>.
-	 *
-	 * @param decoder The CharsetDecoder to use
-	 * @return The read String
-	 *
-	 * @throws CharacterCodingException When we have an error while decoding the String
-	 */
-	public abstract String getPrefixedString(CharsetDecoder decoder) throws CharacterCodingException;
-
-	/**
-	 * Reads a string which has a length field before the actual encoded string,
-	 * using the specified <code>decoder</code> and returns it.
-	 *
-	 * @param prefixLength the length of the length field (1, 2, or 4)
-	 * @param decoder The CharsetDecoder to use
-	 * @return The read String
-	 *
-	 * @throws CharacterCodingException When we have an error while decoding the String
-	 */
-	public abstract String getPrefixedString(int prefixLength, CharsetDecoder decoder) throws CharacterCodingException;
-
-	/**
-	 * Writes the content of <code>in</code> into this buffer as a string which
-	 * has a 16-bit length field before the actual encoded string, using the
-	 * specified <code>encoder</code>. This method is a shortcut for
-	 * <tt>putPrefixedString(in, 2, 0, encoder)</tt>.
-	 *
-	 * @param in The CharSequence to put in the IoBuffer
-	 * @param encoder The CharsetEncoder to use
-	 * @return The modified IoBuffer
-	 *
-	 * @throws CharacterCodingException When we have an error while decoding the CharSequence
-	 */
-	public abstract IoBuffer putPrefixedString(CharSequence in, CharsetEncoder encoder) throws CharacterCodingException;
-
-	/**
-	 * Writes the content of <code>in</code> into this buffer as a string which
-	 * has a 16-bit length field before the actual encoded string, using the
-	 * specified <code>encoder</code>. This method is a shortcut for
-	 * <tt>putPrefixedString(in, prefixLength, 0, encoder)</tt>.
-	 *
-	 * @param in The CharSequence to put in the IoBuffer
-	 * @param prefixLength the length of the length field (1, 2, or 4)
-	 * @param encoder The CharsetEncoder to use
-	 * @return The modified IoBuffer
-	 *
-	 * @throws CharacterCodingException When we have an error while decoding the CharSequence
-	 */
-	public abstract IoBuffer putPrefixedString(CharSequence in, int prefixLength, CharsetEncoder encoder)
-			throws CharacterCodingException;
-
-	/**
-	 * Writes the content of <code>in</code> into this buffer as a string which
-	 * has a 16-bit length field before the actual encoded string, using the
-	 * specified <code>encoder</code>. This method is a shortcut for
-	 * <tt>putPrefixedString(in, prefixLength, padding, ( byte ) 0, encoder)</tt>
-	 *
-	 * @param in The CharSequence to put in the IoBuffer
-	 * @param prefixLength the length of the length field (1, 2, or 4)
-	 * @param padding the number of padded <tt>NUL</tt>s (1 (or 0), 2, or 4)
-	 * @param encoder The CharsetEncoder to use
-	 * @return The modified IoBuffer
-	 *
-	 * @throws CharacterCodingException When we have an error while decoding the CharSequence
-	 */
-	public abstract IoBuffer putPrefixedString(CharSequence in, int prefixLength, int padding, CharsetEncoder encoder)
-			throws CharacterCodingException;
-
-	/**
-	 * Writes the content of <code>val</code> into this buffer as a string which
-	 * has a 16-bit length field before the actual encoded string, using the
-	 * specified <code>encoder</code>.
-	 *
-	 * @param val The CharSequence to put in teh IoBuffer
-	 * @param prefixLength the length of the length field (1, 2, or 4)
-	 * @param padding the number of padded bytes (1 (or 0), 2, or 4)
-	 * @param padValue the value of padded bytes
-	 * @param encoder The CharsetEncoder to use
-	 * @return The modified IoBuffer
-	 * @throws CharacterCodingException When we have an error while decoding the CharSequence
-	 */
-	public abstract IoBuffer putPrefixedString(CharSequence val, int prefixLength, int padding, byte padValue,
-			CharsetEncoder encoder) throws CharacterCodingException;
-
-	/**
-	 * Reads a Java object from the buffer using the context {@link ClassLoader}
-	 * of the current thread.
-	 *
-	 * @return The read Object
-	 * @throws ClassNotFoundException thrown when we can't find the Class to use
-	 */
-	public abstract Object getObject() throws ClassNotFoundException;
-
-	/**
-	 * Reads a Java object from the buffer using the specified
-	 * <tt>classLoader</tt>.
-	 *
-	 * @param classLoader The classLoader to use to read an Object from the IoBuffer
-	 * @return The read Object
-	 * @throws ClassNotFoundException thrown when we can't find the Class to use
-	 */
-	public abstract Object getObject(final ClassLoader classLoader) throws ClassNotFoundException;
-
-	/**
-	 * Writes the specified Java object to the buffer.
-	 *
-	 * @param o The Object to write in the IoBuffer
-	 * @return The modified IoBuffer
-	 */
-	public abstract IoBuffer putObject(Object o);
-
-	/**
-	 * @param prefixLength the length of the prefix field (1, 2, or 4)
-	 * @return <tt>true</tt> if this buffer contains a data which has a data
-	 * length as a prefix and the buffer has remaining data as enough as
-	 * specified in the data length field. This method is identical with
-	 * <tt>prefixedDataAvailable( prefixLength, Integer.MAX_VALUE )</tt>. Please
-	 * not that using this method can allow DoS (Denial of Service) attack in
-	 * case the remote peer sends too big data length value. It is recommended
-	 * to use {@link #prefixedDataAvailable(int, int)} instead.
-	 * @throws IllegalArgumentException if prefixLength is wrong
-	 * @throws BufferDataException if data length is negative
-	 */
-	public abstract boolean prefixedDataAvailable(int prefixLength);
-
-	/**
-	 * @param prefixLength the length of the prefix field (1, 2, or 4)
-	 * @param maxDataLength the allowed maximum of the read data length
-	 * @return <tt>true</tt> if this buffer contains a data which has a data
-	 * length as a prefix and the buffer has remaining data as enough as
-	 * specified in the data length field.
-	 * @throws IllegalArgumentException
-	 *             if prefixLength is wrong
-	 * @throws BufferDataException
-	 *             if data length is negative or greater then
-	 *             <tt>maxDataLength</tt>
-	 */
-	public abstract boolean prefixedDataAvailable(int prefixLength, int maxDataLength);
 
 	// ///////////////////
 	// IndexOf methods //

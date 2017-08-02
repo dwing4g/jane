@@ -38,26 +38,6 @@ import org.apache.mina.core.session.IoSession;
  */
 public interface IoFilterChainBuilder {
 	/**
-	 * An implementation which does nothing.
-	 */
-	IoFilterChainBuilder NOOP = new IoFilterChainBuilder() {
-		/**
-		 * {@inheritDoc}
-		 */
-		@Override
-		public void buildFilterChain(IoFilterChain chain) throws Exception {
-		}
-
-		/**
-		 * {@inheritDoc}
-		 */
-		@Override
-		public String toString() {
-			return "NOOP";
-		}
-	};
-
-	/**
 	 * Modifies the specified <tt>chain</tt>.
 	 *
 	 * @param chain The chain to modify

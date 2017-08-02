@@ -50,11 +50,7 @@ public abstract class ExceptionMonitor {
 	 *                if <tt>null</tt> is specified.
 	 */
 	public static void setInstance(ExceptionMonitor monitor) {
-		if (monitor == null) {
-			instance = new DefaultExceptionMonitor();
-		} else {
-			instance = monitor;
-		}
+		instance = (monitor != null ? monitor : new DefaultExceptionMonitor());
 	}
 
 	/**

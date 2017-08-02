@@ -67,12 +67,4 @@ public interface FileRegion {
 	 * @return  The total number of bytes already written.
 	 */
 	long getWrittenBytes();
-
-	/**
-	 * Provides an absolute filename for the underlying FileChannel.
-	 *
-	 * @return  the absolute filename, or <tt>null</tt> if the FileRegion
-	 *   does not know the filename
-	 */
-	String getFilename();
 }

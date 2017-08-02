@@ -278,7 +278,6 @@ public interface IoFilter {
 		void exceptionCaught(IoSession session, Throwable cause);
 
 		/**
-		 *
 		 * @param session The {@link IoSession} which has to process this invocation
 		 */
 		void inputClosed(IoSession session);

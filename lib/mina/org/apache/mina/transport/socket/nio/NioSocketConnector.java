@@ -42,8 +42,8 @@ import org.apache.mina.transport.socket.SocketSessionConfig;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public final class NioSocketConnector extends AbstractPollingIoConnector<NioSession, SocketChannel> implements
-SocketConnector {
+public final class NioSocketConnector extends AbstractPollingIoConnector<NioSession, SocketChannel>
+		implements SocketConnector {
 
 	private volatile Selector selector;
 
@@ -184,12 +184,7 @@ SocketConnector {
 	@Override
 	protected ConnectionRequest getConnectionRequest(SocketChannel handle) {
 		SelectionKey key = handle.keyFor(selector);
-
-		if ((key == null) || (!key.isValid())) {
-			return null;
-		}
-
-		return (ConnectionRequest) key.attachment();
+		return key != null && key.isValid() ? (ConnectionRequest) key.attachment() : null;
 	}
 
 	/**
@@ -242,10 +237,8 @@ SocketConnector {
 			try {
 				ch.socket().bind(localAddress);
 			} catch (IOException ioe) {
-				// Add some info regarding the address we try to bind to the
-				// message
-				String newMessage = "Error while binding on " + localAddress + "\n" + "original message : "
-						+ ioe.getMessage();
+				// Add some info regarding the address we try to bind to the message
+				String newMessage = "Error while binding on " + localAddress + "\noriginal message : " + ioe.getMessage();
 				Exception e = new IOException(newMessage);
 				e.initCause(ioe.getCause());
 
