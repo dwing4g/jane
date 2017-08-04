@@ -254,17 +254,20 @@ public final class DBManager
 	/**
 	 * 启动数据库系统
 	 * <p>
-	 * 必须在注册数据库表和操作数据库之前启动
+	 * 必须在openTable和操作数据库之前启动<br>
 	 * @param sto 数据库使用的存储引擎实例. 如: StorageLevelDB.instance()
+	 * @param dbFilename 数据库文件/目录所在的位置
 	 */
-	public synchronized void startup(Storage sto) throws IOException
+	public synchronized void startup(Storage sto, String dbFilename) throws IOException
 	{
+		if(_exiting) throw new IllegalArgumentException("can not startup when exiting");
 		if(sto == null) throw new IllegalArgumentException("no Storage specified");
+		if(dbFilename == null || dbFilename.trim().isEmpty()) throw new IllegalArgumentException("no dbFilename specified");
 		shutdown();
-		File dbfile = new File(Const.dbFilename);
+		File dbfile = new File(dbFilename);
 		File dbpath = dbfile.getParentFile();
 		if(dbpath != null && !dbpath.isDirectory() && !dbpath.mkdirs())
-			throw new IOException("create db path failed: " + Const.dbFilename);
+			throw new IOException("create db path failed: " + dbFilename);
 		_storage = sto;
 		sto.openDB(dbfile);
 		ExitManager.getShutdownSystemCallbacks().add(new Runnable()
@@ -288,6 +291,17 @@ public final class DBManager
 				Log.info("DBManager.OnJVMShutDown: db closed");
 			}
 		});
+	}
+
+	/**
+	 * 启动数据库系统
+	 * <p>
+	 * 必须在openTable和操作数据库之前启动<br>
+	 * 默认使用StorageLevelDB.instance()作为存储引擎
+	 */
+	public void startup(Storage sto) throws IOException
+	{
+		startup(sto, Const.dbFilename);
 	}
 
 	/**

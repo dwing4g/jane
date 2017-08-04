@@ -214,6 +214,7 @@ public final class DBSimpleManager
 	{
 		if(_exiting) throw new IllegalArgumentException("can not startup when exiting");
 		if(sto == null) throw new IllegalArgumentException("no StorageLevelDB specified");
+		if(dbFilename == null || dbFilename.trim().isEmpty()) throw new IllegalArgumentException("no dbFilename specified");
 		shutdown();
 		File dbfile = new File(dbFilename);
 		File dbpath = dbfile.getParentFile();
