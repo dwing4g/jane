@@ -124,6 +124,12 @@ public final class TestEcho extends NetManager
 	}
 
 	@Override
+	protected int onConnectFailed(SocketAddress addr, int count, Object ctx)
+	{
+		return 0;
+	}
+
+	@Override
 	public void sessionCreated(IoSession session) throws Exception
 	{
 	}

@@ -45,8 +45,6 @@ public class NetManager implements IoHandler
 
 	public static interface AnswerHandler
 	{
-		public static final int DEFAULT_ANSWER_TIME_OUT = 10; // 默认的回复等待超时时间
-
 		void onAnswer(Bean<?> bean); // 如果超时无回复,会回调null
 	}
 
@@ -84,48 +82,51 @@ public class NetManager implements IoHandler
 				return t;
 			}
 		});
-		scheduleWithFixedDelay(Const.askCheckInterval, Const.askCheckInterval, new Runnable()
+		if(Const.askCheckInterval > 0)
 		{
-			@Override
-			public void run()
+			scheduleWithFixedDelay(Const.askCheckInterval, Const.askCheckInterval, new Runnable()
 			{
-				try
+				@Override
+				public void run()
 				{
-					int now = (int)(System.currentTimeMillis() / 1000);
-					for(MapIterator<BeanContext> it = _beanCtxMap.entryIterator(); it.moveToNext();)
+					try
 					{
-						BeanContext beanCtx = it.value();
-						if(now - beanCtx.askTime > beanCtx.timeOut && _beanCtxMap.remove(it.key(), beanCtx))
+						int now = (int)(System.currentTimeMillis() / 1000);
+						for(MapIterator<BeanContext> it = _beanCtxMap.entryIterator(); it.moveToNext();)
 						{
-							IoSession session = beanCtx.session;
-							beanCtx.session = null; // 绑定期已过,清除对session的引用
-							Bean<?> arg = beanCtx.arg;
-							beanCtx.arg = null;
-							AnswerHandler handler = beanCtx.answerHandler;
-							beanCtx.answerHandler = null;
-							if(session != null && arg != null)
-								Log.warn("{}({}): ask timeout: {}:{}", session.getHandler().getClass().getName(), session.getId(), arg.typeName(), arg);
-							if(handler != null)
+							BeanContext beanCtx = it.value();
+							if(now - beanCtx.askTime > beanCtx.timeOut && _beanCtxMap.remove(it.key(), beanCtx))
 							{
-								try
+								IoSession session = beanCtx.session;
+								beanCtx.session = null; // 绑定期已过,清除对session的引用
+								Bean<?> arg = beanCtx.arg;
+								beanCtx.arg = null;
+								AnswerHandler handler = beanCtx.answerHandler;
+								beanCtx.answerHandler = null;
+								if(session != null && arg != null)
+									Log.warn("{}({}): ask timeout: {}:{}", session.getHandler().getClass().getName(), session.getId(), arg.typeName(), arg);
+								if(handler != null)
 								{
-									handler.onAnswer(null);
-								}
-								catch(Exception e)
-								{
-									Log.error((session != null ? session.getHandler().getClass().getName() + '(' + session.getId() + ')' : "?") +
-											": onAnswer(" + (arg != null ? arg.typeName() + ' ' + arg : "?") + ") exception:", e);
+									try
+									{
+										handler.onAnswer(null);
+									}
+									catch(Exception e)
+									{
+										Log.error((session != null ? session.getHandler().getClass().getName() + '(' + session.getId() + ')' : "?") +
+												": onAnswer(" + (arg != null ? arg.typeName() + ' ' + arg : "?") + ") exception:", e);
+									}
 								}
 							}
 						}
 					}
+					catch(Throwable e)
+					{
+						Log.error("NetManager: ask check fatal exception:", e);
+					}
 				}
-				catch(Throwable e)
-				{
-					Log.error("NetManager: ask check fatal exception:", e);
-				}
-			}
-		});
+			});
+		}
 		scheduleWithFixedDelay(1, 1, new Runnable()
 		{
 			@Override
@@ -646,7 +647,7 @@ public class NetManager implements IoHandler
 
 	public boolean ask(IoSession session, Bean<?> bean, AnswerHandler onAnswer)
 	{
-		return ask(session, bean, AnswerHandler.DEFAULT_ANSWER_TIME_OUT, onAnswer);
+		return ask(session, bean, Const.askDefaultTimeout, onAnswer);
 	}
 
 	/**
@@ -719,7 +720,7 @@ public class NetManager implements IoHandler
 
 	public Future<Bean<?>> askAsync(IoSession session, Bean<?> bean)
 	{
-		return askAsync(session, bean, AnswerHandler.DEFAULT_ANSWER_TIME_OUT);
+		return askAsync(session, bean, Const.askDefaultTimeout);
 	}
 
 	/**

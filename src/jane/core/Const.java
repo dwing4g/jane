@@ -17,14 +17,13 @@ public final class Const
 {
 	public static final long		startupTime		  = System.currentTimeMillis();
 	private static final Properties	_property		  = new Properties();
-	public static final boolean		debug;
 	public static final Charset		stringCharsetISO  = Charset.forName("iso-8859-1");
 	public static final Charset		stringCharsetUTF8 = Charset.forName("utf-8");
 	public static final Charset		stringCharsetGBK  = Charset.forName("gbk");
-	public static final Charset		stringCharset;
 	public static final int			connectTimeout;
 	public static final int			closeOnFlushTimeout;
 	public static final int			askCheckInterval;
+	public static final int			askDefaultTimeout;
 	public static final int			maxRawBeanSize;
 	public static final int			maxHttpHeadSize;
 	public static final int			maxHttpBodySize;
@@ -90,19 +89,17 @@ public final class Const
 			}
 		}
 
-		String str = System.getProperty("debug");
-		debug = (str != null && str.trim().equalsIgnoreCase("true") || getPropBoolean("debug"));
-		stringCharset = Charset.forName(getPropStr("stringCharset", "utf-8"));
 		connectTimeout = getPropInt("connectTimeout", 5, 1);
 		closeOnFlushTimeout = getPropInt("closeOnFlushTimeout", 5, 1);
-		askCheckInterval = getPropInt("askCheckInterval", 3, 1);
+		askCheckInterval = getPropInt("askCheckInterval", 5, 0);
+		askDefaultTimeout = getPropInt("askDefaultTimeout", 30, 1);
 		maxRawBeanSize = getPropInt("maxRawBeanSize", 65536, 0);
 		maxHttpHeadSize = getPropInt("maxHttpHeadSize", 4096, 0);
 		maxHttpBodySize = getPropInt("maxHttpBodySize", 65536, 0);
-		dbFilename = getPropStr("dbFilename", "db/database");
+		dbFilename = getPropStr("dbFilename", "db/jane");
 		dbBackupPath = getPropStr("dbBackupPath", "db");
 		dbThreadCount = getPropInt("dbThreadCount", 1, 1, 1000);
-		deadlockCheckInterval = getPropInt("deadlockCheckInterval", 5, 0);
+		deadlockCheckInterval = getPropInt("deadlockCheckInterval", 10, 0);
 		maxSessionProcedure = getPropInt("maxSessionProceduer", 65536, 1);
 		maxBatchProceduer = getPropInt("maxBatchProceduer", 256, 1);
 		maxProceduerRedo = getPropInt("maxProceduerRedo", 256, 1);
@@ -127,17 +124,18 @@ public final class Const
 
 	public static String getPropStr(String key, String def)
 	{
-		return _property.getProperty(key, def);
+		String value = System.getProperty(key);
+		return value != null ? value : _property.getProperty(key, def);
 	}
 
 	public static String getPropStr(String key)
 	{
-		return _property.getProperty(key, "");
+		return getPropStr(key, "");
 	}
 
 	public static boolean getPropBoolean(String key, boolean def)
 	{
-		String value = _property.getProperty(key);
+		String value = getPropStr(key);
 		return value != null ? Boolean.parseBoolean(value.trim()) : def;
 	}
 
@@ -150,7 +148,7 @@ public final class Const
 	{
 		try
 		{
-			return Integer.parseInt(_property.getProperty(key).trim());
+			return Integer.parseInt(getPropStr(key).trim());
 		}
 		catch(Exception e)
 		{
@@ -162,7 +160,7 @@ public final class Const
 	{
 		try
 		{
-			int r = Integer.parseInt(_property.getProperty(key).trim());
+			int r = Integer.parseInt(getPropStr(key).trim());
 			return r < min ? min : r;
 		}
 		catch(Exception e)
@@ -175,7 +173,7 @@ public final class Const
 	{
 		try
 		{
-			int r = Integer.parseInt(_property.getProperty(key).trim());
+			int r = Integer.parseInt(getPropStr(key).trim());
 			return r < min ? min : (r > max ? max : r);
 		}
 		catch(Exception e)
@@ -193,7 +191,7 @@ public final class Const
 	{
 		try
 		{
-			return Long.parseLong(_property.getProperty(key).trim());
+			return Long.parseLong(getPropStr(key).trim());
 		}
 		catch(Exception e)
 		{
@@ -205,7 +203,7 @@ public final class Const
 	{
 		try
 		{
-			long r = Long.parseLong(_property.getProperty(key).trim());
+			long r = Long.parseLong(getPropStr(key).trim());
 			return r < min ? min : r;
 		}
 		catch(Exception e)
@@ -218,7 +216,7 @@ public final class Const
 	{
 		try
 		{
-			long r = Long.parseLong(_property.getProperty(key).trim());
+			long r = Long.parseLong(getPropStr(key).trim());
 			return r < min ? min : (r > max ? max : r);
 		}
 		catch(Exception e)

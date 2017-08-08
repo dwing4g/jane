@@ -104,7 +104,7 @@ public class ProcThread extends Thread
 
 	static
 	{
-		if(!Const.debug && Const.deadlockCheckInterval > 0)
+		if(Const.deadlockCheckInterval > 0)
 		{
 			NetManager.scheduleWithFixedDelay(Const.deadlockCheckInterval, Const.deadlockCheckInterval, new Runnable()
 			{
