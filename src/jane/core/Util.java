@@ -350,26 +350,34 @@ public final class Util
 	}
 
 	/**
-	 * 持续从输入流中读取指定长度的数据
+	 * 从输入流中读取指定长度的数据
 	 */
 	public static void readStream(InputStream is, String isName, byte[] buf, int len) throws IOException
 	{
 		for(int n = 0; n < len;)
 		{
 			int r = is.read(buf, n, len - n);
-			if(r < 0)
-				throw new IOException(String.format("read interrupt(%s:%d)", isName, n));
+			if(r <= 0)
+				throw new IOException(String.format("read interrupt(%s:%d/%d)", isName, n, len));
 			n += r;
 		}
 	}
 
-	public static byte[] readStreamData(InputStream is) throws IOException
+	/**
+	 * 从输入流中读取未知长度的数据,一直取到无法获取为止
+	 */
+	public static Octets readStream(InputStream is) throws IOException
 	{
 		if(is == null) return null;
-		int len = is.available();
-		byte[] data = new byte[len];
-		readStream(is, "", data, len);
-		return data;
+		Octets res = new Octets();
+		for(int size = 0;;)
+		{
+			res.reserve(size + 2048);
+			int n = is.read(res.array(), size, 2048);
+			if(n <= 0) break;
+			res.resize(size += n);
+		}
+		return res;
 	}
 
 	/**
@@ -381,7 +389,11 @@ public final class Util
 	{
 		try(InputStream is = new FileInputStream(fileName))
 		{
-			return readStreamData(is);
+			int size = is.available();
+			if(size <= 0) return Octets.EMPTY;
+			byte[] data = new byte[size];
+			readStream(is, fileName, data, size);
+			return data;
 		}
 	}
 
@@ -470,15 +482,15 @@ public final class Util
 		return ze != null ? zipFile.getInputStream(ze) : null;
 	}
 
-	public static byte[] readDataInZip(ZipFile zipFile, String path) throws IOException
+	public static Octets readDataInZip(ZipFile zipFile, String path) throws IOException
 	{
 		try(InputStream is = createStreamInZip(zipFile, path))
 		{
-			return readStreamData(is);
+			return readStream(is);
 		}
 	}
 
-	public static byte[] readDataInZip(String zipPath, String path) throws IOException
+	public static Octets readDataInZip(String zipPath, String path) throws IOException
 	{
 		try(ZipFile zf = new ZipFile(zipPath))
 		{
@@ -492,11 +504,11 @@ public final class Util
 		return urls.hasMoreElements() ? urls.nextElement().openStream() : null;
 	}
 
-	public static byte[] readDataInJar(Class<?> cls, String path) throws IOException
+	public static Octets readDataInJar(Class<?> cls, String path) throws IOException
 	{
 		try(InputStream is = createStreamInJar(cls, path))
 		{
-			return readStreamData(is);
+			return readStream(is);
 		}
 	}
 

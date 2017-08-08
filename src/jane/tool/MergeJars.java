@@ -1,15 +1,14 @@
 package jane.tool;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 import jane.core.Util;
 
@@ -35,10 +34,11 @@ public final class MergeJars
 			for(int i = jarNames.length - 2; i >= 0; --i)
 			{
 				osLog.println("+ " + jarNames[i]);
-				try(ZipInputStream zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(jarNames[i]))))
+				try(ZipFile zipFile = new ZipFile(jarNames[i]))
 				{
-					for(ZipEntry ze; (ze = zis.getNextEntry()) != null;)
+					for(Enumeration<? extends ZipEntry> zipEnum = zipFile.entries(); zipEnum.hasMoreElements();)
 					{
+						ZipEntry ze = zipEnum.nextElement();
 						if(!ze.isDirectory())
 							++count0;
 						if(mergedPathes.contains(ze.getName())) continue;
@@ -53,7 +53,7 @@ public final class MergeJars
 						if(len < 0) continue;
 						if(len > buf.length)
 							buf = new byte[len];
-						Util.readStream(zis, ze.getName(), buf, len);
+						Util.readStream(zipFile.getInputStream(ze), ze.getName(), buf, len);
 						zos.putNextEntry(new ZipEntry(ze.getName()));
 						zos.write(buf, 0, len);
 						zos.closeEntry();

@@ -36,17 +36,17 @@ public final class StorageLevelDB implements Storage
 		{
 			try
 			{
-				byte[] data = Util.readStreamData(Util.createStreamInJar(StorageLevelDB.class, nativeLibName));
+				Octets data = Util.readStream(Util.createStreamInJar(StorageLevelDB.class, nativeLibName));
 				if(data != null)
 				{
 					CRC32 crc32 = new CRC32();
-					crc32.update(data);
+					crc32.update(data.array(), 0, data.size());
 					file = new File(System.getProperty("java.io.tmpdir") + "/" + crc32.getValue() + "_" + nativeLibName);
-					if(file.length() != data.length)
+					if(file.length() != data.size())
 					{
 						try(FileOutputStream fos = new FileOutputStream(file))
 						{
-							fos.write(data);
+							fos.write(data.array(), 0, data.size());
 						}
 					}
 				}

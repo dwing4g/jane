@@ -1,21 +1,19 @@
 package jane.tool;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 import jane.core.Util;
 
@@ -59,58 +57,53 @@ public final class DiffJars
 		}
 	}
 
-	public int diffJars(InputStream isJar1, InputStream isJar2, OutputStream osJar, PrintStream osLog) throws IOException
+	public int diffJars(ZipFile jar1, ZipFile jar2, OutputStream osJar, PrintStream osLog) throws IOException
 	{
 		int count = 0;
 		HashMap<String, byte[]> jar1Md5s = new HashMap<>();
 		HashSet<String> pathes = new HashSet<>();
 		byte[] buf = new byte[0x10000];
 
-		try(ZipInputStream zis = new ZipInputStream(new BufferedInputStream(isJar1)))
+		for(Enumeration<? extends ZipEntry> zipEnum = jar1.entries(); zipEnum.hasMoreElements();)
 		{
-			for(ZipEntry ze; (ze = zis.getNextEntry()) != null;)
+			ZipEntry ze = zipEnum.nextElement();
+			if(ze.isDirectory()) continue;
+			int len = (int)ze.getSize();
+			if(len < 0) continue;
+			if(len > buf.length)
+				buf = new byte[len];
+			Util.readStream(jar1.getInputStream(ze), ze.getName(), buf, len);
+			jar1Md5s.put(ze.getName(), getMd5(buf, 0, len));
+		}
+
+		try(ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(osJar)))
+		{
+			zos.setMethod(ZipOutputStream.DEFLATED);
+			zos.setLevel(Deflater.BEST_COMPRESSION);
+			for(Enumeration<? extends ZipEntry> zipEnum = jar2.entries(); zipEnum.hasMoreElements();)
 			{
+				ZipEntry ze = zipEnum.nextElement();
 				if(ze.isDirectory()) continue;
 				int len = (int)ze.getSize();
 				if(len < 0) continue;
 				if(len > buf.length)
 					buf = new byte[len];
-				Util.readStream(zis, ze.getName(), buf, len);
-				jar1Md5s.put(ze.getName(), getMd5(buf, 0, len));
+				String name = ze.getName();
+				Util.readStream(jar2.getInputStream(ze), name, buf, len);
+				if(Arrays.equals(getMd5(buf, 0, len), jar1Md5s.get(name)))
+					continue;
+				if(osLog != null)
+					osLog.println(name);
+				ensurePath(zos, pathes, name);
+				zos.putNextEntry(new ZipEntry(name));
+				zos.write(buf, 0, len);
+				zos.closeEntry();
+				++count;
 			}
 		}
-
-		try(ZipInputStream zis = new ZipInputStream(new BufferedInputStream(isJar2)))
-		{
-			try(ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(osJar)))
-			{
-				zos.setMethod(ZipOutputStream.DEFLATED);
-				zos.setLevel(Deflater.BEST_COMPRESSION);
-				for(ZipEntry ze; (ze = zis.getNextEntry()) != null;)
-				{
-					if(ze.isDirectory()) continue;
-					int len = (int)ze.getSize();
-					if(len > buf.length)
-						buf = new byte[len];
-					String name = ze.getName();
-					Util.readStream(zis, name, buf, len);
-					if(Arrays.equals(getMd5(buf, 0, len), jar1Md5s.get(name)))
-						continue;
-					if(osLog != null)
-						osLog.println(name);
-					ensurePath(zos, pathes, name);
-					zos.putNextEntry(new ZipEntry(name));
-					zos.write(buf, 0, len);
-					zos.closeEntry();
-					++count;
-				}
-			}
-		}
-
 		return count;
 	}
 
-	@SuppressWarnings("resource")
 	public static void main(String[] args) throws Exception
 	{
 		if(args.length < 3)
@@ -120,7 +113,11 @@ public final class DiffJars
 		}
 
 		System.out.println(String.format("%s -> %s = %s ... ", args[0], args[1], args[2]));
-		int count = new DiffJars().diffJars(new FileInputStream(args[0]), new FileInputStream(args[1]), new FileOutputStream(args[2]), System.out);
+		int count;
+		try(ZipFile jar1 = new ZipFile(args[0]); ZipFile jar2 = new ZipFile(args[1]); FileOutputStream osJar = new FileOutputStream(args[2]))
+		{
+			count = new DiffJars().diffJars(jar1, jar2, osJar, System.out);
+		}
 		System.out.println(String.format("done! (%d files)", count));
 	}
 }

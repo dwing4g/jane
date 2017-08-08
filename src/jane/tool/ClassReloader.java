@@ -1,16 +1,15 @@
 package jane.tool;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.instrument.ClassDefinition;
 import java.lang.instrument.Instrumentation;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import java.util.zip.ZipFile;
 import jane.core.Util;
 
 /*
@@ -89,27 +88,24 @@ public final class ClassReloader
 		_inst.redefineClasses(clsDefs);
 	}
 
-	public static void reloadClasses(InputStream zipStream) throws Exception, Error
+	public static int reloadClasses(ZipFile zipFile) throws Exception, Error
 	{
 		if(_inst == null)
 			throw new NullPointerException("Instrumentation not initialized");
 		List<byte[]> classDatas = new ArrayList<>();
-		try(ZipInputStream zis = new ZipInputStream(new BufferedInputStream(zipStream)))
+		for(Enumeration<? extends ZipEntry> zipEnum = zipFile.entries(); zipEnum.hasMoreElements();)
 		{
-			for(ZipEntry ze; (ze = zis.getNextEntry()) != null;)
+			ZipEntry ze = zipEnum.nextElement();
+			if(ze.isDirectory() || !ze.getName().endsWith(".class")) continue;
+			int len = (int)ze.getSize();
+			if(len > 0)
 			{
-				if(ze.getName().endsWith(".class"))
-				{
-					int len = (int)ze.getSize();
-					if(len > 0)
-					{
-						byte[] classData = new byte[len];
-						Util.readStream(zis, ze.getName(), classData, len);
-						classDatas.add(classData);
-					}
-				}
+				byte[] classData = new byte[len];
+				Util.readStream(zipFile.getInputStream(ze), ze.getName(), classData, len);
+				classDatas.add(classData);
 			}
 		}
 		reloadClasses(classDatas);
+		return classDatas.size();
 	}
 }

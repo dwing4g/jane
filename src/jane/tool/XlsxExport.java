@@ -21,6 +21,7 @@ import java.util.zip.ZipInputStream;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamReader;
+import jane.core.Octets;
 import jane.core.Util;
 
 public final class XlsxExport
@@ -69,19 +70,29 @@ public final class XlsxExport
 	 */
 	public static Map<Integer, Map<Integer, String>> xlsx2Maps(InputStream isXlsx, int sheetId) throws Exception
 	{
-		byte[] xmlStr = null, xmlSheet = null;
+		Octets xmlStr = null, xmlSheet = null;
 		String fileSheet = "xl/worksheets/sheet" + sheetId + ".xml";
 		try(ZipInputStream zis = new ZipInputStream(new BufferedInputStream(isXlsx)))
 		{
 			for(ZipEntry ze; (ze = zis.getNextEntry()) != null;)
 			{
-				int len = (int)ze.getSize();
-				if(len < 0) continue;
+				if(ze.isDirectory()) continue;
 				String name = ze.getName();
-				if(name.equals("xl/sharedStrings.xml"))
-					Util.readStream(zis, name, xmlStr = new byte[len], len);
-				else if(name.equals(fileSheet))
-					Util.readStream(zis, name, xmlSheet = new byte[len], len);
+				int len = (int)ze.getSize();
+				if(len >= 0)
+				{
+					if(name.equals("xl/sharedStrings.xml"))
+						Util.readStream(zis, name, (xmlStr = new Octets(len)).array(), len);
+					else if(name.equals(fileSheet))
+						Util.readStream(zis, name, (xmlSheet = new Octets(len)).array(), len);
+				}
+				else
+				{
+					if(name.equals("xl/sharedStrings.xml"))
+						xmlStr = Util.readStream(zis);
+					else if(name.equals(fileSheet))
+						xmlSheet = Util.readStream(zis);
+				}
 			}
 		}
 		if(xmlStr == null) throw new IOException("ERROR: not found xl/sharedStrings.xml");
@@ -89,7 +100,7 @@ public final class XlsxExport
 
 		ArrayList<String> strTable = new ArrayList<>(65536);
 		XMLInputFactory xmlFactory = XMLInputFactory.newInstance();
-		XMLStreamReader xmlReader = xmlFactory.createXMLStreamReader(new ByteArrayInputStream(xmlStr));
+		XMLStreamReader xmlReader = xmlFactory.createXMLStreamReader(new ByteArrayInputStream(xmlStr.array(), 0, xmlStr.size()));
 		while(xmlReader.hasNext()) // <si><t>string</t></si>
 		{
 			if(xmlReader.next() == XMLStreamConstants.START_ELEMENT && xmlReader.getLocalName().equals("si"))
@@ -111,7 +122,7 @@ public final class XlsxExport
 		}
 
 		Map<Integer, Map<Integer, String>> res = new TreeMap<>();
-		xmlReader = xmlFactory.createXMLStreamReader(new ByteArrayInputStream(xmlSheet));
+		xmlReader = xmlFactory.createXMLStreamReader(new ByteArrayInputStream(xmlSheet.array(), 0, xmlSheet.size()));
 		while(xmlReader.hasNext()) // <c r="A1" s="1" t="s/b"><v>0</v></c>
 		{
 			if(xmlReader.next() == XMLStreamConstants.START_ELEMENT && xmlReader.getLocalName().equals("c"))
