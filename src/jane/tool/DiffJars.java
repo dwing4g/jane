@@ -49,7 +49,7 @@ public final class DiffJars
 		{
 			p = path.indexOf('/', p);
 			if(p < 0) break;
-			String subPath = path.substring(0, p + 1);
+			String subPath = path.substring(0, ++p);
 			if(!pathes.contains(subPath))
 			{
 				pathes.add(subPath);
