@@ -352,7 +352,7 @@ public final class Util
 	/**
 	 * 从输入流中读取指定长度的数据
 	 */
-	public static void readStream(InputStream is, String isName, byte[] buf, int len) throws IOException
+	public static byte[] readStream(InputStream is, String isName, byte[] buf, int len) throws IOException
 	{
 		for(int n = 0; n < len;)
 		{
@@ -361,6 +361,7 @@ public final class Util
 				throw new IOException(String.format("read interrupt(%s:%d/%d)", isName, n, len));
 			n += r;
 		}
+		return buf;
 	}
 
 	/**

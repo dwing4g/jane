@@ -82,9 +82,9 @@ public final class XlsxExport
 				if(len >= 0)
 				{
 					if(name.equals("xl/sharedStrings.xml"))
-						Util.readStream(zis, name, (xmlStr = new Octets(len)).array(), len);
+						xmlStr = Octets.wrap(Util.readStream(zis, name, new byte[len], len));
 					else if(name.equals(fileSheet))
-						Util.readStream(zis, name, (xmlSheet = new Octets(len)).array(), len);
+						xmlSheet = Octets.wrap(Util.readStream(zis, name, new byte[len], len));
 				}
 				else
 				{
