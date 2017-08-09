@@ -21,6 +21,7 @@ import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.DefaultWriteRequest;
 import org.apache.mina.core.write.WriteRequest;
 import org.apache.mina.filter.ssl.SslFilter;
+import jane.core.Util.SundaySearch;
 
 /**
  * HTTP的mina协议编解码过滤器
@@ -29,24 +30,25 @@ import org.apache.mina.filter.ssl.SslFilter;
  * 输出(编码): OctetsStream(从position到结尾的数据),或Octets,或byte[]<br>
  * 输入处理: 获取HTTP头中的fields,method,url-path,url-param,content-charset,以及cookie,支持url编码的解码<br>
  * 输出处理: 固定长度输出,chunked方式输出<br>
- * 不直接支持: mime, Connection:close/timeout, Accept-Encoding, Set-Cookie, Multi-Part, encodeUrl
+ * 不直接支持: mime, Connection:close/timeout, Accept-Encoding, Set-Cookie, Multi-Part, encodeUrl, chunked输入
  */
 public final class HttpCodec extends IoFilterAdapter
 {
-	private static final byte[]		HEAD_END_MARK	 = "\r\n\r\n".getBytes(Const.stringCharsetUTF8);
-	private static final byte[]		CONT_LEN_MARK	 = "\r\nContent-Length: ".getBytes(Const.stringCharsetUTF8);
-	private static final byte[]		CONT_TYPE_MARK	 = "\r\nContent-Type: ".getBytes(Const.stringCharsetUTF8);
-	private static final byte[]		COOKIE_MARK		 = "\r\nCookie: ".getBytes(Const.stringCharsetUTF8);
-	private static final byte[]		CHUNK_OVER_MARK	 = "\r\n".getBytes(Const.stringCharsetUTF8);
-	private static final byte[]		CHUNK_END_MARK	 = "0\r\n\r\n".getBytes(Const.stringCharsetUTF8);
-	private static final String		DEF_CONT_CHARSET = "utf-8";
-	private static final Pattern	PATTERN_COOKIE	 = Pattern.compile("(\\w+)=(.*?)(; |$)");
-	private static final Pattern	PATTERN_CHARSET	 = Pattern.compile("charset=([\\w-]+)");
-	private static final DateFormat	_sdf			 = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
-	private static String			_dateStr;
-	private static long				_lastSec;
-	private OctetsStream			_buf			 = new OctetsStream(1024);										  // 用于解码器的数据缓存
-	private long					_bodySize;																		  // 当前请求所需的内容大小
+	private static final SundaySearch HEAD_END_MARK	   = new SundaySearch("\r\n\r\n");
+	private static final SundaySearch CONT_LEN_MARK	   = new SundaySearch("\r\nContent-Length: ");
+	private static final SundaySearch CONT_TYPE_MARK   = new SundaySearch("\r\nContent-Type: ");
+	private static final SundaySearch COOKIE_MARK	   = new SundaySearch("\r\nCookie: ");
+	private static final byte[]		  CHUNK_OVER_MARK  = "\r\n".getBytes(Const.stringCharsetUTF8);
+	private static final byte[]		  CHUNK_END_MARK   = "0\r\n\r\n".getBytes(Const.stringCharsetUTF8);
+	private static final String		  DEF_CONT_CHARSET = "utf-8";
+	private static final Pattern	  PATTERN_COOKIE   = Pattern.compile("(\\w+)=(.*?)(; |$)");
+	private static final Pattern	  PATTERN_CHARSET  = Pattern.compile("charset=([\\w-]+)");
+	private static final DateFormat	  _sdf			   = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
+	private static String			  _dateStr;
+	private static long				  _lastSec;
+	private OctetsStream			  _buf			   = new OctetsStream(1024);										// 用于解码器的数据缓存
+	private long					  _bodySize;																		// 当前请求所需的内容大小
+	private final long				  _maxHttpBodySize;
 
 	/**
 	 * 不带栈信息的解码错误异常
@@ -73,7 +75,7 @@ public final class HttpCodec extends IoFilterAdapter
 		_sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
 	}
 
-	private static String getDate()
+	public static String getDate()
 	{
 		long sec = NetManager.getTimeSec();
 		if(sec != _lastSec)
@@ -241,16 +243,36 @@ public final class HttpCodec extends IoFilterAdapter
 		return getParams(os, os.position(), os.remain(), params);
 	}
 
+	/**
+	 * 获取HTTP请求头中long值的field
+	 * <p>
+	 * 注意: 重复的field-key只有第一个生效
+	 * @param key 格式示例: "\r\nReferer: ".getBytes()
+	 */
 	public static long getHeadLong(OctetsStream head, byte[] key)
 	{
 		int p = head.find(0, head.position(), key);
-		if(p < 0) return -1;
-		p += key.length;
-		int e = head.find(p, (byte)'\r');
+		return p >= 0 ? getHeadLongValue(head, p + key.length) : -1;
+	}
+
+	public static long getHeadLong(OctetsStream head, SundaySearch ss)
+	{
+		int p = ss.find(head.array(), 0, head.position());
+		return p >= 0 ? getHeadLongValue(head, p + ss.getPatLen()) : -1;
+	}
+
+	public static long getHeadLong(OctetsStream head, String key)
+	{
+		return getHeadLong(head, ("\r\n" + key + ": ").getBytes(Const.stringCharsetUTF8));
+	}
+
+	private static long getHeadLongValue(OctetsStream head, int pos)
+	{
+		int e = head.find(pos, (byte)'\r');
 		if(e < 0) return -1;
 		long r = 0;
-		for(byte[] buf = head.array(); p < e; ++p)
-			r = r * 10 + (buf[p] - 0x30);
+		for(byte[] buf = head.array(); pos < e; ++pos)
+			r = r * 10 + (buf[pos] - 0x30);
 		return r;
 	}
 
@@ -263,16 +285,24 @@ public final class HttpCodec extends IoFilterAdapter
 	public static String getHeadField(OctetsStream head, byte[] key)
 	{
 		int p = head.find(0, head.position(), key);
-		if(p < 0) return "";
-		p += key.length;
-		int e = head.find(p + key.length, (byte)'\r');
-		if(e < 0) return "";
-		return decodeUrl(head.array(), p, e - p);
+		return p >= 0 ? getHeadFieldValue(head, p + key.length) : "";
+	}
+
+	public static String getHeadField(OctetsStream head, SundaySearch ss)
+	{
+		int p = ss.find(head.array(), 0, head.position());
+		return p >= 0 ? getHeadFieldValue(head, p + ss.getPatLen()) : "";
 	}
 
 	public static String getHeadField(OctetsStream head, String key)
 	{
 		return getHeadField(head, ("\r\n" + key + ": ").getBytes(Const.stringCharsetUTF8));
+	}
+
+	private static String getHeadFieldValue(OctetsStream head, int pos)
+	{
+		int e = head.find(pos, (byte)'\r');
+		return e >= pos ? decodeUrl(head.array(), pos, e - pos) : "";
 	}
 
 	public static String getHeadCharset(OctetsStream head)
@@ -328,7 +358,7 @@ public final class HttpCodec extends IoFilterAdapter
 		byte[] out = new byte[n];
 		for(int i = 0; i < n; ++i)
 			out[i] = (byte)sb.charAt(i);
-		return NetManager.write(session, out);
+		return send(session, out);
 	}
 
 	public static boolean send(IoSession session, byte[] data)
@@ -350,51 +380,52 @@ public final class HttpCodec extends IoFilterAdapter
 	public static boolean sendChunk(IoSession session, Octets chunk)
 	{
 		int n = chunk.remain();
-		if(n <= 0) return true;
-		ByteBuffer buf = ByteBuffer.wrap(chunk.array(), chunk.position(), n);
-		return NetManager.write(session, buf);
+		return n <= 0 || NetManager.write(session, ByteBuffer.wrap(chunk.array(), chunk.position(), n));
 	}
 
 	public static boolean sendChunk(IoSession session, String chunk)
 	{
-		return sendChunk(session, Octets.wrap(chunk.getBytes(Const.stringCharsetUTF8)));
+		return sendChunk(session, chunk.getBytes(Const.stringCharsetUTF8));
 	}
 
 	public static boolean sendChunkEnd(IoSession session)
 	{
-		return NetManager.write(session, CHUNK_END_MARK);
+		return send(session, CHUNK_END_MARK);
+	}
+
+	public HttpCodec()
+	{
+		this(Const.maxHttpBodySize);
+	}
+
+	public HttpCodec(long maxHttpBodySize)
+	{
+		_maxHttpBodySize = maxHttpBodySize;
 	}
 
 	@Override
 	public void filterWrite(NextFilter next, IoSession session, WriteRequest writeRequest)
 	{
 		Object message = writeRequest.getMessage();
-		if(message instanceof byte[])
+		if(message instanceof byte[]) // for raw data
 		{
 			byte[] bytes = (byte[])message;
 			if(bytes.length > 0)
 				next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(bytes), writeRequest.getFuture()));
 		}
-		else if(message instanceof ByteBuffer)
+		else if(message instanceof ByteBuffer) // for chunked data
 		{
 			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(String.format("%x\r\n",
-					((ByteBuffer)message).remaining()).getBytes(Const.stringCharsetUTF8)), null));
-			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap((ByteBuffer)message), null));
+					((ByteBuffer)message).remaining()).getBytes(Const.stringCharsetUTF8))));
+			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap((ByteBuffer)message)));
 			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(CHUNK_OVER_MARK), writeRequest.getFuture()));
 		}
-		else if(message instanceof OctetsStream)
+		else if(message instanceof Octets) // for raw data
 		{
 			OctetsStream os = (OctetsStream)message;
 			int n = os.remain();
 			if(n > 0)
 				next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(os.array(), os.position(), n), writeRequest.getFuture()));
-		}
-		else if(message instanceof Octets)
-		{
-			Octets oct = (Octets)message;
-			int n = oct.size();
-			if(n > 0)
-				next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(oct.array(), 0, n), writeRequest.getFuture()));
 		}
 		else
 			next.filterWrite(session, writeRequest);
@@ -421,7 +452,7 @@ public final class HttpCodec extends IoFilterAdapter
 					}
 					for(;;)
 					{
-						p = _buf.find(p - (HEAD_END_MARK.length - 1), HEAD_END_MARK);
+						p = HEAD_END_MARK.find(_buf, p - (HEAD_END_MARK.getPatLen() - 1));
 						if(p < 0)
 						{
 							if(_buf.size() > Const.maxHttpHeadSize)
@@ -429,7 +460,7 @@ public final class HttpCodec extends IoFilterAdapter
 							if(!in.hasRemaining()) return;
 							continue begin_;
 						}
-						p += HEAD_END_MARK.length;
+						p += HEAD_END_MARK.getPatLen();
 						if(p < 18) // 最小的可能是"GET / HTTP/1.1\r\n\r\n"
 							throw new DecodeException("http head size too short: headsize=" + p);
 						_buf.setPosition(p);
@@ -441,8 +472,8 @@ public final class HttpCodec extends IoFilterAdapter
 						_buf = os;
 						p = 0;
 					}
-					if(_bodySize > Const.maxHttpBodySize)
-						throw new DecodeException("http body size overflow: bodysize=" + _bodySize + ",maxsize=" + Const.maxHttpBodySize);
+					if(_bodySize > _maxHttpBodySize)
+						throw new DecodeException("http body size overflow: bodysize=" + _bodySize + ",maxsize=" + _maxHttpBodySize);
 				}
 				int r = in.remaining();
 				int s = (int)_bodySize - _buf.remain();

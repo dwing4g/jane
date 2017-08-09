@@ -472,7 +472,7 @@ public class NetManager implements IoHandler
 	{
 		if(session.isClosing() || obj == null) return false;
 		IoFilterChain ifc = session.getFilterChain();
-		DefaultWriteRequest dwr = new DefaultWriteRequest(obj, null);
+		DefaultWriteRequest dwr = new DefaultWriteRequest(obj);
 		synchronized(session)
 		{
 			ifc.fireFilterWrite(dwr);

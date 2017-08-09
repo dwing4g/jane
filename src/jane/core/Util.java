@@ -435,6 +435,16 @@ public final class Util
 		private final int	 _patLen;
 		private final int[]	 _skip = new int[256];
 
+		public SundaySearch(String pat)
+		{
+			this(pat.getBytes(Const.stringCharsetUTF8));
+		}
+
+		public SundaySearch(byte[] pat)
+		{
+			this(pat, pat.length);
+		}
+
 		public SundaySearch(byte[] pat, int patLen)
 		{
 			_patLen = (patLen < 0 ? 0 : (patLen > pat.length ? pat.length : patLen));
@@ -447,6 +457,11 @@ public final class Util
 		public SundaySearch(Octets pat)
 		{
 			this(pat.array(), pat.size());
+		}
+
+		public int getPatLen()
+		{
+			return _patLen;
 		}
 
 		public int find(byte[] src, int srcPos, int srcLen)
