@@ -211,7 +211,7 @@ public final class SslHandler {
 		try {
 			sslEngine.closeInbound();
 		} catch (SSLException e) {
-			LOGGER.error("Unexpected exception from SSLEngine.closeInbound():", e);
+			LOGGER.debug("Unexpected exception from SSLEngine.closeInbound():", e);
 		}
 
 		if (outNetBuffer != null) {
