@@ -649,7 +649,6 @@ public final class TestType extends Bean<TestType>
 		_h_ = _h_ * 31 + 1 + this.v17.hashCode();
 		_h_ = _h_ * 31 + 1 + this.v18.hashCode();
 		_h_ = _h_ * 31 + 1 + this.v19.hashCode();
-		_h_ = _h_ * 31 + 1 + 0;
 		return _h_;
 	}
 
@@ -678,7 +677,6 @@ public final class TestType extends Bean<TestType>
 		if(!this.v17.equals(_b_.v17)) return false;
 		if(!this.v18.equals(_b_.v18)) return false;
 		if(!this.v19.equals(_b_.v19)) return false;
-		if(!this.v20.equals(_b_.v20)) return false;
 		return true;
 	}
 
@@ -707,7 +705,6 @@ public final class TestType extends Bean<TestType>
 		_c_ = Util.compareTo(this.v17, _b_.v17); if(_c_ != 0) return _c_;
 		_c_ = Util.compareTo(this.v18, _b_.v18); if(_c_ != 0) return _c_;
 		_c_ = this.v19.compareTo(_b_.v19); if(_c_ != 0) return _c_;
-		_c_ = 0; if(_c_ != 0) return _c_;
 		return 0;
 	}
 

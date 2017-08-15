@@ -957,6 +957,7 @@ typedef.ref = merge(typedef.bean,
 	unmarshal = "",
 	unmarshal_kv = "",
 	hashcode = "0",
+	equals = "",
 	compareto = "0",
 	tojson = "",
 	tolua = "",
@@ -1177,6 +1178,7 @@ function bean(bean)
 
 	bean.param_warning = (#vartypes > 1 and "" or "/** @param _b_ unused */\n\t")
 	code = code_conv(code, "bean", bean):
+		gsub("\r", ""):
 		gsub(#vartypes > 1 and "#[<>]#" or "#<#(.-)#>#", ""):
 		gsub("\n\n\tstatic\n\t{\n\t\ttry\n\t\t{\n\t\t\tClass<.-> _c_ = .-%.class;\n\t\t}\n\t\tcatch%(Exception e%)\n\t\t{\n\t\t\tthrow new Error%(e%);\n\t\t}\n\t}", ""):
 		gsub("int h = (%(int%)serialVersionUID;)\n\t\treturn h;", "return %1"):
@@ -1184,7 +1186,9 @@ function bean(bean)
 		gsub("\t+/%*%* @param [%w_]+  %*/\n", ""):
 		gsub("\t+/%*%*  %*/\n", ""):
 		gsub("\n\t{\n\n\t\t", "\n\t{\n\t\t"):
-		gsub("\r", "")
+		gsub("\t\t_h_ = _h_ %* 31 %+ 1 %+ 0;\n", ""):
+		gsub("\t\tif%(%) return false;\n", ""):
+		gsub("\t\t_c_ = 0; if%(_c_ != 0%) return _c_;\n", "")
 	if jdk7 then
 		code = code:gsub("( new %w+)<.->", "%1<>")
 	end
