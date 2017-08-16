@@ -403,6 +403,7 @@ typedef.byte =
 	type = "byte", type_i = "byte", type_o = "Byte",
 	subtypeid = 0,
 	final = "",
+	new = "",
 	field = "\tprivate static final Field FIELD_#(var.name);\n",
 	fieldget = "\t\t\tFIELD_#(var.name) = _c_.getDeclaredField(\"#(var.name)\"); FIELD_#(var.name).setAccessible(true);\n",
 	safecache = "",
@@ -1255,10 +1256,13 @@ end
 local key_conv = { int = "Integer", integer = "Integer", Integer = "Integer", long = "Long", Long = "Long", float = "Float", Float = "Float", double = "Double", Double = "Double",
 					string = "String", String = "String", binary = "Octets", bytes = "Octets", data = "Octets", octets = "Octets", Octets = "Octets" }
 local need_save_dbt = {}
+local table_id_used = {}
 function dbt(table)
 	if not handlers.dbt or handlers.dbt ~= true and table.handler ~= handlers.dbt then return end
 	if not table.id then table.id = 0 end
-	if table.id == 0 then table.memory = true end
+	if table.id == 0 then table.memory = true
+	elseif table_id_used[table.id] then error("ERROR: duplicated dbt.id: " .. table.id) end
+	table_id_used[table.id] = true
 	local key_type = key_conv[table.key]
 	if key_type then
 		if key_type == "Octets" then tables.imports["jane.core.Octets"] = true end

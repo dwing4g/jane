@@ -70,18 +70,18 @@ namespace Jane.Bean
 			v5 = 0;
 			v6 = 0;
 			v7 = 0;
-			v8.Clear();
+			if(v8 != null) v8.Clear();
 			v9 = string.Empty;
-			v10.Clear();
-			v11.Clear();
-			v12.Clear();
-			v13.Clear();
-			v14.Clear();
-			v15.Clear();
-			v16.Clear();
-			v17.Clear();
-			v18.Clear();
-			v19.Reset();
+			if(v10 != null) v10.Clear();
+			if(v11 != null) v11.Clear();
+			if(v12 != null) v12.Clear();
+			if(v13 != null) v13.Clear();
+			if(v14 != null) v14.Clear();
+			if(v15 != null) v15.Clear();
+			if(v16 != null) v16.Clear();
+			if(v17 != null) v17.Clear();
+			if(v18 != null) v18.Clear();
+			if(v19 != null) v19.Reset();
 		}
 
 		public void Assign(TestType b)
@@ -93,18 +93,18 @@ namespace Jane.Bean
 			this.v5 = b.v5;
 			this.v6 = b.v6;
 			this.v7 = b.v7;
-			if(b.v8 != null) this.v8.Replace(b.v8); else this.v8.Clear();
+			if(this.v8 == null) { if(b.v8 != null) this.v8 = new Octets(b.v8); } else if(b.v8 != null) this.v8.Replace(b.v8); else this.v8.Clear();
 			this.v9 = b.v9 ?? string.Empty;
-			this.v10.Clear(); if(b.v10 != null) this.v10.AddRange(b.v10);
-			this.v11.Clear(); if(b.v11 != null) Util.AddAll(this.v11, b.v11);
-			this.v12.Clear(); if(b.v12 != null) Util.AddAll(this.v12, b.v12);
-			this.v13.Clear(); if(b.v13 != null) this.v13.UnionWith(v13);
-			this.v14.Clear(); if(b.v14 != null) this.v14.UnionWith(v14);
-			this.v15.Clear(); if(b.v15 != null) this.v15.UnionWith(v15);
-			this.v16.Clear(); if(b.v16 != null) Util.AddAll(this.v16, b.v16);
-			this.v17.Clear(); if(b.v17 != null) Util.AddAll(this.v17, b.v17);
-			this.v18.Clear(); if(b.v18 != null) Util.AddAll(this.v18, b.v18);
-			this.v19.Assign(b.v19);
+			if(this.v10 == null) this.v10 = new List<bool>(10); else this.v10.Clear(); if(b.v10 != null) this.v10.AddRange(b.v10);
+			if(this.v11 == null) this.v11 = new LinkedList<sbyte>(); else this.v11.Clear(); if(b.v11 != null) Util.AddAll(this.v11, b.v11);
+			if(this.v12 == null) this.v12 = new LinkedList<int>(); else this.v12.Clear(); if(b.v12 != null) Util.AddAll(this.v12, b.v12);
+			if(this.v13 == null) this.v13 = new HashSet<long>(); else this.v13.Clear(); if(b.v13 != null) this.v13.UnionWith(v13);
+			if(this.v14 == null) this.v14 = new HashSet<float>(); else this.v14.Clear(); if(b.v14 != null) this.v14.UnionWith(v14);
+			if(this.v15 == null) this.v15 = new HashSet<double>(); else this.v15.Clear(); if(b.v15 != null) this.v15.UnionWith(v15);
+			if(this.v16 == null) this.v16 = new Dictionary<long, string>(0); else this.v16.Clear(); if(b.v16 != null) Util.AddAll(this.v16, b.v16);
+			if(this.v17 == null) this.v17 = new SortedDictionary<TestBean, bool>(); else this.v17.Clear(); if(b.v17 != null) Util.AddAll(this.v17, b.v17);
+			if(this.v18 == null) this.v18 = new Dictionary<Octets, TestBean>(); else this.v18.Clear(); if(b.v18 != null) Util.AddAll(this.v18, b.v18);
+			if(this.v19 == null) this.v19 = TestBean.Create(); else this.v19.Reset(); if(b.v19 != null) this.v19.Assign(b.v19);
 		}
 /*
 		public bool GetV1()
@@ -351,8 +351,8 @@ namespace Jane.Bean
 			if(this.v5 != 0) s.Marshal1((byte)0x14).Marshal(this.v5);
 			if(this.v6 != 0) s.Marshal2(0x1b08).Marshal(this.v6);
 			if(this.v7 != 0) s.Marshal2(0x1f09).Marshal(this.v7);
-			if(!this.v8.Empty()) s.Marshal1((byte)0x21).Marshal(this.v8);
-			if(this.v9.Length > 0) s.Marshal1((byte)0x25).Marshal(this.v9);
+			if(this.v8 != null && !this.v8.Empty()) s.Marshal1((byte)0x21).Marshal(this.v8);
+			if(!string.IsNullOrEmpty(this.v9)) s.Marshal1((byte)0x25).Marshal(this.v9);
 			if(this.v10 != null && this.v10.Count > 0)
 			{
 				s.Marshal2(0x2b00).MarshalUInt(this.v10.Count);
@@ -407,6 +407,7 @@ namespace Jane.Bean
 				foreach(KeyValuePair<Octets, TestBean> p in Util.Enum(this.v18))
 					s.Marshal(p.Key).Marshal(p.Value);
 			}
+			if(this.v19 != null)
 			{
 				int n = s.Size();
 				this.v19.Marshal(s.Marshal1((byte)0x4e));
@@ -689,18 +690,18 @@ namespace Jane.Bean
 			s.Append("\"v5\":").Append(this.v5).Append(',');
 			s.Append("\"v6\":").Append(this.v6).Append(',');
 			s.Append("\"v7\":").Append(this.v7).Append(',');
-			this.v8.DumpJStr(s.Append("\"v8\":")).Append(',');
-			Util.ToJStr(s.Append("\"v9\":"), this.v9).Append(',');
-			Util.AppendJson(s.Append("\"v10\":"), this.v10);
-			Util.AppendJson(s.Append("\"v11\":"), this.v11);
-			Util.AppendJson(s.Append("\"v12\":"), this.v12);
-			Util.AppendJson(s.Append("\"v13\":"), this.v13);
-			Util.AppendJson(s.Append("\"v14\":"), this.v14);
-			Util.AppendJson(s.Append("\"v15\":"), this.v15);
-			Util.AppendJson(s.Append("\"v16\":"), this.v16);
-			Util.AppendJson(s.Append("\"v17\":"), this.v17);
-			Util.AppendJson(s.Append("\"v18\":"), this.v18);
-			this.v19.ToJson(s.Append("\"v19\":")).Append(',');
+			if(this.v8 != null) this.v8.DumpJStr(s.Append("\"v8\":")).Append(',');
+			if(this.v9 != null) Util.ToJStr(s.Append("\"v9\":"), this.v9).Append(',');
+			if(this.v10 != null) Util.AppendJson(s.Append("\"v10\":"), this.v10);
+			if(this.v11 != null) Util.AppendJson(s.Append("\"v11\":"), this.v11);
+			if(this.v12 != null) Util.AppendJson(s.Append("\"v12\":"), this.v12);
+			if(this.v13 != null) Util.AppendJson(s.Append("\"v13\":"), this.v13);
+			if(this.v14 != null) Util.AppendJson(s.Append("\"v14\":"), this.v14);
+			if(this.v15 != null) Util.AppendJson(s.Append("\"v15\":"), this.v15);
+			if(this.v16 != null) Util.AppendJson(s.Append("\"v16\":"), this.v16);
+			if(this.v17 != null) Util.AppendJson(s.Append("\"v17\":"), this.v17);
+			if(this.v18 != null) Util.AppendJson(s.Append("\"v18\":"), this.v18);
+			if(this.v19 != null) this.v19.ToJson(s.Append("\"v19\":")).Append(',');
 			--s.Length;
 			return s.Append('}');
 		}
@@ -721,18 +722,18 @@ namespace Jane.Bean
 			s.Append("v5=").Append(this.v5).Append(',');
 			s.Append("v6=").Append(this.v6).Append(',');
 			s.Append("v7=").Append(this.v7).Append(',');
-			this.v8.DumpJStr(s.Append("v8=")).Append(',');
-			Util.ToJStr(s.Append("v9="), this.v9).Append(',');
-			Util.AppendLua(s.Append("v10="), this.v10);
-			Util.AppendLua(s.Append("v11="), this.v11);
-			Util.AppendLua(s.Append("v12="), this.v12);
-			Util.AppendLua(s.Append("v13="), this.v13);
-			Util.AppendLua(s.Append("v14="), this.v14);
-			Util.AppendLua(s.Append("v15="), this.v15);
-			Util.AppendLua(s.Append("v16="), this.v16);
-			Util.AppendLua(s.Append("v17="), this.v17);
-			Util.AppendLua(s.Append("v18="), this.v18);
-			this.v19.ToLua(s.Append("v19=")).Append(',');
+			if(this.v8 != null) this.v8.DumpJStr(s.Append("v8=")).Append(',');
+			if(this.v9 != null) Util.ToJStr(s.Append("v9="), this.v9).Append(',');
+			if(this.v10 != null) Util.AppendLua(s.Append("v10="), this.v10);
+			if(this.v11 != null) Util.AppendLua(s.Append("v11="), this.v11);
+			if(this.v12 != null) Util.AppendLua(s.Append("v12="), this.v12);
+			if(this.v13 != null) Util.AppendLua(s.Append("v13="), this.v13);
+			if(this.v14 != null) Util.AppendLua(s.Append("v14="), this.v14);
+			if(this.v15 != null) Util.AppendLua(s.Append("v15="), this.v15);
+			if(this.v16 != null) Util.AppendLua(s.Append("v16="), this.v16);
+			if(this.v17 != null) Util.AppendLua(s.Append("v17="), this.v17);
+			if(this.v18 != null) Util.AppendLua(s.Append("v18="), this.v18);
+			if(this.v19 != null) this.v19.ToLua(s.Append("v19=")).Append(',');
 			--s.Length;
 			return s.Append('}');
 		}
