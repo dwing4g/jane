@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -437,7 +438,7 @@ public final class Util
 
 		public SundaySearch(String pat)
 		{
-			this(pat.getBytes(Const.stringCharsetUTF8));
+			this(pat.getBytes(StandardCharsets.UTF_8));
 		}
 
 		public SundaySearch(byte[] pat)

@@ -3,6 +3,7 @@ package jane.core;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -38,8 +39,8 @@ public final class HttpCodec extends IoFilterAdapter
 	private static final SundaySearch CONT_LEN_MARK	   = new SundaySearch("\r\nContent-Length: ");
 	private static final SundaySearch CONT_TYPE_MARK   = new SundaySearch("\r\nContent-Type: ");
 	private static final SundaySearch COOKIE_MARK	   = new SundaySearch("\r\nCookie: ");
-	private static final byte[]		  CHUNK_OVER_MARK  = "\r\n".getBytes(Const.stringCharsetUTF8);
-	private static final byte[]		  CHUNK_END_MARK   = "0\r\n\r\n".getBytes(Const.stringCharsetUTF8);
+	private static final byte[]		  CHUNK_OVER_MARK  = "\r\n".getBytes(StandardCharsets.UTF_8);
+	private static final byte[]		  CHUNK_END_MARK   = "0\r\n\r\n".getBytes(StandardCharsets.UTF_8);
 	private static final String		  DEF_CONT_CHARSET = "utf-8";
 	private static final Pattern	  PATTERN_COOKIE   = Pattern.compile("(\\w+)=(.*?)(; |$)");
 	private static final Pattern	  PATTERN_CHARSET  = Pattern.compile("charset=([\\w-]+)");
@@ -148,19 +149,19 @@ public final class HttpCodec extends IoFilterAdapter
 					break;
 			}
 		}
-		return new String(dst, 0, dstPos, Const.stringCharsetUTF8);
+		return new String(dst, 0, dstPos, StandardCharsets.UTF_8);
 	}
 
 	public static String getHeadLine(OctetsStream head)
 	{
 		int p = head.find(0, head.position(), (byte)'\r');
-		return p < 0 ? "" : new String(head.array(), 0, p, Const.stringCharsetUTF8);
+		return p < 0 ? "" : new String(head.array(), 0, p, StandardCharsets.UTF_8);
 	}
 
 	public static String getHeadVerb(OctetsStream head)
 	{
 		int p = head.find(0, head.position(), (byte)' ');
-		return p < 0 ? "" : new String(head.array(), 0, p, Const.stringCharsetUTF8);
+		return p < 0 ? "" : new String(head.array(), 0, p, StandardCharsets.UTF_8);
 	}
 
 	// GET /path/name.html?k=v&a=b HTTP/1.1
@@ -263,7 +264,7 @@ public final class HttpCodec extends IoFilterAdapter
 
 	public static long getHeadLong(OctetsStream head, String key)
 	{
-		return getHeadLong(head, ("\r\n" + key + ": ").getBytes(Const.stringCharsetUTF8));
+		return getHeadLong(head, ("\r\n" + key + ": ").getBytes(StandardCharsets.UTF_8));
 	}
 
 	private static long getHeadLongValue(OctetsStream head, int pos)
@@ -296,7 +297,7 @@ public final class HttpCodec extends IoFilterAdapter
 
 	public static String getHeadField(OctetsStream head, String key)
 	{
-		return getHeadField(head, ("\r\n" + key + ": ").getBytes(Const.stringCharsetUTF8));
+		return getHeadField(head, ("\r\n" + key + ": ").getBytes(StandardCharsets.UTF_8));
 	}
 
 	private static String getHeadFieldValue(OctetsStream head, int pos)
@@ -385,7 +386,7 @@ public final class HttpCodec extends IoFilterAdapter
 
 	public static boolean sendChunk(IoSession session, String chunk)
 	{
-		return sendChunk(session, chunk.getBytes(Const.stringCharsetUTF8));
+		return sendChunk(session, chunk.getBytes(StandardCharsets.UTF_8));
 	}
 
 	public static boolean sendChunkEnd(IoSession session)
@@ -416,7 +417,7 @@ public final class HttpCodec extends IoFilterAdapter
 		else if(message instanceof ByteBuffer) // for chunked data
 		{
 			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(String.format("%x\r\n",
-					((ByteBuffer)message).remaining()).getBytes(Const.stringCharsetUTF8))));
+					((ByteBuffer)message).remaining()).getBytes(StandardCharsets.UTF_8))));
 			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap((ByteBuffer)message)));
 			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(CHUNK_OVER_MARK), writeRequest.getFuture()));
 		}

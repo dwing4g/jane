@@ -1,12 +1,12 @@
 package jane.tool;
 
+import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Map.Entry;
 import java.util.concurrent.ThreadPoolExecutor;
 import org.apache.mina.core.session.IoSession;
-import jane.core.Const;
 import jane.core.DBManager;
 import jane.core.DBSimpleManager;
 import jane.core.HttpCodec;
@@ -171,7 +171,7 @@ public class StatusServer extends NetManager
 			sb.append("<p>\n");
 			genLevelDBInfo(sb);
 			sb.append("</body></html>\n");
-			byte[] data = sb.toString().getBytes(Const.stringCharsetUTF8);
+			byte[] data = sb.toString().getBytes(StandardCharsets.UTF_8);
 
 			HttpCodec.sendHead(session, "200 OK", data.length, param);
 			HttpCodec.send(session, data);

@@ -2,6 +2,7 @@ package jane.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.AbstractMap.SimpleImmutableEntry;
@@ -530,7 +531,7 @@ public final class DBSimpleManager
 				}
 				byte[] keyData = _os.getBytes(_os.position(), Integer.MAX_VALUE);
 				_os.setPosition(0);
-				return handler.onWalk(new String(keyData, Const.stringCharsetUTF8), toBean(_os.wraps(value), beanStub));
+				return handler.onWalk(new String(keyData, StandardCharsets.UTF_8), toBean(_os.wraps(value), beanStub));
 			}
 		}) || finished.get();
 	}

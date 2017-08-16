@@ -3,6 +3,7 @@ package jane.core;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -440,7 +441,7 @@ public final class StorageLevelDB implements Storage
 		@Override
 		protected boolean onWalk(WalkHandler<String> handler, OctetsStream k)
 		{
-			return Helper.onWalkSafe(handler, new String(k.array(), k.position(), k.remain(), Const.stringCharsetUTF8));
+			return Helper.onWalkSafe(handler, new String(k.array(), k.position(), k.remain(), StandardCharsets.UTF_8));
 		}
 	}
 

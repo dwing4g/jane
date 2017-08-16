@@ -12,6 +12,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -21,7 +22,6 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.NodeList;
-import jane.core.Const;
 
 public final class TestUtil
 {
@@ -160,7 +160,7 @@ public final class TestUtil
 
 		HttpURLConnection conn = null;
 		InputStream is = null;
-		byte[] body = (post != null ? post.getBytes(Const.stringCharsetUTF8) : null);
+		byte[] body = (post != null ? post.getBytes(StandardCharsets.UTF_8) : null);
 		try
 		{
 			conn = (HttpURLConnection)new URL(url).openConnection();
