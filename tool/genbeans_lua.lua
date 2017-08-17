@@ -144,7 +144,7 @@ local function markbean(beanname)
 	end
 end
 for hdlname in pairs(handlers) do
-	for _, beanname in ipairs(hdl_names[hdlname]) do
+	for _, beanname in ipairs(hdl_names[hdlname] or {}) do
 		markbean(beanname)
 	end
 end
