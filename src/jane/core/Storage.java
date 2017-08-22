@@ -12,7 +12,7 @@ import java.io.IOException;
 public interface Storage extends Closeable
 {
 	/**
-	 * 遍历数据库表的用户接口
+	 * 遍历数据库表的用户接口(仅遍历key)
 	 * <p>
 	 * 适用于key是非id类型的表
 	 */
@@ -29,7 +29,24 @@ public interface Storage extends Closeable
 	}
 
 	/**
-	 * 遍历数据库表的用户接口
+	 * 遍历数据库表的用户接口(遍历key和value)
+	 * <p>
+	 * 适用于key是非id类型的表
+	 */
+	interface WalkValueHandler<K, V extends Bean<V>>
+	{
+		/**
+		 * 每次遍历一个记录都会调用此接口
+		 * <p>
+		 * @param k 记录的key
+		 * @param v 记录的value. 只读
+		 * @return 返回true表示继续遍历, 返回false表示中断遍历
+		 */
+		boolean onWalk(K k, V v) throws Exception;
+	}
+
+	/**
+	 * 遍历数据库表的用户接口(仅遍历key)
 	 * <p>
 	 * 适用于key是id类型的表
 	 */
@@ -43,6 +60,23 @@ public interface Storage extends Closeable
 		 * @return 返回true表示继续遍历, 返回false表示中断遍历
 		 */
 		boolean onWalk(long k) throws Exception;
+	}
+
+	/**
+	 * 遍历数据库表的用户接口(遍历key和value)
+	 * <p>
+	 * 适用于key是id类型的表
+	 */
+	interface WalkValueHandlerLong<V extends Bean<V>>
+	{
+		/**
+		 * 每次遍历一个记录都会调用此接口
+		 * <p>
+		 * @param k 记录的key
+		 * @param v 记录的value. 只读
+		 * @return 返回true表示继续遍历, 返回false表示中断遍历
+		 */
+		boolean onWalk(long k, V b) throws Exception;
 	}
 
 	public static final class Helper
@@ -64,11 +98,37 @@ public interface Storage extends Closeable
 			}
 		}
 
+		public static <K, V extends Bean<V>> boolean onWalkSafe(WalkValueHandler<K, V> handler, K k, V v)
+		{
+			try
+			{
+				return handler.onWalk(k, v);
+			}
+			catch(Exception e)
+			{
+				Log.error("walk exception:", e);
+				return false;
+			}
+		}
+
 		public static boolean onWalkSafe(WalkHandlerLong handler, long k)
 		{
 			try
 			{
 				return handler.onWalk(k);
+			}
+			catch(Exception e)
+			{
+				Log.error("walk exception:", e);
+				return false;
+			}
+		}
+
+		public static <V extends Bean<V>> boolean onWalkSafe(WalkValueHandlerLong<V> handler, long k, V v)
+		{
+			try
+			{
+				return handler.onWalk(k, v);
 			}
 			catch(Exception e)
 			{
@@ -111,7 +171,7 @@ public interface Storage extends Closeable
 		void remove(K k);
 
 		/**
-		 * 按记录key的顺序遍历此表的所有记录
+		 * 按记录key的顺序遍历此表的所有key
 		 * <p>
 		 * @param handler 遍历过程中返回false可中断遍历
 		 * @param from 需要遍历的最小key. null表示最小值
@@ -121,6 +181,19 @@ public interface Storage extends Closeable
 		 * @return 返回true表示已完全遍历, 返回false表示被用户中断
 		 */
 		boolean walk(WalkHandler<K> handler, K from, K to, boolean inclusive, boolean reverse);
+
+		/**
+		 * 按记录key的顺序遍历此表的所有key和value
+		 * <p>
+		 * @param handler 遍历过程中返回false可中断遍历
+		 * @param beanStub value的bean类型的stub对象
+		 * @param from 需要遍历的最小key. null表示最小值
+		 * @param to 需要遍历的最大key. null表示最大值
+		 * @param inclusive 遍历是否包含from和to的key
+		 * @param reverse 是否按反序遍历
+		 * @return 返回true表示已完全遍历, 返回false表示被用户中断
+		 */
+		boolean walk(WalkValueHandler<K, V> handler, V beanStub, K from, K to, boolean inclusive, boolean reverse);
 	}
 
 	interface TableLong<V extends Bean<V>>
@@ -170,7 +243,7 @@ public interface Storage extends Closeable
 		void setIdCounter(long v);
 
 		/**
-		 * 按记录key的顺序遍历此表的所有记录
+		 * 按记录key的顺序遍历此表的所有key
 		 * <p>
 		 * @param handler 遍历过程中返回false可中断遍历
 		 * @param from 需要遍历的最小key
@@ -180,6 +253,19 @@ public interface Storage extends Closeable
 		 * @return 返回true表示已完全遍历, 返回false表示被用户中断
 		 */
 		boolean walk(WalkHandlerLong handler, long from, long to, boolean inclusive, boolean reverse);
+
+		/**
+		 * 按记录key的顺序遍历此表的所有key和value
+		 * <p>
+		 * @param handler 遍历过程中返回false可中断遍历
+		 * @param beanStub value的bean类型的stub对象
+		 * @param from 需要遍历的最小key
+		 * @param to 需要遍历的最大key
+		 * @param inclusive 遍历是否包含from和to的key
+		 * @param reverse 是否按反序遍历
+		 * @return 返回true表示已完全遍历, 返回false表示被用户中断
+		 */
+		boolean walk(WalkValueHandlerLong<V> handler, V beanStub, long from, long to, boolean inclusive, boolean reverse);
 	}
 
 	/**

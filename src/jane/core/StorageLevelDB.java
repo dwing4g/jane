@@ -60,6 +60,29 @@ public final class StorageLevelDB implements Storage
 		System.load(file.getAbsolutePath());
 	}
 
+	static <B extends Bean<B>> B toBean(OctetsStreamEx os, B beanStub) throws MarshalException
+	{
+		if(os == null) return null;
+		int format = os.unmarshalInt1();
+		if(format != 0)
+			throw new IllegalStateException("unknown record value format(" + format + ") for type(" + beanStub.typeName() + ")");
+		B bean = beanStub.create();
+		bean.unmarshal(os);
+		return bean;
+	}
+
+	static <B extends Bean<B>> B toBean(Octets data, B beanStub) throws MarshalException
+	{
+		if(data == null || data == StorageLevelDB.deleted()) return null;
+		return toBean(OctetsStreamEx.wrap(data), beanStub);
+	}
+
+	static <B extends Bean<B>> B toBean(byte[] data, B beanStub) throws MarshalException
+	{
+		if(data == null) return null;
+		return toBean(OctetsStreamEx.wrap(data), beanStub);
+	}
+
 	public static native long leveldb_open(String path, int writeBufSize, int cacheSize, boolean useSnappy);
 
 	public static native long leveldb_open2(String path, int writeBufSize, int cacheSize, int fileSize, boolean useSnappy);
@@ -163,6 +186,29 @@ public final class StorageLevelDB implements Storage
 		}
 
 		@Override
+		public long getIdCounter()
+		{
+			OctetsStreamEx val = dbget(_tableIdCounter);
+			if(val == null) return 0;
+			try
+			{
+				return val.unmarshalLong();
+			}
+			catch(MarshalException e)
+			{
+				Log.error("unmarshal idcounter failed", e);
+				return 0;
+			}
+		}
+
+		@Override
+		public void setIdCounter(long v)
+		{
+			if(v != getIdCounter())
+				_writeBuf.put(_tableIdCounter, new OctetsStream(9).marshal(v));
+		}
+
+		@Override
 		public boolean walk(WalkHandlerLong handler, long from, long to, boolean inclusive, boolean reverse)
 		{
 			if(from > to)
@@ -217,26 +263,65 @@ public final class StorageLevelDB implements Storage
 		}
 
 		@Override
-		public long getIdCounter()
+		public boolean walk(WalkValueHandlerLong<V> handler, V beanStub, long from, long to, boolean inclusive, boolean reverse)
 		{
-			OctetsStreamEx val = dbget(_tableIdCounter);
-			if(val == null) return 0;
+			if(from > to)
+			{
+				long t = from;
+				from = to;
+				to = t;
+			}
+			Octets keyFrom = getKey(from);
+			Octets keyTo = getKey(to);
+			long iter = 0;
 			try
 			{
-				return val.unmarshalLong();
+				if(!reverse)
+				{
+					iter = leveldb_iter_new(_db, keyFrom.array(), keyFrom.size(), inclusive ? 2 : 3);
+					for(;;)
+					{
+						byte[] value = leveldb_iter_value(iter);
+						if(value == null) break;
+						byte[] key = leveldb_iter_next(iter);
+						if(key == null) break;
+						OctetsStream keyOs = OctetsStream.wrap(key);
+						int comp = keyOs.compareTo(keyTo);
+						if(comp >= 0 && (comp > 0 || !inclusive)) break;
+						keyOs.setPosition(_tableIdLen);
+						long k = keyOs.unmarshalLong();
+						V v = toBean(value, beanStub);
+						if(!Helper.onWalkSafe(handler, k, v)) return false;
+					}
+				}
+				else
+				{
+					iter = leveldb_iter_new(_db, keyTo.array(), keyTo.size(), inclusive ? 1 : 0);
+					for(;;)
+					{
+						byte[] value = leveldb_iter_value(iter);
+						if(value == null) break;
+						byte[] key = leveldb_iter_prev(iter);
+						if(key == null) break;
+						OctetsStream keyOs = OctetsStream.wrap(key);
+						int comp = keyOs.compareTo(keyFrom);
+						if(comp <= 0 && (comp < 0 || !inclusive)) break;
+						keyOs.setPosition(_tableIdLen);
+						long k = keyOs.unmarshalLong();
+						V v = toBean(value, beanStub);
+						if(!Helper.onWalkSafe(handler, k, v)) return false;
+					}
+				}
 			}
 			catch(MarshalException e)
 			{
-				Log.error("unmarshal idcounter failed", e);
-				return 0;
+				throw new RuntimeException(e);
 			}
-		}
-
-		@Override
-		public void setIdCounter(long v)
-		{
-			if(v != getIdCounter())
-				_writeBuf.put(_tableIdCounter, new OctetsStream(9).marshal(v));
+			finally
+			{
+				if(iter != 0) leveldb_iter_delete(iter);
+			}
+			return true;
 		}
 	}
 
@@ -263,6 +348,8 @@ public final class StorageLevelDB implements Storage
 		protected abstract OctetsStream getKey(K k);
 
 		protected abstract boolean onWalk(WalkHandler<K> handler, OctetsStream k) throws MarshalException;
+
+		protected abstract boolean onWalk(WalkValueHandler<K, V> handler, OctetsStream k, V v) throws MarshalException;
 
 		@Override
 		public int getTableId()
@@ -341,6 +428,66 @@ public final class StorageLevelDB implements Storage
 			}
 			return true;
 		}
+
+		@Override
+		public boolean walk(WalkValueHandler<K, V> handler, V beanStub, K from, K to, boolean inclusive, boolean reverse)
+		{
+			Octets keyFrom = (from != null ? getKey(from) : new OctetsStream(5).marshalUInt(_tableId));
+			Octets keyTo = (to != null ? getKey(to) : _tableIdNext);
+			if(keyFrom.compareTo(keyTo) > 0)
+			{
+				Octets t = keyFrom;
+				keyFrom = keyTo;
+				keyTo = t;
+			}
+			long iter = 0;
+			try
+			{
+				if(!reverse)
+				{
+					iter = leveldb_iter_new(_db, keyFrom.array(), keyFrom.size(), inclusive ? 2 : 3);
+					for(;;)
+					{
+						byte[] value = leveldb_iter_value(iter);
+						if(value == null) break;
+						byte[] key = leveldb_iter_next(iter);
+						if(key == null) break;
+						OctetsStream keyOs = OctetsStream.wrap(key);
+						int comp = keyOs.compareTo(keyTo);
+						if(comp >= 0 && (comp > 0 || !inclusive)) break;
+						keyOs.setPosition(_tableIdLen);
+						V v = toBean(value, beanStub);
+						if(!onWalk(handler, keyOs, v)) return false;
+					}
+				}
+				else
+				{
+					iter = leveldb_iter_new(_db, keyTo.array(), keyTo.size(), inclusive ? 1 : 0);
+					for(;;)
+					{
+						byte[] value = leveldb_iter_value(iter);
+						if(value == null) break;
+						byte[] key = leveldb_iter_prev(iter);
+						if(key == null) break;
+						OctetsStream keyOs = OctetsStream.wrap(key);
+						int comp = keyOs.compareTo(keyFrom);
+						if(comp <= 0 && (comp < 0 || !inclusive)) break;
+						keyOs.setPosition(_tableIdLen);
+						V v = toBean(value, beanStub);
+						if(!onWalk(handler, keyOs, v)) return false;
+					}
+				}
+			}
+			catch(MarshalException e)
+			{
+				throw new RuntimeException(e);
+			}
+			finally
+			{
+				if(iter != 0) leveldb_iter_delete(iter);
+			}
+			return true;
+		}
 	}
 
 	private final class TableOctets<V extends Bean<V>> extends TableBase<Octets, V>
@@ -390,6 +537,12 @@ public final class StorageLevelDB implements Storage
 		protected boolean onWalk(WalkHandler<Octets> handler, OctetsStream k)
 		{
 			return Helper.onWalkSafe(handler, new Octets(k.array(), k.position(), k.remain()));
+		}
+
+		@Override
+		protected boolean onWalk(WalkValueHandler<Octets, V> handler, OctetsStream k, V v) throws MarshalException
+		{
+			return Helper.onWalkSafe(handler, new Octets(k.array(), k.position(), k.remain()), v);
 		}
 	}
 
@@ -442,6 +595,12 @@ public final class StorageLevelDB implements Storage
 		protected boolean onWalk(WalkHandler<String> handler, OctetsStream k)
 		{
 			return Helper.onWalkSafe(handler, new String(k.array(), k.position(), k.remain(), StandardCharsets.UTF_8));
+		}
+
+		@Override
+		protected boolean onWalk(WalkValueHandler<String, V> handler, OctetsStream k, V v) throws MarshalException
+		{
+			return Helper.onWalkSafe(handler, new String(k.array(), k.position(), k.remain(), StandardCharsets.UTF_8), v);
 		}
 	}
 
@@ -498,6 +657,15 @@ public final class StorageLevelDB implements Storage
 			Bean<?> key = ((Bean<?>)_stubK).create();
 			k.unmarshal(key);
 			return Helper.onWalkSafe(handler, (K)key);
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		protected boolean onWalk(WalkValueHandler<K, V> handler, OctetsStream k, V v) throws MarshalException
+		{
+			Bean<?> key = ((Bean<?>)_stubK).create();
+			k.unmarshal(key);
+			return Helper.onWalkSafe(handler, (K)key, v);
 		}
 	}
 

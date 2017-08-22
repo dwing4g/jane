@@ -301,18 +301,6 @@ public final class DBSimpleManager
 		return new OctetsStream(5 + key.initSize()).marshalUInt(tableId).marshal(key);
 	}
 
-	private static <B extends Bean<B>> B toBean(Octets data, B beanStub) throws MarshalException
-	{
-		if(data == null || data == StorageLevelDB.deleted()) return null;
-		OctetsStreamEx os = OctetsStreamEx.wrap(data);
-		int format = os.unmarshalInt1();
-		if(format != 0)
-			throw new IllegalStateException("unknown record value format(" + format + ") for type(" + beanStub.typeName() + ")");
-		B bean = beanStub.create();
-		bean.unmarshal(os);
-		return bean;
-	}
-
 	private <B extends Bean<B>> B get0(Octets key, B beanStub) throws MarshalException
 	{
 		_readCount.incrementAndGet();
@@ -332,7 +320,7 @@ public final class DBSimpleManager
 			else if(val.size() <= 0)
 				return null;
 		}
-		return toBean(val, beanStub);
+		return StorageLevelDB.toBean(val, beanStub);
 	}
 
 	private void put0(Octets key, Octets value)
@@ -460,11 +448,10 @@ public final class DBSimpleManager
 			@Override
 			public boolean onWalk(byte[] key, byte[] value) throws Exception
 			{
-				_os.setPosition(0);
 				_os.wraps(key).setPosition(_tableIdLen);
 				long k = _os.unmarshalLong();
-				_os.setPosition(0);
-				return handler.onWalk(k, toBean(_os.wraps(value), beanStub));
+				_os.wraps(value).setPosition(0);
+				return handler.onWalk(k, StorageLevelDB.toBean(_os, beanStub));
 			}
 		});
 	}
@@ -497,8 +484,8 @@ public final class DBSimpleManager
 					return false;
 				}
 				byte[] k = _os.getBytes(_tableIdLen, Integer.MAX_VALUE);
-				_os.setPosition(0);
-				return handler.onWalk(k, toBean(_os.wraps(value), beanStub));
+				_os.wraps(value).setPosition(0);
+				return handler.onWalk(k, StorageLevelDB.toBean(_os, beanStub));
 			}
 		}) || finished.get();
 	}
@@ -529,9 +516,9 @@ public final class DBSimpleManager
 					finished.set(true);
 					return false;
 				}
-				byte[] keyData = _os.getBytes(_os.position(), Integer.MAX_VALUE);
-				_os.setPosition(0);
-				return handler.onWalk(new String(keyData, StandardCharsets.UTF_8), toBean(_os.wraps(value), beanStub));
+				String keyStr = new String(_os.array(), _os.position(), _os.remain(), StandardCharsets.UTF_8);
+				_os.wraps(value).setPosition(0);
+				return handler.onWalk(keyStr, StorageLevelDB.toBean(_os, beanStub));
 			}
 		}) || finished.get();
 	}
@@ -564,8 +551,8 @@ public final class DBSimpleManager
 				}
 				K k = keyStub.create();
 				k.unmarshal(_os);
-				_os.setPosition(0);
-				return handler.onWalk(k, toBean(_os.wraps(value), beanStub));
+				_os.wraps(value).setPosition(0);
+				return handler.onWalk(k, StorageLevelDB.toBean(_os, beanStub));
 			}
 		}) || finished.get();
 	}

@@ -8,6 +8,7 @@ import jane.core.SContext.Record;
 import jane.core.SContext.Safe;
 import jane.core.Storage.Helper;
 import jane.core.Storage.WalkHandler;
+import jane.core.Storage.WalkValueHandler;
 
 /**
  * 通用key类型的数据库表类
@@ -434,10 +435,10 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	}
 
 	/**
-	 * 按记录key的顺序遍历此表的所有记录
+	 * 按记录key的顺序遍历此表的所有key
 	 * <p>
 	 * 遍历时注意先根据记录的key获取锁再调用get获得其value(取锁操作必须在事务中)<br>
-	 * 注意: 遍历的key列表仅从数据库层获取,当前没有checkpoint的cache记录会被无视,所以get获取到的key可能不是最新,而且得到的value有可能为null
+	 * 注意: 遍历仅从数据库存储层获取,当前没有checkpoint的cache记录会被无视,所以get获取的key可能不是最新,而且得到的value有可能为null
 	 * @param handler 遍历过程中返回false可中断遍历
 	 * @param from 需要遍历的最小key. null表示最小值
 	 * @param to 需要遍历的最大key. null表示最大值
@@ -455,6 +456,31 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	}
 
 	public boolean walk(WalkHandler<K> handler)
+	{
+		return walk(handler, null, null, true, false);
+	}
+
+	/**
+	 * 按记录key的顺序遍历此表的所有key和value
+	 * <p>
+	 * 注意: 遍历仅从数据库存储层获取,当前没有checkpoint的cache记录会被无视,所以遍历获取的key和value可能不是最新,修改value不会改动数据库
+	 * @param handler 遍历过程中返回false可中断遍历
+	 * @param from 需要遍历的最小key. null表示最小值
+	 * @param to 需要遍历的最大key. null表示最大值
+	 * @param inclusive 遍历是否包含from和to的key
+	 * @param reverse 是否按反序遍历
+	 */
+	public boolean walk(WalkValueHandler<K, V> handler, K from, K to, boolean inclusive, boolean reverse)
+	{
+		return _stoTable.walk(handler, _deleted, from, to, inclusive, reverse);
+	}
+
+	public boolean walk(WalkValueHandler<K, V> handler, boolean reverse)
+	{
+		return walk(handler, null, null, true, reverse);
+	}
+
+	public boolean walk(WalkValueHandler<K, V> handler)
 	{
 		return walk(handler, null, null, true, false);
 	}
