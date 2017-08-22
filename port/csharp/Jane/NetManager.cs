@@ -152,7 +152,12 @@ namespace Jane
 					pos = p + psize;
 					BeanDelegate create;
 					if(BeanMap == null || !BeanMap.TryGetValue(ptype, out create))
-						OnRecvUnknownBean(session, ptype, psize);
+					{
+						OnRecvUnknownBean(session, ptype, pserial, psize);
+						recvBuf.Erase(0, pos);
+						recvBuf.SetPosition(0);
+						pos = 0;
+					}
 					else
 					{
 						IBean bean = create();
@@ -219,9 +224,9 @@ namespace Jane
 			return true;
 		}
 
-		protected virtual void OnRecvUnknownBean(NetSession session, int ptype, int psize) // 在Tick解协议过程中解出一个bean时回调,默认会抛出异常;
+		protected virtual void OnRecvUnknownBean(NetSession session, int ptype, int pserial, int psize) // 在Tick解协议过程中解出一个bean时回调,默认会抛出异常;
 		{
-			throw new Exception("unknown bean: type=" + ptype + ",size=" + psize);
+			throw new Exception("unknown bean: type=" + ptype + ",pserial=" + pserial + ",size=" + psize);
 		}
 
 		SocketAsyncEventArgs AllocArg()
