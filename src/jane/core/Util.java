@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -396,6 +397,19 @@ public final class Util
 			byte[] data = new byte[size];
 			readStream(is, fileName, data, size);
 			return data;
+		}
+	}
+
+	/**
+	 * 写入整个文件内容
+	 * @param fileName 文件名
+	 * @param data 写入整个文件的数据
+	 */
+	public static void writeFileData(String fileName, byte[] data) throws IOException
+	{
+		try(OutputStream os = new FileOutputStream(fileName))
+		{
+			os.write(data);
 		}
 	}
 
