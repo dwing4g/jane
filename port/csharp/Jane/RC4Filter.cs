@@ -20,9 +20,9 @@ namespace Jane
 			if(len <= 0) return;
 			for(int i = 0, j = 0, k = 0; i < 256; ++i)
 			{
-				k = (k + ctx[i] + key[j]) & 0xff;
-				if(++j >= len) j = 0;
 				byte t = ctx[i];
+				k = (k + t + key[j]) & 0xff;
+				if(++j >= len) j = 0;
 				ctx[i] = ctx[k];
 				ctx[k] = t;
 			}
@@ -51,11 +51,12 @@ namespace Jane
 			for(int i = 0; i < len; ++i)
 			{
 				idx1 = (idx1 + 1) & 0xff;
-				idx2 = (idx2 + ctx[idx1]) & 0xff;
-				byte k = ctx[idx1];
-				ctx[idx1] = ctx[idx2];
-				ctx[idx2] = k;
-				buf[pos + i] ^= ctx[(ctx[idx1] + ctx[idx2]) & 0xff];
+				byte a = ctx[idx1];
+				idx2 = (idx2 + a) & 0xff;
+				byte b = ctx[idx2];
+				ctx[idx1] = b;
+				ctx[idx2] = a;
+				buf[pos + i] ^= ctx[(a + b) & 0xff];
 			}
 			return idx2;
 		}
