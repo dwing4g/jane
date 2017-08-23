@@ -312,7 +312,7 @@ function Stream:marshal(v, tag, subtype, varmeta)
 		end
 		marshalStr(self, v)
 	elseif t == "table" then
-		if varmeta and type(varmeta.type) == "string" or v.__type then -- bean
+		if varmeta and (subtype and varmeta.value or type(varmeta.type) == "string") or v.__type then -- bean
 			if tag then
 				if tag < 63 then
 					append(self, char(tag * 4 + 2))
@@ -321,6 +321,7 @@ function Stream:marshal(v, tag, subtype, varmeta)
 				end
 			end
 			local vars = v.__base -- v.__class.__base for non-readonly __base
+			if not vars then vars = bean[subtype and varmeta.value or varmeta.type].__base end
 			local buf = self.buf
 			local n = buf and #buf
 			for nn, vv in pairs(v) do
@@ -347,7 +348,7 @@ function Stream:marshal(v, tag, subtype, varmeta)
 				end
 				self:marshalUInt(#v)
 				for _, vv in ipairs(v) do
-					self:marshal(vv, nil, subtype)
+					self:marshal(vv, nil, subtype, varmeta)
 				end
 			end
 		elseif varmeta and varmeta.type == 4 or v.__map then
@@ -368,7 +369,7 @@ function Stream:marshal(v, tag, subtype, varmeta)
 				self:marshalUInt(n)
 				for k, vv in pairs(v) do
 					self:marshal(k, nil, kt)
-					self:marshal(vv, nil, vt)
+					self:marshal(vv, nil, vt, varmeta)
 				end
 			end
 		else

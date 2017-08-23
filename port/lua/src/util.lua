@@ -36,7 +36,7 @@ local cowMt
 cowMt = {
 	__index = function(t, k)
 		local v = proto[t][k]
-		if type(v) ~= "table" or v.__readonly then return v end
+		if type(v) ~= "table" or v.__readonly or k == "__class" then return v end
 		local vv = setmetatable({}, cowMt)
 		proto[vv] = v
 		t[k] = vv
@@ -194,8 +194,8 @@ local function dumpTable(t, out, n)
 end
 util.dump = dumpTable
 
--- 获取bean的详细字符串,后三个参数仅内部使用
-local function toStr(t, out, m, name)
+-- 获取bean的详细字符串,后2个参数仅内部使用
+local function toStr(t, out, m)
 	local o = out or {}
 	local n = #o
 	if type(t) ~= "table" then
@@ -205,7 +205,7 @@ local function toStr(t, out, m, name)
 		if m then
 			if m[t] then
 				o[n + 1] = "<"
-				o[n + 2] = name
+				o[n + 2] = t
 				o[n + 3] = ">"
 				return n + 3
 			end
@@ -228,16 +228,16 @@ local function toStr(t, out, m, name)
 					if v ~= nil then
 						o[n + 2] = name
 						o[n + 3] = "="
-						n = toStr(v, o, m, name)
+						n = toStr(v, o, m)
 						o[n + 1] = ","
 					end
 				end
 			end
 		else
 			for k, v in pairs(t) do
-				n = toStr(k, o, m, k)
+				n = toStr(k, o, m)
 				o[n + 1] = "="
-				n = toStr(v, o, m, k)
+				n = toStr(v, o, m)
 				o[n + 1] = ","
 			end
 		end
