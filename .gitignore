@@ -20,3 +20,4 @@ jane-test.jar
 jane-test-all.jar
 *.keystore
 .eclipse-pmd
+~$*.*

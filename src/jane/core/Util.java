@@ -402,25 +402,41 @@ public final class Util
 
 	/**
 	 * 写入整个文件内容
-	 * @param fileName 文件名
-	 * @param data 写入整个文件的数据
+	 * @param fileName 文件名(所在目录会自动创建)
+	 * @param data 写入整个文件的数据源
+	 * @param dataPos 需要写入的数据源起始位置
+	 * @param dataLen 需要写入的数据大小
+	 * @return 返回写入文件的File对象
 	 */
-	public static void writeFileData(String fileName, byte[] data) throws IOException
+	public static File writeFileData(String fileName, byte[] data, int dataPos, int dataLen) throws IOException
 	{
-		try(OutputStream os = new FileOutputStream(fileName))
+		File file = new File(fileName);
+		File parent = file.getParentFile();
+		if(parent != null && !parent.exists())
+			parent.mkdirs();
+		try(OutputStream os = new FileOutputStream(file))
 		{
-			os.write(data);
+			os.write(data, dataPos, dataLen);
 		}
+		return file;
+	}
+
+	public static File writeFileData(String fileName, byte[] data) throws IOException
+	{
+		return writeFileData(fileName, data, 0, data.length);
 	}
 
 	/**
 	 * 复制文件
 	 * @param srcfile 源文件
-	 * @param dstFile 目标文件
+	 * @param dstFile 目标文件(所在目录会自动创建)
 	 * @return 返回复制的字节数量
 	 */
 	public static long copyFile(FileChannel srcFc, File dstFile) throws IOException
 	{
+		File dstParent = dstFile.getParentFile();
+		if(dstParent != null && !dstParent.exists())
+			dstParent.mkdirs();
 		long r = 0;
 		try(FileOutputStream fos = new FileOutputStream(dstFile))
 		{
@@ -446,32 +462,64 @@ public final class Util
 
 	public static final class SundaySearch
 	{
-		private final byte[] _pat;
-		private final int	 _patLen;
-		private final int[]	 _skip = new int[256];
+		private int			_patLen;
+		private byte[]		_pat;
+		private final int[]	_skip = new int[256];
 
 		public SundaySearch(String pat)
 		{
-			this(pat.getBytes(StandardCharsets.UTF_8));
+			this(pat.getBytes(StandardCharsets.UTF_8), false);
 		}
 
 		public SundaySearch(byte[] pat)
 		{
-			this(pat, pat.length);
-		}
-
-		public SundaySearch(byte[] pat, int patLen)
-		{
-			_patLen = (patLen < 0 ? 0 : (patLen > pat.length ? pat.length : patLen));
-			_pat = Arrays.copyOf(pat, _patLen);
-			Arrays.fill(_skip, _patLen + 1);
-			for(int i = 0; i < _patLen; ++i)
-				_skip[_pat[i] & 0xff] = _patLen - i;
+			this(pat, true);
 		}
 
 		public SundaySearch(Octets pat)
 		{
-			this(pat.array(), pat.size());
+			this(pat, true);
+		}
+
+		public SundaySearch(byte[] pat, boolean copyPat)
+		{
+			reset(pat, pat.length, copyPat);
+		}
+
+		public SundaySearch(byte[] pat, int patLen, boolean copyPat)
+		{
+			reset(pat, patLen, copyPat);
+		}
+
+		public SundaySearch(byte[] pat, int patPos, int patLen)
+		{
+			reset(pat, patPos, patLen);
+		}
+
+		public SundaySearch(Octets pat, boolean copyPat)
+		{
+			reset(pat.array(), pat.size(), copyPat);
+		}
+
+		public void reset(byte[] pat, int patPos, int patLen)
+		{
+			reset(Arrays.copyOfRange(pat, patPos, patPos + patLen), patLen, false);
+		}
+
+		public void reset(byte[] pat, int patLen, boolean copyPat)
+		{
+			if(patLen < 0)
+				patLen = 0;
+			else if(patLen > pat.length)
+				patLen = pat.length;
+			_patLen = patLen;
+			if(copyPat)
+				pat = Arrays.copyOf(pat, patLen);
+			_pat = pat;
+			int[] skip = _skip;
+			Arrays.fill(skip, patLen + 1);
+			for(int i = 0; i < patLen; ++i)
+				skip[pat[i] & 0xff] = patLen - i;
 		}
 
 		public int getPatLen()
@@ -481,19 +529,22 @@ public final class Util
 
 		public int find(byte[] src, int srcPos, int srcLen)
 		{
-			if(_patLen <= 0) return 0;
+			int patLen = _patLen;
+			if(patLen <= 0) return 0;
 			if(srcPos < 0) srcPos = 0;
 			if(srcPos + srcLen > src.length) srcLen = src.length - srcPos;
 			if(srcLen <= 0) return -1;
-			byte c = _pat[0];
-			for(int srcEnd = srcLen - _patLen; srcPos <= srcEnd; srcPos += _skip[src[srcPos + _patLen] & 0xff])
+			byte[] pat = _pat;
+			byte c = pat[0];
+			int[] skip = _skip;
+			for(int srcEnd = srcLen - patLen; srcPos <= srcEnd; srcPos += skip[src[srcPos + patLen] & 0xff])
 			{
 				if(src[srcPos] == c)
 				{
 					for(int k = 1;; ++k)
 					{
-						if(k >= _patLen) return srcPos;
-						if(src[srcPos + k] != _pat[k]) break;
+						if(k >= patLen) return srcPos;
+						if(src[srcPos + k] != pat[k]) break;
 					}
 				}
 				if(srcPos == srcEnd) return -1;
