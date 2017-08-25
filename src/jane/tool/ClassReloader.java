@@ -46,28 +46,40 @@ public final class ClassReloader
 	{
 		DataInputStream dis = new DataInputStream(new ByteArrayInputStream(classData));
 		dis.readLong(); // skip magic[4] and version[4]
-		int constCount = (dis.readShort() & 0xffff) - 1;
+		int constCount = dis.readUnsignedShort() - 1;
 		int[] classes = new int[constCount];
 		String[] strings = new String[constCount];
 		for(int i = 0; i < constCount; ++i)
 		{
 			int t = dis.read();
-			if(t == 7)
-				classes[i] = dis.readShort() & 0xffff;
-			else if(t == 1)
-				strings[i] = dis.readUTF();
-			else if(t == 5 || t == 6)
+			// System.out.println(String.format("%6X: %4d/%4d = %d", classData.length - dis.available(), i + 1, constCount, t));
+			switch(t)
 			{
-				dis.readLong();
-				++i;
+				case 1:
+					strings[i] = dis.readUTF();
+					break;
+				case 7:
+					classes[i] = dis.readUnsignedShort();
+					break;
+				default:
+					dis.read(); //$FALL-THROUGH$
+				case 15:
+					dis.read(); //$FALL-THROUGH$
+				case 8:
+				case 16:
+					dis.read();
+					dis.read();
+					break;
+				case 5:
+				case 6:
+					dis.readLong();
+					++i;
+					break;
 			}
-			else if(t == 8)
-				dis.readShort();
-			else
-				dis.readInt();
 		}
-		dis.readShort(); // skip access flags
-		return strings[classes[(dis.readShort() & 0xffff) - 1] - 1].replace('/', '.');
+		dis.read(); // skip access flags
+		dis.read();
+		return strings[classes[dis.readUnsignedShort() - 1] - 1].replace('/', '.');
 	}
 
 	public static void reloadClass(byte[] classData) throws Exception, Error
