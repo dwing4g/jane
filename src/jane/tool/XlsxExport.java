@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.TreeMap;
@@ -286,7 +287,7 @@ public final class XlsxExport
 	 */
 	public static void xlsx2Txt(InputStream isXlsx, int sheetId, OutputStream outTxt) throws Exception
 	{
-		Charset cs = Charset.forName("utf-8");
+		Charset cs = StandardCharsets.UTF_8;
 		for(Map.Entry<Integer, Map<Integer, String>> e : xlsx2Maps(isXlsx, sheetId).entrySet())
 		{
 			int y = e.getKey();

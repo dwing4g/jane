@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Map.Entry;
@@ -16,7 +17,7 @@ import jane.core.StorageLevelDB;
 public final class LevelDBImport
 {
 	private static final Pattern	  s_patHex	= Pattern.compile("\\\\x(..)");
-	private static final Charset	  s_cs88591	= Charset.forName("ISO-8859-1");
+	private static final Charset	  s_cs88591	= StandardCharsets.ISO_8859_1;
 	private static final OctetsStream s_deleted	= OctetsStream.wrap(Octets.EMPTY);
 
 	private LevelDBImport()
