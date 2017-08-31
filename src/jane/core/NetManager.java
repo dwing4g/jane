@@ -603,12 +603,16 @@ public class NetManager implements IoHandler
 		for(;;)
 		{
 			int serial = _serialCounter.incrementAndGet();
-			if(serial > 0 && _beanCtxMap.putIfAbsent(serial, beanCtx) == null)
+			if(serial > 0)
 			{
-				bean.serial(serial);
-				return beanCtx;
+				if(_beanCtxMap.putIfAbsent(serial, beanCtx) == null)
+				{
+					bean.serial(serial);
+					return beanCtx;
+				}
 			}
-			_serialCounter.set(0);
+			else
+				_serialCounter.set(0);
 		}
 	}
 
