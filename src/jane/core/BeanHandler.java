@@ -3,15 +3,15 @@ package jane.core;
 import org.apache.mina.core.session.IoSession;
 
 /**
- * bean处理器的基类(抽象类)
+ * bean处理器的接口
  */
-public abstract class BeanHandler<B extends Bean<B>>
+public interface BeanHandler<B extends Bean<B>>
 {
 	/**
 	 * 处理的入口
 	 */
 	@SuppressWarnings("unchecked")
-	public final void process(NetManager manager, IoSession session, Bean<?> bean) throws Exception
+	default void process(NetManager manager, IoSession session, Bean<?> bean) throws Exception
 	{
 		onProcess(manager, session, (B)bean);
 	}

@@ -111,14 +111,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 	{
 		SContext ctx = sContext();
 		if(!_list.add(v)) return false;
-		ctx.addOnRollback(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				_list.remove(_list.size() - 1);
-			}
-		});
+		ctx.addOnRollback(() -> _list.remove(_list.size() - 1));
 		return true;
 	}
 
@@ -128,18 +121,11 @@ public final class SList<V, S> implements List<S>, Cloneable
 		return addDirect(unsafe(s));
 	}
 
-	public void addDirect(final int idx, V v)
+	public void addDirect(int idx, V v)
 	{
 		SContext ctx = sContext();
 		_list.add(idx, v);
-		ctx.addOnRollback(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				_list.remove(idx);
-			}
-		});
+		ctx.addOnRollback(() -> _list.remove(idx));
 	}
 
 	@Override
@@ -151,16 +137,12 @@ public final class SList<V, S> implements List<S>, Cloneable
 	public boolean addAllDirect(Collection<? extends V> c)
 	{
 		SContext ctx = sContext();
-		final int n = c.size();
+		int n = c.size();
 		if(!_list.addAll(c)) return false;
-		ctx.addOnRollback(new Runnable()
+		ctx.addOnRollback(() ->
 		{
-			@Override
-			public void run()
-			{
-				for(int i = _list.size() - 1; i >= n; --i)
-					_list.remove(i);
-			}
+			for(int i = _list.size() - 1; i >= n; --i)
+				_list.remove(i);
 		});
 		return true;
 	}
@@ -169,34 +151,26 @@ public final class SList<V, S> implements List<S>, Cloneable
 	public boolean addAll(Collection<? extends S> c)
 	{
 		SContext ctx = sContext();
-		final int n = c.size();
+		int n = c.size();
 		for(S s : c)
 			_list.add(unsafe(s));
-		ctx.addOnRollback(new Runnable()
+		ctx.addOnRollback(() ->
 		{
-			@Override
-			public void run()
-			{
-				for(int i = _list.size() - 1; i >= n; --i)
-					_list.remove(i);
-			}
+			for(int i = _list.size() - 1; i >= n; --i)
+				_list.remove(i);
 		});
 		return true;
 	}
 
-	public boolean addAllDirect(final int idx, Collection<? extends V> c)
+	public boolean addAllDirect(int idx, Collection<? extends V> c)
 	{
 		SContext ctx = sContext();
-		final int n = c.size();
+		int n = c.size();
 		if(!_list.addAll(idx, c)) return false;
-		ctx.addOnRollback(new Runnable()
+		ctx.addOnRollback(() ->
 		{
-			@Override
-			public void run()
-			{
-				for(int i = idx + n - 1, e = i - n; i > e; --i)
-					_list.remove(i);
-			}
+			for(int i = idx + n - 1, e = i - n; i > e; --i)
+				_list.remove(i);
 		});
 		return true;
 	}
@@ -210,18 +184,11 @@ public final class SList<V, S> implements List<S>, Cloneable
 		return addAllDirect(idx, list);
 	}
 
-	public V setDirect(final int idx, V v)
+	public V setDirect(int idx, V v)
 	{
 		SContext ctx = sContext();
-		final V vOld = _list.set(idx, v);
-		ctx.addOnRollback(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				_list.set(idx, vOld);
-			}
-		});
+		V vOld = _list.set(idx, v);
+		ctx.addOnRollback(() -> _list.set(idx, vOld));
 		return vOld;
 	}
 
@@ -231,18 +198,11 @@ public final class SList<V, S> implements List<S>, Cloneable
 		return safeAlone(setDirect(idx, unsafe(s)));
 	}
 
-	public V removeDirect(final int idx)
+	public V removeDirect(int idx)
 	{
 		SContext ctx = sContext();
-		final V vOld = _list.remove(idx);
-		ctx.addOnRollback(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				_list.add(idx, vOld);
-			}
-		});
+		V vOld = _list.remove(idx);
+		ctx.addOnRollback(() -> _list.add(idx, vOld));
 		return vOld;
 	}
 
@@ -297,31 +257,23 @@ public final class SList<V, S> implements List<S>, Cloneable
 	{
 		SContext ctx = sContext();
 		if(_list.isEmpty()) return;
-		ctx.addOnRollback(new Runnable()
+		List<V> saved;
+		try
 		{
-			private final List<V> _saved;
-
-			{
-				try
-				{
-					_saved = _list.getClass().newInstance();
-					_saved.addAll(_list);
-				}
-				catch(Exception e)
-				{
-					throw new Error(e);
-				}
-			}
-
-			@Override
-			public void run()
-			{
-				_list.clear();
-				_list.addAll(_saved);
-				_saved.clear();
-			}
-		});
+			saved = _list.getClass().newInstance();
+		}
+		catch(Exception e)
+		{
+			throw new Error(e);
+		}
+		saved.addAll(_list);
 		_list.clear();
+		ctx.addOnRollback(() ->
+		{
+			_list.clear();
+			_list.addAll(saved);
+			saved.clear();
+		});
 	}
 
 	public final class SIterator implements Iterator<S>
@@ -359,18 +311,9 @@ public final class SList<V, S> implements List<S>, Cloneable
 		{
 			SContext ctx = sContext();
 			_it.remove();
-			ctx.addOnRollback(new Runnable()
-			{
-				private final V	  _v = _cur;
-				private final int _i = _idx;
-
-				@Override
-				public void run()
-				{
-					_list.add(_i, _v);
-				}
-			});
-			--_idx;
+			int i = _idx--;
+			V v = _cur;
+			ctx.addOnRollback(() -> _list.add(i, v));
 		}
 	}
 
@@ -446,35 +389,19 @@ public final class SList<V, S> implements List<S>, Cloneable
 		{
 			SContext ctx = sContext();
 			_it.remove();
-			ctx.addOnRollback(new Runnable()
-			{
-				private final V	  _v = _cur;
-				private final int _i = _idx + _idxOff;
-
-				@Override
-				public void run()
-				{
-					_list.add(_i, _v);
-				}
-			});
+			int i = _idx + _idxOff;
 			_idx -= 1 - _idxOff;
+			V v = _cur;
+			ctx.addOnRollback(() -> _list.add(i, v));
 		}
 
 		public void setDirect(V v)
 		{
 			SContext ctx = sContext();
 			_it.set(v);
-			ctx.addOnRollback(new Runnable()
-			{
-				private final V	  _v = _cur;
-				private final int _i = _idx + _idxOff;
-
-				@Override
-				public void run()
-				{
-					_list.set(_i, _v);
-				}
-			});
+			int i = _idx + _idxOff;
+			V vOld = _cur;
+			ctx.addOnRollback(() -> _list.set(i, vOld));
 		}
 
 		@Override
@@ -487,16 +414,8 @@ public final class SList<V, S> implements List<S>, Cloneable
 		{
 			SContext ctx = sContext();
 			_it.add(v);
-			ctx.addOnRollback(new Runnable()
-			{
-				private final int _i = _idx + _idxOff;
-
-				@Override
-				public void run()
-				{
-					_list.remove(_i);
-				}
-			});
+			int i = _idx + _idxOff;
+			ctx.addOnRollback(() -> _list.remove(i));
 		}
 
 		@Override

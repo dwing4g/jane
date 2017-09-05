@@ -6,7 +6,7 @@ import jane.core.Log;
 import jane.core.NetManager;
 import jane.bean.TestType;
 
-public final class TestTypeHandler extends BeanHandler<TestType>
+public final class TestTypeHandler implements BeanHandler<TestType>
 {
 	/*\
 	|*| boolean v1; // 1字节布尔,0表示假,1表示真,其它默认表示真

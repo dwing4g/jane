@@ -15,7 +15,6 @@ import java.nio.channels.CompletionHandler;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -38,18 +37,13 @@ public class TcpManager implements Closeable
 	{
 		try
 		{
-			_defGroup = AsynchronousChannelGroup.withFixedThreadPool(DEF_TCP_THREAD_COUNT, new ThreadFactory()
+			AtomicInteger counter = new AtomicInteger();
+			_defGroup = AsynchronousChannelGroup.withFixedThreadPool(DEF_TCP_THREAD_COUNT, r ->
 			{
-				private final AtomicInteger _num = new AtomicInteger();
-
-				@Override
-				public Thread newThread(Runnable r)
-				{
-					Thread t = new Thread(r, "TcpManager-" + _num.incrementAndGet());
-					t.setDaemon(true);
-					t.setPriority(Thread.NORM_PRIORITY);
-					return t;
-				}
+				Thread t = new Thread(r, "TcpManager-" + counter.incrementAndGet());
+				t.setDaemon(true);
+				t.setPriority(Thread.NORM_PRIORITY);
+				return t;
 			});
 		}
 		catch(IOException e)

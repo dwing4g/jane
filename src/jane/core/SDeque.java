@@ -162,14 +162,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	{
 		SContext ctx = sContext();
 		if(!_deque.add(v)) return false;
-		ctx.addOnRollback(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				_deque.removeLast();
-			}
-		});
+		ctx.addOnRollback(() -> _deque.removeLast());
 		return true;
 	}
 
@@ -183,14 +176,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	{
 		SContext ctx = sContext();
 		_deque.addFirst(v);
-		ctx.addOnRollback(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				_deque.removeFirst();
-			}
-		});
+		ctx.addOnRollback(() -> _deque.removeFirst());
 	}
 
 	@Override
@@ -258,16 +244,12 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	public boolean addAllDirect(Collection<? extends V> c)
 	{
 		SContext ctx = sContext();
-		final int n = c.size();
+		int n = c.size();
 		if(!_deque.addAll(c)) return false;
-		ctx.addOnRollback(new Runnable()
+		ctx.addOnRollback(() ->
 		{
-			@Override
-			public void run()
-			{
-				for(int i = 0; i < n; ++i)
-					_deque.removeLast();
-			}
+			for(int i = 0; i < n; ++i)
+				_deque.removeLast();
 		});
 		return true;
 	}
@@ -276,17 +258,13 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	public boolean addAll(Collection<? extends S> c)
 	{
 		SContext ctx = sContext();
-		final int n = c.size();
+		int n = c.size();
 		for(S s : c)
 			_deque.addLast(unsafe(s));
-		ctx.addOnRollback(new Runnable()
+		ctx.addOnRollback(() ->
 		{
-			@Override
-			public void run()
-			{
-				for(int i = 0; i < n; ++i)
-					_deque.removeLast();
-			}
+			for(int i = 0; i < n; ++i)
+				_deque.removeLast();
 		});
 		return true;
 	}
@@ -294,15 +272,8 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	public V removeDirect()
 	{
 		SContext ctx = sContext();
-		final V vOld = _deque.remove();
-		ctx.addOnRollback(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				_deque.addFirst(vOld);
-			}
-		});
+		V vOld = _deque.remove();
+		ctx.addOnRollback(() -> _deque.addFirst(vOld));
 		return vOld;
 	}
 
@@ -333,15 +304,8 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	public V removeLastDirect()
 	{
 		SContext ctx = sContext();
-		final V vOld = _deque.removeLast();
-		ctx.addOnRollback(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				_deque.addLast(vOld);
-			}
-		});
+		V vOld = _deque.removeLast();
+		ctx.addOnRollback(() -> _deque.addLast(vOld));
 		return vOld;
 	}
 
@@ -368,16 +332,9 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	public V pollDirect()
 	{
 		SContext ctx = sContext();
-		final V vOld = _deque.poll();
+		V vOld = _deque.poll();
 		if(vOld == null) return null;
-		ctx.addOnRollback(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				_deque.addFirst(vOld);
-			}
-		});
+		ctx.addOnRollback(() -> _deque.addFirst(vOld));
 		return vOld;
 	}
 
@@ -401,16 +358,9 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	public V pollLastDirect()
 	{
 		SContext ctx = sContext();
-		final V vOld = _deque.pollLast();
+		V vOld = _deque.pollLast();
 		if(vOld == null) return null;
-		ctx.addOnRollback(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				_deque.addLast(vOld);
-			}
-		});
+		ctx.addOnRollback(() -> _deque.addLast(vOld));
 		return vOld;
 	}
 
@@ -451,31 +401,23 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	{
 		SContext ctx = sContext();
 		if(_deque.isEmpty()) return;
-		ctx.addOnRollback(new Runnable()
+		Deque<V> saved;
+		try
 		{
-			private final Deque<V> _saved;
-
-			{
-				try
-				{
-					_saved = _deque.getClass().newInstance();
-					_saved.addAll(_deque);
-				}
-				catch(Exception e)
-				{
-					throw new Error(e);
-				}
-			}
-
-			@Override
-			public void run()
-			{
-				_deque.clear();
-				_deque.addAll(_saved);
-				_saved.clear();
-			}
-		});
+			saved = _deque.getClass().newInstance();
+		}
+		catch(Exception e)
+		{
+			throw new Error(e);
+		}
+		saved.addAll(_deque);
 		_deque.clear();
+		ctx.addOnRollback(() ->
+		{
+			_deque.clear();
+			_deque.addAll(saved);
+			saved.clear();
+		});
 	}
 
 	public final class SIterator implements Iterator<S>

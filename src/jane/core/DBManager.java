@@ -10,7 +10,6 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -212,18 +211,13 @@ public final class DBManager
 	private DBManager()
 	{
 		_hasCreated = true;
-		_procThreads = (ThreadPoolExecutor)Executors.newFixedThreadPool(Const.dbThreadCount, new ThreadFactory()
+		AtomicInteger counter = new AtomicInteger();
+		_procThreads = (ThreadPoolExecutor)Executors.newFixedThreadPool(Const.dbThreadCount, r ->
 		{
-			private final AtomicInteger _num = new AtomicInteger();
-
-			@Override
-			public Thread newThread(Runnable r)
-			{
-				Thread t = new ProcThread("ProcThread-" + _num.incrementAndGet(), r);
-				t.setDaemon(true);
-				t.setPriority(Thread.NORM_PRIORITY);
-				return t;
-			}
+			Thread t = new ProcThread("ProcThread-" + counter.incrementAndGet(), r);
+			t.setDaemon(true);
+			t.setPriority(Thread.NORM_PRIORITY);
+			return t;
 		});
 	}
 
@@ -270,26 +264,22 @@ public final class DBManager
 			throw new IOException("create db path failed: " + dbFilename);
 		_storage = sto;
 		sto.openDB(dbfile);
-		ExitManager.getShutdownSystemCallbacks().add(new Runnable()
+		ExitManager.getShutdownSystemCallbacks().add(() ->
 		{
-			@Override
-			public void run()
+			Log.info("DBManager.OnJVMShutDown: db shutdown");
+			try
 			{
-				Log.info("DBManager.OnJVMShutDown: db shutdown");
-				try
+				synchronized(DBManager.this)
 				{
-					synchronized(DBManager.this)
-					{
-						_exiting = true;
-						_procThreads.shutdownNow();
-					}
+					_exiting = true;
+					_procThreads.shutdownNow();
 				}
-				finally
-				{
-					shutdown();
-				}
-				Log.info("DBManager.OnJVMShutDown: db closed");
 			}
+			finally
+			{
+				shutdown();
+			}
+			Log.info("DBManager.OnJVMShutDown: db closed");
 		});
 	}
 
@@ -474,7 +464,7 @@ public final class DBManager
 	/**
 	 * 通知清理事务队列
 	 */
-	public void stopQueue(final Object sid)
+	public void stopQueue(Object sid)
 	{
 		submit(sid, new Procedure()
 		{
@@ -544,7 +534,7 @@ public final class DBManager
 	 * 见{@link #submit(Object sid, Procedure p)}<br>
 	 * 可使用自定义的线程池
 	 */
-	public void submit(final ExecutorService es, final Object sid, Procedure p)
+	public void submit(ExecutorService es, Object sid, Procedure p)
 	{
 		p.setSid(sid);
 		if(sid == null)
@@ -575,7 +565,7 @@ public final class DBManager
 			}
 			break;
 		}
-		final ArrayDeque<Procedure> _q = q;
+		ArrayDeque<Procedure> _q = q;
 		es.execute(new Runnable()
 		{
 			@Override

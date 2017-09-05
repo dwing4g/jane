@@ -71,13 +71,13 @@ public final class StorageLevelDB implements Storage
 		return bean;
 	}
 
-	static <B extends Bean<B>> B toBean(Octets data, B beanStub) throws MarshalException
+	static <B extends Bean<?>> B toBean(Octets data, B beanStub) throws MarshalException
 	{
 		if(data == null || data == StorageLevelDB.deleted()) return null;
 		return toBean(OctetsStreamEx.wrap(data), beanStub);
 	}
 
-	static <B extends Bean<B>> B toBean(byte[] data, B beanStub) throws MarshalException
+	static <B extends Bean<?>> B toBean(byte[] data, B beanStub) throws MarshalException
 	{
 		if(data == null) return null;
 		return toBean(OctetsStreamEx.wrap(data), beanStub);
@@ -606,12 +606,12 @@ public final class StorageLevelDB implements Storage
 
 	private final class TableBean<K, V extends Bean<V>> extends TableBase<K, V>
 	{
-		private final K _stubK;
+		private final Bean<?> _stubK;
 
 		protected TableBean(int tableId, String tableName, K stubK, V stubV)
 		{
 			super(tableId, tableName, stubV);
-			_stubK = stubK;
+			_stubK = (Bean<?>)stubK;
 		}
 
 		@SuppressWarnings("unchecked")
@@ -654,7 +654,7 @@ public final class StorageLevelDB implements Storage
 		@Override
 		protected boolean onWalk(WalkHandler<K> handler, OctetsStream k) throws MarshalException
 		{
-			Bean<?> key = ((Bean<?>)_stubK).create();
+			Bean<?> key = _stubK.create();
 			k.unmarshal(key);
 			return Helper.onWalkSafe(handler, (K)key);
 		}
@@ -663,7 +663,7 @@ public final class StorageLevelDB implements Storage
 		@Override
 		protected boolean onWalk(WalkValueHandler<K, V> handler, OctetsStream k, V v) throws MarshalException
 		{
-			Bean<?> key = ((Bean<?>)_stubK).create();
+			Bean<?> key = _stubK.create();
 			k.unmarshal(key);
 			return Helper.onWalkSafe(handler, (K)key, v);
 		}

@@ -34,23 +34,19 @@ public final class Log
 
 	static
 	{
-		Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler()
+		Thread.setDefaultUncaughtExceptionHandler((t, e) ->
 		{
-			@Override
-			public void uncaughtException(Thread t, Throwable e)
+			try
 			{
-				try
-				{
-					log.error("thread(" + t + "): uncaught fatal exception:", e);
-				}
-				catch(Throwable ex)
-				{
-					ex.printStackTrace();
-				}
-				finally
-				{
-					e.printStackTrace();
-				}
+				log.error("thread(" + t + "): uncaught fatal exception:", e);
+			}
+			catch(Throwable ex)
+			{
+				ex.printStackTrace();
+			}
+			finally
+			{
+				e.printStackTrace();
 			}
 		});
 	}
@@ -83,7 +79,7 @@ public final class Log
 	 */
 	public static void logJarCreateTime() throws IOException
 	{
-		final String TAG = "Created-Time";
+		String TAG = "Created-Time";
 		Enumeration<URL> urls = Log.class.getClassLoader().getResources("META-INF/MANIFEST.MF");
 		while(urls.hasMoreElements())
 		{

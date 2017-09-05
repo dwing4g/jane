@@ -29,25 +29,21 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	protected Set<V>		_added;
 	protected Set<V>		_removed;
 
-	public SSet(Safe<?> owner, Set<V> set, final SSetListener<V> listener)
+	public SSet(Safe<?> owner, Set<V> set, SSetListener<V> listener)
 	{
 		_owner = owner;
 		_set = set;
 		if(listener != null)
 		{
-			final Rec rec = owner.record();
+			Rec rec = owner.record();
 			if(rec != null)
 			{
 				_added = new HashSet<>();
 				_removed = new HashSet<>();
-				SContext.current().addOnCommit(new Runnable()
+				SContext.current().addOnCommit(() ->
 				{
-					@Override
-					public void run()
-					{
-						if(!_added.isEmpty() || !_removed.isEmpty())
-							listener.onChanged(rec, _added, _removed);
-					}
+					if(!_added.isEmpty() || !_removed.isEmpty())
+						listener.onChanged(rec, _added, _removed);
 				});
 			}
 		}
@@ -79,30 +75,16 @@ public class SSet<V, S> implements Set<S>, Cloneable
 		return (V)(v instanceof Safe ? ((Safe<?>)v).unsafe() : v);
 	}
 
-	protected void addUndoAdd(SContext ctx, final V v)
+	protected void addUndoAdd(SContext ctx, V v)
 	{
 		if(_added != null) _added.add(v);
-		ctx.addOnRollback(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				_set.remove(v);
-			}
-		});
+		ctx.addOnRollback(() -> _set.remove(v));
 	}
 
-	protected void addUndoRemove(SContext ctx, final V v)
+	protected void addUndoRemove(SContext ctx, V v)
 	{
 		if(_removed != null) _removed.add(v);
-		ctx.addOnRollback(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				_set.add(v);
-			}
-		});
+		ctx.addOnRollback(() -> _set.add(v));
 	}
 
 	@Override
@@ -221,36 +203,28 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	{
 		SContext ctx = sContext();
 		if(_set.isEmpty()) return;
-		ctx.addOnRollback(new Runnable()
+		Set<V> saved;
+		try
 		{
-			private final Set<V> _saved;
-
-			{
-				try
-				{
-					_saved = _set.getClass().newInstance();
-					_saved.addAll(_set);
-				}
-				catch(Exception e)
-				{
-					throw new Error(e);
-				}
-			}
-
-			@Override
-			public void run()
-			{
-				_set.clear();
-				_set.addAll(_saved);
-				_saved.clear();
-			}
-		});
+			saved = _set.getClass().newInstance();
+		}
+		catch(Exception e)
+		{
+			throw new Error(e);
+		}
+		saved.addAll(_set);
 		if(_removed != null)
 		{
 			for(V v : _set)
 				_removed.add(v);
 		}
 		_set.clear();
+		ctx.addOnRollback(() ->
+		{
+			_set.clear();
+			_set.addAll(saved);
+			saved.clear();
+		});
 	}
 
 	public final class SIterator implements Iterator<S>

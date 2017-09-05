@@ -2,7 +2,6 @@ package jane.core.map;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import jane.core.Log;
 
@@ -24,39 +23,31 @@ final class LRUCleaner
 
 	private LRUCleaner()
 	{
-		cleanerThread = Executors.newSingleThreadExecutor(new ThreadFactory()
+		cleanerThread = Executors.newSingleThreadExecutor(r ->
 		{
-			@Override
-			public Thread newThread(Runnable r)
-			{
-				Thread t = new Thread(r, "LRUCleanerThread");
-				t.setDaemon(true);
-				t.setPriority(Thread.NORM_PRIORITY + 1);
-				return t;
-			}
+			Thread t = new Thread(r, "LRUCleanerThread");
+			t.setDaemon(true);
+			t.setPriority(Thread.NORM_PRIORITY + 1);
+			return t;
 		});
 	}
 
-	static void submit(final AtomicInteger status, final Cleanable c)
+	static void submit(AtomicInteger status, Cleanable c)
 	{
 		if(!status.compareAndSet(0, 1)) return;
-		Singleton.instance.cleanerThread.submit(new Runnable()
+		Singleton.instance.cleanerThread.submit(() ->
 		{
-			@Override
-			public void run()
+			try
 			{
-				try
-				{
-					c.sweep();
-				}
-				catch(Throwable e)
-				{
-					Log.error("LRUCleaner fatal exception:", e);
-				}
-				finally
-				{
-					status.set(0);
-				}
+				c.sweep();
+			}
+			catch(Throwable e)
+			{
+				Log.error("LRUCleaner fatal exception:", e);
+			}
+			finally
+			{
+				status.set(0);
 			}
 		});
 	}

@@ -12,8 +12,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import org.apache.mina.core.file.DefaultFileRegion;
 import org.apache.mina.core.file.FileRegion;
-import org.apache.mina.core.future.IoFuture;
-import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.ssl.SslFilter;
@@ -81,20 +79,16 @@ public final class TestHttpServer extends NetManager
 				WriteFuture wf = session.write(fr);
 				Throwable e = wf.getException();
 				if(e != null) throw e;
-				wf.addListener(new IoFutureListener<IoFuture>()
+				wf.addListener(future ->
 				{
-					@Override
-					public void operationComplete(IoFuture future)
+					try
 					{
-						try
-						{
-							fc.close();
-							fis.close();
-						}
-						catch(IOException ex)
-						{
-							ex.printStackTrace();
-						}
+						fc.close();
+						fis.close();
+					}
+					catch(IOException ex)
+					{
+						ex.printStackTrace();
 					}
 				});
 			}

@@ -350,27 +350,23 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	/**
 	 * 同putUnsafe,但增加的安全封装,可回滚修改
 	 */
-	public void put(final K k, V v)
+	public void put(K k, V v)
 	{
 		if(!Procedure.isLockedByCurrentThread(lockId(k)))
 			throw new IllegalAccessError("put unlocked record! table=" + _tableName + ",key=" + k);
-		final V vOld = getNoCacheUnsafe(k);
+		V vOld = getNoCacheUnsafe(k);
 		if(vOld == v) return;
 		if(v.stored())
 			throw new IllegalStateException("put shared record: t=" + _tableName + ",k=" + k + ",v=" + v);
-		SContext.current().addOnRollbackDirty(new Runnable()
+		SContext.current().addOnRollbackDirty(() ->
 		{
-			@Override
-			public void run()
+			if(vOld != null)
 			{
-				if(vOld != null)
-				{
-					vOld.setSaveState(0); // 确保可写入
-					putUnsafe(k, vOld);
-				}
-				else
-					removeUnsafe(k);
+				vOld.setSaveState(0); // 确保可写入
+				putUnsafe(k, vOld);
 			}
+			else
+				removeUnsafe(k);
 		});
 		putUnsafe(k, v);
 		if(vOld != null)
@@ -401,20 +397,16 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	/**
 	 * 同removeUnsafe,但增加的安全封装,可回滚修改
 	 */
-	public void remove(final K k)
+	public void remove(K k)
 	{
 		if(!Procedure.isLockedByCurrentThread(lockId(k)))
 			throw new IllegalAccessError("remove unlocked record! table=" + _tableName + ",key=" + k);
-		final V vOld = getNoCacheUnsafe(k);
+		V vOld = getNoCacheUnsafe(k);
 		if(vOld == null) return;
-		SContext.current().addOnRollbackDirty(new Runnable()
+		SContext.current().addOnRollbackDirty(() ->
 		{
-			@Override
-			public void run()
-			{
-				vOld.setSaveState(0); // 确保可写入
-				putUnsafe(k, vOld);
-			}
+			vOld.setSaveState(0); // 确保可写入
+			putUnsafe(k, vOld);
 		});
 		removeUnsafe(k);
 		vOld.setSaveState(0);

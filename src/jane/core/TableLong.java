@@ -43,7 +43,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 		_stoTable = stoTable;
 		if(cacheSize < 1) cacheSize = 1;
 		_cache = Util.newLongConcurrentLRUMap(cacheSize, tableName);
-		_cacheMod = (stoTable != null ? new LongConcurrentHashMap<V>() : null);
+		_cacheMod = (stoTable != null ? new LongConcurrentHashMap<>() : null);
 		if(stoTable != null) _idCounter.set(_stoTable.getIdCounter());
 		_tables.add(this);
 	}
@@ -392,27 +392,23 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	/**
 	 * 同putUnsafe,但增加的安全封装,可回滚修改
 	 */
-	public void put(final long k, V v)
+	public void put(long k, V v)
 	{
 		if(!Procedure.isLockedByCurrentThread(lockId(k)))
 			throw new IllegalAccessError("put unlocked record! table=" + _tableName + ",key=" + k);
-		final V vOld = getNoCacheUnsafe(k);
+		V vOld = getNoCacheUnsafe(k);
 		if(vOld == v) return;
 		if(v.stored())
 			throw new IllegalStateException("put shared record: t=" + _tableName + ",k=" + k + ",v=" + v);
-		SContext.current().addOnRollbackDirty(new Runnable()
+		SContext.current().addOnRollbackDirty(() ->
 		{
-			@Override
-			public void run()
+			if(vOld != null)
 			{
-				if(vOld != null)
-				{
-					vOld.setSaveState(0); // 确保可写入
-					putUnsafe(k, vOld);
-				}
-				else
-					removeUnsafe(k);
+				vOld.setSaveState(0); // 确保可写入
+				putUnsafe(k, vOld);
 			}
+			else
+				removeUnsafe(k);
 		});
 		putUnsafe(k, v);
 		if(vOld != null)
@@ -480,20 +476,16 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	/**
 	 * 同removeUnsafe,但增加的安全封装,可回滚修改
 	 */
-	public void remove(final long k)
+	public void remove(long k)
 	{
 		if(!Procedure.isLockedByCurrentThread(lockId(k)))
 			throw new IllegalAccessError("remove unlocked record! table=" + _tableName + ",key=" + k);
-		final V vOld = getNoCacheUnsafe(k);
+		V vOld = getNoCacheUnsafe(k);
 		if(vOld == null) return;
-		SContext.current().addOnRollbackDirty(new Runnable()
+		SContext.current().addOnRollbackDirty(() ->
 		{
-			@Override
-			public void run()
-			{
-				vOld.setSaveState(0); // 确保可写入
-				putUnsafe(k, vOld);
-			}
+			vOld.setSaveState(0); // 确保可写入
+			putUnsafe(k, vOld);
 		});
 		removeUnsafe(k);
 		vOld.setSaveState(0);

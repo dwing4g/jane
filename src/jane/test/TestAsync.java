@@ -1,7 +1,5 @@
 package jane.test;
 
-import jane.test.async.AsyncException;
-import jane.test.async.AsyncHandler;
 import jane.test.async.AsyncManager;
 import jane.test.async.AsyncTask;
 
@@ -9,14 +7,7 @@ public class TestAsync
 {
 	public static void main(String[] args) throws InterruptedException
 	{
-		AsyncManager.setAsyncException(new AsyncException()
-		{
-			@Override
-			public void onException(Runnable r, Throwable e)
-			{
-				System.err.println(e);
-			}
-		});
+		AsyncManager.setAsyncException((r, e) -> System.err.println(e));
 
 		AsyncManager.get().submit(new AsyncTask()
 		{
@@ -32,22 +23,8 @@ public class TestAsync
 				}
 				else
 				{
-					await(1000, new AsyncTask()
-					{
-						@Override
-						public void run()
-						{
-							System.out.println("timeout!");
-						}
-					});
-					awaitReadFile("README.md", new AsyncHandler<byte[]>()
-					{
-						@Override
-						public void onHandler(byte[] result)
-						{
-							System.out.println("read: " + (result != null ? result.length : -1));
-						}
-					});
+					await(1000, () -> System.out.println("timeout!"));
+					awaitReadFile("README.md", result -> System.out.println("read: " + (result != null ? result.length : -1)));
 				}
 			}
 		});

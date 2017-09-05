@@ -31,24 +31,20 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	private SContext		  _sctx;
 	protected Map<K, V>		  _changed;
 
-	public SMap(Safe<?> owner, Map<K, V> map, final SMapListener<K, V> listener)
+	public SMap(Safe<?> owner, Map<K, V> map, SMapListener<K, V> listener)
 	{
 		_owner = owner;
 		_map = map;
 		if(listener != null)
 		{
-			final Rec rec = owner.record();
+			Rec rec = owner.record();
 			if(rec != null)
 			{
 				_changed = new HashMap<>();
-				SContext.current().addOnCommit(new Runnable()
+				SContext.current().addOnCommit(() ->
 				{
-					@Override
-					public void run()
-					{
-						if(!_changed.isEmpty())
-							listener.onChanged(rec, _changed);
-					}
+					if(!_changed.isEmpty())
+						listener.onChanged(rec, _changed);
 				});
 			}
 		}
@@ -70,21 +66,12 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	protected S safe(final Object k, final V v)
+	protected S safe(Object k, V v)
 	{
 		if(!(v instanceof Bean)) return (S)v;
 		Safe<?> s = ((Bean<?>)v).safe(_owner);
 		if(_changed != null)
-		{
-			s.onDirty(new Runnable()
-			{
-				@Override
-				public void run()
-				{
-					_changed.put((K)k, v);
-				}
-			});
-		}
+			s.onDirty(() -> _changed.put((K)k, v));
 		return (S)s;
 	}
 
@@ -100,32 +87,21 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		return (V)(v instanceof Safe ? ((Safe<?>)v).unsafe() : v);
 	}
 
-	protected void addUndoPut(SContext ctx, final K k, final V vOld)
+	protected void addUndoPut(SContext ctx, K k, V vOld)
 	{
-		ctx.addOnRollback(new Runnable()
+		ctx.addOnRollback(() ->
 		{
-			@Override
-			public void run()
-			{
-				if(vOld != null)
-					_map.put(k, vOld);
-				else
-					_map.remove(k);
-			}
+			if(vOld != null)
+				_map.put(k, vOld);
+			else
+				_map.remove(k);
 		});
 	}
 
-	protected void addUndoRemove(SContext ctx, final K k, final V vOld)
+	protected void addUndoRemove(SContext ctx, K k, V vOld)
 	{
 		if(_changed != null) _changed.put(k, null);
-		ctx.addOnRollback(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				_map.put(k, vOld);
-			}
-		});
+		ctx.addOnRollback(() -> _map.put(k, vOld));
 	}
 
 	@Override
@@ -225,36 +201,28 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	{
 		SContext ctx = sContext();
 		if(_map.isEmpty()) return;
-		ctx.addOnRollback(new Runnable()
+		Map<K, V> saved;
+		try
 		{
-			private final Map<K, V> _saved;
-
-			{
-				try
-				{
-					_saved = _map.getClass().newInstance();
-					_saved.putAll(_map);
-				}
-				catch(Exception e)
-				{
-					throw new Error(e);
-				}
-			}
-
-			@Override
-			public void run()
-			{
-				_map.clear();
-				_map.putAll(_saved);
-				_saved.clear();
-			}
-		});
+			saved = _map.getClass().newInstance();
+		}
+		catch(Exception e)
+		{
+			throw new Error(e);
+		}
+		saved.putAll(_map);
 		if(_changed != null)
 		{
 			for(K k : _map.keySet())
 				_changed.put(k, null);
 		}
 		_map.clear();
+		ctx.addOnRollback(() ->
+		{
+			_map.clear();
+			_map.putAll(saved);
+			saved.clear();
+		});
 	}
 
 	public final class SEntry implements Entry<K, S>

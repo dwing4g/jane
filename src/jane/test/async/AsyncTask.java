@@ -8,24 +8,24 @@ import java.nio.channels.CompletionHandler;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
-public abstract class AsyncTask implements Runnable
+public interface AsyncTask extends Runnable
 {
-	protected static void yield(Runnable r)
+	default void yield(Runnable r)
 	{
 		AsyncManager.get().submit(r);
 	}
 
-	protected static void await(AsyncTimerTask task)
+	default void await(AsyncTimerTask task)
 	{
 		AsyncManager.get().submit(task);
 	}
 
-	protected static void await(int delayMs, Runnable r)
+	default void await(int delayMs, Runnable r)
 	{
 		AsyncManager.get().submit(delayMs, r);
 	}
 
-	protected void awaitReadFile(String path, final AsyncHandler<byte[]> handler)
+	default void awaitReadFile(String path, AsyncHandler<byte[]> handler)
 	{
 		int len = (int)new File(path).length();
 		if(len > 0)
@@ -38,23 +38,19 @@ public abstract class AsyncTask implements Runnable
 				afc.read(bb, len, afc, new CompletionHandler<Integer, AsynchronousFileChannel>()
 				{
 					@Override
-					public void completed(Integer result, final AsynchronousFileChannel afc2)
+					public void completed(Integer result, AsynchronousFileChannel afc2)
 					{
-						AsyncManager.get().submit(new Runnable()
+						AsyncManager.get().submit(() ->
 						{
-							@Override
-							public void run()
+							try
 							{
-								try
-								{
-									afc2.close();
-								}
-								catch(IOException e)
-								{
-									AsyncManager.onException(AsyncTask.this, e);
-								}
-								handler.onHandler(bb.array());
+								afc2.close();
 							}
+							catch(IOException e)
+							{
+								AsyncManager.onException(AsyncTask.this, e);
+							}
+							handler.onHandler(bb.array());
 						});
 					}
 
@@ -83,7 +79,7 @@ public abstract class AsyncTask implements Runnable
 			handler.onHandler(null);
 	}
 
-	protected void awaitWriteFile(String path, byte[] data, final AsyncHandler<Boolean> handler)
+	default void awaitWriteFile(String path, byte[] data, AsyncHandler<Boolean> handler)
 	{
 		try
 		{
@@ -92,23 +88,19 @@ public abstract class AsyncTask implements Runnable
 			afc.write(ByteBuffer.wrap(data), 0, afc, new CompletionHandler<Integer, AsynchronousFileChannel>()
 			{
 				@Override
-				public void completed(Integer result, final AsynchronousFileChannel afc2)
+				public void completed(Integer result, AsynchronousFileChannel afc2)
 				{
-					AsyncManager.get().submit(new Runnable()
+					AsyncManager.get().submit(() ->
 					{
-						@Override
-						public void run()
+						try
 						{
-							try
-							{
-								afc2.close();
-							}
-							catch(IOException e)
-							{
-								AsyncManager.onException(AsyncTask.this, e);
-							}
-							handler.onHandler(true);
+							afc2.close();
 						}
+						catch(IOException e)
+						{
+							AsyncManager.onException(AsyncTask.this, e);
+						}
+						handler.onHandler(true);
 					});
 				}
 

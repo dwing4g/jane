@@ -113,16 +113,8 @@ public final class SContext
 		public void addFullUndo()
 		{
 			if(!initSContext()) return;
-			_sctx.addOnRollback(new Runnable()
-			{
-				private final B _saved = _bean.clone();
-
-				@Override
-				public void run()
-				{
-					_bean.assign(_saved);
-				}
-			});
+			B saved = _bean.clone();
+			_sctx.addOnRollback(() -> _bean.assign(saved));
 			_fullUndo = true;
 		}
 

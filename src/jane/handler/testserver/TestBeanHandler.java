@@ -5,11 +5,10 @@ import jane.core.Bean;
 import jane.core.BeanHandler;
 import jane.core.Log;
 import jane.core.NetManager;
-import jane.core.NetManager.AnswerHandler;
 import jane.bean.TestBean;
 import jane.bean.TestType;
 
-public final class TestBeanHandler extends BeanHandler<TestBean>
+public final class TestBeanHandler implements BeanHandler<TestBean>
 {
 	/*\
 	|*| int TEST_CONST1 = 5; // 测试类静态常量
@@ -22,15 +21,11 @@ public final class TestBeanHandler extends BeanHandler<TestBean>
 	public void onProcess(final NetManager manager, final IoSession session, final TestBean arg)
 	{
 		Log.debug("{}: arg={}", getClass().getName(), arg);
-		final TestType bean = new TestType();
-		manager.ask(session, bean, new AnswerHandler()
+		TestType bean = new TestType();
+		manager.<Bean<?>>ask(session, bean, res ->
 		{
-			@Override
-			public void onAnswer(Bean<?> res)
-			{
-				Log.info("{}: onAnswer: ask={},answer={}", getClass().getName(), bean, res);
-				session.closeNow();
-			}
+			Log.info("{}: onAnswer: ask={},answer={}", getClass().getName(), bean, res);
+			session.closeNow();
 		});
 	}
 }

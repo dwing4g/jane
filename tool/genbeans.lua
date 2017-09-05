@@ -259,7 +259,7 @@ import jane.core.Log;
 import jane.core.NetManager;
 import ]=] .. namespace .. [=[.#(bean.name);
 
-public final class #(bean.name)Handler extends BeanHandler<#(bean.name)>
+public final class #(bean.name)Handler implements BeanHandler<#(bean.name)>
 {
 	/*\
 #(#	|*| #(var.type) #(var.name)#(var.value);#(var.comment2)
@@ -568,7 +568,7 @@ typedef.octets = merge(typedef.string,
 	}
 
 	/** #(var.comment1) */
-	public <B extends Bean<B>> void marshal#(var.name_u)(Bean<B> _b_)
+	public void marshal#(var.name_u)(Bean<?> _b_)
 	{
 		OctetsStream _os_ = OctetsStream.wrap(this.#(var.name));
 		_os_.resize(0);
@@ -578,7 +578,7 @@ typedef.octets = merge(typedef.string,
 	}
 
 	/** #(var.comment1) */
-	public <B extends Bean<B>> Bean<B> unmarshal#(var.name_u)(Bean<B> _b_) throws MarshalException
+	public <B extends Bean<?>> B unmarshal#(var.name_u)(B _b_) throws MarshalException
 	{
 		_b_.unmarshal(OctetsStream.wrap(this.#(var.name)));
 		return _b_;
@@ -614,14 +614,14 @@ typedef.octets = merge(typedef.string,
 		}
 
 		/** #(var.comment1) */
-		public <B extends Bean<B>> void marshal#(var.name_u)(Bean<B> _b_)
+		public void marshal#(var.name_u)(Bean<?> _b_)
 		{
 			if(initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.#(var.name), false));
 			_bean.#(var.name) = _b_.marshal(new OctetsStream(_b_.initSize()));
 		}
 
 		/** #(var.comment1) */
-		public <B extends Bean<B>> Bean<B> unmarshal#(var.name_u)(Bean<B> _b_) throws MarshalException
+		public <B extends Bean<?>> B unmarshal#(var.name_u)(B _b_) throws MarshalException
 		{
 			return _bean.unmarshal#(var.name_u)(_b_);
 		}
@@ -1096,8 +1096,8 @@ local function bean_const(code)
 --		gsub("\n\tpublic  static final [%w_]+ BEAN_STUB = new [%w_]+%(%);\n", ""):
 --		gsub("return BEAN_STUB", "throw new UnsupportedOperationException()"):
 --		gsub("return new [%w_]+%(%)", "throw new UnsupportedOperationException()"):
-		gsub("\tpublic <B extends Bean<B>> void marshal.-\n\t}\n\n", ""):
-		gsub("\tpublic <B extends Bean<B>> Bean<B> unmarshal.-\n\t}\n\n", ""):
+		gsub("\tpublic void marshal.-\n\t}\n\n", ""):
+		gsub("\tpublic <B extends Bean<?>> B unmarshal.-\n\t}\n\n", ""):
 		gsub("\tpublic DynBean unmarshal.-\n\t}\n\n", ""):
 		gsub("\n\t@Override\n\tpublic Safe safe.-\n\t}\n", ""):
 		gsub("\t@Override\n\tpublic void reset%(.-\n\t}", [[

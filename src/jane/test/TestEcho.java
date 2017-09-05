@@ -32,7 +32,7 @@ public final class TestEcho extends NetManager
 	private static final DefaultIoSessionDataStructureFactory _dsFactory = new DefaultIoSessionDataStructureFactory()
 	{
 		@Override
-		public WriteRequestQueue getWriteRequestQueue(final IoSession session) throws Exception
+		public WriteRequestQueue getWriteRequestQueue(IoSession session) throws Exception
 		{
 			_wrqCount.incrementAndGet();
 			return new WriteRequestQueue()

@@ -290,7 +290,7 @@ public final class TestType extends Bean<TestType>
 	}
 
 	/** 二进制数据(Octets) */
-	public <B extends Bean<B>> void marshalV8(Bean<B> _b_)
+	public void marshalV8(Bean<?> _b_)
 	{
 		OctetsStream _os_ = OctetsStream.wrap(this.v8);
 		_os_.resize(0);
@@ -300,7 +300,7 @@ public final class TestType extends Bean<TestType>
 	}
 
 	/** 二进制数据(Octets) */
-	public <B extends Bean<B>> Bean<B> unmarshalV8(Bean<B> _b_) throws MarshalException
+	public <B extends Bean<?>> B unmarshalV8(B _b_) throws MarshalException
 	{
 		_b_.unmarshal(OctetsStream.wrap(this.v8));
 		return _b_;
@@ -875,14 +875,14 @@ public final class TestType extends Bean<TestType>
 		}
 
 		/** 二进制数据(Octets) */
-		public <B extends Bean<B>> void marshalV8(Bean<B> _b_)
+		public void marshalV8(Bean<?> _b_)
 		{
 			if(initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_v8, _bean.v8, false));
 			_bean.v8 = _b_.marshal(new OctetsStream(_b_.initSize()));
 		}
 
 		/** 二进制数据(Octets) */
-		public <B extends Bean<B>> Bean<B> unmarshalV8(Bean<B> _b_) throws MarshalException
+		public <B extends Bean<?>> B unmarshalV8(B _b_) throws MarshalException
 		{
 			return _bean.unmarshalV8(_b_);
 		}

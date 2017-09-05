@@ -106,64 +106,60 @@ public class ProcThread extends Thread
 	{
 		if(Const.deadlockCheckInterval > 0)
 		{
-			NetManager.scheduleWithFixedDelay(Const.deadlockCheckInterval, Const.deadlockCheckInterval, new Runnable()
+			NetManager.scheduleWithFixedDelay(Const.deadlockCheckInterval, Const.deadlockCheckInterval, () ->
 			{
-				@Override
-				public void run()
+				try
 				{
-					try
+					long[] tids = null;
+					boolean foundDeadlock = false;
+					long now = System.currentTimeMillis();
+					long procTimeout = (long)Const.procedureTimeout * 1000;
+					long procDeadlockTimeout = (long)Const.procedureDeadlockTimeout * 1000;
+					long procTimoutMin = Math.min(procTimeout, procDeadlockTimeout);
+					for(ProcThread pt : _procThreads)
 					{
-						long[] tids = null;
-						boolean foundDeadlock = false;
-						long now = System.currentTimeMillis();
-						long procTimeout = (long)Const.procedureTimeout * 1000;
-						long procDeadlockTimeout = (long)Const.procedureDeadlockTimeout * 1000;
-						long procTimoutMin = Math.min(procTimeout, procDeadlockTimeout);
-						for(ProcThread pt : _procThreads)
+						if(pt.isAlive())
 						{
-							if(pt.isAlive())
+							Procedure p = pt.proc;
+							if(p != null && now - pt.beginTime > procTimoutMin)
 							{
-								Procedure p = pt.proc;
-								if(p != null && now - pt.beginTime > procTimoutMin)
+								synchronized(p)
 								{
-									synchronized(p)
+									if(p == pt.proc)
 									{
-										if(p == pt.proc)
+										long timeout = now - pt.beginTime;
+										if(timeout > procTimeout)
 										{
-											long timeout = now - pt.beginTime;
-											if(timeout > procTimeout)
+											StringBuilder sb = new StringBuilder(2000);
+											sb.append("procedure({}) in {} interrupted for timeout ({} ms): sid={}\n");
+											for(StackTraceElement ste : pt.getStackTrace())
+												sb.append("\tat ").append(ste).append('\n');
+											Log.error(sb.toString(), p.getClass().getName(), pt, timeout, p.getSid());
+											++_interruptCount;
+											pt.interrupt();
+										}
+										else if(timeout > procDeadlockTimeout)
+										{
+											if(!foundDeadlock)
 											{
-												StringBuilder sb = new StringBuilder(2000);
-												sb.append("procedure({}) in {} interrupted for timeout ({} ms): sid={}\n");
-												for(StackTraceElement ste : pt.getStackTrace())
-													sb.append("\tat ").append(ste).append('\n');
-												Log.error(sb.toString(), p.getClass().getName(), pt, timeout, p.getSid());
-												++_interruptCount;
-												pt.interrupt();
+												foundDeadlock = true;
+												tids = ManagementFactory.getThreadMXBean().findDeadlockedThreads();
 											}
-											else if(timeout > procDeadlockTimeout)
+											if(tids != null)
 											{
-												if(!foundDeadlock)
+												long tid = pt.getId();
+												for(int i = tids.length - 1; i >= 0; --i)
 												{
-													foundDeadlock = true;
-													tids = ManagementFactory.getThreadMXBean().findDeadlockedThreads();
-												}
-												if(tids != null)
-												{
-													long tid = pt.getId();
-													for(int i = tids.length - 1; i >= 0; --i)
+													if(tids[i] == tid)
 													{
-														if(tids[i] == tid)
-														{
-															StringBuilder sb = new StringBuilder(2000);
-															sb.append("procedure({}) in {} interrupted for deadlock timeout({} ms): sid={}\n");
-															for(StackTraceElement ste : pt.getStackTrace())
-																sb.append("\tat ").append(ste).append('\n');
-															Log.error(sb.toString(), p.getClass().getName(), pt, timeout, p.getSid());
-															++_interruptCount;
-															pt.interrupt();
-															break;
-														}
+														StringBuilder sb = new StringBuilder(2000);
+														sb.append("procedure({}) in {} interrupted for deadlock timeout({} ms): sid={}\n");
+														for(StackTraceElement ste : pt.getStackTrace())
+															sb.append("\tat ").append(ste).append('\n');
+														Log.error(sb.toString(), p.getClass().getName(), pt, timeout, p.getSid());
+														++_interruptCount;
+														pt.interrupt();
+														break;
 													}
 												}
 											}
@@ -171,14 +167,14 @@ public class ProcThread extends Thread
 									}
 								}
 							}
-							else
-								_procThreads.remove(pt);
 						}
+						else
+							_procThreads.remove(pt);
 					}
-					catch(Throwable e)
-					{
-						Log.error("procedure timeout fatal exception:", e);
-					}
+				}
+				catch(Throwable e)
+				{
+					Log.error("procedure timeout fatal exception:", e);
 				}
 			});
 		}

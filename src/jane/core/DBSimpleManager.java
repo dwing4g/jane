@@ -13,7 +13,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import jane.core.StorageLevelDB.DBWalkHandler;
 
 /**
  * 数据库管理器(单件)的简单版
@@ -224,19 +223,15 @@ public final class DBSimpleManager
 		_dbFilename = dbFilename;
 		_storage = sto;
 		sto.openDB(dbfile);
-		ExitManager.getShutdownSystemCallbacks().add(new Runnable()
+		ExitManager.getShutdownSystemCallbacks().add(() ->
 		{
-			@Override
-			public void run()
+			Log.info("DBSimpleManager.OnJVMShutDown: db shutdown");
+			synchronized(DBSimpleManager.this)
 			{
-				Log.info("DBSimpleManager.OnJVMShutDown: db shutdown");
-				synchronized(DBSimpleManager.this)
-				{
-					_exiting = true;
-				}
-				shutdown();
-				Log.info("DBSimpleManager.OnJVMShutDown: db closed");
+				_exiting = true;
 			}
+			shutdown();
+			Log.info("DBSimpleManager.OnJVMShutDown: db closed");
 		});
 	}
 
@@ -301,7 +296,7 @@ public final class DBSimpleManager
 		return new OctetsStream(5 + key.initSize()).marshalUInt(tableId).marshal(key);
 	}
 
-	private <B extends Bean<B>> B get0(Octets key, B beanStub) throws MarshalException
+	private <B extends Bean<?>> B get0(Octets key, B beanStub) throws MarshalException
 	{
 		_readCount.incrementAndGet();
 		Octets val = (_enableReadCache ? _readCache.get(key) : null);
@@ -337,7 +332,7 @@ public final class DBSimpleManager
 			_readCache.remove(key);
 	}
 
-	public <B extends Bean<B>> B get(int tableId, long key, B beanStub)
+	public <B extends Bean<?>> B get(int tableId, long key, B beanStub)
 	{
 		try
 		{
@@ -350,7 +345,7 @@ public final class DBSimpleManager
 		}
 	}
 
-	public <B extends Bean<B>> B get(int tableId, Octets key, B beanStub)
+	public <B extends Bean<?>> B get(int tableId, Octets key, B beanStub)
 	{
 		try
 		{
@@ -363,7 +358,7 @@ public final class DBSimpleManager
 		}
 	}
 
-	public <B extends Bean<B>> B get(int tableId, String key, B beanStub)
+	public <B extends Bean<?>> B get(int tableId, String key, B beanStub)
 	{
 		try
 		{
@@ -376,7 +371,7 @@ public final class DBSimpleManager
 		}
 	}
 
-	public <B extends Bean<B>> B get(int tableId, Bean<?> key, B beanStub)
+	public <B extends Bean<?>> B get(int tableId, Bean<?> key, B beanStub)
 	{
 		try
 		{
@@ -429,7 +424,7 @@ public final class DBSimpleManager
 		remove0(toKey(tableId, key));
 	}
 
-	public interface WalkHandlerLongValue<B extends Bean<B>>
+	public interface WalkHandlerLongValue<B extends Bean<?>>
 	{
 		/**
 		 * 每次遍历一个记录都会调用此接口
@@ -438,25 +433,20 @@ public final class DBSimpleManager
 		boolean onWalk(long key, B value) throws Exception;
 	}
 
-	public <B extends Bean<B>> boolean walkTable(final int tableId, long keyFrom, long keyTo, final B beanStub, final WalkHandlerLongValue<B> handler)
+	public <B extends Bean<?>> boolean walkTable(int tableId, long keyFrom, long keyTo, B beanStub, WalkHandlerLongValue<B> handler)
 	{
-		return _storage.dbwalk(toKey(tableId, keyFrom), toKey(tableId, keyTo), true, false, new DBWalkHandler()
+		OctetsStreamEx os = new OctetsStreamEx();
+		int tableIdLen = OctetsStream.marshalUIntLen(tableId);
+		return _storage.dbwalk(toKey(tableId, keyFrom), toKey(tableId, keyTo), true, false, (key, value) ->
 		{
-			private final OctetsStreamEx _os		 = new OctetsStreamEx();
-			private final int			 _tableIdLen = OctetsStream.marshalUIntLen(tableId);
-
-			@Override
-			public boolean onWalk(byte[] key, byte[] value) throws Exception
-			{
-				_os.wraps(key).setPosition(_tableIdLen);
-				long k = _os.unmarshalLong();
-				_os.wraps(value).setPosition(0);
-				return handler.onWalk(k, StorageLevelDB.toBean(_os, beanStub));
-			}
+			os.wraps(key).setPosition(tableIdLen);
+			long k = os.unmarshalLong();
+			os.wraps(value).setPosition(0);
+			return handler.onWalk(k, StorageLevelDB.toBean(os, beanStub));
 		});
 	}
 
-	public interface WalkHandlerOctetsValue<B extends Bean<B>>
+	public interface WalkHandlerOctetsValue<B extends Bean<?>>
 	{
 		/**
 		 * 每次遍历一个记录都会调用此接口
@@ -465,32 +455,27 @@ public final class DBSimpleManager
 		boolean onWalk(byte[] key, B value) throws Exception;
 	}
 
-	public <B extends Bean<B>> boolean walkTable(final int tableId, final B beanStub, final WalkHandlerOctetsValue<B> handler)
+	public <B extends Bean<?>> boolean walkTable(int tableId, B beanStub, WalkHandlerOctetsValue<B> handler)
 	{
-		final AtomicBoolean finished = new AtomicBoolean();
-		return _storage.dbwalk(toKey(tableId, new Octets()), null, true, false, new DBWalkHandler()
+		OctetsStreamEx os = new OctetsStreamEx();
+		int tableIdLen = OctetsStream.marshalUIntLen(tableId);
+		AtomicBoolean finished = new AtomicBoolean();
+		return _storage.dbwalk(toKey(tableId, new Octets()), null, true, false, (key, value) ->
 		{
-			private final OctetsStreamEx _os		 = new OctetsStreamEx();
-			private final int			 _tableIdLen = OctetsStream.marshalUIntLen(tableId);
-
-			@Override
-			public boolean onWalk(byte[] key, byte[] value) throws Exception
+			os.setPosition(0);
+			int tid = os.wraps(key).unmarshalUInt();
+			if(tid != tableId)
 			{
-				_os.setPosition(0);
-				int tid = _os.wraps(key).unmarshalUInt();
-				if(tid != tableId)
-				{
-					finished.set(true);
-					return false;
-				}
-				byte[] k = _os.getBytes(_tableIdLen, Integer.MAX_VALUE);
-				_os.wraps(value).setPosition(0);
-				return handler.onWalk(k, StorageLevelDB.toBean(_os, beanStub));
+				finished.set(true);
+				return false;
 			}
+			byte[] k = os.getBytes(tableIdLen, Integer.MAX_VALUE);
+			os.wraps(value).setPosition(0);
+			return handler.onWalk(k, StorageLevelDB.toBean(os, beanStub));
 		}) || finished.get();
 	}
 
-	public interface WalkHandlerStringValue<B extends Bean<B>>
+	public interface WalkHandlerStringValue<B extends Bean<?>>
 	{
 		/**
 		 * 每次遍历一个记录都会调用此接口
@@ -499,31 +484,26 @@ public final class DBSimpleManager
 		boolean onWalk(String key, B value) throws Exception;
 	}
 
-	public <B extends Bean<B>> boolean walkTable(final int tableId, final B beanStub, final WalkHandlerStringValue<B> handler)
+	public <B extends Bean<?>> boolean walkTable(int tableId, B beanStub, WalkHandlerStringValue<B> handler)
 	{
-		final AtomicBoolean finished = new AtomicBoolean();
-		return _storage.dbwalk(null, null, true, false, new DBWalkHandler()
+		OctetsStreamEx os = new OctetsStreamEx();
+		AtomicBoolean finished = new AtomicBoolean();
+		return _storage.dbwalk(null, null, true, false, (key, value) ->
 		{
-			private final OctetsStreamEx _os = new OctetsStreamEx();
-
-			@Override
-			public boolean onWalk(byte[] key, byte[] value) throws Exception
+			os.setPosition(0);
+			int tid = os.wraps(key).unmarshalUInt();
+			if(tid != tableId)
 			{
-				_os.setPosition(0);
-				int tid = _os.wraps(key).unmarshalUInt();
-				if(tid != tableId)
-				{
-					finished.set(true);
-					return false;
-				}
-				String keyStr = new String(_os.array(), _os.position(), _os.remain(), StandardCharsets.UTF_8);
-				_os.wraps(value).setPosition(0);
-				return handler.onWalk(keyStr, StorageLevelDB.toBean(_os, beanStub));
+				finished.set(true);
+				return false;
 			}
+			String keyStr = new String(os.array(), os.position(), os.remain(), StandardCharsets.UTF_8);
+			os.wraps(value).setPosition(0);
+			return handler.onWalk(keyStr, StorageLevelDB.toBean(os, beanStub));
 		}) || finished.get();
 	}
 
-	public interface WalkHandlerBeanValue<K extends Bean<K>, B extends Bean<B>>
+	public interface WalkHandlerBeanValue<K extends Bean<?>, B extends Bean<?>>
 	{
 		/**
 		 * 每次遍历一个记录都会调用此接口
@@ -532,28 +512,23 @@ public final class DBSimpleManager
 		boolean onWalk(K key, B value) throws Exception;
 	}
 
-	public <K extends Bean<K>, B extends Bean<B>> boolean walkTable(final int tableId, final K keyStub, final B beanStub, final WalkHandlerBeanValue<K, B> handler)
+	public <K extends Bean<K>, B extends Bean<?>> boolean walkTable(int tableId, K keyStub, B beanStub, WalkHandlerBeanValue<K, B> handler)
 	{
-		final AtomicBoolean finished = new AtomicBoolean();
-		return _storage.dbwalk(null, null, true, false, new DBWalkHandler()
+		OctetsStreamEx os = new OctetsStreamEx();
+		AtomicBoolean finished = new AtomicBoolean();
+		return _storage.dbwalk(null, null, true, false, (key, value) ->
 		{
-			private final OctetsStreamEx _os = new OctetsStreamEx();
-
-			@Override
-			public boolean onWalk(byte[] key, byte[] value) throws Exception
+			os.setPosition(0);
+			int tid = os.wraps(key).unmarshalUInt();
+			if(tid != tableId)
 			{
-				_os.setPosition(0);
-				int tid = _os.wraps(key).unmarshalUInt();
-				if(tid != tableId)
-				{
-					finished.set(true);
-					return false;
-				}
-				K k = keyStub.create();
-				k.unmarshal(_os);
-				_os.wraps(value).setPosition(0);
-				return handler.onWalk(k, StorageLevelDB.toBean(_os, beanStub));
+				finished.set(true);
+				return false;
 			}
+			K k = keyStub.create();
+			k.unmarshal(os);
+			os.wraps(value).setPosition(0);
+			return handler.onWalk(k, StorageLevelDB.toBean(os, beanStub));
 		}) || finished.get();
 	}
 
