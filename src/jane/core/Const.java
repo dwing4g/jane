@@ -118,7 +118,7 @@ public final class Const
 		levelDBWriteBufferSize = getPropInt("levelDBWriteBufferSize", 32, 1, 1024);
 		levelDBMaxOpenFiles = getPropInt("levelDBMaxOpenFiles", 10000, 1000);
 		levelDBCacheSize = getPropInt("levelDBCacheSize", 32, 1, 1024);
-		levelDBFileSize = getPropInt("levelDBFileSize", 2, 1, 1024);
+		levelDBFileSize = getPropInt("levelDBFileSize", 10, 1, 1024);
 		levelDBFullBackupPeriod = getPropLong("levelDBFullBackupPeriod", 604800, 1, Long.MAX_VALUE / 1000);
 	}
 
