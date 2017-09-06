@@ -46,6 +46,7 @@ public final class Const
 	public static final int			autoIdStride;
 	public static final String		levelDBNativePath;
 	public static final int			levelDBWriteBufferSize;
+	public static final int			levelDBMaxOpenFiles;
 	public static final int			levelDBCacheSize;
 	public static final int			levelDBFileSize;
 	public static final long		levelDBFullBackupPeriod;
@@ -115,6 +116,7 @@ public final class Const
 		autoIdStride = getPropInt("autoIdStride", 1, 1);
 		levelDBNativePath = getPropStr("levelDBNativePath", "lib");
 		levelDBWriteBufferSize = getPropInt("levelDBWriteBufferSize", 32, 1, 1024);
+		levelDBMaxOpenFiles = getPropInt("levelDBMaxOpenFiles", 10000, 1000);
 		levelDBCacheSize = getPropInt("levelDBCacheSize", 32, 1, 1024);
 		levelDBFileSize = getPropInt("levelDBFileSize", 2, 1, 1024);
 		levelDBFullBackupPeriod = getPropLong("levelDBFullBackupPeriod", 604800, 1, Long.MAX_VALUE / 1000);

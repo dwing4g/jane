@@ -64,7 +64,7 @@ public final class LevelDBImport
 		try(BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(dumpname), s_cs88591)))
 		{
 			System.err.println("INFO: opening " + pathname + " ...");
-			db = StorageLevelDB.leveldb_open(pathname, 0, 0, true);
+			db = StorageLevelDB.leveldb_open3(pathname, 0, 0, 0, 0, true, false);
 			if(db == 0)
 			{
 				System.err.println("ERROR: leveldb_open failed");

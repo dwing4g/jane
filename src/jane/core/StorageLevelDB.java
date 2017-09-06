@@ -28,6 +28,7 @@ public final class StorageLevelDB implements Storage
 	private final long					_backupBase;											// 备份数据的基准时间
 	private volatile boolean			_writing;												// 是否正在执行写操作
 	private boolean						_useSnappy = true;										// 是否使用LevelDB内置的snappy压缩
+	private boolean						_reuseLogs = true;										// 是否使用LevelDB内置的reuse_logs功能
 
 	static
 	{
@@ -86,6 +87,8 @@ public final class StorageLevelDB implements Storage
 	public static native long leveldb_open(String path, int writeBufSize, int cacheSize, boolean useSnappy);
 
 	public static native long leveldb_open2(String path, int writeBufSize, int cacheSize, int fileSize, boolean useSnappy);
+
+	public static native long leveldb_open3(String path, int write_bufsize, int max_open_files, int cache_size, int file_size, boolean use_snappy, boolean reuse_logs);
 
 	public static native void leveldb_close(long handle);
 
@@ -699,6 +702,11 @@ public final class StorageLevelDB implements Storage
 		_useSnappy = useSnappy;
 	}
 
+	public void setReuseLogs(boolean reuseLogs)
+	{
+		_reuseLogs = reuseLogs;
+	}
+
 	public synchronized String getProperty(String prop)
 	{
 		if(_db == 0) return "";
@@ -837,8 +845,9 @@ public final class StorageLevelDB implements Storage
 	public synchronized void openDB(File file) throws IOException
 	{
 		close();
-		_db = leveldb_open2(file.getAbsolutePath(), Const.levelDBWriteBufferSize << 20, Const.levelDBCacheSize << 20, Const.levelDBFileSize << 20, _useSnappy);
-		if(_db == 0) throw new IOException("StorageLevelDB.openDB: leveldb_open failed: " + file.getAbsolutePath());
+		_db = leveldb_open3(file.getAbsolutePath(), Const.levelDBWriteBufferSize << 20, Const.levelDBMaxOpenFiles,
+				Const.levelDBCacheSize << 20, Const.levelDBFileSize << 20, _useSnappy, _reuseLogs);
+		if(_db == 0) throw new IOException("StorageLevelDB.openDB: leveldb_open3 failed: " + file.getAbsolutePath());
 		_dbFile = file;
 	}
 

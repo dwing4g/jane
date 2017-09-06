@@ -24,7 +24,7 @@ public final class LevelDBExport
 
 		long t = System.currentTimeMillis();
 		System.err.println("INFO: opening " + pathname + " ...");
-		long db = StorageLevelDB.leveldb_open(pathname, 0, 0, true);
+		long db = StorageLevelDB.leveldb_open3(pathname, 0, 0, 0, 0, true, true);
 		if(db == 0)
 		{
 			System.err.println("ERROR: leveldb_open failed");

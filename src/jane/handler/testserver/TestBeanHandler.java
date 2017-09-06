@@ -1,7 +1,6 @@
 package jane.handler.testserver;
 
 import org.apache.mina.core.session.IoSession;
-import jane.core.Bean;
 import jane.core.BeanHandler;
 import jane.core.Log;
 import jane.core.NetManager;
@@ -22,9 +21,9 @@ public final class TestBeanHandler implements BeanHandler<TestBean>
 	{
 		Log.debug("{}: arg={}", getClass().getName(), arg);
 		TestType bean = new TestType();
-		manager.<Bean<?>>ask(session, bean, res ->
+		manager.ask(session, bean, re ->
 		{
-			Log.info("{}: onAnswer: ask={},answer={}", getClass().getName(), bean, res);
+			Log.info("{}: onAnswer: ask={},answer={}", getClass().getName(), bean, re);
 			session.closeNow();
 		});
 	}
