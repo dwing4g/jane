@@ -840,7 +840,7 @@ public class NetManager implements IoHandler
 	public void exceptionCaught(IoSession session, Throwable cause)
 	{
 		if(cause instanceof IOException)
-			Log.error(_name + '(' + session.getId() + ',' + session.getRemoteAddress() + "): exception: {}", cause.getMessage());
+			Log.error(_name + '(' + session.getId() + ',' + session.getRemoteAddress() + "): exception: {}: {}", cause.getClass().getSimpleName(), cause.getMessage());
 		else
 			Log.error(_name + '(' + session.getId() + ',' + session.getRemoteAddress() + "): exception:", cause);
 		session.closeNow();

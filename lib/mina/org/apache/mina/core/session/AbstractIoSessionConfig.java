@@ -34,8 +34,6 @@ public abstract class AbstractIoSessionConfig implements IoSessionConfig {
 	/** The maximum size of the buffer used to read incoming data */
 	private int maxReadBufferSize = 65536;
 
-	private int throughputCalculationInterval = 3;
-
 	protected AbstractIoSessionConfig() {
 		// Do nothing
 	}
@@ -52,7 +50,6 @@ public abstract class AbstractIoSessionConfig implements IoSessionConfig {
 		setReadBufferSize(config.getReadBufferSize());
 		setMaxReadBufferSize(config.getMaxReadBufferSize());
 		setMinReadBufferSize(config.getMinReadBufferSize());
-		setThroughputCalculationInterval(config.getThroughputCalculationInterval());
 	}
 
 	/**
@@ -118,33 +115,5 @@ public abstract class AbstractIoSessionConfig implements IoSessionConfig {
 					+ minReadBufferSize + ')');
 		}
 		this.maxReadBufferSize = maxReadBufferSize;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public int getThroughputCalculationInterval() {
-		return throughputCalculationInterval;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setThroughputCalculationInterval(int throughputCalculationInterval) {
-		if (throughputCalculationInterval < 0) {
-			throw new IllegalArgumentException("throughputCalculationInterval: " + throughputCalculationInterval);
-		}
-
-		this.throughputCalculationInterval = throughputCalculationInterval;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public long getThroughputCalculationIntervalInMillis() {
-		return throughputCalculationInterval * 1000L;
 	}
 }

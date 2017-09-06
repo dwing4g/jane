@@ -75,26 +75,6 @@ public interface IoSessionConfig {
 	void setMaxReadBufferSize(int maxReadBufferSize);
 
 	/**
-	 * @return the interval (seconds) between each throughput calculation.
-	 * The default value is <tt>3</tt> seconds.
-	 */
-	int getThroughputCalculationInterval();
-
-	/**
-	 * @return the interval (milliseconds) between each throughput calculation.
-	 * The default value is <tt>3</tt> seconds.
-	 */
-	long getThroughputCalculationIntervalInMillis();
-
-	/**
-	 * Sets the interval (seconds) between each throughput calculation.  The
-	 * default value is <tt>3</tt> seconds.
-	 *
-	 * @param throughputCalculationInterval The interval
-	 */
-	void setThroughputCalculationInterval(int throughputCalculationInterval);
-
-	/**
 	 * Sets all configuration properties retrieved from the specified
 	 * <tt>config</tt>.
 	 *
