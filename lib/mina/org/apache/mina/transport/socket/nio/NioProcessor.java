@@ -29,7 +29,6 @@ import java.nio.channels.spi.SelectorProvider;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.Executor;
-import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.file.FileRegion;
 import org.apache.mina.core.polling.AbstractPollingIoProcessor;
@@ -51,15 +50,11 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	 *
 	 * @param executor The executor to use
 	 */
-	public NioProcessor(Executor executor) {
+	public NioProcessor(Executor executor) throws IOException {
 		super(executor);
 
-		try {
-			// Open a new selector
-			selector = Selector.open();
-		} catch (IOException e) {
-			throw new RuntimeIoException("Failed to open a selector.", e);
-		}
+		// Open a new selector
+		selector = Selector.open();
 	}
 
 	/**
@@ -68,19 +63,15 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	 * @param executor The executor to use
 	 * @param selectorProvider The Selector provider to use
 	 */
-	public NioProcessor(Executor executor, SelectorProvider selectorProvider) {
+	public NioProcessor(Executor executor, SelectorProvider selectorProvider) throws IOException {
 		super(executor);
 
-		try {
-			// Open a new selector
-			if (selectorProvider == null) {
-				selector = Selector.open();
-			} else {
-				this.selectorProvider = selectorProvider;
-				selector = selectorProvider.openSelector();
-			}
-		} catch (IOException e) {
-			throw new RuntimeIoException("Failed to open a selector.", e);
+		// Open a new selector
+		if (selectorProvider == null) {
+			selector = Selector.open();
+		} else {
+			this.selectorProvider = selectorProvider;
+			selector = selectorProvider.openSelector();
 		}
 	}
 

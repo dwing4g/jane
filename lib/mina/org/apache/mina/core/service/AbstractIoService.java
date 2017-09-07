@@ -42,7 +42,6 @@ import org.apache.mina.core.session.DefaultIoSessionDataStructureFactory;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.session.IoSessionConfig;
 import org.apache.mina.core.session.IoSessionDataStructureFactory;
-import org.apache.mina.core.session.IoSessionInitializationException;
 import org.apache.mina.transport.socket.SocketSessionConfig;
 import org.apache.mina.util.ExceptionMonitor;
 import org.apache.mina.util.NamePreservingRunnable;
@@ -407,19 +406,15 @@ public abstract class AbstractIoService implements IoService {
 		try {
 			((AbstractIoSession) session).setAttributeMap(session.getService().getSessionDataStructureFactory()
 					.getAttributeMap(session));
-		} catch (IoSessionInitializationException e) {
-			throw e;
 		} catch (Exception e) {
-			throw new IoSessionInitializationException("Failed to initialize an attributeMap.", e);
+			throw new RuntimeException("Failed to initialize an attributeMap.", e);
 		}
 
 		try {
 			((AbstractIoSession) session).setWriteRequestQueue(session.getService().getSessionDataStructureFactory()
 					.getWriteRequestQueue(session));
-		} catch (IoSessionInitializationException e) {
-			throw e;
 		} catch (Exception e) {
-			throw new IoSessionInitializationException("Failed to initialize a writeRequestQueue.", e);
+			throw new RuntimeException("Failed to initialize a writeRequestQueue.", e);
 		}
 
 		if ((future != null) && (future instanceof ConnectFuture)) {

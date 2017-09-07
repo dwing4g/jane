@@ -28,7 +28,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.filterchain.IoFilter;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.future.DefaultConnectFuture;
@@ -199,7 +198,7 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 		} catch (RuntimeException e) {
 			throw e;
 		} catch (Exception e) {
-			throw new RuntimeIoException("Failed to initialize.", e);
+			throw new RuntimeException("Failed to initialize.", e);
 		} finally {
 			if (!selectable) {
 				try {

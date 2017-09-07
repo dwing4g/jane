@@ -19,7 +19,6 @@
  */
 package org.apache.mina.core.future;
 
-import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.session.IoSession;
 
 /**
@@ -65,8 +64,8 @@ public class DefaultConnectFuture extends DefaultIoFuture implements ConnectFutu
 		} else if (v instanceof Error) {
 			throw (Error) v;
 		} else if (v instanceof Throwable) {
-			throw (RuntimeIoException) new RuntimeIoException("Failed to get the session.").initCause((Throwable) v);
-		} else  {
+			throw new RuntimeException("Failed to get the session.", (Throwable) v);
+		} else {
 			return null;
 		}
 	}

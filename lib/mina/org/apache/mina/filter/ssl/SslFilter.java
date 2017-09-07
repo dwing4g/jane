@@ -32,8 +32,6 @@ import org.apache.mina.core.filterchain.IoFilter;
 import org.apache.mina.core.filterchain.IoFilterAdapter;
 import org.apache.mina.core.filterchain.IoFilterChain;
 import org.apache.mina.core.future.DefaultWriteFuture;
-import org.apache.mina.core.future.IoFuture;
-import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandler;
@@ -663,12 +661,7 @@ public final class SslFilter extends IoFilterAdapter {
 			synchronized (sslHandler) {
 				if (isSslStarted(session)) {
 					future = initiateClosure(nextFilter, session);
-					future.addListener(new IoFutureListener<IoFuture>() {
-						@Override
-						public void operationComplete(IoFuture ioFuture) {
-							nextFilter.filterClose(session);
-						}
-					});
+					future.addListener(ioFuture -> nextFilter.filterClose(session));
 				}
 			}
 

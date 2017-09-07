@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.session.IoSessionConfig;
 
@@ -315,7 +314,7 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 			} catch (IOException | RuntimeException e) {
 				throw e;
 			} catch (Exception e) {
-				throw new RuntimeIoException("Failed to bind to: " + getLocalAddresses(), e);
+				throw new RuntimeException("Failed to bind to: " + getLocalAddresses(), e);
 			}
 		}
 
@@ -401,7 +400,7 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 					} catch (RuntimeException e) {
 						throw e;
 					} catch (Exception e) {
-						throw new RuntimeIoException("Failed to unbind from: " + getLocalAddresses(), e);
+						throw new RuntimeException("Failed to unbind from: " + getLocalAddresses(), e);
 					}
 
 					boundAddresses.removeAll(localAddressesCopy);

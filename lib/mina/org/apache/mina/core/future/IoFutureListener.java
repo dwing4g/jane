@@ -35,15 +35,7 @@ public interface IoFutureListener<F extends IoFuture> extends EventListener {
 	 * An {@link IoFutureListener} that closes the {@link IoSession} which is
 	 * associated with the specified {@link IoFuture}.
 	 */
-	public static final IoFutureListener<IoFuture> CLOSE = new IoFutureListener<IoFuture>() {
-		/**
-		 * {@inheritDoc}
-		 */
-		@Override
-		public void operationComplete(IoFuture future) {
-			future.getSession().closeNow();
-		}
-	};
+	public static final IoFutureListener<IoFuture> CLOSE = future -> future.getSession().closeNow();
 
 	/**
 	 * Invoked when the operation associated with the {@link IoFuture}

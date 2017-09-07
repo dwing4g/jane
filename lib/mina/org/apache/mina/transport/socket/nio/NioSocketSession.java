@@ -26,7 +26,6 @@ import java.net.SocketException;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.IoService;
 import org.apache.mina.core.session.IoSession;
@@ -129,7 +128,7 @@ public final class NioSocketSession extends NioSession {
 			try {
 				return getSocket().getKeepAlive();
 			} catch (SocketException e) {
-				throw new RuntimeIoException(e);
+				throw new RuntimeException(e);
 			}
 		}
 
@@ -141,7 +140,7 @@ public final class NioSocketSession extends NioSession {
 			try {
 				getSocket().setKeepAlive(on);
 			} catch (SocketException e) {
-				throw new RuntimeIoException(e);
+				throw new RuntimeException(e);
 			}
 		}
 
@@ -153,7 +152,7 @@ public final class NioSocketSession extends NioSession {
 			try {
 				return getSocket().getOOBInline();
 			} catch (SocketException e) {
-				throw new RuntimeIoException(e);
+				throw new RuntimeException(e);
 			}
 		}
 
@@ -165,7 +164,7 @@ public final class NioSocketSession extends NioSession {
 			try {
 				getSocket().setOOBInline(on);
 			} catch (SocketException e) {
-				throw new RuntimeIoException(e);
+				throw new RuntimeException(e);
 			}
 		}
 
@@ -177,7 +176,7 @@ public final class NioSocketSession extends NioSession {
 			try {
 				return getSocket().getReuseAddress();
 			} catch (SocketException e) {
-				throw new RuntimeIoException(e);
+				throw new RuntimeException(e);
 			}
 		}
 
@@ -189,7 +188,7 @@ public final class NioSocketSession extends NioSession {
 			try {
 				getSocket().setReuseAddress(on);
 			} catch (SocketException e) {
-				throw new RuntimeIoException(e);
+				throw new RuntimeException(e);
 			}
 		}
 
@@ -201,7 +200,7 @@ public final class NioSocketSession extends NioSession {
 			try {
 				return getSocket().getSoLinger();
 			} catch (SocketException e) {
-				throw new RuntimeIoException(e);
+				throw new RuntimeException(e);
 			}
 		}
 
@@ -217,7 +216,7 @@ public final class NioSocketSession extends NioSession {
 					getSocket().setSoLinger(true, linger);
 				}
 			} catch (SocketException e) {
-				throw new RuntimeIoException(e);
+				throw new RuntimeException(e);
 			}
 		}
 
@@ -233,7 +232,7 @@ public final class NioSocketSession extends NioSession {
 			try {
 				return getSocket().getTcpNoDelay();
 			} catch (SocketException e) {
-				throw new RuntimeIoException(e);
+				throw new RuntimeException(e);
 			}
 		}
 
@@ -245,7 +244,7 @@ public final class NioSocketSession extends NioSession {
 			try {
 				getSocket().setTcpNoDelay(on);
 			} catch (SocketException e) {
-				throw new RuntimeIoException(e);
+				throw new RuntimeException(e);
 			}
 		}
 
@@ -257,7 +256,7 @@ public final class NioSocketSession extends NioSession {
 			try {
 				return getSocket().getTrafficClass();
 			} catch (SocketException e) {
-				throw new RuntimeIoException(e);
+				throw new RuntimeException(e);
 			}
 		}
 
@@ -269,7 +268,7 @@ public final class NioSocketSession extends NioSession {
 			try {
 				getSocket().setTrafficClass(tc);
 			} catch (SocketException e) {
-				throw new RuntimeIoException(e);
+				throw new RuntimeException(e);
 			}
 		}
 
@@ -281,7 +280,7 @@ public final class NioSocketSession extends NioSession {
 			try {
 				return getSocket().getSendBufferSize();
 			} catch (SocketException e) {
-				throw new RuntimeIoException(e);
+				throw new RuntimeException(e);
 			}
 		}
 
@@ -293,7 +292,7 @@ public final class NioSocketSession extends NioSession {
 			try {
 				getSocket().setSendBufferSize(size);
 			} catch (SocketException e) {
-				throw new RuntimeIoException(e);
+				throw new RuntimeException(e);
 			}
 		}
 
@@ -305,7 +304,7 @@ public final class NioSocketSession extends NioSession {
 			try {
 				return getSocket().getReceiveBufferSize();
 			} catch (SocketException e) {
-				throw new RuntimeIoException(e);
+				throw new RuntimeException(e);
 			}
 		}
 
@@ -317,7 +316,7 @@ public final class NioSocketSession extends NioSession {
 			try {
 				getSocket().setReceiveBufferSize(size);
 			} catch (SocketException e) {
-				throw new RuntimeIoException(e);
+				throw new RuntimeException(e);
 			}
 		}
 	}

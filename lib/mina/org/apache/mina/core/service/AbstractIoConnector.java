@@ -218,15 +218,9 @@ public abstract class AbstractIoConnector extends AbstractIoService implements I
 		// In case that ConnectFuture.cancel() is invoked before
 		// setSession() is invoked, add a listener that closes the
 		// connection immediately on cancellation.
-		future.addListener(new IoFutureListener<ConnectFuture>() {
-			/**
-			 * {@inheritDoc}
-			 */
-			@Override
-			public void operationComplete(ConnectFuture future1) {
-				if (future1.isCanceled()) {
-					session.closeNow();
-				}
+		future.addListener((ConnectFuture future1) -> {
+			if (future1.isCanceled()) {
+				session.closeNow();
 			}
 		});
 	}

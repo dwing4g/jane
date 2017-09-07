@@ -36,7 +36,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.filterchain.IoFilter;
 import org.apache.mina.core.service.AbstractIoAcceptor;
 import org.apache.mina.core.service.AbstractIoService;
@@ -237,7 +236,7 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 		} catch (RuntimeException e) {
 			throw e;
 		} catch (Exception e) {
-			throw new RuntimeIoException("Failed to initialize.", e);
+			throw new RuntimeException("Failed to initialize.", e);
 		} finally {
 			if (!selectable) {
 				try {

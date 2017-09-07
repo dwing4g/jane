@@ -261,7 +261,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		try {
 			newFilter.onPreAdd(this, name, entry.getNextFilter());
 		} catch (Exception e) {
-			throw new IoFilterLifeCycleException("onPreAdd(): " + name + ':' + newFilter + " in " + getSession(), e);
+			throw new RuntimeException("onPreAdd(): " + name + ':' + newFilter + " in " + getSession(), e);
 		}
 
 		// Now, register the new Filter replacing the old one.
@@ -272,7 +272,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 			newFilter.onPostAdd(this, name, entry.getNextFilter());
 		} catch (Exception e) {
 			entry.setFilter(oldFilter);
-			throw new IoFilterLifeCycleException("onPostAdd(): " + name + ':' + newFilter + " in " + getSession(), e);
+			throw new RuntimeException("onPostAdd(): " + name + ':' + newFilter + " in " + getSession(), e);
 		}
 
 		return oldFilter;
@@ -301,7 +301,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 				try {
 					newFilter.onPreAdd(this, oldFilterName, entry.getNextFilter());
 				} catch (Exception e) {
-					throw new IoFilterLifeCycleException("onPreAdd(): " + oldFilterName + ':' + newFilter + " in "
+					throw new RuntimeException("onPreAdd(): " + oldFilterName + ':' + newFilter + " in "
 							+ getSession(), e);
 				}
 
@@ -313,7 +313,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 					newFilter.onPostAdd(this, oldFilterName, entry.getNextFilter());
 				} catch (Exception e) {
 					entry.setFilter(oldFilter);
-					throw new IoFilterLifeCycleException("onPostAdd(): " + oldFilterName + ':' + newFilter + " in "
+					throw new RuntimeException("onPostAdd(): " + oldFilterName + ':' + newFilter + " in "
 							+ getSession(), e);
 				}
 
@@ -348,7 +348,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 				try {
 					newFilter.onPreAdd(this, oldFilterName, entry.getNextFilter());
 				} catch (Exception e) {
-					throw new IoFilterLifeCycleException("onPreAdd(): " + oldFilterName + ':' + newFilter + " in "
+					throw new RuntimeException("onPreAdd(): " + oldFilterName + ':' + newFilter + " in "
 							+ getSession(), e);
 				}
 
@@ -359,7 +359,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 					newFilter.onPostAdd(this, oldFilterName, entry.getNextFilter());
 				} catch (Exception e) {
 					entry.setFilter(oldFilter);
-					throw new IoFilterLifeCycleException("onPostAdd(): " + oldFilterName + ':' + newFilter + " in "
+					throw new RuntimeException("onPostAdd(): " + oldFilterName + ':' + newFilter + " in "
 							+ getSession(), e);
 				}
 
@@ -379,7 +379,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 			try {
 				deregister((EntryImpl) entry);
 			} catch (Exception e) {
-				throw new IoFilterLifeCycleException("clear(): " + entry.getName() + " in " + getSession(), e);
+				throw new RuntimeException("clear(): " + entry.getName() + " in " + getSession(), e);
 			}
 		}
 	}
@@ -395,7 +395,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		try {
 			filter.onPreAdd(this, name, newEntry.getNextFilter());
 		} catch (Exception e) {
-			throw new IoFilterLifeCycleException("onPreAdd(): " + name + ':' + filter + " in " + getSession(), e);
+			throw new RuntimeException("onPreAdd(): " + name + ':' + filter + " in " + getSession(), e);
 		}
 
 		prevEntry.nextEntry.prevEntry = newEntry;
@@ -406,7 +406,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 			filter.onPostAdd(this, name, newEntry.getNextFilter());
 		} catch (Exception e) {
 			deregister0(newEntry);
-			throw new IoFilterLifeCycleException("onPostAdd(): " + name + ':' + filter + " in " + getSession(), e);
+			throw new RuntimeException("onPostAdd(): " + name + ':' + filter + " in " + getSession(), e);
 		}
 	}
 
@@ -416,7 +416,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		try {
 			filter.onPreRemove(this, entry.getName(), entry.getNextFilter());
 		} catch (Exception e) {
-			throw new IoFilterLifeCycleException("onPreRemove(): " + entry.getName() + ':' + filter + " in "
+			throw new RuntimeException("onPreRemove(): " + entry.getName() + ':' + filter + " in "
 					+ getSession(), e);
 		}
 
@@ -425,7 +425,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		try {
 			filter.onPostRemove(this, entry.getName(), entry.getNextFilter());
 		} catch (Exception e) {
-			throw new IoFilterLifeCycleException("onPostRemove(): " + entry.getName() + ':' + filter + " in "
+			throw new RuntimeException("onPostRemove(): " + entry.getName() + ':' + filter + " in "
 					+ getSession(), e);
 		}
 	}

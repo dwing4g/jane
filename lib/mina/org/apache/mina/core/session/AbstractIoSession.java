@@ -36,7 +36,6 @@ import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.IoService;
 import org.apache.mina.core.write.DefaultWriteRequest;
-import org.apache.mina.core.write.WriteException;
 import org.apache.mina.core.write.WriteRequest;
 import org.apache.mina.core.write.WriteRequestQueue;
 import org.apache.mina.core.write.WriteToClosedSessionException;
@@ -284,8 +283,7 @@ public abstract class AbstractIoSession implements IoSession {
 		if (isClosing() || !isConnected()) {
 			WriteFuture future = new DefaultWriteFuture(this);
 			WriteRequest request = new DefaultWriteRequest(message, future);
-			WriteException writeException = new WriteToClosedSessionException(request);
-			future.setException(writeException);
+			future.setException(new WriteToClosedSessionException(request));
 			return future;
 		}
 

@@ -26,7 +26,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
-import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.session.AbstractIoSession;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequest;
@@ -215,7 +214,7 @@ public final class SimpleIoProcessorPool<S extends AbstractIoSession> implements
 			} catch (Exception e) {
 				String msg = "Failed to create a new instance of " + processorType.getName() + ": " + e.getMessage();
 				LOGGER.error(msg, e);
-				throw new RuntimeIoException(msg, e);
+				throw new RuntimeException(msg, e);
 			}
 
 			if (processorConstructor == null) {

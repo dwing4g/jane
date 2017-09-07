@@ -8,15 +8,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import javax.xml.stream.XMLInputFactory;
@@ -27,38 +26,8 @@ import jane.core.Util;
 
 public final class XlsxExport
 {
-	private static final Pattern  _patToken1 = Pattern.compile("\\(([A-Za-z_]\\w*)\\)");
-	private static final Pattern  _patToken2 = Pattern.compile("^([A-Za-z_]\\w*)$");
-	private static final Pattern  _patXmlStr = Pattern.compile("[<>&\"]");
-	private static final String[] _strXmlStr = new String[64];
-
-	static
-	{
-		_strXmlStr['<'] = "&lt;";
-		_strXmlStr['>'] = "&gt;";
-		_strXmlStr['&'] = "&amp;";
-		_strXmlStr['"'] = "&quot;";
-	}
-
 	private XlsxExport()
 	{
-	}
-
-	private static String getColumnName(int id) // 只支持A(1)~ZZ(26*26+26)
-	{
-		if(id < 26) return new String(new char[] { (char)(id + 'A') });
-		return new String(new char[] { (char)(id / 26 + 'A' - 1), (char)(id % 26 + 'A') });
-	}
-
-	private static String toXmlStr(String s)
-	{
-		Matcher mat = _patXmlStr.matcher(s);
-		if(!mat.find()) return s;
-		StringBuffer sb = new StringBuffer(s.length() + 16);
-		do
-			mat.appendReplacement(sb, _strXmlStr[mat.group().charAt(0)]);
-		while(mat.find());
-		return mat.appendTail(sb).toString();
 	}
 
 	/**
@@ -69,7 +38,7 @@ public final class XlsxExport
 	 * @param sheetId 指定输入xlsx文件中的页ID
 	 * @return 一定不会返回null
 	 */
-	public static Map<Integer, Map<Integer, String>> xlsx2Maps(InputStream isXlsx, int sheetId) throws Exception
+	public static Map<Integer, List<Entry<Integer, String>>> xlsx2Maps(InputStream isXlsx, int sheetId) throws Exception
 	{
 		Octets xmlStr = null, xmlSheet = null;
 		String fileSheet = "xl/worksheets/sheet" + sheetId + ".xml";
@@ -122,7 +91,7 @@ public final class XlsxExport
 			}
 		}
 
-		Map<Integer, Map<Integer, String>> res = new TreeMap<>();
+		Map<Integer, List<Entry<Integer, String>>> res = new TreeMap<>();
 		xmlReader = xmlFactory.createXMLStreamReader(new ByteArrayInputStream(xmlSheet.array(), 0, xmlSheet.size()));
 		while(xmlReader.hasNext()) // <c r="A1" s="1" t="s/b"><v>0</v></c>
 		{
@@ -174,9 +143,9 @@ public final class XlsxExport
 							x += (a - 'A') * 26 + 27;
 							y = Integer.parseInt(r.substring(2));
 						}
-						Map<Integer, String> map = res.get(y);
-						if(map == null) res.put(y, map = new TreeMap<>());
-						map.put(x, v);
+						List<Entry<Integer, String>> list = res.get(y);
+						if(list == null) res.put(y, list = new ArrayList<>());
+						list.add(new SimpleEntry<>(x, v));
 					}
 					else if(type == XMLStreamConstants.END_ELEMENT && xmlReader.getLocalName().charAt(0) == 'c')
 						break;
@@ -186,94 +155,11 @@ public final class XlsxExport
 		return res;
 	}
 
-	public static Map<Integer, Map<Integer, String>> xlsx2Maps(String filename, int sheetId) throws Exception
+	public static Map<Integer, List<Entry<Integer, String>>> xlsx2Maps(String filename, int sheetId) throws Exception
 	{
 		try(InputStream is = new FileInputStream(filename))
 		{
 			return xlsx2Maps(is, sheetId);
-		}
-	}
-
-	/**
-	 * 把xlsx类型的excel文件中的某一页转换成xml格式
-	 * <p>
-	 * 此调用在发现错误时会抛出异常,注意检查<br>
-	 * 对xlsx文件的要求:<br>
-	 * <li>第一行必须是各字段的名称,且每个名称后面必须有括号包含的程序字段名,以字母数字或下划线(不能以数字开头)构成
-	 * <li>第一列必须是表的主键,全表唯一
-	 * <li>没有字段名的列会被忽略
-	 * <li>第一列为空的整行都会被忽略
-	 * <li>如果非第一列为空,则没有此字段的输出,默认表示数值0或空字符串
-	 * @param isXlsx 输入xlsx文件的输入流
-	 * @param sheetId 指定输入xlsx文件中的页ID
-	 * @param keyCol 指定的key列号. A,B,C...列分别为1,2,3
-	 * @param outXml 输出xml的输出流
-	 * @param tableName 表名. 一般就是输入的文件名,会记录到xml中便于以后查询之用,可以为null
-	 */
-	@Deprecated
-	public static void xlsx2Xml(InputStream isXlsx, int sheetId, int keyCol, OutputStream outXml, String tableName) throws Exception
-	{
-		Map<Integer, Map<Integer, String>> maps = xlsx2Maps(isXlsx, sheetId);
-
-		Map<Integer, String> map = maps.get(1);
-		if(map == null) throw new IllegalStateException("ERROR: not found table head");
-		int nColumn = 0;
-		while(map.get(nColumn + 1) != null)
-			++nColumn;
-		if(nColumn <= 0) throw new IllegalStateException("ERROR: not found any valid table head field");
-		String[] strColumn = new String[nColumn];
-		for(int i = 0; i < nColumn; ++i)
-		{
-			String s = map.get(i + 1);
-			Matcher mat = _patToken1.matcher(s);
-			if(!mat.find())
-			{
-				mat = _patToken2.matcher(s);
-				if(!mat.find())
-					strColumn[i] = getColumnName(i);
-				else
-					strColumn[i] = mat.group(1);
-			}
-			else
-				strColumn[i] = mat.group(1);
-		}
-
-		try(PrintWriter pw = new PrintWriter(new OutputStreamWriter(outXml, "utf-8")))
-		{
-			pw.print("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>\n<table xlsx=\"");
-			if(tableName != null) pw.print(toXmlStr(tableName));
-			pw.print("\" sheetid=\"");
-			pw.print(sheetId);
-			pw.print("\" key=\"");
-			if(keyCol > 0 && keyCol <= strColumn.length) pw.print(strColumn[keyCol - 1]);
-			// pw.print("\" time=\"");
-			// pw.print(new SimpleDateFormat("yy-MM-dd HH:mm:ss\">\n").format(new Date()));
-			pw.print("\">\n");
-			for(Map.Entry<Integer, Map<Integer, String>> e : maps.entrySet())
-			{
-				if(e.getKey() <= 1) continue;
-				map = e.getValue();
-				if(map.get(keyCol) == null) continue;
-				int n = 0;
-				for(Map.Entry<Integer, String> e2 : map.entrySet())
-				{
-					int i = e2.getKey();
-					if(i <= nColumn)
-					{
-						String val = e2.getValue();
-						if(n == 0) pw.print("<record");
-						pw.print(' ');
-						pw.print(strColumn[i - 1]);
-						pw.print('=');
-						pw.print('"');
-						pw.print(toXmlStr(val));
-						pw.print('"');
-						++n;
-					}
-				}
-				if(n > 0) pw.print("/>\n");
-			}
-			pw.print("</table>\n");
 		}
 	}
 
@@ -288,10 +174,10 @@ public final class XlsxExport
 	public static void xlsx2Txt(InputStream isXlsx, int sheetId, OutputStream outTxt) throws Exception
 	{
 		Charset cs = StandardCharsets.UTF_8;
-		for(Map.Entry<Integer, Map<Integer, String>> e : xlsx2Maps(isXlsx, sheetId).entrySet())
+		for(Entry<Integer, List<Entry<Integer, String>>> e : xlsx2Maps(isXlsx, sheetId).entrySet())
 		{
 			int y = e.getKey();
-			for(Map.Entry<Integer, String> e2 : e.getValue().entrySet())
+			for(Entry<Integer, String> e2 : e.getValue())
 			{
 				outTxt.write(String.valueOf(y).getBytes(cs));
 				outTxt.write(' ');
@@ -310,35 +196,19 @@ public final class XlsxExport
 	{
 		if(args.length < 3)
 		{
-			System.err.println("USAGE: java jane.tool.XlsxTool xml <filenameInput.xlsx> <filenameOutput.xml> [sheetId=1] [keyCol=1]");
-			System.err.println("       java jane.tool.XlsxTool txt <filenameInput.xlsx> <filenameOutput.txt> [sheetId=1]");
+			System.err.println("USAGE: java jane.tool.XlsxTool txt <filenameInput.xlsx> <filenameOutput.txt> [sheetId=1]");
 			return;
 		}
 
 		int sheetId = (args.length > 3 ? Integer.parseInt(args[3].trim()) : 1);
-		int keyCol = (args.length > 4 ? Integer.parseInt(args[4].trim()) : 1);
 		System.err.print("INFO: convert " + args[1] + " <" + sheetId + "> => " + args[2] + " ... ");
 		try(InputStream is = (args[1].equals("-") ? System.in : new FileInputStream(args[1].trim())))
 		{
 			try(OutputStream os = new BufferedOutputStream(args[2].equals("-") ? System.out : new FileOutputStream(args[2].trim()), 0x10000))
 			{
-				if(args[0].equals("xml"))
-					xlsx2Xml(is, sheetId, keyCol, os, args[0]);
-				else
-					xlsx2Txt(is, sheetId, os);
-
+				xlsx2Txt(is, sheetId, os);
 			}
 		}
 		System.err.println("OK!");
-
-		// usage sample:
-		// Map<Integer, TestType> beanmap = new HashMap<Integer, TestType>();
-		// Util.xml2BeanMap(args[1], beanmap, Integer.class, TestType.class, null);
-		// for(Entry<Integer, TestType> e : beanmap.entrySet())
-		// {
-		// System.out.print(e.getKey());
-		// System.out.print(": ");
-		// System.out.println(e.getValue().toJson());
-		// }
 	}
 }
