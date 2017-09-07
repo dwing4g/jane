@@ -1131,7 +1131,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	}
 
 	@Override
-	public Iterator<V> valueIterator()
+	public Iterator<V> iterator()
 	{
 		Node<V>[] t;
 		int f = (t = table) == null ? 0 : t.length;

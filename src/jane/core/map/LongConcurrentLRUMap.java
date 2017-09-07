@@ -188,7 +188,7 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 			CacheEntry<?>[] eList = new CacheEntry<?>[sizeOld];
 			int eSize = 0;
 
-			for(final Iterator<CacheEntry<V>> it = map.valueIterator(); it.hasNext();)
+			for(final Iterator<CacheEntry<V>> it = map.iterator(); it.hasNext();)
 			{
 				final CacheEntry<V> ce = it.next();
 				final long v = ce.version;
@@ -336,7 +336,7 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 	}
 
 	@Override
-	public Iterator<V> valueIterator()
+	public Iterator<V> iterator()
 	{
 		return new ValueIterator<>(map);
 	}
@@ -353,7 +353,7 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 
 		private ValueIterator(LongConcurrentHashMap<CacheEntry<V>> map)
 		{
-			it = map.valueIterator();
+			it = map.iterator();
 		}
 
 		@Override

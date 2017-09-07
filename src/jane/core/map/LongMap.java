@@ -16,12 +16,10 @@
 
 package jane.core.map;
 
-import java.util.Iterator;
-
 /**
  * Same as 'java.util.Map' but uses primitive 'long' keys to minimise boxing (and GC) overhead.
  */
-public abstract class LongMap<V>
+public abstract class LongMap<V> implements Iterable<V>
 {
 	/**
 	 * Returns the number of elements in this map.
@@ -74,8 +72,6 @@ public abstract class LongMap<V>
 	public abstract void clear();
 
 	public abstract LongIterator keyIterator();
-
-	public abstract Iterator<V> valueIterator();
 
 	public abstract MapIterator<V> entryIterator();
 

@@ -110,7 +110,7 @@ public final class LongConcurrentHashMapWrap<V> extends LongMap<V>
 	}
 
 	@Override
-	public Iterator<V> valueIterator()
+	public Iterator<V> iterator()
 	{
 		return map.values().iterator();
 	}

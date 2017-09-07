@@ -344,7 +344,7 @@ public final class LongHashMap<V> extends LongMap<V>
 	}
 
 	@Override
-	public Iterator<V> valueIterator()
+	public Iterator<V> iterator()
 	{
 		return new ValueIterator<>(this);
 	}

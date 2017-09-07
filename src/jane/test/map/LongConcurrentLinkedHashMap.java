@@ -637,7 +637,7 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
   }
 
   @Override
-  public Iterator<V> valueIterator() {
+  public Iterator<V> iterator() {
     return new ValueIterator();
   }
 
@@ -697,7 +697,7 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
 
   /** An adapter to safely externalize the value iterator. */
   private final class ValueIterator implements Iterator<V> {
-    private final Iterator<Node<V>> iterator = data.valueIterator();
+    private final Iterator<Node<V>> iterator = data.iterator();
 
     @Override
     public boolean hasNext() {
