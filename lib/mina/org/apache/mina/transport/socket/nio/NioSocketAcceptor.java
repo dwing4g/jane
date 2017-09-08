@@ -28,16 +28,12 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.nio.channels.spi.SelectorProvider;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.concurrent.Executor;
 import org.apache.mina.core.polling.AbstractPollingIoAcceptor;
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoProcessor;
-import org.apache.mina.core.service.IoService;
 import org.apache.mina.core.service.SimpleIoProcessorPool;
-import org.apache.mina.transport.socket.DefaultSocketSessionConfig;
 import org.apache.mina.transport.socket.SocketAcceptor;
 
 /**
@@ -46,18 +42,15 @@ import org.apache.mina.transport.socket.SocketAcceptor;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public final class NioSocketAcceptor extends AbstractPollingIoAcceptor<NioSession, ServerSocketChannel>
-		implements SocketAcceptor {
+public final class NioSocketAcceptor extends AbstractPollingIoAcceptor implements SocketAcceptor {
 
-	private volatile Selector selector;
-	private volatile SelectorProvider selectorProvider;
+	private Selector selector;
 
 	/**
 	 * Constructor for {@link NioSocketAcceptor} using default parameters (multiple thread model).
 	 */
 	public NioSocketAcceptor() {
-		super(new DefaultSocketSessionConfig(), NioProcessor.class);
-		((DefaultSocketSessionConfig) getSessionConfig()).init(this);
+		super();
 	}
 
 	/**
@@ -68,46 +61,7 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor<NioSessio
 	 * {@link SimpleIoProcessorPool}
 	 */
 	public NioSocketAcceptor(int processorCount) {
-		super(new DefaultSocketSessionConfig(), NioProcessor.class, processorCount);
-		((DefaultSocketSessionConfig) getSessionConfig()).init(this);
-	}
-
-	/**
-	 *  Constructor for {@link NioSocketAcceptor} with default configuration but a
-	 *  specific {@link IoProcessor}, useful for sharing the same processor over multiple
-	 *  {@link IoService} of the same type.
-	 * @param processor the processor to use for managing I/O events
-	 */
-	public NioSocketAcceptor(IoProcessor<NioSession> processor) {
-		super(new DefaultSocketSessionConfig(), processor);
-		((DefaultSocketSessionConfig) getSessionConfig()).init(this);
-	}
-
-	/**
-	 *  Constructor for {@link NioSocketAcceptor} with a given {@link Executor} for handling
-	 *  connection events and a given {@link IoProcessor} for handling I/O events, useful for
-	 *  sharing the same processor and executor over multiple {@link IoService} of the same type.
-	 * @param executor the executor for connection
-	 * @param processor the processor for I/O operations
-	 */
-	public NioSocketAcceptor(Executor executor, IoProcessor<NioSession> processor) {
-		super(new DefaultSocketSessionConfig(), executor, processor);
-		((DefaultSocketSessionConfig) getSessionConfig()).init(this);
-	}
-
-	/**
-	 * Constructor for {@link NioSocketAcceptor} using default parameters, and
-	 * given number of {@link NioProcessor} for multithreading I/O operations, and
-	 * a custom SelectorProvider for NIO
-	 *
-	 * @param processorCount the number of processor to create and place in a
-	 * @param selectorProvider teh SelectorProvider to use
-	 * {@link SimpleIoProcessorPool}
-	 */
-	public NioSocketAcceptor(int processorCount, SelectorProvider selectorProvider) {
-		super(new DefaultSocketSessionConfig(), NioProcessor.class, processorCount, selectorProvider);
-		((DefaultSocketSessionConfig) getSessionConfig()).init(this);
-		this.selectorProvider = selectorProvider;
+		super(processorCount);
 	}
 
 	/**
@@ -116,15 +70,6 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor<NioSessio
 	@Override
 	protected void init() throws Exception {
 		selector = Selector.open();
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void init(SelectorProvider provider) throws Exception {
-		selectorProvider = provider;
-		selector = (provider != null ? provider.openSelector() : Selector.open());
 	}
 
 	/**
@@ -192,8 +137,7 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor<NioSessio
 	protected ServerSocketChannel open(SocketAddress localAddress) throws Exception {
 		// Creates the listening ServerSocket
 
-		ServerSocketChannel channel = (selectorProvider != null ?
-				selectorProvider.openServerSocketChannel() : ServerSocketChannel.open());
+		ServerSocketChannel channel = ServerSocketChannel.open();
 
 		boolean success = false;
 

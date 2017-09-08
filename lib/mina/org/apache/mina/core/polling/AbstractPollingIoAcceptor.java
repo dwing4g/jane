@@ -21,7 +21,7 @@ package org.apache.mina.core.polling;
 
 import java.net.SocketAddress;
 import java.nio.channels.ClosedSelectorException;
-import java.nio.channels.spi.SelectorProvider;
+import java.nio.channels.ServerSocketChannel;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,20 +33,17 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.mina.core.filterchain.IoFilter;
 import org.apache.mina.core.service.AbstractIoAcceptor;
-import org.apache.mina.core.service.AbstractIoService;
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.SimpleIoProcessorPool;
-import org.apache.mina.core.session.AbstractIoSession;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.session.IoSessionConfig;
-import org.apache.mina.transport.socket.SocketSessionConfig;
+import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.mina.util.ExceptionMonitor;
 
@@ -63,29 +60,25 @@ import org.apache.mina.util.ExceptionMonitor;
  * by the subclassing implementation.
  *
  * @see NioSocketAcceptor for a example of implementation
- * @param <H> The type of IoHandler
- * @param <S> The type of IoSession
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> extends AbstractIoAcceptor {
+public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 	/** A lock used to protect the selector to be waked up before it's created */
 	private final Semaphore lock = new Semaphore(1);
 
-	private final IoProcessor<S> processor;
+	private final IoProcessor<NioSession> processor;
 
 	private final Queue<AcceptorOperationFuture> registerQueue = new ConcurrentLinkedQueue<>();
 
 	private final Queue<AcceptorOperationFuture> cancelQueue = new ConcurrentLinkedQueue<>();
 
-	private final Map<SocketAddress, H> boundHandles = Collections.synchronizedMap(new HashMap<SocketAddress, H>());
+	private final Map<SocketAddress, ServerSocketChannel> boundHandles = Collections.synchronizedMap(new HashMap<SocketAddress, ServerSocketChannel>());
 
 	private final ServiceOperationFuture disposalFuture = new ServiceOperationFuture();
 
 	/** The thread responsible of accepting incoming requests */
 	private final AtomicReference<Acceptor> acceptorRef = new AtomicReference<>();
-
-	private final boolean createdProcessor;
 
 	/** A flag set when the acceptor has been created and initialized */
 	private volatile boolean selectable;
@@ -105,14 +98,9 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 	 * pool size will be used.
 	 *
 	 * @see SimpleIoProcessorPool
-	 *
-	 * @param sessionConfig
-	 *            the default configuration for the managed {@link IoSession}
-	 * @param processorClass a {@link Class} of {@link IoProcessor} for the associated {@link IoSession}
-	 *            type.
 	 */
-	protected AbstractPollingIoAcceptor(IoSessionConfig sessionConfig, Class<? extends IoProcessor<S>> processorClass) {
-		this(sessionConfig, null, new SimpleIoProcessorPool<>(processorClass), true, null);
+	protected AbstractPollingIoAcceptor() {
+		this(new SimpleIoProcessorPool<>());
 	}
 
 	/**
@@ -123,112 +111,29 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 	 *
 	 * @see SimpleIoProcessorPool
 	 *
-	 * @param sessionConfig
-	 *            the default configuration for the managed {@link IoSession}
-	 * @param processorClass a {@link Class} of {@link IoProcessor} for the associated {@link IoSession}
-	 *            type.
 	 * @param processorCount the amount of processor to instantiate for the pool
 	 */
-	protected AbstractPollingIoAcceptor(IoSessionConfig sessionConfig, Class<? extends IoProcessor<S>> processorClass,
-			int processorCount) {
-		this(sessionConfig, null, new SimpleIoProcessorPool<>(processorClass, processorCount), true, null);
+	protected AbstractPollingIoAcceptor(int processorCount) {
+		this(new SimpleIoProcessorPool<>(processorCount));
 	}
 
 	/**
-	 * Constructor for {@link AbstractPollingIoAcceptor}. You need to provide a default
-	 * session configuration, a class of {@link IoProcessor} which will be instantiated in a
-	 * {@link SimpleIoProcessorPool} for using multiple thread for better scaling in multiprocessor
-	 * systems.
-	 *
-	 * @see SimpleIoProcessorPool
-	 *
-	 * @param sessionConfig
-	 *            the default configuration for the managed {@link IoSession}
-	 * @param processorClass a {@link Class} of {@link IoProcessor} for the associated {@link IoSession}
-	 *            type.
-	 * @param processorCount the amount of processor to instantiate for the pool
-	 * @param selectorProvider The SelectorProvider to use
-	 */
-	protected AbstractPollingIoAcceptor(IoSessionConfig sessionConfig, Class<? extends IoProcessor<S>> processorClass,
-			int processorCount, SelectorProvider selectorProvider ) {
-		this(sessionConfig, null, new SimpleIoProcessorPool<>(processorClass, processorCount, selectorProvider), true, selectorProvider);
-	}
-
-	/**
-	 * Constructor for {@link AbstractPollingIoAcceptor}. You need to provide a default
-	 * session configuration, a default {@link Executor} will be created using
-	 * {@link Executors#newCachedThreadPool()}.
-	 *
-	 * @see AbstractIoService
-	 *
-	 * @param sessionConfig
-	 *            the default configuration for the managed {@link IoSession}
-	 * @param processor the {@link IoProcessor} for processing the {@link IoSession} of this transport, triggering
-	 *            events to the bound {@link IoHandler} and processing the chains of {@link IoFilter}
-	 */
-	protected AbstractPollingIoAcceptor(IoSessionConfig sessionConfig, IoProcessor<S> processor) {
-		this(sessionConfig, null, processor, false, null);
-	}
-
-	/**
-	 * Constructor for {@link AbstractPollingIoAcceptor}. You need to provide a
-	 * default session configuration and an {@link Executor} for handling I/O
-	 * events. If a null {@link Executor} is provided, a default one will be
-	 * created using {@link Executors#newCachedThreadPool()}.
-	 *
-	 * @see AbstractIoService#AbstractIoService(IoSessionConfig, Executor)
-	 *
-	 * @param sessionConfig
-	 *            the default configuration for the managed {@link IoSession}
-	 * @param executor
-	 *            the {@link Executor} used for handling asynchronous execution
-	 *            of I/O events. Can be <code>null</code>.
-	 * @param processor
-	 *            the {@link IoProcessor} for processing the {@link IoSession}
-	 *            of this transport, triggering events to the bound
-	 *            {@link IoHandler} and processing the chains of
-	 *            {@link IoFilter}
-	 */
-	protected AbstractPollingIoAcceptor(IoSessionConfig sessionConfig, Executor executor, IoProcessor<S> processor) {
-		this(sessionConfig, executor, processor, false, null);
-	}
-
-	/**
-	 * Constructor for {@link AbstractPollingIoAcceptor}. You need to provide a
-	 * default session configuration and an {@link Executor} for handling I/O
-	 * events. If a null {@link Executor} is provided, a default one will be
-	 * created using {@link Executors#newCachedThreadPool()}.
+	 * Constructor for {@link AbstractPollingIoAcceptor}.
 	 *
 	 * @see #AbstractIoService(IoSessionConfig, Executor)
 	 *
-	 * @param sessionConfig
-	 *            the default configuration for the managed {@link IoSession}
-	 * @param executor
-	 *            the {@link Executor} used for handling asynchronous execution
-	 *            of I/O events. Can be <code>null</code>.
 	 * @param processor
 	 *            the {@link IoProcessor} for processing the {@link IoSession}
 	 *            of this transport, triggering events to the bound
 	 *            {@link IoHandler} and processing the chains of
 	 *            {@link IoFilter}
-	 * @param createdProcessor
-	 *            tagging the processor as automatically created, so it will be
-	 *            automatically disposed
 	 */
-	private AbstractPollingIoAcceptor(IoSessionConfig sessionConfig, Executor executor, IoProcessor<S> processor,
-			boolean createdProcessor, SelectorProvider selectorProvider) {
-		super(sessionConfig, executor);
-
-		if (processor == null) {
-			throw new IllegalArgumentException("processor");
-		}
-
+	private AbstractPollingIoAcceptor(IoProcessor<NioSession> processor) {
 		this.processor = processor;
-		this.createdProcessor = createdProcessor;
 
 		try {
 			// Initialize the selector
-			init(selectorProvider);
+			init();
 
 			// The selector is now ready, we can switch the
 			// flag to true so that incoming connection can be accepted
@@ -246,6 +151,8 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 				}
 			}
 		}
+
+		sessionConfig.init(this);
 	}
 
 	/**
@@ -253,14 +160,6 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 	 * @throws Exception any exception thrown by the underlying system calls
 	 */
 	protected abstract void init() throws Exception;
-
-	/**
-	 * Initialize the polling system, will be called at construction time.
-	 *
-	 * @param selectorProvider The Selector Provider that will be used by this polling acceptor
-	 * @throws Exception any exception thrown by the underlying system calls
-	 */
-	protected abstract void init(SelectorProvider selectorProvider) throws Exception;
 
 	/**
 	 * Destroy the polling system, will be called when this {@link IoAcceptor}
@@ -287,7 +186,7 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 	 *  during the last {@link #select()} call.
 	 * @return the list of server handles ready
 	 */
-	protected abstract Iterator<H> selectedHandles();
+	protected abstract Iterator<ServerSocketChannel> selectedHandles();
 
 	/**
 	 * Open a server socket for a given local address.
@@ -295,7 +194,7 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 	 * @return the opened server socket
 	 * @throws Exception any exception thrown by the underlying systems calls
 	 */
-	protected abstract H open(SocketAddress localAddress) throws Exception;
+	protected abstract ServerSocketChannel open(SocketAddress localAddress) throws Exception;
 
 	/**
 	 * Get the local address associated with a given server socket
@@ -303,7 +202,7 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 	 * @return the local {@link SocketAddress} associated with this handle
 	 * @throws Exception any exception thrown by the underlying systems calls
 	 */
-	protected abstract SocketAddress localAddress(H handle) throws Exception;
+	protected abstract SocketAddress localAddress(ServerSocketChannel handle) throws Exception;
 
 	/**
 	 * Accept a client connection for a server socket and return a new {@link IoSession}
@@ -313,14 +212,14 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 	 * @return the created {@link IoSession}
 	 * @throws Exception any exception thrown by the underlying systems calls
 	 */
-	protected abstract S accept(IoProcessor<S> ioProcessor, H handle) throws Exception;
+	protected abstract NioSession accept(IoProcessor<NioSession> ioProcessor, ServerSocketChannel handle) throws Exception;
 
 	/**
 	 * Close a server socket.
 	 * @param handle the server socket
 	 * @throws Exception any exception thrown by the underlying systems calls
 	 */
-	protected abstract void close(H handle) throws Exception;
+	protected abstract void close(ServerSocketChannel handle) throws Exception;
 
 	/**
 	 * {@inheritDoc}
@@ -373,7 +272,7 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 		// because of deadlock.
 		Set<SocketAddress> newLocalAddresses = new HashSet<>();
 
-		for (H handle : boundHandles.values()) {
+		for (ServerSocketChannel handle : boundHandles.values()) {
 			newLocalAddresses.add(localAddress(handle));
 		}
 
@@ -509,9 +408,7 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 			if (selectable && isDisposing()) {
 				selectable = false;
 				try {
-					if (createdProcessor) {
-						processor.dispose();
-					}
+					processor.dispose();
 				} finally {
 					try {
 						synchronized (disposalLock) {
@@ -537,15 +434,15 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 		 * Session objects are created by making new instances of SocketSessionImpl
 		 * and passing the session object to the SocketIoProcessor class.
 		 */
-		@SuppressWarnings("unchecked")
-		private void processHandles(Iterator<H> handles) throws Exception {
+		private void processHandles(Iterator<ServerSocketChannel> handles) throws Exception {
 			while (handles.hasNext()) {
-				H handle = handles.next();
+				@SuppressWarnings("resource")
+				ServerSocketChannel handle = handles.next();
 				handles.remove();
 
 				// Associates a new created connection to a processor,
 				// and get back a session
-				S session = accept(processor, handle);
+				NioSession session = accept(processor, handle);
 
 				if (session == null) {
 					continue;
@@ -580,13 +477,14 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 				// We create a temporary map to store the bound handles,
 				// as we may have to remove them all if there is an exception
 				// during the sockets opening.
-				Map<SocketAddress, H> newHandles = new ConcurrentHashMap<>();
+				Map<SocketAddress, ServerSocketChannel> newHandles = new ConcurrentHashMap<>();
 				List<SocketAddress> localAddresses = future.getLocalAddresses();
 
 				try {
 					// Process all the addresses
 					for (SocketAddress a : localAddresses) {
-						H handle = open(a);
+						@SuppressWarnings("resource")
+						ServerSocketChannel handle = open(a);
 						newHandles.put(localAddress(handle), handle);
 					}
 
@@ -604,7 +502,7 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 				} finally {
 					// Roll back if failed to bind all addresses.
 					if (future.getException() != null) {
-						for (H handle : newHandles.values()) {
+						for (ServerSocketChannel handle : newHandles.values()) {
 							try {
 								close(handle);
 							} catch (Exception e) {
@@ -636,7 +534,8 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 
 				// close the channels
 				for (SocketAddress a : future.getLocalAddresses()) {
-					H handle = boundHandles.remove(a);
+					@SuppressWarnings("resource")
+					ServerSocketChannel handle = boundHandles.remove(a);
 
 					if (handle == null) {
 						continue;
@@ -711,13 +610,5 @@ public abstract class AbstractPollingIoAcceptor<S extends AbstractIoSession, H> 
 
 			this.reuseAddress = reuseAddress;
 		}
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public SocketSessionConfig getSessionConfig() {
-		return (SocketSessionConfig)sessionConfig;
 	}
 }

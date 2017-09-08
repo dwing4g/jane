@@ -42,7 +42,7 @@ import org.apache.mina.core.session.DefaultIoSessionDataStructureFactory;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.session.IoSessionConfig;
 import org.apache.mina.core.session.IoSessionDataStructureFactory;
-import org.apache.mina.transport.socket.SocketSessionConfig;
+import org.apache.mina.transport.socket.DefaultSocketSessionConfig;
 import org.apache.mina.util.ExceptionMonitor;
 import org.apache.mina.util.NamePreservingRunnable;
 import org.slf4j.Logger;
@@ -78,15 +78,6 @@ public abstract class AbstractIoService implements IoService {
 	private final Executor executor;
 
 	/**
-	 * A flag used to indicate that the local executor has been created
-	 * inside this instance, and not passed by a caller.
-	 *
-	 * If the executor is locally created, then it will be an instance
-	 * of the ThreadPoolExecutor class.
-	 */
-	private final boolean createdExecutor;
-
-	/**
 	 * The IoHandler in charge of managing all the I/O Events. It is
 	 */
 	private IoHandler handler;
@@ -94,7 +85,7 @@ public abstract class AbstractIoService implements IoService {
 	/**
 	 * The default {@link IoSessionConfig} which will be used to configure new sessions.
 	 */
-	protected final IoSessionConfig sessionConfig;
+	protected final DefaultSocketSessionConfig sessionConfig = new DefaultSocketSessionConfig();
 
 	/**
 	 * Current filter chain builder.
@@ -105,8 +96,10 @@ public abstract class AbstractIoService implements IoService {
 
 	/**
 	 * Maintains the {@link IoServiceListener}s of this service.
+	 * Create the listeners, and add a first listener: a activation listener
+	 * for this service, which will give information on the service state.
 	 */
-	private final IoServiceListenerSupport listeners;
+	private final IoServiceListenerSupport listeners = new IoServiceListenerSupport(this);
 
 	/**
 	 * A lock object which must be acquired when related resources are
@@ -118,47 +111,21 @@ public abstract class AbstractIoService implements IoService {
 
 	private volatile boolean disposed;
 
-	/**
-	 * Constructor for {@link AbstractIoService}. You need to provide a default
-	 * session configuration and an {@link Executor} for handling I/O events. If
-	 * a null {@link Executor} is provided, a default one will be created using
-	 * {@link Executors#newCachedThreadPool()}.
-	 *
-	 * @param sessionConfig
-	 *            the default configuration for the managed {@link IoSession}
-	 * @param executor
-	 *            the {@link Executor} used for handling execution of I/O
-	 *            events. Can be <code>null</code>.
-	 */
-	protected AbstractIoService(IoSessionConfig sessionConfig, Executor executor) {
-		if (sessionConfig == null) {
-			throw new IllegalArgumentException("sessionConfig");
-		}
-
-		if (!SocketSessionConfig.class.isAssignableFrom(sessionConfig.getClass())) {
-			throw new IllegalArgumentException("sessionConfig type: " + sessionConfig.getClass() + " (expected: SocketSessionConfig)");
-		}
-
-		// Create the listeners, and add a first listener: a activation listener
-		// for this service, which will give information on the service state.
-		listeners = new IoServiceListenerSupport(this);
-
-		// Stores the given session configuration
-		this.sessionConfig = sessionConfig;
-
-		// Make JVM load the exception monitor before some transports
-		// change the thread context class loader.
+	protected AbstractIoService() {
+		// Make JVM load the exception monitor before some transports change the thread context class loader.
 		ExceptionMonitor.getInstance();
 
-		if (executor == null) {
-			this.executor = Executors.newCachedThreadPool();
-			createdExecutor = true;
-		} else {
-			this.executor = executor;
-			createdExecutor = false;
-		}
+		executor = Executors.newCachedThreadPool();
 
 		threadName = getClass().getSimpleName() + '-' + id.incrementAndGet();
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public DefaultSocketSessionConfig getSessionConfig() {
+		return sessionConfig;
 	}
 
 	/**
@@ -258,20 +225,17 @@ public abstract class AbstractIoService implements IoService {
 			}
 		}
 
-		if (createdExecutor) {
-			ExecutorService e = (ExecutorService) executor;
-			e.shutdownNow();
-			if (awaitTermination) {
-
-				try {
-					LOGGER.debug("awaitTermination on {} called by thread=[{}]", this, Thread.currentThread().getName());
-					e.awaitTermination(Integer.MAX_VALUE, TimeUnit.SECONDS);
-					LOGGER.debug("awaitTermination on {} finished", this);
-				} catch (InterruptedException e1) {
-					LOGGER.warn("awaitTermination on [{}] was interrupted", this);
-					// Restore the interrupted status
-					Thread.currentThread().interrupt();
-				}
+		ExecutorService e = (ExecutorService) executor;
+		e.shutdownNow();
+		if (awaitTermination) {
+			try {
+				LOGGER.debug("awaitTermination on {} called by thread=[{}]", this, Thread.currentThread().getName());
+				e.awaitTermination(Integer.MAX_VALUE, TimeUnit.SECONDS);
+				LOGGER.debug("awaitTermination on {} finished", this);
+			} catch (InterruptedException e1) {
+				LOGGER.warn("awaitTermination on [{}] was interrupted", this);
+				// Restore the interrupted status
+				Thread.currentThread().interrupt();
 			}
 		}
 		disposed = true;

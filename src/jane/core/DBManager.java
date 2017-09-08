@@ -8,7 +8,7 @@ import java.util.ArrayDeque;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -536,12 +536,12 @@ public final class DBManager
 	 * 见{@link #submit(Object sid, Procedure p)}<br>
 	 * 可使用自定义的线程池
 	 */
-	public void submit(ExecutorService es, Object sid, Procedure p)
+	public void submit(Executor executor, Object sid, Procedure p)
 	{
 		p.setSid(sid);
 		if(sid == null)
 		{
-			es.execute(p);
+			executor.execute(p);
 			return;
 		}
 		ArrayDeque<Procedure> q;
@@ -568,7 +568,7 @@ public final class DBManager
 			break;
 		}
 		ArrayDeque<Procedure> _q = q;
-		es.execute(new Runnable()
+		executor.execute(new Runnable()
 		{
 			@Override
 			public void run()
@@ -599,7 +599,7 @@ public final class DBManager
 						}
 						if(--n <= 0)
 						{
-							es.execute(this);
+							executor.execute(this);
 							return;
 						}
 					}

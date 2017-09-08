@@ -21,13 +21,10 @@ package org.apache.mina.core.service;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.future.IoFuture;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.session.IoSession;
-import org.apache.mina.core.session.IoSessionConfig;
 
 /**
  * A base implementation of {@link IoConnector}.
@@ -47,24 +44,6 @@ public abstract class AbstractIoConnector extends AbstractIoService implements I
 
 	/** The local address */
 	private SocketAddress defaultLocalAddress;
-
-	/**
-	 * Constructor for {@link AbstractIoConnector}. You need to provide a
-	 * default session configuration and an {@link Executor} for handling I/O
-	 * events. If null {@link Executor} is provided, a default one will be
-	 * created using {@link Executors#newCachedThreadPool()}.
-	 *
-	 * @see AbstractIoService#AbstractIoService(IoSessionConfig, Executor)
-	 *
-	 * @param sessionConfig
-	 *            the default configuration for the managed {@link IoSession}
-	 * @param executor
-	 *            the {@link Executor} used for handling execution of I/O
-	 *            events. Can be <code>null</code>.
-	 */
-	protected AbstractIoConnector(IoSessionConfig sessionConfig, Executor executor) {
-		super(sessionConfig, executor);
-	}
 
 	/**
 	* @return

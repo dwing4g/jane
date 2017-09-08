@@ -22,6 +22,7 @@ package org.apache.mina.core.polling;
 import java.net.ConnectException;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedSelectorException;
+import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -37,9 +38,8 @@ import org.apache.mina.core.service.IoConnector;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.SimpleIoProcessorPool;
-import org.apache.mina.core.session.AbstractIoSession;
 import org.apache.mina.core.session.IoSession;
-import org.apache.mina.core.session.IoSessionConfig;
+import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.apache.mina.util.ExceptionMonitor;
 
@@ -56,25 +56,21 @@ import org.apache.mina.util.ExceptionMonitor;
  * provided by the subclassing implementation.
  *
  * @see NioSocketConnector for a example of implementation
- * @param <H> The type of IoHandler
- * @param <S> The type of IoSession
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H> extends AbstractIoConnector {
+public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 
 	private final Queue<ConnectionRequest> connectQueue = new ConcurrentLinkedQueue<>();
 
 	private final Queue<ConnectionRequest> cancelQueue = new ConcurrentLinkedQueue<>();
 
-	private final IoProcessor<S> processor;
+	private final IoProcessor<NioSession> processor;
 
 	private final ServiceOperationFuture disposalFuture = new ServiceOperationFuture();
 
 	/** The connector thread */
 	private final AtomicReference<Connector> connectorRef = new AtomicReference<>();
-
-	private final boolean createdProcessor;
 
 	private volatile boolean selectable;
 
@@ -85,15 +81,9 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 	 * multiprocessor systems. The default pool size will be used.
 	 *
 	 * @see SimpleIoProcessorPool
-	 *
-	 * @param sessionConfig
-	 *            the default configuration for the managed {@link IoSession}
-	 * @param processorClass
-	 *            a {@link Class} of {@link IoProcessor} for the associated
-	 *            {@link IoSession} type.
 	 */
-	protected AbstractPollingIoConnector(IoSessionConfig sessionConfig, Class<? extends IoProcessor<S>> processorClass) {
-		this(sessionConfig, null, new SimpleIoProcessorPool<>(processorClass), true);
+	protected AbstractPollingIoConnector() {
+		this(new SimpleIoProcessorPool<>());
 	}
 
 	/**
@@ -104,59 +94,11 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 	 *
 	 * @see SimpleIoProcessorPool
 	 *
-	 * @param sessionConfig
-	 *            the default configuration for the managed {@link IoSession}
-	 * @param processorClass
-	 *            a {@link Class} of {@link IoProcessor} for the associated
-	 *            {@link IoSession} type.
 	 * @param processorCount
 	 *            the amount of processor to instantiate for the pool
 	 */
-	protected AbstractPollingIoConnector(IoSessionConfig sessionConfig, Class<? extends IoProcessor<S>> processorClass,
-			int processorCount) {
-		this(sessionConfig, null, new SimpleIoProcessorPool<>(processorClass, processorCount), true);
-	}
-
-	/**
-	 * Constructor for {@link AbstractPollingIoConnector}. You need to provide a
-	 * default session configuration, a default {@link Executor} will be created
-	 * using {@link Executors#newCachedThreadPool()}.
-	 *
-	 * @see AbstractIoService#AbstractIoService(IoSessionConfig, Executor)
-	 *
-	 * @param sessionConfig
-	 *            the default configuration for the managed {@link IoSession}
-	 * @param processor
-	 *            the {@link IoProcessor} for processing the {@link IoSession}
-	 *            of this transport, triggering events to the bound
-	 *            {@link IoHandler} and processing the chains of
-	 *            {@link IoFilter}
-	 */
-	protected AbstractPollingIoConnector(IoSessionConfig sessionConfig, IoProcessor<S> processor) {
-		this(sessionConfig, null, processor, false);
-	}
-
-	/**
-	 * Constructor for {@link AbstractPollingIoConnector}. You need to provide a
-	 * default session configuration and an {@link Executor} for handling I/O
-	 * events. If null {@link Executor} is provided, a default one will be
-	 * created using {@link Executors#newCachedThreadPool()}.
-	 *
-	 * @see AbstractIoService#AbstractIoService(IoSessionConfig, Executor)
-	 *
-	 * @param sessionConfig
-	 *            the default configuration for the managed {@link IoSession}
-	 * @param executor
-	 *            the {@link Executor} used for handling asynchronous execution
-	 *            of I/O events. Can be <code>null</code>.
-	 * @param processor
-	 *            the {@link IoProcessor} for processing the {@link IoSession}
-	 *            of this transport, triggering events to the bound
-	 *            {@link IoHandler} and processing the chains of
-	 *            {@link IoFilter}
-	 */
-	protected AbstractPollingIoConnector(IoSessionConfig sessionConfig, Executor executor, IoProcessor<S> processor) {
-		this(sessionConfig, executor, processor, false);
+	protected AbstractPollingIoConnector(int processorCount) {
+		this(new SimpleIoProcessorPool<>(processorCount));
 	}
 
 	/**
@@ -165,32 +107,16 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 	 * events. If null {@link Executor} is provided, a default one will be
 	 * created using {@link Executors#newCachedThreadPool()}.
 	 *
-	 * @see AbstractIoService#AbstractIoService(IoSessionConfig, Executor)
+	 * @see AbstractIoService#AbstractIoService(Executor)
 	 *
-	 * @param sessionConfig
-	 *            the default configuration for the managed {@link IoSession}
-	 * @param executor
-	 *            the {@link Executor} used for handling asynchronous execution
-	 *            of I/O events. Can be <code>null</code>.
 	 * @param processor
 	 *            the {@link IoProcessor} for processing the {@link IoSession}
 	 *            of this transport, triggering events to the bound
 	 *            {@link IoHandler} and processing the chains of
 	 *            {@link IoFilter}
-	 * @param createdProcessor
-	 *            tagging the processor as automatically created, so it will be
-	 *            automatically disposed
 	 */
-	private AbstractPollingIoConnector(IoSessionConfig sessionConfig, Executor executor, IoProcessor<S> processor,
-			boolean createdProcessor) {
-		super(sessionConfig, executor);
-
-		if (processor == null) {
-			throw new IllegalArgumentException("processor");
-		}
-
+	private AbstractPollingIoConnector(IoProcessor<NioSession> processor) {
 		this.processor = processor;
-		this.createdProcessor = createdProcessor;
 
 		try {
 			init();
@@ -208,6 +134,8 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 				}
 			}
 		}
+
+		sessionConfig.init(this);
 	}
 
 	/**
@@ -236,7 +164,7 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 	 * @throws Exception
 	 *             any exception thrown by the underlying systems calls
 	 */
-	protected abstract H newHandle(SocketAddress localAddress) throws Exception;
+	protected abstract SocketChannel newHandle(SocketAddress localAddress) throws Exception;
 
 	/**
 	 * Connect a newly created client socket handle to a remote
@@ -250,7 +178,7 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 	 *         operation is in progress
 	 * @throws Exception If the connect failed
 	 */
-	protected abstract boolean connect(H handle, SocketAddress remoteAddress) throws Exception;
+	protected abstract boolean connect(SocketChannel handle, SocketAddress remoteAddress) throws Exception;
 
 	/**
 	 * Finish the connection process of a client socket after it was marked as
@@ -263,7 +191,7 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 	 * @throws Exception
 	 *             any exception thrown by the underlying systems calls
 	 */
-	protected abstract boolean finishConnect(H handle) throws Exception;
+	protected abstract boolean finishConnect(SocketChannel handle) throws Exception;
 
 	/**
 	 * Create a new {@link IoSession} from a connected socket client handle.
@@ -278,7 +206,7 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 	 * @throws Exception
 	 *             any exception thrown by the underlying systems calls
 	 */
-	protected abstract S newSession(IoProcessor<S> processor1, H handle) throws Exception;
+	protected abstract NioSession newSession(IoProcessor<NioSession> processor1, SocketChannel handle) throws Exception;
 
 	/**
 	 * Close a client socket.
@@ -288,7 +216,7 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 	 * @throws Exception
 	 *             any exception thrown by the underlying systems calls
 	 */
-	protected abstract void close(H handle) throws Exception;
+	protected abstract void close(SocketChannel handle) throws Exception;
 
 	/**
 	 * Interrupt the {@link #select(int)} method. Used when the poll set need to
@@ -313,14 +241,14 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 	 *
 	 * @return the list of client socket handles to process
 	 */
-	protected abstract Iterator<H> selectedHandles();
+	protected abstract Iterator<SocketChannel> selectedHandles();
 
 	/**
 	 * {@link Iterator} for all the client sockets polled for connection.
 	 *
 	 * @return the list of client sockets currently polled for connection
 	 */
-	protected abstract Iterator<H> allHandles();
+	protected abstract Iterator<SocketChannel> allHandles();
 
 	/**
 	 * Register a new client socket for connection, add it to connection polling
@@ -332,7 +260,7 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 	 * @throws Exception
 	 *             any exception thrown by the underlying systems calls
 	 */
-	protected abstract void register(H handle, ConnectionRequest request) throws Exception;
+	protected abstract void register(SocketChannel handle, ConnectionRequest request) throws Exception;
 
 	/**
 	 * get the {@link ConnectionRequest} for a given client socket handle
@@ -342,7 +270,7 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 	 * @return the connection request if the socket is connecting otherwise
 	 *         <code>null</code>
 	 */
-	protected abstract ConnectionRequest getConnectionRequest(H handle);
+	protected abstract ConnectionRequest getConnectionRequest(SocketChannel handle);
 
 	/**
 	 * {@inheritDoc}
@@ -357,15 +285,15 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 	 * {@inheritDoc}
 	 */
 	@Override
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings("resource")
 	protected final ConnectFuture connect0(SocketAddress remoteAddress, SocketAddress localAddress) {
-		H handle = null;
+		SocketChannel handle = null;
 		boolean success = false;
 		try {
 			handle = newHandle(localAddress);
 			if (connect(handle, remoteAddress)) {
 				ConnectFuture future = new DefaultConnectFuture();
-				S session = newSession(processor, handle);
+				NioSession session = newSession(processor, handle);
 				initSession(session, future);
 				// Forward the remaining process to the IoProcessor.
 				session.getProcessor().add(session);
@@ -473,9 +401,7 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 			if (selectable && isDisposing()) {
 				selectable = false;
 				try {
-					if (createdProcessor) {
-						processor.dispose();
-					}
+					processor.dispose();
 				} finally {
 					try {
 						synchronized (disposalLock) {
@@ -500,7 +426,7 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 					break;
 				}
 
-				H handle = req.handle;
+				SocketChannel handle = req.handle;
 				try {
 					register(handle, req);
 					nHandles++;
@@ -524,7 +450,7 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 					break;
 				}
 
-				H handle = req.handle;
+				SocketChannel handle = req.handle;
 				try {
 					close(handle);
 				} catch (Exception e) {
@@ -545,13 +471,13 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 		 * Process the incoming connections, creating a new session for each valid
 		 * connection.
 		 */
-		@SuppressWarnings("unchecked")
-		private int processConnections(Iterator<H> handlers) {
+		private int processConnections(Iterator<SocketChannel> handlers) {
 			int nHandles = 0;
 
 			// Loop on each connection request
 			while (handlers.hasNext()) {
-				H handle = handlers.next();
+				@SuppressWarnings("resource")
+				SocketChannel handle = handlers.next();
 				handlers.remove();
 
 				ConnectionRequest connectionRequest = getConnectionRequest(handle);
@@ -563,7 +489,7 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 				boolean success = false;
 				try {
 					if (finishConnect(handle)) {
-						S session = newSession(processor, handle);
+						NioSession session = newSession(processor, handle);
 						initSession(session, connectionRequest);
 						// Forward the remaining process to the IoProcessor.
 						session.getProcessor().add(session);
@@ -582,11 +508,12 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 			return nHandles;
 		}
 
-		private void processTimedOutSessions(Iterator<H> handles) {
+		private void processTimedOutSessions(Iterator<SocketChannel> handles) {
 			long currentTime = System.currentTimeMillis();
 
 			while (handles.hasNext()) {
-				H handle = handles.next();
+				@SuppressWarnings("resource")
+				SocketChannel handle = handles.next();
 				ConnectionRequest connectionRequest = getConnectionRequest(handle);
 
 				if ((connectionRequest != null) && (currentTime >= connectionRequest.deadline)) {
@@ -602,7 +529,7 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 	 */
 	public final class ConnectionRequest extends DefaultConnectFuture {
 		/** The handle associated with this connection request */
-		private final H handle;
+		private final SocketChannel handle;
 
 		/** The time up to this connection request will be valid */
 		private final long deadline;
@@ -613,7 +540,7 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 		 * @param handle The IoHander
 		 * @param callback The IoFuture callback
 		 */
-		public ConnectionRequest(H handle) {
+		public ConnectionRequest(SocketChannel handle) {
 			this.handle = handle;
 			long timeout = getConnectTimeoutMillis();
 			deadline = (timeout > 0L ? System.currentTimeMillis() + timeout : Long.MAX_VALUE);
@@ -622,7 +549,7 @@ public abstract class AbstractPollingIoConnector<S extends AbstractIoSession, H>
 		/**
 		 * @return The IoHandler instance
 		 */
-		public H getHandle() {
+		public SocketChannel getHandle() {
 			return handle;
 		}
 

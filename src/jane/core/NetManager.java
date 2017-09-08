@@ -21,7 +21,7 @@ import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.DefaultWriteRequest;
-import org.apache.mina.transport.socket.SocketSessionConfig;
+import org.apache.mina.transport.socket.DefaultSocketSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import jane.core.map.IntHashMap;
@@ -232,7 +232,7 @@ public class NetManager implements IoHandler
 	/**
 	 * 获取用于服务器端的mina网络配置并可以修改
 	 */
-	public final SocketSessionConfig getServerConfig()
+	public final DefaultSocketSessionConfig getServerConfig()
 	{
 		return getAcceptor().getSessionConfig();
 	}
@@ -240,7 +240,7 @@ public class NetManager implements IoHandler
 	/**
 	 * 获取用于客户端的mina网络配置并可以修改
 	 */
-	public final SocketSessionConfig getClientConfig()
+	public final DefaultSocketSessionConfig getClientConfig()
 	{
 		return getConnector().getSessionConfig();
 	}

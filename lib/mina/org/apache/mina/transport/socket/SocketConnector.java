@@ -41,7 +41,7 @@ public interface SocketConnector extends IoConnector {
 	 * this connect service.
 	 */
 	@Override
-	SocketSessionConfig getSessionConfig();
+	DefaultSocketSessionConfig getSessionConfig();
 
 	/**
 	 * Sets the default remote InetSocketAddress to connect to when no argument is

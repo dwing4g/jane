@@ -27,32 +27,26 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.concurrent.Executor;
 import org.apache.mina.core.polling.AbstractPollingIoConnector;
 import org.apache.mina.core.service.IoConnector;
 import org.apache.mina.core.service.IoProcessor;
-import org.apache.mina.core.service.IoService;
 import org.apache.mina.core.service.SimpleIoProcessorPool;
-import org.apache.mina.transport.socket.DefaultSocketSessionConfig;
 import org.apache.mina.transport.socket.SocketConnector;
-import org.apache.mina.transport.socket.SocketSessionConfig;
 
 /**
  * {@link IoConnector} for socket transport (TCP/IP).
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public final class NioSocketConnector extends AbstractPollingIoConnector<NioSession, SocketChannel>
-		implements SocketConnector {
+public final class NioSocketConnector extends AbstractPollingIoConnector implements SocketConnector {
 
-	private volatile Selector selector;
+	private Selector selector;
 
 	/**
 	 * Constructor for {@link NioSocketConnector} with default configuration (multiple thread model).
 	 */
 	public NioSocketConnector() {
-		super(new DefaultSocketSessionConfig(), NioProcessor.class);
-		((DefaultSocketSessionConfig) getSessionConfig()).init(this);
+		super();
 	}
 
 	/**
@@ -62,61 +56,7 @@ public final class NioSocketConnector extends AbstractPollingIoConnector<NioSess
 	 * {@link SimpleIoProcessorPool}
 	 */
 	public NioSocketConnector(int processorCount) {
-		super(new DefaultSocketSessionConfig(), NioProcessor.class, processorCount);
-		((DefaultSocketSessionConfig) getSessionConfig()).init(this);
-	}
-
-	/**
-	 *  Constructor for {@link NioSocketConnector} with default configuration but a
-	 *  specific {@link IoProcessor}, useful for sharing the same processor over multiple
-	 *  {@link IoService} of the same type.
-	 * @param processor the processor to use for managing I/O events
-	 */
-	public NioSocketConnector(IoProcessor<NioSession> processor) {
-		super(new DefaultSocketSessionConfig(), processor);
-		((DefaultSocketSessionConfig) getSessionConfig()).init(this);
-	}
-
-	/**
-	 *  Constructor for {@link NioSocketConnector} with a given {@link Executor} for handling
-	 *  connection events and a given {@link IoProcessor} for handling I/O events, useful for sharing
-	 *  the same processor and executor over multiple {@link IoService} of the same type.
-	 * @param executor the executor for connection
-	 * @param processor the processor for I/O operations
-	 */
-	public NioSocketConnector(Executor executor, IoProcessor<NioSession> processor) {
-		super(new DefaultSocketSessionConfig(), executor, processor);
-		((DefaultSocketSessionConfig) getSessionConfig()).init(this);
-	}
-
-	/**
-	 * Constructor for {@link NioSocketConnector} with default configuration which will use a built-in
-	 * thread pool executor to manage the given number of processor instances. The processor class must have
-	 * a constructor that accepts ExecutorService or Executor as its single argument, or, failing that, a
-	 * no-arg constructor.
-	 *
-	 * @param processorClass the processor class.
-	 * @param processorCount the number of processors to instantiate.
-	 * @see SimpleIoProcessorPool#SimpleIoProcessorPool(Class, Executor, int, java.nio.channels.spi.SelectorProvider)
-	 * @since 2.0.0-M4
-	 */
-	public NioSocketConnector(Class<? extends IoProcessor<NioSession>> processorClass, int processorCount) {
-		super(new DefaultSocketSessionConfig(), processorClass, processorCount);
-	}
-
-	/**
-	 * Constructor for {@link NioSocketConnector} with default configuration with default configuration which will use a built-in
-	 * thread pool executor to manage the default number of processor instances. The processor class must have
-	 * a constructor that accepts ExecutorService or Executor as its single argument, or, failing that, a
-	 * no-arg constructor. The default number of instances is equal to the number of processor cores
-	 * in the system, plus one.
-	 *
-	 * @param processorClass the processor class.
-	 * @see SimpleIoProcessorPool#SimpleIoProcessorPool(Class, Executor, int, java.nio.channels.spi.SelectorProvider)
-	 * @since 2.0.0-M4
-	 */
-	public NioSocketConnector(Class<? extends IoProcessor<NioSession>> processorClass) {
-		super(new DefaultSocketSessionConfig(), processorClass);
+		super(processorCount);
 	}
 
 	/**
@@ -135,14 +75,6 @@ public final class NioSocketConnector extends AbstractPollingIoConnector<NioSess
 		if (selector != null) {
 			selector.close();
 		}
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public SocketSessionConfig getSessionConfig() {
-		return (SocketSessionConfig) sessionConfig;
 	}
 
 	/**
@@ -180,7 +112,6 @@ public final class NioSocketConnector extends AbstractPollingIoConnector<NioSess
 	/**
 	 * {@inheritDoc}
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
 	protected ConnectionRequest getConnectionRequest(SocketChannel handle) {
 		SelectionKey key = handle.keyFor(selector);

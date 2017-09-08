@@ -89,5 +89,5 @@ public interface SocketAcceptor extends IoAcceptor {
 	 * this acceptor service.
 	 */
 	@Override
-	SocketSessionConfig getSessionConfig();
+	DefaultSocketSessionConfig getSessionConfig();
 }

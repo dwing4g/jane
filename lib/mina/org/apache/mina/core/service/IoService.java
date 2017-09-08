@@ -28,8 +28,8 @@ import org.apache.mina.core.filterchain.IoFilterChain;
 import org.apache.mina.core.filterchain.IoFilterChainBuilder;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.session.IoSession;
-import org.apache.mina.core.session.IoSessionConfig;
 import org.apache.mina.core.session.IoSessionDataStructureFactory;
+import org.apache.mina.transport.socket.DefaultSocketSessionConfig;
 
 /**
  * Base interface for all {@link IoAcceptor}s and {@link IoConnector}s
@@ -115,7 +115,7 @@ public interface IoService {
 	 * @return the default configuration of the new {@link IoSession}s
 	 * created by this service.
 	 */
-	IoSessionConfig getSessionConfig();
+	DefaultSocketSessionConfig getSessionConfig();
 
 	/**
 	 * @return the {@link IoFilterChainBuilder} which will build the

@@ -19,8 +19,6 @@
  */
 package org.apache.mina.core.service;
 
-import java.lang.reflect.Constructor;
-import java.nio.channels.spi.SelectorProvider;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -29,6 +27,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import org.apache.mina.core.session.AbstractIoSession;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequest;
+import org.apache.mina.transport.socket.nio.NioProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,61 +104,38 @@ public final class SimpleIoProcessorPool<S extends AbstractIoSession> implements
 	/**
 	 * Creates a new instance of SimpleIoProcessorPool with a default
 	 * size of NbCPUs +1.
-	 *
-	 * @param processorType The type of IoProcessor to use
 	 */
-	public SimpleIoProcessorPool(Class<? extends IoProcessor<S>> processorType) {
-		this(processorType, null, DEFAULT_SIZE, null);
+	public SimpleIoProcessorPool() {
+		this(null, DEFAULT_SIZE);
 	}
 
 	/**
 	 * Creates a new instance of SimpleIoProcessorPool with a defined
 	 * number of IoProcessors in the pool
 	 *
-	 * @param processorType The type of IoProcessor to use
 	 * @param size The number of IoProcessor in the pool
 	 */
-	public SimpleIoProcessorPool(Class<? extends IoProcessor<S>> processorType, int size) {
-		this(processorType, null, size, null);
-	}
-
-	/**
-	 * Creates a new instance of SimpleIoProcessorPool with a defined
-	 * number of IoProcessors in the pool
-	 *
-	 * @param processorType The type of IoProcessor to use
-	 * @param size The number of IoProcessor in the pool
-	 * @param selectorProvider The SelectorProvider to use
-	 */
-	public SimpleIoProcessorPool(Class<? extends IoProcessor<S>> processorType, int size, SelectorProvider selectorProvider) {
-		this(processorType, null, size, selectorProvider);
+	public SimpleIoProcessorPool(int size) {
+		this(null, size);
 	}
 
 	/**
 	 * Creates a new instance of SimpleIoProcessorPool with an executor
 	 *
-	 * @param processorType The type of IoProcessor to use
 	 * @param executor The {@link Executor}
 	 */
-	public SimpleIoProcessorPool(Class<? extends IoProcessor<S>> processorType, Executor executor) {
-		this(processorType, executor, DEFAULT_SIZE, null);
+	public SimpleIoProcessorPool(Executor executor) {
+		this(executor, DEFAULT_SIZE);
 	}
 
 	/**
 	 * Creates a new instance of SimpleIoProcessorPool with an executor
 	 *
-	 * @param processorType The type of IoProcessor to use
 	 * @param executor The {@link Executor}
 	 * @param size The number of IoProcessor in the pool
-	 * @param selectorProvider The SelectorProvider to used
 	 */
 	@SuppressWarnings("unchecked")
-	public SimpleIoProcessorPool(Class<? extends IoProcessor<S>> processorType, Executor executor, int size,
-			SelectorProvider selectorProvider) {
-		if (processorType == null) {
-			throw new IllegalArgumentException("processorType");
-		}
-
+	public SimpleIoProcessorPool(Executor executor, int size) {
 		if (size <= 0) {
 			throw new IllegalArgumentException("size: " + size + " (expected: positive integer)");
 		}
@@ -177,69 +153,27 @@ public final class SimpleIoProcessorPool<S extends AbstractIoSession> implements
 
 		pool = new IoProcessor[size];
 
-		Constructor<? extends IoProcessor<S>> processorConstructor = null;
-		boolean usesExecutorArg = true;
 		boolean success = false;
 
 		try {
 			// We create at least one processor
 			try {
-				try {
-					processorConstructor = processorType.getConstructor(ExecutorService.class);
-					pool[0] = processorConstructor.newInstance(this.executor);
-				} catch (NoSuchMethodException e1) {
-					// To the next step...
-					try {
-						if(selectorProvider == null) {
-							processorConstructor = processorType.getConstructor(Executor.class);
-							pool[0] = processorConstructor.newInstance(this.executor);
-						} else {
-							processorConstructor = processorType.getConstructor(Executor.class, SelectorProvider.class);
-							pool[0] = processorConstructor.newInstance(this.executor,selectorProvider);
-						}
-					} catch (NoSuchMethodException e2) {
-						// To the next step...
-						try {
-							processorConstructor = processorType.getConstructor();
-							usesExecutorArg = false;
-							pool[0] = processorConstructor.newInstance();
-						} catch (NoSuchMethodException e3) {
-							// To the next step...
-						}
-					}
-				}
+				pool[0] = (IoProcessor<S>)new NioProcessor(this.executor);
 			} catch (RuntimeException re) {
 				LOGGER.error("Cannot create an IoProcessor: {}", re.getMessage());
 				throw re;
 			} catch (Exception e) {
-				String msg = "Failed to create a new instance of " + processorType.getName() + ": " + e.getMessage();
+				String msg = "Failed to create a new instance of NioProcessor: " + e.getMessage();
 				LOGGER.error(msg, e);
 				throw new RuntimeException(msg, e);
-			}
-
-			if (processorConstructor == null) {
-				// Raise an exception if no proper constructor is found.
-				String msg = String.valueOf(processorType) + " must have a public constructor with one "
-						+ ExecutorService.class.getSimpleName() + " parameter, a public constructor with one "
-						+ Executor.class.getSimpleName() + " parameter or a public default constructor.";
-				LOGGER.error(msg);
-				throw new IllegalArgumentException(msg);
 			}
 
 			// Constructor found now use it for all subsequent instantiations
 			for (int i = 1; i < pool.length; i++) {
 				try {
-					if (usesExecutorArg) {
-						if(selectorProvider == null) {
-							pool[i] = processorConstructor.newInstance(this.executor);
-						} else {
-							pool[i] = processorConstructor.newInstance(this.executor, selectorProvider);
-						}
-					} else {
-						pool[i] = processorConstructor.newInstance();
-					}
+					pool[i] = (IoProcessor<S>)new NioProcessor(this.executor);
 				} catch (Exception e) {
-					// Won't happen because it has been done previously
+					throw new RuntimeException(e);
 				}
 			}
 

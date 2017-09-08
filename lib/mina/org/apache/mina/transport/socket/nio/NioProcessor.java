@@ -25,7 +25,6 @@ import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.nio.channels.spi.SelectorProvider;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.Executor;
@@ -43,8 +42,6 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	/** The selector associated with this processor */
 	private Selector selector;
 
-	private SelectorProvider selectorProvider;
-
 	/**
 	 * Creates a new instance of NioProcessor.
 	 *
@@ -55,24 +52,6 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 
 		// Open a new selector
 		selector = Selector.open();
-	}
-
-	/**
-	 * Creates a new instance of NioProcessor.
-	 *
-	 * @param executor The executor to use
-	 * @param selectorProvider The Selector provider to use
-	 */
-	public NioProcessor(Executor executor, SelectorProvider selectorProvider) throws IOException {
-		super(executor);
-
-		// Open a new selector
-		if (selectorProvider == null) {
-			selector = Selector.open();
-		} else {
-			this.selectorProvider = selectorProvider;
-			selector = selectorProvider.openSelector();
-		}
 	}
 
 	@Override
@@ -141,7 +120,7 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 		Set<SelectionKey> keys = selector.keys();
 
 		// Open a new selector
-		Selector newSelector = (selectorProvider != null ? selectorProvider.openSelector() : Selector.open());
+		Selector newSelector = Selector.open();
 
 		// Loop on all the registered keys, and register them on the new selector
 		for (SelectionKey key : keys) {
