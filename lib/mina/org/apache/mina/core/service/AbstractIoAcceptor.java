@@ -23,12 +23,10 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Executor;
 
 /**
  * A base implementation of {@link IoAcceptor}.
@@ -38,12 +36,7 @@ import java.util.concurrent.Executor;
  */
 public abstract class AbstractIoAcceptor extends AbstractIoService implements IoAcceptor {
 
-	private final ArrayList<SocketAddress> defaultLocalAddresses = new ArrayList<>();
-
-	private final List<SocketAddress> unmodifiableDefaultLocalAddresses = Collections
-			.unmodifiableList(defaultLocalAddresses);
-
-	private final Set<SocketAddress> boundAddresses = new HashSet<>();
+	private final Set<InetSocketAddress> boundAddresses = new HashSet<>();
 
 	/**
 	 * The lock object which is acquired while bind or unbind operation is performed.
@@ -55,20 +48,11 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 	private boolean disconnectOnUnbind = true;
 
 	/**
-	 * Constructor for {@link AbstractIoAcceptor}.
-	 *
-	 * @see AbstractIoService#AbstractIoService(Executor)
-	 */
-	protected AbstractIoAcceptor() {
-		defaultLocalAddresses.add(null);
-	}
-
-	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public SocketAddress getLocalAddress() {
-		ArrayList<SocketAddress> localAddresses = getLocalAddresses();
+	public InetSocketAddress getLocalAddress() {
+		ArrayList<InetSocketAddress> localAddresses = getLocalAddresses();
 		return localAddresses.isEmpty() ? null : localAddresses.get(0);
 	}
 
@@ -76,103 +60,14 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 	 * {@inheritDoc}
 	 */
 	@Override
-	public final ArrayList<SocketAddress> getLocalAddresses() {
-		ArrayList<SocketAddress> localAddresses = new ArrayList<>();
+	public final ArrayList<InetSocketAddress> getLocalAddresses() {
+		ArrayList<InetSocketAddress> localAddresses = new ArrayList<>();
 
 		synchronized (boundAddresses) {
 			localAddresses.addAll(boundAddresses);
 		}
 
 		return localAddresses;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public SocketAddress getDefaultLocalAddress() {
-		return defaultLocalAddresses.isEmpty() ? null : defaultLocalAddresses.get(0);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final void setDefaultLocalAddress(SocketAddress localAddress) {
-		setDefaultLocalAddresses(localAddress);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final List<SocketAddress> getDefaultLocalAddresses() {
-		return unmodifiableDefaultLocalAddresses;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 * @org.apache.xbean.Property nestedType="java.net.SocketAddress"
-	 */
-	@Override
-	public final void setDefaultLocalAddresses(List<? extends SocketAddress> localAddresses) {
-		if (localAddresses == null) {
-			throw new IllegalArgumentException("localAddresses");
-		}
-		setDefaultLocalAddresses((Iterable<? extends SocketAddress>) localAddresses);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final void setDefaultLocalAddresses(Iterable<? extends SocketAddress> localAddresses) {
-		if (localAddresses == null) {
-			throw new IllegalArgumentException("localAddresses");
-		}
-
-		synchronized (bindLock) {
-			synchronized (boundAddresses) {
-				if (!boundAddresses.isEmpty()) {
-					throw new IllegalStateException("localAddress can't be set while the acceptor is bound.");
-				}
-
-				Collection<SocketAddress> newLocalAddresses = new ArrayList<>();
-
-				for (SocketAddress a : localAddresses) {
-					checkAddressType(a);
-					newLocalAddresses.add(a);
-				}
-
-				if (newLocalAddresses.isEmpty()) {
-					throw new IllegalArgumentException("empty localAddresses");
-				}
-
-				defaultLocalAddresses.clear();
-				defaultLocalAddresses.addAll(newLocalAddresses);
-			}
-		}
-	}
-
-	/**
-	 * {@inheritDoc}
-	 * @org.apache.xbean.Property nestedType="java.net.SocketAddress"
-	 */
-	@Override
-	public final void setDefaultLocalAddresses(SocketAddress firstLocalAddress, SocketAddress... otherLocalAddresses) {
-		if (otherLocalAddresses == null) {
-			otherLocalAddresses = new SocketAddress[0];
-		}
-
-		Collection<SocketAddress> newLocalAddresses = new ArrayList<>(otherLocalAddresses.length + 1);
-
-		newLocalAddresses.add(firstLocalAddress);
-
-		for (SocketAddress a : otherLocalAddresses) {
-			newLocalAddresses.add(a);
-		}
-
-		setDefaultLocalAddresses(newLocalAddresses);
 	}
 
 	/**
@@ -195,14 +90,6 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 	 * {@inheritDoc}
 	 */
 	@Override
-	public final void bind() throws IOException {
-		bind(getDefaultLocalAddresses());
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
 	public final void bind(SocketAddress localAddress) throws IOException {
 		if (localAddress == null) {
 			throw new IllegalArgumentException("localAddress");
@@ -217,67 +104,13 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 	 * {@inheritDoc}
 	 */
 	@Override
-	public final void bind(SocketAddress... addresses) throws IOException {
-		if ((addresses == null) || (addresses.length == 0)) {
-			bind(getDefaultLocalAddresses());
-			return;
-		}
-
-		List<SocketAddress> localAddresses = new ArrayList<>(2);
-
-		for (SocketAddress address : addresses) {
-			localAddresses.add(address);
-		}
-
-		bind(localAddresses);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final void bind(SocketAddress firstLocalAddress, SocketAddress... addresses) throws IOException {
-		if (firstLocalAddress == null) {
-			bind(getDefaultLocalAddresses());
-		}
-
-		if ((addresses == null) || (addresses.length == 0)) {
-			bind(getDefaultLocalAddresses());
-			return;
-		}
-
-		List<SocketAddress> localAddresses = new ArrayList<>(2);
-		localAddresses.add(firstLocalAddress);
-
-		for (SocketAddress address : addresses) {
-			localAddresses.add(address);
-		}
-
-		bind(localAddresses);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final void bind(Iterable<? extends SocketAddress> localAddresses) throws IOException {
+	public final void bind(List<? extends SocketAddress> localAddresses) throws IOException {
 		if (isDisposing()) {
 			throw new IllegalStateException("The Accpetor disposed is being disposed.");
 		}
 
 		if (localAddresses == null) {
 			throw new IllegalArgumentException("localAddresses");
-		}
-
-		List<SocketAddress> localAddressesCopy = new ArrayList<>();
-
-		for (SocketAddress a : localAddresses) {
-			checkAddressType(a);
-			localAddressesCopy.add(a);
-		}
-
-		if (localAddressesCopy.isEmpty()) {
-			throw new IllegalArgumentException("localAddresses is empty.");
 		}
 
 		boolean activate = false;
@@ -293,7 +126,7 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 			}
 
 			try {
-				Set<SocketAddress> addresses = bindInternal(localAddressesCopy);
+				Set<InetSocketAddress> addresses = bindInternal(localAddresses);
 
 				synchronized (boundAddresses) {
 					boundAddresses.addAll(addresses);
@@ -411,7 +244,7 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 	 * @return the {@link Set} of the local addresses which is bound actually
 	 * @throws Exception If the bind failed
 	 */
-	protected abstract Set<SocketAddress> bindInternal(List<? extends SocketAddress> localAddresses) throws Exception;
+	protected abstract Set<InetSocketAddress> bindInternal(List<? extends SocketAddress> localAddresses) throws Exception;
 
 	/**
 	 * Implement this method to perform the actual unbind operation.
@@ -425,12 +258,6 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 	public String toString() {
 		return "(nio socket acceptor: " + (isActive() ?
 				"localAddress(es): " + getLocalAddresses() + ", managedSessionCount: " + getManagedSessionCount() : "not bound") + ')';
-	}
-
-	private static void checkAddressType(SocketAddress a) {
-		if (a != null && !InetSocketAddress.class.isAssignableFrom(a.getClass())) {
-			throw new IllegalArgumentException("localAddress type: " + a.getClass().getSimpleName() + " (expected: InetSocketAddress)");
-		}
 	}
 
 	/**

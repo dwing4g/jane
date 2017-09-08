@@ -20,7 +20,6 @@
 package org.apache.mina.transport.socket.nio;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -31,14 +30,13 @@ import org.apache.mina.core.polling.AbstractPollingIoConnector;
 import org.apache.mina.core.service.IoConnector;
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.SimpleIoProcessorPool;
-import org.apache.mina.transport.socket.SocketConnector;
 
 /**
  * {@link IoConnector} for socket transport (TCP/IP).
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public final class NioSocketConnector extends AbstractPollingIoConnector implements SocketConnector {
+public final class NioSocketConnector extends AbstractPollingIoConnector {
 
 	private Selector selector;
 
@@ -75,22 +73,6 @@ public final class NioSocketConnector extends AbstractPollingIoConnector impleme
 		if (selector != null) {
 			selector.close();
 		}
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public InetSocketAddress getDefaultRemoteAddress() {
-		return (InetSocketAddress) super.getDefaultRemoteAddress();
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setDefaultRemoteAddress(InetSocketAddress defaultRemoteAddress) {
-		super.setDefaultRemoteAddress(defaultRemoteAddress);
 	}
 
 	/**

@@ -34,7 +34,6 @@ import org.apache.mina.core.polling.AbstractPollingIoAcceptor;
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.SimpleIoProcessorPool;
-import org.apache.mina.transport.socket.SocketAcceptor;
 
 /**
  * {@link IoAcceptor} for socket transport (TCP/IP).  This class
@@ -42,7 +41,7 @@ import org.apache.mina.transport.socket.SocketAcceptor;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public final class NioSocketAcceptor extends AbstractPollingIoAcceptor implements SocketAcceptor {
+public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 
 	private Selector selector;
 
@@ -80,30 +79,6 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor implement
 		if (selector != null) {
 			selector.close();
 		}
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public InetSocketAddress getLocalAddress() {
-		return (InetSocketAddress) super.getLocalAddress();
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public InetSocketAddress getDefaultLocalAddress() {
-		return (InetSocketAddress) super.getDefaultLocalAddress();
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setDefaultLocalAddress(InetSocketAddress localAddress) {
-		setDefaultLocalAddress((SocketAddress) localAddress);
 	}
 
 	/**
@@ -180,8 +155,8 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor implement
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected SocketAddress localAddress(ServerSocketChannel handle) throws Exception {
-		return handle.socket().getLocalSocketAddress();
+	protected InetSocketAddress localAddress(ServerSocketChannel handle) throws Exception {
+		return (InetSocketAddress)handle.socket().getLocalSocketAddress();
 	}
 
 	/**

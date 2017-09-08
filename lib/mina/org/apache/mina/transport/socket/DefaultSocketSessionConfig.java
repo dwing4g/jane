@@ -20,6 +20,7 @@
 package org.apache.mina.transport.socket;
 
 import org.apache.mina.core.service.IoService;
+import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 
 /**
  * A default implementation of {@link SocketSessionConfig}.
@@ -69,7 +70,7 @@ public final class DefaultSocketSessionConfig extends AbstractSocketSessionConfi
 	public void init(IoService p) {
 		parent = p;
 
-		defaultReuseAddress = p instanceof SocketAcceptor || DEFAULT_REUSE_ADDRESS;
+		defaultReuseAddress = p instanceof NioSocketAcceptor || DEFAULT_REUSE_ADDRESS;
 		reuseAddress = defaultReuseAddress;
 	}
 

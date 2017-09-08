@@ -26,10 +26,6 @@ import org.apache.mina.core.future.ConnectFuture;
  * Connects to endpoint, communicates with the server, and fires events to
  * {@link IoHandler}s.
  * <p>
- * Please refer to
- * <a href="../../../../../xref-examples/org/apache/mina/examples/netcat/Main.html">NetCat</a>
- * example.
- * <p>
  * You should connect to the desired socket address to start communication,
  * and then events for incoming connections will be sent to the specified
  * default {@link IoHandler}.
@@ -52,43 +48,6 @@ public interface IoConnector extends IoService {
 	 * @param connectTimeoutInMillis The time out for the connection
 	 */
 	void setConnectTimeoutMillis(long connectTimeoutInMillis);
-
-	/**
-	 * @return the default remote address to connect to when no argument
-	 * is specified in {@link #connect()} method.
-	 */
-	SocketAddress getDefaultRemoteAddress();
-
-	/**
-	 * Sets the default remote address to connect to when no argument is
-	 * specified in {@link #connect()} method.
-	 *
-	 * @param defaultRemoteAddress The default remote address
-	 */
-	void setDefaultRemoteAddress(SocketAddress defaultRemoteAddress);
-
-	/**
-	 * @return the default local address
-	 */
-	SocketAddress getDefaultLocalAddress();
-
-	/**
-	 * Sets the default local address
-	 *
-	 * @param defaultLocalAddress The default local address
-	 */
-	void setDefaultLocalAddress(SocketAddress defaultLocalAddress);
-
-	/**
-	 * Connects to the {@link #setDefaultRemoteAddress(SocketAddress) default
-	 * remote address}.
-	 *
-	 * @return the {@link ConnectFuture} instance which is completed when the
-	 *         connection attempt initiated by this call succeeds or fails.
-	 * @throws IllegalStateException
-	 *             if no default remoted address is set.
-	 */
-	ConnectFuture connect();
 
 	/**
 	 * Connects to the specified remote address.

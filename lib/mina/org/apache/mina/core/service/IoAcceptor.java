@@ -20,6 +20,7 @@
 package org.apache.mina.core.service;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,16 +31,12 @@ import org.apache.mina.core.session.IoSession;
  * Accepts incoming connection, communicates with clients, and fires events to
  * {@link IoHandler}s.
  * <p>
- * Please refer to
- * <a href="../../../../../xref-examples/org/apache/mina/examples/echoserver/Main.html">EchoServer</a>
- * example.
- * <p>
  * You should bind to the desired socket address to accept incoming
  * connections, and then events for incoming connections will be sent to
  * the specified default {@link IoHandler}.
  * <p>
  * Threads accept incoming connections start automatically when
- * {@link #bind()} is invoked, and stop when {@link #unbind()} is invoked.
+ * {@link #bind(SocketAddress)} is invoked, and stop when {@link #unbind()} is invoked.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
@@ -51,70 +48,14 @@ public interface IoAcceptor extends IoService {
 	 *
 	 * @return The bound LocalAddress
 	 */
-	SocketAddress getLocalAddress();
+	InetSocketAddress getLocalAddress();
 
 	/**
 	 * Returns a {@link Set} of the local addresses which are bound currently.
 	 *
 	 * @return The Set of bound LocalAddresses
 	 */
-	ArrayList<SocketAddress> getLocalAddresses();
-
-	/**
-	 * Returns the default local address to bind when no argument is specified
-	 * in {@link #bind()} method.  Please note that the default will not be
-	 * used if any local address is specified.  If more than one address are
-	 * set, only one of them will be returned, but it's not necessarily the
-	 * firstly specified address in {@link #setDefaultLocalAddresses(List)}.
-	 *
-	 * @return The default bound LocalAddress
-	 */
-	SocketAddress getDefaultLocalAddress();
-
-	/**
-	 * Returns a {@link List} of the default local addresses to bind when no
-	 * argument is specified in {@link #bind()} method.  Please note that the
-	 * default will not be used if any local address is specified.
-	 *
-	 * @return The list of default bound LocalAddresses
-	 */
-	List<SocketAddress> getDefaultLocalAddresses();
-
-	/**
-	 * Sets the default local address to bind when no argument is specified in
-	 * {@link #bind()} method.  Please note that the default will not be used
-	 * if any local address is specified.
-	 *
-	 * @param localAddress The local addresses to bind the acceptor on
-	 */
-	void setDefaultLocalAddress(SocketAddress localAddress);
-
-	/**
-	 * Sets the default local addresses to bind when no argument is specified
-	 * in {@link #bind()} method.  Please note that the default will not be
-	 * used if any local address is specified.
-	 * @param firstLocalAddress The first local address to bind the acceptor on
-	 * @param otherLocalAddresses The other local addresses to bind the acceptor on
-	 */
-	void setDefaultLocalAddresses(SocketAddress firstLocalAddress, SocketAddress... otherLocalAddresses);
-
-	/**
-	 * Sets the default local addresses to bind when no argument is specified
-	 * in {@link #bind()} method.  Please note that the default will not be
-	 * used if any local address is specified.
-	 *
-	 * @param localAddresses The local addresses to bind the acceptor on
-	 */
-	void setDefaultLocalAddresses(Iterable<? extends SocketAddress> localAddresses);
-
-	/**
-	 * Sets the default local addresses to bind when no argument is specified
-	 * in {@link #bind()} method.  Please note that the default will not be
-	 * used if any local address is specified.
-	 *
-	 * @param localAddresses The local addresses to bind the acceptor on
-	 */
-	void setDefaultLocalAddresses(List<? extends SocketAddress> localAddresses);
+	ArrayList<InetSocketAddress> getLocalAddresses();
 
 	/**
 	 * Returns <tt>true</tt> if and only if all clients are closed when this
@@ -135,14 +76,6 @@ public interface IoAcceptor extends IoService {
 	void setCloseOnDeactivation(boolean closeOnDeactivation);
 
 	/**
-	 * Binds to the default local address(es) and start to accept incoming
-	 * connections.
-	 *
-	 * @throws IOException if failed to bind
-	 */
-	void bind() throws IOException;
-
-	/**
 	 * Binds to the specified local address and start to accept incoming
 	 * connections.
 	 *
@@ -154,33 +87,12 @@ public interface IoAcceptor extends IoService {
 
 	/**
 	 * Binds to the specified local addresses and start to accept incoming
-	 * connections. If no address is given, bind on the default local address.
-	 *
-	 * @param firstLocalAddress The first address to bind to
-	 * @param addresses The SocketAddresses to bind to
-	 *
-	 * @throws IOException if failed to bind
-	 */
-	void bind(SocketAddress firstLocalAddress, SocketAddress... addresses) throws IOException;
-
-	/**
-	 * Binds to the specified local addresses and start to accept incoming
-	 * connections. If no address is given, bind on the default local address.
-	 *
-	 * @param addresses The SocketAddresses to bind to
-	 *
-	 * @throws IOException if failed to bind
-	 */
-	void bind(SocketAddress... addresses) throws IOException;
-
-	/**
-	 * Binds to the specified local addresses and start to accept incoming
 	 * connections.
 	 *
 	 * @param localAddresses The local address we will be bound to
 	 * @throws IOException if failed to bind
 	 */
-	void bind(Iterable<? extends SocketAddress> localAddresses) throws IOException;
+	void bind(List<? extends SocketAddress> localAddresses) throws IOException;
 
 	/**
 	 * Unbinds from all local addresses that this service is bound to and stops

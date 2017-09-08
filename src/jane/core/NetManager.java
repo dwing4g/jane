@@ -3,6 +3,7 @@ package jane.core;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -317,7 +318,7 @@ public class NetManager implements IoHandler
 		_acceptor.bind(addr);
 	}
 
-	public void startServer(SocketAddress... addrs) throws IOException
+	public void startServer(List<? extends SocketAddress> addrs) throws IOException
 	{
 		getAcceptor();
 		StringBuilder sb = new StringBuilder();

@@ -19,6 +19,7 @@
  */
 package org.apache.mina.core.session;
 
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Set;
 import org.apache.mina.core.filterchain.IoFilter;
@@ -315,23 +316,23 @@ public interface IoSession {
 	/**
 	 * @return the socket address of remote peer.
 	 */
-	SocketAddress getRemoteAddress();
+	InetSocketAddress getRemoteAddress();
 
 	/**
 	 * @return the socket address of local machine which is associated with this
 	 * session.
 	 */
-	SocketAddress getLocalAddress();
+	InetSocketAddress getLocalAddress();
 
 	/**
 	 * @return the socket address of the {@link IoService} listens to to manage
 	 * this session.  If this session is managed by {@link IoAcceptor}, it
-	 * returns the {@link SocketAddress} which is specified as a parameter of
-	 * {@link IoAcceptor#bind()}.  If this session is managed by
+	 * returns the {@link InetSocketAddress} which is specified as a parameter of
+	 * {@link IoAcceptor#bind(SocketAddress)}.  If this session is managed by
 	 * {@link IoConnector}, this method returns the same address with
 	 * that of {@link #getRemoteAddress()}.
 	 */
-	SocketAddress getServiceAddress();
+	InetSocketAddress getServiceAddress();
 
 	/**
 	 * Returns the {@link WriteRequest} which is being processed by

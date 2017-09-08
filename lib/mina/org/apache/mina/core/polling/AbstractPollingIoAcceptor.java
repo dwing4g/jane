@@ -19,6 +19,8 @@
  */
 package org.apache.mina.core.polling;
 
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.ServerSocketChannel;
@@ -199,10 +201,10 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 	/**
 	 * Get the local address associated with a given server socket
 	 * @param handle the server socket
-	 * @return the local {@link SocketAddress} associated with this handle
+	 * @return the local {@link InetSocketAddress} associated with this handle
 	 * @throws Exception any exception thrown by the underlying systems calls
 	 */
-	protected abstract SocketAddress localAddress(ServerSocketChannel handle) throws Exception;
+	protected abstract InetSocketAddress localAddress(ServerSocketChannel handle) throws Exception;
 
 	/**
 	 * Accept a client connection for a server socket and return a new {@link IoSession}
@@ -236,7 +238,7 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected final Set<SocketAddress> bindInternal(List<? extends SocketAddress> localAddresses) throws Exception {
+	protected final Set<InetSocketAddress> bindInternal(List<? extends SocketAddress> localAddresses) throws Exception {
 		// Create a bind request as a Future operation. When the selector
 		// have handled the registration, it will signal this future.
 		AcceptorOperationFuture request = new AcceptorOperationFuture(localAddresses);
@@ -270,7 +272,7 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 		// Update the local addresses.
 		// setLocalAddresses() shouldn't be called from the worker thread
 		// because of deadlock.
-		Set<SocketAddress> newLocalAddresses = new HashSet<>();
+		Set<InetSocketAddress> newLocalAddresses = new HashSet<>();
 
 		for (ServerSocketChannel handle : boundHandles.values()) {
 			newLocalAddresses.add(localAddress(handle));
@@ -567,17 +569,16 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 	}
 
 	/**
-	 * @return the backLog
+	 * @return the size of the backlog
 	 */
 	public int getBacklog() {
 		return backlog;
 	}
 
 	/**
-	 * Sets the Backlog parameter
+	 * Sets the size of the backlog
 	 *
-	 * @param backlog
-	 *            the backlog variable
+	 * @param backlog The backlog's size
 	 */
 	public void setBacklog(int backlog) {
 		synchronized (bindLock) {
@@ -590,17 +591,18 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 	}
 
 	/**
-	 * @return the flag that sets the reuseAddress information
+	 * @see ServerSocket#getReuseAddress()
+	 *
+	 * @return <tt>true</tt> if the <tt>SO_REUSEADDR</tt> is enabled
 	 */
 	public boolean isReuseAddress() {
 		return reuseAddress;
 	}
 
 	/**
-	 * Set the Reuse Address flag
+	 * @see ServerSocket#setReuseAddress(boolean)
 	 *
-	 * @param reuseAddress
-	 *            The flag to set
+	 * @param reuseAddress tells if the <tt>SO_REUSEADDR</tt> is to be enabled
 	 */
 	public void setReuseAddress(boolean reuseAddress) {
 		synchronized (bindLock) {

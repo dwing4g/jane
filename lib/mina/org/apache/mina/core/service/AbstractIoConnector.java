@@ -39,12 +39,6 @@ public abstract class AbstractIoConnector extends AbstractIoService implements I
 
 	private long connectTimeoutInMillis = 60 * 1000L; // 1 minute by default
 
-	/** The remote address we are connected to */
-	private SocketAddress defaultRemoteAddress;
-
-	/** The local address */
-	private SocketAddress defaultLocalAddress;
-
 	/**
 	* @return
 	 *  The minimum time that this connector can have for a connection
@@ -85,60 +79,6 @@ public abstract class AbstractIoConnector extends AbstractIoService implements I
 			connectTimeoutCheckInterval = connectTimeoutInMillis;
 		}
 		this.connectTimeoutInMillis = connectTimeoutInMillis;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public SocketAddress getDefaultRemoteAddress() {
-		return defaultRemoteAddress;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final void setDefaultLocalAddress(SocketAddress localAddress) {
-		defaultLocalAddress = localAddress;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final SocketAddress getDefaultLocalAddress() {
-		return defaultLocalAddress;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final void setDefaultRemoteAddress(SocketAddress defaultRemoteAddress) {
-		if (defaultRemoteAddress == null) {
-			throw new IllegalArgumentException("defaultRemoteAddress");
-		}
-
-		if (!InetSocketAddress.class.isAssignableFrom(defaultRemoteAddress.getClass())) {
-			throw new IllegalArgumentException("defaultRemoteAddress type: " + defaultRemoteAddress.getClass()
-					+ " (expected: InetSocketAddress)");
-		}
-		this.defaultRemoteAddress = defaultRemoteAddress;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final ConnectFuture connect() {
-		SocketAddress remoteAddress = getDefaultRemoteAddress();
-
-		if (remoteAddress == null) {
-			throw new IllegalStateException("defaultRemoteAddress is not set.");
-		}
-
-		return connect(remoteAddress, null);
 	}
 
 	/**

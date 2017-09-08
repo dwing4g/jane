@@ -20,7 +20,7 @@
 package org.apache.mina.core.session;
 
 import java.io.IOException;
-import java.net.SocketAddress;
+import java.net.InetSocketAddress;
 import java.nio.channels.FileChannel;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -573,7 +573,7 @@ public abstract class AbstractIoSession implements IoSession {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public SocketAddress getServiceAddress() {
+	public InetSocketAddress getServiceAddress() {
 		IoService ioService = getService();
 		return ioService instanceof IoAcceptor ? ((IoAcceptor)ioService).getLocalAddress() :
 				getRemoteAddress();

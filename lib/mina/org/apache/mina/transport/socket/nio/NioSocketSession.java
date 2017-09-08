@@ -109,11 +109,6 @@ public final class NioSocketSession extends NioSession {
 		ch.close();
 	}
 
-	@Override
-	public InetSocketAddress getServiceAddress() {
-		return (InetSocketAddress) super.getServiceAddress();
-	}
-
 	/**
 	 * A private class storing a copy of the IoService configuration when the IoSession
 	 * is created. That allows the session to have its own configuration setting, over
