@@ -47,21 +47,21 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 	private final String							   name;
 	private long									   minVersion;
 
-	public LongConcurrentLRUMap(int upperSize, int lowerSize, int acceptSize, int initialSize, float loadFactor, int concurrencyLevel, String name)
+	public LongConcurrentLRUMap(int upperSize, int lowerSize, int acceptSize, int initialSize, float loadFactor, String name)
 	{
 		if(lowerSize <= 0) throw new IllegalArgumentException("lowerSize must be > 0");
 		if(upperSize <= lowerSize) throw new IllegalArgumentException("upperSize must be > lowerSize");
-		map = new LongConcurrentHashMap<>(initialSize, loadFactor, concurrencyLevel);
+		map = new LongConcurrentHashMap<>(initialSize, loadFactor);
 		this.upperSize = upperSize;
 		this.lowerSize = lowerSize;
 		this.acceptSize = acceptSize;
 		this.name = name;
 	}
 
-	public LongConcurrentLRUMap(int lowerSize, float loadFactor, int concurrencyLevel, String name)
+	public LongConcurrentLRUMap(int lowerSize, float loadFactor, String name)
 	{
 		this(Math.max(lowerSize + (lowerSize + 1) / 2, UPPERSIZE_MIN), lowerSize, lowerSize + lowerSize / 4,
-				Math.max(lowerSize + (lowerSize + 1) / 2, UPPERSIZE_MIN) + 256, loadFactor, concurrencyLevel, name);
+				Math.max(lowerSize + (lowerSize + 1) / 2, UPPERSIZE_MIN) + 256, loadFactor, name);
 	}
 
 	private static final class CacheEntry<V> extends CacheEntryBase<V>
@@ -188,9 +188,8 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 			CacheEntry<?>[] eList = new CacheEntry<?>[sizeOld];
 			int eSize = 0;
 
-			for(final Iterator<CacheEntry<V>> it = map.iterator(); it.hasNext();)
+			for(final CacheEntry<V> ce : map)
 			{
-				final CacheEntry<V> ce = it.next();
 				final long v = ce.version;
 				ce.versionCopy = v;
 

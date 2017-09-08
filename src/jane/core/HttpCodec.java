@@ -396,7 +396,7 @@ public final class HttpCodec extends IoFilterAdapter
 
 	public HttpCodec()
 	{
-		this(Const.maxHttpBodySize);
+		this(Const.httpBodyDefaultMaxSize);
 	}
 
 	public HttpCodec(long maxHttpBodySize)
@@ -456,8 +456,8 @@ public final class HttpCodec extends IoFilterAdapter
 						p = HEAD_END_MARK.find(_buf, p - (HEAD_END_MARK.getPatLen() - 1));
 						if(p < 0)
 						{
-							if(_buf.size() > Const.maxHttpHeadSize)
-								throw new DecodeException("http head size overflow: bufsize=" + _buf.size() + ",maxsize=" + Const.maxHttpHeadSize);
+							if(_buf.size() > Const.httpHeadMaxSize)
+								throw new DecodeException("http head size overflow: bufsize=" + _buf.size() + ",maxsize=" + Const.httpHeadMaxSize);
 							if(!in.hasRemaining()) return;
 							continue begin_;
 						}

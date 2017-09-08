@@ -9,8 +9,9 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
@@ -212,13 +213,14 @@ public final class DBManager
 	{
 		_hasCreated = true;
 		AtomicInteger counter = new AtomicInteger();
-		_procThreads = (ThreadPoolExecutor)Executors.newFixedThreadPool(Const.dbThreadCount, r ->
-		{
-			Thread t = new ProcThread("ProcThread-" + counter.incrementAndGet(), r);
-			t.setDaemon(true);
-			t.setPriority(Thread.NORM_PRIORITY);
-			return t;
-		});
+		_procThreads = new ThreadPoolExecutor(Const.dbThreadCountMin, Const.dbThreadCountMax, Const.dbThreadKeepAlive,
+				TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), r ->
+				{
+					Thread t = new ProcThread("ProcThread-" + counter.incrementAndGet(), r);
+					t.setDaemon(true);
+					t.setPriority(Thread.NORM_PRIORITY);
+					return t;
+				});
 	}
 
 	/**

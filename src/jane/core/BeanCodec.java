@@ -130,7 +130,7 @@ public class BeanCodec extends IoFilterAdapter
 				return false;
 			}
 			int maxSize = getBeanMaxSize(_ptype);
-			if(maxSize < 0) maxSize = Const.maxRawBeanSize;
+			if(maxSize < 0) maxSize = Const.beanDefaultMaxSize;
 			if(_psize > maxSize)
 				throw new DecodeException("bean maxSize overflow: type=" + _ptype + ",serial=" + _pserial + ",size=" + _psize + ",maxSize=" + maxSize);
 		}

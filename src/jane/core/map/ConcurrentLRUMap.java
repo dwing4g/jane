@@ -52,21 +52,21 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 	private final String								 name;
 	private long										 minVersion;
 
-	public ConcurrentLRUMap(int upperSize, int lowerSize, int acceptSize, int initialSize, float loadFactor, int concurrencyLevel, String name)
+	public ConcurrentLRUMap(int upperSize, int lowerSize, int acceptSize, int initialSize, float loadFactor, String name)
 	{
 		if(lowerSize <= 0) throw new IllegalArgumentException("lowerSize must be > 0");
 		if(upperSize <= lowerSize) throw new IllegalArgumentException("upperSize must be > lowerSize");
-		map = new ConcurrentHashMap<>(initialSize, loadFactor, concurrencyLevel);
+		map = new ConcurrentHashMap<>(initialSize, loadFactor);
 		this.upperSize = upperSize;
 		this.lowerSize = lowerSize;
 		this.acceptSize = acceptSize;
 		this.name = name;
 	}
 
-	public ConcurrentLRUMap(int lowerSize, float loadFactor, int concurrencyLevel, String name)
+	public ConcurrentLRUMap(int lowerSize, float loadFactor, String name)
 	{
 		this(Math.max(lowerSize + (lowerSize + 1) / 2, UPPERSIZE_MIN), lowerSize, lowerSize + lowerSize / 4,
-				Math.max(lowerSize + (lowerSize + 1) / 2, UPPERSIZE_MIN) + 256, loadFactor, concurrencyLevel, name);
+				Math.max(lowerSize + (lowerSize + 1) / 2, UPPERSIZE_MIN) + 256, loadFactor, name);
 	}
 
 	private static final class CacheEntry<K, V> extends CacheEntryBase<V>
