@@ -102,7 +102,7 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 	 * @see SimpleIoProcessorPool
 	 */
 	protected AbstractPollingIoAcceptor() {
-		this(new SimpleIoProcessorPool<>());
+		this(new SimpleIoProcessorPool());
 	}
 
 	/**
@@ -116,7 +116,7 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 	 * @param processorCount the amount of processor to instantiate for the pool
 	 */
 	protected AbstractPollingIoAcceptor(int processorCount) {
-		this(new SimpleIoProcessorPool<>(processorCount));
+		this(new SimpleIoProcessorPool(processorCount));
 	}
 
 	/**

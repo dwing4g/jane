@@ -9,6 +9,9 @@ import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.buffer.IoBufferAllocator;
 import org.apache.mina.core.buffer.SimpleBufferAllocator;
 
+/**
+ * 注意: 强烈建议不要在经常分配销毁的线程上使用此分配器分配IoBuffer
+ */
 public final class CachedIoBufferAllocator implements IoBufferAllocator
 {
 	private static final int DEFAULT_MAX_POOL_SIZE			= 8;

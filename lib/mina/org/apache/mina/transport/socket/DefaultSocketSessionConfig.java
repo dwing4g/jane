@@ -28,23 +28,14 @@ import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class DefaultSocketSessionConfig extends AbstractSocketSessionConfig {
-	private static final boolean DEFAULT_REUSE_ADDRESS = false;
-
 	private static final int DEFAULT_TRAFFIC_CLASS = 0;
-
-	private static final boolean DEFAULT_KEEP_ALIVE = false;
-
-	private static final boolean DEFAULT_OOB_INLINE = false;
-
 	private static final int DEFAULT_SO_LINGER = -1;
-
+	private static final boolean DEFAULT_REUSE_ADDRESS = false;
+	private static final boolean DEFAULT_KEEP_ALIVE = false;
+	private static final boolean DEFAULT_OOB_INLINE = false;
 	private static final boolean DEFAULT_TCP_NO_DELAY = false;
 
 	protected IoService parent;
-
-	private boolean defaultReuseAddress;
-
-	private boolean reuseAddress;
 
 	/* The SO_RCVBUF parameter. Set to -1 (ie, will default to OS default) */
 	private int receiveBufferSize = -1;
@@ -53,13 +44,11 @@ public final class DefaultSocketSessionConfig extends AbstractSocketSessionConfi
 	private int sendBufferSize = -1;
 
 	private int trafficClass = DEFAULT_TRAFFIC_CLASS;
-
-	private boolean keepAlive = DEFAULT_KEEP_ALIVE;
-
-	private boolean oobInline = DEFAULT_OOB_INLINE;
-
 	private int soLinger = DEFAULT_SO_LINGER;
-
+	private boolean defaultReuseAddress;
+	private boolean reuseAddress;
+	private boolean keepAlive = DEFAULT_KEEP_ALIVE;
+	private boolean oobInline = DEFAULT_OOB_INLINE;
 	private boolean tcpNoDelay = DEFAULT_TCP_NO_DELAY;
 
 	/**
@@ -69,8 +58,7 @@ public final class DefaultSocketSessionConfig extends AbstractSocketSessionConfi
 	 */
 	public void init(IoService p) {
 		parent = p;
-
-		defaultReuseAddress = p instanceof NioSocketAcceptor || DEFAULT_REUSE_ADDRESS;
+		defaultReuseAddress = (p instanceof NioSocketAcceptor || DEFAULT_REUSE_ADDRESS);
 		reuseAddress = defaultReuseAddress;
 	}
 

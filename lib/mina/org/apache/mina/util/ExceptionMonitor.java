@@ -19,21 +19,23 @@
  */
 package org.apache.mina.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Monitors uncaught exceptions.  {@link #exceptionCaught(Throwable)} is
  * invoked when there are any uncaught exceptions.
  * <p>
  * You can monitor any uncaught exceptions by setting {@link ExceptionMonitor}
  * by calling {@link #setInstance(ExceptionMonitor)}.  The default
- * monitor logs all caught exceptions in <tt>WARN</tt> level using
- * SLF4J.
+ * monitor logs all caught exceptions in <tt>ERROR</tt> level using SLF4J.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
- *
- * @see DefaultExceptionMonitor
  */
-public abstract class ExceptionMonitor {
-	private static ExceptionMonitor instance = new DefaultExceptionMonitor();
+public class ExceptionMonitor {
+	private static final Logger LOGGER = LoggerFactory.getLogger(ExceptionMonitor.class);
+
+	private static ExceptionMonitor instance = new ExceptionMonitor();
 
 	/**
 	 * @return the current exception monitor.
@@ -46,11 +48,13 @@ public abstract class ExceptionMonitor {
 	 * Sets the uncaught exception monitor.
 	 * If <code>null</code> is specified, the default monitor will be set.
 	 *
-	 * @param monitor A new instance of {@link DefaultExceptionMonitor} is set
-	 *                if <tt>null</tt> is specified.
+	 * @param monitor A new instance of {@link ExceptionMonitor} is set if <tt>null</tt> is specified.
 	 */
 	public static void setInstance(ExceptionMonitor monitor) {
-		instance = (monitor != null ? monitor : new DefaultExceptionMonitor());
+		instance = (monitor != null ? monitor : new ExceptionMonitor());
+	}
+
+	protected ExceptionMonitor() {
 	}
 
 	/**
@@ -58,5 +62,12 @@ public abstract class ExceptionMonitor {
 	 *
 	 * @param cause The caught exception
 	 */
-	public abstract void exceptionCaught(Throwable cause);
+	@SuppressWarnings("static-method")
+	public void exceptionCaught(Throwable cause) {
+		if (cause instanceof Error) {
+			throw (Error) cause;
+		}
+
+		LOGGER.error("Unexpected exception:", cause);
+	}
 }

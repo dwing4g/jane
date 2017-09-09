@@ -25,11 +25,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.file.FileRegion;
@@ -43,7 +41,6 @@ import org.apache.mina.core.write.WriteRequest;
 import org.apache.mina.core.write.WriteRequestQueue;
 import org.apache.mina.core.write.WriteToClosedSessionException;
 import org.apache.mina.util.ExceptionMonitor;
-import org.apache.mina.util.NamePreservingRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,12 +61,6 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 
 	/** A timeout used for the select */
 	private static final long SELECT_TIMEOUT = 1000L;
-
-	/** A map containing the last Thread ID for each class */
-	private static final ConcurrentHashMap<Class<?>, AtomicInteger> threadIds = new ConcurrentHashMap<>();
-
-	/** This IoProcessor instance name */
-	private final String threadName;
 
 	/** The executor to use when we need to start the inner Processor */
 	private final Executor executor;
@@ -109,27 +100,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			throw new IllegalArgumentException("executor");
 		}
 
-		threadName = nextThreadName();
 		this.executor = executor;
-	}
-
-	/**
-	 * Compute the thread ID for this class instance. As we may have different
-	 * classes, we store the last ID number into a Map associating the class
-	 * name to the last assigned ID.
-	 *
-	 * @return a name for the current thread, based on the class name and an
-	 *         incremental value, starting at 1.
-	 */
-	private String nextThreadName() {
-		Class<?> cls = getClass();
-		AtomicInteger threadId = threadIds.putIfAbsent(cls, new AtomicInteger(1));
-
-		// Just increment the last ID, and get it
-		int newThreadId = (threadId != null ? threadId.incrementAndGet() : 1);
-
-		// Now we can compute the name for this thread
-		return cls.getSimpleName() + '-' + newThreadId;
 	}
 
 	/**
@@ -398,7 +369,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			processor = new Processor();
 
 			if (processorRef.compareAndSet(null, processor)) {
-				executor.execute(new NamePreservingRunnable(processor, threadName));
+				executor.execute(processor);
 			}
 		}
 

@@ -47,6 +47,8 @@ public abstract class NioSession extends AbstractIoSession {
 	/** The FilterChain created for this session */
 	private final IoFilterChain filterChain;
 
+	private NioProcessor nioProcessor;
+
 	/**
 	 * Creates a new instance of NioSession, with its associated IoProcessor.
 	 * <br>
@@ -90,6 +92,14 @@ public abstract class NioSession extends AbstractIoSession {
 	 */
 	void setSelectionKey(SelectionKey key) {
 		this.key = key;
+	}
+
+	public final NioProcessor getNioProcessor() {
+		return nioProcessor;
+	}
+
+	public final void setNioProcessor(NioProcessor processor) {
+		nioProcessor = processor;
 	}
 
 	/**

@@ -20,14 +20,15 @@
 package org.apache.mina.core.service;
 
 import java.util.Arrays;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
-import org.apache.mina.core.session.AbstractIoSession;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequest;
 import org.apache.mina.transport.socket.nio.NioProcessor;
+import org.apache.mina.transport.socket.nio.NioSession;
 
 /**
  * An {@link IoProcessor} pool that distributes {@link IoSession}s into one or more
@@ -39,13 +40,6 @@ import org.apache.mina.transport.socket.nio.NioProcessor;
  * among all services.  To do so, you can create a new {@link SimpleIoProcessorPool}
  * instance by yourself and provide the pool as a constructor parameter when you create the services.
  * <p>
- * This pool uses Java reflection API to create multiple {@link IoProcessor} instances.
- * It tries to instantiate the processor in the following order:
- * <ol>
- * <li>A public constructor with one {@link ExecutorService} parameter.</li>
- * <li>A public constructor with one {@link Executor} parameter.</li>
- * <li>A public default constructor</li>
- * </ol>
  * The following is an example for the NIO socket transport:
  * <pre><code>
  * // Create a shared pool.
@@ -65,24 +59,18 @@ import org.apache.mina.transport.socket.nio.NioProcessor;
  * </code></pre>
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
- *
- * @param <S> the type of the {@link IoSession} to be managed by the specified {@link IoProcessor}.
  */
-public final class SimpleIoProcessorPool<S extends AbstractIoSession> implements IoProcessor<S> {
+public final class SimpleIoProcessorPool implements IoProcessor<NioSession> {
 	/** The default pool size, when no size is provided. */
 	private static final int DEFAULT_SIZE = Runtime.getRuntime().availableProcessors() + 1;
 
-	/** A key used to store the processor pool in the session's Attributes */
-	private static final String PROCESSOR = "SimpleIoProcessorPool.processor";
-
-	/** The pool table */
-	private final IoProcessor<S>[] pool;
+	private static final AtomicInteger id = new AtomicInteger();
 
 	/** The contained which is passed to the IoProcessor when they are created */
-	private final Executor executor;
+	private final ExecutorService executor;
 
-	/** A flag set to true if we had to create an executor */
-	private final boolean createdExecutor;
+	/** The pool table */
+	private final NioProcessor[] pool;
 
 	/** A lock to protect the disposal against concurrent calls */
 	private final Object disposalLock = new Object();
@@ -97,58 +85,30 @@ public final class SimpleIoProcessorPool<S extends AbstractIoSession> implements
 	 * Creates a new instance of SimpleIoProcessorPool with a default size of NbCPUs +1.
 	 */
 	public SimpleIoProcessorPool() {
-		this(null, DEFAULT_SIZE);
+		this(DEFAULT_SIZE);
 	}
 
 	/**
-	 * Creates a new instance of SimpleIoProcessorPool with a defined
-	 * number of IoProcessors in the pool
+	 * Creates a new instance of SimpleIoProcessorPool with a defined number of IoProcessors in the pool
 	 *
 	 * @param size The number of IoProcessor in the pool
 	 */
 	public SimpleIoProcessorPool(int size) {
-		this(null, size);
-	}
-
-	/**
-	 * Creates a new instance of SimpleIoProcessorPool with an executor
-	 *
-	 * @param executor The {@link Executor}
-	 */
-	public SimpleIoProcessorPool(Executor executor) {
-		this(executor, DEFAULT_SIZE);
-	}
-
-	/**
-	 * Creates a new instance of SimpleIoProcessorPool with an executor
-	 *
-	 * @param executor The {@link Executor}
-	 * @param size The number of IoProcessor in the pool
-	 */
-	@SuppressWarnings("unchecked")
-	public SimpleIoProcessorPool(Executor executor, int size) {
 		if (size <= 0) {
 			throw new IllegalArgumentException("size: " + size + " (expected: positive integer)");
 		}
 
-		// Create the executor if none is provided
-		createdExecutor = (executor == null);
+		executor = new ThreadPoolExecutor(size, size, 0L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(),
+				r -> new Thread(r, NioProcessor.class.getSimpleName() + '-' + id.incrementAndGet()),
+				new ThreadPoolExecutor.CallerRunsPolicy());
 
-		if (createdExecutor) {
-			this.executor = Executors.newCachedThreadPool();
-			// Set a default reject handler
-			((ThreadPoolExecutor) this.executor).setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-		} else {
-			this.executor = executor;
-		}
-
-		pool = new IoProcessor[size];
+		pool = new NioProcessor[size];
 
 		boolean success = false;
 		try {
 			// Constructor found now use it for all subsequent instantiations
 			for (int i = 0; i < pool.length; i++) {
-				pool[i] = (IoProcessor<S>)new NioProcessor(this.executor);
+				pool[i] = new NioProcessor(executor);
 			}
 			success = true;
 		} catch (Exception e) {
@@ -164,7 +124,7 @@ public final class SimpleIoProcessorPool<S extends AbstractIoSession> implements
 	 * {@inheritDoc}
 	 */
 	@Override
-	public final void add(S session) {
+	public final void add(NioSession session) {
 		getProcessor(session).add(session);
 	}
 
@@ -172,7 +132,7 @@ public final class SimpleIoProcessorPool<S extends AbstractIoSession> implements
 	 * {@inheritDoc}
 	 */
 	@Override
-	public final void flush(S session) {
+	public final void flush(NioSession session) {
 		getProcessor(session).flush(session);
 	}
 
@@ -180,7 +140,7 @@ public final class SimpleIoProcessorPool<S extends AbstractIoSession> implements
 	 * {@inheritDoc}
 	 */
 	@Override
-	public final void write(S session, WriteRequest writeRequest) {
+	public final void write(NioSession session, WriteRequest writeRequest) {
 		getProcessor(session).write(session, writeRequest);
 	}
 
@@ -188,7 +148,7 @@ public final class SimpleIoProcessorPool<S extends AbstractIoSession> implements
 	 * {@inheritDoc}
 	 */
 	@Override
-	public final void remove(S session) {
+	public final void remove(NioSession session) {
 		getProcessor(session).remove(session);
 	}
 
@@ -196,7 +156,7 @@ public final class SimpleIoProcessorPool<S extends AbstractIoSession> implements
 	 * {@inheritDoc}
 	 */
 	@Override
-	public final void updateTrafficControl(S session) {
+	public final void updateTrafficControl(NioSession session) {
 		getProcessor(session).updateTrafficControl(session);
 	}
 
@@ -229,7 +189,7 @@ public final class SimpleIoProcessorPool<S extends AbstractIoSession> implements
 			if (!disposing) {
 				disposing = true;
 
-				for (IoProcessor<S> ioProcessor : pool) {
+				for (NioProcessor ioProcessor : pool) {
 					if (ioProcessor == null) {
 						// Special case if the pool has not been initialized properly
 						continue;
@@ -242,9 +202,7 @@ public final class SimpleIoProcessorPool<S extends AbstractIoSession> implements
 					ioProcessor.dispose();
 				}
 
-				if (createdExecutor) {
-					((ExecutorService) executor).shutdown();
-				}
+				executor.shutdown();
 			}
 
 			Arrays.fill(pool, null);
@@ -253,25 +211,24 @@ public final class SimpleIoProcessorPool<S extends AbstractIoSession> implements
 	}
 
 	/**
-	 * Find the processor associated to a session. If it hasen't be stored into
+	 * Find the processor associated to a session. If it hasn't be stored into
 	 * the session's attributes, pick a new processor and stores it.
 	 */
-	@SuppressWarnings("unchecked")
-	private IoProcessor<S> getProcessor(S session) {
-		IoProcessor<S> processor = (IoProcessor<S>) session.getAttribute(PROCESSOR);
+	private NioProcessor getProcessor(NioSession session) {
+		NioProcessor processor = session.getNioProcessor();
 
 		if (processor == null) {
-			if (disposed || disposing) {
-				throw new IllegalStateException("A disposed processor cannot be accessed.");
+			if (disposing) {
+				throw new IllegalStateException(getClass().getSimpleName() + " is disposed");
 			}
 
-			processor = pool[Math.abs((int) session.getId()) % pool.length];
+			processor = pool[((int) session.getId() & 0x7fffffff) % pool.length];
 
 			if (processor == null) {
-				throw new IllegalStateException("A disposed processor cannot be accessed.");
+				throw new IllegalStateException("null processor in pool");
 			}
 
-			session.setAttributeIfAbsent(PROCESSOR, processor);
+			session.setNioProcessor(processor);
 		}
 
 		return processor;

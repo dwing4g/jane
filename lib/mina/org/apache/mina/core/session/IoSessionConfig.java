@@ -25,7 +25,6 @@ package org.apache.mina.core.session;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface IoSessionConfig {
-
 	/**
 	 * @return the size of the read buffer that I/O processor allocates
 	 * per each read.  It's unusual to adjust this property because

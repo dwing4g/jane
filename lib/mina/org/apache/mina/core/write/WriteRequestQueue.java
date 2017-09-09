@@ -30,18 +30,21 @@ public interface WriteRequestQueue {
 
 	/**
 	 * Get the first request available in the queue for a session.
+	 *
 	 * @return The first available request, if any.
 	 */
 	WriteRequest poll();
 
 	/**
 	 * Add a new WriteRequest to the session write's queue
+	 *
 	 * @param writeRequest The writeRequest to add
 	 */
 	void offer(WriteRequest writeRequest);
 
 	/**
 	 * Tells if the WriteRequest queue is empty or not for a session
+	 *
 	 * @return <tt>true</tt> if the writeRequest is empty
 	 */
 	boolean isEmpty();

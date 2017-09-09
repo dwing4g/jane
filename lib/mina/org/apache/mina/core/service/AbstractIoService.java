@@ -28,7 +28,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.mina.core.IoUtil;
 import org.apache.mina.core.filterchain.DefaultIoFilterChain;
 import org.apache.mina.core.filterchain.DefaultIoFilterChainBuilder;
 import org.apache.mina.core.filterchain.IoFilterChainBuilder;
@@ -43,7 +42,7 @@ import org.apache.mina.core.session.IoSessionConfig;
 import org.apache.mina.core.session.IoSessionDataStructureFactory;
 import org.apache.mina.transport.socket.DefaultSocketSessionConfig;
 import org.apache.mina.util.ExceptionMonitor;
-import org.apache.mina.util.NamePreservingRunnable;
+import org.apache.mina.util.IoUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,12 +63,6 @@ public abstract class AbstractIoService implements IoService {
 	 * for each new IoService created.
 	 */
 	private static final AtomicInteger id = new AtomicInteger();
-
-	/**
-	 * The thread name built from the IoService inherited
-	 * instance class name and the IoService Id
-	 **/
-	private final String threadName;
 
 	/**
 	 * The associated executor, responsible for handling execution of I/O events.
@@ -114,9 +107,7 @@ public abstract class AbstractIoService implements IoService {
 		// Make JVM load the exception monitor before some transports change the thread context class loader.
 		ExceptionMonitor.getInstance();
 
-		threadName = getClass().getSimpleName() + '-' + id.incrementAndGet();
-
-		executor = Executors.newCachedThreadPool();
+		executor = Executors.newSingleThreadExecutor(r -> new Thread(r, getClass().getSimpleName() + '-' + id.incrementAndGet()));
 	}
 
 	/**
@@ -325,7 +316,7 @@ public abstract class AbstractIoService implements IoService {
 		// Convert to Set.  We do not return a List here because only the
 		// direct caller of MessageBroadcaster knows the order of write
 		// operations.
-		final List<WriteFuture> futures = IoUtil.broadcast(message, getManagedSessions().values());
+		final List<WriteFuture> futures = IoUtil.broadcast(message, getManagedSessions().values().iterator());
 		return new AbstractSet<WriteFuture>() {
 			@Override
 			public Iterator<WriteFuture> iterator() {
@@ -347,7 +338,7 @@ public abstract class AbstractIoService implements IoService {
 	}
 
 	protected final void executeWorker(Runnable worker) {
-		executor.execute(new NamePreservingRunnable(worker, threadName));
+		executor.execute(worker);
 	}
 
 	protected final void initSession(IoSession session, IoFuture future) {

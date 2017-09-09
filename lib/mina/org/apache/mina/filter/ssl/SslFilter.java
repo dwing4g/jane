@@ -37,7 +37,6 @@ import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequest;
-import org.apache.mina.core.write.WriteRequestWrapper;
 import org.apache.mina.core.write.WriteToClosedSessionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -810,17 +809,36 @@ public final class SslFilter extends IoFilterAdapter {
 		}
 	}
 
-	private static final class EncryptedWriteRequest extends WriteRequestWrapper {
+	private static final class EncryptedWriteRequest implements WriteRequest {
+		private final WriteRequest parentRequest;
 		private final IoBuffer encryptedMessage;
 
 		private EncryptedWriteRequest(WriteRequest writeRequest, IoBuffer encryptedMessage) {
-			super(writeRequest);
+			if (writeRequest == null) {
+				throw new IllegalArgumentException("parentRequest");
+			}
+			parentRequest = writeRequest;
 			this.encryptedMessage = encryptedMessage;
+		}
+
+		@Override
+		public WriteFuture getFuture() {
+			return parentRequest.getFuture();
 		}
 
 		@Override
 		public Object getMessage() {
 			return encryptedMessage;
+		}
+
+		@Override
+		public WriteRequest getOriginalRequest() {
+			return parentRequest.getOriginalRequest();
+		}
+
+		@Override
+		public String toString() {
+			return "(Encrypted)" + parentRequest.toString();
 		}
 	}
 }
