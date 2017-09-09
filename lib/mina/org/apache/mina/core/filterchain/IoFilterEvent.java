@@ -29,8 +29,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * An I/O event or an I/O request that MINA provides for {@link IoFilter}s.
- * Most users won't need to use this class.  It is usually used by internal
- * components to store I/O events.
+ * Most users won't need to use this class.
+ * It is usually used by internal components to store I/O events.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */

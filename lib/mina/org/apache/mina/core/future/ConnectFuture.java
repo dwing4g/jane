@@ -60,35 +60,33 @@ public interface ConnectFuture extends IoFuture {
 	boolean isConnected();
 
 	/**
-	 * @return {@code true} if the connect operation has been canceled by
-	 * {@link #cancel()} method.
+	 * @return {@code true} if the connect operation has been canceled by {@link #cancel()} method.
 	 */
 	boolean isCanceled();
 
 	/**
-	 * Sets the newly connected session and notifies all threads waiting for
-	 * this future.  This method is invoked by MINA internally.  Please do not
-	 * call this method directly.
+	 * Sets the newly connected session and notifies all threads waiting for this future.
+	 * This method is invoked by MINA internally.
+	 * Please do not call this method directly.
 	 *
 	 * @param session The created session to store in the ConnectFuture insteance
 	 */
 	void setSession(IoSession session);
 
 	/**
-	 * Sets the exception caught due to connection failure and notifies all
-	 * threads waiting for this future.  This method is invoked by MINA
-	 * internally.  Please do not call this method directly.
+	 * Sets the exception caught due to connection failure and notifies all threads waiting for this future.
+	 * This method is invoked by MINA internally.
+	 * Please do not call this method directly.
 	 *
 	 * @param exception The exception to store in the ConnectFuture instance
 	 */
 	void setException(Throwable exception);
 
 	/**
-	 * Cancels the connection attempt and notifies all threads waiting for
-	 * this future.
+	 * Cancels the connection attempt and notifies all threads waiting for this future.
 	 *
-	 * @return {@code true} if the future has been cancelled by this call, {@code false}
-	 * if the future was already cancelled.
+	 * @return {@code true} if the future has been cancelled by this call,
+	 *         {@code false} if the future was already cancelled.
 	 */
 	boolean cancel();
 

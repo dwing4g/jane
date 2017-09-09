@@ -96,7 +96,7 @@ public final class IoUtil {
 	 */
 	public static List<WriteFuture> broadcast(Object message, IoSession... sessions) {
 		if (sessions == null) {
-			return new ArrayList<>(0);
+			return new ArrayList<>();
 		}
 
 		List<WriteFuture> answer = new ArrayList<>(sessions.length);
@@ -153,8 +153,8 @@ public final class IoUtil {
 	 * @param futures The {@link IoFuture}s we are waiting on
 	 * @param timeout The maximum time we wait for the {@link IoFuture}s to complete
 	 * @param unit The Time unit to use for the timeout
-	 * @return <tt>TRUE</TT> if all the {@link IoFuture} have been completed, <tt>FALSE</tt> if
-	 * at least one {@link IoFuture} haas been interrupted
+	 * @return <tt>TRUE</TT> if all the {@link IoFuture} have been completed,
+	 *         <tt>FALSE</tt> if at least one {@link IoFuture} haas been interrupted
 	 * @throws InterruptedException If one of the {@link IoFuture} is interrupted
 	 */
 	public static boolean await(Iterable<? extends IoFuture> futures, long timeout, TimeUnit unit)
@@ -167,8 +167,8 @@ public final class IoUtil {
 	 *
 	 * @param futures The {@link IoFuture}s we are waiting on
 	 * @param timeoutMillis The maximum milliseconds we wait for the {@link IoFuture}s to complete
-	 * @return <tt>TRUE</TT> if all the {@link IoFuture} have been completed, <tt>FALSE</tt> if
-	 * at least one {@link IoFuture} has been interrupted
+	 * @return <tt>TRUE</TT> if all the {@link IoFuture} have been completed,
+	 *         <tt>FALSE</tt> if at least one {@link IoFuture} has been interrupted
 	 * @throws InterruptedException If one of the {@link IoFuture} is interrupted
 	 */
 	public static boolean await(Iterable<? extends IoFuture> futures, long timeoutMillis) throws InterruptedException {
@@ -181,8 +181,8 @@ public final class IoUtil {
 	 * @param futures The {@link IoFuture}s we are waiting on
 	 * @param timeout The maximum time we wait for the {@link IoFuture}s to complete
 	 * @param unit The Time unit to use for the timeout
-	 * @return <tt>TRUE</TT> if all the {@link IoFuture} have been completed, <tt>FALSE</tt> if
-	 * at least one {@link IoFuture} has been interrupted
+	 * @return <tt>TRUE</TT> if all the {@link IoFuture} have been completed,
+	 *         <tt>FALSE</tt> if at least one {@link IoFuture} has been interrupted
 	 */
 	public static boolean awaitUninterruptibly(Iterable<? extends IoFuture> futures, long timeout, TimeUnit unit) {
 		return awaitUninterruptibly(futures, unit.toMillis(timeout));
@@ -193,8 +193,8 @@ public final class IoUtil {
 	 *
 	 * @param futures The {@link IoFuture}s we are waiting on
 	 * @param timeoutMillis The maximum milliseconds we wait for the {@link IoFuture}s to complete
-	 * @return <tt>TRUE</TT> if all the {@link IoFuture} have been completed, <tt>FALSE</tt> if
-	 * at least one {@link IoFuture} has been interrupted
+	 * @return <tt>TRUE</TT> if all the {@link IoFuture} have been completed,
+	 *         <tt>FALSE</tt> if at least one {@link IoFuture} has been interrupted
 	 */
 	public static boolean awaitUninterruptibly(Iterable<? extends IoFuture> futures, long timeoutMillis) {
 		try {

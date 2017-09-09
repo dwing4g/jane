@@ -121,18 +121,6 @@ public interface IoAcceptor extends IoService {
 	 * <tt>true</tt>.  This method returns silently if the default local
 	 * addresses are not bound yet.
 	 *
-	 * @param firstLocalAddress The first local address to be unbound from
-	 * @param otherLocalAddresses The other local address to be unbound from
-	 */
-	void unbind(SocketAddress firstLocalAddress, SocketAddress... otherLocalAddresses);
-
-	/**
-	 * Unbinds from the specified local addresses and stop to accept incoming
-	 * connections.  All managed connections will be closed if
-	 * {@link #setCloseOnDeactivation(boolean) disconnectOnUnbind} property is
-	 * <tt>true</tt>.  This method returns silently if the default local
-	 * addresses are not bound yet.
-	 *
 	 * @param localAddresses The local address we will be unbound from
 	 */
 	void unbind(Iterable<? extends SocketAddress> localAddresses);

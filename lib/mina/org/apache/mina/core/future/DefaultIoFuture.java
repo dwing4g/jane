@@ -28,8 +28,7 @@ import org.apache.mina.core.session.IoSession;
 import org.apache.mina.util.ExceptionMonitor;
 
 /**
- * A default implementation of {@link IoFuture} associated with
- * an {@link IoSession}.
+ * A default implementation of {@link IoFuture} associated with an {@link IoSession}.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
@@ -155,16 +154,14 @@ public class DefaultIoFuture implements IoFuture {
 
 	/**
 	 * Wait for the Future to be ready. If the requested delay is 0 or
-	 * negative, this method immediately returns the value of the
-	 * 'ready' flag.
+	 * negative, this method immediately returns the value of the 'ready' flag.
 	 * Every 5 second, the wait will be suspended to be able to check if
 	 * there is a deadlock or not.
 	 *
 	 * @param timeoutMillis The delay we will wait for the Future to be ready
 	 * @param interruptable Tells if the wait can be interrupted or not
 	 * @return <tt>true</tt> if the Future is ready
-	 * @throws InterruptedException If the thread has been interrupted
-	 * when it's not allowed.
+	 * @throws InterruptedException If the thread has been interrupted when it's not allowed.
 	 */
 	private boolean await0(long timeoutMillis, boolean interruptable) throws InterruptedException {
 		long endTime = System.currentTimeMillis() + timeoutMillis;
@@ -373,8 +370,7 @@ public class DefaultIoFuture implements IoFuture {
 	 */
 	private void notifyListeners() {
 		// There won't be any visibility problem or concurrent modification
-		// because 'ready' flag will be checked against both addListener and
-		// removeListener calls.
+		// because 'ready' flag will be checked against both addListener and removeListener calls.
 		if (firstListener != null) {
 			notifyListener(firstListener);
 			firstListener = null;

@@ -55,9 +55,8 @@ public interface IoFilterChain {
 	Entry getEntry(IoFilter filter);
 
 	/**
-	 * Returns the {@link Entry} with the specified <tt>filterType</tt>
-	 * in this chain. If there's more than one filter with the specified
-	 * type, the first match will be chosen.
+	 * Returns the {@link Entry} with the specified <tt>filterType</tt> in this chain.
+	 * If there's more than one filter with the specified type, the first match will be chosen.
 	 *
 	 * @param filterType The filter class we are looking for
 	 * @return <tt>null</tt> if there's no such name in this chain
@@ -73,9 +72,8 @@ public interface IoFilterChain {
 	IoFilter get(String name);
 
 	/**
-	 * Returns the {@link IoFilter} with the specified <tt>filterType</tt>
-	 * in this chain. If there's more than one filter with the specified
-	 * type, the first match will be chosen.
+	 * Returns the {@link IoFilter} with the specified <tt>filterType</tt> in this chain.
+	 * If there's more than one filter with the specified type, the first match will be chosen.
 	 *
 	 * @param filterType The filter class
 	 * @return <tt>null</tt> if there's no such name in this chain
@@ -92,8 +90,7 @@ public interface IoFilterChain {
 	NextFilter getNextFilter(String name);
 
 	/**
-	 * Returns the {@link NextFilter} of the specified {@link IoFilter}
-	 * in this chain.
+	 * Returns the {@link NextFilter} of the specified {@link IoFilter} in this chain.
 	 *
 	 * @param filter The filter for which we want the next filter
 	 * @return <tt>null</tt> if there's no such name in this chain
@@ -101,9 +98,8 @@ public interface IoFilterChain {
 	NextFilter getNextFilter(IoFilter filter);
 
 	/**
-	 * Returns the {@link NextFilter} of the specified <tt>filterType</tt>
-	 * in this chain.  If there's more than one filter with the specified
-	 * type, the first match will be chosen.
+	 * Returns the {@link NextFilter} of the specified <tt>filterType</tt> in this chain.
+	 * If there's more than one filter with the specified type, the first match will be chosen.
 	 *
 	 * @param filterType The Filter class for which we want the next filter
 	 * @return <tt>null</tt> if there's no such name in this chain
@@ -123,8 +119,7 @@ public interface IoFilterChain {
 	/**
 	 * @param name The filter's name we are looking for
 	 *
-	 * @return <tt>true</tt> if this chain contains an {@link IoFilter} with the
-	 * specified <tt>name</tt>.
+	 * @return <tt>true</tt> if this chain contains an {@link IoFilter} with the specified <tt>name</tt>.
 	 */
 	boolean contains(String name);
 
@@ -138,8 +133,7 @@ public interface IoFilterChain {
 	/**
 	 * @param  filterType The filter's class we are looking for
 	 *
-	 * @return <tt>true</tt> if this chain contains an {@link IoFilter} of the
-	 * specified <tt>filterType</tt>.
+	 * @return <tt>true</tt> if this chain contains an {@link IoFilter} of the specified <tt>filterType</tt>.
 	 */
 	boolean contains(Class<? extends IoFilter> filterType);
 
@@ -160,8 +154,8 @@ public interface IoFilterChain {
 	void addLast(String name, IoFilter filter);
 
 	/**
-	 * Adds the specified filter with the specified name just before the filter whose name is
-	 * <code>baseName</code> in this chain.
+	 * Adds the specified filter with the specified name just before the filter
+	 * whose name is <code>baseName</code> in this chain.
 	 *
 	 * @param baseName The targeted Filter's name
 	 * @param name The filter's name
@@ -170,8 +164,8 @@ public interface IoFilterChain {
 	void addBefore(String baseName, String name, IoFilter filter);
 
 	/**
-	 * Adds the specified filter with the specified name just after the filter whose name is
-	 * <code>baseName</code> in this chain.
+	 * Adds the specified filter with the specified name just after the filter
+	 * whose name is <code>baseName</code> in this chain.
 	 *
 	 * @param baseName The targeted Filter's name
 	 * @param name The filter's name
@@ -180,8 +174,7 @@ public interface IoFilterChain {
 	void addAfter(String baseName, String name, IoFilter filter);
 
 	/**
-	 * Replace the filter with the specified name with the specified new
-	 * filter.
+	 * Replace the filter with the specified name with the specified new filter.
 	 *
 	 * @param name The name of the filter we want to replace
 	 * @param newFilter The new filter
@@ -190,8 +183,7 @@ public interface IoFilterChain {
 	IoFilter replace(String name, IoFilter newFilter);
 
 	/**
-	 * Replace the filter with the specified name with the specified new
-	 * filter.
+	 * Replace the filter with the specified name with the specified new filter.
 	 *
 	 * @param oldFilter The filter we want to replace
 	 * @param newFilter The new filter
@@ -199,9 +191,8 @@ public interface IoFilterChain {
 	void replace(IoFilter oldFilter, IoFilter newFilter);
 
 	/**
-	 * Replace the filter of the specified type with the specified new
-	 * filter.  If there's more than one filter with the specified type,
-	 * the first match will be replaced.
+	 * Replace the filter of the specified type with the specified new filter.
+	 * If there's more than one filter with the specified type, the first match will be replaced.
 	 *
 	 * @param oldFilterType The filter class we want to replace
 	 * @param newFilter The new filter
@@ -226,8 +217,7 @@ public interface IoFilterChain {
 
 	/**
 	 * Replace the filter of the specified type with the specified new filter.
-	 * If there's more than one filter with the specified type, the first match
-	 * will be replaced.
+	 * If there's more than one filter with the specified type, the first match will be replaced.
 	 *
 	 * @param filterType The filter class to remove
 	 * @return The removed filter
@@ -242,73 +232,73 @@ public interface IoFilterChain {
 	void clear() throws Exception;
 
 	/**
-	 * Fires a {@link IoHandler#sessionCreated(IoSession)} event. Most users don't need to
-	 * call this method at all. Please use this method only when you implement a new transport
-	 * or fire a virtual event.
+	 * Fires a {@link IoHandler#sessionCreated(IoSession)} event.
+	 * Most users don't need to call this method at all.
+	 * Please use this method only when you implement a new transport or fire a virtual event.
 	 */
 	void fireSessionCreated();
 
 	/**
-	 * Fires a {@link IoHandler#sessionOpened(IoSession)} event. Most users don't need to call
-	 * this method at all. Please use this method only when you implement a new transport or
-	 * fire a virtual event.
+	 * Fires a {@link IoHandler#sessionOpened(IoSession)} event.
+	 * Most users don't need to call this method at all.
+	 * Please use this method only when you implement a new transport or fire a virtual event.
 	 */
 	void fireSessionOpened();
 
 	/**
-	 * Fires a {@link IoHandler#sessionClosed(IoSession)} event. Most users don't need to call
-	 * this method at all. Please use this method only when you implement a new transport or
-	 * fire a virtual event.
+	 * Fires a {@link IoHandler#sessionClosed(IoSession)} event.
+	 * Most users don't need to call this method at all.
+	 * Please use this method only when you implement a new transport or fire a virtual event.
 	 */
 	void fireSessionClosed();
 
 	/**
-	 * Fires a {@link IoHandler#messageReceived(IoSession, Object)} event. Most
-	 * users don't need to call this method at all. Please use this method only
-	 * when you implement a new transport or fire a virtual event.
+	 * Fires a {@link IoHandler#messageReceived(IoSession, Object)} event.
+	 * Most users don't need to call this method at all.
+	 * Please use this method only when you implement a new transport or fire a virtual event.
 	 *
 	 * @param message The received message
 	 */
 	void fireMessageReceived(Object message);
 
 	/**
-	 * Fires a {@link IoHandler#messageSent(IoSession, Object)} event. Most
-	 * users don't need to call this method at all. Please use this method only
-	 * when you implement a new transport or fire a virtual event.
+	 * Fires a {@link IoHandler#messageSent(IoSession, Object)} event.
+	 * Most users don't need to call this method at all.
+	 * Please use this method only when you implement a new transport or fire a virtual event.
 	 *
 	 * @param request The sent request
 	 */
 	void fireMessageSent(WriteRequest request);
 
 	/**
-	 * Fires a {@link IoHandler#exceptionCaught(IoSession, Throwable)} event. Most users don't
-	 * need to call this method at all. Please use this method only when you implement a new
-	 * transport or fire a virtual event.
+	 * Fires a {@link IoHandler#exceptionCaught(IoSession, Throwable)} event.
+	 * Most users don't need to call this method at all.
+	 * Please use this method only when you implement a new transport or fire a virtual event.
 	 *
 	 * @param cause The exception cause
 	 */
 	void fireExceptionCaught(Throwable cause);
 
 	/**
-	 * Fires a {@link IoHandler#inputClosed(IoSession)} event. Most users don't
-	 * need to call this method at all. Please use this method only when you
-	 * implement a new transport or fire a virtual event.
+	 * Fires a {@link IoHandler#inputClosed(IoSession)} event.
+	 * Most users don't need to call this method at all.
+	 * Please use this method only when you implement a new transport or fire a virtual event.
 	 */
 	void fireInputClosed();
 
 	/**
-	 * Fires a {@link IoSession#write(Object)} event. Most users don't need to
-	 * call this method at all. Please use this method only when you implement a
-	 * new transport or fire a virtual event.
+	 * Fires a {@link IoSession#write(Object)} event.
+	 * Most users don't need to call this method at all.
+	 * Please use this method only when you implement a new transport or fire a virtual event.
 	 *
 	 * @param writeRequest The message to write
 	 */
 	void fireFilterWrite(WriteRequest writeRequest);
 
 	/**
-	 * Fires a {@link IoSession#closeNow()} or a {@link IoSession#closeOnFlush()} event. Most users don't need to call this method at
-	 * all. Please use this method only when you implement a new transport or fire a virtual
-	 * event.
+	 * Fires a {@link IoSession#closeNow()} or a {@link IoSession#closeOnFlush()} event.
+	 * Most users don't need to call this method at all.
+	 * Please use this method only when you implement a new transport or fire a virtual event.
 	 */
 	void fireFilterClose();
 

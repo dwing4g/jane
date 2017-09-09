@@ -177,8 +177,8 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 
 	/**
 	 * @return <tt>true</tt> if and only if a direct buffer is allocated by
-	 * default when the type of the new buffer is not specified. The default
-	 * value is <tt>false</tt>.
+	 * default when the type of the new buffer is not specified.
+	 * The default value is <tt>false</tt>.
 	 */
 	public static boolean isUseDirectBuffer() {
 		return useDirectBuffer;
@@ -195,8 +195,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	}
 
 	/**
-	 * Returns the direct or heap buffer which is capable to store the specified
-	 * amount of bytes.
+	 * Returns the direct or heap buffer which is capable to store the specified amount of bytes.
 	 *
 	 * @param capacity the capacity of the buffer
 	 * @return a IoBuffer which can hold up to capacity bytes
@@ -211,8 +210,8 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	 * Returns a direct or heap IoBuffer which can contain the specified number of bytes.
 	 *
 	 * @param capacity the capacity of the buffer
-	 * @param isDirectBuffer <tt>true</tt> to get a direct buffer, <tt>false</tt> to get a
-	 *            heap buffer.
+	 * @param isDirectBuffer <tt>true</tt> to get a direct buffer,
+	 *                       <tt>false</tt> to get a heap buffer.
 	 * @return a direct or heap  IoBuffer which can hold up to capacity bytes
 	 */
 	public static IoBuffer allocate(int capacity, boolean isDirectBuffer) {
@@ -234,9 +233,9 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	}
 
 	/**
-	 * Wraps the specified byte array into a MINA heap buffer. Note that
-	 * the byte array is not copied, so any modification done on it will
-	 * be visible by both sides.
+	 * Wraps the specified byte array into a MINA heap buffer.
+	 * Note that the byte array is not copied,
+	 * so any modification done on it will be visible by both sides.
 	 *
 	 * @param byteArray The byte array to wrap
 	 * @return a heap IoBuffer containing the byte array
@@ -246,10 +245,10 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	}
 
 	/**
-	 * Wraps the specified byte array into MINA heap buffer. We just wrap the
-	 * bytes starting from offset up to offset + length.  Note that
-	 * the byte array is not copied, so any modification done on it will
-	 * be visible by both sides.
+	 * Wraps the specified byte array into MINA heap buffer.
+	 * We just wrap the bytes starting from offset up to offset + length.
+	 * Note that the byte array is not copied,
+	 * so any modification done on it will be visible by both sides.
 	 *
 	 * @param byteArray The byte array to wrap
 	 * @param offset The starting point in the byte array
@@ -261,10 +260,10 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	}
 
 	/**
-	 * Normalizes the specified capacity of the buffer to power of 2, which is
-	 * often helpful for optimal memory usage and performance. If it is greater
-	 * than or equal to {@link Integer#MAX_VALUE}, it returns
-	 * {@link Integer#MAX_VALUE}. If it is zero, it returns zero.
+	 * Normalizes the specified capacity of the buffer to power of 2,
+	 * which is often helpful for optimal memory usage and performance.
+	 * If it is greater than or equal to {@link Integer#MAX_VALUE}, it returns {@link Integer#MAX_VALUE}.
+	 * If it is zero, it returns zero.
 	 *
 	 * @param requestedCapacity The IoBuffer capacity we want to be able to store
 	 * @return The  power of 2 strictly superior to the requested capacity
@@ -281,10 +280,10 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	}
 
 	/**
-	 * Declares this buffer and all its derived buffers are not used anymore so
-	 * that it can be reused by some {@link IoBufferAllocator} implementations.
-	 * It is not mandatory to call this method, but you might want to invoke
-	 * this method for maximum performance.
+	 * Declares this buffer and all its derived buffers are not used anymore
+	 * so that it can be reused by some {@link IoBufferAllocator} implementations.
+	 * It is not mandatory to call this method,
+	 * but you might want to invoke this method for maximum performance.
 	 */
 	public abstract void free();
 
@@ -308,17 +307,15 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 
 	/**
 	 * @return the minimum capacity of this buffer which is used to determine
-	 * the new capacity of the buffer shrunk by the {@link #compact()} and
-	 * {@link #shrink()} operation. The default value is the initial capacity of
-	 * the buffer.
+	 * the new capacity of the buffer shrunk by the {@link #compact()} and {@link #shrink()} operation.
+	 * The default value is the initial capacity of the buffer.
 	 */
 	public abstract int minimumCapacity();
 
 	/**
 	 * Sets the minimum capacity of this buffer which is used to determine the
-	 * new capacity of the buffer shrunk by {@link #compact()} and
-	 * {@link #shrink()} operation. The default value is the initial capacity of
-	 * the buffer.
+	 * new capacity of the buffer shrunk by {@link #compact()} and {@link #shrink()} operation.
+	 * The default value is the initial capacity of the buffer.
 	 *
 	 * @param minimumCapacity the wanted minimum capacity
 	 * @return the underlying NIO {@link ByteBuffer} instance.
@@ -336,8 +333,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	 * Increases the capacity of this buffer. If the new capacity is less than
 	 * or equal to the current capacity, this method returns the original buffer.
 	 * If the new capacity is greater than the current capacity, the buffer is
-	 * reallocated while retaining the position, limit, mark and the content of
-	 * the buffer.
+	 * reallocated while retaining the position, limit, mark and the content of the buffer.
 	 * <br>
 	 * Note that the IoBuffer is replaced, it's not copied.
 	 * <br>
@@ -416,8 +412,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	 * method works even if you didn't set <tt>autoExpand</tt> to <tt>true</tt>.
 	 * <br>
 	 * Assuming a buffer contains N bytes, its position is P and its current capacity is C,
-	 * here are the resulting buffer if we call the expand method with a expectedRemaining
-	 * value V :
+	 * here are the resulting buffer if we call the expand method with a expectedRemaining value V:
 	 *
 	 * <pre>
 	 *  Initial buffer :
@@ -485,8 +480,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	 * <tt>position</tt>. This method works even if you didn't set
 	 * <tt>autoExpand</tt> to <tt>true</tt>.
 	 * Assuming a buffer contains N bytes, its position is P and its current capacity is C,
-	 * here are the resulting buffer if we call the expand method with a expectedRemaining
-	 * value V :
+	 * here are the resulting buffer if we call the expand method with a expectedRemaining value V:
 	 *
 	 * <pre>
 	 *  Initial buffer :
@@ -536,15 +530,13 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	 *                           |
 	 *                           +-- newCapacity
 	 *
-	 * You can now put ( L - pos + V ) bytes in the buffer, which limit is now
-	 * equals to the capacity.
+	 * You can now put ( L - pos + V ) bytes in the buffer, which limit is now equals to the capacity.
 	 * </pre>
 	 *
-	 * Note that the expecting remaining bytes starts at the current position. In all
-	 * those examples, the position is P.
+	 * Note that the expecting remaining bytes starts at the current position.
+	 * In all those examples, the position is P.
 	 *
-	 * @param position The starting position from which we want to define a remaining
-	 * number of bytes
+	 * @param position The starting position from which we want to define a remaining number of bytes
 	 * @param expectedRemaining The expected remaining bytes in the buffer
 	 * @return The modified IoBuffer instance
 	 */
@@ -615,8 +607,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	/**
 	 * @see java.nio.Buffer#limit()
 	 *
-	 * @return the modified IoBuffer
-'s limit
+	 * @return the modified IoBuffer's limit
 	 */
 	public abstract int limit();
 
@@ -638,8 +629,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	public abstract IoBuffer mark();
 
 	/**
-	 * @return the position of the current mark. This method returns <tt>-1</tt>
-	 * if no mark is set.
+	 * @return the position of the current mark. This method returns <tt>-1</tt> if no mark is set.
 	 */
 	public abstract int markValue();
 
@@ -660,9 +650,8 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	public abstract IoBuffer clear();
 
 	/**
-	 * Clears this buffer and fills its content with <tt>NUL</tt>. The position
-	 * is set to zero, the limit is set to the capacity, and the mark is
-	 * discarded.
+	 * Clears this buffer and fills its content with <tt>NUL</tt>.
+	 * The position is set to zero, the limit is set to the capacity, and the mark is discarded.
 	 *
 	 * @return the modified IoBuffer
 
@@ -670,9 +659,8 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	public abstract IoBuffer sweep();
 
 	/**
-	 * double Clears this buffer and fills its content with <tt>value</tt>. The
-	 * position is set to zero, the limit is set to the capacity, and the mark
-	 * is discarded.
+	 * double Clears this buffer and fills its content with <tt>value</tt>.
+	 * The position is set to zero, the limit is set to the capacity, and the mark is discarded.
 	 *
 	 * @param value The value to put in the buffer
 	 * @return the modified IoBuffer
@@ -982,7 +970,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 
 	/**
 	 * Relative <i>get</i> method for reading a medium int value.
-	 *
 	 * <p>
 	 * Reads the next three bytes at this buffer's current position, composing
 	 * them into an int value according to the current byte order, and then
@@ -994,7 +981,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 
 	/**
 	 * Relative <i>get</i> method for reading an unsigned medium int value.
-	 *
 	 * <p>
 	 * Reads the next three bytes at this buffer's current position, composing
 	 * them into an int value according to the current byte order, and then
@@ -1006,68 +992,54 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 
 	/**
 	 * Absolute <i>get</i> method for reading a medium int value.
-	 *
 	 * <p>
 	 * Reads the next three bytes at this buffer's current position, composing
 	 * them into an int value according to the current byte order.
 	 *
 	 * @param index The index from which the medium int will be read
 	 * @return The medium int value at the given index
-	 *
 	 * @throws IndexOutOfBoundsException
-	 *             If <tt>index</tt> is negative or not smaller than the
-	 *             buffer's limit
+	 *         If <tt>index</tt> is negative or not smaller than the buffer's limit
 	 */
 	public abstract int getMediumInt(int index);
 
 	/**
 	 * Absolute <i>get</i> method for reading an unsigned medium int value.
-	 *
 	 * <p>
 	 * Reads the next three bytes at this buffer's current position, composing
 	 * them into an int value according to the current byte order.
 	 *
 	 * @param index The index from which the unsigned medium int will be read
 	 * @return The unsigned medium int value at the given index
-	 *
 	 * @throws IndexOutOfBoundsException
-	 *             If <tt>index</tt> is negative or not smaller than the
-	 *             buffer's limit
+	 *         If <tt>index</tt> is negative or not smaller than the buffer's limit
 	 */
 	public abstract int getUnsignedMediumInt(int index);
 
 	/**
 	 * Relative <i>put</i> method for writing a medium int value.
-	 *
 	 * <p>
 	 * Writes three bytes containing the given int value, in the current byte
 	 * order, into this buffer at the current position, and then increments the
 	 * position by three.
 	 *
 	 * @param value The medium int value to be written
-	 *
 	 * @return the modified IoBuffer
-	 *
 	 * @throws BufferOverflowException If there are fewer than three bytes remaining in this buffer
 	 */
 	public abstract IoBuffer putMediumInt(int value);
 
 	/**
 	 * Absolute <i>put</i> method for writing a medium int value.
-	 *
 	 * <p>
 	 * Writes three bytes containing the given int value, in the current byte
 	 * order, into this buffer at the given index.
 	 *
 	 * @param index The index at which the bytes will be written
-	 *
 	 * @param value The medium int value to be written
-	 *
 	 * @return the modified IoBuffer
-	 *
 	 * @throws IndexOutOfBoundsException
-	 *             If <tt>index</tt> is negative or not smaller than the
-	 *             buffer's limit, minus three
+	 *         If <tt>index</tt> is negative or not smaller than the buffer's limit, minus three
 	 */
 	public abstract IoBuffer putMediumInt(int index, int value);
 
@@ -1081,8 +1053,8 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 
 	/**
 	 * Writes an unsigned int into the ByteBuffer
-	 * @param value the byte to write
 	 *
+	 * @param value the byte to write
 	 * @return the modified IoBuffer
 	 */
 	public abstract IoBuffer putUnsignedInt(byte value);
@@ -1092,7 +1064,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	 *
 	 * @param index the position in the buffer to write the value
 	 * @param value the byte to write
-	 *
 	 * @return the modified IoBuffer
 	 */
 	public abstract IoBuffer putUnsignedInt(int index, byte value);
@@ -1101,7 +1072,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	 * Writes an unsigned int into the ByteBuffer
 	 *
 	 * @param value the short to write
-	 *
 	 * @return the modified IoBuffer
 	 */
 	public abstract IoBuffer putUnsignedInt(short value);
@@ -1111,7 +1081,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	 *
 	 * @param index the position in the buffer to write the value
 	 * @param value the short to write
-	 *
 	 * @return the modified IoBuffer
 	 */
 	public abstract IoBuffer putUnsignedInt(int index, short value);
@@ -1120,7 +1089,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	 * Writes an unsigned short into the ByteBuffer
 	 *
 	 * @param value the byte to write
-	 *
 	 * @return the modified IoBuffer
 	 */
 	public abstract IoBuffer putUnsignedShort(byte value);
@@ -1130,13 +1098,13 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	 *
 	 * @param index the position in the buffer to write the value
 	 * @param value the byte to write
-	 *
 	 * @return the modified IoBuffer
 	 */
 	public abstract IoBuffer putUnsignedShort(int index, byte value);
 
 	/**
 	 * @see ByteBuffer#getInt(int)
+	 *
 	 * @param index The index in the IoBuffer where we will read an int from
 	 * @return the int at the given position
 	 */
@@ -1144,6 +1112,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 
 	/**
 	 * Reads four bytes unsigned integer.
+	 *
 	 * @param index The index in the IoBuffer where we will read an unsigned int from
 	 * @return The long at the given position
 	 */
@@ -1256,8 +1225,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 
 	/**
 	 * @return an {@link InputStream} that reads the data from this buffer.
-	 * {@link InputStream#read()} returns <tt>-1</tt> if the buffer position
-	 * reaches to the limit.
+	 * {@link InputStream#read()} returns <tt>-1</tt> if the buffer position reaches to the limit.
 	 */
 	public abstract InputStream asInputStream();
 
@@ -1266,14 +1234,13 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	 * Please note that the {@link OutputStream#write(int)} will throw a
 	 * {@link BufferOverflowException} instead of an {@link IOException} in case
 	 * of buffer overflow. Please set <tt>autoExpand</tt> property by calling
-	 * {@link #setAutoExpand(boolean)} to prevent the unexpected runtime
-	 * exception.
+	 * {@link #setAutoExpand(boolean)} to prevent the unexpected runtime exception.
 	 */
 	public abstract OutputStream asOutputStream();
 
 	/**
-	 * Returns hexdump of this buffer. The data and pointer are not changed as a
-	 * result of this method call.
+	 * Returns hexdump of this buffer.
+	 * The data and pointer are not changed as a result of this method call.
 	 *
 	 * @return hexidecimal representation of this buffer
 	 */
@@ -1282,16 +1249,14 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	/**
 	 * Return hexdump of this buffer with limited length.
 	 *
-	 * @param lengthLimit
-	 *            The maximum number of bytes to dump from the current buffer
-	 *            position.
+	 * @param lengthLimit The maximum number of bytes to dump from the current buffer position.
 	 * @return hexidecimal representation of this buffer
 	 */
 	public abstract String getHexDump(int lengthLimit);
 
-	// //////////////////////////////
+	////////////////////////////////
 	// String getters and putters //
-	// //////////////////////////////
+	////////////////////////////////
 
 	/**
 	 * Reads a <code>NUL</code>-terminated string from this buffer using the
@@ -1329,12 +1294,10 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 
 	/**
 	 * Writes the content of <code>in</code> into this buffer as a
-	 * <code>NUL</code>-terminated string using the specified
-	 * <code>encoder</code>.
+	 * <code>NUL</code>-terminated string using the specified <code>encoder</code>.
 	 * <p>
-	 * If the charset name of the encoder is UTF-16, you cannot specify odd
-	 * <code>fieldSize</code>, and this method will append two <code>NUL</code>s
-	 * as a terminator.
+	 * If the charset name of the encoder is UTF-16, you cannot specify odd <code>fieldSize</code>,
+	 * and this method will append two <code>NUL</code>s as a terminator.
 	 * <p>
 	 * Please note that this method doesn't terminate with <code>NUL</code> if
 	 * the input string is longer than <tt>fieldSize</tt>.
@@ -1348,9 +1311,9 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	public abstract IoBuffer putString(CharSequence val, int fieldSize, CharsetEncoder encoder)
 			throws CharacterCodingException;
 
-	// ///////////////////
+	/////////////////////
 	// IndexOf methods //
-	// ///////////////////
+	/////////////////////
 
 	/**
 	 * Returns the first occurrence position of the specified byte from the
@@ -1361,13 +1324,12 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	 */
 	public abstract int indexOf(byte b);
 
-	// ////////////////////////
+	//////////////////////////
 	// Skip or fill methods //
-	// ////////////////////////
+	//////////////////////////
 
 	/**
-	 * Forwards the position of this buffer as the specified <code>size</code>
-	 * bytes.
+	 * Forwards the position of this buffer as the specified <code>size</code> bytes.
 	 *
 	 * @param size The added size
 	 * @return The modified IoBuffer
@@ -1375,8 +1337,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	public abstract IoBuffer skip(int size);
 
 	/**
-	 * Fills this buffer with the specified value. This method moves buffer
-	 * position forward.
+	 * Fills this buffer with the specified value. This method moves buffer position forward.
 	 *
 	 * @param value The value to fill the IoBuffer with
 	 * @param size The added size
@@ -1385,8 +1346,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	public abstract IoBuffer fill(byte value, int size);
 
 	/**
-	 * Fills this buffer with the specified value. This method does not change
-	 * buffer position.
+	 * Fills this buffer with the specified value. This method does not change buffer position.
 	 *
 	 * @param value The value to fill the IoBuffer with
 	 * @param size The added size
@@ -1395,8 +1355,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	public abstract IoBuffer fillAndReset(byte value, int size);
 
 	/**
-	 * Fills this buffer with <code>NUL (0x00)</code>. This method moves buffer
-	 * position forward.
+	 * Fills this buffer with <code>NUL (0x00)</code>. This method moves buffer position forward.
 	 *
 	 * @param size The added size
 	 * @return The modified IoBuffer
@@ -1404,8 +1363,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	public abstract IoBuffer fill(int size);
 
 	/**
-	 * Fills this buffer with <code>NUL (0x00)</code>. This method does not
-	 * change buffer position.
+	 * Fills this buffer with <code>NUL (0x00)</code>. This method does not change buffer position.
 	 *
 	 * @param size The added size
 	 * @return The modified IoBuffer

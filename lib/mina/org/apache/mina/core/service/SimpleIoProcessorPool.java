@@ -28,20 +28,16 @@ import org.apache.mina.core.session.AbstractIoSession;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequest;
 import org.apache.mina.transport.socket.nio.NioProcessor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * An {@link IoProcessor} pool that distributes {@link IoSession}s into one or more
  * {@link IoProcessor}s. Most current transport implementations use this pool internally
  * to perform better in a multi-core environment, and therefore, you won't need to
- * use this pool directly unless you are running multiple {@link IoService}s in the
- * same JVM.
+ * use this pool directly unless you are running multiple {@link IoService}s in the same JVM.
  * <p>
  * If you are running multiple {@link IoService}s, you could want to share the pool
  * among all services.  To do so, you can create a new {@link SimpleIoProcessorPool}
- * instance by yourself and provide the pool as a constructor parameter when you
- * create the services.
+ * instance by yourself and provide the pool as a constructor parameter when you create the services.
  * <p>
  * This pool uses Java reflection API to create multiple {@link IoProcessor} instances.
  * It tries to instantiate the processor in the following order:
@@ -70,13 +66,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  *
- * @param <S> the type of the {@link IoSession} to be managed by the specified
- *            {@link IoProcessor}.
+ * @param <S> the type of the {@link IoSession} to be managed by the specified {@link IoProcessor}.
  */
 public final class SimpleIoProcessorPool<S extends AbstractIoSession> implements IoProcessor<S> {
-	/** A logger for this class */
-	private static final Logger LOGGER = LoggerFactory.getLogger(SimpleIoProcessorPool.class);
-
 	/** The default pool size, when no size is provided. */
 	private static final int DEFAULT_SIZE = Runtime.getRuntime().availableProcessors() + 1;
 
@@ -86,7 +78,7 @@ public final class SimpleIoProcessorPool<S extends AbstractIoSession> implements
 	/** The pool table */
 	private final IoProcessor<S>[] pool;
 
-	/** The contained  which is passed to the IoProcessor when they are created */
+	/** The contained which is passed to the IoProcessor when they are created */
 	private final Executor executor;
 
 	/** A flag set to true if we had to create an executor */
@@ -102,8 +94,7 @@ public final class SimpleIoProcessorPool<S extends AbstractIoSession> implements
 	private volatile boolean disposed;
 
 	/**
-	 * Creates a new instance of SimpleIoProcessorPool with a default
-	 * size of NbCPUs +1.
+	 * Creates a new instance of SimpleIoProcessorPool with a default size of NbCPUs +1.
 	 */
 	public SimpleIoProcessorPool() {
 		this(null, DEFAULT_SIZE);
@@ -141,7 +132,7 @@ public final class SimpleIoProcessorPool<S extends AbstractIoSession> implements
 		}
 
 		// Create the executor if none is provided
-		createdExecutor = executor == null;
+		createdExecutor = (executor == null);
 
 		if (createdExecutor) {
 			this.executor = Executors.newCachedThreadPool();
@@ -154,30 +145,14 @@ public final class SimpleIoProcessorPool<S extends AbstractIoSession> implements
 		pool = new IoProcessor[size];
 
 		boolean success = false;
-
 		try {
-			// We create at least one processor
-			try {
-				pool[0] = (IoProcessor<S>)new NioProcessor(this.executor);
-			} catch (RuntimeException re) {
-				LOGGER.error("Cannot create an IoProcessor: {}", re.getMessage());
-				throw re;
-			} catch (Exception e) {
-				String msg = "Failed to create a new instance of NioProcessor: " + e.getMessage();
-				LOGGER.error(msg, e);
-				throw new RuntimeException(msg, e);
-			}
-
 			// Constructor found now use it for all subsequent instantiations
-			for (int i = 1; i < pool.length; i++) {
-				try {
-					pool[i] = (IoProcessor<S>)new NioProcessor(this.executor);
-				} catch (Exception e) {
-					throw new RuntimeException(e);
-				}
+			for (int i = 0; i < pool.length; i++) {
+				pool[i] = (IoProcessor<S>)new NioProcessor(this.executor);
 			}
-
 			success = true;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
 		} finally {
 			if (!success) {
 				dispose();
@@ -264,11 +239,7 @@ public final class SimpleIoProcessorPool<S extends AbstractIoSession> implements
 						continue;
 					}
 
-					try {
-						ioProcessor.dispose();
-					} catch (Exception e) {
-						LOGGER.error("Failed to dispose the {} IoProcessor.", ioProcessor.getClass().getSimpleName(), e);
-					}
+					ioProcessor.dispose();
 				}
 
 				if (createdExecutor) {

@@ -169,24 +169,6 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 	 * {@inheritDoc}
 	 */
 	@Override
-	public final void unbind(SocketAddress firstLocalAddress, SocketAddress... otherLocalAddresses) {
-		if (firstLocalAddress == null) {
-			throw new IllegalArgumentException("firstLocalAddress");
-		}
-		if (otherLocalAddresses == null) {
-			throw new IllegalArgumentException("otherLocalAddresses");
-		}
-
-		List<SocketAddress> localAddresses = new ArrayList<>();
-		localAddresses.add(firstLocalAddress);
-		Collections.addAll(localAddresses, otherLocalAddresses);
-		unbind(localAddresses);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
 	public final void unbind(Iterable<? extends SocketAddress> localAddresses) {
 		if (localAddresses == null) {
 			throw new IllegalArgumentException("localAddresses");

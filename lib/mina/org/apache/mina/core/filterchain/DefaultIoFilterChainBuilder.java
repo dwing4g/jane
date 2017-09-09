@@ -33,8 +33,7 @@ import org.apache.mina.core.session.IoSession;
  * in most cases.  {@link DefaultIoFilterChainBuilder} has an identical interface
  * with {@link IoFilter}; it contains a list of {@link IoFilter}s that you can
  * modify. The {@link IoFilter}s which are added to this builder will be appended
- * to the {@link IoFilterChain} when {@link #buildFilterChain(IoFilterChain)} is
- * invoked.
+ * to the {@link IoFilterChain} when {@link #buildFilterChain(IoFilterChain)} is invoked.
  * <p>
  * However, the identical interface doesn't mean that it behaves in an exactly
  * same way with {@link IoFilterChain}.  {@link DefaultIoFilterChainBuilder}
@@ -50,7 +49,6 @@ import org.apache.mina.core.session.IoSession;
  * </pre>
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
- * @org.apache.xbean.XBean
  */
 public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 	/** The list of filters */
@@ -360,8 +358,7 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 
 	/**
 	 * Replace a filter by a new one. We are looking for a filter type,
-	 * but if we have more than one with the same type, only the first
-	 * found one will be replaced
+	 * but if we have more than one with the same type, only the first found one will be replaced
 	 *
 	 * @param oldFilterType The filter type to replace
 	 * @param newFilter The new filter to use

@@ -38,46 +38,40 @@ import org.apache.mina.transport.socket.DefaultSocketSessionConfig;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface IoService {
-
 	/**
-	 * Adds an {@link IoServiceListener} that listens any events related with
-	 * this service.
+	 * Adds an {@link IoServiceListener} that listens any events related with this service.
 	 *
 	 * @param listener The listener to add
 	 */
 	void addListener(IoServiceListener listener);
 
 	/**
-	 * Removed an existing {@link IoServiceListener} that listens any events
-	 * related with this service.
+	 * Removes an existing {@link IoServiceListener} that listens any events related with this service.
 	 *
-	 * @param listener The listener to use
+	 * @param listener The listener to remove
 	 */
 	void removeListener(IoServiceListener listener);
 
 	/**
-	 * @return <tt>true</tt> if and if only {@link #dispose()} method has
-	 * been called.  Please note that this method will return <tt>true</tt>
-	 * even after all the related resources are released.
+	 * @return <tt>true</tt> if only {@link #dispose()} method has been called.
+	 * Please note that this method will return <tt>true</tt> even after all the related resources are released.
 	 */
 	boolean isDisposing();
 
 	/**
-	 * @return <tt>true</tt> if and if only all resources of this processor
-	 * have been disposed.
+	 * @return <tt>true</tt> if only all resources of this processor have been disposed.
 	 */
 	boolean isDisposed();
 
 	/**
-	 * Releases any resources allocated by this service.  Please note that
-	 * this method might block as long as there are any sessions managed by
-	 * this service.
+	 * Releases any resources allocated by this service.
+	 * Please note that this method might block as long as there are any sessions managed by this service.
 	 */
 	void dispose();
 
 	/**
-	 * Releases any resources allocated by this service.  Please note that
-	 * this method might block as long as there are any sessions managed by this service.
+	 * Releases any resources allocated by this service.
+	 * Please note that this method might block as long as there are any sessions managed by this service.
 	 *
 	 * Warning: calling this method from a IoFutureListener with <code>awaitTermination</code> = true
 	 * will probably lead to a deadlock.

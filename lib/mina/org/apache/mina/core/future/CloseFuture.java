@@ -43,9 +43,9 @@ public interface CloseFuture extends IoFuture {
 	boolean isClosed();
 
 	/**
-	 * Marks this future as closed and notifies all threads waiting for this
-	 * future. This method is invoked by MINA internally.  Please do not call
-	 * this method directly.
+	 * Marks this future as closed and notifies all threads waiting for this future.
+	 * This method is invoked by MINA internally.
+	 * Please do not call this method directly.
 	 */
 	void setClosed();
 

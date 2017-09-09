@@ -51,22 +51,22 @@ public interface WriteFuture extends IoFuture {
 
 	/**
 	 * @return the cause of the write failure if and only if the write
-	 * operation has failed due to an {@link Exception}.  Otherwise,
-	 * <tt>null</tt> is returned.
+	 * operation has failed due to an {@link Exception}.
+	 * Otherwise, <tt>null</tt> is returned.
 	 */
 	Throwable getException();
 
 	/**
-	 * Sets the message is written, and notifies all threads waiting for
-	 * this future.  This method is invoked by MINA internally.  Please do
-	 * not call this method directly.
+	 * Sets the message is written, and notifies all threads waiting for this future.
+	 * This method is invoked by MINA internally.
+	 * Please do not call this method directly.
 	 */
 	void setWritten();
 
 	/**
-	 * Sets the cause of the write failure, and notifies all threads waiting
-	 * for this future.  This method is invoked by MINA internally.  Please
-	 * do not call this method directly.
+	 * Sets the cause of the write failure, and notifies all threads waiting for this future.
+	 * This method is invoked by MINA internally.
+	 * Please do not call this method directly.
 	 *
 	 * @param cause The exception to store in the Future instance
 	 */
@@ -74,8 +74,7 @@ public interface WriteFuture extends IoFuture {
 
 	/**
 	 * Wait for the asynchronous operation to complete.
-	 * The attached listeners will be notified when the operation is
-	 * completed.
+	 * The attached listeners will be notified when the operation is completed.
 	 *
 	 * @return the created {@link WriteFuture}
 	 * @throws InterruptedException If the wait is interrupted

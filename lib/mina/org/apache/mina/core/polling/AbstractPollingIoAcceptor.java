@@ -19,6 +19,7 @@
  */
 package org.apache.mina.core.polling;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.SocketAddress;
@@ -55,8 +56,7 @@ import org.apache.mina.util.ExceptionMonitor;
  * socket needed to be processed. This class handle the logic behind binding,
  * accepting and disposing the server sockets. An {@link Executor} will be used
  * for running client accepting and an {@link AbstractPollingIoProcessor} will
- * be used for processing client I/O operations like reading, writing and
- * closing.
+ * be used for processing client I/O operations like reading, writing and closing.
  *
  * All the low level methods for binding, accepting, closing need to be provided
  * by the subclassing implementation.
@@ -72,10 +72,10 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 	private final IoProcessor<NioSession> processor;
 
 	private final Queue<AcceptorOperationFuture> registerQueue = new ConcurrentLinkedQueue<>();
-
 	private final Queue<AcceptorOperationFuture> cancelQueue = new ConcurrentLinkedQueue<>();
 
-	private final Map<SocketAddress, ServerSocketChannel> boundHandles = Collections.synchronizedMap(new HashMap<SocketAddress, ServerSocketChannel>());
+	private final Map<SocketAddress, ServerSocketChannel> boundHandles =
+			Collections.synchronizedMap(new HashMap<SocketAddress, ServerSocketChannel>());
 
 	private final ServiceOperationFuture disposalFuture = new ServiceOperationFuture();
 
@@ -159,24 +159,21 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 
 	/**
 	 * Initialize the polling system, will be called at construction time.
-	 * @throws Exception any exception thrown by the underlying system calls
 	 */
-	protected abstract void init() throws Exception;
+	protected abstract void init() throws IOException;
 
 	/**
-	 * Destroy the polling system, will be called when this {@link IoAcceptor}
-	 * implementation will be disposed.
-	 * @throws Exception any exception thrown by the underlying systems calls
+	 * Destroy the polling system, will be called when this {@link IoAcceptor} implementation will be disposed.
 	 */
-	protected abstract void destroy() throws Exception;
+	protected abstract void destroy() throws IOException;
 
 	/**
 	 * Check for acceptable connections, interrupt when at least a server is ready for accepting.
 	 * All the ready server socket descriptors need to be returned by {@link #selectedHandles()}
+	 *
 	 * @return The number of sockets having got incoming client
-	 * @throws Exception any exception thrown by the underlying systems calls
 	 */
-	protected abstract int select() throws Exception;
+	protected abstract int select() throws IOException;
 
 	/**
 	 * Interrupt the {@link #select()} method. Used when the poll set need to be modified.
@@ -186,42 +183,43 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 	/**
 	 * {@link Iterator} for the set of server sockets found with acceptable incoming connections
 	 *  during the last {@link #select()} call.
+	 *
 	 * @return the list of server handles ready
 	 */
 	protected abstract Iterator<ServerSocketChannel> selectedHandles();
 
 	/**
 	 * Open a server socket for a given local address.
+	 *
 	 * @param localAddress the associated local address
 	 * @return the opened server socket
-	 * @throws Exception any exception thrown by the underlying systems calls
 	 */
-	protected abstract ServerSocketChannel open(SocketAddress localAddress) throws Exception;
+	protected abstract ServerSocketChannel open(SocketAddress localAddress) throws IOException;
 
 	/**
 	 * Get the local address associated with a given server socket
-	 * @param handle the server socket
+	 *
+	 * @param channel the server socket
 	 * @return the local {@link InetSocketAddress} associated with this handle
-	 * @throws Exception any exception thrown by the underlying systems calls
 	 */
-	protected abstract InetSocketAddress localAddress(ServerSocketChannel handle) throws Exception;
+	protected abstract InetSocketAddress localAddress(ServerSocketChannel channel) throws IOException;
 
 	/**
 	 * Accept a client connection for a server socket and return a new {@link IoSession}
 	 * associated with the given {@link IoProcessor}
+	 *
 	 * @param ioProcessor the {@link IoProcessor} to associate with the {@link IoSession}
-	 * @param handle the server handle
+	 * @param channel the server handle
 	 * @return the created {@link IoSession}
-	 * @throws Exception any exception thrown by the underlying systems calls
 	 */
-	protected abstract NioSession accept(IoProcessor<NioSession> ioProcessor, ServerSocketChannel handle) throws Exception;
+	protected abstract NioSession accept(IoProcessor<NioSession> ioProcessor, ServerSocketChannel channel) throws IOException;
 
 	/**
 	 * Close a server socket.
-	 * @param handle the server socket
-	 * @throws Exception any exception thrown by the underlying systems calls
+	 *
+	 * @param channel the server socket
 	 */
-	protected abstract void close(ServerSocketChannel handle) throws Exception;
+	protected abstract void close(ServerSocketChannel channel) throws IOException;
 
 	/**
 	 * {@inheritDoc}
@@ -243,17 +241,14 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 		// have handled the registration, it will signal this future.
 		AcceptorOperationFuture request = new AcceptorOperationFuture(localAddresses);
 
-		// adds the Registration request to the queue for the Workers
-		// to handle
+		// adds the Registration request to the queue for the Workers to handle
 		registerQueue.add(request);
 
-		// creates the Acceptor instance and has the local
-		// executor kick it off.
+		// creates the Acceptor instance and has the local executor kick it off.
 		startupAcceptor();
 
 		// As we just started the acceptor, we have to unblock the select()
-		// in order to process the bind request we just have added to the
-		// registerQueue.
+		// in order to process the bind request we just have added to the registerQueue.
 		try {
 			lock.acquire();
 
@@ -274,8 +269,8 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 		// because of deadlock.
 		Set<InetSocketAddress> newLocalAddresses = new HashSet<>();
 
-		for (ServerSocketChannel handle : boundHandles.values()) {
-			newLocalAddresses.add(localAddress(handle));
+		for (ServerSocketChannel channel : boundHandles.values()) {
+			newLocalAddresses.add(localAddress(channel));
 		}
 
 		return newLocalAddresses;
@@ -341,8 +336,6 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 		 */
 		@Override
 		public void run() {
-			assert acceptorRef.get() == this;
-
 			int nHandles = 0;
 
 			// Release the lock
@@ -371,16 +364,12 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 						acceptorRef.set(null);
 
 						if (registerQueue.isEmpty() && cancelQueue.isEmpty()) {
-							assert acceptorRef.get() != this;
 							break;
 						}
 
 						if (!acceptorRef.compareAndSet(null, this)) {
-							assert acceptorRef.get() != this;
 							break;
 						}
-
-						assert acceptorRef.get() == this;
 					}
 
 					if (selected > 0) {
@@ -436,15 +425,15 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 		 * Session objects are created by making new instances of SocketSessionImpl
 		 * and passing the session object to the SocketIoProcessor class.
 		 */
-		private void processHandles(Iterator<ServerSocketChannel> handles) throws Exception {
+		private void processHandles(Iterator<ServerSocketChannel> handles) throws IOException {
 			while (handles.hasNext()) {
 				@SuppressWarnings("resource")
-				ServerSocketChannel handle = handles.next();
+				ServerSocketChannel channel = handles.next();
 				handles.remove();
 
 				// Associates a new created connection to a processor,
 				// and get back a session
-				NioSession session = accept(processor, handle);
+				NioSession session = accept(processor, channel);
 
 				if (session == null) {
 					continue;
@@ -486,8 +475,8 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 					// Process all the addresses
 					for (SocketAddress a : localAddresses) {
 						@SuppressWarnings("resource")
-						ServerSocketChannel handle = open(a);
-						newHandles.put(localAddress(handle), handle);
+						ServerSocketChannel channel = open(a);
+						newHandles.put(localAddress(channel), channel);
 					}
 
 					// Everything went ok, we can now update the map storing
@@ -504,9 +493,9 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 				} finally {
 					// Roll back if failed to bind all addresses.
 					if (future.getException() != null) {
-						for (ServerSocketChannel handle : newHandles.values()) {
+						for (ServerSocketChannel channel : newHandles.values()) {
 							try {
-								close(handle);
+								close(channel);
 							} catch (Exception e) {
 								ExceptionMonitor.getInstance().exceptionCaught(e);
 							}
@@ -537,14 +526,14 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 				// close the channels
 				for (SocketAddress a : future.getLocalAddresses()) {
 					@SuppressWarnings("resource")
-					ServerSocketChannel handle = boundHandles.remove(a);
+					ServerSocketChannel channel = boundHandles.remove(a);
 
-					if (handle == null) {
+					if (channel == null) {
 						continue;
 					}
 
 					try {
-						close(handle);
+						close(channel);
 						wakeup(); // wake up again to trigger thread death
 					} catch (Exception e) {
 						ExceptionMonitor.getInstance().exceptionCaught(e);

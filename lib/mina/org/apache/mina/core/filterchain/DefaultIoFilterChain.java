@@ -44,10 +44,9 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 	private static final Logger LOGGER = LoggerFactory.getLogger(DefaultIoFilterChain.class);
 
 	/**
-	 * A session attribute that stores an {@link IoFuture} related with
-	 * the {@link IoSession}.  {@link DefaultIoFilterChain} clears this
-	 * attribute and notifies the future when {@link #fireSessionCreated()}
-	 * or {@link #fireExceptionCaught(Throwable)} is invoked.
+	 * A session attribute that stores an {@link IoFuture} related with the {@link IoSession}.
+	 * {@link DefaultIoFilterChain} clears this attribute and notifies the future
+	 * when {@link #fireSessionCreated()} or {@link #fireExceptionCaught(Throwable)} is invoked.
 	 */
 	public static final String SESSION_CREATED_FUTURE = "DefaultIoFilterChain.connectFuture";
 
@@ -64,8 +63,8 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 	private final EntryImpl tail;
 
 	/**
-	 * Create a new default chain, associated with a session. It will only contain a
-	 * HeadFilter and a TailFilter.
+	 * Create a new default chain, associated with a session.
+	 * It will only contain a HeadFilter and a TailFilter.
 	 *
 	 * @param session The session associated with the created filter chain
 	 */

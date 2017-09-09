@@ -56,8 +56,7 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 	 * Constructor for {@link NioSocketAcceptor} using default parameters, and
 	 * given number of {@link NioProcessor} for multithreading I/O operations.
 	 *
-	 * @param processorCount the number of processor to create and place in a
-	 * {@link SimpleIoProcessorPool}
+	 * @param processorCount the number of processor to create and place in a {@link SimpleIoProcessorPool}
 	 */
 	public NioSocketAcceptor(int processorCount) {
 		super(processorCount);
@@ -67,7 +66,7 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected void init() throws Exception {
+	protected void init() throws IOException {
 		selector = Selector.open();
 	}
 
@@ -75,7 +74,7 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected void destroy() throws Exception {
+	protected void destroy() throws IOException {
 		if (selector != null) {
 			selector.close();
 		}
@@ -86,20 +85,20 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 	 */
 	@SuppressWarnings("resource")
 	@Override
-	protected NioSession accept(IoProcessor<NioSession> processor, ServerSocketChannel handle) throws Exception {
+	protected NioSession accept(IoProcessor<NioSession> processor, ServerSocketChannel channel) throws IOException {
 
 		SelectionKey key = null;
 
-		if (handle != null) {
-			key = handle.keyFor(selector);
+		if (channel != null) {
+			key = channel.keyFor(selector);
 		}
 
-		if ((key == null) || (!key.isValid()) || (!key.isAcceptable())) {
+		if (key == null || !key.isValid() || !key.isAcceptable()) {
 			return null;
 		}
 
 		// accept the connection from the client
-		SocketChannel ch = (handle != null ? handle.accept() : null);
+		SocketChannel ch = (channel != null ? channel.accept() : null);
 
 		return ch != null ? new NioSocketSession(this, processor, ch) : null;
 	}
@@ -109,15 +108,11 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 	 */
 	@SuppressWarnings("resource")
 	@Override
-	protected ServerSocketChannel open(SocketAddress localAddress) throws Exception {
+	protected ServerSocketChannel open(SocketAddress localAddress) throws IOException {
 		// Creates the listening ServerSocket
-
 		ServerSocketChannel channel = ServerSocketChannel.open();
 
-		boolean success = false;
-
 		try {
-			// This is a non blocking socket channel
 			channel.configureBlocking(false);
 
 			// Configure the server socket,
@@ -126,28 +121,20 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 			// Set the reuseAddress flag accordingly with the setting
 			socket.setReuseAddress(isReuseAddress());
 
-			// and bind.
 			try {
 				socket.bind(localAddress, getBacklog());
 			} catch (IOException ioe) {
 				// Add some info regarding the address we try to bind to the message
-				String newMessage = "Error while binding on " + localAddress + "\noriginal message: " + ioe.getMessage();
-				Exception e = new IOException(newMessage);
-				e.initCause(ioe.getCause());
-
-				// And close the channel
-				channel.close();
-				throw e;
+				throw new IOException("Error while binding on " + localAddress + "\noriginal message: " + ioe.getMessage(), ioe);
 			}
 
 			// Register the channel within the selector for ACCEPT event
 			channel.register(selector, SelectionKey.OP_ACCEPT);
-			success = true;
-		} finally {
-			if (!success) {
-				close(channel);
-			}
+		} catch (Throwable e) {
+			close(channel);
+			throw e;
 		}
+
 		return channel;
 	}
 
@@ -155,8 +142,8 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected InetSocketAddress localAddress(ServerSocketChannel handle) throws Exception {
-		return (InetSocketAddress)handle.socket().getLocalSocketAddress();
+	protected InetSocketAddress localAddress(ServerSocketChannel channel) throws IOException {
+		return (InetSocketAddress)channel.socket().getLocalSocketAddress();
 	}
 
 	/**
@@ -173,7 +160,7 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 	 * @throws ClosedSelectorException If this selector is closed
 	 */
 	@Override
-	protected int select() throws Exception {
+	protected int select() throws IOException {
 		return selector.select();
 	}
 
@@ -189,14 +176,14 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected void close(ServerSocketChannel handle) throws Exception {
-		SelectionKey key = handle.keyFor(selector);
+	protected void close(ServerSocketChannel channel) throws IOException {
+		SelectionKey key = channel.keyFor(selector);
 
 		if (key != null) {
 			key.cancel();
 		}
 
-		handle.close();
+		channel.close();
 	}
 
 	/**
@@ -208,16 +195,15 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 	}
 
 	/**
-	 * Defines an iterator for the selected-key Set returned by the
-	 * selector.selectedKeys(). It replaces the SelectionKey operator.
+	 * Defines an iterator for the selected-key Set returned by the selector.selectedKeys().
+	 * It replaces the SelectionKey operator.
 	 */
 	private static final class ServerSocketChannelIterator implements Iterator<ServerSocketChannel> {
 		/** The selected-key iterator */
 		private final Iterator<SelectionKey> iterator;
 
 		/**
-		 * Build a SocketChannel iterator which will return a SocketChannel instead of
-		 * a SelectionKey.
+		 * Build a SocketChannel iterator which will return a SocketChannel instead of a SelectionKey.
 		 *
 		 * @param selectedKeys The selector selected-key set
 		 */
@@ -227,8 +213,8 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 
 		/**
 		 * Tells if there are more SockectChannel left in the iterator
-		 * @return <tt>true</tt> if there is at least one more
-		 * SockectChannel object to read
+		 *
+		 * @return <tt>true</tt> if there is at least one more SockectChannel object to read
 		 */
 		@Override
 		public boolean hasNext() {

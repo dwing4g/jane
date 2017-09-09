@@ -34,8 +34,7 @@ import org.apache.mina.core.session.IoSession;
 import org.apache.mina.util.ExceptionMonitor;
 
 /**
- * A helper class which provides addition and removal of {@link IoServiceListener}s and firing
- * events.
+ * A helper class which provides addition and removal of {@link IoServiceListener}s and firing events.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
@@ -120,16 +119,14 @@ public final class IoServiceListenerSupport {
 	}
 
 	/**
-	 * @return The largest number of managed session since the creation of this
-	 * listenerSupport
+	 * @return The largest number of managed session since the creation of this listenerSupport
 	 */
 	public int getLargestManagedSessionCount() {
 		return largestManagedSessionCount;
 	}
 
 	/**
-	 * @return The total number of sessions managed since the initilization of this
-	 * ListenerSupport
+	 * @return The total number of sessions managed since the initilization of this ListenerSupport
 	 */
 	public long getCumulativeManagedSessionCount() {
 		return cumulativeManagedSessionCount.get();
@@ -143,8 +140,7 @@ public final class IoServiceListenerSupport {
 	}
 
 	/**
-	 * Calls {@link IoServiceListener#serviceActivated(IoService)}
-	 * for all registered listeners.
+	 * Calls {@link IoServiceListener#serviceActivated(IoService)} for all registered listeners.
 	 */
 	public void fireServiceActivated() {
 		if (!activated.compareAndSet(false, true)) {
@@ -165,8 +161,7 @@ public final class IoServiceListenerSupport {
 	}
 
 	/**
-	 * Calls {@link IoServiceListener#serviceDeactivated(IoService)}
-	 * for all registered listeners.
+	 * Calls {@link IoServiceListener#serviceDeactivated(IoService)} for all registered listeners.
 	 */
 	public void fireServiceDeactivated() {
 		if (!activated.compareAndSet(true, false)) {

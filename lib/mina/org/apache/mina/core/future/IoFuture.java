@@ -23,8 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.mina.core.session.IoSession;
 
 /**
- * Represents the completion of an asynchronous I/O operation on an
- * {@link IoSession}.
+ * Represents the completion of an asynchronous I/O operation on an {@link IoSession}.
  * Can be listened for completion using a {@link IoFutureListener}.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
@@ -37,8 +36,7 @@ public interface IoFuture {
 
 	/**
 	 * Wait for the asynchronous operation to complete.
-	 * The attached listeners will be notified when the operation is
-	 * completed.
+	 * The attached listeners will be notified when the operation is completed.
 	 *
 	 * @return The instance of IoFuture that we are waiting for
 	 * @exception InterruptedException If the thread is interrupted while waiting
@@ -66,16 +64,14 @@ public interface IoFuture {
 
 	/**
 	 * Wait for the asynchronous operation to complete uninterruptibly.
-	 * The attached listeners will be notified when the operation is
-	 * completed.
+	 * The attached listeners will be notified when the operation is completed.
 	 *
 	 * @return the current IoFuture
 	 */
 	IoFuture awaitUninterruptibly();
 
 	/**
-	 * Wait for the asynchronous operation to complete with the specified timeout
-	 * uninterruptibly.
+	 * Wait for the asynchronous operation to complete with the specified timeout uninterruptibly.
 	 *
 	 * @param timeout The maximum delay to wait before getting out
 	 * @param unit the type of unit for the delay (seconds, minutes...)
@@ -84,8 +80,7 @@ public interface IoFuture {
 	boolean awaitUninterruptibly(long timeout, TimeUnit unit);
 
 	/**
-	 * Wait for the asynchronous operation to complete with the specified timeout
-	 * uninterruptibly.
+	 * Wait for the asynchronous operation to complete with the specified timeout uninterruptibly.
 	 *
 	 * @param timeoutMillis The maximum milliseconds to wait before getting out
 	 * @return <tt>true</tt> if the operation is finished.
@@ -108,8 +103,8 @@ public interface IoFuture {
 	IoFuture addListener(IoFutureListener<?> listener);
 
 	/**
-	 * Removes an existing event <tt>listener</tt> so it won't be notified when
-	 * the future is completed.
+	 * Removes an existing event <tt>listener</tt>
+	 * so it won't be notified when the future is completed.
 	 *
 	 * @param listener The listener to remove
 	 * @return the current IoFuture

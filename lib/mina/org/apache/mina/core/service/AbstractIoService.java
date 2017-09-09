@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -75,17 +74,19 @@ public abstract class AbstractIoService implements IoService {
 	/**
 	 * The associated executor, responsible for handling execution of I/O events.
 	 */
-	private final Executor executor;
-
-	/**
-	 * The IoHandler in charge of managing all the I/O Events. It is
-	 */
-	private IoHandler handler;
+	private final ExecutorService executor;
 
 	/**
 	 * The default {@link IoSessionConfig} which will be used to configure new sessions.
 	 */
 	protected final DefaultSocketSessionConfig sessionConfig = new DefaultSocketSessionConfig();
+
+	/**
+	 * Maintains the {@link IoServiceListener}s of this service.
+	 * Create the listeners, and add a first listener: a activation listener
+	 * for this service, which will give information on the service state.
+	 */
+	private final IoServiceListenerSupport listeners = new IoServiceListenerSupport(this);
 
 	/**
 	 * Current filter chain builder.
@@ -95,11 +96,9 @@ public abstract class AbstractIoService implements IoService {
 	private IoSessionDataStructureFactory sessionDataStructureFactory = new DefaultIoSessionDataStructureFactory();
 
 	/**
-	 * Maintains the {@link IoServiceListener}s of this service.
-	 * Create the listeners, and add a first listener: a activation listener
-	 * for this service, which will give information on the service state.
+	 * The IoHandler in charge of managing all the I/O Events. It is
 	 */
-	private final IoServiceListenerSupport listeners = new IoServiceListenerSupport(this);
+	private IoHandler handler;
 
 	/**
 	 * A lock object which must be acquired when related resources are
@@ -115,9 +114,9 @@ public abstract class AbstractIoService implements IoService {
 		// Make JVM load the exception monitor before some transports change the thread context class loader.
 		ExceptionMonitor.getInstance();
 
-		executor = Executors.newCachedThreadPool();
-
 		threadName = getClass().getSimpleName() + '-' + id.incrementAndGet();
+
+		executor = Executors.newCachedThreadPool();
 	}
 
 	/**
@@ -225,12 +224,11 @@ public abstract class AbstractIoService implements IoService {
 			}
 		}
 
-		ExecutorService e = (ExecutorService) executor;
-		e.shutdownNow();
+		executor.shutdownNow();
 		if (awaitTermination) {
 			try {
 				LOGGER.debug("awaitTermination on {} called by thread=[{}]", this, Thread.currentThread().getName());
-				e.awaitTermination(Integer.MAX_VALUE, TimeUnit.SECONDS);
+				executor.awaitTermination(Integer.MAX_VALUE, TimeUnit.SECONDS);
 				LOGGER.debug("awaitTermination on {} finished", this);
 			} catch (InterruptedException e1) {
 				LOGGER.warn("awaitTermination on [{}] was interrupted", this);
@@ -244,8 +242,6 @@ public abstract class AbstractIoService implements IoService {
 	/**
 	 * Implement this method to release any acquired resources.  This method
 	 * is invoked only once by {@link #dispose()}.
-	 *
-	 * @throws Exception If the dispose failed
 	 */
 	protected abstract void dispose0() throws Exception;
 
@@ -351,15 +347,7 @@ public abstract class AbstractIoService implements IoService {
 	}
 
 	protected final void executeWorker(Runnable worker) {
-		executeWorker(worker, null);
-	}
-
-	protected final void executeWorker(Runnable worker, String suffix) {
-		String actualThreadName = threadName;
-		if (suffix != null) {
-			actualThreadName = actualThreadName + '-' + suffix;
-		}
-		executor.execute(new NamePreservingRunnable(worker, actualThreadName));
+		executor.execute(new NamePreservingRunnable(worker, threadName));
 	}
 
 	protected final void initSession(IoSession session, IoFuture future) {
@@ -390,10 +378,9 @@ public abstract class AbstractIoService implements IoService {
 	}
 
 	/**
-	 * Implement this method to perform additional tasks required for session
-	 * initialization. Do not call this method directly;
-	 * {@link #initSession(IoSession, IoFuture)} will call
-	 * this method instead.
+	 * Implement this method to perform additional tasks required for session initialization.
+	 * Do not call this method directly;
+	 * {@link #initSession(IoSession, IoFuture)} will call this method instead.
 	 *
 	 * @param session The session to initialize
 	 * @param future The Future to use
@@ -403,7 +390,7 @@ public abstract class AbstractIoService implements IoService {
 	}
 
 	/**
-	 * A  {@link IoFuture} dedicated class for
+	 * A {@link IoFuture} dedicated class for
 	 */
 	protected static class ServiceOperationFuture extends DefaultIoFuture {
 		public ServiceOperationFuture() {

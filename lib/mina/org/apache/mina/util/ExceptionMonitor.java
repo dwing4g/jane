@@ -43,8 +43,8 @@ public abstract class ExceptionMonitor {
 	}
 
 	/**
-	 * Sets the uncaught exception monitor.  If <code>null</code> is specified,
-	 * the default monitor will be set.
+	 * Sets the uncaught exception monitor.
+	 * If <code>null</code> is specified, the default monitor will be set.
 	 *
 	 * @param monitor A new instance of {@link DefaultExceptionMonitor} is set
 	 *                if <tt>null</tt> is specified.

@@ -24,11 +24,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A default {@link ExceptionMonitor} implementation that logs uncaught
- * exceptions using {@link Logger}.
+ * A default {@link ExceptionMonitor} implementation that logs uncaught exceptions using {@link Logger}.
  * <p>
- * All {@link IoService}s have this implementation as a default exception
- * monitor.
+ * All {@link IoService}s have this implementation as a default exception monitor.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */

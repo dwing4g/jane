@@ -111,8 +111,7 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 
 	/**
 	 * In the case we are using the java select() method, this method is used to
-	 * trash the buggy selector and create a new one, registering all the
-	 * sockets on it.
+	 * trash the buggy selector and create a new one, registering all the sockets on it.
 	 */
 	@SuppressWarnings("resource")
 	@Override
@@ -148,15 +147,13 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 		// Get the selector keys
 		Set<SelectionKey> keys = selector.keys();
 
-		// Loop on all the keys to see if one of them
-		// has a closed channel
+		// Loop on all the keys to see if one of them has a closed channel
 		for (SelectionKey key : keys) {
 			@SuppressWarnings("resource")
 			SelectableChannel channel = key.channel();
 
 			if (channel instanceof SocketChannel && !((SocketChannel) channel).isConnected()) {
-				// The channel is not connected anymore. Cancel
-				// the associated key then.
+				// The channel is not connected anymore. Cancel the associated key then.
 				key.cancel();
 
 				// Set the flag to true to avoid a selector switch

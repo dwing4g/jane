@@ -22,8 +22,7 @@ package org.apache.mina.core.buffer;
 import java.nio.ByteBuffer;
 
 /**
- * A simplistic {@link IoBufferAllocator} which simply allocates a new
- * buffer every time.
+ * A simplistic {@link IoBufferAllocator} which simply allocates a new buffer every time.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */

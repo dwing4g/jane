@@ -34,9 +34,9 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 
 /**
- * A base implementation of {@link IoBuffer}.  This implementation
- * assumes that {@link IoBuffer#buf()} always returns a correct NIO
- * {@link ByteBuffer} instance.  Most implementations could
+ * A base implementation of {@link IoBuffer}.
+ * This implementation assumes that {@link IoBuffer#buf()} always returns
+ * a correct NIO {@link ByteBuffer} instance.  Most implementations could
  * extend this class and implement their own buffer management mechanism.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
@@ -81,8 +81,8 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	}
 
 	/**
-	 * Creates a new derived buffer. A derived buffer uses an existing
-	 * buffer properties - capacity -.
+	 * Creates a new derived buffer.
+	 * A derived buffer uses an existing buffer properties - capacity -.
 	 *
 	 * @param parent The buffer we get the properties from
 	 */

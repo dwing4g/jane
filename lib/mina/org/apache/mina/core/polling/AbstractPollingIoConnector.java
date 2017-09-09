@@ -19,6 +19,7 @@
  */
 package org.apache.mina.core.polling;
 
+import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedSelectorException;
@@ -94,8 +95,7 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 	 *
 	 * @see SimpleIoProcessorPool
 	 *
-	 * @param processorCount
-	 *            the amount of processor to instantiate for the pool
+	 * @param processorCount the amount of processor to instantiate for the pool
 	 */
 	protected AbstractPollingIoConnector(int processorCount) {
 		this(new SimpleIoProcessorPool<>(processorCount));
@@ -112,8 +112,7 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 	 * @param processor
 	 *            the {@link IoProcessor} for processing the {@link IoSession}
 	 *            of this transport, triggering events to the bound
-	 *            {@link IoHandler} and processing the chains of
-	 *            {@link IoFilter}
+	 *            {@link IoHandler} and processing the chains of {@link IoFilter}
 	 */
 	private AbstractPollingIoConnector(IoProcessor<NioSession> processor) {
 		this.processor = processor;
@@ -140,87 +139,66 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 
 	/**
 	 * Initialize the polling system, will be called at construction time.
-	 *
-	 * @throws Exception
-	 *             any exception thrown by the underlying system calls
 	 */
-	protected abstract void init() throws Exception;
+	protected abstract void init() throws IOException;
 
 	/**
 	 * Destroy the polling system, will be called when this {@link IoConnector}
 	 * implementation will be disposed.
-	 *
-	 * @throws Exception
-	 *             any exception thrown by the underlying systems calls
 	 */
-	protected abstract void destroy() throws Exception;
+	protected abstract void destroy() throws IOException;
 
 	/**
 	 * Create a new client socket handle from a local {@link SocketAddress}
 	 *
-	 * @param localAddress
-	 *            the socket address for binding the new client socket
+	 * @param localAddress the socket address for binding the new client socket
 	 * @return a new client socket handle
-	 * @throws Exception
-	 *             any exception thrown by the underlying systems calls
 	 */
-	protected abstract SocketChannel newHandle(SocketAddress localAddress) throws Exception;
+	protected abstract SocketChannel newHandle(SocketAddress localAddress) throws IOException;
 
 	/**
 	 * Connect a newly created client socket handle to a remote
 	 * {@link SocketAddress}. This operation is non-blocking, so at end of the
 	 * call the socket can be still in connection process.
 	 *
-	 * @param handle the client socket handle
+	 * @param channel the client socket handle
 	 * @param remoteAddress the remote address where to connect
 	 * @return <tt>true</tt> if a connection was established, <tt>false</tt> if
-	 *         this client socket is in non-blocking mode and the connection
-	 *         operation is in progress
-	 * @throws Exception If the connect failed
+	 *         this client socket is in non-blocking mode and the connection operation is in progress
+	 * @throws IOException If the connect failed
 	 */
-	protected abstract boolean connect(SocketChannel handle, SocketAddress remoteAddress) throws Exception;
+	protected abstract boolean connect(SocketChannel channel, SocketAddress remoteAddress) throws IOException;
 
 	/**
 	 * Finish the connection process of a client socket after it was marked as
 	 * ready to process by the {@link #select(int)} call. The socket will be
 	 * connected or reported as connection failed.
 	 *
-	 * @param handle
-	 *            the client socket handle to finish to connect
+	 * @param channel the client socket handle to finish to connect
 	 * @return true if the socket is connected
-	 * @throws Exception
-	 *             any exception thrown by the underlying systems calls
 	 */
-	protected abstract boolean finishConnect(SocketChannel handle) throws Exception;
+	protected abstract boolean finishConnect(SocketChannel channel) throws IOException;
 
 	/**
 	 * Create a new {@link IoSession} from a connected socket client handle.
 	 * Will assign the created {@link IoSession} to the given
 	 * {@link IoProcessor} for managing future I/O events.
 	 *
-	 * @param processor1
-	 *            the processor in charge of this session
-	 * @param handle
-	 *            the newly connected client socket handle
+	 * @param processor1 the processor in charge of this session
+	 * @param channel the newly connected client socket handle
 	 * @return a new {@link IoSession}
-	 * @throws Exception
-	 *             any exception thrown by the underlying systems calls
 	 */
-	protected abstract NioSession newSession(IoProcessor<NioSession> processor1, SocketChannel handle) throws Exception;
+	protected abstract NioSession newSession(IoProcessor<NioSession> processor1, SocketChannel channel) throws IOException;
 
 	/**
 	 * Close a client socket.
 	 *
-	 * @param handle
-	 *            the client socket
-	 * @throws Exception
-	 *             any exception thrown by the underlying systems calls
+	 * @param channel the client socket
 	 */
-	protected abstract void close(SocketChannel handle) throws Exception;
+	protected abstract void close(SocketChannel channel) throws IOException;
 
 	/**
-	 * Interrupt the {@link #select(int)} method. Used when the poll set need to
-	 * be modified.
+	 * Interrupt the {@link #select(int)} method. Used when the poll set need to be modified.
 	 */
 	protected abstract void wakeup();
 
@@ -231,9 +209,8 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 	 *
 	 * @param timeout The timeout for the select() method
 	 * @return The number of socket having received some data
-	 * @throws Exception any exception thrown by the underlying systems calls
 	 */
-	protected abstract int select(long timeout) throws Exception;
+	protected abstract int select(long timeout) throws IOException;
 
 	/**
 	 * {@link Iterator} for the set of client sockets found connected or failed
@@ -253,30 +230,24 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 	/**
 	 * Register a new client socket for connection, add it to connection polling
 	 *
-	 * @param handle
-	 *            client socket handle
-	 * @param request
-	 *            the associated {@link ConnectionRequest}
-	 * @throws Exception
-	 *             any exception thrown by the underlying systems calls
+	 * @param channel client socket handle
+	 * @param request the associated {@link ConnectionRequest}
 	 */
-	protected abstract void register(SocketChannel handle, ConnectionRequest request) throws Exception;
+	protected abstract void register(SocketChannel channel, ConnectionRequest request) throws IOException;
 
 	/**
 	 * get the {@link ConnectionRequest} for a given client socket handle
 	 *
-	 * @param handle
-	 *            the socket client handle
-	 * @return the connection request if the socket is connecting otherwise
-	 *         <code>null</code>
+	 * @param channel the socket client handle
+	 * @return the connection request if the socket is connecting otherwise <code>null</code>
 	 */
-	protected abstract ConnectionRequest getConnectionRequest(SocketChannel handle);
+	protected abstract ConnectionRequest getConnectionRequest(SocketChannel channel);
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected final void dispose0() throws Exception {
+	protected final void dispose0() throws IOException {
 		startupWorker();
 		wakeup();
 	}
@@ -287,13 +258,13 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 	@Override
 	@SuppressWarnings("resource")
 	protected final ConnectFuture connect0(SocketAddress remoteAddress, SocketAddress localAddress) {
-		SocketChannel handle = null;
+		SocketChannel channel = null;
 		boolean success = false;
 		try {
-			handle = newHandle(localAddress);
-			if (connect(handle, remoteAddress)) {
+			channel = newHandle(localAddress);
+			if (connect(channel, remoteAddress)) {
 				ConnectFuture future = new DefaultConnectFuture();
-				NioSession session = newSession(processor, handle);
+				NioSession session = newSession(processor, channel);
 				initSession(session, future);
 				// Forward the remaining process to the IoProcessor.
 				session.getProcessor().add(session);
@@ -305,16 +276,16 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 		} catch (Exception e) {
 			return DefaultConnectFuture.newFailedFuture(e);
 		} finally {
-			if (!success && handle != null) {
+			if (!success && channel != null) {
 				try {
-					close(handle);
+					close(channel);
 				} catch (Exception e) {
 					ExceptionMonitor.getInstance().exceptionCaught(e);
 				}
 			}
 		}
 
-		ConnectionRequest request = new ConnectionRequest(handle);
+		ConnectionRequest request = new ConnectionRequest(channel);
 		connectQueue.add(request);
 		startupWorker();
 		wakeup();
@@ -345,35 +316,22 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 		 */
 		@Override
 		public void run() {
-			assert connectorRef.get() == this;
-
 			int nHandles = 0;
 
 			while (selectable) {
 				try {
-					// the timeout for select shall be smaller of the connect
-					// timeout or 1 second...
-					long timeout = Math.min(getConnectTimeoutMillis(), 1000L);
-					int selected = select(timeout);
+					// the timeout for select shall be smaller of the connect timeout or 1 second...
+					int selected = select(Math.min(getConnectTimeoutMillis(), 1000L));
 
 					nHandles += registerNew();
 
-					// get a chance to get out of the connector loop, if we
-					// don't have any more handles
+					// get a chance to get out of the connector loop, if we don't have any more handles
 					if (nHandles == 0) {
 						connectorRef.set(null);
 
-						if (connectQueue.isEmpty()) {
-							assert connectorRef.get() != this;
+						if (connectQueue.isEmpty() || !connectorRef.compareAndSet(null, this)) {
 							break;
 						}
-
-						if (!connectorRef.compareAndSet(null, this)) {
-							assert connectorRef.get() != this;
-							break;
-						}
-
-						assert connectorRef.get() == this;
 					}
 
 					if (selected > 0) {
@@ -419,52 +377,43 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 		}
 
 		private int registerNew() {
-			int nHandles = 0;
-			for (;;) {
+			for (int nHandles = 0;;) {
 				ConnectionRequest req = connectQueue.poll();
 				if (req == null) {
-					break;
+					return nHandles;
 				}
 
-				SocketChannel handle = req.handle;
+				SocketChannel channel = req.channel;
 				try {
-					register(handle, req);
+					register(channel, req);
 					nHandles++;
 				} catch (Exception e) {
 					req.setException(e);
 					try {
-						close(handle);
+						close(channel);
 					} catch (Exception e2) {
 						ExceptionMonitor.getInstance().exceptionCaught(e2);
 					}
 				}
 			}
-			return nHandles;
 		}
 
 		private int cancelKeys() {
-			int nHandles = 0;
-			for (;;) {
+			for (int nHandles = 0;; ++nHandles) {
 				ConnectionRequest req = cancelQueue.poll();
 				if (req == null) {
-					break;
+					if (nHandles > 0) {
+						wakeup();
+					}
+					return nHandles;
 				}
 
-				SocketChannel handle = req.handle;
 				try {
-					close(handle);
+					close(req.channel);
 				} catch (Exception e) {
 					ExceptionMonitor.getInstance().exceptionCaught(e);
-				} finally {
-					nHandles++;
 				}
 			}
-
-			if (nHandles > 0) {
-				wakeup();
-			}
-
-			return nHandles;
 		}
 
 		/**
@@ -477,10 +426,10 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 			// Loop on each connection request
 			while (handlers.hasNext()) {
 				@SuppressWarnings("resource")
-				SocketChannel handle = handlers.next();
+				SocketChannel channel = handlers.next();
 				handlers.remove();
 
-				ConnectionRequest connectionRequest = getConnectionRequest(handle);
+				ConnectionRequest connectionRequest = getConnectionRequest(channel);
 
 				if (connectionRequest == null) {
 					continue;
@@ -488,8 +437,8 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 
 				boolean success = false;
 				try {
-					if (finishConnect(handle)) {
-						NioSession session = newSession(processor, handle);
+					if (finishConnect(channel)) {
+						NioSession session = newSession(processor, channel);
 						initSession(session, connectionRequest);
 						// Forward the remaining process to the IoProcessor.
 						session.getProcessor().add(session);
@@ -508,15 +457,13 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 			return nHandles;
 		}
 
-		private void processTimedOutSessions(Iterator<SocketChannel> handles) {
+		private void processTimedOutSessions(Iterator<SocketChannel> channels) {
 			long currentTime = System.currentTimeMillis();
 
-			while (handles.hasNext()) {
-				@SuppressWarnings("resource")
-				SocketChannel handle = handles.next();
-				ConnectionRequest connectionRequest = getConnectionRequest(handle);
+			while (channels.hasNext()) {
+				ConnectionRequest connectionRequest = getConnectionRequest(channels.next());
 
-				if ((connectionRequest != null) && (currentTime >= connectionRequest.deadline)) {
+				if (connectionRequest != null && currentTime >= connectionRequest.deadline) {
 					connectionRequest.setException(new ConnectException("Connection timed out."));
 					cancelQueue.offer(connectionRequest);
 				}
@@ -529,7 +476,7 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 	 */
 	public final class ConnectionRequest extends DefaultConnectFuture {
 		/** The handle associated with this connection request */
-		private final SocketChannel handle;
+		private final SocketChannel channel;
 
 		/** The time up to this connection request will be valid */
 		private final long deadline;
@@ -537,11 +484,11 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 		/**
 		 * Creates a new ConnectionRequest instance
 		 *
-		 * @param handle The IoHander
+		 * @param channel The IoHander
 		 * @param callback The IoFuture callback
 		 */
-		public ConnectionRequest(SocketChannel handle) {
-			this.handle = handle;
+		public ConnectionRequest(SocketChannel channel) {
+			this.channel = channel;
 			long timeout = getConnectTimeoutMillis();
 			deadline = (timeout > 0L ? System.currentTimeMillis() + timeout : Long.MAX_VALUE);
 		}
@@ -550,7 +497,7 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 		 * @return The IoHandler instance
 		 */
 		public SocketChannel getHandle() {
-			return handle;
+			return channel;
 		}
 
 		/**
