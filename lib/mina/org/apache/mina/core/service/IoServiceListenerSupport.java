@@ -15,23 +15,18 @@
  *  KIND, either express or implied.  See the License for the
  *  specific language governing permissions and limitations
  *  under the License.
- *
  */
 package org.apache.mina.core.service;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.mina.core.filterchain.IoFilterChain;
 import org.apache.mina.core.future.IoFuture;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.session.IoSession;
-import org.apache.mina.util.ExceptionMonitor;
 
 /**
  * A helper class which provides addition and removal of {@link IoServiceListener}s and firing events.
@@ -42,9 +37,6 @@ public final class IoServiceListenerSupport {
 	/** The {@link IoService} that this instance manages. */
 	private final IoService service;
 
-	/** A list of {@link IoServiceListener}s. */
-	private final List<IoServiceListener> listeners = new CopyOnWriteArrayList<>();
-
 	/** Tracks managed sessions. */
 	private final ConcurrentMap<Long, IoSession> managedSessions = new ConcurrentHashMap<>();
 
@@ -52,15 +44,6 @@ public final class IoServiceListenerSupport {
 	private final Map<Long, IoSession> readOnlyManagedSessions = Collections.unmodifiableMap(managedSessions);
 
 	private final AtomicBoolean activated = new AtomicBoolean();
-
-	/** Time this listenerSupport has been activated */
-	private volatile long activationTime;
-
-	/** A counter used to store the maximum sessions we managed since the listenerSupport has been activated */
-	private volatile int largestManagedSessionCount;
-
-	/** A global counter to count the number of sessions managed since the start */
-	private final AtomicLong cumulativeManagedSessionCount = new AtomicLong();
 
 	/**
 	 * Creates a new instance of the listenerSupport.
@@ -73,35 +56,6 @@ public final class IoServiceListenerSupport {
 		}
 
 		this.service = service;
-	}
-
-	/**
-	 * Adds a new listener.
-	 *
-	 * @param listener The added listener
-	 */
-	public void add(IoServiceListener listener) {
-		if (listener != null) {
-			listeners.add(listener);
-		}
-	}
-
-	/**
-	 * Removes an existing listener.
-	 *
-	 * @param listener The listener to remove
-	 */
-	public void remove(IoServiceListener listener) {
-		if (listener != null) {
-			listeners.remove(listener);
-		}
-	}
-
-	/**
-	 * @return The time (in ms) this instance has been activated
-	 */
-	public long getActivationTime() {
-		return activationTime;
 	}
 
 	/**
@@ -119,20 +73,6 @@ public final class IoServiceListenerSupport {
 	}
 
 	/**
-	 * @return The largest number of managed session since the creation of this listenerSupport
-	 */
-	public int getLargestManagedSessionCount() {
-		return largestManagedSessionCount;
-	}
-
-	/**
-	 * @return The total number of sessions managed since the initilization of this ListenerSupport
-	 */
-	public long getCumulativeManagedSessionCount() {
-		return cumulativeManagedSessionCount.get();
-	}
-
-	/**
 	 * @return true if the instance is active
 	 */
 	public boolean isActive() {
@@ -143,21 +83,7 @@ public final class IoServiceListenerSupport {
 	 * Calls {@link IoServiceListener#serviceActivated(IoService)} for all registered listeners.
 	 */
 	public void fireServiceActivated() {
-		if (!activated.compareAndSet(false, true)) {
-			// The instance is already active
-			return;
-		}
-
-		activationTime = System.currentTimeMillis();
-
-		// Activate all the listeners now
-		for (IoServiceListener listener : listeners) {
-			try {
-				listener.serviceActivated(service);
-			} catch (Exception e) {
-				ExceptionMonitor.getInstance().exceptionCaught(e);
-			}
-		}
+		activated.set(true);
 	}
 
 	/**
@@ -169,18 +95,7 @@ public final class IoServiceListenerSupport {
 			return;
 		}
 
-		// Desactivate all the listeners
-		try {
-			for (IoServiceListener listener : listeners) {
-				try {
-					listener.serviceDeactivated(service);
-				} catch (Exception e) {
-					ExceptionMonitor.getInstance().exceptionCaught(e);
-				}
-			}
-		} finally {
-			disconnectSessions();
-		}
+		disconnectSessions();
 	}
 
 	/**
@@ -209,23 +124,6 @@ public final class IoServiceListenerSupport {
 		IoFilterChain filterChain = session.getFilterChain();
 		filterChain.fireSessionCreated();
 		filterChain.fireSessionOpened();
-
-		int managedSessionCount = managedSessions.size();
-
-		if (managedSessionCount > largestManagedSessionCount) {
-			largestManagedSessionCount = managedSessionCount;
-		}
-
-		cumulativeManagedSessionCount.incrementAndGet();
-
-		// Fire listener events.
-		for (IoServiceListener l : listeners) {
-			try {
-				l.sessionCreated(session);
-			} catch (Exception e) {
-				ExceptionMonitor.getInstance().exceptionCaught(e);
-			}
-		}
 	}
 
 	/**
@@ -242,21 +140,10 @@ public final class IoServiceListenerSupport {
 		// Fire session events.
 		session.getFilterChain().fireSessionClosed();
 
-		// Fire listener events.
-		try {
-			for (IoServiceListener l : listeners) {
-				try {
-					l.sessionDestroyed(session);
-				} catch (Exception e) {
-					ExceptionMonitor.getInstance().exceptionCaught(e);
-				}
-			}
-		} finally {
-			// Fire a virtual service deactivation event for the last session of the connector.
-			if (session.getService() instanceof IoConnector) {
-				if (managedSessions.isEmpty()) {
-					fireServiceDeactivated();
-				}
+		// Fire a virtual service deactivation event for the last session of the connector.
+		if (session.getService() instanceof IoConnector) {
+			if (managedSessions.isEmpty()) {
+				fireServiceDeactivated();
 			}
 		}
 	}

@@ -3,6 +3,7 @@ package jane.core;
 import java.util.Collection;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.filterchain.IoFilterAdapter;
+import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.DefaultWriteRequest;
 import org.apache.mina.core.write.WriteRequest;
@@ -90,14 +91,18 @@ public class BeanCodec extends IoFilterAdapter
 	@Override
 	public void filterWrite(NextFilter next, IoSession session, WriteRequest writeRequest)
 	{
-		Bean<?> bean = (Bean<?>)writeRequest.getMessage();
+		Bean<?> bean = (Bean<?>)(writeRequest instanceof Bean ? writeRequest : writeRequest.getMessage());
 		int type = bean.type();
 		if(type == 0)
 		{
 			Octets rawdata = ((RawBean)bean).getData();
 			int n = rawdata.remain();
 			if(n > 0)
-				next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(rawdata.array(), rawdata.position(), n), writeRequest.getFuture()));
+			{
+				IoBuffer buf = IoBuffer.wrap(rawdata.array(), rawdata.position(), n);
+				WriteFuture wf = writeRequest.getFuture();
+				next.filterWrite(session, wf == DefaultWriteRequest.UNUSED_FUTURE ? buf : new DefaultWriteRequest(buf, wf));
+			}
 		}
 		else
 		{
@@ -109,7 +114,9 @@ public class BeanCodec extends IoFilterAdapter
 			int pos = 5 - os.marshalUIntBack(reserveLen, len - reserveLen);
 			os.resize(pos);
 			os.marshalUInt(type).marshal(serial);
-			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(os.array(), pos, len - pos), writeRequest.getFuture()));
+			IoBuffer buf = IoBuffer.wrap(os.array(), pos, len - pos);
+			WriteFuture wf = writeRequest.getFuture();
+			next.filterWrite(session, wf == DefaultWriteRequest.UNUSED_FUTURE ? buf : new DefaultWriteRequest(buf, wf));
 		}
 	}
 

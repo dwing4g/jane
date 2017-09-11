@@ -15,7 +15,6 @@
  *  KIND, either express or implied.  See the License for the
  *  specific language governing permissions and limitations
  *  under the License.
- *
  */
 package org.apache.mina.transport.socket.nio;
 
@@ -30,7 +29,6 @@ import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.IoService;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.AbstractSocketSessionConfig;
-import org.apache.mina.transport.socket.SocketSessionConfig;
 
 /**
  * An {@link IoSession} for socket transport (TCP/IP).
@@ -56,8 +54,8 @@ public final class NioSocketSession extends NioSession {
 	}
 
 	@Override
-	public SocketSessionConfig getConfig() {
-		return (SocketSessionConfig) config;
+	public AbstractSocketSessionConfig getConfig() {
+		return config;
 	}
 
 	@Override

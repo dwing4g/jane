@@ -15,7 +15,6 @@
  *  KIND, either express or implied.  See the License for the
  *  specific language governing permissions and limitations
  *  under the License.
- *
  */
 package org.apache.mina.filter.ssl;
 
@@ -58,7 +57,6 @@ import org.slf4j.LoggerFactory;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class SslHandler {
-	/** A logger for this class */
 	private static final Logger LOGGER = LoggerFactory.getLogger(SslHandler.class);
 
 	/** The SSL Filter which has created this handler */
@@ -68,7 +66,6 @@ public final class SslHandler {
 	private final IoSession session;
 
 	private final Queue<IoFilterEvent> preHandshakeEventQueue = new ConcurrentLinkedQueue<>();
-
 	private final Queue<IoFilterEvent> filterWriteEventQueue = new ConcurrentLinkedQueue<>();
 
 	/** A queue used to stack all the incoming data until the SSL session is established */
@@ -121,11 +118,8 @@ public final class SslHandler {
 
 	/**
 	 * Create a new SSL Handler, and initialize it.
-	 *
-	 * @param sslContext
-	 * @throws SSLException
 	 */
-	SslHandler(SslFilter sslFilter, IoSession session) throws SSLException {
+	SslHandler(SslFilter sslFilter, IoSession session) {
 		this.sslFilter = sslFilter;
 		this.session = session;
 	}
@@ -197,7 +191,6 @@ public final class SslHandler {
 			LOGGER.debug("{} SSL Handler Initialization done.", SslFilter.getSessionInfo(session));
 		}
 	}
-
 
 	/**
 	 * Release allocated buffers.
@@ -293,8 +286,7 @@ public final class SslHandler {
 	}
 
 	/**
-	 * Push the newly received data into a queue, waiting for the SSL session
-	 * to be fully established
+	 * Push the newly received data into a queue, waiting for the SSL session to be fully established
 	 *
 	 * @param nextFilter The next filter to call
 	 * @param message The incoming data
@@ -329,8 +321,8 @@ public final class SslHandler {
 	}
 
 	/**
-	 * Call when data are read from net. It will perform the initial hanshake or decrypt
-	 * the data if SSL has been initialiaed.
+	 * Call when data are read from net.
+	 * It will perform the initial hanshake or decrypt the data if SSL has been initialiaed.
 	 *
 	 * @param buf buffer to decrypt
 	 * @param nextFilter Next filter in chain
@@ -425,10 +417,8 @@ public final class SslHandler {
 	/**
 	 * Encrypt provided buffer. Encrypted data returned by getOutNetBuffer().
 	 *
-	 * @param src
-	 *            data to encrypt
-	 * @throws SSLException
-	 *             on errors
+	 * @param src data to encrypt
+	 * @throws SSLException on errors
 	 */
 	void encrypt(ByteBuffer src) throws SSLException {
 		if (!handshakeComplete) {
@@ -468,10 +458,9 @@ public final class SslHandler {
 	/**
 	 * Start SSL shutdown process.
 	 *
-	 * @return <tt>true</tt> if shutdown process is started. <tt>false</tt> if
-	 *         shutdown process is already finished.
-	 * @throws SSLException
-	 *             on errors
+	 * @return <tt>true</tt> if shutdown process is started.
+	 *         <tt>false</tt> if shutdown process is already finished.
+	 * @throws SSLException on errors
 	 */
 	boolean closeOutbound() throws SSLException {
 		if (sslEngine == null || sslEngine.isOutboundDone()) {
@@ -501,10 +490,6 @@ public final class SslHandler {
 		return true;
 	}
 
-	/**
-	 * @param res
-	 * @throws SSLException
-	 */
 	private void checkStatus(SSLEngineResult res) throws SSLException {
 		SSLEngineResult.Status status = res.getStatus();
 
@@ -617,8 +602,7 @@ public final class SslHandler {
 	}
 
 	private void createOutNetBuffer(int expectedRemaining) {
-		// SSLEngine requires us to allocate unnecessarily big buffer
-		// even for small data. *Shrug*
+		// SSLEngine requires us to allocate unnecessarily big buffer even for small data. *Shrug*
 		int capacity = Math.max(expectedRemaining, sslEngine.getSession().getPacketBufferSize());
 
 		if (outNetBuffer != null) {
@@ -635,8 +619,7 @@ public final class SslHandler {
 			return null;
 		}
 
-		// set flag that we are writing encrypted data
-		// (used in SSLFilter.filterWrite())
+		// set flag that we are writing encrypted data (used in SSLFilter.filterWrite())
 		writingEncryptedData = true;
 
 		// write net data
@@ -687,8 +670,7 @@ public final class SslHandler {
 
 		checkStatus(res);
 
-		// If handshake finished, no data was produced, and the status is still
-		// ok, try to unwrap more
+		// If handshake finished, no data was produced, and the status is still ok, try to unwrap more
 		if ((handshakeStatus == SSLEngineResult.HandshakeStatus.FINISHED)
 				&& (res.getStatus() == SSLEngineResult.Status.OK)
 				&& inNetBuffer.hasRemaining()) {
@@ -728,8 +710,7 @@ public final class SslHandler {
 	}
 
 	/**
-	 * Decrypt the incoming buffer and move the decrypted data to an
-	 * application buffer.
+	 * Decrypt the incoming buffer and move the decrypted data to an application buffer.
 	 */
 	private SSLEngineResult unwrap() throws SSLException {
 		// We first have to create the application buffer if it does not exist

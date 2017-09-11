@@ -15,7 +15,6 @@
  *  KIND, either express or implied.  See the License for the
  *  specific language governing permissions and limitations
  *  under the License.
- *
  */
 package org.apache.mina.core.service;
 
@@ -64,7 +63,7 @@ public final class SimpleIoProcessorPool implements IoProcessor<NioSession> {
 	/** The default pool size, when no size is provided. */
 	private static final int DEFAULT_SIZE = Runtime.getRuntime().availableProcessors() + 1;
 
-	private static final AtomicInteger id = new AtomicInteger();
+	private static final AtomicInteger idGenerator = new AtomicInteger();
 
 	/** The contained which is passed to the IoProcessor when they are created */
 	private final ExecutorService executor;
@@ -96,7 +95,7 @@ public final class SimpleIoProcessorPool implements IoProcessor<NioSession> {
 		}
 
 		executor = new ThreadPoolExecutor(size, size, 0L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(),
-				r -> new Thread(r, NioProcessor.class.getSimpleName() + '-' + id.incrementAndGet()),
+				r -> new Thread(r, NioProcessor.class.getSimpleName() + '-' + idGenerator.incrementAndGet()),
 				new ThreadPoolExecutor.CallerRunsPolicy());
 
 		pool = new NioProcessor[size];

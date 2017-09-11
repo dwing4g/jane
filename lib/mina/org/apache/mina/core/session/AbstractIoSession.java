@@ -15,7 +15,6 @@
  *  KIND, either express or implied.  See the License for the
  *  specific language governing permissions and limitations
  *  under the License.
- *
  */
 package org.apache.mina.core.session;
 
@@ -39,6 +38,7 @@ import org.apache.mina.core.write.DefaultWriteRequest;
 import org.apache.mina.core.write.WriteRequest;
 import org.apache.mina.core.write.WriteRequestQueue;
 import org.apache.mina.core.write.WriteToClosedSessionException;
+import org.apache.mina.transport.socket.AbstractSocketSessionConfig;
 import org.apache.mina.util.ExceptionMonitor;
 
 /**
@@ -48,7 +48,7 @@ import org.apache.mina.util.ExceptionMonitor;
  */
 public abstract class AbstractIoSession implements IoSession {
 	/** An internal write request object that triggers session close */
-	public static final WriteRequest CLOSE_REQUEST = new DefaultWriteRequest("CLOSE_REQUEST");
+	public static final WriteRequest CLOSE_REQUEST = new DefaultWriteRequest("CLOSE_REQUEST", null);
 
 	/** An id generator guaranteed to generate unique IDs for the session */
 	private static final AtomicLong idGenerator = new AtomicLong();
@@ -57,7 +57,7 @@ public abstract class AbstractIoSession implements IoSession {
 	private final IoHandler handler;
 
 	/** The session config */
-	protected IoSessionConfig config;
+	protected AbstractSocketSessionConfig config;
 
 	/** The service which will manage this session */
 	private final IoService service;
@@ -70,7 +70,7 @@ public abstract class AbstractIoSession implements IoSession {
 	private WriteRequest currentWriteRequest;
 
 	/** The session ID */
-	private final long sessionId;
+	private final long sessionId = idGenerator.incrementAndGet(); // Set a new ID for this session
 
 	/** A future that will be set 'closed' when the connection is closed */
 	private final CloseFuture closeFuture = new DefaultCloseFuture(this);
@@ -84,7 +84,6 @@ public abstract class AbstractIoSession implements IoSession {
 
 	// traffic control
 	private boolean readSuspended;
-
 	private boolean writeSuspended;
 
 	/**
@@ -95,9 +94,6 @@ public abstract class AbstractIoSession implements IoSession {
 	protected AbstractIoSession(IoService service) {
 		this.service = service;
 		handler = service.getHandler();
-
-		// Set a new ID for this session
-		sessionId = idGenerator.incrementAndGet();
 	}
 
 	/**
@@ -159,13 +155,11 @@ public abstract class AbstractIoSession implements IoSession {
 	}
 
 	/**
-	 * Set the scheduledForFLush flag. As we may have concurrent access to this
-	 * flag, we compare and set it in one call.
+	 * Set the scheduledForFLush flag.
+	 * As we may have concurrent access to this flag, we compare and set it in one call.
 	 *
-	 * @param schedule
-	 *            the new value to set if not already set.
-	 * @return true if the session flag has been set, and if it wasn't set
-	 *         already.
+	 * @param schedule the new value to set if not already set.
+	 * @return true if the session flag has been set, and if it wasn't set already.
 	 */
 	public final boolean setScheduledForFlush(boolean schedule) {
 		if (schedule) {
@@ -238,7 +232,7 @@ public abstract class AbstractIoSession implements IoSession {
 	}
 
 	@Override
-	public IoSessionConfig getConfig() {
+	public AbstractSocketSessionConfig getConfig() {
 		return config;
 	}
 
@@ -447,7 +441,7 @@ public abstract class AbstractIoSession implements IoSession {
 	 * Increase the ReadBuffer size (it will double)
 	 */
 	public final void increaseReadBufferSize() {
-		IoSessionConfig cfg = getConfig();
+		AbstractSocketSessionConfig cfg = getConfig();
 		int readBufferSize = cfg.getReadBufferSize() << 1;
 		if (readBufferSize <= cfg.getMaxReadBufferSize()) {
 			cfg.setReadBufferSize(readBufferSize);
@@ -465,7 +459,7 @@ public abstract class AbstractIoSession implements IoSession {
 			return;
 		}
 
-		IoSessionConfig cfg = getConfig();
+		AbstractSocketSessionConfig cfg = getConfig();
 		int readBufferSize = cfg.getReadBufferSize() >> 1;
 		if (readBufferSize >= cfg.getMinReadBufferSize()) {
 			cfg.setReadBufferSize(readBufferSize);

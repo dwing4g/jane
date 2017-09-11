@@ -218,7 +218,6 @@ public final class DBManager
 				{
 					Thread t = new ProcThread("ProcThread-" + counter.incrementAndGet(), r);
 					t.setDaemon(true);
-					t.setPriority(Thread.NORM_PRIORITY);
 					return t;
 				});
 	}

@@ -15,7 +15,6 @@
  *  KIND, either express or implied.  See the License for the
  *  specific language governing permissions and limitations
  *  under the License.
- *
  */
 package org.apache.mina.filter.ssl;
 
@@ -78,15 +77,12 @@ import org.slf4j.LoggerFactory;
  * </pre>
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
- * @org.apache.xbean.XBean
  */
 public final class SslFilter extends IoFilterAdapter {
-	/** The logger */
 	private static final Logger LOGGER = LoggerFactory.getLogger(SslFilter.class);
 
 	/**
-	 * A session attribute key that stores underlying {@link SSLSession}
-	 * for each session.
+	 * A session attribute key that stores underlying {@link SSLSession} for each session.
 	 */
 	public static final String SSL_SESSION = "SslFilter.session";
 
@@ -97,8 +93,7 @@ public final class SslFilter extends IoFilterAdapter {
 	 * is preferred.)  The attribute is automatically removed from the session
 	 * attribute map as soon as {@link IoSession#write(Object)} is invoked,
 	 * and therefore should be put again if you want to make more messages
-	 * bypass this filter.  This is especially useful when you implement
-	 * StartTLS.
+	 * bypass this filter.  This is especially useful when you implement StartTLS.
 	 */
 	public static final String DISABLE_ENCRYPTION_ONCE = "SslFilter.disableOnce";
 
@@ -114,14 +109,11 @@ public final class SslFilter extends IoFilterAdapter {
 
 	/**
 	 * A session attribute key that should be set to an {@link InetSocketAddress}.
-	 * Setting this attribute causes
-	 * {@link SSLContext#createSSLEngine(String, int)} to be called passing the
-	 * hostname and port of the {@link InetSocketAddress} to get an
-	 * {@link SSLEngine} instance. If not set {@link SSLContext#createSSLEngine()}
-	 * will be called.
+	 * Setting this attribute causes {@link SSLContext#createSSLEngine(String, int)} to be called passing
+	 * the hostname and port of the {@link InetSocketAddress} to get an {@link SSLEngine} instance.
+	 * If not set {@link SSLContext#createSSLEngine()} will be called.
 	 * <br>
-	 * Using this feature {@link SSLSession} objects may be cached and reused
-	 * when in client mode.
+	 * Using this feature {@link SSLSession} objects may be cached and reused when in client mode.
 	 *
 	 * @see SSLContext#createSSLEngine(String, int)
 	 */
@@ -129,15 +121,13 @@ public final class SslFilter extends IoFilterAdapter {
 
 	/**
 	 * A special message object which is emitted with a {@link IoHandler#messageReceived(IoSession, Object)}
-	 * event when the session is secured and its {@link #USE_NOTIFICATION}
-	 * attribute is set.
+	 * event when the session is secured and its {@link #USE_NOTIFICATION} attribute is set.
 	 */
 	public static final SslFilterMessage SESSION_SECURED = new SslFilterMessage("SESSION_SECURED");
 
 	/**
 	 * A special message object which is emitted with a {@link IoHandler#messageReceived(IoSession, Object)}
-	 * event when the session is not secure anymore and its {@link #USE_NOTIFICATION}
-	 * attribute is set.
+	 * event when the session is not secure anymore and its {@link #USE_NOTIFICATION} attribute is set.
 	 */
 	public static final SslFilterMessage SESSION_UNSECURED = new SslFilterMessage("SESSION_UNSECURED");
 
@@ -156,13 +146,10 @@ public final class SslFilter extends IoFilterAdapter {
 	private final boolean autoStart;
 
 	private boolean client;
-
 	private boolean needClientAuth;
-
 	private boolean wantClientAuth;
 
 	private String[] enabledCipherSuites;
-
 	private String[] enabledProtocols;
 
 	/**
@@ -177,8 +164,7 @@ public final class SslFilter extends IoFilterAdapter {
 
 	/**
 	 * Creates a new SSL filter using the specified {@link SSLContext}.
-	 * If the <tt>autostart</tt> flag is set to <tt>true</tt>, the
-	 * handshake will start immediately.
+	 * If the <tt>autostart</tt> flag is set to <tt>true</tt>, the handshake will start immediately.
 	 *
 	 * @param sslContext The SSLContext to use
 	 * @param autoStart The flag used to tell the filter to start the handshake immediately
@@ -238,9 +224,9 @@ public final class SslFilter extends IoFilterAdapter {
 	}
 
 	/**
-	 * An extended toString() method for sessions. If the SSL handshake
-	 * is not yet completed, we will print (ssl) in small caps. Once it's
-	 * completed, we will use SSL capitalized.
+	 * An extended toString() method for sessions.
+	 * If the SSL handshake is not yet completed, we will print (ssl) in small caps.
+	 * Once it's completed, we will use SSL capitalized.
 	 */
 	static String getSessionInfo(IoSession session) {
 		StringBuilder sb = new StringBuilder();
@@ -289,8 +275,7 @@ public final class SslFilter extends IoFilterAdapter {
 	}
 
 	/**
-	 * Stops the SSL session by sending TLS <tt>close_notify</tt> message to
-	 * initiate TLS closure.
+	 * Stops the SSL session by sending TLS <tt>close_notify</tt> message to initiate TLS closure.
 	 *
 	 * @param session the {@link IoSession} to initiate TLS closure
 	 * @return The Future for the initiated closure
@@ -316,8 +301,7 @@ public final class SslFilter extends IoFilterAdapter {
 	}
 
 	/**
-	 * @return <tt>true</tt> if the engine is set to use client mode
-	 * when handshaking.
+	 * @return <tt>true</tt> if the engine is set to use client mode when handshaking.
 	 */
 	public boolean isUseClientMode() {
 		return client;
@@ -377,8 +361,7 @@ public final class SslFilter extends IoFilterAdapter {
 	}
 
 	/**
-	 * Sets the list of cipher suites to be enabled when {@link SSLEngine}
-	 * is initialized.
+	 * Sets the list of cipher suites to be enabled when {@link SSLEngine} is initialized.
 	 *
 	 * @param cipherSuites <tt>null</tt> means 'use {@link SSLEngine}'s default.'
 	 */
@@ -395,8 +378,7 @@ public final class SslFilter extends IoFilterAdapter {
 	}
 
 	/**
-	 * Sets the list of protocols to be enabled when {@link SSLEngine}
-	 * is initialized.
+	 * Sets the list of protocols to be enabled when {@link SSLEngine} is initialized.
 	 *
 	 * @param protocols <tt>null</tt> means 'use {@link SSLEngine}'s default.'
 	 */
@@ -458,6 +440,7 @@ public final class SslFilter extends IoFilterAdapter {
 	}
 
 	// IoFilter impl.
+
 	@Override
 	public void sessionClosed(NextFilter nextFilter, IoSession session) throws SSLException {
 		SslHandler sslHandler = getSslSessionHandler(session);
@@ -791,8 +774,7 @@ public final class SslFilter extends IoFilterAdapter {
 	}
 
 	/**
-	 * A message that is sent from {@link SslFilter} when the connection became
-	 * secure or is not secure anymore.
+	 * A message that is sent from {@link SslFilter} when the connection became secure or is not secure anymore.
 	 *
 	 * @author <a href="http://mina.apache.org">Apache MINA Project</a>
 	 */

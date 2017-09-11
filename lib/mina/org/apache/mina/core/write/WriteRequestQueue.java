@@ -15,7 +15,6 @@
  *  KIND, either express or implied.  See the License for the
  *  specific language governing permissions and limitations
  *  under the License.
- *
  */
 package org.apache.mina.core.write;
 
@@ -27,7 +26,6 @@ import org.apache.mina.core.session.IoSession;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface WriteRequestQueue {
-
 	/**
 	 * Get the first request available in the queue for a session.
 	 *

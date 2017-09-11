@@ -15,7 +15,6 @@
  *  KIND, either express or implied.  See the License for the
  *  specific language governing permissions and limitations
  *  under the License.
- *
  */
 package org.apache.mina.transport.socket;
 
@@ -23,7 +22,7 @@ import org.apache.mina.core.service.IoService;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 
 /**
- * A default implementation of {@link SocketSessionConfig}.
+ * A default implementation of {@link AbstractSocketSessionConfig}.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */

@@ -15,7 +15,6 @@
  *  KIND, either express or implied.  See the License for the
  *  specific language governing permissions and limitations
  *  under the License.
- *
  */
 package org.apache.mina.core.future;
 
@@ -33,7 +32,6 @@ import org.apache.mina.util.ExceptionMonitor;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public class DefaultIoFuture implements IoFuture {
-
 	/** A number of milliseconds to wait between two deadlock controls ( 5 seconds ) */
 	private static final long DEAD_LOCK_CHECK_INTERVAL = 5000L;
 
@@ -132,10 +130,9 @@ public class DefaultIoFuture implements IoFuture {
 	}
 
 	/**
-	 * Wait for the Future to be ready. If the requested delay is 0 or
-	 * negative, this method immediately returns the value of the 'ready' flag.
-	 * Every 5 second, the wait will be suspended to be able to check if
-	 * there is a deadlock or not.
+	 * Wait for the Future to be ready. If the requested delay is 0 or negative,
+	 * this method immediately returns the value of the 'ready' flag.
+	 * Every 5 second, the wait will be suspended to be able to check if there is a deadlock or not.
 	 *
 	 * @param timeoutMillis The delay we will wait for the Future to be ready
 	 * @param interruptable Tells if the wait can be interrupted or not
@@ -196,8 +193,7 @@ public class DefaultIoFuture implements IoFuture {
 	}
 
 	/**
-	 * Check for a deadlock, ie look into the stack trace that we don't have already an
-	 * instance of the caller.
+	 * Check for a deadlock, ie look into the stack trace that we don't have already an instance of the caller.
 	 */
 	private void checkDeadLock() {
 		// Only read / write / connect / write future can cause dead lock.

@@ -15,7 +15,6 @@
  *  KIND, either express or implied.  See the License for the
  *  specific language governing permissions and limitations
  *  under the License.
- *
  */
 package org.apache.mina.core.service;
 
@@ -25,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.mina.core.filterchain.DefaultIoFilterChain;
@@ -38,8 +37,8 @@ import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.session.AbstractIoSession;
 import org.apache.mina.core.session.DefaultIoSessionDataStructureFactory;
 import org.apache.mina.core.session.IoSession;
-import org.apache.mina.core.session.IoSessionConfig;
 import org.apache.mina.core.session.IoSessionDataStructureFactory;
+import org.apache.mina.transport.socket.AbstractSocketSessionConfig;
 import org.apache.mina.transport.socket.DefaultSocketSessionConfig;
 import org.apache.mina.util.ExceptionMonitor;
 import org.apache.mina.util.IoUtil;
@@ -59,18 +58,12 @@ public abstract class AbstractIoService implements IoService {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractIoService.class);
 
 	/**
-	 * The unique number identifying the Service. It's incremented
-	 * for each new IoService created.
-	 */
-	private static final AtomicInteger id = new AtomicInteger();
-
-	/**
 	 * The associated executor, responsible for handling execution of I/O events.
 	 */
 	private final ExecutorService executor;
 
 	/**
-	 * The default {@link IoSessionConfig} which will be used to configure new sessions.
+	 * The default {@link AbstractSocketSessionConfig} which will be used to configure new sessions.
 	 */
 	protected final DefaultSocketSessionConfig sessionConfig = new DefaultSocketSessionConfig();
 
@@ -89,25 +82,29 @@ public abstract class AbstractIoService implements IoService {
 	private IoSessionDataStructureFactory sessionDataStructureFactory = new DefaultIoSessionDataStructureFactory();
 
 	/**
-	 * The IoHandler in charge of managing all the I/O Events. It is
+	 * The IoHandler in charge of managing all the I/O Events.
 	 */
 	private IoHandler handler;
 
-	/**
-	 * A lock object which must be acquired when related resources are
-	 * destroyed.
-	 */
-	protected final Object disposalLock = new Object();
-
 	private volatile boolean disposing;
-
 	private volatile boolean disposed;
 
-	protected AbstractIoService() {
-		// Make JVM load the exception monitor before some transports change the thread context class loader.
-		ExceptionMonitor.getInstance();
+	protected static final class IoThreadFactory implements ThreadFactory {
+		private static final AtomicInteger idGenerator = new AtomicInteger();
+		private final String name;
 
-		executor = Executors.newSingleThreadExecutor(r -> new Thread(r, getClass().getSimpleName() + '-' + id.incrementAndGet()));
+		public IoThreadFactory(Class<?> cls) {
+			name = cls.getSimpleName() + '-' + idGenerator.incrementAndGet();
+		}
+
+		@Override
+		public Thread newThread(Runnable r) {
+			return new Thread(r, name);
+		}
+	}
+
+	protected AbstractIoService(ExecutorService executor) {
+		this.executor = executor;
 	}
 
 	@Override
@@ -132,16 +129,6 @@ public abstract class AbstractIoService implements IoService {
 		}
 
 		throw new IllegalStateException("Current filter chain builder is not a DefaultIoFilterChainBuilder.");
-	}
-
-	@Override
-	public final void addListener(IoServiceListener listener) {
-		listeners.add(listener);
-	}
-
-	@Override
-	public final void removeListener(IoServiceListener listener) {
-		listeners.remove(listener);
 	}
 
 	@Override
@@ -170,7 +157,7 @@ public abstract class AbstractIoService implements IoService {
 			return;
 		}
 
-		synchronized (disposalLock) {
+		synchronized (sessionConfig) {
 			if (!disposing) {
 				disposing = true;
 
@@ -198,8 +185,8 @@ public abstract class AbstractIoService implements IoService {
 	}
 
 	/**
-	 * Implement this method to release any acquired resources.  This method
-	 * is invoked only once by {@link #dispose()}.
+	 * Implement this method to release any acquired resources.
+	 * This method is invoked only once by {@link #dispose()}.
 	 */
 	protected abstract void dispose0() throws Exception;
 
@@ -250,15 +237,9 @@ public abstract class AbstractIoService implements IoService {
 	}
 
 	@Override
-	public final long getActivationTime() {
-		return listeners.getActivationTime();
-	}
-
-	@Override
 	public final Set<WriteFuture> broadcast(Object message) {
 		// Convert to Set.  We do not return a List here because only the
-		// direct caller of MessageBroadcaster knows the order of write
-		// operations.
+		// direct caller of MessageBroadcaster knows the order of write operations.
 		final List<WriteFuture> futures = IoUtil.broadcast(message, getManagedSessions().values().iterator());
 		return new AbstractSet<WriteFuture>() {
 			@Override
@@ -290,15 +271,15 @@ public abstract class AbstractIoService implements IoService {
 		// the attributeMap at last is to make sure all session properties
 		// such as remoteAddress are provided to IoSessionDataStructureFactory.
 		try {
-			((AbstractIoSession) session).setAttributeMap(session.getService().getSessionDataStructureFactory()
-					.getAttributeMap(session));
+			((AbstractIoSession) session).setAttributeMap(session.getService()
+					.getSessionDataStructureFactory().getAttributeMap(session));
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to initialize an attributeMap.", e);
 		}
 
 		try {
-			((AbstractIoSession) session).setWriteRequestQueue(session.getService().getSessionDataStructureFactory()
-					.getWriteRequestQueue(session));
+			((AbstractIoSession) session).setWriteRequestQueue(session.getService()
+					.getSessionDataStructureFactory().getWriteRequestQueue(session));
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to initialize a writeRequestQueue.", e);
 		}
@@ -313,8 +294,7 @@ public abstract class AbstractIoService implements IoService {
 
 	/**
 	 * Implement this method to perform additional tasks required for session initialization.
-	 * Do not call this method directly;
-	 * {@link #initSession(IoSession, IoFuture)} will call this method instead.
+	 * Do not call this method directly; {@link #initSession(IoSession, IoFuture)} will call this method instead.
 	 *
 	 * @param session The session to initialize
 	 * @param future The Future to use

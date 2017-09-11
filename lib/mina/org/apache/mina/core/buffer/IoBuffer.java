@@ -15,7 +15,6 @@
  *  KIND, either express or implied.  See the License for the
  *  specific language governing permissions and limitations
  *  under the License.
- *
  */
 package org.apache.mina.core.buffer;
 
@@ -28,7 +27,10 @@ import java.nio.ByteOrder;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
+import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.session.IoSession;
+import org.apache.mina.core.write.DefaultWriteRequest;
+import org.apache.mina.core.write.WriteRequest;
 
 /**
  * A byte buffer used by MINA applications.
@@ -134,7 +136,7 @@ import org.apache.mina.core.session.IoSession;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public abstract class IoBuffer implements Comparable<IoBuffer> {
+public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	/** The allocator used to create new buffers */
 	private static IoBufferAllocator allocator = new SimpleBufferAllocator();
 
@@ -147,6 +149,21 @@ public abstract class IoBuffer implements Comparable<IoBuffer> {
 	 */
 	protected IoBuffer() {
 		// Do nothing
+	}
+
+	@Override
+	public final Object getMessage() {
+		return this;
+	}
+
+	@Override
+	public final WriteRequest getOriginalRequest() {
+		return this;
+	}
+
+	@Override
+	public final WriteFuture getFuture() {
+		return DefaultWriteRequest.UNUSED_FUTURE;
 	}
 
 	/**

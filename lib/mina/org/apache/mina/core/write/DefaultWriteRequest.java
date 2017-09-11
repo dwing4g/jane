@@ -15,7 +15,6 @@
  *  KIND, either express or implied.  See the License for the
  *  specific language governing permissions and limitations
  *  under the License.
- *
  */
 package org.apache.mina.core.write;
 
@@ -31,7 +30,7 @@ import org.apache.mina.core.session.IoSession;
  */
 public final class DefaultWriteRequest implements WriteRequest {
 	/** An empty FUTURE */
-	private static final WriteFuture UNUSED_FUTURE = new WriteFuture() {
+	public static final WriteFuture UNUSED_FUTURE = new WriteFuture() {
 		@Override
 		public boolean isWritten() {
 			return false;
@@ -108,17 +107,6 @@ public final class DefaultWriteRequest implements WriteRequest {
 	private final WriteFuture future;
 
 	/**
-	 * Creates a new instance without {@link WriteFuture}.  You'll get
-	 * an instance of {@link WriteFuture} even if you called this constructor
-	 * because {@link #getFuture()} will return a bogus future.
-	 *
-	 * @param message The message that will be written
-	 */
-	public DefaultWriteRequest(Object message) {
-		this(message, null);
-	}
-
-	/**
 	 * Creates a new instance.
 	 *
 	 * @param message a message to write
@@ -134,8 +122,8 @@ public final class DefaultWriteRequest implements WriteRequest {
 	}
 
 	@Override
-	public final WriteFuture getFuture() {
-		return future;
+	public final WriteRequest getOriginalRequest() {
+		return this;
 	}
 
 	@Override
@@ -144,24 +132,12 @@ public final class DefaultWriteRequest implements WriteRequest {
 	}
 
 	@Override
-	public final WriteRequest getOriginalRequest() {
-		return this;
+	public final WriteFuture getFuture() {
+		return future;
 	}
 
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder();
-
-		sb.append("WriteRequest: ");
-
-		// Special case for the CLOSE_REQUEST writeRequest: it just
-		// carries a native Object instance
-		if (message.getClass().getName().equals(Object.class.getName())) {
-			sb.append("CLOSE_REQUEST");
-		} else {
-			sb.append(message);
-		}
-
-		return sb.toString();
+		return "WriteRequest: " + message;
 	}
 }

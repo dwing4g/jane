@@ -15,7 +15,6 @@
  *  KIND, either express or implied.  See the License for the
  *  specific language governing permissions and limitations
  *  under the License.
- *
  */
 package org.apache.mina.core.session;
 
@@ -32,6 +31,7 @@ import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoService;
 import org.apache.mina.core.write.WriteRequest;
 import org.apache.mina.core.write.WriteRequestQueue;
+import org.apache.mina.transport.socket.AbstractSocketSessionConfig;
 
 /**
  * <p>
@@ -66,8 +66,8 @@ import org.apache.mina.core.write.WriteRequestQueue;
  */
 public interface IoSession {
 	/**
-	 * @return a unique identifier for this session.  Every session has its own
-	 * ID which is different from each other.
+	 * @return a unique identifier for this session.
+	 *         Every session has its own ID which is different from each other.
 	 */
 	long getId();
 
@@ -84,7 +84,7 @@ public interface IoSession {
 	/**
 	 * @return the configuration of this session.
 	 */
-	IoSessionConfig getConfig();
+	AbstractSocketSessionConfig getConfig();
 
 	/**
 	 * @return the filter chain that only affects this session.
@@ -93,20 +93,17 @@ public interface IoSession {
 
 	/**
 	 * Get the queue that contains the message waiting for being written.
-	 * As the reader might not be ready, it's frequent that the messages
-	 * aren't written completely, or that some older messages are waiting
-	 * to be written when a new message arrives. This queue is used to manage
-	 * the backlog of messages.
+	 * As the reader might not be ready, it's frequent that the messages aren't written completely,
+	 * or that some older messages are waiting to be written when a new message arrives.
+	 * This queue is used to manage the backlog of messages.
 	 *
 	 * @return The queue containing the pending messages.
 	 */
 	WriteRequestQueue getWriteRequestQueue();
 
 	/**
-	 * Writes the specified <code>message</code> to remote peer.  This
-	 * operation is asynchronous.
-	 * You can wait for the returned {@link WriteFuture} if you want
-	 * to wait for the message actually written.
+	 * Writes the specified <code>message</code> to remote peer. This operation is asynchronous.
+	 * You can wait for the returned {@link WriteFuture} if you want to wait for the message actually written.
 	 *
 	 * @param message The message to write
 	 * @return The associated WriteFuture
@@ -114,17 +111,15 @@ public interface IoSession {
 	WriteFuture write(Object message);
 
 	/**
-	 * Closes this session immediately.  This operation is asynchronous, it
-	 * returns a {@link CloseFuture}.
+	 * Closes this session immediately.  This operation is asynchronous, it returns a {@link CloseFuture}.
 	 *
 	 * @return The {@link CloseFuture} that can be use to wait for the completion of this operation
 	 */
 	CloseFuture closeNow();
 
 	/**
-	 * Closes this session after all queued write requests are flushed.  This operation
-	 * is asynchronous.  Wait for the returned {@link CloseFuture} if you want to wait
-	 * for the session actually closed.
+	 * Closes this session after all queued write requests are flushed. This operation is asynchronous.
+	 * Wait for the returned {@link CloseFuture} if you want to wait for the session actually closed.
 	 *
 	 * @return The associated CloseFuture
 	 */
@@ -154,11 +149,10 @@ public interface IoSession {
 	Object getAttribute(Object key);
 
 	/**
-	 * Returns the value of user defined attribute associated with the
-	 * specified key.  If there's no such attribute, the specified default
-	 * value is associated with the specified key, and the default value is
-	 * returned.  This method is same with the following code except that the
-	 * operation is performed atomically.
+	 * Returns the value of user defined attribute associated with the specified key.
+	 * If there's no such attribute, the specified default value is associated with the specified key,
+	 * and the default value is returned.
+	 * This method is same with the following code except that the operation is performed atomically.
 	 * <pre>
 	 * if (containsAttribute(key)) {
 	 *     return getAttribute(key);
@@ -194,9 +188,8 @@ public interface IoSession {
 	Object setAttribute(Object key);
 
 	/**
-	 * Sets a user defined attribute if the attribute with the specified key
-	 * is not set yet.  This method is same with the following code except
-	 * that the operation is performed atomically.
+	 * Sets a user defined attribute if the attribute with the specified key is not set yet.
+	 * This method is same with the following code except that the operation is performed atomically.
 	 * <pre>
 	 * if (containsAttribute(key)) {
 	 *     return getAttribute(key);
@@ -212,11 +205,10 @@ public interface IoSession {
 	Object setAttributeIfAbsent(Object key, Object value);
 
 	/**
-	 * Sets a user defined attribute without a value if the attribute with
-	 * the specified key is not set yet.  This is useful when you just want to
-	 * put a 'mark' attribute.  Its value is set to {@link Boolean#TRUE}.
-	 * This method is same with the following code except that the operation
-	 * is performed atomically.
+	 * Sets a user defined attribute without a value if the attribute with the specified key is not set yet.
+	 * This is useful when you just want to put a 'mark' attribute.
+	 * Its value is set to {@link Boolean#TRUE}.
+	 * This method is same with the following code except that the operation is performed atomically.
 	 * <pre>
 	 * if (containsAttribute(key)) {
 	 *     return getAttribute(key);  // might not always be Boolean.TRUE.
@@ -241,8 +233,7 @@ public interface IoSession {
 	/**
 	 * Removes a user defined attribute with the specified key if the current
 	 * attribute value is equal to the specified value.  This method is same
-	 * with the following code except that the operation is performed
-	 * atomically.
+	 * with the following code except that the operation is performed atomically.
 	 * <pre>
 	 * if (containsAttribute(key) &amp;&amp; getAttribute(key).equals(value)) {
 	 *     removeAttribute(key);
@@ -261,8 +252,7 @@ public interface IoSession {
 	/**
 	 * Replaces a user defined attribute with the specified key if the
 	 * value of the attribute is equals to the specified old value.
-	 * This method is same with the following code except that the operation
-	 * is performed atomically.
+	 * This method is same with the following code except that the operation is performed atomically.
 	 * <pre>
 	 * if (containsAttribute(key) &amp;&amp; getAttribute(key).equals(oldValue)) {
 	 *     setAttribute(key, newValue);
@@ -281,8 +271,7 @@ public interface IoSession {
 
 	/**
 	 * @param key The key of the attribute we are looking for in the session
-	 * @return <tt>true</tt> if this session contains the attribute with
-	 * the specified <tt>key</tt>.
+	 * @return <tt>true</tt> if this session contains the attribute with the specified <tt>key</tt>.
 	 */
 	boolean containsAttribute(Object key);
 
@@ -308,8 +297,8 @@ public interface IoSession {
 	boolean isClosing();
 
 	/**
-	 * @return the {@link CloseFuture} of this session.  This method returns
-	 * the same instance whenever user calls it.
+	 * @return the {@link CloseFuture} of this session.
+	 * This method returns the same instance whenever user calls it.
 	 */
 	CloseFuture getCloseFuture();
 
@@ -319,24 +308,21 @@ public interface IoSession {
 	InetSocketAddress getRemoteAddress();
 
 	/**
-	 * @return the socket address of local machine which is associated with this
-	 * session.
+	 * @return the socket address of local machine which is associated with this session.
 	 */
 	InetSocketAddress getLocalAddress();
 
 	/**
-	 * @return the socket address of the {@link IoService} listens to to manage
-	 * this session.  If this session is managed by {@link IoAcceptor}, it
-	 * returns the {@link InetSocketAddress} which is specified as a parameter of
-	 * {@link IoAcceptor#bind(SocketAddress)}.  If this session is managed by
-	 * {@link IoConnector}, this method returns the same address with
-	 * that of {@link #getRemoteAddress()}.
+	 * @return the socket address of the {@link IoService} listens to to manage this session.
+	 * If this session is managed by {@link IoAcceptor}, it returns the {@link InetSocketAddress}
+	 * which is specified as a parameter of {@link IoAcceptor#bind(SocketAddress)}.
+	 * If this session is managed by {@link IoConnector},
+	 * this method returns the same address with that of {@link #getRemoteAddress()}.
 	 */
 	InetSocketAddress getServiceAddress();
 
 	/**
-	 * Returns the {@link WriteRequest} which is being processed by
-	 * {@link IoService}.
+	 * Returns the {@link WriteRequest} which is being processed by {@link IoService}.
 	 *
 	 * @return <tt>null</tt> if and if only no message is being written
 	 */

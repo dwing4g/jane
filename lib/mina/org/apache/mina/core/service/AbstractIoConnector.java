@@ -15,16 +15,19 @@
  *  KIND, either express or implied.  See the License for the
  *  specific language governing permissions and limitations
  *  under the License.
- *
  */
 package org.apache.mina.core.service;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.future.IoFuture;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.session.IoSession;
+import org.apache.mina.transport.socket.nio.NioSocketConnector;
 
 /**
  * A base implementation of {@link IoConnector}.
@@ -39,10 +42,12 @@ public abstract class AbstractIoConnector extends AbstractIoService implements I
 
 	private long connectTimeoutInMillis = 60 * 1000L; // 1 minute by default
 
+	public AbstractIoConnector() {
+		super(new ThreadPoolExecutor(0, 1, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), new IoThreadFactory(NioSocketConnector.class)));
+	}
+
 	/**
-	* @return
-	 *  The minimum time that this connector can have for a connection
-	 *  timeout in milliseconds.
+	* @return The minimum time that this connector can have for a connection timeout in milliseconds.
 	 */
 	public long getConnectTimeoutCheckInterval() {
 		return connectTimeoutCheckInterval;
@@ -68,7 +73,6 @@ public abstract class AbstractIoConnector extends AbstractIoService implements I
 
 	/**
 	 * Sets the connect timeout value in milliseconds.
-	 *
 	 */
 	@Override
 	public final void setConnectTimeoutMillis(long connectTimeoutInMillis) {
@@ -114,7 +118,6 @@ public abstract class AbstractIoConnector extends AbstractIoService implements I
 	 * @param remoteAddress The remote address to connect from
 	 * @param localAddress <tt>null</tt> if no local address is specified
 	 * @return The ConnectFuture associated with this asynchronous operation
-	 *
 	 */
 	protected abstract ConnectFuture connect0(SocketAddress remoteAddress, SocketAddress localAddress);
 

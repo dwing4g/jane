@@ -22,6 +22,7 @@ import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.DefaultWriteRequest;
+import org.apache.mina.core.write.WriteRequest;
 import org.apache.mina.transport.socket.DefaultSocketSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
@@ -79,7 +80,6 @@ public class NetManager implements IoHandler
 		{
 			Thread t = new Thread(r, "ScheduledThread");
 			t.setDaemon(true);
-			t.setPriority(Thread.NORM_PRIORITY);
 			return t;
 		});
 		if(Const.askCheckInterval > 0)
@@ -452,17 +452,62 @@ public class NetManager implements IoHandler
 		return _scheduledThread.scheduleAtFixedRate(runnable, delaySec, periodSec, TimeUnit.SECONDS);
 	}
 
+	public static final class SimpleWriteRequest implements WriteRequest
+	{
+		private final Object message;
+
+		public SimpleWriteRequest(Object msg)
+		{
+			message = msg;
+		}
+
+		@Override
+		public WriteRequest getOriginalRequest()
+		{
+			return this;
+		}
+
+		@Override
+		public Object getMessage()
+		{
+			return message;
+		}
+
+		@Override
+		public WriteFuture getFuture()
+		{
+			return DefaultWriteRequest.UNUSED_FUTURE;
+		}
+
+		@Override
+		public String toString()
+		{
+			return "WriteRequest: " + message;
+		}
+	}
+
 	/**
 	 * 发送对象的底层入口
 	 */
+	public static boolean write(IoSession session, WriteRequest wr)
+	{
+		if(session.isClosing() || wr == null) return false;
+		IoFilterChain ifc = session.getFilterChain();
+		synchronized(session)
+		{
+			ifc.fireFilterWrite(wr);
+		}
+		return true;
+	}
+
 	public static boolean write(IoSession session, Object obj)
 	{
 		if(session.isClosing() || obj == null) return false;
 		IoFilterChain ifc = session.getFilterChain();
-		DefaultWriteRequest dwr = new DefaultWriteRequest(obj);
+		WriteRequest wr = (obj instanceof WriteRequest ? (WriteRequest)obj : new SimpleWriteRequest(obj));
 		synchronized(session)
 		{
-			ifc.fireFilterWrite(dwr);
+			ifc.fireFilterWrite(wr);
 		}
 		return true;
 	}

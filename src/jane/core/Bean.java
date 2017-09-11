@@ -1,6 +1,9 @@
 package jane.core;
 
 import java.io.Serializable;
+import org.apache.mina.core.future.WriteFuture;
+import org.apache.mina.core.write.DefaultWriteRequest;
+import org.apache.mina.core.write.WriteRequest;
 import jane.core.SContext.Safe;
 
 /**
@@ -9,7 +12,7 @@ import jane.core.SContext.Safe;
  * 模版类型B表示bean的实际类型<br>
  * 一个Bean及其子类的实例不能同时由多个线程同时访问
  */
-public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneable, Serializable
+public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneable, Serializable, WriteRequest
 {
 	private static final long serialVersionUID = 1L;
 	private transient int	  _serial;				// 用作协议时的序列号;也用于存储时的状态(0:未存储,1:已存储但未修改,2:已存储且已修改)
@@ -245,5 +248,23 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	public Safe<B> safe()
 	{
 		return safe(null);
+	}
+
+	@Override
+	public final Object getMessage()
+	{
+		return this;
+	}
+
+	@Override
+	public final WriteRequest getOriginalRequest()
+	{
+		return this;
+	}
+
+	@Override
+	public final WriteFuture getFuture()
+	{
+		return DefaultWriteRequest.UNUSED_FUTURE;
 	}
 }

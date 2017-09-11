@@ -15,7 +15,6 @@
  *  KIND, either express or implied.  See the License for the
  *  specific language governing permissions and limitations
  *  under the License.
- *
  */
 package org.apache.mina.core.session;
 
@@ -30,8 +29,7 @@ import org.apache.mina.core.write.WriteRequestQueue;
 /**
  * The default {@link IoSessionDataStructureFactory} implementation
  * that creates a new {@link HashMap}-based {@link IoSessionAttributeMap}
- * instance and a new synchronized {@link ConcurrentLinkedQueue} instance per
- * {@link IoSession}.
+ * instance and a new synchronized {@link ConcurrentLinkedQueue} instance per {@link IoSession}.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */

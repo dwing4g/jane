@@ -15,7 +15,6 @@
  *  KIND, either express or implied.  See the License for the
  *  specific language governing permissions and limitations
  *  under the License.
- *
  */
 package org.apache.mina.core.service;
 
@@ -37,20 +36,6 @@ import org.apache.mina.util.IoUtil;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface IoService {
-	/**
-	 * Adds an {@link IoServiceListener} that listens any events related with this service.
-	 *
-	 * @param listener The listener to add
-	 */
-	void addListener(IoServiceListener listener);
-
-	/**
-	 * Removes an existing {@link IoServiceListener} that listens any events related with this service.
-	 *
-	 * @param listener The listener to remove
-	 */
-	void removeListener(IoServiceListener listener);
-
 	/**
 	 * @return <tt>true</tt> if only {@link #dispose()} method has been called.
 	 * Please note that this method will return <tt>true</tt> even after all the related resources are released.
@@ -146,12 +131,6 @@ public interface IoService {
 	 * @return a value of whether or not this service is active
 	 */
 	boolean isActive();
-
-	/**
-	 * @return the time when this service was activated.  It returns the last
-	 * time when this service was activated if the service is not active now.
-	 */
-	long getActivationTime();
 
 	/**
 	 * Writes the specified {@code message} to all the {@link IoSession}s

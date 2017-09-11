@@ -15,7 +15,6 @@
  *  KIND, either express or implied.  See the License for the
  *  specific language governing permissions and limitations
  *  under the License.
- *
  */
 package org.apache.mina.core.polling;
 
@@ -45,7 +44,7 @@ import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.SimpleIoProcessorPool;
 import org.apache.mina.core.session.IoSession;
-import org.apache.mina.core.session.IoSessionConfig;
+import org.apache.mina.transport.socket.AbstractSocketSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.mina.util.ExceptionMonitor;
@@ -122,7 +121,7 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 	/**
 	 * Constructor for {@link AbstractPollingIoAcceptor}.
 	 *
-	 * @see #AbstractIoService(IoSessionConfig, Executor)
+	 * @see #AbstractIoService(AbstractSocketSessionConfig, Executor)
 	 *
 	 * @param processor
 	 *            the {@link IoProcessor} for processing the {@link IoSession}
@@ -390,7 +389,7 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 					processor.dispose();
 				} finally {
 					try {
-						synchronized (disposalLock) {
+						synchronized (sessionConfig) {
 							if (isDisposing()) {
 								destroy();
 							}

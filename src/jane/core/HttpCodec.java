@@ -18,6 +18,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.filterchain.IoFilterAdapter;
+import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.DefaultWriteRequest;
 import org.apache.mina.core.write.WriteRequest;
@@ -404,6 +405,17 @@ public final class HttpCodec extends IoFilterAdapter
 		_maxHttpBodySize = maxHttpBodySize;
 	}
 
+	public static void write(NextFilter next, IoSession session, IoBuffer buf)
+	{
+		next.filterWrite(session, buf);
+	}
+
+	public static void write(NextFilter next, IoSession session, WriteRequest writeRequest, IoBuffer buf)
+	{
+		WriteFuture wf = writeRequest.getFuture();
+		next.filterWrite(session, wf == DefaultWriteRequest.UNUSED_FUTURE ? buf : new DefaultWriteRequest(buf, wf));
+	}
+
 	@Override
 	public void filterWrite(NextFilter next, IoSession session, WriteRequest writeRequest)
 	{
@@ -412,21 +424,20 @@ public final class HttpCodec extends IoFilterAdapter
 		{
 			byte[] bytes = (byte[])message;
 			if(bytes.length > 0)
-				next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(bytes), writeRequest.getFuture()));
+				write(next, session, writeRequest, IoBuffer.wrap(bytes));
 		}
 		else if(message instanceof ByteBuffer) // for chunked data
 		{
-			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(String.format("%x\r\n",
-					((ByteBuffer)message).remaining()).getBytes(StandardCharsets.UTF_8))));
-			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap((ByteBuffer)message)));
-			next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(CHUNK_OVER_MARK), writeRequest.getFuture()));
+			write(next, session, IoBuffer.wrap(String.format("%x\r\n", ((ByteBuffer)message).remaining()).getBytes(StandardCharsets.UTF_8)));
+			write(next, session, IoBuffer.wrap((ByteBuffer)message));
+			write(next, session, writeRequest, IoBuffer.wrap(CHUNK_OVER_MARK));
 		}
 		else if(message instanceof Octets) // for raw data
 		{
 			OctetsStream os = (OctetsStream)message;
 			int n = os.remain();
 			if(n > 0)
-				next.filterWrite(session, new DefaultWriteRequest(IoBuffer.wrap(os.array(), os.position(), n), writeRequest.getFuture()));
+				write(next, session, writeRequest, IoBuffer.wrap(os.array(), os.position(), n));
 		}
 		else
 			next.filterWrite(session, writeRequest);

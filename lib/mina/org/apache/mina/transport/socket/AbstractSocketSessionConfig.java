@@ -15,18 +15,17 @@
  *  KIND, either express or implied.  See the License for the
  *  specific language governing permissions and limitations
  *  under the License.
- *
  */
 package org.apache.mina.transport.socket;
 
-import org.apache.mina.core.session.IoSessionConfig;
+import java.net.Socket;
 
 /**
  * The TCP transport session configuration.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public abstract class AbstractSocketSessionConfig implements SocketSessionConfig {
+public abstract class AbstractSocketSessionConfig {
 	/** The default size of the buffer used to read incoming data */
 	private int readBufferSize = 2048;
 
@@ -36,12 +35,22 @@ public abstract class AbstractSocketSessionConfig implements SocketSessionConfig
 	/** The maximum size of the buffer used to read incoming data */
 	private int maxReadBufferSize = 65536;
 
-	@Override
+	/**
+	 * @return the size of the read buffer that I/O processor allocates
+	 * per each read.  It's unusual to adjust this property because
+	 * it's often adjusted automatically by the I/O processor.
+	 */
 	public int getReadBufferSize() {
 		return readBufferSize;
 	}
 
-	@Override
+	/**
+	 * Sets the size of the read buffer that I/O processor allocates
+	 * per each read.  It's unusual to adjust this property because
+	 * it's often adjusted automatically by the I/O processor.
+	 *
+	 * @param readBufferSize The size of the read buffer
+	 */
 	public void setReadBufferSize(int readBufferSize) {
 		if (readBufferSize <= 0) {
 			throw new IllegalArgumentException("readBufferSize: " + readBufferSize + " (expected: 1+)");
@@ -49,12 +58,22 @@ public abstract class AbstractSocketSessionConfig implements SocketSessionConfig
 		this.readBufferSize = readBufferSize;
 	}
 
-	@Override
+	/**
+	 * @return the minimum size of the read buffer that I/O processor
+	 * allocates per each read.  I/O processor will not decrease the
+	 * read buffer size to the smaller value than this property value.
+	 */
 	public int getMinReadBufferSize() {
 		return minReadBufferSize;
 	}
 
-	@Override
+	/**
+	 * Sets the minimum size of the read buffer that I/O processor
+	 * allocates per each read.  I/O processor will not decrease the
+	 * read buffer size to the smaller value than this property value.
+	 *
+	 * @param minReadBufferSize The minimum size of the read buffer
+	 */
 	public void setMinReadBufferSize(int minReadBufferSize) {
 		if (minReadBufferSize <= 0) {
 			throw new IllegalArgumentException("minReadBufferSize: " + minReadBufferSize + " (expected: 1+)");
@@ -66,12 +85,22 @@ public abstract class AbstractSocketSessionConfig implements SocketSessionConfig
 		this.minReadBufferSize = minReadBufferSize;
 	}
 
-	@Override
+	/**
+	 * @return the maximum size of the read buffer that I/O processor
+	 * allocates per each read.  I/O processor will not increase the
+	 * read buffer size to the greater value than this property value.
+	 */
 	public int getMaxReadBufferSize() {
 		return maxReadBufferSize;
 	}
 
-	@Override
+	/**
+	 * Sets the maximum size of the read buffer that I/O processor
+	 * allocates per each read.  I/O processor will not increase the
+	 * read buffer size to the greater value than this property value.
+	 *
+	 * @param maxReadBufferSize The maximum size of the read buffer
+	 */
 	public void setMaxReadBufferSize(int maxReadBufferSize) {
 		if (maxReadBufferSize <= 0) {
 			throw new IllegalArgumentException("maxReadBufferSize: " + maxReadBufferSize + " (expected: 1+)");
@@ -83,8 +112,13 @@ public abstract class AbstractSocketSessionConfig implements SocketSessionConfig
 		this.maxReadBufferSize = maxReadBufferSize;
 	}
 
-	@Override
-	public void setAll(IoSessionConfig config) {
+	/**
+	 * Sets all configuration properties retrieved from the specified
+	 * <tt>config</tt>.
+	 *
+	 * @param config The configuration to use
+	 */
+	public void setAll(AbstractSocketSessionConfig config) {
 		if (config == null) {
 			throw new IllegalArgumentException("config");
 		}
@@ -93,51 +127,153 @@ public abstract class AbstractSocketSessionConfig implements SocketSessionConfig
 		setMinReadBufferSize(config.getMinReadBufferSize());
 		setMaxReadBufferSize(config.getMaxReadBufferSize());
 
-		if (!(config instanceof SocketSessionConfig)) {
-			return;
+		// Minimize unnecessary system calls by checking all 'propertyChanged' properties.
+		if (config.isKeepAliveChanged()) {
+			setKeepAlive(config.isKeepAlive());
 		}
-
-		if (config instanceof AbstractSocketSessionConfig) {
-			// Minimize unnecessary system calls by checking all 'propertyChanged' properties.
-			AbstractSocketSessionConfig cfg = (AbstractSocketSessionConfig) config;
-			if (cfg.isKeepAliveChanged()) {
-				setKeepAlive(cfg.isKeepAlive());
-			}
-			if (cfg.isOobInlineChanged()) {
-				setOobInline(cfg.isOobInline());
-			}
-			if (cfg.isReceiveBufferSizeChanged()) {
-				setReceiveBufferSize(cfg.getReceiveBufferSize());
-			}
-			if (cfg.isReuseAddressChanged()) {
-				setReuseAddress(cfg.isReuseAddress());
-			}
-			if (cfg.isSendBufferSizeChanged()) {
-				setSendBufferSize(cfg.getSendBufferSize());
-			}
-			if (cfg.isSoLingerChanged()) {
-				setSoLinger(cfg.getSoLinger());
-			}
-			if (cfg.isTcpNoDelayChanged()) {
-				setTcpNoDelay(cfg.isTcpNoDelay());
-			}
-			if (cfg.isTrafficClassChanged() && getTrafficClass() != cfg.getTrafficClass()) {
-				setTrafficClass(cfg.getTrafficClass());
-			}
-		} else {
-			SocketSessionConfig cfg = (SocketSessionConfig) config;
-			setKeepAlive(cfg.isKeepAlive());
-			setOobInline(cfg.isOobInline());
-			setReceiveBufferSize(cfg.getReceiveBufferSize());
-			setReuseAddress(cfg.isReuseAddress());
-			setSendBufferSize(cfg.getSendBufferSize());
-			setSoLinger(cfg.getSoLinger());
-			setTcpNoDelay(cfg.isTcpNoDelay());
-			if (getTrafficClass() != cfg.getTrafficClass()) {
-				setTrafficClass(cfg.getTrafficClass());
-			}
+		if (config.isOobInlineChanged()) {
+			setOobInline(config.isOobInline());
+		}
+		if (config.isReceiveBufferSizeChanged()) {
+			setReceiveBufferSize(config.getReceiveBufferSize());
+		}
+		if (config.isReuseAddressChanged()) {
+			setReuseAddress(config.isReuseAddress());
+		}
+		if (config.isSendBufferSizeChanged()) {
+			setSendBufferSize(config.getSendBufferSize());
+		}
+		if (config.isSoLingerChanged()) {
+			setSoLinger(config.getSoLinger());
+		}
+		if (config.isTcpNoDelayChanged()) {
+			setTcpNoDelay(config.isTcpNoDelay());
+		}
+		if (config.isTrafficClassChanged() && getTrafficClass() != config.getTrafficClass()) {
+			setTrafficClass(config.getTrafficClass());
 		}
 	}
+
+	/**
+	 * @see Socket#getReuseAddress()
+	 *
+	 * @return <tt>true</tt> if SO_REUSEADDR is enabled.
+	 */
+	public abstract boolean isReuseAddress();
+
+	/**
+	 * @see Socket#setReuseAddress(boolean)
+	 *
+	 * @param reuseAddress Tells if SO_REUSEADDR is enabled or disabled
+	 */
+	public abstract void setReuseAddress(boolean reuseAddress);
+
+	/**
+	 * @see Socket#getReceiveBufferSize()
+	 *
+	 * @return the size of the receive buffer
+	 */
+	public abstract int getReceiveBufferSize();
+
+	/**
+	 * @see Socket#setReceiveBufferSize(int)
+	 *
+	 * @param receiveBufferSize The size of the receive buffer
+	 */
+	public abstract void setReceiveBufferSize(int receiveBufferSize);
+
+	/**
+	 * @see Socket#getSendBufferSize()
+	 *
+	 * @return the size of the send buffer
+	 */
+	public abstract int getSendBufferSize();
+
+	/**
+	 * @see Socket#setSendBufferSize(int)
+	 *
+	 * @param sendBufferSize The size of the send buffer
+	 */
+	public abstract void setSendBufferSize(int sendBufferSize);
+
+	/**
+	 * @see Socket#getTrafficClass()
+	 *
+	 * @return the traffic class
+	 */
+	public abstract int getTrafficClass();
+
+	/**
+	 * @see Socket#setTrafficClass(int)
+	 *
+	 * @param trafficClass The traffic class to set, one of <tt>IPTOS_LOWCOST</tt> (0x02)
+	 * <tt>IPTOS_RELIABILITY</tt> (0x04), <tt>IPTOS_THROUGHPUT</tt> (0x08) or <tt>IPTOS_LOWDELAY</tt> (0x10)
+	 */
+	public abstract void setTrafficClass(int trafficClass);
+
+	/**
+	 * @see Socket#getKeepAlive()
+	 *
+	 * @return <tt>true</tt> if <tt>SO_KEEPALIVE</tt> is enabled.
+	 */
+	public abstract boolean isKeepAlive();
+
+	/**
+	 * @see Socket#setKeepAlive(boolean)
+	 *
+	 * @param keepAlive if <tt>SO_KEEPALIVE</tt> is to be enabled
+	 */
+	public abstract void setKeepAlive(boolean keepAlive);
+
+	/**
+	 * @see Socket#getOOBInline()
+	 *
+	 * @return <tt>true</tt> if <tt>SO_OOBINLINE</tt> is enabled.
+	 */
+	public abstract boolean isOobInline();
+
+	/**
+	 * @see Socket#setOOBInline(boolean)
+	 *
+	 * @param oobInline if <tt>SO_OOBINLINE</tt> is to be enabled
+	 */
+	public abstract void setOobInline(boolean oobInline);
+
+	/**
+	 * Please note that enabling <tt>SO_LINGER</tt> in Java NIO can result
+	 * in platform-dependent behavior and unexpected blocking of I/O thread.
+	 *
+	 * @see Socket#getSoLinger()
+	 * @see <a href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6179351">Sun Bug Database</a>
+	 *
+	 * @return The value for <tt>SO_LINGER</tt>
+	 */
+	public abstract int getSoLinger();
+
+	/**
+	 * Please note that enabling <tt>SO_LINGER</tt> in Java NIO can result
+	 * in platform-dependent behavior and unexpected blocking of I/O thread.
+	 *
+	 * @param soLinger Please specify a negative value to disable <tt>SO_LINGER</tt>.
+	 *
+	 * @see Socket#setSoLinger(boolean, int)
+	 * @see <a href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6179351">Sun Bug Database</a>
+	 */
+	public abstract void setSoLinger(int soLinger);
+
+	/**
+	 * @see Socket#getTcpNoDelay()
+	 *
+	 * @return <tt>true</tt> if <tt>TCP_NODELAY</tt> is enabled.
+	 */
+	public abstract boolean isTcpNoDelay();
+
+	/**
+	 * @see Socket#setTcpNoDelay(boolean)
+	 *
+	 * @param tcpNoDelay <tt>true</tt> if <tt>TCP_NODELAY</tt> is to be enabled
+	 */
+	public abstract void setTcpNoDelay(boolean tcpNoDelay);
 
 	/**
 	 * @return <tt>true</tt> if and only if the <tt>receiveBufferSize</tt> property

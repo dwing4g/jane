@@ -15,7 +15,6 @@
  *  KIND, either express or implied.  See the License for the
  *  specific language governing permissions and limitations
  *  under the License.
- *
  */
 package org.apache.mina.transport.socket.nio;
 
@@ -36,8 +35,8 @@ import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.SimpleIoProcessorPool;
 
 /**
- * {@link IoAcceptor} for socket transport (TCP/IP).  This class
- * handles incoming TCP/IP based socket connections.
+ * {@link IoAcceptor} for socket transport (TCP/IP).
+ * This class handles incoming TCP/IP based socket connections.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */

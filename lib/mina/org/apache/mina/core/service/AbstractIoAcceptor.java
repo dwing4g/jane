@@ -15,7 +15,6 @@
  *  KIND, either express or implied.  See the License for the
  *  specific language governing permissions and limitations
  *  under the License.
- *
  */
 package org.apache.mina.core.service;
 
@@ -27,12 +26,13 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 
 /**
  * A base implementation of {@link IoAcceptor}.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
- * @org.apache.xbean.XBean
  */
 public abstract class AbstractIoAcceptor extends AbstractIoService implements IoAcceptor {
 
@@ -46,6 +46,10 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 	protected final Object bindLock = new Object();
 
 	private boolean disconnectOnUnbind = true;
+
+	public AbstractIoAcceptor() {
+		super(Executors.newSingleThreadExecutor(new IoThreadFactory(NioSocketAcceptor.class)));
+	}
 
 	@Override
 	public InetSocketAddress getLocalAddress() {

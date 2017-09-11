@@ -15,7 +15,6 @@
  *  KIND, either express or implied.  See the License for the
  *  specific language governing permissions and limitations
  *  under the License.
- *
  */
 package org.apache.mina.core.write;
 
@@ -27,8 +26,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 
 /**
- * An exception which is thrown when one or more write operations were
- * attempted on a closed session.
+ * An exception which is thrown when one or more write operations were attempted on a closed session.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */

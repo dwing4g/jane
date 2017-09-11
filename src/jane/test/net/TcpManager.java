@@ -42,7 +42,6 @@ public class TcpManager implements Closeable
 			{
 				Thread t = new Thread(r, "TcpManager-" + counter.incrementAndGet());
 				t.setDaemon(true);
-				t.setPriority(Thread.NORM_PRIORITY);
 				return t;
 			});
 		}

@@ -15,7 +15,6 @@
  *  KIND, either express or implied.  See the License for the
  *  specific language governing permissions and limitations
  *  under the License.
- *
  */
 package org.apache.mina.core.write;
 
@@ -36,12 +35,12 @@ public interface WriteRequest {
 	WriteRequest getOriginalRequest();
 
 	/**
-	 * @return {@link WriteFuture} that is associated with this write request.
-	 */
-	WriteFuture getFuture();
-
-	/**
 	 * @return a message object to be written.
 	 */
 	Object getMessage();
+
+	/**
+	 * @return {@link WriteFuture} that is associated with this write request.
+	 */
+	WriteFuture getFuture();
 }
