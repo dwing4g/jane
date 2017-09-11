@@ -44,18 +44,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An abstract implementation of {@link IoProcessor} which helps transport
- * developers to write an {@link IoProcessor} easily. This class is in charge of
- * active polling a set of {@link IoSession} and trigger events when some I/O
- * operation is possible.
+ * An abstract implementation of {@link IoProcessor} which helps transport developers to write an {@link IoProcessor} easily.
+ * This class is in charge of active polling a set of {@link IoSession} and trigger events when some I/O operation is possible.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  *
- * @param <S>
- *            the type of the {@link IoSession} this processor can handle
+ * @param <S> the type of the {@link IoSession} this processor can handle
  */
 public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> implements IoProcessor<S> {
-	/** A logger for this class */
 	private static final Logger LOGGER = LoggerFactory.getLogger(IoProcessor.class);
 
 	/** A timeout used for the select */
@@ -89,8 +85,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 	private volatile boolean disposed;
 
 	/**
-	 * Create an {@link AbstractPollingIoProcessor} with the given
-	 * {@link Executor} for handling I/Os events.
+	 * Create an {@link AbstractPollingIoProcessor} with the given {@link Executor} for handling I/Os events.
 	 *
 	 * @param executor the {@link Executor} for handling I/O events
 	 */
@@ -98,7 +93,6 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 		if (executor == null) {
 			throw new IllegalArgumentException("executor");
 		}
-
 		this.executor = executor;
 	}
 
@@ -239,8 +233,8 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 	protected abstract void setInterestedInWrite(S session, boolean isInterested);
 
 	/**
-	 * Reads a sequence of bytes from a {@link IoSession} into the given
-	 * {@link IoBuffer}. Is called when the session was found ready for reading.
+	 * Reads a sequence of bytes from a {@link IoSession} into the given {@link IoBuffer}.
+	 * Is called when the session was found ready for reading.
 	 *
 	 * @param session the session to read
 	 * @param buf the buffer to fill
@@ -250,23 +244,21 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 	protected abstract int read(S session, IoBuffer buf) throws IOException;
 
 	/**
-	 * Write a sequence of bytes to a {@link IoSession}, means to be called when
-	 * a session was found ready for writing.
+	 * Write a sequence of bytes to a {@link IoSession},
+	 * means to be called when a session was found ready for writing.
 	 *
 	 * @param session the session to write
 	 * @param buf the buffer to write
-	 * @param length the number of bytes to write can be superior to the number of
-	 *            bytes remaining in the buffer
+	 * @param length the number of bytes to write can be superior to the number of bytes remaining in the buffer
 	 * @return the number of byte written
 	 * @throws IOException any exception thrown by the underlying system calls
 	 */
 	protected abstract int write(S session, IoBuffer buf, int length) throws IOException;
 
 	/**
-	 * Write a part of a file to a {@link IoSession}, if the underlying API
-	 * isn't supporting system calls like sendfile(), you can throw a
-	 * {@link UnsupportedOperationException} so the file will be send using
-	 * usual {@link #write(AbstractIoSession, IoBuffer, int)} call.
+	 * Write a part of a file to a {@link IoSession}, if the underlying API isn't supporting
+	 * system calls like sendfile(), you can throw a {@link UnsupportedOperationException}
+	 * so the file will be send using usual {@link #write(AbstractIoSession, IoBuffer, int)} call.
 	 *
 	 * @param session the session to write
 	 * @param region the file region to write
@@ -310,8 +302,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 
 	@Override
 	public final void flush(S session) {
-		// add the session to the queue if it's not already
-		// in the queue, then wake up the select()
+		// add the session to the queue if it's not already in the queue, then wake up the select()
 		if (session.setScheduledForFlush(true)) {
 			flushingSessions.add(session);
 			wakeup();
@@ -401,8 +392,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			}
 		}
 
-		// Just stop the select() and start it again, so that the processor
-		// can be activated immediately.
+		// Just stop the select() and start it again, so that the processor can be activated immediately.
 		wakeup();
 	}
 
@@ -418,8 +408,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 
 			for (;;) {
 				try {
-					// This select has a timeout so that we can manage idle session
-					// when we get out of the select every second.
+					// This select has a timeout so that we can manage idle session when we get out of the select every second.
 					// (note: this is a hack to avoid creating a dedicated thread).
 					long t0 = System.currentTimeMillis();
 					int selected = select(SELECT_TIMEOUT);
@@ -434,20 +423,16 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 							break;
 						}
 
-						// Last chance: the select() may have been
-						// interrupted because we have had an closed channel.
+						// Last chance: the select() may have been interrupted because we have had an closed channel.
 						if (isBrokenConnection()) {
 							LOGGER.warn("Broken connection");
 						} else {
 							// Ok, we are hit by the nasty epoll spinning.
-							// Basically, there is a race condition
-							// which causes a closing file descriptor not to be
-							// considered as available as a selected channel,
-							// but it stopped the select. The next time we will
-							// call select(), it will exit immediately for the
-							// same reason, and do so forever, consuming 100% CPU.
-							// We have to destroy the selector, and
-							// register all the socket on a new one.
+							// Basically, there is a race condition which causes a closing file descriptor not to be
+							// considered as available as a selected channel, but it stopped the select.
+							// The next time we will call select(), it will exit immediately for the same reason,
+							// and do so forever, consuming 100% CPU.
+							// We have to destroy the selector, and register all the socket on a new one.
 							if (nbTries == 0) {
 								LOGGER.warn("Create a new selector. Selected is 0, delta = " + delta);
 								registerNewSelector();
@@ -491,8 +476,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 						}
 					}
 
-					// Disconnect all sessions immediately if disposal has been
-					// requested so that we exit this loop eventually.
+					// Disconnect all sessions immediately if disposal has been requested so that we exit this loop eventually.
 					if (isDisposing()) {
 						boolean hasKeys = false;
 
@@ -538,8 +522,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 		}
 
 		/**
-		 * Loops over the new sessions blocking queue and returns the number of
-		 * sessions which are effectively created
+		 * Loops over the new sessions blocking queue and returns the number of sessions which are effectively created
 		 *
 		 * @return The number of new sessions
 		 */
@@ -582,8 +565,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 
 					case OPENING:
 						// Retry later if session is not yet fully initialized.
-						// (In case that Session.suspend??() or session.resume??() is
-						// called before addSession() is processed)
+						// (In case that Session.suspend??() or session.resume??() is called before addSession() is processed)
 						// We just put back the session at the end of the queue.
 						trafficControllingSessions.add(session);
 						break;
@@ -616,8 +598,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 				// Build the filter chain of this session.
 				session.getService().getFilterChainBuilder().buildFilterChain(session.getFilterChain());
 
-				// DefaultIoFilterChain.CONNECT_FUTURE is cleared inside here
-				// in AbstractIoFilterChain.fireSessionOpened().
+				// DefaultIoFilterChain.CONNECT_FUTURE is cleared inside here in AbstractIoFilterChain.fireSessionOpened().
 				// Propagate the SESSION_CREATED event up to the chain
 				((AbstractIoService) session.getService()).getListeners().fireSessionCreated(session);
 			} catch (Exception e) {
@@ -729,11 +710,9 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 
 			final WriteRequestQueue writeRequestQueue = session.getWriteRequestQueue();
 
-			// Set limitation for the number of written bytes for read-write
-			// fairness. I used maxReadBufferSize * 3 / 2, which yields best
-			// performance in my experience while not breaking fairness much.
-			final int maxWrittenBytes = session.getConfig().getMaxReadBufferSize()
-					+ (session.getConfig().getMaxReadBufferSize() >>> 1);
+			// Set limitation for the number of written bytes for read-write fairness.
+			// I used maxReadBufferSize * 3 / 2, which yields best performance in my experience while not breaking fairness much.
+			final int maxWrittenBytes = session.getConfig().getMaxReadBufferSize() + (session.getConfig().getMaxReadBufferSize() >>> 1);
 			int writtenBytes = 0;
 			WriteRequest req = null;
 
@@ -776,8 +755,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 							return false;
 						}
 					} else {
-						throw new IllegalStateException("unknown message type for writting: "
-								+ message.getClass().getName() + ": " + message);
+						throw new IllegalStateException("unknown message type for writting: " + message.getClass().getName() + ": " + message);
 					}
 
 					if (localWrittenBytes == 0) {
@@ -852,8 +830,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 				try {
 					localWrittenBytes = write(session, buf, length);
 				} catch (IOException ioe) {
-					// We have had an issue while trying to send data to the peer:
-					// let's close the session.
+					// We have had an issue while trying to send data to the peer: let's close the session.
 					buf.free();
 					session.closeNow();
 					removeNow(session);

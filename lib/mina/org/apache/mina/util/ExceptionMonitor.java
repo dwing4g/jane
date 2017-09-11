@@ -22,12 +22,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Monitors uncaught exceptions.  {@link #exceptionCaught(Throwable)} is
- * invoked when there are any uncaught exceptions.
+ * Monitors uncaught exceptions.
+ * {@link #exceptionCaught(Throwable)} is invoked when there are any uncaught exceptions.
  * <p>
  * You can monitor any uncaught exceptions by setting {@link ExceptionMonitor}
- * by calling {@link #setInstance(ExceptionMonitor)}.  The default
- * monitor logs all caught exceptions in <tt>ERROR</tt> level using SLF4J.
+ * by calling {@link #setInstance(ExceptionMonitor)}.
+ * The default monitor logs all caught exceptions in <tt>ERROR</tt> level using SLF4J.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */

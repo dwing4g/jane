@@ -27,8 +27,6 @@ import org.apache.mina.core.session.IoSession;
  */
 public final class DefaultCloseFuture extends DefaultIoFuture implements CloseFuture {
 	/**
-	 * Creates a new instance.
-	 *
 	 * @param session The associated session
 	 */
 	public DefaultCloseFuture(IoSession session) {

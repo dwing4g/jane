@@ -88,7 +88,7 @@ public class IoEvent implements Runnable {
 	 * Fire an event
 	 */
 	public void fire() {
-		switch ( type ) {
+		switch (type) {
 			case MESSAGE_RECEIVED:
 				session.getFilterChain().fireMessageReceived(getParameter());
 				break;
@@ -122,9 +122,6 @@ public class IoEvent implements Runnable {
 		}
 	}
 
-	/**
-	 * @see Object#toString()
-	 */
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();

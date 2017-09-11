@@ -22,31 +22,28 @@ import java.net.SocketAddress;
 import org.apache.mina.core.future.ConnectFuture;
 
 /**
- * Connects to endpoint, communicates with the server, and fires events to
- * {@link IoHandler}s.
+ * Connects to endpoint, communicates with the server, and fires events to {@link IoHandler}s.
  * <p>
  * You should connect to the desired socket address to start communication,
- * and then events for incoming connections will be sent to the specified
- * default {@link IoHandler}.
+ * and then events for incoming connections will be sent to the specified default {@link IoHandler}.
  * <p>
- * Threads connect to endpoint start automatically when
- * {@link #connect(SocketAddress)} is invoked, and stop when all
- * connection attempts are finished.
+ * Threads connect to endpoint start automatically when {@link #connect(SocketAddress)} is invoked,
+ * and stop when all connection attempts are finished.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface IoConnector extends IoService {
 	/**
-	 * @return the connect timeout in milliseconds.  The default value is 1 minute.
+	 * @return the connect timeout in milliseconds. The default value is 1 minute.
 	 */
-	long getConnectTimeoutMillis();
+	int getConnectTimeoutMillis();
 
 	/**
-	 * Sets the connect timeout in milliseconds.  The default value is 1 minute.
+	 * Sets the connect timeout in milliseconds. The default value is 1 minute.
 	 *
 	 * @param connectTimeoutInMillis The time out for the connection
 	 */
-	void setConnectTimeoutMillis(long connectTimeoutInMillis);
+	void setConnectTimeoutMillis(int connectTimeoutInMillis);
 
 	/**
 	 * Connects to the specified remote address.

@@ -27,8 +27,6 @@ import org.apache.mina.core.session.IoSession;
  */
 public final class DefaultWriteFuture extends DefaultIoFuture implements WriteFuture {
 	/**
-	 * Creates a new instance.
-	 *
 	 * @param session The associated session
 	 */
 	public DefaultWriteFuture(IoSession session) {

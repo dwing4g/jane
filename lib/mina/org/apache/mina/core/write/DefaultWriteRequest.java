@@ -107,8 +107,6 @@ public final class DefaultWriteRequest implements WriteRequest {
 	private final WriteFuture future;
 
 	/**
-	 * Creates a new instance.
-	 *
 	 * @param message a message to write
 	 * @param future a future that needs to be notified when an operation is finished
 	 */

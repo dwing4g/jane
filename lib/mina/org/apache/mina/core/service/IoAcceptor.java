@@ -27,23 +27,21 @@ import java.util.Set;
 import org.apache.mina.core.session.IoSession;
 
 /**
- * Accepts incoming connection, communicates with clients, and fires events to
- * {@link IoHandler}s.
+ * Accepts incoming connection, communicates with clients, and fires events to {@link IoHandler}s.
  * <p>
- * You should bind to the desired socket address to accept incoming
- * connections, and then events for incoming connections will be sent to
- * the specified default {@link IoHandler}.
+ * You should bind to the desired socket address to accept incoming connections,
+ * and then events for incoming connections will be sent to the specified default {@link IoHandler}.
  * <p>
- * Threads accept incoming connections start automatically when
- * {@link #bind(SocketAddress)} is invoked, and stop when {@link #unbind()} is invoked.
+ * Threads accept incoming connections start automatically when {@link #bind(SocketAddress)} is invoked,
+ * and stop when {@link #unbind()} is invoked.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface IoAcceptor extends IoService {
 	/**
-	 * Returns the local address which is bound currently.  If more than one
-	 * address are bound, only one of them will be returned, but it's not
-	 * necessarily the firstly bound address.
+	 * Returns the local address which is bound currently.
+	 * If more than one address are bound, only one of them will be returned,
+	 * but it's not necessarily the firstly bound address.
 	 *
 	 * @return The bound LocalAddress
 	 */
@@ -58,25 +56,22 @@ public interface IoAcceptor extends IoService {
 
 	/**
 	 * Returns <tt>true</tt> if and only if all clients are closed when this
-	 * acceptor unbinds from all the related local address (i.e. when the
-	 * service is deactivated).
+	 * acceptor unbinds from all the related local address (i.e. when the service is deactivated).
 	 *
 	 * @return <tt>true</tt> if the service sets the closeOnDeactivation flag
 	 */
 	boolean isCloseOnDeactivation();
 
 	/**
-	 * Sets whether all client sessions are closed when this acceptor unbinds
-	 * from all the related local addresses (i.e. when the service is
-	 * deactivated).  The default value is <tt>true</tt>.
+	 * Sets whether all client sessions are closed when this acceptor unbinds from all the related
+	 * local addresses (i.e. when the service is deactivated). The default value is <tt>true</tt>.
 	 *
 	 * @param closeOnDeactivation <tt>true</tt> if we should close on deactivation
 	 */
 	void setCloseOnDeactivation(boolean closeOnDeactivation);
 
 	/**
-	 * Binds to the specified local address and start to accept incoming
-	 * connections.
+	 * Binds to the specified local address and start to accept incoming connections.
 	 *
 	 * @param localAddress The SocketAddress to bind to
 	 *
@@ -85,8 +80,7 @@ public interface IoAcceptor extends IoService {
 	void bind(SocketAddress localAddress) throws IOException;
 
 	/**
-	 * Binds to the specified local addresses and start to accept incoming
-	 * connections.
+	 * Binds to the specified local addresses and start to accept incoming connections.
 	 *
 	 * @param localAddresses The local address we will be bound to
 	 * @throws IOException if failed to bind
@@ -94,51 +88,43 @@ public interface IoAcceptor extends IoService {
 	void bind(List<? extends SocketAddress> localAddresses) throws IOException;
 
 	/**
-	 * Unbinds from all local addresses that this service is bound to and stops
-	 * to accept incoming connections.  All managed connections will be closed
-	 * if {@link #setCloseOnDeactivation(boolean) disconnectOnUnbind} property
-	 * is <tt>true</tt>.  This method returns silently if no local address is
-	 * bound yet.
+	 * Unbinds from all local addresses that this service is bound to and stops to accept incoming connections.
+	 * All managed connections will be closed if {@link #setCloseOnDeactivation(boolean) disconnectOnUnbind}
+	 * property is <tt>true</tt>. This method returns silently if no local address is bound yet.
 	 */
 	void unbind();
 
 	/**
-	 * Unbinds from the specified local address and stop to accept incoming
-	 * connections.  All managed connections will be closed if
-	 * {@link #setCloseOnDeactivation(boolean) disconnectOnUnbind} property is
-	 * <tt>true</tt>.  This method returns silently if the default local
-	 * address is not bound yet.
+	 * Unbinds from the specified local address and stop to accept incoming connections.
+	 * All managed connections will be closed if {@link #setCloseOnDeactivation(boolean) disconnectOnUnbind}
+	 * property is <tt>true</tt>. This method returns silently if the default local address is not bound yet.
 	 *
 	 * @param localAddress The local address we will be unbound from
 	 */
 	void unbind(SocketAddress localAddress);
 
 	/**
-	 * Unbinds from the specified local addresses and stop to accept incoming
-	 * connections.  All managed connections will be closed if
-	 * {@link #setCloseOnDeactivation(boolean) disconnectOnUnbind} property is
-	 * <tt>true</tt>.  This method returns silently if the default local
-	 * addresses are not bound yet.
+	 * Unbinds from the specified local addresses and stop to accept incoming connections.
+	 * All managed connections will be closed if {@link #setCloseOnDeactivation(boolean) disconnectOnUnbind}
+	 * property is <tt>true</tt>. This method returns silently if the default local addresses are not bound yet.
 	 *
 	 * @param localAddresses The local address we will be unbound from
 	 */
 	void unbind(Iterable<? extends SocketAddress> localAddresses);
 
 	/**
-	 * (Optional) Returns an {@link IoSession} that is bound to the specified
-	 * <tt>localAddress</tt> and the specified <tt>remoteAddress</tt> which
-	 * reuses the local address that is already bound by this service.
+	 * (Optional) Returns an {@link IoSession} that is bound to the specified <tt>localAddress</tt> and
+	 * the specified <tt>remoteAddress</tt> which reuses the local address that is already bound by this service.
 	 * <p>
-	 * This operation is optional.  Please throw {@link UnsupportedOperationException}
-	 * if the transport type doesn't support this operation.  This operation is
-	 * usually implemented for connectionless transport types.
+	 * This operation is optional. Please throw {@link UnsupportedOperationException}
+	 * if the transport type doesn't support this operation.
+	 * This operation is usually implemented for connectionless transport types.
 	 *
 	 * @param remoteAddress The remote address bound to the service
 	 * @param localAddress The local address the session will be bound to
 	 * @throws UnsupportedOperationException if this operation is not supported
 	 * @throws IllegalStateException if this service is not running.
-	 * @throws IllegalArgumentException if this service is not bound to the
-	 *                                  specified <tt>localAddress</tt>.
+	 * @throws IllegalArgumentException if this service is not bound to the specified <tt>localAddress</tt>.
 	 * @return The session bound to the the given localAddress and remote address
 	 */
 	IoSession newSession(SocketAddress remoteAddress, SocketAddress localAddress);

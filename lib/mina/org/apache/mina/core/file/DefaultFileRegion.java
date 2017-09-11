@@ -22,9 +22,8 @@ import java.io.IOException;
 import java.nio.channels.FileChannel;
 
 /**
- * Manage a File to be sent to a remote host. We keep a track on the current
- * position, and the number of already written bytes.
- *
+ * Manage a File to be sent to a remote host.
+ * We keep a track on the current position, and the number of already written bytes.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */

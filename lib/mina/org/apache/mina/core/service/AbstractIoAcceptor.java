@@ -35,7 +35,6 @@ import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public abstract class AbstractIoAcceptor extends AbstractIoService implements IoAcceptor {
-
 	private final Set<InetSocketAddress> boundAddresses = new HashSet<>();
 
 	/**
@@ -215,8 +214,8 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 
 	@Override
 	public String toString() {
-		return "(nio socket acceptor: " + (isActive() ?
-				"localAddress(es): " + getLocalAddresses() + ", managedSessionCount: " + getManagedSessionCount() : "not bound") + ')';
+		return "(nio socket acceptor: " + (isActive() ? "localAddress(es): " + getLocalAddresses() +
+				", managedSessionCount: " + getManagedSessionCount() : "not bound") + ')';
 	}
 
 	/**
@@ -241,14 +240,9 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 			return Collections.unmodifiableList(localAddresses);
 		}
 
-		/**
-		 * @see Object#toString()
-		 */
 		@Override
 		public String toString() {
-			StringBuilder sb = new StringBuilder();
-
-			sb.append("Acceptor operation: ");
+			StringBuilder sb = new StringBuilder("Acceptor operation: ");
 
 			if (localAddresses != null) {
 				boolean isFirst = true;

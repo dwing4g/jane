@@ -39,7 +39,7 @@ public interface ConnectFuture extends IoFuture {
 	 * Returns {@link IoSession} which is the result of connect operation.
 	 *
 	 * @return The {@link IoSession} instance that has been associated with the connection,
-	 * if the connection was successful, {@code null} otherwise
+	 *         if the connection was successful, {@code null} otherwise
 	 */
 	@Override
 	IoSession getSession();
@@ -48,8 +48,7 @@ public interface ConnectFuture extends IoFuture {
 	 * Returns the cause of the connection failure.
 	 *
 	 * @return <tt>null</tt> if the connect operation is not finished yet,
-	 *         or if the connection attempt is successful, otherwise returns
-	 *         the cause of the exception
+	 *         or if the connection attempt is successful, otherwise returns the cause of the exception
 	 */
 	Throwable getException();
 
@@ -65,8 +64,7 @@ public interface ConnectFuture extends IoFuture {
 
 	/**
 	 * Sets the newly connected session and notifies all threads waiting for this future.
-	 * This method is invoked by MINA internally.
-	 * Please do not call this method directly.
+	 * This method is invoked by MINA internally. Please do not call this method directly.
 	 *
 	 * @param session The created session to store in the ConnectFuture insteance
 	 */
@@ -74,8 +72,7 @@ public interface ConnectFuture extends IoFuture {
 
 	/**
 	 * Sets the exception caught due to connection failure and notifies all threads waiting for this future.
-	 * This method is invoked by MINA internally.
-	 * Please do not call this method directly.
+	 * This method is invoked by MINA internally. Please do not call this method directly.
 	 *
 	 * @param exception The exception to store in the ConnectFuture instance
 	 */

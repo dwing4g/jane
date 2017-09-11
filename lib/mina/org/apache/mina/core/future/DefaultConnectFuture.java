@@ -29,9 +29,6 @@ public class DefaultConnectFuture extends DefaultIoFuture implements ConnectFutu
 	/** A static object stored into the ConnectFuture when teh connection has been cancelled */
 	private static final Object CANCELED = new Object();
 
-	/**
-	 * Creates a new instance.
-	 */
 	public DefaultConnectFuture() {
 		super(null);
 	}

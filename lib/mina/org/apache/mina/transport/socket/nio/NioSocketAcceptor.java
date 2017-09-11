@@ -41,7 +41,6 @@ import org.apache.mina.core.service.SimpleIoProcessorPool;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
-
 	private Selector selector;
 
 	/**
@@ -76,7 +75,6 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 	@SuppressWarnings("resource")
 	@Override
 	protected NioSession accept(IoProcessor<NioSession> processor, ServerSocketChannel channel) throws IOException {
-
 		SelectionKey key = null;
 
 		if (channel != null) {
@@ -131,8 +129,7 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 	}
 
 	/**
-	 * Check if we have at least one key whose corresponding channels is
-	 * ready for I/O operations.
+	 * Check if we have at least one key whose corresponding channels is ready for I/O operations.
 	 *
 	 * This method performs a blocking selection operation.
 	 * It returns only after at least one channel is selected,

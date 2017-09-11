@@ -50,15 +50,13 @@ import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.mina.util.ExceptionMonitor;
 
 /**
- * A base class for implementing transport using a polling strategy. The
- * underlying sockets will be checked in an active loop and woke up when an
- * socket needed to be processed. This class handle the logic behind binding,
- * accepting and disposing the server sockets. An {@link Executor} will be used
- * for running client accepting and an {@link AbstractPollingIoProcessor} will
- * be used for processing client I/O operations like reading, writing and closing.
+ * A base class for implementing transport using a polling strategy.
+ * The underlying sockets will be checked in an active loop and woke up when an socket needed to be processed.
+ * This class handle the logic behind binding, accepting and disposing the server sockets.
+ * An {@link Executor} will be used for running client accepting and an {@link AbstractPollingIoProcessor}
+ * will be used for processing client I/O operations like reading, writing and closing.
  *
- * All the low level methods for binding, accepting, closing need to be provided
- * by the subclassing implementation.
+ * All the low level methods for binding, accepting, closing need to be provided by the subclassing implementation.
  *
  * @see NioSocketAcceptor for a example of implementation
  *
@@ -87,16 +85,16 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 	protected boolean reuseAddress;
 
 	/**
-	 * Define the number of socket that can wait to be accepted. Default
-	 * to 50 (as in the SocketServer default).
+	 * Define the number of socket that can wait to be accepted.
+	 * Default to 50 (as in the SocketServer default).
 	 */
 	protected int backlog = 50;
 
 	/**
 	 * Constructor for {@link AbstractPollingIoAcceptor}. You need to provide a default
 	 * session configuration, a class of {@link IoProcessor} which will be instantiated in a
-	 * {@link SimpleIoProcessorPool} for better scaling in multiprocessor systems. The default
-	 * pool size will be used.
+	 * {@link SimpleIoProcessorPool} for better scaling in multiprocessor systems.
+	 * The default pool size will be used.
 	 *
 	 * @see SimpleIoProcessorPool
 	 */
@@ -107,8 +105,7 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 	/**
 	 * Constructor for {@link AbstractPollingIoAcceptor}. You need to provide a default
 	 * session configuration, a class of {@link IoProcessor} which will be instantiated in a
-	 * {@link SimpleIoProcessorPool} for using multiple thread for better scaling in multiprocessor
-	 * systems.
+	 * {@link SimpleIoProcessorPool} for using multiple thread for better scaling in multiprocessor systems.
 	 *
 	 * @see SimpleIoProcessorPool
 	 *
@@ -123,11 +120,8 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 	 *
 	 * @see #AbstractIoService(AbstractSocketSessionConfig, Executor)
 	 *
-	 * @param processor
-	 *            the {@link IoProcessor} for processing the {@link IoSession}
-	 *            of this transport, triggering events to the bound
-	 *            {@link IoHandler} and processing the chains of
-	 *            {@link IoFilter}
+	 * @param processor the {@link IoProcessor} for processing the {@link IoSession} of this transport,
+	 *            triggering events to the bound {@link IoHandler} and processing the chains of {@link IoFilter}
 	 */
 	private AbstractPollingIoAcceptor(IoProcessor<NioSession> processor) {
 		this.processor = processor;
@@ -181,7 +175,7 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 
 	/**
 	 * {@link Iterator} for the set of server sockets found with acceptable incoming connections
-	 *  during the last {@link #select()} call.
+	 * during the last {@link #select()} call.
 	 *
 	 * @return the list of server handles ready
 	 */
@@ -258,8 +252,7 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 		}
 
 		// Update the local addresses.
-		// setLocalAddresses() shouldn't be called from the worker thread
-		// because of deadlock.
+		// setLocalAddresses() shouldn't be called from the worker thread because of deadlock.
 		Set<InetSocketAddress> newLocalAddresses = new HashSet<>();
 
 		for (ServerSocketChannel channel : boundHandles.values()) {
@@ -270,12 +263,10 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 	}
 
 	/**
-	 * This method is called by the doBind() and doUnbind()
-	 * methods.  If the acceptor is null, the acceptor object will
-	 * be created and kicked off by the executor.  If the acceptor
-	 * object is null, probably already created and this class
-	 * is now working, then nothing will happen and the method
-	 * will just return.
+	 * This method is called by the doBind() and doUnbind() methods.
+	 * If the acceptor is null, the acceptor object will be created and kicked off by the executor.
+	 * If the acceptor object is null, probably already created and this class is now working,
+	 * then nothing will happen and the method will just return.
 	 */
 	private void startupAcceptor() throws InterruptedException {
 		// If the acceptor is not ready, clear the queues
@@ -315,8 +306,7 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 	}
 
 	/**
-	 * This class is called by the startupAcceptor() method and is
-	 * placed into a NamePreservingRunnable class.
+	 * This class is called by the startupAcceptor() method and is placed into a NamePreservingRunnable class.
 	 * It's a thread accepting incoming connections from clients.
 	 * The loop is stopped when all the bound handlers are unbound.
 	 */
@@ -331,22 +321,17 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 			while (selectable) {
 				try {
 					// Process the bound sockets to this acceptor.
-					// this actually sets the selector to OP_ACCEPT,
-					// and binds to the port on which this class will
-					// listen on. We do that before the select because
-					// the registerQueue containing the new handler is
-					// already updated at this point.
+					// this actually sets the selector to OP_ACCEPT, and binds to the port on which
+					// this class will listen on. We do that before the select because
+					// the registerQueue containing the new handler is already updated at this point.
 					nHandles += registerHandles();
 
-					// Detect if we have some keys ready to be processed
-					// The select() will be woke up if some new connection
-					// have occurred, or if the selector has been explicitly
-					// woke up
+					// Detect if we have some keys ready to be processed The select() will be woke up
+					// if some new connection have occurred, or if the selector has been explicitly woke up
 					int selected = select();
 
-					// Now, if the number of registred handles is 0, we can
-					// quit the loop: we don't have any socket listening
-					// for incoming connection.
+					// Now, if the number of registred handles is 0, we can quit the loop:
+					// we don't have any socket listening for incoming connection.
 					if (nHandles == 0) {
 						acceptorRef.set(null);
 
@@ -360,8 +345,7 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 					}
 
 					if (selected > 0) {
-						// We have some connection request, let's process
-						// them here.
+						// We have some connection request, let's process them here.
 						processHandles(selectedHandles());
 					}
 
@@ -404,10 +388,9 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 		}
 
 		/**
-		 * This method will process new sessions for the Worker class.  All
-		 * keys that have had their status updates as per the Selector.selectedKeys()
-		 * method will be processed here.  Only keys that are ready to accept
-		 * connections are handled here.
+		 * This method will process new sessions for the Worker class.
+		 * All keys that have had their status updates as per the Selector.selectedKeys() method will be processed here.
+		 * Only keys that are ready to accept connections are handled here.
 		 * <p/>
 		 * Session objects are created by making new instances of SocketSessionImpl
 		 * and passing the session object to the SocketIoProcessor class.
@@ -418,8 +401,7 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 				ServerSocketChannel channel = handles.next();
 				handles.remove();
 
-				// Associates a new created connection to a processor,
-				// and get back a session
+				// Associates a new created connection to a processor, and get back a session
 				NioSession session = accept(processor, channel);
 
 				if (session == null) {
@@ -434,18 +416,13 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 		}
 
 		/**
-		 * Sets up the socket communications.  Sets items such as:
+		 * Sets up the socket communications. Sets items such as:
 		 * <p/>
-		 * Blocking
-		 * Reuse address
-		 * Receive buffer size
-		 * Bind to listen port
-		 * Registers OP_ACCEPT for selector
+		 * Blocking, Reuse address, Receive buffer size, Bind to listen port, Registers OP_ACCEPT for selector
 		 */
 		private int registerHandles() {
 			for (;;) {
-				// The register queue contains the list of services to manage
-				// in this acceptor.
+				// The register queue contains the list of services to manage in this acceptor.
 				AcceptorOperationFuture future = registerQueue.poll();
 
 				if (future == null) {
@@ -453,8 +430,7 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 				}
 
 				// We create a temporary map to store the bound handles,
-				// as we may have to remove them all if there is an exception
-				// during the sockets opening.
+				// as we may have to remove them all if there is an exception during the sockets opening.
 				Map<SocketAddress, ServerSocketChannel> newHandles = new ConcurrentHashMap<>();
 				List<SocketAddress> localAddresses = future.getLocalAddresses();
 
@@ -466,8 +442,7 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 						newHandles.put(localAddress(channel), channel);
 					}
 
-					// Everything went ok, we can now update the map storing
-					// all the bound sockets.
+					// Everything went ok, we can now update the map storing all the bound sockets.
 					boundHandles.putAll(newHandles);
 
 					// and notify.
@@ -497,10 +472,9 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 		}
 
 		/**
-		 * This method just checks to see if anything has been placed into the
-		 * cancellation queue.  The only thing that should be in the cancelQueue
-		 * is CancellationRequest objects and the only place this happens is in
-		 * the doUnbind() method.
+		 * This method just checks to see if anything has been placed into the cancellation queue.
+		 * The only thing that should be in the cancelQueue is CancellationRequest objects
+		 * and the only place this happens is in the doUnbind() method.
 		 */
 		private int unregisterHandles() {
 			int cancelledHandles = 0;

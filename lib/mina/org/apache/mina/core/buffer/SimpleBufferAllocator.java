@@ -43,7 +43,6 @@ public final class SimpleBufferAllocator implements IoBufferAllocator {
 
 	@Override
 	public void dispose() {
-		// Do nothing
 	}
 
 	private static final class SimpleIoBuffer extends AbstractIoBuffer {
@@ -96,7 +95,6 @@ public final class SimpleBufferAllocator implements IoBufferAllocator {
 
 		@Override
 		public void free() {
-			// Do nothing
 		}
 	}
 }

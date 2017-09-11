@@ -36,7 +36,6 @@ import org.apache.mina.core.session.IoSession;
  */
 public final class IoUtil {
 	private IoUtil() {
-		// Do nothing
 	}
 
 	/**

@@ -32,14 +32,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A default implementation of {@link IoFilterChain} that provides
- * all operations for developers who want to implement their own
- * transport layer once used with {@link AbstractIoSession}.
+ * A default implementation of {@link IoFilterChain} that provides all operations
+ * for developers who want to implement their own transport layer once used with {@link AbstractIoSession}.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class DefaultIoFilterChain implements IoFilterChain {
-	/** The logger for this class */
 	private static final Logger LOGGER = LoggerFactory.getLogger(DefaultIoFilterChain.class);
 
 	/**
@@ -245,8 +243,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 				try {
 					newFilter.onPreAdd(this, oldFilterName, entry.getNextFilter());
 				} catch (Exception e) {
-					throw new RuntimeException("onPreAdd(): " + oldFilterName + ':' + newFilter + " in "
-							+ getSession(), e);
+					throw new RuntimeException("onPreAdd(): " + oldFilterName + ':' + newFilter + " in " + getSession(), e);
 				}
 
 				// Now, register the new Filter replacing the old one.
@@ -257,8 +254,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 					newFilter.onPostAdd(this, oldFilterName, entry.getNextFilter());
 				} catch (Exception e) {
 					entry.setFilter(oldFilter);
-					throw new RuntimeException("onPostAdd(): " + oldFilterName + ':' + newFilter + " in "
-							+ getSession(), e);
+					throw new RuntimeException("onPostAdd(): " + oldFilterName + ':' + newFilter + " in " + getSession(), e);
 				}
 
 				return;
@@ -289,8 +285,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 				try {
 					newFilter.onPreAdd(this, oldFilterName, entry.getNextFilter());
 				} catch (Exception e) {
-					throw new RuntimeException("onPreAdd(): " + oldFilterName + ':' + newFilter + " in "
-							+ getSession(), e);
+					throw new RuntimeException("onPreAdd(): " + oldFilterName + ':' + newFilter + " in " + getSession(), e);
 				}
 
 				entry.setFilter(newFilter);
@@ -300,8 +295,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 					newFilter.onPostAdd(this, oldFilterName, entry.getNextFilter());
 				} catch (Exception e) {
 					entry.setFilter(oldFilter);
-					throw new RuntimeException("onPostAdd(): " + oldFilterName + ':' + newFilter + " in "
-							+ getSession(), e);
+					throw new RuntimeException("onPostAdd(): " + oldFilterName + ':' + newFilter + " in " + getSession(), e);
 				}
 
 				return oldFilter;
@@ -354,8 +348,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		try {
 			filter.onPreRemove(this, entry.getName(), entry.getNextFilter());
 		} catch (Exception e) {
-			throw new RuntimeException("onPreRemove(): " + entry.getName() + ':' + filter + " in "
-					+ getSession(), e);
+			throw new RuntimeException("onPreRemove(): " + entry.getName() + ':' + filter + " in " + getSession(), e);
 		}
 
 		deregister0(entry);
@@ -363,8 +356,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		try {
 			filter.onPostRemove(this, entry.getName(), entry.getNextFilter());
 		} catch (Exception e) {
-			throw new RuntimeException("onPostRemove(): " + entry.getName() + ':' + filter + " in "
-					+ getSession(), e);
+			throw new RuntimeException("onPostRemove(): " + entry.getName() + ':' + filter + " in " + getSession(), e);
 		}
 	}
 
@@ -597,8 +589,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 
 	@Override
 	public String toString() {
-		StringBuilder buf = new StringBuilder();
-		buf.append("{ ");
+		StringBuilder buf = new StringBuilder("{ ");
 
 		boolean empty = true;
 
@@ -618,9 +609,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 			buf.append("empty");
 		}
 
-		buf.append(" }");
-
-		return buf.toString();
+		return buf.append(" }").toString();
 	}
 
 	private static final class HeadFilter extends IoFilterAdapter {
@@ -707,13 +696,9 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 
 	private final class EntryImpl implements Entry {
 		private EntryImpl prevEntry;
-
 		private EntryImpl nextEntry;
-
 		private final String name;
-
 		private IoFilter filter;
-
 		private final NextFilter nextFilter;
 
 		private EntryImpl(EntryImpl prevEntry, EntryImpl nextEntry, String name, IoFilter filter) {
@@ -802,10 +787,10 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 
 		@Override
 		public String toString() {
-			StringBuilder sb = new StringBuilder();
+			StringBuilder sb = new StringBuilder("('");
 
 			// Add the current filter
-			sb.append("('").append(getName()).append('\'');
+			sb.append(getName()).append('\'');
 
 			// Add the previous filter
 			sb.append(", prev: '");
@@ -827,9 +812,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 				sb.append("null");
 			}
 
-			sb.append("')");
-
-			return sb.toString();
+			return sb.append("')").toString();
 		}
 
 		@Override

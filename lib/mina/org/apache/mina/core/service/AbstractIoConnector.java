@@ -35,39 +35,14 @@ import org.apache.mina.transport.socket.nio.NioSocketConnector;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public abstract class AbstractIoConnector extends AbstractIoService implements IoConnector {
-	/**
-	 * The minimum timeout value that is supported (in milliseconds).
-	 */
-	private long connectTimeoutCheckInterval = 50L;
-
-	private long connectTimeoutInMillis = 60 * 1000L; // 1 minute by default
+	private int connectTimeoutInMillis = 60 * 1000; // 1 minute by default
 
 	public AbstractIoConnector() {
 		super(new ThreadPoolExecutor(0, 1, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), new IoThreadFactory(NioSocketConnector.class)));
 	}
 
-	/**
-	* @return The minimum time that this connector can have for a connection timeout in milliseconds.
-	 */
-	public long getConnectTimeoutCheckInterval() {
-		return connectTimeoutCheckInterval;
-	}
-
-	/**
-	 * Sets the timeout for the connection check
-	 *
-	 * @param minimumConnectTimeout The delay we wait before checking the connection
-	 */
-	public void setConnectTimeoutCheckInterval(long minimumConnectTimeout) {
-		if (getConnectTimeoutMillis() < minimumConnectTimeout) {
-			connectTimeoutInMillis = minimumConnectTimeout;
-		}
-
-		connectTimeoutCheckInterval = minimumConnectTimeout;
-	}
-
 	@Override
-	public final long getConnectTimeoutMillis() {
+	public final int getConnectTimeoutMillis() {
 		return connectTimeoutInMillis;
 	}
 
@@ -75,10 +50,7 @@ public abstract class AbstractIoConnector extends AbstractIoService implements I
 	 * Sets the connect timeout value in milliseconds.
 	 */
 	@Override
-	public final void setConnectTimeoutMillis(long connectTimeoutInMillis) {
-		if (connectTimeoutInMillis <= connectTimeoutCheckInterval) {
-			connectTimeoutCheckInterval = connectTimeoutInMillis;
-		}
+	public final void setConnectTimeoutMillis(int connectTimeoutInMillis) {
 		this.connectTimeoutInMillis = connectTimeoutInMillis;
 	}
 
@@ -128,9 +100,8 @@ public abstract class AbstractIoConnector extends AbstractIoService implements I
 	 */
 	@Override
 	protected final void finishSessionInitialization0(final IoSession session, IoFuture future) {
-		// In case that ConnectFuture.cancel() is invoked before
-		// setSession() is invoked, add a listener that closes the
-		// connection immediately on cancellation.
+		// In case that ConnectFuture.cancel() is invoked before setSession() is invoked,
+		// add a listener that closes the connection immediately on cancellation.
 		future.addListener((ConnectFuture future1) -> {
 			if (future1.isCanceled()) {
 				session.closeNow();

@@ -75,8 +75,7 @@ public class DefaultIoFuture implements IoFuture {
 
 				try {
 					// Wait for a notify, or if no notify is called,
-					// assume that we have a deadlock and exit the
-					// loop to check for a potential deadlock.
+					// assume that we have a deadlock and exit the loop to check for a potential deadlock.
 					wait(DEAD_LOCK_CHECK_INTERVAL);
 				} finally {
 					waiters--;
@@ -205,8 +204,7 @@ public class DefaultIoFuture implements IoFuture {
 		// Using Thread.currentThread().getStackTrace() is the best solution,
 		// even if slightly less efficient than doing a new Exception().getStackTrace(),
 		// as internally, it does exactly the same thing. The advantage of using
-		// this solution is that we may benefit some improvement with some
-		// future versions of Java.
+		// this solution is that we may benefit some improvement with some future versions of Java.
 		StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
 
 		// Simple and quick check.
@@ -287,10 +285,8 @@ public class DefaultIoFuture implements IoFuture {
 
 		synchronized (this) {
 			if (ready) {
-				// Shortcut: if the operation has completed, no need to
-				// add a new listener, we just have to notify it. The existing
-				// listeners have already been notified anyway, when the
-				// 'ready' flag has been set.
+				// Shortcut: if the operation has completed, no need to add a new listener, we just have to notify it.
+				// The existing listeners have already been notified anyway, when the 'ready' flag has been set.
 				notifyListener(listener);
 			} else {
 				if (firstListener == null) {

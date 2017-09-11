@@ -29,10 +29,9 @@ import org.apache.mina.core.session.IoSession;
 public interface IoHandler {
 	/**
 	 * Invoked from an I/O processor thread when a new connection has been created.
-	 * Because this method is supposed to be called from the same thread that
-	 * handles I/O of multiple sessions, please implement this method to perform
-	 * tasks that consumes minimal amount of time such as socket parameter
-	 * and user-defined session attribute initialization.
+	 * Because this method is supposed to be called from the same thread that handles I/O of multiple sessions,
+	 * please implement this method to perform tasks that consumes minimal amount of time
+	 * such as socket parameter and user-defined session attribute initialization.
 	 *
 	 * @param session The session being created
 	 * @throws Exception If we get an exception while processing the create event
@@ -40,10 +39,9 @@ public interface IoHandler {
 	void sessionCreated(IoSession session) throws Exception;
 
 	/**
-	 * Invoked when a connection has been opened.  This method is invoked after
-	 * {@link #sessionCreated(IoSession)}.  The biggest difference from
-	 * {@link #sessionCreated(IoSession)} is that it's invoked from other thread
-	 * than an I/O processor thread once thread model is configured properly.
+	 * Invoked when a connection has been opened.  This method is invoked after {@link #sessionCreated(IoSession)}.
+	 * The biggest difference from {@link #sessionCreated(IoSession)} is that it's invoked
+	 * from other thread than an I/O processor thread once thread model is configured properly.
 	 *
 	 * @param session The session being opened
 	 * @throws Exception If we get an exception while processing the open event
@@ -76,9 +74,8 @@ public interface IoHandler {
 	void messageReceived(IoSession session, Object message) throws Exception;
 
 	/**
-	 * Invoked when any exception is thrown by user {@link IoHandler}
-	 * implementation or by MINA.  If <code>cause</code> is an instance of
-	 * {@link IOException}, MINA will close the connection automatically.
+	 * Invoked when any exception is thrown by user {@link IoHandler} implementation or by MINA.
+	 * If <code>cause</code> is an instance of {@link IOException}, MINA will close the connection automatically.
 	 *
 	 * @param session The session for which we have got an exception
 	 * @param cause The exception that has been caught

@@ -36,7 +36,6 @@ import org.apache.mina.core.service.SimpleIoProcessorPool;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class NioSocketConnector extends AbstractPollingIoConnector {
-
 	private Selector selector;
 
 	/**
@@ -165,7 +164,6 @@ public final class NioSocketConnector extends AbstractPollingIoConnector {
 	}
 
 	private static final class SocketChannelIterator implements Iterator<SocketChannel> {
-
 		private final Iterator<SelectionKey> i;
 
 		private SocketChannelIterator(Collection<SelectionKey> selectedKeys) {

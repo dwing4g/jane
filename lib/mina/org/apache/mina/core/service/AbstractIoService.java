@@ -34,12 +34,12 @@ import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.future.DefaultIoFuture;
 import org.apache.mina.core.future.IoFuture;
 import org.apache.mina.core.future.WriteFuture;
-import org.apache.mina.core.session.AbstractIoSession;
 import org.apache.mina.core.session.DefaultIoSessionDataStructureFactory;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.session.IoSessionDataStructureFactory;
 import org.apache.mina.transport.socket.AbstractSocketSessionConfig;
 import org.apache.mina.transport.socket.DefaultSocketSessionConfig;
+import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.mina.util.ExceptionMonitor;
 import org.apache.mina.util.IoUtil;
 import org.slf4j.Logger;
@@ -48,13 +48,11 @@ import org.slf4j.LoggerFactory;
 /**
  * Base implementation of {@link IoService}s.
  *
- * An instance of IoService contains an Executor which will handle the incoming
- * events.
+ * An instance of IoService contains an Executor which will handle the incoming events.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public abstract class AbstractIoService implements IoService {
-
 	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractIoService.class);
 
 	/**
@@ -69,8 +67,8 @@ public abstract class AbstractIoService implements IoService {
 
 	/**
 	 * Maintains the {@link IoServiceListener}s of this service.
-	 * Create the listeners, and add a first listener: a activation listener
-	 * for this service, which will give information on the service state.
+	 * Create the listeners, and add a first listener: a activation listener for this service,
+	 * which will give information on the service state.
 	 */
 	private final IoServiceListenerSupport listeners = new IoServiceListenerSupport(this);
 
@@ -265,26 +263,14 @@ public abstract class AbstractIoService implements IoService {
 		executor.execute(worker);
 	}
 
-	protected final void initSession(IoSession session, IoFuture future) {
-		// Every property but attributeMap should be set now.
-		// Now initialize the attributeMap.  The reason why we initialize
-		// the attributeMap at last is to make sure all session properties
+	protected final void initSession(NioSession session, IoFuture future) {
+		// Every property but attributeMap should be set now. Now initialize the attributeMap.
+		// The reason why we initialize the attributeMap at last is to make sure all session properties
 		// such as remoteAddress are provided to IoSessionDataStructureFactory.
-		try {
-			((AbstractIoSession) session).setAttributeMap(session.getService()
-					.getSessionDataStructureFactory().getAttributeMap(session));
-		} catch (Exception e) {
-			throw new RuntimeException("Failed to initialize an attributeMap.", e);
-		}
+		session.setAttributeMap(session.getService().getSessionDataStructureFactory().getAttributeMap(session));
+		session.setWriteRequestQueue(session.getService().getSessionDataStructureFactory().getWriteRequestQueue(session));
 
-		try {
-			((AbstractIoSession) session).setWriteRequestQueue(session.getService()
-					.getSessionDataStructureFactory().getWriteRequestQueue(session));
-		} catch (Exception e) {
-			throw new RuntimeException("Failed to initialize a writeRequestQueue.", e);
-		}
-
-		if ((future != null) && (future instanceof ConnectFuture)) {
+		if (future != null && future instanceof ConnectFuture) {
 			// DefaultIoFilterChain will notify the future. (We support ConnectFuture only for now).
 			session.setAttribute(DefaultIoFilterChain.SESSION_CREATED_FUTURE, future);
 		}
@@ -294,7 +280,7 @@ public abstract class AbstractIoService implements IoService {
 
 	/**
 	 * Implement this method to perform additional tasks required for session initialization.
-	 * Do not call this method directly; {@link #initSession(IoSession, IoFuture)} will call this method instead.
+	 * Do not call this method directly; {@link #initSession(NioSession, IoFuture)} will call this method instead.
 	 *
 	 * @param session The session to initialize
 	 * @param future The Future to use

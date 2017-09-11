@@ -21,6 +21,7 @@ package org.apache.mina.transport.socket.nio;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.Channel;
 import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
 import org.apache.mina.core.filterchain.DefaultIoFilterChain;
 import org.apache.mina.core.filterchain.IoFilterChain;
 import org.apache.mina.core.service.IoProcessor;
@@ -38,7 +39,7 @@ public abstract class NioSession extends AbstractIoSession {
 	protected final IoProcessor<NioSession> processor;
 
 	/** The communication channel */
-	protected final Channel channel;
+	protected final SocketChannel channel;
 
 	/** The SelectionKey used for this session */
 	private SelectionKey key;
@@ -53,11 +54,11 @@ public abstract class NioSession extends AbstractIoSession {
 	 * <br>
 	 * This method is only called by the inherited class.
 	 *
-	 * @param processor The associated {@link IoProcessor}
 	 * @param service The associated {@link IoService}
+	 * @param processor The associated {@link IoProcessor}
 	 * @param channel The associated {@link Channel}
 	 */
-	protected NioSession(IoProcessor<NioSession> processor, IoService service, Channel channel) {
+	protected NioSession(IoService service, IoProcessor<NioSession> processor, SocketChannel channel) {
 		super(service);
 		this.processor = processor;
 		this.channel = channel;

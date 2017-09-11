@@ -181,28 +181,24 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	@Override
 	protected boolean isReadable(NioSession session) {
 		SelectionKey key = session.getSelectionKey();
-
 		return key != null && key.isValid() && key.isReadable();
 	}
 
 	@Override
 	protected boolean isWritable(NioSession session) {
 		SelectionKey key = session.getSelectionKey();
-
 		return key != null && key.isValid() && key.isWritable();
 	}
 
 	@Override
 	protected boolean isInterestedInRead(NioSession session) {
 		SelectionKey key = session.getSelectionKey();
-
 		return key != null && key.isValid() && ((key.interestOps() & SelectionKey.OP_READ) != 0);
 	}
 
 	@Override
 	protected boolean isInterestedInWrite(NioSession session) {
 		SelectionKey key = session.getSelectionKey();
-
 		return key != null && key.isValid() && ((key.interestOps() & SelectionKey.OP_WRITE) != 0);
 	}
 
@@ -278,7 +274,7 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 			// Check to see if the IOException is being thrown due to
 			// http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=5103988
 			String message = e.getMessage();
-			if ((message != null) && message.contains("temporarily unavailable")) {
+			if (message != null && message.contains("temporarily unavailable")) {
 				return 0;
 			}
 
@@ -287,8 +283,7 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	}
 
 	/**
-	 * An encapsulating iterator around the {@link Selector#selectedKeys()} or
-	 * the {@link Selector#keys()} iterator;
+	 * An encapsulating iterator around the {@link Selector#selectedKeys()} or the {@link Selector#keys()} iterator
 	 */
 	private static final class IoSessionIterator implements Iterator<NioSession> {
 		private final Iterator<SelectionKey> iterator;

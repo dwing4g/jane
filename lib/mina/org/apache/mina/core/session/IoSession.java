@@ -19,14 +19,11 @@
 package org.apache.mina.core.session;
 
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.util.Set;
 import org.apache.mina.core.filterchain.IoFilter;
 import org.apache.mina.core.filterchain.IoFilterChain;
 import org.apache.mina.core.future.CloseFuture;
 import org.apache.mina.core.future.WriteFuture;
-import org.apache.mina.core.service.IoAcceptor;
-import org.apache.mina.core.service.IoConnector;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoService;
 import org.apache.mina.core.write.WriteRequest;
@@ -35,12 +32,11 @@ import org.apache.mina.transport.socket.AbstractSocketSessionConfig;
 
 /**
  * <p>
- *   A handle which represents connection between two end-points regardless of
- *   transport types.
+ *   A handle which represents connection between two end-points regardless of transport types.
  * </p>
  * <p>
- *   {@link IoSession} provides user-defined attributes.  User-defined attributes
- *   are application-specific data which are associated with a session.
+ *   {@link IoSession} provides user-defined attributes.
+ *   User-defined attributes are application-specific data which are associated with a session.
  *   It often contains objects that represents the state of a higher-level protocol
  *   and becomes a way to exchange data between filters and handlers.
  * </p>
@@ -57,8 +53,8 @@ import org.apache.mina.transport.socket.AbstractSocketSessionConfig;
  *   {@link IoFilter} implementations you're using are thread-safe, too.
  * </p>
  * <h3>Equality of Sessions</h3>
- * TODO: The getId() method is totally wrong. We can't base
- * a method which is designed to create a unique ID on the hashCode method.
+ * TODO: The getId() method is totally wrong.
+ * We can't base a method which is designed to create a unique ID on the hashCode method.
  * {@link Object#equals(Object)} and {@link Object#hashCode()} shall not be overriden
  * to the default behavior that is defined in {@link Object}.
  *
@@ -178,16 +174,6 @@ public interface IoSession {
 	Object setAttribute(Object key, Object value);
 
 	/**
-	 * Sets a user defined attribute without a value.  This is useful when
-	 * you just want to put a 'mark' attribute.  Its value is set to
-	 * {@link Boolean#TRUE}.
-	 *
-	 * @param key the key of the attribute
-	 * @return The old value of the attribute.  <tt>null</tt> if it is new.
-	 */
-	Object setAttribute(Object key);
-
-	/**
 	 * Sets a user defined attribute if the attribute with the specified key is not set yet.
 	 * This method is same with the following code except that the operation is performed atomically.
 	 * <pre>
@@ -203,24 +189,6 @@ public interface IoSession {
 	 * @return The old value of the attribute.  <tt>null</tt> if not found.
 	 */
 	Object setAttributeIfAbsent(Object key, Object value);
-
-	/**
-	 * Sets a user defined attribute without a value if the attribute with the specified key is not set yet.
-	 * This is useful when you just want to put a 'mark' attribute.
-	 * Its value is set to {@link Boolean#TRUE}.
-	 * This method is same with the following code except that the operation is performed atomically.
-	 * <pre>
-	 * if (containsAttribute(key)) {
-	 *     return getAttribute(key);  // might not always be Boolean.TRUE.
-	 * } else {
-	 *     return setAttribute(key);
-	 * }
-	 * </pre>
-	 *
-	 * @param key The key of the attribute we want to set
-	 * @return The old value of the attribute.  <tt>null</tt> if not found.
-	 */
-	Object setAttributeIfAbsent(Object key);
 
 	/**
 	 * Removes a user-defined attribute with the specified key.
@@ -303,23 +271,14 @@ public interface IoSession {
 	CloseFuture getCloseFuture();
 
 	/**
-	 * @return the socket address of remote peer.
-	 */
-	InetSocketAddress getRemoteAddress();
-
-	/**
 	 * @return the socket address of local machine which is associated with this session.
 	 */
 	InetSocketAddress getLocalAddress();
 
 	/**
-	 * @return the socket address of the {@link IoService} listens to to manage this session.
-	 * If this session is managed by {@link IoAcceptor}, it returns the {@link InetSocketAddress}
-	 * which is specified as a parameter of {@link IoAcceptor#bind(SocketAddress)}.
-	 * If this session is managed by {@link IoConnector},
-	 * this method returns the same address with that of {@link #getRemoteAddress()}.
+	 * @return the socket address of remote peer.
 	 */
-	InetSocketAddress getServiceAddress();
+	InetSocketAddress getRemoteAddress();
 
 	/**
 	 * Returns the {@link WriteRequest} which is being processed by {@link IoService}.

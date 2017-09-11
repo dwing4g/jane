@@ -515,10 +515,8 @@ public final class SslFilter extends IoFilterAdapter {
 
 	@Override
 	public void exceptionCaught(NextFilter nextFilter, IoSession session, Throwable cause) throws Exception {
-
 		if (cause instanceof WriteToClosedSessionException) {
-			// Filter out SSL close notify, which is likely to fail to flush
-			// due to disconnection.
+			// Filter out SSL close notify, which is likely to fail to flush due to disconnection.
 			WriteToClosedSessionException e = (WriteToClosedSessionException) cause;
 			List<WriteRequest> failedRequests = e.getRequests();
 			boolean containsCloseNotify = false;

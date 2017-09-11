@@ -26,7 +26,6 @@ import java.nio.channels.FileChannel;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface FileRegion {
-
 	/**
 	 * The open <tt>FileChannel</tt> from which data will be read to send to remote host.
 	 *

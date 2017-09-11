@@ -35,12 +35,12 @@ import org.apache.mina.core.write.WriteRequestQueue;
  */
 public class DefaultIoSessionDataStructureFactory implements IoSessionDataStructureFactory {
 	@Override
-	public IoSessionAttributeMap getAttributeMap(IoSession session) throws Exception {
+	public IoSessionAttributeMap getAttributeMap(IoSession session) {
 		return new DefaultIoSessionAttributeMap();
 	}
 
 	@Override
-	public WriteRequestQueue getWriteRequestQueue(IoSession session) throws Exception {
+	public WriteRequestQueue getWriteRequestQueue(IoSession session) {
 		return new DefaultWriteRequestQueue(session);
 	}
 
@@ -90,7 +90,6 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 
 		@Override
 		public void dispose() throws Exception {
-			// Do nothing
 		}
 	}
 
@@ -105,7 +104,6 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 
 		@Override
 		public void dispose() {
-			// Do nothing
 		}
 
 		@Override

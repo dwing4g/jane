@@ -36,6 +36,9 @@ import org.apache.mina.transport.socket.AbstractSocketSessionConfig;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class NioSocketSession extends NioSession {
+	/** The session config */
+	private final AbstractSocketSessionConfig config;
+
 	/**
 	 * Creates a new instance of NioSocketSession.
 	 *
@@ -44,13 +47,13 @@ public final class NioSocketSession extends NioSession {
 	 * @param channel the used channel
 	 */
 	public NioSocketSession(IoService service, IoProcessor<NioSession> processor, SocketChannel channel) {
-		super(processor, service, channel);
+		super(service, processor, channel);
 		config = new SessionConfigImpl();
 		config.setAll(service.getSessionConfig());
 	}
 
 	private Socket getSocket() {
-		return ((SocketChannel) channel).socket();
+		return channel.socket();
 	}
 
 	@Override
@@ -60,7 +63,7 @@ public final class NioSocketSession extends NioSession {
 
 	@Override
 	SocketChannel getChannel() {
-		return (SocketChannel) channel;
+		return channel;
 	}
 
 	@Override
@@ -88,6 +91,122 @@ public final class NioSocketSession extends NioSession {
 	 * That allows the session to have its own configuration setting, over the IoService default one.
 	 */
 	private final class SessionConfigImpl extends AbstractSocketSessionConfig {
+		@Override
+		public int getReceiveBufferSize() {
+			try {
+				return getSocket().getReceiveBufferSize();
+			} catch (SocketException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		@Override
+		public void setReceiveBufferSize(int size) {
+			try {
+				getSocket().setReceiveBufferSize(size);
+			} catch (SocketException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		@Override
+		public int getSendBufferSize() {
+			try {
+				return getSocket().getSendBufferSize();
+			} catch (SocketException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		@Override
+		public void setSendBufferSize(int size) {
+			try {
+				getSocket().setSendBufferSize(size);
+			} catch (SocketException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		@Override
+		public int getSoLinger() {
+			try {
+				return getSocket().getSoLinger();
+			} catch (SocketException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		@Override
+		public void setSoLinger(int linger) {
+			try {
+				if (linger < 0) {
+					getSocket().setSoLinger(false, 0);
+				} else {
+					getSocket().setSoLinger(true, linger);
+				}
+			} catch (SocketException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		@Override
+		public int getTrafficClass() {
+			try {
+				return getSocket().getTrafficClass();
+			} catch (SocketException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		@Override
+		public void setTrafficClass(int tc) {
+			try {
+				getSocket().setTrafficClass(tc);
+			} catch (SocketException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		@Override
+		public boolean isReuseAddress() {
+			try {
+				return getSocket().getReuseAddress();
+			} catch (SocketException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		@Override
+		public void setReuseAddress(boolean on) {
+			try {
+				getSocket().setReuseAddress(on);
+			} catch (SocketException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		@Override
+		public boolean isTcpNoDelay() {
+			if (!isConnected()) {
+				return false;
+			}
+
+			try {
+				return getSocket().getTcpNoDelay();
+			} catch (SocketException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		@Override
+		public void setTcpNoDelay(boolean on) {
+			try {
+				getSocket().setTcpNoDelay(on);
+			} catch (SocketException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
 		@Override
 		public boolean isKeepAlive() {
 			try {
@@ -119,122 +238,6 @@ public final class NioSocketSession extends NioSession {
 		public void setOobInline(boolean on) {
 			try {
 				getSocket().setOOBInline(on);
-			} catch (SocketException e) {
-				throw new RuntimeException(e);
-			}
-		}
-
-		@Override
-		public boolean isReuseAddress() {
-			try {
-				return getSocket().getReuseAddress();
-			} catch (SocketException e) {
-				throw new RuntimeException(e);
-			}
-		}
-
-		@Override
-		public void setReuseAddress(boolean on) {
-			try {
-				getSocket().setReuseAddress(on);
-			} catch (SocketException e) {
-				throw new RuntimeException(e);
-			}
-		}
-
-		@Override
-		public int getSoLinger() {
-			try {
-				return getSocket().getSoLinger();
-			} catch (SocketException e) {
-				throw new RuntimeException(e);
-			}
-		}
-
-		@Override
-		public void setSoLinger(int linger) {
-			try {
-				if (linger < 0) {
-					getSocket().setSoLinger(false, 0);
-				} else {
-					getSocket().setSoLinger(true, linger);
-				}
-			} catch (SocketException e) {
-				throw new RuntimeException(e);
-			}
-		}
-
-		@Override
-		public boolean isTcpNoDelay() {
-			if (!isConnected()) {
-				return false;
-			}
-
-			try {
-				return getSocket().getTcpNoDelay();
-			} catch (SocketException e) {
-				throw new RuntimeException(e);
-			}
-		}
-
-		@Override
-		public void setTcpNoDelay(boolean on) {
-			try {
-				getSocket().setTcpNoDelay(on);
-			} catch (SocketException e) {
-				throw new RuntimeException(e);
-			}
-		}
-
-		@Override
-		public int getTrafficClass() {
-			try {
-				return getSocket().getTrafficClass();
-			} catch (SocketException e) {
-				throw new RuntimeException(e);
-			}
-		}
-
-		@Override
-		public void setTrafficClass(int tc) {
-			try {
-				getSocket().setTrafficClass(tc);
-			} catch (SocketException e) {
-				throw new RuntimeException(e);
-			}
-		}
-
-		@Override
-		public int getSendBufferSize() {
-			try {
-				return getSocket().getSendBufferSize();
-			} catch (SocketException e) {
-				throw new RuntimeException(e);
-			}
-		}
-
-		@Override
-		public void setSendBufferSize(int size) {
-			try {
-				getSocket().setSendBufferSize(size);
-			} catch (SocketException e) {
-				throw new RuntimeException(e);
-			}
-		}
-
-		@Override
-		public int getReceiveBufferSize() {
-			try {
-				return getSocket().getReceiveBufferSize();
-			} catch (SocketException e) {
-				throw new RuntimeException(e);
-			}
-		}
-
-		@Override
-		public void setReceiveBufferSize(int size) {
-			try {
-				getSocket().setReceiveBufferSize(size);
 			} catch (SocketException e) {
 				throw new RuntimeException(e);
 			}

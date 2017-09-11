@@ -29,12 +29,9 @@ package org.apache.mina.core.future;
  * // Wait until the message is completely written out to the O/S buffer.
  * future.awaitUninterruptibly();
  *
- * if( future.isWritten() )
- * {
+ * if (future.isWritten()) {
  *     // The message has been written successfully.
- * }
- * else
- * {
+ * } else {
  *     // The message couldn't be written out completely for some reason.
  *     // (e.g. Connection is closed)
  * }

@@ -93,7 +93,7 @@ public final class SslHandler {
 	 */
 	private final IoBuffer emptyBuffer = IoBuffer.allocate(0);
 
-	private SSLEngineResult.HandshakeStatus handshakeStatus;
+	private HandshakeStatus handshakeStatus;
 
 	/**
 	 * A flag set to true when the first SSL handshake has been completed
@@ -266,7 +266,7 @@ public final class SslHandler {
 	 * Check if there is any need to complete handshake.
 	 */
 	private boolean needToCompleteHandshake() {
-		return handshakeStatus == SSLEngineResult.HandshakeStatus.NEED_WRAP && !isInboundDone();
+		return handshakeStatus == HandshakeStatus.NEED_WRAP && !isInboundDone();
 	}
 
 	void schedulePreHandshakeWriteRequest(NextFilter nextFilter, WriteRequest writeRequest) {
@@ -436,19 +436,17 @@ public final class SslHandler {
 
 		// Loop until there is no more data in src
 		while (src.hasRemaining()) {
-
 			SSLEngineResult result = sslEngine.wrap(src, outNetBuffer.buf());
 
-			if (result.getStatus() == SSLEngineResult.Status.OK) {
-				if (result.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.NEED_TASK) {
+			if (result.getStatus() == Status.OK) {
+				if (result.getHandshakeStatus() == HandshakeStatus.NEED_TASK) {
 					doTasks();
 				}
-			} else if (result.getStatus() == SSLEngineResult.Status.BUFFER_OVERFLOW) {
+			} else if (result.getStatus() == Status.BUFFER_OVERFLOW) {
 				outNetBuffer.capacity(outNetBuffer.capacity() << 1);
 				outNetBuffer.limit(outNetBuffer.capacity());
 			} else {
-				throw new SSLException("SSLEngine error during encrypt: " + result.getStatus() + " src: " + src
-						+ "outNetBuffer: " + outNetBuffer);
+				throw new SSLException("SSLEngine error during encrypt: " + result.getStatus() + " src: " + src + "outNetBuffer: " + outNetBuffer);
 			}
 		}
 
@@ -474,14 +472,14 @@ public final class SslHandler {
 
 		for (;;) {
 			result = sslEngine.wrap(emptyBuffer.buf(), outNetBuffer.buf());
-			if (result.getStatus() != SSLEngineResult.Status.BUFFER_OVERFLOW) {
+			if (result.getStatus() != Status.BUFFER_OVERFLOW) {
 				break;
 			}
 			outNetBuffer.capacity(outNetBuffer.capacity() << 1);
 			outNetBuffer.limit(outNetBuffer.capacity());
 		}
 
-		if (result.getStatus() != SSLEngineResult.Status.CLOSED) {
+		if (result.getStatus() != Status.CLOSED) {
 			throw new SSLException("Improper close state: " + result);
 		}
 
@@ -491,19 +489,17 @@ public final class SslHandler {
 	}
 
 	private void checkStatus(SSLEngineResult res) throws SSLException {
-		SSLEngineResult.Status status = res.getStatus();
+		Status status = res.getStatus();
 
 		/*
 		 * The status may be:
 		 * OK - Normal operation
-		 * OVERFLOW - Should never happen since the application buffer is sized to hold the maximum
-		 * packet size.
+		 * OVERFLOW - Should never happen since the application buffer is sized to hold the maximum packet size.
 		 * UNDERFLOW - Need to read more data from the socket. It's normal.
 		 * CLOSED - The other peer closed the socket. Also normal.
 		 */
-		if (status == SSLEngineResult.Status.BUFFER_OVERFLOW) {
-			throw new SSLException("SSLEngine error during decrypt: " + status + " inNetBuffer: " + inNetBuffer
-					+ "appBuffer: " + appBuffer);
+		if (status == Status.BUFFER_OVERFLOW) {
+			throw new SSLException("SSLEngine error during decrypt: " + status + " inNetBuffer: " + inNetBuffer + "appBuffer: " + appBuffer);
 		}
 	}
 
@@ -552,10 +548,10 @@ public final class SslHandler {
 					LOGGER.debug("{} processing the NEED_UNWRAP state", SslFilter.getSessionInfo(session));
 				}
 				// we need more data read
-				SSLEngineResult.Status status = unwrapHandshake(nextFilter);
+				Status status = unwrapHandshake(nextFilter);
 
-				if (status == SSLEngineResult.Status.BUFFER_UNDERFLOW
-						&& handshakeStatus != SSLEngineResult.HandshakeStatus.FINISHED || isInboundDone()) {
+				if (status == Status.BUFFER_UNDERFLOW
+						&& handshakeStatus != HandshakeStatus.FINISHED || isInboundDone()) {
 					// We need more data or the session is closed
 					return;
 				}
@@ -580,7 +576,7 @@ public final class SslHandler {
 				for (;;) {
 					result = sslEngine.wrap(emptyBuffer.buf(), outNetBuffer.buf());
 
-					if (result.getStatus() != SSLEngineResult.Status.BUFFER_OVERFLOW) {
+					if (result.getStatus() != Status.BUFFER_OVERFLOW) {
 						break;
 					}
 					outNetBuffer.capacity(outNetBuffer.capacity() << 1);
@@ -654,7 +650,7 @@ public final class SslHandler {
 		return writeFuture;
 	}
 
-	private SSLEngineResult.Status unwrapHandshake(NextFilter nextFilter) throws SSLException {
+	private Status unwrapHandshake(NextFilter nextFilter) throws SSLException {
 		// Prepare the net data for reading.
 		if (inNetBuffer != null) {
 			inNetBuffer.flip();
@@ -662,7 +658,7 @@ public final class SslHandler {
 
 		if ((inNetBuffer == null) || !inNetBuffer.hasRemaining()) {
 			// Need more data.
-			return SSLEngineResult.Status.BUFFER_UNDERFLOW;
+			return Status.BUFFER_UNDERFLOW;
 		}
 
 		SSLEngineResult res = unwrap();
@@ -671,9 +667,7 @@ public final class SslHandler {
 		checkStatus(res);
 
 		// If handshake finished, no data was produced, and the status is still ok, try to unwrap more
-		if ((handshakeStatus == SSLEngineResult.HandshakeStatus.FINISHED)
-				&& (res.getStatus() == SSLEngineResult.Status.OK)
-				&& inNetBuffer.hasRemaining()) {
+		if (handshakeStatus == HandshakeStatus.FINISHED && res.getStatus() == Status.OK && inNetBuffer.hasRemaining()) {
 			res = unwrap();
 
 			// prepare to be written again
@@ -699,9 +693,8 @@ public final class SslHandler {
 	}
 
 	private void renegotiateIfNeeded(NextFilter nextFilter, SSLEngineResult res) throws SSLException {
-		if ((res.getStatus() != SSLEngineResult.Status.CLOSED)
-				&& (res.getStatus() != SSLEngineResult.Status.BUFFER_UNDERFLOW)
-				&& (res.getHandshakeStatus() != SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING)) {
+		if (res.getStatus() != Status.CLOSED && res.getStatus() != Status.BUFFER_UNDERFLOW
+				&& res.getHandshakeStatus() != HandshakeStatus.NOT_HANDSHAKING) {
 			// Renegotiation required.
 			handshakeComplete = false;
 			handshakeStatus = res.getHandshakeStatus();
@@ -733,7 +726,7 @@ public final class SslHandler {
 			// We can be processing the Handshake
 			hs = res.getHandshakeStatus();
 
-			if (status == SSLEngineResult.Status.BUFFER_OVERFLOW) {
+			if (status == Status.BUFFER_OVERFLOW) {
 				// We have to grow the target buffer, it's too small.
 				// Then we can call the unwrap method again
 				int newCapacity = sslEngine.getSession().getApplicationBufferSize();
@@ -747,9 +740,9 @@ public final class SslHandler {
 				appBuffer.expand(newCapacity);
 				continue;
 			}
-		} while (((status == SSLEngineResult.Status.OK) || (status == SSLEngineResult.Status.BUFFER_OVERFLOW))
-				&& ((hs == SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING) ||
-					(hs == SSLEngineResult.HandshakeStatus.NEED_UNWRAP)));
+		} while (((status == Status.OK) || (status == Status.BUFFER_OVERFLOW))
+				&& ((hs == HandshakeStatus.NOT_HANDSHAKING) ||
+					(hs == HandshakeStatus.NEED_UNWRAP)));
 
 		return res;
 	}
@@ -757,15 +750,12 @@ public final class SslHandler {
 	/**
 	 * Do all the outstanding handshake tasks in the current Thread.
 	 */
-	private SSLEngineResult.HandshakeStatus doTasks() {
-		/*
-		 * We could run this in a separate thread, but I don't see the need for
-		 * this when used from SSLFilter. Use thread filters in MINA instead?
-		 */
+	private HandshakeStatus doTasks() {
+		// We could run this in a separate thread, but I don't see the need for
+		// this when used from SSLFilter. Use thread filters in MINA instead?
 		Runnable runnable;
 		while ((runnable = sslEngine.getDelegatedTask()) != null) {
-			// TODO: we may have to use a thread pool here to improve the
-			// performances
+			// TODO: we may have to use a thread pool here to improve the performances
 			runnable.run();
 		}
 		return sslEngine.getHandshakeStatus();
@@ -773,9 +763,7 @@ public final class SslHandler {
 
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder();
-
-		sb.append("SSLStatus<");
+		StringBuilder sb = new StringBuilder("SSLStatus<");
 
 		if (handshakeComplete) {
 			sb.append("SSL established");
@@ -783,9 +771,7 @@ public final class SslHandler {
 			sb.append("Processing Handshake; Status:").append(handshakeStatus);
 		}
 
-		sb.append("; HandshakeComplete:").append(handshakeComplete).append('>');
-
-		return sb.toString();
+		return sb.append("; HandshakeComplete:").append(handshakeComplete).append('>').toString();
 	}
 
 	/**

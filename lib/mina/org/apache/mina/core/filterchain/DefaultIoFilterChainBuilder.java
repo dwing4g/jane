@@ -390,8 +390,7 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 
 	@Override
 	public String toString() {
-		StringBuilder buf = new StringBuilder();
-		buf.append("{ ");
+		StringBuilder buf = new StringBuilder("{ ");
 
 		boolean empty = true;
 
@@ -411,9 +410,7 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 			buf.append("empty");
 		}
 
-		buf.append(" }");
-
-		return buf.toString();
+		return buf.append(" }").toString();
 	}
 
 	private void checkBaseName(String baseName) {

@@ -19,7 +19,6 @@
 package org.apache.mina.core.session;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.channels.FileChannel;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -53,12 +52,6 @@ public abstract class AbstractIoSession implements IoSession {
 	/** An id generator guaranteed to generate unique IDs for the session */
 	private static final AtomicLong idGenerator = new AtomicLong();
 
-	/** The associated handler */
-	private final IoHandler handler;
-
-	/** The session config */
-	protected AbstractSocketSessionConfig config;
-
 	/** The service which will manage this session */
 	private final IoService service;
 
@@ -69,7 +62,6 @@ public abstract class AbstractIoSession implements IoSession {
 
 	private WriteRequest currentWriteRequest;
 
-	/** The session ID */
 	private final long sessionId = idGenerator.incrementAndGet(); // Set a new ID for this session
 
 	/** A future that will be set 'closed' when the connection is closed */
@@ -93,7 +85,6 @@ public abstract class AbstractIoSession implements IoSession {
 	 */
 	protected AbstractIoSession(IoService service) {
 		this.service = service;
-		handler = service.getHandler();
 	}
 
 	/**
@@ -113,12 +104,6 @@ public abstract class AbstractIoSession implements IoSession {
 	@Override
 	public final boolean isConnected() {
 		return !closeFuture.isClosed();
-	}
-
-	@Override
-	public boolean isActive() {
-		// Return true by default
-		return true;
 	}
 
 	@Override
@@ -164,8 +149,7 @@ public abstract class AbstractIoSession implements IoSession {
 	public final boolean setScheduledForFlush(boolean schedule) {
 		if (schedule) {
 			// If the current tag is set to false, switch it to true,
-			// otherwise, we do nothing but return false: the session
-			// is already scheduled for flush
+			// otherwise, we do nothing but return false: the session is already scheduled for flush
 			return scheduledForFlush.compareAndSet(false, schedule);
 		}
 
@@ -228,12 +212,7 @@ public abstract class AbstractIoSession implements IoSession {
 
 	@Override
 	public IoHandler getHandler() {
-		return handler;
-	}
-
-	@Override
-	public AbstractSocketSessionConfig getConfig() {
-		return config;
+		return service.getHandler();
 	}
 
 	@Override
@@ -243,8 +222,7 @@ public abstract class AbstractIoSession implements IoSession {
 		}
 
 		// If the session has been closed or is closing, we can't either
-		// send a message to the remote side. We generate a future
-		// containing an exception.
+		// send a message to the remote side. We generate a future containing an exception.
 		if (isClosing() || !isConnected()) {
 			WriteFuture future = new DefaultWriteFuture(this);
 			WriteRequest request = new DefaultWriteRequest(message, future);
@@ -304,18 +282,8 @@ public abstract class AbstractIoSession implements IoSession {
 	}
 
 	@Override
-	public final Object setAttribute(Object key) {
-		return setAttribute(key, Boolean.TRUE);
-	}
-
-	@Override
 	public final Object setAttributeIfAbsent(Object key, Object value) {
 		return attributes.setAttributeIfAbsent(key, value);
-	}
-
-	@Override
-	public final Object setAttributeIfAbsent(Object key) {
-		return setAttributeIfAbsent(key, Boolean.TRUE);
 	}
 
 	@Override
@@ -469,17 +437,10 @@ public abstract class AbstractIoSession implements IoSession {
 	}
 
 	@Override
-	public InetSocketAddress getServiceAddress() {
-		IoService ioService = getService();
-		return ioService instanceof IoAcceptor ? ((IoAcceptor)ioService).getLocalAddress() :
-				getRemoteAddress();
-	}
-
-	@Override
 	public String toString() {
 		if (isConnected() || isClosing()) {
 			String remote;
-			String local = null;
+			String local;
 
 			try {
 				remote = String.valueOf(getRemoteAddress());
@@ -490,6 +451,7 @@ public abstract class AbstractIoSession implements IoSession {
 			try {
 				local = String.valueOf(getLocalAddress());
 			} catch (Exception e) {
+				local = null;
 			}
 
 			if (getService() instanceof IoAcceptor) {
@@ -502,9 +464,6 @@ public abstract class AbstractIoSession implements IoSession {
 		return '(' + getIdAsString() + ") Session disconnected ...";
 	}
 
-	/**
-	 * Get the Id as a String
-	 */
 	private String getIdAsString() {
 		String id = Long.toHexString(getId()).toUpperCase();
 		return id.length() <= 8 ? "0x00000000".substring(0, 10 - id.length()) + id : "0x" + id;

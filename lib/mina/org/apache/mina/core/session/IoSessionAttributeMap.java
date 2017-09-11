@@ -29,10 +29,9 @@ import java.util.Set;
  */
 public interface IoSessionAttributeMap {
 	/**
-	 * @return the value of user defined attribute associated with the
-	 * specified key.  If there's no such attribute, the default value is
-	 * returned.  This method is same with the following code except that the
-	 * operation is performed atomically.
+	 * @return the value of user defined attribute associated with the specified key.
+	 * If there's no such attribute, the default value is returned.
+	 * This method is same with the following code except that the operation is performed atomically.
 	 * <pre>
 	 * if (containsAttribute(key)) {
 	 *     return getAttribute(key);
@@ -56,9 +55,8 @@ public interface IoSessionAttributeMap {
 	Object setAttribute(Object key, Object value);
 
 	/**
-	 * Sets a user defined attribute if the attribute with the specified key
-	 * is not set yet.  This method is same with the following code except
-	 * that the operation is performed atomically.
+	 * Sets a user defined attribute if the attribute with the specified key is not set yet.
+	 * This method is same with the following code except that the operation is performed atomically.
 	 * <pre>
 	 * if (containsAttribute(key)) {
 	 *     return getAttribute(key);
@@ -84,8 +82,7 @@ public interface IoSessionAttributeMap {
 	/**
 	 * Removes a user defined attribute with the specified key if the current
 	 * attribute value is equal to the specified value.  This method is same
-	 * with the following code except that the operation is performed
-	 * atomically.
+	 * with the following code except that the operation is performed atomically.
 	 * <pre>
 	 * if (containsAttribute(key) &amp;&amp; getAttribute(key).equals(value)) {
 	 *     removeAttribute(key);
@@ -97,16 +94,15 @@ public interface IoSessionAttributeMap {
 	 *
 	 * @param key The key we are looking for
 	 * @param value The value to remove
-	 * @return <tt>true</tt> if the value has been removed, <tt>false</tt> if the key was
-	 * not found of the value not removed
+	 * @return <tt>true</tt> if the value has been removed,
+	 *         <tt>false</tt> if the key was not found of the value not removed
 	 */
 	boolean removeAttribute(Object key, Object value);
 
 	/**
 	 * Replaces a user defined attribute with the specified key if the
 	 * value of the attribute is equals to the specified old value.
-	 * This method is same with the following code except that the operation
-	 * is performed atomically.
+	 * This method is same with the following code except that the operation is performed atomically.
 	 * <pre>
 	 * if (containsAttribute(key) &amp;&amp; getAttribute(key).equals(oldValue)) {
 	 *     setAttribute(key, newValue);
@@ -119,14 +115,13 @@ public interface IoSessionAttributeMap {
 	 * @param key The key we are looking for
 	 * @param oldValue The old value to replace
 	 * @param newValue The new value to set
-	 * @return <tt>true</tt> if the value has been replaced, <tt>false</tt> if the key was
-	 * not found of the value not replaced
+	 * @return <tt>true</tt> if the value has been replaced,
+	 *         <tt>false</tt> if the key was not found of the value not replaced
 	 */
 	boolean replaceAttribute(Object key, Object oldValue, Object newValue);
 
 	/**
-	 * @return <tt>true</tt> if this session contains the attribute with
-	 * the specified <tt>key</tt>.
+	 * @return <tt>true</tt> if this session contains the attribute with the specified <tt>key</tt>.
 	 *
 	 * @param key The key we are looking for
 	 */

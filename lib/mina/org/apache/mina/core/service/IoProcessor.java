@@ -22,10 +22,8 @@ import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequest;
 
 /**
- * An internal interface to represent an 'I/O processor' that performs
- * actual I/O operations for {@link IoSession}s.  It abstracts existing
- * reactor frameworks such as Java NIO once again to simplify transport
- * implementations.
+ * An internal interface to represent an 'I/O processor' that performs actual I/O operations for {@link IoSession}s.
+ * It abstracts existing reactor frameworks such as Java NIO once again to simplify transport implementations.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  *
@@ -74,8 +72,7 @@ public interface IoProcessor<S extends IoSession> {
 
 	/**
 	 * @return <tt>true</tt> if and if only {@link #dispose()} method has been called.
-	 * Please note that this method will return <tt>true</tt>
-	 * even after all the related resources are released.
+	 * Please note that this method will return <tt>true</tt> even after all the related resources are released.
 	 */
 	boolean isDisposing();
 
@@ -86,8 +83,7 @@ public interface IoProcessor<S extends IoSession> {
 
 	/**
 	 * Releases any resources allocated by this processor.
-	 * Please note that the resources might not be released as long as
-	 * there are any sessions managed by this processor.
+	 * Please note that the resources might not be released as long as there are any sessions managed by this processor.
 	 * Most implementations will close all sessions immediately and release the related resources.
 	 */
 	void dispose();

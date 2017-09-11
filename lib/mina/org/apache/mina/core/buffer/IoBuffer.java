@@ -144,11 +144,9 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	private static boolean useDirectBuffer;
 
 	/**
-	 * Creates a new instance. This is an empty constructor. It's protected,
-	 * to forbid its usage by the users.
+	 * It's protected, to forbid its usage by the users.
 	 */
 	protected IoBuffer() {
-		// Do nothing
 	}
 
 	@Override
@@ -397,28 +395,16 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 */
 	public abstract IoBuffer capacity(int newCapacity);
 
-	/**
-	 * @return <tt>true</tt> if and only if <tt>autoExpand</tt> is turned on.
-	 */
 	public abstract boolean isAutoExpand();
 
 	/**
-	 * Turns on or off <tt>autoExpand</tt>.
-	 *
-	 * @param autoExpand The flag value to set
 	 * @return The modified IoBuffer instance
 	 */
 	public abstract IoBuffer setAutoExpand(boolean autoExpand);
 
-	/**
-	 * @return <tt>true</tt> if and only if <tt>autoShrink</tt> is turned on.
-	 */
 	public abstract boolean isAutoShrink();
 
 	/**
-	 * Turns on or off <tt>autoShrink</tt>.
-	 *
-	 * @param autoShrink The flag value to set
 	 * @return The modified IoBuffer instance
 	 */
 	public abstract IoBuffer setAutoShrink(boolean autoShrink);
@@ -479,12 +465,11 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 *                           |
 	 *                           +-- newCapacity
 	 *
-	 * You can now put ( L - pos + V ) bytes in the buffer, which limit is now
-	 * equals to the capacity.
+	 * You can now put ( L - pos + V ) bytes in the buffer, which limit is now equals to the capacity.
 	 * </pre>
 	 *
-	 * Note that the expecting remaining bytes starts at the current position. In all
-	 * those examples, the position is 0.
+	 * Note that the expecting remaining bytes starts at the current position.
+	 * In all those examples, the position is 0.
 	 *
 	 * @param expectedRemaining The expected remaining bytes in the buffer
 	 * @return The modified IoBuffer instance
@@ -493,9 +478,8 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 
 	/**
 	 * Changes the capacity and limit of this buffer so this buffer get the
-	 * specified <tt>expectedRemaining</tt> room from the specified
-	 * <tt>position</tt>. This method works even if you didn't set
-	 * <tt>autoExpand</tt> to <tt>true</tt>.
+	 * specified <tt>expectedRemaining</tt> room from the specified <tt>position</tt>.
+	 * This method works even if you didn't set <tt>autoExpand</tt> to <tt>true</tt>.
 	 * Assuming a buffer contains N bytes, its position is P and its current capacity is C,
 	 * here are the resulting buffer if we call the expand method with a expectedRemaining value V:
 	 *
@@ -564,8 +548,8 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 * memory as possible while retaining the position, limit and the buffer
 	 * content between the position and limit.
 	 * <br>
-	 * <b>The capacity of the buffer never becomes less than {@link #minimumCapacity()}</b>
-	 * <br>.
+	 * <b>The capacity of the buffer never becomes less than {@link #minimumCapacity()}</b>.
+	 * <br>
 	 * The mark is discarded once the capacity changes.
 	 * <br>
 	 * Typically, a call to this method tries to remove as much unused bytes
@@ -608,6 +592,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 
 	/**
 	 * @see java.nio.Buffer#position()
+	 *
 	 * @return The current position in the buffer
 	 */
 	public abstract int position();
@@ -654,7 +639,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 * @see java.nio.Buffer#reset()
 	 *
 	 * @return the modified IoBuffer
-
 	 */
 	public abstract IoBuffer reset();
 
@@ -662,7 +646,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 * @see java.nio.Buffer#clear()
 	 *
 	 * @return the modified IoBuffer
-
 	 */
 	public abstract IoBuffer clear();
 
@@ -671,7 +654,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 * The position is set to zero, the limit is set to the capacity, and the mark is discarded.
 	 *
 	 * @return the modified IoBuffer
-
 	 */
 	public abstract IoBuffer sweep();
 
@@ -681,7 +663,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 *
 	 * @param value The value to put in the buffer
 	 * @return the modified IoBuffer
-
 	 */
 	public abstract IoBuffer sweep(byte value);
 
@@ -689,7 +670,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 * @see java.nio.Buffer#flip()
 	 *
 	 * @return the modified IoBuffer
-
 	 */
 	public abstract IoBuffer flip();
 
@@ -697,7 +677,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 * @see java.nio.Buffer#rewind()
 	 *
 	 * @return the modified IoBuffer
-
 	 */
 	public abstract IoBuffer rewind();
 
@@ -727,7 +706,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 * @see ByteBuffer#slice()
 	 *
 	 * @return the modified IoBuffer
-
 	 */
 	public abstract IoBuffer slice();
 
@@ -771,7 +749,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 *
 	 * @param b The byte to put in the buffer
 	 * @return the modified IoBuffer
-
 	 */
 	public abstract IoBuffer put(byte b);
 
@@ -797,7 +774,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 * @param index The position where the byte will be put
 	 * @param b The byte to put
 	 * @return the modified IoBuffer
-
 	 */
 	public abstract IoBuffer put(int index, byte b);
 
@@ -1015,8 +991,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 *
 	 * @param index The index from which the medium int will be read
 	 * @return The medium int value at the given index
-	 * @throws IndexOutOfBoundsException
-	 *         If <tt>index</tt> is negative or not smaller than the buffer's limit
+	 * @throws IndexOutOfBoundsException If <tt>index</tt> is negative or not smaller than the buffer's limit
 	 */
 	public abstract int getMediumInt(int index);
 
@@ -1028,17 +1003,15 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 *
 	 * @param index The index from which the unsigned medium int will be read
 	 * @return The unsigned medium int value at the given index
-	 * @throws IndexOutOfBoundsException
-	 *         If <tt>index</tt> is negative or not smaller than the buffer's limit
+	 * @throws IndexOutOfBoundsException If <tt>index</tt> is negative or not smaller than the buffer's limit
 	 */
 	public abstract int getUnsignedMediumInt(int index);
 
 	/**
 	 * Relative <i>put</i> method for writing a medium int value.
 	 * <p>
-	 * Writes three bytes containing the given int value, in the current byte
-	 * order, into this buffer at the current position, and then increments the
-	 * position by three.
+	 * Writes three bytes containing the given int value, in the current byte order,
+	 * into this buffer at the current position, and then increments the position by three.
 	 *
 	 * @param value The medium int value to be written
 	 * @return the modified IoBuffer
@@ -1049,14 +1022,13 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	/**
 	 * Absolute <i>put</i> method for writing a medium int value.
 	 * <p>
-	 * Writes three bytes containing the given int value, in the current byte
-	 * order, into this buffer at the given index.
+	 * Writes three bytes containing the given int value, in the current byte order,
+	 * into this buffer at the given index.
 	 *
 	 * @param index The index at which the bytes will be written
 	 * @param value The medium int value to be written
 	 * @return the modified IoBuffer
-	 * @throws IndexOutOfBoundsException
-	 *         If <tt>index</tt> is negative or not smaller than the buffer's limit, minus three
+	 * @throws IndexOutOfBoundsException If <tt>index</tt> is negative or not smaller than the buffer's limit, minus three
 	 */
 	public abstract IoBuffer putMediumInt(int index, int value);
 
@@ -1325,8 +1297,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 * @return The modified IoBuffer
 	 * @throws CharacterCodingException When we have an error while decoding the String
 	 */
-	public abstract IoBuffer putString(CharSequence val, int fieldSize, CharsetEncoder encoder)
-			throws CharacterCodingException;
+	public abstract IoBuffer putString(CharSequence val, int fieldSize, CharsetEncoder encoder) throws CharacterCodingException;
 
 	/////////////////////
 	// IndexOf methods //

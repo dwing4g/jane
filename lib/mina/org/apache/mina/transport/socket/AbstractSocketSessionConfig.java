@@ -36,18 +36,16 @@ public abstract class AbstractSocketSessionConfig {
 	private int maxReadBufferSize = 65536;
 
 	/**
-	 * @return the size of the read buffer that I/O processor allocates
-	 * per each read.  It's unusual to adjust this property because
-	 * it's often adjusted automatically by the I/O processor.
+	 * @return the size of the read buffer that I/O processor allocates per each read.
+	 * It's unusual to adjust this property because it's often adjusted automatically by the I/O processor.
 	 */
 	public int getReadBufferSize() {
 		return readBufferSize;
 	}
 
 	/**
-	 * Sets the size of the read buffer that I/O processor allocates
-	 * per each read.  It's unusual to adjust this property because
-	 * it's often adjusted automatically by the I/O processor.
+	 * Sets the size of the read buffer that I/O processor allocates per each read.
+	 * It's unusual to adjust this property because it's often adjusted automatically by the I/O processor.
 	 *
 	 * @param readBufferSize The size of the read buffer
 	 */
@@ -59,18 +57,16 @@ public abstract class AbstractSocketSessionConfig {
 	}
 
 	/**
-	 * @return the minimum size of the read buffer that I/O processor
-	 * allocates per each read.  I/O processor will not decrease the
-	 * read buffer size to the smaller value than this property value.
+	 * @return the minimum size of the read buffer that I/O processor allocates per each read.
+	 *         I/O processor will not decrease the read buffer size to the smaller value than this property value.
 	 */
 	public int getMinReadBufferSize() {
 		return minReadBufferSize;
 	}
 
 	/**
-	 * Sets the minimum size of the read buffer that I/O processor
-	 * allocates per each read.  I/O processor will not decrease the
-	 * read buffer size to the smaller value than this property value.
+	 * Sets the minimum size of the read buffer that I/O processor allocates per each read.
+	 * I/O processor will not decrease the read buffer size to the smaller value than this property value.
 	 *
 	 * @param minReadBufferSize The minimum size of the read buffer
 	 */
@@ -79,25 +75,22 @@ public abstract class AbstractSocketSessionConfig {
 			throw new IllegalArgumentException("minReadBufferSize: " + minReadBufferSize + " (expected: 1+)");
 		}
 		if (minReadBufferSize > maxReadBufferSize) {
-			throw new IllegalArgumentException("minReadBufferSize: " + minReadBufferSize + " (expected: smaller than "
-					+ maxReadBufferSize + ')');
+			throw new IllegalArgumentException("minReadBufferSize: " + minReadBufferSize + " (expected: smaller than " + maxReadBufferSize + ')');
 		}
 		this.minReadBufferSize = minReadBufferSize;
 	}
 
 	/**
-	 * @return the maximum size of the read buffer that I/O processor
-	 * allocates per each read.  I/O processor will not increase the
-	 * read buffer size to the greater value than this property value.
+	 * @return the maximum size of the read buffer that I/O processor allocates per each read.
+	 * I/O processor will not increase the read buffer size to the greater value than this property value.
 	 */
 	public int getMaxReadBufferSize() {
 		return maxReadBufferSize;
 	}
 
 	/**
-	 * Sets the maximum size of the read buffer that I/O processor
-	 * allocates per each read.  I/O processor will not increase the
-	 * read buffer size to the greater value than this property value.
+	 * Sets the maximum size of the read buffer that I/O processor allocates per each read.
+	 * I/O processor will not increase the read buffer size to the greater value than this property value.
 	 *
 	 * @param maxReadBufferSize The maximum size of the read buffer
 	 */
@@ -106,15 +99,13 @@ public abstract class AbstractSocketSessionConfig {
 			throw new IllegalArgumentException("maxReadBufferSize: " + maxReadBufferSize + " (expected: 1+)");
 		}
 		if (maxReadBufferSize < minReadBufferSize) {
-			throw new IllegalArgumentException("maxReadBufferSize: " + maxReadBufferSize + " (expected: greater than "
-					+ minReadBufferSize + ')');
+			throw new IllegalArgumentException("maxReadBufferSize: " + maxReadBufferSize + " (expected: greater than " + minReadBufferSize + ')');
 		}
 		this.maxReadBufferSize = maxReadBufferSize;
 	}
 
 	/**
-	 * Sets all configuration properties retrieved from the specified
-	 * <tt>config</tt>.
+	 * Sets all configuration properties retrieved from the specified <tt>config</tt>.
 	 *
 	 * @param config The configuration to use
 	 */

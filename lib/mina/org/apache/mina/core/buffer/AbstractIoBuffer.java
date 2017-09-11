@@ -34,9 +34,8 @@ import java.nio.charset.CoderResult;
 
 /**
  * A base implementation of {@link IoBuffer}.
- * This implementation assumes that {@link IoBuffer#buf()} always returns
- * a correct NIO {@link ByteBuffer} instance.  Most implementations could
- * extend this class and implement their own buffer management mechanism.
+ * This implementation assumes that {@link IoBuffer#buf()} always returns a correct NIO {@link ByteBuffer} instance.
+ * Most implementations could extend this class and implement their own buffer management mechanism.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  * @see IoBufferAllocator
@@ -225,7 +224,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 
 	@Override
 	public final IoBuffer shrink() {
-
 		if (!recapacityAllowed) {
 			throw new IllegalStateException("Derived buffers and their parent can't be expanded.");
 		}
@@ -452,8 +450,7 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 
 			//// Sanity check.
 			if (remaining > newCapacity) {
-				throw new IllegalStateException("The amount of the remaining bytes is greater than "
-						+ "the new capacity.");
+				throw new IllegalStateException("The amount of the remaining bytes is greater than the new capacity.");
 			}
 
 			//// Reallocate.
@@ -674,8 +671,7 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	}
 
 	/**
-	 * Implement this method to return the unexpandable duplicate of this
-	 * buffer.
+	 * Implement this method to return the unexpandable duplicate of this buffer.
 	 *
 	 * @return the IoBoffer instance
 	 */
@@ -703,8 +699,7 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		int endIndex = index + length;
 
 		if (endIndex > limit) {
-			throw new IndexOutOfBoundsException("index + length (" + endIndex + ") is greater than limit ("
-					+ limit + ')');
+			throw new IndexOutOfBoundsException("index + length (" + endIndex + ") is greater than limit (" + limit + ')');
 		}
 
 		clear();
@@ -727,8 +722,7 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		int limit = limit();
 		int nextPos = pos + length;
 		if (limit < nextPos) {
-			throw new IndexOutOfBoundsException("position + length (" + nextPos + ") is greater than limit ("
-					+ limit + ')');
+			throw new IndexOutOfBoundsException("position + length (" + nextPos + ") is greater than limit (" + limit + ')');
 		}
 
 		limit(pos + length);
@@ -995,7 +989,7 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 
 	@Override
 	public String getHexDump() {
-		return this.getHexDump(Integer.MAX_VALUE);
+		return getHexDump(Integer.MAX_VALUE);
 	}
 
 	/** The getHexdump digits lookup table */
@@ -1234,8 +1228,7 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 							expandedState++;
 							break;
 						default:
-							throw new RuntimeException("Expanded by "
-									+ (int) Math.ceil(in.remaining() * encoder.maxBytesPerChar())
+							throw new RuntimeException("Expanded by " + (int) Math.ceil(in.remaining() * encoder.maxBytesPerChar())
 									+ " but that wasn't enough for '" + val + '\'');
 					}
 					continue;
