@@ -382,9 +382,6 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 		entries.clear();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void buildFilterChain(IoFilterChain chain) throws Exception {
 		for (Entry e : entries) {
@@ -392,9 +389,6 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public String toString() {
 		StringBuilder buf = new StringBuilder();
@@ -459,17 +453,11 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 			this.filter = filter;
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public String getName() {
 			return name;
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public IoFilter getFilter() {
 			return filter;
@@ -479,9 +467,6 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 			this.filter = filter;
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public NextFilter getNextFilter() {
 			throw new IllegalStateException();
@@ -492,33 +477,21 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 			return '(' + getName() + ':' + filter + ')';
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public void addAfter(String name1, IoFilter filter1) {
 			DefaultIoFilterChainBuilder.this.addAfter(getName(), name1, filter1);
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public void addBefore(String name1, IoFilter filter1) {
 			DefaultIoFilterChainBuilder.this.addBefore(getName(), name1, filter1);
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public void remove() {
 			DefaultIoFilterChainBuilder.this.remove(getName());
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public void replace(IoFilter newFilter) {
 			DefaultIoFilterChainBuilder.this.replace(getName(), newFilter);

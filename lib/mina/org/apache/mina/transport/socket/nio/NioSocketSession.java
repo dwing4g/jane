@@ -55,48 +55,24 @@ public final class NioSocketSession extends NioSession {
 		return ((SocketChannel) channel).socket();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public SocketSessionConfig getConfig() {
 		return (SocketSessionConfig) config;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	SocketChannel getChannel() {
 		return (SocketChannel) channel;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@SuppressWarnings("resource")
-	@Override
-	public InetSocketAddress getRemoteAddress() {
-		if (channel == null) {
-			return null;
-		}
-
-		Socket socket = getSocket();
-		return socket != null ? (InetSocketAddress) socket.getRemoteSocketAddress() : null;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@SuppressWarnings("resource")
 	@Override
 	public InetSocketAddress getLocalAddress() {
-		if (channel == null) {
-			return null;
-		}
+		return channel != null ? (InetSocketAddress) getSocket().getLocalSocketAddress() : null;
+	}
 
-		Socket socket = getSocket();
-		return socket != null ? (InetSocketAddress) socket.getLocalSocketAddress() : null;
+	@Override
+	public InetSocketAddress getRemoteAddress() {
+		return channel != null ? (InetSocketAddress) getSocket().getRemoteSocketAddress() : null;
 	}
 
 	protected static void destroy(NioSession session) throws IOException {
@@ -110,14 +86,10 @@ public final class NioSocketSession extends NioSession {
 	}
 
 	/**
-	 * A private class storing a copy of the IoService configuration when the IoSession
-	 * is created. That allows the session to have its own configuration setting, over
-	 * the IoService default one.
+	 * A private class storing a copy of the IoService configuration when the IoSession is created.
+	 * That allows the session to have its own configuration setting, over the IoService default one.
 	 */
 	private final class SessionConfigImpl extends AbstractSocketSessionConfig {
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public boolean isKeepAlive() {
 			try {
@@ -127,9 +99,6 @@ public final class NioSocketSession extends NioSession {
 			}
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public void setKeepAlive(boolean on) {
 			try {
@@ -139,9 +108,6 @@ public final class NioSocketSession extends NioSession {
 			}
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public boolean isOobInline() {
 			try {
@@ -151,9 +117,6 @@ public final class NioSocketSession extends NioSession {
 			}
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public void setOobInline(boolean on) {
 			try {
@@ -163,9 +126,6 @@ public final class NioSocketSession extends NioSession {
 			}
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public boolean isReuseAddress() {
 			try {
@@ -175,9 +135,6 @@ public final class NioSocketSession extends NioSession {
 			}
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public void setReuseAddress(boolean on) {
 			try {
@@ -187,9 +144,6 @@ public final class NioSocketSession extends NioSession {
 			}
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public int getSoLinger() {
 			try {
@@ -199,9 +153,6 @@ public final class NioSocketSession extends NioSession {
 			}
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public void setSoLinger(int linger) {
 			try {
@@ -215,9 +166,6 @@ public final class NioSocketSession extends NioSession {
 			}
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public boolean isTcpNoDelay() {
 			if (!isConnected()) {
@@ -231,9 +179,6 @@ public final class NioSocketSession extends NioSession {
 			}
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public void setTcpNoDelay(boolean on) {
 			try {
@@ -243,9 +188,6 @@ public final class NioSocketSession extends NioSession {
 			}
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public int getTrafficClass() {
 			try {
@@ -255,9 +197,6 @@ public final class NioSocketSession extends NioSession {
 			}
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public void setTrafficClass(int tc) {
 			try {
@@ -267,9 +206,6 @@ public final class NioSocketSession extends NioSession {
 			}
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public int getSendBufferSize() {
 			try {
@@ -279,9 +215,6 @@ public final class NioSocketSession extends NioSession {
 			}
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public void setSendBufferSize(int size) {
 			try {
@@ -291,9 +224,6 @@ public final class NioSocketSession extends NioSession {
 			}
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public int getReceiveBufferSize() {
 			try {
@@ -303,9 +233,6 @@ public final class NioSocketSession extends NioSession {
 			}
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public void setReceiveBufferSize(int size) {
 			try {

@@ -50,9 +50,6 @@ public class DefaultConnectFuture extends DefaultIoFuture implements ConnectFutu
 		return failedFuture;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public IoSession getSession() {
 		Object v = getValue();
@@ -70,34 +67,22 @@ public class DefaultConnectFuture extends DefaultIoFuture implements ConnectFutu
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public Throwable getException() {
 		Object v = getValue();
 		return (v instanceof Throwable) ? (Throwable) v : null;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public boolean isConnected() {
 		return getValue() instanceof IoSession;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public boolean isCanceled() {
 		return getValue() == CANCELED;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void setSession(IoSession session) {
 		if (session == null) {
@@ -107,9 +92,6 @@ public class DefaultConnectFuture extends DefaultIoFuture implements ConnectFutu
 		setValue(session);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void setException(Throwable exception) {
 		if (exception == null) {
@@ -119,41 +101,26 @@ public class DefaultConnectFuture extends DefaultIoFuture implements ConnectFutu
 		setValue(exception);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public boolean cancel() {
 		return setValue(CANCELED);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public ConnectFuture await() throws InterruptedException {
 		return (ConnectFuture) super.await();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public ConnectFuture awaitUninterruptibly() {
 		return (ConnectFuture) super.awaitUninterruptibly();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public ConnectFuture addListener(IoFutureListener<?> listener) {
 		return (ConnectFuture) super.addListener(listener);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public ConnectFuture removeListener(IoFutureListener<?> listener) {
 		return (ConnectFuture) super.removeListener(listener);

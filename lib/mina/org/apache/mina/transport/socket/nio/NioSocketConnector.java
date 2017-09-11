@@ -57,17 +57,11 @@ public final class NioSocketConnector extends AbstractPollingIoConnector {
 		super(processorCount);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	protected void init() throws IOException {
 		selector = Selector.open();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	protected void destroy() throws IOException {
 		if (selector != null) {
@@ -75,34 +69,22 @@ public final class NioSocketConnector extends AbstractPollingIoConnector {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	protected Iterator<SocketChannel> allHandles() {
 		return new SocketChannelIterator(selector.keys());
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	protected boolean connect(SocketChannel channel, SocketAddress remoteAddress) throws IOException {
 		return channel.connect(remoteAddress);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	protected ConnectionRequest getConnectionRequest(SocketChannel channel) {
 		SelectionKey key = channel.keyFor(selector);
 		return key != null && key.isValid() ? (ConnectionRequest) key.attachment() : null;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	protected void close(SocketChannel channel) throws IOException {
 		SelectionKey key = channel.keyFor(selector);
@@ -114,9 +96,6 @@ public final class NioSocketConnector extends AbstractPollingIoConnector {
 		channel.close();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	protected boolean finishConnect(SocketChannel channel) throws IOException {
 		if (channel.finishConnect()) {
@@ -132,9 +111,6 @@ public final class NioSocketConnector extends AbstractPollingIoConnector {
 		return false;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	protected SocketChannel newHandle(SocketAddress localAddress) throws IOException {
 		@SuppressWarnings("resource")
@@ -164,41 +140,26 @@ public final class NioSocketConnector extends AbstractPollingIoConnector {
 		return ch;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	protected NioSession newSession(IoProcessor<NioSession> processor, SocketChannel channel) {
 		return new NioSocketSession(this, processor, channel);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	protected void register(SocketChannel channel, ConnectionRequest request) throws IOException {
 		channel.register(selector, SelectionKey.OP_CONNECT, request);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	protected int select(long timeout) throws IOException {
 		return selector.select(timeout);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	protected Iterator<SocketChannel> selectedHandles() {
 		return new SocketChannelIterator(selector.selectedKeys());
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	protected void wakeup() {
 		selector.wakeup();
@@ -212,26 +173,17 @@ public final class NioSocketConnector extends AbstractPollingIoConnector {
 			i = selectedKeys.iterator();
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public boolean hasNext() {
 			return i.hasNext();
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public SocketChannel next() {
 			SelectionKey key = i.next();
 			return (SocketChannel) key.channel();
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public void remove() {
 			i.remove();

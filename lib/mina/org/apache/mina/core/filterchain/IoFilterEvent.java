@@ -68,9 +68,6 @@ public final class IoFilterEvent extends IoEvent {
 		return nextFilter;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void fire() {
 		IoSession session = getSession();

@@ -28,28 +28,22 @@ import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class DefaultSocketSessionConfig extends AbstractSocketSessionConfig {
-	private static final int DEFAULT_TRAFFIC_CLASS = 0;
 	private static final int DEFAULT_SO_LINGER = -1;
+	private static final int DEFAULT_TRAFFIC_CLASS = 0;
 	private static final boolean DEFAULT_REUSE_ADDRESS = false;
+	private static final boolean DEFAULT_TCP_NO_DELAY = false;
 	private static final boolean DEFAULT_KEEP_ALIVE = false;
 	private static final boolean DEFAULT_OOB_INLINE = false;
-	private static final boolean DEFAULT_TCP_NO_DELAY = false;
 
-	protected IoService parent;
-
-	/* The SO_RCVBUF parameter. Set to -1 (ie, will default to OS default) */
-	private int receiveBufferSize = -1;
-
-	/* The SO_SNDBUF parameter. Set to -1 (ie, will default to OS default) */
-	private int sendBufferSize = -1;
-
-	private int trafficClass = DEFAULT_TRAFFIC_CLASS;
+	private int receiveBufferSize = -1; // The SO_RCVBUF parameter. Set to -1 (ie, will default to OS default)
+	private int sendBufferSize = -1; // The SO_SNDBUF parameter. Set to -1 (ie, will default to OS default)
 	private int soLinger = DEFAULT_SO_LINGER;
+	private int trafficClass = DEFAULT_TRAFFIC_CLASS;
 	private boolean defaultReuseAddress;
 	private boolean reuseAddress;
+	private boolean tcpNoDelay = DEFAULT_TCP_NO_DELAY;
 	private boolean keepAlive = DEFAULT_KEEP_ALIVE;
 	private boolean oobInline = DEFAULT_OOB_INLINE;
-	private boolean tcpNoDelay = DEFAULT_TCP_NO_DELAY;
 
 	/**
 	 * Initialize this configuration.
@@ -57,200 +51,126 @@ public final class DefaultSocketSessionConfig extends AbstractSocketSessionConfi
 	 * @param p The parent IoService.
 	 */
 	public void init(IoService p) {
-		parent = p;
-		defaultReuseAddress = (p instanceof NioSocketAcceptor || DEFAULT_REUSE_ADDRESS);
-		reuseAddress = defaultReuseAddress;
+		reuseAddress = defaultReuseAddress = (p instanceof NioSocketAcceptor || DEFAULT_REUSE_ADDRESS);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean isReuseAddress() {
-		return reuseAddress;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setReuseAddress(boolean reuseAddress) {
-		this.reuseAddress = reuseAddress;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public int getReceiveBufferSize() {
 		return receiveBufferSize;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void setReceiveBufferSize(int receiveBufferSize) {
 		this.receiveBufferSize = receiveBufferSize;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public int getSendBufferSize() {
-		return sendBufferSize;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setSendBufferSize(int sendBufferSize) {
-		this.sendBufferSize = sendBufferSize;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public int getTrafficClass() {
-		return trafficClass;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setTrafficClass(int trafficClass) {
-		this.trafficClass = trafficClass;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean isKeepAlive() {
-		return keepAlive;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setKeepAlive(boolean keepAlive) {
-		this.keepAlive = keepAlive;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean isOobInline() {
-		return oobInline;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setOobInline(boolean oobInline) {
-		this.oobInline = oobInline;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public int getSoLinger() {
-		return soLinger;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setSoLinger(int soLinger) {
-		this.soLinger = soLinger;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean isTcpNoDelay() {
-		return tcpNoDelay;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setTcpNoDelay(boolean tcpNoDelay) {
-		this.tcpNoDelay = tcpNoDelay;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected boolean isKeepAliveChanged() {
-		return keepAlive != DEFAULT_KEEP_ALIVE;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected boolean isOobInlineChanged() {
-		return oobInline != DEFAULT_OOB_INLINE;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	protected boolean isReceiveBufferSizeChanged() {
 		return receiveBufferSize != -1;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
-	protected boolean isReuseAddressChanged() {
-		return reuseAddress != defaultReuseAddress;
+	public int getSendBufferSize() {
+		return sendBufferSize;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
+	@Override
+	public void setSendBufferSize(int sendBufferSize) {
+		this.sendBufferSize = sendBufferSize;
+	}
+
 	@Override
 	protected boolean isSendBufferSizeChanged() {
 		return sendBufferSize != -1;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
+	@Override
+	public int getSoLinger() {
+		return soLinger;
+	}
+
+	@Override
+	public void setSoLinger(int soLinger) {
+		this.soLinger = soLinger;
+	}
+
 	@Override
 	protected boolean isSoLingerChanged() {
 		return soLinger != DEFAULT_SO_LINGER;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
+	@Override
+	public int getTrafficClass() {
+		return trafficClass;
+	}
+
+	@Override
+	public void setTrafficClass(int trafficClass) {
+		this.trafficClass = trafficClass;
+	}
+
+	@Override
+	protected boolean isTrafficClassChanged() {
+		return trafficClass != DEFAULT_TRAFFIC_CLASS;
+	}
+
+	@Override
+	public boolean isReuseAddress() {
+		return reuseAddress;
+	}
+
+	@Override
+	public void setReuseAddress(boolean reuseAddress) {
+		this.reuseAddress = reuseAddress;
+	}
+
+	@Override
+	protected boolean isReuseAddressChanged() {
+		return reuseAddress != defaultReuseAddress;
+	}
+
+	@Override
+	public boolean isTcpNoDelay() {
+		return tcpNoDelay;
+	}
+
+	@Override
+	public void setTcpNoDelay(boolean tcpNoDelay) {
+		this.tcpNoDelay = tcpNoDelay;
+	}
+
 	@Override
 	protected boolean isTcpNoDelayChanged() {
 		return tcpNoDelay != DEFAULT_TCP_NO_DELAY;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
-	protected boolean isTrafficClassChanged() {
-		return trafficClass != DEFAULT_TRAFFIC_CLASS;
+	public boolean isKeepAlive() {
+		return keepAlive;
+	}
+
+	@Override
+	public void setKeepAlive(boolean keepAlive) {
+		this.keepAlive = keepAlive;
+	}
+
+	@Override
+	protected boolean isKeepAliveChanged() {
+		return keepAlive != DEFAULT_KEEP_ALIVE;
+	}
+
+	@Override
+	public boolean isOobInline() {
+		return oobInline;
+	}
+
+	@Override
+	public void setOobInline(boolean oobInline) {
+		this.oobInline = oobInline;
+	}
+
+	@Override
+	protected boolean isOobInlineChanged() {
+		return oobInline != DEFAULT_OOB_INLINE;
 	}
 }

@@ -90,27 +90,15 @@ public interface ConnectFuture extends IoFuture {
 	 */
 	boolean cancel();
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	ConnectFuture await() throws InterruptedException;
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	ConnectFuture awaitUninterruptibly();
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	ConnectFuture addListener(IoFutureListener<?> listener);
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	ConnectFuture removeListener(IoFutureListener<?> listener);
 }

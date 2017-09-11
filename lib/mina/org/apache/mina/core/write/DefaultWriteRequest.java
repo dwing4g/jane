@@ -32,113 +32,71 @@ import org.apache.mina.core.session.IoSession;
 public final class DefaultWriteRequest implements WriteRequest {
 	/** An empty FUTURE */
 	private static final WriteFuture UNUSED_FUTURE = new WriteFuture() {
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public boolean isWritten() {
 			return false;
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public void setWritten() {
 			// Do nothing
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public IoSession getSession() {
 			return null;
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public boolean isDone() {
 			return true;
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public WriteFuture addListener(IoFutureListener<?> listener) {
 			throw new IllegalStateException("You can't add a listener to a dummy future.");
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public WriteFuture removeListener(IoFutureListener<?> listener) {
 			throw new IllegalStateException("You can't add a listener to a dummy future.");
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public WriteFuture await() throws InterruptedException {
 			return this;
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public boolean await(long timeout, TimeUnit unit) throws InterruptedException {
 			return true;
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public boolean await(long timeoutMillis) throws InterruptedException {
 			return true;
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public WriteFuture awaitUninterruptibly() {
 			return this;
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public boolean awaitUninterruptibly(long timeout, TimeUnit unit) {
 			return true;
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public boolean awaitUninterruptibly(long timeoutMillis) {
 			return true;
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public Throwable getException() {
 			return null;
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public void setException(Throwable cause) {
 			// Do nothing
@@ -175,25 +133,16 @@ public final class DefaultWriteRequest implements WriteRequest {
 		this.future = (future != null ? future : UNUSED_FUTURE);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final WriteFuture getFuture() {
 		return future;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final Object getMessage() {
 		return message;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final WriteRequest getOriginalRequest() {
 		return this;

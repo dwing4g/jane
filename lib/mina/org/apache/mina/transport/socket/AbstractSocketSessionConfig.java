@@ -19,7 +19,6 @@
  */
 package org.apache.mina.transport.socket;
 
-import org.apache.mina.core.session.AbstractIoSessionConfig;
 import org.apache.mina.core.session.IoSessionConfig;
 
 /**
@@ -27,13 +26,72 @@ import org.apache.mina.core.session.IoSessionConfig;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public abstract class AbstractSocketSessionConfig extends AbstractIoSessionConfig implements SocketSessionConfig {
-	/**
-	 * {@inheritDoc}
-	 */
+public abstract class AbstractSocketSessionConfig implements SocketSessionConfig {
+	/** The default size of the buffer used to read incoming data */
+	private int readBufferSize = 2048;
+
+	/** The minimum size of the buffer used to read incoming data */
+	private int minReadBufferSize = 64;
+
+	/** The maximum size of the buffer used to read incoming data */
+	private int maxReadBufferSize = 65536;
+
+	@Override
+	public int getReadBufferSize() {
+		return readBufferSize;
+	}
+
+	@Override
+	public void setReadBufferSize(int readBufferSize) {
+		if (readBufferSize <= 0) {
+			throw new IllegalArgumentException("readBufferSize: " + readBufferSize + " (expected: 1+)");
+		}
+		this.readBufferSize = readBufferSize;
+	}
+
+	@Override
+	public int getMinReadBufferSize() {
+		return minReadBufferSize;
+	}
+
+	@Override
+	public void setMinReadBufferSize(int minReadBufferSize) {
+		if (minReadBufferSize <= 0) {
+			throw new IllegalArgumentException("minReadBufferSize: " + minReadBufferSize + " (expected: 1+)");
+		}
+		if (minReadBufferSize > maxReadBufferSize) {
+			throw new IllegalArgumentException("minReadBufferSize: " + minReadBufferSize + " (expected: smaller than "
+					+ maxReadBufferSize + ')');
+		}
+		this.minReadBufferSize = minReadBufferSize;
+	}
+
+	@Override
+	public int getMaxReadBufferSize() {
+		return maxReadBufferSize;
+	}
+
+	@Override
+	public void setMaxReadBufferSize(int maxReadBufferSize) {
+		if (maxReadBufferSize <= 0) {
+			throw new IllegalArgumentException("maxReadBufferSize: " + maxReadBufferSize + " (expected: 1+)");
+		}
+		if (maxReadBufferSize < minReadBufferSize) {
+			throw new IllegalArgumentException("maxReadBufferSize: " + maxReadBufferSize + " (expected: greater than "
+					+ minReadBufferSize + ')');
+		}
+		this.maxReadBufferSize = maxReadBufferSize;
+	}
+
 	@Override
 	public void setAll(IoSessionConfig config) {
-		super.setAll(config);
+		if (config == null) {
+			throw new IllegalArgumentException("config");
+		}
+
+		setReadBufferSize(config.getReadBufferSize());
+		setMinReadBufferSize(config.getMinReadBufferSize());
+		setMaxReadBufferSize(config.getMaxReadBufferSize());
 
 		if (!(config instanceof SocketSessionConfig)) {
 			return;
@@ -82,30 +140,6 @@ public abstract class AbstractSocketSessionConfig extends AbstractIoSessionConfi
 	}
 
 	/**
-	 * @return <tt>true</tt> if and only if the <tt>keepAlive</tt> property
-	 * has been changed by its setter method.  The system call related with
-	 * the property is made only when this method returns <tt>true</tt>.  By
-	 * default, this method always returns <tt>true</tt> to simplify implementation
-	 * of subclasses, but overriding the default behavior is always encouraged.
-	 */
-	@SuppressWarnings("static-method")
-	protected boolean isKeepAliveChanged() {
-		return true;
-	}
-
-	/**
-	 * @return <tt>true</tt> if and only if the <tt>oobInline</tt> property
-	 * has been changed by its setter method.  The system call related with
-	 * the property is made only when this method returns <tt>true</tt>.  By
-	 * default, this method always returns <tt>true</tt> to simplify implementation
-	 * of subclasses, but overriding the default behavior is always encouraged.
-	 */
-	@SuppressWarnings("static-method")
-	protected boolean isOobInlineChanged() {
-		return true;
-	}
-
-	/**
 	 * @return <tt>true</tt> if and only if the <tt>receiveBufferSize</tt> property
 	 * has been changed by its setter method.  The system call related with
 	 * the property is made only when this method returns <tt>true</tt>.  By
@@ -114,18 +148,6 @@ public abstract class AbstractSocketSessionConfig extends AbstractIoSessionConfi
 	 */
 	@SuppressWarnings("static-method")
 	protected boolean isReceiveBufferSizeChanged() {
-		return true;
-	}
-
-	/**
-	 * @return <tt>true</tt> if and only if the <tt>reuseAddress</tt> property
-	 * has been changed by its setter method.  The system call related with
-	 * the property is made only when this method returns <tt>true</tt>.  By
-	 * default, this method always returns <tt>true</tt> to simplify implementation
-	 * of subclasses, but overriding the default behavior is always encouraged.
-	 */
-	@SuppressWarnings("static-method")
-	protected boolean isReuseAddressChanged() {
 		return true;
 	}
 
@@ -154,6 +176,30 @@ public abstract class AbstractSocketSessionConfig extends AbstractIoSessionConfi
 	}
 
 	/**
+	 * @return <tt>true</tt> if and only if the <tt>trafficClass</tt> property
+	 * has been changed by its setter method.  The system call related with
+	 * the property is made only when this method returns <tt>true</tt>.  By
+	 * default, this method always returns <tt>true</tt> to simplify implementation
+	 * of subclasses, but overriding the default behavior is always encouraged.
+	 */
+	@SuppressWarnings("static-method")
+	protected boolean isTrafficClassChanged() {
+		return true;
+	}
+
+	/**
+	 * @return <tt>true</tt> if and only if the <tt>reuseAddress</tt> property
+	 * has been changed by its setter method.  The system call related with
+	 * the property is made only when this method returns <tt>true</tt>.  By
+	 * default, this method always returns <tt>true</tt> to simplify implementation
+	 * of subclasses, but overriding the default behavior is always encouraged.
+	 */
+	@SuppressWarnings("static-method")
+	protected boolean isReuseAddressChanged() {
+		return true;
+	}
+
+	/**
 	 * @return <tt>true</tt> if and only if the <tt>tcpNoDelay</tt> property
 	 * has been changed by its setter method.  The system call related with
 	 * the property is made only when this method returns <tt>true</tt>.  By
@@ -166,14 +212,26 @@ public abstract class AbstractSocketSessionConfig extends AbstractIoSessionConfi
 	}
 
 	/**
-	 * @return <tt>true</tt> if and only if the <tt>trafficClass</tt> property
+	 * @return <tt>true</tt> if and only if the <tt>keepAlive</tt> property
 	 * has been changed by its setter method.  The system call related with
 	 * the property is made only when this method returns <tt>true</tt>.  By
 	 * default, this method always returns <tt>true</tt> to simplify implementation
 	 * of subclasses, but overriding the default behavior is always encouraged.
 	 */
 	@SuppressWarnings("static-method")
-	protected boolean isTrafficClassChanged() {
+	protected boolean isKeepAliveChanged() {
+		return true;
+	}
+
+	/**
+	 * @return <tt>true</tt> if and only if the <tt>oobInline</tt> property
+	 * has been changed by its setter method.  The system call related with
+	 * the property is made only when this method returns <tt>true</tt>.  By
+	 * default, this method always returns <tt>true</tt> to simplify implementation
+	 * of subclasses, but overriding the default behavior is always encouraged.
+	 */
+	@SuppressWarnings("static-method")
+	protected boolean isOobInlineChanged() {
 		return true;
 	}
 }

@@ -101,8 +101,6 @@ public abstract class AbstractIoSession implements IoSession {
 	}
 
 	/**
-	 * {@inheritDoc}
-	 *
 	 * We use an AtomicLong to guarantee that the session ID are unique.
 	 */
 	@Override
@@ -116,34 +114,22 @@ public abstract class AbstractIoSession implements IoSession {
 	@SuppressWarnings("rawtypes")
 	public abstract IoProcessor getProcessor();
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final boolean isConnected() {
 		return !closeFuture.isClosed();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public boolean isActive() {
 		// Return true by default
 		return true;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final boolean isClosing() {
 		return closing || closeFuture.isClosed();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final CloseFuture getCloseFuture() {
 		return closeFuture;
@@ -193,9 +179,6 @@ public abstract class AbstractIoSession implements IoSession {
 		return true;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@SuppressWarnings("unchecked")
 	@Override
 	public final CloseFuture closeOnFlush() {
@@ -207,9 +190,6 @@ public abstract class AbstractIoSession implements IoSession {
 		return closeFuture;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final CloseFuture closeNow() {
 		synchronized (scheduledForFlush) {
@@ -252,25 +232,16 @@ public abstract class AbstractIoSession implements IoSession {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public IoHandler getHandler() {
 		return handler;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public IoSessionConfig getConfig() {
 		return config;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public WriteFuture write(Object message) {
 		if (message == null) {
@@ -311,17 +282,11 @@ public abstract class AbstractIoSession implements IoSession {
 		return writeFuture;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final Object getAttachment() {
 		return attachment;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final Object setAttachment(Object attachment) {
 		Object old = this.attachment;
@@ -329,89 +294,56 @@ public abstract class AbstractIoSession implements IoSession {
 		return old;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final Object getAttribute(Object key) {
 		return getAttribute(key, null);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final Object getAttribute(Object key, Object defaultValue) {
 		return attributes.getAttribute(key, defaultValue);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final Object setAttribute(Object key, Object value) {
 		return attributes.setAttribute(key, value);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final Object setAttribute(Object key) {
 		return setAttribute(key, Boolean.TRUE);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final Object setAttributeIfAbsent(Object key, Object value) {
 		return attributes.setAttributeIfAbsent(key, value);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final Object setAttributeIfAbsent(Object key) {
 		return setAttributeIfAbsent(key, Boolean.TRUE);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final Object removeAttribute(Object key) {
 		return attributes.removeAttribute(key);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final boolean removeAttribute(Object key, Object value) {
 		return attributes.removeAttribute(key, value);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final boolean replaceAttribute(Object key, Object oldValue, Object newValue) {
 		return attributes.replaceAttribute(key, oldValue, newValue);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final boolean containsAttribute(Object key) {
 		return attributes.containsAttribute(key);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final Set<Object> getAttributeKeys() {
 		return attributes.getAttributeKeys();
@@ -442,9 +374,6 @@ public abstract class AbstractIoSession implements IoSession {
 		this.writeRequestQueue = writeRequestQueue;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@SuppressWarnings("unchecked")
 	@Override
 	public final void suspendRead() {
@@ -455,9 +384,6 @@ public abstract class AbstractIoSession implements IoSession {
 		getProcessor().updateTrafficControl(this);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@SuppressWarnings("unchecked")
 	@Override
 	public final void suspendWrite() {
@@ -468,9 +394,6 @@ public abstract class AbstractIoSession implements IoSession {
 		getProcessor().updateTrafficControl(this);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	@SuppressWarnings("unchecked")
 	public final void resumeRead() {
@@ -481,9 +404,6 @@ public abstract class AbstractIoSession implements IoSession {
 		getProcessor().updateTrafficControl(this);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	@SuppressWarnings("unchecked")
 	public final void resumeWrite() {
@@ -494,25 +414,16 @@ public abstract class AbstractIoSession implements IoSession {
 		getProcessor().updateTrafficControl(this);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public boolean isReadSuspended() {
 		return readSuspended;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public boolean isWriteSuspended() {
 		return writeSuspended;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final WriteRequestQueue getWriteRequestQueue() {
 		if (writeRequestQueue == null) {
@@ -522,17 +433,11 @@ public abstract class AbstractIoSession implements IoSession {
 		return writeRequestQueue;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final WriteRequest getCurrentWriteRequest() {
 		return currentWriteRequest;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final void setCurrentWriteRequest(WriteRequest currentWriteRequest) {
 		this.currentWriteRequest = currentWriteRequest;
@@ -569,9 +474,6 @@ public abstract class AbstractIoSession implements IoSession {
 		deferDecreaseReadBuffer = true;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public InetSocketAddress getServiceAddress() {
 		IoService ioService = getService();
@@ -579,9 +481,6 @@ public abstract class AbstractIoSession implements IoSession {
 				getRemoteAddress();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public String toString() {
 		if (isConnected() || isClosing()) {
@@ -617,9 +516,6 @@ public abstract class AbstractIoSession implements IoSession {
 		return id.length() <= 8 ? "0x00000000".substring(0, 10 - id.length()) + id : "0x" + id;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public IoService getService() {
 		return service;

@@ -47,18 +47,12 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 
 	private boolean disconnectOnUnbind = true;
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public InetSocketAddress getLocalAddress() {
 		ArrayList<InetSocketAddress> localAddresses = getLocalAddresses();
 		return localAddresses.isEmpty() ? null : localAddresses.get(0);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final ArrayList<InetSocketAddress> getLocalAddresses() {
 		ArrayList<InetSocketAddress> localAddresses = new ArrayList<>();
@@ -70,25 +64,16 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 		return localAddresses;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final boolean isCloseOnDeactivation() {
 		return disconnectOnUnbind;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final void setCloseOnDeactivation(boolean disconnectClientsOnUnbind) {
 		disconnectOnUnbind = disconnectClientsOnUnbind;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final void bind(SocketAddress localAddress) throws IOException {
 		if (localAddress == null) {
@@ -100,9 +85,6 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 		bind(localAddresses);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final void bind(List<? extends SocketAddress> localAddresses) throws IOException {
 		if (isDisposing()) {
@@ -143,17 +125,11 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final void unbind() {
 		unbind(getLocalAddresses());
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final void unbind(SocketAddress localAddress) {
 		if (localAddress == null) {
@@ -165,9 +141,6 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 		unbind(localAddresses);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final void unbind(Iterable<? extends SocketAddress> localAddresses) {
 		if (localAddresses == null) {

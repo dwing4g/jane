@@ -61,9 +61,6 @@ public abstract class AbstractIoConnector extends AbstractIoService implements I
 		connectTimeoutCheckInterval = minimumConnectTimeout;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final long getConnectTimeoutMillis() {
 		return connectTimeoutInMillis;
@@ -81,17 +78,11 @@ public abstract class AbstractIoConnector extends AbstractIoService implements I
 		this.connectTimeoutInMillis = connectTimeoutInMillis;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final ConnectFuture connect(SocketAddress remoteAddress) {
 		return connect(remoteAddress, null);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final ConnectFuture connect(SocketAddress remoteAddress, SocketAddress localAddress) {
 		if (isDisposing()) {
@@ -144,9 +135,6 @@ public abstract class AbstractIoConnector extends AbstractIoService implements I
 		});
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public String toString() {
 		return "(nio socket connector: managedSessionCount: " + getManagedSessionCount() + ')';

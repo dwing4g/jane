@@ -72,9 +72,6 @@ public final class SimpleIoProcessorPool implements IoProcessor<NioSession> {
 	/** The pool table */
 	private final NioProcessor[] pool;
 
-	/** A lock to protect the disposal against concurrent calls */
-	private final Object disposalLock = new Object();
-
 	/** A flg set to true if the IoProcessor in the pool are being disposed */
 	private volatile boolean disposing;
 
@@ -106,7 +103,6 @@ public final class SimpleIoProcessorPool implements IoProcessor<NioSession> {
 
 		boolean success = false;
 		try {
-			// Constructor found now use it for all subsequent instantiations
 			for (int i = 0; i < pool.length; i++) {
 				pool[i] = new NioProcessor(executor);
 			}
@@ -117,96 +113,6 @@ public final class SimpleIoProcessorPool implements IoProcessor<NioSession> {
 			if (!success) {
 				dispose();
 			}
-		}
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final void add(NioSession session) {
-		getProcessor(session).add(session);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final void flush(NioSession session) {
-		getProcessor(session).flush(session);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final void write(NioSession session, WriteRequest writeRequest) {
-		getProcessor(session).write(session, writeRequest);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final void remove(NioSession session) {
-		getProcessor(session).remove(session);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final void updateTrafficControl(NioSession session) {
-		getProcessor(session).updateTrafficControl(session);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean isDisposed() {
-		return disposed;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean isDisposing() {
-		return disposing;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final void dispose() {
-		if (disposed) {
-			return;
-		}
-
-		synchronized (disposalLock) {
-			if (!disposing) {
-				disposing = true;
-
-				for (NioProcessor ioProcessor : pool) {
-					if (ioProcessor == null) {
-						// Special case if the pool has not been initialized properly
-						continue;
-					}
-
-					if (ioProcessor.isDisposing()) {
-						continue;
-					}
-
-					ioProcessor.dispose();
-				}
-
-				executor.shutdown();
-			}
-
-			Arrays.fill(pool, null);
-			disposed = true;
 		}
 	}
 
@@ -232,5 +138,71 @@ public final class SimpleIoProcessorPool implements IoProcessor<NioSession> {
 		}
 
 		return processor;
+	}
+
+	@Override
+	public final void add(NioSession session) {
+		getProcessor(session).add(session);
+	}
+
+	@Override
+	public final void remove(NioSession session) {
+		getProcessor(session).remove(session);
+	}
+
+	@Override
+	public final void write(NioSession session, WriteRequest writeRequest) {
+		getProcessor(session).write(session, writeRequest);
+	}
+
+	@Override
+	public final void flush(NioSession session) {
+		getProcessor(session).flush(session);
+	}
+
+	@Override
+	public final void updateTrafficControl(NioSession session) {
+		getProcessor(session).updateTrafficControl(session);
+	}
+
+	@Override
+	public boolean isDisposed() {
+		return disposed;
+	}
+
+	@Override
+	public boolean isDisposing() {
+		return disposing;
+	}
+
+	@Override
+	public final void dispose() {
+		if (disposed) {
+			return;
+		}
+
+		synchronized (pool) {
+			if (!disposing) {
+				disposing = true;
+
+				for (NioProcessor ioProcessor : pool) {
+					if (ioProcessor == null) {
+						// Special case if the pool has not been initialized properly
+						continue;
+					}
+
+					if (ioProcessor.isDisposing()) {
+						continue;
+					}
+
+					ioProcessor.dispose();
+				}
+
+				executor.shutdown();
+			}
+
+			Arrays.fill(pool, null);
+			disposed = true;
+		}
 	}
 }

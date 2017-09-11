@@ -221,9 +221,6 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 	 */
 	protected abstract void close(ServerSocketChannel channel) throws IOException;
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	protected void dispose0() throws Exception {
 		unbind();
@@ -232,9 +229,6 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 		wakeup();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	protected final Set<InetSocketAddress> bindInternal(List<? extends SocketAddress> localAddresses) throws Exception {
 		// Create a bind request as a Future operation. When the selector
@@ -307,9 +301,6 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	protected final void unbind0(List<? extends SocketAddress> localAddresses) throws Exception {
 		AcceptorOperationFuture future = new AcceptorOperationFuture(localAddresses);
@@ -331,9 +322,6 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 	 * The loop is stopped when all the bound handlers are unbound.
 	 */
 	private final class Acceptor implements Runnable {
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public void run() {
 			int nHandles = 0;
@@ -549,9 +537,6 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoSession newSession(SocketAddress remoteAddress, SocketAddress localAddress) {
 		throw new UnsupportedOperationException();

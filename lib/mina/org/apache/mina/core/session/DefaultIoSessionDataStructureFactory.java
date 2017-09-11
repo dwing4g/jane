@@ -36,17 +36,11 @@ import org.apache.mina.core.write.WriteRequestQueue;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public class DefaultIoSessionDataStructureFactory implements IoSessionDataStructureFactory {
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public IoSessionAttributeMap getAttributeMap(IoSession session) throws Exception {
 		return new DefaultIoSessionAttributeMap();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public WriteRequestQueue getWriteRequestQueue(IoSession session) throws Exception {
 		return new DefaultWriteRequestQueue(session);
@@ -55,74 +49,47 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 	private static final class DefaultIoSessionAttributeMap implements IoSessionAttributeMap {
 		private final ConcurrentHashMap<Object, Object> attributes = new ConcurrentHashMap<>(4);
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public Object getAttribute(Object key, Object defaultValue) {
 			Object value = attributes.get(key);
 			return value != null ? value : defaultValue;
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public Object setAttribute(Object key, Object value) {
 			return value != null ? attributes.put(key, value) : attributes.remove(key);
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public Object setAttributeIfAbsent(Object key, Object value) {
 			return value != null ? attributes.putIfAbsent(key, value) : null;
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public Object removeAttribute(Object key) {
 			return attributes.remove(key);
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public boolean removeAttribute(Object key, Object value) {
 			return attributes.remove(key, value);
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public boolean replaceAttribute(Object key, Object oldValue, Object newValue) {
 			return attributes.replace(key, oldValue, newValue);
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public boolean containsAttribute(Object key) {
 			return attributes.containsKey(key);
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public Set<Object> getAttributeKeys() {
 			return attributes.keySet();
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public void dispose() throws Exception {
 			// Do nothing
@@ -138,41 +105,26 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 			s = session;
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public void dispose() {
 			// Do nothing
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public void clear() {
 			q.clear();
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public boolean isEmpty() {
 			return q.isEmpty();
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public void offer(WriteRequest writeRequest) {
 			q.offer(writeRequest);
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public WriteRequest poll() {
 			WriteRequest wr = q.poll();
@@ -186,17 +138,11 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 			return wr;
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public String toString() {
 			return q.toString();
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public int size() {
 			return q.size();

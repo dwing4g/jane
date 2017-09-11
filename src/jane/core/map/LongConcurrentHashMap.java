@@ -316,9 +316,6 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		sizeCtl = cap;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public int size()
 	{
@@ -326,9 +323,6 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		return ((n < 0L) ? 0 : (n > Integer.MAX_VALUE) ? Integer.MAX_VALUE : (int)n);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public boolean isEmpty()
 	{
@@ -646,8 +640,6 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	// ConcurrentMap methods
 
 	/**
-	 * {@inheritDoc}
-	 *
 	 * @return the previous value associated with the specified key,
 	 *         or {@code null} if there was no mapping for the key
 	 * @throws NullPointerException if the specified key or value is null
@@ -658,8 +650,6 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	}
 
 	/**
-	 * {@inheritDoc}
-	 *
 	 * @throws NullPointerException if the specified key is null
 	 */
 	@Override
@@ -669,8 +659,6 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	}
 
 	/**
-	 * {@inheritDoc}
-	 *
 	 * @throws NullPointerException if any of the arguments are null
 	 */
 	public boolean replace(long key, V oldValue, V newValue)
@@ -681,8 +669,6 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	}
 
 	/**
-	 * {@inheritDoc}
-	 *
 	 * @return the previous value associated with the specified key,
 	 *         or {@code null} if there was no mapping for the key
 	 * @throws NullPointerException if the specified key or value is null

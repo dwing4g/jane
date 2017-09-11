@@ -78,41 +78,26 @@ public class DefaultFileRegion implements FileRegion {
 		this.remainingBytes = remainingBytes;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public long getWrittenBytes() {
 		return position - originalPosition;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public long getRemainingBytes() {
 		return remainingBytes;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public FileChannel getFileChannel() {
 		return channel;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public long getPosition() {
 		return position;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void update(long value) {
 		position += value;

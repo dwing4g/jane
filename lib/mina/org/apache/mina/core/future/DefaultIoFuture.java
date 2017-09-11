@@ -64,17 +64,11 @@ public class DefaultIoFuture implements IoFuture {
 		this.session = session;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public IoSession getSession() {
 		return session;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public IoFuture await() throws InterruptedException {
 		synchronized (this) {
@@ -98,25 +92,16 @@ public class DefaultIoFuture implements IoFuture {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public boolean await(long timeout, TimeUnit unit) throws InterruptedException {
 		return await0(unit.toMillis(timeout), true);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public boolean await(long timeoutMillis) throws InterruptedException {
 		return await0(timeoutMillis, true);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public IoFuture awaitUninterruptibly() {
 		try {
@@ -128,9 +113,6 @@ public class DefaultIoFuture implements IoFuture {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public boolean awaitUninterruptibly(long timeout, TimeUnit unit) {
 		try {
@@ -140,9 +122,6 @@ public class DefaultIoFuture implements IoFuture {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public boolean awaitUninterruptibly(long timeoutMillis) {
 		try {
@@ -261,9 +240,6 @@ public class DefaultIoFuture implements IoFuture {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public boolean isDone() {
 		synchronized (this) {
@@ -307,9 +283,6 @@ public class DefaultIoFuture implements IoFuture {
 		return result;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public IoFuture addListener(IoFutureListener<?> listener) {
 		if (listener == null) {
@@ -339,9 +312,6 @@ public class DefaultIoFuture implements IoFuture {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public IoFuture removeListener(IoFutureListener<?> listener) {
 		if (listener == null) {

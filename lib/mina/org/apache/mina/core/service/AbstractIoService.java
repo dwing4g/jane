@@ -110,33 +110,21 @@ public abstract class AbstractIoService implements IoService {
 		executor = Executors.newSingleThreadExecutor(r -> new Thread(r, getClass().getSimpleName() + '-' + id.incrementAndGet()));
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public DefaultSocketSessionConfig getSessionConfig() {
 		return sessionConfig;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoFilterChainBuilder getFilterChainBuilder() {
 		return filterChainBuilder;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final void setFilterChainBuilder(IoFilterChainBuilder builder) {
 		filterChainBuilder = (builder != null ? builder : new DefaultIoFilterChainBuilder());
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final DefaultIoFilterChainBuilder getFilterChain() {
 		if (filterChainBuilder instanceof DefaultIoFilterChainBuilder) {
@@ -146,57 +134,36 @@ public abstract class AbstractIoService implements IoService {
 		throw new IllegalStateException("Current filter chain builder is not a DefaultIoFilterChainBuilder.");
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final void addListener(IoServiceListener listener) {
 		listeners.add(listener);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final void removeListener(IoServiceListener listener) {
 		listeners.remove(listener);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final boolean isActive() {
 		return listeners.isActive();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final boolean isDisposing() {
 		return disposing;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final boolean isDisposed() {
 		return disposed;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final void dispose() {
 		dispose(false);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final void dispose(boolean awaitTermination) {
 		if (disposed) {
@@ -236,33 +203,21 @@ public abstract class AbstractIoService implements IoService {
 	 */
 	protected abstract void dispose0() throws Exception;
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final Map<Long, IoSession> getManagedSessions() {
 		return listeners.getManagedSessions();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final int getManagedSessionCount() {
 		return listeners.getManagedSessionCount();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoHandler getHandler() {
 		return handler;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final void setHandler(IoHandler handler) {
 		if (handler == null) {
@@ -276,17 +231,11 @@ public abstract class AbstractIoService implements IoService {
 		this.handler = handler;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoSessionDataStructureFactory getSessionDataStructureFactory() {
 		return sessionDataStructureFactory;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final void setSessionDataStructureFactory(IoSessionDataStructureFactory sessionDataStructureFactory) {
 		if (sessionDataStructureFactory == null) {
@@ -300,17 +249,11 @@ public abstract class AbstractIoService implements IoService {
 		this.sessionDataStructureFactory = sessionDataStructureFactory;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final long getActivationTime() {
 		return listeners.getActivationTime();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final Set<WriteFuture> broadcast(Object message) {
 		// Convert to Set.  We do not return a List here because only the
@@ -388,9 +331,6 @@ public abstract class AbstractIoService implements IoService {
 			super(null);
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public final boolean isDone() {
 			return getValue() == Boolean.TRUE;

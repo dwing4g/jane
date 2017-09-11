@@ -243,18 +243,12 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 	 */
 	protected abstract ConnectionRequest getConnectionRequest(SocketChannel channel);
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	protected final void dispose0() throws IOException {
 		startupWorker();
 		wakeup();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	@SuppressWarnings("resource")
 	protected final ConnectFuture connect0(SocketAddress remoteAddress, SocketAddress localAddress) {
@@ -311,9 +305,6 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 	}
 
 	private final class Connector implements Runnable {
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public void run() {
 			int nHandles = 0;
@@ -507,9 +498,6 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 			return deadline;
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public boolean cancel() {
 			if (!isDone()) {

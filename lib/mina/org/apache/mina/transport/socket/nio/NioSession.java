@@ -60,9 +60,14 @@ public abstract class NioSession extends AbstractIoSession {
 	 */
 	protected NioSession(IoProcessor<NioSession> processor, IoService service, Channel channel) {
 		super(service);
-		this.channel = channel;
 		this.processor = processor;
+		this.channel = channel;
 		filterChain = new DefaultIoFilterChain(this);
+	}
+
+	@Override
+	public final IoProcessor<NioSession> getProcessor() {
+		return processor;
 	}
 
 	/**
@@ -71,17 +76,9 @@ public abstract class NioSession extends AbstractIoSession {
 	abstract ByteChannel getChannel();
 
 	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public IoFilterChain getFilterChain() {
-		return filterChain;
-	}
-
-	/**
 	 * @return The {@link SelectionKey} associated with this {@link IoSession}
 	 */
-	SelectionKey getSelectionKey() {
+	final SelectionKey getSelectionKey() {
 		return key;
 	}
 
@@ -90,8 +87,18 @@ public abstract class NioSession extends AbstractIoSession {
 	 *
 	 * @param key The new {@link SelectionKey}
 	 */
-	void setSelectionKey(SelectionKey key) {
+	final void setSelectionKey(SelectionKey key) {
 		this.key = key;
+	}
+
+	@Override
+	public final boolean isActive() {
+		return key.isValid();
+	}
+
+	@Override
+	public final IoFilterChain getFilterChain() {
+		return filterChain;
 	}
 
 	public final NioProcessor getNioProcessor() {
@@ -100,21 +107,5 @@ public abstract class NioSession extends AbstractIoSession {
 
 	public final void setNioProcessor(NioProcessor processor) {
 		nioProcessor = processor;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public IoProcessor<NioSession> getProcessor() {
-		return processor;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final boolean isActive() {
-		return key.isValid();
 	}
 }

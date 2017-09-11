@@ -80,9 +80,6 @@ public class IoEvent implements Runnable {
 		return parameter;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void run() {
 		fire();

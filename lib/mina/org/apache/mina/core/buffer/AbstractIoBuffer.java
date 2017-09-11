@@ -92,9 +92,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		minimumCapacity = parent.minimumCapacity;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final boolean isDirect() {
 		return buf().isDirect();
@@ -107,17 +104,11 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	 */
 	protected abstract void buf(ByteBuffer newBuf);
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final int minimumCapacity() {
 		return minimumCapacity;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer minimumCapacity(int capacity) {
 		if (capacity < 0) {
@@ -127,17 +118,11 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final int capacity() {
 		return buf().capacity();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer capacity(int newCapacity) {
 		if (!recapacityAllowed) {
@@ -173,33 +158,21 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final boolean isAutoExpand() {
 		return autoExpand && recapacityAllowed;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final boolean isAutoShrink() {
 		return autoShrink && recapacityAllowed;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final boolean isDerived() {
 		return derived;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer setAutoExpand(boolean autoExpand) {
 		if (!recapacityAllowed) {
@@ -209,9 +182,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer setAutoShrink(boolean autoShrink) {
 		if (!recapacityAllowed) {
@@ -221,9 +191,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer expand(int expectedRemaining) {
 		return expand(position(), expectedRemaining, false);
@@ -233,9 +200,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return expand(position(), expectedRemaining, isAutoExpand);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer expand(int pos, int expectedRemaining) {
 		return expand(pos, expectedRemaining, false);
@@ -260,9 +224,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer shrink() {
 
@@ -319,17 +280,11 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final int position() {
 		return buf().position();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer position(int newPosition) {
 		autoExpand(newPosition, 0);
@@ -337,17 +292,11 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final int limit() {
 		return buf().limit();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer limit(int newLimit) {
 		autoExpand(newLimit, 0);
@@ -355,9 +304,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer mark() {
 		ByteBuffer byteBuffer = buf();
@@ -365,9 +311,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final int markValue() {
 		try {
@@ -377,97 +320,64 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer reset() {
 		buf().reset();
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer clear() {
 		buf().clear();
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer sweep() {
 		clear();
 		return fillAndReset(remaining());
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer sweep(byte value) {
 		clear();
 		return fillAndReset(value, remaining());
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer flip() {
 		buf().flip();
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer rewind() {
 		buf().rewind();
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final int remaining() {
 		ByteBuffer byteBuffer = buf();
 		return byteBuffer.limit() - byteBuffer.position();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final boolean hasRemaining() {
 		ByteBuffer byteBuffer = buf();
 		return byteBuffer.limit() > byteBuffer.position();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final byte get() {
 		return buf().get();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final int getUnsigned() {
 		return get() & 0xff;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer put(byte b) {
 		autoExpand(1);
@@ -475,25 +385,16 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final byte get(int index) {
 		return buf().get(index);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final int getUnsigned(int index) {
 		return get(index) & 0xff;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer put(int index, byte b) {
 		autoExpand(index, 1);
@@ -501,18 +402,12 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer get(byte[] dst, int offset, int length) {
 		buf().get(dst, offset, length);
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer put(ByteBuffer src) {
 		autoExpand(src.remaining());
@@ -520,9 +415,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer put(byte[] src, int offset, int length) {
 		autoExpand(length);
@@ -530,9 +422,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer compact() {
 		int remaining = remaining();
@@ -582,34 +471,22 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final ByteOrder order() {
 		return buf().order();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer order(ByteOrder bo) {
 		buf().order(bo);
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final char getChar() {
 		return buf().getChar();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer putChar(char value) {
 		autoExpand(2);
@@ -617,17 +494,11 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final char getChar(int index) {
 		return buf().getChar(index);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer putChar(int index, char value) {
 		autoExpand(index, 2);
@@ -635,17 +506,11 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final short getShort() {
 		return buf().getShort();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer putShort(short value) {
 		autoExpand(2);
@@ -653,17 +518,11 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final short getShort(int index) {
 		return buf().getShort(index);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer putShort(int index, short value) {
 		autoExpand(index, 2);
@@ -671,17 +530,11 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final int getInt() {
 		return buf().getInt();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer putInt(int value) {
 		autoExpand(4);
@@ -689,9 +542,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer putUnsignedInt(byte value) {
 		autoExpand(4);
@@ -699,9 +549,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer putUnsignedInt(int index, byte value) {
 		autoExpand(index, 4);
@@ -709,9 +556,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer putUnsignedInt(short value) {
 		autoExpand(4);
@@ -719,9 +563,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer putUnsignedInt(int index, short value) {
 		autoExpand(index, 4);
@@ -729,9 +570,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer putUnsignedShort(byte value) {
 		autoExpand(2);
@@ -739,9 +577,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer putUnsignedShort(int index, byte value) {
 		autoExpand(index, 2);
@@ -749,17 +584,11 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final int getInt(int index) {
 		return buf().getInt(index);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer putInt(int index, int value) {
 		autoExpand(index, 4);
@@ -767,17 +596,11 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final long getLong() {
 		return buf().getLong();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer putLong(long value) {
 		autoExpand(8);
@@ -785,17 +608,11 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final long getLong(int index) {
 		return buf().getLong(index);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer putLong(int index, long value) {
 		autoExpand(index, 8);
@@ -803,17 +620,11 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final float getFloat() {
 		return buf().getFloat();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer putFloat(float value) {
 		autoExpand(4);
@@ -821,17 +632,11 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final float getFloat(int index) {
 		return buf().getFloat(index);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer putFloat(int index, float value) {
 		autoExpand(index, 4);
@@ -839,17 +644,11 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final double getDouble() {
 		return buf().getDouble();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer putDouble(double value) {
 		autoExpand(8);
@@ -857,17 +656,11 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final double getDouble(int index) {
 		return buf().getDouble(index);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer putDouble(int index, double value) {
 		autoExpand(index, 8);
@@ -875,9 +668,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer duplicate() {
 		recapacityAllowed = false;
@@ -892,18 +682,12 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	 */
 	protected abstract IoBuffer duplicate0();
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer slice() {
 		recapacityAllowed = false;
 		return slice0();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer getSlice(int index, int length) {
 		if (length < 0) {
@@ -935,9 +719,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return slice;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public final IoBuffer getSlice(int length) {
 		if (length < 0) {
@@ -966,9 +747,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	 */
 	protected abstract IoBuffer slice0();
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public int hashCode() {
 		int h = 1;
@@ -979,9 +757,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return h;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public boolean equals(Object o) {
 		if (!(o instanceof IoBuffer)) {
@@ -1004,9 +779,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return true;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public int compareTo(IoBuffer that) {
 		int n = this.position() + Math.min(this.remaining(), that.remaining());
@@ -1025,9 +797,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this.remaining() - that.remaining();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public String toString() {
 		StringBuilder buf = new StringBuilder();
@@ -1039,57 +808,36 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return buf.toString();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public IoBuffer get(byte[] dst) {
 		return get(dst, 0, dst.length);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public IoBuffer put(IoBuffer src) {
 		return put(src.buf());
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public IoBuffer put(byte[] src) {
 		return put(src, 0, src.length);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public int getUnsignedShort() {
 		return getShort() & 0xffff;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public int getUnsignedShort(int index) {
 		return getShort(index) & 0xffff;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public long getUnsignedInt() {
 		return getInt() & 0xffffffffL;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public int getMediumInt() {
 		byte b1 = get();
@@ -1100,9 +848,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 			getMediumInt(b3, b2, b1);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public int getUnsignedMediumInt() {
 		int b1 = getUnsigned();
@@ -1113,9 +858,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 			b3 << 16 | b2 << 8 | b1;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public int getMediumInt(int index) {
 		byte b1 = get(index);
@@ -1126,9 +868,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 			getMediumInt(b3, b2, b1);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public int getUnsignedMediumInt(int index) {
 		int b1 = getUnsigned(index);
@@ -1149,9 +888,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return ret;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public IoBuffer putMediumInt(int value) {
 		byte b1 = (byte) (value >> 16);
@@ -1167,9 +903,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public IoBuffer putMediumInt(int index, int value) {
 		byte b1 = (byte) (value >> 16);
@@ -1185,17 +918,11 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public long getUnsignedInt(int index) {
 		return getInt(index) & 0xffffffffL;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public InputStream asInputStream() {
 		return new InputStream() {
@@ -1252,9 +979,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		};
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public OutputStream asOutputStream() {
 		return new OutputStream() {
@@ -1270,9 +994,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		};
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public String getHexDump() {
 		return this.getHexDump(Integer.MAX_VALUE);
@@ -1281,9 +1002,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	/** The getHexdump digits lookup table */
 	private static final byte[] digits = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public String getHexDump(int lengthLimit) {
 		if (lengthLimit == 0) {
@@ -1319,9 +1037,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return out.toString();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public String getString(CharsetDecoder decoder) throws CharacterCodingException {
 		if (!hasRemaining()) {
@@ -1412,9 +1127,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return out.flip().toString();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public String getString(int fieldSize, CharsetDecoder decoder) throws CharacterCodingException {
 		checkFieldSize(fieldSize);
@@ -1494,9 +1206,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return out.flip().toString();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public IoBuffer putString(CharSequence val, CharsetEncoder encoder) throws CharacterCodingException {
 		if (val.length() == 0) {
@@ -1540,9 +1249,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public IoBuffer putString(CharSequence val, int fieldSize, CharsetEncoder encoder) throws CharacterCodingException {
 		checkFieldSize(fieldSize);
@@ -1605,9 +1311,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public int indexOf(byte b) {
 		if (hasArray()) {
@@ -1635,18 +1338,12 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return -1;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public IoBuffer skip(int size) {
 		autoExpand(size);
 		return position(position() + size);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public IoBuffer fill(byte value, int size) {
 		autoExpand(size);
@@ -1685,9 +1382,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public IoBuffer fillAndReset(byte value, int size) {
 		autoExpand(size);
@@ -1700,9 +1394,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public IoBuffer fill(int size) {
 		autoExpand(size);
@@ -1734,9 +1425,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		return this;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public IoBuffer fillAndReset(int size) {
 		autoExpand(size);

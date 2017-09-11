@@ -79,25 +79,16 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		head.nextEntry = tail;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public IoSession getSession() {
 		return session;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public Entry getEntry(String name) {
 		return name2entry.get(name);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public Entry getEntry(IoFilter filter) {
 		for (EntryImpl e = head.nextEntry; e != tail; e = e.nextEntry) {
@@ -109,9 +100,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		return null;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public Entry getEntry(Class<? extends IoFilter> filterType) {
 		for (EntryImpl e = head.nextEntry; e != tail; e = e.nextEntry) {
@@ -123,72 +111,48 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		return null;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public IoFilter get(String name) {
 		Entry e = getEntry(name);
 		return e != null ? e.getFilter() : null;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public IoFilter get(Class<? extends IoFilter> filterType) {
 		Entry e = getEntry(filterType);
 		return e != null ? e.getFilter() : null;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public NextFilter getNextFilter(String name) {
 		Entry e = getEntry(name);
 		return e != null ? e.getNextFilter() : null;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public NextFilter getNextFilter(IoFilter filter) {
 		Entry e = getEntry(filter);
 		return e != null ? e.getNextFilter() : null;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public NextFilter getNextFilter(Class<? extends IoFilter> filterType) {
 		Entry e = getEntry(filterType);
 		return e != null ? e.getNextFilter() : null;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized void addFirst(String name, IoFilter filter) {
 		checkAddable(name);
 		register(head, name, filter);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized void addLast(String name, IoFilter filter) {
 		checkAddable(name);
 		register(tail.prevEntry, name, filter);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized void addBefore(String baseName, String name, IoFilter filter) {
 		EntryImpl baseEntry = checkOldName(baseName);
@@ -196,9 +160,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		register(baseEntry.prevEntry, name, filter);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized void addAfter(String baseName, String name, IoFilter filter) {
 		EntryImpl baseEntry = checkOldName(baseName);
@@ -206,9 +167,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		register(baseEntry, name, filter);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized IoFilter remove(String name) {
 		EntryImpl entry = checkOldName(name);
@@ -217,9 +175,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		return entry.getFilter();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized void remove(IoFilter filter) {
 		for (EntryImpl e = head.nextEntry; e != tail; e = e.nextEntry) {
@@ -232,9 +187,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		throw new IllegalArgumentException("Filter not found: " + filter.getClass().getName());
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized IoFilter remove(Class<? extends IoFilter> filterType) {
 		for (EntryImpl e = head.nextEntry; e != tail; e = e.nextEntry) {
@@ -248,9 +200,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		throw new IllegalArgumentException("Filter not found: " + filterType.getName());
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized IoFilter replace(String name, IoFilter newFilter) {
 		EntryImpl entry = checkOldName(name);
@@ -277,9 +226,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		return oldFilter;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized void replace(IoFilter oldFilter, IoFilter newFilter) {
 		// Search for the filter to replace
@@ -323,9 +269,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		throw new IllegalArgumentException("Filter not found: " + oldFilter.getClass().getName());
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized IoFilter replace(Class<? extends IoFilter> oldFilterType, IoFilter newFilter) {
 		for (EntryImpl entry = head.nextEntry; entry != tail; entry = entry.nextEntry) {
@@ -369,9 +312,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		throw new IllegalArgumentException("Filter not found: " + oldFilterType.getName());
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public synchronized void clear() throws Exception {
 		for (IoFilterChain.Entry entry : name2entry.values().toArray(new IoFilterChain.Entry[name2entry.size()])) {
@@ -462,9 +402,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void fireSessionCreated() {
 		callNextSessionCreated(head, session);
@@ -481,9 +418,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void fireSessionOpened() {
 		callNextSessionOpened(head, session);
@@ -500,9 +434,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void fireSessionClosed() {
 		// Update future.
@@ -527,9 +458,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void fireMessageReceived(Object message) {
 		callNextMessageReceived(head, session, message);
@@ -546,9 +474,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void fireMessageSent(WriteRequest request) {
 		try {
@@ -561,9 +486,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void fireExceptionCaught(Throwable cause) {
 		callNextExceptionCaught(head, session, cause);
@@ -590,9 +512,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void fireInputClosed() {
 		callNextInputClosed(head, session);
@@ -606,9 +525,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void fireFilterWrite(WriteRequest writeRequest) {
 		callPreviousFilterWrite(tail, session, writeRequest);
@@ -627,9 +543,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void fireFilterClose() {
 		callPreviousFilterClose(tail, session);
@@ -646,9 +559,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public List<Entry> getAll() {
 		List<Entry> list = new ArrayList<>();
@@ -660,9 +570,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		return list;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public List<Entry> getAllReversed() {
 		List<Entry> list = new ArrayList<>();
@@ -674,25 +581,16 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		return list;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public boolean contains(String name) {
 		return getEntry(name) != null;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public boolean contains(IoFilter filter) {
 		return getEntry(filter) != null;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public boolean contains(Class<? extends IoFilter> filterType) {
 		return getEntry(filterType) != null;
@@ -833,73 +731,46 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 			this.name = name;
 			this.filter = filter;
 			this.nextFilter = new NextFilter() {
-				/**
-				 * {@inheritDoc}
-				 */
 				@Override
 				public void sessionCreated(IoSession ioSession) {
 					callNextSessionCreated(EntryImpl.this.nextEntry, ioSession);
 				}
 
-				/**
-				 * {@inheritDoc}
-				 */
 				@Override
 				public void sessionOpened(IoSession ioSession) {
 					callNextSessionOpened(EntryImpl.this.nextEntry, ioSession);
 				}
 
-				/**
-				 * {@inheritDoc}
-				 */
 				@Override
 				public void sessionClosed(IoSession ioSession) {
 					callNextSessionClosed(EntryImpl.this.nextEntry, ioSession);
 				}
 
-				/**
-				 * {@inheritDoc}
-				 */
 				@Override
 				public void exceptionCaught(IoSession ioSession, Throwable cause) {
 					callNextExceptionCaught(EntryImpl.this.nextEntry, ioSession, cause);
 				}
 
-				/**
-				 * {@inheritDoc}
-				 */
 				@Override
 				public void inputClosed(IoSession ioSession) {
 					callNextInputClosed(EntryImpl.this.nextEntry, ioSession);
 				}
 
-				/**
-				 * {@inheritDoc}
-				 */
 				@Override
 				public void messageReceived(IoSession ioSession, Object message) {
 					callNextMessageReceived(EntryImpl.this.nextEntry, ioSession, message);
 				}
 
-				/**
-				 * {@inheritDoc}
-				 */
 				@Override
 				public void filterWrite(IoSession ioSession, WriteRequest writeRequest) {
 					callPreviousFilterWrite(EntryImpl.this.prevEntry, ioSession, writeRequest);
 				}
 
-				/**
-				 * {@inheritDoc}
-				 */
 				@Override
 				public void filterClose(IoSession ioSession) {
 					callPreviousFilterClose(EntryImpl.this.prevEntry, ioSession);
 				}
 
-				/**
-				 * {@inheritDoc}
-				 */
 				@Override
 				public String toString() {
 					return EntryImpl.this.nextEntry.name;
@@ -907,17 +778,11 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 			};
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public String getName() {
 			return name;
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public IoFilter getFilter() {
 			return filter;
@@ -931,9 +796,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 			this.filter = filter;
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public NextFilter getNextFilter() {
 			return nextFilter;
@@ -971,33 +833,21 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 			return sb.toString();
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public void addAfter(String name1, IoFilter filter1) {
 			DefaultIoFilterChain.this.addAfter(getName(), name1, filter1);
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public void addBefore(String name1, IoFilter filter1) {
 			DefaultIoFilterChain.this.addBefore(getName(), name1, filter1);
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public void remove() {
 			DefaultIoFilterChain.this.remove(getName());
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
 		@Override
 		public void replace(IoFilter newFilter) {
 			DefaultIoFilterChain.this.replace(getName(), newFilter);

@@ -62,17 +62,11 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 		super(processorCount);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	protected void init() throws IOException {
 		selector = Selector.open();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	protected void destroy() throws IOException {
 		if (selector != null) {
@@ -80,9 +74,6 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@SuppressWarnings("resource")
 	@Override
 	protected NioSession accept(IoProcessor<NioSession> processor, ServerSocketChannel channel) throws IOException {
@@ -103,9 +94,6 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 		return ch != null ? new NioSocketSession(this, processor, ch) : null;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@SuppressWarnings("resource")
 	@Override
 	protected ServerSocketChannel open(SocketAddress localAddress) throws IOException {
@@ -138,9 +126,6 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 		return channel;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	protected InetSocketAddress localAddress(ServerSocketChannel channel) throws IOException {
 		return (InetSocketAddress)channel.socket().getLocalSocketAddress();
@@ -164,17 +149,11 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 		return selector.select();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	protected Iterator<ServerSocketChannel> selectedHandles() {
 		return new ServerSocketChannelIterator(selector.selectedKeys());
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	protected void close(ServerSocketChannel channel) throws IOException {
 		SelectionKey key = channel.keyFor(selector);
@@ -186,9 +165,6 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 		channel.close();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	protected void wakeup() {
 		selector.wakeup();
