@@ -140,7 +140,7 @@ public final class NioSocketConnector extends AbstractPollingIoConnector {
 
 	@Override
 	protected NioSession newSession(IoProcessor<NioSession> processor, SocketChannel channel) {
-		return new NioSocketSession(this, processor, channel);
+		return new NioSession(this, processor, channel);
 	}
 
 	@Override

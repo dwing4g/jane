@@ -600,7 +600,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 
 				// DefaultIoFilterChain.CONNECT_FUTURE is cleared inside here in AbstractIoFilterChain.fireSessionOpened().
 				// Propagate the SESSION_CREATED event up to the chain
-				((AbstractIoService) session.getService()).getListeners().fireSessionCreated(session);
+				((AbstractIoService) session.getService()).fireSessionCreated(session);
 			} catch (Exception e) {
 				ExceptionMonitor.getInstance().exceptionCaught(e);
 
@@ -859,7 +859,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			} finally {
 				try {
 					clearWriteRequestQueue(session);
-					((AbstractIoService) session.getService()).getListeners().fireSessionDestroyed(session);
+					((AbstractIoService) session.getService()).fireSessionDestroyed(session);
 				} catch (Exception e) {
 					// The session was either destroyed or not at this point.
 					// We do not want any exception thrown from this "cleanup" code

@@ -146,8 +146,6 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 				}
 			}
 		}
-
-		sessionConfig.init(this);
 	}
 
 	/**
@@ -373,7 +371,7 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 					processor.dispose();
 				} finally {
 					try {
-						synchronized (sessionConfig) {
+						synchronized (getSessionConfig()) {
 							if (isDisposing()) {
 								destroy();
 							}

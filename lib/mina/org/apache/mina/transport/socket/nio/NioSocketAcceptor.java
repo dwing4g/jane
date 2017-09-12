@@ -88,7 +88,7 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 		// accept the connection from the client
 		SocketChannel ch = (channel != null ? channel.accept() : null);
 
-		return ch != null ? new NioSocketSession(this, processor, ch) : null;
+		return ch != null ? new NioSession(this, processor, ch) : null;
 	}
 
 	@SuppressWarnings("resource")

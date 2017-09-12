@@ -56,7 +56,7 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	@Override
 	protected void init(NioSession session) throws IOException {
 		@SuppressWarnings("resource")
-		SelectableChannel ch = (SelectableChannel) session.getChannel();
+		SelectableChannel ch = session.getChannel();
 		ch.configureBlocking(false);
 		session.setSelectionKey(ch.register(selector, SelectionKey.OP_READ, session));
 	}

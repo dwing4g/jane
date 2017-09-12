@@ -124,7 +124,7 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 		}
 
 		if (activate) {
-			getListeners().fireServiceActivated();
+			fireServiceActivated();
 		}
 	}
 
@@ -191,7 +191,7 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 		}
 
 		if (deactivate) {
-			getListeners().fireServiceDeactivated();
+			fireServiceDeactivated();
 		}
 	}
 

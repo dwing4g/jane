@@ -19,20 +19,26 @@
 package org.apache.mina.core.service;
 
 import java.util.AbstractSet;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.mina.core.filterchain.DefaultIoFilterChain;
 import org.apache.mina.core.filterchain.DefaultIoFilterChainBuilder;
+import org.apache.mina.core.filterchain.IoFilterChain;
 import org.apache.mina.core.filterchain.IoFilterChainBuilder;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.future.DefaultIoFuture;
 import org.apache.mina.core.future.IoFuture;
+import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.session.DefaultIoSessionDataStructureFactory;
 import org.apache.mina.core.session.IoSession;
@@ -63,18 +69,8 @@ public abstract class AbstractIoService implements IoService {
 	/**
 	 * The default {@link AbstractSocketSessionConfig} which will be used to configure new sessions.
 	 */
-	protected final DefaultSocketSessionConfig sessionConfig = new DefaultSocketSessionConfig();
+	private final DefaultSocketSessionConfig sessionConfig = new DefaultSocketSessionConfig();
 
-	/**
-	 * Maintains the {@link IoServiceListener}s of this service.
-	 * Create the listeners, and add a first listener: a activation listener for this service,
-	 * which will give information on the service state.
-	 */
-	private final IoServiceListenerSupport listeners = new IoServiceListenerSupport(this);
-
-	/**
-	 * Current filter chain builder.
-	 */
 	private IoFilterChainBuilder filterChainBuilder = new DefaultIoFilterChainBuilder();
 
 	private IoSessionDataStructureFactory sessionDataStructureFactory = new DefaultIoSessionDataStructureFactory();
@@ -83,6 +79,14 @@ public abstract class AbstractIoService implements IoService {
 	 * The IoHandler in charge of managing all the I/O Events.
 	 */
 	private IoHandler handler;
+
+	/** Tracks managed sessions. */
+	private final ConcurrentMap<Long, IoSession> managedSessions = new ConcurrentHashMap<>();
+
+	/**  Read only version of {@link #managedSessions}. */
+	private final Map<Long, IoSession> readOnlyManagedSessions = Collections.unmodifiableMap(managedSessions);
+
+	private final AtomicBoolean activated = new AtomicBoolean();
 
 	private volatile boolean disposing;
 	private volatile boolean disposed;
@@ -103,6 +107,7 @@ public abstract class AbstractIoService implements IoService {
 
 	protected AbstractIoService(ExecutorService executor) {
 		this.executor = executor;
+		sessionConfig.init(this);
 	}
 
 	@Override
@@ -129,9 +134,12 @@ public abstract class AbstractIoService implements IoService {
 		throw new IllegalStateException("Current filter chain builder is not a DefaultIoFilterChainBuilder.");
 	}
 
+	/**
+	 * @return true if the instance is active
+	 */
 	@Override
 	public final boolean isActive() {
-		return listeners.isActive();
+		return activated.get();
 	}
 
 	@Override
@@ -188,14 +196,20 @@ public abstract class AbstractIoService implements IoService {
 	 */
 	protected abstract void dispose0() throws Exception;
 
+	/**
+	 * @return A Map of the managed {@link IoSession}s
+	 */
 	@Override
 	public final Map<Long, IoSession> getManagedSessions() {
-		return listeners.getManagedSessions();
+		return readOnlyManagedSessions;
 	}
 
+	/**
+	 * @return The number of managed {@link IoSession}s
+	 */
 	@Override
 	public final int getManagedSessionCount() {
-		return listeners.getManagedSessionCount();
+		return managedSessions.size();
 	}
 
 	@Override
@@ -253,10 +267,106 @@ public abstract class AbstractIoService implements IoService {
 	}
 
 	/**
-	 * @return The {@link IoServiceListenerSupport} attached to this service
+	 * Calls {@link IoServiceListener#serviceActivated(IoService)} for all registered listeners.
 	 */
-	public final IoServiceListenerSupport getListeners() {
-		return listeners;
+	protected final void fireServiceActivated() {
+		activated.set(true);
+	}
+
+	/**
+	 * Calls {@link IoServiceListener#serviceDeactivated(IoService)} for all registered listeners.
+	 */
+	protected final void fireServiceDeactivated() {
+		if (!activated.compareAndSet(true, false)) {
+			// The instance is already desactivated
+			return;
+		}
+
+		// Close all the sessions
+
+		if (!(this instanceof IoAcceptor)) {
+			// We don't disconnect sessions for anything but an Acceptor
+			return;
+		}
+
+		if (!((IoAcceptor) this).isCloseOnDeactivation()) {
+			return;
+		}
+
+		Object lock = new Object();
+		// A listener in charge of releasing the lock when the close has been completed
+		IoFutureListener<IoFuture> listener = new IoFutureListener<IoFuture>() {
+			@Override
+			public void operationComplete(IoFuture future) {
+				synchronized (lock) {
+					lock.notifyAll();
+				}
+			}
+		};
+
+		for (IoSession s : managedSessions.values()) {
+			s.closeNow().addListener(listener);
+		}
+
+		try {
+			synchronized (lock) {
+				while (!managedSessions.isEmpty()) {
+					lock.wait(500);
+				}
+			}
+		} catch (InterruptedException ie) {
+			// Ignored
+		}
+	}
+
+	/**
+	 * Calls {@link IoServiceListener#sessionCreated(IoSession)} for all registered listeners.
+	 *
+	 * @param session The session which has been created
+	 */
+	public final void fireSessionCreated(IoSession session) {
+		boolean firstSession = false;
+
+		if (session.getService() instanceof IoConnector) {
+			firstSession = managedSessions.isEmpty();
+		}
+
+		// If already registered, ignore.
+		if (managedSessions.putIfAbsent(session.getId(), session) != null) {
+			return;
+		}
+
+		// If the first connector session, fire a virtual service activation event.
+		if (firstSession) {
+			fireServiceActivated();
+		}
+
+		// Fire session events.
+		IoFilterChain filterChain = session.getFilterChain();
+		filterChain.fireSessionCreated();
+		filterChain.fireSessionOpened();
+	}
+
+	/**
+	 * Calls {@link IoServiceListener#sessionDestroyed(IoSession)} for all registered listeners.
+	 *
+	 * @param session The session which has been destroyed
+	 */
+	public final void fireSessionDestroyed(IoSession session) {
+		// Try to remove the remaining empty session set after removal.
+		if (managedSessions.remove(session.getId()) == null) {
+			return;
+		}
+
+		// Fire session events.
+		session.getFilterChain().fireSessionClosed();
+
+		// Fire a virtual service deactivation event for the last session of the connector.
+		if (session.getService() instanceof IoConnector) {
+			if (managedSessions.isEmpty()) {
+				fireServiceDeactivated();
+			}
+		}
 	}
 
 	protected final void executeWorker(Runnable worker) {

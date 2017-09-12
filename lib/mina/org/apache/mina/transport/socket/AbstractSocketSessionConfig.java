@@ -119,17 +119,8 @@ public abstract class AbstractSocketSessionConfig {
 		setMaxReadBufferSize(config.getMaxReadBufferSize());
 
 		// Minimize unnecessary system calls by checking all 'propertyChanged' properties.
-		if (config.isKeepAliveChanged()) {
-			setKeepAlive(config.isKeepAlive());
-		}
-		if (config.isOobInlineChanged()) {
-			setOobInline(config.isOobInline());
-		}
 		if (config.isReceiveBufferSizeChanged()) {
 			setReceiveBufferSize(config.getReceiveBufferSize());
-		}
-		if (config.isReuseAddressChanged()) {
-			setReuseAddress(config.isReuseAddress());
 		}
 		if (config.isSendBufferSizeChanged()) {
 			setSendBufferSize(config.getSendBufferSize());
@@ -137,27 +128,22 @@ public abstract class AbstractSocketSessionConfig {
 		if (config.isSoLingerChanged()) {
 			setSoLinger(config.getSoLinger());
 		}
-		if (config.isTcpNoDelayChanged()) {
-			setTcpNoDelay(config.isTcpNoDelay());
-		}
 		if (config.isTrafficClassChanged() && getTrafficClass() != config.getTrafficClass()) {
 			setTrafficClass(config.getTrafficClass());
 		}
+		if (config.isReuseAddressChanged()) {
+			setReuseAddress(config.isReuseAddress());
+		}
+		if (config.isTcpNoDelayChanged()) {
+			setTcpNoDelay(config.isTcpNoDelay());
+		}
+		if (config.isKeepAliveChanged()) {
+			setKeepAlive(config.isKeepAlive());
+		}
+		if (config.isOobInlineChanged()) {
+			setOobInline(config.isOobInline());
+		}
 	}
-
-	/**
-	 * @see Socket#getReuseAddress()
-	 *
-	 * @return <tt>true</tt> if SO_REUSEADDR is enabled.
-	 */
-	public abstract boolean isReuseAddress();
-
-	/**
-	 * @see Socket#setReuseAddress(boolean)
-	 *
-	 * @param reuseAddress Tells if SO_REUSEADDR is enabled or disabled
-	 */
-	public abstract void setReuseAddress(boolean reuseAddress);
 
 	/**
 	 * @see Socket#getReceiveBufferSize()
@@ -188,6 +174,28 @@ public abstract class AbstractSocketSessionConfig {
 	public abstract void setSendBufferSize(int sendBufferSize);
 
 	/**
+	 * Please note that enabling <tt>SO_LINGER</tt> in Java NIO can result
+	 * in platform-dependent behavior and unexpected blocking of I/O thread.
+	 *
+	 * @see Socket#getSoLinger()
+	 * @see <a href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6179351">Sun Bug Database</a>
+	 *
+	 * @return The value for <tt>SO_LINGER</tt>
+	 */
+	public abstract int getSoLinger();
+
+	/**
+	 * Please note that enabling <tt>SO_LINGER</tt> in Java NIO can result
+	 * in platform-dependent behavior and unexpected blocking of I/O thread.
+	 *
+	 * @param soLinger Please specify a negative value to disable <tt>SO_LINGER</tt>.
+	 *
+	 * @see Socket#setSoLinger(boolean, int)
+	 * @see <a href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6179351">Sun Bug Database</a>
+	 */
+	public abstract void setSoLinger(int soLinger);
+
+	/**
 	 * @see Socket#getTrafficClass()
 	 *
 	 * @return the traffic class
@@ -201,6 +209,34 @@ public abstract class AbstractSocketSessionConfig {
 	 * <tt>IPTOS_RELIABILITY</tt> (0x04), <tt>IPTOS_THROUGHPUT</tt> (0x08) or <tt>IPTOS_LOWDELAY</tt> (0x10)
 	 */
 	public abstract void setTrafficClass(int trafficClass);
+
+	/**
+	 * @see Socket#getReuseAddress()
+	 *
+	 * @return <tt>true</tt> if SO_REUSEADDR is enabled.
+	 */
+	public abstract boolean isReuseAddress();
+
+	/**
+	 * @see Socket#setReuseAddress(boolean)
+	 *
+	 * @param reuseAddress Tells if SO_REUSEADDR is enabled or disabled
+	 */
+	public abstract void setReuseAddress(boolean reuseAddress);
+
+	/**
+	 * @see Socket#getTcpNoDelay()
+	 *
+	 * @return <tt>true</tt> if <tt>TCP_NODELAY</tt> is enabled.
+	 */
+	public abstract boolean isTcpNoDelay();
+
+	/**
+	 * @see Socket#setTcpNoDelay(boolean)
+	 *
+	 * @param tcpNoDelay <tt>true</tt> if <tt>TCP_NODELAY</tt> is to be enabled
+	 */
+	public abstract void setTcpNoDelay(boolean tcpNoDelay);
 
 	/**
 	 * @see Socket#getKeepAlive()
@@ -229,42 +265,6 @@ public abstract class AbstractSocketSessionConfig {
 	 * @param oobInline if <tt>SO_OOBINLINE</tt> is to be enabled
 	 */
 	public abstract void setOobInline(boolean oobInline);
-
-	/**
-	 * Please note that enabling <tt>SO_LINGER</tt> in Java NIO can result
-	 * in platform-dependent behavior and unexpected blocking of I/O thread.
-	 *
-	 * @see Socket#getSoLinger()
-	 * @see <a href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6179351">Sun Bug Database</a>
-	 *
-	 * @return The value for <tt>SO_LINGER</tt>
-	 */
-	public abstract int getSoLinger();
-
-	/**
-	 * Please note that enabling <tt>SO_LINGER</tt> in Java NIO can result
-	 * in platform-dependent behavior and unexpected blocking of I/O thread.
-	 *
-	 * @param soLinger Please specify a negative value to disable <tt>SO_LINGER</tt>.
-	 *
-	 * @see Socket#setSoLinger(boolean, int)
-	 * @see <a href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6179351">Sun Bug Database</a>
-	 */
-	public abstract void setSoLinger(int soLinger);
-
-	/**
-	 * @see Socket#getTcpNoDelay()
-	 *
-	 * @return <tt>true</tt> if <tt>TCP_NODELAY</tt> is enabled.
-	 */
-	public abstract boolean isTcpNoDelay();
-
-	/**
-	 * @see Socket#setTcpNoDelay(boolean)
-	 *
-	 * @param tcpNoDelay <tt>true</tt> if <tt>TCP_NODELAY</tt> is to be enabled
-	 */
-	public abstract void setTcpNoDelay(boolean tcpNoDelay);
 
 	/**
 	 * @return <tt>true</tt> if and only if the <tt>receiveBufferSize</tt> property
