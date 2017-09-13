@@ -109,9 +109,7 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 		try {
 			init();
 			selectable = true;
-		} catch (RuntimeException e) {
-			throw e;
-		} catch (Exception e) {
+		} catch (IOException e) {
 			throw new RuntimeException("Failed to initialize.", e);
 		} finally {
 			if (!selectable) {

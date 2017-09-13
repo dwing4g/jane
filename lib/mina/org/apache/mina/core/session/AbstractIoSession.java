@@ -67,7 +67,7 @@ public abstract class AbstractIoSession implements IoSession {
 	/** A future that will be set 'closed' when the connection is closed */
 	private final CloseFuture closeFuture = new DefaultCloseFuture(this);
 
-	// Status variables
+	/** Status variables */
 	private final AtomicBoolean scheduledForFlush = new AtomicBoolean();
 
 	private volatile boolean closing;

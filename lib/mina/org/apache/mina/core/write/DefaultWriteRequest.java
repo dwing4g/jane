@@ -103,7 +103,6 @@ public final class DefaultWriteRequest implements WriteRequest {
 	};
 
 	private final Object message;
-
 	private final WriteFuture future;
 
 	/**

@@ -54,10 +54,10 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 	private final Map<String, Entry> name2entry = new ConcurrentHashMap<>();
 
 	/** The chain head */
-	private final EntryImpl head;
+	private final EntryImpl head = new EntryImpl(null, null, "head", new HeadFilter());
 
 	/** The chain tail */
-	private final EntryImpl tail;
+	private final EntryImpl tail = new EntryImpl(head, null, "tail", new TailFilter());
 
 	/**
 	 * Create a new default chain, associated with a session.
@@ -71,8 +71,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		}
 
 		this.session = session;
-		head = new EntryImpl(null, null, "head", new HeadFilter());
-		tail = new EntryImpl(head, null, "tail", new TailFilter());
 		head.nextEntry = tail;
 	}
 

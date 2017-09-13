@@ -47,7 +47,6 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 	 * Constructor for {@link NioSocketAcceptor} using default parameters (multiple thread model).
 	 */
 	public NioSocketAcceptor() {
-		super();
 	}
 
 	/**

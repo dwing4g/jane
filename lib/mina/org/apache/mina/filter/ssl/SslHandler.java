@@ -73,24 +73,16 @@ public final class SslHandler {
 
 	private SSLEngine sslEngine;
 
-	/**
-	 * Encrypted data from the net
-	 */
+	/** Encrypted data from the net */
 	private IoBuffer inNetBuffer;
 
-	/**
-	 * Encrypted data to be written to the net
-	 */
+	/** Encrypted data to be written to the net */
 	private IoBuffer outNetBuffer;
 
-	/**
-	 * Application cleartext data to be read by application
-	 */
+	/** Application cleartext data to be read by application */
 	private IoBuffer appBuffer;
 
-	/**
-	 * Empty buffer used during initial handshake and close operations
-	 */
+	/** Empty buffer used during initial handshake and close operations */
 	private final IoBuffer emptyBuffer = IoBuffer.allocate(0);
 
 	private HandshakeStatus handshakeStatus;
@@ -105,9 +97,11 @@ public final class SslHandler {
 	/** A flag set to true when a SSL Handshake has been completed */
 	private boolean handshakeComplete;
 
-	/** A flag used to indicate to the SslFilter that the buffer
+	/**
+	 * A flag used to indicate to the SslFilter that the buffer
 	 * it will write is already encrypted (this will be the case
-	 * for data being produced during the handshake). */
+	 * for data being produced during the handshake).
+	 */
 	private boolean writingEncryptedData;
 
 	/** A lock to protect the SSL flush of events */

@@ -38,8 +38,7 @@ public class DefaultIoFuture implements IoFuture {
 	/** The associated session */
 	private final IoSession session;
 
-	/** The first listener. This is easier to have this variable
-	 * when we most of the time have one single listener */
+	/** The first listener. This is easier to have this variable when we most of the time have one single listener */
 	private IoFutureListener<?> firstListener;
 
 	/** All the other listeners, in case we have more than one */

@@ -77,9 +77,7 @@ public final class SimpleIoProcessorPool implements IoProcessor<NioSession> {
 	/** A flag set to true if all the IoProcessor contained in the pool have been disposed */
 	private volatile boolean disposed;
 
-	/**
-	 * Creates a new instance of SimpleIoProcessorPool with a default size of NbCPUs +1.
-	 */
+	/** Creates a new instance of SimpleIoProcessorPool with a default size of NbCPUs +1 */
 	public SimpleIoProcessorPool() {
 		this(DEFAULT_SIZE);
 	}

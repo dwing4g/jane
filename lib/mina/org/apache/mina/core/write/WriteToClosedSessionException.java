@@ -43,7 +43,6 @@ public final class WriteToClosedSessionException extends IOException {
 	 * @param request The {@link WriteRequest} which has been written on a closed session
 	 */
 	public WriteToClosedSessionException(WriteRequest request) {
-		super();
 		requests = asRequestList(request);
 	}
 
@@ -53,7 +52,6 @@ public final class WriteToClosedSessionException extends IOException {
 	 * @param requests The {@link WriteRequest}s which have been written on a closed session
 	 */
 	public WriteToClosedSessionException(Collection<WriteRequest> requests) {
-		super();
 		this.requests = asRequestList(requests);
 	}
 

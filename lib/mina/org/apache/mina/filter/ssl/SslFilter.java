@@ -81,9 +81,7 @@ import org.slf4j.LoggerFactory;
 public final class SslFilter extends IoFilterAdapter {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SslFilter.class);
 
-	/**
-	 * A session attribute key that stores underlying {@link SSLSession} for each session.
-	 */
+	/** A session attribute key that stores underlying {@link SSLSession} for each session */
 	public static final String SSL_SESSION = "SslFilter.session";
 
 	/**

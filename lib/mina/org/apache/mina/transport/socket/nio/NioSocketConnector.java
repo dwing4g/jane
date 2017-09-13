@@ -42,7 +42,6 @@ public final class NioSocketConnector extends AbstractPollingIoConnector {
 	 * Constructor for {@link NioSocketConnector} using default parameters (multiple thread model).
 	 */
 	public NioSocketConnector() {
-		super();
 	}
 
 	/**

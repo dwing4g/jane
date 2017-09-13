@@ -82,13 +82,13 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 	/** A flag set when the acceptor has been created and initialized */
 	private volatile boolean selectable;
 
-	protected boolean reuseAddress;
+	private boolean reuseAddress = true;
 
 	/**
 	 * Define the number of socket that can wait to be accepted.
 	 * Default to 50 (as in the SocketServer default).
 	 */
-	protected int backlog = 50;
+	private int backlog = 50;
 
 	/**
 	 * Constructor for {@link AbstractPollingIoAcceptor}. You need to provide a default
@@ -133,9 +133,7 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 			// The selector is now ready, we can switch the
 			// flag to true so that incoming connection can be accepted
 			selectable = true;
-		} catch (RuntimeException e) {
-			throw e;
-		} catch (Exception e) {
+		} catch (IOException e) {
 			throw new RuntimeException("Failed to initialize.", e);
 		} finally {
 			if (!selectable) {

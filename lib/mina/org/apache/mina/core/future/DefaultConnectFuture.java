@@ -27,7 +27,7 @@ import org.apache.mina.core.session.IoSession;
  */
 public class DefaultConnectFuture extends DefaultIoFuture implements ConnectFuture {
 	/** A static object stored into the ConnectFuture when teh connection has been cancelled */
-	private static final Object CANCELED = new Object();
+	private static final Object CANCELED = DefaultConnectFuture.class;
 
 	public DefaultConnectFuture() {
 		super(null);

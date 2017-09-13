@@ -61,29 +61,23 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractIoService implements IoService {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractIoService.class);
 
-	/**
-	 * The associated executor, responsible for handling execution of I/O events.
-	 */
+	/** The associated executor, responsible for handling execution of I/O events */
 	private final ExecutorService executor;
 
-	/**
-	 * The default {@link AbstractSocketSessionConfig} which will be used to configure new sessions.
-	 */
+	/** The default {@link AbstractSocketSessionConfig} which will be used to configure new sessions */
 	private final DefaultSocketSessionConfig sessionConfig = new DefaultSocketSessionConfig();
 
 	private IoFilterChainBuilder filterChainBuilder = new DefaultIoFilterChainBuilder();
 
 	private IoSessionDataStructureFactory sessionDataStructureFactory = new DefaultIoSessionDataStructureFactory();
 
-	/**
-	 * The IoHandler in charge of managing all the I/O Events.
-	 */
+	/** The IoHandler in charge of managing all the I/O Events */
 	private IoHandler handler;
 
 	/** Tracks managed sessions. */
 	private final ConcurrentMap<Long, IoSession> managedSessions = new ConcurrentHashMap<>();
 
-	/**  Read only version of {@link #managedSessions}. */
+	/** Read only version of {@link #managedSessions} */
 	private final Map<Long, IoSession> readOnlyManagedSessions = Collections.unmodifiableMap(managedSessions);
 
 	private final AtomicBoolean activated = new AtomicBoolean();
