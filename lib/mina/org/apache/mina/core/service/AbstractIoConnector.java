@@ -20,7 +20,7 @@ package org.apache.mina.core.service;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.apache.mina.core.future.ConnectFuture;
@@ -38,7 +38,8 @@ public abstract class AbstractIoConnector extends AbstractIoService implements I
 	private int connectTimeoutInMillis = 60 * 1000; // 1 minute by default
 
 	public AbstractIoConnector() {
-		super(new ThreadPoolExecutor(0, 1, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), new IoThreadFactory(NioSocketConnector.class)));
+		super(new ThreadPoolExecutor(0, 1, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(),
+				new IoThreadFactory(NioSocketConnector.class)));
 	}
 
 	@Override

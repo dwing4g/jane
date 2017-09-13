@@ -27,7 +27,6 @@ import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.mina.core.filterchain.IoFilter;
 import org.apache.mina.core.future.ConnectFuture;
@@ -95,8 +94,6 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 
 	/**
 	 * Constructor for {@link AbstractPollingIoAcceptor}.
-	 * You need to provide a default session configuration and an {@link Executor} for handling I/O events.
-	 * If null {@link Executor} is provided, a default one will be created using {@link Executors#newCachedThreadPool()}.
 	 *
 	 * @see AbstractIoService#AbstractIoService(Executor)
 	 *

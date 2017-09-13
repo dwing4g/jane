@@ -20,6 +20,7 @@ package org.apache.mina.util;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -64,7 +65,7 @@ public final class IoUtil {
 	 */
 	public static List<WriteFuture> broadcast(Object message, IoSession... sessions) {
 		if (sessions == null) {
-			return new ArrayList<>();
+			return Collections.emptyList();
 		}
 
 		List<WriteFuture> answer = new ArrayList<>(sessions.length);

@@ -26,7 +26,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 
 /**
@@ -47,7 +49,8 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 	private boolean disconnectOnUnbind = true;
 
 	public AbstractIoAcceptor() {
-		super(Executors.newSingleThreadExecutor(new IoThreadFactory(NioSocketAcceptor.class)));
+		super(new ThreadPoolExecutor(0, 1, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(),
+				new IoThreadFactory(NioSocketAcceptor.class)));
 	}
 
 	@Override

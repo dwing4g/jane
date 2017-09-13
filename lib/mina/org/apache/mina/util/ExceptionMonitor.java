@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public class ExceptionMonitor {
-	private static ExceptionMonitor instance;
+	private static volatile ExceptionMonitor instance;
 
 	private final Logger logger = LoggerFactory.getLogger(ExceptionMonitor.class);
 

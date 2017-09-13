@@ -9,7 +9,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
-import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -214,7 +214,7 @@ public final class DBManager
 		_hasCreated = true;
 		AtomicInteger counter = new AtomicInteger();
 		_procThreads = new ThreadPoolExecutor(Const.dbThreadCountMin, Const.dbThreadCountMax, Const.dbThreadKeepAlive,
-				TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), r ->
+				TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(), r ->
 				{
 					Thread t = new ProcThread("ProcThread-" + counter.incrementAndGet(), r);
 					t.setDaemon(true);
