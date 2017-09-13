@@ -19,8 +19,6 @@
 package org.apache.mina.core.filterchain;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.mina.core.filterchain.IoFilter.NextFilter;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.future.IoFuture;
@@ -45,9 +43,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 
 	/** The associated session */
 	private final AbstractIoSession session;
-
-	/** The mapping between the filters and their associated name */
-	private final Map<String, EntryImpl> name2entry = new HashMap<>();
 
 	/** The chain head */
 	private final EntryImpl head = new EntryImpl(null, null, "head", HeadFilter.instance);
@@ -76,29 +71,32 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 	}
 
 	@Override
-	public synchronized Entry getEntry(String name) {
-		return name2entry.get(name);
+	public synchronized EntryImpl getEntry(String name) {
+		for (EntryImpl e = head.nextEntry; e != tail; e = e.nextEntry) {
+			if (e.getName().equals(name)) {
+				return e;
+			}
+		}
+		return null;
 	}
 
 	@Override
-	public synchronized Entry getEntry(IoFilter filter) {
+	public synchronized EntryImpl getEntry(IoFilter filter) {
 		for (EntryImpl e = head.nextEntry; e != tail; e = e.nextEntry) {
 			if (e.getFilter() == filter) {
 				return e;
 			}
 		}
-
 		return null;
 	}
 
 	@Override
-	public synchronized Entry getEntry(Class<? extends IoFilter> filterType) {
+	public synchronized EntryImpl getEntry(Class<? extends IoFilter> filterType) {
 		for (EntryImpl e = head.nextEntry; e != tail; e = e.nextEntry) {
 			if (filterType.isAssignableFrom(e.getFilter().getClass())) {
 				return e;
 			}
 		}
-
 		return null;
 	}
 
@@ -160,7 +158,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 
 	@Override
 	public synchronized IoFilter remove(String name) {
-		EntryImpl entry = name2entry.get(name);
+		EntryImpl entry = getEntry(name);
 		if (entry == null) {
 			return null;
 		}
@@ -220,7 +218,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 
 	@Override
 	public synchronized void clear() throws Exception {
-		for (EntryImpl entry : name2entry.values().toArray(new EntryImpl[name2entry.size()])) {
+		for (EntryImpl entry; (entry = tail.prevEntry) != head;) {
 			try {
 				deregister(entry);
 			} catch (Exception e) {
@@ -244,7 +242,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 
 		prevEntry.nextEntry.prevEntry = newEntry;
 		prevEntry.nextEntry = newEntry;
-		name2entry.put(name, newEntry);
 
 		try {
 			filter.onPostAdd(this, name, newEntry.getNextFilter());
@@ -272,13 +269,11 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		}
 	}
 
-	private void deregister0(EntryImpl entry) {
+	private static void deregister0(EntryImpl entry) {
 		EntryImpl prevEntry = entry.prevEntry;
 		EntryImpl nextEntry = entry.nextEntry;
 		prevEntry.nextEntry = nextEntry;
 		nextEntry.prevEntry = prevEntry;
-
-		name2entry.remove(entry.name);
 	}
 
 	/**
@@ -287,8 +282,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 	 * @return An filter entry with the specified name.
 	 */
 	private EntryImpl checkOldName(String baseName) {
-		EntryImpl e = name2entry.get(baseName);
-
+		EntryImpl e = getEntry(baseName);
 		if (e == null) {
 			throw new IllegalArgumentException("Filter not found: " + baseName);
 		}
@@ -300,7 +294,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 	 * Checks the specified filter name is already taken and throws an exception if already taken.
 	 */
 	private void checkAddable(String name) {
-		if (name2entry.containsKey(name)) {
+		if (getEntry(name) != null) {
 			throw new IllegalArgumentException("Other filter is using the same name '" + name + '\'');
 		}
 	}
@@ -619,7 +613,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 			if (filter == null) {
 				throw new IllegalArgumentException("filter");
 			}
-
 			if (name == null) {
 				throw new IllegalArgumentException("name");
 			}
@@ -690,7 +683,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 			if (filter == null) {
 				throw new IllegalArgumentException("filter");
 			}
-
 			this.filter = filter;
 		}
 
@@ -710,8 +702,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 			sb.append(", prev: '");
 
 			if (prevEntry != null) {
-				sb.append(prevEntry.name).append(':');
-				sb.append(prevEntry.getFilter().getClass().getSimpleName());
+				sb.append(prevEntry.name).append(':').append(prevEntry.getFilter().getClass().getSimpleName());
 			} else {
 				sb.append("null");
 			}
@@ -720,8 +711,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 			sb.append("', next: '");
 
 			if (nextEntry != null) {
-				sb.append(nextEntry.name).append(':');
-				sb.append(nextEntry.getFilter().getClass().getSimpleName());
+				sb.append(nextEntry.name).append(':').append(nextEntry.getFilter().getClass().getSimpleName());
 			} else {
 				sb.append("null");
 			}
