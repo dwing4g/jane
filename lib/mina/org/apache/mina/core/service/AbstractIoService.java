@@ -48,8 +48,6 @@ import org.apache.mina.transport.socket.DefaultSocketSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.mina.util.ExceptionMonitor;
 import org.apache.mina.util.IoUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Base implementation of {@link IoService}s.
@@ -59,8 +57,6 @@ import org.slf4j.LoggerFactory;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public abstract class AbstractIoService implements IoService {
-	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractIoService.class);
-
 	/** The associated executor, responsible for handling execution of I/O events */
 	private final ExecutorService executor;
 
@@ -172,11 +168,9 @@ public abstract class AbstractIoService implements IoService {
 		executor.shutdownNow();
 		if (awaitTermination) {
 			try {
-				LOGGER.debug("awaitTermination on {} called by thread=[{}]", this, Thread.currentThread().getName());
 				executor.awaitTermination(Integer.MAX_VALUE, TimeUnit.SECONDS);
-				LOGGER.debug("awaitTermination on {} finished", this);
 			} catch (InterruptedException e1) {
-				LOGGER.warn("awaitTermination on [{}] was interrupted", this);
+				ExceptionMonitor.getInstance().warn("awaitTermination on [" + this + "] was interrupted");
 				// Restore the interrupted status
 				Thread.currentThread().interrupt();
 			}
@@ -374,7 +368,7 @@ public abstract class AbstractIoService implements IoService {
 		session.setAttributeMap(session.getService().getSessionDataStructureFactory().getAttributeMap(session));
 		session.setWriteRequestQueue(session.getService().getSessionDataStructureFactory().getWriteRequestQueue(session));
 
-		if (future != null && future instanceof ConnectFuture) {
+		if (future instanceof ConnectFuture) {
 			// DefaultIoFilterChain will notify the future. (We support ConnectFuture only for now).
 			session.setAttribute(DefaultIoFilterChain.SESSION_CREATED_FUTURE, future);
 		}

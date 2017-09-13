@@ -23,8 +23,6 @@ import org.apache.mina.core.session.IoEvent;
 import org.apache.mina.core.session.IoEventType;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * An I/O event or an I/O request that MINA provides for {@link IoFilter}s.
@@ -34,11 +32,6 @@ import org.slf4j.LoggerFactory;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class IoFilterEvent extends IoEvent {
-	private static final Logger LOGGER = LoggerFactory.getLogger(IoFilterEvent.class);
-
-	/** A speedup for logs */
-	private static final boolean DEBUG = LOGGER.isDebugEnabled();
-
 	private final NextFilter nextFilter;
 
 	/**
@@ -70,10 +63,6 @@ public final class IoFilterEvent extends IoEvent {
 	public void fire() {
 		IoSession session = getSession();
 		IoEventType type = getType();
-
-		if (DEBUG) {
-			LOGGER.debug("Firing a {} event for session {}", type, session.getId());
-		}
 
 		switch (type) {
 			case MESSAGE_RECEIVED:
@@ -109,10 +98,6 @@ public final class IoFilterEvent extends IoEvent {
 
 			default:
 				throw new IllegalArgumentException("Unknown event type: " + type);
-		}
-
-		if (DEBUG) {
-			LOGGER.debug("Event {} has been fired for session {}", type, session.getId());
 		}
 	}
 }

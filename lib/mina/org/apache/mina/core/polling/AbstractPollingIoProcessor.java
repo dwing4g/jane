@@ -40,8 +40,6 @@ import org.apache.mina.core.write.WriteRequest;
 import org.apache.mina.core.write.WriteRequestQueue;
 import org.apache.mina.core.write.WriteToClosedSessionException;
 import org.apache.mina.util.ExceptionMonitor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * An abstract implementation of {@link IoProcessor} which helps transport developers to write an {@link IoProcessor} easily.
@@ -52,8 +50,6 @@ import org.slf4j.LoggerFactory;
  * @param <S> the type of the {@link IoSession} this processor can handle
  */
 public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> implements IoProcessor<S> {
-	private static final Logger LOGGER = LoggerFactory.getLogger(IoProcessor.class);
-
 	/** A timeout used for the select */
 	private static final long SELECT_TIMEOUT = 1000L;
 
@@ -419,13 +415,13 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 							// Thread was interrupted so reset selected keys and break so we not run into a busy loop.
 							// As this is most likely a bug in the handler of the user or it's client library we will also log it.
 							// See https://github.com/netty/netty/issues/2426
-							LOGGER.error("Selector.select() returned prematurely because Thread.interrupted()");
+							ExceptionMonitor.getInstance().error("Selector.select() returned prematurely because Thread.interrupted()");
 							break;
 						}
 
 						// Last chance: the select() may have been interrupted because we have had an closed channel.
 						if (isBrokenConnection()) {
-							LOGGER.warn("Broken connection");
+							ExceptionMonitor.getInstance().warn("Broken connection");
 						} else {
 							// Ok, we are hit by the nasty epoll spinning.
 							// Basically, there is a race condition which causes a closing file descriptor not to be
@@ -434,7 +430,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 							// and do so forever, consuming 100% CPU.
 							// We have to destroy the selector, and register all the socket on a new one.
 							if (nbTries == 0) {
-								LOGGER.warn("Create a new selector. Selected is 0, delta = " + delta);
+								ExceptionMonitor.getInstance().warn("Create a new selector. Selected is 0, delta = " + delta);
 								registerNewSelector();
 								nbTries = 10;
 							} else {

@@ -32,15 +32,24 @@ import org.slf4j.LoggerFactory;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public class ExceptionMonitor {
-	private static final Logger LOGGER = LoggerFactory.getLogger(ExceptionMonitor.class);
+	private static ExceptionMonitor instance;
 
-	private static ExceptionMonitor instance = new ExceptionMonitor();
+	private final Logger logger = LoggerFactory.getLogger(ExceptionMonitor.class);
 
 	/**
 	 * @return the current exception monitor.
 	 */
 	public static ExceptionMonitor getInstance() {
-		return instance;
+		ExceptionMonitor monitor = instance;
+		if (monitor == null) {
+			synchronized(ExceptionMonitor.class) {
+				monitor = instance;
+				if (monitor == null) {
+					instance = monitor = new ExceptionMonitor();
+				}
+			}
+		}
+		return monitor;
 	}
 
 	/**
@@ -49,11 +58,19 @@ public class ExceptionMonitor {
 	 *
 	 * @param monitor A new instance of {@link ExceptionMonitor} is set if <tt>null</tt> is specified.
 	 */
-	public static void setInstance(ExceptionMonitor monitor) {
+	public static synchronized void setInstance(ExceptionMonitor monitor) {
 		instance = (monitor != null ? monitor : new ExceptionMonitor());
 	}
 
 	protected ExceptionMonitor() {
+	}
+
+	public void warn(String msg) {
+		logger.warn(msg);
+	}
+
+	public void error(String msg) {
+		logger.error(msg);
 	}
 
 	/**
@@ -61,12 +78,11 @@ public class ExceptionMonitor {
 	 *
 	 * @param cause The caught exception
 	 */
-	@SuppressWarnings("static-method")
 	public void exceptionCaught(Throwable cause) {
 		if (cause instanceof Error) {
 			throw (Error) cause;
 		}
 
-		LOGGER.error("Unexpected exception:", cause);
+		logger.error("Unexpected exception:", cause);
 	}
 }

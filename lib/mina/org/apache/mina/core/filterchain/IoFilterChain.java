@@ -18,7 +18,7 @@
  */
 package org.apache.mina.core.filterchain;
 
-import java.util.List;
+import java.util.ArrayList;
 import org.apache.mina.core.filterchain.IoFilter.NextFilter;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.session.IoSession;
@@ -108,12 +108,12 @@ public interface IoFilterChain {
 	/**
 	 * @return The list of all {@link Entry}s this chain contains.
 	 */
-	List<Entry> getAll();
+	ArrayList<Entry> getAll();
 
 	/**
 	 * @return The reversed list of all {@link Entry}s this chain contains.
 	 */
-	List<Entry> getAllReversed();
+	ArrayList<Entry> getAllReversed();
 
 	/**
 	 * @param name The filter's name we are looking for
@@ -130,7 +130,7 @@ public interface IoFilterChain {
 	boolean contains(IoFilter filter);
 
 	/**
-	 * @param  filterType The filter's class we are looking for
+	 * @param filterType The filter's class we are looking for
 	 *
 	 * @return <tt>true</tt> if this chain contains an {@link IoFilter} of the specified <tt>filterType</tt>.
 	 */
@@ -173,6 +173,31 @@ public interface IoFilterChain {
 	void addAfter(String baseName, String name, IoFilter filter);
 
 	/**
+	 * Removes the filter with the specified name from this chain.
+	 *
+	 * @param name The name of the filter to remove
+	 * @return The removed filter, <tt>null</tt> if there's no such name in this chain
+	 */
+	IoFilter remove(String name);
+
+	/**
+	 * Removes the filter from this chain.
+	 *
+	 * @param filter The filter to remove
+	 * @return <tt>true</tt> if removed successfully
+	 */
+	boolean remove(IoFilter filter);
+
+	/**
+	 * Removes the filter of the specified type from this chain.
+	 * If there's more than one filter with the specified type, the first match will be removed.
+	 *
+	 * @param filterType The filter class to remove
+	 * @return The removed filter, <tt>null</tt> if there's no such type in this chain
+	 */
+	IoFilter remove(Class<? extends IoFilter> filterType);
+
+	/**
 	 * Replace the filter with the specified name with the specified new filter.
 	 *
 	 * @param name The name of the filter we want to replace
@@ -180,48 +205,6 @@ public interface IoFilterChain {
 	 * @return the old filter
 	 */
 	IoFilter replace(String name, IoFilter newFilter);
-
-	/**
-	 * Replace the filter with the specified name with the specified new filter.
-	 *
-	 * @param oldFilter The filter we want to replace
-	 * @param newFilter The new filter
-	 */
-	void replace(IoFilter oldFilter, IoFilter newFilter);
-
-	/**
-	 * Replace the filter of the specified type with the specified new filter.
-	 * If there's more than one filter with the specified type, the first match will be replaced.
-	 *
-	 * @param oldFilterType The filter class we want to replace
-	 * @param newFilter The new filter
-	 * @return The replaced IoFilter
-	 */
-	IoFilter replace(Class<? extends IoFilter> oldFilterType, IoFilter newFilter);
-
-	/**
-	 * Removes the filter with the specified name from this chain.
-	 *
-	 * @param name The name of the filter to remove
-	 * @return The removed filter
-	 */
-	IoFilter remove(String name);
-
-	/**
-	 * Replace the filter with the specified name with the specified new filter.
-	 *
-	 * @param filter The filter to remove
-	 */
-	void remove(IoFilter filter);
-
-	/**
-	 * Replace the filter of the specified type with the specified new filter.
-	 * If there's more than one filter with the specified type, the first match will be replaced.
-	 *
-	 * @param filterType The filter class to remove
-	 * @return The removed filter
-	 */
-	IoFilter remove(Class<? extends IoFilter> filterType);
 
 	/**
 	 * Removes all filters added to this chain.

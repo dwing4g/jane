@@ -39,8 +39,7 @@ import org.apache.mina.core.session.IoEventType;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.DefaultWriteRequest;
 import org.apache.mina.core.write.WriteRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.mina.util.ExceptionMonitor;
 
 /**
  * A helper class using the SSLEngine API to decrypt/encrypt data.
@@ -57,8 +56,6 @@ import org.slf4j.LoggerFactory;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class SslHandler {
-	private static final Logger LOGGER = LoggerFactory.getLogger(SslHandler.class);
-
 	/** The SSL Filter which has created this handler */
 	private final SslFilter sslFilter;
 
@@ -129,9 +126,7 @@ public final class SslHandler {
 			return;
 		}
 
-		if (LOGGER.isDebugEnabled()) {
-			LOGGER.debug("{} Initializing the SSL Handler", SslFilter.getSessionInfo(session));
-		}
+		// LOGGER.debug("{} Initializing the SSL Handler", SslFilter.getSessionInfo(session));
 
 		InetSocketAddress peer = (InetSocketAddress) session.getAttribute(SslFilter.PEER_ADDRESS);
 
@@ -181,9 +176,7 @@ public final class SslHandler {
 		firstSSLNegociation = true;
 		handshakeComplete = false;
 
-		if (LOGGER.isDebugEnabled()) {
-			LOGGER.debug("{} SSL Handler Initialization done.", SslFilter.getSessionInfo(session));
-		}
+		// LOGGER.debug("{} SSL Handler Initialization done.", SslFilter.getSessionInfo(session));
 	}
 
 	/**
@@ -198,7 +191,7 @@ public final class SslHandler {
 		try {
 			sslEngine.closeInbound();
 		} catch (SSLException e) {
-			LOGGER.debug("Unexpected exception from SSLEngine.closeInbound():", e);
+			// LOGGER.debug("Unexpected exception from SSLEngine.closeInbound():", e);
 		}
 
 		if (outNetBuffer != null) {
@@ -323,13 +316,11 @@ public final class SslHandler {
 	 * @throws SSLException on errors
 	 */
 	void messageReceived(NextFilter nextFilter, ByteBuffer buf) throws SSLException {
-		if (LOGGER.isDebugEnabled()) {
-			if (!isOutboundDone()) {
-				LOGGER.debug("{} Processing the received message", SslFilter.getSessionInfo(session));
-			} else {
-				LOGGER.debug("{} Processing the received message", SslFilter.getSessionInfo(session));
-			}
-		}
+		// if (!isOutboundDone()) {
+		// 	LOGGER.debug("{} Processing the received message", SslFilter.getSessionInfo(session));
+		// } else {
+		// 	LOGGER.debug("{} Processing the received message", SslFilter.getSessionInfo(session));
+		// }
 
 		// append buf to inNetBuffer
 		if (inNetBuffer == null) {
@@ -505,9 +496,7 @@ public final class SslHandler {
 			switch (handshakeStatus) {
 			case FINISHED:
 			case NOT_HANDSHAKING:
-				if (LOGGER.isDebugEnabled()) {
-					LOGGER.debug("{} processing the FINISHED state", SslFilter.getSessionInfo(session));
-				}
+				// LOGGER.debug("{} processing the FINISHED state", SslFilter.getSessionInfo(session));
 
 				session.setAttribute(SslFilter.SSL_SESSION, sslEngine.getSession());
 				handshakeComplete = true;
@@ -519,43 +508,33 @@ public final class SslHandler {
 					scheduleMessageReceived(nextFilter, SslFilter.SESSION_SECURED);
 				}
 
-				if (LOGGER.isDebugEnabled()) {
-					if (!isOutboundDone()) {
-						LOGGER.debug("{} is now secured", SslFilter.getSessionInfo(session));
-					} else {
-						LOGGER.debug("{} is not secured yet", SslFilter.getSessionInfo(session));
-					}
-				}
+				// if (!isOutboundDone()) {
+				// 	LOGGER.debug("{} is now secured", SslFilter.getSessionInfo(session));
+				// } else {
+				// 	LOGGER.debug("{} is not secured yet", SslFilter.getSessionInfo(session));
+				// }
 
 				return;
 
 			case NEED_TASK:
-				if (LOGGER.isDebugEnabled()) {
-					LOGGER.debug("{} processing the NEED_TASK state", SslFilter.getSessionInfo(session));
-				}
+				// LOGGER.debug("{} processing the NEED_TASK state", SslFilter.getSessionInfo(session));
 
 				handshakeStatus = doTasks();
 				break;
 
 			case NEED_UNWRAP:
-				if (LOGGER.isDebugEnabled()) {
-					LOGGER.debug("{} processing the NEED_UNWRAP state", SslFilter.getSessionInfo(session));
-				}
+				// LOGGER.debug("{} processing the NEED_UNWRAP state", SslFilter.getSessionInfo(session));
+
 				// we need more data read
 				Status status = unwrapHandshake(nextFilter);
-
-				if (status == Status.BUFFER_UNDERFLOW
-						&& handshakeStatus != HandshakeStatus.FINISHED || isInboundDone()) {
-					// We need more data or the session is closed
-					return;
+				if (status == Status.BUFFER_UNDERFLOW && handshakeStatus != HandshakeStatus.FINISHED || isInboundDone()) {
+					return; // We need more data or the session is closed
 				}
 
 				break;
 
 			case NEED_WRAP:
-				if (LOGGER.isDebugEnabled()) {
-					LOGGER.debug("{} processing the NEED_WRAP state", SslFilter.getSessionInfo(session));
-				}
+				// LOGGER.debug("{} processing the NEED_WRAP state", SslFilter.getSessionInfo(session));
 
 				// First make sure that the out buffer is completely empty.
 				// Since we
@@ -585,7 +564,7 @@ public final class SslHandler {
 			default:
 				String msg = "Invalid Handshaking State" + handshakeStatus +
 						" while processing the Handshake for session " + session.getId();
-				LOGGER.error(msg);
+				ExceptionMonitor.getInstance().error(msg);
 				throw new IllegalStateException(msg);
 			}
 		}
