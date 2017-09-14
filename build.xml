@@ -4,6 +4,13 @@
 		example: add this line in linux ~/.bash_profile:
 		export PATH=$PATH:$HOME/apache-ant-1.9.8/bin
 	-->
+	<!-- compile by ecj:
+		ant -Dbuild.compiler=org.eclipse.jdt.core.JDTCompilerAdapter
+		need files in $ANT_ROOT/lib/:
+		org.eclipse.jdt.compiler.apt_*.jar (can be found in $ECLIPSE_ROOT/plugins/)
+		org.eclipse.jdt.core_*.jar (can be found in $ECLIPSE_ROOT/plugins/)
+		jdtCompilerAdapter.jar (can be found in org.eclipse.jdt.core_*.jar)
+	-->
 	<property name="root" value="."/>
 	<property name="classes" value="${root}/classes"/>
 	<property name="src" value="${root}/src"/>
@@ -27,7 +34,7 @@
 				<include name="*.jar"/>
 			</fileset>
 		</path>
-		<javac destdir="${classes}" encoding="utf-8" classpathref="classpath" source="1.8" target="1.8" debug="on" debuglevel="lines,source" fork="true" memoryMaximumSize="512m" includeantruntime="false">
+		<javac destdir="${classes}" encoding="utf-8" classpathref="classpath" source="1.8" target="1.8" debug="on" debuglevel="lines,source" includeantruntime="false">
 			<compilerarg value="-nowarn"/>
 			<!--compilerarg value="-Xlint:deprecation"/-->
 			<!--compilerarg value="-Xlint:unchecked"/-->

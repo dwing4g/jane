@@ -13,7 +13,7 @@
 /port/csharp/project.lock.json
 /port/.vs/
 /port/lua/bin/
-jane-core.jar
+jane-core*.jar
 jane-core-src.jar
 jane-native.jar
 jane-test.jar
