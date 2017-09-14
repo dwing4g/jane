@@ -1,6 +1,7 @@
 package jane.test;
 
 import java.net.SocketAddress;
+import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.session.IoSession;
 import jane.core.Log;
 import jane.core.NetManager;
@@ -34,10 +35,10 @@ public final class TestClient extends NetManager
 	}
 
 	@Override
-	protected int onConnectFailed(SocketAddress address, int count, Object ctx)
+	protected int onConnectFailed(ConnectFuture future, SocketAddress address, int count, Object ctx)
 	{
 		Log.error("{}: onConnectFailed: addr={},count={}", getName(), address, count);
 		int sec = 1 << count;
-		return sec < MAX_CONNECT_DELAY_SEC ? sec : MAX_CONNECT_DELAY_SEC;
+		return (sec < MAX_CONNECT_DELAY_SEC ? sec : MAX_CONNECT_DELAY_SEC) * 1000;
 	}
 }

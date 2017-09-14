@@ -6,10 +6,8 @@
 	-->
 	<!-- compile by ecj:
 		ant -Dbuild.compiler=org.eclipse.jdt.core.JDTCompilerAdapter
-		need files in $ANT_ROOT/lib/:
-		org.eclipse.jdt.compiler.apt_*.jar (can be found in $ECLIPSE_ROOT/plugins/)
-		org.eclipse.jdt.core_*.jar (can be found in $ECLIPSE_ROOT/plugins/)
-		jdtCompilerAdapter.jar (can be found in org.eclipse.jdt.core_*.jar)
+		need a file in $ANT_ROOT/lib/ecj-*.jar
+		which can be downloaded at http://archive.eclipse.org/eclipse/downloads/ or in jetty or tomcat
 	-->
 	<property name="root" value="."/>
 	<property name="classes" value="${root}/classes"/>

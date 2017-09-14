@@ -17,17 +17,16 @@ import jane.core.CachedIoBufferAllocator;
 import jane.core.Log;
 import jane.core.NetManager;
 
-// start.bat jane.test.TestEcho 32 100000 1 64
+// start.bat jane.test.TestEcho 64 32 100000 1 64
 public final class TestEcho extends NetManager
 {
+	private static int TEST_CLIENT_COUNT = 64;
 	private static int TEST_ECHO_SIZE	 = 32;
 	private static int TEST_ECHO_COUNT	 = 100000;
-	private static int TEST_CLIENT_COUNT = 64;
 
-	private static final CountDownLatch	_closedCount = new CountDownLatch(TEST_CLIENT_COUNT * 2);
-	private static final AtomicInteger	_recvCount	 = new AtomicInteger();
-
-	private static final AtomicInteger _wrqCount = new AtomicInteger();
+	private static CountDownLatch	   _closedCount;
+	private static final AtomicInteger _recvCount = new AtomicInteger();
+	private static final AtomicInteger _wrqCount  = new AtomicInteger();
 
 	private static final DefaultIoSessionDataStructureFactory _dsFactory = new DefaultIoSessionDataStructureFactory()
 	{
@@ -124,7 +123,7 @@ public final class TestEcho extends NetManager
 	}
 
 	@Override
-	protected int onConnectFailed(SocketAddress addr, int count, Object ctx)
+	protected int onConnectFailed(ConnectFuture future, SocketAddress addr, int count, Object ctx)
 	{
 		return 0;
 	}
@@ -164,11 +163,13 @@ public final class TestEcho extends NetManager
 	public static void main(String[] args) throws IOException, InterruptedException
 	{
 		Log.removeAppendersFromArgs(args);
+		if(args.length > 0) TEST_CLIENT_COUNT = Integer.parseInt(args[0]);
+		if(args.length > 1) TEST_ECHO_SIZE = Integer.parseInt(args[1]);
+		if(args.length > 2) TEST_ECHO_COUNT = Integer.parseInt(args[2]);
 		System.out.println("TestEcho: start: " + TEST_CLIENT_COUNT);
-		if(args.length > 0) TEST_ECHO_SIZE = Integer.parseInt(args[0]);
-		if(args.length > 1) TEST_ECHO_COUNT = Integer.parseInt(args[1]);
-		CachedIoBufferAllocator.globalSet((args.length > 2 ? Integer.parseInt(args[2]) : 0) > 0,
-				args.length > 3 ? Integer.parseInt(args[3]) : 0, 64 * 1024);
+		_closedCount = new CountDownLatch(TEST_CLIENT_COUNT * 2);
+		CachedIoBufferAllocator.globalSet((args.length > 3 ? Integer.parseInt(args[3]) : 0) > 0,
+				args.length > 4 ? Integer.parseInt(args[4]) : 0, 64 * 1024);
 		long time = System.currentTimeMillis();
 //		perf[2].begin();
 //		perf[0].begin();

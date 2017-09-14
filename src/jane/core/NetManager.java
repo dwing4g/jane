@@ -351,15 +351,10 @@ public class NetManager implements IoHandler
 					{
 						++_count;
 						Log.warn("{}: connect failed: addr={},count={}", _name, addr, _count);
-						int delaySec = onConnectFailed(addr, _count, ctx);
-						if(delaySec == 0)
+						int delayMs = onConnectFailed(future, addr, _count, ctx);
+						if(delayMs >= 0) // 可能在同线程同步回调,为避免无限递归,统一放线程池里调度
 						{
-							Log.info("{}: reconnecting addr={},count={}", _name, addr, _count);
-							_connector.connect(addr).addListener(this);
-						}
-						else if(delaySec > 0)
-						{
-							schedule(delaySec, () ->
+							scheduleMs(delayMs, () ->
 							{
 								try
 								{
@@ -434,6 +429,11 @@ public class NetManager implements IoHandler
 		return _scheduledThread.schedule(runnable, delaySec, TimeUnit.SECONDS);
 	}
 
+	public static ScheduledFuture<?> scheduleMs(long delayMs, Runnable runnable)
+	{
+		return _scheduledThread.schedule(runnable, delayMs, TimeUnit.MILLISECONDS);
+	}
+
 	/**
 	 * 向网络工作线程调度一个定时间隔任务
 	 * @param periodSec 定时间隔周期的秒数
@@ -443,6 +443,11 @@ public class NetManager implements IoHandler
 		return _scheduledThread.scheduleWithFixedDelay(runnable, delaySec, periodSec, TimeUnit.SECONDS);
 	}
 
+	public static ScheduledFuture<?> scheduleWithFixedDelayMs(int delayMs, int periodSec, Runnable runnable)
+	{
+		return _scheduledThread.scheduleWithFixedDelay(runnable, delayMs, periodSec, TimeUnit.MILLISECONDS);
+	}
+
 	/**
 	 * 向网络工作线程调度一个定时触发任务(同一任务不会并发,即使延迟过大也会保证触发的次数)
 	 * @param periodSec 定时触发周期的秒数
@@ -450,6 +455,11 @@ public class NetManager implements IoHandler
 	public static ScheduledFuture<?> scheduleAtFixedRate(int delaySec, int periodSec, Runnable runnable)
 	{
 		return _scheduledThread.scheduleAtFixedRate(runnable, delaySec, periodSec, TimeUnit.SECONDS);
+	}
+
+	public static ScheduledFuture<?> scheduleAtFixedRateMs(int delayMs, int periodSec, Runnable runnable)
+	{
+		return _scheduledThread.scheduleAtFixedRate(runnable, delayMs, periodSec, TimeUnit.MILLISECONDS);
 	}
 
 	public static final class SimpleWriteRequest implements WriteRequest
@@ -789,13 +799,14 @@ public class NetManager implements IoHandler
 
 	/**
 	 * 作为客户端连接失败后的回调
+	 * @param future 连接的future,可获取连接失败的原因
 	 * @param addr 连接失败的地址
 	 * @param count 重试次数(从1开始)
 	 * @param ctx startClient时传入的用户对象. 没有则为null
-	 * @return 返回下次重连的时间间隔(秒)
+	 * @return 返回下次重连的时间间隔(毫秒)
 	 */
 	@SuppressWarnings("static-method")
-	protected int onConnectFailed(SocketAddress addr, int count, Object ctx)
+	protected int onConnectFailed(ConnectFuture future, SocketAddress addr, int count, Object ctx)
 	{
 		return -1;
 	}
