@@ -252,18 +252,8 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	}
 
 	@Override
-	protected int write(NioSession session, IoBuffer buf, int length) throws IOException {
-		if (buf.remaining() <= length) {
-			return session.getChannel().write(buf.buf());
-		}
-
-		int oldLimit = buf.limit();
-		buf.limit(buf.position() + length);
-		try {
-			return session.getChannel().write(buf.buf());
-		} finally {
-			buf.limit(oldLimit);
-		}
+	protected int write(NioSession session, IoBuffer buf) throws IOException {
+		return session.getChannel().write(buf.buf());
 	}
 
 	@Override
@@ -277,7 +267,6 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 			if (message != null && message.contains("temporarily unavailable")) {
 				return 0;
 			}
-
 			throw e;
 		}
 	}

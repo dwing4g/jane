@@ -19,8 +19,6 @@
 package org.apache.mina.filter.ssl;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
@@ -36,7 +34,6 @@ import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequest;
-import org.apache.mina.core.write.WriteToClosedSessionException;
 import org.apache.mina.util.ExceptionMonitor;
 
 /**
@@ -502,64 +499,6 @@ public final class SslFilter extends IoFilterAdapter {
 		}
 
 		sslHandler.flushScheduledEvents();
-	}
-
-	@Override
-	public void exceptionCaught(NextFilter nextFilter, IoSession session, Throwable cause) throws Exception {
-		if (cause instanceof WriteToClosedSessionException) {
-			// Filter out SSL close notify, which is likely to fail to flush due to disconnection.
-			WriteToClosedSessionException e = (WriteToClosedSessionException) cause;
-			List<WriteRequest> failedRequests = e.getRequests();
-			boolean containsCloseNotify = false;
-
-			for (WriteRequest r : failedRequests) {
-				if (isCloseNotify(r.getMessage())) {
-					containsCloseNotify = true;
-					break;
-				}
-			}
-
-			if (containsCloseNotify) {
-				if (failedRequests.size() == 1) {
-					// close notify is the only failed request; bail out.
-					return;
-				}
-
-				List<WriteRequest> newFailedRequests = new ArrayList<>(failedRequests.size() - 1);
-
-				for (WriteRequest r : failedRequests) {
-					if (!isCloseNotify(r.getMessage())) {
-						newFailedRequests.add(r);
-					}
-				}
-
-				if (newFailedRequests.isEmpty()) {
-					// the failedRequests were full with close notify; bail out.
-					return;
-				}
-
-				cause = new WriteToClosedSessionException(newFailedRequests, cause.getMessage(), cause.getCause());
-			}
-		}
-
-		nextFilter.exceptionCaught(session, cause);
-	}
-
-	private static boolean isCloseNotify(Object message) {
-		if (!(message instanceof IoBuffer)) {
-			return false;
-		}
-
-		IoBuffer buf = (IoBuffer) message;
-		int offset = buf.position();
-
-		return (buf.get(offset + 0) == 0x15) /* Alert */
-				&& (buf.get(offset + 1) == 0x03) /* TLS/SSL */
-				&& ((buf.get(offset + 2) == 0x00) /* SSL 3.0 */
-					|| (buf.get(offset + 2) == 0x01) /* TLS 1.0 */
-					|| (buf.get(offset + 2) == 0x02) /* TLS 1.1 */
-					|| (buf.get(offset + 2) == 0x03)) /* TLS 1.2 */
-					&& (buf.get(offset + 3) == 0x00); /* close_notify */
 	}
 
 	@Override

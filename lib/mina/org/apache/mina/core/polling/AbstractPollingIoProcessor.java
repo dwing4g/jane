@@ -20,9 +20,7 @@ package org.apache.mina.core.polling;
 
 import java.io.IOException;
 import java.nio.channels.ClosedSelectorException;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
@@ -245,11 +243,10 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 	 *
 	 * @param session the session to write
 	 * @param buf the buffer to write
-	 * @param length the number of bytes to write can be superior to the number of bytes remaining in the buffer
 	 * @return the number of byte written
 	 * @throws IOException any exception thrown by the underlying system calls
 	 */
-	protected abstract int write(S session, IoBuffer buf, int length) throws IOException;
+	protected abstract int write(S session, IoBuffer buf) throws IOException;
 
 	/**
 	 * Write a part of a file to a {@link IoSession}, if the underlying API isn't supporting
@@ -366,7 +363,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 				}
 			}
 		} catch (IOException e) {
-			scheduleRemove(session);
+			session.closeNow();
 			session.getFilterChain().fireExceptionCaught(e);
 		} catch (Exception e) {
 			session.getFilterChain().fireExceptionCaught(e);
@@ -622,7 +619,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 				switch (state) {
 					case OPENED:
 						// Try to remove this session
-						if (removeNow(session)) {
+						if (removeNow(session, null)) {
 							removedSessions++;
 						}
 
@@ -637,7 +634,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 						// Remove session from the newSessions queue and remove it
 						newSessions.remove(session);
 
-						if (removeNow(session)) {
+						if (removeNow(session, null)) {
 							removedSessions++;
 						}
 
@@ -657,7 +654,6 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 		private void flush() {
 			for(;;) {
 				S session = flushingSessions.poll(); // the same one with firstSession
-
 				if (session == null) {
 					break;
 				}
@@ -666,16 +662,11 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 				session.unscheduledForFlush();
 
 				SessionState state = getState(session);
-
 				switch (state) {
 					case OPENED:
 						try {
-							if (flushNow(session) && !session.getWriteRequestQueue().isEmpty()
-									&& !session.isScheduledForFlush()) {
-								scheduleFlush(session);
-							}
+							flushNow(session);
 						} catch (Exception e) {
-							scheduleRemove(session);
 							session.closeNow();
 							session.getFilterChain().fireExceptionCaught(e);
 						}
@@ -698,10 +689,10 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			}
 		}
 
-		private boolean flushNow(S session) {
+		private void flushNow(S session) {
 			if (!session.isConnected()) {
 				scheduleRemove(session);
-				return false;
+				return;
 			}
 
 			final WriteRequestQueue writeRequestQueue = session.getWriteRequestQueue();
@@ -713,51 +704,66 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			WriteRequest req = null;
 
 			try {
-				do {
-					// Check for pending writes.
-					req = session.getCurrentWriteRequest();
-
+				for(;;) {
+					req = session.getCurrentWriteRequest(); // Check for pending writes.
 					if (req == null) {
 						req = writeRequestQueue.poll();
-
 						if (req == null) {
-							break;
+							setInterestedInWrite(session, false);
+							return;
 						}
 
 						session.setCurrentWriteRequest(req);
 					}
 
-					int localWrittenBytes;
+					int localWrittenBytes = 0;
 					Object message = req.getMessage();
 
 					if (message instanceof IoBuffer) {
-						localWrittenBytes = writeBuffer(session, req, maxWrittenBytes - writtenBytes);
+						IoBuffer buf = (IoBuffer) message;
+						if (buf.hasRemaining()) {
+							try {
+								localWrittenBytes = write(session, buf);
+							} catch (IOException ioe) {
+								session.setCurrentWriteRequest(null);
+								req.getFuture().setException(ioe);
+								buf.free();
+								// we have had an issue while trying to send data to the peer, let's close the session
+								session.closeNow();
+								removeNow(session, ioe);
+								return;
+							}
 
-						if ((localWrittenBytes > 0) && ((IoBuffer) message).hasRemaining()) {
-							// the buffer isn't empty, we re-interest it in writing
-							setInterestedInWrite(session, true);
-							return false;
+							if (buf.hasRemaining()) { // the buffer isn't empty, we re-interest it in writing
+								setInterestedInWrite(session, true);
+								return;
+							}
 						}
 					} else if (message instanceof FileRegion) {
-						localWrittenBytes = writeFile(session, req, maxWrittenBytes - writtenBytes);
+						FileRegion region = (FileRegion) message;
+						int length = (int) Math.min(region.getRemainingBytes(), maxWrittenBytes - writtenBytes);
+						if (length > 0) {
+							localWrittenBytes = transferFile(session, region, length);
+							region.update(localWrittenBytes);
+						}
 
 						// Fix for Java bug on Linux
 						// http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=5103988
 						// If there's still data to be written in the FileRegion,
-						// return 0 indicating that we need
-						// to pause until writing may resume.
-						if ((localWrittenBytes > 0) && (((FileRegion) message).getRemainingBytes() > 0)) {
+						// return 0 indicating that we need to pause until writing may resume.
+						if (region.getRemainingBytes() > 0) {
 							setInterestedInWrite(session, true);
-							return false;
+							return;
 						}
 					} else {
 						throw new IllegalStateException("unknown message type for writting: " + message.getClass().getName() + ": " + message);
 					}
 
-					if (localWrittenBytes == 0) {
-						// Kernel buffer is full.
-						setInterestedInWrite(session, true);
-						return false;
+					session.setCurrentWriteRequest(null);
+					session.getFilterChain().fireMessageSent(req);
+
+					if (message instanceof IoBuffer) {
+						((IoBuffer) message).free();
 					}
 
 					writtenBytes += localWrittenBytes;
@@ -765,16 +771,9 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 						// Wrote too much
 						scheduleFlush(session);
 						setInterestedInWrite(session, false);
-						return false;
+						return;
 					}
-
-					if (message instanceof IoBuffer) {
-						((IoBuffer) message).free();
-					}
-				} while (writtenBytes < maxWrittenBytes);
-
-				setInterestedInWrite(session, false);
-				return true;
+				}
 			} catch (Exception e) {
 				try {
 					setInterestedInWrite(session, false);
@@ -786,7 +785,6 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 				}
 
 				session.getFilterChain().fireExceptionCaught(e);
-				return false;
 			}
 		}
 
@@ -797,55 +795,8 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			}
 		}
 
-		private int writeFile(S session, WriteRequest req, int maxLength) throws Exception {
-			int localWrittenBytes;
-			FileRegion region = (FileRegion) req.getMessage();
-
-			if (region.getRemainingBytes() > 0) {
-				int length = (int) Math.min(region.getRemainingBytes(), maxLength);
-				localWrittenBytes = transferFile(session, region, length);
-				region.update(localWrittenBytes);
-			} else {
-				localWrittenBytes = 0;
-			}
-
-			if (region.getRemainingBytes() <= 0) {
-				fireMessageSent(session, req);
-			}
-
-			return localWrittenBytes;
-		}
-
-		private int writeBuffer(S session, WriteRequest req, int maxLength) throws Exception {
-			IoBuffer buf = (IoBuffer) req.getMessage();
-			int localWrittenBytes = 0;
-
-			if (buf.hasRemaining()) {
-				int length = Math.min(buf.remaining(), maxLength);
-
-				try {
-					localWrittenBytes = write(session, buf, length);
-				} catch (IOException ioe) {
-					// We have had an issue while trying to send data to the peer: let's close the session.
-					buf.free();
-					session.closeNow();
-					removeNow(session);
-
-					return 0;
-				}
-			}
-
-			// Now, forward the original message
-			if (!buf.hasRemaining()) {
-				// Buffer has been sent, clear the current request.
-				fireMessageSent(session, req);
-			}
-
-			return localWrittenBytes;
-		}
-
-		private boolean removeNow(S session) {
-			clearWriteRequestQueue(session);
+		private boolean removeNow(S session, IOException ioe) {
+			clearWriteRequestQueue(session, ioe);
 
 			try {
 				destroy(session);
@@ -854,7 +805,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 				session.getFilterChain().fireExceptionCaught(e);
 			} finally {
 				try {
-					clearWriteRequestQueue(session);
+					clearWriteRequestQueue(session, null);
 					((AbstractIoService) session.getService()).fireSessionDestroyed(session);
 				} catch (Exception e) {
 					// The session was either destroyed or not at this point.
@@ -867,49 +818,36 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			return false;
 		}
 
-		private void clearWriteRequestQueue(S session) {
+		private void clearWriteRequestQueue(S session, IOException ioe) {
 			WriteRequestQueue writeRequestQueue = session.getWriteRequestQueue();
-			WriteRequest req;
+			if (writeRequestQueue == null) { // currentWriteRequest must be null
+				return;
+			}
 
-			List<WriteRequest> failedRequests = new ArrayList<>();
-
-			if ((req = writeRequestQueue.poll()) != null) {
-				Object message = req.getMessage();
-
-				if (message instanceof IoBuffer) {
-					IoBuffer buf = (IoBuffer) message;
-
-					// The first unwritten empty buffer must be forwarded to the filter chain.
-					if (buf.hasRemaining()) {
-						failedRequests.add(req);
-					} else {
-						session.getFilterChain().fireMessageSent(req);
-					}
-				} else {
-					failedRequests.add(req);
+			WriteRequest req = session.getCurrentWriteRequest();
+			if (req == null) {
+				req = writeRequestQueue.poll();
+				if (req == null) {
+					return;
 				}
-
-				// Discard others.
-				while ((req = writeRequestQueue.poll()) != null) {
-					failedRequests.add(req);
-				}
+			} else {
+				session.setCurrentWriteRequest(null);
 			}
 
 			// Create an exception and notify.
-			if (!failedRequests.isEmpty()) {
-				WriteToClosedSessionException cause = new WriteToClosedSessionException(failedRequests);
+			WriteToClosedSessionException cause = (ioe != null ?
+					new WriteToClosedSessionException(ioe) : new WriteToClosedSessionException());
 
-				for (WriteRequest r : failedRequests) {
-					r.getFuture().setException(cause);
+			do {
+				req.getFuture().setException(cause);
+
+				Object message = req.getMessage();
+				if (message instanceof IoBuffer) {
+					((IoBuffer) message).free();
 				}
+			} while ((req = writeRequestQueue.poll()) != null);
 
-				session.getFilterChain().fireExceptionCaught(cause);
-			}
-		}
-
-		private void fireMessageSent(S session, WriteRequest req) {
-			session.setCurrentWriteRequest(null);
-			session.getFilterChain().fireMessageSent(req);
+			session.getFilterChain().fireExceptionCaught(cause);
 		}
 
 		private void process() throws Exception {

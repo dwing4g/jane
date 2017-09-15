@@ -176,38 +176,11 @@ public abstract class AbstractIoSession implements IoSession {
 			}
 
 			closing = true;
-
-			try {
-				destroy();
-			} catch (Exception e) {
-				getFilterChain().fireExceptionCaught(e);
-			}
 		}
 
 		getFilterChain().fireFilterClose();
 
 		return closeFuture;
-	}
-
-	/**
-	 * Destroy the session
-	 */
-	protected void destroy() {
-		if (writeRequestQueue != null) {
-			while (!writeRequestQueue.isEmpty()) {
-				WriteRequest writeRequest = writeRequestQueue.poll();
-
-				if (writeRequest != null) {
-					WriteFuture writeFuture = writeRequest.getFuture();
-
-					// The WriteRequest may not always have a future: The CLOSE_REQUEST
-					// and MESSAGE_SENT_REQUEST don't.
-					if (writeFuture != null) {
-						writeFuture.setWritten();
-					}
-				}
-			}
-		}
 	}
 
 	@Override
@@ -221,13 +194,10 @@ public abstract class AbstractIoSession implements IoSession {
 			throw new IllegalArgumentException("Trying to write a null message: not allowed");
 		}
 
-		// If the session has been closed or is closing, we can't either
-		// send a message to the remote side. We generate a future containing an exception.
+		// If the session has been closed or is closing, we can't either send a message to the remote side.
+		// We generate a future containing an exception.
 		if (isClosing() || !isConnected()) {
-			WriteFuture future = new DefaultWriteFuture(this);
-			WriteRequest request = new DefaultWriteRequest(message, future);
-			future.setException(new WriteToClosedSessionException(request));
-			return future;
+			return DefaultWriteFuture.newNotWrittenFuture(this, new WriteToClosedSessionException());
 		}
 
 		try {
@@ -388,10 +358,6 @@ public abstract class AbstractIoSession implements IoSession {
 
 	@Override
 	public final WriteRequestQueue getWriteRequestQueue() {
-		if (writeRequestQueue == null) {
-			throw new IllegalStateException();
-		}
-
 		return writeRequestQueue;
 	}
 
