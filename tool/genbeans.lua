@@ -578,7 +578,7 @@ typedef.octets = merge(typedef.string,
 	}
 
 	/** #(var.comment1) */
-	public <B extends Bean<?>> B unmarshal#(var.name_u)(B _b_) throws MarshalException
+	public <B extends Bean<B>> B unmarshal#(var.name_u)(B _b_) throws MarshalException
 	{
 		_b_.unmarshal(OctetsStream.wrap(this.#(var.name)));
 		return _b_;
@@ -621,7 +621,7 @@ typedef.octets = merge(typedef.string,
 		}
 
 		/** #(var.comment1) */
-		public <B extends Bean<?>> B unmarshal#(var.name_u)(B _b_) throws MarshalException
+		public <B extends Bean<B>> B unmarshal#(var.name_u)(B _b_) throws MarshalException
 		{
 			return _bean.unmarshal#(var.name_u)(_b_);
 		}
@@ -1097,7 +1097,7 @@ local function bean_const(code)
 --		gsub("return BEAN_STUB", "throw new UnsupportedOperationException()"):
 --		gsub("return new [%w_]+%(%)", "throw new UnsupportedOperationException()"):
 		gsub("\tpublic void marshal.-\n\t}\n\n", ""):
-		gsub("\tpublic <B extends Bean<?>> B unmarshal.-\n\t}\n\n", ""):
+		gsub("\tpublic <B extends Bean<B>> B unmarshal.-\n\t}\n\n", ""):
 		gsub("\tpublic DynBean unmarshal.-\n\t}\n\n", ""):
 		gsub("\n\t@Override\n\tpublic Safe safe.-\n\t}\n", ""):
 		gsub("\t@Override\n\tpublic void reset%(.-\n\t}", [[

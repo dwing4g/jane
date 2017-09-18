@@ -1274,19 +1274,19 @@ public class OctetsStream extends Octets
 		return type == 2 ? b.unmarshal(this) : unmarshalSkipVar(type);
 	}
 
-	public <B extends Bean<?>> B unmarshalBean(B b) throws MarshalException
+	public <B extends Bean<B>> B unmarshalBean(B b) throws MarshalException
 	{
 		b.unmarshal(this);
 		return b;
 	}
 
-	public <B extends Bean<?>> B unmarshalProtocolBean(B b) throws MarshalException
+	public <B extends Bean<B>> B unmarshalProtocolBean(B b) throws MarshalException
 	{
 		b.unmarshalProtocol(this);
 		return b;
 	}
 
-	public <B extends Bean<?>> B unmarshalBeanKV(B b, int type) throws MarshalException
+	public <B extends Bean<B>> B unmarshalBeanKV(B b, int type) throws MarshalException
 	{
 		if(type == 2)
 			b.unmarshal(this);

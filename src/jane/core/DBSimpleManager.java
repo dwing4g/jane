@@ -296,7 +296,7 @@ public final class DBSimpleManager
 		return new OctetsStream(5 + key.initSize()).marshalUInt(tableId).marshal(key);
 	}
 
-	private <B extends Bean<?>> B get0(Octets key, B beanStub) throws MarshalException
+	private <B extends Bean<B>> B get0(Octets key, B beanStub) throws MarshalException
 	{
 		_readCount.incrementAndGet();
 		Octets val = (_enableReadCache ? _readCache.get(key) : null);
@@ -332,7 +332,7 @@ public final class DBSimpleManager
 			_readCache.remove(key);
 	}
 
-	public <B extends Bean<?>> B get(int tableId, long key, B beanStub)
+	public <B extends Bean<B>> B get(int tableId, long key, B beanStub)
 	{
 		try
 		{
@@ -345,7 +345,7 @@ public final class DBSimpleManager
 		}
 	}
 
-	public <B extends Bean<?>> B get(int tableId, Octets key, B beanStub)
+	public <B extends Bean<B>> B get(int tableId, Octets key, B beanStub)
 	{
 		try
 		{
@@ -358,7 +358,7 @@ public final class DBSimpleManager
 		}
 	}
 
-	public <B extends Bean<?>> B get(int tableId, String key, B beanStub)
+	public <B extends Bean<B>> B get(int tableId, String key, B beanStub)
 	{
 		try
 		{
@@ -371,7 +371,7 @@ public final class DBSimpleManager
 		}
 	}
 
-	public <B extends Bean<?>> B get(int tableId, Bean<?> key, B beanStub)
+	public <B extends Bean<B>> B get(int tableId, Bean<?> key, B beanStub)
 	{
 		try
 		{
@@ -424,7 +424,7 @@ public final class DBSimpleManager
 		remove0(toKey(tableId, key));
 	}
 
-	public interface WalkHandlerLongValue<B extends Bean<?>>
+	public interface WalkHandlerLongValue<B extends Bean<B>>
 	{
 		/**
 		 * 每次遍历一个记录都会调用此接口
@@ -433,7 +433,7 @@ public final class DBSimpleManager
 		boolean onWalk(long key, B value) throws Exception;
 	}
 
-	public <B extends Bean<?>> boolean walkTable(int tableId, long keyFrom, long keyTo, B beanStub, WalkHandlerLongValue<B> handler)
+	public <B extends Bean<B>> boolean walkTable(int tableId, long keyFrom, long keyTo, B beanStub, WalkHandlerLongValue<B> handler)
 	{
 		OctetsStreamEx os = new OctetsStreamEx();
 		int tableIdLen = OctetsStream.marshalUIntLen(tableId);
@@ -446,7 +446,7 @@ public final class DBSimpleManager
 		});
 	}
 
-	public interface WalkHandlerOctetsValue<B extends Bean<?>>
+	public interface WalkHandlerOctetsValue<B extends Bean<B>>
 	{
 		/**
 		 * 每次遍历一个记录都会调用此接口
@@ -455,7 +455,7 @@ public final class DBSimpleManager
 		boolean onWalk(byte[] key, B value) throws Exception;
 	}
 
-	public <B extends Bean<?>> boolean walkTable(int tableId, B beanStub, WalkHandlerOctetsValue<B> handler)
+	public <B extends Bean<B>> boolean walkTable(int tableId, B beanStub, WalkHandlerOctetsValue<B> handler)
 	{
 		OctetsStreamEx os = new OctetsStreamEx();
 		int tableIdLen = OctetsStream.marshalUIntLen(tableId);
@@ -475,7 +475,7 @@ public final class DBSimpleManager
 		}) || finished.get();
 	}
 
-	public interface WalkHandlerStringValue<B extends Bean<?>>
+	public interface WalkHandlerStringValue<B extends Bean<B>>
 	{
 		/**
 		 * 每次遍历一个记录都会调用此接口
@@ -484,7 +484,7 @@ public final class DBSimpleManager
 		boolean onWalk(String key, B value) throws Exception;
 	}
 
-	public <B extends Bean<?>> boolean walkTable(int tableId, B beanStub, WalkHandlerStringValue<B> handler)
+	public <B extends Bean<B>> boolean walkTable(int tableId, B beanStub, WalkHandlerStringValue<B> handler)
 	{
 		OctetsStreamEx os = new OctetsStreamEx();
 		AtomicBoolean finished = new AtomicBoolean();
@@ -503,7 +503,7 @@ public final class DBSimpleManager
 		}) || finished.get();
 	}
 
-	public interface WalkHandlerBeanValue<K extends Bean<?>, B extends Bean<?>>
+	public interface WalkHandlerBeanValue<K extends Bean<K>, B extends Bean<B>>
 	{
 		/**
 		 * 每次遍历一个记录都会调用此接口
@@ -512,7 +512,7 @@ public final class DBSimpleManager
 		boolean onWalk(K key, B value) throws Exception;
 	}
 
-	public <K extends Bean<K>, B extends Bean<?>> boolean walkTable(int tableId, K keyStub, B beanStub, WalkHandlerBeanValue<K, B> handler)
+	public <K extends Bean<K>, B extends Bean<B>> boolean walkTable(int tableId, K keyStub, B beanStub, WalkHandlerBeanValue<K, B> handler)
 	{
 		OctetsStreamEx os = new OctetsStreamEx();
 		AtomicBoolean finished = new AtomicBoolean();

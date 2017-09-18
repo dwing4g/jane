@@ -42,7 +42,7 @@ public class NetManager implements IoHandler
 	public static final int	DEFAULT_SERVER_IO_THREAD_COUNT = Runtime.getRuntime().availableProcessors() + 1;
 	public static final int	DEFAULT_CLIENT_IO_THREAD_COUNT = 1;
 
-	public static interface AnswerHandler<B extends Bean<?>>
+	public static interface AnswerHandler<B extends Bean<B>>
 	{
 		void onAnswer(B bean); // 如果超时无回复,会回调null
 
@@ -53,7 +53,7 @@ public class NetManager implements IoHandler
 		}
 	}
 
-	static final class BeanContext<B extends Bean<?>>
+	static final class BeanContext<B extends Bean<B>>
 	{
 		private final int		 askTime = (int)(System.currentTimeMillis() / 1000); // 发送请求的时间戳(秒)
 		private int				 timeOut = Integer.MAX_VALUE;						 // 超时时间(秒)
@@ -584,7 +584,7 @@ public class NetManager implements IoHandler
 	 * @param onSent 可设置一个回调对象,用于在发送成功后回调. null表示不回调
 	 * @return 如果连接已经失效则返回false, 否则返回true
 	 */
-	public <B extends Bean<?>> boolean send(IoSession session, B bean, Runnable onSent)
+	public <B extends Bean<B>> boolean send(IoSession session, B bean, Runnable onSent)
 	{
 		if(bean == null) return false;
 		bean.serial(0);
@@ -611,14 +611,14 @@ public class NetManager implements IoHandler
 		return true;
 	}
 
-	public <B extends Bean<?>> boolean sendSafe(IoSession session, B bean, Runnable callback)
+	public <B extends Bean<B>> boolean sendSafe(IoSession session, B bean, Runnable callback)
 	{
 		if(session.isClosing() || bean == null) return false;
 		SContext.current().addOnCommit(() -> send(session, bean, callback));
 		return true;
 	}
 
-	private static <B extends Bean<?>> BeanContext<B> allocBeanContext(Bean<?> bean, IoSession session, AnswerHandler<B> onAnswer)
+	private static <B extends Bean<B>> BeanContext<B> allocBeanContext(Bean<?> bean, IoSession session, AnswerHandler<B> onAnswer)
 	{
 		BeanContext<B> beanCtx = new BeanContext<>();
 		beanCtx.session = session;
@@ -655,7 +655,7 @@ public class NetManager implements IoHandler
 	 * @param timeout 超时时间(秒)
 	 * @return 如果连接已经失效则返回false且不会有回复和超时的回调, 否则返回true
 	 */
-	public <B extends Bean<?>> boolean ask(IoSession session, Bean<?> bean, int timeout, AnswerHandler<B> onAnswer)
+	public <B extends Bean<B>> boolean ask(IoSession session, Bean<?> bean, int timeout, AnswerHandler<B> onAnswer)
 	{
 		if(session.isClosing() || bean == null) return false;
 		BeanContext<B> beanCtx = allocBeanContext(bean, session, onAnswer);
@@ -673,7 +673,7 @@ public class NetManager implements IoHandler
 		return true;
 	}
 
-	public <B extends Bean<?>> boolean ask(IoSession session, Bean<?> bean, AnswerHandler<B> onAnswer)
+	public <B extends Bean<B>> boolean ask(IoSession session, Bean<?> bean, AnswerHandler<B> onAnswer)
 	{
 		return ask(session, bean, Const.askDefaultTimeout, onAnswer);
 	}
@@ -697,7 +697,7 @@ public class NetManager implements IoHandler
 	 * 此操作是异步的
 	 * @return 如果连接已经失效则返回null, 如果请求超时则对返回的Future对象调用get方法时返回null
 	 */
-	public <B extends Bean<?>> CompletableFuture<B> askAsync(IoSession session, Bean<?> bean, int timeout)
+	public <B extends Bean<B>> CompletableFuture<B> askAsync(IoSession session, Bean<?> bean, int timeout)
 	{
 		if(session.isClosing() || bean == null) return null;
 		CompletableFuture<B> cf = new CompletableFuture<>();
@@ -716,7 +716,7 @@ public class NetManager implements IoHandler
 		return cf;
 	}
 
-	public <B extends Bean<?>> Future<B> askAsync(IoSession session, Bean<?> bean)
+	public <B extends Bean<B>> Future<B> askAsync(IoSession session, Bean<?> bean)
 	{
 		return askAsync(session, bean, Const.askDefaultTimeout);
 	}
@@ -724,7 +724,7 @@ public class NetManager implements IoHandler
 	/**
 	 * 同ask, 区别仅仅是在事务成功后发送请求
 	 */
-	public <B extends Bean<?>> boolean askSafe(IoSession session, Bean<?> bean, AnswerHandler<B> onAnswer)
+	public <B extends Bean<B>> boolean askSafe(IoSession session, Bean<?> bean, AnswerHandler<B> onAnswer)
 	{
 		if(session.isClosing() || bean == null) return false;
 		SContext.current().addOnCommit(() -> ask(session, bean, onAnswer));

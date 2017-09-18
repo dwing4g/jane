@@ -300,7 +300,7 @@ public final class TestType extends Bean<TestType>
 	}
 
 	/** 二进制数据(Octets) */
-	public <B extends Bean<?>> B unmarshalV8(B _b_) throws MarshalException
+	public <B extends Bean<B>> B unmarshalV8(B _b_) throws MarshalException
 	{
 		_b_.unmarshal(OctetsStream.wrap(this.v8));
 		return _b_;
@@ -882,7 +882,7 @@ public final class TestType extends Bean<TestType>
 		}
 
 		/** 二进制数据(Octets) */
-		public <B extends Bean<?>> B unmarshalV8(B _b_) throws MarshalException
+		public <B extends Bean<B>> B unmarshalV8(B _b_) throws MarshalException
 		{
 			return _bean.unmarshalV8(_b_);
 		}

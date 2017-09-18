@@ -72,13 +72,13 @@ public final class StorageLevelDB implements Storage
 		return bean;
 	}
 
-	static <B extends Bean<?>> B toBean(Octets data, B beanStub) throws MarshalException
+	static <B extends Bean<B>> B toBean(Octets data, B beanStub) throws MarshalException
 	{
 		if(data == null || data == StorageLevelDB.deleted()) return null;
 		return toBean(OctetsStreamEx.wrap(data), beanStub);
 	}
 
-	static <B extends Bean<?>> B toBean(byte[] data, B beanStub) throws MarshalException
+	static <B extends Bean<B>> B toBean(byte[] data, B beanStub) throws MarshalException
 	{
 		if(data == null) return null;
 		return toBean(OctetsStreamEx.wrap(data), beanStub);
