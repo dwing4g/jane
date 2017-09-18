@@ -272,6 +272,11 @@ public final class DBSimpleManager
 		return _readStoCount.get();
 	}
 
+	private static Octets toKeyFrom(int tableId)
+	{
+		return new OctetsStream(5).marshalUInt(tableId);
+	}
+
 	private static Octets toKey(int tableId, long key)
 	{
 		return new OctetsStream(5 + 9).marshalUInt(tableId).marshal(key);
@@ -446,6 +451,11 @@ public final class DBSimpleManager
 		});
 	}
 
+	public <B extends Bean<B>> boolean walkTable(int tableId, B beanStub, WalkHandlerLongValue<B> handler)
+	{
+		return walkTable(tableId, 0, -1, beanStub, handler);
+	}
+
 	public interface WalkHandlerOctetsValue<B extends Bean<B>>
 	{
 		/**
@@ -460,7 +470,7 @@ public final class DBSimpleManager
 		OctetsStreamEx os = new OctetsStreamEx();
 		int tableIdLen = OctetsStream.marshalUIntLen(tableId);
 		AtomicBoolean finished = new AtomicBoolean();
-		return _storage.dbwalk(toKey(tableId, new Octets()), null, true, false, (key, value) ->
+		return _storage.dbwalk(toKeyFrom(tableId), null, true, false, (key, value) ->
 		{
 			os.setPosition(0);
 			int tid = os.wraps(key).unmarshalUInt();
@@ -488,7 +498,7 @@ public final class DBSimpleManager
 	{
 		OctetsStreamEx os = new OctetsStreamEx();
 		AtomicBoolean finished = new AtomicBoolean();
-		return _storage.dbwalk(null, null, true, false, (key, value) ->
+		return _storage.dbwalk(toKeyFrom(tableId), null, true, false, (key, value) ->
 		{
 			os.setPosition(0);
 			int tid = os.wraps(key).unmarshalUInt();
@@ -515,21 +525,15 @@ public final class DBSimpleManager
 	public <K extends Bean<K>, B extends Bean<B>> boolean walkTable(int tableId, K keyStub, B beanStub, WalkHandlerBeanValue<K, B> handler)
 	{
 		OctetsStreamEx os = new OctetsStreamEx();
-		AtomicBoolean finished = new AtomicBoolean();
-		return _storage.dbwalk(null, null, true, false, (key, value) ->
+		int tableIdLen = OctetsStream.marshalUIntLen(tableId);
+		return _storage.dbwalk(toKeyFrom(tableId), toKeyFrom(tableId + 1), false, false, (key, value) ->
 		{
-			os.setPosition(0);
-			int tid = os.wraps(key).unmarshalUInt();
-			if(tid != tableId)
-			{
-				finished.set(true);
-				return false;
-			}
+			os.wraps(key).setPosition(tableIdLen);
 			K k = keyStub.create();
 			k.unmarshal(os);
 			os.wraps(value).setPosition(0);
 			return handler.onWalk(k, StorageLevelDB.toBean(os, beanStub));
-		}) || finished.get();
+		});
 	}
 
 	/**

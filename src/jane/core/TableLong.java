@@ -523,12 +523,12 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 
 	public boolean walk(WalkHandlerLong handler, boolean reverse)
 	{
-		return walk(handler, 0, Long.MAX_VALUE, true, reverse);
+		return walk(handler, 0, -1, true, reverse);
 	}
 
 	public boolean walk(WalkHandlerLong handler)
 	{
-		return walk(handler, 0, Long.MAX_VALUE, true, false);
+		return walk(handler, 0, -1, true, false);
 	}
 
 	/**
@@ -548,11 +548,11 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 
 	public boolean walk(WalkValueHandlerLong<V> handler, boolean reverse)
 	{
-		return walk(handler, 0, Long.MAX_VALUE, true, reverse);
+		return walk(handler, 0, -1, true, reverse);
 	}
 
 	public boolean walk(WalkValueHandlerLong<V> handler)
 	{
-		return walk(handler, 0, Long.MAX_VALUE, true, false);
+		return walk(handler, 0, -1, true, false);
 	}
 }

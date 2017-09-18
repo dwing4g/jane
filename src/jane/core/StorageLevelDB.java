@@ -214,14 +214,14 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public boolean walk(WalkHandlerLong handler, long from, long to, boolean inclusive, boolean reverse)
 		{
-			if(from > to)
-			{
-				long t = from;
-				from = to;
-				to = t;
-			}
 			Octets keyFrom = getKey(from);
 			Octets keyTo = getKey(to);
+			if(keyFrom.compareTo(keyTo) > 0)
+			{
+				Octets t = keyFrom;
+				keyFrom = keyTo;
+				keyTo = t;
+			}
 			long iter = 0;
 			try
 			{
@@ -268,14 +268,14 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public boolean walk(WalkValueHandlerLong<V> handler, V beanStub, long from, long to, boolean inclusive, boolean reverse)
 		{
-			if(from > to)
-			{
-				long t = from;
-				from = to;
-				to = t;
-			}
 			Octets keyFrom = getKey(from);
 			Octets keyTo = getKey(to);
+			if(keyFrom.compareTo(keyTo) > 0)
+			{
+				Octets t = keyFrom;
+				keyFrom = keyTo;
+				keyTo = t;
+			}
 			long iter = 0;
 			try
 			{
