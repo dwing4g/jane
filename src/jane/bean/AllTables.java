@@ -48,10 +48,10 @@ public final class AllTables
 
 		public final int tableId;
 		public final String tableName;
-		public final Bean<?> keyBeanStub;
+		public final Object keyBeanStub; // Class<?> or Bean<?>
 		public final Bean<?> valueBeanStub;
 
-		private Types(int id, String name, Bean<?> kbs, Bean<?> vbs)
+		private Types(int id, String name, Object kbs, Bean<?> vbs)
 		{
 			tableId = id;
 			tableName = name;
@@ -62,16 +62,16 @@ public final class AllTables
 		static
 		{
 			Types types;
-			types = new Types(1, "TestTable", null, TestType.BEAN_STUB);
+			types = new Types(1, "TestTable", Long.class, TestType.BEAN_STUB);
 			idTypes.put(1, types);
 			nameTypes.put("TestTable", types);
 			types = new Types(2, "BeanTable", TestKeyBean.BEAN_STUB, TestBean.BEAN_STUB);
 			idTypes.put(2, types);
 			nameTypes.put("BeanTable", types);
-			types = new Types(0, "OctetsTable", null, TestEmpty.BEAN_STUB);
+			types = new Types(0, "OctetsTable", Octets.class, TestEmpty.BEAN_STUB);
 			idTypes.put(0, types);
 			nameTypes.put("OctetsTable", types);
-			types = new Types(3, "Benchmark", null, TestBean.BEAN_STUB);
+			types = new Types(3, "Benchmark", Long.class, TestBean.BEAN_STUB);
 			idTypes.put(3, types);
 			nameTypes.put("Benchmark", types);
 		}

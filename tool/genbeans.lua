@@ -302,10 +302,10 @@ public final class AllTables
 
 		public final int tableId;
 		public final String tableName;
-		public final Bean<?> keyBeanStub;
+		public final Object keyBeanStub; // Class<?> or Bean<?>
 		public final Bean<?> valueBeanStub;
 
-		private Types(int id, String name, Bean<?> kbs, Bean<?> vbs)
+		private Types(int id, String name, Object kbs, Bean<?> vbs)
 		{
 			tableId = id;
 			tableName = name;
@@ -1268,18 +1268,17 @@ function dbt(table)
 		if key_type == "Octets" then tables.imports["jane.core.Octets"] = true end
 		table.table = "Table"
 		table.key = key_type
-		if table.memory then table.keys = "null"
-		elseif key_type == "String" then table.keys = "\"\""
-		elseif key_type == "Octets" then table.keys = "new Octets()"
-		else table.keys = "new " .. key_type .. "(0)" end
-		table.keyg = "null"
+			if key_type == "String" then table.keys = "\"\""; table.keyg = "String.class"
+		elseif key_type == "Octets" then table.keys = "new Octets()"; table.keyg = "Octets.class"
+		else table.keys = "new " .. key_type .. "(0)"; table.keyg = key_type .. ".class" end
+		if table.memory then table.keys = "null" end
 		table.comma = ", "
 		tables.imports["jane.core.Table"] = true
 	elseif table.key == "id" then
 		table.table = "TableLong"
 		table.key = ""
 		table.keys = ""
-		table.keyg = "null"
+		table.keyg = "Long.class"
 		table.comma = ""
 		tables.imports["jane.core.TableLong"] = true
 	else
