@@ -17,9 +17,10 @@ import jane.core.CachedIoBufferAllocator;
 import jane.core.Log;
 import jane.core.NetManager;
 
-// start.bat jane.test.TestEcho 64 32 100000 1 64
+// start.bat jane.test.TestEcho 6 64 32 100000 1 64
 public final class TestEcho extends NetManager
 {
+	private static int TEST_THREAD_COUNT = 6;
 	private static int TEST_CLIENT_COUNT = 64;
 	private static int TEST_ECHO_SIZE	 = 32;
 	private static int TEST_ECHO_COUNT	 = 100000;
@@ -104,7 +105,7 @@ public final class TestEcho extends NetManager
 	@Override
 	public synchronized void startServer(SocketAddress addr) throws IOException
 	{
-		setIoThreadCount(1);
+		setIoThreadCount(TEST_THREAD_COUNT);
 		if(getAcceptor().getSessionDataStructureFactory() != _dsFactory)
 			getAcceptor().setSessionDataStructureFactory(_dsFactory);
 		getServerConfig().setReuseAddress(true);
@@ -115,7 +116,7 @@ public final class TestEcho extends NetManager
 	@Override
 	public synchronized ConnectFuture startClient(SocketAddress addr)
 	{
-		setIoThreadCount(1);
+		setIoThreadCount(TEST_THREAD_COUNT);
 		if(getConnector().getSessionDataStructureFactory() != _dsFactory)
 			getConnector().setSessionDataStructureFactory(_dsFactory);
 		getClientConfig().setTcpNoDelay(true);
@@ -163,13 +164,14 @@ public final class TestEcho extends NetManager
 	public static void main(String[] args) throws IOException, InterruptedException
 	{
 		Log.removeAppendersFromArgs(args);
-		if(args.length > 0) TEST_CLIENT_COUNT = Integer.parseInt(args[0]);
-		if(args.length > 1) TEST_ECHO_SIZE = Integer.parseInt(args[1]);
-		if(args.length > 2) TEST_ECHO_COUNT = Integer.parseInt(args[2]);
+		if(args.length > 0) TEST_THREAD_COUNT = Integer.parseInt(args[0]);
+		if(args.length > 1) TEST_CLIENT_COUNT = Integer.parseInt(args[1]);
+		if(args.length > 2) TEST_ECHO_SIZE = Integer.parseInt(args[2]);
+		if(args.length > 3) TEST_ECHO_COUNT = Integer.parseInt(args[3]);
 		System.out.println("TestEcho: start: " + TEST_CLIENT_COUNT);
 		_closedCount = new CountDownLatch(TEST_CLIENT_COUNT * 2);
-		CachedIoBufferAllocator.globalSet((args.length > 3 ? Integer.parseInt(args[3]) : 0) > 0,
-				args.length > 4 ? Integer.parseInt(args[4]) : 0, 64 * 1024);
+		CachedIoBufferAllocator.globalSet((args.length > 4 ? Integer.parseInt(args[4]) : 0) > 0,
+				args.length > 5 ? Integer.parseInt(args[5]) : 0, 64 * 1024);
 		long time = System.currentTimeMillis();
 //		perf[2].begin();
 //		perf[0].begin();

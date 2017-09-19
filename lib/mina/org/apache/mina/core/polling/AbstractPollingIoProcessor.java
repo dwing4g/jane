@@ -20,6 +20,7 @@ package org.apache.mina.core.polling;
 
 import java.io.IOException;
 import java.nio.channels.ClosedSelectorException;
+import java.nio.channels.SelectionKey;
 import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -63,9 +64,6 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 	/** A queue used to store the sessions to be flushed */
 	private final Queue<S> flushingSessions = new ConcurrentLinkedQueue<>();
 
-	/** A queue used to store the sessions which have a trafficControl to be updated */
-	private final Queue<S> trafficControllingSessions = new ConcurrentLinkedQueue<>();
-
 	/** The processor thread: it handles the incoming messages */
 	private final AtomicReference<Processor> processorRef = new AtomicReference<>();
 
@@ -74,6 +72,8 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 	private final DefaultIoFuture disposalFuture = new DefaultIoFuture(null);
 
 	protected final AtomicBoolean wakeupCalled = new AtomicBoolean();
+
+	private Thread runningThread;
 
 	private volatile boolean disposing;
 	private volatile boolean disposed;
@@ -153,20 +153,18 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 	protected abstract void wakeup();
 
 	/**
-	 * Get an {@link Iterator} for the list of {@link IoSession} polled by this
-	 * {@link IoProcessor}
+	 * Get an {@link Iterator} for the list of {@link IoSession} polled by this {@link IoProcessor}
 	 *
 	 * @return {@link Iterator} of {@link IoSession}
 	 */
-	protected abstract Iterator<S> allSessions();
+	protected abstract Iterator<SelectionKey> allSessions();
 
 	/**
-	 * Get an {@link Iterator} for the list of {@link IoSession} found selected
-	 * by the last call of {@link #select(long)}
+	 * Get an {@link Iterator} for the list of {@link IoSession} found selected by the last call of {@link #select(long)}
 	 *
 	 * @return {@link Iterator} of {@link IoSession} read for I/Os operation
 	 */
-	protected abstract Iterator<S> selectedSessions();
+	protected abstract Iterator<SelectionKey> selectedSessions();
 
 	/**
 	 * Get the state of a session (One of OPENING, OPEN, CLOSING)
@@ -175,38 +173,6 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 	 * @return the state of the session
 	 */
 	protected abstract SessionState getState(S session);
-
-	/**
-	 * Tells if the session ready for reading
-	 *
-	 * @param session the queried session
-	 * @return <tt>true</tt> is ready, <tt>false</tt> if not ready
-	 */
-	protected abstract boolean isReadable(S session);
-
-	/**
-	 * Tells if the session ready for writing
-	 *
-	 * @param session the queried session
-	 * @return <tt>true</tt> is ready, <tt>false</tt> if not ready
-	 */
-	protected abstract boolean isWritable(S session);
-
-	/**
-	 * Tells if this session is registered for reading
-	 *
-	 * @param session the queried session
-	 * @return <tt>true</tt> is registered for reading
-	 */
-	protected abstract boolean isInterestedInRead(S session);
-
-	/**
-	 * Tells if this session is registered for writing
-	 *
-	 * @param session the queried session
-	 * @return <tt>true</tt> is registered for writing
-	 */
-	protected abstract boolean isInterestedInWrite(S session);
 
 	/**
 	 * Set the session to be informed when a read event should be processed
@@ -295,6 +261,11 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 
 	@Override
 	public final void flush(S session) {
+		if (Thread.currentThread() == runningThread) {
+			processorRef.get().flushNow(session);
+			return;
+		}
+
 		// add the session to the queue if it's not already in the queue, then wake up the select()
 		if (session.setScheduledForFlush(true)) {
 			flushingSessions.add(session);
@@ -396,6 +367,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 	private final class Processor implements Runnable {
 		@Override
 		public void run() {
+			runningThread = Thread.currentThread();
 			int nSessions = 0;
 			int nbTries = 10;
 
@@ -441,8 +413,6 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 					// Manage newly created session first
 					nSessions += handleNewSessions();
 
-					updateTrafficMask();
-
 					// Now, if we have had some incoming or outgoing events, deal with them
 					if (selected > 0) {
 						process();
@@ -473,8 +443,9 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 					if (isDisposing()) {
 						boolean hasKeys = false;
 
-						for (Iterator<S> i = allSessions(); i.hasNext();) {
-							S session = i.next();
+						for (Iterator<SelectionKey> i = allSessions(); i.hasNext();) {
+							@SuppressWarnings("unchecked")
+							S session = (S)i.next().attachment();
 
 							if (session.isActive()) {
 								scheduleRemove(session);
@@ -530,49 +501,6 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			}
 
 			return addedSessions;
-		}
-
-		/**
-		 * Update the trafficControl for all the session.
-		 */
-		private void updateTrafficMask() {
-			int queueSize = trafficControllingSessions.size();
-
-			while (queueSize > 0) {
-				S session = trafficControllingSessions.poll();
-
-				if (session == null) {
-					// We are done with this queue.
-					return;
-				}
-
-				SessionState state = getState(session);
-
-				switch (state) {
-					case OPENED:
-						updateTrafficControl(session);
-						break;
-
-					case CLOSING:
-						break;
-
-					case OPENING:
-						// Retry later if session is not yet fully initialized.
-						// (In case that Session.suspend??() or session.resume??() is called before addSession() is processed)
-						// We just put back the session at the end of the queue.
-						trafficControllingSessions.add(session);
-						break;
-
-					default:
-						throw new IllegalStateException(String.valueOf(state));
-				}
-
-				// As we have handled one session, decrement the number of
-				// remaining sessions. The OPENING session will be processed
-				// with the next select(), as the queue size has been decreased,
-				// even if the session has been pushed at the end of the queue
-				queueSize--;
-			}
 		}
 
 		/**
@@ -851,25 +779,24 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 		}
 
 		private void process() throws Exception {
-			for (Iterator<S> i = selectedSessions(); i.hasNext();) {
-				process(i.next());
+			for (Iterator<SelectionKey> i = selectedSessions(); i.hasNext();) {
+				SelectionKey key = i.next();
+				@SuppressWarnings("unchecked")
+				S session = (S)key.attachment();
+				int ops = key.readyOps();
+
+				// Process Reads
+				if ((ops & SelectionKey.OP_READ) != 0 && !session.isReadSuspended()) {
+					read(session);
+				}
+
+				// Process writes
+				if ((ops & SelectionKey.OP_WRITE) != 0 && !session.isWriteSuspended() && session.setScheduledForFlush(true)) {
+					// add the session to the queue, if it's not already there
+					flushingSessions.add(session);
+				}
+
 				i.remove();
-			}
-		}
-
-		/**
-		 * Deal with session ready for the read or write operations, or both.
-		 */
-		private void process(S session) {
-			// Process Reads
-			if (isReadable(session) && !session.isReadSuspended()) {
-				read(session);
-			}
-
-			// Process writes
-			if (isWritable(session) && !session.isWriteSuspended() && session.setScheduledForFlush(true)) {
-				// add the session to the queue, if it's not already there
-				flushingSessions.add(session);
 			}
 		}
 	}

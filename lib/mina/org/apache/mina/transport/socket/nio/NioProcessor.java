@@ -99,13 +99,13 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	}
 
 	@Override
-	protected Iterator<NioSession> allSessions() {
-		return new IoSessionIterator(selector.keys());
+	protected Iterator<SelectionKey> allSessions() {
+		return selector.keys().iterator();
 	}
 
 	@Override
-	protected Iterator<NioSession> selectedSessions() {
-		return new IoSessionIterator(selector.selectedKeys());
+	protected Iterator<SelectionKey> selectedSessions() {
+		return selector.selectedKeys().iterator();
 	}
 
 	@Override
@@ -179,30 +179,6 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	}
 
 	@Override
-	protected boolean isReadable(NioSession session) {
-		SelectionKey key = session.getSelectionKey();
-		return key != null && key.isValid() && key.isReadable();
-	}
-
-	@Override
-	protected boolean isWritable(NioSession session) {
-		SelectionKey key = session.getSelectionKey();
-		return key != null && key.isValid() && key.isWritable();
-	}
-
-	@Override
-	protected boolean isInterestedInRead(NioSession session) {
-		SelectionKey key = session.getSelectionKey();
-		return key != null && key.isValid() && ((key.interestOps() & SelectionKey.OP_READ) != 0);
-	}
-
-	@Override
-	protected boolean isInterestedInWrite(NioSession session) {
-		SelectionKey key = session.getSelectionKey();
-		return key != null && key.isValid() && ((key.interestOps() & SelectionKey.OP_WRITE) != 0);
-	}
-
-	@Override
 	protected void setInterestedInRead(NioSession session, boolean isInterested) {
 		SelectionKey key = session.getSelectionKey();
 
@@ -268,37 +244,6 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 				return 0;
 			}
 			throw e;
-		}
-	}
-
-	/**
-	 * An encapsulating iterator around the {@link Selector#selectedKeys()} or the {@link Selector#keys()} iterator
-	 */
-	private static final class IoSessionIterator implements Iterator<NioSession> {
-		private final Iterator<SelectionKey> iterator;
-
-		/**
-		 * Create this iterator as a wrapper on top of the selectionKey Set.
-		 *
-		 * @param keys The set of selected sessions
-		 */
-		private IoSessionIterator(Set<SelectionKey> keys) {
-			iterator = keys.iterator();
-		}
-
-		@Override
-		public boolean hasNext() {
-			return iterator.hasNext();
-		}
-
-		@Override
-		public NioSession next() {
-			return (NioSession) iterator.next().attachment();
-		}
-
-		@Override
-		public void remove() {
-			iterator.remove();
 		}
 	}
 }

@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p>
  * 可直接对bean的存取,没有事务性,存取均有缓存,定期存库和备份. 目前仅支持StorageLevelDB,记录格式与DBManager兼容. 不能与DBManager同时访问同一个数据库.<br>
  * 对同一个记录并发访问不会出错,但顺序不能保证. 一般只在单线程环境下访问此类,或者用户自行处理同一记录的互斥访问.<br>
- * 只依赖Log, Const, Util, Octets, OctetsStream, MarshalException, ExitManager, Bean, StorageLevelDB.<br>
+ * 只依赖Log, Const, Util, Octets*, MarshalException, ExitManager, Bean, StorageLevelDB.<br>
  * 一般不再使用DBManager,Proc*,Table*,S*; 不生成dbt,只生成bean
  */
 public final class DBSimpleManager
@@ -537,7 +537,7 @@ public final class DBSimpleManager
 	}
 
 	/**
-	 * 启动数据库提交线程
+	 * 启动数据库提交线程(默认不开启)
 	 * <p>
 	 * 要在startup后执行
 	 */
@@ -567,7 +567,7 @@ public final class DBSimpleManager
 	}
 
 	/**
-	 * 设置是否启用备份(开启会根据配置自动周期备份)
+	 * 设置是否启用备份(开启会根据配置自动周期备份,默认不开启)
 	 */
 	public void enableBackup(boolean enabled)
 	{
