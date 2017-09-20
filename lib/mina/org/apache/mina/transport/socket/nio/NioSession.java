@@ -135,6 +135,16 @@ public final class NioSession extends AbstractIoSession {
 		nioProcessor = processor;
 	}
 
+	@Override
+	public boolean isInProcessorThread() {
+		return nioProcessor.isInProcessorThread();
+	}
+
+	@Override
+	public boolean isInterestedInWrite() {
+		return key != null && key.isValid() && ((key.interestOps() & SelectionKey.OP_WRITE) != 0);
+	}
+
 	/**
 	 * A private class storing a copy of the IoService configuration when the IoSession is created.
 	 * That allows the session to have its own configuration setting, over the IoService default one.

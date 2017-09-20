@@ -73,7 +73,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 
 	protected final AtomicBoolean wakeupCalled = new AtomicBoolean();
 
-	private Thread runningThread;
+	private Thread processorThread;
 
 	private volatile boolean disposing;
 	private volatile boolean disposed;
@@ -259,9 +259,13 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 		}
 	}
 
+	public final boolean isInProcessorThread() {
+		return Thread.currentThread() == processorThread;
+	}
+
 	@Override
 	public final void flush(S session) {
-		if (Thread.currentThread() == runningThread) {
+		if (session.isInProcessorThread() && !session.isInterestedInWrite()) {
 			processorRef.get().flushNow(session);
 			return;
 		}
@@ -367,7 +371,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 	private final class Processor implements Runnable {
 		@Override
 		public void run() {
-			runningThread = Thread.currentThread();
+			processorThread = Thread.currentThread();
 			int nSessions = 0;
 			int nbTries = 10;
 

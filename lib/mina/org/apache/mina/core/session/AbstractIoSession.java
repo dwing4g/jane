@@ -101,6 +101,10 @@ public abstract class AbstractIoSession implements IoSession {
 	@SuppressWarnings("rawtypes")
 	public abstract IoProcessor getProcessor();
 
+	public abstract boolean isInProcessorThread();
+
+	public abstract boolean isInterestedInWrite();
+
 	@Override
 	public final boolean isConnected() {
 		return !closeFuture.isClosed();
