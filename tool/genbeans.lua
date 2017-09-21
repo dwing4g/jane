@@ -437,11 +437,14 @@ typedef.byte =
 		}
 ]],
 	marshal = function(var)
+		if var.id <= 0 then return "" end
 		return var.id < 63 and
 			string.format("\t\tif(this.#(var.name) != 0) _s_.marshal1((byte)0x%02x).marshal(this.#(var.name));\n", var.id * 4) or
 			string.format("\t\tif(this.#(var.name) != 0) _s_.marshal2(0x%04x).marshal(this.#(var.name));\n", 0xfc00 + var.id - 63)
 	end,
-	unmarshal = "\t\t\tcase #(var.id): this.#(var.name) = (#(var.type))_s_.unmarshalInt(_t_); break;\n",
+	unmarshal = function(var)
+		return var.id > 0 and "\t\t\tcase #(var.id): this.#(var.name) = (#(var.type))_s_.unmarshalInt(_t_); break;\n" or ""
+	end,
 	unmarshal_kv = function(var, kv, t) if kv then return "(" .. typename(var, var[kv]) .. ")_s_.unmarshalIntKV(" .. t .. ")" end end,
 	hashcode = "this.#(var.name)",
 	equals = "this.#(var.name) != _b_.#(var.name)",
@@ -457,7 +460,9 @@ typedef.int = merge(typedef.byte,
 	type = "int",
 	type_i = "int",
 	type_o = "Integer",
-	unmarshal = "\t\t\tcase #(var.id): this.#(var.name) = _s_.unmarshalInt(_t_); break;\n",
+	unmarshal = function(var)
+		return var.id > 0 and "\t\t\tcase #(var.id): this.#(var.name) = _s_.unmarshalInt(_t_); break;\n" or ""
+	end,
 	unmarshal_kv = function(var, kv, t) if kv then return "_s_.unmarshalIntKV(" .. t .. ")" end end,
 })
 typedef.long = merge(typedef.byte,
@@ -465,7 +470,9 @@ typedef.long = merge(typedef.byte,
 	type = "long",
 	type_i = "long",
 	type_o = "Long",
-	unmarshal = "\t\t\tcase #(var.id): this.#(var.name) = _s_.unmarshalLong(_t_); break;\n",
+	unmarshal = function(var)
+		return var.id > 0 and "\t\t\tcase #(var.id): this.#(var.name) = _s_.unmarshalLong(_t_); break;\n" or ""
+	end,
 	unmarshal_kv = function(var, kv, t) if kv then return "_s_.unmarshalLongKV(" .. t .. ")" end end,
 	hashcode = "(int)this.#(var.name)",
 	compareto = "Long.signum(this.#(var.name) - _b_.#(var.name))",
@@ -475,11 +482,14 @@ typedef.bool = merge(typedef.byte,
 	type = "boolean", type_i = "boolean", type_o = "Boolean",
 	reset = "#(var.name) = false",
 	marshal = function(var)
+		if var.id <= 0 then return "" end
 		return var.id < 63 and
 			string.format("\t\tif(this.#(var.name)) _s_.marshal2(0x%04x);\n", var.id * 0x400 + 1) or
 			string.format("\t\tif(this.#(var.name)) _s_.marshal3(0x%06x);\n", 0xfc0001 + (var.id - 63) * 0x100)
 	end,
-	unmarshal = "\t\t\tcase #(var.id): this.#(var.name) = (_s_.unmarshalInt(_t_) != 0); break;\n",
+	unmarshal = function(var)
+		return var.id > 0 and "\t\t\tcase #(var.id): this.#(var.name) = (_s_.unmarshalInt(_t_) != 0); break;\n" or ""
+	end,
 	unmarshal_kv = function(var, kv, t) if kv then return "(_s_.unmarshalIntKV(" .. t .. ") != 0)" end end,
 	hashcode = "(this.#(var.name) ? 0xcafebabe : 0xdeadbeef)",
 	compareto = "(this.#(var.name) == _b_.#(var.name) ? 0 : (this.#(var.name) ? 1 : -1))",
@@ -489,11 +499,14 @@ typedef.float = merge(typedef.byte,
 	type = "float", type_i = "float", type_o = "Float",
 	subtypeid = 4,
 	marshal = function(var)
+		if var.id <= 0 then return "" end
 		return var.id < 63 and
 			string.format("\t\tif(this.#(var.name) != 0) _s_.marshal2(0x%04x).marshal(this.#(var.name));\n", var.id * 0x400 + 0x308) or
 			string.format("\t\tif(this.#(var.name) != 0) _s_.marshal3(0x%06x).marshal(this.#(var.name));\n", 0xff0008 + (var.id - 63) * 0x100)
 	end,
-	unmarshal = "\t\t\tcase #(var.id): this.#(var.name) = _s_.unmarshalFloat(_t_); break;\n",
+	unmarshal = function(var)
+		return var.id > 0 and "\t\t\tcase #(var.id): this.#(var.name) = _s_.unmarshalFloat(_t_); break;\n" or ""
+	end,
 	unmarshal_kv = function(var, kv, t) if kv then return "_s_.unmarshalFloatKV(" .. t .. ")" end end,
 	hashcode = "Float.floatToRawIntBits(this.#(var.name))",
 	compareto = "Float.compare(this.#(var.name), _b_.#(var.name))",
@@ -503,11 +516,14 @@ typedef.double = merge(typedef.byte,
 	type = "double", type_i = "double", type_o = "Double",
 	subtypeid = 5,
 	marshal = function(var)
+		if var.id <= 0 then return "" end
 		return var.id < 63 and
 			string.format("\t\tif(this.#(var.name) != 0) _s_.marshal2(0x%04x).marshal(this.#(var.name));\n", var.id * 0x400 + 0x309) or
 			string.format("\t\tif(this.#(var.name) != 0) _s_.marshal3(0x%06x).marshal(this.#(var.name));\n", 0xff0009 + (var.id - 63) * 0x100)
 	end,
-	unmarshal = "\t\t\tcase #(var.id): this.#(var.name) = _s_.unmarshalDouble(_t_); break;\n",
+	unmarshal = function(var)
+		return var.id > 0 and "\t\t\tcase #(var.id): this.#(var.name) = _s_.unmarshalDouble(_t_); break;\n" or ""
+	end,
 	unmarshal_kv = function(var, kv, t) if kv then return "_s_.unmarshalDoubleKV(" .. t .. ")" end end,
 	hashcode = "(int)((Double.doubleToRawLongBits(this.#(var.name)) * 0x100000001L) >> 32)",
 	compareto = "Double.compare(this.#(var.name), _b_.#(var.name))",
@@ -539,11 +555,14 @@ typedef.string = merge(typedef.byte,
 		}
 ]],
 	marshal = function(var)
+		if var.id <= 0 then return "" end
 		return var.id < 63 and
 			string.format("\t\tif(!this.#(var.name).isEmpty()) _s_.marshal1((byte)0x%02x).marshal(this.#(var.name));\n", var.id * 4 + 1) or
 			string.format("\t\tif(!this.#(var.name).isEmpty()) _s_.marshal2(0x%04x).marshal(this.#(var.name));\n", 0xfd00 + var.id - 63)
 	end,
-	unmarshal = "\t\t\tcase #(var.id): this.#(var.name) = _s_.unmarshalString(_t_); break;\n",
+	unmarshal = function(var)
+		return var.id > 0 and "\t\t\tcase #(var.id): this.#(var.name) = _s_.unmarshalString(_t_); break;\n" or ""
+	end,
 	unmarshal_kv = function(var, kv, t) if kv then return "_s_.unmarshalStringKV(" .. t .. ")" end end,
 	hashcode = "this.#(var.name).hashCode()",
 	equals = "!this.#(var.name).equals(_b_.#(var.name))",
@@ -641,11 +660,14 @@ typedef.octets = merge(typedef.string,
 ]],
 	setsafe = "",
 	marshal = function(var)
+		if var.id <= 0 then return "" end
 		return var.id < 63 and
 			string.format("\t\tif(!this.#(var.name).empty()) _s_.marshal1((byte)0x%02x).marshal(this.#(var.name));\n", var.id * 4 + 1) or
 			string.format("\t\tif(!this.#(var.name).empty()) _s_.marshal2(0x%04x).marshal(this.#(var.name));\n", 0xfd00 + var.id - 63)
 	end,
-	unmarshal = "\t\t\tcase #(var.id): _s_.unmarshal(this.#(var.name), _t_); break;\n",
+	unmarshal = function(var)
+		return var.id > 0 and "\t\t\tcase #(var.id): _s_.unmarshal(this.#(var.name), _t_); break;\n" or ""
+	end,
 	unmarshal_kv = function(var, kv, t) if kv then return "_s_.unmarshalOctetsKV(" .. t .. ")" end end,
 	tojson = "\t\tthis.#(var.name).dumpJStr(_s_.append(\"\\\"#(var.name)\\\":\")).append(',');\n",
 	tolua = "\t\tthis.#(var.name).dumpJStr(_s_.append(\"#(var.name)=\")).append(',');\n",
@@ -679,6 +701,7 @@ typedef.vector = merge(typedef.octets,
 		}
 ]],
 	marshal = function(var)
+		if var.id <= 0 then return "" end
 		return var.id < 63 and
 			string.format([[		if(!this.#(var.name).isEmpty())
 		{
@@ -695,7 +718,9 @@ typedef.vector = merge(typedef.octets,
 		}
 ]], 0xff0000 + (var.id - 63) * 0x100 + subtypeid(var.k), subtypename(var, var.k))
 	end,
-	unmarshal = function(var) return string.format([[			case #(var.id):
+	unmarshal = function(var)
+		return var.id <= 0 and "" or string.format([[
+			case #(var.id):
 			{
 				this.#(var.name).clear();
 				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
@@ -707,7 +732,8 @@ typedef.vector = merge(typedef.octets,
 				for(; _n_ > 0; --_n_)
 					this.#(var.name).add(%s);
 			} break;
-]], get_unmarshal_kv(var, "k", "_t_")) end,
+]], get_unmarshal_kv(var, "k", "_t_"))
+	end,
 	compareto = "Util.compareTo(this.#(var.name), _b_.#(var.name))",
 	tostring = "Util.append(_s_, this.#(var.name))",
 	tojson = "\t\tUtil.appendJson(_s_.append(\"\\\"#(var.name)\\\":\"), this.#(var.name));\n",
@@ -719,7 +745,9 @@ typedef.list = merge(typedef.vector,
 	type = function(var) return "LinkedList<" .. subtypename(var, var.k) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new LinkedList<" .. subtypename_new(var, var.k) .. ">();\n" end,
 	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new LinkedList<" .. subtypename_new(var, var.k) .. ">())" end,
-	unmarshal = function(var) return string.format([[			case #(var.id):
+	unmarshal = function(var)
+		return var.id <= 0 and "" or string.format([[
+			case #(var.id):
 			{
 				this.#(var.name).clear();
 				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
@@ -729,7 +757,8 @@ typedef.list = merge(typedef.vector,
 				for(int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
 					this.#(var.name).add(%s);
 			} break;
-]], get_unmarshal_kv(var, "k", "_t_")) end,
+]], get_unmarshal_kv(var, "k", "_t_"))
+	end,
 })
 typedef.deque = merge(typedef.list,
 {
@@ -823,6 +852,7 @@ typedef.hashmap = merge(typedef.list,
 		}
 ]] end,
 	marshal = function(var)
+		if var.id <= 0 then return "" end
 		return var.id < 63 and
 			string.format([[		if(!this.#(var.name).isEmpty())
 		{
@@ -839,7 +869,9 @@ typedef.hashmap = merge(typedef.list,
 		}
 ]], 0xff0040 + (var.id - 63) * 0x100 + subtypeid(var.k) * 8 + subtypeid(var.v), subtypename(var, var.k), subtypename(var, var.v))
 	end,
-	unmarshal = function(var) return string.format([[			case #(var.id):
+	unmarshal = function(var)
+		return var.id <= 0 and "" or string.format([[
+			case #(var.id):
 			{
 				this.#(var.name).clear();
 				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
@@ -849,7 +881,8 @@ typedef.hashmap = merge(typedef.list,
 				for(int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
 					this.#(var.name).put(%s, %s);
 			} break;
-]], get_unmarshal_kv(var, "k", "_k_"), get_unmarshal_kv(var, "v", "_t_")) end,
+]], get_unmarshal_kv(var, "k", "_k_"), get_unmarshal_kv(var, "v", "_t_"))
+	end,
 })
 typedef.treemap = merge(typedef.hashmap,
 {
@@ -898,6 +931,7 @@ typedef.bean = merge(typedef.octets,
 ]],
 	setsafe = "",
 	marshal = function(var)
+		if var.id <= 0 then return "" end
 		return var.id < 63 and
 			string.format([[
 		{
@@ -914,7 +948,9 @@ typedef.bean = merge(typedef.octets,
 		}
 ]], 0xfe00 + var.id - 63)
 	end,
-	unmarshal = "\t\t\tcase #(var.id): _s_.unmarshalBean(this.#(var.name), _t_); break;\n",
+	unmarshal = function(var)
+		return var.id > 0 and "\t\t\tcase #(var.id): _s_.unmarshalBean(this.#(var.name), _t_); break;\n" or ""
+	end,
 	unmarshal_kv = function(var, kv, t) if kv then return "_s_.unmarshalBeanKV(new " .. typename(var, var[kv]) .. "(), " .. t .. ")" end end,
 	compareto = "this.#(var.name).compareTo(_b_.#(var.name))",
 	tojson = "\t\tthis.#(var.name).toJson(_s_.append(\"\\\"#(var.name)\\\":\")).append(',');\n",
