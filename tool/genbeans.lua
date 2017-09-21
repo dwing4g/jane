@@ -1165,9 +1165,9 @@ function bean(bean)
 			if id_used[var.id] then error("ERROR: duplicated var.id: " .. var.id .. " in bean: " .. bean.name) end
 			id_used[var.id] = true
 			vartypes[#vartypes + 1] = var.type
-			for _, v in ipairs(var.import) do
-				bean.import[v] = true
-			end
+		end
+		for _, v in ipairs(var.import) do
+			bean.import[v] = true
 		end
 	end
 	if bean.poolsize and bean.poolsize > 0 then
