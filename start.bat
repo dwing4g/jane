@@ -2,6 +2,18 @@
 setlocal
 pushd %~dp0
 
+for /f "tokens=3" %%g in ('java -version 2^>^&1 ^| findstr /i "version"') do set JAVA_VER=%%g
+set JAVAVER=%JAVAVER:"=%
+if %JAVA_VER% == "9" (
+set JVM=^
+-Xms128m ^
+-Xmx512m ^
+-server ^
+-Xlog:gc:log/gc.log ^
+-verbose:gc ^
+-Dsun.stdout.encoding=gbk ^
+-Dsun.stderr.encoding=gbk
+) else (
 set JVM=^
 -Xms128m ^
 -Xmx512m ^
@@ -13,6 +25,7 @@ set JVM=^
 -verbose:gc ^
 -Dsun.stdout.encoding=gbk ^
 -Dsun.stderr.encoding=gbk
+)
 
 rem -Djava.rmi.server.hostname=127.0.0.1 ^
 rem -Djava.net.preferIPv4Stack=true ^

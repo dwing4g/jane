@@ -18,9 +18,6 @@
  */
 package org.apache.mina.core.buffer;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -623,26 +620,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	public abstract IoBuffer limit(int newLimit);
 
 	/**
-	 * @see java.nio.Buffer#mark()
-	 *
-	 * @return the modified IoBuffer
-
-	 */
-	public abstract IoBuffer mark();
-
-	/**
-	 * @return the position of the current mark. This method returns <tt>-1</tt> if no mark is set.
-	 */
-	public abstract int markValue();
-
-	/**
-	 * @see java.nio.Buffer#reset()
-	 *
-	 * @return the modified IoBuffer
-	 */
-	public abstract IoBuffer reset();
-
-	/**
 	 * @see java.nio.Buffer#clear()
 	 *
 	 * @return the modified IoBuffer
@@ -1211,21 +1188,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 * @return the modified IoBuffer
 	 */
 	public abstract IoBuffer putDouble(int index, double value);
-
-	/**
-	 * @return an {@link InputStream} that reads the data from this buffer.
-	 * {@link InputStream#read()} returns <tt>-1</tt> if the buffer position reaches to the limit.
-	 */
-	public abstract InputStream asInputStream();
-
-	/**
-	 * @return an {@link OutputStream} that appends the data into this buffer.
-	 * Please note that the {@link OutputStream#write(int)} will throw a
-	 * {@link BufferOverflowException} instead of an {@link IOException} in case
-	 * of buffer overflow. Please set <tt>autoExpand</tt> property by calling
-	 * {@link #setAutoExpand(boolean)} to prevent the unexpected runtime exception.
-	 */
-	public abstract OutputStream asOutputStream();
 
 	/**
 	 * Returns hexdump of this buffer.

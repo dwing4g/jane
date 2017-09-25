@@ -2,6 +2,17 @@
 
 cd `dirname $0`
 
+JAVA_VER=`java -version 2>&1 | awk '/version/{print $3}'`
+if [ "$JAVA_VER" == "\"9\"" ]; then
+JVM="\
+-Xms512m \
+-Xmx512m \
+-server \
+-Xlog:gc:log/gc.log \
+-verbose:gc \
+-Dsun.stdout.encoding=utf-8 \
+-Dsun.stderr.encoding=utf-8"
+else
 JVM="\
 -Xms512m \
 -Xmx512m \
@@ -13,6 +24,7 @@ JVM="\
 -verbose:gc \
 -Dsun.stdout.encoding=utf-8 \
 -Dsun.stderr.encoding=utf-8"
+fi
 
 # -Djava.rmi.server.hostname=127.0.0.1 \
 # -Djava.net.preferIPv4Stack=true \

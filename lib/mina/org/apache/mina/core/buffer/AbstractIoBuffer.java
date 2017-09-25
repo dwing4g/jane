@@ -18,10 +18,6 @@
  */
 package org.apache.mina.core.buffer;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.lang.reflect.Field;
-import java.nio.Buffer;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
@@ -55,17 +51,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 
 	/** The minimum number of bytes the IoBuffer can hold */
 	private int minimumCapacity;
-
-	private static final Field markField;
-
-	static {
-		try {
-			markField = Buffer.class.getDeclaredField("mark");
-			markField.setAccessible(true);
-		} catch(Exception e) {
-			throw new Error(e);
-		}
-	}
 
 	/**
 	 * Creates a new parent buffer.
@@ -133,7 +118,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 			//// Save the state.
 			int pos = position();
 			int limit = limit();
-			int mark = markValue();
 			ByteOrder bo = order();
 
 			//// Reallocate.
@@ -145,10 +129,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 
 			//// Restore the state.
 			buf().limit(limit);
-			if (mark >= 0) {
-				buf().position(mark);
-				buf().mark();
-			}
 			buf().position(pos);
 			buf().order(bo);
 		}
@@ -298,28 +278,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	public final IoBuffer limit(int newLimit) {
 		autoExpand(newLimit, 0);
 		buf().limit(newLimit);
-		return this;
-	}
-
-	@Override
-	public final IoBuffer mark() {
-		ByteBuffer byteBuffer = buf();
-		byteBuffer.mark();
-		return this;
-	}
-
-	@Override
-	public final int markValue() {
-		try {
-			return markField.getInt(buf());
-		} catch(Exception e) {
-			throw new Error(e);
-		}
-	}
-
-	@Override
-	public final IoBuffer reset() {
-		buf().reset();
 		return this;
 	}
 
@@ -914,77 +872,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	@Override
 	public long getUnsignedInt(int index) {
 		return getInt(index) & 0xffffffffL;
-	}
-
-	@Override
-	public InputStream asInputStream() {
-		return new InputStream() {
-			@Override
-			public int available() {
-				return AbstractIoBuffer.this.remaining();
-			}
-
-			@Override
-			public synchronized void mark(int readlimit) {
-				AbstractIoBuffer.this.mark();
-			}
-
-			@Override
-			public boolean markSupported() {
-				return true;
-			}
-
-			@Override
-			public int read() {
-				if (AbstractIoBuffer.this.hasRemaining()) {
-					return AbstractIoBuffer.this.get() & 0xff;
-				}
-
-				return -1;
-			}
-
-			@Override
-			public int read(byte[] b, int off, int len) {
-				int remaining = AbstractIoBuffer.this.remaining();
-				if (remaining > 0) {
-					int readBytes = Math.min(remaining, len);
-					AbstractIoBuffer.this.get(b, off, readBytes);
-					return readBytes;
-				}
-
-				return -1;
-			}
-
-			@Override
-			public synchronized void reset() {
-				AbstractIoBuffer.this.reset();
-			}
-
-			@Override
-			public long skip(long n) {
-				int bytes = AbstractIoBuffer.this.remaining();
-				if (n <= Integer.MAX_VALUE) {
-					bytes = Math.min(bytes, (int) n);
-				}
-				AbstractIoBuffer.this.skip(bytes);
-				return bytes;
-			}
-		};
-	}
-
-	@Override
-	public OutputStream asOutputStream() {
-		return new OutputStream() {
-			@Override
-			public void write(byte[] b, int off, int len) {
-				AbstractIoBuffer.this.put(b, off, len);
-			}
-
-			@Override
-			public void write(int b) {
-				AbstractIoBuffer.this.put((byte) b);
-			}
-		};
 	}
 
 	@Override
