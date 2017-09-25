@@ -100,7 +100,7 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 	 * @param processor the {@link IoProcessor} for processing the {@link IoSession} of this transport,
 	 *            triggering events to the bound {@link IoHandler} and processing the chains of {@link IoFilter}
 	 */
-	private AbstractPollingIoConnector(IoProcessor<NioSession> processor) {
+	protected AbstractPollingIoConnector(IoProcessor<NioSession> processor) {
 		this.processor = processor;
 
 		try {

@@ -32,9 +32,9 @@ import org.apache.mina.core.write.WriteRequest;
 /**
  * A byte buffer used by MINA applications.
  * <p>
- * This is a replacement for {@link ByteBuffer}. Please refer to
- * {@link ByteBuffer} documentation for preliminary usage. MINA does not use NIO
- * {@link ByteBuffer} directly for two reasons:
+ * This is a replacement for {@link ByteBuffer}.
+ * Please refer to {@link ByteBuffer} documentation for preliminary usage.
+ * MINA does not use NIO {@link ByteBuffer} directly for two reasons:
  * <ul>
  *   <li>It doesn't provide useful getters and putters such as <code>fill</code>,
  *       <code>get/putString</code>, and <code>get/putAsciiInt()</code> enough.</li>
@@ -113,10 +113,9 @@ import org.apache.mina.core.write.WriteRequest;
  *
  * <h2>Derived Buffers</h2>
  * <p>
- *   Derived buffers are the buffers which were created by the {@link #duplicate()} or
- *   {@link #slice()} methods. They are useful especially
- *   when you broadcast the same messages to multiple {@link IoSession}s. Please
- *   note that the buffer derived from and its derived buffers are not
+ *   Derived buffers are the buffers which were created by the {@link #duplicate()} method.
+ *   They are useful especially when you broadcast the same messages to multiple {@link IoSession}s.
+ *   Please note that the buffer derived from and its derived buffers are not
  *   auto-expandable nor auto-shrinkable. Trying to call
  *   {@link #setAutoExpand(boolean)} or {@link #setAutoShrink(boolean)} with
  *   <tt>true</tt> parameter will raise an {@link IllegalStateException}.
@@ -313,7 +312,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 
 	/**
 	 * @return <tt>true</tt> if and only if this buffer is derived from another
-	 * buffer via one of the {@link #duplicate()} or {@link #slice()} methods.
+	 * buffer via one of the {@link #duplicate()} method.
 	 */
 	public abstract boolean isDerived();
 
@@ -599,7 +598,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 *
 	 * @param newPosition Sets the new position in the buffer
 	 * @return the modified IoBuffer
-
 	 */
 	public abstract IoBuffer position(int newPosition);
 
@@ -615,7 +613,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 *
 	 * @param newLimit The new buffer's limit
 	 * @return the modified IoBuffer
-
 	 */
 	public abstract IoBuffer limit(int newLimit);
 
@@ -678,13 +675,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 
 	 */
 	public abstract IoBuffer duplicate();
-
-	/**
-	 * @see ByteBuffer#slice()
-	 *
-	 * @return the modified IoBuffer
-	 */
-	public abstract IoBuffer slice();
 
 	/**
 	 * @see ByteBuffer#hasArray()
@@ -771,23 +761,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 * @return the IoBuffer
 	 */
 	public abstract IoBuffer get(byte[] dst);
-
-	/**
-	 * Get a new IoBuffer containing a slice of the current buffer
-	 *
-	 * @param index The position in the buffer
-	 * @param length The number of bytes to copy
-	 * @return the new IoBuffer
-	 */
-	public abstract IoBuffer getSlice(int index, int length);
-
-	/**
-	 * Get a new IoBuffer containing a slice of the current buffer
-	 *
-	 * @param length The number of bytes to copy
-	 * @return the new IoBuffer
-	 */
-	public abstract IoBuffer getSlice(int length);
 
 	/**
 	 * Writes the content of the specified <tt>src</tt> into this buffer.

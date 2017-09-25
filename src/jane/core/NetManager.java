@@ -20,6 +20,7 @@ import org.apache.mina.core.future.DefaultWriteFuture;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.service.IoHandler;
+import org.apache.mina.core.service.SimpleIoProcessorPool;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.DefaultWriteRequest;
 import org.apache.mina.core.write.WriteRequest;
@@ -39,8 +40,7 @@ import jane.core.map.LongMap.MapIterator;
  */
 public class NetManager implements IoHandler
 {
-	public static final int	DEFAULT_SERVER_IO_THREAD_COUNT = Runtime.getRuntime().availableProcessors() + 1;
-	public static final int	DEFAULT_CLIENT_IO_THREAD_COUNT = 1;
+	public static final int DEFAULT_IO_THREAD_COUNT = 1;
 
 	public static interface AnswerHandler<B extends Bean<B>>
 	{
@@ -66,13 +66,15 @@ public class NetManager implements IoHandler
 	private static final ConcurrentLinkedQueue<IoSession>	   _closings	  = new ConcurrentLinkedQueue<>();	   // 已经closeOnFlush的session队列,超时则closeNow
 	private static final ScheduledExecutorService			   _scheduledThread;								   // NetManager自带的单线程调度器(处理重连,请求和事务超时)
 	private static final AtomicInteger						   _serialCounter = new AtomicInteger();			   // 协议序列号的分配器
+	private static volatile SimpleIoProcessorPool			   _sharedIoProcessorPool;							   // 共享的网络IO线程池
+	private static int										   _sharedIoThreadCount;							   // 共享的网络IO线程数量(<=0表示默认的线程数量)
 	private static long										   _timeSec		  = System.currentTimeMillis() / 1000; // NetManager的秒级时间戳值,可以快速获取
 	private final String									   _name		  = getClass().getSimpleName();		   // 当前管理器的名字
 	private volatile Class<? extends IoFilter>				   _pcf			  = BeanCodec.class;				   // 协议编码器的类
 	private volatile IntHashMap<BeanHandler<?>>				   _handlers	  = new IntHashMap<>(0);			   // bean的处理器
 	private volatile NioSocketAcceptor						   _acceptor;										   // mina的网络监听器
 	private volatile NioSocketConnector						   _connector;										   // mina的网络连接器
-	private int												   _ioThreadCount;									   // IO线程池的最大数量(<=0表示默认值)
+	private int												   _ioThreadCount;									   // 网络IO线程数量(0表示使用共享的IO线程池;<0表示默认的线程数量)
 
 	static
 	{
@@ -179,9 +181,32 @@ public class NetManager implements IoHandler
 	}
 
 	/**
-	 * 设置IO线程池的最大数量
+	 * 设置全局共享的网络IO线程池的线程数量
 	 * <p>
-	 * 必须在创建连接器和监听器之前修改. <=0表示使用默认值(作为服务器时是CPU核数+1,作为客户端时为1)
+	 * 必须在创建连接器和监听器之前修改. <=0表示默认的线程数量(目前为1)
+	 */
+	public static synchronized void setSharedIoThreadCount(int count)
+	{
+		_sharedIoThreadCount = count;
+	}
+
+	private static SimpleIoProcessorPool getSharedIoProcessorPool()
+	{
+		if(_sharedIoProcessorPool == null || _sharedIoProcessorPool.isDisposed())
+		{
+			synchronized(NetManager.class)
+			{
+				if(_sharedIoProcessorPool == null || _sharedIoProcessorPool.isDisposed())
+					_sharedIoProcessorPool = new SimpleIoProcessorPool(_sharedIoThreadCount > 0 ? _sharedIoThreadCount : DEFAULT_IO_THREAD_COUNT);
+			}
+		}
+		return _sharedIoProcessorPool;
+	}
+
+	/**
+	 * 设置网络IO线程池的线程数量
+	 * <p>
+	 * 必须在创建连接器和监听器之前修改. 默认0表示使用共享的IO线程池;<0表示默认的线程数量(目前为1)
 	 */
 	public final synchronized void setIoThreadCount(int count)
 	{
@@ -199,7 +224,13 @@ public class NetManager implements IoHandler
 			{
 				if(_acceptor == null || _acceptor.isDisposed())
 				{
-					NioSocketAcceptor t = new NioSocketAcceptor(_ioThreadCount > 0 ? _ioThreadCount : DEFAULT_SERVER_IO_THREAD_COUNT);
+					NioSocketAcceptor t;
+					if(_ioThreadCount == 0)
+						t = new NioSocketAcceptor(getSharedIoProcessorPool());
+					else if(_ioThreadCount > 0)
+						t = new NioSocketAcceptor(_ioThreadCount);
+					else
+						t = new NioSocketAcceptor(DEFAULT_IO_THREAD_COUNT);
 					t.setReuseAddress(true);
 					t.setHandler(this);
 					_acceptor = t;
@@ -220,7 +251,13 @@ public class NetManager implements IoHandler
 			{
 				if(_connector == null || _connector.isDisposed())
 				{
-					NioSocketConnector t = new NioSocketConnector(_ioThreadCount > 0 ? _ioThreadCount : DEFAULT_CLIENT_IO_THREAD_COUNT);
+					NioSocketConnector t;
+					if(_ioThreadCount == 0)
+						t = new NioSocketConnector(getSharedIoProcessorPool());
+					else if(_ioThreadCount > 0)
+						t = new NioSocketConnector(_ioThreadCount);
+					else
+						t = new NioSocketConnector(DEFAULT_IO_THREAD_COUNT);
 					t.setHandler(this);
 					t.setConnectTimeoutMillis(Const.connectTimeout * 1000);
 					_connector = t;

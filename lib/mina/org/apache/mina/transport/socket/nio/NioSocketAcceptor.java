@@ -59,6 +59,10 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 		super(processorCount);
 	}
 
+	public NioSocketAcceptor(IoProcessor<NioSession> processor) {
+		super(processor);
+	}
+
 	@Override
 	protected void init() throws IOException {
 		selector = Selector.open();

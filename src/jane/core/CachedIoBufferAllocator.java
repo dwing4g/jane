@@ -165,12 +165,6 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 		}
 
 		@Override
-		protected IoBuffer slice0()
-		{
-			return new CachedBuffer(this, buf.slice());
-		}
-
-		@Override
 		public byte[] array()
 		{
 			return buf.array();

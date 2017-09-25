@@ -499,42 +499,42 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	@Override
 	public final IoBuffer putUnsignedInt(byte value) {
 		autoExpand(4);
-		buf().putInt(value & 0x00ff);
+		buf().putInt(value & 0xff);
 		return this;
 	}
 
 	@Override
 	public final IoBuffer putUnsignedInt(int index, byte value) {
 		autoExpand(index, 4);
-		buf().putInt(index, value & 0x00ff);
+		buf().putInt(index, value & 0xff);
 		return this;
 	}
 
 	@Override
 	public final IoBuffer putUnsignedInt(short value) {
 		autoExpand(4);
-		buf().putInt(value & 0x0000ffff);
+		buf().putInt(value & 0xffff);
 		return this;
 	}
 
 	@Override
 	public final IoBuffer putUnsignedInt(int index, short value) {
 		autoExpand(index, 4);
-		buf().putInt(index, value & 0x0000ffff);
+		buf().putInt(index, value & 0xffff);
 		return this;
 	}
 
 	@Override
 	public final IoBuffer putUnsignedShort(byte value) {
 		autoExpand(2);
-		buf().putShort((short) (value & 0x00ff));
+		buf().putShort((short) (value & 0xff));
 		return this;
 	}
 
 	@Override
 	public final IoBuffer putUnsignedShort(int index, byte value) {
 		autoExpand(index, 2);
-		buf().putShort(index, (short) (value & 0x00ff));
+		buf().putShort(index, (short) (value & 0xff));
 		return this;
 	}
 
@@ -634,69 +634,6 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	 * @return the IoBoffer instance
 	 */
 	protected abstract IoBuffer duplicate0();
-
-	@Override
-	public final IoBuffer slice() {
-		recapacityAllowed = false;
-		return slice0();
-	}
-
-	@Override
-	public final IoBuffer getSlice(int index, int length) {
-		if (length < 0) {
-			throw new IllegalArgumentException("length: " + length);
-		}
-
-		int pos = position();
-		int limit = limit();
-
-		if (index > limit) {
-			throw new IllegalArgumentException("index: " + index);
-		}
-
-		int endIndex = index + length;
-
-		if (endIndex > limit) {
-			throw new IndexOutOfBoundsException("index + length (" + endIndex + ") is greater than limit (" + limit + ')');
-		}
-
-		clear();
-		limit(endIndex);
-		position(index);
-
-		IoBuffer slice = slice();
-		limit(limit);
-		position(pos);
-
-		return slice;
-	}
-
-	@Override
-	public final IoBuffer getSlice(int length) {
-		if (length < 0) {
-			throw new IllegalArgumentException("length: " + length);
-		}
-		int pos = position();
-		int limit = limit();
-		int nextPos = pos + length;
-		if (limit < nextPos) {
-			throw new IndexOutOfBoundsException("position + length (" + nextPos + ") is greater than limit (" + limit + ')');
-		}
-
-		limit(pos + length);
-		IoBuffer slice = slice();
-		position(nextPos);
-		limit(limit);
-		return slice;
-	}
-
-	/**
-	 * Implement this method to return the unexpandable slice of this
-	 * buffer.
-	 *
-	 * @return the IoBoffer instance
-	 */
-	protected abstract IoBuffer slice0();
 
 	@Override
 	public int hashCode() {
@@ -830,7 +767,7 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	}
 
 	private static int getMediumInt(byte b1, byte b2, byte b3) {
-		int ret = b1 << 16 & 0xff0000 | b2 << 8 & 0xff00 | b3 & 0xff;
+		int ret = (b1 << 16) & 0xff0000 | (b2 << 8) & 0xff00 | b3 & 0xff;
 		// Check to see if the medium int is negative (high bit in b1 set)
 		if ((b1 & 0x80) == 0x80) {
 			// Make the the whole int negative
@@ -899,7 +836,7 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		int mark = position();
 
 		for (;;) {
-			int byteValue = get() & 0xFF;
+			int byteValue = get() & 0xff;
 			out.append((char) digits[byteValue >> 4]);
 			out.append((char) digits[byteValue & 15]);
 			if (--size <= 0) {
@@ -931,7 +868,7 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		int newPos;
 
 		if (!utf16) {
-			end = indexOf((byte) 0x00);
+			end = indexOf((byte) 0);
 			if (end < 0) {
 				newPos = end = oldLimit;
 			} else {
@@ -963,7 +900,7 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 			}
 
 			if (end < 0) {
-				newPos = end = oldPos + (oldLimit - oldPos & 0xFFFFFFFE);
+				newPos = end = oldPos + ((oldLimit - oldPos) & 0xfffffffe);
 			} else {
 				newPos = (end + 2 <= oldLimit ? end + 2 : end);
 			}
@@ -1152,11 +1089,9 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		}
 
 		if (val.length() == 0) {
-			if (!utf16) {
-				put((byte) 0x00);
-			} else {
-				put((byte) 0x00);
-				put((byte) 0x00);
+			put((byte) 0);
+			if (utf16) {
+				put((byte) 0);
 			}
 			position(end);
 			return this;
@@ -1178,11 +1113,9 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		limit(oldLimit);
 
 		if (position() < end) {
-			if (!utf16) {
-				put((byte) 0x00);
-			} else {
-				put((byte) 0x00);
-				put((byte) 0x00);
+			put((byte) 0);
+			if (utf16) {
+				put((byte) 0);
 			}
 		}
 
@@ -1230,8 +1163,8 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		int r = size & 7;
 
 		if (q > 0) {
-			int intValue = value & 0x000000FF | ( value << 8 ) & 0x0000FF00 | ( value << 16 ) & 0x00FF0000 | value << 24;
-			long longValue = intValue & 0x00000000FFFFFFFFL | (long)intValue << 32;
+			int intValue = value & 0xff | (value << 8) & 0xff00 | (value << 16) & 0xff0000 | value << 24;
+			long longValue = intValue & 0xffffffffL | (long)intValue << 32;
 
 			for (int i = q; i > 0; i--) {
 				putLong(longValue);
@@ -1242,7 +1175,7 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		r = r & 3;
 
 		if (q > 0) {
-			int intValue = value & 0x000000FF | ( value << 8 ) & 0x0000FF00 | ( value << 16 ) & 0x00FF0000 | value << 24;
+			int intValue = value & 0xff | (value << 8) & 0xff00 | (value << 16) & 0xff0000 | (value << 24);
 			putInt(intValue);
 		}
 
@@ -1250,7 +1183,7 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 		r = r & 1;
 
 		if (q > 0) {
-			short shortValue = (short) (value & 0x00FF | value << 8);
+			short shortValue = (short) (value & 0xff | (value << 8));
 			putShort(shortValue);
 		}
 

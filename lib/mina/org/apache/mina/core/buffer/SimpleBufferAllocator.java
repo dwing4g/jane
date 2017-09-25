@@ -74,11 +74,6 @@ public final class SimpleBufferAllocator implements IoBufferAllocator {
 		}
 
 		@Override
-		protected IoBuffer slice0() {
-			return new SimpleIoBuffer(this, buf.slice());
-		}
-
-		@Override
 		public byte[] array() {
 			return buf.array();
 		}

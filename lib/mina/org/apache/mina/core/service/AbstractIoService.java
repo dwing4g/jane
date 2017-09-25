@@ -27,7 +27,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -95,8 +97,9 @@ public abstract class AbstractIoService implements IoService {
 		}
 	}
 
-	protected AbstractIoService(ExecutorService executor) {
-		this.executor = executor;
+	protected AbstractIoService() {
+		executor = new ThreadPoolExecutor(0, 1, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(),
+				new IoThreadFactory(getClass()));
 		sessionConfig.init(this);
 	}
 
