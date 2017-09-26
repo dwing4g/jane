@@ -205,7 +205,7 @@ public abstract class AbstractIoBuffer extends IoBuffer {
 	@Override
 	public final IoBuffer shrink() {
 		if (!recapacityAllowed) {
-			throw new IllegalStateException("Derived buffers and their parent can't be expanded.");
+			throw new IllegalStateException("Derived buffers and their parent can't be shrinked.");
 		}
 
 		int position = position();

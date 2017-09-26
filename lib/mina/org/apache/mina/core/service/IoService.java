@@ -19,15 +19,12 @@
 package org.apache.mina.core.service;
 
 import java.util.Map;
-import java.util.Set;
 import org.apache.mina.core.filterchain.DefaultIoFilterChainBuilder;
 import org.apache.mina.core.filterchain.IoFilterChain;
 import org.apache.mina.core.filterchain.IoFilterChainBuilder;
-import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.session.IoSessionDataStructureFactory;
 import org.apache.mina.transport.socket.DefaultSocketSessionConfig;
-import org.apache.mina.util.IoUtil;
 
 /**
  * Base interface for all {@link IoAcceptor}s and {@link IoConnector}s that provide I/O service and manage {@link IoSession}s.
@@ -122,15 +119,6 @@ public interface IoService {
 	 * @return a value of whether or not this service is active
 	 */
 	boolean isActive();
-
-	/**
-	 * Writes the specified {@code message} to all the {@link IoSession}s managed by this service.
-	 * This method is a convenience shortcut for {@link IoUtil#broadcast(Object, Iterator)}.
-	 *
-	 * @param message the message to broadcast
-	 * @return The set of WriteFuture associated to the message being broadcasted
-	 */
-	Set<WriteFuture> broadcast(Object message);
 
 	/**
 	 * @return the {@link IoSessionDataStructureFactory} that provides related data structures for a new session created by this service.

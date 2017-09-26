@@ -126,7 +126,6 @@ public final class SimpleIoProcessorPool implements IoProcessor<NioSession> {
 			}
 
 			processor = pool[((int) session.getId() & 0x7fffffff) % pool.length];
-
 			if (processor == null) {
 				throw new IllegalStateException("null processor in pool");
 			}

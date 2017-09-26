@@ -39,7 +39,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 	 * {@link DefaultIoFilterChain} clears this attribute and notifies the future
 	 * when {@link #fireSessionCreated()} or {@link #fireExceptionCaught(Throwable)} is invoked.
 	 */
-	public static final String SESSION_CREATED_FUTURE = "DefaultIoFilterChain.connectFuture";
+	public static final Object SESSION_CREATED_FUTURE = DefaultIoFilterChain.class;
 
 	/** The associated session */
 	private final AbstractIoSession session;
@@ -542,7 +542,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 			} finally {
 				// Notify the related future.
 				ConnectFuture future = (ConnectFuture) session.removeAttribute(SESSION_CREATED_FUTURE);
-
 				if (future != null) {
 					future.setSession(session);
 				}

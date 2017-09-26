@@ -18,12 +18,8 @@
  */
 package org.apache.mina.core.service;
 
-import java.util.AbstractSet;
 import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
@@ -41,7 +37,6 @@ import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.future.DefaultIoFuture;
 import org.apache.mina.core.future.IoFuture;
 import org.apache.mina.core.future.IoFutureListener;
-import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.session.DefaultIoSessionDataStructureFactory;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.session.IoSessionDataStructureFactory;
@@ -49,7 +44,6 @@ import org.apache.mina.transport.socket.AbstractSocketSessionConfig;
 import org.apache.mina.transport.socket.DefaultSocketSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.mina.util.ExceptionMonitor;
-import org.apache.mina.util.IoUtil;
 
 /**
  * Base implementation of {@link IoService}s.
@@ -237,24 +231,6 @@ public abstract class AbstractIoService implements IoService {
 		}
 
 		this.sessionDataStructureFactory = sessionDataStructureFactory;
-	}
-
-	@Override
-	public final Set<WriteFuture> broadcast(Object message) {
-		// Convert to Set.  We do not return a List here because only the
-		// direct caller of MessageBroadcaster knows the order of write operations.
-		final List<WriteFuture> futures = IoUtil.broadcast(message, getManagedSessions().values().iterator());
-		return new AbstractSet<WriteFuture>() {
-			@Override
-			public Iterator<WriteFuture> iterator() {
-				return futures.iterator();
-			}
-
-			@Override
-			public int size() {
-				return futures.size();
-			}
-		};
 	}
 
 	/**
