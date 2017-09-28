@@ -286,7 +286,11 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 		}
 
 		try {
-			setInterestedInWrite(session, !session.getWriteRequestQueue().isEmpty() && !session.isWriteSuspended());
+			boolean isInterested = !session.getWriteRequestQueue().isEmpty() && !session.isWriteSuspended();
+			setInterestedInWrite(session, isInterested);
+			if (isInterested) {
+				flush(session);
+			}
 		} catch (Exception e) {
 			session.getFilterChain().fireExceptionCaught(e);
 		}
