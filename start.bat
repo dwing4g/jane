@@ -10,7 +10,6 @@ set JVM=^
 -Xmx512m ^
 -server ^
 -Xlog:gc:log/gc.log ^
--verbose:gc ^
 -Dsun.stdout.encoding=gbk ^
 -Dsun.stderr.encoding=gbk
 ) else (

@@ -9,7 +9,6 @@ JVM="\
 -Xmx512m \
 -server \
 -Xlog:gc:log/gc.log \
--verbose:gc \
 -Dsun.stdout.encoding=utf-8 \
 -Dsun.stderr.encoding=utf-8"
 else
