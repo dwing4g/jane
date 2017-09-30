@@ -1,11 +1,10 @@
 package jane.core.map;
 
-import java.util.Random;
 import java.util.function.Consumer;
-import java.util.function.IntConsumer;
+import java.util.function.LongConsumer;
 
 /**
- * An unordered map that uses int keys.<br>
+ * An unordered map that uses long keys.<br>
  * This implementation is a cuckoo hash map using 3 hashes, random walking,<br>
  * and a small stash for problematic keys.<br>
  * Null values are allowed. No allocation is done except when growing the table size.<br>
@@ -15,39 +14,25 @@ import java.util.function.IntConsumer;
  * the map will have to rehash to the next higher POT size.<br>
  * @author Nathan Sweet
  */
-public final class IntHashMap<V> implements Cloneable
+public final class LongHashMap<V> implements Cloneable
 {
-	static final int		PRIME2	= 0xbe1f14b1;
-	static final int		PRIME3	= 0xb4b82e39;
-	public static final int	EMPTY	= 0;
-	static final Random		_random	= new Random();
-	private int				_size;
-	private int[]			_keyTable;
-	private V[]				_valueTable;
-	private int				_capacity, _tableSize;
-	private V				_zeroValue;
-	private boolean			_hasZeroValue;
-	private short			_pushIterations;
-	private int				_hashShift, _mask, _threshold;
-	private final float		_loadFactor;
+	public static final long EMPTY = 0;
+	private int				 _size;
+	private long[]			 _keyTable;
+	private V[]				 _valueTable;
+	private int				 _capacity, _tableSize;
+	private V				 _zeroValue;
+	private boolean			 _hasZeroValue;
+	private short			 _pushIterations;
+	private int				 _hashShift, _mask, _threshold;
+	private final float		 _loadFactor;
 
-	public static int nextPowerOfTwo(int value)
-	{
-		value--;
-		value |= value >> 1;
-		value |= value >> 2;
-		value |= value >> 4;
-		value |= value >> 8;
-		value |= value >> 16;
-		return value + 1;
-	}
-
-	public IntHashMap()
+	public LongHashMap()
 	{
 		this(4, 0.8f);
 	}
 
-	public IntHashMap(int initialCapacity)
+	public LongHashMap(int initialCapacity)
 	{
 		this(initialCapacity, 0.8f);
 	}
@@ -57,7 +42,7 @@ public final class IntHashMap<V> implements Cloneable
 	 * This map will hold initialCapacity * loadFactor items before growing the backing table.
 	 */
 	@SuppressWarnings("unchecked")
-	public IntHashMap(int initialCapacity, float loadFactor)
+	public LongHashMap(int initialCapacity, float loadFactor)
 	{
 		if(initialCapacity < 1)
 			initialCapacity = 1;
@@ -68,14 +53,14 @@ public final class IntHashMap<V> implements Cloneable
 		else if(loadFactor > 1)
 			loadFactor = 1f;
 
-		_capacity = _tableSize = initialCapacity = nextPowerOfTwo(initialCapacity); // [1,0x40000000]
+		_capacity = _tableSize = initialCapacity = IntHashMap.nextPowerOfTwo(initialCapacity); // [1,0x40000000]
 		_pushIterations = (short)Math.max(Math.min(initialCapacity, 8), (int)Math.sqrt(initialCapacity) / 8); // [1,2,4,...,4096]
 		_hashShift = 31 - Integer.numberOfTrailingZeros(initialCapacity); // [31,...,1]
 		_mask = initialCapacity - 1; // [0,0x3fffffff]
 		_threshold = (int)Math.ceil(initialCapacity * loadFactor); // [1,0x40000000]
 		_loadFactor = loadFactor; // (0, 1]
 		initialCapacity += (int)Math.ceil(Math.log(initialCapacity)) * 2; // [0,2,4,6,...,42]
-		_keyTable = new int[initialCapacity]; // [1+0,2+2,4+4,8+6,...,0x40000000+42]
+		_keyTable = new long[initialCapacity]; // [1+0,2+2,4+4,8+6,...,0x40000000+42]
 		_valueTable = (V[])new Object[initialCapacity];
 	}
 
@@ -84,7 +69,7 @@ public final class IntHashMap<V> implements Cloneable
 		return _size;
 	}
 
-	public int[] getKeyTable()
+	public long[] getKeyTable()
 	{
 		return _keyTable;
 	}
@@ -99,7 +84,7 @@ public final class IntHashMap<V> implements Cloneable
 		return _tableSize;
 	}
 
-	public int getIndexKey(int index)
+	public long getIndexKey(int index)
 	{
 		return _keyTable[index];
 	}
@@ -119,7 +104,7 @@ public final class IntHashMap<V> implements Cloneable
 		return _zeroValue;
 	}
 
-	public V put(int key, V value)
+	public V put(long key, V value)
 	{
 		if(key == EMPTY)
 		{
@@ -133,11 +118,11 @@ public final class IntHashMap<V> implements Cloneable
 			return oldValue;
 		}
 
-		int[] kt = _keyTable;
+		long[] kt = _keyTable;
 
 		// Check for existing keys.
-		int index1 = key & _mask;
-		int key1 = kt[index1];
+		int index1 = (int)key & _mask;
+		long key1 = kt[index1];
 		if(key1 == key)
 		{
 			V oldValue = _valueTable[index1];
@@ -146,7 +131,7 @@ public final class IntHashMap<V> implements Cloneable
 		}
 
 		int index2 = hash2(key);
-		int key2 = kt[index2];
+		long key2 = kt[index2];
 		if(key2 == key)
 		{
 			V oldValue = _valueTable[index2];
@@ -155,7 +140,7 @@ public final class IntHashMap<V> implements Cloneable
 		}
 
 		int index3 = hash3(key);
-		int key3 = kt[index3];
+		long key3 = kt[index3];
 		if(key3 == key)
 		{
 			V oldValue = _valueTable[index3];
@@ -204,7 +189,7 @@ public final class IntHashMap<V> implements Cloneable
 	}
 
 	/** Skips checks for existing keys. */
-	private void putResize(int key, V value)
+	private void putResize(long key, V value)
 	{
 		if(key == EMPTY)
 		{
@@ -214,8 +199,8 @@ public final class IntHashMap<V> implements Cloneable
 		}
 
 		// Check for empty buckets.
-		int index1 = key & _mask;
-		int key1 = _keyTable[index1];
+		int index1 = (int)key & _mask;
+		long key1 = _keyTable[index1];
 		if(key1 == EMPTY)
 		{
 			_keyTable[index1] = key;
@@ -225,7 +210,7 @@ public final class IntHashMap<V> implements Cloneable
 		}
 
 		int index2 = hash2(key);
-		int key2 = _keyTable[index2];
+		long key2 = _keyTable[index2];
 		if(key2 == EMPTY)
 		{
 			_keyTable[index2] = key;
@@ -235,7 +220,7 @@ public final class IntHashMap<V> implements Cloneable
 		}
 
 		int index3 = hash3(key);
-		int key3 = _keyTable[index3];
+		long key3 = _keyTable[index3];
 		if(key3 == EMPTY)
 		{
 			_keyTable[index3] = key;
@@ -247,20 +232,20 @@ public final class IntHashMap<V> implements Cloneable
 		push(key, value, index1, key1, index2, key2, index3, key3);
 	}
 
-	private void push(int insertKey, V insertValue, int index1, int key1, int index2, int key2, int index3, int key3)
+	private void push(long insertKey, V insertValue, int index1, long key1, int index2, long key2, int index3, long key3)
 	{
-		int[] kt = _keyTable;
+		long[] kt = _keyTable;
 		V[] vt = _valueTable;
 		int m = _mask;
 
 		// Push keys until an empty bucket is found.
-		int evictedKey;
+		long evictedKey;
 		V evictedValue;
 		int i = 0, pis = _pushIterations;
 		for(;;)
 		{
 			// Replace the key and value for one of the hashes.
-			switch(_random.nextInt(3))
+			switch(IntHashMap._random.nextInt(3))
 			{
 				case 0:
 					evictedKey = key1;
@@ -283,7 +268,7 @@ public final class IntHashMap<V> implements Cloneable
 			}
 
 			// If the evicted key hashes to an empty bucket, put it there and stop.
-			index1 = evictedKey & m;
+			index1 = (int)evictedKey & m;
 			key1 = kt[index1];
 			if(key1 == EMPTY)
 			{
@@ -322,7 +307,7 @@ public final class IntHashMap<V> implements Cloneable
 		putStash(evictedKey, evictedValue);
 	}
 
-	private void putStash(int key, V value)
+	private void putStash(long key, V value)
 	{
 		if(_tableSize == _keyTable.length)
 		{
@@ -339,10 +324,10 @@ public final class IntHashMap<V> implements Cloneable
 		_size++;
 	}
 
-	public V get(int key)
+	public V get(long key)
 	{
 		if(key == EMPTY) return _hasZeroValue ? _zeroValue : null;
-		int index = key & _mask;
+		int index = (int)key & _mask;
 		if(_keyTable[index] != key)
 		{
 			index = hash2(key);
@@ -355,10 +340,10 @@ public final class IntHashMap<V> implements Cloneable
 		return _valueTable[index];
 	}
 
-	public V get(int key, V defaultValue)
+	public V get(long key, V defaultValue)
 	{
 		if(key == EMPTY) return _hasZeroValue ? _zeroValue : defaultValue;
-		int index = key & _mask;
+		int index = (int)key & _mask;
 		if(_keyTable[index] != key)
 		{
 			index = hash2(key);
@@ -371,15 +356,15 @@ public final class IntHashMap<V> implements Cloneable
 		return _valueTable[index];
 	}
 
-	private V getStash(int key, V defaultValue)
+	private V getStash(long key, V defaultValue)
 	{
-		int[] kt = _keyTable;
+		long[] kt = _keyTable;
 		for(int i = _capacity, n = _tableSize; i < n; i++)
 			if(kt[i] == key) return _valueTable[i];
 		return defaultValue;
 	}
 
-	public V remove(int key)
+	public V remove(long key)
 	{
 		if(key == EMPTY)
 		{
@@ -391,7 +376,7 @@ public final class IntHashMap<V> implements Cloneable
 			return oldValue;
 		}
 
-		int index = key & _mask;
+		int index = (int)key & _mask;
 		if(_keyTable[index] == key)
 		{
 			_keyTable[index] = EMPTY;
@@ -424,9 +409,9 @@ public final class IntHashMap<V> implements Cloneable
 		return removeStash(key);
 	}
 
-	private V removeStash(int key)
+	private V removeStash(long key)
 	{
-		int[] kt = _keyTable;
+		long[] kt = _keyTable;
 		for(int i = _capacity, n = _tableSize; i < n; i++)
 		{
 			if(kt[i] == key)
@@ -459,7 +444,7 @@ public final class IntHashMap<V> implements Cloneable
 	{
 		if(maximumCapacity > _capacity) return;
 		if(maximumCapacity < _size) maximumCapacity = _size;
-		maximumCapacity = nextPowerOfTwo(maximumCapacity);
+		maximumCapacity = IntHashMap.nextPowerOfTwo(maximumCapacity);
 		resize(maximumCapacity);
 	}
 
@@ -478,7 +463,7 @@ public final class IntHashMap<V> implements Cloneable
 
 	public void clear()
 	{
-		int[] kt = _keyTable;
+		long[] kt = _keyTable;
 		V[] vt = _valueTable;
 		for(int i = 0, n = _capacity; i < n; ++i)
 			kt[i] = EMPTY;
@@ -496,7 +481,7 @@ public final class IntHashMap<V> implements Cloneable
 		if(value == null)
 		{
 			if(_hasZeroValue && _zeroValue == null) return true;
-			int[] kt = _keyTable;
+			long[] kt = _keyTable;
 			for(int i = _tableSize; i-- > 0;)
 				if(kt[i] != EMPTY && vt[i] == null) return true;
 		}
@@ -515,10 +500,10 @@ public final class IntHashMap<V> implements Cloneable
 		return false;
 	}
 
-	public boolean containsKey(int key)
+	public boolean containsKey(long key)
 	{
 		if(key == EMPTY) return _hasZeroValue;
-		int index = key & _mask;
+		int index = (int)key & _mask;
 		if(_keyTable[index] != key)
 		{
 			index = hash2(key);
@@ -531,21 +516,21 @@ public final class IntHashMap<V> implements Cloneable
 		return true;
 	}
 
-	private boolean containsKeyStash(int key)
+	private boolean containsKeyStash(long key)
 	{
-		int[] kt = _keyTable;
+		long[] kt = _keyTable;
 		for(int i = _capacity, n = _tableSize; i < n; i++)
 			if(kt[i] == key) return true;
 		return false;
 	}
 
-	public int findKey(Object value, boolean identity, int notFound)
+	public long findKey(Object value, boolean identity, long notFound)
 	{
 		V[] vt = _valueTable;
 		if(value == null)
 		{
 			if(_hasZeroValue && _zeroValue == null) return EMPTY;
-			int[] kt = _keyTable;
+			long[] kt = _keyTable;
 			for(int i = _tableSize; i-- > 0;)
 				if(kt[i] != EMPTY && vt[i] == null) return kt[i];
 		}
@@ -567,7 +552,7 @@ public final class IntHashMap<V> implements Cloneable
 	public void ensureCapacity(int additionalCapacity)
 	{
 		int sizeNeeded = _size + additionalCapacity;
-		if(sizeNeeded >= _threshold) resize(nextPowerOfTwo((int)(sizeNeeded / _loadFactor)));
+		if(sizeNeeded >= _threshold) resize(IntHashMap.nextPowerOfTwo((int)(sizeNeeded / _loadFactor)));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -581,10 +566,10 @@ public final class IntHashMap<V> implements Cloneable
 		_mask = newSize - 1;
 		_threshold = (int)Math.ceil(newSize * _loadFactor);
 
-		int[] oldKeyTable = _keyTable;
+		long[] oldKeyTable = _keyTable;
 		V[] oldValueTable = _valueTable;
 		newSize += (int)Math.ceil(Math.log(newSize)) * 2;
-		_keyTable = new int[newSize];
+		_keyTable = new long[newSize];
 		_valueTable = (V[])new Object[newSize];
 
 		int oldSize = _size;
@@ -593,29 +578,31 @@ public final class IntHashMap<V> implements Cloneable
 		{
 			for(int i = 0; i < oldEndIndex; i++)
 			{
-				int key = oldKeyTable[i];
+				long key = oldKeyTable[i];
 				if(key != EMPTY) putResize(key, oldValueTable[i]);
 			}
 		}
 	}
 
-	private int hash2(int h)
+	private int hash2(long h64)
 	{
-		h *= PRIME2;
+		int h = (int)(h64 ^ (h64 >> 32));
+		h *= IntHashMap.PRIME2;
 		return (h ^ (h >>> _hashShift)) & _mask;
 	}
 
-	private int hash3(int h)
+	private int hash3(long h64)
 	{
-		h *= PRIME3;
+		int h = (int)(h64 ^ (h64 >> 32));
+		h *= IntHashMap.PRIME3;
 		return (h ^ (h >>> _hashShift)) & _mask;
 	}
 
 	@Override
-	public IntHashMap<V> clone() throws CloneNotSupportedException
+	public LongHashMap<V> clone() throws CloneNotSupportedException
 	{
 		@SuppressWarnings("unchecked")
-		IntHashMap<V> map = (IntHashMap<V>)super.clone();
+		LongHashMap<V> map = (LongHashMap<V>)super.clone();
 		map._keyTable = _keyTable.clone();
 		map._valueTable = _valueTable.clone();
 		return map;
@@ -626,7 +613,7 @@ public final class IntHashMap<V> implements Cloneable
 	{
 		if(_size == 0) return "{}";
 		StringBuilder s = new StringBuilder(32).append('{');
-		int[] kt = _keyTable;
+		long[] kt = _keyTable;
 		V[] vt = _valueTable;
 		int i = kt.length;
 		if(_hasZeroValue)
@@ -635,7 +622,7 @@ public final class IntHashMap<V> implements Cloneable
 		{
 			while(i > 0)
 			{
-				int key = kt[--i];
+				long key = kt[--i];
 				if(key != EMPTY)
 				{
 					s.append(key).append('=').append(vt[i]);
@@ -645,42 +632,42 @@ public final class IntHashMap<V> implements Cloneable
 		}
 		while(i > 0)
 		{
-			int key = kt[--i];
+			long key = kt[--i];
 			if(key != EMPTY)
 				s.append(',').append(key).append('=').append(vt[i]);
 		}
 		return s.append('}').toString();
 	}
 
-	public static interface IntObjectConsumer<V>
+	public static interface LongObjectConsumer<V>
 	{
-		void accept(int key, V value);
+		void accept(long key, V value);
 	}
 
-	public void foreach(IntObjectConsumer<V> consumer)
+	public void foreach(LongObjectConsumer<V> consumer)
 	{
 		if(_size <= 0) return;
 		if(_hasZeroValue)
 			consumer.accept(EMPTY, _zeroValue);
-		int[] kt = _keyTable;
+		long[] kt = _keyTable;
 		V[] vt = _valueTable;
 		for(int i = 0, n = _tableSize; i < n; ++i)
 		{
-			int key = kt[i];
+			long key = kt[i];
 			if(key != EMPTY)
 				consumer.accept(key, vt[i]);
 		}
 	}
 
-	public void foreachKey(IntConsumer consumer)
+	public void foreachKey(LongConsumer consumer)
 	{
 		if(_size <= 0) return;
 		if(_hasZeroValue)
 			consumer.accept(EMPTY);
-		int[] kt = _keyTable;
+		long[] kt = _keyTable;
 		for(int i = 0, n = _tableSize; i < n; ++i)
 		{
-			int key = kt[i];
+			long key = kt[i];
 			if(key != EMPTY)
 				consumer.accept(key);
 		}
@@ -691,7 +678,7 @@ public final class IntHashMap<V> implements Cloneable
 		if(_size <= 0) return;
 		if(_hasZeroValue)
 			consumer.accept(_zeroValue);
-		int[] kt = _keyTable;
+		long[] kt = _keyTable;
 		V[] vt = _valueTable;
 		for(int i = 0, n = _tableSize; i < n; ++i)
 		{
