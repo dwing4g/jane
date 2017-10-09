@@ -39,7 +39,7 @@ jane并不是为了极度的轻量级而全部实现所需的功能，而是调�
 Long*Map(内置)：以JDK8的ConcurrentHashMap为原型改造成固定以Long作为key特化的版本; 开源项目MapDB中的一个并发LRUMap实现(源自apache lucene中的ConcurrentLRUCache)。
 SLF4J和Logback：后者是jane所使用的日志库，前者SLF4J接口的使用范围较广，且被Mina库依赖，适合内置并推荐上层开发者使用。Logback作为后端，是SLF4J接口的具体实现，运行效率较高。
 Mina：著名的Java网络底层库，apache基金会的子项目，高效易用。不过由于近几年开发几乎处于停滞状态，因此已精简优化并合并到jane库中内置。
-LevelDB：嵌入式key-value型NoSQL数据库，C++语言实现，Google公司里的大神开发，jane增加了自实现的jni接口来访问，目前已经编译好的有Windows平台的32/64位版本和Linux平台的64位版本，生产用途应使用64位的版本。
+LevelDB：嵌入式key-value型NoSQL数据库，C++语言实现，Google公司里的大神开发，jane增加了自实现的jni接口来访问，目前已经编译好的有Windows和Linux平台的64位版本，开发和生产用途都应使用64位的版本。
 以上依赖库以及jane包括源代码的jar和动态库文件总大小不到10MB。
 
 ● jane框架如何利用多核性能

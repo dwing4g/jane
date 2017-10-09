@@ -17,6 +17,7 @@
  leveldbutil.vcxproj.filters     |    7 +
  make_linux.sh                   |  123 +++
  make_mingw.bat                  |  129 +++
+ port/atomic_pointer.h           |    1 +
  port/endian.h                   |    5 +
  port/vs/jni/jni.h               | 1960 +++++++++++++++++++++++++++++++++++++++
  port/vs/jni/jni_md.h            |   37 +
@@ -35,7 +36,7 @@
  util/env_windows.cc             |  443 +++++++++
  util/jni.cc                     |  506 ++++++++++
  util/logging.cc                 |    2 +-
- 37 files changed, 7973 insertions(+), 1 deletion(-)
+ 38 files changed, 7974 insertions(+), 1 deletion(-)
 
 diff --git a/.gitignore b/.gitignore
 index 0630251..bbfce0d 100644
@@ -217,7 +218,7 @@ index 0000000..e0aa5a0
 +EndGlobal
 diff --git a/leveldb.vcxproj b/leveldb.vcxproj
 new file mode 100644
-index 0000000..9b82fbc
+index 0000000..d800008
 --- /dev/null
 +++ b/leveldb.vcxproj
 @@ -0,0 +1,301 @@
@@ -434,7 +435,7 @@ index 0000000..9b82fbc
 +      </PrecompiledHeader>
 +      <WarningLevel>Level3</WarningLevel>
 +      <Optimization>Disabled</Optimization>
-+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 +      <AdditionalIncludeDirectories>.;include;port;port\vs;port\vs\jni;snappy</AdditionalIncludeDirectories>
 +    </ClCompile>
 +    <Link>
@@ -450,7 +451,7 @@ index 0000000..9b82fbc
 +      </PrecompiledHeader>
 +      <WarningLevel>Level3</WarningLevel>
 +      <Optimization>Disabled</Optimization>
-+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 +      <AdditionalIncludeDirectories>.;include;port;port\vs;port\vs\jni;snappy</AdditionalIncludeDirectories>
 +    </ClCompile>
 +    <Link>
@@ -467,7 +468,7 @@ index 0000000..9b82fbc
 +      <Optimization>MaxSpeed</Optimization>
 +      <FunctionLevelLinking>true</FunctionLevelLinking>
 +      <IntrinsicFunctions>true</IntrinsicFunctions>
-+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 +      <DebugInformationFormat>None</DebugInformationFormat>
 +      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
 +      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -496,7 +497,7 @@ index 0000000..9b82fbc
 +      <Optimization>MaxSpeed</Optimization>
 +      <FunctionLevelLinking>true</FunctionLevelLinking>
 +      <IntrinsicFunctions>true</IntrinsicFunctions>
-+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 +      <AdditionalIncludeDirectories>.;include;port;port\vs;port\vs\jni;snappy</AdditionalIncludeDirectories>
 +      <DebugInformationFormat>None</DebugInformationFormat>
 +      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
@@ -871,7 +872,7 @@ index 0000000..6673ea3
 \ No newline at end of file
 diff --git a/leveldbbench.vcxproj b/leveldbbench.vcxproj
 new file mode 100644
-index 0000000..366984a
+index 0000000..c42116f
 --- /dev/null
 +++ b/leveldbbench.vcxproj
 @@ -0,0 +1,191 @@
@@ -983,7 +984,7 @@ index 0000000..366984a
 +      <Optimization>MaxSpeed</Optimization>
 +      <FunctionLevelLinking>true</FunctionLevelLinking>
 +      <IntrinsicFunctions>true</IntrinsicFunctions>
-+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <PreprocessorDefinitions>NDEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 +      <DebugInformationFormat>None</DebugInformationFormat>
 +      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
 +      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -1008,7 +1009,7 @@ index 0000000..366984a
 +      </PrecompiledHeader>
 +      <WarningLevel>Level3</WarningLevel>
 +      <Optimization>Disabled</Optimization>
-+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 +      <AdditionalIncludeDirectories>.;include;port;port\vs;port\vs\jni;snappy</AdditionalIncludeDirectories>
 +    </ClCompile>
 +    <Link>
@@ -1022,7 +1023,7 @@ index 0000000..366984a
 +      </PrecompiledHeader>
 +      <WarningLevel>Level3</WarningLevel>
 +      <Optimization>Disabled</Optimization>
-+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <PreprocessorDefinitions>_DEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 +      <AdditionalIncludeDirectories>.;include;port;port\vs;port\vs\jni;snappy</AdditionalIncludeDirectories>
 +    </ClCompile>
 +    <Link>
@@ -1038,7 +1039,7 @@ index 0000000..366984a
 +      <Optimization>MaxSpeed</Optimization>
 +      <FunctionLevelLinking>true</FunctionLevelLinking>
 +      <IntrinsicFunctions>true</IntrinsicFunctions>
-+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 +      <DebugInformationFormat>None</DebugInformationFormat>
 +      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
 +      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -1084,7 +1085,7 @@ index 0000000..b70e4ff
 \ No newline at end of file
 diff --git a/leveldbdll.vcxproj b/leveldbdll.vcxproj
 new file mode 100644
-index 0000000..2ab2ee1
+index 0000000..45af7b4
 --- /dev/null
 +++ b/leveldbdll.vcxproj
 @@ -0,0 +1,207 @@
@@ -1207,7 +1208,7 @@ index 0000000..2ab2ee1
 +      </PrecompiledHeader>
 +      <WarningLevel>Level3</WarningLevel>
 +      <Optimization>Disabled</Optimization>
-+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 +      <AdditionalIncludeDirectories>.;include;port;port\vs;port\vs\jni;snappy</AdditionalIncludeDirectories>
 +    </ClCompile>
 +    <Link>
@@ -1223,7 +1224,7 @@ index 0000000..2ab2ee1
 +      </PrecompiledHeader>
 +      <WarningLevel>Level3</WarningLevel>
 +      <Optimization>Disabled</Optimization>
-+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 +      <AdditionalIncludeDirectories>.;include;port;port\vs;port\vs\jni;snappy</AdditionalIncludeDirectories>
 +    </ClCompile>
 +    <Link>
@@ -1240,7 +1241,7 @@ index 0000000..2ab2ee1
 +      <Optimization>MaxSpeed</Optimization>
 +      <FunctionLevelLinking>true</FunctionLevelLinking>
 +      <IntrinsicFunctions>true</IntrinsicFunctions>
-+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 +      <DebugInformationFormat>None</DebugInformationFormat>
 +      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
 +      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -1269,7 +1270,7 @@ index 0000000..2ab2ee1
 +      <Optimization>MaxSpeed</Optimization>
 +      <FunctionLevelLinking>true</FunctionLevelLinking>
 +      <IntrinsicFunctions>true</IntrinsicFunctions>
-+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 +      <AdditionalIncludeDirectories>.;include;port;port\vs;port\vs\jni;snappy</AdditionalIncludeDirectories>
 +      <DebugInformationFormat>None</DebugInformationFormat>
 +      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
@@ -1314,7 +1315,7 @@ index 0000000..e1de2d1
 \ No newline at end of file
 diff --git a/leveldbtestdb.vcxproj b/leveldbtestdb.vcxproj
 new file mode 100644
-index 0000000..776546c
+index 0000000..bbd8364
 --- /dev/null
 +++ b/leveldbtestdb.vcxproj
 @@ -0,0 +1,192 @@
@@ -1426,7 +1427,7 @@ index 0000000..776546c
 +      <Optimization>MaxSpeed</Optimization>
 +      <FunctionLevelLinking>true</FunctionLevelLinking>
 +      <IntrinsicFunctions>true</IntrinsicFunctions>
-+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <PreprocessorDefinitions>NDEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 +      <DebugInformationFormat>None</DebugInformationFormat>
 +      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
 +      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -1451,7 +1452,7 @@ index 0000000..776546c
 +      </PrecompiledHeader>
 +      <WarningLevel>Level3</WarningLevel>
 +      <Optimization>Disabled</Optimization>
-+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 +      <AdditionalIncludeDirectories>.;include;port;port\vs;port\vs\jni;snappy</AdditionalIncludeDirectories>
 +    </ClCompile>
 +    <Link>
@@ -1465,7 +1466,7 @@ index 0000000..776546c
 +      </PrecompiledHeader>
 +      <WarningLevel>Level3</WarningLevel>
 +      <Optimization>Disabled</Optimization>
-+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <PreprocessorDefinitions>_DEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 +      <AdditionalIncludeDirectories>.;include;port;port\vs;port\vs\jni;snappy</AdditionalIncludeDirectories>
 +    </ClCompile>
 +    <Link>
@@ -1481,7 +1482,7 @@ index 0000000..776546c
 +      <Optimization>MaxSpeed</Optimization>
 +      <FunctionLevelLinking>true</FunctionLevelLinking>
 +      <IntrinsicFunctions>true</IntrinsicFunctions>
-+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 +      <DebugInformationFormat>None</DebugInformationFormat>
 +      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
 +      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -1529,7 +1530,7 @@ index 0000000..4cc9e9e
 \ No newline at end of file
 diff --git a/leveldbtestenv.vcxproj b/leveldbtestenv.vcxproj
 new file mode 100644
-index 0000000..a297363
+index 0000000..f633f26
 --- /dev/null
 +++ b/leveldbtestenv.vcxproj
 @@ -0,0 +1,191 @@
@@ -1641,7 +1642,7 @@ index 0000000..a297363
 +      <Optimization>MaxSpeed</Optimization>
 +      <FunctionLevelLinking>true</FunctionLevelLinking>
 +      <IntrinsicFunctions>true</IntrinsicFunctions>
-+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <PreprocessorDefinitions>NDEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 +      <DebugInformationFormat>None</DebugInformationFormat>
 +      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
 +      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -1666,7 +1667,7 @@ index 0000000..a297363
 +      </PrecompiledHeader>
 +      <WarningLevel>Level3</WarningLevel>
 +      <Optimization>Disabled</Optimization>
-+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 +      <AdditionalIncludeDirectories>.;include;port;port\vs;snappy</AdditionalIncludeDirectories>
 +    </ClCompile>
 +    <Link>
@@ -1680,7 +1681,7 @@ index 0000000..a297363
 +      </PrecompiledHeader>
 +      <WarningLevel>Level3</WarningLevel>
 +      <Optimization>Disabled</Optimization>
-+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <PreprocessorDefinitions>_DEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 +      <AdditionalIncludeDirectories>.;include;port;port\vs;snappy</AdditionalIncludeDirectories>
 +    </ClCompile>
 +    <Link>
@@ -1696,7 +1697,7 @@ index 0000000..a297363
 +      <Optimization>MaxSpeed</Optimization>
 +      <FunctionLevelLinking>true</FunctionLevelLinking>
 +      <IntrinsicFunctions>true</IntrinsicFunctions>
-+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 +      <DebugInformationFormat>None</DebugInformationFormat>
 +      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
 +      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -1742,7 +1743,7 @@ index 0000000..48ecf99
 \ No newline at end of file
 diff --git a/leveldbutil.vcxproj b/leveldbutil.vcxproj
 new file mode 100644
-index 0000000..6da2b8b
+index 0000000..d51f5a7
 --- /dev/null
 +++ b/leveldbutil.vcxproj
 @@ -0,0 +1,190 @@
@@ -1854,7 +1855,7 @@ index 0000000..6da2b8b
 +      <Optimization>MaxSpeed</Optimization>
 +      <FunctionLevelLinking>true</FunctionLevelLinking>
 +      <IntrinsicFunctions>true</IntrinsicFunctions>
-+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <PreprocessorDefinitions>NDEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 +      <DebugInformationFormat>None</DebugInformationFormat>
 +      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
 +      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -1879,7 +1880,7 @@ index 0000000..6da2b8b
 +      </PrecompiledHeader>
 +      <WarningLevel>Level3</WarningLevel>
 +      <Optimization>Disabled</Optimization>
-+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 +      <AdditionalIncludeDirectories>.;include;port;port\vs;snappy</AdditionalIncludeDirectories>
 +    </ClCompile>
 +    <Link>
@@ -1893,7 +1894,7 @@ index 0000000..6da2b8b
 +      </PrecompiledHeader>
 +      <WarningLevel>Level3</WarningLevel>
 +      <Optimization>Disabled</Optimization>
-+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <PreprocessorDefinitions>_DEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 +      <AdditionalIncludeDirectories>.;include;port;port\vs;snappy</AdditionalIncludeDirectories>
 +    </ClCompile>
 +    <Link>
@@ -1909,7 +1910,7 @@ index 0000000..6da2b8b
 +      <Optimization>MaxSpeed</Optimization>
 +      <FunctionLevelLinking>true</FunctionLevelLinking>
 +      <IntrinsicFunctions>true</IntrinsicFunctions>
-+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 +      <DebugInformationFormat>None</DebugInformationFormat>
 +      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
 +      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -1953,7 +1954,7 @@ index 0000000..1fb0903
 \ No newline at end of file
 diff --git a/make_linux.sh b/make_linux.sh
 new file mode 100755
-index 0000000..a6de636
+index 0000000..216f56d
 --- /dev/null
 +++ b/make_linux.sh
 @@ -0,0 +1,123 @@
@@ -2063,12 +2064,12 @@ index 0000000..a6de636
 +testharness.o \
 +"
 +
-+COMPILE="g++ -DOS_LINUX -DLEVELDB_PLATFORM_POSIX -DLEVELDB_PLATFORM_POSIX_SSE -DSNAPPY -DENABLE_JNI -DNDEBUG -I. -Iinclude -Isnappy -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -m64 -O3 -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -fPIC -pipe -pthread"
++COMPILE="g++ -DOS_LINUX=1 -DLEVELDB_PLATFORM_POSIX=1 -DLEVELDB_PLATFORM_POSIX_SSE=1 -DHAVE_SNAPPY=1 -DENABLE_JNI -DNDEBUG -Dconstexpr= -I. -Iinclude -Isnappy -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -m64 -O3 -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -fPIC -pipe -pthread"
 +
 +$COMPILE -c -msse4.2 -o port_posix_sse.o port/port_posix_sse.cc
 +
 +echo building libleveldbjni.so ...
-+$COMPILE -shared -Wl,-soname -Wl,libleveldbjni.so -o libleveldbjni.so $CORE_FILES port_posix_sse.o
++$COMPILE -shared -fvisibility=hidden -Wl,-soname -Wl,libleveldbjni.so -o libleveldbjni.so $CORE_FILES port_posix_sse.o
 +
 +echo building libleveldb.a ...
 +$COMPILE -c $CORE_FILES $TEST_FILES
@@ -2082,7 +2083,7 @@ index 0000000..a6de636
 +$COMPILE -o env_test    util/env_test.cc  libleveldb.a
 diff --git a/make_mingw.bat b/make_mingw.bat
 new file mode 100644
-index 0000000..fca0041
+index 0000000..2cf3a72
 --- /dev/null
 +++ b/make_mingw.bat
 @@ -0,0 +1,129 @@
@@ -2188,7 +2189,7 @@ index 0000000..fca0041
 +testutil.o ^
 +testharness.o
 +
-+set COMPILE=-DOS_WIN -DLEVELDB_PLATFORM_POSIX -DLEVELDB_PLATFORM_POSIX_SSE -DSNAPPY -DENABLE_JNI -D_POSIX -D__USE_MINGW_ANSI_STDIO=1 -DNDEBUG -I. -Iinclude -Isnappy -Iport -Iport/vs/jni -Ofast -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -pipe -pthread -static -lpthread
++set COMPILE=-DOS_WIN=1 -DLEVELDB_PLATFORM_POSIX=1 -DLEVELDB_PLATFORM_POSIX_SSE=1 -DHAVE_SNAPPY=1 -DENABLE_JNI -DLEVELDB_EXPORT= -D_POSIX -D__USE_MINGW_ANSI_STDIO=1 -DNDEBUG -I. -Iinclude -Isnappy -Iport -Iport/vs/jni -Ofast -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -pipe -pthread -static -lpthread
 +
 +set COMPILE32=i686-w64-mingw32-g++.exe -m32 -march=i686 -flto -fwhole-program %COMPILE%
 +set COMPILE64=x86_64-w64-mingw32-g++.exe -m64 %COMPILE%
@@ -2215,6 +2216,18 @@ index 0000000..fca0041
 +del port_posix_sse_??.o
 +
 +pause
+diff --git a/port/atomic_pointer.h b/port/atomic_pointer.h
+index 54f0885..4e0ad51 100644
+--- a/port/atomic_pointer.h
++++ b/port/atomic_pointer.h
+@@ -24,6 +24,7 @@
+ #endif
+ #ifdef OS_WIN
+ #include <windows.h>
++#undef DeleteFile
+ #endif
+ #ifdef __APPLE__
+ #include <libkern/OSAtomic.h>
 diff --git a/port/endian.h b/port/endian.h
 new file mode 100644
 index 0000000..d119e59
@@ -4285,13 +4298,13 @@ index 0000000..4ebd5ea
 +#define PTHREAD_ONCE_INIT new std::once_flag
 diff --git a/port/vs/sys/time.h b/port/vs/sys/time.h
 new file mode 100644
-index 0000000..221d6dd
+index 0000000..c6d820c
 --- /dev/null
 +++ b/port/vs/sys/time.h
 @@ -0,0 +1,31 @@
 +#pragma once
 +
-+#include <Windows.h>
++#include <windows.h>
 +#include <stdint.h> // portable: uint64_t   MSVC: __int64 
 +
 +// MSVC defines this in winsock2.h!?
