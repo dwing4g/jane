@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import jane.core.SContext.Rec;
 import jane.core.SContext.Safe;
 
@@ -443,6 +445,53 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	public SEntrySet entrySet()
 	{
 		return new SEntrySet();
+	}
+
+	public boolean foreachFilter(Predicate<V> filter, Predicate<S> consumer)
+	{
+		for(Entry<K, V> entry : _map.entrySet())
+		{
+			V v = entry.getValue();
+			if(filter.test(v) && !consumer.test(safe(entry.getKey(), v)))
+				return false;
+		}
+		return true;
+	}
+
+	public boolean foreachFilter(Predicate<V> filter, BiPredicate<K, S> consumer)
+	{
+		for(Entry<K, V> entry : _map.entrySet())
+		{
+			K k = entry.getKey();
+			V v = entry.getValue();
+			if(filter.test(v) && !consumer.test(k, safe(k, v)))
+				return false;
+		}
+		return true;
+	}
+
+	public boolean foreachFilter(BiPredicate<K, V> filter, Predicate<S> consumer)
+	{
+		for(Entry<K, V> entry : _map.entrySet())
+		{
+			K k = entry.getKey();
+			V v = entry.getValue();
+			if(filter.test(k, v) && !consumer.test(safe(k, v)))
+				return false;
+		}
+		return true;
+	}
+
+	public boolean foreachFilter(BiPredicate<K, V> filter, BiPredicate<K, S> consumer)
+	{
+		for(Entry<K, V> entry : _map.entrySet())
+		{
+			K k = entry.getKey();
+			V v = entry.getValue();
+			if(filter.test(k, v) && !consumer.test(k, safe(k, v)))
+				return false;
+		}
+		return true;
 	}
 
 	@Override

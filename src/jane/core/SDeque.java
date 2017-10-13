@@ -3,6 +3,7 @@ package jane.core;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.Iterator;
+import java.util.function.Predicate;
 import jane.core.SContext.Safe;
 
 /**
@@ -465,6 +466,16 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	public Iterator<S> descendingIterator()
 	{
 		return new SIterator(true);
+	}
+
+	public boolean foreachFilter(Predicate<V> filter, Predicate<S> consumer)
+	{
+		for(V v : _deque)
+		{
+			if(filter.test(v) && !consumer.test(safe(v)))
+				return false;
+		}
+		return true;
 	}
 
 	public SDeque<V, S> append(Deque<V> deque)

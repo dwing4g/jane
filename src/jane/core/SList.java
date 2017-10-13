@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.function.Predicate;
 import jane.core.SContext.Safe;
 
 /**
@@ -447,6 +448,16 @@ public final class SList<V, S> implements List<S>, Cloneable
 	public SList<V, S> subList(int idxFrom, int idxTo)
 	{
 		return new SList<>(_owner, _list.subList(idxFrom, idxTo));
+	}
+
+	public boolean foreachFilter(Predicate<V> filter, Predicate<S> consumer)
+	{
+		for(V v : _list)
+		{
+			if(filter.test(v) && !consumer.test(safe(v)))
+				return false;
+		}
+		return true;
 	}
 
 	public SList<V, S> append(List<V> list)

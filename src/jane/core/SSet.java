@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.function.Predicate;
 import jane.core.SContext.Rec;
 import jane.core.SContext.Safe;
 
@@ -268,6 +269,16 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	public SIterator iterator()
 	{
 		return new SIterator(_set.iterator());
+	}
+
+	public boolean foreachFilter(Predicate<V> filter, Predicate<S> consumer)
+	{
+		for(V v : _set)
+		{
+			if(filter.test(v) && !consumer.test(safe(v)))
+				return false;
+		}
+		return true;
 	}
 
 	public SSet<V, S> append(Set<V> set)
