@@ -267,6 +267,24 @@ public final class SslFilter extends IoFilterAdapter {
 	}
 
 	/**
+	 * @return <tt>true</tt> if and only if the conditions for
+	 * {@link #isSslStarted(IoSession)} are met, and the handhake has completed.
+	 *
+	 * @param session the session we want to check
+	 */
+	public static boolean isSecured(IoSession session) {
+		SslHandler sslHandler = (SslHandler) session.getAttribute(SSL_HANDLER);
+
+		if (sslHandler == null) {
+			return false;
+		}
+
+		synchronized (sslHandler) {
+			return !sslHandler.isOutboundDone() && sslHandler.isHandshakeComplete();
+		}
+	}
+
+	/**
 	 * Stops the SSL session by sending TLS <tt>close_notify</tt> message to initiate TLS closure.
 	 *
 	 * @param session the {@link IoSession} to initiate TLS closure
@@ -462,6 +480,11 @@ public final class SslFilter extends IoFilterAdapter {
 				IoBuffer buf = (IoBuffer) message;
 
 				try {
+					if (sslHandler.isOutboundDone()) {
+						sslHandler.destroy();
+						throw new SSLException("Outbound done");
+					}
+
 					// forward read encrypted data to SSL handler
 					sslHandler.messageReceived(nextFilter, buf.buf());
 
