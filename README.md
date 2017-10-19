@@ -59,7 +59,9 @@ License:
  * 网络库:
   * mina:           http://mina.apache.org/
   * netty:          http://netty.io/
-  * rupy:           https://github.com/tinspin/rupy
+  * libuv:          https://github.com/libuv/libuv
+  * libuv-jni:      https://github.com/dwing4g/libuv
+  * jetty:          http://www.eclipse.org/jetty/download.html
  * 数据库:
   * leveldb:        https://github.com/google/leveldb
   * leveldb-jni:    https://github.com/dwing4g/leveldb
@@ -75,6 +77,7 @@ License:
   * perst:          http://www.mcobject.com/perst/
  * 脚本库:
   * luaj:           http://luaj.org/luaj/README.html
+  * luaj:           https://github.com/dwing4g/luaj
 
 相关软件:
  * JDK:             http://www.oracle.com/technetwork/java/javase/downloads/index.html

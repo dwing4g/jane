@@ -14,12 +14,12 @@ import jane.core.map.IntHashMap;
  */
 public class BeanCodec extends IoFilterAdapter
 {
-	protected static final IntHashMap<Integer> _maxSize	= new IntHashMap<>(65536, 0.5f); // 所有注册beans的最大空间限制
-	protected static final IntHashMap<Bean<?>> _stubMap	= new IntHashMap<>(65536, 0.5f); // 所有注册beans的存根对象
-	protected final OctetsStream			   _os		= new OctetsStream();			 // 用于解码器的数据缓存
-	protected int							   _ptype;									 // 当前数据缓存中获得的协议类型
-	protected int							   _pserial;								 // 当前数据缓存中获得的协议序列号
-	protected int							   _psize	= -1;							 // 当前数据缓存中获得的协议大小. -1表示没获取到
+	protected static final IntHashMap<Integer> _maxSize	= new IntHashMap<>(4096, 0.5f);	// 所有注册beans的最大空间限制
+	protected static final IntHashMap<Bean<?>> _stubMap	= new IntHashMap<>(4096, 0.5f);	// 所有注册beans的存根对象
+	protected final OctetsStream			   _os		= new OctetsStream();			// 用于解码器的数据缓存
+	protected int							   _ptype;									// 当前数据缓存中获得的协议类型
+	protected int							   _pserial;								// 当前数据缓存中获得的协议序列号
+	protected int							   _psize	= -1;							// 当前数据缓存中获得的协议大小. -1表示没获取到
 
 	/**
 	 * 不带栈信息的解码错误异常
