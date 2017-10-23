@@ -140,7 +140,7 @@ public final class LZCompressor
 		for(srcLen += srcPos - 2; srcPos < srcLen;)
 		{
 			a = b; b = src[srcPos + 1];
-			h = ((a << 8) + b) & 0xffff;
+			h = ((a << 8) ^ b) & 0xffff;
 			p = _hash[h];
 			_hash[h] = srcPos;
 			f = srcPos - p;

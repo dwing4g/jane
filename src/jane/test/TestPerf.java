@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public final class TestPerf
 {
-	private static final boolean ENABLE = false;
+	private static final boolean ENABLE = true;
 
 	private final AtomicLong		_allTime   = new AtomicLong();
 	private final AtomicLong		_allCount  = new AtomicLong();
