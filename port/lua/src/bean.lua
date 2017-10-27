@@ -3,33 +3,33 @@
 
 local num, str, bool, vec, map = 0, 1, 2, 3, 4
 return require "util".initBeans {
-	TestBean = { __type = 1, __base = {
-		TEST_CONST1 = 5,
-		TEST_CONST2 = "test_const2",
-		[  1] = { name = "value1", type = num },
+	TestBean = { __type = 1, __base = { -- bean的注释
+		TEST_CONST1 = 5, -- 测试类静态常量
+		TEST_CONST2 = "test_const2", -- #(var.comment)
+		[  1] = { name = "value1", type = num }, -- 字段的注释
 		[  2] = { name = "value2", type = num },
 	}},
-	TestType = { __type = 2, __base = {
-		[  1] = { name = "v1", type = bool },
-		[  2] = { name = "v2", type = num },
-		[  3] = { name = "v3", type = num },
-		[  4] = { name = "v4", type = num },
-		[  5] = { name = "v5", type = num },
-		[  6] = { name = "v6", type = num },
-		[  7] = { name = "v7", type = num },
-		[  8] = { name = "v8", type = str },
-		[  9] = { name = "v9", type = str },
-		[ 10] = { name = "v10", type = vec, value = bool },
-		[ 11] = { name = "v11", type = vec, value = num },
-		[ 12] = { name = "v12", type = vec, value = num },
-		[ 13] = { name = "v13", type = vec, value = num },
-		[ 14] = { name = "v14", type = vec, value = num },
-		[ 15] = { name = "v15", type = vec, value = num },
-		[ 16] = { name = "v16", type = map, key = num, value = str },
-		[ 17] = { name = "v17", type = map, key = "TestBean", value = bool },
-		[ 18] = { name = "v18", type = map, key = str, value = "TestBean" },
-		[ 19] = { name = "v19", type = "TestBean" },
+	TestType = { __type = 2, __base = { -- 测试生成所有支持的类型
+		[  1] = { name = "v1", type = bool }, -- 1字节布尔,0表示假,1表示真,其它默认表示真
+		[  2] = { name = "v2", type = num }, -- 1字节整数
+		[  3] = { name = "v3", type = num }, -- 2字节整数
+		[  4] = { name = "v4", type = num }, -- 4字节整数
+		[  5] = { name = "v5", type = num }, -- 8字节整数
+		[  6] = { name = "v6", type = num }, -- 4字节浮点数
+		[  7] = { name = "v7", type = num }, -- 8字节浮点数
+		[  8] = { name = "v8", type = str }, -- 二进制数据(Octets)
+		[  9] = { name = "v9", type = str }, -- 字符串(String)
+		[ 10] = { name = "v10", type = vec, value = bool }, -- 数组容器(ArrayList)
+		[ 11] = { name = "v11", type = vec, value = num }, -- 链表容器(LinkedList)
+		[ 12] = { name = "v12", type = vec, value = num }, -- 队列容器(ArrayDeque)
+		[ 13] = { name = "v13", type = vec, value = num }, -- 无序集合容器(HashSet)
+		[ 14] = { name = "v14", type = vec, value = num }, -- 排序集合容器(TreeSet)
+		[ 15] = { name = "v15", type = vec, value = num }, -- 有序集合容器(LinkedHashSet)
+		[ 16] = { name = "v16", type = map, key = num, value = str }, -- 无序映射容器(HashMap)
+		[ 17] = { name = "v17", type = map, key = "TestBean", value = bool }, -- 排序映射容器(TreeMap)
+		[ 18] = { name = "v18", type = map, key = str, value = "TestBean" }, -- 有序映射容器(LinkedHashMap)
+		[ 19] = { name = "v19", type = "TestBean" }, -- 嵌入其它bean
 	}},
-	TestEmpty = { __type = 3, __base = {
+	TestEmpty = { __type = 3, __base = { -- 测试空bean
 	}},
 }

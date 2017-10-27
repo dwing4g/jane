@@ -15,9 +15,9 @@ local template_bean = [=[
 
 local num, str, bool, vec, map = 0, 1, 2, 3, 4
 return require "util".initBeans {
-#[#	#(bean.name) = { __type = #(bean.type), __base = {
-#{#		#(var.name)#(var.value),
-#}##(#		[#(var.id3)] = { name = "#(var.name)", type = #(var.btype)#(var.keyval) },
+#[#	#(bean.name) = { __type = #(bean.type), __base = { -- #(bean.comment)
+#{#		#(var.name)#(var.value), -- #(var.comment)
+#}##(#		[#(var.id3)] = { name = "#(var.name)", type = #(var.btype)#(var.keyval) }, -- #(var.comment)
 #)#	}},
 #]#}
 ]=]
@@ -170,6 +170,6 @@ checksave(outpath .. "bean.lua", (template_bean:gsub("#%[#(.-)#%]#", function(bo
 		end
 	end
 	return concat(subcode)
-end)):gsub("\r", ""))
+end)):gsub("\r", ""):gsub(" %-%- \n", "\n"))
 
 print((arg[1] or "") .. " ... done!")
