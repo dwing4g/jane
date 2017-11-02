@@ -586,15 +586,15 @@ public final class LongHashMap<V> implements Cloneable
 
 	private int hash2(long h64)
 	{
+		h64 *= IntHashMap.PRIME2;
 		int h = (int)(h64 ^ (h64 >> 32));
-		h *= IntHashMap.PRIME2;
 		return (h ^ (h >>> _hashShift)) & _mask;
 	}
 
 	private int hash3(long h64)
 	{
+		h64 *= IntHashMap.PRIME3;
 		int h = (int)(h64 ^ (h64 >> 32));
-		h *= IntHashMap.PRIME3;
 		return (h ^ (h >>> _hashShift)) & _mask;
 	}
 
