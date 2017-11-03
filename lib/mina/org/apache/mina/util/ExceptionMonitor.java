@@ -73,6 +73,10 @@ public class ExceptionMonitor {
 		logger.error(msg);
 	}
 
+	public void error(String msg, Throwable e) {
+		logger.error(msg, e);
+	}
+
 	/**
 	 * Invoked when there are any uncaught exceptions.
 	 *

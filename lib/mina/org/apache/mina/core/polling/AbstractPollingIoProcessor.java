@@ -454,9 +454,9 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 						for (Iterator<SelectionKey> i = allSessions(); i.hasNext();) {
 							@SuppressWarnings("unchecked")
 							S session = (S)i.next().attachment();
+							scheduleRemove(session);
 
 							if (session.isActive()) {
-								scheduleRemove(session);
 								hasKeys = true;
 							}
 						}

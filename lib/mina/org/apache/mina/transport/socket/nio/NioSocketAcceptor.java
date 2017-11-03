@@ -33,6 +33,7 @@ import org.apache.mina.core.polling.AbstractPollingIoAcceptor;
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.SimpleIoProcessorPool;
+import org.apache.mina.util.ExceptionMonitor;
 
 /**
  * {@link IoAcceptor} for socket transport (TCP/IP).
@@ -89,9 +90,25 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 		}
 
 		// accept the connection from the client
-		SocketChannel ch = (channel != null ? channel.accept() : null);
+		try {
+			SocketChannel ch = (channel != null ? channel.accept() : null);
 
-		return ch != null ? new NioSession(this, processor, ch) : null;
+			return ch != null ? new NioSession(this, processor, ch) : null;
+		} catch (Throwable t) {
+			ExceptionMonitor.getInstance().error("Error Calling Accept on Socket - Sleeping Acceptor Thread. Check the ulimit parameter", t);
+			try {
+				// Sleep 50 ms, so that the select does not spin like crazy doing nothing but eating CPU
+				// This is typically what will happen if we don't have any more File handle on the server
+				// Check the ulimit parameter
+				// NOTE : this is a workaround, there is no way we can handle this exception in any smarter way...
+				Thread.sleep(50L);
+			} catch (InterruptedException ie) {
+				// Nothing to do
+			}
+
+			// No session when we have met an exception
+			return null;
+		}
 	}
 
 	@SuppressWarnings("resource")

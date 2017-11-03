@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.apache.mina.core.future.IoFuture;
 
 /**
  * A base implementation of {@link IoAcceptor}.
@@ -213,7 +214,7 @@ public abstract class AbstractIoAcceptor extends AbstractIoService implements Io
 	}
 
 	/**
-	 * A {@Link IoFuture}
+	 * A {@link IoFuture}
 	 */
 	public static final class AcceptorOperationFuture extends ServiceOperationFuture {
 		private final List<SocketAddress> localAddresses;

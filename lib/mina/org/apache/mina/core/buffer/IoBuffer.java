@@ -965,7 +965,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 *
 	 * @param value The medium int value to be written
 	 * @return the modified IoBuffer
-	 * @throws BufferOverflowException If there are fewer than three bytes remaining in this buffer
 	 */
 	public abstract IoBuffer putMediumInt(int value);
 
