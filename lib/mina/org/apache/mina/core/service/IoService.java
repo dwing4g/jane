@@ -105,15 +105,14 @@ public interface IoService {
 	void setFilterChainBuilder(IoFilterChainBuilder builder);
 
 	/**
-	 * A shortcut for <tt>( ( DefaultIoFilterChainBuilder ) </tt>{@link #getFilterChainBuilder()}<tt> )</tt>.
-	 * Please note that the returned object is not a <b>real</b> {@link IoFilterChain} but a {@link DefaultIoFilterChainBuilder}.
+	 * A shortcut for <tt>( (DefaultIoFilterChainBuilder) </tt>{@link #getFilterChainBuilder()}<tt> )</tt>.
 	 * Modifying the returned builder won't affect the existing {@link IoSession}s at all,
 	 * because {@link IoFilterChainBuilder}s affect only newly created {@link IoSession}s.
 	 *
 	 * @return The filter chain in use
 	 * @throws IllegalStateException if the current {@link IoFilterChainBuilder} is not a {@link DefaultIoFilterChainBuilder}
 	 */
-	DefaultIoFilterChainBuilder getFilterChain();
+	DefaultIoFilterChainBuilder getDefaultIoFilterChainBuilder();
 
 	/**
 	 * @return a value of whether or not this service is active

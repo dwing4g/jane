@@ -26,8 +26,8 @@ import org.apache.mina.core.session.IoSession;
  * For example, to add a filter to the chain,
  * <pre>
  * public class MyFilterChainBuilder implements IoFilterChainBuilder {
- *     public void buildFilterChain( IoFilterChain chain ) throws Exception {
- *         chain.addLast( "myFilter", new MyFilter() );
+ *     public void buildFilterChain(IoFilterChain chain) throws Exception {
+ *         chain.addLast("myFilter", new MyFilter());
  *     }
  * }
  * </pre>

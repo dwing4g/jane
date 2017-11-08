@@ -113,7 +113,7 @@ public abstract class AbstractIoService implements IoService {
 	}
 
 	@Override
-	public final DefaultIoFilterChainBuilder getFilterChain() {
+	public final DefaultIoFilterChainBuilder getDefaultIoFilterChainBuilder() {
 		if (filterChainBuilder instanceof DefaultIoFilterChainBuilder) {
 			return (DefaultIoFilterChainBuilder) filterChainBuilder;
 		}

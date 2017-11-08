@@ -27,7 +27,7 @@ public final class TestHttpServer extends NetManager
 		{
 			SslFilter sf = HttpCodec.getSslFilter(key_file, key_pw);
 			sf.setUseClientMode(false);
-			getAcceptor().getFilterChain().addFirst("ssl", sf);
+			getAcceptor().getDefaultIoFilterChainBuilder().addFirst("ssl", sf);
 		}
 		setCodec(HttpCodec.class);
 	}

@@ -43,8 +43,6 @@ import org.apache.mina.core.write.WriteRequest;
  * <p>
  * When you add an {@link IoFilter} to an {@link IoFilterChain}:
  * <ol>
- *   <li>{@link #init()} is invoked by {@link ReferenceCountingFilter} if
- *       the filter is added at the first time.</li>
  *   <li>{@link #onPreAdd(IoFilterChain, String, NextFilter)} is invoked to notify
  *       that the filter will be added to the chain.</li>
  *   <li>The filter is added to the chain, and all events and I/O requests
@@ -52,9 +50,7 @@ import org.apache.mina.core.write.WriteRequest;
  *   <li>{@link #onPostAdd(IoFilterChain, String, NextFilter)} is invoked to notify
  *       that the filter is added to the chain.</li>
  *   <li>The filter is removed from the chain if {@link #onPostAdd(IoFilterChain, String, org.apache.mina.core.filterchain.IoFilter.NextFilter)}
- *       threw an exception.  {@link #destroy()} is also invoked by
- *       {@link ReferenceCountingFilter} if the filter is the last filter which
- *       was added to {@link IoFilterChain}s.</li>
+ *       threw an exception.
  * </ol>
  * <p>
  * When you remove an {@link IoFilter} from an {@link IoFilterChain}:
@@ -65,8 +61,6 @@ import org.apache.mina.core.write.WriteRequest;
  *       don't pass through the filter from now.</li>
  *   <li>{@link #onPostRemove(IoFilterChain, String, NextFilter)} is invoked to
  *       notify that the filter is removed from the chain.</li>
- *   <li>{@link #destroy()} is invoked by {@link ReferenceCountingFilter} if
- *       the removed filter was the last one.</li>
  * </ol>
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
@@ -75,30 +69,9 @@ import org.apache.mina.core.write.WriteRequest;
  */
 public interface IoFilter {
 	/**
-	 * Invoked by {@link ReferenceCountingFilter} when this filter
-	 * is added to a {@link IoFilterChain} at the first time, so you can
-	 * initialize shared resources.  Please note that this method is never
-	 * called if you don't wrap a filter with {@link ReferenceCountingFilter}.
-	 *
-	 * @throws Exception If an error occurred while processing the event
-	 */
-	void init() throws Exception;
-
-	/**
-	 * Invoked by {@link ReferenceCountingFilter} when this filter
-	 * is not used by any {@link IoFilterChain} anymore, so you can destroy
-	 * shared resources.  Please note that this method is never called if
-	 * you don't wrap a filter with {@link ReferenceCountingFilter}.
-	 *
-	 * @throws Exception If an error occurred while processing the event
-	 */
-	void destroy() throws Exception;
-
-	/**
 	 * Invoked before this filter is added to the specified <tt>parent</tt>.
 	 * Please note that this method can be invoked more than once if
-	 * this filter is added to more than one parents.  This method is not
-	 * invoked before {@link #init()} is invoked.
+	 * this filter is added to more than one parents.
 	 *
 	 * @param parent the parent who called this method
 	 * @param name the name assigned to this filter
@@ -111,8 +84,7 @@ public interface IoFilter {
 	/**
 	 * Invoked after this filter is added to the specified <tt>parent</tt>.
 	 * Please note that this method can be invoked more than once if
-	 * this filter is added to more than one parents.  This method is not
-	 * invoked before {@link #init()} is invoked.
+	 * this filter is added to more than one parents.
 	 *
 	 * @param parent the parent who called this method
 	 * @param name the name assigned to this filter
@@ -126,7 +98,6 @@ public interface IoFilter {
 	 * Invoked before this filter is removed from the specified <tt>parent</tt>.
 	 * Please note that this method can be invoked more than once if
 	 * this filter is removed from more than one parents.
-	 * This method is always invoked before {@link #destroy()} is invoked.
 	 *
 	 * @param parent the parent who called this method
 	 * @param name the name assigned to this filter
@@ -140,7 +111,6 @@ public interface IoFilter {
 	 * Invoked after this filter is removed from the specified <tt>parent</tt>.
 	 * Please note that this method can be invoked more than once if
 	 * this filter is removed from more than one parents.
-	 * This method is always invoked before {@link #destroy()} is invoked.
 	 *
 	 * @param parent the parent who called this method
 	 * @param name the name assigned to this filter
@@ -213,16 +183,6 @@ public interface IoFilter {
 	void messageReceived(NextFilter nextFilter, IoSession session, Object message) throws Exception;
 
 	/**
-	 * Filters {@link IoSession#closeNow()} or a {@link IoSession#closeOnFlush()} method invocations.
-	 *
-	 * @param nextFilter the {@link NextFilter} for this filter.
-	 *            You can reuse this object until this filter is removed from the chain.
-	 * @param session The {@link IoSession} which has to process this method invocation
-	 * @throws Exception If an error occurred while processing the event
-	 */
-	void filterClose(NextFilter nextFilter, IoSession session) throws Exception;
-
-	/**
 	 * Filters {@link IoSession#write(Object)} method invocation.
 	 *
 	 * @param nextFilter the {@link NextFilter} for this filter.
@@ -232,6 +192,16 @@ public interface IoFilter {
 	 * @throws Exception If an error occurred while processing the event
 	 */
 	void filterWrite(NextFilter nextFilter, IoSession session, WriteRequest writeRequest) throws Exception;
+
+	/**
+	 * Filters {@link IoSession#closeNow()} or a {@link IoSession#closeOnFlush()} method invocations.
+	 *
+	 * @param nextFilter the {@link NextFilter} for this filter.
+	 *            You can reuse this object until this filter is removed from the chain.
+	 * @param session The {@link IoSession} which has to process this method invocation
+	 * @throws Exception If an error occurred while processing the event
+	 */
+	void filterClose(NextFilter nextFilter, IoSession session) throws Exception;
 
 	/**
 	 * Represents the next {@link IoFilter} in {@link IoFilterChain}.

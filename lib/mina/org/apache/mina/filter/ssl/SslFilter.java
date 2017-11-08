@@ -34,7 +34,6 @@ import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequest;
-import org.apache.mina.util.ExceptionMonitor;
 
 /**
  * An SSL filter that encrypts and decrypts the data exchanged in the session.
@@ -128,9 +127,6 @@ public final class SslFilter extends IoFilterAdapter {
 
 	private static final String SSL_HANDLER = "SslFilter.handler";
 
-	/** A flag used to determinate if the handshake should start immediately */
-	private static final boolean START_HANDSHAKE = true;
-
 	/** The SslContext used */
 	final SSLContext sslContext;
 
@@ -151,7 +147,7 @@ public final class SslFilter extends IoFilterAdapter {
 	 * @param sslContext The SSLContext to use
 	 */
 	public SslFilter(SSLContext sslContext) {
-		this(sslContext, START_HANDSHAKE);
+		this(sslContext, true);
 	}
 
 	/**
@@ -408,10 +404,8 @@ public final class SslFilter extends IoFilterAdapter {
 	@Override
 	public void onPreAdd(IoFilterChain parent, String name, NextFilter nextFilter) throws SSLException {
 		// Check that we don't have a SSL filter already present in the chain
-		if (parent.contains(SslFilter.class)) {
-			String msg = "Only one SSL filter is permitted in a chain.";
-			ExceptionMonitor.getInstance().error(msg);
-			throw new IllegalStateException(msg);
+		if (parent.getEntry(SslFilter.class) != null) {
+			throw new IllegalStateException("Only one SSL filter is permitted in a chain.");
 		}
 
 		// LOGGER.debug("Adding the SSL Filter {} to the chain", name);
@@ -423,7 +417,7 @@ public final class SslFilter extends IoFilterAdapter {
 		SslHandler sslHandler = new SslHandler(this, session);
 
 		// Adding the supported ciphers in the SSLHandler
-		if ((enabledCipherSuites == null) || (enabledCipherSuites.length == 0)) {
+		if (enabledCipherSuites == null || enabledCipherSuites.length == 0) {
 			enabledCipherSuites = sslContext.getServerSocketFactory().getSupportedCipherSuites();
 		}
 
@@ -434,7 +428,7 @@ public final class SslFilter extends IoFilterAdapter {
 
 	@Override
 	public void onPostAdd(IoFilterChain parent, String name, NextFilter nextFilter) throws SSLException {
-		if (autoStart == START_HANDSHAKE) {
+		if (autoStart) {
 			initiateHandshake(nextFilter, parent.getSession());
 		}
 	}
@@ -447,13 +441,10 @@ public final class SslFilter extends IoFilterAdapter {
 		session.removeAttribute(SSL_HANDLER);
 	}
 
-	// IoFilter impl.
-
 	@Override
 	public void sessionClosed(NextFilter nextFilter, IoSession session) throws SSLException {
-		SslHandler sslHandler = getSslSessionHandler(session);
-
 		try {
+			SslHandler sslHandler = getSslSessionHandler(session);
 			synchronized (sslHandler) {
 				// release resources
 				sslHandler.destroy();
@@ -528,10 +519,10 @@ public final class SslFilter extends IoFilterAdapter {
 	public void filterWrite(NextFilter nextFilter, IoSession session, WriteRequest writeRequest) throws SSLException {
 		// LOGGER.debug("{}: Writing Message: {}", getSessionInfo(session), writeRequest);
 
-		boolean needsFlush = true;
 		SslHandler sslHandler = getSslSessionHandler(session);
 
 		try {
+			boolean needsFlush = true;
 			synchronized (sslHandler) {
 				if (!isSslStarted(session)) {
 					sslHandler.scheduleFilterWrite(nextFilter, writeRequest);
@@ -619,7 +610,8 @@ public final class SslFilter extends IoFilterAdapter {
 			throw new SSLException("No filter chain");
 		}
 
-		IoFilter.NextFilter nextFilter = filterChain.getNextFilter(SslFilter.class);
+		IoFilterChain.Entry entry = filterChain.getEntry(SslFilter.class);
+		IoFilter.NextFilter nextFilter = (entry != null ? entry.getNextFilter() : null);
 
 		if (nextFilter == null) {
 			throw new SSLException("No SSL next filter in the chain");

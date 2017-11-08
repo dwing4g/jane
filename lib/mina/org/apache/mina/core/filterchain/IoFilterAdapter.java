@@ -30,14 +30,6 @@ import org.apache.mina.core.write.WriteRequest;
  */
 public class IoFilterAdapter implements IoFilter {
 	@Override
-	public void init() throws Exception {
-	}
-
-	@Override
-	public void destroy() throws Exception {
-	}
-
-	@Override
 	public void onPreAdd(IoFilterChain parent, String name, NextFilter nextFilter) throws Exception {
 	}
 
@@ -74,6 +66,11 @@ public class IoFilterAdapter implements IoFilter {
 	}
 
 	@Override
+	public void inputClosed(NextFilter nextFilter, IoSession session) throws Exception {
+		nextFilter.inputClosed(session);
+	}
+
+	@Override
 	public void messageReceived(NextFilter nextFilter, IoSession session, Object message) throws Exception {
 		nextFilter.messageReceived(session, message);
 	}
@@ -86,11 +83,6 @@ public class IoFilterAdapter implements IoFilter {
 	@Override
 	public void filterClose(NextFilter nextFilter, IoSession session) throws Exception {
 		nextFilter.filterClose(session);
-	}
-
-	@Override
-	public void inputClosed(NextFilter nextFilter, IoSession session) throws Exception {
-		nextFilter.inputClosed(session);
 	}
 
 	@Override

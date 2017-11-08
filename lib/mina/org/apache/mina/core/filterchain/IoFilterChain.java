@@ -63,49 +63,6 @@ public interface IoFilterChain {
 	Entry getEntry(Class<? extends IoFilter> filterType);
 
 	/**
-	 * Returns the {@link IoFilter} with the specified <tt>name</tt> in this chain.
-	 *
-	 * @param name the filter's name
-	 * @return <tt>null</tt> if there's no such name in this chain
-	 */
-	IoFilter get(String name);
-
-	/**
-	 * Returns the {@link IoFilter} with the specified <tt>filterType</tt> in this chain.
-	 * If there's more than one filter with the specified type, the first match will be chosen.
-	 *
-	 * @param filterType The filter class
-	 * @return <tt>null</tt> if there's no such name in this chain
-	 */
-	IoFilter get(Class<? extends IoFilter> filterType);
-
-	/**
-	 * Returns the {@link NextFilter} of the {@link IoFilter} with the
-	 * specified <tt>name</tt> in this chain.
-	 *
-	 * @param name The filter's name we want the next filter
-	 * @return <tt>null</tt> if there's no such name in this chain
-	 */
-	NextFilter getNextFilter(String name);
-
-	/**
-	 * Returns the {@link NextFilter} of the specified {@link IoFilter} in this chain.
-	 *
-	 * @param filter The filter for which we want the next filter
-	 * @return <tt>null</tt> if there's no such name in this chain
-	 */
-	NextFilter getNextFilter(IoFilter filter);
-
-	/**
-	 * Returns the {@link NextFilter} of the specified <tt>filterType</tt> in this chain.
-	 * If there's more than one filter with the specified type, the first match will be chosen.
-	 *
-	 * @param filterType The Filter class for which we want the next filter
-	 * @return <tt>null</tt> if there's no such name in this chain
-	 */
-	NextFilter getNextFilter(Class<? extends IoFilter> filterType);
-
-	/**
 	 * @return The list of all {@link Entry}s this chain contains.
 	 */
 	ArrayList<Entry> getAll();
@@ -114,27 +71,6 @@ public interface IoFilterChain {
 	 * @return The reversed list of all {@link Entry}s this chain contains.
 	 */
 	ArrayList<Entry> getAllReversed();
-
-	/**
-	 * @param name The filter's name we are looking for
-	 *
-	 * @return <tt>true</tt> if this chain contains an {@link IoFilter} with the specified <tt>name</tt>.
-	 */
-	boolean contains(String name);
-
-	/**
-	 * @param filter The filter we are looking for
-	 *
-	 * @return <tt>true</tt> if this chain contains the specified <tt>filter</tt>.
-	 */
-	boolean contains(IoFilter filter);
-
-	/**
-	 * @param filterType The filter's class we are looking for
-	 *
-	 * @return <tt>true</tt> if this chain contains an {@link IoFilter} of the specified <tt>filterType</tt>.
-	 */
-	boolean contains(Class<? extends IoFilter> filterType);
 
 	/**
 	 * Adds the specified filter with the specified name at the beginning of this chain.
@@ -173,45 +109,17 @@ public interface IoFilterChain {
 	void addAfter(String baseName, String name, IoFilter filter);
 
 	/**
-	 * Removes the filter with the specified name from this chain.
+	 * Removes the filter entry from this chain.
 	 *
-	 * @param name The name of the filter to remove
-	 * @return The removed filter, <tt>null</tt> if there's no such name in this chain
-	 */
-	IoFilter remove(String name);
-
-	/**
-	 * Removes the filter from this chain.
-	 *
-	 * @param filter The filter to remove
+	 * @param filter The filter entry to remove
 	 * @return <tt>true</tt> if removed successfully
 	 */
-	boolean remove(IoFilter filter);
-
-	/**
-	 * Removes the filter of the specified type from this chain.
-	 * If there's more than one filter with the specified type, the first match will be removed.
-	 *
-	 * @param filterType The filter class to remove
-	 * @return The removed filter, <tt>null</tt> if there's no such type in this chain
-	 */
-	IoFilter remove(Class<? extends IoFilter> filterType);
-
-	/**
-	 * Replace the filter with the specified name with the specified new filter.
-	 *
-	 * @param name The name of the filter we want to replace
-	 * @param newFilter The new filter
-	 * @return the old filter
-	 */
-	IoFilter replace(String name, IoFilter newFilter);
+	boolean remove(Entry filter);
 
 	/**
 	 * Removes all filters added to this chain.
-	 *
-	 * @throws Exception If we weren't able to clear the filters
 	 */
-	void clear() throws Exception;
+	void clear();
 
 	/**
 	 * Fires a {@link IoHandler#sessionCreated(IoSession)} event.
@@ -320,13 +228,6 @@ public interface IoFilterChain {
 		 * @param filter The added Filter
 		 */
 		void addAfter(String name, IoFilter filter);
-
-		/**
-		 * Replace the filter of this entry with the specified new filter.
-		 *
-		 * @param newFilter The new filter that will be put in the chain
-		 */
-		void replace(IoFilter newFilter);
 
 		/**
 		 * Removes this entry from the chain it belongs to.
