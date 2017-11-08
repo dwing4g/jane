@@ -101,7 +101,7 @@ public class BeanCodec extends IoFilterAdapter
 			{
 				IoBuffer buf = IoBuffer.wrap(rawdata.array(), rawdata.position(), n);
 				WriteFuture wf = writeRequest.getFuture();
-				next.filterWrite(session, wf == DefaultWriteRequest.UNUSED_FUTURE ? buf : new DefaultWriteRequest(buf, wf));
+				next.filterWrite(wf == DefaultWriteRequest.UNUSED_FUTURE ? buf : new DefaultWriteRequest(buf, wf));
 			}
 		}
 		else
@@ -116,11 +116,11 @@ public class BeanCodec extends IoFilterAdapter
 			os.marshalUInt(type).marshal(serial);
 			IoBuffer buf = IoBuffer.wrap(os.array(), pos, len - pos);
 			WriteFuture wf = writeRequest.getFuture();
-			next.filterWrite(session, wf == DefaultWriteRequest.UNUSED_FUTURE ? buf : new DefaultWriteRequest(buf, wf));
+			next.filterWrite(wf == DefaultWriteRequest.UNUSED_FUTURE ? buf : new DefaultWriteRequest(buf, wf));
 		}
 	}
 
-	protected boolean decodeProtocol(OctetsStream os, NextFilter next, IoSession session) throws Exception
+	protected boolean decodeProtocol(OctetsStream os, NextFilter next) throws Exception
 	{
 		if(_psize < 0)
 		{
@@ -156,7 +156,7 @@ public class BeanCodec extends IoFilterAdapter
 			bean = new RawBean(_ptype, os.unmarshalRaw(_psize));
 		bean.serial(_pserial);
 		_psize = -1;
-		next.messageReceived(session, bean);
+		next.messageReceived(bean);
 		return true;
 	}
 
@@ -175,7 +175,7 @@ public class BeanCodec extends IoFilterAdapter
 				in.get(_os.array(), s, n);
 				r -= n;
 				s += n;
-				if(!decodeProtocol(_os, next, session)) // 能正好解出一个协议,或者因之前无法解出头部或者in的数据还不够导致失败
+				if(!decodeProtocol(_os, next)) // 能正好解出一个协议,或者因之前无法解出头部或者in的数据还不够导致失败
 				{
 					if(r <= 0) return; // 如果in已经无数据可取就直接等下次,之前无法解出头部的话,in也肯定无数据了
 					n = _psize - _os.remain();
@@ -187,7 +187,7 @@ public class BeanCodec extends IoFilterAdapter
 					}
 					_os.resize(s + n);
 					in.get(_os.array(), s, n);
-					decodeProtocol(_os, next, session); // 应该能正好解出一个协议
+					decodeProtocol(_os, next); // 应该能正好解出一个协议
 					_os.clear();
 					if(r <= n) return;
 				}
@@ -214,7 +214,7 @@ public class BeanCodec extends IoFilterAdapter
 				in.get(buf, 0, n);
 				os = OctetsStream.wrap(buf);
 			}
-			while(decodeProtocol(os, next, session))
+			while(decodeProtocol(os, next))
 				if(os.remain() <= 0) return;
 			if(os.remain() <= 0) return; // 正好只解出头部的情况
 			_os.replace(os.array(), os.position(), os.remain());

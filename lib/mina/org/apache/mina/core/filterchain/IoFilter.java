@@ -209,59 +209,48 @@ public interface IoFilter {
 	interface NextFilter {
 		/**
 		 * Forwards <tt>sessionCreated</tt> event to next filter.
-		 *
-		 * @param session The {@link IoSession} which has to process this invocation
 		 */
-		void sessionCreated(IoSession session);
+		void sessionCreated();
 
 		/**
 		 * Forwards <tt>sessionOpened</tt> event to next filter.
-		 *
-		 * @param session The {@link IoSession} which has to process this invocation
 		 */
-		void sessionOpened(IoSession session);
+		void sessionOpened();
 
 		/**
 		 * Forwards <tt>sessionClosed</tt> event to next filter.
-		 *
-		 * @param session The {@link IoSession} which has to process this invocation
 		 */
-		void sessionClosed(IoSession session);
+		void sessionClosed();
 
 		/**
 		 * Forwards <tt>exceptionCaught</tt> event to next filter.
 		 *
-		 * @param session The {@link IoSession} which has to process this invocation
 		 * @param cause The exception that cause this event to be received
 		 */
-		void exceptionCaught(IoSession session, Throwable cause);
+		void exceptionCaught(Throwable cause);
 
 		/**
-		 * @param session The {@link IoSession} which has to process this invocation
+		 * Forwards <tt>inputClosed</tt> event to next filter.
 		 */
-		void inputClosed(IoSession session);
+		void inputClosed();
 
 		/**
 		 * Forwards <tt>messageReceived</tt> event to next filter.
 		 *
-		 * @param session The {@link IoSession} which has to process this invocation
 		 * @param message The received message
 		 */
-		void messageReceived(IoSession session, Object message);
+		void messageReceived(Object message);
 
 		/**
 		 * Forwards <tt>filterWrite</tt> event to next filter.
 		 *
-		 * @param session The {@link IoSession} which has to process this invocation
 		 * @param writeRequest The {@link WriteRequest} to process
 		 */
-		void filterWrite(IoSession session, WriteRequest writeRequest);
+		void filterWrite(WriteRequest writeRequest);
 
 		/**
 		 * Forwards <tt>filterClose</tt> event to next filter.
-		 *
-		 * @param session The {@link IoSession} which has to process this invocation
 		 */
-		void filterClose(IoSession session);
+		void filterClose();
 	}
 }

@@ -143,6 +143,22 @@ public interface IoFilterChain {
 	void fireSessionClosed();
 
 	/**
+	 * Fires a {@link IoHandler#exceptionCaught(IoSession, Throwable)} event.
+	 * Most users don't need to call this method at all.
+	 * Please use this method only when you implement a new transport or fire a virtual event.
+	 *
+	 * @param cause The exception cause
+	 */
+	void fireExceptionCaught(Throwable cause);
+
+	/**
+	 * Fires a {@link IoHandler#inputClosed(IoSession)} event.
+	 * Most users don't need to call this method at all.
+	 * Please use this method only when you implement a new transport or fire a virtual event.
+	 */
+	void fireInputClosed();
+
+	/**
 	 * Fires a {@link IoHandler#messageReceived(IoSession, Object)} event.
 	 * Most users don't need to call this method at all.
 	 * Please use this method only when you implement a new transport or fire a virtual event.
@@ -159,22 +175,6 @@ public interface IoFilterChain {
 	 * @param request The sent request
 	 */
 	void fireMessageSent(WriteRequest request);
-
-	/**
-	 * Fires a {@link IoHandler#exceptionCaught(IoSession, Throwable)} event.
-	 * Most users don't need to call this method at all.
-	 * Please use this method only when you implement a new transport or fire a virtual event.
-	 *
-	 * @param cause The exception cause
-	 */
-	void fireExceptionCaught(Throwable cause);
-
-	/**
-	 * Fires a {@link IoHandler#inputClosed(IoSession)} event.
-	 * Most users don't need to call this method at all.
-	 * Please use this method only when you implement a new transport or fire a virtual event.
-	 */
-	void fireInputClosed();
 
 	/**
 	 * Fires a {@link IoSession#write(Object)} event.
@@ -194,8 +194,6 @@ public interface IoFilterChain {
 
 	/**
 	 * Represents a name-filter pair that an {@link IoFilterChain} contains.
-	 *
-	 * @author <a href="http://mina.apache.org">Apache MINA Project</a>
 	 */
 	interface Entry {
 		/**

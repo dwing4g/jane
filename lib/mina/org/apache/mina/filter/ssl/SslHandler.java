@@ -294,11 +294,11 @@ public final class SslHandler {
 					// We need synchronization here inevitably because filterWrite can be
 					// called simultaneously and cause 'bad record MAC' integrity error.
 					while ((event = filterWriteEventQueue.poll()) != null) {
-						event.getNextFilter().filterWrite(session, (WriteRequest) event.getParameter());
+						event.getNextFilter().filterWrite((WriteRequest) event.getParameter());
 					}
 
 					while ((event = messageReceivedEventQueue.poll()) != null) {
-						event.getNextFilter().messageReceived(session, event.getParameter());
+						event.getNextFilter().messageReceived(event.getParameter());
 					}
 				} while (scheduled_events.decrementAndGet() > 0);
 			} finally {

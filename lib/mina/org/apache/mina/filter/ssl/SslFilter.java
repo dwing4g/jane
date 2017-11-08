@@ -451,7 +451,7 @@ public final class SslFilter extends IoFilterAdapter {
 			}
 		} finally {
 			// notify closed session
-			nextFilter.sessionClosed(session);
+			nextFilter.sessionClosed();
 		}
 	}
 
@@ -571,7 +571,7 @@ public final class SslFilter extends IoFilterAdapter {
 		if (sslHandler == null) {
 			// The connection might already have closed, or
 			// SSL might have not started yet.
-			nextFilter.filterClose(session);
+			nextFilter.filterClose();
 			return;
 		}
 
@@ -581,7 +581,7 @@ public final class SslFilter extends IoFilterAdapter {
 			synchronized (sslHandler) {
 				if (isSslStarted(session)) {
 					future = initiateClosure(nextFilter, session);
-					future.addListener(ioFuture -> nextFilter.filterClose(session));
+					future.addListener(ioFuture -> nextFilter.filterClose());
 				}
 			}
 
@@ -591,7 +591,7 @@ public final class SslFilter extends IoFilterAdapter {
 			throw se;
 		} finally {
 			if (future == null) {
-				nextFilter.filterClose(session);
+				nextFilter.filterClose();
 			}
 		}
 	}

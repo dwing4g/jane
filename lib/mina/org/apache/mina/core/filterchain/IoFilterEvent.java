@@ -61,39 +61,38 @@ public final class IoFilterEvent extends IoEvent {
 
 	@Override
 	public void fire() {
-		IoSession session = getSession();
 		IoEventType type = getType();
 
 		switch (type) {
 			case MESSAGE_RECEIVED:
 				Object parameter = getParameter();
-				nextFilter.messageReceived(session, parameter);
+				nextFilter.messageReceived(parameter);
 				break;
 
 			case WRITE:
 				WriteRequest writeRequest = (WriteRequest) getParameter();
-				nextFilter.filterWrite(session, writeRequest);
+				nextFilter.filterWrite(writeRequest);
 				break;
 
 			case CLOSE:
-				nextFilter.filterClose(session);
+				nextFilter.filterClose();
 				break;
 
 			case EXCEPTION_CAUGHT:
 				Throwable throwable = (Throwable) getParameter();
-				nextFilter.exceptionCaught(session, throwable);
+				nextFilter.exceptionCaught(throwable);
 				break;
 
 			case SESSION_OPENED:
-				nextFilter.sessionOpened(session);
+				nextFilter.sessionOpened();
 				break;
 
 			case SESSION_CREATED:
-				nextFilter.sessionCreated(session);
+				nextFilter.sessionCreated();
 				break;
 
 			case SESSION_CLOSED:
-				nextFilter.sessionClosed(session);
+				nextFilter.sessionClosed();
 				break;
 
 			default:

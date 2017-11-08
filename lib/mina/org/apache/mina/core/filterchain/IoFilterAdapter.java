@@ -47,42 +47,42 @@ public class IoFilterAdapter implements IoFilter {
 
 	@Override
 	public void sessionCreated(NextFilter nextFilter, IoSession session) throws Exception {
-		nextFilter.sessionCreated(session);
+		nextFilter.sessionCreated();
 	}
 
 	@Override
 	public void sessionOpened(NextFilter nextFilter, IoSession session) throws Exception {
-		nextFilter.sessionOpened(session);
+		nextFilter.sessionOpened();
 	}
 
 	@Override
 	public void sessionClosed(NextFilter nextFilter, IoSession session) throws Exception {
-		nextFilter.sessionClosed(session);
+		nextFilter.sessionClosed();
 	}
 
 	@Override
 	public void exceptionCaught(NextFilter nextFilter, IoSession session, Throwable cause) throws Exception {
-		nextFilter.exceptionCaught(session, cause);
+		nextFilter.exceptionCaught(cause);
 	}
 
 	@Override
 	public void inputClosed(NextFilter nextFilter, IoSession session) throws Exception {
-		nextFilter.inputClosed(session);
+		nextFilter.inputClosed();
 	}
 
 	@Override
 	public void messageReceived(NextFilter nextFilter, IoSession session, Object message) throws Exception {
-		nextFilter.messageReceived(session, message);
+		nextFilter.messageReceived(message);
 	}
 
 	@Override
 	public void filterWrite(NextFilter nextFilter, IoSession session, WriteRequest writeRequest) throws Exception {
-		nextFilter.filterWrite(session, writeRequest);
+		nextFilter.filterWrite(writeRequest);
 	}
 
 	@Override
 	public void filterClose(NextFilter nextFilter, IoSession session) throws Exception {
-		nextFilter.filterClose(session);
+		nextFilter.filterClose();
 	}
 
 	@Override

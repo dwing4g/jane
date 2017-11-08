@@ -405,15 +405,15 @@ public final class HttpCodec extends IoFilterAdapter
 		_maxHttpBodySize = maxHttpBodySize;
 	}
 
-	public static void write(NextFilter next, IoSession session, IoBuffer buf)
+	public static void write(NextFilter next, IoBuffer buf)
 	{
-		next.filterWrite(session, buf);
+		next.filterWrite(buf);
 	}
 
-	public static void write(NextFilter next, IoSession session, WriteRequest writeRequest, IoBuffer buf)
+	public static void write(NextFilter next, WriteRequest writeRequest, IoBuffer buf)
 	{
 		WriteFuture wf = writeRequest.getFuture();
-		next.filterWrite(session, wf == DefaultWriteRequest.UNUSED_FUTURE ? buf : new DefaultWriteRequest(buf, wf));
+		next.filterWrite(wf == DefaultWriteRequest.UNUSED_FUTURE ? buf : new DefaultWriteRequest(buf, wf));
 	}
 
 	@Override
@@ -424,23 +424,23 @@ public final class HttpCodec extends IoFilterAdapter
 		{
 			byte[] bytes = (byte[])message;
 			if(bytes.length > 0)
-				write(next, session, writeRequest, IoBuffer.wrap(bytes));
+				write(next, writeRequest, IoBuffer.wrap(bytes));
 		}
 		else if(message instanceof ByteBuffer) // for chunked data
 		{
-			write(next, session, IoBuffer.wrap(String.format("%x\r\n", ((ByteBuffer)message).remaining()).getBytes(StandardCharsets.UTF_8)));
-			write(next, session, IoBuffer.wrap((ByteBuffer)message));
-			write(next, session, writeRequest, IoBuffer.wrap(CHUNK_OVER_MARK));
+			write(next, IoBuffer.wrap(String.format("%x\r\n", ((ByteBuffer)message).remaining()).getBytes(StandardCharsets.UTF_8)));
+			write(next, IoBuffer.wrap((ByteBuffer)message));
+			write(next, writeRequest, IoBuffer.wrap(CHUNK_OVER_MARK));
 		}
 		else if(message instanceof Octets) // for raw data
 		{
 			OctetsStream os = (OctetsStream)message;
 			int n = os.remain();
 			if(n > 0)
-				write(next, session, writeRequest, IoBuffer.wrap(os.array(), os.position(), n));
+				write(next, writeRequest, IoBuffer.wrap(os.array(), os.position(), n));
 		}
 		else
-			next.filterWrite(session, writeRequest);
+			next.filterWrite(writeRequest);
 	}
 
 	@Override
@@ -480,7 +480,7 @@ public final class HttpCodec extends IoFilterAdapter
 						if(_bodySize > 0) break; // 有内容则跳到下半部分的处理
 						OctetsStream os = new OctetsStream(_buf.array(), p, _buf.remain()); // 切割出尾部当作下次缓存(不会超过1024字节)
 						_buf.resize(p);
-						next.messageReceived(session, _buf);
+						next.messageReceived(_buf);
 						_buf = os;
 						p = 0;
 					}
@@ -507,7 +507,7 @@ public final class HttpCodec extends IoFilterAdapter
 					os = new OctetsStream(_buf.array(), p += s, -s); // 缓存数据过剩就切割出尾部当作下次缓存(不会超过1024字节)
 					_buf.resize(p);
 				}
-				next.messageReceived(session, _buf);
+				next.messageReceived(_buf);
 				_buf = os;
 				_bodySize = 0; // 下次从HTTP头部开始匹配
 			}

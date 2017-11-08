@@ -127,7 +127,7 @@ public final class RC4Filter extends IoFilterAdapter
 				ioBuf.position(pos);
 			}
 		}
-		nextFilter.messageReceived(session, message);
+		nextFilter.messageReceived(message);
 	}
 
 	@Override
@@ -151,6 +151,6 @@ public final class RC4Filter extends IoFilterAdapter
 				ioBuf.position(pos);
 			}
 		}
-		nextFilter.filterWrite(session, writeRequest);
+		nextFilter.filterWrite(writeRequest);
 	}
 }
