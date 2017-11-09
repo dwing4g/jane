@@ -84,7 +84,9 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 	@Override
 	public IoBuffer allocate(int requestedCapacity, boolean direct)
 	{
-		if(requestedCapacity < 0) requestedCapacity = 0;
+		if(requestedCapacity <= 0)
+			return direct ? SimpleBufferAllocator.emptyDirectBuffer : SimpleBufferAllocator.emptyBuffer;
+
 		int actualCapacity = Integer.highestOneBit(requestedCapacity);
 		if(actualCapacity < requestedCapacity)
 		{

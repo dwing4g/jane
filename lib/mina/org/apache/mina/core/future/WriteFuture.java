@@ -54,15 +54,13 @@ public interface WriteFuture extends IoFuture {
 
 	/**
 	 * Sets the message is written, and notifies all threads waiting for this future.
-	 * This method is invoked by MINA internally.
-	 * Please do not call this method directly.
+	 * This method is invoked by MINA internally. Please do not call this method directly.
 	 */
 	void setWritten();
 
 	/**
 	 * Sets the cause of the write failure, and notifies all threads waiting for this future.
-	 * This method is invoked by MINA internally.
-	 * Please do not call this method directly.
+	 * This method is invoked by MINA internally. Please do not call this method directly.
 	 *
 	 * @param cause The exception to store in the Future instance
 	 */

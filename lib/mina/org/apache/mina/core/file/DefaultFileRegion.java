@@ -27,7 +27,7 @@ import java.nio.channels.FileChannel;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class DefaultFileRegion implements FileRegion {
+public final class DefaultFileRegion implements FileRegion {
 	/** The channel used to manage the file */
 	private final FileChannel channel;
 

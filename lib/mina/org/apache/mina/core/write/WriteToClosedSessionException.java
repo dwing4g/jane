@@ -26,8 +26,7 @@ import java.io.IOException;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class WriteToClosedSessionException extends IOException {
-	/** The mandatory serialVersionUUID */
-	private static final long serialVersionUID = 5550204573739301393L;
+	private static final long serialVersionUID = 1L;
 
 	public WriteToClosedSessionException() {
 	}

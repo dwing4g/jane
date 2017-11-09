@@ -199,9 +199,9 @@ public interface IoSession {
 	Object removeAttribute(Object key);
 
 	/**
-	 * Removes a user defined attribute with the specified key if the current
-	 * attribute value is equal to the specified value.  This method is same
-	 * with the following code except that the operation is performed atomically.
+	 * Removes a user defined attribute with the specified key
+	 * if the current attribute value is equal to the specified value.
+	 * This method is same with the following code except that the operation is performed atomically.
 	 * <pre>
 	 * if (containsAttribute(key) &amp;&amp; getAttribute(key).equals(value)) {
 	 *     removeAttribute(key);
@@ -218,8 +218,8 @@ public interface IoSession {
 	boolean removeAttribute(Object key, Object value);
 
 	/**
-	 * Replaces a user defined attribute with the specified key if the
-	 * value of the attribute is equals to the specified old value.
+	 * Replaces a user defined attribute with the specified key
+	 * if the value of the attribute is equals to the specified old value.
 	 * This method is same with the following code except that the operation is performed atomically.
 	 * <pre>
 	 * if (containsAttribute(key) &amp;&amp; getAttribute(key).equals(oldValue)) {

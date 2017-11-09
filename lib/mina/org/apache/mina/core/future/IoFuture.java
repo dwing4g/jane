@@ -92,9 +92,8 @@ public interface IoFuture {
 	boolean isDone();
 
 	/**
-	 * Adds an event <tt>listener</tt> which is notified when
-	 * this future is completed. If the listener is added
-	 * after the completion, the listener is directly notified.
+	 * Adds an event <tt>listener</tt> which is notified when this future is completed.
+	 * If the listener is added after the completion, the listener is directly notified.
 	 *
 	 * @param listener The listener to add
 	 * @return the current IoFuture

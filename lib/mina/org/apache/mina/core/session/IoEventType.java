@@ -20,8 +20,8 @@ package org.apache.mina.core.session;
 
 /**
  * An {@link Enum} that represents the type of I/O events and requests.
- * Most users won't need to use this class.  It is usually used by internal
- * components to store I/O events.
+ * Most users won't need to use this class.
+ * It is usually used by internal components to store I/O events.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */

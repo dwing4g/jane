@@ -22,8 +22,8 @@ import org.apache.mina.core.write.WriteRequest;
 
 /**
  * An I/O event or an I/O request that MINA provides.
- * Most users won't need to use this class.  It is usually used by internal
- * components to store I/O events.
+ * Most users won't need to use this class.
+ * It is usually used by internal components to store I/O events.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */

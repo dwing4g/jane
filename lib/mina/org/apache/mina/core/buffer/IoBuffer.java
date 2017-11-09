@@ -168,7 +168,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 		int pos = buf.position();
 		ByteOrder bo = buf.order();
 
-		IoBuffer newBuf = getAllocator().allocate(capacity, buf.isDirect());
+		IoBuffer newBuf = allocate(capacity, buf.isDirect());
 		buf.clear();
 		newBuf.put(buf);
 		newBuf.limit(limit);

@@ -22,8 +22,7 @@ import java.util.Set;
 
 /**
  * Stores the user-defined attributes which is provided per {@link IoSession}.
- * All user-defined attribute accesses in {@link IoSession} are forwarded to
- * the instance of {@link IoSessionAttributeMap}.
+ * All user-defined attribute accesses in {@link IoSession} are forwarded to the instance of {@link IoSessionAttributeMap}.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
@@ -81,8 +80,8 @@ public interface IoSessionAttributeMap {
 
 	/**
 	 * Removes a user defined attribute with the specified key if the current
-	 * attribute value is equal to the specified value.  This method is same
-	 * with the following code except that the operation is performed atomically.
+	 * attribute value is equal to the specified value.
+	 * This method is same with the following code except that the operation is performed atomically.
 	 * <pre>
 	 * if (containsAttribute(key) &amp;&amp; getAttribute(key).equals(value)) {
 	 *     removeAttribute(key);

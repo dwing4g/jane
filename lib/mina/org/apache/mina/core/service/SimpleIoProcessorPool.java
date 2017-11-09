@@ -114,8 +114,8 @@ public final class SimpleIoProcessorPool implements IoProcessor<NioSession> {
 	}
 
 	/**
-	 * Find the processor associated to a session. If it hasn't be stored into
-	 * the session's attributes, pick a new processor and stores it.
+	 * Find the processor associated to a session.
+	 * If it hasn't be stored into the session's attributes, pick a new processor and stores it.
 	 */
 	private NioProcessor getProcessor(NioSession session) {
 		NioProcessor processor = session.getNioProcessor();

@@ -160,8 +160,7 @@ public class DefaultIoFuture implements IoFuture {
 						long timeOut = Math.min(timeoutMillis, DEAD_LOCK_CHECK_INTERVAL);
 
 						// Wait for the requested period of time,
-						// but every DEAD_LOCK_CHECK_INTERVAL seconds, we will
-						// check that we aren't blocked.
+						// but every DEAD_LOCK_CHECK_INTERVAL seconds, we will check that we aren't blocked.
 						wait(timeOut);
 					} catch (InterruptedException e) {
 						if (interruptable) {
