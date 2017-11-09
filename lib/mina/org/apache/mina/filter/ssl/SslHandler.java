@@ -195,7 +195,7 @@ public final class SslHandler {
 		}
 
 		if (outNetBuffer != null) {
-			outNetBuffer.capacity(sslEngine.getSession().getPacketBufferSize());
+			outNetBuffer = IoBuffer.reallocateNew(outNetBuffer, sslEngine.getSession().getPacketBufferSize());
 		} else {
 			createOutNetBuffer(0);
 		}
@@ -287,10 +287,9 @@ public final class SslHandler {
 
 		// Fire events only when the lock is available for this handler.
 		if (sslLock.tryLock()) {
-			IoFilterEvent event;
-
 			try {
 				do {
+					IoFilterEvent event;
 					// We need synchronization here inevitably because filterWrite can be
 					// called simultaneously and cause 'bad record MAC' integrity error.
 					while ((event = filterWriteEventQueue.poll()) != null) {
@@ -324,7 +323,9 @@ public final class SslHandler {
 
 		// append buf to inNetBuffer
 		if (inNetBuffer == null) {
-			inNetBuffer = IoBuffer.allocate(buf.remaining()).setAutoExpand(true);
+			inNetBuffer = IoBuffer.allocate(buf.remaining());
+		} else {
+			inNetBuffer = IoBuffer.reallocateRemain(inNetBuffer, buf.remaining());
 		}
 
 		inNetBuffer.put(buf);
@@ -355,8 +356,7 @@ public final class SslHandler {
 		}
 
 		if (isInboundDone()) {
-			// Rewind the MINA buffer if not all data is processed and inbound
-			// is finished.
+			// Rewind the MINA buffer if not all data is processed and inbound is finished.
 			int inNetBufferPosition = (inNetBuffer == null ? 0 : inNetBuffer.position());
 			buf.position(buf.position() - inNetBufferPosition);
 
@@ -379,7 +379,7 @@ public final class SslHandler {
 		IoBuffer newAppBuffer = appBuffer.flip();
 		appBuffer = null;
 
-		return newAppBuffer.shrink();
+		return newAppBuffer;
 	}
 
 	/**
@@ -396,7 +396,7 @@ public final class SslHandler {
 
 		outNetBuffer = null;
 
-		return answer.shrink();
+		return answer;
 	}
 
 	/**
@@ -428,7 +428,7 @@ public final class SslHandler {
 					doTasks();
 				}
 			} else if (result.getStatus() == Status.BUFFER_OVERFLOW) {
-				outNetBuffer.capacity(outNetBuffer.capacity() << 1);
+				outNetBuffer = IoBuffer.reallocate(outNetBuffer, outNetBuffer.capacity() << 1);
 				outNetBuffer.limit(outNetBuffer.capacity());
 			} else {
 				throw new SSLException("SSLEngine error during encrypt: " + result.getStatus() + " src: " + src + "outNetBuffer: " + outNetBuffer);
@@ -460,7 +460,7 @@ public final class SslHandler {
 			if (result.getStatus() != Status.BUFFER_OVERFLOW) {
 				break;
 			}
-			outNetBuffer.capacity(outNetBuffer.capacity() << 1);
+			outNetBuffer = IoBuffer.reallocate(outNetBuffer, outNetBuffer.capacity() << 1);
 			outNetBuffer.limit(outNetBuffer.capacity());
 		}
 
@@ -498,7 +498,6 @@ public final class SslHandler {
 			case NOT_HANDSHAKING:
 				// LOGGER.debug("{} processing the FINISHED state", SslFilter.getSessionInfo(session));
 
-				session.setAttribute(SslFilter.SSL_SESSION, sslEngine.getSession());
 				handshakeComplete = true;
 
 				// Send the SECURE message only if it's the first SSL handshake
@@ -552,13 +551,13 @@ public final class SslHandler {
 					if (result.getStatus() != Status.BUFFER_OVERFLOW) {
 						break;
 					}
-					outNetBuffer.capacity(outNetBuffer.capacity() << 1);
+					outNetBuffer = IoBuffer.reallocate(outNetBuffer, outNetBuffer.capacity() << 1);
 					outNetBuffer.limit(outNetBuffer.capacity());
 				}
 
 				outNetBuffer.flip();
 				handshakeStatus = result.getHandshakeStatus();
-				writeNetBuffer(nextFilter);
+				writeNetBuffer(nextFilter, false);
 				break;
 
 			default:
@@ -575,13 +574,13 @@ public final class SslHandler {
 		int capacity = Math.max(expectedRemaining, sslEngine.getSession().getPacketBufferSize());
 
 		if (outNetBuffer != null) {
-			outNetBuffer.capacity(capacity);
+			outNetBuffer = IoBuffer.reallocateRemain(outNetBuffer, capacity);
 		} else {
-			outNetBuffer = IoBuffer.allocate(capacity).minimumCapacity(0);
+			outNetBuffer = IoBuffer.allocate(capacity);
 		}
 	}
 
-	WriteFuture writeNetBuffer(NextFilter nextFilter) throws SSLException {
+	WriteFuture writeNetBuffer(NextFilter nextFilter, boolean needFuture) throws SSLException {
 		// Check if any net data needed to be writen
 		if (outNetBuffer == null || !outNetBuffer.hasRemaining()) {
 			// no; bail out
@@ -592,12 +591,11 @@ public final class SslHandler {
 		writingEncryptedData = true;
 
 		// write net data
-		WriteFuture writeFuture = null;
+		WriteFuture writeFuture = (needFuture ? new DefaultWriteFuture(session) : null);
 
 		try {
 			IoBuffer writeBuffer = fetchOutNetBuffer();
-			writeFuture = new DefaultWriteFuture(session);
-			sslFilter.filterWrite(nextFilter, session, new DefaultWriteRequest(writeBuffer, writeFuture));
+			sslFilter.filterWrite(nextFilter, session, writeFuture != null ? new DefaultWriteRequest(writeBuffer, writeFuture) : writeBuffer);
 
 			// loop while more writes required to complete handshake
 			while (needToCompleteHandshake()) {
@@ -612,8 +610,8 @@ public final class SslHandler {
 				IoBuffer currentOutNetBuffer = fetchOutNetBuffer();
 
 				if (currentOutNetBuffer != null && currentOutNetBuffer.hasRemaining()) {
-					writeFuture = new DefaultWriteFuture(session);
-					sslFilter.filterWrite(nextFilter, session, new DefaultWriteRequest(currentOutNetBuffer, writeFuture));
+					writeFuture = (needFuture ? new DefaultWriteFuture(session) : null);
+					sslFilter.filterWrite(nextFilter, session, writeFuture != null ? new DefaultWriteRequest(currentOutNetBuffer, writeFuture) : currentOutNetBuffer);
 				}
 			}
 		} finally {
@@ -684,7 +682,7 @@ public final class SslHandler {
 			appBuffer = IoBuffer.allocate(inNetBuffer.remaining());
 		} else {
 			// We already have one, just add the new data into it
-			appBuffer.expand(inNetBuffer.remaining());
+			appBuffer = IoBuffer.reallocateRemain(appBuffer, inNetBuffer.remaining());
 		}
 
 		SSLEngineResult res;
@@ -710,7 +708,7 @@ public final class SslHandler {
 					throw new SSLException("SSL buffer overflow");
 				}
 
-				appBuffer.expand(newCapacity);
+				appBuffer = IoBuffer.reallocateRemain(appBuffer, newCapacity);
 				continue;
 			}
 		} while (((status == Status.OK) || (status == Status.BUFFER_OVERFLOW))

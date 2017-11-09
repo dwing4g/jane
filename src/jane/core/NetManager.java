@@ -509,12 +509,6 @@ public class NetManager implements IoHandler
 		}
 
 		@Override
-		public WriteRequest getOriginalRequest()
-		{
-			return this;
-		}
-
-		@Override
 		public Object getMessage()
 		{
 			return message;

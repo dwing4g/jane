@@ -26,35 +26,33 @@ import java.nio.ByteBuffer;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class SimpleBufferAllocator implements IoBufferAllocator {
+	public static final SimpleBufferAllocator instance = new SimpleBufferAllocator();
+
+	private SimpleBufferAllocator() {
+	}
+
 	@Override
 	public IoBuffer allocate(int capacity, boolean direct) {
-		return wrap(allocateNioBuffer(capacity, direct));
+		return new SimpleIoBuffer(capacity, direct);
 	}
 
 	@Override
-	public ByteBuffer allocateNioBuffer(int capacity, boolean direct) {
-		return direct ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity);
-	}
-
-	@Override
-	public IoBuffer wrap(ByteBuffer nioBuffer) {
-		return new SimpleIoBuffer(nioBuffer);
+	public IoBuffer wrap(ByteBuffer bb) {
+		return new SimpleIoBuffer(bb);
 	}
 
 	@Override
 	public void dispose() {
 	}
 
-	private static final class SimpleIoBuffer extends AbstractIoBuffer {
-		private ByteBuffer buf;
+	private static final class SimpleIoBuffer extends IoBuffer {
+		private final ByteBuffer buf;
 
-		private SimpleIoBuffer(ByteBuffer bb) {
-			super(bb.capacity());
-			buf = bb;
+		private SimpleIoBuffer(int capacity, boolean direct) {
+			buf = (direct ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity));
 		}
 
-		private SimpleIoBuffer(SimpleIoBuffer parent, ByteBuffer bb) {
-			super(parent);
+		private SimpleIoBuffer(ByteBuffer bb) {
 			buf = bb;
 		}
 
@@ -64,28 +62,8 @@ public final class SimpleBufferAllocator implements IoBufferAllocator {
 		}
 
 		@Override
-		protected void buf(ByteBuffer bb) {
-			buf = bb;
-		}
-
-		@Override
-		protected IoBuffer duplicate0() {
-			return new SimpleIoBuffer(this, buf.duplicate());
-		}
-
-		@Override
-		public byte[] array() {
-			return buf.array();
-		}
-
-		@Override
-		public int arrayOffset() {
-			return buf.arrayOffset();
-		}
-
-		@Override
-		public boolean hasArray() {
-			return buf.hasArray();
+		public IoBuffer duplicate() {
+			return new SimpleIoBuffer(buf.duplicate());
 		}
 
 		@Override

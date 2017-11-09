@@ -74,9 +74,6 @@ import org.apache.mina.core.write.WriteRequest;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class SslFilter extends IoFilterAdapter {
-	/** A session attribute key that stores underlying {@link SSLSession} for each session */
-	public static final String SSL_SESSION = "SslFilter.session";
-
 	/**
 	 * A session attribute key that makes next one write request bypass
 	 * this filter (not encrypting the data).  This is a marker attribute,
@@ -110,6 +107,11 @@ public final class SslFilter extends IoFilterAdapter {
 	 */
 	public static final String PEER_ADDRESS = "SslFilter.peerAddress";
 
+	/** An attribute containing the next filter */
+	private static final String NEXT_FILTER = "SslFilter.nextFilter";
+
+	public static final String SSL_HANDLER = "SslFilter.handler";
+
 	/**
 	 * A special message object which is emitted with a {@link IoHandler#messageReceived(IoSession, Object)}
 	 * event when the session is secured and its {@link #USE_NOTIFICATION} attribute is set.
@@ -121,11 +123,6 @@ public final class SslFilter extends IoFilterAdapter {
 	 * event when the session is not secure anymore and its {@link #USE_NOTIFICATION} attribute is set.
 	 */
 	public static final SslFilterMessage SESSION_UNSECURED = new SslFilterMessage("SESSION_UNSECURED");
-
-	/** An attribute containing the next filter */
-	private static final String NEXT_FILTER = "SslFilter.nextFilter";
-
-	private static final String SSL_HANDLER = "SslFilter.handler";
 
 	/** The SslContext used */
 	final SSLContext sslContext;
@@ -167,56 +164,11 @@ public final class SslFilter extends IoFilterAdapter {
 	}
 
 	/**
-	 * Returns the underlying {@link SSLSession} for the specified session.
-	 *
-	 * @param session The current session
-	 * @return <tt>null</tt> if no {@link SSLSession} is initialized yet.
-	 */
-	public static SSLSession getSslSession(IoSession session) {
-		return (SSLSession) session.getAttribute(SSL_SESSION);
-	}
-
-	/**
-	 * (Re)starts SSL session for the specified <tt>session</tt> if not started yet.
-	 * Please note that SSL session is automatically started by default, and therefore
-	 * you don't need to call this method unless you've used TLS closure.
-	 *
-	 * @param session The session that will be switched to SSL mode
-	 * @return <tt>true</tt> if the SSL session has been started, <tt>false</tt> if already started.
-	 * @throws SSLException if failed to start the SSL session
-	 */
-	public boolean startSsl(IoSession session) throws SSLException {
-		SslHandler sslHandler = getSslSessionHandler(session);
-		boolean started;
-
-		try {
-			synchronized (sslHandler) {
-				if (sslHandler.isOutboundDone()) {
-					NextFilter nextFilter = (NextFilter) session.getAttribute(NEXT_FILTER);
-					sslHandler.destroy();
-					sslHandler.init();
-					sslHandler.handshake(nextFilter);
-					started = true;
-				} else {
-					started = false;
-				}
-			}
-
-			sslHandler.flushScheduledEvents();
-		} catch (SSLException se) {
-			sslHandler.release();
-			throw se;
-		}
-
-		return started;
-	}
-
-	/**
 	 * An extended toString() method for sessions.
 	 * If the SSL handshake is not yet completed, we will print (ssl) in small caps.
 	 * Once it's completed, we will use SSL capitalized.
 	 */
-	static String getSessionInfo(IoSession session) {
+	public static String getSessionInfo(IoSession session) {
 		StringBuilder sb = new StringBuilder();
 
 		if (session.getService() instanceof IoAcceptor) {
@@ -278,32 +230,6 @@ public final class SslFilter extends IoFilterAdapter {
 		synchronized (sslHandler) {
 			return !sslHandler.isOutboundDone() && sslHandler.isHandshakeComplete();
 		}
-	}
-
-	/**
-	 * Stops the SSL session by sending TLS <tt>close_notify</tt> message to initiate TLS closure.
-	 *
-	 * @param session the {@link IoSession} to initiate TLS closure
-	 * @return The Future for the initiated closure
-	 * @throws SSLException if failed to initiate TLS closure
-	 */
-	public WriteFuture stopSsl(IoSession session) throws SSLException {
-		SslHandler sslHandler = getSslSessionHandler(session);
-		NextFilter nextFilter = (NextFilter) session.getAttribute(NEXT_FILTER);
-		WriteFuture future;
-
-		try {
-			synchronized (sslHandler) {
-				future = initiateClosure(nextFilter, session);
-			}
-
-			sslHandler.flushScheduledEvents();
-		} catch (SSLException se) {
-			sslHandler.release();
-			throw se;
-		}
-
-		return future;
 	}
 
 	/**
@@ -390,6 +316,67 @@ public final class SslFilter extends IoFilterAdapter {
 	 */
 	public void setEnabledProtocols(String[] protocols) {
 		enabledProtocols = protocols;
+	}
+
+	/**
+	 * (Re)starts SSL session for the specified <tt>session</tt> if not started yet.
+	 * Please note that SSL session is automatically started by default, and therefore
+	 * you don't need to call this method unless you've used TLS closure.
+	 *
+	 * @param session The session that will be switched to SSL mode
+	 * @return <tt>true</tt> if the SSL session has been started, <tt>false</tt> if already started.
+	 * @throws SSLException if failed to start the SSL session
+	 */
+	public boolean startSsl(IoSession session) throws SSLException {
+		SslHandler sslHandler = getSslSessionHandler(session);
+		boolean started;
+
+		try {
+			synchronized (sslHandler) {
+				if (sslHandler.isOutboundDone()) {
+					NextFilter nextFilter = (NextFilter) session.getAttribute(NEXT_FILTER);
+					sslHandler.destroy();
+					sslHandler.init();
+					sslHandler.handshake(nextFilter);
+					started = true;
+				} else {
+					started = false;
+				}
+			}
+
+			sslHandler.flushScheduledEvents();
+		} catch (SSLException se) {
+			sslHandler.release();
+			throw se;
+		}
+
+		return started;
+	}
+
+	/**
+	 * Stops the SSL session by sending TLS <tt>close_notify</tt> message to initiate TLS closure.
+	 *
+	 * @param session the {@link IoSession} to initiate TLS closure
+	 * @return The Future for the initiated closure
+	 * @throws SSLException if failed to initiate TLS closure
+	 */
+	public WriteFuture stopSsl(IoSession session) throws SSLException {
+		SslHandler sslHandler = getSslSessionHandler(session);
+		NextFilter nextFilter = (NextFilter) session.getAttribute(NEXT_FILTER);
+		WriteFuture future;
+
+		try {
+			synchronized (sslHandler) {
+				future = initiateClosure(nextFilter, session);
+			}
+
+			sslHandler.flushScheduledEvents();
+		} catch (SSLException se) {
+			sslHandler.release();
+			throw se;
+		}
+
+		return future;
 	}
 
 	/**
@@ -569,8 +556,7 @@ public final class SslFilter extends IoFilterAdapter {
 		SslHandler sslHandler = (SslHandler) session.getAttribute(SSL_HANDLER);
 
 		if (sslHandler == null) {
-			// The connection might already have closed, or
-			// SSL might have not started yet.
+			// The connection might already have closed, or SSL might have not started yet.
 			nextFilter.filterClose();
 			return;
 		}
@@ -597,8 +583,8 @@ public final class SslFilter extends IoFilterAdapter {
 	}
 
 	/**
-	 * Initiate the SSL handshake. This can be invoked if you have set the 'autoStart' to
-	 * false when creating the SslFilter instance.
+	 * Initiate the SSL handshake.
+	 * This can be invoked if you have set the 'autoStart' to false when creating the SslFilter instance.
 	 *
 	 * @param session The session for which the SSL handshake should be done
 	 * @throws SSLException If the handshake failed
@@ -648,7 +634,7 @@ public final class SslFilter extends IoFilterAdapter {
 			}
 
 			// there might be data to write out here?
-			future = sslHandler.writeNetBuffer(nextFilter);
+			future = sslHandler.writeNetBuffer(nextFilter, true);
 
 			if (future == null) {
 				future = DefaultWriteFuture.newWrittenFuture(session);
@@ -679,7 +665,7 @@ public final class SslFilter extends IoFilterAdapter {
 		}
 
 		// Write encrypted data to be written (if any)
-		sslHandler.writeNetBuffer(nextFilter);
+		sslHandler.writeNetBuffer(nextFilter, false);
 
 		// handle app. data read (if any)
 		handleAppDataRead(nextFilter, sslHandler);
@@ -714,15 +700,15 @@ public final class SslFilter extends IoFilterAdapter {
 	 * @author <a href="http://mina.apache.org">Apache MINA Project</a>
 	 */
 	public static final class SslFilterMessage {
-		private final String name;
+		private final String message;
 
-		private SslFilterMessage(String name) {
-			this.name = name;
+		private SslFilterMessage(String message) {
+			this.message = message;
 		}
 
 		@Override
 		public String toString() {
-			return name;
+			return message;
 		}
 	}
 
@@ -746,11 +732,6 @@ public final class SslFilter extends IoFilterAdapter {
 		@Override
 		public Object getMessage() {
 			return encryptedMessage;
-		}
-
-		@Override
-		public WriteRequest getOriginalRequest() {
-			return parentRequest.getOriginalRequest();
 		}
 
 		@Override

@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayDeque;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.mina.core.buffer.AbstractIoBuffer;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.buffer.IoBufferAllocator;
 import org.apache.mina.core.buffer.SimpleBufferAllocator;
@@ -22,7 +21,7 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 	private static final AtomicLong	freeCount  = new AtomicLong();
 
 	private final int									  maxPoolSize;
-	private final int									  maxCachedBufferSize;
+	private final int									  maxCachedBufferSize;					 // 2^n:[0,0x4000_4000]
 	private final ThreadLocal<ArrayDeque<CachedBuffer>[]> heapBuffers	= new CacheThreadLocal();
 	private final ThreadLocal<ArrayDeque<CachedBuffer>[]> directBuffers	= new CacheThreadLocal();
 	private final int[]									  checkPoolSize	= new int[32];
@@ -48,7 +47,7 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 	public static void globalSet(boolean useDirectBuffer, int maxPoolSize, int maxCachedBufferSize)
 	{
 		IoBuffer.setUseDirectBuffer(useDirectBuffer);
-		IoBuffer.setAllocator(maxPoolSize > 0 && maxCachedBufferSize > 0 ? new CachedIoBufferAllocator(maxPoolSize, maxCachedBufferSize) : new SimpleBufferAllocator());
+		IoBuffer.setAllocator(maxPoolSize > 0 && maxCachedBufferSize > 0 ? new CachedIoBufferAllocator(maxPoolSize, maxCachedBufferSize) : SimpleBufferAllocator.instance);
 	}
 
 	public static long getAllocCount()
@@ -76,10 +75,10 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 		this(DEFAULT_MAX_POOL_SIZE, DEFAULT_MAX_CACHED_BUFFER_SIZE);
 	}
 
-	public CachedIoBufferAllocator(int maxPoolSize, int maxCachedBufferSize) // maxCachedBufferSize must be 2^n
+	public CachedIoBufferAllocator(int maxPoolSize, int maxCachedBufferSize) // maxCachedBufferSize should be 2^n
 	{
 		this.maxPoolSize = maxPoolSize;
-		this.maxCachedBufferSize = maxCachedBufferSize;
+		this.maxCachedBufferSize = Integer.highestOneBit(Math.max(maxCachedBufferSize, 0));
 	}
 
 	@Override
@@ -90,35 +89,34 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 		if(actualCapacity < requestedCapacity)
 		{
 			actualCapacity += actualCapacity;
-			if(actualCapacity < 0) actualCapacity = requestedCapacity;
+			if(actualCapacity < 0) actualCapacity = requestedCapacity; // must be > 0x4000_0000
 		}
 		IoBuffer buf;
-		if(actualCapacity <= maxCachedBufferSize &&
-				(buf = (direct ? directBuffers : heapBuffers).get()[getIdx(actualCapacity)].pollFirst()) != null)
+		if(actualCapacity <= maxCachedBufferSize)
 		{
-			buf.clear();
-			buf.order(ByteOrder.BIG_ENDIAN);
-			reuseCount.incrementAndGet();
+			buf = (direct ? directBuffers : heapBuffers).get()[getIdx(actualCapacity)].pollFirst();
+			if(buf != null)
+			{
+				buf.clear();
+				buf.order(ByteOrder.BIG_ENDIAN);
+				reuseCount.incrementAndGet();
+			}
+			else
+			{
+				buf = new CachedBuffer(actualCapacity, direct);
+				allocCount.incrementAndGet();
+			}
 		}
 		else
-		{
-			buf = wrap(direct ? ByteBuffer.allocateDirect(actualCapacity) : ByteBuffer.allocate(actualCapacity));
-			allocCount.incrementAndGet();
-		}
+			buf = SimpleBufferAllocator.instance.allocate(actualCapacity, direct);
 		buf.limit(requestedCapacity);
 		return buf;
 	}
 
 	@Override
-	public ByteBuffer allocateNioBuffer(int capacity, boolean direct)
+	public IoBuffer wrap(ByteBuffer bb)
 	{
-		return allocate(capacity, direct).buf();
-	}
-
-	@Override
-	public IoBuffer wrap(ByteBuffer nioBuffer)
-	{
-		return new CachedBuffer(nioBuffer);
+		return SimpleBufferAllocator.instance.wrap(bb);
 	}
 
 	@Override
@@ -126,22 +124,13 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 	{
 	}
 
-	private final class CachedBuffer extends AbstractIoBuffer
+	private final class CachedBuffer extends IoBuffer
 	{
-		private ByteBuffer buf;
+		private final ByteBuffer buf;
 
-		private CachedBuffer(ByteBuffer bb)
+		private CachedBuffer(int capacity, boolean direct)
 		{
-			super(bb.capacity());
-			buf = bb;
-		}
-
-		private CachedBuffer(CachedBuffer parent, ByteBuffer bb)
-		{
-			super(parent);
-			if(bb == null)
-				throw new NullPointerException();
-			buf = bb;
+			buf = (direct ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity));
 		}
 
 		@Override
@@ -151,45 +140,15 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 		}
 
 		@Override
-		protected void buf(ByteBuffer bb)
+		public IoBuffer duplicate()
 		{
-			if(bb == null)
-				throw new NullPointerException();
-			buf = bb;
+			return SimpleBufferAllocator.instance.wrap(buf.duplicate());
 		}
 
 		@Override
-		protected IoBuffer duplicate0()
+		public void free() //NOTE: DO NOT double free
 		{
-			return new CachedBuffer(this, buf.duplicate());
-		}
-
-		@Override
-		public byte[] array()
-		{
-			return buf.array();
-		}
-
-		@Override
-		public int arrayOffset()
-		{
-			return buf.arrayOffset();
-		}
-
-		@Override
-		public boolean hasArray()
-		{
-			return buf.hasArray();
-		}
-
-		@Override
-		public void free()
-		{
-			if(buf == null || buf.capacity() > maxCachedBufferSize || buf.isReadOnly() || isDerived()) return;
-			int cap = buf.capacity();
-			int i = getIdx(cap);
-			if(checkPoolSize[i] != cap) return;
-			ArrayDeque<CachedBuffer> pool = (buf.isDirect() ? directBuffers : heapBuffers).get()[i];
+			ArrayDeque<CachedBuffer> pool = (buf.isDirect() ? directBuffers : heapBuffers).get()[getIdx(buf.capacity())];
 			if(pool.size() < maxPoolSize)
 			{
 				pool.addFirst(this);

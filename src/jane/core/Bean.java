@@ -257,12 +257,6 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	}
 
 	@Override
-	public final WriteRequest getOriginalRequest()
-	{
-		return this;
-	}
-
-	@Override
 	public final WriteFuture getFuture()
 	{
 		return DefaultWriteRequest.UNUSED_FUTURE;

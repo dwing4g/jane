@@ -18,7 +18,6 @@
  */
 package org.apache.mina.core.write;
 
-import org.apache.mina.core.filterchain.IoFilter;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.session.IoSession;
 
@@ -28,12 +27,6 @@ import org.apache.mina.core.session.IoSession;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface WriteRequest {
-	/**
-	 * @return the {@link WriteRequest} which was requested originally,
-	 * which is not transformed by any {@link IoFilter}.
-	 */
-	WriteRequest getOriginalRequest();
-
 	/**
 	 * @return a message object to be written.
 	 */
