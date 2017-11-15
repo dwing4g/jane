@@ -48,7 +48,7 @@ namespace Jane
 
 		static int Update(byte[] ctx, int idx1, int idx2, byte[] buf, int pos, int len)
 		{
-			for(int i = 0; i < len; ++i)
+			for(len += pos; pos < len; ++pos)
 			{
 				idx1 = (idx1 + 1) & 0xff;
 				byte a = ctx[idx1];
@@ -56,7 +56,7 @@ namespace Jane
 				byte b = ctx[idx2];
 				ctx[idx1] = b;
 				ctx[idx2] = a;
-				buf[pos + i] ^= ctx[(a + b) & 0xff];
+				buf[pos] ^= ctx[(a + b) & 0xff];
 			}
 			return idx2;
 		}

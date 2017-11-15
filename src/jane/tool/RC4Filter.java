@@ -1,5 +1,6 @@
 package jane.tool;
 
+import java.nio.ByteBuffer;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.filterchain.IoFilterAdapter;
 import org.apache.mina.core.session.IoSession;
@@ -66,7 +67,7 @@ public final class RC4Filter extends IoFilterAdapter
 
 	private static int update(byte[] ctx, int idx1, int idx2, byte[] buf, int pos, int len)
 	{
-		for(int i = 0; i < len; ++i)
+		for(len += pos; pos < len; ++pos)
 		{
 			idx1 = (idx1 + 1) & 0xff;
 			byte a = ctx[idx1];
@@ -74,7 +75,22 @@ public final class RC4Filter extends IoFilterAdapter
 			byte b = ctx[idx2];
 			ctx[idx1] = b;
 			ctx[idx2] = a;
-			buf[pos + i] ^= ctx[(a + b) & 0xff];
+			buf[pos] ^= ctx[(a + b) & 0xff];
+		}
+		return idx2;
+	}
+
+	private static int update(byte[] ctx, int idx1, int idx2, ByteBuffer buf, int pos, int len)
+	{
+		for(len += pos; pos < len; ++pos)
+		{
+			idx1 = (idx1 + 1) & 0xff;
+			byte a = ctx[idx1];
+			idx2 = (idx2 + a) & 0xff;
+			byte b = ctx[idx2];
+			ctx[idx1] = b;
+			ctx[idx2] = a;
+			buf.put(pos, (byte)(buf.get(pos) ^ ctx[(a + b) & 0xff]));
 		}
 		return idx2;
 	}
@@ -88,6 +104,12 @@ public final class RC4Filter extends IoFilterAdapter
 	 * @param len 数据的长度
 	 */
 	public void updateInput(byte[] buf, int pos, int len)
+	{
+		_idx2I = update(_ctxI, _idx1I, _idx2I, buf, pos, len);
+		_idx1I = (_idx1I + len) & 0xff;
+	}
+
+	public void updateInput(ByteBuffer buf, int pos, int len)
 	{
 		_idx2I = update(_ctxI, _idx1I, _idx2I, buf, pos, len);
 		_idx1I = (_idx1I + len) & 0xff;
@@ -107,6 +129,12 @@ public final class RC4Filter extends IoFilterAdapter
 		_idx1O = (_idx1O + len) & 0xff;
 	}
 
+	public void updateOutput(ByteBuffer buf, int pos, int len)
+	{
+		_idx2O = update(_ctxO, _idx1O, _idx2O, buf, pos, len);
+		_idx1O = (_idx1O + len) & 0xff;
+	}
+
 	@Override
 	public void messageReceived(NextFilter nextFilter, IoSession session, Object message)
 	{
@@ -116,16 +144,7 @@ public final class RC4Filter extends IoFilterAdapter
 			if(ioBuf.hasArray())
 				updateInput(ioBuf.array(), ioBuf.position(), ioBuf.remaining());
 			else
-			{
-				int len = ioBuf.remaining();
-				byte[] buf = new byte[len];
-				int pos = ioBuf.position();
-				ioBuf.get(buf, 0, len);
-				ioBuf.position(pos);
-				updateInput(buf, 0, len);
-				ioBuf.put(buf, 0, len);
-				ioBuf.position(pos);
-			}
+				updateInput(ioBuf.buf(), ioBuf.position(), ioBuf.remaining());
 		}
 		nextFilter.messageReceived(message);
 	}
@@ -140,16 +159,7 @@ public final class RC4Filter extends IoFilterAdapter
 			if(ioBuf.hasArray())
 				updateOutput(ioBuf.array(), ioBuf.position(), ioBuf.remaining());
 			else
-			{
-				int len = ioBuf.remaining();
-				byte[] buf = new byte[len];
-				int pos = ioBuf.position();
-				ioBuf.get(buf, 0, len);
-				ioBuf.position(pos);
-				updateOutput(buf, 0, len);
-				ioBuf.put(buf, 0, len);
-				ioBuf.position(pos);
-			}
+				updateOutput(ioBuf.buf(), ioBuf.position(), ioBuf.remaining());
 		}
 		nextFilter.filterWrite(writeRequest);
 	}
