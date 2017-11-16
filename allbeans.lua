@@ -23,7 +23,7 @@ handler
 	},
 }
 
-bean{ name="TestBean", type=1, initsize=16, maxsize=16, poolsize=1000, comment="bean的注释",
+bean{ name="TestBean", type=1, initsize=16, maxsize=16, comment="bean的注释",
 	{ name="TEST_CONST1", type="int", value=5, comment="测试类静态常量" },
 	{ name="TEST_CONST2", type="string", value="test_const2" },
 	{ id=1, name="value1", type="int",  comment="字段的注释" },

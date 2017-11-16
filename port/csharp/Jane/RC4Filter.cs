@@ -67,7 +67,7 @@ namespace Jane
 		public void UpdateInput(byte[] buf, int pos, int len)
 		{
 			_idx2I = Update(_ctxI, _idx1I, _idx2I, buf, pos, len);
-			_idx1I = (_idx1I + len) & 0xff;
+			_idx1I += len;
 		}
 
 		/**
@@ -76,7 +76,7 @@ namespace Jane
 		public void UpdateOutput(byte[] buf, int pos, int len)
 		{
 			_idx2O = Update(_ctxO, _idx1O, _idx2O, buf, pos, len);
-			_idx1O = (_idx1O + len) & 0xff;
+			_idx1O += len;
 		}
 	}
 }

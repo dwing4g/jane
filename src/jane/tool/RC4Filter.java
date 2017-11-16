@@ -106,13 +106,13 @@ public final class RC4Filter extends IoFilterAdapter
 	public void updateInput(byte[] buf, int pos, int len)
 	{
 		_idx2I = update(_ctxI, _idx1I, _idx2I, buf, pos, len);
-		_idx1I = (_idx1I + len) & 0xff;
+		_idx1I += len;
 	}
 
 	public void updateInput(ByteBuffer buf, int pos, int len)
 	{
 		_idx2I = update(_ctxI, _idx1I, _idx2I, buf, pos, len);
-		_idx1I = (_idx1I + len) & 0xff;
+		_idx1I += len;
 	}
 
 	/**
@@ -126,13 +126,13 @@ public final class RC4Filter extends IoFilterAdapter
 	public void updateOutput(byte[] buf, int pos, int len)
 	{
 		_idx2O = update(_ctxO, _idx1O, _idx2O, buf, pos, len);
-		_idx1O = (_idx1O + len) & 0xff;
+		_idx1O += len;
 	}
 
 	public void updateOutput(ByteBuffer buf, int pos, int len)
 	{
 		_idx2O = update(_ctxO, _idx1O, _idx2O, buf, pos, len);
-		_idx1O = (_idx1O + len) & 0xff;
+		_idx1O += len;
 	}
 
 	@Override

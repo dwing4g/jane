@@ -31,7 +31,7 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 	private static final long serialVersionUID = #(bean.uid);
 	public  static final int BEAN_TYPE = #(bean.type);
 	public  static final String BEAN_TYPENAME = "#(bean.name)";
-	public  static final #(bean.name) BEAN_STUB = new #(bean.name)();#(bean.pool_def)
+	public  static final #(bean.name) BEAN_STUB = new #(bean.name)();
 #{#	public  static final #(var.type) #(var.name)#(var.value);#(var.comment2)
 #}##(##(var.field)#)#
 #(#	private /*#(var.id3)*/ #(var.final)#(var.type) #(var.name);#(var.comment2)
@@ -112,7 +112,7 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 	{
 		return #(bean.maxsize);
 	}
-#(bean.pool_func)
+
 	@Override
 	public OctetsStream marshal(OctetsStream _s_)
 	{
@@ -1169,27 +1169,6 @@ function bean(bean)
 		for _, v in ipairs(var.import) do
 			bean.import[v] = true
 		end
-	end
-	if bean.poolsize and bean.poolsize > 0 then
-		bean.import["jane.core.BeanPool"] = true
-		bean.pool_def = "\n\tpublic  static final BeanPool<" .. bean.name .. "> BEAN_POOL = new BeanPool<" .. (jdk7 and "" or bean.name) .. ">(BEAN_STUB, " .. bean.poolsize .. ");"
-		bean.pool_func = [[
-
-	@Override
-	public ]] .. bean.name .. [[ alloc()
-	{
-		return BEAN_POOL.alloc();
-	}
-
-	@Override
-	public void free()
-	{
-		BEAN_POOL.free(this);
-	}
-]]
-	else
-		bean.pool_def = ""
-		bean.pool_func = ""
 	end
 
 	if not bean.maxsize then bean.maxsize = 0x7fffffff end

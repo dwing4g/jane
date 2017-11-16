@@ -56,7 +56,7 @@ local function update(ctx, idx1, idx2, buf)
 		idx1 = idx1 + 1
 		if idx1 > 255 then idx1 = 0 end
 		idx2 = idx2 + ctx[idx1]
-		if idx2 > 255 then idx2 = 0 end
+		if idx2 > 255 then idx2 = idx2 - 256 end
 		local a, b = ctx[idx1], ctx[idx2]
 		ctx[idx1], ctx[idx2] = b, a
 		local a = a + b
@@ -64,20 +64,18 @@ local function update(ctx, idx1, idx2, buf)
 		local j = i + 1
 		r[j] = char(bxor(byte(buf, j), (ctx[a])))
 	end
-	return idx2, concat(r)
+	return idx1, idx2, concat(r)
 end
 
 -- 加解密一段输入数据
 function Rc4:updateInput(buf)
-	self.idx2I, buf = update(self.ctxI, self.idx1I, self.idx2I, buf)
-	self.idx1I = (self.idx1I + #buf) % 256;
+	self.idx1I, self.idx2I, buf = update(self.ctxI, self.idx1I, self.idx2I, buf)
 	return buf
 end
 
 -- 加解密一段输出数据
 function Rc4:updateOutput(buf)
-	self.idx2O, buf = update(self.ctxO, self.idx1O, self.idx2O, buf)
-	self.idx1O = (self.idx1O + #buf) % 256;
+	self.idx1O, self.idx2O, buf = update(self.ctxO, self.idx1O, self.idx2O, buf)
 	return buf
 end
 
