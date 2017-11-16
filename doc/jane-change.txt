@@ -2,7 +2,7 @@
 ■ jane更新说明 ■
 ==================
 
-1.0.0 (2016-11-05) => 1.5.0 (git HEAD) (2017-10-09)
+1.0.0 (2016-11-05) => 1.5.0 (git HEAD) (2017-11-16)
 
 * 编译运行环境升级到Java8,不再推荐32位运行环境
 * 精简优化了Mina库,并合并到jane-core中
@@ -11,6 +11,7 @@
 * 移除了google的ConcurrentHashMapV8, 改用JRE内置版本(V8同Java8内置的,因此推荐运行环境使用Java8)
 * 移除了google的ConcurrentLinkedHashMap, 所有读cache的实现均使用LRUMap(虽然LRU的自动清理不是很及时,但性能好很多)
 * 内置并进一步优化了LongConcurrentHash/LRUMap, LRUMap的自动清理改为后台线程并发执行
+* 移除了BeanPool
 * 协议头增加serial字段(有符号整数序列化), 可用于自定义Bean的序列号及新增的ask/answer通信机制(支持C#端), 移除了旧的RPC通信支持
 * 运行事务的线程类要求是新加的ProcThread类或子类(为了少量优化及便于管理,内置事务线程池已是ProcThread类线程)
 * 默认的事务线程池的线程数量不再固定创建,而改为自动调节

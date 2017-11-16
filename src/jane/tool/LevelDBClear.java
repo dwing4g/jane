@@ -17,7 +17,7 @@ public final class LevelDBClear
 	{
 		if(args.length < 1)
 		{
-			System.err.println("USAGE: java jane.tool.LevelDBClear <databasePath.ld> [tableId]");
+			System.err.println("USAGE: java jane.tool.LevelDBClear <databasePath> [tableId]");
 			return;
 		}
 		String pathname = args[0].trim();
