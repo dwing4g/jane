@@ -13,9 +13,9 @@ import org.apache.mina.core.session.DefaultIoSessionDataStructureFactory;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequest;
 import org.apache.mina.core.write.WriteRequestQueue;
-import jane.core.CachedIoBufferAllocator;
 import jane.core.Log;
 import jane.core.NetManager;
+import jane.tool.CachedIoBufferAllocator;
 
 // start.bat jane.test.TestEcho 6 64 32 100000 1 64
 public final class TestEcho extends NetManager
