@@ -92,7 +92,7 @@ public final class DynBean extends Bean<DynBean>
 	{
 		for(Entry<Integer, Object> e : _fields.entrySet())
 			os.marshalVar(e.getKey(), e.getValue());
-		return os.marshal1((byte)0);
+		return os.marshalZero();
 	}
 
 	@Override

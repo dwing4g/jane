@@ -179,7 +179,7 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public void put(long k, V v)
 		{
-			_writeBuf.put(getKey(k), v.marshal(new OctetsStream(_stubV.initSize()).marshal1((byte)0))); // format
+			_writeBuf.put(getKey(k), v.marshal(new OctetsStream(_stubV.initSize()).marshalZero())); // format
 		}
 
 		@Override
@@ -369,7 +369,7 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public void put(K k, V v)
 		{
-			_writeBuf.put(getKey(k), v.marshal(new OctetsStream(_stubV.initSize()).marshal1((byte)0))); // format
+			_writeBuf.put(getKey(k), v.marshal(new OctetsStream(_stubV.initSize()).marshalZero())); // format
 		}
 
 		@Override

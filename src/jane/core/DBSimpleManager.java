@@ -391,22 +391,22 @@ public final class DBSimpleManager
 
 	public void put(int tableId, long key, Bean<?> bean)
 	{
-		put0(toKey(tableId, key), new OctetsStream(bean.initSize()).marshal1((byte)0).marshal(bean)); // format
+		put0(toKey(tableId, key), new OctetsStream(bean.initSize()).marshalZero().marshal(bean)); // format
 	}
 
 	public void put(int tableId, Octets key, Bean<?> bean)
 	{
-		put0(toKey(tableId, key), new OctetsStream(bean.initSize()).marshal1((byte)0).marshal(bean)); // format
+		put0(toKey(tableId, key), new OctetsStream(bean.initSize()).marshalZero().marshal(bean)); // format
 	}
 
 	public void put(int tableId, String key, Bean<?> bean)
 	{
-		put0(toKey(tableId, key), new OctetsStream(bean.initSize()).marshal1((byte)0).marshal(bean)); // format
+		put0(toKey(tableId, key), new OctetsStream(bean.initSize()).marshalZero().marshal(bean)); // format
 	}
 
 	public void put(int tableId, Bean<?> key, Bean<?> bean)
 	{
-		put0(toKey(tableId, key), new OctetsStream(bean.initSize()).marshal1((byte)0).marshal(bean)); // format
+		put0(toKey(tableId, key), new OctetsStream(bean.initSize()).marshalZero().marshal(bean)); // format
 	}
 
 	public void remove(int tableId, long key)

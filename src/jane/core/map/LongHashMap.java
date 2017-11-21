@@ -241,8 +241,7 @@ public final class LongHashMap<V> implements Cloneable
 		// Push keys until an empty bucket is found.
 		long evictedKey;
 		V evictedValue;
-		int i = 0, pis = _pushIterations;
-		for(;;)
+		for(int i = 0, pis = _pushIterations;;)
 		{
 			// Replace the key and value for one of the hashes.
 			switch(IntHashMap._random.nextInt(3))
@@ -269,8 +268,7 @@ public final class LongHashMap<V> implements Cloneable
 
 			// If the evicted key hashes to an empty bucket, put it there and stop.
 			index1 = (int)evictedKey & m;
-			key1 = kt[index1];
-			if(key1 == EMPTY)
+			if(kt[index1] == EMPTY)
 			{
 				kt[index1] = evictedKey;
 				vt[index1] = evictedValue;
@@ -279,8 +277,7 @@ public final class LongHashMap<V> implements Cloneable
 			}
 
 			index2 = hash2(evictedKey);
-			key2 = kt[index2];
-			if(key2 == EMPTY)
+			if(kt[index2] == EMPTY)
 			{
 				kt[index2] = evictedKey;
 				vt[index2] = evictedValue;
@@ -289,8 +286,7 @@ public final class LongHashMap<V> implements Cloneable
 			}
 
 			index3 = hash3(evictedKey);
-			key3 = kt[index3];
-			if(key3 == EMPTY)
+			if(kt[index3] == EMPTY)
 			{
 				kt[index3] = evictedKey;
 				vt[index3] = evictedValue;

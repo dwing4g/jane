@@ -10,11 +10,10 @@ public final class RawBean extends Bean<RawBean>
 	private static final long	serialVersionUID = 1L;
 	public static final RawBean	BEAN_STUB		 = new RawBean();
 	private int					_type;							 // 未知的bean类型
-	private final Octets		_data;							 // 未知的bean数据
+	private Octets				_data;							 // 未知的bean数据
 
 	public RawBean()
 	{
-		_data = new Octets();
 	}
 
 	public RawBean(int type, Octets data)
@@ -25,13 +24,7 @@ public final class RawBean extends Bean<RawBean>
 
 	public RawBean(Bean<?> bean)
 	{
-		_type = bean.type();
-		OctetsStream os = new OctetsStream(bean.initSize() + 10);
-		os.resize(10);
-		bean.marshalProtocol(os);
-		int n = os.marshalUIntBack(10, os.size() - 10);
-		os.setPosition(10 - (n + os.marshalUIntBack(10 - n, _type)));
-		_data = os;
+		setBean(bean);
 	}
 
 	public int getType()
@@ -39,9 +32,48 @@ public final class RawBean extends Bean<RawBean>
 		return _type;
 	}
 
+	public void setType(int type)
+	{
+		_type = type;
+	}
+
 	public Octets getData()
 	{
 		return _data;
+	}
+
+	public void setData(Octets data)
+	{
+		_data = data;
+	}
+
+	/**
+	 * data包含类型,长度
+	 * @param bean
+	 */
+	public void setBean(Bean<?> bean)
+	{
+		int type = bean.type();
+		int serial = bean.serial();
+		int reserveLen = OctetsStream.marshalUIntLen(type) + OctetsStream.marshalLen(serial) + 5;
+		_type = type;
+		serial(serial);
+
+		OctetsStream os;
+		if(_data instanceof OctetsStream)
+		{
+			os = (OctetsStream)_data;
+			os.reserve(reserveLen + bean.initSize());
+		}
+		else
+			_data = os = new OctetsStream(reserveLen + bean.initSize());
+		os.resize(reserveLen);
+		int len = bean.marshalProtocol(os).size();
+		int pos = 5 - os.marshalUIntBack(reserveLen, len - reserveLen);
+		os.resize(pos);
+		os.marshalUInt(type).marshal(serial);
+		os.resize(len);
+		os.setPosition(pos);
 	}
 
 	@Override
@@ -72,19 +104,27 @@ public final class RawBean extends Bean<RawBean>
 	public void reset()
 	{
 		_type = 0;
-		_data.clear();
+		if(_data != null)
+			_data.clear();
 	}
 
 	@Override
 	public OctetsStream marshal(OctetsStream os)
 	{
-		return os.marshalUInt(_type).marshal(_data);
+		os.marshalUInt(_type);
+		if(_data != null)
+			os.marshal(_data);
+		else
+			os.marshalZero();
+		return os;
 	}
 
 	@Override
 	public OctetsStream unmarshal(OctetsStream os) throws MarshalException
 	{
 		_type = os.unmarshalUInt();
+		if(_data == null)
+			_data = new Octets();
 		return os.unmarshal(_data);
 	}
 
@@ -97,7 +137,7 @@ public final class RawBean extends Bean<RawBean>
 	@Override
 	public int hashCode()
 	{
-		return _type + _data.hashCode();
+		return _type + (_data != null ? _data.hashCode() : 0);
 	}
 
 	@Override
@@ -106,6 +146,8 @@ public final class RawBean extends Bean<RawBean>
 		if(b == this) return 0;
 		int c = _type - b._type;
 		if(c != 0) return c;
+		if(_data == null)
+			return b._data != null ? 1 : 0;
 		return _data.compareTo(b._data);
 	}
 
@@ -115,26 +157,27 @@ public final class RawBean extends Bean<RawBean>
 		if(this == o) return true;
 		if(!(o instanceof RawBean)) return false;
 		RawBean rb = (RawBean)o;
-		return _type == rb._type && _data.equals(rb._data);
+		if(_type != rb._type) return false;
+		return _data != null ? _data.equals(rb._data) : rb._data == null;
 	}
 
 	@Override
 	public String toString()
 	{
-		return "{type=" + _type + ",data=[" + _data.size() + "]}";
+		return "{type=" + _type + ",data=[" + (_data != null ? _data.size() : "null") + "]}";
 	}
 
 	@Override
 	public StringBuilder toJson(StringBuilder s)
 	{
-		if(s == null) s = new StringBuilder(_data.size() * 3 + 32);
-		return s.append("{\"type\":").append(_type).append(",\"data\":").append(_data.dumpJStr(s)).append('}');
+		if(s == null) s = new StringBuilder((_data != null ? _data.size() * 3 : 0) + 32);
+		return s.append("{\"type\":").append(_type).append(",\"data\":").append(_data != null ? _data.dumpJStr(s) : null).append('}');
 	}
 
 	@Override
 	public StringBuilder toLua(StringBuilder s)
 	{
-		if(s == null) s = new StringBuilder(_data.size() * 3 + 32);
-		return s.append("{type=").append(_type).append(",data=").append(_data.dumpJStr(s)).append('}');
+		if(s == null) s = new StringBuilder((_data != null ? _data.size() * 3 : 0) + 32);
+		return s.append("{type=").append(_type).append(",data=").append(_data != null ? _data.dumpJStr(s) : null).append('}');
 	}
 }
