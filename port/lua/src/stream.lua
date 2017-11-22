@@ -24,7 +24,7 @@ local ftype = 4 -- 可修改成4/5来区分全局使用float/double类型来序�
 local writef = (ftype == 4 and platform.writef32 or platform.writef64)
 
 --[[ 注意:
-* long类型只支持低52(二进制)位, 高12位必须保证为0, 否则结果未定义
+* long类型只支持低52(二进制)位, 高12位必须保证为全0(正值)或全1(负值), 否则结果未定义
 * 序列化浮点数只能指定固定的32位或64位(通过ftype指定)
 * 字符串类型是原生数据格式, 一般建议使用UTF-8, 否则不利于显示及日志输出
 * marshal容器类型字段时,容器里的key和value类型必须一致, 否则会marshal出错误的结果

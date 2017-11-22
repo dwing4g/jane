@@ -243,7 +243,7 @@ namespace Jane
 		 */
 		public static StringBuilder Append<T>(StringBuilder s, ICollection<T> list)
 		{
-			if(list.Count <= 0) return s.Append("{},");
+			if(list == null || list.Count <= 0) return s.Append("{},");
 			s.Append('{');
 			foreach(T e in list)
 				s.Append(e).Append(',');
@@ -256,7 +256,7 @@ namespace Jane
 		 */
 		public static StringBuilder Append<K, V>(StringBuilder s, IDictionary<K, V> dic)
 		{
-			if(dic.Count <= 0) return s.Append("{},");
+			if(dic == null || dic.Count <= 0) return s.Append("{},");
 			s.Append('{');
 			foreach(KeyValuePair<K, V> p in dic)
 				s.Append(p.Key).Append(',').Append(p.Value).Append(';');
