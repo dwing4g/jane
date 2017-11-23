@@ -9,6 +9,7 @@ set JVM=^
 -Xms128m ^
 -Xmx512m ^
 -server ^
+-XX:+AggressiveOpts ^
 -Xlog:gc:log/gc.log ^
 -Dsun.stdout.encoding=gbk ^
 -Dsun.stderr.encoding=gbk
@@ -18,6 +19,7 @@ set JVM=^
 -Xmx512m ^
 -server ^
 -XX:+UseConcMarkSweepGC ^
+-XX:+AggressiveOpts ^
 -Xloggc:log/gc.log ^
 -XX:+PrintGCDetails ^
 -XX:+PrintGCDateStamps ^

@@ -8,6 +8,7 @@ JVM="\
 -Xms512m \
 -Xmx512m \
 -server \
+-XX:+AggressiveOpts \
 -Xlog:gc:log/gc.log \
 -Dsun.stdout.encoding=utf-8 \
 -Dsun.stderr.encoding=utf-8"
@@ -17,6 +18,7 @@ JVM="\
 -Xmx512m \
 -server \
 -XX:+UseConcMarkSweepGC \
+-XX:+AggressiveOpts \
 -Xloggc:log/gc.log \
 -XX:+PrintGCDetails \
 -XX:+PrintGCDateStamps \
