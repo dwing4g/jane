@@ -283,7 +283,8 @@ public final class IntHashMap<V> implements Cloneable
 
 			// If the evicted key hashes to an empty bucket, put it there and stop.
 			index1 = evictedKey & m;
-			if(kt[index1] == EMPTY)
+			key1 = kt[index1];
+			if(key1 == EMPTY)
 			{
 				kt[index1] = evictedKey;
 				vt[index1] = evictedValue;
@@ -292,7 +293,8 @@ public final class IntHashMap<V> implements Cloneable
 			}
 
 			index2 = hash2(evictedKey);
-			if(kt[index2] == EMPTY)
+			key2 = kt[index2];
+			if(key2 == EMPTY)
 			{
 				kt[index2] = evictedKey;
 				vt[index2] = evictedValue;
@@ -301,7 +303,8 @@ public final class IntHashMap<V> implements Cloneable
 			}
 
 			index3 = hash3(evictedKey);
-			if(kt[index3] == EMPTY)
+			key3 = kt[index3];
+			if(key3 == EMPTY)
 			{
 				kt[index3] = evictedKey;
 				vt[index3] = evictedValue;
