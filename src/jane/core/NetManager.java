@@ -602,6 +602,7 @@ public class NetManager implements IoHandler
 	public boolean sendSafe(IoSession session, Bean<?> bean)
 	{
 		if(session.isClosing() || bean == null) return false;
+		bean.serial(0);
 		RawBean rawbean = new RawBean(bean);
 		SContext.current().addOnCommit(() -> send(session, rawbean));
 		return true;
@@ -645,7 +646,9 @@ public class NetManager implements IoHandler
 	public <B extends Bean<B>> boolean sendSafe(IoSession session, B bean, Runnable callback)
 	{
 		if(session.isClosing() || bean == null) return false;
-		SContext.current().addOnCommit(() -> send(session, bean, callback));
+		bean.serial(0);
+		RawBean rawbean = new RawBean(bean);
+		SContext.current().addOnCommit(() -> send(session, rawbean, callback));
 		return true;
 	}
 
@@ -722,6 +725,12 @@ public class NetManager implements IoHandler
 		return send0(session, answerBean);
 	}
 
+	public boolean answer(IoSession session, int askSerial, Bean<?> answerBean)
+	{
+		answerBean.serial(askSerial > 0 ? -askSerial : 0);
+		return send0(session, answerBean);
+	}
+
 	/**
 	 * 向某个连接发送请求并返回Future对象
 	 * <p>
@@ -754,6 +763,8 @@ public class NetManager implements IoHandler
 
 	/**
 	 * 同ask, 区别仅仅是在事务成功后发送请求
+	 * <p>
+	 * 注意调用后修改参数bean会影响到实际的请求
 	 */
 	public <B extends Bean<B>> boolean askSafe(IoSession session, Bean<?> bean, AnswerHandler<B> onAnswer)
 	{
@@ -768,34 +779,20 @@ public class NetManager implements IoHandler
 	public boolean answerSafe(IoSession session, Bean<?> askBean, Bean<?> answerBean)
 	{
 		if(session.isClosing() || askBean == null || answerBean == null) return false;
-		SContext.current().addOnCommit(() -> answer(session, askBean, answerBean));
+		int askSerial = askBean.serial();
+		answerBean.serial(askSerial > 0 ? -askSerial : 0);
+		RawBean rawbean = new RawBean(answerBean);
+		SContext.current().addOnCommit(() -> send0(session, rawbean));
 		return true;
 	}
 
-	/**
-	 * 对连接器管理的全部连接广播bean
-	 * <p>
-	 * 警告: 连接数很大的情况下慎用,必要时应自己在某一工作线程中即时或定时地逐一发送
-	 */
-	public void clientBroadcast(Bean<?> bean)
+	public boolean answerSafe(IoSession session, int askSerial, Bean<?> answerBean)
 	{
-		if(bean == null) return;
-		bean.serial(0);
-		for(IoSession session : getClientSessions().values())
-			write(session, bean);
-	}
-
-	/**
-	 * 对监听器管理的全部连接广播bean
-	 * <p>
-	 * 警告: 连接数很大的情况下慎用,必要时应自己在某一工作线程中即时或定时地逐一发送
-	 */
-	public void serverBroadcast(Bean<?> bean)
-	{
-		if(bean == null) return;
-		bean.serial(0);
-		for(IoSession session : getServerSessions().values())
-			write(session, bean);
+		if(session.isClosing() || answerBean == null) return false;
+		answerBean.serial(askSerial > 0 ? -askSerial : 0);
+		RawBean rawbean = new RawBean(answerBean);
+		SContext.current().addOnCommit(() -> send0(session, rawbean));
+		return true;
 	}
 
 	/**
