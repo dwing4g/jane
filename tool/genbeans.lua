@@ -293,42 +293,46 @@ public final class AllTables
 #(#	#(table.comment)public static final #(table.table)<#(table.key)#(table.comma)#(table.value), #(table.value).Safe> #(table.name) = _dbm.<#(table.key)#(table.comma)#(table.value), #(table.value).Safe>openTable(#(table.id), "#(table.name)", "#(table.lock)", #(table.cachesize)#(table.comma)#(table.keys), #(table.values));
 #)#
 	/**
-	 * 以下内部类可以单独使用,避免初始化前面的表对象,主要用于获取表的ID和键值类型
+	 * 以下内部类可以单独使用,避免初始化前面的表对象
 	 */
-	public static final class Types
+	public static final class MetaTable
 	{
-		private static final IntHashMap<Types> idTypes = new IntHashMap<]=] .. (jdk7 and "" or "Types") .. [=[>(#(tables.count) * 2);
-		private static final HashMap<String, Types> nameTypes = new HashMap<]=] .. (jdk7 and "" or "String, Types") .. [=[>(#(tables.count) * 2);
+		private static final ArrayList<MetaTable> typeList = new ArrayList<]=] .. (jdk7 and "" or "MetaTable") .. [=[>(#(tables.count));
+		private static final IntHashMap<MetaTable> idTypes = new IntHashMap<]=] .. (jdk7 and "" or "MetaTable") .. [=[>(#(tables.count) * 2);
+		private static final HashMap<String, MetaTable> nameTypes = new HashMap<]=] .. (jdk7 and "" or "String, MetaTable") .. [=[>(#(tables.count) * 2);
 
-		public final int tableId;
-		public final String tableName;
+		public final TableBase<?> table;
 		public final Object keyBeanStub; // Class<?> or Bean<?>
 		public final Bean<?> valueBeanStub;
 
-		private Types(int id, String name, Object kbs, Bean<?> vbs)
+		private MetaTable(TableBase<?> tbl, Object kbs, Bean<?> vbs)
 		{
-			tableId = id;
-			tableName = name;
+			table = tbl;
 			keyBeanStub = kbs;
 			valueBeanStub = vbs;
 		}
 #<#
 		static
 		{
-			Types types;
-#(#			types = new Types(#(table.id), "#(table.name)", #(table.keyg), #(table.value).BEAN_STUB);
-			idTypes.put(#(table.id), types);
-			nameTypes.put("#(table.name)", types);
+			MetaTable mt;
+#(#			typeList.add(mt = new MetaTable(#(table.name), #(table.keyg), #(table.value).BEAN_STUB));
+			idTypes.put(#(table.id), mt);
+			nameTypes.put("#(table.name)", mt);
 #)#		}
 #>#
-		public static Types getTypes(int tableId)
+		public static MetaTable get(int tableId)
 		{
 			return idTypes.get(tableId);
 		}
 
-		public static Types getTypes(String tableName)
+		public static MetaTable get(String tableName)
 		{
 			return nameTypes.get(tableName);
+		}
+
+		public static void foreach(Consumer<MetaTable> consumer)
+		{
+			idTypes.foreachValue(consumer);
 		}
 	}
 }
@@ -1371,7 +1375,10 @@ end):gsub("#%(#(.-)#%)#", function(body)
 end)):gsub(has_handler and "#[<>]#" or "#%<#(.-)#%>#", ""):gsub("#%(bean.count%)", bean_count):gsub("\r", ""), 0)
 
 tables.count = #tables
+tables.imports["java.util.ArrayList"] = true
+tables.imports["java.util.function.Consumer"] = true
 tables.imports["jane.core.DBManager"] = true
+tables.imports["jane.core.TableBase"] = true
 tables.imports["jane.core.map.IntHashMap"] = true
 tables.imports = get_imports(tables.imports)
 if tables.count > 0 then
