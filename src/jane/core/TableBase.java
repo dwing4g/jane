@@ -1,6 +1,7 @@
 package jane.core;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -16,7 +17,7 @@ public abstract class TableBase<V extends Bean<V>>
 
 	public static List<TableBase<?>> getTables()
 	{
-		return _tables;
+		return Collections.unmodifiableList(_tables);
 	}
 
 	/**

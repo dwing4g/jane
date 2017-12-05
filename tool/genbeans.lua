@@ -332,7 +332,7 @@ public final class AllTables
 
 		public static void foreach(Consumer<MetaTable> consumer)
 		{
-			idTypes.foreachValue(consumer);
+			typeList.forEach(consumer);
 		}
 	}
 }
