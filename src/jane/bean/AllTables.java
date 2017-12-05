@@ -46,9 +46,9 @@ public final class AllTables
 	 */
 	public static final class MetaTable
 	{
-		private static final ArrayList<MetaTable> typeList = new ArrayList<>(4);
-		private static final IntHashMap<MetaTable> idTypes = new IntHashMap<>(4 * 2);
-		private static final HashMap<String, MetaTable> nameTypes = new HashMap<>(4 * 2);
+		private static final ArrayList<MetaTable> metaList = new ArrayList<>(4);
+		private static final IntHashMap<MetaTable> idMetas = new IntHashMap<>(4 * 2);
+		private static final HashMap<String, MetaTable> nameMetas = new HashMap<>(4 * 2);
 
 		public final TableBase<?> table;
 		public final Object keyBeanStub; // Class<?> or Bean<?>
@@ -64,33 +64,33 @@ public final class AllTables
 		static
 		{
 			MetaTable mt;
-			typeList.add(mt = new MetaTable(TestTable, Long.class, TestType.BEAN_STUB));
-			idTypes.put(1, mt);
-			nameTypes.put("TestTable", mt);
-			typeList.add(mt = new MetaTable(BeanTable, TestKeyBean.BEAN_STUB, TestBean.BEAN_STUB));
-			idTypes.put(2, mt);
-			nameTypes.put("BeanTable", mt);
-			typeList.add(mt = new MetaTable(OctetsTable, Octets.class, TestEmpty.BEAN_STUB));
-			idTypes.put(0, mt);
-			nameTypes.put("OctetsTable", mt);
-			typeList.add(mt = new MetaTable(Benchmark, Long.class, TestBean.BEAN_STUB));
-			idTypes.put(3, mt);
-			nameTypes.put("Benchmark", mt);
+			metaList.add(mt = new MetaTable(TestTable, Long.class, TestType.BEAN_STUB));
+			idMetas.put(1, mt);
+			nameMetas.put("TestTable", mt);
+			metaList.add(mt = new MetaTable(BeanTable, TestKeyBean.BEAN_STUB, TestBean.BEAN_STUB));
+			idMetas.put(2, mt);
+			nameMetas.put("BeanTable", mt);
+			metaList.add(mt = new MetaTable(OctetsTable, Octets.class, TestEmpty.BEAN_STUB));
+			idMetas.put(0, mt);
+			nameMetas.put("OctetsTable", mt);
+			metaList.add(mt = new MetaTable(Benchmark, Long.class, TestBean.BEAN_STUB));
+			idMetas.put(3, mt);
+			nameMetas.put("Benchmark", mt);
 		}
 
 		public static MetaTable get(int tableId)
 		{
-			return idTypes.get(tableId);
+			return idMetas.get(tableId);
 		}
 
 		public static MetaTable get(String tableName)
 		{
-			return nameTypes.get(tableName);
+			return nameMetas.get(tableName);
 		}
 
 		public static void foreach(Consumer<MetaTable> consumer)
 		{
-			typeList.forEach(consumer);
+			metaList.forEach(consumer);
 		}
 	}
 }

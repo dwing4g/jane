@@ -297,9 +297,9 @@ public final class AllTables
 	 */
 	public static final class MetaTable
 	{
-		private static final ArrayList<MetaTable> typeList = new ArrayList<]=] .. (jdk7 and "" or "MetaTable") .. [=[>(#(tables.count));
-		private static final IntHashMap<MetaTable> idTypes = new IntHashMap<]=] .. (jdk7 and "" or "MetaTable") .. [=[>(#(tables.count) * 2);
-		private static final HashMap<String, MetaTable> nameTypes = new HashMap<]=] .. (jdk7 and "" or "String, MetaTable") .. [=[>(#(tables.count) * 2);
+		private static final ArrayList<MetaTable> metaList = new ArrayList<]=] .. (jdk7 and "" or "MetaTable") .. [=[>(#(tables.count));
+		private static final IntHashMap<MetaTable> idMetas = new IntHashMap<]=] .. (jdk7 and "" or "MetaTable") .. [=[>(#(tables.count) * 2);
+		private static final HashMap<String, MetaTable> nameMetas = new HashMap<]=] .. (jdk7 and "" or "String, MetaTable") .. [=[>(#(tables.count) * 2);
 
 		public final TableBase<?> table;
 		public final Object keyBeanStub; // Class<?> or Bean<?>
@@ -315,24 +315,24 @@ public final class AllTables
 		static
 		{
 			MetaTable mt;
-#(#			typeList.add(mt = new MetaTable(#(table.name), #(table.keyg), #(table.value).BEAN_STUB));
-			idTypes.put(#(table.id), mt);
-			nameTypes.put("#(table.name)", mt);
+#(#			metaList.add(mt = new MetaTable(#(table.name), #(table.keyg), #(table.value).BEAN_STUB));
+			idMetas.put(#(table.id), mt);
+			nameMetas.put("#(table.name)", mt);
 #)#		}
 #>#
 		public static MetaTable get(int tableId)
 		{
-			return idTypes.get(tableId);
+			return idMetas.get(tableId);
 		}
 
 		public static MetaTable get(String tableName)
 		{
-			return nameTypes.get(tableName);
+			return nameMetas.get(tableName);
 		}
 
 		public static void foreach(Consumer<MetaTable> consumer)
 		{
-			typeList.forEach(consumer);
+			metaList.forEach(consumer);
 		}
 	}
 }
