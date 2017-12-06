@@ -533,7 +533,7 @@ public final class Util
 			byte[] pat = _pat;
 			byte c = pat[0];
 			int[] skip = _skip;
-			for(int srcEnd = srcLen - patLen; srcPos <= srcEnd; srcPos += skip[src[srcPos + patLen] & 0xff])
+			for(int srcEnd = srcPos + srcLen - patLen; srcPos <= srcEnd; srcPos += skip[src[srcPos + patLen] & 0xff])
 			{
 				if(src[srcPos] == c)
 				{
