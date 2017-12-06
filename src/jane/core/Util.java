@@ -533,7 +533,7 @@ public final class Util
 			byte[] pat = _pat;
 			byte c = pat[0];
 			int[] skip = _skip;
-			for(int srcEnd = srcPos + srcLen - patLen; srcPos <= srcEnd; srcPos += skip[src[srcPos + patLen] & 0xff])
+			for(int srcEnd = srcPos + srcLen - patLen; srcPos <= srcEnd;)
 			{
 				if(src[srcPos] == c)
 				{
@@ -543,7 +543,14 @@ public final class Util
 						if(src[srcPos + k] != pat[k]) break;
 					}
 				}
-				if(srcPos == srcEnd) return -1;
+				for(;;)
+				{
+					if(srcPos >= srcEnd) return -1;
+					int s = skip[src[srcPos + patLen] & 0xff];
+					srcPos += s;
+					if(s <= patLen) break;
+					--srcPos;
+				}
 			}
 			return -1;
 		}
