@@ -1,6 +1,7 @@
 -- UTF-8 without BOM
 local type = type
 local string = string
+local char = string.char
 local error = error
 local pairs = pairs
 local table = table
@@ -289,7 +290,14 @@ local function get_unmarshal_kv(var, kv, t)
 end
 typedef.byte =
 {
-	name_u = function(var) return var.name:sub(1, 1):upper() .. var.name:sub(2) end,
+	name_u = function(var)
+		local name = var.name
+		local c1, c2 = name:byte(1, 2)
+		if c1 >= 0x61 and c1 <= 0x7a and (not c2 or c2 < 0x41 or c2 > 0x5a) then -- [a-z][^A-Z]
+			return char(c1 - 0x20) .. name:sub(2)
+		end
+		return name
+	end,
 	type = "sbyte", type_i = "sbyte", type_o = "sbyte",
 	subtypeid = 0,
 	public = "public ",
