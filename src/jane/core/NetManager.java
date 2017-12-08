@@ -55,11 +55,11 @@ public class NetManager implements IoHandler
 
 	static final class BeanContext<B extends Bean<B>>
 	{
-		private final int		 askTime = (int)(System.currentTimeMillis() / 1000); // 发送请求的时间戳(秒)
-		private int				 timeOut = Integer.MAX_VALUE;						 // 超时时间(秒)
-		private IoSession		 session;											 // 请求时绑定的session
-		private Bean<?>			 arg;												 // 请求的bean
-		private AnswerHandler<B> answerHandler;										 // 接收回复的回调,超时也会回调(传入的bean为null)
+		private final int		 askTime = (int)_timeSec;	  // 发送请求的时间戳(秒)
+		private int				 timeOut = Integer.MAX_VALUE; // 超时时间(秒)
+		private IoSession		 session;					  // 请求时绑定的session
+		private Bean<?>			 askBean;					  // 请求的bean
+		private AnswerHandler<B> answerHandler;				  // 接收回复的回调,超时也会回调(传入的bean为null)
 	}
 
 	private static final LongConcurrentHashMap<BeanContext<?>> _beanCtxMap	  = new LongConcurrentHashMap<>();	   // 当前等待回复的所有请求上下文
@@ -90,32 +90,20 @@ public class NetManager implements IoHandler
 			{
 				try
 				{
-					int now = (int)(System.currentTimeMillis() / 1000);
+					int now = (int)_timeSec;
 					for(MapIterator<BeanContext<?>> it = _beanCtxMap.entryIterator(); it.moveToNext();)
 					{
 						BeanContext<?> beanCtx = it.value();
 						if(now - beanCtx.askTime > beanCtx.timeOut && _beanCtxMap.remove(it.key(), beanCtx))
 						{
 							IoSession session = beanCtx.session;
-							beanCtx.session = null; // 绑定期已过,清除对session的引用
-							Bean<?> arg = beanCtx.arg;
-							beanCtx.arg = null;
-							AnswerHandler<?> handler = beanCtx.answerHandler;
+							Bean<?> askBean = beanCtx.askBean;
+							AnswerHandler<?> answerHandler = beanCtx.answerHandler;
+							beanCtx.session = null;
+							beanCtx.askBean = null;
 							beanCtx.answerHandler = null;
-							if(session != null && arg != null)
-								Log.warn("{}({}): ask timeout: {}:{}", session.getHandler().getClass().getName(), session.getId(), arg.typeName(), arg);
-							if(handler != null)
-							{
-								try
-								{
-									handler.onAnswer(null);
-								}
-								catch(Exception e)
-								{
-									Log.error((session != null ? session.getHandler().getClass().getName() + '(' + session.getId() + ')' : "?") +
-											": onAnswer(" + (arg != null ? arg.typeName() + ' ' + arg : "?") + ") exception:", e);
-								}
-							}
+							if(session != null)
+								((NetManager)session.getHandler()).onAnswer(session, answerHandler, askBean, null);
 						}
 					}
 				}
@@ -129,8 +117,7 @@ public class NetManager implements IoHandler
 		{
 			try
 			{
-				long now = System.currentTimeMillis();
-				_timeSec = now / 1000;
+				int timeSec = (int)(_timeSec = System.currentTimeMillis() / 1000);
 				IoSession session = _closings.peek();
 				if(session == null) return;
 				do
@@ -138,7 +125,7 @@ public class NetManager implements IoHandler
 					if(!session.isClosing())
 					{
 						Object v = session.getAttribute("closeOnFlushTime");
-						if(v != null && v instanceof Long && now < (long)v) break;
+						if(v != null && v instanceof Integer && timeSec < (Integer)v) break;
 						session.closeNow();
 					}
 					_closings.poll();
@@ -656,7 +643,7 @@ public class NetManager implements IoHandler
 	{
 		BeanContext<B> beanCtx = new BeanContext<>();
 		beanCtx.session = session;
-		beanCtx.arg = bean;
+		beanCtx.askBean = bean;
 		beanCtx.answerHandler = onAnswer;
 		for(;;)
 		{
@@ -698,7 +685,7 @@ public class NetManager implements IoHandler
 			if(_beanCtxMap.remove(bean.serial(), beanCtx))
 			{
 				beanCtx.session = null;
-				beanCtx.arg = null;
+				beanCtx.askBean = null;
 				beanCtx.answerHandler = null;
 			}
 			return false;
@@ -747,7 +734,7 @@ public class NetManager implements IoHandler
 			if(_beanCtxMap.remove(bean.serial(), beanCtx))
 			{
 				beanCtx.session = null;
-				beanCtx.arg = null;
+				beanCtx.askBean = null;
 				beanCtx.answerHandler = null;
 			}
 			return null;
@@ -802,7 +789,7 @@ public class NetManager implements IoHandler
 	 */
 	public static boolean closeOnFlush(IoSession session)
 	{
-		if(session.setAttributeIfAbsent("closeOnFlushTime", System.currentTimeMillis() + Const.closeOnFlushTimeout * 1000L) != null)
+		if(session.setAttributeIfAbsent("closeOnFlushTime", (int)_timeSec + Const.closeOnFlushTimeout) != null)
 			return false;
 		session.closeOnFlush();
 		_closings.offer(session);
@@ -837,15 +824,6 @@ public class NetManager implements IoHandler
 	protected int onConnectFailed(ConnectFuture future, SocketAddress addr, int count, Object ctx)
 	{
 		return -1;
-	}
-
-	/**
-	 * 当收到一个没有注册处理器的bean时的回调
-	 */
-	protected void onUnhandledBean(IoSession session, Bean<?> bean)
-	{
-		Log.warn("{}({}): unhandled bean: {}({}):{}", _name, session.getId(), bean.typeName(), bean.serial(), bean);
-		// session.closeNow();
 	}
 
 	@Override
@@ -884,41 +862,90 @@ public class NetManager implements IoHandler
 		if(Log.hasTrace) Log.trace("{}({}): recv: {}({}):{}", _name, session.getId(), bean.typeName(), serial, bean);
 		if(serial < 0)
 		{
-			BeanContext<?> beanCtx = _beanCtxMap.remove(-serial);
-			if(beanCtx != null)
+			BeanContext<?> beanCtx = _beanCtxMap.get(-serial);
+			if(beanCtx != null && beanCtx.session == session) // 判断session是否一致,避免伪造影响其它session的answer处理
 			{
-				beanCtx.session = null; // 绑定期已过,清除对session的引用
-				beanCtx.arg = null;
-				AnswerHandler<?> handler = beanCtx.answerHandler;
+				if(!_beanCtxMap.remove(-serial, beanCtx)) return; // 异常情况,刚刚被其它地方处理了,所以不再继续处理了
+				Bean<?> askBean = beanCtx.askBean;
+				AnswerHandler<?> answerHandler = beanCtx.answerHandler;
+				beanCtx.session = null;
+				beanCtx.askBean = null;
 				beanCtx.answerHandler = null;
-				if(handler != null)
-				{
-					try
-					{
-						handler.doAnswer(bean);
-					}
-					catch(Throwable e)
-					{
-						Log.error(_name + '(' + session.getId() + "): onAnswer exception: " + bean.typeName(), e);
-					}
+				if(onAnswer(session, answerHandler, askBean, bean))
 					return;
-				}
 			}
 		}
-		BeanHandler<?> handler = _handlers.get(bean.type());
-		if(handler != null)
+		onProcess(session, _handlers.get(bean.type()), bean);
+	}
+
+	/**
+	 * 处理回复bean的可重载方法(包括超时处理). 只有在之前发过ask才会在这里响应
+	 * @param session 关联的session. 不会为null
+	 * @param answerHandler 关联的处理. 有小概率情况为null,可忽略处理
+	 * @param askBean 之前发送的请求bean. 有小概率情况为null,可忽略处理
+	 * @param answerBean 收到的回复bean. null表示接收超时
+	 * @return 接收到回复时返回true表示已处理,false表示继续用answerBean的BeanHandler处理; 超时(answerBean==null)时忽略返回值
+	 */
+	protected boolean onAnswer(IoSession session, AnswerHandler<?> answerHandler, Bean<?> askBean, Bean<?> answerBean)
+	{
+		String askTypeName = null;
+		int askSerial = 0;
+		if(answerBean == null)
 		{
-			try
+			if(askBean != null)
 			{
-				handler.process(this, session, bean);
+				askTypeName = askBean.typeName();
+				askSerial = askBean.serial();
 			}
-			catch(Throwable e)
-			{
-				Log.error(_name + '(' + session.getId() + "): process exception: " + bean.typeName(), e);
-			}
+			Log.warn("{}({}): ask timeout: {}({}):{}", _name, session.getId(), askTypeName, askSerial, askBean);
 		}
-		else
-			onUnhandledBean(session, bean);
+		if(answerHandler == null) return false;
+		try
+		{
+			answerHandler.doAnswer(answerBean);
+		}
+		catch(Throwable e)
+		{
+			if(askTypeName == null && askBean != null)
+			{
+				askTypeName = askBean.typeName();
+				askSerial = askBean.serial();
+			}
+			String answerTypeName = null;
+			int answerSerial = 0;
+			if(answerBean != null)
+			{
+				answerTypeName = answerBean.typeName();
+				answerSerial = answerBean.serial();
+			}
+			Log.error(e, "{}({}): onAnswer exception: {}({}):{} => {}({}):{}", _name, session.getId(),
+					askTypeName, askSerial, askBean, answerTypeName, answerSerial, answerBean);
+		}
+		return true;
+	}
+
+	/**
+	 * 处理bean的可重载方法
+	 * @param session 关联的session. 不会为null
+	 * @param handler 关联的处理. null表示此bean没有注册处理器
+	 * @param bean 收到的bean. 不会为null
+	 */
+	protected void onProcess(IoSession session, BeanHandler<?> handler, Bean<?> bean)
+	{
+		if(handler == null) // 当收到一个没有注册处理器的bean时的回调
+		{
+			Log.warn("{}({}): unhandled bean: {}({}):{}", _name, session.getId(), bean.typeName(), bean.serial(), bean);
+			// session.closeNow();
+			return;
+		}
+		try
+		{
+			handler.process(this, session, bean);
+		}
+		catch(Throwable e)
+		{
+			Log.error(e, "{}({}): onProcess exception: {}({}):{}", _name, session.getId(), bean.typeName(), bean.serial(), bean);
+		}
 	}
 
 	@Override
