@@ -91,7 +91,7 @@ public class BeanCodec extends IoFilterAdapter
 	@Override
 	public void filterWrite(NextFilter next, IoSession session, WriteRequest writeRequest)
 	{
-		Bean<?> bean = (Bean<?>)(writeRequest instanceof Bean ? writeRequest : writeRequest.getMessage());
+		Bean<?> bean = (Bean<?>)writeRequest.getMessage();
 		int type = bean.type();
 		if(type == 0)
 		{
