@@ -306,6 +306,24 @@ public final class SContext
 		return ((ProcThread)Thread.currentThread()).sctx;
 	}
 
+	@SuppressWarnings("unchecked")
+	static <V, S> S safe(Safe<?> _owner, V v)
+	{
+		return (S)(v instanceof Bean ? ((Bean<?>)v).safe(_owner) : v);
+	}
+
+	@SuppressWarnings("unchecked")
+	static <V, S> S safeAlone(V v)
+	{
+		return (S)(v instanceof Bean ? ((Bean<?>)v).safe(null) : v);
+	}
+
+	@SuppressWarnings("unchecked")
+	static <V> V unsafe(Object v)
+	{
+		return (V)(v instanceof Safe ? ((Safe<?>)v).unsafe() : v);
+	}
+
 	<K, V extends Bean<V>, S extends Safe<V>> S addRecord(Table<K, V, S> table, K key, V value)
 	{
 		@SuppressWarnings("unchecked")

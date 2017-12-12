@@ -17,7 +17,7 @@ public final class SSMap<K, V, S> extends SMap<K, V, S> implements NavigableMap<
 		super(owner, map, listener);
 	}
 
-	protected SSMap(Safe<?> owner, NavigableMap<K, V> map, Map<K, V> changed)
+	private SSMap(Safe<?> owner, NavigableMap<K, V> map, Map<K, V> changed)
 	{
 		super(owner, map, changed);
 	}
@@ -43,7 +43,8 @@ public final class SSMap<K, V, S> extends SMap<K, V, S> implements NavigableMap<
 	@Override
 	public SEntry lowerEntry(K k)
 	{
-		return new SEntry(((NavigableMap<K, V>)_map).lowerEntry(k));
+		Entry<K, V> e = ((NavigableMap<K, V>)_map).lowerEntry(k);
+		return e != null ? new SEntry(e) : null;
 	}
 
 	@Override
@@ -55,7 +56,8 @@ public final class SSMap<K, V, S> extends SMap<K, V, S> implements NavigableMap<
 	@Override
 	public SEntry floorEntry(K k)
 	{
-		return new SEntry(((NavigableMap<K, V>)_map).floorEntry(k));
+		Entry<K, V> e = ((NavigableMap<K, V>)_map).floorEntry(k);
+		return e != null ? new SEntry(e) : null;
 	}
 
 	@Override
@@ -67,7 +69,8 @@ public final class SSMap<K, V, S> extends SMap<K, V, S> implements NavigableMap<
 	@Override
 	public SEntry ceilingEntry(K k)
 	{
-		return new SEntry(((NavigableMap<K, V>)_map).ceilingEntry(k));
+		Entry<K, V> e = ((NavigableMap<K, V>)_map).ceilingEntry(k);
+		return e != null ? new SEntry(e) : null;
 	}
 
 	@Override
@@ -79,7 +82,8 @@ public final class SSMap<K, V, S> extends SMap<K, V, S> implements NavigableMap<
 	@Override
 	public SEntry higherEntry(K k)
 	{
-		return new SEntry(((NavigableMap<K, V>)_map).higherEntry(k));
+		Entry<K, V> e = ((NavigableMap<K, V>)_map).higherEntry(k);
+		return e != null ? new SEntry(e) : null;
 	}
 
 	@Override
@@ -91,13 +95,15 @@ public final class SSMap<K, V, S> extends SMap<K, V, S> implements NavigableMap<
 	@Override
 	public SEntry firstEntry()
 	{
-		return new SEntry(((NavigableMap<K, V>)_map).firstEntry());
+		Entry<K, V> e = ((NavigableMap<K, V>)_map).firstEntry();
+		return e != null ? new SEntry(e) : null;
 	}
 
 	@Override
 	public SEntry lastEntry()
 	{
-		return new SEntry(((NavigableMap<K, V>)_map).lastEntry());
+		Entry<K, V> e = ((NavigableMap<K, V>)_map).lastEntry();
+		return e != null ? new SEntry(e) : null;
 	}
 
 	@Override
@@ -105,7 +111,8 @@ public final class SSMap<K, V, S> extends SMap<K, V, S> implements NavigableMap<
 	{
 		SContext ctx = sContext();
 		Entry<K, V> e = ((NavigableMap<K, V>)_map).pollFirstEntry();
-		if(e != null) addUndoRemove(ctx, e.getKey(), e.getValue());
+		if(e == null) return null;
+		addUndoRemove(ctx, e.getKey(), e.getValue());
 		return new SEntry(e);
 	}
 
@@ -114,7 +121,8 @@ public final class SSMap<K, V, S> extends SMap<K, V, S> implements NavigableMap<
 	{
 		SContext ctx = sContext();
 		Entry<K, V> e = ((NavigableMap<K, V>)_map).pollLastEntry();
-		if(e != null) addUndoRemove(ctx, e.getKey(), e.getValue());
+		if(e == null) return null;
+		addUndoRemove(ctx, e.getKey(), e.getValue());
 		return new SEntry(e);
 	}
 

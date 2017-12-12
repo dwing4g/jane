@@ -32,7 +32,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 	@Override
 	public S first()
 	{
-		return safe(firstUnsafe());
+		return SContext.safe(_owner, firstUnsafe());
 	}
 
 	@Deprecated
@@ -44,7 +44,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 	@Override
 	public S last()
 	{
-		return safe(lastUnsafe());
+		return SContext.safe(_owner, lastUnsafe());
 	}
 
 	@Deprecated
@@ -56,7 +56,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 	@Override
 	public S lower(S s)
 	{
-		return safe(lowerUnsafe(unsafe(s)));
+		return SContext.safe(_owner, lowerUnsafe(SContext.unsafe(s)));
 	}
 
 	@Deprecated
@@ -68,7 +68,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 	@Override
 	public S floor(S s)
 	{
-		return safe(floorUnsafe(unsafe(s)));
+		return SContext.safe(_owner, floorUnsafe(SContext.unsafe(s)));
 	}
 
 	@Deprecated
@@ -80,7 +80,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 	@Override
 	public S ceiling(S s)
 	{
-		return safe(ceilingUnsafe(unsafe(s)));
+		return SContext.safe(_owner, ceilingUnsafe(SContext.unsafe(s)));
 	}
 
 	@Deprecated
@@ -92,7 +92,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 	@Override
 	public S higher(S s)
 	{
-		return safe(higherUnsafe(unsafe(s)));
+		return SContext.safe(_owner, higherUnsafe(SContext.unsafe(s)));
 	}
 
 	public V pollFirstDirect()
@@ -106,7 +106,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 	@Override
 	public S pollFirst()
 	{
-		return safeAlone(pollFirstDirect());
+		return SContext.safeAlone(pollFirstDirect());
 	}
 
 	public V pollLastDirect()
@@ -120,7 +120,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 	@Override
 	public S pollLast()
 	{
-		return safeAlone(pollLastDirect());
+		return SContext.safeAlone(pollLastDirect());
 	}
 
 	@Override
@@ -143,7 +143,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 	@Override
 	public SSSet<V, S> subSet(S from, boolean fromInclusive, S to, boolean toInclusive)
 	{
-		return subSetDirect(unsafe(from), fromInclusive, unsafe(to), toInclusive);
+		return subSetDirect(SContext.unsafe(from), fromInclusive, SContext.unsafe(to), toInclusive);
 	}
 
 	public SSSet<V, S> headSetDirect(V to, boolean inclusive)
@@ -154,7 +154,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 	@Override
 	public SSSet<V, S> headSet(S to, boolean inclusive)
 	{
-		return headSetDirect(unsafe(to), inclusive);
+		return headSetDirect(SContext.unsafe(to), inclusive);
 	}
 
 	public SSSet<V, S> tailSetDirect(V from, boolean inclusive)
@@ -165,7 +165,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 	@Override
 	public SSSet<V, S> tailSet(S from, boolean inclusive)
 	{
-		return tailSetDirect(unsafe(from), inclusive);
+		return tailSetDirect(SContext.unsafe(from), inclusive);
 	}
 
 	public SSSet<V, S> subSetDirect(V from, V to)
@@ -176,7 +176,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 	@Override
 	public SSSet<V, S> subSet(S from, S to)
 	{
-		return subSetDirect(unsafe(from), true, unsafe(to), false);
+		return subSetDirect(SContext.unsafe(from), true, SContext.unsafe(to), false);
 	}
 
 	public SSSet<V, S> headSetDirect(V to)
@@ -187,7 +187,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 	@Override
 	public SSSet<V, S> headSet(S to)
 	{
-		return headSetDirect(unsafe(to), false);
+		return headSetDirect(SContext.unsafe(to), false);
 	}
 
 	public SSSet<V, S> tailSetDirect(V from)
@@ -198,6 +198,6 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 	@Override
 	public SSSet<V, S> tailSet(S from)
 	{
-		return tailSetDirect(unsafe(from), true);
+		return tailSetDirect(SContext.unsafe(from), true);
 	}
 }

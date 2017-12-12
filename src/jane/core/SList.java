@@ -31,24 +31,6 @@ public final class SList<V, S> implements List<S>, Cloneable
 		return _sctx = SContext.current();
 	}
 
-	@SuppressWarnings("unchecked")
-	private S safe(V v)
-	{
-		return (S)(v instanceof Bean ? ((Bean<?>)v).safe(_owner) : v);
-	}
-
-	@SuppressWarnings("unchecked")
-	private S safeAlone(V v)
-	{
-		return (S)(v instanceof Bean ? ((Bean<?>)v).safe(null) : v);
-	}
-
-	@SuppressWarnings({ "unchecked", "deprecation" })
-	private V unsafe(Object v)
-	{
-		return (V)(v instanceof Safe ? ((Safe<?>)v).unsafe() : v);
-	}
-
 	@Override
 	public int size()
 	{
@@ -64,7 +46,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 	@Override
 	public boolean contains(Object o)
 	{
-		return _list.contains(unsafe(o));
+		return _list.contains(SContext.unsafe(o));
 	}
 
 	@Override
@@ -76,13 +58,13 @@ public final class SList<V, S> implements List<S>, Cloneable
 	@Override
 	public int indexOf(Object o)
 	{
-		return _list.indexOf(unsafe(o));
+		return _list.indexOf(SContext.unsafe(o));
 	}
 
 	@Override
 	public int lastIndexOf(Object o)
 	{
-		return _list.lastIndexOf(unsafe(o));
+		return _list.lastIndexOf(SContext.unsafe(o));
 	}
 
 	@Deprecated
@@ -102,7 +84,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 	@Override
 	public S get(int idx)
 	{
-		return safe(_list.get(idx));
+		return SContext.safe(_owner, _list.get(idx));
 	}
 
 	/**
@@ -119,7 +101,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 	@Override
 	public boolean add(S s)
 	{
-		return addDirect(unsafe(s));
+		return addDirect(SContext.unsafe(s));
 	}
 
 	public void addDirect(int idx, V v)
@@ -132,18 +114,23 @@ public final class SList<V, S> implements List<S>, Cloneable
 	@Override
 	public void add(int idx, S s)
 	{
-		addDirect(idx, unsafe(s));
+		addDirect(idx, SContext.unsafe(s));
 	}
 
 	public boolean addAllDirect(Collection<? extends V> c)
 	{
 		SContext ctx = sContext();
-		int n = c.size();
+		int n = _list.size();
 		if(!_list.addAll(c)) return false;
 		ctx.addOnRollback(() ->
 		{
-			for(int i = _list.size() - 1; i >= n; --i)
-				_list.remove(i);
+			if(n > 0)
+			{
+				for(int i = _list.size() - 1; i >= n; --i)
+					_list.remove(i);
+			}
+			else
+				_list.clear();
 		});
 		return true;
 	}
@@ -152,13 +139,18 @@ public final class SList<V, S> implements List<S>, Cloneable
 	public boolean addAll(Collection<? extends S> c)
 	{
 		SContext ctx = sContext();
-		int n = c.size();
+		int n = _list.size();
 		for(S s : c)
-			_list.add(unsafe(s));
+			_list.add(SContext.unsafe(s));
 		ctx.addOnRollback(() ->
 		{
-			for(int i = _list.size() - 1; i >= n; --i)
-				_list.remove(i);
+			if(n > 0)
+			{
+				for(int i = _list.size() - 1; i >= n; --i)
+					_list.remove(i);
+			}
+			else
+				_list.clear();
 		});
 		return true;
 	}
@@ -166,12 +158,18 @@ public final class SList<V, S> implements List<S>, Cloneable
 	public boolean addAllDirect(int idx, Collection<? extends V> c)
 	{
 		SContext ctx = sContext();
-		int n = c.size();
+		int n = _list.size();
 		if(!_list.addAll(idx, c)) return false;
+		int n2 = _list.size() - n;
 		ctx.addOnRollback(() ->
 		{
-			for(int i = idx + n - 1, e = i - n; i > e; --i)
-				_list.remove(i);
+			if(n2 < _list.size())
+			{
+				for(int i = idx + n2 - 1; i >= idx; --i)
+					_list.remove(i);
+			}
+			else
+				_list.clear();
 		});
 		return true;
 	}
@@ -181,7 +179,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 	{
 		List<V> list = new ArrayList<>(c.size());
 		for(S s : c)
-			list.add(unsafe(s));
+			list.add(SContext.unsafe(s));
 		return addAllDirect(idx, list);
 	}
 
@@ -196,7 +194,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 	@Override
 	public S set(int idx, S s)
 	{
-		return safeAlone(setDirect(idx, unsafe(s)));
+		return SContext.safeAlone(setDirect(idx, SContext.unsafe(s)));
 	}
 
 	public V removeDirect(int idx)
@@ -210,7 +208,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 	@Override
 	public S remove(int idx)
 	{
-		return safeAlone(removeDirect(idx));
+		return SContext.safeAlone(removeDirect(idx));
 	}
 
 	@Override
@@ -218,7 +216,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 	{
 		int idx = indexOf(o);
 		if(idx < 0) return false;
-		remove(idx);
+		removeDirect(idx);
 		return true;
 	}
 
@@ -252,22 +250,12 @@ public final class SList<V, S> implements List<S>, Cloneable
 		return r;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public void clear()
 	{
-		SContext ctx = sContext();
 		if(_list.isEmpty()) return;
-		List<V> saved;
-		try
-		{
-			saved = _list.getClass().newInstance();
-		}
-		catch(Exception e)
-		{
-			throw new Error(e);
-		}
-		saved.addAll(_list);
+		SContext ctx = sContext();
+		List<V> saved = new ArrayList<>(_list);
 		_list.clear();
 		ctx.addOnRollback(() ->
 		{
@@ -304,7 +292,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 		@Override
 		public S next()
 		{
-			return safe(nextUnsafe());
+			return SContext.safe(_owner, nextUnsafe());
 		}
 
 		@Override
@@ -367,7 +355,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 		@Override
 		public S next()
 		{
-			return safe(nextUnsafe());
+			return SContext.safe(_owner, nextUnsafe());
 		}
 
 		@Deprecated
@@ -382,7 +370,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 		@Override
 		public S previous()
 		{
-			return safe(previousUnsafe());
+			return SContext.safe(_owner, previousUnsafe());
 		}
 
 		@Override
@@ -408,21 +396,21 @@ public final class SList<V, S> implements List<S>, Cloneable
 		@Override
 		public void set(S s)
 		{
-			setDirect(unsafe(s));
+			setDirect(SContext.unsafe(s));
 		}
 
 		public void addDirect(V v)
 		{
 			SContext ctx = sContext();
 			_it.add(v);
-			int i = _idx + _idxOff;
+			int i = _idx + 1;
 			ctx.addOnRollback(() -> _list.remove(i));
 		}
 
 		@Override
 		public void add(S s)
 		{
-			addDirect(unsafe(s));
+			addDirect(SContext.unsafe(s));
 		}
 	}
 
@@ -454,7 +442,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 	{
 		for(V v : _list)
 		{
-			if(filter.test(v) && !consumer.test(safe(v)))
+			if(filter.test(v) && !consumer.test(SContext.safe(_owner, v)))
 				return false;
 		}
 		return true;

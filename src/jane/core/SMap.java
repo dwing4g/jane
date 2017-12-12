@@ -4,6 +4,7 @@ import java.util.AbstractCollection;
 import java.util.AbstractSet;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiPredicate;
@@ -77,18 +78,6 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		return (S)s;
 	}
 
-	@SuppressWarnings("unchecked")
-	private S safeAlone(V v)
-	{
-		return (S)(v instanceof Bean ? ((Bean<?>)v).safe(null) : v);
-	}
-
-	@SuppressWarnings({ "unchecked", "deprecation" })
-	private V unsafe(Object v)
-	{
-		return (V)(v instanceof Safe ? ((Safe<?>)v).unsafe() : v);
-	}
-
 	protected void addUndoPut(SContext ctx, K k, V vOld)
 	{
 		ctx.addOnRollback(() ->
@@ -118,17 +107,16 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		return _map.isEmpty();
 	}
 
-	@SuppressWarnings("unlikely-arg-type")
 	@Override
 	public boolean containsKey(Object k)
 	{
-		return _map.containsKey(unsafe(k));
+		return _map.containsKey(k);
 	}
 
 	@Override
 	public boolean containsValue(Object v)
 	{
-		return _map.containsValue(unsafe(v));
+		return _map.containsValue(SContext.unsafe(v));
 	}
 
 	@Deprecated
@@ -145,8 +133,8 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 
 	public V putDirect(K k, V v)
 	{
-		SContext ctx = sContext();
 		if(v == null) throw new NullPointerException();
+		SContext ctx = sContext();
 		if(_changed != null) _changed.put(k, v);
 		v = _map.put(k, v);
 		addUndoPut(ctx, k, v);
@@ -156,7 +144,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	@Override
 	public S put(K k, S s)
 	{
-		return safeAlone(putDirect(k, unsafe(s)));
+		return SContext.safeAlone(putDirect(k, SContext.unsafe(s)));
 	}
 
 	@Override
@@ -165,8 +153,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		if(_map == m || this == m) return;
 		for(Entry<? extends K, ? extends S> e : m.entrySet())
 		{
-			S s = e.getValue();
-			V v = unsafe(s);
+			V v = SContext.unsafe(e.getValue());
 			if(v != null) putDirect(e.getKey(), v);
 		}
 	}
@@ -181,11 +168,11 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		}
 	}
 
-	@SuppressWarnings({ "unchecked", "unlikely-arg-type" })
+	@SuppressWarnings("unchecked")
 	public V removeDirect(Object k)
 	{
 		SContext ctx = sContext();
-		V vOld = _map.remove(unsafe(k));
+		V vOld = _map.remove(k);
 		if(vOld == null) return null;
 		addUndoRemove(ctx, (K)k, vOld);
 		return vOld;
@@ -194,25 +181,15 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	@Override
 	public S remove(Object k)
 	{
-		return safeAlone(removeDirect(k));
+		return SContext.safeAlone(removeDirect(k));
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public void clear()
 	{
-		SContext ctx = sContext();
 		if(_map.isEmpty()) return;
-		Map<K, V> saved;
-		try
-		{
-			saved = _map.getClass().newInstance();
-		}
-		catch(Exception e)
-		{
-			throw new Error(e);
-		}
-		saved.putAll(_map);
+		SContext ctx = sContext();
+		Map<K, V> saved = (_map instanceof LinkedHashMap ? new LinkedHashMap<>(_map) : new HashMap<>(_map));
 		if(_changed != null)
 		{
 			for(K k : _map.keySet())
@@ -231,7 +208,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	{
 		private final Entry<K, V> _e;
 
-		protected SEntry(Entry<K, V> e)
+		SEntry(Entry<K, V> e)
 		{
 			_e = e;
 		}
@@ -256,8 +233,8 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 
 		public V setValueDirect(V v)
 		{
-			SContext ctx = sContext();
 			if(v == null) throw new NullPointerException();
+			SContext ctx = sContext();
 			K k = _e.getKey();
 			if(_changed != null) _changed.put(k, v);
 			v = _e.setValue(v);
@@ -268,7 +245,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		@Override
 		public S setValue(S s)
 		{
-			return safeAlone(setValueDirect(unsafe(s)));
+			return SContext.safeAlone(setValueDirect(SContext.unsafe(s)));
 		}
 
 		@Override
@@ -289,6 +266,10 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		private final Iterator<Entry<K, V>>	_it	= _map.entrySet().iterator();
 		private SEntry						_cur;
 
+		private SIterator()
+		{
+		}
+
 		@Override
 		public boolean hasNext()
 		{
@@ -303,9 +284,9 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		@Override
 		public void remove()
 		{
-			SContext ctx = sContext();
 			K k = _cur.getKey();
 			V v = _cur.getValueUnsafe();
+			SContext ctx = sContext();
 			_it.remove();
 			addUndoRemove(ctx, k, v);
 		}
@@ -338,18 +319,21 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 			return SMap.this.size();
 		}
 
+		@SuppressWarnings("unchecked")
 		@Override
-		public boolean contains(Object o)
+		public boolean contains(Object e)
 		{
 			if(_it == null) _it = _map.entrySet();
-			return _it.contains(unsafe(o));
+			return _it.contains(e instanceof SMap.SEntry ? ((SEntry)e)._e : e);
 		}
 
 		@SuppressWarnings("unchecked")
 		@Override
-		public boolean remove(Object o)
+		public boolean remove(Object e)
 		{
-			return o instanceof Entry && SMap.this.remove(((Entry<K, ?>)o).getKey()) != null;
+			if(e instanceof SMap.SEntry) e = ((SEntry)e)._e;
+			if(!contains(e)) return false;
+			return e instanceof Entry && SMap.this.removeDirect(((Entry<K, ?>)e).getKey()) != null;
 		}
 
 		@Override
@@ -385,15 +369,15 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		}
 
 		@Override
-		public boolean contains(Object o)
+		public boolean contains(Object k)
 		{
-			return SMap.this.containsKey(o);
+			return SMap.this.containsKey(k);
 		}
 
 		@Override
-		public boolean remove(Object o)
+		public boolean remove(Object k)
 		{
-			return SMap.this.remove(o) != null;
+			return SMap.this.removeDirect(k) != null;
 		}
 
 		@Override
@@ -429,9 +413,9 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		}
 
 		@Override
-		public boolean contains(Object o)
+		public boolean contains(Object v)
 		{
-			return SMap.this.containsValue(o);
+			return SMap.this.containsValue(v);
 		}
 
 		@Override
@@ -445,6 +429,18 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	public SEntrySet entrySet()
 	{
 		return new SEntrySet();
+	}
+
+	@Override
+	public SKeySet keySet()
+	{
+		return new SKeySet();
+	}
+
+	@Override
+	public SValues values()
+	{
+		return new SValues();
 	}
 
 	public boolean foreachFilter(Predicate<V> filter, Predicate<S> consumer)
@@ -492,18 +488,6 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 				return false;
 		}
 		return true;
-	}
-
-	@Override
-	public SKeySet keySet()
-	{
-		return new SKeySet();
-	}
-
-	@Override
-	public SValues values()
-	{
-		return new SValues();
 	}
 
 	public SMap<K, V, S> append(Map<K, V> map)
