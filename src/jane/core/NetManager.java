@@ -75,6 +75,7 @@ public class NetManager implements IoHandler
 	private volatile NioSocketAcceptor						   _acceptor;										   // mina的网络监听器
 	private volatile NioSocketConnector						   _connector;										   // mina的网络连接器
 	private int												   _ioThreadCount;									   // 网络IO线程数量(0表示使用共享的IO线程池;<0表示默认的线程数量)
+	private boolean											   _enableTrace	  = Log.hasTrace;					   // 是否输出TRACE级日志
 
 	static
 	{
@@ -165,6 +166,11 @@ public class NetManager implements IoHandler
 	public final String getName()
 	{
 		return _name;
+	}
+
+	public final void setEnableTrace(boolean enable)
+	{
+		_enableTrace = enable && Log.hasTrace;
 	}
 
 	/**
@@ -567,7 +573,7 @@ public class NetManager implements IoHandler
 	public boolean sendRaw(IoSession session, Object obj)
 	{
 		if(!write(session, obj)) return false;
-		if(Log.hasTrace) Log.trace("{}({}): send: raw:{}", _name, session.getId(), obj);
+		if(_enableTrace) Log.trace("{}({}): send: raw:{}", _name, session.getId(), obj);
 		return true;
 	}
 
@@ -582,7 +588,7 @@ public class NetManager implements IoHandler
 	{
 		bean.serial(0);
 		if(!write(session, bean)) return false;
-		if(Log.hasTrace) Log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.typeName(), bean);
+		if(_enableTrace) Log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.typeName(), bean);
 		return true;
 	}
 
@@ -626,7 +632,7 @@ public class NetManager implements IoHandler
 				}
 			}) == null) return false;
 		}
-		if(Log.hasTrace) Log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.typeName(), bean);
+		if(_enableTrace) Log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.typeName(), bean);
 		return true;
 	}
 
@@ -664,7 +670,7 @@ public class NetManager implements IoHandler
 	private boolean send0(IoSession session, Bean<?> bean)
 	{
 		if(!write(session, bean)) return false;
-		if(Log.hasTrace) Log.trace("{}({}): send: {}({}):{}", _name, session.getId(), bean.typeName(), bean.serial(), bean);
+		if(_enableTrace) Log.trace("{}({}): send: {}({}):{}", _name, session.getId(), bean.typeName(), bean.serial(), bean);
 		return true;
 	}
 
@@ -859,7 +865,7 @@ public class NetManager implements IoHandler
 	{
 		Bean<?> bean = (Bean<?>)message;
 		int serial = bean.serial();
-		if(Log.hasTrace) Log.trace("{}({}): recv: {}({}):{}", _name, session.getId(), bean.typeName(), serial, bean);
+		if(_enableTrace) Log.trace("{}({}): recv: {}({}):{}", _name, session.getId(), bean.typeName(), serial, bean);
 		if(serial < 0)
 		{
 			BeanContext<?> beanCtx = _beanCtxMap.get(-serial);

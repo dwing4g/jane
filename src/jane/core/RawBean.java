@@ -10,15 +10,17 @@ public final class RawBean extends Bean<RawBean>
 	private static final long	serialVersionUID = 1L;
 	public static final RawBean	BEAN_STUB		 = new RawBean();
 	private int					_type;							 // 未知的bean类型
+	private int					_serial;						 // 未知的bean序列号
 	private Octets				_data;							 // 未知的bean数据
 
 	public RawBean()
 	{
 	}
 
-	public RawBean(int type, Octets data)
+	public RawBean(int type, int serial, Octets data)
 	{
 		_type = type;
+		_serial = serial;
 		_data = data;
 	}
 
@@ -35,6 +37,16 @@ public final class RawBean extends Bean<RawBean>
 	public void setType(int type)
 	{
 		_type = type;
+	}
+
+	public int getSerial()
+	{
+		return _serial;
+	}
+
+	public void setSerial(int serial)
+	{
+		_serial = serial;
 	}
 
 	public Octets getData()
@@ -57,12 +69,14 @@ public final class RawBean extends Bean<RawBean>
 		int serial = bean.serial();
 		int reserveLen = OctetsStream.marshalUIntLen(type) + OctetsStream.marshalLen(serial) + 5;
 		_type = type;
+		_serial = serial;
 		serial(serial);
 
 		OctetsStream os;
 		if(_data instanceof OctetsStream)
 		{
 			os = (OctetsStream)_data;
+			os.clear();
 			os.reserve(reserveLen + bean.initSize());
 		}
 		else
@@ -104,6 +118,7 @@ public final class RawBean extends Bean<RawBean>
 	public void reset()
 	{
 		_type = 0;
+		_serial = 0;
 		if(_data != null)
 			_data.clear();
 	}
@@ -131,7 +146,7 @@ public final class RawBean extends Bean<RawBean>
 	@Override
 	public RawBean clone()
 	{
-		return new RawBean(_type, _data != null ? _data.clone() : null);
+		return new RawBean(_type, _serial, _data != null ? _data.clone() : null);
 	}
 
 	@Override
@@ -164,20 +179,20 @@ public final class RawBean extends Bean<RawBean>
 	@Override
 	public String toString()
 	{
-		return "{type=" + _type + ",data=[" + (_data != null ? _data.size() : "null") + "]}";
+		return "{type=" + _type + ",serial=" + _serial + ",data=" + _data + "}";
 	}
 
 	@Override
 	public StringBuilder toJson(StringBuilder s)
 	{
 		if(s == null) s = new StringBuilder((_data != null ? _data.size() * 3 : 0) + 32);
-		return s.append("{\"type\":").append(_type).append(",\"data\":").append(_data != null ? _data.dumpJStr(s) : null).append('}');
+		return s.append("{\"type\":").append(_type).append(",\"serial\":").append(_serial).append(",\"data\":").append(_data != null ? _data.dumpJStr(s) : null).append('}');
 	}
 
 	@Override
 	public StringBuilder toLua(StringBuilder s)
 	{
 		if(s == null) s = new StringBuilder((_data != null ? _data.size() * 3 : 0) + 32);
-		return s.append("{type=").append(_type).append(",data=").append(_data != null ? _data.dumpJStr(s) : null).append('}');
+		return s.append("{type=").append(_type).append(",serial=").append(_serial).append(",data=").append(_data != null ? _data.dumpJStr(s) : null).append('}');
 	}
 }

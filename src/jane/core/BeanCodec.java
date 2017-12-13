@@ -153,7 +153,7 @@ public class BeanCodec extends IoFilterAdapter
 			os.setPosition(pos + _psize);
 		}
 		else
-			bean = new RawBean(_ptype, os.unmarshalRaw(_psize));
+			bean = new RawBean(_ptype, _pserial, os.unmarshalRaw(_psize));
 		bean.serial(_pserial);
 		_psize = -1;
 		next.messageReceived(bean);
