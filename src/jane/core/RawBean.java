@@ -116,6 +116,7 @@ public final class RawBean extends Bean<RawBean>
 	public OctetsStream marshal(OctetsStream os)
 	{
 		os.marshalUInt(_type);
+		os.marshal(serial());
 		if(_data != null)
 			os.marshal(_data);
 		else
@@ -127,6 +128,7 @@ public final class RawBean extends Bean<RawBean>
 	public OctetsStream unmarshal(OctetsStream os) throws MarshalException
 	{
 		_type = os.unmarshalUInt();
+		serial(os.unmarshalInt());
 		if(_data == null)
 			_data = new Octets();
 		return os.unmarshal(_data);
