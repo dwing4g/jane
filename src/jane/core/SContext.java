@@ -176,16 +176,6 @@ public final class SContext
 		{
 			return _bean.toString();
 		}
-
-		public StringBuilder toJson(StringBuilder s)
-		{
-			return _bean.toJson(s);
-		}
-
-		public StringBuilder toLua(StringBuilder s)
-		{
-			return _bean.toLua(s);
-		}
 	}
 
 	public interface Rec

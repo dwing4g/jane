@@ -15,7 +15,7 @@ public final class TestBean extends Bean<TestBean>
 {
 	private static final long serialVersionUID = 0xbeacaa44540448ccL;
 	public  static final int BEAN_TYPE = 1;
-	public  static final String BEAN_TYPENAME = "TestBean";
+	public  static final String BEAN_TYPENAME = TestBean.class.getSimpleName();
 	public  static final TestBean BEAN_STUB = new TestBean();
 	public  static final int TEST_CONST1 = 5; // 测试类静态常量
 	public  static final String TEST_CONST2 = "test_const2";

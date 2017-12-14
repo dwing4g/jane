@@ -8,10 +8,11 @@ package jane.core;
 public final class RawBean extends Bean<RawBean>
 {
 	private static final long	serialVersionUID = 1L;
+	public static final int		BEAN_TYPE		 = 0;
+	public static final String	BEAN_TYPENAME	 = RawBean.class.getSimpleName();
 	public static final RawBean	BEAN_STUB		 = new RawBean();
-	private int					_type;							 // 未知的bean类型
-	private int					_serial;						 // 未知的bean序列号
-	private Octets				_data;							 // 未知的bean数据
+	private int					_type;											 // 未知的bean类型
+	private Octets				_data;											 // 未知的bean数据
 
 	public RawBean()
 	{
@@ -19,8 +20,8 @@ public final class RawBean extends Bean<RawBean>
 
 	public RawBean(int type, int serial, Octets data)
 	{
+		serial(serial);
 		_type = type;
-		_serial = serial;
 		_data = data;
 	}
 
@@ -39,16 +40,6 @@ public final class RawBean extends Bean<RawBean>
 		_type = type;
 	}
 
-	public int getSerial()
-	{
-		return _serial;
-	}
-
-	public void setSerial(int serial)
-	{
-		_serial = serial;
-	}
-
 	public Octets getData()
 	{
 		return _data;
@@ -60,16 +51,14 @@ public final class RawBean extends Bean<RawBean>
 	}
 
 	/**
-	 * data包含类型,长度
-	 * @param bean
+	 * data包含bean的头部
 	 */
-	public void setBean(Bean<?> bean)
+	public RawBean setBean(Bean<?> bean)
 	{
 		int type = bean.type();
 		int serial = bean.serial();
 		int reserveLen = OctetsStream.marshalUIntLen(type) + OctetsStream.marshalLen(serial) + 5;
 		_type = type;
-		_serial = serial;
 		serial(serial);
 
 		OctetsStream os;
@@ -88,18 +77,19 @@ public final class RawBean extends Bean<RawBean>
 		os.marshalUInt(type).marshal(serial);
 		os.resize(len);
 		os.setPosition(pos);
+		return this;
 	}
 
 	@Override
 	public int type()
 	{
-		return 0;
+		return BEAN_TYPE;
 	}
 
 	@Override
 	public String typeName()
 	{
-		return "RawBean";
+		return BEAN_TYPENAME;
 	}
 
 	@Override
@@ -118,7 +108,6 @@ public final class RawBean extends Bean<RawBean>
 	public void reset()
 	{
 		_type = 0;
-		_serial = 0;
 		if(_data != null)
 			_data.clear();
 	}
@@ -146,7 +135,7 @@ public final class RawBean extends Bean<RawBean>
 	@Override
 	public RawBean clone()
 	{
-		return new RawBean(_type, _serial, _data != null ? _data.clone() : null);
+		return new RawBean(_type, serial(), _data != null ? _data.clone() : null);
 	}
 
 	@Override
@@ -179,20 +168,6 @@ public final class RawBean extends Bean<RawBean>
 	@Override
 	public String toString()
 	{
-		return "{type=" + _type + ",serial=" + _serial + ",data=" + _data + "}";
-	}
-
-	@Override
-	public StringBuilder toJson(StringBuilder s)
-	{
-		if(s == null) s = new StringBuilder((_data != null ? _data.size() * 3 : 0) + 32);
-		return s.append("{\"type\":").append(_type).append(",\"serial\":").append(_serial).append(",\"data\":").append(_data != null ? _data.dumpJStr(s) : null).append('}');
-	}
-
-	@Override
-	public StringBuilder toLua(StringBuilder s)
-	{
-		if(s == null) s = new StringBuilder((_data != null ? _data.size() * 3 : 0) + 32);
-		return s.append("{type=").append(_type).append(",serial=").append(_serial).append(",data=").append(_data != null ? _data.dumpJStr(s) : null).append('}');
+		return "{t:" + _type + ",s:" + serial() + ",d:" + _data + "}";
 	}
 }

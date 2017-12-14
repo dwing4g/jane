@@ -1,6 +1,5 @@
 package jane.core;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -12,16 +11,18 @@ import java.util.TreeMap;
 public final class DynBean extends Bean<DynBean>
 {
 	private static final long		   serialVersionUID	= 1L;
+	public static final String		   BEAN_TYPENAME	= DynBean.class.getSimpleName();
 	public static final DynBean		   BEAN_STUB		= new DynBean();
-	private int						   _type;							   // bean的类型(可用可不用,不影响序列化/反序列化)
-	private final Map<Integer, Object> _fields			= new TreeMap<>(); // key是字段ID. 为了方便格式化成字符串,使用有序的容器
+	private int						   _type;											// bean的类型(可用可不用,不影响序列化/反序列化)
+	private final Map<Integer, Object> _fields			= new TreeMap<>();				// key是字段ID. 为了方便格式化成字符串,使用有序的容器
 
 	public DynBean()
 	{
 	}
 
-	public DynBean(int type)
+	public DynBean(int type, int serial)
 	{
+		serial(serial);
 		_type = type;
 	}
 
@@ -65,7 +66,7 @@ public final class DynBean extends Bean<DynBean>
 	@Override
 	public String typeName()
 	{
-		return "DynBean";
+		return BEAN_TYPENAME;
 	}
 
 	@Override
@@ -110,7 +111,7 @@ public final class DynBean extends Bean<DynBean>
 	@Override
 	public DynBean clone()
 	{
-		DynBean b = new DynBean(_type);
+		DynBean b = new DynBean(_type, serial());
 		b._fields.putAll(_fields);
 		return b;
 	}
@@ -134,55 +135,9 @@ public final class DynBean extends Bean<DynBean>
 	public String toString()
 	{
 		StringBuilder s = new StringBuilder(_fields.size() * 16 + 16);
-		s.append("{t:").append(_type);
+		s.append("{t:").append(_type).append(",s:").append(serial());
 		for(Entry<Integer, Object> e : _fields.entrySet())
 			s.append(',').append(e.getKey()).append(':').append(e.getValue());
 		return s.append('}').toString();
-	}
-
-	@Override
-	public StringBuilder toJson(StringBuilder s)
-	{
-		if(s == null) s = new StringBuilder(_fields.size() * 16 + 16);
-		s.append("{\"t\":").append(_type);
-		for(Entry<Integer, Object> e : _fields.entrySet())
-		{
-			s.append(',').append('"').append(e.getKey()).append('"').append(':');
-			Object o = e.getValue();
-			if(o instanceof Number || o instanceof Boolean)
-				s.append(o.toString());
-			else if(o instanceof Octets)
-				((Octets)o).dumpJStr(s);
-			else if(o instanceof Collection)
-				Util.appendJson(s, (Collection<?>)o);
-			else if(o instanceof Map)
-				Util.appendJson(s, (Map<?, ?>)o);
-			else
-				Util.toJStr(s, o.toString());
-		}
-		return s.append('}');
-	}
-
-	@Override
-	public StringBuilder toLua(StringBuilder s)
-	{
-		if(s == null) s = new StringBuilder(_fields.size() * 16 + 16);
-		s.append("{t=").append(_type);
-		for(Entry<Integer, Object> e : _fields.entrySet())
-		{
-			s.append(',').append('[').append(e.getKey()).append(']').append('=');
-			Object o = e.getValue();
-			if(o instanceof Number || o instanceof Boolean)
-				s.append(o.toString());
-			else if(o instanceof Octets)
-				((Octets)o).dumpJStr(s);
-			else if(o instanceof Collection)
-				Util.appendLua(s, (Collection<?>)o);
-			else if(o instanceof Map)
-				Util.appendLua(s, (Map<?, ?>)o);
-			else
-				Util.toJStr(s, o.toString());
-		}
-		return s.append('}');
 	}
 }

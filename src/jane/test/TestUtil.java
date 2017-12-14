@@ -13,6 +13,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -22,12 +23,173 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.NodeList;
+import jane.core.Octets;
 
 public final class TestUtil
 {
 	private static final Pattern _patCharset				 = Pattern.compile("charset=(\\S+)");
 	private static final int	 HTTP_REQ_CONNECTION_TIMEOUT = 15 * 1000;
 	private static final int	 HTTP_RES_BUFFER_SIZE		 = 8 * 1024;
+
+	/**
+	 * 把字符串转化成Lua字符串输出到{@link StringBuilder}中
+	 */
+	public static StringBuilder toLuaStr(StringBuilder sb, String str)
+	{
+		int n = str.length();
+		if(sb == null)
+			sb = new StringBuilder(n + 4);
+		sb.append('"');
+		for(int i = 0; i < n; ++i)
+		{
+			char c = str.charAt(i);
+			switch(c)
+			{
+				case '\\':
+				case '"':
+					sb.append('\\').append(c);
+					break;
+				default:
+					if(c < ' ') // 0x20
+						sb.append('\\').append('x').append(Octets.toHexNumber(c >> 4)).append(Octets.toHexNumber(c));
+					else
+						sb.append(c);
+			}
+		}
+		return sb.append('"');
+	}
+
+	/**
+	 * 把字符串转化成Java/JSON字符串输出到{@link StringBuilder}中
+	 */
+	public static StringBuilder toJStr(StringBuilder sb, String str)
+	{
+		int n = str.length();
+		if(sb == null)
+			sb = new StringBuilder(n + 4);
+		sb.append('"');
+		for(int i = 0; i < n; ++i)
+		{
+			char c = str.charAt(i);
+			switch(c)
+			{
+				case '\\':
+				case '"':
+					sb.append('\\').append(c);
+					break;
+				case '\b':
+					sb.append('\\').append('b');
+					break;
+				case '\t':
+					sb.append('\\').append('t');
+					break;
+				case '\n':
+					sb.append('\\').append('n');
+					break;
+				case '\f':
+					sb.append('\\').append('f');
+					break;
+				case '\r':
+					sb.append('\\').append('r');
+					break;
+				default:
+					if(c < ' ') // 0x20
+						sb.append(c < 0x10 ? "\\u000" : "\\u001").append(Octets.toHexNumber(c));
+					else
+						sb.append(c);
+			}
+		}
+		return sb.append('"');
+	}
+
+	/**
+	 * 把普通对象转成JSON字符串输出到{@link StringBuilder}中
+	 */
+	public static StringBuilder appendJson(StringBuilder s, Object o)
+	{
+		if(o instanceof Number)
+			return s.append(o.toString());
+		else if(o instanceof Octets)
+			return ((Octets)o).dumpJStr(s);
+//		else if(o instanceof Bean)
+//			return ((Bean<?>)o).toJson(s);
+		else
+			return toJStr(s, o.toString());
+	}
+
+	/**
+	 * 把序列容器里的元素转成JSON字符串输出到{@link StringBuilder}中
+	 */
+	public static StringBuilder appendJson(StringBuilder s, Collection<?> c)
+	{
+		if(c.isEmpty()) return s.append("[],");
+		s.append('[');
+		for(Object o : c)
+			appendJson(s, o).append(',');
+		s.setCharAt(s.length() - 1, ']');
+		return s.append(',');
+	}
+
+	/**
+	 * 把Map容器里的元素转成JSON字符串输出到{@link StringBuilder}中
+	 */
+	public static StringBuilder appendJson(StringBuilder s, Map<?, ?> m)
+	{
+		if(m.isEmpty()) return s.append("{},");
+		s.append('{');
+		for(Entry<?, ?> e : m.entrySet())
+		{
+			appendJson(s, e.getKey()).append(':');
+			appendJson(s, e.getValue()).append(',');
+		}
+		s.setCharAt(s.length() - 1, '}');
+		return s.append(',');
+	}
+
+	/**
+	 * 把普通对象转成Lua字符串输出到{@link StringBuilder}中
+	 */
+	public static StringBuilder appendLua(StringBuilder s, Object o)
+	{
+		if(o instanceof Number)
+			return s.append(o.toString());
+		else if(o instanceof Octets)
+			return ((Octets)o).dumpJStr(s);
+//		else if(o instanceof Bean)
+//			return ((Bean<?>)o).toLua(s);
+		else
+			return toJStr(s, o.toString());
+	}
+
+	/**
+	 * 把序列容器里的元素转成Lua字符串输出到{@link StringBuilder}中
+	 */
+	public static StringBuilder appendLua(StringBuilder s, Collection<?> c)
+	{
+		if(c.isEmpty()) return s.append("{},");
+		s.append('{');
+		for(Object o : c)
+			appendLua(s, o).append(',');
+		s.setCharAt(s.length() - 1, '}');
+		return s.append(',');
+	}
+
+	/**
+	 * 把Map容器里的元素转成Lua字符串输出到{@link StringBuilder}中
+	 */
+	public static StringBuilder appendLua(StringBuilder s, Map<?, ?> m)
+	{
+		if(m.isEmpty()) return s.append("{},");
+		s.append('{');
+		for(Entry<?, ?> e : m.entrySet())
+		{
+			s.append('[');
+			appendLua(s, e.getKey()).append(']').append('=');
+			appendLua(s, e.getValue()).append(',');
+		}
+		s.setCharAt(s.length() - 1, '}');
+		return s.append(',');
+	}
 
 	/**
 	 * 把xml文件转换成bean的map结构

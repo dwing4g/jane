@@ -12,7 +12,7 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 {
 	private static final long serialVersionUID = 0xbeac0364a4241981L;
 	public  static final int BEAN_TYPE = 0;
-	public  static final String BEAN_TYPENAME = "TestKeyBean";
+	public  static final String BEAN_TYPENAME = TestKeyBean.class.getSimpleName();
 	public  static final TestKeyBean BEAN_STUB = new TestKeyBean();
 
 	private /*  1*/ int key1; // KEY-1

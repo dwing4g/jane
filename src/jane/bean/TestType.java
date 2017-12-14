@@ -38,7 +38,7 @@ public final class TestType extends Bean<TestType>
 {
 	private static final long serialVersionUID = 0xbeacabe90777739dL;
 	public  static final int BEAN_TYPE = 2;
-	public  static final String BEAN_TYPENAME = "TestType";
+	public  static final String BEAN_TYPENAME = TestType.class.getSimpleName();
 	public  static final TestType BEAN_STUB = new TestType();
 	private static final Field FIELD_v1;
 	private static final Field FIELD_v2;

@@ -14,9 +14,6 @@ local open = io.open
 local tostring = tostring
 local arg = {...}
 
-local jdk7 = true -- false for jdk6
-local genToJson = false
-local genToLua = false
 local namespace = arg[1] -- for bean namespace
 if not namespace then error("ERROR: arg[1] must be namespace") end
 
@@ -31,7 +28,7 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 {
 	private static final long serialVersionUID = #(bean.uid);
 	public  static final int BEAN_TYPE = #(bean.type);
-	public  static final String BEAN_TYPENAME = "#(bean.name)";
+	public  static final String BEAN_TYPENAME = #(bean.name).class.getSimpleName();
 	public  static final #(bean.name) BEAN_STUB = new #(bean.name)();
 #{#	public  static final #(var.type) #(var.name)#(var.value);#(var.comment2)
 #}##(##(var.field)#)#
@@ -172,24 +169,6 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 #)#		_s_.setLength(_s_.length() - 1);#>#
 		return _s_.append('}').toString();
 	}
-
-	@Override
-	public StringBuilder toJson(StringBuilder _s_)
-	{
-		if(_s_ == null) _s_ = new StringBuilder(1024);
-		_s_.append('{');#<#
-#(##(var.tojson)#)#		_s_.setLength(_s_.length() - 1);#>#
-		return _s_.append('}');
-	}
-
-	@Override
-	public StringBuilder toLua(StringBuilder _s_)
-	{
-		if(_s_ == null) _s_ = new StringBuilder(1024);
-		_s_.append('{');#<#
-#(##(var.tolua)#)#		_s_.setLength(_s_.length() - 1);#>#
-		return _s_.append('}');
-	}
 #(bean.attach_java)
 	@Override
 	public Safe safe(SContext.Safe<?> _parent_)
@@ -232,7 +211,7 @@ public final class AllBeans
 	/** 获取全部的bean实例 */
 	public static Collection<Bean<?>> getAllBeans()
 	{
-		List<Bean<?>> r = new ArrayList<]=] .. (jdk7 and "" or "Bean<?>") .. [=[>(#(bean.count));
+		List<Bean<?>> r = new ArrayList<>(#(bean.count));
 #(#		r.add(#(bean.name).BEAN_STUB);
 #)#		return r;
 	}
@@ -244,7 +223,7 @@ public final class AllBeans
 
 	public static IntHashMap<BeanHandler<?>> get#(hdl.name)Handlers(IntHashMap<BeanHandler<?>> r)
 	{
-		if(r == null) r = new IntHashMap<]=] .. (jdk7 and "" or "BeanHandler<?>") .. [=[>(#(hdl.count) * 4);
+		if(r == null) r = new IntHashMap<>(#(hdl.count) * 4);
 #(#		r.put(#(bean.type), new #(hdl.path).#(bean.name)Handler());
 #)#		return r;
 	}
@@ -298,9 +277,9 @@ public final class AllTables
 	 */
 	public static final class MetaTable
 	{
-		private static final ArrayList<MetaTable> metaList = new ArrayList<]=] .. (jdk7 and "" or "MetaTable") .. [=[>(#(tables.count));
-		private static final IntHashMap<MetaTable> idMetas = new IntHashMap<]=] .. (jdk7 and "" or "MetaTable") .. [=[>(#(tables.count) * 2);
-		private static final HashMap<String, MetaTable> nameMetas = new HashMap<]=] .. (jdk7 and "" or "String, MetaTable") .. [=[>(#(tables.count) * 2);
+		private static final ArrayList<MetaTable> metaList = new ArrayList<>(#(tables.count));
+		private static final IntHashMap<MetaTable> idMetas = new IntHashMap<>(#(tables.count) * 2);
+		private static final HashMap<String, MetaTable> nameMetas = new HashMap<>(#(tables.count) * 2);
 
 		public final TableBase<?> table;
 		public final Object keyBeanStub; // Class<?> or Bean<?>
@@ -386,10 +365,6 @@ end
 local function subtypename_safe(var, t)
 	return typedef[t] and subtypename(var, t) or (t .. ".Safe")
 end
-local function subtypename_new(var, t)
-	if not var then return jdk7 and "" or ", " end
-	return jdk7 and "" or subtypename(var, t)
-end
 local function subtypeid(t)
 	local def = typedef[t]
 	if not def then def = typedef.bean end
@@ -462,8 +437,6 @@ typedef.byte =
 	equals = "this.#(var.name) != _b_.#(var.name)",
 	compareto = "this.#(var.name) - _b_.#(var.name)",
 	tostring = "_s_.append(this.#(var.name)).append(',')",
-	tojson = "\t\t_s_.append(\"\\\"#(var.name)\\\":\").append(this.#(var.name)).append(',');\n",
-	tolua = "\t\t_s_.append(\"#(var.name)=\").append(this.#(var.name)).append(',');\n",
 }
 typedef.char  = merge(typedef.byte, { type = "char",  type_i = "char",  type_o = "Char"  })
 typedef.short = merge(typedef.byte, { type = "short", type_i = "short", type_o = "Short" })
@@ -579,8 +552,6 @@ typedef.string = merge(typedef.byte,
 	hashcode = "this.#(var.name).hashCode()",
 	equals = "!this.#(var.name).equals(_b_.#(var.name))",
 	compareto = "this.#(var.name).compareTo(_b_.#(var.name))",
-	tojson = "\t\tUtil.toJStr(_s_.append(\"\\\"#(var.name)\\\":\"), this.#(var.name)).append(',');\n",
-	tolua = "\t\tUtil.toLuaStr(_s_.append(\"#(var.name)=\"), this.#(var.name)).append(',');\n",
 })
 typedef.octets = merge(typedef.string,
 {
@@ -681,8 +652,6 @@ typedef.octets = merge(typedef.string,
 		return var.id > 0 and "\t\t\tcase #(var.id): _s_.unmarshal(this.#(var.name), _t_); break;\n" or ""
 	end,
 	unmarshal_kv = function(var, kv, t) if kv then return "_s_.unmarshalOctetsKV(" .. t .. ")" end end,
-	tojson = "\t\tthis.#(var.name).dumpJStr(_s_.append(\"\\\"#(var.name)\\\":\")).append(',');\n",
-	tolua = "\t\tthis.#(var.name).dumpJStr(_s_.append(\"#(var.name)=\")).append(',');\n",
 })
 typedef.vector = merge(typedef.octets,
 {
@@ -693,8 +662,8 @@ typedef.vector = merge(typedef.octets,
 	final = "final ",
 	field = "",
 	fieldget = "",
-	new = function(var) return "\t\t#(var.name) = new ArrayList<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
-	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new ArrayList<" .. subtypename_new(var, var.k) .. ">(#(var.cap)))" end,
+	new = function(var) return "\t\t#(var.name) = new ArrayList<>(#(var.cap));\n" end,
+	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new ArrayList<>(#(var.cap)))" end,
 	assign = "this.#(var.name).clear(); Util.appendDeep(_b_.#(var.name), this.#(var.name))",
 	set = "",
 	getsafe = [[
@@ -748,15 +717,13 @@ typedef.vector = merge(typedef.octets,
 	end,
 	compareto = "Util.compareTo(this.#(var.name), _b_.#(var.name))",
 	tostring = "Util.append(_s_, this.#(var.name))",
-	tojson = "\t\tUtil.appendJson(_s_.append(\"\\\"#(var.name)\\\":\"), this.#(var.name));\n",
-	tolua = "\t\tUtil.appendLua(_s_.append(\"#(var.name)=\"), this.#(var.name));\n",
 })
 typedef.list = merge(typedef.vector,
 {
 	import = { "java.util.LinkedList", "java.util.Collection", "jane.core.Util", "jane.core.SList" },
 	type = function(var) return "LinkedList<" .. subtypename(var, var.k) .. ">" end,
-	new = function(var) return "\t\t#(var.name) = new LinkedList<" .. subtypename_new(var, var.k) .. ">();\n" end,
-	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new LinkedList<" .. subtypename_new(var, var.k) .. ">())" end,
+	new = function(var) return "\t\t#(var.name) = new LinkedList<>();\n" end,
+	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new LinkedList<>())" end,
 	unmarshal = function(var)
 		return var.id <= 0 and "" or string.format([[
 			case #(var.id):
@@ -777,8 +744,8 @@ typedef.deque = merge(typedef.list,
 	import = { "java.util.ArrayDeque", "java.util.Collection", "jane.core.Util", "jane.core.SDeque" },
 	type = function(var) return "ArrayDeque<" .. subtypename(var, var.k) .. ">" end,
 	stype = function(var) return "SDeque<" .. subtypename(var, var.k) .. ", " .. subtypename_safe(var, var.k) .. ">" end,
-	new = function(var) return "\t\t#(var.name) = new ArrayDeque<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
-	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new ArrayDeque<" .. subtypename_new(var, var.k) .. ">(#(var.cap)))" end,
+	new = function(var) return "\t\t#(var.name) = new ArrayDeque<>(#(var.cap));\n" end,
+	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new ArrayDeque<>(#(var.cap)))" end,
 })
 typedef.hashset = merge(typedef.list,
 {
@@ -789,8 +756,8 @@ typedef.hashset = merge(typedef.list,
 	private static SSetListener<]] .. subtypename(var, var.k) .. [[> LISTENER_#(var.name);
 ]] end,
 	safecache = "\t\tprivate #(var.stype) CACHE_#(var.name);\n",
-	new = function(var) return "\t\t#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
-	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap)))" end,
+	new = function(var) return "\t\t#(var.name) = new HashSet<>(#(var.cap));\n" end,
+	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new HashSet<>(#(var.cap)))" end,
 	getsafe = function(var) return [[
 
 		/** #(var.comment1) */
@@ -819,15 +786,15 @@ typedef.treeset = merge(typedef.hashset,
 	import = { "java.util.TreeSet", "java.util.Collection", "jane.core.Util", "jane.core.SSSet", "jane.core.SSet.SSetListener" },
 	type = function(var) return "TreeSet<" .. subtypename(var, var.k) .. ">" end,
 	stype = function(var) return "SSSet<" .. subtypename(var, var.k) .. ", " .. subtypename_safe(var, var.k) .. ">" end,
-	new = function(var) return "\t\t#(var.name) = new TreeSet<" .. subtypename_new(var, var.k) .. ">();\n" end,
-	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new TreeSet<" .. subtypename_new(var, var.k) .. ">())" end,
+	new = function(var) return "\t\t#(var.name) = new TreeSet<>();\n" end,
+	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new TreeSet<>())" end,
 })
 typedef.linkedhashset = merge(typedef.hashset,
 {
 	import = { "java.util.LinkedHashSet", "java.util.Collection", "jane.core.Util", "jane.core.SSet", "jane.core.SSet.SSetListener" },
 	type = function(var) return "LinkedHashSet<" .. subtypename(var, var.k) .. ">" end,
-	new = function(var) return "\t\t#(var.name) = new LinkedHashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
-	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new LinkedHashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap)))" end,
+	new = function(var) return "\t\t#(var.name) = new LinkedHashSet<>(#(var.cap));\n" end,
+	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new LinkedHashSet<>(#(var.cap)))" end,
 })
 typedef.hashmap = merge(typedef.list,
 {
@@ -839,8 +806,8 @@ typedef.hashmap = merge(typedef.list,
 	private static SMapListener<]] .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. [[> LISTENER_#(var.name);
 ]] end,
 	safecache = "\t\tprivate #(var.stype) CACHE_#(var.name);\n",
-	new = function(var) return "\t\t#(var.name) = new HashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap));\n" end,
-	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new HashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap)))" end,
+	new = function(var) return "\t\t#(var.name) = new HashMap<>(#(var.cap));\n" end,
+	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new HashMap<>(#(var.cap)))" end,
 	getsafe = function(var) return [[
 
 		/** #(var.comment1) */
@@ -901,15 +868,15 @@ typedef.treemap = merge(typedef.hashmap,
 	import = { "java.util.TreeMap", "java.util.Map.Entry", "java.util.Map", "jane.core.Util", "jane.core.SSMap", "jane.core.SMap.SMapListener" },
 	type = function(var) return "TreeMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	stype = function(var) return "SSMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ", " .. subtypename_safe(var, var.v) .. ">" end,
-	new = function(var) return "\t\t#(var.name) = new TreeMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">();\n" end,
-	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new TreeMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">())" end,
+	new = function(var) return "\t\t#(var.name) = new TreeMap<>();\n" end,
+	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new TreeMap<>())" end,
 })
 typedef.linkedhashmap = merge(typedef.hashmap,
 {
 	import = { "java.util.LinkedHashMap", "java.util.Map.Entry", "java.util.Map", "jane.core.Util", "jane.core.SMap", "jane.core.SMap.SMapListener" },
 	type = function(var) return "LinkedHashMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
-	new = function(var) return "\t\t#(var.name) = new LinkedHashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap));\n" end,
-	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new LinkedHashMap<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap)))" end,
+	new = function(var) return "\t\t#(var.name) = new LinkedHashMap<>(#(var.cap));\n" end,
+	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new LinkedHashMap<>(#(var.cap)))" end,
 })
 typedef.bean = merge(typedef.octets,
 {
@@ -965,8 +932,6 @@ typedef.bean = merge(typedef.octets,
 	end,
 	unmarshal_kv = function(var, kv, t) if kv then return "_s_.unmarshalBeanKV(new " .. typename(var, var[kv]) .. "(), " .. t .. ")" end end,
 	compareto = "this.#(var.name).compareTo(_b_.#(var.name))",
-	tojson = "\t\tthis.#(var.name).toJson(_s_.append(\"\\\"#(var.name)\\\":\")).append(',');\n",
-	tolua = "\t\tthis.#(var.name).toLua(_s_.append(\"#(var.name)=\")).append(',');\n",
 })
 typedef.ref = merge(typedef.bean,
 {
@@ -1008,8 +973,6 @@ typedef.ref = merge(typedef.bean,
 	hashcode = "0",
 	equals = "",
 	compareto = "0",
-	tojson = "",
-	tolua = "",
 })
 typedef.boolean = typedef.bool
 typedef.integer = typedef.int
@@ -1216,10 +1179,8 @@ function bean(bean)
 		gsub("\n\t{\n\n\t\t", "\n\t{\n\t\t"):
 		gsub("\t\t_h_ = _h_ %* 31 %+ 1 %+ 0;\n", ""):
 		gsub("\t\tif%(%) return false;\n", ""):
-		gsub("\t\t_c_ = 0; if%(_c_ != 0%) return _c_;\n", "")
-	if jdk7 then
-		code = code:gsub("( new %w+)<.->", "%1<>")
-	end
+		gsub("\t\t_c_ = 0; if%(_c_ != 0%) return _c_;\n", ""):
+		gsub("( new %w+)<.->", "%1<>")
 	if not code:find("\tprivate static final Field ") then
 		code = code:gsub("import java.lang.reflect.Field;\n", "")
 	end
@@ -1417,8 +1378,6 @@ for beanname, safe in spairs(need_save) do
 				   :gsub("\tprivate static S...Listener<.-\n", "")
 				   :gsub("\n\tstatic\n\t{.-\n\t}\n", "")
 	end
-	if not genToJson then code = code:gsub("\n\t@Override\n\tpublic StringBuilder toJson%(.-\n\t}\n", "") end
-	if not genToLua  then code = code:gsub("\n\t@Override\n\tpublic StringBuilder toLua%(.-\n\t}\n", "") end
 	if not code:find("Util.", 1, true) then code = code:gsub("import jane%.core%.Util;\n", "") end
 	checksave(outpath .. namespace_path .. "/" .. beanname .. ".java", code, 0)
 end
