@@ -54,20 +54,14 @@ public final class DBManager
 			super("CommitThread");
 			setDaemon(true);
 			setPriority(Thread.NORM_PRIORITY + 1);
-			long now = System.currentTimeMillis();
-			long base = now;
 			try
 			{
-				base = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(Const.dbBackupBase).getTime();
+				long base = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(Const.dbBackupBase).getTime();
+				_backupTime = base + (Math.floorDiv(System.currentTimeMillis() - base, _backupPeriod) + 1) * _backupPeriod;
 			}
 			catch(ParseException e)
 			{
 				throw new IllegalStateException("parse dbBackupBase(" + Const.dbBackupBase + ") failed", e);
-			}
-			finally
-			{
-				if(base > now) base -= ((base - now) / _backupPeriod + 1) * _backupPeriod;
-				_backupTime = base + ((now - base) / _backupPeriod + 1) * _backupPeriod;
 			}
 		}
 
@@ -169,7 +163,7 @@ public final class DBManager
 						if(_backupTime <= t3)
 						{
 							_backupTime += _backupPeriod;
-							if(_backupTime <= t) _backupTime += ((t - _backupTime) / _backupPeriod + 1) * _backupPeriod;
+							if(_backupTime <= t3) _backupTime += ((t3 - _backupTime) / _backupPeriod + 1) * _backupPeriod;
 							Log.info("db-commit backup begin...");
 							String timeStr;
 							synchronized(_sdf)

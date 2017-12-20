@@ -679,21 +679,13 @@ public final class StorageLevelDB implements Storage
 
 	public StorageLevelDB()
 	{
-		long now = System.currentTimeMillis();
-		long base = now;
 		try
 		{
-			base = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(Const.dbBackupBase).getTime();
+			_backupBase = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(Const.dbBackupBase).getTime();
 		}
 		catch(ParseException e)
 		{
 			throw new IllegalStateException("parse dbBackupBase(" + Const.dbBackupBase + ") failed", e);
-		}
-		finally
-		{
-			long backupPeriod = Const.dbBackupPeriod * 1000; // 备份数据库的周期
-			if(base > now) base -= ((base - now) / backupPeriod + 1) * backupPeriod;
-			_backupBase = base;
 		}
 	}
 
@@ -934,7 +926,7 @@ public final class StorageLevelDB implements Storage
 		dstPath = dstPath.substring(0, pos);
 		long period = Const.levelDBFullBackupPeriod * 1000;
 		long time = System.currentTimeMillis();
-		Date backupDate = new Date(_backupBase + (long)Math.floor((double)(time - _backupBase) / period) * period);
+		Date backupDate = new Date(_backupBase + Math.floorDiv(time - _backupBase, period) * period);
 		dstPath += '.' + _sdf.format(backupDate);
 		File path = new File(dstPath).getParentFile();
 		if(path != null && !path.isDirectory() && !path.mkdirs())

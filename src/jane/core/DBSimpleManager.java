@@ -68,20 +68,14 @@ public final class DBSimpleManager
 		{
 			if(enabled)
 			{
-				long now = System.currentTimeMillis();
-				long base = now;
 				try
 				{
-					base = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(Const.dbBackupBase).getTime();
+					long base = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(Const.dbBackupBase).getTime();
+					_backupTime = base + (Math.floorDiv(System.currentTimeMillis() - base, _backupPeriod) + 1) * _backupPeriod;
 				}
 				catch(ParseException e)
 				{
 					throw new IllegalStateException("parse dbBackupBase(" + Const.dbBackupBase + ") failed", e);
-				}
-				finally
-				{
-					if(base > now) base -= ((base - now) / _backupPeriod + 1) * _backupPeriod;
-					_backupTime = base + ((now - base) / _backupPeriod + 1) * _backupPeriod;
 				}
 			}
 			else
@@ -150,7 +144,7 @@ public final class DBSimpleManager
 						}
 
 						// 2.判断备份周期并启动备份
-						if(_backupTime <= t1)
+						if(_backupTime < t1)
 						{
 							Log.info("db-commit backup begin...");
 							if(_backupTime >= 0)

@@ -106,14 +106,14 @@ public final class Const
 		maxSessionProcedure = getPropInt("maxSessionProceduer", 65536, 1);
 		maxBatchProceduer = getPropInt("maxBatchProceduer", 256, 1);
 		maxProceduerRedo = getPropInt("maxProceduerRedo", 256, 1);
-		lockPoolSize = IntHashMap.nextPowerOfTwo(getPropInt("lockPoolSize", 65536, 1, 1073741824));
+		lockPoolSize = IntHashMap.nextPowerOfTwo(getPropInt("lockPoolSize", 65536, 1, 0x4000_0000));
 		maxLockPerProcedure = getPropInt("maxLockPerProcedure", 16, 4, 256);
 		dbSimpleCacheSize = getPropInt("dbSimpleCacheSize", 10000, 1);
 		dbCommitResaveCount = getPropInt("dbCommitResaveCount", 200000, 1);
 		dbCommitModCount = getPropInt("dbCommitModCount", 200000, 1);
-		dbCommitPeriod = getPropLong("dbCommitPeriod", 60, 1, Long.MAX_VALUE / 1000);
+		dbCommitPeriod = getPropLong("dbCommitPeriod", 60, 1, 86400L * 366 * 10000); // 0x49_A06B_5000
 		dbBackupBase = getPropStr("dbBackupBase", "2014-01-06 04:00:00");
-		dbBackupPeriod = getPropLong("dbBackupPeriod", 3600, 1, Long.MAX_VALUE / 1000);
+		dbBackupPeriod = getPropLong("dbBackupPeriod", 3600, 1, 86400L * 366 * 10000); // 0x49_A06B_5000
 		procedureTimeout = getPropInt("procedureTimeout", 60, 1);
 		procedureDeadlockTimeout = getPropInt("procedureDeadlockTimeout", 5, 1);
 		autoIdBegin = getPropInt("autoIdBegin", 1, 1);
@@ -123,7 +123,7 @@ public final class Const
 		levelDBMaxOpenFiles = getPropInt("levelDBMaxOpenFiles", 10000, 1000);
 		levelDBCacheSize = getPropInt("levelDBCacheSize", 32, 1, 1024);
 		levelDBFileSize = getPropInt("levelDBFileSize", 10, 1, 1024);
-		levelDBFullBackupPeriod = getPropLong("levelDBFullBackupPeriod", 604800, 1, Long.MAX_VALUE / 1000);
+		levelDBFullBackupPeriod = getPropLong("levelDBFullBackupPeriod", 604800, 1, 86400L * 366 * 10000); // 0x49_A06B_5000
 	}
 
 	public static String getPropStr(String key, String def)
