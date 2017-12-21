@@ -68,6 +68,7 @@
 			<fileset dir="${lib}">
 				<include name="*.dll"/>
 				<include name="*.so"/>
+				<include name="*.dylib"/>
 			</fileset>
 		</jar>
 		<jar jarfile="${root}/jane-test.jar" basedir="${classes}" includes="**/jane/bean/**,**/jane/handler/**,**/jane/test/**" level="9">
@@ -88,6 +89,7 @@
 			<fileset dir="${lib}">
 				<include name="*.dll"/>
 				<include name="*.so"/>
+				<include name="*.dylib"/>
 			</fileset>
 			<fileset dir="${root}">
 				<include name="logback.xml"/>
