@@ -66,9 +66,9 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 
 	private static final class CacheEntry<V> extends CacheEntryBase<V>
 	{
-		private final long key;
+		final long key;
 
-		private CacheEntry(long k, V v, long ver)
+		CacheEntry(long k, V v, long ver)
 		{
 			key = k;
 			value = v;
@@ -350,7 +350,7 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 	{
 		private final Iterator<CacheEntry<V>> it;
 
-		private ValueIterator(LongConcurrentHashMap<CacheEntry<V>> map)
+		ValueIterator(LongConcurrentHashMap<CacheEntry<V>> map)
 		{
 			it = map.iterator();
 		}
@@ -379,7 +379,7 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 	{
 		private final MapIterator<CacheEntry<V>> it;
 
-		private EntryIterator(LongConcurrentHashMap<CacheEntry<V>> map)
+		EntryIterator(LongConcurrentHashMap<CacheEntry<V>> map)
 		{
 			it = map.entryIterator();
 		}

@@ -277,9 +277,9 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 
 	private final class EntryImpl implements Entry {
 		private final String name;
-		private volatile IoFilter filter;
+		volatile IoFilter filter;
 
-		private EntryImpl(String name, IoFilter filter) {
+		EntryImpl(String name, IoFilter filter) {
 			if (name == null) {
 				throw new IllegalArgumentException("name");
 			}

@@ -491,12 +491,12 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 	}
 
 	private final class EntryImpl implements Entry, NextFilter {
-		private EntryImpl prevEntry;
-		private EntryImpl nextEntry;
+		EntryImpl prevEntry;
+		EntryImpl nextEntry;
 		private final String name;
 		private final IoFilter filter;
 
-		private EntryImpl(EntryImpl prevEntry, EntryImpl nextEntry, String name, IoFilter filter) {
+		EntryImpl(EntryImpl prevEntry, EntryImpl nextEntry, String name, IoFilter filter) {
 			if (name == null) {
 				throw new IllegalArgumentException("name");
 			}

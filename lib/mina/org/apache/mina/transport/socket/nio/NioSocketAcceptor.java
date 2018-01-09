@@ -199,7 +199,7 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 		 *
 		 * @param selectedKeys The selector selected-key set
 		 */
-		private ServerSocketChannelIterator(Collection<SelectionKey> selectedKeys) {
+		ServerSocketChannelIterator(Collection<SelectionKey> selectedKeys) {
 			iterator = selectedKeys.iterator();
 		}
 

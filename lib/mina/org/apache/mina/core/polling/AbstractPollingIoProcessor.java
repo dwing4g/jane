@@ -625,7 +625,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			}
 		}
 
-		private void flushNow(S session) {
+		void flushNow(S session) {
 			if (!session.isConnected()) {
 				scheduleRemove(session);
 				return;

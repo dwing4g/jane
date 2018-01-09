@@ -169,7 +169,7 @@ public final class NioSocketConnector extends AbstractPollingIoConnector {
 	private static final class SocketChannelIterator implements Iterator<SocketChannel> {
 		private final Iterator<SelectionKey> i;
 
-		private SocketChannelIterator(Collection<SelectionKey> selectedKeys) {
+		SocketChannelIterator(Collection<SelectionKey> selectedKeys) {
 			i = selectedKeys.iterator();
 		}
 

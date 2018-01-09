@@ -667,7 +667,7 @@ public final class SslFilter extends IoFilterAdapter {
 		private final WriteRequest parentRequest;
 		private final IoBuffer encryptedMessage;
 
-		private EncryptedWriteRequest(WriteRequest parentRequest, IoBuffer encryptedMessage) {
+		EncryptedWriteRequest(WriteRequest parentRequest, IoBuffer encryptedMessage) {
 			if (parentRequest == null) {
 				throw new IllegalArgumentException("parentRequest");
 			}

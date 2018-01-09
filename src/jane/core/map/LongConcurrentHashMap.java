@@ -133,15 +133,15 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	 */
 	private static final class ForwardingNode<V> extends Node<V>
 	{
-		private final Node<V>[] nextTable;
+		final Node<V>[] nextTable;
 
-		private ForwardingNode(Node<V>[] tab)
+		ForwardingNode(Node<V>[] tab)
 		{
 			super(0, null, null);
 			nextTable = tab;
 		}
 
-		private Node<V> find(int h, long k)
+		Node<V> find(int h, long k)
 		{
 			// loop to avoid arbitrarily deep recursion on forwarding nodes
 			for(Node<V>[] tab = nextTable;;)
@@ -750,13 +750,13 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	{
 		private static final class Probe
 		{
-			private int probe;
+			int probe;
 		}
 
 		private static final AtomicInteger		probeGenerator = new AtomicInteger();
 		private static final ThreadLocal<Probe>	tlProb		   = new ThreadLocal<>();
 
-		private static void localInit()
+		static void localInit()
 		{
 			int p = probeGenerator.addAndGet(0x9e3779b9);
 			Probe probe = new Probe();
@@ -764,13 +764,13 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 			tlProb.set(probe);
 		}
 
-		private static int getProbe()
+		static int getProbe()
 		{
 			Probe probe = tlProb.get();
 			return probe != null ? tlProb.get().probe : 0;
 		}
 
-		private static int advanceProbe(int probe)
+		static int advanceProbe(int probe)
 		{
 			probe ^= probe << 13; // xorshift
 			probe ^= probe >>> 17;
@@ -1321,7 +1321,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	{
 		private Node<V> node;
 
-		private EntryIterator(Node<V>[] tab, int index, int size)
+		EntryIterator(Node<V>[] tab, int index, int size)
 		{
 			super(tab, index, size);
 		}

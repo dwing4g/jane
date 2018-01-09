@@ -100,7 +100,7 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 			if(buf != null)
 			{
 				buf.clear();
-				buf.order(ByteOrder.BIG_ENDIAN);
+				buf.buf().order(ByteOrder.BIG_ENDIAN);
 				reuseCount.incrementAndGet();
 			}
 			else
@@ -130,7 +130,7 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 	{
 		private final ByteBuffer buf;
 
-		private CachedBuffer(int capacity, boolean direct)
+		CachedBuffer(int capacity, boolean direct)
 		{
 			buf = (direct ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity));
 		}

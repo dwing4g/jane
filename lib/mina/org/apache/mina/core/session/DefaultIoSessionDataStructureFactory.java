@@ -98,7 +98,7 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 		private final Queue<WriteRequest> q = new ConcurrentLinkedQueue<>();
 		private final IoSession s;
 
-		private DefaultWriteRequestQueue(IoSession session) {
+		DefaultWriteRequestQueue(IoSession session) {
 			s = session;
 		}
 

@@ -31,7 +31,6 @@ public final class DBSimpleManager
 
 	private static volatile boolean _hasCreated; // 是否创建过此类的对象
 
-	private final SimpleDateFormat				_sdf			 = new SimpleDateFormat("yy-MM-dd-HH-mm-ss");						 // 备份文件后缀名的时间格式
 	private final CommitThread					_commitThread	 = new CommitThread();												 // 处理数据提交的线程
 	private final Map<Octets, Octets>			_readCache		 = Util.newConcurrentLRUMap(Const.dbSimpleCacheSize, "SimpleCache"); // 读缓冲区
 	private final ConcurrentMap<Octets, Octets>	_writeCache		 = Util.newConcurrentHashMap();										 // 写缓冲区
@@ -47,24 +46,25 @@ public final class DBSimpleManager
 	 */
 	private final class CommitThread extends Thread
 	{
-		private final long	  _commitPeriod	= Const.dbCommitPeriod * 1000;				  // 提交数据库的周期
-		private final long	  _backupPeriod	= Const.dbBackupPeriod * 1000;				  // 备份数据库的周期
-		private volatile long _commitTime	= System.currentTimeMillis() + _commitPeriod; // 下次提交数据库的时间
-		private volatile long _backupTime	= Long.MAX_VALUE;							  // 下次备份数据库的时间(默认不备份)
+		private final SimpleDateFormat _sdf			 = new SimpleDateFormat("yy-MM-dd-HH-mm-ss");  // 备份文件后缀名的时间格式
+		private final long			   _commitPeriod = Const.dbCommitPeriod * 1000;				   // 提交数据库的周期
+		private final long			   _backupPeriod = Const.dbBackupPeriod * 1000;				   // 备份数据库的周期
+		private volatile long		   _commitTime	 = System.currentTimeMillis() + _commitPeriod; // 下次提交数据库的时间
+		private volatile long		   _backupTime	 = Long.MAX_VALUE;							   // 下次备份数据库的时间(默认不备份)
 
-		private CommitThread()
+		CommitThread()
 		{
 			super("CommitThread");
 			setDaemon(true);
 			setPriority(Thread.NORM_PRIORITY + 1);
 		}
 
-		private void commitNext()
+		void commitNext()
 		{
 			_commitTime = System.currentTimeMillis();
 		}
 
-		private void enableBackup(boolean enabled)
+		void enableBackup(boolean enabled)
 		{
 			if(enabled)
 			{
@@ -82,7 +82,7 @@ public final class DBSimpleManager
 				_backupTime = Long.MAX_VALUE;
 		}
 
-		private void backupNextCommit()
+		void backupNextCommit()
 		{
 			_backupTime = -1;
 		}
@@ -105,20 +105,22 @@ public final class DBSimpleManager
 			}
 		}
 
-		private boolean tryCommit(boolean force)
+		boolean tryCommit(boolean force)
 		{
 			try
 			{
 				long t = System.currentTimeMillis();
-				if(t < _commitTime && _writeCache.size() < Const.dbCommitModCount) return true;
+				ConcurrentMap<Octets, Octets> writeCache = _writeCache;
+				if(t < _commitTime && writeCache.size() < Const.dbCommitModCount) return true;
 				synchronized(DBSimpleManager.this)
 				{
 					_commitTime = (_commitTime <= t ? _commitTime : t) + _commitPeriod;
 					if(_commitTime <= t) _commitTime = t + _commitPeriod;
 					if(Thread.interrupted() && !force) return false;
-					if(_storage != null)
+					StorageLevelDB storage = getStorage();
+					if(storage != null)
 					{
-						long t1, modCount = _writeCache.size();
+						long t1, modCount = writeCache.size();
 						if(modCount == 0)
 						{
 							Log.info("db-commit not found modified record");
@@ -129,18 +131,18 @@ public final class DBSimpleManager
 							// 1.首先尝试遍历单个加锁的方式保存已修改的记录. 此时和其它事务可以并发
 							long t0 = System.currentTimeMillis();
 							Log.info("db-commit saving: {}...", modCount);
-							ArrayList<Entry<Octets, Octets>> writeBuf = new ArrayList<>(_writeCache.size());
-							for(Entry<Octets, Octets> e : _writeCache.entrySet())
+							ArrayList<Entry<Octets, Octets>> writeBuf = new ArrayList<>(writeCache.size());
+							for(Entry<Octets, Octets> e : writeCache.entrySet())
 								writeBuf.add(new SimpleImmutableEntry<>(e.getKey(), e.getValue()));
 							Log.info("db-commit committing: {}...", writeBuf.size());
-							_storage.dbcommit(writeBuf.iterator());
+							storage.dbcommit(writeBuf.iterator());
 							Log.info("db-commit cleaning...");
-							int n = _writeCache.size();
+							int n = writeCache.size();
 							for(Entry<Octets, Octets> e : writeBuf)
-								_writeCache.remove(e.getKey(), e.getValue());
+								writeCache.remove(e.getKey(), e.getValue());
 							writeBuf.clear();
 							t1 = System.currentTimeMillis();
-							Log.info("db-commit done: {}=>{} ({} ms)", n, _writeCache.size(), t1 - t0);
+							Log.info("db-commit done: {}=>{} ({} ms)", n, writeCache.size(), t1 - t0);
 						}
 
 						// 2.判断备份周期并启动备份
@@ -159,7 +161,7 @@ public final class DBSimpleManager
 							{
 								timeStr = _sdf.format(new Date());
 							}
-							long r = _storage.backup(new File(Const.dbBackupPath, new File(_dbFilename).getName() + '.' + timeStr));
+							long r = storage.backup(new File(Const.dbBackupPath, new File(_dbFilename).getName() + '.' + timeStr));
 							Log.info(r >= 0 ? "db-commit backup end ({} bytes) ({} ms)" : "db-commit backup error({}) ({} ms)",
 									r, System.currentTimeMillis() - t1);
 						}
@@ -238,6 +240,14 @@ public final class DBSimpleManager
 	public void startup() throws IOException
 	{
 		startup(StorageLevelDB.instance(), Const.dbFilename);
+	}
+
+	/**
+	 * 获取当前的存储引擎
+	 */
+	public StorageLevelDB getStorage()
+	{
+		return _storage;
 	}
 
 	public void enableReadCache(boolean enabled)

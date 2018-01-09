@@ -53,13 +53,13 @@ public class NetManager implements IoHandler
 		}
 	}
 
-	static final class BeanContext<B extends Bean<B>>
+	private static final class BeanContext<B extends Bean<B>>
 	{
-		private final int		 askTime = (int)_timeSec;	  // 发送请求的时间戳(秒)
-		private int				 timeOut = Integer.MAX_VALUE; // 超时时间(秒)
-		private IoSession		 session;					  // 请求时绑定的session
-		private Bean<?>			 askBean;					  // 请求的bean
-		private AnswerHandler<B> answerHandler;				  // 接收回复的回调,超时也会回调(传入的bean为null)
+		final int		 askTime = (int)getTimeSec(); // 发送请求的时间戳(秒)
+		int				 timeOut = Integer.MAX_VALUE; // 超时时间(秒)
+		IoSession		 session;					  // 请求时绑定的session
+		Bean<?>			 askBean;					  // 请求的bean
+		AnswerHandler<B> answerHandler;				  // 接收回复的回调,超时也会回调(传入的bean为null)
 	}
 
 	private static final LongConcurrentHashMap<BeanContext<?>> _beanCtxMap	  = new LongConcurrentHashMap<>();	   // 当前等待回复的所有请求上下文
@@ -380,7 +380,7 @@ public class NetManager implements IoHandler
 					try
 					{
 						++_count;
-						Log.warn("{}: connect failed: addr={},count={}", _name, addr, _count);
+						Log.warn("{}: connect failed: addr={},count={}", getName(), addr, _count);
 						int delayMs = onConnectFailed(future, addr, _count, ctx);
 						if(delayMs >= 0) // 可能在同线程同步回调,为避免无限递归,统一放线程池里调度
 						{
@@ -388,8 +388,8 @@ public class NetManager implements IoHandler
 							{
 								try
 								{
-									Log.info("{}: reconnecting addr={},count={}", _name, addr, _count);
-									_connector.connect(addr).addListener(this);
+									Log.info("{}: reconnecting addr={},count={}", getName(), addr, _count);
+									getConnector().connect(addr).addListener(this);
 								}
 								catch(Throwable e)
 								{

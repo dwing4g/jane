@@ -53,11 +53,11 @@ public final class SimpleBufferAllocator implements IoBufferAllocator {
 	private static final class SimpleIoBuffer extends IoBuffer {
 		private final ByteBuffer buf;
 
-		private SimpleIoBuffer(int capacity, boolean direct) {
+		SimpleIoBuffer(int capacity, boolean direct) {
 			buf = (direct ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity));
 		}
 
-		private SimpleIoBuffer(ByteBuffer bb) {
+		SimpleIoBuffer(ByteBuffer bb) {
 			buf = bb;
 		}
 

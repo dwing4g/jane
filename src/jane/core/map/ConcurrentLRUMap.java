@@ -71,9 +71,9 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 
 	private static final class CacheEntry<K, V> extends CacheEntryBase<V>
 	{
-		private final K key;
+		final K key;
 
-		private CacheEntry(K k, V v, long ver)
+		CacheEntry(K k, V v, long ver)
 		{
 			key = k;
 			value = v;
@@ -389,7 +389,7 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 	{
 		private final Enumeration<CacheEntry<K, V>> it;
 
-		private ValueIterator(ConcurrentHashMap<K, CacheEntry<K, V>> map)
+		ValueIterator(ConcurrentHashMap<K, CacheEntry<K, V>> map)
 		{
 			it = map.elements();
 		}

@@ -185,7 +185,7 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public void remove(long k)
 		{
-			_writeBuf.put(getKey(k), _deleted);
+			_writeBuf.put(getKey(k), deleted());
 		}
 
 		@Override
@@ -375,7 +375,7 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public void remove(K k)
 		{
-			_writeBuf.put(getKey(k), _deleted);
+			_writeBuf.put(getKey(k), deleted());
 		}
 
 		@Override

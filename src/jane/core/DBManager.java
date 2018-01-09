@@ -29,27 +29,27 @@ public final class DBManager
 
 	private static volatile boolean _hasCreated; // 是否创建过此类的对象
 
-	private final SimpleDateFormat							   _sdf			 = new SimpleDateFormat("yy-MM-dd-HH-mm-ss"); // 备份文件后缀名的时间格式
-	private final CommitThread								   _commitThread = new CommitThread();						  // 处理数据提交的线程
-	private final ThreadPoolExecutor						   _procThreads;											  // 事务线程池
-	private final ConcurrentMap<Object, ArrayDeque<Procedure>> _qmap		 = Util.newConcurrentHashMap();				  // 当前sid队列的数量
-	private final AtomicLong								   _procCount	 = new AtomicLong();						  // 绑定过sid的在队列中未运行的事务数量
-	private final AtomicLong								   _modCount	 = new AtomicLong();						  // 当前缓存修改的记录数
-	private Storage											   _storage;												  // 存储引擎
-	private volatile boolean								   _exiting;												  // 是否在退出状态(已经执行了ShutdownHook)
+	private final CommitThread								   _commitThread = new CommitThread();			// 处理数据提交的线程
+	private final ThreadPoolExecutor						   _procThreads;								// 事务线程池
+	private final ConcurrentMap<Object, ArrayDeque<Procedure>> _qmap		 = Util.newConcurrentHashMap();	// 当前sid队列的数量
+	private final AtomicLong								   _procCount	 = new AtomicLong();			// 绑定过sid的在队列中未运行的事务数量
+	private final AtomicLong								   _modCount	 = new AtomicLong();			// 当前缓存修改的记录数
+	private Storage											   _storage;									// 存储引擎
+	private volatile boolean								   _exiting;									// 是否在退出状态(已经执行了ShutdownHook)
 
 	/**
 	 * 周期向数据库存储提交事务性修改的线程(checkpoint)
 	 */
 	private final class CommitThread extends Thread
 	{
-		private final long[]  _counts		= new long[3];								  // 3个统计数量值,分别是统计前数量,统计后数量,处理过的数量
-		private final long	  _commitPeriod	= Const.dbCommitPeriod * 1000;				  // 提交数据库的周期
-		private final long	  _backupPeriod	= Const.dbBackupPeriod * 1000;				  // 备份数据库的周期
-		private volatile long _commitTime	= System.currentTimeMillis() + _commitPeriod; // 下次提交数据库的时间
-		private volatile long _backupTime;												  // 下次备份数据库的时间
+		private final SimpleDateFormat _sdf			 = new SimpleDateFormat("yy-MM-dd-HH-mm-ss");  // 备份文件后缀名的时间格式
+		private final long[]		   _counts		 = new long[3];								   // 3个统计数量值,分别是统计前数量,统计后数量,处理过的数量
+		private final long			   _commitPeriod = Const.dbCommitPeriod * 1000;				   // 提交数据库的周期
+		private final long			   _backupPeriod = Const.dbBackupPeriod * 1000;				   // 备份数据库的周期
+		private volatile long		   _commitTime	 = System.currentTimeMillis() + _commitPeriod; // 下次提交数据库的时间
+		private volatile long		   _backupTime;												   // 下次备份数据库的时间
 
-		private CommitThread()
+		CommitThread()
 		{
 			super("CommitThread");
 			setDaemon(true);
@@ -65,12 +65,12 @@ public final class DBManager
 			}
 		}
 
-		private void commitNext()
+		void commitNext()
 		{
 			_commitTime = System.currentTimeMillis();
 		}
 
-		private void backupNextCommit()
+		void backupNextCommit()
 		{
 			_backupTime = System.currentTimeMillis();
 		}
@@ -93,7 +93,7 @@ public final class DBManager
 			}
 		}
 
-		private boolean tryCommit(boolean force)
+		boolean tryCommit(boolean force)
 		{
 			try
 			{
@@ -104,7 +104,8 @@ public final class DBManager
 					_commitTime = (_commitTime <= t ? _commitTime : t) + _commitPeriod;
 					if(_commitTime <= t) _commitTime = t + _commitPeriod;
 					if(Thread.interrupted() && !force) return false;
-					if(_storage != null)
+					Storage storage = getStorage();
+					if(storage != null)
 					{
 						long t3, modCount = _modCount.get();
 						if(modCount == 0 && !force)
@@ -118,7 +119,7 @@ public final class DBManager
 							long t0 = System.currentTimeMillis(), t1 = 0;
 							Log.info("db-commit saving: {}...", modCount);
 							_counts[0] = _counts[1] = _counts[2] = 0;
-							_storage.putBegin();
+							storage.putBegin();
 							TableBase.trySaveModifiedAll(_counts);
 							// 2.如果前一轮遍历之后仍然有过多的修改记录,则再试一轮
 							if(_counts[1] >= Const.dbCommitResaveCount)
@@ -132,7 +133,7 @@ public final class DBManager
 							{
 								WriteLock wl = Procedure.getWriteLock();
 								Log.info("db-commit saved: {}=>{}({}), flushing...", _counts[0], _counts[1], _counts[2]);
-								_storage.putFlush(false);
+								storage.putFlush(false);
 								Log.info("db-commit procedure pausing...");
 								t1 = System.currentTimeMillis();
 								wl.lock();
@@ -141,7 +142,7 @@ public final class DBManager
 									_modCount.set(0);
 									Log.info("db-commit saving left...");
 									Log.info("db-commit saved: {}, flushing left...", TableBase.saveModifiedAll());
-									_storage.putFlush(true);
+									storage.putFlush(true);
 								}
 								finally
 								{
@@ -154,7 +155,7 @@ public final class DBManager
 								Log.info("db-commit not found modified record");
 							// 4.最后恢复其它事务的运行,并对数据库存储系统做提交操作,完成一整轮的事务性持久化
 							long t2 = System.currentTimeMillis();
-							_storage.commit();
+							storage.commit();
 							t3 = System.currentTimeMillis();
 							Log.info("db-commit done ({}/{}/{} ms)", t1, t3 - t2, t3 - t0);
 						}
@@ -170,7 +171,7 @@ public final class DBManager
 							{
 								timeStr = _sdf.format(new Date());
 							}
-							long r = _storage.backup(new File(Const.dbBackupPath,
+							long r = storage.backup(new File(Const.dbBackupPath,
 									new File(Const.dbFilename).getName() + '.' + timeStr));
 							if(r >= 0)
 								Log.info("db-commit backup end ({} bytes) ({} ms)", r, System.currentTimeMillis() - t);

@@ -166,14 +166,14 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 
 		int limit = buf.limit();
 		int pos = buf.position();
-		ByteOrder bo = buf.order();
+		ByteOrder bo = buf.buf().order();
 
 		IoBuffer newBuf = allocate(capacity, buf.isDirect());
 		buf.clear();
 		newBuf.put(buf);
 		newBuf.limit(limit);
 		newBuf.position(pos);
-		newBuf.order(bo);
+		newBuf.buf().order(bo);
 		buf.free();
 
 		return newBuf;
@@ -552,514 +552,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 		}
 
 		buf().compact();
-		return this;
-	}
-
-	/**
-	 * @see ByteBuffer#order()
-	 *
-	 * @return the IoBuffer ByteOrder
-	 */
-	public final ByteOrder order() {
-		return buf().order();
-	}
-
-	/**
-	 * @see ByteBuffer#order(ByteOrder)
-	 *
-	 * @param bo The new ByteBuffer to use for this IoBuffer
-	 * @return the modified IoBuffer
-	 */
-	public final IoBuffer order(ByteOrder bo) {
-		buf().order(bo);
-		return this;
-	}
-
-	/**
-	 * @see ByteBuffer#getChar()
-	 *
-	 * @return The char at the current position
-	 */
-	public final char getChar() {
-		return buf().getChar();
-	}
-
-	/**
-	 * @see ByteBuffer#putChar(char)
-	 *
-	 * @param value The char to put at the current position
-	 * @return the modified IoBuffer
-	 */
-	public final IoBuffer putChar(char value) {
-		buf().putChar(value);
-		return this;
-	}
-
-	/**
-	 * @see ByteBuffer#getChar(int)
-	 *
-	 * @param index The index in the IoBuffer where we will read a char from
-	 * @return the char at 'index' position
-	 */
-	public final char getChar(int index) {
-		return buf().getChar(index);
-	}
-
-	/**
-	 * @see ByteBuffer#putChar(int, char)
-	 *
-	 * @param index The index in the IoBuffer where we will put a char in
-	 * @param value The char to put at the current position
-	 * @return the modified IoBuffer
-	 */
-	public final IoBuffer putChar(int index, char value) {
-		buf().putChar(index, value);
-		return this;
-	}
-
-	/**
-	 * @see ByteBuffer#getShort()
-	 *
-	 * @return The read short
-	 */
-	public final short getShort() {
-		return buf().getShort();
-	}
-
-	/**
-	 * Reads two bytes unsigned integer.
-	 *
-	 * @return The read unsigned short
-	 */
-	public final int getUnsignedShort() {
-		return getShort() & 0xffff;
-	}
-
-	/**
-	 * @see ByteBuffer#putShort(short)
-	 *
-	 * @param value The short to put at the current position
-	 * @return the modified IoBuffer
-	 */
-	public final IoBuffer putShort(short value) {
-		buf().putShort(value);
-		return this;
-	}
-
-	/**
-	 * @see ByteBuffer#getShort()
-	 *
-	 * @param index The index in the IoBuffer where we will read a short from
-	 * @return The read short
-	 */
-	public final short getShort(int index) {
-		return buf().getShort(index);
-	}
-
-	/**
-	 * Reads two bytes unsigned integer.
-	 *
-	 * @param index The index in the IoBuffer where we will read an unsigned short from
-	 * @return the unsigned short at the given position
-	 */
-	public final int getUnsignedShort(int index) {
-		return getShort(index) & 0xffff;
-	}
-
-	/**
-	 * @see ByteBuffer#putShort(int, short)
-	 *
-	 * @param index The position at which the short should be written
-	 * @param value The short to put at the current position
-	 * @return the modified IoBuffer
-	 */
-	public final IoBuffer putShort(int index, short value) {
-		buf().putShort(index, value);
-		return this;
-	}
-
-	/**
-	 * @see ByteBuffer#getInt()
-	 *
-	 * @return The int read
-	 */
-	public final int getInt() {
-		return buf().getInt();
-	}
-
-	/**
-	 * Reads four bytes unsigned integer.
-	 *
-	 * @return The unsigned int read
-	 */
-	public final long getUnsignedInt() {
-		return getInt() & 0xffffffffL;
-	}
-
-	/**
-	 * Relative <i>get</i> method for reading a medium int value.
-	 * <p>
-	 * Reads the next three bytes at this buffer's current position, composing them into an int value
-	 * according to the current byte order, and then increments the position by three.
-	 *
-	 * @return The medium int value at the buffer's current position
-	 */
-	public final int getMediumInt() {
-		byte b1 = get();
-		byte b2 = get();
-		byte b3 = get();
-		return ByteOrder.BIG_ENDIAN.equals(order()) ?
-			getMediumInt(b1, b2, b3) :
-			getMediumInt(b3, b2, b1);
-	}
-
-	/**
-	 * Relative <i>get</i> method for reading an unsigned medium int value.
-	 * <p>
-	 * Reads the next three bytes at this buffer's current position, composing them into an int value
-	 * according to the current byte order, and then increments the position by three.
-	 *
-	 * @return The unsigned medium int value at the buffer's current position
-	 */
-	public final int getUnsignedMediumInt() {
-		int b1 = getUnsigned();
-		int b2 = getUnsigned();
-		int b3 = getUnsigned();
-		return ByteOrder.BIG_ENDIAN.equals(order()) ?
-			b1 << 16 | b2 << 8 | b3 :
-			b3 << 16 | b2 << 8 | b1;
-	}
-
-	/**
-	 * Absolute <i>get</i> method for reading a medium int value.
-	 * <p>
-	 * Reads the next three bytes at this buffer's current position, composing
-	 * them into an int value according to the current byte order.
-	 *
-	 * @param index The index from which the medium int will be read
-	 * @return The medium int value at the given index
-	 * @throws IndexOutOfBoundsException If <tt>index</tt> is negative or not smaller than the buffer's limit
-	 */
-	public final int getMediumInt(int index) {
-		byte b1 = get(index);
-		byte b2 = get(index + 1);
-		byte b3 = get(index + 2);
-		return ByteOrder.BIG_ENDIAN.equals(order()) ?
-			getMediumInt(b1, b2, b3) :
-			getMediumInt(b3, b2, b1);
-	}
-
-	private static int getMediumInt(byte b1, byte b2, byte b3) {
-		int ret = (b1 << 16) & 0xff0000 | (b2 << 8) & 0xff00 | b3 & 0xff;
-		// Check to see if the medium int is negative (high bit in b1 set)
-		if ((b1 & 0x80) == 0x80) {
-			// Make the the whole int negative
-			ret |= 0xff000000;
-		}
-		return ret;
-	}
-
-	/**
-	 * Absolute <i>get</i> method for reading an unsigned medium int value.
-	 * <p>
-	 * Reads the next three bytes at this buffer's current position, composing
-	 * them into an int value according to the current byte order.
-	 *
-	 * @param index The index from which the unsigned medium int will be read
-	 * @return The unsigned medium int value at the given index
-	 * @throws IndexOutOfBoundsException If <tt>index</tt> is negative or not smaller than the buffer's limit
-	 */
-	public final int getUnsignedMediumInt(int index) {
-		int b1 = getUnsigned(index);
-		int b2 = getUnsigned(index + 1);
-		int b3 = getUnsigned(index + 2);
-		return ByteOrder.BIG_ENDIAN.equals(order()) ?
-			b1 << 16 | b2 << 8 | b3 :
-			b3 << 16 | b2 << 8 | b1;
-	}
-
-	/**
-	 * Relative <i>put</i> method for writing a medium int value.
-	 * <p>
-	 * Writes three bytes containing the given int value, in the current byte order,
-	 * into this buffer at the current position, and then increments the position by three.
-	 *
-	 * @param value The medium int value to be written
-	 * @return the modified IoBuffer
-	 */
-	public final IoBuffer putMediumInt(int value) {
-		byte b1 = (byte) (value >> 16);
-		byte b2 = (byte) (value >> 8);
-		byte b3 = (byte) value;
-
-		if (ByteOrder.BIG_ENDIAN.equals(order())) {
-			put(b1).put(b2).put(b3);
-		} else {
-			put(b3).put(b2).put(b1);
-		}
-
-		return this;
-	}
-
-	/**
-	 * Absolute <i>put</i> method for writing a medium int value.
-	 * <p>
-	 * Writes three bytes containing the given int value, in the current byte order, into this buffer at the given index.
-	 *
-	 * @param index The index at which the bytes will be written
-	 * @param value The medium int value to be written
-	 * @return the modified IoBuffer
-	 * @throws IndexOutOfBoundsException If <tt>index</tt> is negative or not smaller than the buffer's limit, minus three
-	 */
-	public final IoBuffer putMediumInt(int index, int value) {
-		byte b1 = (byte) (value >> 16);
-		byte b2 = (byte) (value >> 8);
-		byte b3 = (byte) value;
-
-		if (ByteOrder.BIG_ENDIAN.equals(order())) {
-			put(index, b1).put(index + 1, b2).put(index + 2, b3);
-		} else {
-			put(index, b3).put(index + 1, b2).put(index + 2, b1);
-		}
-
-		return this;
-	}
-
-	/**
-	 * @see ByteBuffer#putInt(int)
-	 *
-	 * @param value The int to put at the current position
-	 * @return the modified IoBuffer
-	 */
-	public final IoBuffer putInt(int value) {
-		buf().putInt(value);
-		return this;
-	}
-
-	/**
-	 * Writes an unsigned int into the ByteBuffer
-	 *
-	 * @param value the byte to write
-	 * @return the modified IoBuffer
-	 */
-	public final IoBuffer putUnsignedInt(byte value) {
-		buf().putInt(value & 0xff);
-		return this;
-	}
-
-	/**
-	 * Writes an unsigned int into the ByteBuffer at a specified position
-	 *
-	 * @param index the position in the buffer to write the value
-	 * @param value the byte to write
-	 * @return the modified IoBuffer
-	 */
-	public final IoBuffer putUnsignedInt(int index, byte value) {
-		buf().putInt(index, value & 0xff);
-		return this;
-	}
-
-	/**
-	 * Writes an unsigned int into the ByteBuffer
-	 *
-	 * @param value the short to write
-	 * @return the modified IoBuffer
-	 */
-	public final IoBuffer putUnsignedInt(short value) {
-		buf().putInt(value & 0xffff);
-		return this;
-	}
-
-	/**
-	 * Writes an unsigned int into the ByteBuffer at a specified position
-	 *
-	 * @param index the position in the buffer to write the value
-	 * @param value the short to write
-	 * @return the modified IoBuffer
-	 */
-	public final IoBuffer putUnsignedInt(int index, short value) {
-		buf().putInt(index, value & 0xffff);
-		return this;
-	}
-
-	/**
-	 * Writes an unsigned short into the ByteBuffer
-	 *
-	 * @param value the byte to write
-	 * @return the modified IoBuffer
-	 */
-	public final IoBuffer putUnsignedShort(byte value) {
-		buf().putShort((short) (value & 0xff));
-		return this;
-	}
-
-	/**
-	 * Writes an unsigned Short into the ByteBuffer at a specified position
-	 *
-	 * @param index the position in the buffer to write the value
-	 * @param value the byte to write
-	 * @return the modified IoBuffer
-	 */
-	public final IoBuffer putUnsignedShort(int index, byte value) {
-		buf().putShort(index, (short) (value & 0xff));
-		return this;
-	}
-
-	/**
-	 * @see ByteBuffer#getInt(int)
-	 *
-	 * @param index The index in the IoBuffer where we will read an int from
-	 * @return the int at the given position
-	 */
-	public final int getInt(int index) {
-		return buf().getInt(index);
-	}
-
-	/**
-	 * Reads four bytes unsigned integer.
-	 *
-	 * @param index The index in the IoBuffer where we will read an unsigned int from
-	 * @return The long at the given position
-	 */
-	public final long getUnsignedInt(int index) {
-		return getInt(index) & 0xffffffffL;
-	}
-
-	/**
-	 * @see ByteBuffer#putInt(int, int)
-	 *
-	 * @param index The position where to put the int
-	 * @param value The int to put in the IoBuffer
-	 * @return the modified IoBuffer
-	 */
-	public final IoBuffer putInt(int index, int value) {
-		buf().putInt(index, value);
-		return this;
-	}
-
-	/**
-	 * @see ByteBuffer#getLong()
-	 *
-	 * @return The long at the current position
-	 */
-	public final long getLong() {
-		return buf().getLong();
-	}
-
-	/**
-	 * @see ByteBuffer#putLong(int, long)
-	 *
-	 * @param value The log to put in the IoBuffer
-	 * @return the modified IoBuffer
-	 */
-	public final IoBuffer putLong(long value) {
-		buf().putLong(value);
-		return this;
-	}
-
-	/**
-	 * @see ByteBuffer#getLong(int)
-	 *
-	 * @param index The index in the IoBuffer where we will read a long from
-	 * @return the long at the given position
-	 */
-	public final long getLong(int index) {
-		return buf().getLong(index);
-	}
-
-	/**
-	 * @see ByteBuffer#putLong(int, long)
-	 *
-	 * @param index The position where to put the long
-	 * @param value The long to put in the IoBuffer
-	 * @return the modified IoBuffer
-	 */
-	public final IoBuffer putLong(int index, long value) {
-		buf().putLong(index, value);
-		return this;
-	}
-
-	/**
-	 * @see ByteBuffer#getFloat()
-	 *
-	 * @return the float at the current position
-	 */
-	public final float getFloat() {
-		return buf().getFloat();
-	}
-
-	/**
-	 * @see ByteBuffer#putFloat(float)
-	 *
-	 * @param value The float to put in the IoBuffer
-	 * @return the modified IoBuffer
-	 */
-	public final IoBuffer putFloat(float value) {
-		buf().putFloat(value);
-		return this;
-	}
-
-	/**
-	 * @see ByteBuffer#getFloat(int)
-	 *
-	 * @param index The index in the IoBuffer where we will read a float from
-	 * @return The float at the given position
-	 */
-	public final float getFloat(int index) {
-		return buf().getFloat(index);
-	}
-
-	/**
-	 * @see ByteBuffer#putFloat(int, float)
-	 *
-	 * @param index The position where to put the float
-	 * @param value The float to put in the IoBuffer
-	 * @return the modified IoBuffer
-	 */
-	public final IoBuffer putFloat(int index, float value) {
-		buf().putFloat(index, value);
-		return this;
-	}
-
-	/**
-	 * @see ByteBuffer#getDouble()
-	 *
-	 * @return the double at the current position
-	 */
-	public final double getDouble() {
-		return buf().getDouble();
-	}
-
-	/**
-	 * @see ByteBuffer#putDouble(double)
-	 *
-	 * @param value The double to put at the IoBuffer current position
-	 * @return the modified IoBuffer
-	 */
-	public final IoBuffer putDouble(double value) {
-		buf().putDouble(value);
-		return this;
-	}
-
-	/**
-	 * @see ByteBuffer#getDouble(int)
-	 *
-	 * @param index The position where to get the double from
-	 * @return The double at the given position
-	 */
-	public final double getDouble(int index) {
-		return buf().getDouble(index);
-	}
-
-	/**
-	 * @see ByteBuffer#putDouble(int, double)
-	 *
-	 * @param index The position where to put the double
-	 * @param value The double to put in the IoBuffer
-	 * @return the modified IoBuffer
-	 */
-	public final IoBuffer putDouble(int index, double value) {
-		buf().putDouble(index, value);
 		return this;
 	}
 
@@ -1469,13 +961,14 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	public final IoBuffer fill(byte value, int size) {
 		int q = size >>> 3;
 		int r = size & 7;
+		ByteBuffer bb = buf();
 
 		if (q > 0) {
 			int intValue = value & 0xff | (value << 8) & 0xff00 | (value << 16) & 0xff0000 | value << 24;
 			long longValue = intValue & 0xffffffffL | (long)intValue << 32;
 
 			for (int i = q; i > 0; i--) {
-				putLong(longValue);
+				bb.putLong(longValue);
 			}
 		}
 
@@ -1484,7 +977,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 
 		if (q > 0) {
 			int intValue = value & 0xff | (value << 8) & 0xff00 | (value << 16) & 0xff0000 | (value << 24);
-			putInt(intValue);
+			bb.putInt(intValue);
 		}
 
 		q = r >> 1;
@@ -1492,11 +985,11 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 
 		if (q > 0) {
 			short shortValue = (short) (value & 0xff | (value << 8));
-			putShort(shortValue);
+			bb.putShort(shortValue);
 		}
 
 		if (r > 0) {
-			put(value);
+			bb.put(value);
 		}
 
 		return this;
@@ -1528,27 +1021,28 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	public final IoBuffer fill(int size) {
 		int q = size >>> 3;
 		int r = size & 7;
+		ByteBuffer bb = buf();
 
 		for (int i = q; i > 0; i--) {
-			putLong(0L);
+			bb.putLong(0L);
 		}
 
 		q = r >>> 2;
 		r = r & 3;
 
 		if (q > 0) {
-			putInt(0);
+			bb.putInt(0);
 		}
 
 		q = r >> 1;
 		r = r & 1;
 
 		if (q > 0) {
-			putShort((short) 0);
+			bb.putShort((short) 0);
 		}
 
 		if (r > 0) {
-			put((byte) 0);
+			bb.put((byte) 0);
 		}
 
 		return this;

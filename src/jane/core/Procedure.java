@@ -129,7 +129,7 @@ public abstract class Procedure implements Runnable
 	@SuppressWarnings("serial")
 	private static final class Redo extends Error
 	{
-		private static final Redo _instance = new Redo();
+		static final Redo _instance = new Redo();
 
 		@SuppressWarnings("sync-override")
 		@Override
@@ -142,7 +142,7 @@ public abstract class Procedure implements Runnable
 	@SuppressWarnings("serial")
 	private static final class Undo extends Error
 	{
-		private static final Undo _instance = new Undo();
+		static final Undo _instance = new Undo();
 
 		@SuppressWarnings("sync-override")
 		@Override

@@ -150,7 +150,7 @@ public final class NioSession extends AbstractIoSession {
 	 * That allows the session to have its own configuration setting, over the IoService default one.
 	 */
 	private final class SessionConfigImpl extends AbstractSocketSessionConfig {
-		private SessionConfigImpl(IoService service) {
+		SessionConfigImpl(IoService service) {
 			setAll(service.getSessionConfig());
 		}
 

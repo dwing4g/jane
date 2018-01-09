@@ -11,7 +11,7 @@ final class LRUCleaner
 {
 	private static final class Singleton
 	{
-		private static final LRUCleaner instance = new LRUCleaner();
+		static final LRUCleaner instance = new LRUCleaner();
 	}
 
 	interface Cleanable
