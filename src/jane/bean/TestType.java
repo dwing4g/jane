@@ -40,22 +40,6 @@ public final class TestType extends Bean<TestType>
 	public  static final int BEAN_TYPE = 2;
 	public  static final String BEAN_TYPENAME = TestType.class.getSimpleName();
 	public  static final TestType BEAN_STUB = new TestType();
-	private static final Field FIELD_v1;
-	private static final Field FIELD_v2;
-	private static final Field FIELD_v3;
-	private static final Field FIELD_v4;
-	private static final Field FIELD_v5;
-	private static final Field FIELD_v6;
-	private static final Field FIELD_v7;
-	private static final Field FIELD_v8;
-	private static final Field FIELD_v9;
-	private static SSetListener<Long> LISTENER_v13;
-	private static SSetListener<Float> LISTENER_v14;
-	private static SSetListener<Double> LISTENER_v15;
-	private static SMapListener<Long, String> LISTENER_v16;
-	private static SMapListener<TestBean, Boolean> LISTENER_v17;
-	private static SMapListener<Octets, TestBean> LISTENER_v18;
-	private static final Field FIELD_v20;
 
 	private /*  1*/ boolean v1; // 1字节布尔,0表示假,1表示真,其它默认表示真
 	private /*  2*/ byte v2; // 1字节整数
@@ -77,28 +61,6 @@ public final class TestType extends Bean<TestType>
 	private /* 18*/ final LinkedHashMap<Octets, TestBean> v18; // 有序映射容器(LinkedHashMap)
 	private /* 19*/ final TestBean v19; // 嵌入其它bean
 	private /*  0*/ java.lang.String v20; // 非序列化字段
-
-	static
-	{
-		try
-		{
-			Class<TestType> _c_ = TestType.class;
-			FIELD_v1 = _c_.getDeclaredField("v1"); FIELD_v1.setAccessible(true);
-			FIELD_v2 = _c_.getDeclaredField("v2"); FIELD_v2.setAccessible(true);
-			FIELD_v3 = _c_.getDeclaredField("v3"); FIELD_v3.setAccessible(true);
-			FIELD_v4 = _c_.getDeclaredField("v4"); FIELD_v4.setAccessible(true);
-			FIELD_v5 = _c_.getDeclaredField("v5"); FIELD_v5.setAccessible(true);
-			FIELD_v6 = _c_.getDeclaredField("v6"); FIELD_v6.setAccessible(true);
-			FIELD_v7 = _c_.getDeclaredField("v7"); FIELD_v7.setAccessible(true);
-			FIELD_v8 = _c_.getDeclaredField("v8"); FIELD_v8.setAccessible(true);
-			FIELD_v9 = _c_.getDeclaredField("v9"); FIELD_v9.setAccessible(true);
-			FIELD_v20 = _c_.getDeclaredField("v20"); FIELD_v20.setAccessible(true);
-		}
-		catch(Exception e)
-		{
-			throw new Error(e);
-		}
-	}
 
 	public TestType()
 	{
@@ -752,6 +714,45 @@ public final class TestType extends Bean<TestType>
 
 	public static final class Safe extends SContext.Safe<TestType>
 	{
+		private static final Field FIELD_v1;
+		private static final Field FIELD_v2;
+		private static final Field FIELD_v3;
+		private static final Field FIELD_v4;
+		private static final Field FIELD_v5;
+		private static final Field FIELD_v6;
+		private static final Field FIELD_v7;
+		private static final Field FIELD_v8;
+		private static final Field FIELD_v9;
+		private static SSetListener<Long> LISTENER_v13;
+		private static SSetListener<Float> LISTENER_v14;
+		private static SSetListener<Double> LISTENER_v15;
+		private static SMapListener<Long, String> LISTENER_v16;
+		private static SMapListener<TestBean, Boolean> LISTENER_v17;
+		private static SMapListener<Octets, TestBean> LISTENER_v18;
+		private static final Field FIELD_v20;
+
+		static
+		{
+			try
+			{
+				Class<TestType> _c_ = TestType.class;
+				FIELD_v1 = _c_.getDeclaredField("v1"); FIELD_v1.setAccessible(true);
+				FIELD_v2 = _c_.getDeclaredField("v2"); FIELD_v2.setAccessible(true);
+				FIELD_v3 = _c_.getDeclaredField("v3"); FIELD_v3.setAccessible(true);
+				FIELD_v4 = _c_.getDeclaredField("v4"); FIELD_v4.setAccessible(true);
+				FIELD_v5 = _c_.getDeclaredField("v5"); FIELD_v5.setAccessible(true);
+				FIELD_v6 = _c_.getDeclaredField("v6"); FIELD_v6.setAccessible(true);
+				FIELD_v7 = _c_.getDeclaredField("v7"); FIELD_v7.setAccessible(true);
+				FIELD_v8 = _c_.getDeclaredField("v8"); FIELD_v8.setAccessible(true);
+				FIELD_v9 = _c_.getDeclaredField("v9"); FIELD_v9.setAccessible(true);
+				FIELD_v20 = _c_.getDeclaredField("v20"); FIELD_v20.setAccessible(true);
+			}
+			catch(Exception e)
+			{
+				throw new Error(e);
+			}
+		}
+
 		private SSet<Long, Long> CACHE_v13;
 		private SSSet<Float, Float> CACHE_v14;
 		private SSet<Double, Double> CACHE_v15;
@@ -767,118 +768,118 @@ public final class TestType extends Bean<TestType>
 		/** @return 1字节布尔,0表示假,1表示真,其它默认表示真 */
 		public boolean getV1()
 		{
-			return _bean.v1;
+			return _bean.getV1();
 		}
 
 		/** @param v1 1字节布尔,0表示假,1表示真,其它默认表示真 */
 		public void setV1(boolean v1)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SBoolean(_bean, FIELD_v1, _bean.v1));
-			_bean.v1 = v1;
+			if(initSContext()) _sctx.addOnRollback(new SBase.SBoolean(_bean, FIELD_v1, _bean.getV1()));
+			_bean.setV1(v1);
 		}
 
 		/** @return 1字节整数 */
 		public byte getV2()
 		{
-			return _bean.v2;
+			return _bean.getV2();
 		}
 
 		/** @param v2 1字节整数 */
 		public void setV2(byte v2)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SByte(_bean, FIELD_v2, _bean.v2));
-			_bean.v2 = v2;
+			if(initSContext()) _sctx.addOnRollback(new SBase.SByte(_bean, FIELD_v2, _bean.getV2()));
+			_bean.setV2(v2);
 		}
 
 		/** @return 2字节整数 */
 		public short getV3()
 		{
-			return _bean.v3;
+			return _bean.getV3();
 		}
 
 		/** @param v3 2字节整数 */
 		public void setV3(short v3)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SShort(_bean, FIELD_v3, _bean.v3));
-			_bean.v3 = v3;
+			if(initSContext()) _sctx.addOnRollback(new SBase.SShort(_bean, FIELD_v3, _bean.getV3()));
+			_bean.setV3(v3);
 		}
 
 		/** @return 4字节整数 */
 		public int getV4()
 		{
-			return _bean.v4;
+			return _bean.getV4();
 		}
 
 		/** @param v4 4字节整数 */
 		public void setV4(int v4)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SInteger(_bean, FIELD_v4, _bean.v4));
-			_bean.v4 = v4;
+			if(initSContext()) _sctx.addOnRollback(new SBase.SInteger(_bean, FIELD_v4, _bean.getV4()));
+			_bean.setV4(v4);
 		}
 
 		/** @return 8字节整数 */
 		public long getV5()
 		{
-			return _bean.v5;
+			return _bean.getV5();
 		}
 
 		/** @param v5 8字节整数 */
 		public void setV5(long v5)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SLong(_bean, FIELD_v5, _bean.v5));
-			_bean.v5 = v5;
+			if(initSContext()) _sctx.addOnRollback(new SBase.SLong(_bean, FIELD_v5, _bean.getV5()));
+			_bean.setV5(v5);
 		}
 
 		/** @return 4字节浮点数 */
 		public float getV6()
 		{
-			return _bean.v6;
+			return _bean.getV6();
 		}
 
 		/** @param v6 4字节浮点数 */
 		public void setV6(float v6)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SFloat(_bean, FIELD_v6, _bean.v6));
-			_bean.v6 = v6;
+			if(initSContext()) _sctx.addOnRollback(new SBase.SFloat(_bean, FIELD_v6, _bean.getV6()));
+			_bean.setV6(v6);
 		}
 
 		/** @return 8字节浮点数 */
 		public double getV7()
 		{
-			return _bean.v7;
+			return _bean.getV7();
 		}
 
 		/** @param v7 8字节浮点数 */
 		public void setV7(double v7)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SDouble(_bean, FIELD_v7, _bean.v7));
-			_bean.v7 = v7;
+			if(initSContext()) _sctx.addOnRollback(new SBase.SDouble(_bean, FIELD_v7, _bean.getV7()));
+			_bean.setV7(v7);
 		}
 
 		/** @return 二进制数据(Octets) */
 		public Octets getV8()
 		{
-			return _bean.v8.clone();
+			return _bean.getV8().clone();
 		}
 
 		/** @param v8 二进制数据(Octets) */
 		public void setV8(Octets v8)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_v8, _bean.v8, false));
-			_bean.v8 = (v8 != null ? v8.clone() : new Octets(5));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_v8, _bean.getV8(), false));
+			_bean.setV8((v8 != null ? v8.clone() : new Octets(5)));
 		}
 
 		/** 二进制数据(Octets) */
 		public byte[] copyOfV8()
 		{
-			return _bean.v8.getBytes();
+			return _bean.getV8().getBytes();
 		}
 
 		/** 二进制数据(Octets) */
 		public void marshalV8(Bean<?> _b_)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_v8, _bean.v8, false));
-			_bean.v8 = _b_.marshal(new OctetsStream(_b_.initSize()));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_v8, _bean.getV8(), false));
+			_bean.setV8(_b_.marshal(new OctetsStream(_b_.initSize())));
 		}
 
 		/** 二进制数据(Octets) */
@@ -897,59 +898,59 @@ public final class TestType extends Bean<TestType>
 		@Deprecated
 		public Octets unsafeV8()
 		{
-			return _bean.v8;
+			return _bean.getV8();
 		}
 
 		/** @return 字符串(String) */
 		public String getV9()
 		{
-			return _bean.v9;
+			return _bean.getV9();
 		}
 
 		/** @param v9 字符串(String) */
 		public void setV9(String v9)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SObject(_bean, FIELD_v9, _bean.v9));
-			_bean.v9 = (v9 != null ? v9 : "");
+			if(initSContext()) _sctx.addOnRollback(new SBase.SObject(_bean, FIELD_v9, _bean.getV9()));
+			_bean.setV9((v9 != null ? v9 : ""));
 		}
 
 		/** @return 数组容器(ArrayList) */
 		public SList<Boolean, Boolean> getV10()
 		{
-			return new SList<>(this, _bean.v10);
+			return new SList<>(this, _bean.getV10());
 		}
 
 		/** @return 数组容器(ArrayList) */
 		@Deprecated
 		public ArrayList<Boolean> unsafeV10()
 		{
-			return _bean.v10;
+			return _bean.getV10();
 		}
 
 		/** @return 链表容器(LinkedList) */
 		public SList<Byte, Byte> getV11()
 		{
-			return new SList<>(this, _bean.v11);
+			return new SList<>(this, _bean.getV11());
 		}
 
 		/** @return 链表容器(LinkedList) */
 		@Deprecated
 		public LinkedList<Byte> unsafeV11()
 		{
-			return _bean.v11;
+			return _bean.getV11();
 		}
 
 		/** @return 队列容器(ArrayDeque) */
 		public SDeque<Integer, Integer> getV12()
 		{
-			return new SDeque<>(this, _bean.v12);
+			return new SDeque<>(this, _bean.getV12());
 		}
 
 		/** @return 队列容器(ArrayDeque) */
 		@Deprecated
 		public ArrayDeque<Integer> unsafeV12()
 		{
-			return _bean.v12;
+			return _bean.getV12();
 		}
 
 		/** 无序集合容器(HashSet) */
@@ -961,7 +962,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 无序集合容器(HashSet) */
 		public SSet<Long, Long> getV13()
 		{
-			if(CACHE_v13 == null) CACHE_v13 = new SSet<>(this, _bean.v13, LISTENER_v13);
+			if(CACHE_v13 == null) CACHE_v13 = new SSet<>(this, _bean.getV13(), LISTENER_v13);
 			return CACHE_v13;
 		}
 
@@ -969,7 +970,7 @@ public final class TestType extends Bean<TestType>
 		@Deprecated
 		public HashSet<Long> unsafeV13()
 		{
-			return _bean.v13;
+			return _bean.getV13();
 		}
 
 		/** 排序集合容器(TreeSet) */
@@ -981,7 +982,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 排序集合容器(TreeSet) */
 		public SSSet<Float, Float> getV14()
 		{
-			if(CACHE_v14 == null) CACHE_v14 = new SSSet<>(this, _bean.v14, LISTENER_v14);
+			if(CACHE_v14 == null) CACHE_v14 = new SSSet<>(this, _bean.getV14(), LISTENER_v14);
 			return CACHE_v14;
 		}
 
@@ -989,7 +990,7 @@ public final class TestType extends Bean<TestType>
 		@Deprecated
 		public TreeSet<Float> unsafeV14()
 		{
-			return _bean.v14;
+			return _bean.getV14();
 		}
 
 		/** 有序集合容器(LinkedHashSet) */
@@ -1001,7 +1002,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 有序集合容器(LinkedHashSet) */
 		public SSet<Double, Double> getV15()
 		{
-			if(CACHE_v15 == null) CACHE_v15 = new SSet<>(this, _bean.v15, LISTENER_v15);
+			if(CACHE_v15 == null) CACHE_v15 = new SSet<>(this, _bean.getV15(), LISTENER_v15);
 			return CACHE_v15;
 		}
 
@@ -1009,7 +1010,7 @@ public final class TestType extends Bean<TestType>
 		@Deprecated
 		public LinkedHashSet<Double> unsafeV15()
 		{
-			return _bean.v15;
+			return _bean.getV15();
 		}
 
 		/** 无序映射容器(HashMap) */
@@ -1021,7 +1022,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 无序映射容器(HashMap) */
 		public SMap<Long, String, String> getV16()
 		{
-			if(CACHE_v16 == null) CACHE_v16 = new SMap<>(this, _bean.v16, LISTENER_v16);
+			if(CACHE_v16 == null) CACHE_v16 = new SMap<>(this, _bean.getV16(), LISTENER_v16);
 			return CACHE_v16;
 		}
 
@@ -1029,7 +1030,7 @@ public final class TestType extends Bean<TestType>
 		@Deprecated
 		public HashMap<Long, String> unsafeV16()
 		{
-			return _bean.v16;
+			return _bean.getV16();
 		}
 
 		/** 排序映射容器(TreeMap) */
@@ -1041,7 +1042,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 排序映射容器(TreeMap) */
 		public SSMap<TestBean, Boolean, Boolean> getV17()
 		{
-			if(CACHE_v17 == null) CACHE_v17 = new SSMap<>(this, _bean.v17, LISTENER_v17);
+			if(CACHE_v17 == null) CACHE_v17 = new SSMap<>(this, _bean.getV17(), LISTENER_v17);
 			return CACHE_v17;
 		}
 
@@ -1049,7 +1050,7 @@ public final class TestType extends Bean<TestType>
 		@Deprecated
 		public TreeMap<TestBean, Boolean> unsafeV17()
 		{
-			return _bean.v17;
+			return _bean.getV17();
 		}
 
 		/** 有序映射容器(LinkedHashMap) */
@@ -1061,7 +1062,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 有序映射容器(LinkedHashMap) */
 		public SMap<Octets, TestBean, TestBean.Safe> getV18()
 		{
-			if(CACHE_v18 == null) CACHE_v18 = new SMap<>(this, _bean.v18, LISTENER_v18);
+			if(CACHE_v18 == null) CACHE_v18 = new SMap<>(this, _bean.getV18(), LISTENER_v18);
 			return CACHE_v18;
 		}
 
@@ -1069,33 +1070,33 @@ public final class TestType extends Bean<TestType>
 		@Deprecated
 		public LinkedHashMap<Octets, TestBean> unsafeV18()
 		{
-			return _bean.v18;
+			return _bean.getV18();
 		}
 
 		/** @return 嵌入其它bean */
 		public TestBean.Safe getV19()
 		{
-			return _bean.v19.safe(this);
+			return _bean.getV19().safe(this);
 		}
 
 		/** @return 嵌入其它bean */
 		@Deprecated
 		public TestBean unsafeV19()
 		{
-			return _bean.v19;
+			return _bean.getV19();
 		}
 
 		/** @return 非序列化字段 */
 		public java.lang.String getV20()
 		{
-			return _bean.v20;
+			return _bean.getV20();
 		}
 
 		/** @param v20 非序列化字段 */
 		public void setV20(java.lang.String v20)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SObject(_bean, FIELD_v20, _bean.v20));
-			_bean.v20 = v20;
+			if(initSContext()) _sctx.addOnRollback(new SBase.SObject(_bean, FIELD_v20, _bean.getV20()));
+			_bean.setV20(v20);
 		}
 	}
 }

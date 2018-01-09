@@ -31,21 +31,9 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 	public  static final String BEAN_TYPENAME = #(bean.name).class.getSimpleName();
 	public  static final #(bean.name) BEAN_STUB = new #(bean.name)();
 #{#	public  static final #(var.type) #(var.name)#(var.value);#(var.comment2)
-#}##(##(var.field)#)#
+#}#
 #(#	private /*#(var.id3)*/ #(var.final)#(var.type) #(var.name);#(var.comment2)
 #)##<#
-	static
-	{
-		try
-		{
-			Class<#(bean.name)> _c_ = #(bean.name).class;
-#(##(var.fieldget)#)#		}
-		catch(Exception e)
-		{
-			throw new Error(e);
-		}
-	}
-
 	public #(bean.name)()
 	{
 #(##(var.new)#)#	}
@@ -184,6 +172,19 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 
 	public static final class Safe extends SContext.Safe<#(bean.name)>
 	{
+#(##(var.field)#)#
+		static
+		{
+			try
+			{
+				Class<#(bean.name)> _c_ = #(bean.name).class;
+#(##(var.fieldget)#)#			}
+			catch(Exception e)
+			{
+				throw new Error(e);
+			}
+		}
+
 #(##(var.safecache)#)#
 		private Safe(#(bean.name) bean, SContext.Safe<?> _parent_)
 		{
@@ -391,8 +392,8 @@ typedef.byte =
 	subtypeid = 0,
 	final = "",
 	new = "",
-	field = "\tprivate static final Field FIELD_#(var.name);\n",
-	fieldget = "\t\t\tFIELD_#(var.name) = _c_.getDeclaredField(\"#(var.name)\"); FIELD_#(var.name).setAccessible(true);\n",
+	field = "\t\tprivate static final Field FIELD_#(var.name);\n",
+	fieldget = "\t\t\t\tFIELD_#(var.name) = _c_.getDeclaredField(\"#(var.name)\"); FIELD_#(var.name).setAccessible(true);\n",
 	safecache = "",
 	new = "",
 	init = "this.#(var.name) = #(var.name)",
@@ -411,7 +412,7 @@ typedef.byte =
 		/** @return #(var.comment1) */
 		public #(var.type) get#(var.name_u)()
 		{
-			return _bean.#(var.name);
+			return _bean.get#(var.name_u)();
 		}
 ]],
 	setsafe = [[
@@ -419,8 +420,8 @@ typedef.byte =
 		/** @param #(var.name) #(var.comment1) */
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.S#(var.type_o)(_bean, FIELD_#(var.name), _bean.#(var.name)));
-			_bean.#(var.name) = #(var.name);
+			if(initSContext()) _sctx.addOnRollback(new SBase.S#(var.type_o)(_bean, FIELD_#(var.name), _bean.get#(var.name_u)()));
+			_bean.set#(var.name_u)(#(var.name));
 		}
 ]],
 	marshal = function(var)
@@ -535,8 +536,8 @@ typedef.string = merge(typedef.byte,
 		/** @param #(var.name) #(var.comment1) */
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SObject(_bean, FIELD_#(var.name), _bean.#(var.name)));
-			_bean.#(var.name) = (#(var.name) != null ? #(var.name) : "");
+			if(initSContext()) _sctx.addOnRollback(new SBase.SObject(_bean, FIELD_#(var.name), _bean.get#(var.name_u)()));
+			_bean.set#(var.name_u)((#(var.name) != null ? #(var.name) : ""));
 		}
 ]],
 	marshal = function(var)
@@ -599,27 +600,27 @@ typedef.octets = merge(typedef.string,
 		/** @return #(var.comment1) */
 		public #(var.type) get#(var.name_u)()
 		{
-			return _bean.#(var.name).clone();
+			return _bean.get#(var.name_u)().clone();
 		}
 
 		/** @param #(var.name) #(var.comment1) */
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.#(var.name), false));
-			_bean.#(var.name) = (#(var.name) != null ? #(var.name).clone() : new Octets(#(var.cap)));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.get#(var.name_u)(), false));
+			_bean.set#(var.name_u)((#(var.name) != null ? #(var.name).clone() : new Octets(#(var.cap))));
 		}
 
 		/** #(var.comment1) */
 		public byte[] copyOf#(var.name_u)()
 		{
-			return _bean.#(var.name).getBytes();
+			return _bean.get#(var.name_u)().getBytes();
 		}
 
 		/** #(var.comment1) */
 		public void marshal#(var.name_u)(Bean<?> _b_)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.#(var.name), false));
-			_bean.#(var.name) = _b_.marshal(new OctetsStream(_b_.initSize()));
+			if(initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.get#(var.name_u)(), false));
+			_bean.set#(var.name_u)(_b_.marshal(new OctetsStream(_b_.initSize())));
 		}
 
 		/** #(var.comment1) */
@@ -638,7 +639,7 @@ typedef.octets = merge(typedef.string,
 		@Deprecated
 		public #(var.type) unsafe#(var.name_u)()
 		{
-			return _bean.#(var.name);
+			return _bean.get#(var.name_u)();
 		}
 ]],
 	setsafe = "",
@@ -671,14 +672,14 @@ typedef.vector = merge(typedef.octets,
 		/** @return #(var.comment1) */
 		public #(var.stype) get#(var.name_u)()
 		{
-			return new #(var.stype)(this, _bean.#(var.name));
+			return new #(var.stype)(this, _bean.get#(var.name_u)());
 		}
 
 		/** @return #(var.comment1) */
 		@Deprecated
 		public #(var.type) unsafe#(var.name_u)()
 		{
-			return _bean.#(var.name);
+			return _bean.get#(var.name_u)();
 		}
 ]],
 	marshal = function(var)
@@ -753,7 +754,7 @@ typedef.hashset = merge(typedef.list,
 	type = function(var) return "HashSet<" .. subtypename(var, var.k) .. ">" end,
 	stype = function(var) return "SSet<" .. subtypename(var, var.k) .. ", " .. subtypename_safe(var, var.k) .. ">" end,
 	field = function(var) return [[
-	private static SSetListener<]] .. subtypename(var, var.k) .. [[> LISTENER_#(var.name);
+		private static SSetListener<]] .. subtypename(var, var.k) .. [[> LISTENER_#(var.name);
 ]] end,
 	safecache = "\t\tprivate #(var.stype) CACHE_#(var.name);\n",
 	new = function(var) return "\t\t#(var.name) = new HashSet<>(#(var.cap));\n" end,
@@ -769,7 +770,7 @@ typedef.hashset = merge(typedef.list,
 		/** @return #(var.comment1) */
 		public #(var.stype) get#(var.name_u)()
 		{
-			if(CACHE_#(var.name) == null) CACHE_#(var.name) = new #(var.stype)(this, _bean.#(var.name), LISTENER_#(var.name));
+			if(CACHE_#(var.name) == null) CACHE_#(var.name) = new #(var.stype)(this, _bean.get#(var.name_u)(), LISTENER_#(var.name));
 			return CACHE_#(var.name);
 		}
 
@@ -777,7 +778,7 @@ typedef.hashset = merge(typedef.list,
 		@Deprecated
 		public #(var.type) unsafe#(var.name_u)()
 		{
-			return _bean.#(var.name);
+			return _bean.get#(var.name_u)();
 		}
 ]] end,
 })
@@ -803,7 +804,7 @@ typedef.hashmap = merge(typedef.list,
 	type_i = function(var) return "Map<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ">" end,
 	stype = function(var) return "SMap<" .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. ", " .. subtypename_safe(var, var.v) .. ">" end,
 	field = function(var) return [[
-	private static SMapListener<]] .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. [[> LISTENER_#(var.name);
+		private static SMapListener<]] .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. [[> LISTENER_#(var.name);
 ]] end,
 	safecache = "\t\tprivate #(var.stype) CACHE_#(var.name);\n",
 	new = function(var) return "\t\t#(var.name) = new HashMap<>(#(var.cap));\n" end,
@@ -819,7 +820,7 @@ typedef.hashmap = merge(typedef.list,
 		/** @return #(var.comment1) */
 		public #(var.stype) get#(var.name_u)()
 		{
-			if(CACHE_#(var.name) == null) CACHE_#(var.name) = new #(var.stype)(this, _bean.#(var.name), LISTENER_#(var.name));
+			if(CACHE_#(var.name) == null) CACHE_#(var.name) = new #(var.stype)(this, _bean.get#(var.name_u)(), LISTENER_#(var.name));
 			return CACHE_#(var.name);
 		}
 
@@ -827,7 +828,7 @@ typedef.hashmap = merge(typedef.list,
 		@Deprecated
 		public #(var.type) unsafe#(var.name_u)()
 		{
-			return _bean.#(var.name);
+			return _bean.get#(var.name_u)();
 		}
 ]] end,
 	marshal = function(var)
@@ -898,14 +899,14 @@ typedef.bean = merge(typedef.octets,
 		/** @return #(var.comment1) */
 		public #(var.type).Safe get#(var.name_u)()
 		{
-			return _bean.#(var.name).safe(this);
+			return _bean.get#(var.name_u)().safe(this);
 		}
 
 		/** @return #(var.comment1) */
 		@Deprecated
 		public #(var.type) unsafe#(var.name_u)()
 		{
-			return _bean.#(var.name);
+			return _bean.get#(var.name_u)();
 		}
 ]],
 	setsafe = "",
@@ -936,8 +937,8 @@ typedef.bean = merge(typedef.octets,
 typedef.ref = merge(typedef.bean,
 {
 	final = "",
-	field = "\tprivate static final Field FIELD_#(var.name);\n",
-	fieldget = "\t\t\tFIELD_#(var.name) = _c_.getDeclaredField(\"#(var.name)\"); FIELD_#(var.name).setAccessible(true);\n",
+	field = "\t\tprivate static final Field FIELD_#(var.name);\n",
+	fieldget = "\t\t\t\tFIELD_#(var.name) = _c_.getDeclaredField(\"#(var.name)\"); FIELD_#(var.name).setAccessible(true);\n",
 	new = "\t\t#(var.name) = null;\n",
 	init = "this.#(var.name) = #(var.name)",
 	reset = "#(var.name) = null",
@@ -955,7 +956,7 @@ typedef.ref = merge(typedef.bean,
 		/** @return #(var.comment1) */
 		public #(var.type) get#(var.name_u)()
 		{
-			return _bean.#(var.name);
+			return _bean.get#(var.name_u)();
 		}
 ]],
 	setsafe = function() return [[
@@ -963,8 +964,8 @@ typedef.ref = merge(typedef.bean,
 		/** @param #(var.name) #(var.comment1) */
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SObject(_bean, FIELD_#(var.name), _bean.#(var.name)));
-			_bean.#(var.name) = #(var.name);
+			if(initSContext()) _sctx.addOnRollback(new SBase.SObject(_bean, FIELD_#(var.name), _bean.get#(var.name_u)()));
+			_bean.set#(var.name_u)(#(var.name));
 		}
 ]] end,
 	marshal = "",
@@ -1100,8 +1101,8 @@ local function bean_const(code)
 		gsub("import jane%.core%.DynBean;\n", ""):
 		gsub("import jane%.core%.SBase;\n", ""):
 		gsub("import jane%.core%.SContext;\n", ""):
-		gsub("\tprivate static final Field .-\n", ""):
-		gsub("\tstatic\n.-\n\t}\n\n", ""):
+--		gsub("\tprivate static final Field .-\n", ""):
+--		gsub("\tstatic\n.-\n\t}\n\n", ""):
 --		gsub("\n\tpublic [%w_]+%(%).-\n\t}\n", ""):
 --		gsub("(\n\tprivate /%*[ %d]+%*/)", "%1 final"):
 --		gsub("\n\tpublic  static final [%w_]+ BEAN_STUB = new [%w_]+%(%);\n", ""):
@@ -1171,7 +1172,7 @@ function bean(bean)
 	code = code_conv(code, "bean", bean):
 		gsub("\r", ""):
 		gsub(#vartypes > 1 and "#[<>]#" or "#<#(.-)#>#", ""):
-		gsub("\n\n\tstatic\n\t{\n\t\ttry\n\t\t{\n\t\t\tClass<.-> _c_ = .-%.class;\n\t\t}\n\t\tcatch%(Exception e%)\n\t\t{\n\t\t\tthrow new Error%(e%);\n\t\t}\n\t}", ""):
+		gsub("\n\t\tstatic\n\t\t{\n\t\t\ttry\n\t\t\t{\n\t\t\t\tClass<.-> _c_ = .-%.class;\n\t\t\t}\n\t\t\tcatch%(Exception e%)\n\t\t\t{\n\t\t\t\tthrow new Error%(e%);\n\t\t\t}\n\t\t}\n\n", ""):
 		gsub("int h = (%(int%)serialVersionUID;)\n\t\treturn h;", "return %1"):
 		gsub("\t+/%*%* @return  %*/\n", ""):
 		gsub("\t+/%*%* @param [%w_]+  %*/\n", ""):
@@ -1180,7 +1181,8 @@ function bean(bean)
 		gsub("\t\t_h_ = _h_ %* 31 %+ 1 %+ 0;\n", ""):
 		gsub("\t\tif%(%) return false;\n", ""):
 		gsub("\t\t_c_ = 0; if%(_c_ != 0%) return _c_;\n", ""):
-		gsub("( new %w+)<.->", "%1<>")
+		gsub("( new %w+)<.->", "%1<>"):
+		gsub("\n\n\n", "\n\n")
 	if not code:find("\tprivate static final Field ") then
 		code = code:gsub("import java.lang.reflect.Field;\n", "")
 	end
@@ -1374,12 +1376,9 @@ for beanname, safe in spairs(need_save) do
 		code = code:gsub("\n\t@Override\n\tpublic Safe safe%(.*", "}\n")
 				   :gsub("import java%.lang%.reflect%.Field;\n", "")
 				   :gsub("import jane%.core%.S.-\n", "")
-				   :gsub("\tprivate static final Field FIELD_.-\n", "")
-				   :gsub("\tprivate static S...Listener<.-\n", "")
-				   :gsub("\n\tstatic\n\t{.-\n\t}\n", "")
 	end
 	if not code:find("Util.", 1, true) then code = code:gsub("import jane%.core%.Util;\n", "") end
-	checksave(outpath .. namespace_path .. "/" .. beanname .. ".java", code, 0)
+	checksave(outpath .. namespace_path .. "/" .. beanname .. ".java", code:gsub("\r", ""), 0)
 end
 
 print((arg[2] or "") .. " ... done!")

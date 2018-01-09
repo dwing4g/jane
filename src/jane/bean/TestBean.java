@@ -19,25 +19,9 @@ public final class TestBean extends Bean<TestBean>
 	public  static final TestBean BEAN_STUB = new TestBean();
 	public  static final int TEST_CONST1 = 5; // 测试类静态常量
 	public  static final String TEST_CONST2 = "test_const2";
-	private static final Field FIELD_value1;
-	private static final Field FIELD_value2;
 
 	private /*  1*/ int value1; // 字段的注释
 	private /*  2*/ long value2;
-
-	static
-	{
-		try
-		{
-			Class<TestBean> _c_ = TestBean.class;
-			FIELD_value1 = _c_.getDeclaredField("value1"); FIELD_value1.setAccessible(true);
-			FIELD_value2 = _c_.getDeclaredField("value2"); FIELD_value2.setAccessible(true);
-		}
-		catch(Exception e)
-		{
-			throw new Error(e);
-		}
-	}
 
 	public TestBean()
 	{
@@ -204,6 +188,23 @@ public final class TestBean extends Bean<TestBean>
 
 	public static final class Safe extends SContext.Safe<TestBean>
 	{
+		private static final Field FIELD_value1;
+		private static final Field FIELD_value2;
+
+		static
+		{
+			try
+			{
+				Class<TestBean> _c_ = TestBean.class;
+				FIELD_value1 = _c_.getDeclaredField("value1"); FIELD_value1.setAccessible(true);
+				FIELD_value2 = _c_.getDeclaredField("value2"); FIELD_value2.setAccessible(true);
+			}
+			catch(Exception e)
+			{
+				throw new Error(e);
+			}
+		}
+
 		private Safe(TestBean bean, SContext.Safe<?> _parent_)
 		{
 			super(bean, _parent_);
@@ -212,25 +213,25 @@ public final class TestBean extends Bean<TestBean>
 		/** @return 字段的注释 */
 		public int getValue1()
 		{
-			return _bean.value1;
+			return _bean.getValue1();
 		}
 
 		/** @param value1 字段的注释 */
 		public void setValue1(int value1)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SInteger(_bean, FIELD_value1, _bean.value1));
-			_bean.value1 = value1;
+			if(initSContext()) _sctx.addOnRollback(new SBase.SInteger(_bean, FIELD_value1, _bean.getValue1()));
+			_bean.setValue1(value1);
 		}
 
 		public long getValue2()
 		{
-			return _bean.value2;
+			return _bean.getValue2();
 		}
 
 		public void setValue2(long value2)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SLong(_bean, FIELD_value2, _bean.value2));
-			_bean.value2 = value2;
+			if(initSContext()) _sctx.addOnRollback(new SBase.SLong(_bean, FIELD_value2, _bean.getValue2()));
+			_bean.setValue2(value2);
 		}
 	}
 }
