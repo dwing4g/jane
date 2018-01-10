@@ -23,8 +23,7 @@ import java.net.SocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.Collection;
-import java.util.Iterator;
+import java.util.Set;
 import org.apache.mina.core.polling.AbstractPollingIoConnector;
 import org.apache.mina.core.service.IoConnector;
 import org.apache.mina.core.service.IoProcessor;
@@ -71,8 +70,8 @@ public final class NioSocketConnector extends AbstractPollingIoConnector {
 	}
 
 	@Override
-	protected Iterator<SocketChannel> allHandles() {
-		return new SocketChannelIterator(selector.keys());
+	protected Set<SelectionKey> allHandles() {
+		return selector.keys();
 	}
 
 	@Override
@@ -157,36 +156,12 @@ public final class NioSocketConnector extends AbstractPollingIoConnector {
 	}
 
 	@Override
-	protected Iterator<SocketChannel> selectedHandles() {
-		return new SocketChannelIterator(selector.selectedKeys());
+	protected Set<SelectionKey> selectedHandles() {
+		return selector.selectedKeys();
 	}
 
 	@Override
 	protected void wakeup() {
 		selector.wakeup();
-	}
-
-	private static final class SocketChannelIterator implements Iterator<SocketChannel> {
-		private final Iterator<SelectionKey> i;
-
-		SocketChannelIterator(Collection<SelectionKey> selectedKeys) {
-			i = selectedKeys.iterator();
-		}
-
-		@Override
-		public boolean hasNext() {
-			return i.hasNext();
-		}
-
-		@Override
-		public SocketChannel next() {
-			SelectionKey key = i.next();
-			return (SocketChannel) key.channel();
-		}
-
-		@Override
-		public void remove() {
-			i.remove();
-		}
 	}
 }

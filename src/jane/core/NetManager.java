@@ -185,11 +185,11 @@ public class NetManager implements IoHandler
 
 	private static SimpleIoProcessorPool getSharedIoProcessorPool()
 	{
-		if(_sharedIoProcessorPool == null || _sharedIoProcessorPool.isDisposed())
+		if(_sharedIoProcessorPool == null || _sharedIoProcessorPool.isDisposing())
 		{
 			synchronized(NetManager.class)
 			{
-				if(_sharedIoProcessorPool == null || _sharedIoProcessorPool.isDisposed())
+				if(_sharedIoProcessorPool == null || _sharedIoProcessorPool.isDisposing())
 					_sharedIoProcessorPool = new SimpleIoProcessorPool(_sharedIoThreadCount > 0 ? _sharedIoThreadCount : DEFAULT_IO_THREAD_COUNT);
 			}
 		}

@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedSelectorException;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.util.Collections;
 import java.util.HashMap;
@@ -175,7 +176,7 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 	 *
 	 * @return the list of server handles ready
 	 */
-	protected abstract Iterator<ServerSocketChannel> selectedHandles();
+	protected abstract Set<SelectionKey> selectedHandles();
 
 	/**
 	 * Open a server socket for a given local address.
@@ -391,11 +392,12 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 		 * Session objects are created by making new instances of SocketSessionImpl
 		 * and passing the session object to the SocketIoProcessor class.
 		 */
-		private void processHandles(Iterator<ServerSocketChannel> handles) throws IOException {
-			while (handles.hasNext()) {
+		private void processHandles(Set<SelectionKey> keys) throws IOException {
+			for (Iterator<SelectionKey> it = keys.iterator(); it.hasNext();) {
+				SelectionKey key = it.next();
 				@SuppressWarnings("resource")
-				ServerSocketChannel channel = handles.next();
-				handles.remove();
+				ServerSocketChannel channel = (key.isValid() && key.isAcceptable() ? (ServerSocketChannel) key.channel() : null);
+				it.remove();
 
 				// Associates a new created connection to a processor, and get back a session
 				NioSession session = accept(processor, channel);

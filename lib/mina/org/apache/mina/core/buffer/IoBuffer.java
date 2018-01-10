@@ -372,8 +372,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 * @return The remaining bytes in the buffer
 	 */
 	public final int remaining() {
-		ByteBuffer byteBuffer = buf();
-		return byteBuffer.limit() - byteBuffer.position();
+		return buf().remaining();
 	}
 
 	/**
@@ -382,8 +381,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 * @return <tt>true</tt> if there are some remaining bytes in the buffer
 	 */
 	public final boolean hasRemaining() {
-		ByteBuffer byteBuffer = buf();
-		return byteBuffer.limit() > byteBuffer.position();
+		return buf().hasRemaining();
 	}
 
 	/**
@@ -547,10 +545,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 * @return the modified IoBuffer
 	 */
 	public final IoBuffer compact() {
-		if (capacity() == 0) {
-			return this;
-		}
-
 		buf().compact();
 		return this;
 	}
@@ -643,22 +637,17 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 			int i = oldPos;
 			for (;;) {
 				boolean wasZero = get(i) == 0;
-				i++;
 
-				if (i >= oldLimit) {
+				if (++i >= oldLimit) {
 					break;
 				}
 
 				if (get(i) != 0) {
-					i++;
-					if (i >= oldLimit) {
+					if (++i >= oldLimit) {
 						break;
 					}
-
-					continue;
 				}
-
-				if (wasZero) {
+				else if (wasZero) {
 					end = i - 1;
 					break;
 				}
@@ -683,7 +672,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 		CharBuffer out = CharBuffer.allocate(expectedLength);
 		for (;;) {
 			CoderResult cr = (hasRemaining() ? decoder.decode(buf(), out, true) : decoder.flush(out));
-
 			if (cr.isUnderflow()) {
 				break;
 			}
@@ -693,10 +681,8 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 				out.flip();
 				o.put(out);
 				out = o;
-				continue;
 			}
-
-			if (cr.isError()) {
+			else if (cr.isError()) {
 				// Revert the buffer back to the previous state.
 				limit(oldLimit);
 				position(oldPos);
@@ -726,11 +712,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	public final String getString(int fieldSize, CharsetDecoder decoder) throws CharacterCodingException {
 		checkFieldSize(fieldSize);
 
-		if (fieldSize == 0) {
-			return "";
-		}
-
-		if (!hasRemaining()) {
+		if (fieldSize == 0 || !hasRemaining()) {
 			return "";
 		}
 
@@ -775,7 +757,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 		CharBuffer out = CharBuffer.allocate(expectedLength);
 		for (;;) {
 			CoderResult cr = (hasRemaining() ? decoder.decode(buf(), out, true) : decoder.flush(out));
-
 			if (cr.isUnderflow()) {
 				break;
 			}
@@ -785,10 +766,8 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 				out.flip();
 				o.put(out);
 				out = o;
-				continue;
 			}
-
-			if (cr.isError()) {
+			else if (cr.isError()) {
 				// Revert the buffer back to the previous state.
 				limit(oldLimit);
 				position(oldPos);
@@ -820,7 +799,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 
 		for (;;) {
 			CoderResult cr = (in.hasRemaining() ? encoder.encode(in, buf(), true) : encoder.flush(buf()));
-
 			if (cr.isUnderflow()) {
 				break;
 			}
@@ -880,7 +858,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 
 		for (;;) {
 			CoderResult cr = (in.hasRemaining() ? encoder.encode(in, buf(), true) : encoder.flush(buf()));
-
 			if (cr.isUnderflow() || cr.isOverflow()) {
 				break;
 			}
@@ -914,11 +891,10 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	public final int indexOf(byte b) {
 		if (hasArray()) {
 			int arrayOffset = arrayOffset();
-			int beginPos = arrayOffset + position();
 			int limit = arrayOffset + limit();
 			byte[] array = array();
 
-			for (int i = beginPos; i < limit; i++) {
+			for (int i = arrayOffset + position(); i < limit; i++) {
 				if (array[i] == b) {
 					return i - arrayOffset;
 				}
@@ -1068,8 +1044,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	@Override
 	public int hashCode() {
 		int h = 1;
-		int p = position();
-		for (int i = limit() - 1; i >= p; i--) {
+		for (int i = position(), n = limit(); i < n; i++) {
 			h = 31 * h + get(i);
 		}
 		return h;
@@ -1086,11 +1061,8 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 			return false;
 		}
 
-		int p = this.position();
-		for (int i = this.limit() - 1, j = that.limit() - 1; i >= p; i--, j--) {
-			byte v1 = this.get(i);
-			byte v2 = that.get(j);
-			if (v1 != v2) {
+		for (int i = this.limit() - 1, j = that.limit() - 1, p = this.position(); i >= p; i--, j--) {
+			if (this.get(i) != that.get(j)) {
 				return false;
 			}
 		}
@@ -1099,30 +1071,20 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 
 	@Override
 	public int compareTo(IoBuffer that) {
-		int n = this.position() + Math.min(this.remaining(), that.remaining());
-		for (int i = this.position(), j = that.position(); i < n; i++, j++) {
-			byte v1 = this.get(i);
-			byte v2 = that.get(j);
-			if (v1 == v2) {
-				continue;
+		int r0 = this.remaining(), r1 = that.remaining();
+		for (int i = this.position(), j = that.position(), n = i + Math.min(r0, r1); i < n; i++, j++) {
+			int d = this.get(i) - that.get(j);
+			if (d != 0) {
+				return d;
 			}
-			if (v1 < v2) {
-				return -1;
-			}
-
-			return +1;
 		}
-		return this.remaining() - that.remaining();
+		return r0 - r1;
 	}
 
 	@Override
 	public String toString() {
-		StringBuilder buf = new StringBuilder(64);
-		buf.append(isDirect() ? "DirectBuffer[pos=" : "HeapBuffer[pos=");
-		buf.append(position());
-		buf.append(" lim=").append(limit());
-		buf.append(" cap=").append(capacity());
-		buf.append(": ").append(getHexDump(16)).append(']');
-		return buf.toString();
+		return new StringBuilder(64).append(isDirect() ? "DirBuf[" : "HeapBuf[")
+				.append(position()).append('/').append(limit()).append('/').append(capacity())
+				.append(": ").append(getHexDump(16)).append(']').toString();
 	}
 }

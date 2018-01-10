@@ -76,7 +76,7 @@ public final class NioSession extends AbstractIoSession {
 	}
 
 	/**
-	 * @return The ByteChannel associated with this {@link IoSession}
+	 * @return The SocketChannel associated with this {@link IoSession}
 	 */
 	SocketChannel getChannel() {
 		return channel;
@@ -94,17 +94,17 @@ public final class NioSession extends AbstractIoSession {
 
 	@Override
 	public InetSocketAddress getLocalAddress() {
-		return channel != null ? (InetSocketAddress) getSocket().getLocalSocketAddress() : null;
+		return (InetSocketAddress) getSocket().getLocalSocketAddress();
 	}
 
 	@Override
 	public InetSocketAddress getRemoteAddress() {
-		return channel != null ? (InetSocketAddress) getSocket().getRemoteSocketAddress() : null;
+		return (InetSocketAddress) getSocket().getRemoteSocketAddress();
 	}
 
 	@Override
 	public boolean isActive() {
-		return key.isValid();
+		return key != null && key.isValid();
 	}
 
 	private Socket getSocket() {

@@ -27,8 +27,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.Collection;
-import java.util.Iterator;
+import java.util.Set;
 import org.apache.mina.core.polling.AbstractPollingIoAcceptor;
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoProcessor;
@@ -166,8 +165,8 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 	}
 
 	@Override
-	protected Iterator<ServerSocketChannel> selectedHandles() {
-		return new ServerSocketChannelIterator(selector.selectedKeys());
+	protected Set<SelectionKey> selectedHandles() {
+		return selector.selectedKeys();
 	}
 
 	@Override
@@ -184,53 +183,5 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 	@Override
 	protected void wakeup() {
 		selector.wakeup();
-	}
-
-	/**
-	 * Defines an iterator for the selected-key Set returned by the selector.selectedKeys().
-	 * It replaces the SelectionKey operator.
-	 */
-	private static final class ServerSocketChannelIterator implements Iterator<ServerSocketChannel> {
-		/** The selected-key iterator */
-		private final Iterator<SelectionKey> iterator;
-
-		/**
-		 * Build a SocketChannel iterator which will return a SocketChannel instead of a SelectionKey.
-		 *
-		 * @param selectedKeys The selector selected-key set
-		 */
-		ServerSocketChannelIterator(Collection<SelectionKey> selectedKeys) {
-			iterator = selectedKeys.iterator();
-		}
-
-		/**
-		 * Tells if there are more SockectChannel left in the iterator
-		 *
-		 * @return <tt>true</tt> if there is at least one more SockectChannel object to read
-		 */
-		@Override
-		public boolean hasNext() {
-			return iterator.hasNext();
-		}
-
-		/**
-		 * Get the next SocketChannel in the operator we have built from
-		 * the selected-key et for this selector.
-		 *
-		 * @return The next SocketChannel in the iterator
-		 */
-		@Override
-		public ServerSocketChannel next() {
-			SelectionKey key = iterator.next();
-			return key.isValid() && key.isAcceptable() ? (ServerSocketChannel) key.channel() : null;
-		}
-
-		/**
-		 * Remove the current SocketChannel from the iterator
-		 */
-		@Override
-		public void remove() {
-			iterator.remove();
-		}
 	}
 }

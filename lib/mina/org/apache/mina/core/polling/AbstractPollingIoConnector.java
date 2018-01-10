@@ -22,9 +22,11 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedSelectorException;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
@@ -195,14 +197,14 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 	 *
 	 * @return the list of client socket handles to process
 	 */
-	protected abstract Iterator<SocketChannel> selectedHandles();
+	protected abstract Set<SelectionKey> selectedHandles();
 
 	/**
 	 * {@link Iterator} for all the client sockets polled for connection.
 	 *
 	 * @return the list of client sockets currently polled for connection
 	 */
-	protected abstract Iterator<SocketChannel> allHandles();
+	protected abstract Set<SelectionKey> allHandles();
 
 	/**
 	 * Register a new client socket for connection, add it to connection polling
@@ -387,17 +389,16 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 		/**
 		 * Process the incoming connections, creating a new session for each valid connection.
 		 */
-		private int processConnections(Iterator<SocketChannel> handlers) {
+		private int processConnections(Set<SelectionKey> keys) {
 			int nHandles = 0;
 
 			// Loop on each connection request
-			while (handlers.hasNext()) {
+			for (Iterator<SelectionKey> it = keys.iterator(); it.hasNext();) {
 				@SuppressWarnings("resource")
-				SocketChannel channel = handlers.next();
-				handlers.remove();
+				SocketChannel channel = (SocketChannel) it.next().channel();
+				it.remove();
 
 				ConnectionRequest connectionRequest = getConnectionRequest(channel);
-
 				if (connectionRequest == null) {
 					continue;
 				}
@@ -424,11 +425,11 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 			return nHandles;
 		}
 
-		private void processTimedOutSessions(Iterator<SocketChannel> channels) {
+		private void processTimedOutSessions(Set<SelectionKey> keys) {
 			long currentTime = System.currentTimeMillis();
 
-			while (channels.hasNext()) {
-				ConnectionRequest connectionRequest = getConnectionRequest(channels.next());
+			for (Iterator<SelectionKey> it = keys.iterator(); it.hasNext();) {
+				ConnectionRequest connectionRequest = getConnectionRequest((SocketChannel) it.next().channel());
 
 				if (connectionRequest != null && currentTime >= connectionRequest.deadline) {
 					connectionRequest.setException(new ConnectException("Connection timed out."));

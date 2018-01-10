@@ -69,6 +69,7 @@ public abstract class AbstractIoSession implements IoSession {
 
 	/** Status variables */
 	private final AtomicBoolean scheduledForFlush = new AtomicBoolean();
+	private final AtomicBoolean scheduledForRemove = new AtomicBoolean();
 
 	private volatile boolean closing;
 
@@ -121,22 +122,6 @@ public abstract class AbstractIoSession implements IoSession {
 	}
 
 	/**
-	 * Tells if the session is scheduled for flushed
-	 *
-	 * @return true if the session is scheduled for flush
-	 */
-	public final boolean isScheduledForFlush() {
-		return scheduledForFlush.get();
-	}
-
-	/**
-	 * Schedule the session for flushed
-	 */
-	public final void scheduledForFlush() {
-		scheduledForFlush.set(true);
-	}
-
-	/**
 	 * Change the session's status: it's not anymore scheduled for flush
 	 */
 	public final void unscheduledForFlush() {
@@ -159,6 +144,10 @@ public abstract class AbstractIoSession implements IoSession {
 
 		scheduledForFlush.set(schedule);
 		return true;
+	}
+
+	public final boolean setScheduledForRemove() {
+		return scheduledForRemove.compareAndSet(false, true);
 	}
 
 	@SuppressWarnings("unchecked")

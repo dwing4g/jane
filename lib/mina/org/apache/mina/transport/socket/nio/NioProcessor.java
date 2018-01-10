@@ -19,13 +19,10 @@
 package org.apache.mina.transport.socket.nio;
 
 import java.io.IOException;
-import java.nio.channels.ByteChannel;
-import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
-import java.util.Set;
 import java.util.concurrent.Executor;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.file.FileRegion;
@@ -55,26 +52,17 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 
 	@Override
 	protected void init(NioSession session) throws IOException {
-		@SuppressWarnings("resource")
-		SelectableChannel ch = session.getChannel();
-		ch.configureBlocking(false);
-		session.setSelectionKey(ch.register(selector, SelectionKey.OP_READ, session));
+		session.setSelectionKey(session.getChannel().configureBlocking(false).register(selector, SelectionKey.OP_READ, session));
 	}
 
 	@Override
 	protected void destroy(NioSession session) throws IOException {
-		@SuppressWarnings("resource")
-		ByteChannel ch = session.getChannel();
-
 		SelectionKey key = session.getSelectionKey();
-
 		if (key != null) {
 			key.cancel();
 		}
 
-		if (ch.isOpen()) {
-			ch.close();
-		}
+		session.getChannel().close();
 	}
 
 	@Override
@@ -111,7 +99,6 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	@Override
 	protected SessionState getState(NioSession session) {
 		SelectionKey key = session.getSelectionKey();
-
 		if (key == null) {
 			// The channel is not yet registred to a selector
 			return SessionState.OPENING;
@@ -130,22 +117,16 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	 * In the case we are using the java select() method, this method is used to
 	 * trash the buggy selector and create a new one, registering all the sockets on it.
 	 */
-	@SuppressWarnings("resource")
 	@Override
 	protected void registerNewSelector() throws IOException {
-		Set<SelectionKey> keys = selector.keys();
-
 		// Open a new selector
 		Selector newSelector = Selector.open();
 
 		// Loop on all the registered keys, and register them on the new selector
-		for (SelectionKey key : keys) {
-			SelectableChannel ch = key.channel();
-
-			// Don't forget to attache the session, and back !
+		for (SelectionKey key : selector.keys()) {
+			// Don't forget to attache the session, and back!
 			NioSession session = (NioSession) key.attachment();
-			SelectionKey newKey = ch.register(newSelector, key.interestOps(), session);
-			session.setSelectionKey(newKey);
+			session.setSelectionKey(key.channel().register(newSelector, key.interestOps(), session));
 		}
 
 		// Now we can close the old selector and switch it
@@ -158,15 +139,9 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 		// A flag set to true if we find a broken session
 		boolean brokenSession = false;
 
-		// Get the selector keys
-		Set<SelectionKey> keys = selector.keys();
-
 		// Loop on all the keys to see if one of them has a closed channel
-		for (SelectionKey key : keys) {
-			@SuppressWarnings("resource")
-			SelectableChannel channel = key.channel();
-
-			if (channel instanceof SocketChannel && !((SocketChannel) channel).isConnected()) {
+		for (SelectionKey key : selector.keys()) {
+			if (!((SocketChannel) key.channel()).isConnected()) {
 				// The channel is not connected anymore. Cancel the associated key then.
 				key.cancel();
 
@@ -181,7 +156,6 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	@Override
 	protected void setInterestedInRead(NioSession session, boolean isInterested) {
 		SelectionKey key = session.getSelectionKey();
-
 		if (key == null || !key.isValid()) {
 			return;
 		}
@@ -203,7 +177,6 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	@Override
 	protected void setInterestedInWrite(NioSession session, boolean isInterested) {
 		SelectionKey key = session.getSelectionKey();
-
 		if (key == null || !key.isValid()) {
 			return;
 		}

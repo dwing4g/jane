@@ -125,7 +125,7 @@ public final class SimpleIoProcessorPool implements IoProcessor<NioSession> {
 				throw new IllegalStateException(getClass().getSimpleName() + " is disposed");
 			}
 
-			processor = pool[((int) session.getId() & 0x7fffffff) % pool.length];
+			processor = pool[(int) ((session.getId() & Long.MAX_VALUE) % pool.length)];
 			if (processor == null) {
 				throw new IllegalStateException("null processor in pool");
 			}
@@ -173,29 +173,30 @@ public final class SimpleIoProcessorPool implements IoProcessor<NioSession> {
 
 	@Override
 	public final void dispose() {
-		if (disposed) {
+		if (disposing) {
 			return;
 		}
 
 		synchronized (pool) {
-			if (!disposing) {
-				disposing = true;
+			if (disposing) {
+				return;
+			}
+			disposing = true;
 
-				for (NioProcessor ioProcessor : pool) {
-					if (ioProcessor == null) {
-						// Special case if the pool has not been initialized properly
-						continue;
-					}
-
-					if (ioProcessor.isDisposing()) {
-						continue;
-					}
-
-					ioProcessor.dispose();
+			for (NioProcessor ioProcessor : pool) {
+				if (ioProcessor == null) {
+					// Special case if the pool has not been initialized properly
+					continue;
 				}
 
-				executor.shutdown();
+				if (ioProcessor.isDisposing()) {
+					continue;
+				}
+
+				ioProcessor.dispose();
 			}
+
+			executor.shutdown();
 
 			Arrays.fill(pool, null);
 			disposed = true;

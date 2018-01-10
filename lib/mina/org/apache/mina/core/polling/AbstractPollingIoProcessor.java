@@ -67,8 +67,6 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 	/** The processor thread: it handles the incoming messages */
 	private final AtomicReference<Processor> processorRef = new AtomicReference<>();
 
-	private final Object disposalLock = new Object();
-
 	private final DefaultIoFuture disposalFuture = new DefaultIoFuture(null);
 
 	protected final AtomicBoolean wakeupCalled = new AtomicBoolean();
@@ -229,7 +227,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 
 	@Override
 	public final void add(S session) {
-		if (disposed || disposing) {
+		if (disposing) {
 			throw new IllegalStateException("Already disposed.");
 		}
 
@@ -245,7 +243,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 	}
 
 	private void scheduleRemove(S session) {
-		if (!removingSessions.contains(session)) {
+		if (session.setScheduledForRemove()) {
 			removingSessions.add(session);
 		}
 	}
@@ -266,8 +264,11 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 	@Override
 	public final void flush(S session) {
 		if (session.isInProcessorThread() && !session.isInterestedInWrite()) {
-			processorRef.get().flushNow(session);
-			return;
+			Processor processor = processorRef.get();
+			if (processor != null) {
+				processor.flushNow(session);
+				return;
+			}
 		}
 
 		// add the session to the queue if it's not already in the queue, then wake up the select()
@@ -286,7 +287,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 		}
 
 		try {
-			boolean isInterested = !session.getWriteRequestQueue().isEmpty() && !session.isWriteSuspended();
+			boolean isInterested = (!session.getWriteRequestQueue().isEmpty() && !session.isWriteSuspended());
 			setInterestedInWrite(session, isInterested);
 			if (isInterested) {
 				flush(session);
@@ -308,12 +309,16 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 
 	@Override
 	public final void dispose() {
-		if (disposed || disposing) {
+		if (disposing) {
 			return;
 		}
 
-		synchronized (disposalLock) {
+		synchronized (this) {
+			if (disposing) {
+				return;
+			}
 			disposing = true;
+
 			startupProcessor();
 		}
 
@@ -376,10 +381,8 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 		@Override
 		public void run() {
 			processorThread = Thread.currentThread();
-			int nSessions = 0;
-			int nbTries = 10;
 
-			for (;;) {
+			for (int nSessions = 0, nbTries = 10;;) {
 				try {
 					// This select has a timeout so that we can manage idle session when we get out of the select every second.
 					// (note: this is a hack to avoid creating a dedicated thread).
@@ -451,9 +454,9 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 					if (isDisposing()) {
 						boolean hasKeys = false;
 
-						for (Iterator<SelectionKey> i = allSessions(); i.hasNext();) {
+						for (Iterator<SelectionKey> it = allSessions(); it.hasNext();) {
 							@SuppressWarnings("unchecked")
-							S session = (S)i.next().attachment();
+							S session = (S)it.next().attachment();
 							scheduleRemove(session);
 
 							if (session.isActive()) {
@@ -481,8 +484,8 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			}
 
 			try {
-				synchronized (disposalLock) {
-					if (disposing) {
+				synchronized (AbstractPollingIoProcessor.this) {
+					if (isDisposing()) {
 						doDispose();
 					}
 				}
@@ -500,8 +503,9 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 		 */
 		private int handleNewSessions() {
 			int addedSessions = 0;
+			S session;
 
-			for (S session = newSessions.poll(); session != null; session = newSessions.poll()) {
+			while ((session = newSessions.poll()) != null) {
 				if (addNow(session)) {
 					// A new session has been created
 					addedSessions++;
@@ -539,6 +543,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 					ExceptionMonitor.getInstance().exceptionCaught(e1);
 				} finally {
 					registered = false;
+					session.setScheduledForRemove();
 				}
 			}
 
@@ -547,38 +552,21 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 
 		private int removeSessions() {
 			int removedSessions = 0;
+			S session;
 
-			for (S session = removingSessions.poll(); session != null; session = removingSessions.poll()) {
-				SessionState state = getState(session);
-
+			while ((session = removingSessions.poll()) != null) {
 				// Now deal with the removal accordingly to the session's state
-				switch (state) {
-					case OPENED:
-						// Try to remove this session
-						if (removeNow(session, null)) {
-							removedSessions++;
-						}
-
-						break;
-
-					case CLOSING:
-						// Skip if channel is already closed In any case, remove the session from the queue
-						removedSessions++;
-						break;
-
-					case OPENING:
-						// Remove session from the newSessions queue and remove it
+				switch (getState(session)) {
+					case OPENING: // Remove session from the newSessions queue and remove it
 						newSessions.remove(session);
-
-						if (removeNow(session, null)) {
-							removedSessions++;
-						}
-
+						//$FALL-THROUGH$
+					case OPENED: // Try to remove this session
+						removeNow(session, null);
+						//$FALL-THROUGH$
+					case CLOSING: // Skip if channel is already closed In any case, remove the session from the queue
 						break;
-
-					default:
-						throw new IllegalStateException(String.valueOf(state));
 				}
+				removedSessions++;
 			}
 
 			return removedSessions;
@@ -588,17 +576,18 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 		 * Write all the pending messages
 		 */
 		private void flush() {
-			for(;;) {
-				S session = flushingSessions.poll(); // the same one with firstSession
-				if (session == null) {
-					break;
-				}
-
+			S session;
+			while ((session = flushingSessions.poll()) != null) { // the same one with firstSession
 				// Reset the Schedule for flush flag for this session, as we are flushing it now
 				session.unscheduledForFlush();
 
-				SessionState state = getState(session);
-				switch (state) {
+				switch (getState(session)) {
+					case OPENING:
+						// Retry later if session is not yet fully initialized.
+						// (In case that Session.write() is called before addSession() is processed)
+						scheduleFlush(session);
+						return;
+
 					case OPENED:
 						try {
 							flushNow(session);
@@ -606,21 +595,9 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 							session.closeNow();
 							session.getFilterChain().fireExceptionCaught(e);
 						}
-
+						//$FALL-THROUGH$
+					case CLOSING: // Skip if the channel is already closed.
 						break;
-
-					case CLOSING:
-						// Skip if the channel is already closed.
-						break;
-
-					case OPENING:
-						// Retry later if session is not yet fully initialized.
-						// (In case that Session.write() is called before addSession() is processed)
-						scheduleFlush(session);
-						return;
-
-					default:
-						throw new IllegalStateException(String.valueOf(state));
 				}
 			}
 		}
@@ -731,12 +708,11 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			}
 		}
 
-		private boolean removeNow(S session, IOException ioe) {
+		private void removeNow(S session, IOException ioe) {
 			clearWriteRequestQueue(session, ioe);
 
 			try {
 				destroy(session);
-				return true;
 			} catch (Exception e) {
 				session.getFilterChain().fireExceptionCaught(e);
 			} finally {
@@ -750,16 +726,10 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 					session.getFilterChain().fireExceptionCaught(e);
 				}
 			}
-
-			return false;
 		}
 
 		private void clearWriteRequestQueue(S session, IOException ioe) {
 			WriteRequestQueue writeRequestQueue = session.getWriteRequestQueue();
-			if (writeRequestQueue == null) { // currentWriteRequest must be null
-				return;
-			}
-
 			WriteRequest req = session.getCurrentWriteRequest();
 			if (req == null) {
 				req = writeRequestQueue.poll();
@@ -771,8 +741,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			}
 
 			// Create an exception and notify.
-			WriteToClosedSessionException cause = (ioe != null ?
-					new WriteToClosedSessionException(ioe) : new WriteToClosedSessionException());
+			Throwable cause = (ioe != null ? new WriteToClosedSessionException(ioe) : new WriteToClosedSessionException());
 
 			do {
 				req.getFuture().setException(cause);
@@ -787,24 +756,22 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 		}
 
 		private void process() throws Exception {
-			for (Iterator<SelectionKey> i = selectedSessions(); i.hasNext();) {
-				SelectionKey key = i.next();
+			for (Iterator<SelectionKey> it = selectedSessions(); it.hasNext(); it.remove()) {
+				SelectionKey key = it.next();
 				@SuppressWarnings("unchecked")
 				S session = (S)key.attachment();
 				int ops = key.readyOps();
 
-				// Process Reads
+				// Process reads
 				if ((ops & SelectionKey.OP_READ) != 0 && !session.isReadSuspended()) {
 					read(session);
 				}
 
 				// Process writes
-				if ((ops & SelectionKey.OP_WRITE) != 0 && !session.isWriteSuspended() && session.setScheduledForFlush(true)) {
+				if ((ops & SelectionKey.OP_WRITE) != 0 && !session.isWriteSuspended()) {
 					// add the session to the queue, if it's not already there
-					flushingSessions.add(session);
+					scheduleFlush(session);
 				}
-
-				i.remove();
 			}
 		}
 	}

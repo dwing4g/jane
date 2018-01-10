@@ -165,9 +165,9 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 	 * @param filter The filter to add
 	 */
 	public synchronized void addBefore(String baseName, String name, IoFilter filter) {
-		for (ListIterator<Entry> i = entries.listIterator(); i.hasNext();) {
-			if (i.next().getName().equals(baseName)) {
-				register(i.previousIndex(), new EntryImpl(name, filter));
+		for (ListIterator<Entry> it = entries.listIterator(); it.hasNext();) {
+			if (it.next().getName().equals(baseName)) {
+				register(it.previousIndex(), new EntryImpl(name, filter));
 				return;
 			}
 		}
@@ -183,9 +183,9 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 	 * @param filter The filter to add
 	 */
 	public synchronized void addAfter(String baseName, String name, IoFilter filter) {
-		for (ListIterator<Entry> i = entries.listIterator(); i.hasNext();) {
-			if (i.next().getName().equals(baseName)) {
-				register(i.nextIndex(), new EntryImpl(name, filter));
+		for (ListIterator<Entry> it = entries.listIterator(); it.hasNext();) {
+			if (it.next().getName().equals(baseName)) {
+				register(it.nextIndex(), new EntryImpl(name, filter));
 				return;
 			}
 		}
@@ -200,10 +200,10 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 	 * @return The removed IoFilter
 	 */
 	public synchronized IoFilter remove(String name) {
-		for (ListIterator<Entry> i = entries.listIterator(); i.hasNext();) {
-			Entry e = i.next();
+		for (ListIterator<Entry> it = entries.listIterator(); it.hasNext();) {
+			Entry e = it.next();
 			if (e.getName().equals(name)) {
-				entries.remove(i.previousIndex());
+				entries.remove(it.previousIndex());
 				return e.getFilter();
 			}
 		}
