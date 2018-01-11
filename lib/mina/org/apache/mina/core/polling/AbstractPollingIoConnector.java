@@ -20,6 +20,7 @@ package org.apache.mina.core.polling;
 
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectionKey;
@@ -33,7 +34,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.mina.core.filterchain.IoFilter;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.future.DefaultConnectFuture;
-import org.apache.mina.core.service.AbstractIoConnector;
+import org.apache.mina.core.future.IoFuture;
+import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.service.AbstractIoService;
 import org.apache.mina.core.service.IoConnector;
 import org.apache.mina.core.service.IoHandler;
@@ -57,7 +59,7 @@ import org.apache.mina.util.ExceptionMonitor;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
+public abstract class AbstractPollingIoConnector extends AbstractIoService implements IoConnector {
 	private final Queue<ConnectionRequest> connectQueue = new ConcurrentLinkedQueue<>();
 	private final Queue<ConnectionRequest> cancelQueue = new ConcurrentLinkedQueue<>();
 
@@ -68,6 +70,9 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 	/** The connector thread */
 	private final AtomicReference<Connector> connectorRef = new AtomicReference<>();
 
+	private int connectTimeoutInMillis = 60 * 1000; // 1 minute by default
+
+	/** A flag set when the connector has been created and initialized */
 	private volatile boolean selectable;
 
 	/**
@@ -223,14 +228,53 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 	protected abstract ConnectionRequest getConnectionRequest(SocketChannel channel);
 
 	@Override
-	protected final void dispose0() throws IOException {
-		startupWorker();
-		wakeup();
+	public final int getConnectTimeoutMillis() {
+		return connectTimeoutInMillis;
 	}
 
 	@Override
+	public final void setConnectTimeoutMillis(int connectTimeoutInMillis) {
+		this.connectTimeoutInMillis = connectTimeoutInMillis;
+	}
+
+	@Override
+	public final ConnectFuture connect(SocketAddress remoteAddress) {
+		return connect(remoteAddress, null);
+	}
+
+	@Override
+	public final ConnectFuture connect(SocketAddress remoteAddress, SocketAddress localAddress) {
+		if (isDisposing()) {
+			throw new IllegalStateException("The connector is being disposed.");
+		}
+
+		if (remoteAddress == null) {
+			throw new IllegalArgumentException("null remoteAddress");
+		}
+		if (!InetSocketAddress.class.isAssignableFrom(remoteAddress.getClass())) {
+			throw new IllegalArgumentException("remoteAddress type: " + remoteAddress.getClass() + " (expected: InetSocketAddress)");
+		}
+
+		if (localAddress != null && !InetSocketAddress.class.isAssignableFrom(localAddress.getClass())) {
+			throw new IllegalArgumentException("localAddress type: " + localAddress.getClass() + " (expected: InetSocketAddress)");
+		}
+
+		if (getHandler() == null) {
+			throw new IllegalStateException("The handler is not set.");
+		}
+
+		return connect0(remoteAddress, localAddress);
+	}
+
+	/**
+	 * Implement this method to perform the actual connect operation.
+	 *
+	 * @param remoteAddress The remote address to connect from
+	 * @param localAddress <tt>null</tt> if no local address is specified
+	 * @return The ConnectFuture associated with this asynchronous operation
+	 */
 	@SuppressWarnings("resource")
-	protected final ConnectFuture connect0(SocketAddress remoteAddress, SocketAddress localAddress) {
+	private ConnectFuture connect0(SocketAddress remoteAddress, SocketAddress localAddress) {
 		SocketChannel channel = null;
 		boolean success = false;
 		try {
@@ -281,6 +325,32 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 				executeWorker(connector);
 			}
 		}
+	}
+
+	/**
+	 * Adds required internal attributes and {@link IoFutureListener}s related with event notifications
+	 * to the specified {@code session} and {@code future}.  Do not call this method directly;
+	 */
+	@Override
+	protected final void finishSessionInitialization0(IoSession session, IoFuture future) {
+		// In case that ConnectFuture.cancel() is invoked before setSession() is invoked,
+		// add a listener that closes the connection immediately on cancellation.
+		future.addListener((ConnectFuture future1) -> {
+			if (future1.isCanceled()) {
+				session.closeNow();
+			}
+		});
+	}
+
+	@Override
+	protected final void dispose0() throws IOException {
+		startupWorker();
+		wakeup();
+	}
+
+	@Override
+	public String toString() {
+		return "(nio socket connector: managedSessionCount: " + getManagedSessionCount() + ')';
 	}
 
 	private final class Connector implements Runnable {
@@ -428,8 +498,8 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 		private void processTimedOutSessions(Set<SelectionKey> keys) {
 			long currentTime = System.currentTimeMillis();
 
-			for (Iterator<SelectionKey> it = keys.iterator(); it.hasNext();) {
-				ConnectionRequest connectionRequest = getConnectionRequest((SocketChannel) it.next().channel());
+			for (SelectionKey key : keys) {
+				ConnectionRequest connectionRequest = getConnectionRequest((SocketChannel) key.channel());
 
 				if (connectionRequest != null && currentTime >= connectionRequest.deadline) {
 					connectionRequest.setException(new ConnectException("Connection timed out."));
@@ -439,9 +509,6 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 		}
 	}
 
-	/**
-	 * A ConnectionRequest's Iouture
-	 */
 	public final class ConnectionRequest extends DefaultConnectFuture {
 		/** The handle associated with this connection request */
 		private final SocketChannel channel;
@@ -469,11 +536,8 @@ public abstract class AbstractPollingIoConnector extends AbstractIoConnector {
 		@Override
 		public boolean cancel() {
 			if (!isDone()) {
-				boolean justCancelled = super.cancel();
-
-				// We haven't cancelled the request before, so add the future
-				// in the cancel queue.
-				if (justCancelled) {
+				// We haven't cancelled the request before, so add the future in the cancel queue.
+				if (super.cancel()) {
 					cancelQueue.add(this);
 					startupWorker();
 					wakeup();

@@ -46,11 +46,11 @@ public class DefaultIoFuture implements IoFuture {
 
 	private Object result;
 
-	/** The flag used to determinate if the Future is completed or not */
-	private boolean ready;
-
 	/** A counter for the number of threads waiting on this future */
 	private int waiters;
+
+	/** The flag used to determinate if the Future is completed or not */
+	private boolean ready;
 
 	/**
 	 * Creates a new instance associated with an {@link IoSession}.

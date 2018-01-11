@@ -20,6 +20,8 @@ package org.apache.mina.filter.ssl;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -34,10 +36,8 @@ import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.buffer.SimpleBufferAllocator;
 import org.apache.mina.core.filterchain.IoFilter.NextFilter;
 import org.apache.mina.core.filterchain.IoFilterChain;
-import org.apache.mina.core.filterchain.IoFilterEvent;
 import org.apache.mina.core.future.DefaultWriteFuture;
 import org.apache.mina.core.future.WriteFuture;
-import org.apache.mina.core.session.IoEventType;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.DefaultWriteRequest;
 import org.apache.mina.core.write.WriteRequest;
@@ -64,11 +64,11 @@ public final class SslHandler {
 	/** The current session */
 	private final IoSession session;
 
-	private final Queue<IoFilterEvent> preHandshakeEventQueue = new ConcurrentLinkedQueue<>();
-	private final Queue<IoFilterEvent> filterWriteEventQueue = new ConcurrentLinkedQueue<>();
+	private final Queue<Entry<NextFilter, WriteRequest>> preHandshakeEventQueue = new ConcurrentLinkedQueue<>();
+	private final Queue<Entry<NextFilter, WriteRequest>> filterWriteEventQueue = new ConcurrentLinkedQueue<>();
 
 	/** A queue used to stack all the incoming data until the SSL session is established */
-	private final Queue<IoFilterEvent> messageReceivedEventQueue = new ConcurrentLinkedQueue<>();
+	private final Queue<Entry<NextFilter, Object>> messageReceivedEventQueue = new ConcurrentLinkedQueue<>();
 
 	private SSLEngine sslEngine;
 
@@ -254,19 +254,19 @@ public final class SslHandler {
 	}
 
 	void schedulePreHandshakeWriteRequest(NextFilter nextFilter, WriteRequest writeRequest) {
-		preHandshakeEventQueue.add(new IoFilterEvent(nextFilter, IoEventType.WRITE, session, writeRequest));
+		preHandshakeEventQueue.add(new SimpleEntry<>(nextFilter, writeRequest));
 	}
 
 	void flushPreHandshakeEvents() throws SSLException {
-		IoFilterEvent scheduledWrite;
+		Entry<NextFilter, WriteRequest> event;
 
-		while ((scheduledWrite = preHandshakeEventQueue.poll()) != null) {
-			sslFilter.filterWrite(scheduledWrite.getNextFilter(), session, (WriteRequest) scheduledWrite.getParameter());
+		while ((event = preHandshakeEventQueue.poll()) != null) {
+			sslFilter.filterWrite(event.getKey(), session, event.getValue());
 		}
 	}
 
 	void scheduleFilterWrite(NextFilter nextFilter, WriteRequest writeRequest) {
-		filterWriteEventQueue.add(new IoFilterEvent(nextFilter, IoEventType.WRITE, session, writeRequest));
+		filterWriteEventQueue.add(new SimpleEntry<>(nextFilter, writeRequest));
 	}
 
 	/**
@@ -276,7 +276,7 @@ public final class SslHandler {
 	 * @param message The incoming data
 	 */
 	void scheduleMessageReceived(NextFilter nextFilter, Object message) {
-		messageReceivedEventQueue.add(new IoFilterEvent(nextFilter, IoEventType.MESSAGE_RECEIVED, session, message));
+		messageReceivedEventQueue.add(new SimpleEntry<>(nextFilter, message));
 	}
 
 	void flushScheduledEvents() {
@@ -286,15 +286,16 @@ public final class SslHandler {
 		if (sslLock.tryLock()) {
 			try {
 				do {
-					IoFilterEvent event;
+					Entry<NextFilter, WriteRequest> eventW;
 					// We need synchronization here inevitably because filterWrite can be
 					// called simultaneously and cause 'bad record MAC' integrity error.
-					while ((event = filterWriteEventQueue.poll()) != null) {
-						event.getNextFilter().filterWrite((WriteRequest) event.getParameter());
+					while ((eventW = filterWriteEventQueue.poll()) != null) {
+						eventW.getKey().filterWrite(eventW.getValue());
 					}
 
-					while ((event = messageReceivedEventQueue.poll()) != null) {
-						event.getNextFilter().messageReceived(event.getParameter());
+					Entry<NextFilter, Object> eventR;
+					while ((eventR = messageReceivedEventQueue.poll()) != null) {
+						eventR.getKey().messageReceived(eventR.getValue());
 					}
 				} while (scheduled_events.decrementAndGet() > 0);
 			} finally {

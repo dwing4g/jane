@@ -24,7 +24,6 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import org.apache.mina.core.session.IoSession;
 
 /**
  * Accepts incoming connection, communicates with clients, and fires events to {@link IoHandler}s.
@@ -110,22 +109,5 @@ public interface IoAcceptor extends IoService {
 	 *
 	 * @param localAddresses The local address we will be unbound from
 	 */
-	void unbind(Iterable<? extends SocketAddress> localAddresses);
-
-	/**
-	 * (Optional) Returns an {@link IoSession} that is bound to the specified <tt>localAddress</tt> and
-	 * the specified <tt>remoteAddress</tt> which reuses the local address that is already bound by this service.
-	 * <p>
-	 * This operation is optional. Please throw {@link UnsupportedOperationException}
-	 * if the transport type doesn't support this operation.
-	 * This operation is usually implemented for connectionless transport types.
-	 *
-	 * @param remoteAddress The remote address bound to the service
-	 * @param localAddress The local address the session will be bound to
-	 * @throws UnsupportedOperationException if this operation is not supported
-	 * @throws IllegalStateException if this service is not running.
-	 * @throws IllegalArgumentException if this service is not bound to the specified <tt>localAddress</tt>.
-	 * @return The session bound to the the given localAddress and remote address
-	 */
-	IoSession newSession(SocketAddress remoteAddress, SocketAddress localAddress);
+	void unbind(List<? extends SocketAddress> localAddresses);
 }

@@ -25,21 +25,20 @@ import java.net.SocketAddress;
 import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.mina.core.filterchain.IoFilter;
-import org.apache.mina.core.service.AbstractIoAcceptor;
+import org.apache.mina.core.service.AbstractIoService;
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoProcessor;
@@ -63,7 +62,15 @@ import org.apache.mina.util.ExceptionMonitor;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
+public abstract class AbstractPollingIoAcceptor extends AbstractIoService implements IoAcceptor {
+	private final ArrayList<InetSocketAddress> boundAddresses = new ArrayList<>(0);
+
+	/**
+	 * The lock object which is acquired while bind or unbind operation is performed.
+	 * Acquire this lock in your property setters which shouldn't be changed while the service is bound.
+	 */
+	private final Object bindLock = new Object();
+
 	/** A lock used to protect the selector to be waked up before it's created */
 	private final Semaphore lock = new Semaphore(1);
 
@@ -73,23 +80,24 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 	private final Queue<AcceptorOperationFuture> cancelQueue = new ConcurrentLinkedQueue<>();
 
 	private final Map<SocketAddress, ServerSocketChannel> boundHandles =
-			Collections.synchronizedMap(new HashMap<SocketAddress, ServerSocketChannel>());
+			Collections.synchronizedMap(new HashMap<SocketAddress, ServerSocketChannel>(0));
 
 	private final ServiceOperationFuture disposalFuture = new ServiceOperationFuture();
 
 	/** The thread responsible of accepting incoming requests */
 	private final AtomicReference<Acceptor> acceptorRef = new AtomicReference<>();
 
-	/** A flag set when the acceptor has been created and initialized */
-	private volatile boolean selectable;
-
-	private boolean reuseAddress = true;
-
 	/**
 	 * Define the number of socket that can wait to be accepted.
 	 * Default to 50 (as in the SocketServer default).
 	 */
 	private int backlog = 50;
+
+	/** A flag set when the acceptor has been created and initialized */
+	private volatile boolean selectable;
+
+	private boolean reuseAddress = true;
+	private boolean disconnectOnUnbind = true;
 
 	/**
 	 * Constructor for {@link AbstractPollingIoAcceptor}. You need to provide a default
@@ -211,16 +219,185 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 	 */
 	protected abstract void close(ServerSocketChannel channel) throws IOException;
 
-	@Override
-	protected void dispose0() throws Exception {
-		unbind();
+	/**
+	 * @return the size of the backlog
+	 */
+	public int getBacklog() {
+		return backlog;
+	}
 
-		startupAcceptor();
-		wakeup();
+	/**
+	 * Sets the size of the backlog
+	 *
+	 * @param backlog The backlog's size
+	 */
+	public void setBacklog(int backlog) {
+		synchronized (bindLock) {
+			if (isActive()) {
+				throw new IllegalStateException("backlog can't be set while the acceptor is bound.");
+			}
+
+			this.backlog = backlog;
+		}
+	}
+
+	/**
+	 * @see ServerSocket#getReuseAddress()
+	 *
+	 * @return <tt>true</tt> if the <tt>SO_REUSEADDR</tt> is enabled
+	 */
+	public boolean isReuseAddress() {
+		return reuseAddress;
+	}
+
+	/**
+	 * @see ServerSocket#setReuseAddress(boolean)
+	 *
+	 * @param reuseAddress tells if the <tt>SO_REUSEADDR</tt> is to be enabled
+	 */
+	public void setReuseAddress(boolean reuseAddress) {
+		synchronized (bindLock) {
+			if (isActive()) {
+				throw new IllegalStateException("backlog can't be set while the acceptor is bound.");
+			}
+
+			this.reuseAddress = reuseAddress;
+		}
 	}
 
 	@Override
-	protected final Set<InetSocketAddress> bindInternal(List<? extends SocketAddress> localAddresses) throws Exception {
+	public final boolean isCloseOnDeactivation() {
+		return disconnectOnUnbind;
+	}
+
+	@Override
+	public final void setCloseOnDeactivation(boolean disconnectClientsOnUnbind) {
+		disconnectOnUnbind = disconnectClientsOnUnbind;
+	}
+
+	@Override
+	public final InetSocketAddress getLocalAddress() {
+		synchronized (boundAddresses) {
+			return boundAddresses.isEmpty() ? null : boundAddresses.get(0);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public final ArrayList<InetSocketAddress> getLocalAddresses() {
+		synchronized (boundAddresses) {
+			return (ArrayList<InetSocketAddress>)boundAddresses.clone();
+		}
+	}
+
+	@Override
+	public final void bind(SocketAddress localAddress) throws IOException {
+		if (localAddress == null) {
+			throw new IllegalArgumentException("null localAddress");
+		}
+
+		List<SocketAddress> localAddresses = new ArrayList<>(1);
+		localAddresses.add(localAddress);
+		bind(localAddresses);
+	}
+
+	@Override
+	public final void bind(List<? extends SocketAddress> localAddresses) throws IOException {
+		if (isDisposing()) {
+			throw new IllegalStateException("The Accpetor disposed is being disposed.");
+		}
+
+		if (localAddresses == null) {
+			throw new IllegalArgumentException("null localAddresses");
+		}
+		if (localAddresses.isEmpty()) {
+			throw new IllegalArgumentException("empty localAddresses");
+		}
+
+		boolean activate = false;
+		synchronized (bindLock) {
+			if (getHandler() == null) {
+				throw new IllegalStateException("The handler is not set.");
+			}
+
+			if (boundAddresses.isEmpty()) {
+				activate = true;
+			}
+
+			try {
+				bind0(localAddresses);
+			} catch (IOException | RuntimeException e) {
+				throw e;
+			} catch (Exception e) {
+				throw new RuntimeException("Failed to bind to: " + getLocalAddresses(), e);
+			}
+		}
+
+		if (activate) {
+			fireServiceActivated();
+		}
+	}
+
+	@Override
+	public final void unbind() {
+		unbind(getLocalAddresses());
+	}
+
+	@Override
+	public final void unbind(SocketAddress localAddress) {
+		if (localAddress == null) {
+			throw new IllegalArgumentException("null localAddress");
+		}
+
+		List<SocketAddress> localAddresses = new ArrayList<>(1);
+		localAddresses.add(localAddress);
+		unbind(localAddresses);
+	}
+
+	@Override
+	public final void unbind(List<? extends SocketAddress> localAddresses) {
+		if (localAddresses == null) {
+			throw new IllegalArgumentException("null localAddresses");
+		}
+		if (localAddresses.isEmpty()) {
+			throw new IllegalArgumentException("empty localAddresses");
+		}
+
+		boolean deactivate = false;
+		synchronized (bindLock) {
+			synchronized (boundAddresses) {
+				List<SocketAddress> localAddressesCopy = new ArrayList<>(localAddresses);
+				localAddressesCopy.retainAll(boundAddresses);
+
+				if (!localAddressesCopy.isEmpty()) {
+					try {
+						unbind0(localAddressesCopy);
+					} catch (RuntimeException e) {
+						throw e;
+					} catch (Exception e) {
+						throw new RuntimeException("Failed to unbind from: " + getLocalAddresses(), e);
+					}
+
+					boundAddresses.removeAll(localAddressesCopy);
+					if (boundAddresses.isEmpty()) {
+						deactivate = true;
+					}
+				}
+			}
+		}
+
+		if (deactivate) {
+			fireServiceDeactivated();
+		}
+	}
+
+	/**
+	 * Starts the acceptor, and register the given addresses
+	 *
+	 * @param localAddresses The address to bind to
+	 * @throws Exception If the bind failed
+	 */
+	private void bind0(List<? extends SocketAddress> localAddresses) throws Exception {
 		// Create a bind request as a Future operation. When the selector
 		// have handled the registration, it will signal this future.
 		AcceptorOperationFuture request = new AcceptorOperationFuture(localAddresses);
@@ -248,15 +425,33 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 			throw request.getException();
 		}
 
-		// Update the local addresses.
-		// setLocalAddresses() shouldn't be called from the worker thread because of deadlock.
-		Set<InetSocketAddress> newLocalAddresses = new HashSet<>();
-
-		for (ServerSocketChannel channel : boundHandles.values()) {
-			newLocalAddresses.add(localAddress(channel));
+		synchronized (boundAddresses) {
+			for (ServerSocketChannel channel : boundHandles.values()) {
+				InetSocketAddress sa = localAddress(channel);
+				if (sa != null) {
+					boundAddresses.add(sa);
+				}
+			}
 		}
+	}
 
-		return newLocalAddresses;
+	/**
+	 * Implement this method to perform the actual unbind operation.
+	 *
+	 * @param localAddresses The address to unbind from
+	 * @throws Exception If the unbind failed
+	 */
+	private void unbind0(List<? extends SocketAddress> localAddresses) throws Exception {
+		AcceptorOperationFuture future = new AcceptorOperationFuture(localAddresses);
+
+		cancelQueue.add(future);
+		startupAcceptor();
+		wakeup();
+
+		future.awaitUninterruptibly();
+		if (future.getException() != null) {
+			throw future.getException();
+		}
 	}
 
 	/**
@@ -275,7 +470,6 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 
 		// start the acceptor if not already started
 		Acceptor acceptor = acceptorRef.get();
-
 		if (acceptor == null) {
 			lock.acquire();
 			acceptor = new Acceptor();
@@ -289,17 +483,17 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 	}
 
 	@Override
-	protected final void unbind0(List<? extends SocketAddress> localAddresses) throws Exception {
-		AcceptorOperationFuture future = new AcceptorOperationFuture(localAddresses);
+	protected void dispose0() throws Exception {
+		unbind();
 
-		cancelQueue.add(future);
 		startupAcceptor();
 		wakeup();
+	}
 
-		future.awaitUninterruptibly();
-		if (future.getException() != null) {
-			throw future.getException();
-		}
+	@Override
+	public String toString() {
+		return "(nio socket acceptor: " + (isActive() ? "localAddress(es): " + getLocalAddresses() +
+				", managedSessionCount: " + getManagedSessionCount() : "not bound") + ')';
 	}
 
 	/**
@@ -332,11 +526,7 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 					if (nHandles == 0) {
 						acceptorRef.set(null);
 
-						if (registerQueue.isEmpty() && cancelQueue.isEmpty()) {
-							break;
-						}
-
-						if (!acceptorRef.compareAndSet(null, this)) {
+						if (registerQueue.isEmpty() && cancelQueue.isEmpty() || !acceptorRef.compareAndSet(null, this)) {
 							break;
 						}
 					}
@@ -401,7 +591,6 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 
 				// Associates a new created connection to a processor, and get back a session
 				NioSession session = accept(processor, channel);
-
 				if (session == null) {
 					continue;
 				}
@@ -422,21 +611,20 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 			for (;;) {
 				// The register queue contains the list of services to manage in this acceptor.
 				AcceptorOperationFuture future = registerQueue.poll();
-
 				if (future == null) {
 					return 0;
 				}
 
+				List<SocketAddress> localAddresses = future.getLocalAddresses();
 				// We create a temporary map to store the bound handles,
 				// as we may have to remove them all if there is an exception during the sockets opening.
-				Map<SocketAddress, ServerSocketChannel> newHandles = new ConcurrentHashMap<>();
-				List<SocketAddress> localAddresses = future.getLocalAddresses();
+				Map<SocketAddress, ServerSocketChannel> newHandles = new HashMap<>(localAddresses.size());
 
 				try {
 					// Process all the addresses
-					for (SocketAddress a : localAddresses) {
+					for (SocketAddress sa : localAddresses) {
 						@SuppressWarnings("resource")
-						ServerSocketChannel channel = open(a);
+						ServerSocketChannel channel = open(sa);
 						newHandles.put(localAddress(channel), channel);
 					}
 
@@ -475,18 +663,16 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 		 * and the only place this happens is in the doUnbind() method.
 		 */
 		private int unregisterHandles() {
-			int cancelledHandles = 0;
-			for (;;) {
+			for (int cancelledHandles = 0;;) {
 				AcceptorOperationFuture future = cancelQueue.poll();
 				if (future == null) {
-					break;
+					return cancelledHandles;
 				}
 
 				// close the channels
-				for (SocketAddress a : future.getLocalAddresses()) {
+				for (SocketAddress sa : future.getLocalAddresses()) {
 					@SuppressWarnings("resource")
-					ServerSocketChannel channel = boundHandles.remove(a);
-
+					ServerSocketChannel channel = boundHandles.remove(sa);
 					if (channel == null) {
 						continue;
 					}
@@ -503,59 +689,46 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoAcceptor {
 
 				future.setDone();
 			}
-
-			return cancelledHandles;
 		}
 	}
 
-	@Override
-	public final IoSession newSession(SocketAddress remoteAddress, SocketAddress localAddress) {
-		throw new UnsupportedOperationException();
-	}
+	private static final class AcceptorOperationFuture extends ServiceOperationFuture {
+		private final List<SocketAddress> localAddresses;
 
-	/**
-	 * @return the size of the backlog
-	 */
-	public int getBacklog() {
-		return backlog;
-	}
-
-	/**
-	 * Sets the size of the backlog
-	 *
-	 * @param backlog The backlog's size
-	 */
-	public void setBacklog(int backlog) {
-		synchronized (bindLock) {
-			if (isActive()) {
-				throw new IllegalStateException("backlog can't be set while the acceptor is bound.");
-			}
-
-			this.backlog = backlog;
+		/**
+		 * Creates a new AcceptorOperationFuture instance
+		 *
+		 * @param localAddresses The list of local addresses to listen to
+		 */
+		AcceptorOperationFuture(List<? extends SocketAddress> localAddresses) {
+			this.localAddresses = new ArrayList<>(localAddresses);
 		}
-	}
 
-	/**
-	 * @see ServerSocket#getReuseAddress()
-	 *
-	 * @return <tt>true</tt> if the <tt>SO_REUSEADDR</tt> is enabled
-	 */
-	public boolean isReuseAddress() {
-		return reuseAddress;
-	}
+		/**
+		 * @return The list of local addresses we listen to
+		 */
+		List<SocketAddress> getLocalAddresses() {
+			return localAddresses;
+		}
 
-	/**
-	 * @see ServerSocket#setReuseAddress(boolean)
-	 *
-	 * @param reuseAddress tells if the <tt>SO_REUSEADDR</tt> is to be enabled
-	 */
-	public void setReuseAddress(boolean reuseAddress) {
-		synchronized (bindLock) {
-			if (isActive()) {
-				throw new IllegalStateException("backlog can't be set while the acceptor is bound.");
+		@Override
+		public String toString() {
+			StringBuilder sb = new StringBuilder("Acceptor operation: ");
+
+			if (localAddresses != null) {
+				boolean isFirst = true;
+
+				for (SocketAddress address : localAddresses) {
+					if (isFirst) {
+						isFirst = false;
+					} else {
+						sb.append(',');
+					}
+
+					sb.append(address);
+				}
 			}
-
-			this.reuseAddress = reuseAddress;
+			return sb.toString();
 		}
 	}
 }
