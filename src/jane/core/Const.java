@@ -120,7 +120,7 @@ public final class Const
 		autoIdStride = getPropInt("autoIdStride", 1, 1);
 		levelDBNativePath = getPropStr("levelDBNativePath", "lib");
 		levelDBWriteBufferSize = getPropInt("levelDBWriteBufferSize", 32, 1, 1024);
-		levelDBMaxOpenFiles = getPropInt("levelDBMaxOpenFiles", 10000, 1000);
+		levelDBMaxOpenFiles = getPropInt("levelDBMaxOpenFiles", 1000, 1000);
 		levelDBCacheSize = getPropInt("levelDBCacheSize", 32, 1, 1024);
 		levelDBFileSize = getPropInt("levelDBFileSize", 10, 1, 1024);
 		levelDBFullBackupPeriod = getPropLong("levelDBFullBackupPeriod", 604800, 1, 86400L * 366 * 10000); // 0x49_A06B_5000
