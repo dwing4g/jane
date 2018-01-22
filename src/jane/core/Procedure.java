@@ -26,7 +26,7 @@ public abstract class Procedure implements Runnable
 	{
 		private static final long serialVersionUID = 1L;
 
-		public final int index;
+		final int index;
 
 		IndexLock(int i)
 		{
@@ -338,7 +338,7 @@ public abstract class Procedure implements Runnable
 	/**
 	 * 追加一个lockId的锁
 	 * <p>
-	 * 会引发已加锁的重排序并重锁,并检测两次锁之间是否有修改的序列号变化,如果有则抛出Redo异常<br>
+	 * 可能会引发已加锁的重排序并重锁,并检测两次锁之间是否有修改的序列号变化,如果有则抛出Redo异常<br>
 	 * 只能在事务中调用. 且此调用之前的事务不能有写操作
 	 */
 	protected final void appendLock(int lockId) throws InterruptedException
@@ -348,51 +348,65 @@ public abstract class Procedure implements Runnable
 		final IndexLock[] locks = pt.locks;
 		final int lockIdx = lockId & _lockMask;
 		final int n = pt.lockCount;
+		IndexLock lock = getLock(lockIdx);
 		if(n == 0)
 		{
-			(locks[0] = getLock(lockIdx)).lockInterruptibly();
+			(locks[0] = lock).lockInterruptibly(); // 之前没有加任何锁则可以直接加锁
 			pt.lockCount = 1;
 			return;
 		}
 		IndexLock lastLock = locks[n - 1];
 		int lastLockIdx = lastLock.index;
-		if(lastLockIdx == lockIdx) return;
-		if(lastLockIdx < lockIdx)
+		if(lastLockIdx <= lockIdx)
 		{
-			if(n >= Const.maxLockPerProcedure)
-				throw new IllegalStateException("appendLock exceed: " + (n + 1) + '>' + Const.maxLockPerProcedure);
-			(locks[n] = getLock(lockIdx)).lockInterruptibly();
-			pt.lockCount = n + 1;
+			if(lastLockIdx != lockIdx)
+			{
+				if(n >= Const.maxLockPerProcedure)
+					throw new IllegalStateException("appendLock exceed: " + (n + 1) + '>' + Const.maxLockPerProcedure);
+				(locks[n] = lock).lockInterruptibly(); // 要加的锁比之前的锁都大则直接加锁
+				pt.lockCount = n + 1;
+			}
 			return;
 		}
 		int i = n - 1;
 		for(; i > 0; --i) // 算出需要插入锁的下标位置i时跳出循环
 		{
 			lastLockIdx = locks[i - 1].index;
-			if(lastLockIdx == lockIdx) return;
-			if(lastLockIdx < lockIdx) break;
+			if(lastLockIdx <= lockIdx)
+			{
+				if(lastLockIdx == lockIdx) return; // 之前加过当前锁则直接返回
+				break;
+			}
 		}
-		if(pt.sctx.hasDirty())
-			throw new IllegalStateException("invalid appendLock after any dirty record");
 		if(n >= Const.maxLockPerProcedure)
 			throw new IllegalStateException("appendLock exceed: " + (n + 1) + '>' + Const.maxLockPerProcedure);
+		if(lock.tryLock()) // 尝试直接加锁,成功则直接按顺序插入锁
+		{
+			for(int j = n - 1; j >= i; --j)
+				locks[j + 1] = locks[j];
+			locks[i] = lock;
+			pt.lockCount = n + 1;
+			return;
+		}
+		if(pt.sctx.hasDirty()) // 必须要解部分锁了,所以确保之前不能有修改操作
+			throw new IllegalStateException("invalid appendLock after any dirty record");
 		final int[] versions = pt.versions;
 		for(int j = n - 1; j >= i; --j)
 		{
 			lastLock = locks[j];
 			versions[j] = _lockVersions.get(lastLock.index);
-			lastLock.unlock();
+			lastLock.unlock(); // 尝试解所有比当前锁大的锁
 		}
 		pt.lockCount = i;
-		(locks[i] = getLock(lockIdx)).lockInterruptibly();
+		(locks[i] = lock).lockInterruptibly(); // 加当前锁
 		pt.lockCount = ++i;
 		for(;;)
 		{
-			final IndexLock lock = locks[i];
-			(locks[i] = lastLock).lockInterruptibly();
+			lock = locks[i];
+			(locks[i] = lastLock).lockInterruptibly(); // 继续加比当前锁大的所有锁
 			pt.lockCount = ++i;
 			if(_lockVersions.get(lastLock.index) != versions[i - 2])
-				redo();
+				redo(); // 发现解锁和加锁期间有版本变化则回滚重做
 			if(i > n) return;
 			lastLock = lock;
 		}
