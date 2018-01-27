@@ -2,14 +2,14 @@
 ■ jane更新说明 ■
 ==================
 
-1.0.0 (2016-11-05) => 1.5.0 (git HEAD) (2018-01-22)
+1.0.0 (2016-11-05) => 1.5.0 (git HEAD) (2018-01-27)
 
 * 编译运行环境升级到Java8,不再推荐32位运行环境
 * 增加Mac OS X平台上的开发支持
 * 精简优化了Mina库,并合并到jane-core中
 * 日志库使用Logback(1.2.x)代替了Log4j2, lib体积更小,性能更高,没有使用Log4j2遇到的一些bugs
 * 移除了MapDB,MVStore,以及开发中放弃的limax_edb的数据存储支持, 目前只支持LevelDB(功能及性能均最佳选择,数据库目录名不再加后缀)
-* 移除了google的ConcurrentHashMapV8, 改用JRE内置版本(V8同Java8内置的,因此推荐运行环境使用Java8)
+* 移除了google的ConcurrentHashMapV8, 改用Java8内置版本
 * 移除了google的ConcurrentLinkedHashMap, 所有读cache的实现均使用LRUMap(虽然LRU的自动清理不是很及时,但性能好很多)
 * 内置并进一步优化了LongConcurrentHash/LRUMap, LRUMap的自动清理改为后台线程并发执行
 * 移除了BeanPool

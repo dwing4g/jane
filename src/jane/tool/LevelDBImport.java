@@ -16,9 +16,8 @@ import jane.core.StorageLevelDB;
 
 public final class LevelDBImport
 {
-	private static final Pattern	  s_patHex	= Pattern.compile("\\\\x(..)");
-	private static final Charset	  s_cs88591	= StandardCharsets.ISO_8859_1;
-	private static final OctetsStream s_deleted	= OctetsStream.wrap(Octets.EMPTY);
+	private static final Pattern s_patHex  = Pattern.compile("\\\\x(..)");
+	private static final Charset s_cs88591 = StandardCharsets.ISO_8859_1;
 
 	private LevelDBImport()
 	{
@@ -82,7 +81,7 @@ public final class LevelDBImport
 			while((line = br.readLine()) != null)
 			{
 				Matcher mat;
-				OctetsStream v;
+				Octets v;
 				if((mat = patPut1.matcher(line)).find())
 					v = str2Oct(mat.group(2));
 				else if((mat = patPut2.matcher(line)).find())
@@ -90,9 +89,9 @@ public final class LevelDBImport
 				else if((mat = patPut3.matcher(line)).find())
 					v = str2Oct(mat.group(2));
 				else if((mat = patDel1.matcher(line)).find())
-					v = s_deleted;
+					v = StorageLevelDB.deleted();
 				else if((mat = patDel2.matcher(line)).find())
-					v = s_deleted;
+					v = StorageLevelDB.deleted();
 				else
 					continue;
 

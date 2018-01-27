@@ -474,7 +474,7 @@ public final class DBManager
 					{
 						_procCount.addAndGet(1 - q.size());
 						q.clear();
-						q.add(this); // 清除此队列所有的任务,只留当前任务待完成时会删除
+						q.addLast(this); // 清除此队列所有的任务,只留当前任务待完成时会删除
 						_qmap.remove(sid); // _qmap删除队列的地方只有两处,另一处是collectQueue中队列判空的时候(有synchronized保护)
 					}
 				}
@@ -528,7 +528,7 @@ public final class DBManager
 
 	/**
 	 * 见{@link #submit(Object sid, Procedure p)}<br>
-	 * 可使用自定义的线程池
+	 * 可使用自定义的线程池(必须是ProcThread)
 	 */
 	public void submit(Executor executor, Object sid, Procedure p)
 	{
@@ -555,7 +555,7 @@ public final class DBManager
 				if(qs >= Const.maxSessionProcedure)
 					throw new IllegalStateException("procedure overflow: procedure=" + p.getClass().getName() +
 							",sid=" + sid + ",size=" + q.size() + ",maxsize=" + Const.maxSessionProcedure);
-				q.add(p);
+				q.addLast(p);
 				_procCount.incrementAndGet();
 				if(qs > 0) return;
 			}
@@ -574,7 +574,7 @@ public final class DBManager
 						Procedure proc;
 						synchronized(_q)
 						{
-							proc = _q.peek(); // 这里只能先peek而不能poll或remove,否则可能和下次commit并发
+							proc = _q.peekFirst(); // 这里只能先peek而不能poll或remove,否则可能和下次commit并发
 						}
 						if(proc == null) return;
 						_procCount.decrementAndGet();
@@ -588,7 +588,7 @@ public final class DBManager
 						}
 						synchronized(_q)
 						{
-							_q.remove();
+							_q.pollFirst();
 							if(_q.isEmpty()) return;
 						}
 						if(--n <= 0)

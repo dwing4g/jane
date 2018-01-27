@@ -24,7 +24,7 @@ public class OctetsStream extends Octets
 		OctetsStream os = new OctetsStream();
 		os._buffer = data;
 		if(size > data.length) os._count = data.length;
-		else if(size < 0)      os._count = 0;
+		else if(size <= 0)     os._count = 0;
 		else                   os._count = size;
 		os._pos = pos;
 		return os;
@@ -35,7 +35,7 @@ public class OctetsStream extends Octets
 		OctetsStream os = new OctetsStream();
 		os._buffer = data;
 		if(size > data.length) os._count = data.length;
-		else if(size < 0)      os._count = 0;
+		else if(size <= 0)     os._count = 0;
 		else                   os._count = size;
 		return os;
 	}
@@ -108,7 +108,7 @@ public class OctetsStream extends Octets
 	{
 		_buffer = data;
 		if(size > data.length) _count = data.length;
-		else if(size < 0)      _count = 0;
+		else if(size <= 0)     _count = 0;
 		else                   _count = size;
 		return this;
 	}
@@ -127,6 +127,14 @@ public class OctetsStream extends Octets
 		_buffer = o._buffer;
 		_count = o._count;
 		return this;
+	}
+
+	public static OctetsStream createSpace(int size)
+	{
+		OctetsStream os = new OctetsStream();
+		if(size > 0)
+			os._buffer = new byte[size];
+		return os;
 	}
 
 	@Override
@@ -395,23 +403,6 @@ public class OctetsStream extends Octets
 		                      { _count = p - 5; marshal5((byte)0x87, x);  _count = t; return 5; }
 	}
 
-	public static int marshalLen(int x)
-	{
-		if(x >= 0)
-		{
-		    if(x < 0x40)      return 1;
-		    if(x < 0x2000)    return 2;
-		    if(x < 0x100000)  return 3;
-		    if(x < 0x8000000) return 4;
-		                      return 5;
-		}
-		if(x >= -0x40)        return 1;
-		if(x >= -0x2000)      return 2;
-		if(x >= -0x100000)    return 3;
-		if(x >= -0x8000000)   return 4;
-		                      return 5;
-	}
-
 	public OctetsStream marshal(long x)
 	{
 		if(x >= 0)
@@ -436,23 +427,25 @@ public class OctetsStream extends Octets
 		return x != null ? marshal(x.longValue()) : marshalZero();
 	}
 
+	public static int marshalLen(int x)
+	{
+		return (39 - Integer.numberOfLeadingZeros(x < 0 ? ~x : x)) / 7; // x ^ (x >> 31) is much slower
+	}
+
 	public static int marshalLen(long x)
 	{
-		if(x >= 0)
-		{
-		    if(x <          0x800_0000 ) return marshalLen((int)x);
-		    if(x <       0x4_0000_0000L) return 5;
-		    if(x <     0x200_0000_0000L) return 6;
-		    if(x <  0x1_0000_0000_0000L) return 7;
-		    if(x < 0x80_0000_0000_0000L) return 8;
-		                                 return 9;
-		}
-		if(x >= -           0x800_0000 ) return marshalLen((int)x);
-		if(x >= -        0x4_0000_0000L) return 5;
-		if(x >= -      0x200_0000_0000L) return 6;
-		if(x >= -   0x1_0000_0000_0000L) return 7;
-		if(x >= -  0x80_0000_0000_0000L) return 8;
-		                                 return 9;
+		int n = (71 - Long.numberOfLeadingZeros(x < 0 ? ~x : x)) / 7; // x ^ (x >> 31) is much slower
+		return n < 10 ? n : 9;
+	}
+
+	public static int marshalUIntLen(int x)
+	{
+		// return (31 - Integer.numberOfLeadingZeros(x)) / 7 + 1; // x is very small usually
+		if(x < 0x80)       return 1;
+		if(x < 0x4000)     return 2;
+		if(x < 0x200000)   return 3;
+		if(x < 0x10000000) return 4;
+		                   return 5;
 	}
 
 	public OctetsStream marshalUInt(int x)
@@ -475,20 +468,24 @@ public class OctetsStream extends Octets
 		                   { _count = p - 5; marshal5((byte)0xf0, x);         _count = t; return 5; }
 	}
 
-	public static int marshalUIntLen(int x)
-	{
-		if(x < 0x80)       return 1;
-		if(x < 0x4000)     return 2;
-		if(x < 0x200000)   return 3;
-		if(x < 0x10000000) return 4;
-		                   return 5;
-	}
-
 	public OctetsStream marshalUTF8(char x)
 	{
 		if(x < 0x80)  return marshal1((byte)x);                                              // 0xxx xxxx
 		if(x < 0x800) return marshal2(((x << 2) & 0x1f00) + (x & 0x3f) + 0xc080);            // 110x xxxx  10xx xxxx
 		return marshal3(((x << 4) & 0xf0000) + ((x << 2) & 0x3f00) + (x & 0x3f) + 0xe08080); // 1110 xxxx  10xx xxxx  10xx xxxx
+	}
+
+	public static int marshalStrLen(String str)
+	{
+		if(str == null) return 0;
+		int bn = 0;
+		for(int i = 0, cn = str.length(); i < cn; ++i)
+		{
+			int c = str.charAt(i);
+			if(c < 0x80) ++bn;
+			else bn += (c < 0x800 ? 2 : 3);
+		}
+		return bn;
 	}
 
 	public OctetsStream marshal(float x)
@@ -529,18 +526,12 @@ public class OctetsStream extends Octets
 
 	public OctetsStream marshal(String str)
 	{
-		int cn;
-		if(str == null || (cn = str.length()) <= 0)
+		int bn = marshalStrLen(str);
+		if(bn <= 0)
 			return marshalZero();
-		int bn = 0;
-		for(int i = 0; i < cn; ++i)
-		{
-			int c = str.charAt(i);
-			if(c < 0x80) ++bn;
-			else bn += (c < 0x800 ? 2 : 3);
-		}
+		reserve(_count + marshalUIntLen(bn) + bn);
 		marshalUInt(bn);
-		reserve(_count + bn);
+		int cn = str.length();
 		if(bn == cn)
 		{
 			for(int i = 0; i < cn; ++i)

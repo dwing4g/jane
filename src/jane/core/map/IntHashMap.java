@@ -33,13 +33,7 @@ public final class IntHashMap<V> implements Cloneable
 
 	public static int nextPowerOfTwo(int value)
 	{
-		value--;
-		value |= value >> 1;
-		value |= value >> 2;
-		value |= value >> 4;
-		value |= value >> 8;
-		value |= value >> 16;
-		return value + 1;
+		return 1 << (32 - Integer.numberOfLeadingZeros(value - 1));
 	}
 
 	public IntHashMap()

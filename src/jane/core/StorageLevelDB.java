@@ -20,7 +20,7 @@ import java.util.zip.CRC32;
 public final class StorageLevelDB implements Storage
 {
 	private static final StorageLevelDB	_instance  = new StorageLevelDB();
-	private static final Octets			_deleted   = Octets.wrap(Octets.EMPTY);					// 表示已删除的值
+	private static final Octets			_deleted   = new Octets();								// 表示已删除的值
 	private final Map<Octets, Octets>	_writeBuf  = Util.newConcurrentHashMap();				// 提交过程中临时的写缓冲区
 	private long						_db;													// LevelDB的数据库对象句柄
 	private File						_dbFile;												// 当前数据库的文件
@@ -117,7 +117,7 @@ public final class StorageLevelDB implements Storage
 		private final String	   _tableName;
 		private final int		   _tableId;
 		private final int		   _tableIdLen;
-		private final OctetsStream _tableIdCounter = new OctetsStream(6);
+		private final OctetsStream _tableIdCounter;
 		private final V			   _stubV;
 
 		public TableLong(int tableId, String tableName, V stubV)
@@ -125,14 +125,15 @@ public final class StorageLevelDB implements Storage
 			_tableName = tableName;
 			_tableId = tableId;
 			_tableIdLen = OctetsStream.marshalUIntLen(tableId);
-			_tableIdCounter.marshal1((byte)0xf1).marshalUInt(tableId); // 0xf1前缀用于idcounter
+			_tableIdCounter = OctetsStream.createSpace(1 + OctetsStream.marshalUIntLen(tableId))
+					.marshal1((byte)0xf1).marshalUInt(tableId); // 0xf1前缀用于idcounter
 			_stubV = stubV;
 		}
 
-		private OctetsStream getKey(long k)
+		private OctetsStream marshalKey(long k)
 		{
 			int tableIdLen = _tableIdLen;
-			OctetsStream key = new OctetsStream(tableIdLen + 9);
+			OctetsStream key = OctetsStream.createSpace(tableIdLen + OctetsStream.marshalLen(k));
 			if(tableIdLen == 1)
 				key.append((byte)_tableId);
 			else
@@ -156,7 +157,7 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public V get(long k)
 		{
-			OctetsStreamEx val = dbget(getKey(k));
+			OctetsStreamEx val = dbget(marshalKey(k));
 			if(val == null) return null;
 			try
 			{
@@ -179,13 +180,13 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public void put(long k, V v)
 		{
-			_writeBuf.put(getKey(k), v.marshal(new OctetsStream(_stubV.initSize()).marshalZero())); // format
+			_writeBuf.put(marshalKey(k), v.marshal(new OctetsStream(_stubV.initSize()).marshalZero())); // format
 		}
 
 		@Override
 		public void remove(long k)
 		{
-			_writeBuf.put(getKey(k), deleted());
+			_writeBuf.put(marshalKey(k), deleted());
 		}
 
 		@Override
@@ -208,14 +209,14 @@ public final class StorageLevelDB implements Storage
 		public void setIdCounter(long v)
 		{
 			if(v != getIdCounter())
-				_writeBuf.put(_tableIdCounter, new OctetsStream(9).marshal(v));
+				_writeBuf.put(_tableIdCounter, OctetsStream.createSpace(OctetsStream.marshalLen(v)).marshal(v));
 		}
 
 		@Override
 		public boolean walk(WalkHandlerLong handler, long from, long to, boolean inclusive, boolean reverse)
 		{
-			Octets keyFrom = getKey(from);
-			Octets keyTo = getKey(to);
+			Octets keyFrom = marshalKey(from);
+			Octets keyTo = marshalKey(to);
 			if(keyFrom.compareTo(keyTo) > 0)
 			{
 				Octets t = keyFrom;
@@ -268,8 +269,8 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public boolean walk(WalkValueHandlerLong<V> handler, V beanStub, long from, long to, boolean inclusive, boolean reverse)
 		{
-			Octets keyFrom = getKey(from);
-			Octets keyTo = getKey(to);
+			Octets keyFrom = marshalKey(from);
+			Octets keyTo = marshalKey(to);
 			if(keyFrom.compareTo(keyTo) > 0)
 			{
 				Octets t = keyFrom;
@@ -333,7 +334,7 @@ public final class StorageLevelDB implements Storage
 		protected final String		 _tableName;
 		protected final int			 _tableId;
 		protected final int			 _tableIdLen;
-		protected final OctetsStream _tableIdNext = new OctetsStream(5);
+		protected final OctetsStream _tableIdNext = OctetsStream.createSpace(5);
 		protected final V			 _stubV;
 
 		protected TableBase(int tableId, String tableName, V stubV)
@@ -348,7 +349,7 @@ public final class StorageLevelDB implements Storage
 			_stubV = stubV;
 		}
 
-		protected abstract OctetsStream getKey(K k);
+		protected abstract OctetsStream marshalKey(K k);
 
 		protected abstract boolean onWalk(WalkHandler<K> handler, OctetsStream k) throws MarshalException;
 
@@ -369,20 +370,20 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public void put(K k, V v)
 		{
-			_writeBuf.put(getKey(k), v.marshal(new OctetsStream(_stubV.initSize()).marshalZero())); // format
+			_writeBuf.put(marshalKey(k), v.marshal(new OctetsStream(_stubV.initSize()).marshalZero())); // format
 		}
 
 		@Override
 		public void remove(K k)
 		{
-			_writeBuf.put(getKey(k), deleted());
+			_writeBuf.put(marshalKey(k), deleted());
 		}
 
 		@Override
 		public boolean walk(WalkHandler<K> handler, K from, K to, boolean inclusive, boolean reverse)
 		{
-			Octets keyFrom = (from != null ? getKey(from) : new OctetsStream(5).marshalUInt(_tableId));
-			Octets keyTo = (to != null ? getKey(to) : _tableIdNext);
+			Octets keyFrom = (from != null ? marshalKey(from) : OctetsStream.createSpace(5).marshalUInt(_tableId));
+			Octets keyTo = (to != null ? marshalKey(to) : _tableIdNext);
 			if(keyFrom.compareTo(keyTo) > 0)
 			{
 				Octets t = keyFrom;
@@ -435,8 +436,8 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public boolean walk(WalkValueHandler<K, V> handler, V beanStub, K from, K to, boolean inclusive, boolean reverse)
 		{
-			Octets keyFrom = (from != null ? getKey(from) : new OctetsStream(5).marshalUInt(_tableId));
-			Octets keyTo = (to != null ? getKey(to) : _tableIdNext);
+			Octets keyFrom = (from != null ? marshalKey(from) : OctetsStream.createSpace(5).marshalUInt(_tableId));
+			Octets keyTo = (to != null ? marshalKey(to) : _tableIdNext);
 			if(keyFrom.compareTo(keyTo) > 0)
 			{
 				Octets t = keyFrom;
@@ -501,10 +502,10 @@ public final class StorageLevelDB implements Storage
 		}
 
 		@Override
-		protected OctetsStream getKey(Octets k)
+		protected OctetsStream marshalKey(Octets k)
 		{
 			int tableIdLen = _tableIdLen;
-			OctetsStream key = new OctetsStream(tableIdLen + k.size());
+			OctetsStream key = OctetsStream.createSpace(tableIdLen + k.size());
 			if(tableIdLen == 1)
 				key.append((byte)_tableId);
 			else
@@ -516,7 +517,7 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public V get(Octets k)
 		{
-			OctetsStreamEx val = dbget(getKey(k));
+			OctetsStreamEx val = dbget(marshalKey(k));
 			if(val == null) return null;
 			try
 			{
@@ -557,24 +558,33 @@ public final class StorageLevelDB implements Storage
 		}
 
 		@Override
-		protected OctetsStream getKey(String k)
+		protected OctetsStream marshalKey(String k)
 		{
 			int tableIdLen = _tableIdLen;
-			int n = k.length();
-			OctetsStream key = new OctetsStream(tableIdLen + n * 3);
+			int bn = OctetsStream.marshalStrLen(k);
+			OctetsStream key = OctetsStream.createSpace(tableIdLen + bn);
 			if(tableIdLen == 1)
 				key.append((byte)_tableId);
 			else
 				key.marshalUInt(_tableId);
-			for(int i = 0; i < n; ++i)
-				key.marshalUTF8(k.charAt(i));
+			int cn = k.length();
+			if(bn == cn)
+			{
+				for(int i = 0; i < cn; ++i)
+					key.marshal1((byte)k.charAt(i));
+			}
+			else
+			{
+				for(int i = 0; i < cn; ++i)
+					key.marshalUTF8(k.charAt(i));
+			}
 			return key;
 		}
 
 		@Override
 		public V get(String k)
 		{
-			OctetsStreamEx val = dbget(getKey(k));
+			OctetsStreamEx val = dbget(marshalKey(k));
 			if(val == null) return null;
 			try
 			{
@@ -619,7 +629,7 @@ public final class StorageLevelDB implements Storage
 
 		@SuppressWarnings("unchecked")
 		@Override
-		protected OctetsStream getKey(K k)
+		protected OctetsStream marshalKey(K k)
 		{
 			int tableIdLen = _tableIdLen;
 			OctetsStream key = new OctetsStream(tableIdLen + ((Bean<V>)k).initSize());
@@ -633,7 +643,7 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public V get(K k)
 		{
-			OctetsStreamEx val = dbget(getKey(k));
+			OctetsStreamEx val = dbget(marshalKey(k));
 			if(val == null) return null;
 			try
 			{
@@ -882,23 +892,21 @@ public final class StorageLevelDB implements Storage
 	@Override
 	public synchronized void commit()
 	{
-		if(_writeBuf.isEmpty())
+		if(!_writeBuf.isEmpty())
 		{
-			_writing = false;
-			return;
+			if(_db == 0)
+			{
+				Log.error("StorageLevelDB.commit: db is closed");
+				return;
+			}
+			int r = leveldb_write(_db, _writeBuf.entrySet().iterator());
+			if(r != 0)
+			{
+				Log.error("StorageLevelDB.commit: leveldb_write failed({})", r);
+				return;
+			}
+			_writeBuf.clear();
 		}
-		if(_db == 0)
-		{
-			Log.error("StorageLevelDB.commit: db is closed");
-			return;
-		}
-		int r = leveldb_write(_db, _writeBuf.entrySet().iterator());
-		if(r != 0)
-		{
-			Log.error("StorageLevelDB.commit: leveldb_write failed({})", r);
-			return;
-		}
-		_writeBuf.clear();
 		_writing = false;
 	}
 

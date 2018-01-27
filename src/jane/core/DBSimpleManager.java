@@ -278,25 +278,36 @@ public final class DBSimpleManager
 
 	private static Octets toKeyFrom(int tableId)
 	{
-		return new OctetsStream(5).marshalUInt(tableId);
+		return OctetsStream.createSpace(OctetsStream.marshalUIntLen(tableId)).marshalUInt(tableId);
 	}
 
 	private static Octets toKey(int tableId, long key)
 	{
-		return new OctetsStream(5 + 9).marshalUInt(tableId).marshal(key);
+		return OctetsStream.createSpace(OctetsStream.marshalUIntLen(tableId) + OctetsStream.marshalLen(key))
+				.marshalUInt(tableId).marshal(key);
 	}
 
 	private static Octets toKey(int tableId, Octets key)
 	{
-		return new OctetsStream(5 + key.size()).marshalUInt(tableId).append(key);
+		return OctetsStream.createSpace(OctetsStream.marshalUIntLen(tableId) + key.size()).marshalUInt(tableId).append(key);
 	}
 
 	private static Octets toKey(int tableId, String key)
 	{
-		int n = key.length();
-		OctetsStream os = new OctetsStream(5 + n * 3).marshalUInt(tableId);
-		for(int i = 0; i < n; ++i)
-			os.marshalUTF8(key.charAt(i));
+		int tableIdLen = OctetsStream.marshalUIntLen(tableId);
+		int bn = OctetsStream.marshalStrLen(key);
+		OctetsStream os = OctetsStream.createSpace(tableIdLen + bn).marshalUInt(tableId);
+		int cn = key.length();
+		if(bn == cn)
+		{
+			for(int i = 0; i < cn; ++i)
+				os.marshal1((byte)key.charAt(i));
+		}
+		else
+		{
+			for(int i = 0; i < cn; ++i)
+				os.marshalUTF8(key.charAt(i));
+		}
 		return os;
 	}
 

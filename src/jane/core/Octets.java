@@ -482,20 +482,20 @@ public class Octets implements Cloneable, Comparable<Octets>
 	{
 		byte[] buf = _buffer;
 		int n = _count;
-		int result = n;
+		int hash = n;
 		if(n <= 32)
 		{
 			for(int i = 0; i < n; ++i)
-				result = 31 * result + buf[i];
+				hash = hash * 31 + buf[i];
 		}
 		else
 		{
 			for(int i = 0; i < 16; ++i)
-				result = 31 * result + buf[i];
+				hash = hash * 31 + buf[i];
 			for(int i = n - 16; i < n; ++i)
-				result = 31 * result + buf[i];
+				hash = hash * 31 + buf[i];
 		}
-		return result;
+		return hash;
 	}
 
 	@Override
@@ -504,11 +504,11 @@ public class Octets implements Cloneable, Comparable<Octets>
 		if(o == null) return 1;
 		int n0 = _count, n1 = o._count;
 		int n = (n0 < n1 ? n0 : n1);
-		byte[] buf = _buffer;
-		byte[] data = o._buffer;
+		byte[] buf0 = _buffer;
+		byte[] buf1 = o._buffer;
 		for(int i = 0; i < n; ++i)
 		{
-			int c = ((buf[i] & 0xff) - (data[i] & 0xff));
+			int c = ((buf0[i] & 0xff) - (buf1[i] & 0xff));
 			if(c != 0) return c;
 		}
 		return n0 - n1;
@@ -522,10 +522,10 @@ public class Octets implements Cloneable, Comparable<Octets>
 		Octets oct = (Octets)o;
 		int n = _count;
 		if(n != oct._count) return false;
-		byte[] buf = _buffer;
-		byte[] data = oct._buffer;
+		byte[] buf0 = _buffer;
+		byte[] buf1 = oct._buffer;
 		for(int i = 0; i < n; ++i)
-			if(buf[i] != data[i]) return false;
+			if(buf0[i] != buf1[i]) return false;
 		return true;
 	}
 
@@ -535,10 +535,10 @@ public class Octets implements Cloneable, Comparable<Octets>
 		if(oct == null) return false;
 		int n = _count;
 		if(n != oct._count) return false;
-		byte[] buf = _buffer;
-		byte[] data = oct._buffer;
+		byte[] buf0 = _buffer;
+		byte[] buf1 = oct._buffer;
 		for(int i = 0; i < n; ++i)
-			if(buf[i] != data[i]) return false;
+			if(buf0[i] != buf1[i]) return false;
 		return true;
 	}
 

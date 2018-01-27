@@ -51,9 +51,8 @@ public final class LevelDBClear
 		ArrayList<Entry<Octets, Octets>> buf = new ArrayList<>(10000);
 		long count = 0;
 
-		OctetsStream deleted = OctetsStream.wrap(Octets.EMPTY);
-		OctetsStream keyFrom = (tableId > 0 ? new OctetsStream().marshalUInt(tableId) : deleted);
-		OctetsStream keyTo;
+		Octets keyFrom = (tableId > 0 ? new OctetsStream().marshalUInt(tableId) : StorageLevelDB.deleted());
+		Octets keyTo;
 		if(tableId < 0)
 			keyTo = null;
 		else if(tableId < Integer.MAX_VALUE)
@@ -67,7 +66,7 @@ public final class LevelDBClear
 			if(key == null) break;
 			OctetsStream keyOs = OctetsStream.wrap(key);
 			if(keyTo != null && keyOs.compareTo(keyTo) >= 0) break;
-			buf.add(new SimpleEntry<Octets, Octets>(keyOs, deleted));
+			buf.add(new SimpleEntry<Octets, Octets>(keyOs, StorageLevelDB.deleted()));
 			if(buf.size() >= 10000)
 			{
 				count += buf.size();
