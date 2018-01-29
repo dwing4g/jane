@@ -10,6 +10,9 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.zip.CRC32;
 
 /**
@@ -19,16 +22,78 @@ import java.util.zip.CRC32;
  */
 public final class StorageLevelDB implements Storage
 {
-	private static final StorageLevelDB	_instance  = new StorageLevelDB();
-	private static final Octets			_deleted   = new Octets();								// 表示已删除的值
-	private final Map<Octets, Octets>	_writeBuf  = Util.newConcurrentHashMap();				// 提交过程中临时的写缓冲区
-	private long						_db;													// LevelDB的数据库对象句柄
-	private File						_dbFile;												// 当前数据库的文件
-	private final SimpleDateFormat		_sdf	   = new SimpleDateFormat("yy-MM-dd-HH-mm-ss");	// 备份文件后缀名的时间格式
-	private final long					_backupBase;											// 备份数据的基准时间
-	private volatile boolean			_writing;												// 是否正在执行写操作
-	private boolean						_useSnappy = true;										// 是否使用LevelDB内置的snappy压缩
-	private boolean						_reuseLogs = true;										// 是否使用LevelDB内置的reuse_logs功能
+	private static final StorageLevelDB	_instance	   = new StorageLevelDB();
+	private static final Octets			_deleted	   = new Octets();								// 表示已删除的值
+	private final Slice					_deletedSlice  = new Slice(0, 0);							// 表示已删除的slice
+	private int							_writeCount;												// 提交中的写缓冲区记录数量
+	private final OctetsStreamEx		_writeBuf	   = new OctetsStreamEx(0x10000);				// 提交中的写缓冲区
+	private final Map<Slice, Slice>		_writeMap	   = Util.newConcurrentHashMap();				// 提交中的写记录
+	private final ReadWriteLock			_writeLock	   = new ReentrantReadWriteLock();				// 访问_writeBuf和_writeMap的锁
+	private final Lock					_writeReadLock = _writeLock.readLock();						// 访问_writeBuf和_writeMap的读锁
+	private long						_db;														// LevelDB的数据库对象句柄
+	private File						_dbFile;													// 当前数据库的文件
+	private final SimpleDateFormat		_sdf		   = new SimpleDateFormat("yy-MM-dd-HH-mm-ss");	// 备份文件后缀名的时间格式
+	private final long					_backupBase;												// 备份数据的基准时间
+	private boolean						_useSnappy	   = true;										// 是否使用LevelDB内置的snappy压缩
+	private boolean						_reuseLogs	   = true;										// 是否使用LevelDB内置的reuse_logs功能
+
+	private final class Slice
+	{
+		final int pos, len;
+
+		Slice(int p, int n)
+		{
+			pos = p;
+			len = n;
+		}
+
+		@Override
+		public int hashCode()
+		{
+			byte[] buf = _writeBuf.array();
+			int hash = len;
+			if(hash <= 32)
+			{
+				for(int i = pos, n = i + hash; i < n; ++i)
+					hash = hash * 31 + buf[i];
+			}
+			else
+			{
+				for(int i = pos, n = i + 16; i < n; ++i)
+					hash = hash * 31 + buf[i];
+				for(int n = pos + len, i = n - 16; i < n; ++i)
+					hash = hash * 31 + buf[i];
+			}
+			return hash;
+		}
+
+		@Override
+		public boolean equals(Object o)
+		{
+			if(o instanceof Slice)
+			{
+				Slice s = (Slice)o;
+				int n = len;
+				if(n != s.len) return false;
+				byte[] buf = _writeBuf.array();
+				for(int p = pos, q = s.pos, e = p + n; p < e; ++p, ++q)
+					if(buf[p] != buf[q]) return false;
+				return true;
+			}
+			else if(o instanceof Octets)
+			{
+				Octets oct = (Octets)o;
+				int n = len;
+				if(n != oct.size()) return false;
+				byte[] buf0 = _writeBuf.array();
+				byte[] buf1 = oct.array();
+				for(int i = 0, p = pos; i < n; ++i, ++p)
+					if(buf0[p] != buf1[i]) return false;
+				return true;
+			}
+			return false;
+		}
+	}
 
 	static
 	{
@@ -84,6 +149,80 @@ public final class StorageLevelDB implements Storage
 		return toBean(OctetsStreamEx.wrap(data), beanStub);
 	}
 
+	private static int writeVarUInt2(byte[] buf, int pos, int v)
+	{
+		buf[pos++] = (byte)(v | 0x80);
+		if(v < 0x4000)
+			buf[pos++] = (byte)(v >> 7);
+		else
+		{
+			buf[pos++] = (byte)((v >> 7) | 0x80);
+			if(v < 0x20_0000)
+				buf[pos++] = (byte)(v >> 14);
+			else
+			{
+				buf[pos++] = (byte)((v >> 14) | 0x80);
+				if(v < 0x1000_0000)
+					buf[pos++] = (byte)(v >> 21);
+				else
+				{
+					buf[pos++] = (byte)((v >> 21) | 0x80);
+					buf[pos++] = (byte)(v >> 28);
+				}
+			}
+		}
+		return pos;
+	}
+
+	int writeVarUInt(int v)
+	{
+		OctetsStreamEx os = _writeBuf;
+		if(v < 0x80)
+			return os.marshal1((byte)v).size();
+		int size = os.size();
+		os.reserve(size + 5);
+		size = writeVarUInt2(os.array(), size, v);
+		os.resize(size);
+		return size;
+	}
+
+	int writeValue(Bean<?> bean)
+	{
+		int maxSize = 1 + bean.maxSize();
+		int initLenLen = OctetsStream.marshalUIntLen(maxSize > 1 ? maxSize : Integer.MAX_VALUE);
+
+		OctetsStreamEx os = _writeBuf;
+		int pos = os.size(); // 记录当前位置,之后写大小
+		int vpos = pos + initLenLen;
+		os.resize(vpos); // 跳过估计大小的长度
+		os.marshalZero(); // format
+		bean.marshal(os);
+		int size = os.size();
+		int len = size - pos - initLenLen; // 实际的bean序列化大小
+		int lenLen = OctetsStream.marshalUIntLen(maxSize); // 实际大小的长度
+		byte[] buf;
+		if(lenLen <= initLenLen) // 正常情况不会超
+		{
+			lenLen = initLenLen;
+			buf = os.array();
+		}
+		else // 说明序列化大小已经超了maxSize,不应该出现这种情况,但为了确保继续运行下去,只能挪点空间了
+		{
+			os.resize(size + lenLen - initLenLen);
+			buf = os.array();
+			vpos = pos + lenLen;
+			System.arraycopy(buf, pos + initLenLen, buf, vpos, len);
+		}
+
+		while(--lenLen > 0)
+		{
+			buf[pos++] = (byte)(len | 0x80);
+			len >>= 7;
+		}
+		buf[pos] = (byte)len;
+		return vpos;
+	}
+
 	public static native long leveldb_open(String path, int writeBufSize, int cacheSize, boolean useSnappy);
 
 	public static native long leveldb_open2(String path, int writeBufSize, int cacheSize, int fileSize, boolean useSnappy);
@@ -95,6 +234,8 @@ public final class StorageLevelDB implements Storage
 	public static native byte[] leveldb_get(long handle, byte[] key, int keyLen); // return null for not found
 
 	public static native int leveldb_write(long handle, Iterator<Entry<Octets, Octets>> it); // return 0 for ok
+
+	public static native int leveldb_write_direct(long handle, byte[] buf, int size); // return 0 for ok
 
 	public static native long leveldb_backup(long handle, String srcPath, String dstPath, String dateTime); // return byte-size of copied data
 
@@ -135,7 +276,7 @@ public final class StorageLevelDB implements Storage
 			int tableIdLen = _tableIdLen;
 			OctetsStream key = OctetsStream.createSpace(tableIdLen + OctetsStream.marshalLen(k));
 			if(tableIdLen == 1)
-				key.append((byte)_tableId);
+				key.marshal1((byte)_tableId);
 			else
 				key.marshalUInt(_tableId);
 			key.marshal(k);
@@ -157,8 +298,9 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public V get(long k)
 		{
-			OctetsStreamEx val = dbget(marshalKey(k));
-			if(val == null) return null;
+			byte[] buf = dbget(marshalKey(k));
+			if(buf == null) return null;
+			OctetsStreamEx val = OctetsStreamEx.wrap(buf);
 			try
 			{
 				int format = val.unmarshalInt1();
@@ -180,23 +322,48 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public void put(long k, V v)
 		{
-			_writeBuf.put(marshalKey(k), v.marshal(new OctetsStream(_stubV.initSize()).marshalZero())); // format
+			if(++_writeCount == 0)
+				throw new IllegalStateException("wrote too many records");
+			OctetsStreamEx os = _writeBuf;
+			os.marshal1((byte)1); // leveldb::ValueType::kTypeValue
+			int klen = _tableIdLen + OctetsStream.marshalLen(k);
+			os.marshal1((byte)klen);
+			int kpos = os.size();
+			if(_tableIdLen == 1)
+				os.marshal1((byte)_tableId);
+			else
+				os.marshalUInt(_tableId);
+			os.marshal(k);
+			int vpos = writeValue(v);
+			_writeMap.put(new Slice(kpos, klen), new Slice(vpos, os.size() - vpos));
 		}
 
 		@Override
 		public void remove(long k)
 		{
-			_writeBuf.put(marshalKey(k), deleted());
+			if(++_writeCount == 0)
+				throw new IllegalStateException("wrote too many records");
+			OctetsStreamEx os = _writeBuf;
+			os.marshalZero(); // leveldb::ValueType::kTypeDeletion
+			int klen = _tableIdLen + OctetsStream.marshalLen(k);
+			os.marshal1((byte)klen);
+			int kpos = os.size();
+			if(_tableIdLen == 1)
+				os.marshal1((byte)_tableId);
+			else
+				os.marshalUInt(_tableId);
+			os.marshal(k);
+			_writeMap.put(new Slice(kpos, klen), _deletedSlice);
 		}
 
 		@Override
 		public long getIdCounter()
 		{
-			OctetsStreamEx val = dbget(_tableIdCounter);
-			if(val == null) return 0;
+			byte[] buf = dbget(_tableIdCounter);
+			if(buf == null) return 0;
 			try
 			{
-				return val.unmarshalLong();
+				return OctetsStreamEx.wrap(buf).unmarshalLong();
 			}
 			catch(MarshalException e)
 			{
@@ -208,13 +375,26 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public void setIdCounter(long v)
 		{
-			if(v != getIdCounter())
-				_writeBuf.put(_tableIdCounter, OctetsStream.createSpace(OctetsStream.marshalLen(v)).marshal(v));
+			if(v == getIdCounter()) return;
+			if(++_writeCount == 0)
+				throw new IllegalStateException("wrote too many records");
+			OctetsStreamEx os = _writeBuf;
+			os.marshal1((byte)1); // leveldb::ValueType::kTypeValue
+			int klen = _tableIdCounter.size();
+			os.marshal1((byte)klen);
+			int kpos = os.size();
+			os.append(_tableIdCounter);
+			int vlen = OctetsStream.marshalLen(v);
+			os.marshal1((byte)vlen);
+			int vpos = os.size();
+			os.marshal(v);
+			_writeMap.put(new Slice(kpos, klen), new Slice(vpos, vlen));
 		}
 
 		@Override
 		public boolean walk(WalkHandlerLong handler, long from, long to, boolean inclusive, boolean reverse)
 		{
+			if(_db == 0) throw new IllegalStateException("db closed");
 			Octets keyFrom = marshalKey(from);
 			Octets keyTo = marshalKey(to);
 			if(keyFrom.compareTo(keyTo) > 0)
@@ -269,6 +449,7 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public boolean walk(WalkValueHandlerLong<V> handler, V beanStub, long from, long to, boolean inclusive, boolean reverse)
 		{
+			if(_db == 0) throw new IllegalStateException("db closed");
 			Octets keyFrom = marshalKey(from);
 			Octets keyTo = marshalKey(to);
 			if(keyFrom.compareTo(keyTo) > 0)
@@ -368,20 +549,9 @@ public final class StorageLevelDB implements Storage
 		}
 
 		@Override
-		public void put(K k, V v)
-		{
-			_writeBuf.put(marshalKey(k), v.marshal(new OctetsStream(_stubV.initSize()).marshalZero())); // format
-		}
-
-		@Override
-		public void remove(K k)
-		{
-			_writeBuf.put(marshalKey(k), deleted());
-		}
-
-		@Override
 		public boolean walk(WalkHandler<K> handler, K from, K to, boolean inclusive, boolean reverse)
 		{
+			if(_db == 0) throw new IllegalStateException("db closed");
 			Octets keyFrom = (from != null ? marshalKey(from) : OctetsStream.createSpace(5).marshalUInt(_tableId));
 			Octets keyTo = (to != null ? marshalKey(to) : _tableIdNext);
 			if(keyFrom.compareTo(keyTo) > 0)
@@ -436,6 +606,7 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public boolean walk(WalkValueHandler<K, V> handler, V beanStub, K from, K to, boolean inclusive, boolean reverse)
 		{
+			if(_db == 0) throw new IllegalStateException("db closed");
 			Octets keyFrom = (from != null ? marshalKey(from) : OctetsStream.createSpace(5).marshalUInt(_tableId));
 			Octets keyTo = (to != null ? marshalKey(to) : _tableIdNext);
 			if(keyFrom.compareTo(keyTo) > 0)
@@ -507,7 +678,7 @@ public final class StorageLevelDB implements Storage
 			int tableIdLen = _tableIdLen;
 			OctetsStream key = OctetsStream.createSpace(tableIdLen + k.size());
 			if(tableIdLen == 1)
-				key.append((byte)_tableId);
+				key.marshal1((byte)_tableId);
 			else
 				key.marshalUInt(_tableId);
 			key.append(k);
@@ -517,8 +688,9 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public V get(Octets k)
 		{
-			OctetsStreamEx val = dbget(marshalKey(k));
-			if(val == null) return null;
+			byte[] buf = dbget(marshalKey(k));
+			if(buf == null) return null;
+			OctetsStreamEx val = OctetsStreamEx.wrap(buf);
 			try
 			{
 				int format = val.unmarshalInt1();
@@ -535,6 +707,47 @@ public final class StorageLevelDB implements Storage
 			{
 				throw new RuntimeException(e);
 			}
+		}
+
+		@Override
+		public void put(Octets k, V v)
+		{
+			if(++_writeCount == 0)
+				throw new IllegalStateException("wrote too many records");
+			OctetsStreamEx os = _writeBuf;
+			os.marshal1((byte)1); // leveldb::ValueType::kTypeValue
+			int ksize = k.size();
+			int klen = _tableIdLen + ksize;
+			int kpos = writeVarUInt(klen);
+			if(_tableIdLen == 1)
+				os.marshal1((byte)_tableId);
+			else
+				os.marshalUInt(_tableId);
+			int pos = os.size();
+			os.resize(pos + ksize);
+			System.arraycopy(k.array(), 0, os.array(), pos, ksize);
+			int vpos = writeValue(v);
+			_writeMap.put(new Slice(kpos, klen), new Slice(vpos, os.size() - vpos));
+		}
+
+		@Override
+		public void remove(Octets k)
+		{
+			if(++_writeCount == 0)
+				throw new IllegalStateException("wrote too many records");
+			OctetsStreamEx os = _writeBuf;
+			os.marshalZero(); // leveldb::ValueType::kTypeDeletion
+			int ksize = k.size();
+			int klen = _tableIdLen + ksize;
+			int kpos = writeVarUInt(klen);
+			if(_tableIdLen == 1)
+				os.marshal1((byte)_tableId);
+			else
+				os.marshalUInt(_tableId);
+			int pos = os.size();
+			os.resize(pos + ksize);
+			System.arraycopy(k.array(), 0, os.array(), pos, ksize);
+			_writeMap.put(new Slice(kpos, klen), _deletedSlice);
 		}
 
 		@Override
@@ -564,7 +777,7 @@ public final class StorageLevelDB implements Storage
 			int bn = OctetsStream.marshalStrLen(k);
 			OctetsStream key = OctetsStream.createSpace(tableIdLen + bn);
 			if(tableIdLen == 1)
-				key.append((byte)_tableId);
+				key.marshal1((byte)_tableId);
 			else
 				key.marshalUInt(_tableId);
 			int cn = k.length();
@@ -584,8 +797,9 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public V get(String k)
 		{
-			OctetsStreamEx val = dbget(marshalKey(k));
-			if(val == null) return null;
+			byte[] buf = dbget(marshalKey(k));
+			if(buf == null) return null;
+			OctetsStreamEx val = OctetsStreamEx.wrap(buf);
 			try
 			{
 				int format = val.unmarshalInt1();
@@ -602,6 +816,63 @@ public final class StorageLevelDB implements Storage
 			{
 				throw new RuntimeException(e);
 			}
+		}
+
+		@Override
+		public void put(String k, V v)
+		{
+			if(++_writeCount == 0)
+				throw new IllegalStateException("wrote too many records");
+			OctetsStreamEx os = _writeBuf;
+			os.marshal1((byte)1); // leveldb::ValueType::kTypeValue
+			int bn = OctetsStream.marshalStrLen(k);
+			int klen = _tableIdLen + bn;
+			int kpos = writeVarUInt(klen);
+			if(_tableIdLen == 1)
+				os.marshal1((byte)_tableId);
+			else
+				os.marshalUInt(_tableId);
+			int cn = k.length();
+			if(bn == cn)
+			{
+				for(int i = 0; i < cn; ++i)
+					os.marshal1((byte)k.charAt(i));
+			}
+			else
+			{
+				for(int i = 0; i < cn; ++i)
+					os.marshalUTF8(k.charAt(i));
+			}
+			int vpos = writeValue(v);
+			_writeMap.put(new Slice(kpos, klen), new Slice(vpos, os.size() - vpos));
+		}
+
+		@Override
+		public void remove(String k)
+		{
+			if(++_writeCount == 0)
+				throw new IllegalStateException("wrote too many records");
+			OctetsStreamEx os = _writeBuf;
+			os.marshalZero(); // leveldb::ValueType::kTypeDeletion
+			int bn = OctetsStream.marshalStrLen(k);
+			int klen = _tableIdLen + bn;
+			int kpos = writeVarUInt(klen);
+			if(_tableIdLen == 1)
+				os.marshal1((byte)_tableId);
+			else
+				os.marshalUInt(_tableId);
+			int cn = k.length();
+			if(bn == cn)
+			{
+				for(int i = 0; i < cn; ++i)
+					os.marshal1((byte)k.charAt(i));
+			}
+			else
+			{
+				for(int i = 0; i < cn; ++i)
+					os.marshalUTF8(k.charAt(i));
+			}
+			_writeMap.put(new Slice(kpos, klen), _deletedSlice);
 		}
 
 		@Override
@@ -634,7 +905,7 @@ public final class StorageLevelDB implements Storage
 			int tableIdLen = _tableIdLen;
 			OctetsStream key = new OctetsStream(tableIdLen + ((Bean<V>)k).initSize());
 			if(tableIdLen == 1)
-				key.append((byte)_tableId);
+				key.marshal1((byte)_tableId);
 			else
 				key.marshalUInt(_tableId);
 			return ((Bean<V>)k).marshal(key);
@@ -643,8 +914,9 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public V get(K k)
 		{
-			OctetsStreamEx val = dbget(marshalKey(k));
-			if(val == null) return null;
+			byte[] buf = dbget(marshalKey(k));
+			if(buf == null) return null;
+			OctetsStreamEx val = OctetsStreamEx.wrap(buf);
 			try
 			{
 				int format = val.unmarshalInt1();
@@ -661,6 +933,30 @@ public final class StorageLevelDB implements Storage
 			{
 				throw new RuntimeException(e);
 			}
+		}
+
+		@Override
+		public void put(K k, V v)
+		{
+			if(++_writeCount == 0)
+				throw new IllegalStateException("wrote too many records");
+			OctetsStreamEx os = _writeBuf;
+			os.marshal1((byte)1); // leveldb::ValueType::kTypeValue
+			int kpos = writeValue((Bean<?>)k);
+			int klen = os.size() - kpos;
+			int vpos = writeValue(v);
+			_writeMap.put(new Slice(kpos, klen), new Slice(vpos, os.size() - vpos));
+		}
+
+		@Override
+		public void remove(K k)
+		{
+			if(++_writeCount == 0)
+				throw new IllegalStateException("wrote too many records");
+			OctetsStreamEx os = _writeBuf;
+			os.marshalZero(); // leveldb::ValueType::kTypeDeletion
+			int kpos = writeValue((Bean<?>)k);
+			_writeMap.put(new Slice(kpos, os.size() - kpos), _deletedSlice);
 		}
 
 		@SuppressWarnings("unchecked")
@@ -717,33 +1013,74 @@ public final class StorageLevelDB implements Storage
 	}
 
 	/**
-	 * 先尝试从_writeBuf取
-	 * @return 数据部分不能改动, 而pos和count可以改动
+	 * 先尝试从_writeMap取
+	 * @return 数据不能改动
 	 */
-	public OctetsStreamEx dbget(Octets k)
+	public byte[] dbget(Octets k)
 	{
-		if(_writing)
+		if(_writeReadLock.tryLock())
 		{
-			Octets v = _writeBuf.get(k);
-			if(v == _deleted) return null;
-			if(v != null) return OctetsStreamEx.wrap(v);
+			try
+			{
+				@SuppressWarnings("unlikely-arg-type")
+				Slice s = _writeMap.get(k); // Octets类型可以在Slice的key中匹配,兼容hashCode和equals方法
+				if(s == _deletedSlice) return null;
+				if(s != null) return _writeBuf.getBytes(s.pos, s.len);
+			}
+			finally
+			{
+				_writeReadLock.unlock();
+			}
 		}
 		if(_db == 0) throw new IllegalStateException("db closed. key=" + k.dump());
-		byte[] v = leveldb_get(_db, k.array(), k.size());
-		return v != null ? OctetsStreamEx.wrap(v) : null;
+		return leveldb_get(_db, k.array(), k.size());
 	}
 
-	/**
-	 * @param value 调用后就不能再修改value了
-	 */
-	public void dbput(Octets key, Octets value)
+	public synchronized void dbput(Octets key, Octets value)
 	{
-		_writing = true;
-		_writeBuf.put(key, value);
+		if(++_writeCount == 0)
+			throw new IllegalStateException("wrote too many records");
+		int klen = key.size();
+		int vlen = value.size();
+		int klenlen = OctetsStream.marshalUIntLen(klen);
+		OctetsStreamEx os = _writeBuf;
+		int pos = os.size();
+		if(vlen > 0)
+		{
+			int vlenlen = OctetsStream.marshalUIntLen(vlen);
+			os.resize(pos + 1 + klenlen + klen + vlenlen + vlen);
+			byte[] buf = os.array();
+			buf[pos++] = 1; // leveldb::ValueType::kTypeValue
+			if(klenlen == 1)
+				buf[pos++] = (byte)klen;
+			else
+				pos = writeVarUInt2(buf, pos, klen);
+			System.arraycopy(key.array(), 0, buf, pos, klen);
+			int kpos = pos;
+			pos += klen;
+			if(vlenlen == 1)
+				buf[pos++] = (byte)vlen;
+			else
+				pos = writeVarUInt2(buf, pos, vlen);
+			System.arraycopy(value.array(), 0, buf, pos, vlen);
+			_writeMap.put(new Slice(kpos, klen), new Slice(pos, vlen));
+		}
+		else
+		{
+			os.resize(pos + 1 + klenlen + klen);
+			byte[] buf = os.array();
+			buf[pos++] = 0; // leveldb::ValueType::kTypeDeletion
+			if(klenlen == 1)
+				buf[pos++] = (byte)klen;
+			else
+				pos = writeVarUInt2(buf, pos, klen);
+			System.arraycopy(key.array(), 0, buf, pos, klen);
+			_writeMap.put(new Slice(pos, klen), _deletedSlice);
+		}
 	}
 
 	/**
-	 * 除了it遍历的所有entry外, _writeBuf也会全部提交后清空
+	 * 除了it遍历的所有entry外, _writeBuf也会全部提交
 	 */
 	public void dbcommit(Iterator<Entry<Octets, Octets>> it)
 	{
@@ -767,6 +1104,7 @@ public final class StorageLevelDB implements Storage
 
 	public boolean dbwalk(Octets keyFrom, Octets keyTo, boolean inclusive, boolean reverse, DBWalkHandler handler)
 	{
+		if(_db == 0) throw new IllegalStateException("db closed");
 		if(keyFrom != null && keyTo != null && keyFrom.compareTo(keyTo) > 0)
 		{
 			Octets t = keyFrom;
@@ -875,13 +1213,23 @@ public final class StorageLevelDB implements Storage
 
 	public int getPutSize()
 	{
-		return _writeBuf.size();
+		return _writeMap.size();
 	}
 
 	@Override
-	public void putBegin()
+	public synchronized void putBegin()
 	{
-		_writing = true;
+		_writeLock.writeLock().lock();
+		try
+		{
+			_writeMap.clear();
+			_writeBuf.resize(4);
+		}
+		finally
+		{
+			_writeLock.writeLock().unlock();
+		}
+		_writeCount = 0;
 	}
 
 	@Override
@@ -892,22 +1240,22 @@ public final class StorageLevelDB implements Storage
 	@Override
 	public synchronized void commit()
 	{
-		if(!_writeBuf.isEmpty())
+		if(!_writeMap.isEmpty())
 		{
-			if(_db == 0)
-			{
-				Log.error("StorageLevelDB.commit: db is closed");
-				return;
-			}
-			int r = leveldb_write(_db, _writeBuf.entrySet().iterator());
+			if(_db == 0) throw new IllegalStateException("db closed");
+			byte[] buf = _writeBuf.array();
+			int count = _writeCount;
+			buf[0] = (byte)count;
+			buf[1] = (byte)(count >> 8);
+			buf[2] = (byte)(count >> 16);
+			buf[3] = (byte)(count >> 24);
+			int r = leveldb_write_direct(_db, buf, _writeBuf.size());
 			if(r != 0)
 			{
 				Log.error("StorageLevelDB.commit: leveldb_write failed({})", r);
 				return;
 			}
-			_writeBuf.clear();
 		}
-		_writing = false;
 	}
 
 	@Override
@@ -920,14 +1268,13 @@ public final class StorageLevelDB implements Storage
 			leveldb_close(_db);
 			_db = 0;
 		}
-		_writeBuf.clear();
-		_writing = false;
+		_writeMap.clear();
 	}
 
 	@Override
 	public synchronized long backup(File fdst) throws IOException
 	{
-		if(_dbFile == null) throw new IllegalStateException("current db is not opened");
+		if(_db == 0) throw new IllegalStateException("db closed");
 		String dstPath = fdst.getAbsolutePath();
 		int pos = dstPath.lastIndexOf('.');
 		if(pos <= 0) throw new IOException("invalid db backup path: " + dstPath);

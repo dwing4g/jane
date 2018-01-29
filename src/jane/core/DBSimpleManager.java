@@ -326,13 +326,15 @@ public final class DBSimpleManager
 			if(val == null)
 			{
 				_readStoCount.incrementAndGet();
-				val = _storage.dbget(key);
-				if(val == null)
+				byte[] v = _storage.dbget(key);
+				if(v == null)
 					return null;
+				OctetsStreamEx os = OctetsStreamEx.wrap(v);
 				if(_enableReadCache)
-					_readCache.put(key, val);
+					_readCache.put(key, os);
+				return StorageLevelDB.toBean(os, beanStub);
 			}
-			else if(val.size() <= 0)
+			if(val.size() <= 0)
 				return null;
 		}
 		return StorageLevelDB.toBean(val, beanStub);

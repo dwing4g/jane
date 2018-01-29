@@ -14,22 +14,27 @@
  crc32c/crc32c_sse42_check.h       |   48 +
  db/db_impl.cc                     |    4 +
  db/db_impl.h                      |    3 +
+ db/write_batch.cc                 |   53 +-
+ db/write_batch_internal.h         |   31 +-
  gendef.lua                        |   32 +
- leveldb.def                       |   81 ++
+ include/leveldb/write_batch.h     |    3 +-
+ leveldb.def                       |   82 ++
  leveldb.sln                       |   93 ++
- leveldb.vcxproj                   |  313 ++++++
- leveldb.vcxproj.filters           |  363 +++++++
- leveldbbench.vcxproj              |  191 ++++
+ leveldb.vcxproj                   |  319 ++++++
+ leveldb.vcxproj.filters           |  366 +++++++
+ leveldbbench.vcxproj              |  195 ++++
  leveldbbench.vcxproj.filters      |    8 +
- leveldbdll.vcxproj                |  207 ++++
+ leveldbdll.vcxproj                |  211 ++++
  leveldbdll.vcxproj.filters        |    9 +
- leveldbtestdb.vcxproj             |  192 ++++
+ leveldbtestdb.vcxproj             |  196 ++++
  leveldbtestdb.vcxproj.filters     |    9 +
- leveldbtestenv.vcxproj            |  191 ++++
+ leveldbtestenv.vcxproj            |  195 ++++
  leveldbtestenv.vcxproj.filters    |    8 +
- leveldbutil.vcxproj               |  190 ++++
+ leveldbutil.vcxproj               |  194 ++++
  leveldbutil.vcxproj.filters       |    7 +
- make_linux.sh                     |  127 +++
+ make_linux.sh                     |  130 +++
+ make_linux_jemalloc.sh            |  131 +++
+ make_mac.sh                       |  127 +++
  make_mingw.bat                    |  133 +++
  port/atomic_pointer.h             |    1 +
  port/endian.h                     |    5 +
@@ -47,10 +52,10 @@
  snappy/snappy-stubs-public.h      |   94 ++
  snappy/snappy.cc                  | 1515 ++++++++++++++++++++++++++++
  snappy/snappy.h                   |  203 ++++
- util/env_windows.cc               |  446 +++++++++
- util/jni.cc                       |  537 ++++++++++
+ util/env_windows.cc               |  457 +++++++++
+ util/jni.cc                       |  551 +++++++++++
  util/logging.cc                   |    2 +-
- 52 files changed, 9229 insertions(+), 1 deletion(-)
+ 57 files changed, 9612 insertions(+), 21 deletions(-)
 
 diff --git a/.gitignore b/.gitignore
 index 0630251..bbfce0d 100644
@@ -1267,6 +1272,171 @@ index 8ff323e..785778c 100644
   private:
    friend class DB;
    struct CompactionState;
+diff --git a/db/write_batch.cc b/db/write_batch.cc
+index 7f8f3e8..02714d9 100644
+--- a/db/write_batch.cc
++++ b/db/write_batch.cc
+@@ -26,25 +26,28 @@ namespace leveldb {
+ // WriteBatch header has an 8-byte sequence number followed by a 4-byte count.
+ static const size_t kHeader = 12;
+ 
+-WriteBatch::WriteBatch() {
++WriteBatch::WriteBatch() : buf_(0), size_(0), cap_(0) {
+   Clear();
+ }
+ 
+-WriteBatch::~WriteBatch() { }
++WriteBatch::~WriteBatch() {
++  free(buf_);
++}
+ 
+ WriteBatch::Handler::~Handler() { }
+ 
+ void WriteBatch::Clear() {
+-  rep_.clear();
+-  rep_.resize(kHeader);
++  WriteBatchInternal::EnsureCapacity(this, kHeader + 124); // initial capacity
++  WriteBatchInternal::Resize(this, kHeader);
++  memset(buf_, 0, kHeader);
+ }
+ 
+ size_t WriteBatch::ApproximateSize() {
+-  return rep_.size();
++  return size_;
+ }
+ 
+ Status WriteBatch::Iterate(Handler* handler) const {
+-  Slice input(rep_);
++  Slice input(buf_, size_);
+   if (input.size() < kHeader) {
+     return Status::Corruption("malformed WriteBatch (too small)");
+   }
+@@ -84,32 +87,44 @@ Status WriteBatch::Iterate(Handler* handler) const {
+ }
+ 
+ int WriteBatchInternal::Count(const WriteBatch* b) {
+-  return DecodeFixed32(b->rep_.data() + 8);
++  return DecodeFixed32(b->buf_ + 8);
+ }
+ 
+ void WriteBatchInternal::SetCount(WriteBatch* b, int n) {
+-  EncodeFixed32(&b->rep_[8], n);
++  EncodeFixed32(b->buf_ + 8, n);
+ }
+ 
+ SequenceNumber WriteBatchInternal::Sequence(const WriteBatch* b) {
+-  return SequenceNumber(DecodeFixed64(b->rep_.data()));
++  return SequenceNumber(DecodeFixed64(b->buf_));
+ }
+ 
+ void WriteBatchInternal::SetSequence(WriteBatch* b, SequenceNumber seq) {
+-  EncodeFixed64(&b->rep_[0], seq);
++  EncodeFixed64(b->buf_, seq);
+ }
+ 
+ void WriteBatch::Put(const Slice& key, const Slice& value) {
+   WriteBatchInternal::SetCount(this, WriteBatchInternal::Count(this) + 1);
+-  rep_.push_back(static_cast<char>(kTypeValue));
+-  PutLengthPrefixedSlice(&rep_, key);
+-  PutLengthPrefixedSlice(&rep_, value);
++  WriteBatchInternal::EnsureCapacity(this, size_ + 11 + key.size() + value.size());
++  char* p = buf_ + size_;
++  *p++ = static_cast<char>(kTypeValue);
++  p = EncodeVarint32(p, key.size());
++  memcpy(p, key.data(), key.size());
++  p += key.size();
++  p = EncodeVarint32(p, value.size());
++  memcpy(p, value.data(), value.size());
++  p += value.size();
++  size_ = p - buf_;
+ }
+ 
+ void WriteBatch::Delete(const Slice& key) {
+   WriteBatchInternal::SetCount(this, WriteBatchInternal::Count(this) + 1);
+-  rep_.push_back(static_cast<char>(kTypeDeletion));
+-  PutLengthPrefixedSlice(&rep_, key);
++  WriteBatchInternal::EnsureCapacity(this, size_ + 6 + key.size());
++  char* p = buf_ + size_;
++  *p++ = static_cast<char>(kTypeDeletion);
++  p = EncodeVarint32(p, key.size());
++  memcpy(p, key.data(), key.size());
++  p += key.size();
++  size_ = p - buf_;
+ }
+ 
+ namespace {
+@@ -139,13 +154,17 @@ Status WriteBatchInternal::InsertInto(const WriteBatch* b,
+ 
+ void WriteBatchInternal::SetContents(WriteBatch* b, const Slice& contents) {
+   assert(contents.size() >= kHeader);
+-  b->rep_.assign(contents.data(), contents.size());
++  if (b->cap_ < contents.size()) {
++    free(b->buf_);
++    b->buf_ = (char*)malloc(b->cap_ = contents.size());
++  }
++  memcpy(b->buf_, contents.data(), b->size_ = contents.size());
+ }
+ 
+ void WriteBatchInternal::Append(WriteBatch* dst, const WriteBatch* src) {
+   SetCount(dst, Count(dst) + Count(src));
+   assert(src->rep_.size() >= kHeader);
+-  dst->rep_.append(src->rep_.data() + kHeader, src->rep_.size() - kHeader);
++  Append(dst, src->buf_ + kHeader, src->size_ - kHeader);
+ }
+ 
+ }  // namespace leveldb
+diff --git a/db/write_batch_internal.h b/db/write_batch_internal.h
+index 9448ef7..0cb661e 100644
+--- a/db/write_batch_internal.h
++++ b/db/write_batch_internal.h
+@@ -30,11 +30,11 @@ class WriteBatchInternal {
+   static void SetSequence(WriteBatch* batch, SequenceNumber seq);
+ 
+   static Slice Contents(const WriteBatch* batch) {
+-    return Slice(batch->rep_);
++    return Slice(batch->buf_, batch->size_);
+   }
+ 
+   static size_t ByteSize(const WriteBatch* batch) {
+-    return batch->rep_.size();
++    return batch->size_;
+   }
+ 
+   static void SetContents(WriteBatch* batch, const Slice& contents);
+@@ -42,6 +42,33 @@ class WriteBatchInternal {
+   static Status InsertInto(const WriteBatch* batch, MemTable* memtable);
+ 
+   static void Append(WriteBatch* dst, const WriteBatch* src);
++
++  static void EnsureCapacity(WriteBatch* batch, size_t cap) {
++    if (batch->cap_ < cap) {
++      if (batch->cap_ == 0) {
++        batch->cap_ = cap;
++      } else {
++        do batch->cap_ <<= 1;
++        while (batch->cap_ < cap);
++      }
++      batch->buf_ = (char*)realloc(batch->buf_, batch->cap_);
++    }
++  }
++
++  static void Append(WriteBatch* batch, const char* buf, size_t size) {
++    size_t cap_need = batch->size_ + size;
++    EnsureCapacity(batch, cap_need);
++    memcpy(batch->buf_ + batch->size_, buf, size);
++    batch->size_ = cap_need;
++  }
++
++  static char* Resize(WriteBatch* batch, size_t size) {
++    if (size > batch->cap_) {
++      batch->buf_ = (char*)realloc(batch->buf_, batch->cap_ = size);
++    }
++    batch->size_ = size;
++    return batch->buf_;
++  }
+ };
+ 
+ }  // namespace leveldb
 diff --git a/gendef.lua b/gendef.lua
 new file mode 100644
 index 0000000..efd3ee7
@@ -1305,12 +1475,26 @@ index 0000000..efd3ee7
 +f:close()
 +
 +print "done!"
+diff --git a/include/leveldb/write_batch.h b/include/leveldb/write_batch.h
+index 40ceb03..08cf1c8 100644
+--- a/include/leveldb/write_batch.h
++++ b/include/leveldb/write_batch.h
+@@ -61,7 +61,8 @@ class LEVELDB_EXPORT WriteBatch {
+  private:
+   friend class WriteBatchInternal;
+ 
+-  std::string rep_;  // See comment in write_batch.cc for the format of rep_
++  char* buf_;  // See comment in write_batch.cc for the format of buf_
++  size_t size_, cap_;
+ 
+   // Intentionally copyable
+ };
 diff --git a/leveldb.def b/leveldb.def
 new file mode 100644
-index 0000000..b815af7
+index 0000000..935db40
 --- /dev/null
 +++ b/leveldb.def
-@@ -0,0 +1,81 @@
+@@ -0,0 +1,82 @@
 +EXPORTS
 +Java_jane_core_StorageLevelDB_leveldb_1backup
 +Java_jane_core_StorageLevelDB_leveldb_1close
@@ -1326,6 +1510,7 @@ index 0000000..b815af7
 +Java_jane_core_StorageLevelDB_leveldb_1open3
 +Java_jane_core_StorageLevelDB_leveldb_1property
 +Java_jane_core_StorageLevelDB_leveldb_1write
++Java_jane_core_StorageLevelDB_leveldb_1write_1direct
 +leveldb_approximate_sizes
 +leveldb_cache_create_lru
 +leveldb_cache_destroy
@@ -1493,10 +1678,10 @@ index 0000000..e0aa5a0
 +EndGlobal
 diff --git a/leveldb.vcxproj b/leveldb.vcxproj
 new file mode 100644
-index 0000000..b294185
+index 0000000..8ec51bc
 --- /dev/null
 +++ b/leveldb.vcxproj
-@@ -0,0 +1,313 @@
+@@ -0,0 +1,319 @@
 +﻿<?xml version="1.0" encoding="utf-8"?>
 +<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 +  <ItemGroup Label="ProjectConfigurations">
@@ -1561,6 +1746,12 @@ index 0000000..b294185
 +      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)crc32.obj</ObjectFileName>
 +    </ClCompile>
 +    <ClCompile Include="util\env.cc" />
++    <ClCompile Include="util\env_posix.cc">
++      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
++      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
++      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
++      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
++    </ClCompile>
 +    <ClCompile Include="util\env_windows.cc" />
 +    <ClCompile Include="util\filter_policy.cc" />
 +    <ClCompile Include="util\hash.cc" />
@@ -1813,10 +2004,10 @@ index 0000000..b294185
 \ No newline at end of file
 diff --git a/leveldb.vcxproj.filters b/leveldb.vcxproj.filters
 new file mode 100644
-index 0000000..d5f34ac
+index 0000000..b4c1d6b
 --- /dev/null
 +++ b/leveldb.vcxproj.filters
-@@ -0,0 +1,363 @@
+@@ -0,0 +1,366 @@
 +﻿<?xml version="1.0" encoding="utf-8"?>
 +<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 +  <ItemGroup>
@@ -1986,6 +2177,9 @@ index 0000000..d5f34ac
 +    </ClCompile>
 +    <ClCompile Include="crc32c\crc32c_sse42.cc">
 +      <Filter>crc32c</Filter>
++    </ClCompile>
++    <ClCompile Include="util\env_posix.cc">
++      <Filter>util</Filter>
 +    </ClCompile>
 +  </ItemGroup>
 +  <ItemGroup>
@@ -2183,10 +2377,10 @@ index 0000000..d5f34ac
 \ No newline at end of file
 diff --git a/leveldbbench.vcxproj b/leveldbbench.vcxproj
 new file mode 100644
-index 0000000..eea5dd7
+index 0000000..238f04f
 --- /dev/null
 +++ b/leveldbbench.vcxproj
-@@ -0,0 +1,191 @@
+@@ -0,0 +1,195 @@
 +﻿<?xml version="1.0" encoding="utf-8"?>
 +<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 +  <ItemGroup Label="ProjectConfigurations">
@@ -2312,6 +2506,7 @@ index 0000000..eea5dd7
 +      <RandomizedBaseAddress>false</RandomizedBaseAddress>
 +      <FixedBaseAddress>true</FixedBaseAddress>
 +      <AdditionalDependencies>kernel32.lib;Release_x64\leveldb64.lib;%(AdditionalDependencies)</AdditionalDependencies>
++      <GenerateDebugInformation>false</GenerateDebugInformation>
 +    </Link>
 +  </ItemDefinitionGroup>
 +  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -2326,6 +2521,7 @@ index 0000000..eea5dd7
 +    <Link>
 +      <SubSystem>Console</SubSystem>
 +      <AdditionalDependencies>kernel32.lib;Debug\leveldb32.lib;%(AdditionalDependencies)</AdditionalDependencies>
++      <GenerateDebugInformation>false</GenerateDebugInformation>
 +    </Link>
 +  </ItemDefinitionGroup>
 +  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -2340,6 +2536,7 @@ index 0000000..eea5dd7
 +    <Link>
 +      <SubSystem>Console</SubSystem>
 +      <AdditionalDependencies>kernel32.lib;Debug_x64\leveldb64.lib;%(AdditionalDependencies)</AdditionalDependencies>
++      <GenerateDebugInformation>false</GenerateDebugInformation>
 +    </Link>
 +  </ItemDefinitionGroup>
 +  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -2367,6 +2564,7 @@ index 0000000..eea5dd7
 +      <RandomizedBaseAddress>false</RandomizedBaseAddress>
 +      <FixedBaseAddress>true</FixedBaseAddress>
 +      <AdditionalDependencies>kernel32.lib;Release\leveldb32.lib;%(AdditionalDependencies)</AdditionalDependencies>
++      <GenerateDebugInformation>false</GenerateDebugInformation>
 +    </Link>
 +  </ItemDefinitionGroup>
 +  <ItemGroup>
@@ -2396,10 +2594,10 @@ index 0000000..b70e4ff
 \ No newline at end of file
 diff --git a/leveldbdll.vcxproj b/leveldbdll.vcxproj
 new file mode 100644
-index 0000000..c365b71
+index 0000000..fc5c1ef
 --- /dev/null
 +++ b/leveldbdll.vcxproj
-@@ -0,0 +1,207 @@
+@@ -0,0 +1,211 @@
 +﻿<?xml version="1.0" encoding="utf-8"?>
 +<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 +  <ItemGroup Label="ProjectConfigurations">
@@ -2527,6 +2725,7 @@ index 0000000..c365b71
 +      <AdditionalDependencies>kernel32.lib;advapi32.lib;Debug\leveldb32.lib;%(AdditionalDependencies)</AdditionalDependencies>
 +      <ModuleDefinitionFile>leveldb.def</ModuleDefinitionFile>
 +      <RandomizedBaseAddress>false</RandomizedBaseAddress>
++      <GenerateDebugInformation>false</GenerateDebugInformation>
 +    </Link>
 +  </ItemDefinitionGroup>
 +  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -2543,6 +2742,7 @@ index 0000000..c365b71
 +      <AdditionalDependencies>kernel32.lib;advapi32.lib;Debug_x64\leveldb64.lib;%(AdditionalDependencies)</AdditionalDependencies>
 +      <RandomizedBaseAddress>false</RandomizedBaseAddress>
 +      <ModuleDefinitionFile>leveldb.def</ModuleDefinitionFile>
++      <GenerateDebugInformation>false</GenerateDebugInformation>
 +    </Link>
 +  </ItemDefinitionGroup>
 +  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -2572,6 +2772,7 @@ index 0000000..c365b71
 +      </FixedBaseAddress>
 +      <AdditionalDependencies>kernel32.lib;advapi32.lib;Release\leveldb32.lib;%(AdditionalDependencies)</AdditionalDependencies>
 +      <ModuleDefinitionFile>leveldb.def</ModuleDefinitionFile>
++      <GenerateDebugInformation>false</GenerateDebugInformation>
 +    </Link>
 +  </ItemDefinitionGroup>
 +  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -2601,6 +2802,7 @@ index 0000000..c365b71
 +      </FixedBaseAddress>
 +      <ModuleDefinitionFile>leveldb.def</ModuleDefinitionFile>
 +      <AdditionalDependencies>kernel32.lib;advapi32.lib;Release_x64\leveldb64.lib;%(AdditionalDependencies)</AdditionalDependencies>
++      <GenerateDebugInformation>false</GenerateDebugInformation>
 +    </Link>
 +  </ItemDefinitionGroup>
 +  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
@@ -2626,10 +2828,10 @@ index 0000000..e1de2d1
 \ No newline at end of file
 diff --git a/leveldbtestdb.vcxproj b/leveldbtestdb.vcxproj
 new file mode 100644
-index 0000000..b35eb4c
+index 0000000..58e59e0
 --- /dev/null
 +++ b/leveldbtestdb.vcxproj
-@@ -0,0 +1,192 @@
+@@ -0,0 +1,196 @@
 +﻿<?xml version="1.0" encoding="utf-8"?>
 +<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 +  <ItemGroup Label="ProjectConfigurations">
@@ -2755,6 +2957,7 @@ index 0000000..b35eb4c
 +      <RandomizedBaseAddress>false</RandomizedBaseAddress>
 +      <FixedBaseAddress>true</FixedBaseAddress>
 +      <AdditionalDependencies>kernel32.lib;Release_x64\leveldb64.lib;%(AdditionalDependencies)</AdditionalDependencies>
++      <GenerateDebugInformation>false</GenerateDebugInformation>
 +    </Link>
 +  </ItemDefinitionGroup>
 +  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -2769,6 +2972,7 @@ index 0000000..b35eb4c
 +    <Link>
 +      <SubSystem>Console</SubSystem>
 +      <AdditionalDependencies>kernel32.lib;Debug\leveldb32.lib;%(AdditionalDependencies)</AdditionalDependencies>
++      <GenerateDebugInformation>false</GenerateDebugInformation>
 +    </Link>
 +  </ItemDefinitionGroup>
 +  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -2783,6 +2987,7 @@ index 0000000..b35eb4c
 +    <Link>
 +      <SubSystem>Console</SubSystem>
 +      <AdditionalDependencies>kernel32.lib;Debug_x64\leveldb64.lib;%(AdditionalDependencies)</AdditionalDependencies>
++      <GenerateDebugInformation>false</GenerateDebugInformation>
 +    </Link>
 +  </ItemDefinitionGroup>
 +  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -2810,6 +3015,7 @@ index 0000000..b35eb4c
 +      <RandomizedBaseAddress>false</RandomizedBaseAddress>
 +      <FixedBaseAddress>true</FixedBaseAddress>
 +      <AdditionalDependencies>kernel32.lib;Release\leveldb32.lib;%(AdditionalDependencies)</AdditionalDependencies>
++      <GenerateDebugInformation>false</GenerateDebugInformation>
 +    </Link>
 +  </ItemDefinitionGroup>
 +  <ItemGroup>
@@ -2841,10 +3047,10 @@ index 0000000..4cc9e9e
 \ No newline at end of file
 diff --git a/leveldbtestenv.vcxproj b/leveldbtestenv.vcxproj
 new file mode 100644
-index 0000000..9c27a5d
+index 0000000..ceb6d36
 --- /dev/null
 +++ b/leveldbtestenv.vcxproj
-@@ -0,0 +1,191 @@
+@@ -0,0 +1,195 @@
 +﻿<?xml version="1.0" encoding="utf-8"?>
 +<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 +  <ItemGroup Label="ProjectConfigurations">
@@ -2970,6 +3176,7 @@ index 0000000..9c27a5d
 +      <RandomizedBaseAddress>false</RandomizedBaseAddress>
 +      <FixedBaseAddress>true</FixedBaseAddress>
 +      <AdditionalDependencies>kernel32.lib;Release_x64\leveldb64.lib;%(AdditionalDependencies)</AdditionalDependencies>
++      <GenerateDebugInformation>false</GenerateDebugInformation>
 +    </Link>
 +  </ItemDefinitionGroup>
 +  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -2984,6 +3191,7 @@ index 0000000..9c27a5d
 +    <Link>
 +      <SubSystem>Console</SubSystem>
 +      <AdditionalDependencies>kernel32.lib;Debug\leveldb32.lib;%(AdditionalDependencies)</AdditionalDependencies>
++      <GenerateDebugInformation>false</GenerateDebugInformation>
 +    </Link>
 +  </ItemDefinitionGroup>
 +  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -2998,6 +3206,7 @@ index 0000000..9c27a5d
 +    <Link>
 +      <SubSystem>Console</SubSystem>
 +      <AdditionalDependencies>kernel32.lib;Debug_x64\leveldb64.lib;%(AdditionalDependencies)</AdditionalDependencies>
++      <GenerateDebugInformation>false</GenerateDebugInformation>
 +    </Link>
 +  </ItemDefinitionGroup>
 +  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -3025,6 +3234,7 @@ index 0000000..9c27a5d
 +      <RandomizedBaseAddress>false</RandomizedBaseAddress>
 +      <FixedBaseAddress>true</FixedBaseAddress>
 +      <AdditionalDependencies>kernel32.lib;Release\leveldb32.lib;%(AdditionalDependencies)</AdditionalDependencies>
++      <GenerateDebugInformation>false</GenerateDebugInformation>
 +    </Link>
 +  </ItemDefinitionGroup>
 +  <ItemGroup>
@@ -3054,10 +3264,10 @@ index 0000000..48ecf99
 \ No newline at end of file
 diff --git a/leveldbutil.vcxproj b/leveldbutil.vcxproj
 new file mode 100644
-index 0000000..6940803
+index 0000000..396910b
 --- /dev/null
 +++ b/leveldbutil.vcxproj
-@@ -0,0 +1,190 @@
+@@ -0,0 +1,194 @@
 +﻿<?xml version="1.0" encoding="utf-8"?>
 +<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 +  <ItemGroup Label="ProjectConfigurations">
@@ -3183,6 +3393,7 @@ index 0000000..6940803
 +      <RandomizedBaseAddress>false</RandomizedBaseAddress>
 +      <FixedBaseAddress>true</FixedBaseAddress>
 +      <AdditionalDependencies>kernel32.lib;Release_x64\leveldb64.lib;%(AdditionalDependencies)</AdditionalDependencies>
++      <GenerateDebugInformation>false</GenerateDebugInformation>
 +    </Link>
 +  </ItemDefinitionGroup>
 +  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -3197,6 +3408,7 @@ index 0000000..6940803
 +    <Link>
 +      <SubSystem>Console</SubSystem>
 +      <AdditionalDependencies>kernel32.lib;Debug\leveldb32.lib;%(AdditionalDependencies)</AdditionalDependencies>
++      <GenerateDebugInformation>false</GenerateDebugInformation>
 +    </Link>
 +  </ItemDefinitionGroup>
 +  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -3211,6 +3423,7 @@ index 0000000..6940803
 +    <Link>
 +      <SubSystem>Console</SubSystem>
 +      <AdditionalDependencies>kernel32.lib;Debug_x64\leveldb64.lib;%(AdditionalDependencies)</AdditionalDependencies>
++      <GenerateDebugInformation>false</GenerateDebugInformation>
 +    </Link>
 +  </ItemDefinitionGroup>
 +  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -3238,6 +3451,7 @@ index 0000000..6940803
 +      <RandomizedBaseAddress>false</RandomizedBaseAddress>
 +      <FixedBaseAddress>true</FixedBaseAddress>
 +      <AdditionalDependencies>kernel32.lib;Release\leveldb32.lib;%(AdditionalDependencies)</AdditionalDependencies>
++      <GenerateDebugInformation>false</GenerateDebugInformation>
 +    </Link>
 +  </ItemDefinitionGroup>
 +  <ItemGroup>
@@ -3265,13 +3479,16 @@ index 0000000..1fb0903
 \ No newline at end of file
 diff --git a/make_linux.sh b/make_linux.sh
 new file mode 100755
-index 0000000..cd88b9a
+index 0000000..9ea87e7
 --- /dev/null
 +++ b/make_linux.sh
-@@ -0,0 +1,127 @@
+@@ -0,0 +1,130 @@
 +#!/bin/sh
 +
 +cd `dirname $0`
++
++# note:
++# 1. if gcc supports c++11 (4.8+), remove "-Dconstexpr= -Doverride="
 +
 +if [ "$JAVA_HOME" = "" ]; then JAVA_HOME=/usr/java/default; fi
 +
@@ -3385,6 +3602,276 @@ index 0000000..cd88b9a
 +
 +echo building libleveldbjni64.so ...
 +$COMPILE -DLEVELDB_SHARED_LIBRARY=1 -DLEVELDB_COMPILE_LIBRARY=1 -shared -fvisibility=hidden -Wl,-soname -Wl,libleveldbjni64.so -o libleveldbjni64.so $CORE_FILES crc32c/crc32c.cc crc32c_sse42.o
++
++echo building libleveldb.a ...
++$COMPILE -c $CORE_FILES $TEST_FILES
++ar -rs libleveldb.a $OBJ_FILES
++rm -f *.o 2> /dev/null
++
++echo building db-tools ...
++$COMPILE -o leveldbutil db/leveldbutil.cc libleveldb.a
++$COMPILE -o db_bench    db/db_bench.cc    libleveldb.a
++$COMPILE -o db_test     db/db_test.cc     libleveldb.a
++$COMPILE -o env_test    util/env_test.cc  libleveldb.a
+diff --git a/make_linux_jemalloc.sh b/make_linux_jemalloc.sh
+new file mode 100755
+index 0000000..07c8de3
+--- /dev/null
++++ b/make_linux_jemalloc.sh
+@@ -0,0 +1,131 @@
++#!/bin/sh
++
++cd `dirname $0`
++
++# note:
++# 1. if gcc supports c++11 (4.8+), remove "-Dconstexpr= -Doverride="
++# 2. configure and make jemalloc, then put the result "lib/libjemalloc.a" and "lib/libjemalloc_pic.a" in this path
++
++if [ "$JAVA_HOME" = "" ]; then JAVA_HOME=/usr/java/default; fi
++
++CORE_FILES="\
++db/builder.cc \
++db/c.cc \
++db/db_impl.cc \
++db/db_iter.cc \
++db/dbformat.cc \
++db/dumpfile.cc \
++db/filename.cc \
++db/log_reader.cc \
++db/log_writer.cc \
++db/memtable.cc \
++db/repair.cc \
++db/table_cache.cc \
++db/version_edit.cc \
++db/version_set.cc \
++db/write_batch.cc \
++table/block.cc \
++table/block_builder.cc \
++table/filter_block.cc \
++table/format.cc \
++table/iterator.cc \
++table/merger.cc \
++table/table.cc \
++table/table_builder.cc \
++table/two_level_iterator.cc \
++util/arena.cc \
++util/bloom.cc \
++util/cache.cc \
++util/coding.cc \
++util/comparator.cc \
++util/crc32c.cc \
++util/env.cc \
++util/env_posix.cc \
++util/filter_policy.cc \
++util/hash.cc \
++util/histogram.cc \
++util/jni.cc \
++util/logging.cc \
++util/options.cc \
++util/status.cc \
++port/port_posix.cc \
++crc32c/crc32c_portable.cc \
++snappy/snappy.cc \
++snappy/snappy-sinksource.cc \
++snappy/snappy-stubs-internal.cc \
++"
++
++TEST_FILES="\
++util/testutil.cc \
++util/testharness.cc \
++"
++
++OBJ_FILES="\
++builder.o \
++c.o \
++db_impl.o \
++db_iter.o \
++dbformat.o \
++dumpfile.o \
++filename.o \
++log_reader.o \
++log_writer.o \
++memtable.o \
++repair.o \
++table_cache.o \
++version_edit.o \
++version_set.o \
++write_batch.o \
++block.o \
++block_builder.o \
++filter_block.o \
++format.o \
++iterator.o \
++merger.o \
++table.o \
++table_builder.o \
++two_level_iterator.o \
++arena.o \
++bloom.o \
++cache.o \
++coding.o \
++comparator.o \
++crc32c.o \
++env.o \
++env_posix.o \
++filter_policy.o \
++hash.o \
++histogram.o \
++jni.o \
++logging.o \
++options.o \
++status.o \
++port_posix.o \
++crc32c_.o \
++crc32c_portable.o \
++crc32c_sse42.o \
++snappy.o \
++snappy-sinksource.o \
++snappy-stubs-internal.o \
++testutil.o \
++testharness.o \
++"
++
++COMPILE="g++ -std=c++0x -DOS_LINUX=1 -DLEVELDB_PLATFORM_POSIX=1 -DHAVE_CRC32C=1 -DHAVE_SNAPPY=1 -DHAVE_BUILTIN_EXPECT=1 -DHAVE_BYTESWAP_H=1 -DHAVE_BUILTIN_CTZ=1 -DENABLE_JNI -DNDEBUG -Dconstexpr= -Doverride= -I. -Iinclude -Isnappy -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -m64 -O3 -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -fPIC -pipe -pthread -ldl"
++
++$COMPILE -c          -o crc32c_.o      crc32c/crc32c.cc
++$COMPILE -c -msse4.2 -o crc32c_sse42.o crc32c/crc32c_sse42.cc
++
++echo building libleveldbjni64.so ...
++$COMPILE -DLEVELDB_SHARED_LIBRARY=1 -DLEVELDB_COMPILE_LIBRARY=1 -shared -fvisibility=hidden -Wl,-soname -Wl,libleveldbjni64.so -o libleveldbjni64.so $CORE_FILES crc32c/crc32c.cc crc32c_sse42.o libjemalloc_pic.a
++
++echo building libleveldb.a ...
++$COMPILE -c $CORE_FILES $TEST_FILES
++ar -rs libleveldb.a $OBJ_FILES
++rm -f *.o 2> /dev/null
++
++echo building db-tools ...
++$COMPILE      -o leveldbutil db/leveldbutil.cc libleveldb.a libjemalloc.a
++$COMPILE -lrt -o db_bench    db/db_bench.cc    libleveldb.a libjemalloc.a
++$COMPILE -lrt -o db_test     db/db_test.cc     libleveldb.a libjemalloc.a
++$COMPILE      -o env_test    util/env_test.cc  libleveldb.a libjemalloc.a
+diff --git a/make_mac.sh b/make_mac.sh
+new file mode 100644
+index 0000000..ae09186
+--- /dev/null
++++ b/make_mac.sh
+@@ -0,0 +1,127 @@
++#!/bin/sh
++
++cd `dirname $0`
++
++if [ "$JAVA_INCLUDE" = "" ]; then JAVA_INCLUDE=/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers; fi
++
++CORE_FILES="\
++db/builder.cc \
++db/c.cc \
++db/db_impl.cc \
++db/db_iter.cc \
++db/dbformat.cc \
++db/dumpfile.cc \
++db/filename.cc \
++db/log_reader.cc \
++db/log_writer.cc \
++db/memtable.cc \
++db/repair.cc \
++db/table_cache.cc \
++db/version_edit.cc \
++db/version_set.cc \
++db/write_batch.cc \
++table/block.cc \
++table/block_builder.cc \
++table/filter_block.cc \
++table/format.cc \
++table/iterator.cc \
++table/merger.cc \
++table/table.cc \
++table/table_builder.cc \
++table/two_level_iterator.cc \
++util/arena.cc \
++util/bloom.cc \
++util/cache.cc \
++util/coding.cc \
++util/comparator.cc \
++util/crc32c.cc \
++util/env.cc \
++util/env_posix.cc \
++util/filter_policy.cc \
++util/hash.cc \
++util/histogram.cc \
++util/jni.cc \
++util/logging.cc \
++util/options.cc \
++util/status.cc \
++port/port_posix.cc \
++crc32c/crc32c_portable.cc \
++snappy/snappy.cc \
++snappy/snappy-sinksource.cc \
++snappy/snappy-stubs-internal.cc \
++"
++
++TEST_FILES="\
++util/testutil.cc \
++util/testharness.cc \
++"
++
++OBJ_FILES="\
++builder.o \
++c.o \
++db_impl.o \
++db_iter.o \
++dbformat.o \
++dumpfile.o \
++filename.o \
++log_reader.o \
++log_writer.o \
++memtable.o \
++repair.o \
++table_cache.o \
++version_edit.o \
++version_set.o \
++write_batch.o \
++block.o \
++block_builder.o \
++filter_block.o \
++format.o \
++iterator.o \
++merger.o \
++table.o \
++table_builder.o \
++two_level_iterator.o \
++arena.o \
++bloom.o \
++cache.o \
++coding.o \
++comparator.o \
++crc32c.o \
++env.o \
++env_posix.o \
++filter_policy.o \
++hash.o \
++histogram.o \
++jni.o \
++logging.o \
++options.o \
++status.o \
++port_posix.o \
++crc32c_.o \
++crc32c_portable.o \
++crc32c_sse42.o \
++snappy.o \
++snappy-sinksource.o \
++snappy-stubs-internal.o \
++testutil.o \
++testharness.o \
++"
++
++COMPILE="g++ -std=c++0x -mmacosx-version-min=10.9 -DOS_LINUX=1 -DLEVELDB_PLATFORM_POSIX=1 -DHAVE_CRC32C=1 -DHAVE_SNAPPY=1 -DHAVE_BUILTIN_EXPECT=1 -DHAVE_BYTESWAP_H=1 -DHAVE_BUILTIN_CTZ=1 -DENABLE_JNI -DNDEBUG -I. -Iinclude -Isnappy -I${JAVA_INCLUDE} -m64 -O3 -ffast-math -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -fPIC -pipe -pthread"
++
++$COMPILE -c          -o crc32c_.o      crc32c/crc32c.cc
++$COMPILE -c -msse4.2 -o crc32c_sse42.o crc32c/crc32c_sse42.cc
++
++echo building libleveldbjni64.dylib ...
++$COMPILE -DLEVELDB_SHARED_LIBRARY=1 -DLEVELDB_COMPILE_LIBRARY=1 -shared -fvisibility=hidden -dynamiclib -o libleveldbjni64.dylib $CORE_FILES crc32c/crc32c.cc crc32c_sse42.o
 +
 +echo building libleveldb.a ...
 +$COMPILE -c $CORE_FILES $TEST_FILES
@@ -8630,10 +9117,10 @@ index 0000000..4568db8
 +#endif  // THIRD_PARTY_SNAPPY_SNAPPY_H__
 diff --git a/util/env_windows.cc b/util/env_windows.cc
 new file mode 100644
-index 0000000..0d38d4a
+index 0000000..b296991
 --- /dev/null
 +++ b/util/env_windows.cc
-@@ -0,0 +1,446 @@
+@@ -0,0 +1,457 @@
 +// Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file. See the AUTHORS file for names of contributors.
@@ -8643,7 +9130,7 @@ index 0000000..0d38d4a
 +#undef _WIN32_WINNT
 +#define _WIN32_WINNT 0x500
 +#include <windows.h>
-+#include <shellapi.h>
++// #include <shellapi.h>
 +#include <stdio.h>
 +#undef DeleteFile
 +#undef min
@@ -8871,7 +9358,7 @@ index 0000000..0d38d4a
 +	virtual bool FileExists(const std::string& fname) {
 +		WCHAR wbuf[MAX_PATH];
 +		DWORD attr = GetFileAttributesW(Utf8_Wchar(fname, wbuf));
-+		return attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY);
++		return attr != INVALID_FILE_ATTRIBUTES; // && !(attr & FILE_ATTRIBUTE_DIRECTORY);
 +	}
 +
 +	// Store in *result the names of the children of the specified directory.
@@ -8887,8 +9374,8 @@ index 0000000..0d38d4a
 +		if(h == INVALID_HANDLE_VALUE) return Status::IOError(dir);
 +		char buf[MAX_PATH];
 +		do {
-+			if(!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-+				result->push_back(Wchar_Utf8(fd.cFileName, buf));
++			// if(!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
++			result->push_back(Wchar_Utf8(fd.cFileName, buf));
 +		}
 +		while(FindNextFileW(h, &fd));
 +		FindClose(h);
@@ -8905,18 +9392,26 @@ index 0000000..0d38d4a
 +	// Create the specified directory.
 +	virtual Status CreateDir(const std::string& dirname) {
 +		WCHAR wbuf[MAX_PATH];
-+		return CreateDirectoryW(Utf8_Wchar(dirname, wbuf), 0) ? Status::OK() : Status::IOError(dirname);
++		Utf8_Wchar(dirname, wbuf);
++		BOOL r;
++		for(int i = 0; i < 100; ++i) {
++			r = CreateDirectoryW(wbuf, 0);
++			if(r || GetLastError() != ERROR_ACCESS_DENIED) break;
++			Sleep(10); // CreateDirectory maybe failed by ERROR_ACCESS_DENIED, we have to try again
++		}
++		return r ? Status::OK() : Status::IOError(dirname);
 +	}
 +
 +	// Delete the specified directory.
 +	virtual Status DeleteDir(const std::string& dirname) {
 +		WCHAR wbuf[MAX_PATH];
-+		SHFILEOPSTRUCTW fileop = {0};
-+		fileop.wFunc = FO_DELETE;
-+		fileop.pFrom = Utf8_Wchar(dirname, wbuf);
-+		fileop.fFlags = 0x14; // FOF_SILENT | FOF_NOCONFIRMATION
-+		int nResult = SHFileOperationW(&fileop);
-+		return !nResult && !fileop.fAnyOperationsAborted ? Status::OK() : Status::IOError(dirname);
++		return RemoveDirectoryW(Utf8_Wchar(dirname, wbuf)) ? Status::OK() : Status::IOError(dirname);
++		// SHFILEOPSTRUCTW fileop = {0};
++		// fileop.wFunc = FO_DELETE;
++		// fileop.pFrom = Utf8_Wchar(dirname, wbuf);
++		// fileop.fFlags = 0x14; // FOF_SILENT | FOF_NOCONFIRMATION
++		// int nResult = SHFileOperationW(&fileop);
++		// return !nResult && !fileop.fAnyOperationsAborted ? Status::OK() : Status::IOError(dirname);
 +	}
 +
 +	// Store the size of fname in *file_size.
@@ -8998,6 +9493,9 @@ index 0000000..0d38d4a
 +	virtual Status GetTestDirectory(std::string* path) {
 +		WCHAR tempPath[MAX_PATH];
 +		GetTempPathW(MAX_PATH, tempPath);
++		size_t len = wcslen(tempPath);
++		if(len > 0 && tempPath[len - 1] == L'\\')
++			tempPath[len - 1] = 0;
 +		char buf[MAX_PATH];
 +		*path = Wchar_Utf8(tempPath, buf);
 +		return Status::OK();
@@ -9082,10 +9580,10 @@ index 0000000..0d38d4a
 +#endif
 diff --git a/util/jni.cc b/util/jni.cc
 new file mode 100644
-index 0000000..f76585e
+index 0000000..fae1209
 --- /dev/null
 +++ b/util/jni.cc
-@@ -0,0 +1,537 @@
+@@ -0,0 +1,551 @@
 +// Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file. See the AUTHORS file for names of contributors.
@@ -9114,6 +9612,7 @@ index 0000000..f76585e
 +#include "db/db_impl.h"
 +#include "db/filename.h"
 +#include "db/version_set.h"
++#include "db/write_batch_internal.h"
 +#include "table/format.h"
 +#include "util/coding.h"
 +
@@ -9171,8 +9670,8 @@ index 0000000..f76585e
 +	jenv->ReleaseStringUTFChars(path, pathptr);
 +	Options opt;
 +	opt.create_if_missing = true;
-+	opt.write_buffer_size = (write_bufsize > WRITE_BUFSIZE_MIN ? write_bufsize : WRITE_BUFSIZE_MIN);
-+	opt.block_cache = NewLRUCache(cache_size > CACHE_SIZE_MIN ? cache_size : CACHE_SIZE_MIN);
++	if(write_bufsize > 0) opt.write_buffer_size = (write_bufsize > WRITE_BUFSIZE_MIN ? write_bufsize : WRITE_BUFSIZE_MIN);
++	if(cache_size > 0) opt.block_cache = NewLRUCache(cache_size > CACHE_SIZE_MIN ? cache_size : CACHE_SIZE_MIN);
 +	opt.compression = (use_snappy ? kSnappyCompression : kNoCompression);
 +	opt.filter_policy = (g_fp ? g_fp : (g_fp = NewBloomFilterPolicy(BLOOM_FILTER_BITS)));
 +	g_ro_nocached.fill_cache = false;
@@ -9193,9 +9692,9 @@ index 0000000..f76585e
 +	jenv->ReleaseStringUTFChars(path, pathptr);
 +	Options opt;
 +	opt.create_if_missing = true;
-+	opt.write_buffer_size = (write_bufsize > WRITE_BUFSIZE_MIN ? write_bufsize : WRITE_BUFSIZE_MIN);
-+	opt.block_cache = NewLRUCache(cache_size > CACHE_SIZE_MIN ? cache_size : CACHE_SIZE_MIN);
-+	opt.max_file_size = (file_size > FILE_SIZE_MIN ? file_size : FILE_SIZE_MIN);
++	if(write_bufsize > 0) opt.write_buffer_size = (write_bufsize > WRITE_BUFSIZE_MIN ? write_bufsize : WRITE_BUFSIZE_MIN);
++	if(cache_size > 0) opt.block_cache = NewLRUCache(cache_size > CACHE_SIZE_MIN ? cache_size : CACHE_SIZE_MIN);
++	if(file_size > 0) opt.max_file_size = (file_size > FILE_SIZE_MIN ? file_size : FILE_SIZE_MIN);
 +	opt.compression = (use_snappy ? kSnappyCompression : kNoCompression);
 +	opt.filter_policy = (g_fp ? g_fp : (g_fp = NewBloomFilterPolicy(BLOOM_FILTER_BITS)));
 +	g_ro_nocached.fill_cache = false;
@@ -9216,10 +9715,10 @@ index 0000000..f76585e
 +	jenv->ReleaseStringUTFChars(path, pathptr);
 +	Options opt;
 +	opt.create_if_missing = true;
-+	opt.write_buffer_size = (write_bufsize > WRITE_BUFSIZE_MIN ? write_bufsize : WRITE_BUFSIZE_MIN);
-+	opt.max_open_files = (max_open_files > OPEN_FILES_MIN ? max_open_files : OPEN_FILES_MIN);
-+	opt.block_cache = NewLRUCache(cache_size > CACHE_SIZE_MIN ? cache_size : CACHE_SIZE_MIN);
-+	opt.max_file_size = (file_size > FILE_SIZE_MIN ? file_size : FILE_SIZE_MIN);
++	if(write_bufsize > 0) opt.write_buffer_size = (write_bufsize > WRITE_BUFSIZE_MIN ? write_bufsize : WRITE_BUFSIZE_MIN);
++	if(max_open_files > 0) opt.max_open_files = (max_open_files > OPEN_FILES_MIN ? max_open_files : OPEN_FILES_MIN);
++	if(cache_size > 0) opt.block_cache = NewLRUCache(cache_size > CACHE_SIZE_MIN ? cache_size : CACHE_SIZE_MIN);
++	if(file_size > 0) opt.max_file_size = (file_size > FILE_SIZE_MIN ? file_size : FILE_SIZE_MIN);
 +	opt.compression = (use_snappy ? kSnappyCompression : kNoCompression);
 +	opt.reuse_logs = reuse_logs;
 +	opt.filter_policy = (g_fp ? g_fp : (g_fp = NewBloomFilterPolicy(BLOOM_FILTER_BITS)));
@@ -9343,6 +9842,19 @@ index 0000000..f76585e
 +			}
 +		}
 +	}
++	return db->Write(g_wo_sync, &wb).ok() ? 0 : 5;
++}
++
++// public static native int leveldb_write_direct(long handle, byte[] buf, int size); // return 0 for ok
++extern "C" JNIEXPORT jint JNICALL DEF_JAVA(leveldb_1write_1direct)
++	(JNIEnv* jenv, jclass jcls, jlong handle, jbyteArray buf, jint size)
++{
++	DB* db = (DB*)handle;
++	if(!db || !buf) return 1;
++	if(size < 4 || jenv->GetArrayLength(buf) < size) return 2;
++	WriteBatch wb;
++	char* pbuf = WriteBatchInternal::Resize(&wb, 8 + size);
++	jenv->GetByteArrayRegion(buf, 0, size, (jbyte*)pbuf + 8);
 +	return db->Write(g_wo_sync, &wb).ok() ? 0 : 5;
 +}
 +
