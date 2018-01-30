@@ -39,38 +39,40 @@ public final class StorageLevelDB implements Storage
 
 	private static final class Slice
 	{
-		final byte[] buf;
-		final int	 pos, len;
+		private final byte[] _buf;
+		private final int	 _pos;
+		private final int	 _len;
 
-		Slice(byte[] b, int p, int n)
+		Slice(byte[] buf, int pos, int len)
 		{
-			buf = b;
-			pos = p;
-			len = n;
+			_buf = buf;
+			_pos = pos;
+			_len = len;
 		}
 
 		byte[] getBytes()
 		{
-			byte[] b = new byte[len];
-			System.arraycopy(buf, pos, b, 0, len);
+			int n = _len;
+			byte[] b = new byte[n];
+			System.arraycopy(_buf, _pos, b, 0, n);
 			return b;
 		}
 
 		@Override
 		public int hashCode()
 		{
-			byte[] b = buf;
-			int hash = len;
+			byte[] b = _buf;
+			int hash = _len;
 			if(hash <= 32)
 			{
-				for(int i = pos, n = i + hash; i < n; ++i)
+				for(int i = _pos, n = i + hash; i < n; ++i)
 					hash = hash * 31 + b[i];
 			}
 			else
 			{
-				for(int i = pos, n = i + 16; i < n; ++i)
+				for(int i = _pos, n = i + 16; i < n; ++i)
 					hash = hash * 31 + b[i];
-				for(int n = pos + len, i = n - 16; i < n; ++i)
+				for(int n = _pos + _len, i = n - 16; i < n; ++i)
 					hash = hash * 31 + b[i];
 			}
 			return hash;
@@ -82,21 +84,21 @@ public final class StorageLevelDB implements Storage
 			if(o instanceof Slice)
 			{
 				Slice s = (Slice)o;
-				int n = len;
-				if(n != s.len) return false;
-				byte[] b = buf;
-				for(int p = pos, q = s.pos, e = p + n; p < e; ++p, ++q)
+				int n = _len;
+				if(n != s._len) return false;
+				byte[] b = _buf;
+				for(int p = _pos, q = s._pos, e = p + n; p < e; ++p, ++q)
 					if(b[p] != b[q]) return false;
 				return true;
 			}
 			else if(o instanceof Octets)
 			{
 				Octets oct = (Octets)o;
-				int n = len;
+				int n = _len;
 				if(n != oct.size()) return false;
-				byte[] b0 = buf;
+				byte[] b0 = _buf;
 				byte[] b1 = oct.array();
-				for(int i = 0, p = pos; i < n; ++i, ++p)
+				for(int i = 0, p = _pos; i < n; ++i, ++p)
 					if(b0[p] != b1[i]) return false;
 				return true;
 			}
@@ -195,9 +197,9 @@ public final class StorageLevelDB implements Storage
 		return size;
 	}
 
-	private int writeValue(Bean<?> bean)
+	private int writeValue(Bean<?> bean) // size(VarUInt) + data
 	{
-		int maxSize = 1 + bean.maxSize();
+		int maxSize = 1 + bean.maxSize(); // 1 for format
 		int initLenLen = OctetsStream.marshalUIntLen(maxSize > 1 ? maxSize : Integer.MAX_VALUE);
 
 		OctetsStreamEx os = _writeBuf;
@@ -206,9 +208,8 @@ public final class StorageLevelDB implements Storage
 		os.resize(vpos); // 跳过估计大小的长度
 		os.marshalZero(); // format
 		bean.marshal(os);
-		int size = os.size();
-		int len = size - pos - initLenLen; // 实际的bean序列化大小
-		int lenLen = OctetsStream.marshalUIntLen(maxSize); // 实际大小的长度
+		int len = os.size() - vpos; // 实际的bean序列化大小
+		int lenLen = OctetsStream.marshalUIntLen(len); // 实际大小的长度
 		byte[] buf;
 		if(lenLen <= initLenLen) // 正常情况不会超
 		{
@@ -217,9 +218,9 @@ public final class StorageLevelDB implements Storage
 		}
 		else // 说明序列化大小已经超了maxSize,不应该出现这种情况,但为了确保继续运行下去,只能挪点空间了
 		{
-			os.resize(size + lenLen - initLenLen);
-			buf = os.array();
 			vpos = pos + lenLen;
+			os.resize(vpos + len);
+			buf = os.array();
 			System.arraycopy(buf, pos + initLenLen, buf, vpos, len);
 		}
 
@@ -283,13 +284,13 @@ public final class StorageLevelDB implements Storage
 		private OctetsStream marshalKey(long k)
 		{
 			int tableIdLen = _tableIdLen;
-			OctetsStream key = OctetsStream.createSpace(tableIdLen + OctetsStream.marshalLen(k));
+			OctetsStream keyOs = OctetsStream.createSpace(tableIdLen + OctetsStream.marshalLen(k));
 			if(tableIdLen == 1)
-				key.marshal1((byte)_tableId);
+				keyOs.marshal1((byte)_tableId);
 			else
-				key.marshalUInt(_tableId);
-			key.marshal(k);
-			return key;
+				keyOs.marshalUInt(_tableId);
+			keyOs.marshal(k);
+			return keyOs;
 		}
 
 		@Override
@@ -377,7 +378,7 @@ public final class StorageLevelDB implements Storage
 			}
 			catch(MarshalException e)
 			{
-				Log.error("unmarshal idcounter failed", e);
+				Log.error("unmarshal idCounter failed", e);
 				return 0;
 			}
 		}
@@ -687,13 +688,13 @@ public final class StorageLevelDB implements Storage
 		protected OctetsStream marshalKey(Octets k)
 		{
 			int tableIdLen = _tableIdLen;
-			OctetsStream key = OctetsStream.createSpace(tableIdLen + k.size());
+			OctetsStream keyOs = OctetsStream.createSpace(tableIdLen + k.size());
 			if(tableIdLen == 1)
-				key.marshal1((byte)_tableId);
+				keyOs.marshal1((byte)_tableId);
 			else
-				key.marshalUInt(_tableId);
-			key.append(k);
-			return key;
+				keyOs.marshalUInt(_tableId);
+			keyOs.append(k);
+			return keyOs;
 		}
 
 		@Override
@@ -788,23 +789,23 @@ public final class StorageLevelDB implements Storage
 		{
 			int tableIdLen = _tableIdLen;
 			int bn = OctetsStream.marshalStrLen(k);
-			OctetsStream key = OctetsStream.createSpace(tableIdLen + bn);
+			OctetsStream keyOs = OctetsStream.createSpace(tableIdLen + bn);
 			if(tableIdLen == 1)
-				key.marshal1((byte)_tableId);
+				keyOs.marshal1((byte)_tableId);
 			else
-				key.marshalUInt(_tableId);
+				keyOs.marshalUInt(_tableId);
 			int cn = k.length();
 			if(bn == cn)
 			{
 				for(int i = 0; i < cn; ++i)
-					key.marshal1((byte)k.charAt(i));
+					keyOs.marshal1((byte)k.charAt(i));
 			}
 			else
 			{
 				for(int i = 0; i < cn; ++i)
-					key.marshalUTF8(k.charAt(i));
+					keyOs.marshalUTF8(k.charAt(i));
 			}
-			return key;
+			return keyOs;
 		}
 
 		@Override
@@ -912,17 +913,18 @@ public final class StorageLevelDB implements Storage
 			_stubK = (Bean<?>)stubK;
 		}
 
-		@SuppressWarnings("unchecked")
 		@Override
 		protected OctetsStream marshalKey(K k)
 		{
+			@SuppressWarnings("unchecked")
+			Bean<V> kb = (Bean<V>)k;
 			int tableIdLen = _tableIdLen;
-			OctetsStream key = new OctetsStream(tableIdLen + ((Bean<V>)k).initSize());
+			OctetsStream keyOs = new OctetsStream(tableIdLen + kb.initSize());
 			if(tableIdLen == 1)
-				key.marshal1((byte)_tableId);
+				keyOs.marshal1((byte)_tableId);
 			else
-				key.marshalUInt(_tableId);
-			return ((Bean<V>)k).marshal(key);
+				keyOs.marshalUInt(_tableId);
+			return kb.marshal(keyOs);
 		}
 
 		@Override

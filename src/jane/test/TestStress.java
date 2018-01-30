@@ -95,6 +95,12 @@ public final class TestStress extends Procedure
 		}
 
 		@Override
+		public int maxSize()
+		{
+			return 8;
+		}
+
+		@Override
 		public OctetsStream marshal(OctetsStream os)
 		{
 			if(value1 != 0) os.marshal1((byte)4).marshal(value1);
