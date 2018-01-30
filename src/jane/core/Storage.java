@@ -159,14 +159,14 @@ public interface Storage extends Closeable
 		 * 存储记录的key和value
 		 * <p>
 		 * 已存在key的记录会被覆盖<br>
-		 * 目前的引擎实现不会出现并发的put和remove
+		 * 目前的引擎实现不会出现并发的put,remove和setCounter
 		 */
 		void put(K k, V v);
 
 		/**
 		 * 根据记录的key删除记录
 		 * <p>
-		 * 目前的引擎实现不会出现并发的put和remove
+		 * 目前的引擎实现不会出现并发的put,remove和setCounter
 		 */
 		void remove(K k);
 
@@ -217,14 +217,14 @@ public interface Storage extends Closeable
 		 * 存储记录的key和value
 		 * <p>
 		 * 已存在key的记录会被覆盖<br>
-		 * 目前的引擎实现不会出现并发的put和remove
+		 * 目前的引擎实现不会出现并发的put,remove和setCounter
 		 */
 		void put(long k, V v);
 
 		/**
 		 * 根据记录的key删除记录
 		 * <p>
-		 * 目前的引擎实现不会出现并发的put和remove
+		 * 目前的引擎实现不会出现并发的put,remove和setCounter
 		 */
 		void remove(long k);
 
@@ -238,7 +238,7 @@ public interface Storage extends Closeable
 		/**
 		 * 设置计数器当前值,用于保存自增长ID
 		 * <p>
-		 * 目前的引擎实现不会出现并发的getCounter和setCounter
+		 * 目前的引擎实现不会出现并发的put,remove和setCounter
 		 */
 		void setIdCounter(long v);
 

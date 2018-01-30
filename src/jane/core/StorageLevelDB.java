@@ -24,7 +24,7 @@ public final class StorageLevelDB implements Storage
 {
 	private static final StorageLevelDB	_instance	   = new StorageLevelDB();
 	private static final Octets			_deleted	   = new Octets();								// 表示已删除的值
-	private final Slice					_deletedSlice  = new Slice(0, 0);							// 表示已删除的slice
+	private final Slice					_deletedSlice  = new Slice(null, 0, 0);						// 表示已删除的slice
 	private int							_writeCount;												// 提交中的写缓冲区记录数量
 	private final OctetsStreamEx		_writeBuf	   = new OctetsStreamEx(0x10000);				// 提交中的写缓冲区
 	private final Map<Slice, Slice>		_writeMap	   = Util.newConcurrentHashMap();				// 提交中的写记录
@@ -37,32 +37,41 @@ public final class StorageLevelDB implements Storage
 	private boolean						_useSnappy	   = true;										// 是否使用LevelDB内置的snappy压缩
 	private boolean						_reuseLogs	   = true;										// 是否使用LevelDB内置的reuse_logs功能
 
-	private final class Slice
+	private static final class Slice
 	{
-		final int pos, len;
+		final byte[] buf;
+		final int	 pos, len;
 
-		Slice(int p, int n)
+		Slice(byte[] b, int p, int n)
 		{
+			buf = b;
 			pos = p;
 			len = n;
+		}
+
+		byte[] getBytes()
+		{
+			byte[] b = new byte[len];
+			System.arraycopy(buf, pos, b, 0, len);
+			return b;
 		}
 
 		@Override
 		public int hashCode()
 		{
-			byte[] buf = _writeBuf.array();
+			byte[] b = buf;
 			int hash = len;
 			if(hash <= 32)
 			{
 				for(int i = pos, n = i + hash; i < n; ++i)
-					hash = hash * 31 + buf[i];
+					hash = hash * 31 + b[i];
 			}
 			else
 			{
 				for(int i = pos, n = i + 16; i < n; ++i)
-					hash = hash * 31 + buf[i];
+					hash = hash * 31 + b[i];
 				for(int n = pos + len, i = n - 16; i < n; ++i)
-					hash = hash * 31 + buf[i];
+					hash = hash * 31 + b[i];
 			}
 			return hash;
 		}
@@ -75,9 +84,9 @@ public final class StorageLevelDB implements Storage
 				Slice s = (Slice)o;
 				int n = len;
 				if(n != s.len) return false;
-				byte[] buf = _writeBuf.array();
+				byte[] b = buf;
 				for(int p = pos, q = s.pos, e = p + n; p < e; ++p, ++q)
-					if(buf[p] != buf[q]) return false;
+					if(b[p] != b[q]) return false;
 				return true;
 			}
 			else if(o instanceof Octets)
@@ -85,10 +94,10 @@ public final class StorageLevelDB implements Storage
 				Octets oct = (Octets)o;
 				int n = len;
 				if(n != oct.size()) return false;
-				byte[] buf0 = _writeBuf.array();
-				byte[] buf1 = oct.array();
+				byte[] b0 = buf;
+				byte[] b1 = oct.array();
 				for(int i = 0, p = pos; i < n; ++i, ++p)
-					if(buf0[p] != buf1[i]) return false;
+					if(b0[p] != b1[i]) return false;
 				return true;
 			}
 			return false;
@@ -174,7 +183,7 @@ public final class StorageLevelDB implements Storage
 		return pos;
 	}
 
-	int writeVarUInt(int v)
+	private int writeVarUInt(int v)
 	{
 		OctetsStreamEx os = _writeBuf;
 		if(v < 0x80)
@@ -186,7 +195,7 @@ public final class StorageLevelDB implements Storage
 		return size;
 	}
 
-	int writeValue(Bean<?> bean)
+	private int writeValue(Bean<?> bean)
 	{
 		int maxSize = 1 + bean.maxSize();
 		int initLenLen = OctetsStream.marshalUIntLen(maxSize > 1 ? maxSize : Integer.MAX_VALUE);
@@ -335,7 +344,8 @@ public final class StorageLevelDB implements Storage
 				os.marshalUInt(_tableId);
 			os.marshal(k);
 			int vpos = writeValue(v);
-			_writeMap.put(new Slice(kpos, klen), new Slice(vpos, os.size() - vpos));
+			byte[] buf = os.array();
+			_writeMap.put(new Slice(buf, kpos, klen), new Slice(buf, vpos, os.size() - vpos));
 		}
 
 		@Override
@@ -353,7 +363,7 @@ public final class StorageLevelDB implements Storage
 			else
 				os.marshalUInt(_tableId);
 			os.marshal(k);
-			_writeMap.put(new Slice(kpos, klen), _deletedSlice);
+			_writeMap.put(new Slice(os.array(), kpos, klen), _deletedSlice);
 		}
 
 		@Override
@@ -388,7 +398,8 @@ public final class StorageLevelDB implements Storage
 			os.marshal1((byte)vlen);
 			int vpos = os.size();
 			os.marshal(v);
-			_writeMap.put(new Slice(kpos, klen), new Slice(vpos, vlen));
+			byte[] buf = os.array();
+			_writeMap.put(new Slice(buf, kpos, klen), new Slice(buf, vpos, vlen));
 		}
 
 		@Override
@@ -727,7 +738,8 @@ public final class StorageLevelDB implements Storage
 			os.resize(pos + ksize);
 			System.arraycopy(k.array(), 0, os.array(), pos, ksize);
 			int vpos = writeValue(v);
-			_writeMap.put(new Slice(kpos, klen), new Slice(vpos, os.size() - vpos));
+			byte[] buf = os.array();
+			_writeMap.put(new Slice(buf, kpos, klen), new Slice(buf, vpos, os.size() - vpos));
 		}
 
 		@Override
@@ -746,8 +758,9 @@ public final class StorageLevelDB implements Storage
 				os.marshalUInt(_tableId);
 			int pos = os.size();
 			os.resize(pos + ksize);
-			System.arraycopy(k.array(), 0, os.array(), pos, ksize);
-			_writeMap.put(new Slice(kpos, klen), _deletedSlice);
+			byte[] buf = os.array();
+			System.arraycopy(k.array(), 0, buf, pos, ksize);
+			_writeMap.put(new Slice(buf, kpos, klen), _deletedSlice);
 		}
 
 		@Override
@@ -844,7 +857,8 @@ public final class StorageLevelDB implements Storage
 					os.marshalUTF8(k.charAt(i));
 			}
 			int vpos = writeValue(v);
-			_writeMap.put(new Slice(kpos, klen), new Slice(vpos, os.size() - vpos));
+			byte[] buf = os.array();
+			_writeMap.put(new Slice(buf, kpos, klen), new Slice(buf, vpos, os.size() - vpos));
 		}
 
 		@Override
@@ -872,7 +886,7 @@ public final class StorageLevelDB implements Storage
 				for(int i = 0; i < cn; ++i)
 					os.marshalUTF8(k.charAt(i));
 			}
-			_writeMap.put(new Slice(kpos, klen), _deletedSlice);
+			_writeMap.put(new Slice(os.array(), kpos, klen), _deletedSlice);
 		}
 
 		@Override
@@ -945,7 +959,8 @@ public final class StorageLevelDB implements Storage
 			int kpos = writeValue((Bean<?>)k);
 			int klen = os.size() - kpos;
 			int vpos = writeValue(v);
-			_writeMap.put(new Slice(kpos, klen), new Slice(vpos, os.size() - vpos));
+			byte[] buf = os.array();
+			_writeMap.put(new Slice(buf, kpos, klen), new Slice(buf, vpos, os.size() - vpos));
 		}
 
 		@Override
@@ -956,7 +971,7 @@ public final class StorageLevelDB implements Storage
 			OctetsStreamEx os = _writeBuf;
 			os.marshalZero(); // leveldb::ValueType::kTypeDeletion
 			int kpos = writeValue((Bean<?>)k);
-			_writeMap.put(new Slice(kpos, os.size() - kpos), _deletedSlice);
+			_writeMap.put(new Slice(os.array(), kpos, os.size() - kpos), _deletedSlice);
 		}
 
 		@SuppressWarnings("unchecked")
@@ -1025,7 +1040,7 @@ public final class StorageLevelDB implements Storage
 				@SuppressWarnings("unlikely-arg-type")
 				Slice s = _writeMap.get(k); // Octets类型可以在Slice的key中匹配,兼容hashCode和equals方法
 				if(s == _deletedSlice) return null;
-				if(s != null) return _writeBuf.getBytes(s.pos, s.len);
+				if(s != null) return s.getBytes();
 			}
 			finally
 			{
@@ -1063,7 +1078,7 @@ public final class StorageLevelDB implements Storage
 			else
 				pos = writeVarUInt2(buf, pos, vlen);
 			System.arraycopy(value.array(), 0, buf, pos, vlen);
-			_writeMap.put(new Slice(kpos, klen), new Slice(pos, vlen));
+			_writeMap.put(new Slice(buf, kpos, klen), new Slice(buf, pos, vlen));
 		}
 		else
 		{
@@ -1075,7 +1090,7 @@ public final class StorageLevelDB implements Storage
 			else
 				pos = writeVarUInt2(buf, pos, klen);
 			System.arraycopy(key.array(), 0, buf, pos, klen);
-			_writeMap.put(new Slice(pos, klen), _deletedSlice);
+			_writeMap.put(new Slice(buf, pos, klen), _deletedSlice);
 		}
 	}
 
@@ -1211,9 +1226,14 @@ public final class StorageLevelDB implements Storage
 		return new TableLong<>(tableId, tableName, stubV);
 	}
 
-	public int getPutSize()
+	public int getPutCount()
 	{
 		return _writeMap.size();
+	}
+
+	public int getPutSize()
+	{
+		return _writeBuf.size();
 	}
 
 	@Override
@@ -1240,7 +1260,8 @@ public final class StorageLevelDB implements Storage
 	@Override
 	public synchronized void commit()
 	{
-		if(!_writeMap.isEmpty())
+		int bufSize = _writeBuf.size();
+		if(bufSize > 4)
 		{
 			if(_db == 0) throw new IllegalStateException("db closed");
 			byte[] buf = _writeBuf.array();
@@ -1249,10 +1270,10 @@ public final class StorageLevelDB implements Storage
 			buf[1] = (byte)(count >> 8);
 			buf[2] = (byte)(count >> 16);
 			buf[3] = (byte)(count >> 24);
-			int r = leveldb_write_direct(_db, buf, _writeBuf.size());
+			int r = leveldb_write_direct(_db, buf, bufSize);
 			if(r != 0)
 			{
-				Log.error("StorageLevelDB.commit: leveldb_write failed({})", r);
+				Log.error("StorageLevelDB.commit: leveldb_write_direct failed({})", r);
 				return;
 			}
 		}
@@ -1268,7 +1289,7 @@ public final class StorageLevelDB implements Storage
 			leveldb_close(_db);
 			_db = 0;
 		}
-		_writeMap.clear();
+		putBegin(); // only for clearing the write buffer
 	}
 
 	@Override

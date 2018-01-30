@@ -149,7 +149,13 @@ public final class DBManager
 									wl.unlock();
 								}
 								t1 = System.currentTimeMillis() - t1;
-								Log.info("db-commit procedure continued, committing...");
+								if(storage instanceof StorageLevelDB)
+								{
+									StorageLevelDB stoLDB = (StorageLevelDB)storage;
+									Log.info("db-commit procedure continued, committing({}:{})...", stoLDB.getPutCount(), stoLDB.getPutSize());
+								}
+								else
+									Log.info("db-commit procedure continued, committing...");
 							}
 							else
 								Log.info("db-commit not found modified record");

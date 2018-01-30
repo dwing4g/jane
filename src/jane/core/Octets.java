@@ -518,7 +518,8 @@ public class Octets implements Cloneable, Comparable<Octets>
 	public boolean equals(Object o)
 	{
 		if(this == o) return true;
-		if(!(o instanceof Octets)) return false;
+		if(!(o instanceof Octets))
+			return o != null && o.equals(this); // for StorageLevelDB.Slice
 		Octets oct = (Octets)o;
 		int n = _count;
 		if(n != oct._count) return false;
