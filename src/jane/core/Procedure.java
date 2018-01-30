@@ -744,8 +744,9 @@ public abstract class Procedure implements Runnable
 		}
 		if(DBManager.instance().isExiting())
 		{
-			Thread.sleep(Long.MAX_VALUE); // 如果有退出信号则线程睡死等待终结
-			throw new IllegalStateException();
+			_running.set(0);
+			Log.info("procedure canceled: " + toString());
+			return false;
 		}
 		ProcThread pt = null;
 		SContext sctx = null;
@@ -783,7 +784,9 @@ public abstract class Procedure implements Runnable
 		{
 			try
 			{
-				if(e != Undo._instance)
+				if(e instanceof InterruptedException && DBManager.instance().isExiting())
+					Log.info("procedure canceled: " + toString());
+				else if(e != Undo._instance)
 					onException(e);
 			}
 			catch(Throwable ex)

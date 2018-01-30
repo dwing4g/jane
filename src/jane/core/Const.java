@@ -27,9 +27,7 @@ public final class Const
 	public static final int			httpBodyDefaultMaxSize;
 	public static final String		dbFilename;
 	public static final String		dbBackupPath;
-	public static final int			dbThreadCountMin;
-	public static final int			dbThreadCountMax;
-	public static final int			dbThreadKeepAlive;
+	public static final int			dbThreadCount;
 	public static final int			deadlockCheckInterval;
 	public static final int			maxSessionProcedure;
 	public static final int			maxBatchProceduer;
@@ -99,9 +97,7 @@ public final class Const
 		httpBodyDefaultMaxSize = getPropInt("maxHttpBodySize", 65536, 0);
 		dbFilename = getPropStr("dbFilename", "db/jane");
 		dbBackupPath = getPropStr("dbBackupPath", "db");
-		dbThreadCountMin = getPropInt("dbThreadCountMin", 0, 0);
-		dbThreadCountMax = Math.max(Math.max(1, dbThreadCountMin), getPropInt("dbThreadCountMax", Runtime.getRuntime().availableProcessors(), 0));
-		dbThreadKeepAlive = getPropInt("dbThreadKeepAlive", 60, 0);
+		dbThreadCount = getPropInt("dbThreadCount", 0, 0);
 		deadlockCheckInterval = getPropInt("deadlockCheckInterval", 10, 0);
 		maxSessionProcedure = getPropInt("maxSessionProceduer", 65536, 1);
 		maxBatchProceduer = getPropInt("maxBatchProceduer", 256, 1);

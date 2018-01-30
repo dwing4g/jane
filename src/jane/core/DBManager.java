@@ -9,9 +9,9 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
@@ -214,8 +214,8 @@ public final class DBManager
 	{
 		_hasCreated = true;
 		AtomicInteger counter = new AtomicInteger();
-		_procThreads = new ThreadPoolExecutor(Const.dbThreadCountMin, Const.dbThreadCountMax, Const.dbThreadKeepAlive,
-				TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(), r ->
+		_procThreads = (ThreadPoolExecutor)Executors.newFixedThreadPool(
+				Const.dbThreadCount > 0 ? Const.dbThreadCount : Runtime.getRuntime().availableProcessors(), r ->
 				{
 					Thread t = new ProcThread("ProcThread-" + counter.incrementAndGet(), r);
 					t.setDaemon(true);
@@ -606,7 +606,10 @@ public final class DBManager
 				}
 				catch(Throwable e)
 				{
-					Log.error("procedure(sid=" + sid + ") fatal exception:", e);
+					if(e instanceof RejectedExecutionException && _exiting)
+						Log.info("procedure queue canceled. sid={}, queueSize={}", sid, _q.size());
+					else
+						Log.error("procedure(sid=" + sid + ") fatal exception:", e);
 				}
 			}
 		});
