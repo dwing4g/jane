@@ -248,10 +248,8 @@ public final class TestStress extends Procedure
 		catch(Error e)
 		{
 			if(e == redoException())
-			{
 				redo = true;
-				throw e;
-			}
+			throw e;
 		}
 		finally
 		{

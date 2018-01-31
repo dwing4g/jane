@@ -536,25 +536,25 @@ namespace Jane.Bean
 		public override int GetHashCode()
 		{
 			int h = unchecked(2 * (int)0x9e3779b1);
-			h = h * 31 + 1 + (int)(this.v1 ? 0xcafebabe : 0xdeadbeef);
-			h = h * 31 + 1 + this.v2;
-			h = h * 31 + 1 + this.v3;
-			h = h * 31 + 1 + this.v4;
-			h = h * 31 + 1 + (int)this.v5;
-			h = h * 31 + 1 + (int)((BitConverter.DoubleToInt64Bits(this.v6) * 0x100000001L) >> 32);
-			h = h * 31 + 1 + (int)((BitConverter.DoubleToInt64Bits(this.v7) * 0x100000001L) >> 32);
-			h = h * 31 + 1 + this.v8.GetHashCode();
-			h = h * 31 + 1 + this.v9.GetHashCode();
-			h = h * 31 + 1 + this.v10.GetHashCode();
-			h = h * 31 + 1 + this.v11.GetHashCode();
-			h = h * 31 + 1 + this.v12.GetHashCode();
-			h = h * 31 + 1 + this.v13.GetHashCode();
-			h = h * 31 + 1 + this.v14.GetHashCode();
-			h = h * 31 + 1 + this.v15.GetHashCode();
-			h = h * 31 + 1 + this.v16.GetHashCode();
-			h = h * 31 + 1 + this.v17.GetHashCode();
-			h = h * 31 + 1 + this.v18.GetHashCode();
-			h = h * 31 + 1 + this.v19.GetHashCode();
+			h = h * 16777619 + 1 + (int)(this.v1 ? 0xcafebabe : 0xdeadbeef);
+			h = h * 16777619 + 1 + this.v2;
+			h = h * 16777619 + 1 + this.v3;
+			h = h * 16777619 + 1 + this.v4;
+			h = h * 16777619 + 1 + (int)this.v5;
+			h = h * 16777619 + 1 + (int)((BitConverter.DoubleToInt64Bits(this.v6) * 0x100000001L) >> 32);
+			h = h * 16777619 + 1 + (int)((BitConverter.DoubleToInt64Bits(this.v7) * 0x100000001L) >> 32);
+			h = h * 16777619 + 1 + this.v8.GetHashCode();
+			h = h * 16777619 + 1 + this.v9.GetHashCode();
+			h = h * 16777619 + 1 + this.v10.GetHashCode();
+			h = h * 16777619 + 1 + this.v11.GetHashCode();
+			h = h * 16777619 + 1 + this.v12.GetHashCode();
+			h = h * 16777619 + 1 + this.v13.GetHashCode();
+			h = h * 16777619 + 1 + this.v14.GetHashCode();
+			h = h * 16777619 + 1 + this.v15.GetHashCode();
+			h = h * 16777619 + 1 + this.v16.GetHashCode();
+			h = h * 16777619 + 1 + this.v17.GetHashCode();
+			h = h * 16777619 + 1 + this.v18.GetHashCode();
+			h = h * 16777619 + 1 + this.v19.GetHashCode();
 			return h;
 		}
 

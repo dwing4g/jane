@@ -1043,9 +1043,9 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 
 	@Override
 	public int hashCode() {
-		int h = 1;
+		int h = remaining();
 		for (int i = position(), n = limit(); i < n; i++) {
-			h = 31 * h + get(i);
+			h = h * 16777619 + get(i);
 		}
 		return h;
 	}

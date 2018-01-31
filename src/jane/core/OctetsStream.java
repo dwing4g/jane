@@ -87,7 +87,7 @@ public class OctetsStream extends Octets
 	}
 
 	@Override
-    public int position()
+	public int position()
 	{
 		return _pos;
 	}
@@ -98,13 +98,13 @@ public class OctetsStream extends Octets
 	}
 
 	@Override
-    public int remain()
+	public int remain()
 	{
 		return _count - _pos;
 	}
 
 	@Override
-    public OctetsStream wraps(byte[] data, int size)
+	public OctetsStream wraps(byte[] data, int size)
 	{
 		_buffer = data;
 		if(size > data.length) _count = data.length;
@@ -114,7 +114,7 @@ public class OctetsStream extends Octets
 	}
 
 	@Override
-    public OctetsStream wraps(byte[] data)
+	public OctetsStream wraps(byte[] data)
 	{
 		if(data == null) throw new NullPointerException();
 		_buffer = data;

@@ -592,25 +592,25 @@ public final class TestType extends Bean<TestType>
 	public int hashCode()
 	{
 		int _h_ = (int)serialVersionUID;
-		_h_ = _h_ * 31 + 1 + (this.v1 ? 0xcafebabe : 0xdeadbeef);
-		_h_ = _h_ * 31 + 1 + this.v2;
-		_h_ = _h_ * 31 + 1 + this.v3;
-		_h_ = _h_ * 31 + 1 + this.v4;
-		_h_ = _h_ * 31 + 1 + (int)this.v5;
-		_h_ = _h_ * 31 + 1 + Float.floatToRawIntBits(this.v6);
-		_h_ = _h_ * 31 + 1 + (int)((Double.doubleToRawLongBits(this.v7) * 0x100000001L) >> 32);
-		_h_ = _h_ * 31 + 1 + this.v8.hashCode();
-		_h_ = _h_ * 31 + 1 + this.v9.hashCode();
-		_h_ = _h_ * 31 + 1 + this.v10.hashCode();
-		_h_ = _h_ * 31 + 1 + this.v11.hashCode();
-		_h_ = _h_ * 31 + 1 + this.v12.hashCode();
-		_h_ = _h_ * 31 + 1 + this.v13.hashCode();
-		_h_ = _h_ * 31 + 1 + this.v14.hashCode();
-		_h_ = _h_ * 31 + 1 + this.v15.hashCode();
-		_h_ = _h_ * 31 + 1 + this.v16.hashCode();
-		_h_ = _h_ * 31 + 1 + this.v17.hashCode();
-		_h_ = _h_ * 31 + 1 + this.v18.hashCode();
-		_h_ = _h_ * 31 + 1 + this.v19.hashCode();
+		_h_ = _h_ * 16777619 + 1 + (this.v1 ? 0xcafebabe : 0xdeadbeef);
+		_h_ = _h_ * 16777619 + 1 + this.v2;
+		_h_ = _h_ * 16777619 + 1 + this.v3;
+		_h_ = _h_ * 16777619 + 1 + this.v4;
+		_h_ = _h_ * 16777619 + 1 + (int)this.v5;
+		_h_ = _h_ * 16777619 + 1 + Float.floatToRawIntBits(this.v6);
+		_h_ = _h_ * 16777619 + 1 + (int)((Double.doubleToRawLongBits(this.v7) * 0x100000001L) >> 32);
+		_h_ = _h_ * 16777619 + 1 + this.v8.hashCode();
+		_h_ = _h_ * 16777619 + 1 + this.v9.hashCode();
+		_h_ = _h_ * 16777619 + 1 + this.v10.hashCode();
+		_h_ = _h_ * 16777619 + 1 + this.v11.hashCode();
+		_h_ = _h_ * 16777619 + 1 + this.v12.hashCode();
+		_h_ = _h_ * 16777619 + 1 + this.v13.hashCode();
+		_h_ = _h_ * 16777619 + 1 + this.v14.hashCode();
+		_h_ = _h_ * 16777619 + 1 + this.v15.hashCode();
+		_h_ = _h_ * 16777619 + 1 + this.v16.hashCode();
+		_h_ = _h_ * 16777619 + 1 + this.v17.hashCode();
+		_h_ = _h_ * 16777619 + 1 + this.v18.hashCode();
+		_h_ = _h_ * 16777619 + 1 + this.v19.hashCode();
 		return _h_;
 	}
 

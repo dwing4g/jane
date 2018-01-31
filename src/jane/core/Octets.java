@@ -13,11 +13,12 @@ import java.nio.charset.StandardCharsets;
 public class Octets implements Cloneable, Comparable<Octets>
 {
 	private static final char[] HEX = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-	public static final byte[]  EMPTY           = new byte[0];              // 共享的空缓冲区
-	public static final int     DEFAULT_SIZE    = 16;                       // 默认的缓冲区
+	public static final int     HASH_PRIME      = 16777619;               // from Fowler–Noll–Vo hash function
+	public static final byte[]  EMPTY           = new byte[0];            // 共享的空缓冲区
+	public static final int     DEFAULT_SIZE    = 16;                     // 默认的缓冲区
 	private static Charset      _defaultCharset = StandardCharsets.UTF_8; // 本类的默认字符集
-	protected byte[]            _buffer         = EMPTY;                    // 数据缓冲区. 注意此变量名字和类型的改变要和leveldb中的jni.cc对应
-	protected int               _count;                                     // 当前有效的数据缓冲区大小. 注意此变量名字和类型的改变要和leveldb中的jni.cc对应
+	protected byte[]            _buffer         = EMPTY;                  // 数据缓冲区. 注意此变量名字和类型的改变要和leveldb中的jni.cc对应
+	protected int               _count;                                   // 当前有效的数据缓冲区大小. 注意此变量名字和类型的改变要和leveldb中的jni.cc对应
 
 	public static Charset getDefaultEncoding()
 	{
@@ -119,7 +120,7 @@ public class Octets implements Cloneable, Comparable<Octets>
 	}
 
 	@SuppressWarnings("static-method")
-    public int position()
+	public int position()
 	{
 		return 0;
 	}
@@ -486,14 +487,14 @@ public class Octets implements Cloneable, Comparable<Octets>
 		if(n <= 32)
 		{
 			for(int i = 0; i < n; ++i)
-				hash = hash * 31 + buf[i];
+				hash = hash * HASH_PRIME + buf[i];
 		}
 		else
 		{
 			for(int i = 0; i < 16; ++i)
-				hash = hash * 31 + buf[i];
+				hash = hash * HASH_PRIME + buf[i];
 			for(int i = n - 16; i < n; ++i)
-				hash = hash * 31 + buf[i];
+				hash = hash * HASH_PRIME + buf[i];
 		}
 		return hash;
 	}

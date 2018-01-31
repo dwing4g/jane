@@ -115,8 +115,8 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 	public int hashCode()
 	{
 		int _h_ = (int)serialVersionUID;
-		_h_ = _h_ * 31 + 1 + this.key1;
-		_h_ = _h_ * 31 + 1 + this.key2.hashCode();
+		_h_ = _h_ * 16777619 + 1 + this.key1;
+		_h_ = _h_ * 16777619 + 1 + this.key2.hashCode();
 		return _h_;
 	}
 

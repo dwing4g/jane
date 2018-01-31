@@ -2,7 +2,7 @@
 ■ jane更新说明 ■
 ==================
 
-1.0.0 (2016-11-05) => 1.5.0 (git HEAD) (2018-01-30)
+1.0.0 (2016-11-05) => 1.5.0 (git HEAD) (2018-01-31)
 
 * 编译运行环境升级到Java8,不再推荐32位运行环境
 * 增加Mac OS X平台上的开发支持
@@ -25,6 +25,7 @@
 * NetManager支持同时绑定多个地址
 * 网络session可以更安全地关闭(NetManager.closeOnFlush)
 * 网络部分的IoBuffer支持DirectByteBuffer及回收池
+* 改进了Octets的hashCode算法
 * 增加继承OctetsStream的OctetsStreamEx表示带有异常详细信息的OctetsStream(省了1个数据成员)
 * 移除了LuaJ(推荐改用Java自带的Javascript)
 * 简化日志输出接口

@@ -137,8 +137,8 @@ public final class TestBean extends Bean<TestBean>
 	public int hashCode()
 	{
 		int _h_ = (int)serialVersionUID;
-		_h_ = _h_ * 31 + 1 + this.value1;
-		_h_ = _h_ * 31 + 1 + (int)this.value2;
+		_h_ = _h_ * 16777619 + 1 + this.value1;
+		_h_ = _h_ * 16777619 + 1 + (int)this.value2;
 		return _h_;
 	}
 

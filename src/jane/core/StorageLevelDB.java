@@ -66,14 +66,14 @@ public final class StorageLevelDB implements Storage
 			if(hash <= 32)
 			{
 				for(int i = _pos, n = i + hash; i < n; ++i)
-					hash = hash * 31 + b[i];
+					hash = hash * Octets.HASH_PRIME + b[i];
 			}
 			else
 			{
 				for(int i = _pos, n = i + 16; i < n; ++i)
-					hash = hash * 31 + b[i];
+					hash = hash * Octets.HASH_PRIME + b[i];
 				for(int n = _pos + _len, i = n - 16; i < n; ++i)
-					hash = hash * 31 + b[i];
+					hash = hash * Octets.HASH_PRIME + b[i];
 			}
 			return hash;
 		}
