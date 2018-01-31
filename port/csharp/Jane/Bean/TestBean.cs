@@ -121,8 +121,8 @@ namespace Jane.Bean
 		public override int GetHashCode()
 		{
 			int h = unchecked(1 * (int)0x9e3779b1);
-			h = h * 16777619 + 1 + this.value1;
-			h = h * 16777619 + 1 + (int)this.value2;
+			h = h * 16777619 + this.value1;
+			h = h * 16777619 + (int)this.value2;
 			return h;
 		}
 

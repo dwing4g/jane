@@ -115,7 +115,7 @@ namespace ]=] .. namespace .. [=[
 		public override int GetHashCode()
 		{
 			int h = unchecked(#(bean.type) * (int)0x9e3779b1);
-#(#			h = h * 16777619 + 1 + #(var.hashcode);
+#(#			h = h * 16777619 + #(var.hashcode);
 #)#			return h;
 		}
 

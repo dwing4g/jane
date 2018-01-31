@@ -125,7 +125,7 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 	public int hashCode()
 	{
 		int _h_ = (int)serialVersionUID;
-#(#		_h_ = _h_ * 16777619 + 1 + #(var.hashcode);
+#(#		_h_ = _h_ * 16777619 + #(var.hashcode);
 #)#		return _h_;
 	}
 
@@ -1178,7 +1178,7 @@ function bean(bean)
 		gsub("\t+/%*%* @param [%w_]+  %*/\n", ""):
 		gsub("\t+/%*%*  %*/\n", ""):
 		gsub("\n\t{\n\n\t\t", "\n\t{\n\t\t"):
-		gsub("\t\t_h_ = _h_ %* 16777619 %+ 1 %+ 0;\n", ""):
+		gsub("\t\t_h_ = _h_ %* 16777619 %+ 0;\n", ""):
 		gsub("\t\tif%(%) return false;\n", ""):
 		gsub("\t\t_c_ = 0; if%(_c_ != 0%) return _c_;\n", ""):
 		gsub("( new %w+)<.->", "%1<>"):
