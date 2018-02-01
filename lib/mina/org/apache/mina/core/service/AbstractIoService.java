@@ -24,7 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -53,6 +52,8 @@ import org.apache.mina.util.ExceptionMonitor;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public abstract class AbstractIoService implements IoService {
+	private static final AtomicInteger idGenerator = new AtomicInteger();
+
 	/** The associated executor, responsible for handling execution of I/O events */
 	private final ExecutorService executor;
 
@@ -77,23 +78,10 @@ public abstract class AbstractIoService implements IoService {
 	private volatile boolean disposing;
 	private volatile boolean disposed;
 
-	protected static final class IoThreadFactory implements ThreadFactory {
-		private static final AtomicInteger idGenerator = new AtomicInteger();
-		private final String name;
-
-		public IoThreadFactory(Class<?> cls) {
-			name = cls.getSimpleName() + '-' + idGenerator.incrementAndGet();
-		}
-
-		@Override
-		public Thread newThread(Runnable r) {
-			return new Thread(r, name);
-		}
-	}
-
 	protected AbstractIoService() {
+		int id = idGenerator.incrementAndGet();
 		executor = new ThreadPoolExecutor(0, 1, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(),
-				new IoThreadFactory(getClass()));
+				r -> new Thread(r, getClass().getSimpleName() + '-' + id));
 		sessionConfig.init(this);
 	}
 

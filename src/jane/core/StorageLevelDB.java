@@ -10,9 +10,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.CRC32;
 
 /**
@@ -22,20 +20,19 @@ import java.util.zip.CRC32;
  */
 public final class StorageLevelDB implements Storage
 {
-	private static final StorageLevelDB	_instance	   = new StorageLevelDB();
-	private static final Octets			_deleted	   = new Octets();								// 表示已删除的值
-	private final Slice					_deletedSlice  = new Slice(null, 0, 0);						// 表示已删除的slice
-	private int							_writeCount;												// 提交中的写缓冲区记录数量
-	private final OctetsStreamEx		_writeBuf	   = new OctetsStreamEx(0x10000);				// 提交中的写缓冲区
-	private final Map<Slice, Slice>		_writeMap	   = Util.newConcurrentHashMap();				// 提交中的写记录
-	private final ReadWriteLock			_writeLock	   = new ReentrantReadWriteLock();				// 访问_writeBuf和_writeMap的锁
-	private final Lock					_writeReadLock = _writeLock.readLock();						// 访问_writeBuf和_writeMap的读锁
-	private long						_db;														// LevelDB的数据库对象句柄
-	private File						_dbFile;													// 当前数据库的文件
-	private final SimpleDateFormat		_sdf		   = new SimpleDateFormat("yy-MM-dd-HH-mm-ss");	// 备份文件后缀名的时间格式
-	private final long					_backupBase;												// 备份数据的基准时间
-	private boolean						_useSnappy	   = true;										// 是否使用LevelDB内置的snappy压缩
-	private boolean						_reuseLogs	   = true;										// 是否使用LevelDB内置的reuse_logs功能
+	private static final StorageLevelDB	_instance	  = new StorageLevelDB();
+	private static final Octets			_deleted	  = new Octets();							   // 表示已删除的值
+	private static final Slice			_deletedSlice = new Slice(null, 0, 0);					   // 表示已删除的slice
+	private int							_writeCount;											   // 提交中的写缓冲区记录数量
+	private final OctetsStreamEx		_writeBuf	  = new OctetsStreamEx(0x10000);			   // 提交中的写缓冲区
+	private final Map<Slice, Slice>		_writeMap	  = Util.newConcurrentHashMap();			   // 提交中的写记录
+	private final FastRWLock			_writeLock	  = new FastRWLock();						   // 访问_writeBuf和_writeMap的读写锁
+	private long						_db;													   // LevelDB的数据库对象句柄
+	private File						_dbFile;												   // 当前数据库的文件
+	private final SimpleDateFormat		_sdf		  = new SimpleDateFormat("yy-MM-dd-HH-mm-ss"); // 备份文件后缀名的时间格式
+	private final long					_backupBase;											   // 备份数据的基准时间
+	private boolean						_useSnappy	  = true;									   // 是否使用LevelDB内置的snappy压缩
+	private boolean						_reuseLogs	  = true;									   // 是否使用LevelDB内置的reuse_logs功能
 
 	private static final class Slice
 	{
@@ -103,6 +100,53 @@ public final class StorageLevelDB implements Storage
 				return true;
 			}
 			return false;
+		}
+	}
+
+	public static final class FastRWLock extends AtomicInteger
+	{
+		private static final long serialVersionUID = 1L;
+
+		public boolean tryReadLock()
+		{
+			for(;;)
+			{
+				int c = get();
+				if(c < 0) return false;
+				if(compareAndSet(c, c + 1)) return true;
+			}
+		}
+
+		public void readUnlock()
+		{
+			decrementAndGet();
+		}
+
+		public void writeLock()
+		{
+			for(;;)
+			{
+				int c = get();
+				if((c & 0x7fff_ffff) == 0) // 如果没有读标记和写独占
+				{
+					if(compareAndSet(c, 0xc000_0000)) return; // 加写独占标记,阻止其它读写操作
+					continue;
+				}
+				else if(c > 0 && !compareAndSet(c, c | 0x8000_0000)) // 如果只有读标记,那么加写等待标记,无法再次读
+					continue;
+				try
+				{
+					Thread.sleep(1); // 忙等,主要用于不着急写也不常写的情况
+				}
+				catch(InterruptedException e)
+				{
+				}
+			}
+		}
+
+		public void writeUnlock()
+		{
+			set(0);
 		}
 	}
 
@@ -1035,7 +1079,7 @@ public final class StorageLevelDB implements Storage
 	 */
 	public byte[] dbget(Octets k)
 	{
-		if(_writeReadLock.tryLock())
+		if(_writeLock.tryReadLock())
 		{
 			try
 			{
@@ -1046,7 +1090,7 @@ public final class StorageLevelDB implements Storage
 			}
 			finally
 			{
-				_writeReadLock.unlock();
+				_writeLock.readUnlock();
 			}
 		}
 		if(_db == 0) throw new IllegalStateException("db closed. key=" + k.dump());
@@ -1241,7 +1285,7 @@ public final class StorageLevelDB implements Storage
 	@Override
 	public synchronized void putBegin()
 	{
-		_writeLock.writeLock().lock();
+		_writeLock.writeLock();
 		try
 		{
 			_writeMap.clear();
@@ -1249,7 +1293,7 @@ public final class StorageLevelDB implements Storage
 		}
 		finally
 		{
-			_writeLock.writeLock().unlock();
+			_writeLock.writeUnlock();
 		}
 		_writeCount = 0;
 	}

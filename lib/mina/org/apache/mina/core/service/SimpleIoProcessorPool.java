@@ -20,9 +20,7 @@ package org.apache.mina.core.service;
 
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequest;
@@ -92,9 +90,8 @@ public final class SimpleIoProcessorPool implements IoProcessor<NioSession> {
 			throw new IllegalArgumentException("size: " + size + " (expected: positive integer)");
 		}
 
-		executor = new ThreadPoolExecutor(size, size, 0L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(),
-				r -> new Thread(r, NioProcessor.class.getSimpleName() + '-' + idGenerator.incrementAndGet()),
-				new ThreadPoolExecutor.CallerRunsPolicy());
+		executor = Executors.newFixedThreadPool(size,
+				r -> new Thread(r, NioProcessor.class.getSimpleName() + '-' + idGenerator.incrementAndGet()));
 
 		pool = new NioProcessor[size];
 

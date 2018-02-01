@@ -24,7 +24,7 @@ import jane.core.Util;
 public final class TestStress extends Procedure
 {
 	private static final int TABLE_ID		  = 9999;	 // 表ID. 可调整来避免和现有数据库中的数据冲突
-	private static final int TABLE_CACHE	  = 10000;	 // 读缓存的记录数. 可调小来测试未缓存情况的稳定性
+	private static final int TABLE_CACHE	  = 0x20000; // 读缓存的记录数. 可调小来测试未缓存情况的稳定性
 	private static final int RECORD_COUNT	  = 0x20000; // 总测试的记录数量. 可调小来测试竞争压力;可调大测试大数据量时的内存压力. 必须是2的N次幂
 	private static final int CONCURRENT_COUNT = 100;	 // 并发事务的数量. 可调大来测试高压力时并发的稳定性
 
@@ -272,7 +272,7 @@ public final class TestStress extends Procedure
 
 		for(;;)
 		{
-			System.out.println("TQ=" + dbm.getProcThreads().getQueue().size() + "  TA=" + dbm.getProcThreads().getActiveCount() + "  C=" + counter.getAndSet(0));
+			Log.info("TQ=" + dbm.getProcThreads().getQueue().size() + "  TA=" + dbm.getProcThreads().getActiveCount() + "  C=" + counter.getAndSet(0));
 			Thread.sleep(1000);
 		}
 	}
