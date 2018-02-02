@@ -26,7 +26,7 @@ public final class StorageLevelDB implements Storage
 	private int							_writeCount;											   // 提交中的写缓冲区记录数量
 	private final OctetsStreamEx		_writeBuf	  = new OctetsStreamEx(0x10000);			   // 提交中的写缓冲区
 	private final Map<Slice, Slice>		_writeMap	  = Util.newConcurrentHashMap();			   // 提交中的写记录
-	private final FastRWLock			_writeLock	  = new FastRWLock();						   // 访问_writeBuf和_writeMap的读写锁
+	private final SharedLock			_writeLock	  = new SharedLock();						   // 访问_writeBuf和_writeMap的读写锁
 	private long						_db;													   // LevelDB的数据库对象句柄
 	private File						_dbFile;												   // 当前数据库的文件
 	private final SimpleDateFormat		_sdf		  = new SimpleDateFormat("yy-MM-dd-HH-mm-ss"); // 备份文件后缀名的时间格式
@@ -103,11 +103,11 @@ public final class StorageLevelDB implements Storage
 		}
 	}
 
-	public static final class FastRWLock extends AtomicInteger
+	public static final class SharedLock extends AtomicInteger
 	{
 		private static final long serialVersionUID = 1L;
 
-		public boolean tryReadLock()
+		public boolean tryLock()
 		{
 			for(;;)
 			{
@@ -117,36 +117,32 @@ public final class StorageLevelDB implements Storage
 			}
 		}
 
-		public void readUnlock()
+		public void unlock()
 		{
 			decrementAndGet();
 		}
 
-		public void writeLock()
+		public void waitLock()
 		{
 			for(;;)
 			{
 				int c = get();
-				if((c & 0x7fff_ffff) == 0) // 如果没有读标记和写独占
+				if(c == 0) return; // 没有锁和等待标记
+				if(c == 0x8000_0000) // 没有锁标记,只有等待标记
 				{
-					if(compareAndSet(c, 0xc000_0000)) return; // 加写独占标记,阻止其它读写操作
-					continue;
+					set(0);
+					return;
 				}
-				else if(c > 0 && !compareAndSet(c, c | 0x8000_0000)) // 如果只有读标记,那么加写等待标记,无法再次读
+				if(c > 0 && !compareAndSet(c, c | 0x8000_0000)) // 如果有锁标记但没有等待标记,那么加等待标记,无法再次锁
 					continue;
 				try
 				{
-					Thread.sleep(1); // 忙等,主要用于不着急写也不常写的情况
+					Thread.sleep(1); // 忙等,主要用于不着急也不经常等待的情况
 				}
 				catch(InterruptedException e)
 				{
 				}
 			}
-		}
-
-		public void writeUnlock()
-		{
-			set(0);
 		}
 	}
 
@@ -1079,7 +1075,7 @@ public final class StorageLevelDB implements Storage
 	 */
 	public byte[] dbget(Octets k)
 	{
-		if(_writeLock.tryReadLock())
+		if(_writeLock.tryLock())
 		{
 			try
 			{
@@ -1090,7 +1086,7 @@ public final class StorageLevelDB implements Storage
 			}
 			finally
 			{
-				_writeLock.readUnlock();
+				_writeLock.unlock();
 			}
 		}
 		if(_db == 0) throw new IllegalStateException("db closed. key=" + k.dump());
@@ -1285,17 +1281,10 @@ public final class StorageLevelDB implements Storage
 	@Override
 	public synchronized void putBegin()
 	{
-		_writeLock.writeLock();
-		try
-		{
-			_writeMap.clear();
-			_writeBuf.resize(4);
-		}
-		finally
-		{
-			_writeLock.writeUnlock();
-		}
+		_writeMap.clear();
+		_writeBuf.resize(4);
 		_writeCount = 0;
+		_writeLock.waitLock(); // 确保此时没有线程在读_writeBuf
 	}
 
 	@Override

@@ -117,7 +117,7 @@ namespace Jane
 		static int _serialCounter;
 		static readonly Dictionary<int, BeanContext> _beanCtxMap = new Dictionary<int, BeanContext>(); // 当前所有请求中的上下文映射(key:serial);
 		readonly BufPool _bufPool = new BufPool(RECV_BUFSIZE); // 网络接收缓冲区池;
-		readonly Pool<SocketAsyncEventArgs> _argPool = new Pool<SocketAsyncEventArgs>(); // 网络时间对象池;
+		readonly Pool<SocketAsyncEventArgs> _argPool = new Pool<SocketAsyncEventArgs>(); // 网络事件对象池;
 		readonly Queue<SocketAsyncEventArgs> _eventQueue = new Queue<SocketAsyncEventArgs>(); // 网络事件队列;
 		readonly Queue<BeanContext> _beanCtxQueue = new Queue<BeanContext>(); // 当前请求中的上下文队列;
 

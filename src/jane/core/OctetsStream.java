@@ -412,14 +412,14 @@ public class OctetsStream extends Octets
 		    if(x <     0x200_0000_0000L) return marshal6(x +      0x7c00_0000_0000L); // 0111 110x +5B
 		    if(x <  0x1_0000_0000_0000L) return marshal7(x +   0x7e_0000_0000_0000L); // 0111 1110 +6B
 		    if(x < 0x80_0000_0000_0000L) return marshal8(x + 0x7f00_0000_0000_0000L); // 0111 1111 0+7B
-		                  return marshal9((byte)0x7f, x +    0x8000_0000_0000_0000L); // 0111 1111 1+8B
+		                     return marshal9((byte)0x7f, x + 0x8000_0000_0000_0000L); // 0111 1111 1+8B
 		}
 		if(x >= -           0x800_0000 ) return marshal((int)x);
 		if(x >= -        0x4_0000_0000L) return marshal5(x -        0x78_0000_0000L); // 1000 01xx +4B
 		if(x >= -      0x200_0000_0000L) return marshal6(x -      0x7c00_0000_0000L); // 1000 001x +5B
 		if(x >= -   0x1_0000_0000_0000L) return marshal7(x -   0x7e_0000_0000_0000L); // 1000 0001 +6B
 		if(x >= -  0x80_0000_0000_0000L) return marshal8(x - 0x7f00_0000_0000_0000L); // 1000 0000 1+7B
-		                  return marshal9((byte)0x80, x -    0x8000_0000_0000_0000L); // 1000 0000 0+8B
+		                     return marshal9((byte)0x80, x - 0x8000_0000_0000_0000L); // 1000 0000 0+8B
 	}
 
 	public OctetsStream marshal(Long x)

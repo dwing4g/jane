@@ -8,7 +8,7 @@ Feature:
  * simple, extensible and compact protocol on TCP
  * embedded database based on LevelDB with extremely fast in-memory cache
  * single process with multi-thread concurrent network and database
- * optimized for high performance (1 million TPS on one core of 3GHz PC)
+ * optimized for ultra high performance (million level TPS on common PC)
  * simple implement but powerful (only 17K+ lines of core source code)
  * easy to understand and use with code generation for Java bean code
 
