@@ -34,7 +34,7 @@ public final class TestEcho extends NetManager
 		@Override
 		public WriteRequestQueue getWriteRequestQueue(IoSession session)
 		{
-			_wrqCount.incrementAndGet();
+			_wrqCount.getAndIncrement();
 			return new WriteRequestQueue()
 			{
 				private final ArrayDeque<WriteRequest> _wrq = new ArrayDeque<>();
@@ -151,7 +151,7 @@ public final class TestEcho extends NetManager
 	@Override
 	public void messageReceived(IoSession session, Object message)
 	{
-		if(_recvCount.incrementAndGet() <= TEST_ECHO_COUNT)
+		if(_recvCount.getAndIncrement() < TEST_ECHO_COUNT)
 		{
 //			perf[6].begin();
 			write(session, message);

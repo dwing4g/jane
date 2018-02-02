@@ -318,14 +318,14 @@ public final class DBSimpleManager
 
 	private <B extends Bean<B>> B get0(Octets key, B beanStub) throws MarshalException
 	{
-		_readCount.incrementAndGet();
+		_readCount.getAndIncrement();
 		Octets val = (_enableReadCache ? _readCache.get(key) : null);
 		if(val == null)
 		{
 			val = _writeCache.get(key);
 			if(val == null)
 			{
-				_readStoCount.incrementAndGet();
+				_readStoCount.getAndIncrement();
 				byte[] v = _storage.dbget(key);
 				if(v == null)
 					return null;

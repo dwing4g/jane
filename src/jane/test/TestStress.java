@@ -243,7 +243,7 @@ public final class TestStress extends Procedure
 			checkMap.put(id2, v2);
 			b1.setValue1(v1);
 			b2.setValue1(v2);
-			counter.incrementAndGet();
+			counter.getAndIncrement();
 		}
 		catch(Error e)
 		{

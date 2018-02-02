@@ -65,7 +65,7 @@ public class NetManager implements IoHandler
 	private static final LongConcurrentHashMap<BeanContext<?>> _beanCtxMap	  = new LongConcurrentHashMap<>();	   // 当前等待回复的所有请求上下文
 	private static final ConcurrentLinkedQueue<IoSession>	   _closings	  = new ConcurrentLinkedQueue<>();	   // 已经closeOnFlush的session队列,超时则closeNow
 	private static final ScheduledExecutorService			   _scheduledThread;								   // NetManager自带的单线程调度器(处理重连,请求和事务超时)
-	private static final AtomicInteger						   _serialCounter = new AtomicInteger();			   // 协议序列号的分配器
+	private static final AtomicInteger						   _serialCounter = new AtomicInteger(1);			   // 协议序列号的分配器
 	private static volatile SimpleIoProcessorPool			   _sharedIoProcessorPool;							   // 共享的网络IO线程池
 	private static int										   _sharedIoThreadCount;							   // 共享的网络IO线程数量(<=0表示默认的线程数量)
 	private static long										   _timeSec		  = System.currentTimeMillis() / 1000; // NetManager的秒级时间戳值,可以快速获取
@@ -653,7 +653,7 @@ public class NetManager implements IoHandler
 		beanCtx.answerHandler = onAnswer;
 		for(;;)
 		{
-			int serial = _serialCounter.incrementAndGet();
+			int serial = _serialCounter.getAndIncrement();
 			if(serial > 0)
 			{
 				if(_beanCtxMap.putIfAbsent(serial, beanCtx) == null)
@@ -663,7 +663,7 @@ public class NetManager implements IoHandler
 				}
 			}
 			else
-				_serialCounter.set(0);
+				_serialCounter.compareAndSet(serial + 1, 1);
 		}
 	}
 

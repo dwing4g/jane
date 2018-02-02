@@ -82,7 +82,7 @@ public abstract class Procedure implements Runnable
 
 	static void incVersion(int lockId)
 	{
-		_lockVersions.incrementAndGet(lockId & _lockMask);
+		_lockVersions.getAndIncrement(lockId & _lockMask);
 	}
 
 	/**

@@ -242,8 +242,13 @@ namespace Jane
 
 		void FreeArg(SocketAsyncEventArgs arg)
 		{
-			arg.SocketError = SocketError.Success;
+			arg.AcceptSocket = null;
+			arg.BufferList = null;
+			arg.DisconnectReuseSocket = false;
 			arg.RemoteEndPoint = null;
+			arg.SendPacketsSendSize = -1;
+			arg.SocketError = SocketError.Success;
+			arg.SocketFlags = SocketFlags.None;
 			arg.UserToken = null;
 			_argPool.Free(arg);
 		}
@@ -544,7 +549,7 @@ namespace Jane
 					beanCtx.serial = serial;
 					return beanCtx;
 				}
-				_serialCounter = 0;
+				Interlocked.CompareExchange(ref _serialCounter, 0, serial);
 			}
 		}
 

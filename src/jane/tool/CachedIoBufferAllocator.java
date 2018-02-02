@@ -101,12 +101,12 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 			{
 				buf.clear();
 				buf.buf().order(ByteOrder.BIG_ENDIAN);
-				reuseCount.incrementAndGet();
+				reuseCount.getAndIncrement();
 			}
 			else
 			{
 				buf = new CachedBuffer(actualCapacity, direct);
-				allocCount.incrementAndGet();
+				allocCount.getAndIncrement();
 			}
 		}
 		else
@@ -154,7 +154,7 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 			if(pool.size() < maxPoolSize)
 			{
 				pool.addFirst(this);
-				freeCount.incrementAndGet();
+				freeCount.getAndIncrement();
 			}
 		}
 	}

@@ -72,12 +72,12 @@ public final class ByteBufferPool
 		{
 			bb.clear();
 			bb.order(ByteOrder.BIG_ENDIAN);
-			// cacheCount.incrementAndGet();
+			// cacheCount.getAndIncrement();
 		}
 		else
 		{
 			bb = ByteBuffer.allocateDirect(actualCapacity);
-			// allocCount.incrementAndGet();
+			// allocCount.getAndIncrement();
 		}
 		bb.limit(capacity);
 		return bb;
@@ -92,7 +92,7 @@ public final class ByteBufferPool
 		if(bufQueue.size() < _maxPoolSize)
 		{
 			bufQueue.addFirst(bb);
-			// offerCount.incrementAndGet();
+			// offerCount.getAndIncrement();
 		}
 	}
 }

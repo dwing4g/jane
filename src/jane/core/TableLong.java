@@ -185,7 +185,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	@Deprecated
 	public V getUnsafe(long k)
 	{
-		_readCount.incrementAndGet();
+		_readCount.getAndIncrement();
 		V v = _cache.get(k);
 		if(v != null) return v;
 		if(_cacheMod == null) return null;
@@ -196,7 +196,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 			_cache.put(k, v);
 			return v;
 		}
-		_readStoCount.incrementAndGet();
+		_readStoCount.getAndIncrement();
 		v = _stoTable.get(k);
 		if(v != null)
 		{
@@ -258,14 +258,14 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	@Deprecated
 	public V getNoCacheUnsafe(long k)
 	{
-		_readCount.incrementAndGet();
+		_readCount.getAndIncrement();
 		V v = _cache.get(k);
 		if(v != null) return v;
 		if(_cacheMod == null) return null;
 		v = _cacheMod.get(k);
 		if(v != null)
 			return v != _deleted ? v : null;
-		_readStoCount.incrementAndGet();
+		_readStoCount.getAndIncrement();
 		return _stoTable.get(k);
 	}
 
@@ -289,7 +289,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	@Deprecated
 	public V getCacheUnsafe(long k)
 	{
-		_readCount.incrementAndGet();
+		_readCount.getAndIncrement();
 		V v = _cache.get(k);
 		if(v != null) return v;
 		if(_cacheMod == null) return null;

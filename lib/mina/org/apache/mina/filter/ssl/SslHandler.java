@@ -280,7 +280,7 @@ public final class SslHandler {
 	}
 
 	void flushScheduledEvents() {
-		scheduled_events.incrementAndGet();
+		scheduled_events.getAndIncrement();
 
 		// Fire events only when the lock is available for this handler.
 		if (sslLock.tryLock()) {

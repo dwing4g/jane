@@ -46,7 +46,7 @@ public final class TestEchoAio extends TcpManager
 			bb.put(buf);
 			bb.flip();
 			session.send(bb);
-			ctx.sendSize.addAndGet(TEST_ECHO_SIZE);
+			ctx.sendSize.getAndAdd(TEST_ECHO_SIZE);
 		}
 	}
 
@@ -69,7 +69,7 @@ public final class TestEchoAio extends TcpManager
 			bb.limit(size);
 			bbSend.put(bb);
 			bbSend.flip();
-			ctx.sendSize.addAndGet(size);
+			ctx.sendSize.getAndAdd(size);
 			session.send(bbSend);
 		}
 		else if(recvSize >= sendSize)

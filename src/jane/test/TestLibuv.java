@@ -29,7 +29,7 @@ public final class TestLibuv implements Libuv.LibuvLoopHandler
 	{
 		// System.out.println("onRecv(" + handle_stream + "): " + len);
 		// Libuv.libuv_tcp_send(handle_stream, bb, 0, len);
-		if(_recvCount.incrementAndGet() <= TEST_ECHO_COUNT)
+		if(_recvCount.getAndIncrement() < TEST_ECHO_COUNT)
 			Libuv.libuv_tcp_send(handle_stream, bb, 0, len);
 		else
 			Libuv.libuv_tcp_close(handle_stream, 4321);

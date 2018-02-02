@@ -112,7 +112,7 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 		CacheEntry<K, V> e = map.get(key);
 		if(e == null)
 			return null;
-		e.version = versionCounter.incrementAndGet();
+		e.version = versionCounter.getAndIncrement();
 		return e.value;
 	}
 
@@ -121,10 +121,10 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 	{
 		if(value == null)
 			return null;
-		CacheEntry<K, V> ceOld = map.put(key, new CacheEntry<>(key, value, versionCounter.incrementAndGet()));
+		CacheEntry<K, V> ceOld = map.put(key, new CacheEntry<>(key, value, versionCounter.getAndIncrement()));
 		if(ceOld != null)
 			return ceOld.value;
-		if(size.incrementAndGet() > upperSize && sweepStatus.get() == 0)
+		if(size.getAndIncrement() >= upperSize && sweepStatus.get() == 0)
 			LRUCleaner.submit(sweepStatus, this);
 		return null;
 	}
@@ -142,7 +142,7 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 		CacheEntry<K, V> ceOld = map.remove(key);
 		if(ceOld == null)
 			return null;
-		size.decrementAndGet();
+		size.getAndDecrement();
 		return ceOld.value;
 	}
 
@@ -157,7 +157,7 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 	{
 		CacheEntry<K, V> o = map.remove(key);
 		if(o == null) return;
-		size.decrementAndGet();
+		size.getAndDecrement();
 		// evictedEntry(o.key, o.value);
 	}
 
@@ -192,7 +192,7 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 		if(sizeOld <= newLowerSize) return;
 		try
 		{
-			final long curV = versionCounter.get();
+			final long nextV = versionCounter.get();
 			long minV = minVersion;
 			long maxVNew = -1;
 			long minVNew = Long.MAX_VALUE;
@@ -210,7 +210,7 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 				ce.versionCopy = v;
 
 				// since the numToKeep group is likely to be bigger than numToRemove, check it first
-				if(v > curV - numToKeep)
+				if(v >= nextV - numToKeep)
 				{
 					// this entry is guaranteed not to be in the bottom group, so do nothing
 					numKept++;

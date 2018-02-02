@@ -79,7 +79,7 @@ public final class TestDBBenchmark
 							else
 							{
 								if(a.getValue2() == id)
-									checked.incrementAndGet();
+									checked.getAndIncrement();
 								else
 									a.setValue2(id);
 							}

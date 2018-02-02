@@ -33,8 +33,8 @@ public final class TestPerf
 		Long s = _startTime.get();
 		if(s != null)
 		{
-			_allTime.addAndGet(t - s);
-			_allCount.incrementAndGet();
+			_allTime.getAndAdd(t - s);
+			_allCount.getAndIncrement();
 		}
 		_startTime.set(t);
 	}

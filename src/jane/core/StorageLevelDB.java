@@ -119,7 +119,7 @@ public final class StorageLevelDB implements Storage
 
 		public void unlock()
 		{
-			decrementAndGet();
+			getAndDecrement();
 		}
 
 		public void waitLock()
