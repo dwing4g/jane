@@ -14,7 +14,6 @@ namespace Jane
 		public delegate void Task();
 
 		readonly SortedDictionary<long, Task> _timerTaskMap = new SortedDictionary<long, Task>(); // 简单的时间调度处理容器;
-		readonly Queue<IBean> _sendBeanQueue = new Queue<IBean>(); // 待发送协议的缓冲区;
 		IPAddress _serverIp = DEFAULT_SERVER_IP; // 连接服务器的地址;
 		int _serverPort = DEFAULT_SERVER_PORT; // 连接服务器的端口;
 		RC4Filter _filter;
@@ -159,40 +158,8 @@ namespace Jane
 		 */
 		public void Connect()
 		{
-			_sendBeanQueue.Clear();
 			_filter = null;
 			Connect(_serverIp, _serverPort);
-		}
-
-		/**
-		 * 发送bean. 发送中的情况下会自动放入发送队列,并按顺序自动发送;
-		 * 发送失败不会得到通知, 要么是连接已经关闭, 要么很快就会触发连接关闭;
-		 */
-		public override void Send(NetSession session, IBean bean)
-		{
-			_sendBeanQueue.Enqueue(bean);
-			if(_sendBeanQueue.Count == 1 && !SendDirect(session, bean))
-				_sendBeanQueue.Clear();
-		}
-
-		/**
-		 * 对已发送完bean的回调, 触发发送队列中协议的顺序发送;
-		 */
-		protected override void OnSent(NetSession session, object userdata)
-		{
-			if(_sendBeanQueue.Count <= 0) return; // 以防意外;
-			_sendBeanQueue.Dequeue();
-			if(_sendBeanQueue.Count <= 0) return;
-			if(!SendDirect(session, _sendBeanQueue.Peek()))
-				_sendBeanQueue.Clear();
-		}
-
-		/**
-		 * 清除所有尚未发送的beans;
-		 */
-		public void ClearSendBuffer()
-		{
-			_sendBeanQueue.Clear();
 		}
 
 		public new void Tick()
