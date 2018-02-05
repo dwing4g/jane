@@ -3,18 +3,16 @@ package jane.core;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 import jane.core.SContext.Safe;
+import jane.core.map.LongConcurrentHashMap;
 
 /**
  * 事务的基类(抽象类)
  */
+@SuppressWarnings("restriction")
 public abstract class Procedure implements Runnable
 {
 	public interface ExceptionHandler
@@ -38,21 +36,40 @@ public abstract class Procedure implements Runnable
 	private static final AtomicIntegerArray				 _lockVersions = new AtomicIntegerArray(Const.lockPoolSize); // 全局共享的锁版本号池
 	private static final AtomicReferenceArray<IndexLock> _lockCreator  = new AtomicReferenceArray<>(_lockPool);		 // 锁池中锁的线程安全创造器(副本)
 	private static final int							 _lockMask	   = Const.lockPoolSize - 1;					 // 锁池下标的掩码
-	private static final ReentrantReadWriteLock			 _rwlCommit	   = new ReentrantReadWriteLock();				 // 用于数据提交的读写锁
+	private static final FastRWLock						 _rwlCommit	   = new FastRWLock();							 // 用于数据提交的读写锁
+	private static final long							 _runningOffset;											 // _running变量的偏移量
 	private static ExceptionHandler						 _defaultEh;												 // 默认的全局异常处理
 
-	private ProcThread			_pt;							// 事务所属的线程上下文. 只在事务运行中有效
-	private final AtomicInteger	_running = new AtomicInteger();	// 事务是否在运行中(不能同时并发运行)
-	private volatile Object		_sid;							// 事务所属的SessionId
+	private ProcThread		_pt;	  // 事务所属的线程上下文. 只在事务运行中有效
+	@SuppressWarnings("unused")
+	private volatile int	_running; // 事务是否在运行中(不能同时并发运行)
+	private volatile Object	_sid;	  // 事务所属的SessionId
+
+	static
+	{
+		try
+		{
+			_runningOffset = LongConcurrentHashMap.U.objectFieldOffset(Procedure.class.getDeclaredField("_running"));
+		}
+		catch(Exception e)
+		{
+			throw new Error(e);
+		}
+	}
 
 	/**
-	 * 获取提交的写锁
+	 * 加提交的写锁
 	 * <p>
 	 * 用于提交线程暂停工作线程之用
 	 */
-	static WriteLock getWriteLock()
+	static void writeLock()
 	{
-		return _rwlCommit.writeLock();
+		_rwlCommit.writeLock();
+	}
+
+	static void writeUnlock()
+	{
+		_rwlCommit.writeUnlock();
 	}
 
 	/**
@@ -737,25 +754,25 @@ public abstract class Procedure implements Runnable
 	 */
 	public boolean execute() throws Exception
 	{
-		if(!_running.compareAndSet(0, 1))
+		if(!LongConcurrentHashMap.U.compareAndSwapInt(this, _runningOffset, 0, 1))
 		{
 			Log.error("procedure already running: " + toString());
 			return false;
 		}
 		if(DBManager.instance().isExiting())
 		{
-			_running.set(0);
+			_running = 0;
 			Log.info("procedure canceled: " + toString());
 			return false;
 		}
 		ProcThread pt = null;
 		SContext sctx = null;
-		ReadLock rl = null;
+		FastRWLock rl = null;
 		try
 		{
 			_pt = pt = (ProcThread)Thread.currentThread();
-			rl = _rwlCommit.readLock();
-			rl.lock();
+			rl = _rwlCommit;
+			rl.readLock();
 			sctx = pt.sctx;
 			pt.beginTime = System.currentTimeMillis();
 			pt.proc = this;
@@ -811,9 +828,9 @@ public abstract class Procedure implements Runnable
 				Thread.interrupted(); // 清除interrupted标识
 			}
 			if(rl != null)
-				rl.unlock();
+				rl.readUnlock();
 			_pt = null;
-			_running.set(0);
+			_running = 0;
 		}
 	}
 

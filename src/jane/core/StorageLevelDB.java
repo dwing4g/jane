@@ -10,7 +10,6 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.CRC32;
 
 /**
@@ -26,7 +25,7 @@ public final class StorageLevelDB implements Storage
 	private int							_writeCount;											   // 提交中的写缓冲区记录数量
 	private final OctetsStreamEx		_writeBuf	  = new OctetsStreamEx(0x10000);			   // 提交中的写缓冲区
 	private final Map<Slice, Slice>		_writeMap	  = Util.newConcurrentHashMap();			   // 提交中的写记录
-	private final SharedLock			_writeLock	  = new SharedLock();						   // 访问_writeBuf和_writeMap的读写锁
+	private final FastRWLock			_writeBufLock = new FastRWLock();						   // 访问_writeBuf和_writeMap的读写锁
 	private long						_db;													   // LevelDB的数据库对象句柄
 	private File						_dbFile;												   // 当前数据库的文件
 	private final SimpleDateFormat		_sdf		  = new SimpleDateFormat("yy-MM-dd-HH-mm-ss"); // 备份文件后缀名的时间格式
@@ -100,49 +99,6 @@ public final class StorageLevelDB implements Storage
 				return true;
 			}
 			return false;
-		}
-	}
-
-	public static final class SharedLock extends AtomicInteger
-	{
-		private static final long serialVersionUID = 1L;
-
-		public boolean tryLock()
-		{
-			for(;;)
-			{
-				int c = get();
-				if(c < 0) return false;
-				if(compareAndSet(c, c + 1)) return true;
-			}
-		}
-
-		public void unlock()
-		{
-			getAndDecrement();
-		}
-
-		public void waitLock()
-		{
-			for(;;)
-			{
-				int c = get();
-				if(c == 0) return; // 没有锁和等待标记
-				if(c == 0x8000_0000) // 没有锁标记,只有等待标记
-				{
-					set(0);
-					return;
-				}
-				if(c > 0 && !compareAndSet(c, c | 0x8000_0000)) // 如果有锁标记但没有等待标记,那么加等待标记,无法再次锁
-					continue;
-				try
-				{
-					Thread.sleep(1); // 忙等,主要用于不着急也不经常等待的情况
-				}
-				catch(InterruptedException e)
-				{
-				}
-			}
 		}
 	}
 
@@ -1066,7 +1022,7 @@ public final class StorageLevelDB implements Storage
 	 */
 	public byte[] dbget(Octets k)
 	{
-		if(_writeLock.tryLock())
+		if(_writeBufLock.tryReadLock())
 		{
 			try
 			{
@@ -1077,7 +1033,7 @@ public final class StorageLevelDB implements Storage
 			}
 			finally
 			{
-				_writeLock.unlock();
+				_writeBufLock.readUnlock();
 			}
 		}
 		if(_db == 0) throw new IllegalStateException("db closed. key=" + k.dump());
@@ -1286,7 +1242,7 @@ public final class StorageLevelDB implements Storage
 		{
 			_writeMap.clear();
 			_writeBuf.resize(4);
-			_writeLock.waitLock(); // 确保此时没有线程在读_writeBuf
+			_writeBufLock.waitLock(); // 确保此时没有线程在读_writeBuf
 		}
 	}
 

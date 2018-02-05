@@ -119,8 +119,8 @@ namespace Jane
 					BeanDelegate create;
 					if(BeanMap == null || !BeanMap.TryGetValue(ptype, out create))
 					{
-						recvBuf.SetPosition(pos);
 						OnRecvUnknownBean(session, ptype, pserial, psize);
+						recvBuf.SetPosition(pos);
 					}
 					else
 					{
@@ -435,7 +435,7 @@ namespace Jane
 			buf.SetPosition(pos);
 			buf.Resize(len);
 			OctetsStream os = OnEncode(session, buf.Array(), buf.Position(), buf.Remain());
-			SendDirect(session, os != null ? os : buf);
+			SendDirect(session, os ?? buf);
 		}
 
 		public bool Ask(NetSession session, IBean bean, AnswerDelegate onAnswer = null)

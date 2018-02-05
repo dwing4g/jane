@@ -1349,14 +1349,14 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	}
 
 	// Unsafe mechanics
-	private static final sun.misc.Unsafe U;
-	private static final long			 SIZECTL;
-	private static final long			 TRANSFERINDEX;
-	private static final long			 BASECOUNT;
-	private static final long			 CELLSBUSY;
-	private static final long			 CELLVALUE;
-	private static final long			 ABASE;
-	private static final int			 ASHIFT;
+	public static final sun.misc.Unsafe	U;
+	private static final long			SIZECTL;
+	private static final long			TRANSFERINDEX;
+	private static final long			BASECOUNT;
+	private static final long			CELLSBUSY;
+	private static final long			CELLVALUE;
+	private static final long			ABASE;
+	private static final int			ASHIFT;
 
 	/**
 	 * Returns a sun.misc.Unsafe.  Suitable for use in a 3rd party package.

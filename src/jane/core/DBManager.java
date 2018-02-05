@@ -14,7 +14,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 import jane.core.SContext.Safe;
 
 /**
@@ -131,12 +130,11 @@ public final class DBManager
 							// 3.然后加全局事务锁,待其它事务都停止等待时,保存剩余已修改的记录. 只有此步骤不能和其它事务并发
 							if(_counts[2] != 0 || _counts[1] != 0 || _counts[0] != 0 || force)
 							{
-								WriteLock wl = Procedure.getWriteLock();
 								Log.info("db-commit saved: {}=>{}({}), flushing...", _counts[0], _counts[1], _counts[2]);
 								storage.putFlush(false);
 								Log.info("db-commit procedure pausing...");
 								t1 = System.currentTimeMillis();
-								wl.lock();
+								Procedure.writeLock();
 								try
 								{
 									_modCount.set(0);
@@ -146,7 +144,7 @@ public final class DBManager
 								}
 								finally
 								{
-									wl.unlock();
+									Procedure.writeUnlock();
 								}
 								t1 = System.currentTimeMillis() - t1;
 								if(storage instanceof StorageLevelDB)
