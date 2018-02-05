@@ -135,14 +135,18 @@ public final class DBSimpleManager
 							for(Entry<Octets, Octets> e : writeCache.entrySet())
 								writeBuf.add(new SimpleImmutableEntry<>(e.getKey(), e.getValue()));
 							Log.info("db-commit committing: {}...", writeBuf.size());
-							storage.dbcommit(writeBuf.iterator());
-							Log.info("db-commit cleaning...");
-							int n = writeCache.size();
-							for(Entry<Octets, Octets> e : writeBuf)
-								writeCache.remove(e.getKey(), e.getValue());
-							writeBuf.clear();
-							t1 = System.currentTimeMillis();
-							Log.info("db-commit done: {}=>{} ({} ms)", n, writeCache.size(), t1 - t0);
+							if(storage.dbcommit(writeBuf.iterator()))
+							{
+								Log.info("db-commit cleaning...");
+								int n = writeCache.size();
+								for(Entry<Octets, Octets> e : writeBuf)
+									writeCache.remove(e.getKey(), e.getValue());
+								writeBuf.clear();
+								t1 = System.currentTimeMillis();
+								Log.info("db-commit done: {}=>{} ({} ms)", n, writeCache.size(), t1 - t0);
+							}
+							else
+								t1 = System.currentTimeMillis();
 						}
 
 						// 2.判断备份周期并启动备份

@@ -316,8 +316,9 @@ public interface Storage extends Closeable
 	 * 提交并刷新数据库
 	 * <p>
 	 * 把已写入数据库的数据完整地刷新到磁盘上
+	 * @return 是否提交成功. false表示提交失败,可下次再试
 	 */
-	void commit();
+	boolean commit();
 
 	/**
 	 * 关闭数据库

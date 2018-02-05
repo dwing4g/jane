@@ -344,12 +344,12 @@ namespace Jane
 			}
 		}
 
-		public void Tick() // 在网络开始连接和已经连接时,要频繁调用此方法来及时处理网络接收和发送;
+		public bool Tick() // 在网络开始连接和已经连接时,要频繁调用此方法来及时处理网络接收和发送,返回是否处理了至少一个网络事件;
 		{
-			if(_eventQueue.Count > 0) // 这里并发脏读,应该没问题的;
+			bool hasNetEvent = (_eventQueue.Count > 0); // 这里并发脏读,应该没问题的;
+			if(hasNetEvent)
 			{
-				NetEvent e;
-				for(;;)
+				for(NetEvent e;;)
 				{
 					lock(_eventQueue)
 					{
@@ -367,6 +367,7 @@ namespace Jane
 			}
 			if(_beanCtxQueue.Count > 0)
 				CheckAskTimeout();
+			return hasNetEvent;
 		}
 
 		// 开始异步监听连接,一个NetManager只能监听一个地址和端口,否则会抛异常;

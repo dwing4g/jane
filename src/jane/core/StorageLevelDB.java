@@ -372,8 +372,7 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public void put(long k, V v)
 		{
-			if(++_writeCount == 0)
-				throw new IllegalStateException("wrote too many records");
+			incWriteCount();
 			OctetsStreamEx os = _writeBuf;
 			os.marshal1((byte)1); // leveldb::ValueType::kTypeValue
 			int klen = _tableIdLen + OctetsStream.marshalLen(k);
@@ -392,8 +391,7 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public void remove(long k)
 		{
-			if(++_writeCount == 0)
-				throw new IllegalStateException("wrote too many records");
+			incWriteCount();
 			OctetsStreamEx os = _writeBuf;
 			os.marshalZero(); // leveldb::ValueType::kTypeDeletion
 			int klen = _tableIdLen + OctetsStream.marshalLen(k);
@@ -427,8 +425,7 @@ public final class StorageLevelDB implements Storage
 		public void setIdCounter(long v)
 		{
 			if(v == getIdCounter()) return;
-			if(++_writeCount == 0)
-				throw new IllegalStateException("wrote too many records");
+			incWriteCount();
 			OctetsStreamEx os = _writeBuf;
 			os.marshal1((byte)1); // leveldb::ValueType::kTypeValue
 			int klen = _tableIdCounter.size();
@@ -764,8 +761,7 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public void put(Octets k, V v)
 		{
-			if(++_writeCount == 0)
-				throw new IllegalStateException("wrote too many records");
+			incWriteCount();
 			OctetsStreamEx os = _writeBuf;
 			os.marshal1((byte)1); // leveldb::ValueType::kTypeValue
 			int ksize = k.size();
@@ -786,8 +782,7 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public void remove(Octets k)
 		{
-			if(++_writeCount == 0)
-				throw new IllegalStateException("wrote too many records");
+			incWriteCount();
 			OctetsStreamEx os = _writeBuf;
 			os.marshalZero(); // leveldb::ValueType::kTypeDeletion
 			int ksize = k.size();
@@ -875,8 +870,7 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public void put(String k, V v)
 		{
-			if(++_writeCount == 0)
-				throw new IllegalStateException("wrote too many records");
+			incWriteCount();
 			OctetsStreamEx os = _writeBuf;
 			os.marshal1((byte)1); // leveldb::ValueType::kTypeValue
 			int bn = OctetsStream.marshalStrLen(k);
@@ -905,8 +899,7 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public void remove(String k)
 		{
-			if(++_writeCount == 0)
-				throw new IllegalStateException("wrote too many records");
+			incWriteCount();
 			OctetsStreamEx os = _writeBuf;
 			os.marshalZero(); // leveldb::ValueType::kTypeDeletion
 			int bn = OctetsStream.marshalStrLen(k);
@@ -994,8 +987,7 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public void put(K k, V v)
 		{
-			if(++_writeCount == 0)
-				throw new IllegalStateException("wrote too many records");
+			incWriteCount();
 			OctetsStreamEx os = _writeBuf;
 			os.marshal1((byte)1); // leveldb::ValueType::kTypeValue
 			int kpos = writeValue((Bean<?>)k);
@@ -1008,8 +1000,7 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public void remove(K k)
 		{
-			if(++_writeCount == 0)
-				throw new IllegalStateException("wrote too many records");
+			incWriteCount();
 			OctetsStreamEx os = _writeBuf;
 			os.marshalZero(); // leveldb::ValueType::kTypeDeletion
 			int kpos = writeValue((Bean<?>)k);
@@ -1093,10 +1084,16 @@ public final class StorageLevelDB implements Storage
 		return leveldb_get(_db, k.array(), k.size());
 	}
 
+	void incWriteCount()
+	{
+		if(_writeCount == -1)
+			throw new IllegalStateException("wrote too many records");
+		++_writeCount;
+	}
+
 	public synchronized void dbput(Octets key, Octets value)
 	{
-		if(++_writeCount == 0)
-			throw new IllegalStateException("wrote too many records");
+		incWriteCount();
 		int klen = key.size();
 		int vlen = value.size();
 		int klenlen = OctetsStream.marshalUIntLen(klen);
@@ -1139,15 +1136,19 @@ public final class StorageLevelDB implements Storage
 	/**
 	 * 除了it遍历的所有entry外, _writeBuf也会全部提交
 	 */
-	public void dbcommit(Iterator<Entry<Octets, Octets>> it)
+	public boolean dbcommit(Iterator<Entry<Octets, Octets>> it)
 	{
 		if(it != null)
 		{
 			if(_db == 0) throw new IllegalStateException("db closed");
 			int r = leveldb_write(_db, it);
-			if(r != 0) Log.error("StorageLevelDB.dbcommit: leveldb_write failed({})", r);
+			if(r != 0)
+			{
+				Log.error("StorageLevelDB.dbcommit: leveldb_write failed({})", r);
+				return false;
+			}
 		}
-		commit();
+		return commit();
 	}
 
 	public interface DBWalkHandler
@@ -1281,10 +1282,12 @@ public final class StorageLevelDB implements Storage
 	@Override
 	public synchronized void putBegin()
 	{
-		_writeMap.clear();
-		_writeBuf.resize(4);
-		_writeCount = 0;
-		_writeLock.waitLock(); // 确保此时没有线程在读_writeBuf
+		if(_writeCount == 0)
+		{
+			_writeMap.clear();
+			_writeBuf.resize(4);
+			_writeLock.waitLock(); // 确保此时没有线程在读_writeBuf
+		}
 	}
 
 	@Override
@@ -1293,10 +1296,9 @@ public final class StorageLevelDB implements Storage
 	}
 
 	@Override
-	public synchronized void commit()
+	public synchronized boolean commit()
 	{
-		int bufSize = _writeBuf.size();
-		if(bufSize > 4)
+		if(_writeCount != 0)
 		{
 			if(_db == 0) throw new IllegalStateException("db closed");
 			byte[] buf = _writeBuf.array();
@@ -1305,13 +1307,15 @@ public final class StorageLevelDB implements Storage
 			buf[1] = (byte)(count >> 8);
 			buf[2] = (byte)(count >> 16);
 			buf[3] = (byte)(count >> 24);
-			int r = leveldb_write_direct(_db, buf, bufSize);
+			int r = leveldb_write_direct(_db, buf, _writeBuf.size());
 			if(r != 0)
 			{
 				Log.error("StorageLevelDB.commit: leveldb_write_direct failed({})", r);
-				return;
+				return false;
 			}
+			_writeCount = 0;
 		}
+		return true;
 	}
 
 	@Override
