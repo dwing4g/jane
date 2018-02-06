@@ -21,7 +21,7 @@ package org.apache.mina.core.session;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.file.DefaultFileRegion;
@@ -49,6 +49,12 @@ public abstract class AbstractIoSession implements IoSession {
 	/** An internal write request object that triggers session close */
 	public static final WriteRequest CLOSE_REQUEST = new DefaultWriteRequest("CLOSE_REQUEST", null);
 
+	private static final AtomicIntegerFieldUpdater<AbstractIoSession> scheduledForFlushUpdater
+			= AtomicIntegerFieldUpdater.newUpdater(AbstractIoSession.class, "scheduledForFlush");
+
+	private static final AtomicIntegerFieldUpdater<AbstractIoSession> scheduledForRemoveUpdater
+			= AtomicIntegerFieldUpdater.newUpdater(AbstractIoSession.class, "scheduledForRemove");
+
 	/** An id generator guaranteed to generate unique IDs for the session */
 	private static final AtomicLong idGenerator = new AtomicLong();
 
@@ -68,8 +74,10 @@ public abstract class AbstractIoSession implements IoSession {
 	private final CloseFuture closeFuture = new DefaultCloseFuture(this);
 
 	/** Status variables */
-	private final AtomicBoolean scheduledForFlush = new AtomicBoolean();
-	private final AtomicBoolean scheduledForRemove = new AtomicBoolean();
+	@SuppressWarnings("unused")
+	private volatile int scheduledForFlush;
+	@SuppressWarnings("unused")
+	private volatile int scheduledForRemove;
 
 	private volatile boolean closing;
 
@@ -125,7 +133,7 @@ public abstract class AbstractIoSession implements IoSession {
 	 * Change the session's status: it's not anymore scheduled for flush
 	 */
 	public final void unscheduledForFlush() {
-		scheduledForFlush.set(false);
+		scheduledForFlush = 0;
 	}
 
 	/**
@@ -139,15 +147,15 @@ public abstract class AbstractIoSession implements IoSession {
 		if (schedule) {
 			// If the current tag is set to false, switch it to true,
 			// otherwise, we do nothing but return false: the session is already scheduled for flush
-			return scheduledForFlush.compareAndSet(false, schedule);
+			return scheduledForFlushUpdater.compareAndSet(this, 0, 1);
 		}
 
-		scheduledForFlush.set(schedule);
+		scheduledForFlush = 0;
 		return true;
 	}
 
 	public final boolean setScheduledForRemove() {
-		return scheduledForRemove.compareAndSet(false, true);
+		return scheduledForRemoveUpdater.compareAndSet(this, 0, 1);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -163,7 +171,7 @@ public abstract class AbstractIoSession implements IoSession {
 
 	@Override
 	public final CloseFuture closeNow() {
-		synchronized (scheduledForFlush) {
+		synchronized (closeFuture) {
 			if (isClosing()) {
 				return closeFuture;
 			}

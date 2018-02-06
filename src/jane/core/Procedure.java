@@ -7,12 +7,10 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.ReentrantLock;
 import jane.core.SContext.Safe;
-import jane.core.map.LongConcurrentHashMap;
 
 /**
  * 事务的基类(抽象类)
  */
-@SuppressWarnings("restriction")
 public abstract class Procedure implements Runnable
 {
 	public interface ExceptionHandler
@@ -37,24 +35,14 @@ public abstract class Procedure implements Runnable
 	private static final AtomicReferenceArray<IndexLock> _lockCreator  = new AtomicReferenceArray<>(_lockPool);		 // 锁池中锁的线程安全创造器(副本)
 	private static final int							 _lockMask	   = Const.lockPoolSize - 1;					 // 锁池下标的掩码
 	private static final FastRWLock						 _rwlCommit	   = new FastRWLock();							 // 用于数据提交的读写锁
-	private static final long							 _runningOffset;											 // _running变量的偏移量
 	private static ExceptionHandler						 _defaultEh;												 // 默认的全局异常处理
 
-	private ProcThread		_pt;	  // 事务所属的线程上下文. 只在事务运行中有效
-	@SuppressWarnings("unused")
-	private volatile int	_running; // 事务是否在运行中(不能同时并发运行)
-	private volatile Object	_sid;	  // 事务所属的SessionId
+	private ProcThread		_pt;  // 事务所属的线程上下文. 只在事务运行中有效
+	private volatile Object	_sid; // 事务绑定的SessionId
 
-	static
+	static void incVersion(int lockId)
 	{
-		try
-		{
-			_runningOffset = LongConcurrentHashMap.U.objectFieldOffset(Procedure.class.getDeclaredField("_running"));
-		}
-		catch(Exception e)
-		{
-			throw new Error(e);
-		}
+		_lockVersions.getAndIncrement(lockId & _lockMask);
 	}
 
 	/**
@@ -97,24 +85,11 @@ public abstract class Procedure implements Runnable
 		return getCurProcedure() != null;
 	}
 
-	static void incVersion(int lockId)
-	{
-		_lockVersions.getAndIncrement(lockId & _lockMask);
-	}
-
-	/**
-	 * 获取当前事务绑定的sid
-	 */
 	public final Object getSid()
 	{
 		return _sid;
 	}
 
-	/**
-	 * 设置当前事务绑定的sid
-	 * <p>
-	 * 为了安全只能由内部类设置
-	 */
 	final void setSid(Object sid)
 	{
 		_sid = sid;
@@ -189,13 +164,13 @@ public abstract class Procedure implements Runnable
 		throw Undo._instance;
 	}
 
-	public <V extends Bean<V>, S extends Safe<V>> S lockGet(TableLong<V, S> t, long k) throws InterruptedException
+	public final <V extends Bean<V>, S extends Safe<V>> S lockGet(TableLong<V, S> t, long k) throws InterruptedException
 	{
 		appendLock(t.lockId(k));
 		return t.getNoLock(k);
 	}
 
-	public <K, V extends Bean<V>, S extends Safe<V>> S lockGet(Table<K, V, S> t, K k) throws InterruptedException
+	public final <K, V extends Bean<V>, S extends Safe<V>> S lockGet(Table<K, V, S> t, K k) throws InterruptedException
 	{
 		appendLock(t.lockId(k));
 		return t.getNoLock(k);
@@ -752,16 +727,15 @@ public abstract class Procedure implements Runnable
 	 * 必须在ProcThread类的线程上运行. 一般应通过调度来运行({@link DBManager#submit})<br>
 	 * 如果确保没有顺序问题,也可以由用户直接调用,但不能在事务中嵌套调用
 	 */
-	public boolean execute() throws Exception
+	public synchronized boolean execute() throws Exception
 	{
-		if(!LongConcurrentHashMap.U.compareAndSwapInt(this, _runningOffset, 0, 1))
+		if(_pt != null) // 防止嵌套调用
 		{
-			Log.error("procedure already running: " + toString());
+			Log.error("procedure can not be reentrant: " + toString());
 			return false;
 		}
 		if(DBManager.instance().isExiting())
 		{
-			_running = 0;
 			Log.info("procedure canceled: " + toString());
 			return false;
 		}
@@ -830,7 +804,6 @@ public abstract class Procedure implements Runnable
 			if(rl != null)
 				rl.readUnlock();
 			_pt = null;
-			_running = 0;
 		}
 	}
 

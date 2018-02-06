@@ -1,9 +1,7 @@
 package jane.test;
 
 import java.lang.reflect.Field;
-import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import jane.core.Bean;
 import jane.core.DBManager;
@@ -15,6 +13,7 @@ import jane.core.SBase;
 import jane.core.SContext;
 import jane.core.TableLong;
 import jane.core.Util;
+import jane.core.map.LongConcurrentHashMap;
 
 /**
  * 压力测试
@@ -28,8 +27,8 @@ public final class TestStress extends Procedure
 	private static final int RECORD_COUNT	  = 0x20000; // 总测试的记录数量. 可调小来测试竞争压力;可调大测试大数据量时的内存压力. 必须是2的N次幂
 	private static final int CONCURRENT_COUNT = 100;	 // 并发事务的数量. 可调大来测试高压力时并发的稳定性
 
-	private static final AtomicLong						  counter  = new AtomicLong();			// 事务完成次数统计
-	private static final Map<Integer, Integer>			  checkMap = new ConcurrentHashMap<>();	// 用于验证数据正确性的内存表
+	private static final AtomicLong						  counter  = new AtomicLong();							// 事务完成次数统计
+	private static final LongConcurrentHashMap<Integer>	  checkMap = new LongConcurrentHashMap<>(RECORD_COUNT);	// 用于验证数据正确性的内存表
 	private static final Random							  rand	   = Util.getRand();
 	private static TableLong<StressBean, StressBean.Safe> stressTable;
 
@@ -254,7 +253,7 @@ public final class TestStress extends Procedure
 		finally
 		{
 			if(!redo && !DBManager.instance().isExiting())
-				DBManager.instance().submit(id, this);
+				DBManager.instance().submit(id, new TestStress(id)); // 也可以用this,但跟实际用途不太相符
 		}
 	}
 
