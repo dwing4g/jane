@@ -112,9 +112,9 @@ public class ProcThread extends Thread
 				{
 					long[] tids = null;
 					boolean foundDeadlock = false;
-					long now = System.currentTimeMillis();
-					long procTimeout = (long)Const.procedureTimeout * 1000;
-					long procDeadlockTimeout = (long)Const.procedureDeadlockTimeout * 1000;
+					long now = NetManager.getTimeSec();
+					long procTimeout = Const.procedureTimeout;
+					long procDeadlockTimeout = Const.procedureDeadlockTimeout;
 					long procTimoutMin = Math.min(procTimeout, procDeadlockTimeout);
 					for(ProcThread pt : _procThreads)
 					{

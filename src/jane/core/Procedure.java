@@ -37,8 +37,8 @@ public abstract class Procedure implements Runnable
 	private static final FastRWLock						 _rwlCommit	   = new FastRWLock();							 // 用于数据提交的读写锁
 	private static ExceptionHandler						 _defaultEh;												 // 默认的全局异常处理
 
-	private ProcThread		_pt;  // 事务所属的线程上下文. 只在事务运行中有效
-	private volatile Object	_sid; // 事务绑定的SessionId
+	private ProcThread _pt;	 // 事务所属的线程上下文. 只在事务运行中有效
+	private Object	   _sid; // 事务绑定的SessionId
 
 	static void incVersion(int lockId)
 	{
@@ -727,33 +727,28 @@ public abstract class Procedure implements Runnable
 	 * 必须在ProcThread类的线程上运行. 一般应通过调度来运行({@link DBManager#submit})<br>
 	 * 如果确保没有顺序问题,也可以由用户直接调用,但不能在事务中嵌套调用
 	 */
-	public synchronized boolean execute() throws Exception
+	public boolean execute() throws Exception
 	{
-		if(_pt != null) // 防止嵌套调用
-		{
-			Log.error("procedure can not be reentrant: " + toString());
-			return false;
-		}
 		if(DBManager.instance().isExiting())
 		{
 			Log.info("procedure canceled: " + toString());
 			return false;
 		}
-		ProcThread pt = null;
-		SContext sctx = null;
-		FastRWLock rl = null;
+		ProcThread pt = (ProcThread)Thread.currentThread();
+		SContext sctx = pt.sctx;
+		_rwlCommit.readLock();
 		try
 		{
-			_pt = pt = (ProcThread)Thread.currentThread();
-			rl = _rwlCommit;
-			rl.readLock();
-			sctx = pt.sctx;
-			pt.beginTime = System.currentTimeMillis();
-			pt.proc = this;
+			synchronized(this)
+			{
+				if(pt.proc != null) // 防止嵌套调用
+					throw new IllegalStateException("procedure can not be reentrant: " + toString());
+				pt.beginTime = NetManager.getTimeSec();
+				pt.proc = this;
+			}
+			_pt = pt;
 			for(int n = Const.maxProceduerRedo;;)
 			{
-				if(Thread.interrupted())
-					throw new InterruptedException();
 				try
 				{
 					onProcess();
@@ -786,24 +781,20 @@ public abstract class Procedure implements Runnable
 			}
 			finally
 			{
-				if(sctx != null)
-					sctx.rollback();
+				sctx.rollback();
 			}
 			return false;
 		}
 		finally
 		{
-			if(pt != null)
-				unlock();
+			unlock();
+			_pt = null;
 			synchronized(this)
 			{
-				if(pt != null)
-					pt.proc = null;
+				pt.proc = null;
 				Thread.interrupted(); // 清除interrupted标识
 			}
-			if(rl != null)
-				rl.readUnlock();
-			_pt = null;
+			_rwlCommit.readUnlock();
 		}
 	}
 
