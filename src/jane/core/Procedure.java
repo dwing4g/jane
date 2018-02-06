@@ -743,10 +743,12 @@ public abstract class Procedure implements Runnable
 			{
 				if(pt.proc != null) // 防止嵌套调用
 					throw new IllegalStateException("procedure can not be reentrant: " + toString());
+				if(_pt != null) // 防止多线程并发
+					throw new IllegalStateException("procedure is running already: " + toString());
 				pt.beginTime = NetManager.getTimeSec();
 				pt.proc = this;
+				_pt = pt;
 			}
-			_pt = pt;
 			for(int n = Const.maxProceduerRedo;;)
 			{
 				try
@@ -788,9 +790,9 @@ public abstract class Procedure implements Runnable
 		finally
 		{
 			unlock();
-			_pt = null;
 			synchronized(this)
 			{
+				_pt = null;
 				pt.proc = null;
 				Thread.interrupted(); // 清除interrupted标识
 			}
