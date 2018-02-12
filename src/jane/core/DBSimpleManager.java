@@ -26,20 +26,18 @@ public final class DBSimpleManager
 {
 	private static final class InstanceHolder
 	{
-		public static final DBSimpleManager instance = new DBSimpleManager();
+		public static final DBSimpleManager instance = new DBSimpleManager(Const.dbSimpleCacheSize);
 	}
 
 	private static volatile boolean _hasCreated; // 是否创建过此类的对象
 
-	private final CommitThread					_commitThread	 = new CommitThread();												 // 处理数据提交的线程
-	private final Map<Octets, Octets>			_readCache		 = Util.newConcurrentLRUMap(Const.dbSimpleCacheSize, "SimpleCache"); // 读缓冲区
-	private final ConcurrentMap<Octets, Octets>	_writeCache		 = Util.newConcurrentHashMap();										 // 写缓冲区
-	private StorageLevelDB						_storage;																			 // 存储引擎
-	private String								_dbFilename;																		 // 数据库保存的路径
-	protected final AtomicLong					_readCount		 = new AtomicLong();												 // 读操作次数统计
-	protected final AtomicLong					_readStoCount	 = new AtomicLong();												 // 读数据库存储的次数统计(即cache-miss的次数统计)
-	private boolean								_enableReadCache = true;															 // 是否开启读缓存
-	private volatile boolean					_exiting;																			 // 是否在退出状态(已经执行了ShutdownHook)
+	private final CommitThread					_commitThread = new CommitThread();			 // 处理数据提交的线程
+	private final Map<Octets, Octets>			_readCache;									 // 读缓冲区
+	private final ConcurrentMap<Octets, Octets>	_writeCache	  = Util.newConcurrentHashMap(); // 写缓冲区
+	protected final AtomicLong					_readCount	  = new AtomicLong();			 // 读操作次数统计
+	protected final AtomicLong					_readStoCount = new AtomicLong();			 // 读数据库存储的次数统计(即cache-miss的次数统计)
+	private StorageLevelDB						_storage;									 // 存储引擎
+	private String								_dbFilename;								 // 数据库保存的路径
 
 	/**
 	 * 周期向数据库存储提交事务性修改的线程(checkpoint)
@@ -111,11 +109,13 @@ public final class DBSimpleManager
 			{
 				long t = System.currentTimeMillis();
 				ConcurrentMap<Octets, Octets> writeCache = _writeCache;
-				if(t < _commitTime && writeCache.size() < Const.dbCommitModCount) return true;
+				long commitTime = _commitTime;
+				if(t < commitTime && writeCache.size() < Const.dbCommitModCount) return true;
 				synchronized(DBSimpleManager.this)
 				{
-					_commitTime = (_commitTime <= t ? _commitTime : t) + _commitPeriod;
-					if(_commitTime <= t) _commitTime = t + _commitPeriod;
+					commitTime = (commitTime <= t ? commitTime : t) + _commitPeriod;
+					if(commitTime <= t) commitTime = t + _commitPeriod;
+					_commitTime = commitTime;
 					if(Thread.interrupted() && !force) return false;
 					StorageLevelDB storage = getStorage();
 					if(storage != null)
@@ -150,13 +150,15 @@ public final class DBSimpleManager
 						}
 
 						// 2.判断备份周期并启动备份
-						if(_backupTime < t1)
+						long backupTime = _backupTime;
+						if(backupTime < t1)
 						{
 							Log.info("db-commit backup begin...");
-							if(_backupTime >= 0)
+							if(backupTime >= 0)
 							{
-								_backupTime += _backupPeriod;
-								if(_backupTime <= t1) _backupTime += ((t1 - _backupTime) / _backupPeriod + 1) * _backupPeriod;
+								backupTime += _backupPeriod;
+								if(backupTime <= t1) backupTime += ((t1 - backupTime) / _backupPeriod + 1) * _backupPeriod;
+								_backupTime = backupTime;
 							}
 							else
 								_backupTime = Long.MAX_VALUE;
@@ -190,17 +192,18 @@ public final class DBSimpleManager
 		return _hasCreated;
 	}
 
-	public DBSimpleManager()
+	public DBSimpleManager(int readCacheSize)
 	{
+		_readCache = (readCacheSize > 0 ? Util.newConcurrentLRUMap(readCacheSize, "SimpleReadCache") : null);
 		_hasCreated = true;
 	}
 
 	/**
 	 * 判断是否在退出前的shutdown状态下
 	 */
-	public boolean isExiting()
+	public synchronized boolean isExiting()
 	{
-		return _exiting;
+		return _storage == null;
 	}
 
 	/**
@@ -212,7 +215,7 @@ public final class DBSimpleManager
 	 */
 	public synchronized void startup(StorageLevelDB sto, String dbFilename) throws IOException
 	{
-		if(_exiting) throw new IllegalArgumentException("can not startup when exiting");
+		if(_storage != null) throw new IllegalArgumentException("already started");
 		if(sto == null) throw new IllegalArgumentException("no StorageLevelDB specified");
 		if(dbFilename == null || dbFilename.trim().isEmpty()) throw new IllegalArgumentException("no dbFilename specified");
 		shutdown();
@@ -226,10 +229,6 @@ public final class DBSimpleManager
 		ExitManager.getShutdownSystemCallbacks().add(() ->
 		{
 			Log.info("DBSimpleManager.OnJVMShutDown: db shutdown");
-			synchronized(DBSimpleManager.this)
-			{
-				_exiting = true;
-			}
 			shutdown();
 			Log.info("DBSimpleManager.OnJVMShutDown: db closed");
 		});
@@ -254,15 +253,9 @@ public final class DBSimpleManager
 		return _storage;
 	}
 
-	public void enableReadCache(boolean enabled)
-	{
-		_enableReadCache = enabled;
-		_readCache.clear();
-	}
-
 	public int getReadCacheSize()
 	{
-		return _readCache.size();
+		return _readCache != null ? _readCache.size() : 0;
 	}
 
 	public int getWriteCacheSize()
@@ -323,7 +316,7 @@ public final class DBSimpleManager
 	private <B extends Bean<B>> B get0(Octets key, B beanStub) throws MarshalException
 	{
 		_readCount.getAndIncrement();
-		Octets val = (_enableReadCache ? _readCache.get(key) : null);
+		Octets val = (_readCache != null ? _readCache.get(key) : null);
 		if(val == null)
 		{
 			val = _writeCache.get(key);
@@ -334,7 +327,7 @@ public final class DBSimpleManager
 				if(v == null)
 					return null;
 				OctetsStreamEx os = OctetsStreamEx.wrap(v);
-				if(_enableReadCache)
+				if(_readCache != null)
 					_readCache.put(key, os);
 				return StorageLevelDB.toBean(os, beanStub);
 			}
@@ -347,14 +340,14 @@ public final class DBSimpleManager
 	private void put0(Octets key, Octets value)
 	{
 		_writeCache.put(key, value);
-		if(_enableReadCache)
+		if(_readCache != null)
 			_readCache.put(key, value);
 	}
 
 	private void remove0(Octets key)
 	{
 		_writeCache.put(key, StorageLevelDB.deleted());
-		if(_enableReadCache)
+		if(_readCache != null)
 			_readCache.remove(key);
 	}
 

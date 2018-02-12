@@ -27,7 +27,7 @@ public final class TcpSession implements Channel
 	private final ArrayDeque<ByteBuffer>	_sendBuf	 = new ArrayDeque<>();
 	private final RecvHandler				_recvHandler = new RecvHandler();
 	private final SendHandler				_sendHandler = new SendHandler();
-	private volatile Object					_userObject;
+	private Object							_userObject;
 	private final int						_recvBufSize;
 	private final int						_sendSoBufSize;
 	private int								_sendBufMaxSize;

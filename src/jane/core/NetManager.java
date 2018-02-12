@@ -211,11 +211,13 @@ public class NetManager implements IoHandler
 	 */
 	public final NioSocketAcceptor getAcceptor()
 	{
-		if(_acceptor == null || _acceptor.isDisposed())
+		NioSocketAcceptor acceptor = _acceptor;
+		if(acceptor == null || acceptor.isDisposed())
 		{
 			synchronized(this)
 			{
-				if(_acceptor == null || _acceptor.isDisposed())
+				acceptor = _acceptor;
+				if(acceptor == null || acceptor.isDisposed())
 				{
 					NioSocketAcceptor t;
 					if(_ioThreadCount == 0)
@@ -226,11 +228,11 @@ public class NetManager implements IoHandler
 						t = new NioSocketAcceptor(DEFAULT_IO_THREAD_COUNT);
 					t.setReuseAddress(true);
 					t.setHandler(this);
-					_acceptor = t;
+					_acceptor = acceptor = t;
 				}
 			}
 		}
-		return _acceptor;
+		return acceptor;
 	}
 
 	/**
@@ -238,11 +240,13 @@ public class NetManager implements IoHandler
 	 */
 	public final NioSocketConnector getConnector()
 	{
-		if(_connector == null || _connector.isDisposed())
+		NioSocketConnector connector = _connector;
+		if(connector == null || connector.isDisposed())
 		{
 			synchronized(this)
 			{
-				if(_connector == null || _connector.isDisposed())
+				connector = _connector;
+				if(connector == null || connector.isDisposed())
 				{
 					NioSocketConnector t;
 					if(_ioThreadCount == 0)
@@ -253,11 +257,11 @@ public class NetManager implements IoHandler
 						t = new NioSocketConnector(DEFAULT_IO_THREAD_COUNT);
 					t.setHandler(this);
 					t.setConnectTimeoutMillis(Const.connectTimeout * 1000);
-					_connector = t;
+					_connector = connector = t;
 				}
 			}
 		}
-		return _connector;
+		return connector;
 	}
 
 	/**
@@ -282,8 +286,10 @@ public class NetManager implements IoHandler
 	public final boolean hasSession(IoSession session)
 	{
 		long sid = session.getId();
-		if(_acceptor != null && _acceptor.getManagedSessions().containsKey(sid)) return true;
-		if(_connector != null && _connector.getManagedSessions().containsKey(sid)) return true;
+		NioSocketAcceptor acceptor = _acceptor;
+		if(acceptor != null && acceptor.getManagedSessions().containsKey(sid)) return true;
+		NioSocketConnector connector = _connector;
+		if(connector != null && connector.getManagedSessions().containsKey(sid)) return true;
 		return false;
 	}
 
@@ -293,7 +299,8 @@ public class NetManager implements IoHandler
 	 */
 	public final Map<Long, IoSession> getServerSessions()
 	{
-		return _acceptor != null ? _acceptor.getManagedSessions() : Collections.<Long, IoSession>emptyMap();
+		NioSocketAcceptor acceptor = _acceptor;
+		return acceptor != null ? acceptor.getManagedSessions() : Collections.<Long, IoSession>emptyMap();
 	}
 
 	/**
@@ -302,7 +309,8 @@ public class NetManager implements IoHandler
 	 */
 	public final Map<Long, IoSession> getClientSessions()
 	{
-		return _connector != null ? _connector.getManagedSessions() : Collections.<Long, IoSession>emptyMap();
+		NioSocketConnector connector = _connector;
+		return connector != null ? connector.getManagedSessions() : Collections.<Long, IoSession>emptyMap();
 	}
 
 	/**
@@ -343,19 +351,17 @@ public class NetManager implements IoHandler
 	 */
 	public void startServer(SocketAddress addr) throws IOException
 	{
-		getAcceptor();
 		Log.info("{}: listening addr={}", _name, addr);
-		_acceptor.bind(addr);
+		getAcceptor().bind(addr);
 	}
 
 	public void startServer(List<? extends SocketAddress> addrs) throws IOException
 	{
-		getAcceptor();
 		StringBuilder sb = new StringBuilder();
 		for(SocketAddress addr : addrs)
 			sb.append(addr).append(';');
 		Log.info("{}: listening addr={}", _name, sb);
-		_acceptor.bind(addrs);
+		getAcceptor().bind(addrs);
 	}
 
 	/**
@@ -366,9 +372,8 @@ public class NetManager implements IoHandler
 	 */
 	public ConnectFuture startClient(SocketAddress addr, Object ctx)
 	{
-		getConnector();
 		Log.info("{}: connecting addr={}", _name, addr);
-		return _connector.connect(addr).addListener(new IoFutureListener<ConnectFuture>()
+		return getConnector().connect(addr).addListener(new IoFutureListener<ConnectFuture>()
 		{
 			private int _count;
 
@@ -423,11 +428,11 @@ public class NetManager implements IoHandler
 	 */
 	public void stopServer(SocketAddress addr)
 	{
-		getAcceptor();
+		NioSocketAcceptor acceptor = getAcceptor();
 		if(addr != null)
-			_acceptor.unbind(addr);
+			acceptor.unbind(addr);
 		else
-			_acceptor.unbind();
+			acceptor.unbind();
 	}
 
 	/**
@@ -436,9 +441,10 @@ public class NetManager implements IoHandler
 	 */
 	public void stopAllClients(boolean force)
 	{
-		if(_connector != null)
+		NioSocketConnector connector = _connector;
+		if(connector != null)
 		{
-			for(IoSession session : _connector.getManagedSessions().values())
+			for(IoSession session : connector.getManagedSessions().values())
 			{
 				if(force)
 					session.closeNow();

@@ -9,12 +9,12 @@ public class ProcThread extends Thread
 	private static final ConcurrentLinkedQueue<ProcThread> _procThreads	= new ConcurrentLinkedQueue<>(); // 当前运行的全部事务线程. 用于判断是否超时
 	private static volatile long						   _interruptCount;								 // 事务被打断的次数统计
 
-	final IndexLock[]  locks	= new IndexLock[Const.maxLockPerProcedure];	// 当前线程已经加过的锁
-	int				   lockCount;											// 当前进程已经加过锁的数量
-	final SContext	   sctx		= new SContext();							// 当前线程上的安全修改的上下文
-	volatile Procedure proc;												// 当前运行的事务
-	volatile long	   beginTime;											// 当前/上个事务运行的起始时间. 用于判断是否超时
-	final int[]		   versions	= new int[Const.maxLockPerProcedure];		// 当前线程已经加过的锁版本号(只在需要时临时设置,这里只是为了避免反复分配)
+	final IndexLock[] locks	   = new IndexLock[Const.maxLockPerProcedure]; // 当前线程已经加过的锁
+	int				  lockCount;										   // 当前进程已经加过锁的数量
+	final SContext	  sctx	   = new SContext();						   // 当前线程上的安全修改的上下文
+	Procedure		  proc;												   // 当前运行的事务
+	long			  beginTime;										   // 当前/上个事务运行的起始时间. 用于判断是否超时
+	final int[]		  versions = new int[Const.maxLockPerProcedure];	   // 当前线程已经加过的锁版本号(只在需要时临时设置,这里只是为了避免反复分配)
 
 	public ProcThread(String name)
 	{
@@ -120,8 +120,8 @@ public class ProcThread extends Thread
 					{
 						if(pt.isAlive())
 						{
-							Procedure p = pt.proc;
-							if(p != null && now - pt.beginTime > procTimoutMin)
+							Procedure p = pt.proc; // 虽然非volatile读,但因为对及时性要求不高,而且下面有double check,所以没什么问题
+							if(p != null && now - pt.beginTime > procTimoutMin) // beginTime的问题同上
 							{
 								synchronized(p)
 								{

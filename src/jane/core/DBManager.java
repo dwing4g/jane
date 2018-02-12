@@ -97,11 +97,13 @@ public final class DBManager
 			try
 			{
 				long t = System.currentTimeMillis();
-				if(t < _commitTime && _modCount.get() < Const.dbCommitModCount) return true;
+				long commitTime = _commitTime;
+				if(t < commitTime && _modCount.get() < Const.dbCommitModCount) return true;
 				synchronized(DBManager.this)
 				{
-					_commitTime = (_commitTime <= t ? _commitTime : t) + _commitPeriod;
-					if(_commitTime <= t) _commitTime = t + _commitPeriod;
+					commitTime = (commitTime <= t ? commitTime : t) + _commitPeriod;
+					if(commitTime <= t) commitTime = t + _commitPeriod;
+					_commitTime = commitTime;
 					if(Thread.interrupted() && !force) return false;
 					Storage storage = getStorage();
 					if(storage != null)
@@ -165,10 +167,12 @@ public final class DBManager
 						}
 
 						// 5.判断备份周期并启动备份
-						if(_backupTime <= t3)
+						long backupTime = _backupTime;
+						if(backupTime <= t3)
 						{
-							_backupTime += _backupPeriod;
-							if(_backupTime <= t3) _backupTime += ((t3 - _backupTime) / _backupPeriod + 1) * _backupPeriod;
+							backupTime += _backupPeriod;
+							if(backupTime <= t3) backupTime += ((t3 - backupTime) / _backupPeriod + 1) * _backupPeriod;
+							_backupTime = backupTime;
 							Log.info("db-commit backup begin...");
 							String timeStr;
 							synchronized(_sdf)

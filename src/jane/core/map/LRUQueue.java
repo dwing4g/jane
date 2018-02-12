@@ -2,9 +2,9 @@ package jane.core.map;
 
 abstract class CacheEntryBase<V>
 {
-	protected long			versionCopy;
-	protected volatile long	version;
-	protected V				value;
+	protected long versionCopy;
+	protected long version;	   // volatile is not necessary for most situation
+	protected V	   value;
 
 	/**
 	 * Determines the ordering of objects in this priority queue.

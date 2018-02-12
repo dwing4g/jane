@@ -111,7 +111,7 @@ public abstract class Procedure implements Runnable
 	 * 可以避免事务超时时被打断,只能在事务运行中设置,会使getBeginTime()结果失效<br>
 	 * 一般用于事务可能会运行较久的情况,但一般不推荐这样做
 	 */
-	protected final void setUnintterrupted()
+	protected final synchronized void setUnintterrupted()
 	{
 		ProcThread pt = _pt;
 		if(pt != null)
