@@ -158,6 +158,13 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 	protected abstract Iterator<SelectionKey> allSessions();
 
 	/**
+	 * Get the number of {@link IoSession} polled by this {@link IoProcessor}
+	 *
+	 * @return the number of sessions attached to this {@link IoProcessor}
+	 */
+	protected abstract int allSessionsCount();
+
+	/**
 	 * Get an {@link Iterator} for the list of {@link IoSession} found selected by the last call of {@link #select(long)}
 	 *
 	 * @return {@link Iterator} of {@link IoSession} read for I/Os operation
@@ -382,7 +389,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 		public void run() {
 			processorThread = Thread.currentThread();
 
-			for (int nSessions = 0, nbTries = 10;;) {
+			for (int nbTries = 10;;) {
 				try {
 					// This select has a timeout so that we can manage idle session when we get out of the select every second.
 					// (note: this is a hack to avoid creating a dedicated thread).
@@ -422,7 +429,22 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 					}
 
 					// Manage newly created session first
-					nSessions += handleNewSessions();
+					if (handleNewSessions() == 0) {
+						// Get a chance to exit the infinite loop if there are no more sessions on this Processor
+						if (allSessionsCount() == 0) {
+							processorRef.set(null);
+
+							if (newSessions.isEmpty() && isSelectorEmpty()) {
+								// newSessions.add() precedes startupProcessor
+								break;
+							}
+
+							if (!processorRef.compareAndSet(null, this)) {
+								// startupProcessor won race, so must exit processor
+								break;
+							}
+						}
+					}
 
 					// Now, if we have had some incoming or outgoing events, deal with them
 					if (selected > 0) {
@@ -433,40 +455,16 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 					flush();
 
 					// And manage removed sessions
-					nSessions -= removeSessions();
-
-					// Get a chance to exit the infinite loop if there are no more sessions on this Processor
-					if (nSessions == 0) {
-						processorRef.set(null);
-
-						if (newSessions.isEmpty() && isSelectorEmpty()) {
-							// newSessions.add() precedes startupProcessor
-							break;
-						}
-
-						if (!processorRef.compareAndSet(null, this)) {
-							// startupProcessor won race, so must exit processor
-							break;
-						}
-					}
+					removeSessions();
 
 					// Disconnect all sessions immediately if disposal has been requested so that we exit this loop eventually.
 					if (isDisposing()) {
-						boolean hasKeys = false;
-
 						for (Iterator<SelectionKey> it = allSessions(); it.hasNext();) {
 							@SuppressWarnings("unchecked")
 							S session = (S)it.next().attachment();
 							scheduleRemove(session);
-
-							if (session.isActive()) {
-								hasKeys = true;
-							}
 						}
-
-						if (hasKeys) {
-							wakeup();
-						}
+						wakeup();
 					}
 				} catch (ClosedSelectorException cse) {
 					// If the selector has been closed, we can exit the loop But first, dump a stack trace
@@ -550,10 +548,8 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			return registered;
 		}
 
-		private int removeSessions() {
-			int removedSessions = 0;
+		private void removeSessions() {
 			S session;
-
 			while ((session = removingSessions.poll()) != null) {
 				// Now deal with the removal accordingly to the session's state
 				switch (getState(session)) {
@@ -566,10 +562,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 					case CLOSING: // Skip if channel is already closed In any case, remove the session from the queue
 						break;
 				}
-				removedSessions++;
 			}
-
-			return removedSessions;
 		}
 
 		/**

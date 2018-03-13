@@ -92,6 +92,12 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	}
 
 	@Override
+	protected int allSessionsCount()
+	{
+		return selector.keys().size();
+	}
+
+	@Override
 	protected Iterator<SelectionKey> selectedSessions() {
 		return selector.selectedKeys().iterator();
 	}

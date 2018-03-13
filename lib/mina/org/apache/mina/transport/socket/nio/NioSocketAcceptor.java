@@ -94,15 +94,19 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 
 			return ch != null ? new NioSession(this, processor, ch) : null;
 		} catch (Throwable t) {
-			ExceptionMonitor.getInstance().error("Error Calling Accept on Socket - Sleeping Acceptor Thread. Check the ulimit parameter", t);
-			try {
-				// Sleep 50 ms, so that the select does not spin like crazy doing nothing but eating CPU
-				// This is typically what will happen if we don't have any more File handle on the server
-				// Check the ulimit parameter
-				// NOTE : this is a workaround, there is no way we can handle this exception in any smarter way...
-				Thread.sleep(50L);
-			} catch (InterruptedException ie) {
-				// Nothing to do
+			if(t.getMessage().equals("Too many open files")) {
+				ExceptionMonitor.getInstance().error("Error Calling Accept on Socket - Sleeping Acceptor Thread. Check the ulimit parameter", t);
+				try {
+					// Sleep 50 ms, so that the select does not spin like crazy doing nothing but eating CPU
+					// This is typically what will happen if we don't have any more File handle on the server
+					// Check the ulimit parameter
+					// NOTE : this is a workaround, there is no way we can handle this exception in any smarter way...
+					Thread.sleep(50L);
+				} catch (InterruptedException ie) {
+					// Nothing to do
+				}
+			} else {
+				throw t;
 			}
 
 			// No session when we have met an exception
