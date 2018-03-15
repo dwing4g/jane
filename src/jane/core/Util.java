@@ -16,9 +16,9 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import jane.core.map.ConcurrentLRUMap;
@@ -31,11 +31,9 @@ import jane.core.map.LongMap;
  */
 public final class Util
 {
-	private static final Random _rand = new Random();
-
-	public static Random getRand()
+	public static ThreadLocalRandom getRand()
 	{
-		return _rand;
+		return ThreadLocalRandom.current();
 	}
 
 	/**

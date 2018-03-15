@@ -188,7 +188,7 @@ public class Octets implements Cloneable, Comparable<Octets>
 	}
 
 	/**
-	 * @param size 期望缩小的空间. 如果比当前数据小,则缩小的当前数据大小
+	 * @param size 期望缩小的空间. 如果比当前数据小,则缩小到当前数据大小
 	 */
 	public void shrink(int size)
 	{

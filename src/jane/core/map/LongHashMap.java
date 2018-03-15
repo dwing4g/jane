@@ -2,6 +2,7 @@ package jane.core.map;
 
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import jane.core.Util;
 
 /**
  * An unordered map that uses long keys.<br>
@@ -244,7 +245,7 @@ public final class LongHashMap<V> implements Cloneable
 		for(int i = 0, pis = _pushIterations;;)
 		{
 			// Replace the key and value for one of the hashes.
-			switch(IntHashMap._random.nextInt(3))
+			switch(Util.getRand().nextInt(3))
 			{
 				case 0:
 					evictedKey = key1;

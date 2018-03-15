@@ -1,8 +1,8 @@
 package jane.core.map;
 
-import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
+import jane.core.Util;
 
 /**
  * An unordered map that uses int keys.<br>
@@ -17,10 +17,9 @@ import java.util.function.IntConsumer;
  */
 public final class IntHashMap<V> implements Cloneable
 {
-	static final int		PRIME2	= 0xbe1f14b1;
-	static final int		PRIME3	= 0xb4b82e39;
-	public static final int	EMPTY	= 0;
-	static final Random		_random	= new Random();
+	static final int		PRIME2 = 0xbe1f14b1;
+	static final int		PRIME3 = 0xb4b82e39;
+	public static final int	EMPTY  = 0;
 	private int				_size;
 	private int[]			_keyTable;
 	private V[]				_valueTable;
@@ -253,7 +252,7 @@ public final class IntHashMap<V> implements Cloneable
 		for(int i = 0, pis = _pushIterations;;)
 		{
 			// Replace the key and value for one of the hashes.
-			switch(_random.nextInt(3))
+			switch(Util.getRand().nextInt(3))
 			{
 				case 0:
 					evictedKey = key1;
