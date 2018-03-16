@@ -174,13 +174,8 @@ public final class DBManager
 							if(backupTime <= t3) backupTime += ((t3 - backupTime) / _backupPeriod + 1) * _backupPeriod;
 							_backupTime = backupTime;
 							Log.info("db-commit backup begin...");
-							String timeStr;
-							synchronized(_sdf)
-							{
-								timeStr = _sdf.format(new Date());
-							}
 							long r = storage.backup(new File(Const.dbBackupPath,
-									new File(Const.dbFilename).getName() + '.' + timeStr));
+									new File(Const.dbFilename).getName() + '.' + _sdf.format(new Date())));
 							if(r >= 0)
 								Log.info("db-commit backup end ({} bytes) ({} ms)", r, System.currentTimeMillis() - t);
 							else

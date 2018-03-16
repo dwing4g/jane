@@ -162,12 +162,8 @@ public final class DBSimpleManager
 							}
 							else
 								_backupTime = Long.MAX_VALUE;
-							String timeStr;
-							synchronized(_sdf)
-							{
-								timeStr = _sdf.format(new Date());
-							}
-							long r = storage.backup(new File(Const.dbBackupPath, new File(_dbFilename).getName() + '.' + timeStr));
+							long r = storage.backup(new File(Const.dbBackupPath,
+									new File(_dbFilename).getName() + '.' + _sdf.format(new Date())));
 							Log.info(r >= 0 ? "db-commit backup end ({} bytes) ({} ms)" : "db-commit backup error({}) ({} ms)",
 									r, System.currentTimeMillis() - t1);
 						}
