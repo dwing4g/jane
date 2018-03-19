@@ -10,6 +10,8 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -209,8 +211,9 @@ public final class Util
 		Octets res = new Octets();
 		for(int size = 0;;)
 		{
-			res.reserve(size + 2048);
-			int n = is.read(res.array(), size, 2048);
+			res.reserve(size + 8192);
+			byte[] buf = res.array();
+			int n = is.read(buf, size, buf.length - size);
 			if(n <= 0) break;
 			res.resize(size += n);
 		}
@@ -224,14 +227,7 @@ public final class Util
 	 */
 	public static byte[] readFileData(String fileName) throws IOException
 	{
-		try(InputStream is = new FileInputStream(fileName))
-		{
-			int size = is.available();
-			if(size <= 0) return Octets.EMPTY;
-			byte[] data = new byte[size];
-			readStream(is, fileName, data, size);
-			return data;
-		}
+		return Files.readAllBytes(Paths.get(fileName));
 	}
 
 	/**

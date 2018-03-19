@@ -333,19 +333,24 @@ public final class HttpCodec extends IoFilterAdapter
 	}
 
 	/**
-	 * 发送HTTP的回复头
+	 * 发送HTTP的回复头和可选的数据部分
 	 * @param code 回复的HTTP状态码字符串. 如"200 OK"表示正常
 	 * @param len
 	 * <li>len < 0: 使用chunked模式,后续发送若干个{@link #sendChunk},最后发送{@link #sendChunkEnd}
+	 * <li>len = 0: 由data参数的长度确定
 	 * <li>len > 0: 后续使用{@link #send}发送固定长度的数据
-	 * @param heads 额外发送的HTTP头. 每个元素表示一行文字,没有做验证,所以小心使用,可传null表示无任何额外的头信息
+	 * @param heads 额外发送的HTTP头. 每个元素表示一行文字(不含换行符),没有做验证,所以小心使用,可传null表示无任何额外的头信息
+	 * @param data HTTP回复数据的内容. 有效范围是remain部分,null表示无数据
 	 */
-	public static boolean sendHead(IoSession session, String code, long len, Iterable<String> heads)
+	@SuppressWarnings("null")
+	public static boolean sendHead(IoSession session, String code, long len, Iterable<String> heads, Octets data)
 	{
 		if(session.isClosing()) return false;
 		StringBuilder sb = new StringBuilder(1024);
 		sb.append("HTTP/1.1 ").append(code).append('\r').append('\n');
 		sb.append("Date: ").append(getDate()).append('\r').append('\n');
+		int dataLen = (data != null ? data.remain() : 0);
+		if(len == 0) len = dataLen;
 		if(len >= 0)
 			sb.append("Content-Length: ").append(len).append('\r').append('\n');
 		else
@@ -357,10 +362,17 @@ public final class HttpCodec extends IoFilterAdapter
 		}
 		sb.append('\r').append('\n');
 		int n = sb.length();
-		byte[] out = new byte[n];
+		byte[] out = new byte[n + dataLen];
 		for(int i = 0; i < n; ++i)
 			out[i] = (byte)sb.charAt(i);
+		if(dataLen > 0)
+			System.arraycopy(data.array(), data.position(), out, n, dataLen);
 		return send(session, out);
+	}
+
+	public static boolean sendHead(IoSession session, String code, long len, Iterable<String> heads)
+	{
+		return sendHead(session, code, len, heads, null);
 	}
 
 	public static boolean send(IoSession session, byte[] data)
