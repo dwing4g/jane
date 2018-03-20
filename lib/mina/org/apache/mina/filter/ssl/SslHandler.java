@@ -104,7 +104,7 @@ public final class SslHandler {
 	private final ReentrantLock sslLock = new ReentrantLock();
 
 	/** A counter of schedules events */
-	private final AtomicInteger scheduled_events = new AtomicInteger();
+	private final AtomicInteger scheduledEvents = new AtomicInteger();
 
 	/**
 	 * Create a new SSL Handler, and initialize it.
@@ -280,7 +280,7 @@ public final class SslHandler {
 	}
 
 	void flushScheduledEvents() {
-		scheduled_events.getAndIncrement();
+		scheduledEvents.getAndIncrement();
 
 		// Fire events only when the lock is available for this handler.
 		if (sslLock.tryLock()) {
@@ -297,7 +297,7 @@ public final class SslHandler {
 					while ((eventR = messageReceivedEventQueue.poll()) != null) {
 						eventR.getKey().messageReceived(eventR.getValue());
 					}
-				} while (scheduled_events.decrementAndGet() > 0);
+				} while (scheduledEvents.decrementAndGet() > 0);
 			} finally {
 				sslLock.unlock();
 			}
@@ -313,11 +313,7 @@ public final class SslHandler {
 	 * @throws SSLException on errors
 	 */
 	void messageReceived(NextFilter nextFilter, ByteBuffer buf) throws SSLException {
-		// if (!isOutboundDone()) {
-		// 	LOGGER.debug("{} Processing the received message", SslFilter.getSessionInfo(session));
-		// } else {
-		// 	LOGGER.debug("{} Processing the received message", SslFilter.getSessionInfo(session));
-		// }
+		// LOGGER.debug("{} Processing the received message", SslFilter.getSessionInfo(session));
 
 		// append buf to inNetBuffer
 		if (inNetBuffer == null) {
@@ -679,7 +675,6 @@ public final class SslHandler {
 
 		SSLEngineResult res;
 		Status status;
-		HandshakeStatus hs;
 
 		do {
 			// Decode the incoming data
@@ -687,7 +682,7 @@ public final class SslHandler {
 			status = res.getStatus();
 
 			// We can be processing the Handshake
-			hs = res.getHandshakeStatus();
+			handshakeStatus = res.getHandshakeStatus();
 
 			if (status == Status.BUFFER_OVERFLOW) {
 				// We have to grow the target buffer, it's too small.
@@ -704,7 +699,7 @@ public final class SslHandler {
 				continue;
 			}
 		} while ((status == Status.OK || status == Status.BUFFER_OVERFLOW) &&
-				(hs == HandshakeStatus.NOT_HANDSHAKING || hs == HandshakeStatus.NEED_UNWRAP));
+				(handshakeStatus == HandshakeStatus.NOT_HANDSHAKING || handshakeStatus == HandshakeStatus.NEED_UNWRAP));
 
 		return res;
 	}

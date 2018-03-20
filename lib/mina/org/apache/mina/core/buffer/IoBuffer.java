@@ -24,9 +24,11 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
+import java.nio.charset.StandardCharsets;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.write.DefaultWriteRequest;
 import org.apache.mina.core.write.WriteRequest;
@@ -606,6 +608,12 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	// String getters and putters //
 	////////////////////////////////
 
+	private static boolean isUtf16(Charset charset) {
+		return	charset.equals(StandardCharsets.UTF_16) ||
+				charset.equals(StandardCharsets.UTF_16BE) ||
+				charset.equals(StandardCharsets.UTF_16LE);
+	}
+
 	/**
 	 * Reads a <code>NUL</code>-terminated string from this buffer using the specified <code>decoder</code> and returns it.
 	 * This method reads until the limit of this buffer if no <tt>NUL</tt> is found.
@@ -619,14 +627,12 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 			return "";
 		}
 
-		boolean utf16 = decoder.charset().name().startsWith("UTF-16");
-
 		int oldPos = position();
 		int oldLimit = limit();
 		int end = -1;
 		int newPos;
 
-		if (!utf16) {
+		if (!isUtf16(decoder.charset())) {
 			end = indexOf((byte) 0);
 			if (end < 0) {
 				newPos = end = oldLimit;
@@ -716,7 +722,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 			return "";
 		}
 
-		boolean utf16 = decoder.charset().name().startsWith("UTF-16");
+		boolean utf16 = isUtf16(decoder.charset());
 
 		if (utf16 && (fieldSize & 1) != 0) {
 			throw new IllegalArgumentException("fieldSize is not even.");
@@ -830,7 +836,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 			return this;
 		}
 
-		boolean utf16 = encoder.charset().name().startsWith("UTF-16");
+		boolean utf16 = isUtf16(encoder.charset());
 
 		if (utf16 && (fieldSize & 1) != 0) {
 			throw new IllegalArgumentException("fieldSize is not even.");
