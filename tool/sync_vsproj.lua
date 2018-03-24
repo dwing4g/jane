@@ -13,6 +13,7 @@ local cspath = arg[2]
 local excludes =
 {
 	"dotnetcore.cs",
+	"obj\\.*",
 }
 
 local function checksave(fn, d)
