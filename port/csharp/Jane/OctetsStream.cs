@@ -87,9 +87,17 @@ namespace Jane
 			return this;
 		}
 
+		public static OctetsStream CreateSpace(int size)
+		{
+			OctetsStream os = new OctetsStream();
+			if(size > 0)
+				os._buffer = new byte[size];
+			return os;
+		}
+
 		public override object Clone()
 		{
-			OctetsStream os = new OctetsStream(this);
+			OctetsStream os = OctetsStream.Wrap(GetBytes());
 			os._pos = _pos;
 			return os;
 		}

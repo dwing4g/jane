@@ -32,11 +32,12 @@ import jane.core.Util.SundaySearch;
  * 输出(编码): OctetsStream(从position到结尾的数据),或Octets,或byte[]<br>
  * 输入处理: 获取HTTP头中的fields,method,url-path,url-param,content-charset,以及cookie,支持url编码的解码<br>
  * 输出处理: 固定长度输出,chunked方式输出<br>
- * 不直接支持: mime, Connection:close/timeout, Accept-Encoding, Set-Cookie, Multi-Part, encodeUrl, chunked输入
+ * 不直接支持: mime, Connection:close/timeout, Accept-Encoding, Set-Cookie, Multi-Part, encodeUrl
  */
 public final class HttpCodec extends IoFilterAdapter
 {
-	private static final SundaySearch HEAD_END_MARK	   = new SundaySearch("\r\n\r\n");
+	private static final int		  BUF_INIT_SIZE	   = 1024;
+	private static final SundaySearch CONT_CHUNK_MARK  = new SundaySearch("\r\nTransfer-Encoding: chunked");
 	private static final SundaySearch CONT_LEN_MARK	   = new SundaySearch("\r\nContent-Length: ");
 	private static final SundaySearch CONT_TYPE_MARK   = new SundaySearch("\r\nContent-Type: ");
 	private static final SundaySearch COOKIE_MARK	   = new SundaySearch("\r\nCookie: ");
@@ -45,12 +46,15 @@ public final class HttpCodec extends IoFilterAdapter
 	private static final String		  DEF_CONT_CHARSET = "utf-8";
 	private static final Pattern	  PATTERN_COOKIE   = Pattern.compile("(\\w+)=(.*?)(; |$)");
 	private static final Pattern	  PATTERN_CHARSET  = Pattern.compile("charset=([\\w-]+)");
-	private static final DateFormat	  _sdf			   = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
+	private static final DateFormat	  _sdf			   = new SimpleDateFormat("E, dd MMM yyyy HH:mm:ss z", Locale.US);
 	private static String			  _dateStr;
 	private static long				  _lastSec;
-	private OctetsStream			  _buf			   = new OctetsStream(1024);										// 用于解码器的数据缓存
-	private long					  _bodySize;																		// 当前请求所需的内容大小
-	private final long				  _maxHttpBodySize;
+
+	private final int		   _maxHttpBodySize;
+	private final OctetsStream _buf	= new OctetsStreamEx(BUF_INIT_SIZE); // 用于解码器的数据缓存
+	private int				   _state;									 // 0:head; 1:body/chunkBody; 2:chunkPreSize; 3:chunkSize; 4:chunkPostSize;
+	private int				   _bodyLeft;								 // 当前数据部分所需的剩余大小
+	private int				   _skipLeft;								 // chunked模式时当前需要跳过的剩余大小
 
 	/**
 	 * 不带栈信息的解码错误异常
@@ -253,13 +257,13 @@ public final class HttpCodec extends IoFilterAdapter
 	 */
 	public static long getHeadLong(OctetsStream head, byte[] key)
 	{
-		int p = head.find(0, head.position(), key);
+		int p = head.find(14, head.position() - 4, key);
 		return p >= 0 ? getHeadLongValue(head, p + key.length) : -1;
 	}
 
 	public static long getHeadLong(OctetsStream head, SundaySearch ss)
 	{
-		int p = ss.find(head.array(), 0, head.position());
+		int p = ss.find(head.array(), 14, head.position() - 18);
 		return p >= 0 ? getHeadLongValue(head, p + ss.getPatLen()) : -1;
 	}
 
@@ -286,13 +290,13 @@ public final class HttpCodec extends IoFilterAdapter
 	 */
 	public static String getHeadField(OctetsStream head, byte[] key)
 	{
-		int p = head.find(0, head.position(), key);
+		int p = head.find(14, head.position() - 4, key);
 		return p >= 0 ? getHeadFieldValue(head, p + key.length) : "";
 	}
 
 	public static String getHeadField(OctetsStream head, SundaySearch ss)
 	{
-		int p = ss.find(head.array(), 0, head.position());
+		int p = ss.find(head.array(), 14, head.position() - 18);
 		return p >= 0 ? getHeadFieldValue(head, p + ss.getPatLen()) : "";
 	}
 
@@ -412,7 +416,7 @@ public final class HttpCodec extends IoFilterAdapter
 		this(Const.httpBodyDefaultMaxSize);
 	}
 
-	public HttpCodec(long maxHttpBodySize)
+	public HttpCodec(int maxHttpBodySize)
 	{
 		_maxHttpBodySize = maxHttpBodySize;
 	}
@@ -458,75 +462,132 @@ public final class HttpCodec extends IoFilterAdapter
 	@Override
 	public void messageReceived(NextFilter next, IoSession session, Object message) throws Exception
 	{
-		IoBuffer in = (IoBuffer)message;
+		final IoBuffer inBuf = (IoBuffer)message;
+		int state = _state;
 		try
 		{
-			begin_: for(;;)
+			final OctetsStream buf = _buf;
+			int n, inLeft = inBuf.remaining();
+			while(inLeft > 0)
 			{
-				if(_bodySize <= 0)
+				switch(state)
 				{
-					int r = in.remaining();
-					if(r <= 0) return;
-					int s = (r < 1024 ? r : 1024); // 最多一次取1024字节来查找HTTP头
-					int p = _buf.size();
-					if(s > 0)
-					{
-						_buf.resize(p + s);
-						in.get(_buf.array(), p, s);
-					}
-					for(;;)
-					{
-						p = HEAD_END_MARK.find(_buf, p - (HEAD_END_MARK.getPatLen() - 1));
-						if(p < 0)
+					case 0: // head
+						final int oldSize = buf.size();
+						n = Math.min(inLeft, Const.httpHeadMaxSize - oldSize);
+						if(n <= 0)
+							throw new DecodeException("http head size overflow: maxsize=" + Const.httpHeadMaxSize);
+						buf.resize(oldSize + n);
+						final byte[] b = buf.array();
+						inBuf.get(b, oldSize, n);
+						inLeft -= n;
+						n += oldSize;
+						for(int i = Math.max(17, oldSize); i < n; ++i) // minimum head: size("GET / HTTP/1.1\r\n\r\n") = 18
 						{
-							if(_buf.size() > Const.httpHeadMaxSize)
-								throw new DecodeException("http head size overflow: bufsize=" + _buf.size() + ",maxsize=" + Const.httpHeadMaxSize);
-							if(!in.hasRemaining()) return;
-							continue begin_;
+							if(b[i] == '\n' && b[i - 2] == '\n') // not strict check but enough
+							{
+								buf.setPosition(++i);
+								if(CONT_CHUNK_MARK.find(b, 14, i - 18) < 0) // empty or fix-sized body
+								{
+									final long n2 = getHeadLong(buf, CONT_LEN_MARK);
+									if(n2 > _maxHttpBodySize)
+										throw new DecodeException("http body size overflow: bodysize=" + n2 + ",maxsize=" + _maxHttpBodySize);
+									final int left = i + (int)n2 - n;
+									if(left <= 0)
+									{
+										if(left < 0) // unlikely over read
+										{
+											buf.resize(n + left);
+											inBuf.position(inBuf.position() + left);
+											inLeft -= left;
+										}
+										next.messageReceived(buf);
+										buf.clear();
+									}
+									else
+									{
+										_bodyLeft = left;
+										state = 1;
+									}
+								}
+								else // chunked body
+								{
+									n -= i;
+									buf.resize(i);
+									inBuf.position(inBuf.position() - n);
+									inLeft += n;
+									state = 3;
+								}
+								break;
+							}
 						}
-						p += HEAD_END_MARK.getPatLen();
-						if(p < 18) // 最小的可能是"GET / HTTP/1.1\r\n\r\n"
-							throw new DecodeException("http head size too short: headsize=" + p);
-						_buf.setPosition(p);
-						_bodySize = getHeadLong(_buf, CONT_LEN_MARK); // 从HTTP头中找到内容长度(目前不支持请求的chunk)
-						if(_bodySize > 0) break; // 有内容则跳到下半部分的处理
-						OctetsStream os = new OctetsStream(_buf.array(), p, _buf.remain()); // 切割出尾部当作下次缓存(不会超过1024字节)
-						_buf.resize(p);
-						next.messageReceived(_buf);
-						_buf = os;
-						p = 0;
-					}
-					if(_bodySize > _maxHttpBodySize)
-						throw new DecodeException("http body size overflow: bodysize=" + _bodySize + ",maxsize=" + _maxHttpBodySize);
+						break;
+					case 1:// body/chunkBody
+						final int i = buf.size();
+						n = Math.min(inLeft, _bodyLeft - (i - buf.position()));
+						buf.resize(i + n);
+						inBuf.get(buf.array(), i, n);
+						inLeft -= n;
+						if((_bodyLeft -= n) <= 0 && (state = _skipLeft) == 0)
+						{
+							next.messageReceived(buf);
+							buf.clear();
+						}
+						break;
+					case 2: // chunkPreSize
+						n = Math.min(inLeft, _skipLeft);
+						inBuf.skip(n);
+						inLeft -= n;
+						if(_skipLeft > n)
+						{
+							_skipLeft -= n;
+							return;
+						}
+						state = 3;
+						if(inLeft <= 0) return;
+						//$FALL-THROUGH$
+					case 3: // chunkSize
+						for(;;)
+						{
+							--inLeft;
+							final byte c = inBuf.get();
+							if(c < (byte)'0')
+							{
+								if(buf.remain() + (_bodyLeft & 0xffff_ffffL) > _maxHttpBodySize)
+									throw new DecodeException("http body size overflow: bodysize=" + buf.remain() + '+' + _bodyLeft + ",maxsize=" + _maxHttpBodySize);
+								_skipLeft = (_bodyLeft > 0 ? 1 : 3);
+								break;
+							}
+							_bodyLeft = (_bodyLeft << 4) + (c <= '9' ? c - '0' : 9 + (c & 7));
+							if(inLeft <= 0) return;
+						}
+						state = 4;
+						if(inLeft <= 0) return;
+						//$FALL-THROUGH$
+					case 4: // chunkPostSize
+						n = Math.min(inLeft, _skipLeft);
+						inBuf.skip(n);
+						inLeft -= n;
+						if(_skipLeft > n)
+							_skipLeft -= n;
+						else if(_bodyLeft == 0)
+						{
+							next.messageReceived(buf);
+							buf.clear();
+							_skipLeft = state = 0;
+						}
+						else
+						{
+							state = 1;
+							_skipLeft = 2; // next state & pre size
+						}
 				}
-				int r = in.remaining();
-				int s = (int)_bodySize - _buf.remain();
-				int p = _buf.size();
-				OctetsStream os;
-				if(s > r) s = r; // 只取能取到的大小
-				if(s >= 0) // 缓存数据不足或正好
-				{
-					if(s > 0) // 不足且有数据就尽量补足
-					{
-						_buf.resize(p + s);
-						in.get(_buf.array(), p, s);
-					}
-					if(_buf.remain() < _bodySize) return; // 再不足就等下次
-					os = new OctetsStream(1024); // 正好满足了,申请新的缓存
-				}
-				else
-				{
-					os = new OctetsStream(_buf.array(), p += s, -s); // 缓存数据过剩就切割出尾部当作下次缓存(不会超过1024字节)
-					_buf.resize(p);
-				}
-				next.messageReceived(_buf);
-				_buf = os;
-				_bodySize = 0; // 下次从HTTP头部开始匹配
 			}
 		}
 		finally
 		{
-			in.free();
+			_state = state;
+			inBuf.free();
 		}
 	}
 }

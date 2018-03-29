@@ -68,10 +68,7 @@ public class Octets implements Cloneable, Comparable<Octets>
 	{
 		Octets o = new Octets();
 		if(size > 0)
-		{
 			o._buffer = new byte[size];
-			o._count = size;
-		}
 		return o;
 	}
 
@@ -475,7 +472,7 @@ public class Octets implements Cloneable, Comparable<Octets>
 	@Override
 	public Octets clone()
 	{
-		return new Octets(this);
+		return Octets.wrap(getBytes());
 	}
 
 	@Override

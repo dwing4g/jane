@@ -140,7 +140,7 @@ public class OctetsStream extends Octets
 	@Override
 	public OctetsStream clone()
 	{
-		OctetsStream os = new OctetsStream(this);
+		OctetsStream os = OctetsStream.wrap(getBytes());
 		os._pos = _pos;
 		return os;
 	}

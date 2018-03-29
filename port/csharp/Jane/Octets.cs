@@ -59,10 +59,7 @@ namespace Jane
 		{
 			Octets o = new Octets();
 			if(size > 0)
-			{
 				o._buffer = new byte[size];
-				o._count = size;
-			}
 			return o;
 		}
 
@@ -429,7 +426,7 @@ namespace Jane
 
 		public virtual object Clone()
 		{
-			return new Octets(this);
+			return Octets.Wrap(GetBytes());
 		}
 
 		public override int GetHashCode()

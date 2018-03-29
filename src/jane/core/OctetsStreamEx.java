@@ -46,6 +46,14 @@ public class OctetsStreamEx extends OctetsStream
 		return os;
 	}
 
+	public static OctetsStreamEx createSpace(int size)
+	{
+		OctetsStreamEx os = new OctetsStreamEx();
+		if(size > 0)
+			os._buffer = new byte[size];
+		return os;
+	}
+
 	public OctetsStreamEx()
 	{
 	}
@@ -85,7 +93,7 @@ public class OctetsStreamEx extends OctetsStream
 	@Override
 	public OctetsStream clone()
 	{
-		OctetsStreamEx os = new OctetsStreamEx(this);
+		OctetsStreamEx os = OctetsStreamEx.wrap(getBytes());
 		os._pos = _pos;
 		return os;
 	}
