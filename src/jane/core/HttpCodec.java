@@ -46,7 +46,7 @@ public final class HttpCodec extends IoFilterAdapter
 	private static final String		  DEF_CONT_CHARSET = "utf-8";
 	private static final Pattern	  PATTERN_COOKIE   = Pattern.compile("(\\w+)=(.*?)(; |$)");
 	private static final Pattern	  PATTERN_CHARSET  = Pattern.compile("charset=([\\w-]+)");
-	private static final DateFormat	  _sdf			   = new SimpleDateFormat("E, dd MMM yyyy HH:mm:ss z", Locale.US);
+	private static final DateFormat	  _sdf			   = new SimpleDateFormat("E, dd MMM yyyy HH:mm:ss z", Locale.ENGLISH);
 	private static String			  _dateStr;
 	private static long				  _lastSec;
 
@@ -507,7 +507,7 @@ public final class HttpCodec extends IoFilterAdapter
 									else
 									{
 										_bodyLeft = left;
-										state = 1;
+										state = 1; // to read body
 									}
 								}
 								else // chunked body
@@ -516,13 +516,13 @@ public final class HttpCodec extends IoFilterAdapter
 									buf.resize(i);
 									inBuf.position(inBuf.position() - n);
 									inLeft += n;
-									state = 3;
+									state = 3; // to read chunk size
 								}
 								break;
 							}
 						}
 						break;
-					case 1:// body/chunkBody
+					case 1: // body/chunkBody
 						final int i = buf.size();
 						n = Math.min(inLeft, _bodyLeft - (i - buf.position()));
 						buf.resize(i + n);
@@ -555,7 +555,7 @@ public final class HttpCodec extends IoFilterAdapter
 							{
 								if(buf.remain() + (_bodyLeft & 0xffff_ffffL) > _maxHttpBodySize)
 									throw new DecodeException("http body size overflow: bodysize=" + buf.remain() + '+' + _bodyLeft + ",maxsize=" + _maxHttpBodySize);
-								_skipLeft = (_bodyLeft > 0 ? 1 : 3);
+								_skipLeft = (_bodyLeft > 0 ? 1 : 3); // \n : \n\r\n
 								break;
 							}
 							_bodyLeft = (_bodyLeft << 4) + (c <= '9' ? c - '0' : 9 + (c & 7));
@@ -570,7 +570,7 @@ public final class HttpCodec extends IoFilterAdapter
 						inLeft -= n;
 						if(_skipLeft > n)
 							_skipLeft -= n;
-						else if(_bodyLeft == 0)
+						else if(_bodyLeft <= 0) // end mark
 						{
 							next.messageReceived(buf);
 							buf.clear();
@@ -578,8 +578,8 @@ public final class HttpCodec extends IoFilterAdapter
 						}
 						else
 						{
-							state = 1;
-							_skipLeft = 2; // next state & pre size
+							state = 1; // to read chunk body
+							_skipLeft = 2; // next state & pre size("\r\n")
 						}
 				}
 			}

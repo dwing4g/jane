@@ -87,7 +87,7 @@ namespace Jane
 			return this;
 		}
 
-		public static OctetsStream CreateSpace(int size)
+		public new static OctetsStream CreateSpace(int size)
 		{
 			OctetsStream os = new OctetsStream();
 			if(size > 0)
