@@ -29,6 +29,7 @@ import jane.core.Util.SundaySearch;
  * HTTP的mina协议编解码过滤器
  * <p>
  * 输入(解码): OctetsStream类型,包括一次完整请求原始的HTTP头和内容,position指向内容的起始,如果没有内容则指向结尾<br>
+ * 也支持分片获取(主要用于上传较大数据),此时每次会收到一个分片,第一个分片带有完整的头,最后一个分片(或者只有一个完整分片)获取后会得到null表示一次请求结束<br>
  * 输出(编码): OctetsStream(从position到结尾的数据),或Octets,或byte[]<br>
  * 输入处理: 获取HTTP头中的fields,method,url-path,url-param,content-charset,以及cookie,支持url编码的解码<br>
  * 输出处理: 固定长度输出,chunked方式输出<br>
@@ -50,7 +51,7 @@ public final class HttpCodec extends IoFilterAdapter
 	private static String			  _dateStr;
 	private static long				  _lastSec;
 
-	private final int		   _maxHttpBodySize;
+	private final int		   _maxHttpBodySize;						 // body大小限制,超过则抛异常. 0表示不接受body; <0表示分片获取HTTP请求
 	private final OctetsStream _buf	= new OctetsStreamEx(BUF_INIT_SIZE); // 用于解码器的数据缓存
 	private int				   _state;									 // 0:head; 1:body/chunkBody; 2:chunkPreSize; 3:chunkSize; 4:chunkPostSize;
 	private int				   _bodyLeft;								 // 当前数据部分所需的剩余大小
@@ -503,6 +504,8 @@ public final class HttpCodec extends IoFilterAdapter
 										}
 										next.messageReceived(buf);
 										buf.clear();
+										if(_maxHttpBodySize < 0)
+											next.messageReceived(null);
 									}
 									else
 									{
@@ -517,6 +520,12 @@ public final class HttpCodec extends IoFilterAdapter
 									inBuf.position(inBuf.position() - n);
 									inLeft += n;
 									state = 3; // to read chunk size
+									if(_maxHttpBodySize < 0)
+									{
+										next.messageReceived(buf);
+										buf.clear();
+										buf.setPosition(0);
+									}
 								}
 								break;
 							}
@@ -524,14 +533,17 @@ public final class HttpCodec extends IoFilterAdapter
 						break;
 					case 1: // body/chunkBody
 						final int i = buf.size();
-						n = Math.min(inLeft, _bodyLeft - (i - buf.position()));
+						n = Math.min(inLeft, _bodyLeft);
 						buf.resize(i + n);
 						inBuf.get(buf.array(), i, n);
 						inLeft -= n;
-						if((_bodyLeft -= n) <= 0 && (state = _skipLeft) == 0)
+						if((_bodyLeft -= n) <= 0 && (state = _skipLeft) == 0 || _maxHttpBodySize < 0)
 						{
 							next.messageReceived(buf);
 							buf.clear();
+							buf.setPosition(0);
+							if(state == 0 && _maxHttpBodySize < 0)
+								next.messageReceived(null);
 						}
 						break;
 					case 2: // chunkPreSize
@@ -541,7 +553,7 @@ public final class HttpCodec extends IoFilterAdapter
 						if(_skipLeft > n)
 						{
 							_skipLeft -= n;
-							return;
+							return; // inLeft must be 0
 						}
 						state = 3;
 						if(inLeft <= 0) return;
@@ -572,9 +584,14 @@ public final class HttpCodec extends IoFilterAdapter
 							_skipLeft -= n;
 						else if(_bodyLeft <= 0) // end mark
 						{
-							next.messageReceived(buf);
-							buf.clear();
 							_skipLeft = state = 0;
+							if(buf.size() > 0)
+							{
+								next.messageReceived(buf);
+								buf.clear();
+							}
+							if(_maxHttpBodySize < 0)
+								next.messageReceived(null);
 						}
 						else
 						{
