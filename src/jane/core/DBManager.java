@@ -6,7 +6,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayDeque;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -494,17 +493,17 @@ public final class DBManager
 	private void collectQueue(long[] counts)
 	{
 		counts[0] = _qmap.size();
-		for(Iterator<ArrayDeque<Procedure>> it = _qmap.values().iterator(); it.hasNext();)
+		_qmap.forEach((sid, q) ->
 		{
-			ArrayDeque<Procedure> q = it.next();
 			if(q.isEmpty())
 			{
 				synchronized(q)
 				{
-					if(q.isEmpty()) it.remove();
+					if(q.isEmpty())
+						_qmap.remove(sid, q);
 				}
 			}
-		}
+		});
 		counts[1] = _qmap.size();
 	}
 
@@ -544,16 +543,10 @@ public final class DBManager
 		ArrayDeque<Procedure> q;
 		for(;;)
 		{
-			q = _qmap.get(sid);
-			if(q == null)
-			{
-				q = new ArrayDeque<>();
-				ArrayDeque<Procedure> t = _qmap.putIfAbsent(sid, q); // _qmap增加队列的地方只有这一处
-				if(t != null) q = t;
-			}
+			q = _qmap.computeIfAbsent(sid, __ -> new ArrayDeque<>()); // _qmap增加队列的地方只有这一处
 			synchronized(q)
 			{
-				if(q != _qmap.get(sid)) continue;
+				if(q != _qmap.get(sid)) continue; // maybe just collected
 				int qs = q.size();
 				if(qs >= Const.maxSessionProcedure)
 					throw new IllegalStateException("procedure overflow: procedure=" + p.getClass().getName() +

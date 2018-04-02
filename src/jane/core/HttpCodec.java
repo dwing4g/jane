@@ -307,7 +307,7 @@ public final class HttpCodec extends IoFilterAdapter
 
 	private static IoBuffer createHexLine(int value)
 	{
-		int bytes = (64 - Long.numberOfLeadingZeros(value) + 3) / 4;
+		int bytes = (67 - Long.numberOfLeadingZeros(value)) / 4;
 		if(bytes == 0) bytes = 1;
 		byte[] buf = new byte[bytes + 2];
 		buf[bytes] = '\r';
