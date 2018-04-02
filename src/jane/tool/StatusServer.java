@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map.Entry;
 import java.util.concurrent.ThreadPoolExecutor;
 import org.apache.mina.core.session.IoSession;
@@ -11,6 +12,7 @@ import jane.core.DBManager;
 import jane.core.DBSimpleManager;
 import jane.core.HttpCodec;
 import jane.core.NetManager;
+import jane.core.Octets;
 import jane.core.OctetsStream;
 import jane.core.ProcThread;
 import jane.core.StorageLevelDB;
@@ -18,6 +20,13 @@ import jane.core.TableBase;
 
 public class StatusServer extends NetManager
 {
+	private static final Octets extraHead = HttpCodec.createExtraHead(Arrays.asList(
+			"Server: jane",
+			"Content-Type: text/html; charset=utf-8",
+			"Connection: keep-alive",
+			"Cache-Control: no-cache",
+			"Pragma: no-cache"));
+
 	public StatusServer()
 	{
 		setCodec(HttpCodec.class);
@@ -154,27 +163,18 @@ public class StatusServer extends NetManager
 	@Override
 	public void messageReceived(IoSession session, Object message)
 	{
-		ArrayList<String> param = new ArrayList<>();
-		param.add("Server: jane");
 		if(HttpCodec.getHeadPath((OctetsStream)message).endsWith("/favicon.ico"))
-			HttpCodec.sendHead(session, "404 Not Found", 0, param);
+			HttpCodec.sendHead(session, "404 Not Found", 0, extraHead);
 		else
 		{
-			param.add("Content-Type: text/html; charset=utf-8");
-			param.add("Connection: keep-alive");
-			param.add("Cache-Control: no-cache");
-			param.add("Pragma: no-cache");
-
 			StringBuilder sb = new StringBuilder(4000);
 			sb.append("<html><head><meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\"/><title>Jane Status</title></head><body>\n");
 			genStatus(sb);
 			sb.append("<p>\n");
 			genLevelDBInfo(sb);
 			sb.append("</body></html>\n");
-			byte[] data = sb.toString().getBytes(StandardCharsets.UTF_8);
-
-			HttpCodec.sendHead(session, "200 OK", data.length, param);
-			HttpCodec.send(session, data);
+			Octets data = Octets.wrap(sb.toString().getBytes(StandardCharsets.UTF_8));
+			HttpCodec.sendHead(session, null, 0, extraHead, data);
 		}
 	}
 }
