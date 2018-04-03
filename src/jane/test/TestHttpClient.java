@@ -34,10 +34,10 @@ import jane.core.Log;
 import jane.core.Octets;
 
 /**
- * HTTP客户端
+ * HTTP客户端工具类
  * <p>
- * 使用cached线程池并发访问多个请求, 相同host的请求不会并发, 并发时每个host占一个线程<br>
- * 因此适合并发host不多的情况, 而不适合大并发爬虫, 大并发爬虫可考虑对host做hash来分固定的线程池
+ * 使用cached线程池并发访问多个请求, 相同host的请求在同一个队列中, 队列越大,处理此队列的线程越多(对数上涨)<br>
+ * 因此适合并发host不多的情况, 而不适合host众多的大并发爬虫(可考虑对host做hash来分固定的请求队列)
  */
 public final class TestHttpClient
 {
@@ -62,17 +62,24 @@ public final class TestHttpClient
 		}
 	}
 
-	private static final int REQ_QUEUE_MAX_SIZE		= 65536;	   // 请求队列的最大容量
+	private static final class RequestQueue extends ArrayDeque<Request>
+	{
+		private static final long serialVersionUID = 1L;
+
+		int threadCount;
+	}
+
+	private static final int REQ_QUEUE_MAX_SIZE		= 65536;	   // 每个请求队列的最大容量
 	private static final int BUF_INIT_SIZE			= 1024;		   // 每个线程初始接收缓冲区大小
 	private static final int RESPONSE_DATA_MAX_SIZE	= 1024 * 1024; // 回复数据的最大长度限制
 	private static final int CONNECT_TIMEOUT_MS		= 5000;		   // 连接/读取的超时时间(毫秒)
 
-	private static final Map<String, ArrayDeque<Request>> reqQueues	 = new ConcurrentHashMap<>();		 // 请求队列,超出则阻塞调用者
-	private static final Pattern						  patCharset = Pattern.compile("charset=(\\S+)");
-	private static final ThreadLocal<byte[]>			  tlBuf		 = new ThreadLocal<>();
-	private static final SSLSocketFactory				  trustAllFactory;
-	private static final HostnameVerifier				  trustAllVerifier;
-	private static final Executor						  threadPool;
+	private static final Map<String, RequestQueue> reqQueues  = new ConcurrentHashMap<>();
+	private static final Pattern				   patCharset = Pattern.compile("charset=([^\\s;]+)");
+	private static final ThreadLocal<byte[]>	   tlBuf	  = new ThreadLocal<>();
+	private static final SSLSocketFactory		   trustAllFactory;
+	private static final HostnameVerifier		   trustAllVerifier;
+	private static final Executor				   threadPool;
 
 	static
 	{
@@ -133,7 +140,7 @@ public final class TestHttpClient
 		return sw.toString(); // 结尾带换行符
 	}
 
-	private static void workThread(ArrayDeque<Request> reqQueue)
+	private static void workThread(RequestQueue reqQueue)
 	{
 		byte[] buf = tlBuf.get();
 		if(buf == null)
@@ -145,7 +152,12 @@ public final class TestHttpClient
 			{
 				synchronized(reqQueue)
 				{
-					req = reqQueue.peekFirst();
+					req = reqQueue.pollFirst();
+					if(req == null)
+					{
+						--reqQueue.threadCount;
+						return;
+					}
 				}
 				HttpURLConnection conn = (HttpURLConnection)req.url.openConnection();
 				conn.setConnectTimeout(CONNECT_TIMEOUT_MS);
@@ -232,14 +244,6 @@ public final class TestHttpClient
 				if(req != null && req.callback != null)
 					req.callback.onCompleted(-2, getStackTrace(e));
 			}
-			finally
-			{
-				synchronized(reqQueue)
-				{
-					reqQueue.pollFirst();
-					if(reqQueue.isEmpty()) break;
-				}
-			}
 		}
 	}
 
@@ -286,17 +290,20 @@ public final class TestHttpClient
 		Request req = new Request(method, u, postData, callback);
 		for(String host = u.getHost();;)
 		{
-			ArrayDeque<Request> reqQueue = reqQueues.computeIfAbsent(host, __ -> new ArrayDeque<>());
+			RequestQueue reqQueue = reqQueues.computeIfAbsent(host, __ -> new RequestQueue());
 			synchronized(reqQueue)
 			{
 				if(reqQueue != reqQueues.get(host))
 					continue;
-				int size = reqQueue.size();
-				if(size >= REQ_QUEUE_MAX_SIZE)
+				int size = reqQueue.size() + 1;
+				if(size > REQ_QUEUE_MAX_SIZE)
 					throw new RuntimeException("reqQueue size > " + REQ_QUEUE_MAX_SIZE + " for " + url);
 				reqQueue.addLast(req);
-				if(size == 0)
+				if((size >> (reqQueue.threadCount * 3)) > 0) // 1t:<8q, 2t:<64q, 3t:<512q, 4t:<4kq, 5t:<32kq, ...
+				{
+					++reqQueue.threadCount;
 					threadPool.execute(() -> workThread(reqQueue));
+				}
 			}
 			break;
 		}
@@ -329,19 +336,19 @@ public final class TestHttpClient
 		doReq("POST", url, postData, onResponse);
 	}
 
-	public static int getQueueSize()
+	public static int getQueueCount()
 	{
 		return reqQueues.size();
 	}
 
-	public static void cleanQueues()
+	public static void collectQueues()
 	{
-		reqQueues.forEach((host, queue) ->
+		reqQueues.forEach((host, reqQueue) ->
 		{
-			synchronized(queue)
+			synchronized(reqQueue)
 			{
-				if(queue.isEmpty())
-					reqQueues.remove(host, queue);
+				if(reqQueue.isEmpty())
+					reqQueues.remove(host, reqQueue);
 			}
 		});
 	}
