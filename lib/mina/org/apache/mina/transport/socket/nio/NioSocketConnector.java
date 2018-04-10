@@ -116,7 +116,7 @@ public final class NioSocketConnector extends AbstractPollingIoConnector {
 		@SuppressWarnings("resource")
 		SocketChannel ch = SocketChannel.open();
 
-		int receiveBufferSize = (getSessionConfig()).getReceiveBufferSize();
+		int receiveBufferSize = getSessionConfig().getReceiveBufferSize();
 
 		if (receiveBufferSize > 65535) {
 			ch.socket().setReceiveBufferSize(receiveBufferSize);

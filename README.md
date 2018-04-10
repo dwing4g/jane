@@ -3,7 +3,7 @@
 simple, fast, powerful application server framework based on tcp and embedded database
 
 Feature:
- * application server framework in Java8
+ * application server framework in Java8 (64-bit)
  * TCP server and client framework based on custom optimized Apache Mina
  * simple, extensible and compact protocol on TCP
  * embedded database based on LevelDB with extremely fast in-memory cache
@@ -11,10 +11,6 @@ Feature:
  * optimized for ultra high performance (million level TPS on common PC)
  * simple implement but powerful (only 17K+ lines of core source code)
  * easy to understand and use with code generation for Java bean code
-
-Todo:
- * more tests
- * more optimization for speed, memory and I/O throughput
 
 License:
  * GNU Lesser GPL
@@ -36,12 +32,12 @@ License:
 
 依赖库:
  * 日志库: slf4j-1.7.x logback-1.2.x
- * 网络库: mina-core-2.0.x (已内置到jane中)
+ * 网络库: mina-core-2.0.x (已精简优化并内置到jane中)
  * 数据库: leveldb-jni
 
 托管站点:
  * https://github.com/dwing4g/jane
- * https://git.oschina.net/dwing/jane
+ * https://gitee.com/dwing/jane
  * https://code.google.com/p/jane-framework/ (已不再维护)
 
 参考/备用的开源库:
@@ -86,15 +82,15 @@ License:
  * LuaJIT:          http://luajit.org/download.html
 
 特性:
- * 高性能的网络/数据库IO, 单进程+多线程, 嵌入式数据库
+ * 内嵌精简优化的mina高性能网络库
+ * 内嵌支持win,mac,linux平台native的LevelDB高性能数据库及优化的jni接口
+ * 单进程+多线程并发
  * 通用的框架和便利的逻辑实现, 以及异常安全保护
  * 统一使用bean作为网络传输和数据库value的单位, 自动通过配置生成bean代码
  * bean的定义包括8种数值类型, 字符串、二进制数据, 以及9种容器类型, 还支持数值和字符串常量
  * 支持发送简单的bean, 动态bean, 已序列化的bean, 以及RPC(ask/answer)统一处理/单独回调/超时处理
- * 支持简易高效的HTTP协议响应及回复
- * 内含简单实用的压缩和加密算法
+ * 支持简易高效的HTTP服务器响应及回复
+ * 提供简单实用的压缩和加密算法
+ * 提供简单高效的基于自动线程池的HTTP客户端异步请求
  * 透明的基于文件和内存的面向对象数据库的操作、缓存、事务型持久化、热备份和增量备份, 基于记录加锁，支持死锁超时打断
-
-TODO:
- * 更多的测试
- * 更多的性能、内存、IO优化
+ * jane-core.jar仅有400KB, jane-native.jar仅有650KB
