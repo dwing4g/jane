@@ -161,7 +161,7 @@ public final class SslHandler {
 
 		// TODO: we may not need to call this method...
 		// However, if we don't call it here, the tests are failing. Why?
-		sslEngine.beginHandshake();
+		// sslEngine.beginHandshake();
 
 		handshakeStatus = sslEngine.getHandshakeStatus();
 
@@ -485,7 +485,6 @@ public final class SslHandler {
 		for (;;) {
 			switch (handshakeStatus) {
 			case FINISHED:
-			case NOT_HANDSHAKING:
 				// LOGGER.debug("{} processing the FINISHED state", SslFilter.getSessionInfo(session));
 
 				handshakeComplete = true;
@@ -523,6 +522,7 @@ public final class SslHandler {
 				break;
 
 			case NEED_WRAP:
+			case NOT_HANDSHAKING:
 				// LOGGER.debug("{} processing the NEED_WRAP state", SslFilter.getSessionInfo(session));
 
 				// First make sure that the out buffer is completely empty.

@@ -135,7 +135,7 @@ public final class SslFilter extends IoFilterAdapter {
 
 	/**
 	 * Creates a new SSL filter using the specified {@link SSLContext}.
-	 * The handshake will start immediately.
+	 * The handshake will start immediately after the filter has been added to the chain.
 	 *
 	 * @param sslContext The SSLContext to use
 	 */
@@ -145,7 +145,8 @@ public final class SslFilter extends IoFilterAdapter {
 
 	/**
 	 * Creates a new SSL filter using the specified {@link SSLContext}.
-	 * If the <tt>autostart</tt> flag is set to <tt>true</tt>, the handshake will start immediately.
+	 * If the <tt>autostart</tt> flag is set to <tt>true</tt>,
+	 * the handshake will start immediately after the filter has been added to the chain.
 	 *
 	 * @param sslContext The SSLContext to use
 	 * @param autoStart The flag used to tell the filter to start the handshake immediately
