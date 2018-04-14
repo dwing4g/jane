@@ -17,7 +17,7 @@ import jane.core.MarshalException.WithoutTrace;
  */
 public class OctetsStream extends Octets
 {
-	protected transient int _pos; // 当前的读位置(写是在_count位置之后追加)
+	protected int _pos; // 当前的读位置(写是在_count位置之后追加)
 
 	public static OctetsStream wrap(byte[] data, int pos, int size)
 	{
