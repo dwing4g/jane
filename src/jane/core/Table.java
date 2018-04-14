@@ -349,13 +349,14 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 
 	/**
 	 * 同putUnsafe,但增加的安全封装,可回滚修改
+	 * @return 返回被覆盖的记录值,如果与覆盖值是不同的对象,则可用于再次put. 返回null则表示没有旧记录
 	 */
-	public void put(K k, V v)
+	public V put(K k, V v)
 	{
 		if(!Procedure.isLockedByCurrentThread(lockId(k)))
 			throw new IllegalAccessError("put unlocked record! table=" + _tableName + ",key=" + k);
 		V vOld = getNoCacheUnsafe(k);
-		if(vOld == v) return;
+		if(vOld == v) return v;
 		if(v.stored())
 			throw new IllegalStateException("put shared record: t=" + _tableName + ",k=" + k + ",v=" + v);
 		SContext.current().addOnRollbackDirty(() ->
@@ -371,13 +372,17 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 		putUnsafe(k, v);
 		if(vOld != null)
 			vOld.setSaveState(0);
+		return vOld;
 	}
 
 	@SuppressWarnings("deprecation")
-	public void put(K k, S s)
+	public V put(K k, S s)
 	{
-		put(k, s.unsafe());
-		s.record(new Record<>(this, k, s));
+		V v = s.unsafe();
+		V vOld = put(k, v);
+		if(vOld != v)
+			s.record(new Record<>(this, k, s));
+		return vOld;
 	}
 
 	/**
@@ -396,13 +401,14 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 
 	/**
 	 * 同removeUnsafe,但增加的安全封装,可回滚修改
+	 * @return 返回被移除的记录值,可用于再次put. 返回null则表示没有旧记录
 	 */
-	public void remove(K k)
+	public V remove(K k)
 	{
 		if(!Procedure.isLockedByCurrentThread(lockId(k)))
 			throw new IllegalAccessError("remove unlocked record! table=" + _tableName + ",key=" + k);
 		V vOld = getNoCacheUnsafe(k);
-		if(vOld == null) return;
+		if(vOld == null) return null;
 		SContext.current().addOnRollbackDirty(() ->
 		{
 			vOld.setSaveState(0); // 确保可写入
@@ -410,6 +416,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 		});
 		removeUnsafe(k);
 		vOld.setSaveState(0);
+		return vOld;
 	}
 
 	/**
