@@ -3,15 +3,26 @@ local ipairs = ipairs
 local print = print
 
 local clses = {}
-local lines = 0
+local lines1, lines2 = 0, 0
 local function CountFile(fn)
 	for line in io.lines(fn) do
 		local cls = line:match "^import%s+([%w_%.]+)"
 		if cls then
 			clses[cls] = true
 		end
-		lines = lines + 1
+		lines1 = lines1 + 1
 	end
+
+	local f = io.open(fn, "rb")
+	local s = f:read "*a"
+	f:close()
+	local _, lines = s:gsub("/%*.-%*/", "\n")
+					  :gsub("//.-\n", "")
+					  :gsub("\n[ \t\r]*\n", "\n")
+					  :gsub("^[ \t\r]*\n+", "")
+					  :gsub("\n\n+", "\n")
+					  :gsub("\n", "\n")
+	lines2 = lines2 + lines
 end
 
 for _, path in ipairs({...}) do
@@ -29,6 +40,6 @@ table.sort(t)
 for _, v in ipairs(t) do
 	print(v)
 end
-print("lines: " .. lines)
+print("lines: " .. lines2 .. " / " .. lines1)
 
 print("======")

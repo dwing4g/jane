@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -731,10 +730,10 @@ public class NetManager implements IoHandler
 	}
 
 	/**
-	 * 向某个连接发送请求并返回Future对象
+	 * 向某个连接发送请求并返回CompletableFuture对象
 	 * <p>
 	 * 此操作是异步的
-	 * @return 如果连接已经失效则返回null, 如果请求超时则对返回的Future对象调用get方法时返回null
+	 * @return 如果连接已经失效则返回null, 如果请求超时则对返回的CompletableFuture对象调用get方法时返回null
 	 */
 	public <B extends Bean<B>> CompletableFuture<B> askAsync(IoSession session, Bean<?> bean, int timeout)
 	{
@@ -755,7 +754,7 @@ public class NetManager implements IoHandler
 		return cf;
 	}
 
-	public <B extends Bean<B>> Future<B> askAsync(IoSession session, Bean<?> bean)
+	public <B extends Bean<B>> CompletableFuture<B> askAsync(IoSession session, Bean<?> bean)
 	{
 		return askAsync(session, bean, Const.askDefaultTimeout);
 	}
@@ -826,7 +825,7 @@ public class NetManager implements IoHandler
 
 	/**
 	 * 作为客户端连接失败后的回调
-	 * @param future 连接的future,可获取连接失败的原因
+	 * @param future 连接的ConnectFuture,可获取连接失败的原因
 	 * @param addr 连接失败的地址
 	 * @param count 重试次数(从1开始)
 	 * @param ctx startClient时传入的用户对象. 没有则为null
