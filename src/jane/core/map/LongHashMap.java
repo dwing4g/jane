@@ -15,7 +15,7 @@ import java.util.function.LongConsumer;
  * the map will have to rehash to the next higher POT size.<br>
  * @author Nathan Sweet
  */
-public final class LongHashMap<V> implements Cloneable
+public class LongHashMap<V> implements Cloneable
 {
 	public static final long EMPTY = 0;
 	private int				 _size;

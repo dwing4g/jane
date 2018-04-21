@@ -173,6 +173,15 @@ public class TcpManager implements Closeable
 	{
 		try
 		{
+			if(channel instanceof AsynchronousSocketChannel)
+				((AsynchronousSocketChannel)channel).shutdownOutput();
+		}
+		catch(Throwable e)
+		{
+			doException(null, e);
+		}
+		try
+		{
 			if(channel != null)
 				channel.close();
 		}
@@ -223,6 +232,7 @@ public class TcpManager implements Closeable
 		channel.setOption(StandardSocketOptions.SO_KEEPALIVE, false);
 		channel.setOption(StandardSocketOptions.SO_RCVBUF, TcpSession.DEF_RECV_SOBUF_SIZE);
 		channel.setOption(StandardSocketOptions.SO_SNDBUF, TcpSession.DEF_SEND_SOBUF_SIZE);
+		// channel.setOption(StandardSocketOptions.SO_LINGER, -1); // AIO目前不支持设置linger,而且固定为0,因此直接close会导致发RST,最好先shutdownOutput再close
 		return 0;
 	}
 

@@ -15,7 +15,7 @@ import java.util.function.IntConsumer;
  * the map will have to rehash to the next higher POT size.<br>
  * @author Nathan Sweet
  */
-public final class IntHashMap<V> implements Cloneable
+public class IntHashMap<V> implements Cloneable
 {
 	static final int		PRIME2 = 0xbe1f14b1;
 	static final int		PRIME3 = 0xb4b82e39;
