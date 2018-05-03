@@ -476,7 +476,7 @@ public final class TestType extends Bean<TestType>
 		for(;;) { int _i_ = _s_.unmarshalInt1() & 0xff, _t_ = _i_ & 3; if((_i_ >>= 2) == 63) _i_ += _s_.unmarshalInt1(); switch(_i_)
 		{
 			case 0: return _s_;
-			case 1: this.v1 = (_s_.unmarshalInt(_t_) != 0); break;
+			case 1: this.v1 = (_s_.unmarshalLong(_t_) != 0); break;
 			case 2: this.v2 = (byte)_s_.unmarshalInt(_t_); break;
 			case 3: this.v3 = (short)_s_.unmarshalInt(_t_); break;
 			case 4: this.v4 = _s_.unmarshalInt(_t_); break;
@@ -490,20 +490,18 @@ public final class TestType extends Bean<TestType>
 				this.v10.clear();
 				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
 				_t_ = _s_.unmarshalInt1();
-				if((_t_ >> 3) != 0) { _s_.unmarshalSkipVarSub(_t_); break; }
-				_t_ &= 7;
+				if(_t_ >= 8) { _s_.unmarshalSkipVarSub(_t_); break; }
 				int _n_ = _s_.unmarshalUInt();
 				this.v10.ensureCapacity(_n_ < 1000 ? _n_ : 1000);
 				for(; _n_ > 0; --_n_)
-					this.v10.add((_s_.unmarshalIntKV(_t_) != 0));
+					this.v10.add((_s_.unmarshalLongKV(_t_) != 0));
 			} break;
 			case 11:
 			{
 				this.v11.clear();
 				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
 				_t_ = _s_.unmarshalInt1();
-				if((_t_ >> 3) != 0) { _s_.unmarshalSkipVarSub(_t_); break; }
-				_t_ &= 7;
+				if(_t_ >= 8) { _s_.unmarshalSkipVarSub(_t_); break; }
 				for(int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
 					this.v11.add((byte)_s_.unmarshalIntKV(_t_));
 			} break;
@@ -512,8 +510,7 @@ public final class TestType extends Bean<TestType>
 				this.v12.clear();
 				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
 				_t_ = _s_.unmarshalInt1();
-				if((_t_ >> 3) != 0) { _s_.unmarshalSkipVarSub(_t_); break; }
-				_t_ &= 7;
+				if(_t_ >= 8) { _s_.unmarshalSkipVarSub(_t_); break; }
 				for(int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
 					this.v12.add(_s_.unmarshalIntKV(_t_));
 			} break;
@@ -522,8 +519,7 @@ public final class TestType extends Bean<TestType>
 				this.v13.clear();
 				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
 				_t_ = _s_.unmarshalInt1();
-				if((_t_ >> 3) != 0) { _s_.unmarshalSkipVarSub(_t_); break; }
-				_t_ &= 7;
+				if(_t_ >= 8) { _s_.unmarshalSkipVarSub(_t_); break; }
 				for(int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
 					this.v13.add(_s_.unmarshalLongKV(_t_));
 			} break;
@@ -532,8 +528,7 @@ public final class TestType extends Bean<TestType>
 				this.v14.clear();
 				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
 				_t_ = _s_.unmarshalInt1();
-				if((_t_ >> 3) != 0) { _s_.unmarshalSkipVarSub(_t_); break; }
-				_t_ &= 7;
+				if(_t_ >= 8) { _s_.unmarshalSkipVarSub(_t_); break; }
 				for(int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
 					this.v14.add(_s_.unmarshalFloatKV(_t_));
 			} break;
@@ -542,8 +537,7 @@ public final class TestType extends Bean<TestType>
 				this.v15.clear();
 				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
 				_t_ = _s_.unmarshalInt1();
-				if((_t_ >> 3) != 0) { _s_.unmarshalSkipVarSub(_t_); break; }
-				_t_ &= 7;
+				if(_t_ >= 8) { _s_.unmarshalSkipVarSub(_t_); break; }
 				for(int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
 					this.v15.add(_s_.unmarshalDoubleKV(_t_));
 			} break;
@@ -565,7 +559,7 @@ public final class TestType extends Bean<TestType>
 				if((_t_ >> 6) != 1) { _s_.unmarshalSkipVarSub(_t_); break; }
 				int _k_ = (_t_ >> 3) & 7; _t_ &= 7;
 				for(int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
-					this.v17.put(_s_.unmarshalBeanKV(new TestBean(), _k_), (_s_.unmarshalIntKV(_t_) != 0));
+					this.v17.put(_s_.unmarshalBeanKV(new TestBean(), _k_), (_s_.unmarshalLongKV(_t_) != 0));
 			} break;
 			case 18:
 			{

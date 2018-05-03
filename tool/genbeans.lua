@@ -474,9 +474,9 @@ typedef.bool = merge(typedef.byte,
 			string.format("\t\tif(this.#(var.name)) _s_.marshal3(0x%06x);\n", 0xfc0001 + (var.id - 63) * 0x100)
 	end,
 	unmarshal = function(var)
-		return var.id > 0 and "\t\t\tcase #(var.id): this.#(var.name) = (_s_.unmarshalInt(_t_) != 0); break;\n" or ""
+		return var.id > 0 and "\t\t\tcase #(var.id): this.#(var.name) = (_s_.unmarshalLong(_t_) != 0); break;\n" or ""
 	end,
-	unmarshal_kv = function(var, kv, t) if kv then return "(_s_.unmarshalIntKV(" .. t .. ") != 0)" end end,
+	unmarshal_kv = function(var, kv, t) if kv then return "(_s_.unmarshalLongKV(" .. t .. ") != 0)" end end,
 	hashcode = "(this.#(var.name) ? 0xcafebabe : 0xdeadbeef)",
 	compareto = "(this.#(var.name) == _b_.#(var.name) ? 0 : (this.#(var.name) ? 1 : -1))",
 })
@@ -706,9 +706,8 @@ typedef.vector = merge(typedef.octets,
 			{
 				this.#(var.name).clear();
 				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
-				_t_ = _s_.unmarshalInt1();
-				if((_t_ >> 3) != 0) { _s_.unmarshalSkipVarSub(_t_); break; }
-				_t_ &= 7;
+				_t_ = _s_.unmarshalInt1() & 0xff;
+				if(_t_ >= 8) { _s_.unmarshalSkipVarSub(_t_); break; }
 				int _n_ = _s_.unmarshalUInt();
 				this.#(var.name).ensureCapacity(_n_ < 1000 ? _n_ : 1000);
 				for(; _n_ > 0; --_n_)
@@ -731,9 +730,8 @@ typedef.list = merge(typedef.vector,
 			{
 				this.#(var.name).clear();
 				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
-				_t_ = _s_.unmarshalInt1();
-				if((_t_ >> 3) != 0) { _s_.unmarshalSkipVarSub(_t_); break; }
-				_t_ &= 7;
+				_t_ = _s_.unmarshalInt1() & 0xff;
+				if(_t_ >= 8) { _s_.unmarshalSkipVarSub(_t_); break; }
 				for(int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
 					this.#(var.name).add(%s);
 			} break;

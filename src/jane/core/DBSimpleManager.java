@@ -595,8 +595,7 @@ public final class DBSimpleManager
 	/**
 	 * 停止数据库系统
 	 * <p>
-	 * 停止后不能再操作任何数据库表. 下次启动应再重新调用startup,startCommitThread<br>
-	 * 注意不能和数据库启动过程并发
+	 * 停止后不能再操作此对象的方法. 下次启动应构造一个新对象,重新调用startup,startCommitThread
 	 */
 	public void shutdown()
 	{

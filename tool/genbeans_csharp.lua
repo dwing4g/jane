@@ -356,8 +356,8 @@ typedef.bool = merge(typedef.byte,
 			string.format("if(this.#(var.name)) s.Marshal2(0x%04x);", var.id * 0x400 + 1) or
 			string.format("if(this.#(var.name)) s.Marshal3(0x%06x);", 0xfc0001 + (var.id - 63) * 0x100)
 	end,
-	unmarshal = "case #(var.id): this.#(var.name) = (s.UnmarshalInt(t) != 0);",
-	unmarshal_kv = function(var, kv, t) if kv then return "(s.UnmarshalIntKV(" .. t .. ") != 0)" end end,
+	unmarshal = "case #(var.id): this.#(var.name) = (s.UnmarshalLong(t) != 0);",
+	unmarshal_kv = function(var, kv, t) if kv then return "(s.UnmarshalLongKV(" .. t .. ") != 0)" end end,
 	hashcode = "(int)(this.#(var.name) ? 0xcafebabe : 0xdeadbeef)",
 	compareto = "(this.#(var.name) == b.#(var.name) ? 0 : (this.#(var.name) ? 1 : -1))",
 })
@@ -471,8 +471,7 @@ typedef.vector = merge(typedef.octets,
 					this.#(var.name).Clear();
 					if(t != 3) { s.UnmarshalSkipVar(t); break; }
 					t = s.UnmarshalUInt1();
-					if((t >> 3) != 0) { s.UnmarshalSkipVarSub(t); break; }
-					t &= 7;
+					if(t >= 8) { s.UnmarshalSkipVarSub(t); break; }
 					int n = s.UnmarshalUInt();
 					this.#(var.name).Capacity = (n < 0x10000 ? n : 0x10000);
 					for(; n > 0; --n)
@@ -494,8 +493,7 @@ typedef.list = merge(typedef.vector,
 					this.#(var.name).Clear();
 					if(t != 3) { s.UnmarshalSkipVar(t); break; }
 					t = s.UnmarshalUInt1();
-					if((t >> 3) != 0) { s.UnmarshalSkipVarSub(t); break; }
-					t &= 7;
+					if(t >= 8) { s.UnmarshalSkipVarSub(t); break; }
 					for(int n = s.UnmarshalUInt(); n > 0; --n)
 						this.#(var.name).AddLast(%s);
 				}]], get_unmarshal_kv(var, "k", "t")) end,
@@ -514,8 +512,7 @@ typedef.hashset = merge(typedef.vector,
 					this.#(var.name).Clear();
 					if(t != 3) { s.UnmarshalSkipVar(t); break; }
 					t = s.UnmarshalUInt1();
-					if((t >> 3) != 0) { s.UnmarshalSkipVarSub(t); break; }
-					t &= 7;
+					if(t >= 8) { s.UnmarshalSkipVarSub(t); break; }
 					for(int n = s.UnmarshalUInt(); n > 0; --n)
 						this.#(var.name).Add(%s);
 				}]], get_unmarshal_kv(var, "k", "t")) end,

@@ -422,7 +422,7 @@ namespace Jane.Bean
 			for(;;) { int i = s.UnmarshalUInt1(), t = i & 3; if((i >>= 2) == 63) i += s.UnmarshalUInt1(); switch(i)
 			{
 				case 0: return s;
-				case 1: this.v1 = (s.UnmarshalInt(t) != 0); break;
+				case 1: this.v1 = (s.UnmarshalLong(t) != 0); break;
 				case 2: this.v2 = (sbyte)s.UnmarshalInt(t); break;
 				case 3: this.v3 = (short)s.UnmarshalInt(t); break;
 				case 4: this.v4 = s.UnmarshalInt(t); break;
@@ -436,20 +436,18 @@ namespace Jane.Bean
 					this.v10.Clear();
 					if(t != 3) { s.UnmarshalSkipVar(t); break; }
 					t = s.UnmarshalUInt1();
-					if((t >> 3) != 0) { s.UnmarshalSkipVarSub(t); break; }
-					t &= 7;
+					if(t >= 8) { s.UnmarshalSkipVarSub(t); break; }
 					int n = s.UnmarshalUInt();
 					this.v10.Capacity = (n < 0x10000 ? n : 0x10000);
 					for(; n > 0; --n)
-						this.v10.Add((s.UnmarshalIntKV(t) != 0));
+						this.v10.Add((s.UnmarshalLongKV(t) != 0));
 				} break;
 				case 11:
 				{
 					this.v11.Clear();
 					if(t != 3) { s.UnmarshalSkipVar(t); break; }
 					t = s.UnmarshalUInt1();
-					if((t >> 3) != 0) { s.UnmarshalSkipVarSub(t); break; }
-					t &= 7;
+					if(t >= 8) { s.UnmarshalSkipVarSub(t); break; }
 					for(int n = s.UnmarshalUInt(); n > 0; --n)
 						this.v11.AddLast((sbyte)s.UnmarshalIntKV(t));
 				} break;
@@ -458,8 +456,7 @@ namespace Jane.Bean
 					this.v12.Clear();
 					if(t != 3) { s.UnmarshalSkipVar(t); break; }
 					t = s.UnmarshalUInt1();
-					if((t >> 3) != 0) { s.UnmarshalSkipVarSub(t); break; }
-					t &= 7;
+					if(t >= 8) { s.UnmarshalSkipVarSub(t); break; }
 					for(int n = s.UnmarshalUInt(); n > 0; --n)
 						this.v12.AddLast(s.UnmarshalIntKV(t));
 				} break;
@@ -468,8 +465,7 @@ namespace Jane.Bean
 					this.v13.Clear();
 					if(t != 3) { s.UnmarshalSkipVar(t); break; }
 					t = s.UnmarshalUInt1();
-					if((t >> 3) != 0) { s.UnmarshalSkipVarSub(t); break; }
-					t &= 7;
+					if(t >= 8) { s.UnmarshalSkipVarSub(t); break; }
 					for(int n = s.UnmarshalUInt(); n > 0; --n)
 						this.v13.Add(s.UnmarshalLongKV(t));
 				} break;
@@ -478,8 +474,7 @@ namespace Jane.Bean
 					this.v14.Clear();
 					if(t != 3) { s.UnmarshalSkipVar(t); break; }
 					t = s.UnmarshalUInt1();
-					if((t >> 3) != 0) { s.UnmarshalSkipVarSub(t); break; }
-					t &= 7;
+					if(t >= 8) { s.UnmarshalSkipVarSub(t); break; }
 					for(int n = s.UnmarshalUInt(); n > 0; --n)
 						this.v14.Add(s.UnmarshalFloatKV(t));
 				} break;
@@ -488,8 +483,7 @@ namespace Jane.Bean
 					this.v15.Clear();
 					if(t != 3) { s.UnmarshalSkipVar(t); break; }
 					t = s.UnmarshalUInt1();
-					if((t >> 3) != 0) { s.UnmarshalSkipVarSub(t); break; }
-					t &= 7;
+					if(t >= 8) { s.UnmarshalSkipVarSub(t); break; }
 					for(int n = s.UnmarshalUInt(); n > 0; --n)
 						this.v15.Add(s.UnmarshalDoubleKV(t));
 				} break;
@@ -511,7 +505,7 @@ namespace Jane.Bean
 					if((t >> 6) != 1) { s.UnmarshalSkipVarSub(t); break; }
 					int k = (t >> 3) & 7; t &= 7;
 					for(int n = s.UnmarshalUInt(); n > 0; --n)
-						this.v17.Add((TestBean)s.UnmarshalBeanKV(TestBean.Create(), k), (s.UnmarshalIntKV(t) != 0));
+						this.v17.Add((TestBean)s.UnmarshalBeanKV(TestBean.Create(), k), (s.UnmarshalLongKV(t) != 0));
 				} break;
 				case 18:
 				{

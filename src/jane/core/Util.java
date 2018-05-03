@@ -182,7 +182,7 @@ public final class Util
 		if(m.isEmpty()) return s.append("{},");
 		s.append('{');
 		for(Entry<?, ?> e : m.entrySet())
-			s.append(e.getKey()).append(',').append(e.getValue()).append(';');
+			s.append(e.getKey()).append('=').append(e.getValue()).append(',');
 		s.setCharAt(s.length() - 1, '}');
 		return s.append(',');
 	}
