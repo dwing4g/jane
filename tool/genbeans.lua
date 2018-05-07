@@ -3,6 +3,7 @@ local type = type
 local string = string
 local char = string.char
 local lower = string.lower
+local format = string.format
 local error = error
 local pairs = pairs
 local table = table
@@ -427,8 +428,8 @@ typedef.byte =
 	marshal = function(var)
 		if var.id <= 0 then return "" end
 		return var.id < 63 and
-			string.format("\t\tif(this.#(var.name) != 0) _s_.marshal1((byte)0x%02x).marshal(this.#(var.name));\n", var.id * 4) or
-			string.format("\t\tif(this.#(var.name) != 0) _s_.marshal2(0x%04x).marshal(this.#(var.name));\n", 0xfc00 + var.id - 63)
+			format("\t\tif(this.#(var.name) != 0) _s_.marshal1((byte)0x%02x).marshal(this.#(var.name));\n", var.id * 4) or
+			format("\t\tif(this.#(var.name) != 0) _s_.marshal2(0x%04x).marshal(this.#(var.name));\n", 0xfc00 + var.id - 63)
 	end,
 	unmarshal = function(var)
 		return var.id > 0 and "\t\t\tcase #(var.id): this.#(var.name) = (#(var.type))_s_.unmarshalInt(_t_); break;\n" or ""
@@ -470,8 +471,8 @@ typedef.bool = merge(typedef.byte,
 	marshal = function(var)
 		if var.id <= 0 then return "" end
 		return var.id < 63 and
-			string.format("\t\tif(this.#(var.name)) _s_.marshal2(0x%04x);\n", var.id * 0x400 + 1) or
-			string.format("\t\tif(this.#(var.name)) _s_.marshal3(0x%06x);\n", 0xfc0001 + (var.id - 63) * 0x100)
+			format("\t\tif(this.#(var.name)) _s_.marshal2(0x%04x);\n", var.id * 0x400 + 1) or
+			format("\t\tif(this.#(var.name)) _s_.marshal3(0x%06x);\n", 0xfc0001 + (var.id - 63) * 0x100)
 	end,
 	unmarshal = function(var)
 		return var.id > 0 and "\t\t\tcase #(var.id): this.#(var.name) = (_s_.unmarshalLong(_t_) != 0); break;\n" or ""
@@ -487,8 +488,8 @@ typedef.float = merge(typedef.byte,
 	marshal = function(var)
 		if var.id <= 0 then return "" end
 		return var.id < 63 and
-			string.format("\t\tif(this.#(var.name) != 0) _s_.marshal2(0x%04x).marshal(this.#(var.name));\n", var.id * 0x400 + 0x308) or
-			string.format("\t\tif(this.#(var.name) != 0) _s_.marshal3(0x%06x).marshal(this.#(var.name));\n", 0xff0008 + (var.id - 63) * 0x100)
+			format("\t\tif(this.#(var.name) != 0) _s_.marshal2(0x%04x).marshal(this.#(var.name));\n", var.id * 0x400 + 0x308) or
+			format("\t\tif(this.#(var.name) != 0) _s_.marshal3(0x%06x).marshal(this.#(var.name));\n", 0xff0008 + (var.id - 63) * 0x100)
 	end,
 	unmarshal = function(var)
 		return var.id > 0 and "\t\t\tcase #(var.id): this.#(var.name) = _s_.unmarshalFloat(_t_); break;\n" or ""
@@ -504,8 +505,8 @@ typedef.double = merge(typedef.byte,
 	marshal = function(var)
 		if var.id <= 0 then return "" end
 		return var.id < 63 and
-			string.format("\t\tif(this.#(var.name) != 0) _s_.marshal2(0x%04x).marshal(this.#(var.name));\n", var.id * 0x400 + 0x309) or
-			string.format("\t\tif(this.#(var.name) != 0) _s_.marshal3(0x%06x).marshal(this.#(var.name));\n", 0xff0009 + (var.id - 63) * 0x100)
+			format("\t\tif(this.#(var.name) != 0) _s_.marshal2(0x%04x).marshal(this.#(var.name));\n", var.id * 0x400 + 0x309) or
+			format("\t\tif(this.#(var.name) != 0) _s_.marshal3(0x%06x).marshal(this.#(var.name));\n", 0xff0009 + (var.id - 63) * 0x100)
 	end,
 	unmarshal = function(var)
 		return var.id > 0 and "\t\t\tcase #(var.id): this.#(var.name) = _s_.unmarshalDouble(_t_); break;\n" or ""
@@ -543,8 +544,8 @@ typedef.string = merge(typedef.byte,
 	marshal = function(var)
 		if var.id <= 0 then return "" end
 		return var.id < 63 and
-			string.format("\t\tif(!this.#(var.name).isEmpty()) _s_.marshal1((byte)0x%02x).marshal(this.#(var.name));\n", var.id * 4 + 1) or
-			string.format("\t\tif(!this.#(var.name).isEmpty()) _s_.marshal2(0x%04x).marshal(this.#(var.name));\n", 0xfd00 + var.id - 63)
+			format("\t\tif(!this.#(var.name).isEmpty()) _s_.marshal1((byte)0x%02x).marshal(this.#(var.name));\n", var.id * 4 + 1) or
+			format("\t\tif(!this.#(var.name).isEmpty()) _s_.marshal2(0x%04x).marshal(this.#(var.name));\n", 0xfd00 + var.id - 63)
 	end,
 	unmarshal = function(var)
 		return var.id > 0 and "\t\t\tcase #(var.id): this.#(var.name) = _s_.unmarshalString(_t_); break;\n" or ""
@@ -646,8 +647,8 @@ typedef.octets = merge(typedef.string,
 	marshal = function(var)
 		if var.id <= 0 then return "" end
 		return var.id < 63 and
-			string.format("\t\tif(!this.#(var.name).empty()) _s_.marshal1((byte)0x%02x).marshal(this.#(var.name));\n", var.id * 4 + 1) or
-			string.format("\t\tif(!this.#(var.name).empty()) _s_.marshal2(0x%04x).marshal(this.#(var.name));\n", 0xfd00 + var.id - 63)
+			format("\t\tif(!this.#(var.name).empty()) _s_.marshal1((byte)0x%02x).marshal(this.#(var.name));\n", var.id * 4 + 1) or
+			format("\t\tif(!this.#(var.name).empty()) _s_.marshal2(0x%04x).marshal(this.#(var.name));\n", 0xfd00 + var.id - 63)
 	end,
 	unmarshal = function(var)
 		return var.id > 0 and "\t\t\tcase #(var.id): _s_.unmarshal(this.#(var.name), _t_); break;\n" or ""
@@ -685,14 +686,14 @@ typedef.vector = merge(typedef.octets,
 	marshal = function(var)
 		if var.id <= 0 then return "" end
 		return var.id < 63 and
-			string.format([[		if(!this.#(var.name).isEmpty())
+			format([[		if(!this.#(var.name).isEmpty())
 		{
 			_s_.marshal2(0x%04x).marshalUInt(this.#(var.name).size());
 			for(%s v : this.#(var.name))
 				_s_.marshal(v);
 		}
 ]], var.id * 0x400 + 0x300 + subtypeid(var.k), subtypename(var, var.k)) or
-			string.format([[		if(!this.#(var.name).isEmpty())
+			format([[		if(!this.#(var.name).isEmpty())
 		{
 			_s_.marshal3(0x%06x).marshalUInt(this.#(var.name).size());
 			for(%s v : this.#(var.name))
@@ -701,7 +702,7 @@ typedef.vector = merge(typedef.octets,
 ]], 0xff0000 + (var.id - 63) * 0x100 + subtypeid(var.k), subtypename(var, var.k))
 	end,
 	unmarshal = function(var)
-		return var.id <= 0 and "" or string.format([[
+		return var.id <= 0 and "" or format([[
 			case #(var.id):
 			{
 				this.#(var.name).clear();
@@ -725,7 +726,7 @@ typedef.list = merge(typedef.vector,
 	new = function(var) return "\t\t#(var.name) = new LinkedList<>();\n" end,
 	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new LinkedList<>())" end,
 	unmarshal = function(var)
-		return var.id <= 0 and "" or string.format([[
+		return var.id <= 0 and "" or format([[
 			case #(var.id):
 			{
 				this.#(var.name).clear();
@@ -832,14 +833,14 @@ typedef.hashmap = merge(typedef.list,
 	marshal = function(var)
 		if var.id <= 0 then return "" end
 		return var.id < 63 and
-			string.format([[		if(!this.#(var.name).isEmpty())
+			format([[		if(!this.#(var.name).isEmpty())
 		{
 			_s_.marshal2(0x%04x).marshalUInt(this.#(var.name).size());
 			for(Entry<%s, %s> e : this.#(var.name).entrySet())
 				_s_.marshal(e.getKey()).marshal(e.getValue());
 		}
 ]], var.id * 0x400 + 0x340 + subtypeid(var.k) * 8 + subtypeid(var.v), subtypename(var, var.k), subtypename(var, var.v)) or
-			string.format([[		if(!this.#(var.name).isEmpty())
+			format([[		if(!this.#(var.name).isEmpty())
 		{
 			_s_.marshal3(0x%06x).marshalUInt(this.#(var.name).size());
 			for(Entry<%s, %s> e : this.#(var.name).entrySet())
@@ -848,7 +849,7 @@ typedef.hashmap = merge(typedef.list,
 ]], 0xff0040 + (var.id - 63) * 0x100 + subtypeid(var.k) * 8 + subtypeid(var.v), subtypename(var, var.k), subtypename(var, var.v))
 	end,
 	unmarshal = function(var)
-		return var.id <= 0 and "" or string.format([[
+		return var.id <= 0 and "" or format([[
 			case #(var.id):
 			{
 				this.#(var.name).clear();
@@ -911,14 +912,14 @@ typedef.bean = merge(typedef.octets,
 	marshal = function(var)
 		if var.id <= 0 then return "" end
 		return var.id < 63 and
-			string.format([[
+			format([[
 		{
 			int _n_ = _s_.size();
 			this.#(var.name).marshal(_s_.marshal1((byte)0x%02x));
 			if(_s_.size() - _n_ < 3) _s_.resize(_n_);
 		}
 ]], var.id * 4 + 2) or
-			string.format([[
+			format([[
 		{
 			int _n_ = _s_.size();
 			this.#(var.name).marshal(_s_.marshal2(0x%04x));
@@ -994,7 +995,7 @@ local function do_var(var)
 	if type(var.id) ~= "number" then var.id = -1 end
 	if var.id < -1 or var.id > 190 then error("ERROR: var.id=" .. var.id .. " must be in [1, 190]") end
 	var.import = {}
-	var.id3 = string.format("%3d", var.id)
+	var.id3 = format("%3d", var.id)
 	var.name = trim(var.name)
 	var.type = trim(var.type)
 	if var.comment and #var.comment > 0 then
@@ -1036,7 +1037,7 @@ local function gen_uid(beanname, s)
 	for i = 1, #s do
 		h = h % 0x10000000000 * 4093 + 1 + s:byte(i)
 	end
-	h = string.format("0xbeac%04x%08xL", math.floor(h / 0x100000000) % 0x10000, h % 0x100000000)
+	h = format("0xbeac%04x%08xL", math.floor(h / 0x100000000) % 0x10000, h % 0x100000000)
 	if uid_used[h] then
 		error("ERROR: hash collisions in gen_uid(" .. uid_used[h] .. ", " .. beanname .. "): " ..  h)
 	end

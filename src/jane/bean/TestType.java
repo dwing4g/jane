@@ -489,7 +489,7 @@ public final class TestType extends Bean<TestType>
 			{
 				this.v10.clear();
 				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
-				_t_ = _s_.unmarshalInt1();
+				_t_ = _s_.unmarshalInt1() & 0xff;
 				if(_t_ >= 8) { _s_.unmarshalSkipVarSub(_t_); break; }
 				int _n_ = _s_.unmarshalUInt();
 				this.v10.ensureCapacity(_n_ < 1000 ? _n_ : 1000);
@@ -500,7 +500,7 @@ public final class TestType extends Bean<TestType>
 			{
 				this.v11.clear();
 				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
-				_t_ = _s_.unmarshalInt1();
+				_t_ = _s_.unmarshalInt1() & 0xff;
 				if(_t_ >= 8) { _s_.unmarshalSkipVarSub(_t_); break; }
 				for(int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
 					this.v11.add((byte)_s_.unmarshalIntKV(_t_));
@@ -509,7 +509,7 @@ public final class TestType extends Bean<TestType>
 			{
 				this.v12.clear();
 				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
-				_t_ = _s_.unmarshalInt1();
+				_t_ = _s_.unmarshalInt1() & 0xff;
 				if(_t_ >= 8) { _s_.unmarshalSkipVarSub(_t_); break; }
 				for(int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
 					this.v12.add(_s_.unmarshalIntKV(_t_));
@@ -518,7 +518,7 @@ public final class TestType extends Bean<TestType>
 			{
 				this.v13.clear();
 				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
-				_t_ = _s_.unmarshalInt1();
+				_t_ = _s_.unmarshalInt1() & 0xff;
 				if(_t_ >= 8) { _s_.unmarshalSkipVarSub(_t_); break; }
 				for(int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
 					this.v13.add(_s_.unmarshalLongKV(_t_));
@@ -527,7 +527,7 @@ public final class TestType extends Bean<TestType>
 			{
 				this.v14.clear();
 				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
-				_t_ = _s_.unmarshalInt1();
+				_t_ = _s_.unmarshalInt1() & 0xff;
 				if(_t_ >= 8) { _s_.unmarshalSkipVarSub(_t_); break; }
 				for(int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
 					this.v14.add(_s_.unmarshalFloatKV(_t_));
@@ -536,7 +536,7 @@ public final class TestType extends Bean<TestType>
 			{
 				this.v15.clear();
 				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
-				_t_ = _s_.unmarshalInt1();
+				_t_ = _s_.unmarshalInt1() & 0xff;
 				if(_t_ >= 8) { _s_.unmarshalSkipVarSub(_t_); break; }
 				for(int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
 					this.v15.add(_s_.unmarshalDoubleKV(_t_));

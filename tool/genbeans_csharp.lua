@@ -2,6 +2,7 @@
 local type = type
 local string = string
 local char = string.char
+local format = string.format
 local error = error
 local pairs = pairs
 local table = table
@@ -315,8 +316,8 @@ typedef.byte =
 ]],
 	marshal = function(var)
 		return var.id < 63 and
-			string.format("if(this.#(var.name) != 0) s.Marshal1((byte)0x%02x).Marshal(this.#(var.name));", var.id * 4) or
-			string.format("if(this.#(var.name) != 0) s.Marshal2(0x%04x).Marshal(this.#(var.name));", 0xfc00 + var.id - 63)
+			format("if(this.#(var.name) != 0) s.Marshal1((byte)0x%02x).Marshal(this.#(var.name));", var.id * 4) or
+			format("if(this.#(var.name) != 0) s.Marshal2(0x%04x).Marshal(this.#(var.name));", 0xfc00 + var.id - 63)
 	end,
 	unmarshal = "case #(var.id): this.#(var.name) = (#(var.type))s.UnmarshalInt(t);",
 	unmarshal_kv = function(var, kv, t) if kv then return "(" .. typename(var, var[kv]) .. ")s.UnmarshalIntKV(" .. t .. ")" end end,
@@ -353,8 +354,8 @@ typedef.bool = merge(typedef.byte,
 	reset = "#(var.name) = false",
 	marshal = function(var)
 		return var.id < 63 and
-			string.format("if(this.#(var.name)) s.Marshal2(0x%04x);", var.id * 0x400 + 1) or
-			string.format("if(this.#(var.name)) s.Marshal3(0x%06x);", 0xfc0001 + (var.id - 63) * 0x100)
+			format("if(this.#(var.name)) s.Marshal2(0x%04x);", var.id * 0x400 + 1) or
+			format("if(this.#(var.name)) s.Marshal3(0x%06x);", 0xfc0001 + (var.id - 63) * 0x100)
 	end,
 	unmarshal = "case #(var.id): this.#(var.name) = (s.UnmarshalLong(t) != 0);",
 	unmarshal_kv = function(var, kv, t) if kv then return "(s.UnmarshalLongKV(" .. t .. ") != 0)" end end,
@@ -367,8 +368,8 @@ typedef.float = merge(typedef.byte,
 	subtypeid = 4,
 	marshal = function(var)
 		return var.id < 63 and
-			string.format("if(this.#(var.name) != 0) s.Marshal2(0x%04x).Marshal(this.#(var.name));", var.id * 0x400 + 0x308) or
-			string.format("if(this.#(var.name) != 0) s.Marshal3(0x%06x).Marshal(this.#(var.name));", 0xff0008 + (var.id - 63) * 0x100)
+			format("if(this.#(var.name) != 0) s.Marshal2(0x%04x).Marshal(this.#(var.name));", var.id * 0x400 + 0x308) or
+			format("if(this.#(var.name) != 0) s.Marshal3(0x%06x).Marshal(this.#(var.name));", 0xff0008 + (var.id - 63) * 0x100)
 	end,
 	unmarshal = "case #(var.id): this.#(var.name) = s.UnmarshalFloat(t);",
 	unmarshal_kv = function(var, kv, t) if kv then return "s.UnmarshalFloatKV(" .. t .. ")" end end,
@@ -381,8 +382,8 @@ typedef.double = merge(typedef.float,
 	subtypeid = 5,
 	marshal = function(var)
 		return var.id < 63 and
-			string.format("if(this.#(var.name) != 0) s.Marshal2(0x%04x).Marshal(this.#(var.name));", var.id * 0x400 + 0x309) or
-			string.format("if(this.#(var.name) != 0) s.Marshal3(0x%06x).Marshal(this.#(var.name));", 0xff0009 + (var.id - 63) * 0x100)
+			format("if(this.#(var.name) != 0) s.Marshal2(0x%04x).Marshal(this.#(var.name));", var.id * 0x400 + 0x309) or
+			format("if(this.#(var.name) != 0) s.Marshal3(0x%06x).Marshal(this.#(var.name));", 0xff0009 + (var.id - 63) * 0x100)
 	end,
 	unmarshal = "case #(var.id): this.#(var.name) = s.UnmarshalDouble(t);",
 	unmarshal_kv = function(var, kv, t) if kv then return "s.UnmarshalDoubleKV(" .. t .. ")" end end,
@@ -406,8 +407,8 @@ typedef.string = merge(typedef.byte,
 ]],
 	marshal = function(var)
 		return var.id < 63 and
-			string.format("if(!string.IsNullOrEmpty(this.#(var.name))) s.Marshal1((byte)0x%02x).Marshal(this.#(var.name));", var.id * 4 + 1) or
-			string.format("if(!string.IsNullOrEmpty(this.#(var.name))) s.Marshal2(0x%04x).Marshal(this.#(var.name));", 0xfd00 + var.id - 63)
+			format("if(!string.IsNullOrEmpty(this.#(var.name))) s.Marshal1((byte)0x%02x).Marshal(this.#(var.name));", var.id * 4 + 1) or
+			format("if(!string.IsNullOrEmpty(this.#(var.name))) s.Marshal2(0x%04x).Marshal(this.#(var.name));", 0xfd00 + var.id - 63)
 	end,
 	unmarshal = "case #(var.id): this.#(var.name) = s.UnmarshalString(t);",
 	unmarshal_kv = function(var, kv, t) if kv then return "s.UnmarshalStringKV(" .. t .. ")" end end,
@@ -435,8 +436,8 @@ typedef.octets = merge(typedef.string,
 ]],
 	marshal = function(var)
 		return var.id < 63 and
-			string.format("if(this.#(var.name) != null && !this.#(var.name).Empty()) s.Marshal1((byte)0x%02x).Marshal(this.#(var.name));", var.id * 4 + 1) or
-			string.format("if(this.#(var.name) != null && !this.#(var.name).Empty()) s.Marshal2(0x%04x).Marshal(this.#(var.name));", 0xfd00 + var.id - 63)
+			format("if(this.#(var.name) != null && !this.#(var.name).Empty()) s.Marshal1((byte)0x%02x).Marshal(this.#(var.name));", var.id * 4 + 1) or
+			format("if(this.#(var.name) != null && !this.#(var.name).Empty()) s.Marshal2(0x%04x).Marshal(this.#(var.name));", 0xfd00 + var.id - 63)
 	end,
 	unmarshal = "case #(var.id): s.Unmarshal(this.#(var.name), t);",
 	unmarshal_kv = function(var, kv, t) if kv then return "s.UnmarshalOctetsKV(" .. t .. ")" end end,
@@ -453,20 +454,20 @@ typedef.vector = merge(typedef.octets,
 	assign = function(var) return "if(this.#(var.name) == null) this.#(var.name) = new List<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); else this.#(var.name).Clear(); if(b.#(var.name) != null) this.#(var.name).AddRange(b.#(var.name));" end,
 	marshal = function(var)
 		return var.id < 63 and
-			string.format([[if(this.#(var.name) != null && this.#(var.name).Count > 0)
+			format([[if(this.#(var.name) != null && this.#(var.name).Count > 0)
 			{
 				s.Marshal2(0x%04x).MarshalUInt(this.#(var.name).Count);
 				foreach(%s e in Util.Enum(this.#(var.name)))
 					s.Marshal(e);
 			}]], var.id * 0x400 + 0x300 + subtypeid(var.k), subtypename(var, var.k)) or
-			string.format([[if(this.#(var.name) != null && this.#(var.name).Count > 0)
+			format([[if(this.#(var.name) != null && this.#(var.name).Count > 0)
 			{
 				s.Marshal3(0x%06x).MarshalUInt(this.#(var.name).Count);
 				foreach(%s e in Util.Enum(this.#(var.name)))
 					s.Marshal(e);
 			}]], 0xff0000 + (var.id - 63) * 0x100 + subtypeid(var.k), subtypename(var, var.k))
 	end,
-	unmarshal = function(var) return string.format([[case #(var.id):
+	unmarshal = function(var) return format([[case #(var.id):
 				{
 					this.#(var.name).Clear();
 					if(t != 3) { s.UnmarshalSkipVar(t); break; }
@@ -488,7 +489,7 @@ typedef.list = merge(typedef.vector,
 	new = function(var) return "\t\t\t#(var.name) = new LinkedList<" .. subtypename_new(var, var.k) .. ">();\n" end,
 	init = function(var) return "this.#(var.name) = new LinkedList<" .. subtypename_new(var, var.k) .. ">(); if(#(var.name) != null) Util.AddAll(this.#(var.name), #(var.name))" end,
 	assign = function(var) return "if(this.#(var.name) == null) this.#(var.name) = new LinkedList<" .. subtypename_new(var, var.k) .. ">(); else this.#(var.name).Clear(); if(b.#(var.name) != null) Util.AddAll(this.#(var.name), b.#(var.name));" end,
-	unmarshal = function(var) return string.format([[case #(var.id):
+	unmarshal = function(var) return format([[case #(var.id):
 				{
 					this.#(var.name).Clear();
 					if(t != 3) { s.UnmarshalSkipVar(t); break; }
@@ -507,7 +508,7 @@ typedef.hashset = merge(typedef.vector,
 	new = function(var) return "\t\t\t#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap));\n" end,
 	init = function(var) return "this.#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); if(#(var.name) != null) this.#(var.name).UnionWith(#(var.name))" end,
 	assign = function(var) return "if(this.#(var.name) == null) this.#(var.name) = new HashSet<" .. subtypename_new(var, var.k) .. ">(#(var.cap)); else this.#(var.name).Clear(); if(b.#(var.name) != null) this.#(var.name).UnionWith(#(var.name));" end,
-	unmarshal = function(var) return string.format([[case #(var.id):
+	unmarshal = function(var) return format([[case #(var.id):
 				{
 					this.#(var.name).Clear();
 					if(t != 3) { s.UnmarshalSkipVar(t); break; }
@@ -534,20 +535,20 @@ typedef.hashmap = merge(typedef.hashset,
 	init = function(var) return "this.#(var.name) = new Dictionary<" .. subtypename_new(var, var.k) .. subtypename_new() .. subtypename_new(var, var.v) .. ">(#(var.cap)); if(#(var.name) != null) Util.AddAll(this.#(var.name), #(var.name))" end,
 	marshal = function(var)
 		return var.id < 63 and
-			string.format([[if(this.#(var.name) != null && this.#(var.name).Count > 0)
+			format([[if(this.#(var.name) != null && this.#(var.name).Count > 0)
 			{
 				s.Marshal2(0x%04x).MarshalUInt(this.#(var.name).Count);
 				foreach(KeyValuePair<%s, %s> p in Util.Enum(this.#(var.name)))
 					s.Marshal(p.Key).Marshal(p.Value);
 			}]], var.id * 0x400 + 0x340 + subtypeid(var.k) * 8 + subtypeid(var.v), subtypename(var, var.k), subtypename(var, var.v)) or
-			string.format([[if(this.#(var.name) != null && this.#(var.name).Count > 0)
+			format([[if(this.#(var.name) != null && this.#(var.name).Count > 0)
 			{
 				s.Marshal2(0x%04x).MarshalUInt(this.#(var.name).Count);
 				foreach(KeyValuePair<%s, %s> p in Util.Enum(this.#(var.name)))
 					s.Marshal(p.Key).Marshal(p.Value);
 			}]], 0xff0040 + (var.id - 63) * 0x100 + subtypeid(var.k) * 8 + subtypeid(var.v), subtypename(var, var.k), subtypename(var, var.v))
 	end,
-	unmarshal = function(var) return string.format([[case #(var.id):
+	unmarshal = function(var) return format([[case #(var.id):
 				{
 					this.#(var.name).Clear();
 					if(t != 3) { s.UnmarshalSkipVar(t); break; }
@@ -587,13 +588,13 @@ typedef.bean = merge(typedef.octets,
 	assign = function(var) return "if(this.#(var.name) == null) this.#(var.name) = " .. var.type .. ".Create(); else this.#(var.name).Reset(); if(b.#(var.name) != null) this.#(var.name).Assign(b.#(var.name));" end,
 	marshal = function(var)
 		return var.id < 63 and
-			string.format([[if(this.#(var.name) != null)
+			format([[if(this.#(var.name) != null)
 			{
 				int n = s.Size();
 				this.#(var.name).Marshal(s.Marshal1((byte)0x%02x));
 				if(s.Size() - n < 3) s.Resize(n);
 			}]], var.id * 4 + 2) or
-			string.format([[if(this.#(var.name) != null)
+			format([[if(this.#(var.name) != null)
 			{
 				int n = s.Size();
 				this.#(var.name).Marshal(s.Marshal1((byte)0x%02x));
@@ -626,7 +627,7 @@ end
 local function do_var(var)
 	if type(var.id) ~= "number" then var.id = -1 end
 	if var.id < -1 or var.id > 190 then error("ERROR: normal id=" .. var.id .. " must be in [1, 190]") end
-	var.id3 = string.format("%3d", var.id)
+	var.id3 = format("%3d", var.id)
 	var.name = trim(var.name)
 	var.type = trim(var.type)
 	if var.comment and #var.comment > 0 then var.comment = " // " .. var.comment:gsub("%c", " ") .. ";" else var.comment = ""  end
