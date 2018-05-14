@@ -1232,7 +1232,11 @@ local function savebean(beanname, safe)
 	end
 	need_save[beanname] = safe or false
 	bean_order[beanname] = true
-	for _, var in ipairs(name_bean[beanname]) do
+	local bean = name_bean[beanname]
+	if not bean then
+		error("ERROR: not found bean.name: " .. beanname)
+	end
+	for _, var in ipairs(bean) do
 		if name_bean[var.type] then savebean(var.type, safe) end
 		if name_bean[var.k] then savebean(var.k, safe) end
 		if name_bean[var.v] then savebean(var.v, safe) end
