@@ -52,7 +52,6 @@ local function to_ltype(btype)
 end
 
 local name_used = {}
-local type_bean = {}
 local name_bean = {}
 local bean_order = {}
 local handlers = {} -- selected handler name => true
@@ -71,13 +70,11 @@ function bean(bean)
 	bean.name = trim(bean.name)
 	if bean.name:find("[^%w_]") or typemap[bean.name:lower()] then error("ERROR: invalid bean.name: " .. bean.name) end
 	if name_used[bean.name] then error("ERROR: duplicated bean.name: " .. bean.name) end
-	if type_bean[bean.type] then error("ERROR: duplicated bean.type: " .. bean.type) end
 	if type(bean.type) ~= "number" then bean.type = 0 end
 	for name in (bean.handlers or ""):gmatch("([%w_%.]+)") do
 		hdl_names[name] = hdl_names[name] or {}
 		hdl_names[name][#hdl_names[name] + 1] = bean.name
 	end
-	type_bean[bean.type] = bean
 	name_bean[bean.name] = bean
 
 	for _, var in ipairs(bean) do
@@ -133,10 +130,16 @@ local outpath = (arg[3] or "."):gsub("\\", "/")
 if outpath:sub(-1, -1) ~= "/" then outpath = outpath .. "/" end
 
 local marked = {}
+local typed = {}
 local function markbean(beanname)
 	if marked[beanname] then return end
 	marked[beanname] = true
-	if not name_bean[beanname] then error("ERROR: unknown bean: " .. beanname) end
+	local bean = name_bean[beanname]
+	if not bean then error("ERROR: unknown bean: " .. beanname) end
+	if bean.type ~= 0 then
+		if typed[bean.type] then error("ERROR: duplicated bean.type: " .. bean.type .. " (" .. typed[bean.type] .. ", " .. beanname .. ")") end
+		typed[bean.type] = beanname
+	end
 	for _, var in ipairs(name_bean[beanname]) do
 		if name_bean[var.type] then markbean(var.type) end
 		if name_bean[var.k] then markbean(var.k) end

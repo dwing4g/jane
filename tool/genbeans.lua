@@ -1046,7 +1046,6 @@ local function gen_uid(beanname, s)
 end
 
 local name_code = {} -- bean name => bean code
-local type_bean = {} -- bean type => bean
 local name_bean = {} -- bean name => bean
 local handlers = {} -- selected handler name => handler path
 local has_handler -- any selected handler?
@@ -1078,7 +1077,6 @@ local function bean_common(bean)
 	bean.name = trim(bean.name)
 	if bean.name:find("[^%w_]") or typedef[bean.name] or bean.name == "AllBeans" or bean.name == "AllTables" then error("ERROR: invalid bean.name: " .. bean.name) end
 	if name_code[lower(bean.name)] then error("ERROR: duplicated bean.name: " .. bean.name) end
-	if bean.handlers and type_bean[bean.type] then error("ERROR: duplicated bean.type: " .. bean.type) end
 	if type(bean.type) ~= "number" or not bean.handlers then bean.type = 0 end
 	if not bean.initsize then bean.initsize = 0 end
 	for name in (bean.handlers or ""):gmatch("([%w_%.]+)") do
@@ -1086,7 +1084,6 @@ local function bean_common(bean)
 		hdl_names[name] = hdl_names[name] or {}
 		hdl_names[name][#hdl_names[name] + 1] = bean.name
 	end
-	type_bean[bean.type] = bean
 	name_bean[bean.name] = bean
 	bean.comment = bean.comment and #bean.comment > 0 and "\n/**\n * " .. bean.comment:gsub("\n", "<br>\n * ") .. "\n */" or ""
 	bean_order[#bean_order + 1] = bean.name
@@ -1303,12 +1300,15 @@ checksave(outpath .. namespace_path .. "/AllBeans.java", (template_allbeans:gsub
 			subcode[#subcode + 1] = code_conv(body:gsub("#%(#(.-)#%)#", function(body)
 				local subcode2 = {}
 				local saved = {}
+				local typed = {}
 				for _, name in ipairs(names) do
 					if not saved[name] then
 						saved[name] = true
 						local bean = name_bean[name]
 						savebean(bean.name)
 						if bean.type ~= 0 then
+							if typed[bean.type] then error("ERROR: duplicated bean.type: " .. bean.type .. " (" .. typed[bean.type] .. ", " .. bean.name .. ") for " .. hdlname) end
+							typed[bean.type] = name
 							hdl.count = hdl.count + 1
 							subcode2[#subcode2 + 1] = code_conv(body, "bean", bean)
 							if type(hdlpath) == "string" then

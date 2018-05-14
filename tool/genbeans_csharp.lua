@@ -653,7 +653,6 @@ local function code_conv(code, prefix, t)
 end
 
 local name_code = {} -- bean name => bean code
-local type_bean = {} -- bean type => bean
 local name_bean = {} -- bean name => bean
 local handlers = {} -- selected handler name => handler path
 local has_handler -- any selected handler?
@@ -682,14 +681,12 @@ local function bean_common(bean)
 	bean.name = trim(bean.name)
 	if bean.name:find("[^%w_]") or typedef[bean.name] or bean.name == "AllBeans" or bean.name == "AllTables" then error("ERROR: invalid bean.name: " .. bean.name) end
 	if name_code[bean.name] then error("ERROR: duplicated bean.name: " .. bean.name) end
-	if bean.handlers and type_bean[bean.type] then error("ERROR: duplicated bean.type: " .. bean.type) end
 	if type(bean.type) ~= "number" then bean.type = 0 end
 	for name in (bean.handlers or ""):gmatch("([%w_%.]+)") do
 		if not all_handlers[name] then error("ERROR: not defined handler: " .. name) end
 		hdl_names[name] = hdl_names[name] or {}
 		hdl_names[name][#hdl_names[name] + 1] = bean.name
 	end
-	type_bean[bean.type] = bean
 	name_bean[bean.name] = bean
 	bean.comment = bean.comment and #bean.comment > 0 and "\n\t/**\n\t * " .. bean.comment:gsub("\n", "<br>\n\t * ") .. ";\n\t */" or ""
 	if not bean.attach_csharp then bean.attach_csharp = "" end
@@ -796,23 +793,22 @@ checksave(outpath .. namespace_path .. "/AllBeans.cs", (template_allbeans:gsub("
 		local hdl = { name = hdlname, path = tostring(hdlpath), count = #names }
 		subcode[#subcode + 1] = code_conv(body:gsub("#%(#(.-)#%)#", function(body)
 			local subcode2 = {}
+			local typed = {}
 			for _, name in ipairs(names) do
 				local bean = name_bean[name]
 				savebean(bean.name)
 				subcode2[#subcode2 + 1] = code_conv(body, "bean", bean)
 				if type(hdlpath) == "string" then
 					if bean.type <= 0 or bean.type > 0x7fffffff then error("ERROR: invalid bean.type: " .. tostring(bean.type) .. " (bean.name: " .. bean.name .. ")") end
-					if not bean.arg then
-						checksave(outpath .. hdlpath:gsub("%.", "/") .. "/" .. bean.name .. "Handler.cs", code_conv(code_conv(template_bean_handler:gsub("#%(#(.-)#%)#", function(body)
-							local subcode3 = {}
-							for _, var in ipairs(bean) do
-								if var.id > 0 or var.id == -1 then subcode3[#subcode3 + 1] = code_conv(body, "var", var) end
-							end
-							return concat(subcode3)
-						end), "hdl", hdl), "bean", bean):gsub("\r", ""), 1)
-					else
-						error("ERROR: not support rpc for c# port")
-					end
+					if typed[bean.type] then error("ERROR: duplicated bean.type: " .. bean.type .. " (" .. typed[bean.type] .. ", " .. bean.name .. ") for " .. hdlname) end
+					typed[bean.type] = name
+					checksave(outpath .. hdlpath:gsub("%.", "/") .. "/" .. bean.name .. "Handler.cs", code_conv(code_conv(template_bean_handler:gsub("#%(#(.-)#%)#", function(body)
+						local subcode3 = {}
+						for _, var in ipairs(bean) do
+							if var.id > 0 or var.id == -1 then subcode3[#subcode3 + 1] = code_conv(body, "var", var) end
+						end
+						return concat(subcode3)
+					end), "hdl", hdl), "bean", bean):gsub("\r", ""), 1)
 				end
 			end
 			return concat(subcode2)
