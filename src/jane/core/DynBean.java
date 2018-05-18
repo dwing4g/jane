@@ -101,7 +101,7 @@ public final class DynBean extends Bean<DynBean>
 	{
 		for(_fields.clear();;)
 		{
-			int b = os.unmarshalInt1() & 0xff;
+			int b = os.unmarshalInt1();
 			if(b == 0) return os;
 			if(b > 251) b += os.unmarshalInt1() << 2;
 			_fields.put(b >> 2, os.unmarshalVar(b & 3));

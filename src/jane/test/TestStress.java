@@ -25,7 +25,7 @@ public final class TestStress extends Procedure
 	private static final int TABLE_ID		  = 9999;	 // 表ID. 可调整来避免和现有数据库中的数据冲突
 	private static final int TABLE_CACHE	  = 0x20000; // 读缓存的记录数. 可调小来测试未缓存情况的稳定性
 	private static final int RECORD_COUNT	  = 0x20000; // 总测试的记录数量. 可调小来测试竞争压力;可调大测试大数据量时的内存压力. 必须是2的N次幂
-	private static final int CONCURRENT_COUNT = 100;	 // 并发事务的数量. 可调大来测试高压力时并发的稳定性
+	private static final int CONCURRENT_COUNT = 4;		 // 并发事务的数量. 可调大来测试高压力时并发的稳定性
 
 	private static final AtomicLong						  counter  = new AtomicLong();							// 事务完成次数统计
 	private static final LongConcurrentHashMap<Integer>	  checkMap = new LongConcurrentHashMap<>(RECORD_COUNT);	// 用于验证数据正确性的内存表
@@ -111,7 +111,7 @@ public final class TestStress extends Procedure
 		{
 			for(;;)
 			{
-				int i = os.unmarshalInt1() & 0xff, t = i & 3;
+				int i = os.unmarshalInt1(), t = i & 3;
 				if((i >>= 2) == 63) i += os.unmarshalInt1();
 				switch(i)
 				{

@@ -110,11 +110,12 @@ public class BeanCodec extends IoFilterAdapter
 			int reserveLen = OctetsStream.marshalUIntLen(type) + OctetsStream.marshalLen(serial) + 5;
 			OctetsStream os = new OctetsStream(reserveLen + bean.initSize());
 			os.resize(reserveLen);
-			int len = bean.marshalProtocol(os).size();
-			int pos = 5 - os.marshalUIntBack(reserveLen, len - reserveLen);
+			int end = bean.marshalProtocol(os).size();
+			int len = end - reserveLen;
+			int pos = 5 - OctetsStream.marshalUIntLen(len);
 			os.resize(pos);
-			os.marshalUInt(type).marshal(serial);
-			IoBuffer buf = IoBuffer.wrap(os.array(), pos, len - pos);
+			os.marshalUInt(type).marshal(serial).marshalUInt(len);
+			IoBuffer buf = IoBuffer.wrap(os.array(), pos, end - pos);
 			WriteFuture wf = writeRequest.getFuture();
 			next.filterWrite(wf == DefaultWriteRequest.UNUSED_FUTURE ? buf : new DefaultWriteRequest(buf, wf));
 		}

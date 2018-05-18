@@ -32,6 +32,15 @@ public final class TestMarshal
 		if(os.position() != os.size()) throw new Error("unmarshal wrong position: " + x);
 	}
 
+	private static void testULong(long x) throws MarshalException
+	{
+		OctetsStream os = new OctetsStream();
+		os.marshalULong(x);
+		long y = os.unmarshalULong();
+		if(x != y) throw new Error("unmarshal wrong value: " + x + " -> " + y + " dump: " + os.dump());
+		if(os.position() != os.size()) throw new Error("unmarshal wrong position: " + x);
+	}
+
 	private static void testUTF8(char x) throws MarshalException
 	{
 		OctetsStream os = new OctetsStream();
@@ -45,7 +54,8 @@ public final class TestMarshal
 	{
 		testInt((int)x);
 		testInt((int)-x);
-		testUInt((int)x & 0x7fffffff);
+		testUInt((int)x & 0x7fff_ffff);
+		testULong(x & 0x7fff_ffff_ffff_ffffL);
 		testUTF8((char)x);
 		testLong(x);
 		testLong(-x);
@@ -57,8 +67,8 @@ public final class TestMarshal
 		{
 			testAll(1L << i);
 			testAll((1L << i) - 1);
-			testAll(((1L << i) - 1) & 0x5555555555555555L);
-			testAll(((1L << i) - 1) & 0xaaaaaaaaaaaaaaaaL);
+			testAll(((1L << i) - 1) & 0x5555_5555_5555_5555L);
+			testAll(((1L << i) - 1) & 0xaaaa_aaaa_aaaa_aaaaL);
 		}
 		testInt(Integer.MIN_VALUE);
 		testInt(Integer.MAX_VALUE);
@@ -66,6 +76,8 @@ public final class TestMarshal
 		testLong(Integer.MAX_VALUE);
 		testLong(Long.MIN_VALUE);
 		testLong(Long.MAX_VALUE);
+		testUInt(Integer.MAX_VALUE);
+		testULong(Long.MAX_VALUE);
 
 		System.err.println("Test OK");
 	}

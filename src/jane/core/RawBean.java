@@ -71,11 +71,12 @@ public final class RawBean extends Bean<RawBean>
 		else
 			_data = os = new OctetsStream(reserveLen + bean.initSize());
 		os.resize(reserveLen);
-		int len = bean.marshalProtocol(os).size();
-		int pos = 5 - os.marshalUIntBack(reserveLen, len - reserveLen);
+		int end = bean.marshalProtocol(os).size();
+		int len = end - reserveLen;
+		int pos = 5 - OctetsStream.marshalUIntLen(len);
 		os.resize(pos);
-		os.marshalUInt(type).marshal(serial);
-		os.resize(len);
+		os.marshalUInt(type).marshal(serial).marshalUInt(len);
+		os.resize(end);
 		os.setPosition(pos);
 		return this;
 	}

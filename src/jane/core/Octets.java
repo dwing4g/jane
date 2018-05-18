@@ -306,12 +306,29 @@ public class Octets implements Cloneable, Comparable<Octets>
 		return append(o._buffer, 0, o._count);
 	}
 
+	public Octets insert(int from, int size)
+	{
+		if(size <= 0) return this;
+		int n = _count;
+		if(from < 0) from = 0;
+		if(from >= n)
+		{
+			resize(n + size);
+			return this;
+		}
+		reserve(n + size);
+		byte[] buf = _buffer;
+		System.arraycopy(buf, from, buf, from + size, n - from);
+		_count = n + size;
+		return this;
+	}
+
 	public Octets insert(int from, byte[] data, int pos, int size)
 	{
+		if(size <= 0) return this;
 		int n = _count;
 		if(from < 0) from = 0;
 		if(from >= n) return append(data, pos, size);
-		if(size <= 0) return this;
 		int len = data.length;
 		if(pos < 0) pos = 0;
 		if(pos >= len) return this;
