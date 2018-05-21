@@ -428,12 +428,13 @@ namespace Jane
 			int reserveLen = OctetsStream.MarshalUIntLen(type) + OctetsStream.MarshalLen(serial) + 5;
 			OctetsStream buf = new OctetsStream(reserveLen + bean.InitSize());
 			buf.Resize(reserveLen);
-			int len = bean.Marshal(buf).Size();
-			int pos = 5 - buf.MarshalUIntBack(reserveLen, len - reserveLen);
+			int end = bean.Marshal(buf).Size();
+			int len = end - reserveLen;
+			int pos = 5 - OctetsStream.MarshalUIntLen(len);
 			buf.Resize(pos);
-			buf.MarshalUInt(type).Marshal(serial);
+			buf.MarshalUInt(type).Marshal(serial).MarshalUInt(len);
 			buf.SetPosition(pos);
-			buf.Resize(len);
+			buf.Resize(end);
 			OctetsStream os = OnEncode(session, buf.Array(), buf.Position(), buf.Remain());
 			SendDirect(session, os ?? buf);
 		}

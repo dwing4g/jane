@@ -181,6 +181,20 @@ local function __call(_, data)
 	return Stream.new(data)
 end
 
+-- 序列化1个无符号整数(支持范围:0到+(52-bit))
+function Stream:marshalUInt(v)
+		if v < 0x80             then append(self, char(v))
+	elseif v < 0x4000           then append(self, char(floor(v / 0x100            ) + 0x80,       v % 0x100))
+	elseif v < 0x200000         then append(self, char(floor(v / 0x10000          ) + 0xc0, floor(v / 0x100          ) % 0x100,       v % 0x100))
+	elseif v < 0x10000000       then append(self, char(floor(v / 0x1000000        ) + 0xe0, floor(v / 0x10000        ) % 0x100, floor(v / 0x100        ) % 0x100,       v % 0x100))
+	elseif v < 0x800000000      then append(self, char(floor(v / 0x100000000      ) + 0xf0, floor(v / 0x1000000      ) % 0x100, floor(v / 0x10000      ) % 0x100, floor(v / 0x100      ) % 0x100,       v % 0x100))
+	elseif v < 0x40000000000    then append(self, char(floor(v / 0x10000000000    ) + 0xf8, floor(v / 0x100000000    ) % 0x100, floor(v / 0x1000000    ) % 0x100, floor(v / 0x10000    ) % 0x100, floor(v / 0x100    ) % 0x100,       v % 0x100))
+	elseif v < 0x2000000000000  then append(self, char(floor(v / 0x1000000000000  ) + 0xfc, floor(v / 0x10000000000  ) % 0x100, floor(v / 0x100000000  ) % 0x100, floor(v / 0x1000000  ) % 0x100, floor(v / 0x10000  ) % 0x100, floor(v / 0x100  ) % 0x100,       v % 0x100))
+	elseif v < 0x10000000000000 then append(self, char(floor(v / 0x100000000000000) + 0xfe, floor(v / 0x1000000000000) % 0x100, floor(v / 0x10000000000) % 0x100, floor(v / 0x100000000) % 0x100, floor(v / 0x1000000) % 0x100, floor(v / 0x10000) % 0x100, floor(v / 0x100) % 0x100, v % 0x100))
+	else                             append(self, char(0xfe, 0x0f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff)) end -- max = +(52-bit)
+	return self
+end
+
 -- 序列化1个整数(支持范围:-(52-bit)到+(52-bit))
 function Stream:marshalInt(v)
 	if v >= 0 then
@@ -204,16 +218,6 @@ function Stream:marshalInt(v)
 		elseif v >  -0x10000000000000 then v = v + 0x10000000000000 append(self, char(0x80, floor(v / 0x1000000000000) + 0xf0, floor(v / 0x10000000000) % 0x100, floor(v / 0x100000000) % 0x100, floor(v / 0x1000000) % 0x100, floor(v / 0x10000) % 0x100, floor(v / 0x100) % 0x100, v % 0x100))
 		else                                                        append(self, char(0x80, 0xf0, 0, 0, 0, 0, 0, 1)) end -- min = -(52-bit)
 	end
-	return self
-end
-
--- 序列化1个无符号整数(支持范围:0到+(32-bit))
-function Stream:marshalUInt(v)
-		if v < 0x80       then append(self, char(v))
-	elseif v < 0x4000     then append(self, char(floor(v / 0x100    ) + 0x80,       v % 0x100))
-	elseif v < 0x200000   then append(self, char(floor(v / 0x10000  ) + 0xc0, floor(v / 0x100  ) % 0x100,       v % 0x100))
-	elseif v < 0x10000000 then append(self, char(floor(v / 0x1000000) + 0xe0, floor(v / 0x10000) % 0x100, floor(v / 0x100) % 0x100, v % 0x100))
-	else                       append(self, char(0xf0,  floor(v / 0x1000000), floor(v / 0x10000) % 0x100, floor(v / 0x100) % 0x100, v % 0x100)) end
 	return self
 end
 
@@ -426,14 +430,18 @@ local function unmarshalStr(self, n)
 	return strsub(self._buf, pos + 1, p)
 end
 
--- 反序列化1个无符号整数(支持范围:0到+(32-bit))
+-- 反序列化1个无符号整数(支持范围:0到+(52-bit))
 function Stream:unmarshalUInt()
 	local v = unmarshalByte(self)
 		if v < 0x80 then
-	elseif v < 0xc0 then v = v % 0x40 * 0x100     + unmarshalByte (self   )
-	elseif v < 0xe0 then v = v % 0x20 * 0x10000   + unmarshalBytes(self, 2)
-	elseif v < 0xf0 then v = v % 0x10 * 0x1000000 + unmarshalBytes(self, 3)
-	else                 v = unmarshalBytes(self, 4) end
+	elseif v < 0xc0 then v = v % 0x40 * 0x100           + unmarshalByte (self   )
+	elseif v < 0xe0 then v = v % 0x20 * 0x10000         + unmarshalBytes(self, 2)
+	elseif v < 0xf0 then v = v % 0x10 * 0x1000000       + unmarshalBytes(self, 3)
+	elseif v < 0xf8 then v = v % 0x8  * 0x100000000     + unmarshalBytes(self, 4)
+	elseif v < 0xfc then v = v % 0x4  * 0x10000000000   + unmarshalBytes(self, 5)
+	elseif v < 0xfe then v = v % 0x2  * 0x1000000000000 + unmarshalBytes(self, 6)
+	elseif v < 0xff then v =                              unmarshalBytes(self, 7)
+	else                 v =                              unmarshalBytes(self, 8) end
 	return v
 end
 
