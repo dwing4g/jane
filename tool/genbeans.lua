@@ -517,7 +517,7 @@ typedef.double = merge(typedef.byte,
 })
 typedef.string = merge(typedef.byte,
 {
-	import = { "jane.core.Util", "jane.core.SBase" },
+	import = { "jane.core.SBase" },
 	type = "String", type_i = "String", type_o = "String",
 	subtypeid = 1,
 	new = "\t\t#(var.name) = \"\";\n",
@@ -1380,7 +1380,6 @@ for beanname, safe in spairs(need_save) do
 				   :gsub("import java%.lang%.reflect%.Field;\n", "")
 				   :gsub("import jane%.core%.S.-\n", "")
 	end
-	if not code:find("Util.", 1, true) then code = code:gsub("import jane%.core%.Util;\n", "") end
 	checksave(outpath .. namespace_path .. "/" .. beanname .. ".java", code:gsub("\r", ""), 0)
 end
 
