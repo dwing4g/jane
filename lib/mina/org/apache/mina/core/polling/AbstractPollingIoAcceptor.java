@@ -521,7 +521,7 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoService implem
 					// if some new connection have occurred, or if the selector has been explicitly woke up
 					int selected = select();
 
-					// Now, if the number of registred handles is 0, we can quit the loop:
+					// Now, if the number of registered handles is 0, we can quit the loop:
 					// we don't have any socket listening for incoming connection.
 					if (nHandles == 0) {
 						acceptorRef.set(null);

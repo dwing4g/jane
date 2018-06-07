@@ -614,6 +614,7 @@ local function savebean(beanname)
 end
 
 local bean_count = 0
+local typed_all = {}
 checksave(outpath .. "allbeans.h", (template_allbeans:gsub("#%[#(.-)#%]#", function(body)
 	local subcode = {}
 	for hdlname, hdlpath in pairs(handlers) do
@@ -630,6 +631,7 @@ checksave(outpath .. "allbeans.h", (template_allbeans:gsub("#%[#(.-)#%]#", funct
 					if bean.type <= 0 or bean.type > 0x7fffffff then error("ERROR: invalid bean.type: " .. tostring(bean.type) .. " (bean.name: " .. bean.name .. ")") end
 					if typed[bean.type] then error("ERROR: duplicated bean.type: " .. bean.type .. " (" .. typed[bean.type] .. ", " .. bean.name .. ") for " .. hdlname) end
 					typed[bean.type] = name
+					typed_all[bean.type] = name
 				end
 			end
 			return concat(subcode2)
@@ -642,7 +644,7 @@ end):gsub("#%(#(.-)#%)#", function(body)
 	for _, beanname in ipairs(bean_order) do
 		if bean_order[beanname] then
 			local bean = name_bean[beanname]
-			if bean.type > 0 then
+			if typed_all[bean.type] == beanname then
 				subcode[#subcode + 1] = code_conv(body, "bean", bean)
 				bean_count = bean_count + 1
 			end

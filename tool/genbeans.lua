@@ -1295,6 +1295,7 @@ end
 
 local namespace_path = namespace:gsub("%.", "/")
 local bean_count = 0
+local typed_all = {}
 checksave(outpath .. namespace_path .. "/AllBeans.java", (template_allbeans:gsub("#%[#(.-)#%]#", function(body)
 	local subcode = {}
 	for hdlname, hdlpath in spairs(handlers) do
@@ -1313,10 +1314,14 @@ checksave(outpath .. namespace_path .. "/AllBeans.java", (template_allbeans:gsub
 						if bean.type ~= 0 then
 							if typed[bean.type] then error("ERROR: duplicated bean.type: " .. bean.type .. " (" .. typed[bean.type] .. ", " .. bean.name .. ") for " .. hdlname) end
 							typed[bean.type] = name
+							if not typed_all[bean.type] then
+								typed_all[bean.type] = name
+							end
 							hdl.count = hdl.count + 1
 							subcode2[#subcode2 + 1] = code_conv(body, "bean", bean)
 							if type(hdlpath) == "string" then
 								if bean.type < 0 or bean.type > 0x7fffffff then error("ERROR: invalid bean.type: " .. tostring(bean.type) .. " (bean.name: " .. bean.name .. ")") end
+								typed_all[bean.type] = name
 								checksave(outpath .. hdlpath:gsub("%.", "/") .. "/" .. bean.name .. "Handler.java", code_conv(code_conv(template_bean_handler:gsub("#%(#(.-)#%)#", function(body)
 									local subcode3 = {}
 									for _, var in ipairs(bean) do
@@ -1339,7 +1344,7 @@ end):gsub("#%(#(.-)#%)#", function(body)
 	for _, beanname in ipairs(bean_order) do
 		if bean_order[beanname] then
 			local bean = name_bean[beanname]
-			if bean.type > 0 then
+			if typed_all[bean.type] == beanname then
 				subcode[#subcode + 1] = code_conv(body, "bean", bean)
 				bean_count = bean_count + 1
 			end

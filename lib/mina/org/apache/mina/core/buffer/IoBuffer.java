@@ -571,31 +571,32 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 * @return hexidecimal representation of this buffer
 	 */
 	public final String getHexDump(int lengthLimit) {
-		if (lengthLimit == 0) {
+		if (lengthLimit <= 0) {
 			throw new IllegalArgumentException("lengthLimit: " + lengthLimit + " (expected: 1+)");
 		}
 
-		boolean truncate = (remaining() > lengthLimit);
-		int size = (truncate ? lengthLimit : remaining());
-		if (size <= 0) {
+		int limit = limit();
+		int pos = position();
+		int len = limit - pos;
+		if (len <= 0) {
 			return "empty";
 		}
+		boolean truncate = len > lengthLimit;
+		if (truncate) {
+			limit = pos + (len = lengthLimit);
+		}
 
-		StringBuilder out = new StringBuilder(size * 3 + 2);
-
-		int mark = position();
+		StringBuilder out = new StringBuilder(len * 3 + 2);
 
 		for (;;) {
-			int byteValue = get() & 0xff;
+			int byteValue = get(pos) & 0xff;
 			out.append((char) digits[byteValue >> 4]);
 			out.append((char) digits[byteValue & 15]);
-			if (--size <= 0) {
+			if (++pos >= limit) {
 				break;
 			}
 			out.append(' ');
 		}
-
-		position(mark);
 
 		if (truncate) {
 			out.append("...");

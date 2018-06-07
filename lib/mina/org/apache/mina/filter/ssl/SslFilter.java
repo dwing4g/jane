@@ -605,20 +605,22 @@ public final class SslFilter extends IoFilterAdapter {
 
 		// if already shut down
 		try {
-			if (!sslHandler.closeOutbound()) {
-				return DefaultWriteFuture.newNotWrittenFuture(session,
-						new IllegalStateException("SSL session is shut down already."));
-			}
+			synchronized(sslHandler) {
+				if (!sslHandler.closeOutbound()) {
+					return DefaultWriteFuture.newNotWrittenFuture(session,
+							new IllegalStateException("SSL session is shut down already."));
+				}
 
-			// there might be data to write out here?
-			future = sslHandler.writeNetBuffer(nextFilter, true);
+				// there might be data to write out here?
+				future = sslHandler.writeNetBuffer(nextFilter, true);
 
-			if (future == null) {
-				future = DefaultWriteFuture.newWrittenFuture(session);
-			}
+				if (future == null) {
+					future = DefaultWriteFuture.newWrittenFuture(session);
+				}
 
-			if (sslHandler.isInboundDone()) {
-				sslHandler.destroy();
+				if (sslHandler.isInboundDone()) {
+					sslHandler.destroy();
+				}
 			}
 
 			if (session.containsAttribute(USE_NOTIFICATION)) {
@@ -639,8 +641,10 @@ public final class SslFilter extends IoFilterAdapter {
 			throw new IllegalStateException("no sslHandler");
 		}
 
-		if (sslHandler.getSslFilter() != this) {
-			throw new IllegalArgumentException("Not managed by this filter.");
+		synchronized(sslHandler) {
+			if (sslHandler.getSslFilter() != this) {
+				throw new IllegalArgumentException("Not managed by this filter.");
+			}
 		}
 
 		return sslHandler;
