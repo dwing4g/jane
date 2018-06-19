@@ -164,12 +164,14 @@ public abstract class Procedure implements Runnable
 		throw Undo._instance;
 	}
 
+	@SuppressWarnings("deprecation")
 	public final <V extends Bean<V>, S extends Safe<V>> S lockGet(TableLong<V, S> t, long k) throws InterruptedException
 	{
 		appendLock(t.lockId(k));
 		return t.getNoLock(k);
 	}
 
+	@SuppressWarnings("deprecation")
 	public final <K, V extends Bean<V>, S extends Safe<V>> S lockGet(Table<K, V, S> t, K k) throws InterruptedException
 	{
 		appendLock(t.lockId(k));

@@ -220,6 +220,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	/**
 	 * 同getUnsafe,但增加的安全封装,可回滚修改,但没有加锁检查
 	 */
+	@Deprecated
 	public S getNoLock(long k)
 	{
 		V v = getUnsafe(k);
@@ -249,6 +250,17 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	}
 
 	/**
+	 * 同getUnsafe,但有加锁检查
+	 */
+	@Deprecated
+	public V getReadOnly(long k)
+	{
+		if(!Procedure.isLockedByCurrentThread(lockId(k)))
+			throw new IllegalAccessError("get unlocked record! table=" + _tableName + ",key=" + k);
+		return getUnsafe(k);
+	}
+
+	/**
 	 * 根据记录的key获取value
 	 * <p>
 	 * 不会自动添加到读cache中<br>
@@ -270,11 +282,13 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	}
 
 	/**
-	 * 同getNoCacheUnsafe,但增加的安全封装,可回滚修改<br>
+	 * 同getNoCacheUnsafe,但增加了加锁检查和安全封装,可回滚修改<br>
 	 * <b>注意</b>: 不能在同一事务里使用NoCache方式(或混合Cache方式)get同一个记录多次并且对这些记录有多次修改,否则会触发modify函数中的异常
 	 */
 	public S getNoCache(long k)
 	{
+		if(!Procedure.isLockedByCurrentThread(lockId(k)))
+			throw new IllegalAccessError("get unlocked record! table=" + _tableName + ",key=" + k);
 		V v = getNoCacheUnsafe(k);
 		SContext sctx = SContext.current();
 		return v != null ? sctx.addRecord(this, k, v) : sctx.getRecord(this, k);
@@ -298,10 +312,12 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	}
 
 	/**
-	 * 同getCacheUnsafe,但增加的安全封装,可回滚修改
+	 * 同getCacheUnsafe,但增加了加锁检查和安全封装,可回滚修改
 	 */
 	public S getCache(long k)
 	{
+		if(!Procedure.isLockedByCurrentThread(lockId(k)))
+			throw new IllegalAccessError("get unlocked record! table=" + _tableName + ",key=" + k);
 		V v = getCacheUnsafe(k);
 		SContext sctx = SContext.current();
 		return v != null ? sctx.addRecord(this, k, v) : sctx.getRecord(this, k);
