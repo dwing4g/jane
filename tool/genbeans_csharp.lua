@@ -26,13 +26,13 @@ namespace ]=] .. namespace .. [=[
 
 {#(bean.comment)
 	[Serializable]
-	public class #(bean.name) : IBean, IEquatable<#(bean.name)>, IComparable<#(bean.name)>
+	public #(bean.final)class #(bean.name) : IBean, IEquatable<#(bean.name)>, IComparable<#(bean.name)>
 	{
 		public const int BEAN_TYPE = #(bean.type);
 #{#		public const #(var.type) #(var.name)#(var.value);#(var.comment)
 #}#		public int Serial { get; set; }
 
-#(#		#(var.public) /*#(var.id3)*/ #(var.final)#(var.type) #(var.name);#(var.comment)
+#(#		#(var.modifier) /*#(var.id3)*/ #(var.final)#(var.type) #(var.name);#(var.comment)
 #)##<#
 		public #(bean.name)()
 		{
@@ -301,7 +301,7 @@ typedef.byte =
 	end,
 	type = "sbyte", type_i = "sbyte", type_o = "sbyte",
 	subtypeid = 0,
-	public = "public ",
+	modifier = "public ",
 	final = "",
 	new = "",
 	init = "this.#(var.name) = #(var.name)",
@@ -393,7 +393,7 @@ typedef.string = merge(typedef.byte,
 {
 	type = "string", type_i = "string", type_o = "string",
 	subtypeid = 1,
---	public = "private",
+--	modifier = "private",
 	new = "\t\t\t#(var.name) = string.Empty;\n",
 	init = "this.#(var.name) = #(var.name) ?? string.Empty",
 	reset = "#(var.name) = string.Empty",
@@ -421,7 +421,7 @@ typedef.string = merge(typedef.byte,
 typedef.octets = merge(typedef.string,
 {
 	type = "Octets", type_i = "Octets", type_o = "Octets",
-	public = "public ",
+	modifier = "public ",
 --	final = "readonly ",
 	new = "\t\t\t#(var.name) = new Octets(#(var.cap));\n",
 	init = "this.#(var.name) = #(var.name) ?? new Octets()",
@@ -682,6 +682,7 @@ local function bean_common(bean)
 	if bean.name:find("[^%w_]") or typedef[bean.name] or bean.name == "AllBeans" or bean.name == "AllTables" then error("ERROR: invalid bean.name: " .. bean.name) end
 	if name_code[bean.name] then error("ERROR: duplicated bean.name: " .. bean.name) end
 	if type(bean.type) ~= "number" then bean.type = 0 end
+	bean.final = (bean.extend and "" or "sealed ")
 	for name in (bean.handlers or ""):gmatch("([%w_%.]+)") do
 		if not all_handlers[name] then error("ERROR: not defined handler: " .. name) end
 		hdl_names[name] = hdl_names[name] or {}

@@ -25,7 +25,7 @@ package ]=] .. namespace .. [=[;
 import java.lang.reflect.Field;#>#
 import #(bean.imports);
 #(bean.comment)
-public final class #(bean.name) extends Bean<#(bean.name)>
+public #(bean.final)class #(bean.name) extends Bean<#(bean.name)>
 {
 	private static final long serialVersionUID = #(bean.uid);
 	public  static final int BEAN_TYPE = #(bean.type);
@@ -33,7 +33,7 @@ public final class #(bean.name) extends Bean<#(bean.name)>
 	public  static final #(bean.name) BEAN_STUB = new #(bean.name)();
 #{#	public  static final #(var.type) #(var.name)#(var.value);#(var.comment2)
 #}#
-#(#	private /*#(var.id3)*/ #(var.final)#(var.type) #(var.name);#(var.comment2)
+#(#	#(bean.modifier) /*#(var.id3)*/ #(var.final)#(var.type) #(var.name);#(var.comment2)
 #)##<#
 	public #(bean.name)()
 	{
@@ -1079,6 +1079,8 @@ local function bean_common(bean)
 	if name_code[lower(bean.name)] then error("ERROR: duplicated bean.name: " .. bean.name) end
 	if type(bean.type) ~= "number" or not bean.handlers then bean.type = 0 end
 	if not bean.initsize then bean.initsize = 0 end
+	bean.final = (bean.extend and "" or "final ")
+	bean.modifier = (bean.extend and "protected" or "private")
 	for name in (bean.handlers or ""):gmatch("([%w_%.]+)") do
 		if not all_handlers[name] then error("ERROR: not defined handler: " .. name) end
 		hdl_names[name] = hdl_names[name] or {}

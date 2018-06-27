@@ -9,7 +9,7 @@ namespace Jane.Bean
 	 * 测试空bean;
 	 */
 	[Serializable]
-	public class TestEmpty : IBean, IEquatable<TestEmpty>, IComparable<TestEmpty>
+	public sealed class TestEmpty : IBean, IEquatable<TestEmpty>, IComparable<TestEmpty>
 	{
 		public const int BEAN_TYPE = 3;
 		public int Serial { get; set; }

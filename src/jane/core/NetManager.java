@@ -55,7 +55,7 @@ public class NetManager implements IoHandler
 	private static final class BeanContext<B extends Bean<B>>
 	{
 		final int		 askTime = (int)getTimeSec(); // 发送请求的时间戳(秒)
-		int				 timeOut = Integer.MAX_VALUE; // 超时时间(秒)
+		int				 timeout = Integer.MAX_VALUE; // 超时时间(秒)
 		IoSession		 session;					  // 请求时绑定的session
 		Bean<?>			 askBean;					  // 请求的bean
 		AnswerHandler<B> answerHandler;				  // 接收回复的回调,超时也会回调(传入的bean为null)
@@ -94,7 +94,7 @@ public class NetManager implements IoHandler
 					for(MapIterator<BeanContext<?>> it = _beanCtxMap.entryIterator(); it.moveToNext();)
 					{
 						BeanContext<?> beanCtx = it.value();
-						if(now - beanCtx.askTime > beanCtx.timeOut && _beanCtxMap.remove(it.key(), beanCtx))
+						if(now - beanCtx.askTime > beanCtx.timeout && _beanCtxMap.remove(it.key(), beanCtx))
 						{
 							IoSession session = beanCtx.session;
 							Bean<?> askBean = beanCtx.askBean;
@@ -701,7 +701,7 @@ public class NetManager implements IoHandler
 			}
 			return false;
 		}
-		beanCtx.timeOut = timeout;
+		beanCtx.timeout = timeout;
 		return true;
 	}
 
@@ -750,7 +750,7 @@ public class NetManager implements IoHandler
 			}
 			return null;
 		}
-		beanCtx.timeOut = timeout;
+		beanCtx.timeout = timeout;
 		return cf;
 	}
 

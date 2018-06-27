@@ -9,7 +9,7 @@ namespace Jane.Bean
 	 * 测试生成所有支持的类型;
 	 */
 	[Serializable]
-	public class TestType : IBean, IEquatable<TestType>, IComparable<TestType>
+	public sealed class TestType : IBean, IEquatable<TestType>, IComparable<TestType>
 	{
 		public const int BEAN_TYPE = 2;
 		public int Serial { get; set; }
