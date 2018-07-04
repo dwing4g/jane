@@ -8,6 +8,11 @@ import org.apache.mina.core.session.IoSession;
 public interface BeanHandler<B extends Bean<B>>
 {
 	/**
+	 * 获取处理bean的stub
+	 */
+	B stub();
+
+	/**
 	 * 处理的入口
 	 */
 	@SuppressWarnings("unchecked")
@@ -19,5 +24,5 @@ public interface BeanHandler<B extends Bean<B>>
 	/**
 	 * 处理回调的接口
 	 */
-	public abstract void onProcess(NetManager manager, IoSession session, B arg) throws Exception;
+	void onProcess(NetManager manager, IoSession session, B arg) throws Exception;
 }

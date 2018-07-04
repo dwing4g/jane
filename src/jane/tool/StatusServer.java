@@ -29,7 +29,7 @@ public class StatusServer extends NetManager
 
 	public StatusServer()
 	{
-		setCodec(HttpCodec.class);
+		setCodecFactory(HttpCodec::new);
 	}
 
 	public static ArrayList<Object> genStatusList()

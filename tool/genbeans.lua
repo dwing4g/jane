@@ -197,26 +197,14 @@ public #(bean.final)class #(bean.name) extends Bean<#(bean.name)>
 
 local template_allbeans = template_hint .. [=[
 package ]=] .. namespace .. [=[;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import jane.core.Bean;#<#
+#<#
 import jane.core.BeanHandler;
-import jane.core.map.IntHashMap;#>#
-
+import jane.core.map.IntHashMap;
+#>#
 /** 全部beans的注册(自动生成的静态类) */
 public final class AllBeans
 {
 	private AllBeans() {}
-
-	/** 获取全部的bean实例 */
-	public static Collection<Bean<?>> getAllBeans()
-	{
-		List<Bean<?>> r = new ArrayList<>(#(bean.count));
-#(#		r.add(#(bean.name).BEAN_STUB);
-#)#		return r;
-	}
 #[#
 	public static IntHashMap<BeanHandler<?>> get#(hdl.name)Handlers()
 	{
@@ -243,6 +231,12 @@ import ]=] .. namespace .. [=[.#(bean.name);
 
 public final class #(bean.name)Handler implements BeanHandler<#(bean.name)>
 {
+	@Override
+	public #(bean.name) stub()
+	{
+		return #(bean.name).BEAN_STUB;
+	}
+
 	/*\
 #(#	|*| #(var.type) #(var.name)#(var.value);#(var.comment2)
 #)#	\*/

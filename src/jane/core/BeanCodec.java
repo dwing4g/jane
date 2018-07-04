@@ -1,25 +1,22 @@
 package jane.core;
 
-import java.util.Collection;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.filterchain.IoFilterAdapter;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.DefaultWriteRequest;
 import org.apache.mina.core.write.WriteRequest;
-import jane.core.map.IntHashMap;
 
 /**
  * bean的mina协议编解码过滤器
  */
 public class BeanCodec extends IoFilterAdapter
 {
-	protected static final IntHashMap<Integer> _maxSize	= new IntHashMap<>(4096, 0.5f);	// 所有注册beans的最大空间限制
-	protected static final IntHashMap<Bean<?>> _stubMap	= new IntHashMap<>(4096, 0.5f);	// 所有注册beans的存根对象
-	protected final OctetsStream			   _os		= new OctetsStream();			// 用于解码器的数据缓存
-	protected int							   _ptype;									// 当前数据缓存中获得的协议类型
-	protected int							   _pserial;								// 当前数据缓存中获得的协议序列号
-	protected int							   _psize	= -1;							// 当前数据缓存中获得的协议大小. -1表示没获取到
+	protected final NetManager	 _mgr;
+	protected final OctetsStream _os	= new OctetsStream(); // 用于解码器的数据缓存
+	protected int				 _ptype;					  // 当前数据缓存中获得的协议类型
+	protected int				 _pserial;					  // 当前数据缓存中获得的协议序列号
+	protected int				 _psize	= -1;				  // 当前数据缓存中获得的协议大小. -1表示没获取到
 
 	/**
 	 * 不带栈信息的解码错误异常
@@ -41,51 +38,27 @@ public class BeanCodec extends IoFilterAdapter
 		}
 	}
 
-	/**
-	 * 重新注册所有的beans
-	 * <p>
-	 * 参数中的所有beans会被保存下来当存根(通过调用create方法创建对象)<br>
-	 * 警告: 此方法<b>必须</b>在开启任何<b>网络连接前</b>调用
-	 */
-	public static void registerAllBeans(Collection<Bean<?>> beans)
+	public BeanCodec(NetManager mgr)
 	{
-		_maxSize.clear();
-		_stubMap.clear();
-		for(Bean<?> bean : beans)
-		{
-			int type = bean.type();
-			if(type > 0)
-			{
-				_maxSize.put(type, bean.maxSize());
-				_stubMap.put(type, bean);
-			}
-		}
+		_mgr = mgr;
 	}
 
 	/**
 	 * 获取某个类型bean的最大空间限制(字节)
 	 */
-	public static int getBeanMaxSize(int type)
+	public int getBeanMaxSize(int type)
 	{
-		Integer size = _maxSize.get(type);
-		return size != null ? size : -1;
-	}
-
-	/**
-	 * 获取一个类型的bean存根对象(只能读)
-	 */
-	public static Bean<?> getBeanStub(int type)
-	{
-		return _stubMap.get(type);
+		BeanHandler<?> handler = _mgr.getHandler(type);
+		return handler != null ? handler.stub().maxSize() : -1;
 	}
 
 	/**
 	 * 根据类型创建一个默认初始化的bean
 	 */
-	public static Bean<?> createBean(int type)
+	public Bean<?> createBean(int type)
 	{
-		Bean<?> bean = _stubMap.get(type);
-		return bean != null ? bean.create() : null;
+		BeanHandler<?> handler = _mgr.getHandler(type);
+		return handler != null ? handler.stub().create() : null;
 	}
 
 	@Override

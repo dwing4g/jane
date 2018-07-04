@@ -8,6 +8,12 @@ import jane.bean.TestType;
 
 public final class TestTypeHandler implements BeanHandler<TestType>
 {
+	@Override
+	public TestType stub()
+	{
+		return TestType.BEAN_STUB;
+	}
+
 	/*\
 	|*| boolean v1; // 1字节布尔,0表示假,1表示真,其它默认表示真
 	|*| byte v2; // 1字节整数

@@ -12,6 +12,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import org.apache.mina.core.filterchain.IoFilter;
 import org.apache.mina.core.filterchain.IoFilterChain;
 import org.apache.mina.core.future.ConnectFuture;
@@ -69,7 +70,7 @@ public class NetManager implements IoHandler
 	private static int										   _sharedIoThreadCount;							   // 共享的网络IO线程数量(<=0表示默认的线程数量)
 	private static long										   _timeSec		  = System.currentTimeMillis() / 1000; // NetManager的秒级时间戳值,可以快速获取
 	private final String									   _name		  = getClass().getSimpleName();		   // 当前管理器的名字
-	private volatile Class<? extends IoFilter>				   _pcf			  = BeanCodec.class;				   // 协议编码器的类
+	private volatile Supplier<IoFilter>						   _codecFactory  = () -> new BeanCodec(this);		   // 协议编码器的工厂
 	private volatile IntHashMap<BeanHandler<?>>				   _handlers	  = new IntHashMap<>(0);			   // bean的处理器
 	private volatile NioSocketAcceptor						   _acceptor;										   // mina的网络监听器
 	private volatile NioSocketConnector						   _connector;										   // mina的网络连接器
@@ -313,13 +314,21 @@ public class NetManager implements IoHandler
 	}
 
 	/**
-	 * 设置当前的协议编码器
+	 * 设置当前的协议编码器工厂
 	 * <p>
 	 * 必须在连接或监听之前设置
 	 */
-	public final void setCodec(Class<? extends IoFilter> pcf)
+	public final void setCodecFactory(Supplier<IoFilter> codecFactory)
 	{
-		_pcf = pcf;
+		_codecFactory = codecFactory;
+	}
+
+	/**
+	 * 获取一个类型的bean的处理器
+	 */
+	public BeanHandler<?> getHandler(int type)
+	{
+		return _handlers.get(type);
 	}
 
 	/**
@@ -840,9 +849,9 @@ public class NetManager implements IoHandler
 	@Override
 	public void sessionCreated(IoSession session) throws Exception
 	{
-		Class<? extends IoFilter> pcf = _pcf;
-		if(pcf != null)
-			session.getFilterChain().addLast("codec", pcf.newInstance());
+		Supplier<IoFilter> codecFactory = _codecFactory;
+		if(codecFactory != null)
+			session.getFilterChain().addLast("codec", codecFactory.get());
 	}
 
 	@Override

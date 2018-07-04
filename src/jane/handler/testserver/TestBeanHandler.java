@@ -9,6 +9,12 @@ import jane.bean.TestType;
 
 public final class TestBeanHandler implements BeanHandler<TestBean>
 {
+	@Override
+	public TestBean stub()
+	{
+		return TestBean.BEAN_STUB;
+	}
+
 	/*\
 	|*| int TEST_CONST1 = 5; // 测试类静态常量
 	|*| String TEST_CONST2 = "test_const2";

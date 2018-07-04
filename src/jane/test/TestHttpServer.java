@@ -29,7 +29,7 @@ public final class TestHttpServer extends NetManager
 			sf.setUseClientMode(false);
 			getAcceptor().getDefaultIoFilterChainBuilder().addFirst("ssl", sf);
 		}
-		setCodec(HttpCodec.class);
+		setCodecFactory(HttpCodec::new);
 	}
 
 	@Override
