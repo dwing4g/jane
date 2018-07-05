@@ -4,7 +4,7 @@ package jane.bean;
 import jane.core.BeanHandler;
 import jane.core.map.IntHashMap;
 
-/** 全部beans的注册(自动生成的静态类) */
+/** 全部handlers的获取(自动生成的静态类) */
 public final class AllBeans
 {
 	private AllBeans() {}

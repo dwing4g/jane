@@ -10,7 +10,7 @@ public interface BeanHandler<B extends Bean<B>>
 	/**
 	 * 获取处理bean的stub
 	 */
-	B stub();
+	B beanStub();
 
 	/**
 	 * 处理的入口

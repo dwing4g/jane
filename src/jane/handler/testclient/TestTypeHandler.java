@@ -9,7 +9,7 @@ import jane.bean.TestType;
 public final class TestTypeHandler implements BeanHandler<TestType>
 {
 	@Override
-	public TestType stub()
+	public TestType beanStub()
 	{
 		return TestType.BEAN_STUB;
 	}

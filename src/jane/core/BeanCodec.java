@@ -49,7 +49,7 @@ public class BeanCodec extends IoFilterAdapter
 	public int getBeanMaxSize(int type)
 	{
 		BeanHandler<?> handler = _mgr.getHandler(type);
-		return handler != null ? handler.stub().maxSize() : -1;
+		return handler != null ? handler.beanStub().maxSize() : -1;
 	}
 
 	/**
@@ -58,7 +58,7 @@ public class BeanCodec extends IoFilterAdapter
 	public Bean<?> createBean(int type)
 	{
 		BeanHandler<?> handler = _mgr.getHandler(type);
-		return handler != null ? handler.stub().create() : null;
+		return handler != null ? handler.beanStub().create() : null;
 	}
 
 	@Override

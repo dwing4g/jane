@@ -2,7 +2,7 @@
 ■ jane更新说明 ■
 ==================
 
-1.0.0 (2016-11-05) => 2.0.0 (git HEAD) (2018-05-24)
+1.0.0 (2016-11-05) => 2.0.0 (git HEAD) (2018-07-05)
 
 * 编译运行环境升级到Java8,不再推荐32位运行环境
 * 增加Mac OS X平台上的开发支持
@@ -33,6 +33,7 @@
 * 增加了在IDE中调试时的安全停止方法(ExitManager.waitStdInToExit)
 * genbeans不再生成bean代码中不需要的Safe类等代码, toJson和toLua方法的生成改为可选
 * genbeans可在生成bean代码中附加用户的额外代码
+* BeanHandler增加beanStub接口, 不再需要BeanCodec.registerAllBeans; 不再生成AllBeans.getAllBeans
 * StatusServer增加LevelDB和DBSimpleManager的一些运行状态
 * 增加热更class的工具类,支持热更单个类,多个类,jar包中的所有类
 * 增加jar/zip文件的差异和合并工具类

@@ -206,7 +206,6 @@ public final class Main
     {
         DBManager.instance().startup(StorageLevelDB.instance()); // 使用LevelDB引擎启动数据库
         AllTables.register(); // 注册所有的数据库表
-        BeanCodec.registerAllBeans(AllBeans.getAllBeans()); // 注册所有的Bean
         GameServer.instance().startServer(new InetSocketAddress(29000)); // 启动服务器, GameServer监听29000端口
         // 启动成功后虽然会退出main函数, 但由于创建了其它非后台线程, 所以并不会退出服务器进程
     }

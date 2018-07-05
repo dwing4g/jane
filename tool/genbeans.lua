@@ -201,7 +201,7 @@ package ]=] .. namespace .. [=[;
 import jane.core.BeanHandler;
 import jane.core.map.IntHashMap;
 #>#
-/** 全部beans的注册(自动生成的静态类) */
+/** 全部handlers的获取(自动生成的静态类) */
 public final class AllBeans
 {
 	private AllBeans() {}
@@ -232,7 +232,7 @@ import ]=] .. namespace .. [=[.#(bean.name);
 public final class #(bean.name)Handler implements BeanHandler<#(bean.name)>
 {
 	@Override
-	public #(bean.name) stub()
+	public #(bean.name) beanStub()
 	{
 		return #(bean.name).BEAN_STUB;
 	}
@@ -261,7 +261,7 @@ public final class AllTables
 	private static final DBManager _dbm = DBManager.instance();
 	/**
 	 * 注册全部的数据库表<p>
-	 * 用于初始化和注册下面的全部静态成员(保持和AllBeans.register一致的用法), 并启动提交线程<br>
+	 * 用于初始化和注册下面的全部静态成员, 并启动提交线程<br>
 	 * 调用前要先初始化数据库管理器: DBManager.instance().startup(...)
 	 */
 	public static void register() { _dbm.startCommitThread(); }#<#
@@ -1045,7 +1045,6 @@ local handlers = {} -- selected handler name => handler path
 local has_handler -- any selected handler?
 local all_handlers = {} -- all handlers name => true
 local hdl_names = {} -- handler name => {bean names}
-local bean_order = {} -- defined order => bean name
 local tables = { imports = { ["java.util.HashMap"] = true, ["jane.core.Bean"] = true } }
 function handler(hdls)
 	if not arg[2] then error("ERROR: arg[2] must be handler name(s)") end
@@ -1082,7 +1081,6 @@ local function bean_common(bean)
 	end
 	name_bean[bean.name] = bean
 	bean.comment = bean.comment and #bean.comment > 0 and "\n/**\n * " .. bean.comment:gsub("\n", "<br>\n * ") .. "\n */" or ""
-	bean_order[#bean_order + 1] = bean.name
 end
 local function bean_const(code)
 	return code:gsub("public  /%*", "private /*"):
@@ -1227,7 +1225,6 @@ local function savebean(beanname, safe)
 		return
 	end
 	need_save[beanname] = safe or false
-	bean_order[beanname] = true
 	local bean = name_bean[beanname]
 	if not bean then
 		error("ERROR: not found bean.name: " .. beanname)
@@ -1290,8 +1287,6 @@ for beanname in pairs(need_save_dbt) do
 end
 
 local namespace_path = namespace:gsub("%.", "/")
-local bean_count = 0
-local typed_all = {}
 checksave(outpath .. namespace_path .. "/AllBeans.java", (template_allbeans:gsub("#%[#(.-)#%]#", function(body)
 	local subcode = {}
 	for hdlname, hdlpath in spairs(handlers) do
@@ -1310,14 +1305,10 @@ checksave(outpath .. namespace_path .. "/AllBeans.java", (template_allbeans:gsub
 						if bean.type ~= 0 then
 							if typed[bean.type] then error("ERROR: duplicated bean.type: " .. bean.type .. " (" .. typed[bean.type] .. ", " .. bean.name .. ") for " .. hdlname) end
 							typed[bean.type] = name
-							if not typed_all[bean.type] then
-								typed_all[bean.type] = name
-							end
 							hdl.count = hdl.count + 1
 							subcode2[#subcode2 + 1] = code_conv(body, "bean", bean)
 							if type(hdlpath) == "string" then
 								if bean.type < 0 or bean.type > 0x7fffffff then error("ERROR: invalid bean.type: " .. tostring(bean.type) .. " (bean.name: " .. bean.name .. ")") end
-								typed_all[bean.type] = name
 								checksave(outpath .. hdlpath:gsub("%.", "/") .. "/" .. bean.name .. "Handler.java", code_conv(code_conv(template_bean_handler:gsub("#%(#(.-)#%)#", function(body)
 									local subcode3 = {}
 									for _, var in ipairs(bean) do
@@ -1335,19 +1326,7 @@ checksave(outpath .. namespace_path .. "/AllBeans.java", (template_allbeans:gsub
 		end
 	end
 	return concat(subcode)
-end):gsub("#%(#(.-)#%)#", function(body)
-	local subcode = {}
-	for _, beanname in ipairs(bean_order) do
-		if bean_order[beanname] then
-			local bean = name_bean[beanname]
-			if typed_all[bean.type] == beanname then
-				subcode[#subcode + 1] = code_conv(body, "bean", bean)
-				bean_count = bean_count + 1
-			end
-		end
-	end
-	return concat(subcode)
-end)):gsub(has_handler and "#[<>]#" or "#%<#(.-)#%>#", ""):gsub("#%(bean.count%)", bean_count):gsub("\r", ""), 0)
+end):gsub(has_handler and "#[<>]#" or "#%<#(.-)#%>#", ""):gsub("\r", "")), 0)
 
 tables.count = #tables
 tables.imports["java.util.ArrayList"] = true

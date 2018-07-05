@@ -10,7 +10,7 @@ import jane.tool.RC4Filter;
 public final class TestBeanHandler implements BeanHandler<TestBean>
 {
 	@Override
-	public TestBean stub()
+	public TestBean beanStub()
 	{
 		return TestBean.BEAN_STUB;
 	}

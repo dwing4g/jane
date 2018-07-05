@@ -19,7 +19,7 @@ public final class AllTables
 	private static final DBManager _dbm = DBManager.instance();
 	/**
 	 * 注册全部的数据库表<p>
-	 * 用于初始化和注册下面的全部静态成员(保持和AllBeans.register一致的用法), 并启动提交线程<br>
+	 * 用于初始化和注册下面的全部静态成员, 并启动提交线程<br>
 	 * 调用前要先初始化数据库管理器: DBManager.instance().startup(...)
 	 */
 	public static void register() { _dbm.startCommitThread(); }
