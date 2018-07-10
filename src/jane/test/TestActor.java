@@ -4,6 +4,11 @@ import jane.test.net.ActorThread;
 
 public final class TestActor extends ActorThread<Object>
 {
+	protected TestActor()
+	{
+		super("TestActorThread");
+	}
+
 	@ActorThread.Event(Integer.class)
 	private static void doInteger(int v)
 	{
@@ -19,7 +24,7 @@ public final class TestActor extends ActorThread<Object>
 	public static void main(String[] args)
 	{
 		TestActor actor = new TestActor();
-		actor.postCmd(123);
+		actor.postMsg(123);
 		actor.start();
 	}
 }

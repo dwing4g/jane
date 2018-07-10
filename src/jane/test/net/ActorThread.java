@@ -7,12 +7,16 @@ import java.lang.annotation.Target;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public abstract class ActorThread<T> extends Thread
 {
-	private final HashMap<Class<?>, Method>	dispatcher = new HashMap<>();
-	private final ConcurrentLinkedQueue<T>	cmdQueue   = new ConcurrentLinkedQueue<>();
-	private int								periodMs   = 100;
+	private static final ScheduledThreadPoolExecutor delayExecutor;
+	private final ConcurrentLinkedQueue<T>			 msgQueue	= new ConcurrentLinkedQueue<>();
+	private final HashMap<Class<?>, Method>			 dispatcher	= new HashMap<>();
+	private int										 periodMs	= 100;
+	private boolean									 started;
 
 	@Target(ElementType.METHOD)
 	@Retention(RetentionPolicy.RUNTIME)
@@ -21,8 +25,24 @@ public abstract class ActorThread<T> extends Thread
 		public Class<?> value();
 	}
 
-	protected ActorThread()
+	static
 	{
+		delayExecutor = new ScheduledThreadPoolExecutor(1, r ->
+		{
+			Thread t = new Thread(r, "ActorDelayThread");
+			t.setDaemon(true);
+			return t;
+		});
+	}
+
+	public static int getDelayQueueSize()
+	{
+		return delayExecutor.getQueue().size();
+	}
+
+	protected ActorThread(String threadName)
+	{
+		super(threadName);
 		for(Method method : getClass().getDeclaredMethods())
 		{
 			Event anno = method.getAnnotation(Event.class);
@@ -32,14 +52,19 @@ public abstract class ActorThread<T> extends Thread
 		}
 	}
 
+	public int getMsgQueueSize()
+	{
+		return msgQueue.size();
+	}
+
 	public ActorThread<T> setPeriodMs(int periodMs)
 	{
 		this.periodMs = periodMs;
 		return this;
 	}
 
-	/** @param cmd */
-	protected void onUnknown(T cmd)
+	/** @param msg */
+	protected void onUnknown(T msg)
 	{
 	}
 
@@ -47,8 +72,10 @@ public abstract class ActorThread<T> extends Thread
 	{
 	}
 
-	protected void onInterrupted()
+	@SuppressWarnings("static-method")
+	protected boolean onInterrupted()
 	{
+		return true;
 	}
 
 	/** @param e */
@@ -56,30 +83,44 @@ public abstract class ActorThread<T> extends Thread
 	{
 	}
 
-	public void postCmd(T cmd)
+	public void postMsg(T msg)
 	{
-		if(cmd != null)
-			cmdQueue.offer(cmd);
+		if(msg != null)
+			msgQueue.offer(msg);
+	}
+
+	public void postDelayMsg(long delayMs, T msg)
+	{
+		if(delayMs <= 0)
+		{
+			postMsg(msg);
+			return;
+		}
+		if(msg == null)
+			return;
+		delayExecutor.schedule(() -> postMsg(msg), delayMs, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
 	public void run()
 	{
-		for(;;)
+		if(Thread.currentThread() != this || started)
+			throw new IllegalStateException();
+		for(started = true;;)
 		{
 			try
 			{
 				long timeBegin = System.currentTimeMillis();
 				for(;;)
 				{
-					T cmd = cmdQueue.poll();
-					if(cmd == null)
+					T msg = msgQueue.poll();
+					if(msg == null)
 						break;
-					Method method = dispatcher.get(cmd.getClass());
+					Method method = dispatcher.get(msg.getClass());
 					if(method != null)
-						method.invoke(this, cmd);
+						method.invoke(this, msg);
 					else
-						onUnknown(cmd);
+						onUnknown(msg);
 				}
 				onIdle();
 				long sleepTime = periodMs - (System.currentTimeMillis() - timeBegin);
@@ -87,8 +128,9 @@ public abstract class ActorThread<T> extends Thread
 			}
 			catch(InterruptedException e)
 			{
-				onInterrupted();
-				break;
+				if(onInterrupted())
+					break;
+				interrupted(); // clear status
 			}
 			catch(Throwable e)
 			{
