@@ -1,5 +1,7 @@
 package jane.core;
 
+import java.lang.ref.Reference;
+import java.lang.ref.SoftReference;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
@@ -21,13 +23,13 @@ import jane.core.map.LongMap.MapIterator;
  */
 public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends TableBase<V>
 {
-	private final Storage.TableLong<V> _stoTable;							// 存储引擎的表对象
-	private final LongMap<V>		   _cache;								// 读缓存. 有大小限制,溢出自动清理
-	private final LongMap<V>		   _cacheMod;							// 写缓存. 不会溢出,保存到数据库存储引擎后清理
-	private final AtomicLong		   _idCounter	 = new AtomicLong();	// 用于自增长ID的统计器, 当前值表示当前表已存在的最大ID值
-	private final AtomicBoolean		   _idCounterMod = new AtomicBoolean();	// idCounter是否待存状态(有修改未存库)
-	private int						   _autoIdBegin	 = Const.autoIdBegin;	// 自增长ID的初始值, 可运行时指定
-	private int						   _autoIdStride = Const.autoIdStride;	// 自增长ID的分配跨度, 可运行时指定
+	private final Storage.TableLong<V>	_stoTable;							 // 存储引擎的表对象
+	private final LongMap<Reference<V>>	_cache;								 // 读缓存. 有大小限制,溢出自动清理
+	private final LongMap<V>			_cacheMod;							 // 写缓存. 不会溢出,保存到数据库存储引擎后清理
+	private final AtomicLong			_idCounter	  = new AtomicLong();	 // 用于自增长ID的统计器, 当前值表示当前表已存在的最大ID值
+	private final AtomicBoolean			_idCounterMod = new AtomicBoolean(); // idCounter是否待存状态(有修改未存库)
+	private int							_autoIdBegin  = Const.autoIdBegin;	 // 自增长ID的初始值, 可运行时指定
+	private int							_autoIdStride = Const.autoIdStride;	 // 自增长ID的分配跨度, 可运行时指定
 
 	/**
 	 * 创建一个数据库表
@@ -186,14 +188,15 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	public V getUnsafe(long k)
 	{
 		_readCount.getAndIncrement();
-		V v = _cache.get(k);
-		if(v != null) return v;
+		Reference<V> r = _cache.get(k);
+		V v;
+		if(r != null && (v = r.get()) != null) return v;
 		if(_cacheMod == null) return null;
 		v = _cacheMod.get(k);
 		if(v != null)
 		{
 			if(v == _deleted) return null;
-			_cache.put(k, v);
+			_cache.put(k, new SoftReference<>(v));
 			return v;
 		}
 		_readStoCount.getAndIncrement();
@@ -201,8 +204,10 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 		if(v != null)
 		{
 			v.setSaveState(1);
-			_cache.put(k, v);
+			_cache.put(k, new SoftReference<>(v));
 		}
+		else if(r != null)
+			_cache.remove(k);
 		return v;
 	}
 
@@ -271,8 +276,13 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	public V getNoCacheUnsafe(long k)
 	{
 		_readCount.getAndIncrement();
-		V v = _cache.get(k);
-		if(v != null) return v;
+		Reference<V> r = _cache.get(k);
+		V v;
+		if(r != null)
+		{
+			if((v = r.get()) != null) return v;
+			_cache.remove(k);
+		}
 		if(_cacheMod == null) return null;
 		v = _cacheMod.get(k);
 		if(v != null)
@@ -304,8 +314,13 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	public V getCacheUnsafe(long k)
 	{
 		_readCount.getAndIncrement();
-		V v = _cache.get(k);
-		if(v != null) return v;
+		Reference<V> r = _cache.get(k);
+		V v;
+		if(r != null)
+		{
+			if((v = r.get()) != null) return v;
+			_cache.remove(k);
+		}
 		if(_cacheMod == null) return null;
 		v = _cacheMod.get(k);
 		return v != null && v != _deleted ? v : null;
@@ -372,36 +387,32 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	 * <p>
 	 * 必须在事务中已加锁的状态下调用此方法<br>
 	 * 如果使用自增长ID来插入记录的表,则不能用此方法来插入新的记录
-	 * @param v 如果是get获取到的对象引用,可调用modify来提高性能
+	 * @param v 如果是get获取到的对象引用,可调用modify来提高性能. 不能为null
 	 */
 	@Deprecated
 	public void putUnsafe(long k, V v)
 	{
-		V vOld = _cache.put(k, v);
-		if(vOld == v)
+		if(v == null)
+			throw new NullPointerException();
+		Reference<V> rOld = _cache.get(k);
+		if(rOld != null && rOld.get() == v)
 			modify(k, v);
 		else
 		{
+			if(v.stored())
+				throw new IllegalStateException("put shared record: t=" + _tableName +
+						",k=" + k + ",vOld=" + (rOld != null ? rOld.get() : null) + ",v=" + v);
 			Procedure.incVersion(lockId(k));
-			if(!v.stored())
+			if(_cacheMod != null)
 			{
-				if(_cacheMod != null)
-				{
-					vOld = _cacheMod.put(k, v);
-					if(vOld == null)
-						DBManager.instance().incModCount();
-					v.setSaveState(2);
-				}
+				_cache.put(k, new SoftReference<>(v));
+				V vOld = _cacheMod.put(k, v);
+				if(vOld == null)
+					DBManager.instance().incModCount();
+				v.setSaveState(2);
 			}
 			else
-			{
-				if(vOld != null)
-					_cache.put(k, vOld);
-				else
-					_cache.remove(k);
-				throw new IllegalStateException("put shared record: t=" +
-						_tableName + ",k=" + k + ",vOld=" + vOld + ",v=" + v);
-			}
+				_cache.put(k, new HardReference<>(v));
 		}
 	}
 
