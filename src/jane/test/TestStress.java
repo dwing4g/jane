@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import jane.core.Bean;
+import jane.core.CacheRef;
 import jane.core.DBManager;
 import jane.core.Log;
 import jane.core.MarshalException;
@@ -23,7 +24,7 @@ import jane.core.map.LongConcurrentHashMap;
 public final class TestStress extends Procedure
 {
 	private static final int TABLE_ID		  = 9999;	 // 表ID. 可调整来避免和现有数据库中的数据冲突
-	private static final int TABLE_CACHE	  = 0x20000; // 读缓存的记录数. 可调小来测试未缓存情况的稳定性
+	private static final int TABLE_CACHE	  = 0;		 // 读缓存的记录数. 可调小来测试未缓存情况的稳定性. <=0表示软引用规则
 	private static final int RECORD_COUNT	  = 0x20000; // 总测试的记录数量. 可调小来测试竞争压力;可调大测试大数据量时的内存压力. 必须是2的N次幂
 	private static final int CONCURRENT_COUNT = 4;		 // 并发事务的数量. 可调大来测试高压力时并发的稳定性
 
@@ -269,9 +270,15 @@ public final class TestStress extends Procedure
 		for(int i = 0; i < CONCURRENT_COUNT; ++i)
 			DBManager.instance().submit(i, new TestStress(i));
 
+		long lastRemoveCount = 0;
 		for(;;)
 		{
-			Log.info("TQ=" + dbm.getProcThreads().getQueue().size() + "  TA=" + dbm.getProcThreads().getActiveCount() + "  C=" + counter.getAndSet(0));
+			long curRemoveCount = CacheRef.getRefRemoveCount();
+			Log.info("TQ=" + dbm.getProcThreads().getQueue().size() +
+					"  TA=" + dbm.getProcThreads().getActiveCount() +
+					"  RR=" + (curRemoveCount - lastRemoveCount) +
+					"  C=" + counter.getAndSet(0));
+			lastRemoveCount = curRemoveCount;
 			Thread.sleep(1000);
 		}
 	}

@@ -1245,6 +1245,7 @@ function dbt(table)
 	if not table.id then table.id = 0 end
 	if table.id == 0 then table.memory = true
 	elseif table_id_used[table.id] then error("ERROR: duplicated dbt.id: " .. table.id) end
+	if not table.cachesize then table.cachesize = 0 end
 	table_id_used[table.id] = true
 	local key_type = key_conv[table.key]
 	if key_type then

@@ -1,11 +1,10 @@
 package jane.core;
 
-import java.lang.ref.Reference;
-import java.lang.ref.SoftReference;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
+import java.util.function.Supplier;
 import jane.core.SContext.Record;
 import jane.core.SContext.Safe;
 import jane.core.Storage.Helper;
@@ -17,9 +16,9 @@ import jane.core.Storage.WalkValueHandler;
  */
 public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableBase<V>
 {
-	private final Storage.Table<K, V>  _stoTable; // 存储引擎的表对象
-	private final Map<K, Reference<V>> _cache;	  // 读缓存. 有大小限制,溢出自动清理
-	private final ConcurrentMap<K, V>  _cacheMod; // 写缓存. 不会溢出,保存到数据库存储引擎后清理
+	private final Storage.Table<K, V> _stoTable; // 存储引擎的表对象
+	private final Map<K, Supplier<V>> _cache;	 // 读缓存. 有大小限制,溢出自动清理
+	private final ConcurrentMap<K, V> _cacheMod; // 写缓存. 不会溢出,保存到数据库存储引擎后清理
 
 	/**
 	 * 创建一个数据库表
@@ -33,9 +32,9 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	{
 		super(tableId, tableName, stubV, (lockName != null && !(lockName = lockName.trim()).isEmpty() ? lockName.hashCode() : tableId) * 0x9e3779b1);
 		_stoTable = stoTable;
-		if(cacheSize < 1) cacheSize = 1;
+		if(cacheSize < 1 && stoTable == null) cacheSize = 1;
 		_cache = Util.newConcurrentLRUMap(cacheSize, tableName);
-		_cacheMod = (stoTable != null ? Util.<K, V>newConcurrentHashMap() : null);
+		_cacheMod = (stoTable != null ? Util.newConcurrentHashMap() : null);
 		_tables.add(this);
 	}
 
@@ -146,7 +145,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	public V getUnsafe(K k)
 	{
 		_readCount.getAndIncrement();
-		Reference<V> r = _cache.get(k);
+		Supplier<V> r = _cache.get(k);
 		V v;
 		if(r != null && (v = r.get()) != null) return v;
 		if(_cacheMod == null) return null;
@@ -154,7 +153,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 		if(v != null)
 		{
 			if(v == _deleted) return null;
-			_cache.put(k, new SoftReference<>(v));
+			_cache.put(k, new CacheRefK<>(_cache, k, v));
 			return v;
 		}
 		_readStoCount.getAndIncrement();
@@ -162,7 +161,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 		if(v != null)
 		{
 			v.setSaveState(1);
-			_cache.put(k, new SoftReference<>(v));
+			_cache.put(k, new CacheRefK<>(_cache, k, v));
 		}
 		else if(r != null)
 			_cache.remove(k);
@@ -234,7 +233,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	public V getNoCacheUnsafe(K k)
 	{
 		_readCount.getAndIncrement();
-		Reference<V> r = _cache.get(k);
+		Supplier<V> r = _cache.get(k);
 		V v;
 		if(r != null)
 		{
@@ -272,7 +271,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	public V getCacheUnsafe(K k)
 	{
 		_readCount.getAndIncrement();
-		Reference<V> r = _cache.get(k);
+		Supplier<V> r = _cache.get(k);
 		V v;
 		if(r != null)
 		{
@@ -352,7 +351,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	{
 		if(v == null)
 			throw new NullPointerException();
-		Reference<V> rOld = _cache.get(k);
+		Supplier<V> rOld = _cache.get(k);
 		if(rOld != null && rOld.get() == v)
 			modify(k, v);
 		else
@@ -363,14 +362,14 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 			Procedure.incVersion(lockId(k));
 			if(_cacheMod != null)
 			{
-				_cache.put(k, new SoftReference<>(v));
+				_cache.put(k, new CacheRefK<>(_cache, k, v));
 				V vOld = _cacheMod.put(k, v);
 				if(vOld == null)
 					DBManager.instance().incModCount();
 				v.setSaveState(2);
 			}
 			else
-				_cache.put(k, new HardReference<>(v));
+				_cache.put(k, new HardRef<>(v));
 		}
 	}
 

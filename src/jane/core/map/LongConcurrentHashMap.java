@@ -1375,21 +1375,17 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		}
 		try
 		{
-			return AccessController.doPrivileged(new PrivilegedExceptionAction<sun.misc.Unsafe>()
+			return AccessController.doPrivileged((PrivilegedExceptionAction<sun.misc.Unsafe>)() ->
 			{
-				@Override
-				public sun.misc.Unsafe run() throws Exception
+				Class<sun.misc.Unsafe> k = sun.misc.Unsafe.class;
+				for(Field f : k.getDeclaredFields())
 				{
-					Class<sun.misc.Unsafe> k = sun.misc.Unsafe.class;
-					for(Field f : k.getDeclaredFields())
-					{
-						f.setAccessible(true);
-						Object x = f.get(null);
-						if(k.isInstance(x))
-							return k.cast(x);
-					}
-					throw new NoSuchFieldError("the Unsafe");
+					f.setAccessible(true);
+					Object x = f.get(null);
+					if(k.isInstance(x))
+						return k.cast(x);
 				}
+				throw new NoSuchFieldError("the Unsafe");
 			});
 		}
 		catch(PrivilegedActionException e)

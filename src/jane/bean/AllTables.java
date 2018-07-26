@@ -37,9 +37,9 @@ public final class AllTables
 	 */
 	public static final Table<Octets, TestEmpty, TestEmpty.Safe> OctetsTable = _dbm.<Octets, TestEmpty, TestEmpty.Safe>openTable(0, "OctetsTable", "bean", 1000, null, null);
 	/**
-	 * 用于测试数据库的表
+	 * 用于测试数据库的表. cachesize不定义或<=0则靠软引用的生命期决定
 	 */
-	public static final TableLong<TestBean, TestBean.Safe> Benchmark = _dbm.<TestBean, TestBean.Safe>openTable(3, "Benchmark", "bench", 50000, TestBean.BEAN_STUB);
+	public static final TableLong<TestBean, TestBean.Safe> Benchmark = _dbm.<TestBean, TestBean.Safe>openTable(3, "Benchmark", "bench", 0, TestBean.BEAN_STUB);
 
 	/**
 	 * 以下内部类可以单独使用,避免初始化前面的表对象

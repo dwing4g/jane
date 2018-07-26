@@ -9,6 +9,7 @@ JVM="\
 -Xmx512m \
 -server \
 -XX:+AggressiveOpts \
+-XX:SoftRefLRUPolicyMSPerMB=1000 \
 -Xlog:gc:log/gc.log \
 -Dsun.stdout.encoding=utf-8 \
 -Dsun.stderr.encoding=utf-8"
@@ -19,6 +20,7 @@ JVM="\
 -server \
 -XX:+UseConcMarkSweepGC \
 -XX:+AggressiveOpts \
+-XX:SoftRefLRUPolicyMSPerMB=1000 \
 -Xloggc:log/gc.log \
 -XX:+PrintGCDetails \
 -XX:+PrintGCDateStamps \

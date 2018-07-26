@@ -13,49 +13,45 @@ public final class ExitManager
 
 	static
 	{
-		Runtime.getRuntime().addShutdownHook(new Thread("ExitHook")
+		Runtime.getRuntime().addShutdownHook(new Thread(() ->
 		{
-			@Override
-			public void run()
+			try
 			{
-				try
+				Log.info("ExitManager: shutdown begin");
+				for(Runnable r : getShutdownUserCallbacks())
 				{
-					Log.info("ExitManager: shutdown begin");
-					for(Runnable r : getShutdownUserCallbacks())
+					try
 					{
-						try
-						{
-							r.run();
-						}
-						catch(Throwable e)
-						{
-							Log.error("ExitManager: user callback exception:", e);
-						}
+						r.run();
 					}
-					getShutdownUserCallbacks().clear();
-					for(Runnable r : getShutdownSystemCallbacks())
+					catch(Throwable e)
 					{
-						try
-						{
-							r.run();
-						}
-						catch(Throwable e)
-						{
-							Log.error("ExitManager: system callback exception:", e);
-						}
+						Log.error("ExitManager: user callback exception:", e);
 					}
-					getShutdownSystemCallbacks().clear();
 				}
-				catch(Throwable e)
+				getShutdownUserCallbacks().clear();
+				for(Runnable r : getShutdownSystemCallbacks())
 				{
-					Log.error("ExitManager: fatal exception:", e);
+					try
+					{
+						r.run();
+					}
+					catch(Throwable e)
+					{
+						Log.error("ExitManager: system callback exception:", e);
+					}
 				}
-				finally
-				{
-					Log.shutdown();
-				}
+				getShutdownSystemCallbacks().clear();
 			}
-		});
+			catch(Throwable e)
+			{
+				Log.error("ExitManager: fatal exception:", e);
+			}
+			finally
+			{
+				Log.shutdown();
+			}
+		}, "ExitHookThread"));
 	}
 
 	/**

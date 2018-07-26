@@ -2,6 +2,7 @@ package jane.test;
 
 import static jane.bean.AllTables.Benchmark;
 import java.util.concurrent.atomic.AtomicInteger;
+import jane.core.CacheRef;
 import jane.core.DBManager;
 import jane.core.Log;
 import jane.core.ProcThread;
@@ -106,6 +107,7 @@ public final class TestDBBenchmark
 		DBManager.instance().backupNextCheckpoint();
 		DBManager.instance().checkpoint();
 		Log.info("end");
+		Log.info("CacheRefRemoveCount={}", CacheRef.getRefRemoveCount());
 		System.exit(0);
 	}
 }

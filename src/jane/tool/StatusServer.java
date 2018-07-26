@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.Map.Entry;
 import java.util.concurrent.ThreadPoolExecutor;
 import org.apache.mina.core.session.IoSession;
+import jane.core.CacheRef;
 import jane.core.DBManager;
 import jane.core.DBSimpleManager;
 import jane.core.HttpCodec;
@@ -105,6 +106,7 @@ public class StatusServer extends NetManager
 			list.add(new SimpleEntry<String, Object>("jane.ProcThreadCount", tpe.getActiveCount() + "/" + tpe.getPoolSize() + "/" + tpe.getLargestPoolSize()));
 			list.add(new SimpleEntry<String, Object>("jane.ProcCompletedCount", tpe.getCompletedTaskCount()));
 		}
+		list.add(new SimpleEntry<String, Object>("jane.CacheRefRemoveCount", CacheRef.getRefRemoveCount()));
 		list.add(new SimpleEntry<String, Object>("jane.ProcInterruptCount", ProcThread.getInterruptCount()));
 		list.add(new SimpleEntry<String, Object>("jane.AskWaitingCount", NetManager.getAskCount()));
 

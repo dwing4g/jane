@@ -1,10 +1,9 @@
 package jane.core;
 
-import java.lang.ref.Reference;
-import java.lang.ref.SoftReference;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
+import java.util.function.Supplier;
 import jane.core.SContext.RecordLong;
 import jane.core.SContext.Safe;
 import jane.core.Storage.Helper;
@@ -23,13 +22,13 @@ import jane.core.map.LongMap.MapIterator;
  */
 public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends TableBase<V>
 {
-	private final Storage.TableLong<V>	_stoTable;							 // 存储引擎的表对象
-	private final LongMap<Reference<V>>	_cache;								 // 读缓存. 有大小限制,溢出自动清理
-	private final LongMap<V>			_cacheMod;							 // 写缓存. 不会溢出,保存到数据库存储引擎后清理
-	private final AtomicLong			_idCounter	  = new AtomicLong();	 // 用于自增长ID的统计器, 当前值表示当前表已存在的最大ID值
-	private final AtomicBoolean			_idCounterMod = new AtomicBoolean(); // idCounter是否待存状态(有修改未存库)
-	private int							_autoIdBegin  = Const.autoIdBegin;	 // 自增长ID的初始值, 可运行时指定
-	private int							_autoIdStride = Const.autoIdStride;	 // 自增长ID的分配跨度, 可运行时指定
+	private final Storage.TableLong<V> _stoTable;							// 存储引擎的表对象
+	private final LongMap<Supplier<V>> _cache;								// 读缓存. 有大小限制,溢出自动清理
+	private final LongMap<V>		   _cacheMod;							// 写缓存. 不会溢出,保存到数据库存储引擎后清理
+	private final AtomicLong		   _idCounter	 = new AtomicLong();	// 用于自增长ID的统计器, 当前值表示当前表已存在的最大ID值
+	private final AtomicBoolean		   _idCounterMod = new AtomicBoolean();	// idCounter是否待存状态(有修改未存库)
+	private int						   _autoIdBegin	 = Const.autoIdBegin;	// 自增长ID的初始值, 可运行时指定
+	private int						   _autoIdStride = Const.autoIdStride;	// 自增长ID的分配跨度, 可运行时指定
 
 	/**
 	 * 创建一个数据库表
@@ -43,7 +42,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	{
 		super(tableId, tableName, stubV, (lockName != null && !(lockName = lockName.trim()).isEmpty() ? lockName.hashCode() : tableId) * 0x9e3779b1);
 		_stoTable = stoTable;
-		if(cacheSize < 1) cacheSize = 1;
+		if(cacheSize < 1 && stoTable == null) cacheSize = 1;
 		_cache = Util.newLongConcurrentLRUMap(cacheSize, tableName);
 		_cacheMod = (stoTable != null ? new LongConcurrentHashMap<>() : null);
 		if(stoTable != null) _idCounter.set(_stoTable.getIdCounter());
@@ -188,7 +187,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	public V getUnsafe(long k)
 	{
 		_readCount.getAndIncrement();
-		Reference<V> r = _cache.get(k);
+		Supplier<V> r = _cache.get(k);
 		V v;
 		if(r != null && (v = r.get()) != null) return v;
 		if(_cacheMod == null) return null;
@@ -196,7 +195,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 		if(v != null)
 		{
 			if(v == _deleted) return null;
-			_cache.put(k, new SoftReference<>(v));
+			_cache.put(k, new CacheRefLong<>(_cache, k, v));
 			return v;
 		}
 		_readStoCount.getAndIncrement();
@@ -204,7 +203,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 		if(v != null)
 		{
 			v.setSaveState(1);
-			_cache.put(k, new SoftReference<>(v));
+			_cache.put(k, new CacheRefLong<>(_cache, k, v));
 		}
 		else if(r != null)
 			_cache.remove(k);
@@ -276,7 +275,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	public V getNoCacheUnsafe(long k)
 	{
 		_readCount.getAndIncrement();
-		Reference<V> r = _cache.get(k);
+		Supplier<V> r = _cache.get(k);
 		V v;
 		if(r != null)
 		{
@@ -314,7 +313,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	public V getCacheUnsafe(long k)
 	{
 		_readCount.getAndIncrement();
-		Reference<V> r = _cache.get(k);
+		Supplier<V> r = _cache.get(k);
 		V v;
 		if(r != null)
 		{
@@ -394,7 +393,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	{
 		if(v == null)
 			throw new NullPointerException();
-		Reference<V> rOld = _cache.get(k);
+		Supplier<V> rOld = _cache.get(k);
 		if(rOld != null && rOld.get() == v)
 			modify(k, v);
 		else
@@ -405,14 +404,14 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 			Procedure.incVersion(lockId(k));
 			if(_cacheMod != null)
 			{
-				_cache.put(k, new SoftReference<>(v));
+				_cache.put(k, new CacheRefLong<>(_cache, k, v));
 				V vOld = _cacheMod.put(k, v);
 				if(vOld == null)
 					DBManager.instance().incModCount();
 				v.setSaveState(2);
 			}
 			else
-				_cache.put(k, new HardReference<>(v));
+				_cache.put(k, new HardRef<>(v));
 		}
 	}
 
