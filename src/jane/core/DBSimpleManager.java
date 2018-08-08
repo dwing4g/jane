@@ -36,8 +36,10 @@ public final class DBSimpleManager
 	private final ConcurrentMap<Octets, Octets>	_writeCache	  = Util.newConcurrentHashMap(); // 写缓冲区
 	protected final AtomicLong					_readCount	  = new AtomicLong();			 // 读操作次数统计
 	protected final AtomicLong					_readStoCount = new AtomicLong();			 // 读数据库存储的次数统计(即cache-miss的次数统计)
+	private String								_dbFilename;								 // 数据库的文件名(不含父路径,对LevelDB而言是目录名)
+	private String								_dbBackupPath;								 // 数据库的备份路径
 	private StorageLevelDB						_storage;									 // 存储引擎
-	private String								_dbFilename;								 // 数据库保存的路径
+	private volatile boolean					_exiting;									 // 是否在退出状态(已经执行了ShutdownHook)
 
 	/**
 	 * 周期向数据库存储提交事务性修改的线程(checkpoint)
@@ -151,7 +153,8 @@ public final class DBSimpleManager
 
 						// 2.判断备份周期并启动备份
 						long backupTime = _backupTime;
-						if(backupTime < t1)
+						String dbBackupPath = _dbBackupPath;
+						if(backupTime <= t1 && dbBackupPath != null)
 						{
 							Log.info("db-commit backup begin...");
 							if(backupTime >= 0)
@@ -162,8 +165,7 @@ public final class DBSimpleManager
 							}
 							else
 								_backupTime = Long.MAX_VALUE;
-							long r = storage.backup(new File(Const.dbBackupPath,
-									new File(_dbFilename).getName() + '.' + _sdf.format(new Date())));
+							long r = storage.backup(new File(dbBackupPath, _dbFilename + '.' + _sdf.format(new Date())));
 							Log.info(r >= 0 ? "db-commit backup end ({} bytes) ({} ms)" : "db-commit backup error({}) ({} ms)",
 									r, System.currentTimeMillis() - t1);
 						}
@@ -206,11 +208,13 @@ public final class DBSimpleManager
 	 * 启动数据库系统
 	 * <p>
 	 * 必须在操作数据库之前启动
-	 * @param sto 数据库使用的存储引擎实例. 如: StorageLevelDB.instance()
-	 * @param dbFilename 数据库文件名(对StorageLevelDB来说是目录名)
+	 * @param sto LevelDB存储引擎的实例. 如: StorageLevelDB.instance()
+	 * @param dbFilename 数据库的文件名(不含父路径,对LevelDB而言是目录名)
+	 * @param dbBackupPath 数据库的备份目录
 	 */
-	public synchronized void startup(StorageLevelDB sto, String dbFilename) throws IOException
+	public synchronized void startup(StorageLevelDB sto, String dbFilename, String dbBackupPath) throws IOException
 	{
+		if(_exiting) throw new IllegalArgumentException("can not startup when exiting");
 		if(_storage != null) throw new IllegalArgumentException("already started");
 		if(sto == null) throw new IllegalArgumentException("no StorageLevelDB specified");
 		if(dbFilename == null || dbFilename.trim().isEmpty()) throw new IllegalArgumentException("no dbFilename specified");
@@ -219,13 +223,24 @@ public final class DBSimpleManager
 		File dbpath = dbfile.getParentFile();
 		if(dbpath != null && !dbpath.isDirectory() && !dbpath.mkdirs())
 			throw new IOException("create db path failed: " + dbFilename);
-		_dbFilename = dbFilename;
+		_dbFilename = dbfile.getName();
+		_dbBackupPath = dbBackupPath;
 		_storage = sto;
 		sto.openDB(dbfile);
 		ExitManager.getShutdownSystemCallbacks().add(() ->
 		{
 			Log.info("DBSimpleManager.OnJVMShutDown: db shutdown");
-			shutdown();
+			try
+			{
+				synchronized(DBSimpleManager.this)
+				{
+					_exiting = true;
+				}
+			}
+			finally
+			{
+				shutdown();
+			}
 			Log.info("DBSimpleManager.OnJVMShutDown: db closed");
 		});
 	}
@@ -238,7 +253,7 @@ public final class DBSimpleManager
 	 */
 	public void startup() throws IOException
 	{
-		startup(StorageLevelDB.instance(), Const.dbFilename);
+		startup(StorageLevelDB.instance(), Const.dbFilename, Const.dbBackupPath);
 	}
 
 	/**

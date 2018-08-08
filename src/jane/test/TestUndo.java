@@ -10,7 +10,6 @@ import jane.core.ProcThread;
 import jane.core.Procedure;
 import jane.core.SContext.Rec;
 import jane.core.SMap.SMapListener;
-import jane.core.StorageLevelDB;
 import jane.bean.AllTables;
 import jane.bean.TestBean;
 import jane.bean.TestType;
@@ -19,7 +18,7 @@ public final class TestUndo
 {
 	public static void main(String[] args) throws Throwable
 	{
-		DBManager.instance().startup(StorageLevelDB.instance());
+		DBManager.instance().startup();
 		AllTables.register();
 		System.out.println("start");
 		final long id = 1;

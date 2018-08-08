@@ -61,8 +61,7 @@ public final class Const
 			janeProp = System.getProperty("jane.prop");
 			if(janeProp == null || (janeProp = janeProp.trim()).isEmpty())
 				janeProp = "jane.properties";
-			else
-				Log.info("{}: load {}", Const.class.getName(), janeProp);
+			Log.info("{}: load {}", Const.class.getName(), janeProp);
 			if(new File(janeProp).exists())
 				isProp = new FileInputStream(janeProp);
 			else
@@ -83,7 +82,7 @@ public final class Const
 				}
 				catch(IOException e)
 				{
-					Log.error("close jane.prop=" + janeProp + " file failed", e);
+					Log.error("close " + janeProp + " failed", e);
 				}
 			}
 		}

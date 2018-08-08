@@ -7,34 +7,24 @@ import jane.core.DBManager;
 import jane.core.Log;
 import jane.core.ProcThread;
 import jane.core.Procedure;
-import jane.core.Storage;
-import jane.core.StorageLevelDB;
 import jane.core.Util;
 import jane.bean.AllTables;
 import jane.bean.TestBean;
 
 // JVM: -Xms512M -Xmx512M
-// RUN: start.bat b ld 100000 50000 1000 500000
+// RUN: start.bat b 100000 50000 1000 500000
 public final class TestDBBenchmark
 {
-	@SuppressWarnings("resource")
 	public static void main(String[] args) throws Throwable
 	{
-		Storage sto = null;
-		if(args.length > 0)
-		{
-			if("ld".equals(args[0]))
-				sto = StorageLevelDB.instance();
-		}
-		if(sto == null) sto = StorageLevelDB.instance();
-		final int keyAllCount = (args.length > 1 ? Integer.parseInt(args[1]) : 100000);
-		final int keyWinCount = Math.min(args.length > 2 ? Integer.parseInt(args[2]) : keyAllCount / 2, keyAllCount);
-		final int countIn = (args.length > 3 ? Integer.parseInt(args[3]) : 100);
-		final int countOut = (args.length > 4 ? ("u".equals(args[4]) ? Integer.MAX_VALUE : Integer.parseInt(args[4])) : (keyAllCount - keyWinCount) * 10);
+		final int keyAllCount = (args.length > 0 ? Integer.parseInt(args[0]) : 100000);
+		final int keyWinCount = Math.min(args.length > 1 ? Integer.parseInt(args[1]) : keyAllCount / 2, keyAllCount);
+		final int countIn = (args.length > 2 ? Integer.parseInt(args[2]) : 100);
+		final int countOut = (args.length > 3 ? ("u".equals(args[3]) ? Integer.MAX_VALUE : Integer.parseInt(args[3])) : (keyAllCount - keyWinCount) * 10);
 		final int KEY_BEGIN = -keyAllCount / 2;
 
-		Log.info("begin {}: key: {}/{}, count: {}*{}", sto.getClass().getName(), keyWinCount, keyAllCount, countIn, countOut);
-		DBManager.instance().startup(sto);
+		Log.info("begin: key: {}/{}, count: {}*{}", keyWinCount, keyAllCount, countIn, countOut);
+		DBManager.instance().startup();
 		AllTables.register();
 		System.gc();
 		System.runFinalization();

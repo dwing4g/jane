@@ -32,6 +32,8 @@ public final class DBManager
 	private final ConcurrentMap<Object, ArrayDeque<Procedure>> _qmap		 = Util.newConcurrentHashMap();	// 当前sid队列的数量
 	private final AtomicLong								   _procCount	 = new AtomicLong();			// 绑定过sid的在队列中未运行的事务数量
 	private final AtomicLong								   _modCount	 = new AtomicLong();			// 当前缓存修改的记录数
+	private String											   _dbFilename;									// 数据库的文件名(不含父路径,对LevelDB而言是目录名)
+	private String											   _dbBackupPath;								// 数据库的备份路径
 	private Storage											   _storage;									// 存储引擎
 	private volatile boolean								   _exiting;									// 是否在退出状态(已经执行了ShutdownHook)
 
@@ -167,14 +169,14 @@ public final class DBManager
 
 						// 5.判断备份周期并启动备份
 						long backupTime = _backupTime;
-						if(backupTime <= t3)
+						String dbBackupPath = _dbBackupPath;
+						if(backupTime <= t3 && dbBackupPath != null)
 						{
 							backupTime += _backupPeriod;
 							if(backupTime <= t3) backupTime += ((t3 - backupTime) / _backupPeriod + 1) * _backupPeriod;
 							_backupTime = backupTime;
 							Log.info("db-commit backup begin...");
-							long r = storage.backup(new File(Const.dbBackupPath,
-									new File(Const.dbFilename).getName() + '.' + _sdf.format(new Date())));
+							long r = storage.backup(new File(dbBackupPath, _dbFilename + '.' + _sdf.format(new Date())));
 							if(r >= 0)
 								Log.info("db-commit backup end ({} bytes) ({} ms)", r, System.currentTimeMillis() - t);
 							else
@@ -246,13 +248,15 @@ public final class DBManager
 	/**
 	 * 启动数据库系统
 	 * <p>
-	 * 必须在openTable和操作数据库之前启动<br>
-	 * @param sto 数据库使用的存储引擎实例. 如: StorageLevelDB.instance()
-	 * @param dbFilename 数据库文件/目录所在的位置
+	 * 必须在openTable和操作数据库之前启动
+	 * @param sto 数据库存储引擎的实例. 如: StorageLevelDB.instance()
+	 * @param dbFilename 数据库的文件名(不含父路径,对LevelDB而言是目录名)
+	 * @param dbBackupPath 数据库的备份目录
 	 */
-	public synchronized void startup(Storage sto, String dbFilename) throws IOException
+	public synchronized void startup(Storage sto, String dbFilename, String dbBackupPath) throws IOException
 	{
 		if(_exiting) throw new IllegalArgumentException("can not startup when exiting");
+		if(_storage != null) throw new IllegalArgumentException("already started");
 		if(sto == null) throw new IllegalArgumentException("no Storage specified");
 		if(dbFilename == null || dbFilename.trim().isEmpty()) throw new IllegalArgumentException("no dbFilename specified");
 		shutdown();
@@ -260,6 +264,8 @@ public final class DBManager
 		File dbpath = dbfile.getParentFile();
 		if(dbpath != null && !dbpath.isDirectory() && !dbpath.mkdirs())
 			throw new IOException("create db path failed: " + dbFilename);
+		_dbFilename = dbfile.getName();
+		_dbBackupPath = dbBackupPath;
 		_storage = sto;
 		sto.openDB(dbfile);
 		ExitManager.getShutdownSystemCallbacks().add(() ->
@@ -287,20 +293,9 @@ public final class DBManager
 	 * 必须在openTable和操作数据库之前启动<br>
 	 * 默认使用StorageLevelDB.instance()作为存储引擎
 	 */
-	public void startup(Storage sto) throws IOException
-	{
-		startup(sto, Const.dbFilename);
-	}
-
-	/**
-	 * 启动数据库系统
-	 * <p>
-	 * 必须在openTable和操作数据库之前启动<br>
-	 * 默认使用StorageLevelDB.instance()作为存储引擎
-	 */
 	public void startup() throws IOException
 	{
-		startup(StorageLevelDB.instance());
+		startup(StorageLevelDB.instance(), Const.dbFilename, Const.dbBackupPath);
 	}
 
 	/**
