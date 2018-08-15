@@ -6,7 +6,6 @@ import java.lang.reflect.Method;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import jane.tool.RC4Filter;
 
 /**
  * 10M times block encrypt (160MB) benchmark
@@ -152,7 +151,7 @@ public final class TestAes
 
 	public static void testRc4()
 	{
-		RC4Filter rc4 = new RC4Filter();
+		TestRc4Filter rc4 = new TestRc4Filter();
 		rc4.setInputKey(new byte[16], 16);
 		byte[] src = new byte[16];
 		long t = System.currentTimeMillis();

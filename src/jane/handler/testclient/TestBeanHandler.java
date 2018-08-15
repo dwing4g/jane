@@ -5,7 +5,7 @@ import jane.core.BeanHandler;
 import jane.core.Log;
 import jane.core.NetManager;
 import jane.bean.TestBean;
-import jane.tool.RC4Filter;
+import jane.test.TestRc4Filter;
 
 public final class TestBeanHandler implements BeanHandler<TestBean>
 {
@@ -27,7 +27,7 @@ public final class TestBeanHandler implements BeanHandler<TestBean>
 	{
 		Log.debug("{}: arg={}", getClass().getName(), arg);
 
-		RC4Filter filter = new RC4Filter();
+		TestRc4Filter filter = new TestRc4Filter();
 		filter.setInputKey(new byte[] { 1, 2, 3 }, 3);
 		filter.setOutputKey(new byte[] { 1, 2, 3 }, 3);
 		session.getFilterChain().addFirst("enc", filter);
