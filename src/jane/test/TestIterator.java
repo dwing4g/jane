@@ -27,8 +27,7 @@ public final class TestIterator
 				@Override
 				protected void onProcess() throws Exception
 				{
-					TestType.Safe a = TestTable.lockGet(id);
-					if(a == null)
+					TestTable.lockGetOrNew(id, () ->
 					{
 						TestType aa = new TestType();
 						LinkedHashMap<Octets, TestBean> map = aa.getV18();
@@ -38,8 +37,8 @@ public final class TestIterator
 							o.append((byte)i);
 							map.put(o, new TestBean());
 						}
-						TestTable.put(id, aa);
-					}
+						return aa;
+					});
 				}
 			}.run();
 

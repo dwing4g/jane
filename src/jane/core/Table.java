@@ -201,6 +201,33 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	}
 
 	/**
+	 * 同get,但在取不到时放入supplier提供的值并返回
+	 */
+	@SuppressWarnings("unchecked")
+	public S getOrNew(K k, Supplier<V> supplier)
+	{
+		S s = get(k);
+		if(s == null)
+		{
+			V v = supplier.get();
+			if(v != null)
+			{
+				put(k, v);
+				s = (S)v.safe();
+			}
+		}
+		return s;
+	}
+
+	/**
+	 * 同get,但在取不到时放入新的值并返回
+	 */
+	public S getOrNew(K k)
+	{
+		return getOrNew(k, _deleted::create);
+	}
+
+	/**
 	 * 追加一个锁并获取其字段. 有可能因重锁而导致有记录被其它事务修改而抛出Redo异常
 	 */
 	public S lockGet(K k) throws InterruptedException
@@ -209,6 +236,35 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 		if(proc == null) throw new IllegalStateException("invalid lockGet out of procedure");
 		proc.appendLock(lockId(k));
 		return getNoLock(k);
+	}
+
+	/**
+	 * 同lockGet,但在取不到时放入supplier提供的值并返回
+	 */
+	@SuppressWarnings("unchecked")
+	public S lockGetOrNew(K k, Supplier<V> supplier) throws InterruptedException
+	{
+		Procedure proc = Procedure.getCurProcedure();
+		if(proc == null) throw new IllegalStateException("invalid lockGet out of procedure");
+		S s = lockGet(k);
+		if(s == null)
+		{
+			V v = supplier.get();
+			if(v != null)
+			{
+				put(k, v);
+				s = (S)v.safe();
+			}
+		}
+		return s;
+	}
+
+	/**
+	 * 同lockGet,但在取不到时放入新的值并返回
+	 */
+	public S lockGetOrNew(K k) throws InterruptedException
+	{
+		return lockGetOrNew(k, _deleted::create);
 	}
 
 	/**

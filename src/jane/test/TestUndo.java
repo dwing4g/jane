@@ -107,12 +107,7 @@ public final class TestUndo
 				@Override
 				protected void onProcess() throws Exception
 				{
-					TestType.Safe a = TestTable.lockGet(1);
-					if(a == null)
-					{
-						a = new TestType().safe();
-						TestTable.put(1, a);
-					}
+					TestType.Safe a = TestTable.lockGetOrNew(1);
 					Map<Octets, TestBean.Safe> map = a.getV18();
 					map.put(Octets.wrap("a"), new TestBean(11, 22).safe());
 					map.put(Octets.wrap("b"), new TestBean(33, 44).safe());

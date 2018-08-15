@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 import jane.core.SContext.Safe;
 
 /**
@@ -176,6 +177,48 @@ public abstract class Procedure implements Runnable
 	{
 		appendLock(t.lockId(k));
 		return t.getNoLock(k);
+	}
+
+	@SuppressWarnings("unchecked")
+	public final <V extends Bean<V>, S extends Safe<V>> S lockGetOrNew(TableLong<V, S> t, long k, Supplier<V> supplier) throws InterruptedException
+	{
+		S s = lockGet(t, k);
+		if(s == null)
+		{
+			V v = supplier.get();
+			if(v != null)
+			{
+				t.put(k, v);
+				s = (S)v.safe();
+			}
+		}
+		return s;
+	}
+
+	public final <V extends Bean<V>, S extends Safe<V>> S lockGetOrNew(TableLong<V, S> t, long k) throws InterruptedException
+	{
+		return lockGetOrNew(t, k, t._deleted::create);
+	}
+
+	@SuppressWarnings("unchecked")
+	public final <K, V extends Bean<V>, S extends Safe<V>> S lockGetOrNew(Table<K, V, S> t, K k, Supplier<V> supplier) throws InterruptedException
+	{
+		S s = lockGet(t, k);
+		if(s == null)
+		{
+			V v = supplier.get();
+			if(v != null)
+			{
+				t.put(k, v);
+				s = (S)v.safe();
+			}
+		}
+		return s;
+	}
+
+	public final <K, V extends Bean<V>, S extends Safe<V>> S lockGetOrNew(Table<K, V, S> t, K k) throws InterruptedException
+	{
+		return lockGetOrNew(t, k, t._deleted::create);
 	}
 
 	public static void check(boolean a, boolean b)
