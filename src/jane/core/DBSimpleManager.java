@@ -192,8 +192,8 @@ public final class DBSimpleManager
 
 	public DBSimpleManager(int readCacheSize)
 	{
-		_readCache = (readCacheSize > 0 ? Util.newConcurrentLRUMap(readCacheSize, "SimpleReadCache") : null);
 		_hasCreated = true;
+		_readCache = (readCacheSize > 0 ? Util.newConcurrentLRUMap(readCacheSize, "SimpleReadCache") : null);
 	}
 
 	/**

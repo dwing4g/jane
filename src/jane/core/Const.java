@@ -2,7 +2,6 @@ package jane.core;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Properties;
@@ -53,38 +52,20 @@ public final class Const
 
 	static
 	{
-		String janeProp = null;
-		@SuppressWarnings("resource")
-		InputStream isProp = null;
-		try
+		String janeProp = System.getProperty("jane.prop");
+		if(janeProp == null || (janeProp = janeProp.trim()).isEmpty())
+			janeProp = "jane.properties";
+		Log.info("{}: load {}", Const.class.getName(), janeProp);
+		try(InputStream isProp = (new File(janeProp).exists() ? new FileInputStream(janeProp) : Util.createStreamInJar(Const.class, janeProp)))
 		{
-			janeProp = System.getProperty("jane.prop");
-			if(janeProp == null || (janeProp = janeProp.trim()).isEmpty())
-				janeProp = "jane.properties";
-			Log.info("{}: load {}", Const.class.getName(), janeProp);
-			if(new File(janeProp).exists())
-				isProp = new FileInputStream(janeProp);
+			if(isProp != null)
+				_property.load(isProp);
 			else
-				isProp = Util.createStreamInJar(Const.class, janeProp);
-			_property.load(isProp);
+				Log.error("{}: load {} failed, use all default properties", Const.class.getName(), janeProp);
 		}
 		catch(Exception e)
 		{
-			Log.error("{}: load {} failed, use all default properties", Const.class.getName(), janeProp);
-		}
-		finally
-		{
-			if(isProp != null)
-			{
-				try
-				{
-					isProp.close();
-				}
-				catch(IOException e)
-				{
-					Log.error("close " + janeProp + " failed", e);
-				}
-			}
+			Log.error(e, "{}: load {} failed", Const.class.getName(), janeProp);
 		}
 
 		connectTimeout = getPropInt("connectTimeout", 5, 1);

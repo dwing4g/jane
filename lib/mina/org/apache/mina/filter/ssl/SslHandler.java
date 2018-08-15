@@ -116,10 +116,8 @@ public final class SslHandler {
 
 	/**
 	 * Initialize the SSL handshake.
-	 *
-	 * @throws SSLException If the underlying SSLEngine handshake initialization failed
 	 */
-	void init() throws SSLException {
+	void init() {
 		if (sslEngine != null) {
 			// We already have a SSL engine created, no need to create a new one
 			return;
@@ -698,7 +696,6 @@ public final class SslHandler {
 				}
 
 				appBuffer = IoBuffer.reallocateRemain(appBuffer, newCapacity);
-				continue;
 			}
 		} while ((status == Status.OK || status == Status.BUFFER_OVERFLOW) &&
 				(localHandshakeStatus == HandshakeStatus.NOT_HANDSHAKING || localHandshakeStatus == HandshakeStatus.NEED_UNWRAP));

@@ -146,7 +146,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	{
 		SContext ctx = sContext();
 		if(!_deque.add(v)) return false;
-		ctx.addOnRollback(() -> _deque.removeLast());
+		ctx.addOnRollback(_deque::removeLast);
 		return true;
 	}
 
@@ -160,7 +160,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	{
 		SContext ctx = sContext();
 		_deque.addFirst(v);
-		ctx.addOnRollback(() -> _deque.removeFirst());
+		ctx.addOnRollback(_deque::removeFirst);
 	}
 
 	@Override

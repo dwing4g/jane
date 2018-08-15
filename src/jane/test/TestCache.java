@@ -29,7 +29,7 @@ public class TestCache
 		printMap(m);
 		m.put(11, 11);
 		printMap(m);
-		System.out.println("get(2) = " + String.valueOf(m.get(2)));
+		System.out.println("get(2) = " + m.get(2));
 		printMap(m);
 		m.put(12, 12);
 		printMap(m);

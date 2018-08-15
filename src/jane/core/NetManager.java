@@ -126,7 +126,7 @@ public class NetManager implements IoHandler
 					if(!session.isClosing())
 					{
 						Object v = session.getAttribute("closeOnFlushTime");
-						if(v != null && v instanceof Integer && timeSec < (Integer)v) break;
+						if(v instanceof Integer && timeSec < (Integer)v) break;
 						session.closeNow();
 					}
 					_closings.poll();
@@ -748,7 +748,7 @@ public class NetManager implements IoHandler
 	{
 		if(session.isClosing() || bean == null) return null;
 		CompletableFuture<B> cf = new CompletableFuture<>();
-		BeanContext<B> beanCtx = allocBeanContext(bean, session, answerBean -> cf.complete(answerBean));
+		BeanContext<B> beanCtx = allocBeanContext(bean, session, cf::complete);
 		if(!send0(session, bean))
 		{
 			if(_beanCtxMap.remove(bean.serial(), beanCtx))

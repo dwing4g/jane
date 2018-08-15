@@ -333,34 +333,6 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 		disposed = true;
 	}
 
-	private void read(S session) {
-		try {
-			int readBufferSize = session.getConfig().getReadBufferSize();
-			IoBuffer buf = IoBuffer.allocate(readBufferSize);
-			int readBytes = read(session, buf);
-
-			if (readBytes > 0) {
-				if ((readBytes << 1) < readBufferSize) {
-					session.decreaseReadBufferSize();
-				} else if (readBytes >= readBufferSize) {
-					session.increaseReadBufferSize();
-				}
-				session.getFilterChain().fireMessageReceived(buf.flip());
-			} else {
-				// release temporary buffer when read nothing
-				buf.free();
-				if (readBytes < 0) {
-					session.getFilterChain().fireInputClosed();
-				}
-			}
-		} catch (IOException e) {
-			session.closeNow();
-			session.getFilterChain().fireExceptionCaught(e);
-		} catch (Exception e) {
-			session.getFilterChain().fireExceptionCaught(e);
-		}
-	}
-
 	/**
 	 * Starts the inner Processor, asking the executor to pick a thread in its pool.
 	 * The Runnable will be renamed
@@ -429,20 +401,18 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 					}
 
 					// Manage newly created session first
-					if (handleNewSessions() == 0) {
+					if (handleNewSessions() == 0 && allSessionsCount() == 0) {
 						// Get a chance to exit the infinite loop if there are no more sessions on this Processor
-						if (allSessionsCount() == 0) {
-							processorRef.set(null);
+						processorRef.set(null);
 
-							if (newSessions.isEmpty() && isSelectorEmpty()) {
-								// newSessions.add() precedes startupProcessor
-								break;
-							}
+						if (newSessions.isEmpty() && isSelectorEmpty()) {
+							// newSessions.add() precedes startupProcessor
+							break;
+						}
 
-							if (!processorRef.compareAndSet(null, this)) {
-								// startupProcessor won race, so must exit processor
-								break;
-							}
+						if (!processorRef.compareAndSet(null, this)) {
+							// startupProcessor won race, so must exit processor
+							break;
 						}
 					}
 
@@ -647,7 +617,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 						}
 					} else if (message instanceof FileRegion) {
 						FileRegion region = (FileRegion) message;
-						int length = (int) Math.min(region.getRemainingBytes(), maxWrittenBytes - writtenBytes);
+						int length = (int) Math.min(region.getRemainingBytes(), (long)maxWrittenBytes - writtenBytes);
 						if (length > 0) {
 							localWrittenBytes = transferFile(session, region, length);
 							region.update(localWrittenBytes);
@@ -748,7 +718,35 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			session.getFilterChain().fireExceptionCaught(cause);
 		}
 
-		private void process() throws Exception {
+		private void read(S session) {
+			try {
+				int readBufferSize = session.getConfig().getReadBufferSize();
+				IoBuffer buf = IoBuffer.allocate(readBufferSize);
+				int readBytes = AbstractPollingIoProcessor.this.read(session, buf);
+
+				if (readBytes > 0) {
+					if ((readBytes << 1) < readBufferSize) {
+						session.decreaseReadBufferSize();
+					} else if (readBytes >= readBufferSize) {
+						session.increaseReadBufferSize();
+					}
+					session.getFilterChain().fireMessageReceived(buf.flip());
+				} else {
+					// release temporary buffer when read nothing
+					buf.free();
+					if (readBytes < 0) {
+						session.getFilterChain().fireInputClosed();
+					}
+				}
+			} catch (IOException e) {
+				session.closeNow();
+				session.getFilterChain().fireExceptionCaught(e);
+			} catch (Exception e) {
+				session.getFilterChain().fireExceptionCaught(e);
+			}
+		}
+
+		private void process() {
 			for (Iterator<SelectionKey> it = selectedSessions(); it.hasNext(); it.remove()) {
 				SelectionKey key = it.next();
 				@SuppressWarnings("unchecked")

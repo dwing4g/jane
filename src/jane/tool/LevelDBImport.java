@@ -67,7 +67,6 @@ public final class LevelDBImport
 			if(db == 0)
 			{
 				System.err.println("ERROR: leveldb_open failed");
-				br.close();
 				return;
 			}
 

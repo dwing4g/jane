@@ -250,12 +250,9 @@ public abstract class AbstractIoService implements IoService {
 
 		Object lock = new Object();
 		// A listener in charge of releasing the lock when the close has been completed
-		IoFutureListener<IoFuture> listener = new IoFutureListener<IoFuture>() {
-			@Override
-			public void operationComplete(IoFuture future) {
-				synchronized (lock) {
-					lock.notifyAll();
-				}
+		IoFutureListener<IoFuture> listener = __ -> {
+			synchronized (lock) {
+				lock.notifyAll();
 			}
 		};
 
@@ -317,11 +314,8 @@ public abstract class AbstractIoService implements IoService {
 		session.getFilterChain().fireSessionClosed();
 
 		// Fire a virtual service deactivation event for the last session of the connector.
-		if (session.getService() instanceof IoConnector) {
-			if (managedSessions.isEmpty()) {
-				fireServiceDeactivated();
-			}
-		}
+		if (session.getService() instanceof IoConnector && managedSessions.isEmpty())
+			fireServiceDeactivated();
 	}
 
 	protected final void executeWorker(Runnable worker) {

@@ -11,7 +11,7 @@ import java.util.List;
  */
 public final class SContext
 {
-	public static abstract class Safe<B extends Bean<B>> implements Comparable<B>, Cloneable
+	public abstract static class Safe<B extends Bean<B>> implements Comparable<B>, Cloneable
 	{
 		protected final B	  _bean;
 		private final Safe<?> _parent;

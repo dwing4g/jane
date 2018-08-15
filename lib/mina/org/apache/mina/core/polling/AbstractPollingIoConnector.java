@@ -535,13 +535,11 @@ public abstract class AbstractPollingIoConnector extends AbstractIoService imple
 
 		@Override
 		public boolean cancel() {
-			if (!isDone()) {
+			if (!isDone() && super.cancel()) {
 				// We haven't cancelled the request before, so add the future in the cancel queue.
-				if (super.cancel()) {
-					cancelQueue.add(this);
-					startupWorker();
-					wakeup();
-				}
+				cancelQueue.add(this);
+				startupWorker();
+				wakeup();
 			}
 
 			return true;

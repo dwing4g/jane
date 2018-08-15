@@ -468,7 +468,7 @@ public final class DBManager
 				{
 					synchronized(q)
 					{
-						_procCount.getAndAdd(1 - q.size());
+						_procCount.getAndAdd(1L - q.size());
 						q.clear();
 						q.addLast(this); // 清除此队列所有的任务,只留当前任务待完成时会删除
 						_qmap.remove(sid); // _qmap删除队列的地方只有两处,另一处是collectQueue中队列判空的时候(有synchronized保护)

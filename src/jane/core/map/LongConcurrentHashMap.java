@@ -307,7 +307,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	 */
 	public LongConcurrentHashMap(int initialCapacity, float loadFactor, int concurrencyLevel)
 	{
-		if(!(loadFactor > 0.0f) || initialCapacity < 0 || concurrencyLevel <= 0)
+		if(loadFactor <= 0.0f || initialCapacity < 0 || concurrencyLevel <= 0)
 			throw new IllegalArgumentException();
 		if(initialCapacity < concurrencyLevel) // Use at least as many bins
 			initialCapacity = concurrencyLevel; // as estimated threads
@@ -1258,7 +1258,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	 * Base of key, value, and entry Iterators. Adds fields to
 	 * Traverser to support iterator.remove.
 	 */
-	private static abstract class BaseIterator<V> extends Traverser<V>
+	private abstract static class BaseIterator<V> extends Traverser<V>
 	{
 		private BaseIterator(Node<V>[] tab, int size, int index)
 		{

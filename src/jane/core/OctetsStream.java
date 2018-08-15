@@ -948,7 +948,7 @@ public class OctetsStream extends Octets
 		{
 			case 0: return unmarshalLong();
 			case 1: return unmarshalOctets();
-			case 2: { DynBean db = new DynBean(); db.unmarshal(this); return db; }
+			case 2: DynBean db = new DynBean(); db.unmarshal(this); return db;
 			case 3: return unmarshalVarSub(unmarshalInt1());
 			default: throw getMarshalException();
 		}
@@ -1018,7 +1018,7 @@ public class OctetsStream extends Octets
 		{
 			case 0: return unmarshalLong();
 			case 1: return unmarshalOctets();
-			case 2: { DynBean db = new DynBean(); db.unmarshal(this); return db; }
+			case 2: DynBean db = new DynBean(); db.unmarshal(this); return db;
 			case 4: return unmarshalFloat();
 			case 5: return unmarshalDouble();
 			default: throw getMarshalException();

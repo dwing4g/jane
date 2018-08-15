@@ -232,7 +232,6 @@ public final class TestCompressor
 			if(fis.skip(srcpos) != srcpos)
 			{
 				System.out.println("ERROR: skip file failed");
-				fis.close();
 				return;
 			}
 			fis.read(src);
