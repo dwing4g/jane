@@ -302,18 +302,18 @@ public final class DBManager
 	 * 获取或创建一个数据库表
 	 * <p>
 	 * 必须先启动数据库系统(startup)后再调用此方法
-	 * @param tableName 表名
+	 * @param tableName 表名. 如果<0则表示此表是内存表
 	 * @param lockName 此表关联的锁名
 	 * @param cacheSize 此表的读缓存记录数量上限. 如果是内存表则表示超过此上限则会自动丢弃
 	 * @param stubK 记录key的存根对象,不要用于记录有用的数据
-	 * @param stubV 记录value的存根对象,不要用于记录有用的数据. 如果为null则表示此表是内存表
+	 * @param stubV 记录value的存根对象,不要用于记录有用的数据
 	 * @return Table
 	 */
 	public synchronized <K, V extends Bean<V>, S extends Safe<V>> Table<K, V, S> openTable(int tableId, String tableName, String lockName, int cacheSize, Object stubK, V stubV)
 	{
 		if(_storage == null) throw new IllegalArgumentException("call DBManager.startup before open any table");
 		tableName = (tableName != null && !(tableName = tableName.trim()).isEmpty() ? tableName : '[' + String.valueOf(tableId) + ']');
-		Storage.Table<K, V> stoTable = (stubV != null ? _storage.<K, V>openTable(tableId, tableName, stubK, stubV) : null);
+		Storage.Table<K, V> stoTable = (tableId >= 0 ? _storage.<K, V>openTable(tableId, tableName, stubK, stubV) : null);
 		return new Table<>(tableId, tableName, stoTable, lockName, cacheSize, stubV);
 	}
 
@@ -322,17 +322,17 @@ public final class DBManager
 	 * <p>
 	 * 此表的key只能是>=0的long值,一般用于id,比直接用Long类型作key效率高一些<br>
 	 * 必须先启动数据库系统(startup)后再调用此方法
-	 * @param tableName 表名
+	 * @param tableName 表名. 如果<0则表示此表是内存表
 	 * @param lockName 此表关联的锁名
 	 * @param cacheSize 此表的读缓存记录数量上限. 如果是内存表则表示超过此上限则会自动丢弃
-	 * @param stubV 记录value的存根对象,不要用于记录有用的数据. 如果为null则表示此表是内存表
+	 * @param stubV 记录value的存根对象,不要用于记录有用的数据
 	 * @return TableLong
 	 */
 	public synchronized <V extends Bean<V>, S extends Safe<V>> TableLong<V, S> openTable(int tableId, String tableName, String lockName, int cacheSize, V stubV)
 	{
 		if(_storage == null) throw new IllegalArgumentException("call DBManager.startup before open any table");
 		tableName = (tableName != null && !(tableName = tableName.trim()).isEmpty() ? tableName : '[' + String.valueOf(tableId) + ']');
-		Storage.TableLong<V> stoTable = (stubV != null ? _storage.openTable(tableId, tableName, stubV) : null);
+		Storage.TableLong<V> stoTable = (tableId >= 0 ? _storage.openTable(tableId, tableName, stubV) : null);
 		return new TableLong<>(tableId, tableName, stoTable, lockName, cacheSize, stubV);
 	}
 

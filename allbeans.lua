@@ -76,5 +76,5 @@ bean{ name="TestEmpty", type=3, initsize=0, maxsize=0, comment="测试空bean",
 
 dbt { name="TestTable", id=1, lock="test", key="id", value="TestType", cachesize=65536, comment="数据库表定义. key类型只能是32/64位整数/浮点数或字符串/binary类型或bean类型, id类型表示优化的非负数long类型" }
 dbt { name="BeanTable", id=2, lock="bean", key="TestKeyBean", value="TestBean", cachesize=65536, comment="value类型必须是bean定义的类型" }
-dbt { name="OctetsTable", lock="bean", key="binary", value="TestEmpty", cachesize=1000, comment="没有定义id的是内存表. 注意表名和key类型的对应关系是不能改变的" }
+dbt { name="OctetsTable", lock="bean", key="binary", value="TestEmpty", cachesize=1000, comment="没有定义id或id为负的是内存表. 注意表名和key类型的对应关系是不能改变的" }
 dbt { name="Benchmark", id=3, lock="bench", key="id", value="TestBean", comment="用于测试数据库的表. cachesize不定义或<=0则靠软引用的生命期决定" }

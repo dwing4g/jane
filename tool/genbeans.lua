@@ -1239,14 +1239,10 @@ end
 local key_conv = { int = "Integer", integer = "Integer", Integer = "Integer", long = "Long", Long = "Long", float = "Float", Float = "Float", double = "Double", Double = "Double",
 					string = "String", String = "String", binary = "Octets", bytes = "Octets", data = "Octets", octets = "Octets", Octets = "Octets" }
 local need_save_dbt = {}
-local table_id_used = {}
 function dbt(table)
 	if not handlers.dbt or handlers.dbt ~= true and table.handler ~= handlers.dbt then return end
-	if not table.id then table.id = 0 end
-	if table.id == 0 then table.memory = true
-	elseif table_id_used[table.id] then error("ERROR: duplicated dbt.id: " .. table.id) end
+	if not table.id then table.id = -1 end
 	if not table.cachesize then table.cachesize = 0 end
-	table_id_used[table.id] = true
 	local key_type = key_conv[table.key]
 	if key_type then
 		if key_type == "Octets" then tables.imports["jane.core.Octets"] = true end
@@ -1255,7 +1251,6 @@ function dbt(table)
 			if key_type == "String" then table.keys = "\"\""; table.keyg = "String.class"
 		elseif key_type == "Octets" then table.keys = "new Octets()"; table.keyg = "Octets.class"
 		else table.keys = "new " .. key_type .. "(0)"; table.keyg = key_type .. ".class" end
-		if table.memory then table.keys = "null" end
 		table.comma = ", "
 		tables.imports["jane.core.Table"] = true
 	elseif table.key == "id" then
@@ -1267,13 +1262,13 @@ function dbt(table)
 		tables.imports["jane.core.TableLong"] = true
 	else
 		table.table = "Table"
-		table.keys = not table.memory and "#(table.key).BEAN_STUB" or "null"
+		table.keys = "#(table.key).BEAN_STUB"
 		table.keyg = table.keys
 		table.comma = ", "
 		tables.imports["jane.core.Table"] = true
 		need_save_dbt[table.key] = true
 	end
-	table.values = table.memory and "null" or "#(table.value).BEAN_STUB"
+	table.values = "#(table.value).BEAN_STUB"
 	table.lock = table.lock or ""
 	if table.comment and #table.comment > 0 then table.comment = "/**\n\t * " .. table.comment:gsub("\n", "<br>\n\t * ") .. "\n\t */\n\t" end
 	tables[#tables + 1] = table
@@ -1343,8 +1338,8 @@ if tables.count > 0 then
 		local ids = {}
 		for _, table in ipairs(tables) do
 			if names[table.name] then error("ERROR: duplicated table.name: " .. table.name) end
-			if ids[table.id] and table.id ~= 0 then error("ERROR: duplicated table.id: " .. table.id) end
-			if table.id < 0 or table.id > 0x7fffffff then error("ERROR: invalid table.id: " .. table.id) end
+			if ids[table.id] and table.id >= 0 then error("ERROR: duplicated table.id: " .. table.id) end
+			if table.id < -0x80000000 or table.id > 0x7fffffff then error("ERROR: invalid table.id: " .. table.id) end
 			names[table.name] = true
 			ids[table.id] = true
 			subcode[#subcode + 1] = code_conv(code_conv(body, "table", table), "table", table)

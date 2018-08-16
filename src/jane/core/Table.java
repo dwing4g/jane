@@ -26,7 +26,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	 * @param stoTable 存储引擎的表对象. null表示此表是内存表
 	 * @param lockName 此表关联的锁名
 	 * @param cacheSize 此表的读缓存记录数量上限. 如果是内存表则表示超过此上限则会自动丢弃
-	 * @param stubV 记录value的存根对象,不要用于记录有用的数据. 这里只用于标记删除的字段,如果为null则表示此表是内存表
+	 * @param stubV 记录value的存根对象,不要用于记录有用的数据. 这里只用于标记删除的字段,同存根bean
 	 */
 	Table(int tableId, String tableName, Storage.Table<K, V> stoTable, String lockName, int cacheSize, V stubV)
 	{

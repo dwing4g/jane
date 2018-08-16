@@ -33,9 +33,9 @@ public final class AllTables
 	 */
 	public static final Table<TestKeyBean, TestBean, TestBean.Safe> BeanTable = _dbm.<TestKeyBean, TestBean, TestBean.Safe>openTable(2, "BeanTable", "bean", 65536, TestKeyBean.BEAN_STUB, TestBean.BEAN_STUB);
 	/**
-	 * 没有定义id的是内存表. 注意表名和key类型的对应关系是不能改变的
+	 * 没有定义id或id为负的是内存表. 注意表名和key类型的对应关系是不能改变的
 	 */
-	public static final Table<Octets, TestEmpty, TestEmpty.Safe> OctetsTable = _dbm.<Octets, TestEmpty, TestEmpty.Safe>openTable(0, "OctetsTable", "bean", 1000, null, null);
+	public static final Table<Octets, TestEmpty, TestEmpty.Safe> OctetsTable = _dbm.<Octets, TestEmpty, TestEmpty.Safe>openTable(-1, "OctetsTable", "bean", 1000, new Octets(), TestEmpty.BEAN_STUB);
 	/**
 	 * 用于测试数据库的表. cachesize不定义或<=0则靠软引用的生命期决定
 	 */
@@ -71,7 +71,7 @@ public final class AllTables
 			idMetas.put(2, mt);
 			nameMetas.put("BeanTable", mt);
 			metaList.add(mt = new MetaTable(OctetsTable, Octets.class, TestEmpty.BEAN_STUB));
-			idMetas.put(0, mt);
+			idMetas.put(-1, mt);
 			nameMetas.put("OctetsTable", mt);
 			metaList.add(mt = new MetaTable(Benchmark, Long.class, TestBean.BEAN_STUB));
 			idMetas.put(3, mt);
