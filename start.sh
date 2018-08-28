@@ -3,14 +3,17 @@
 cd `dirname $0`
 
 JAVA_VER=`java -version 2>&1 | awk '/version/{print $3}'`
-if [ "$JAVA_VER" == "\"9\"" ]; then
+if [ "$JAVA_VER" == "\"9\"" ] || [ "$JAVA_VER" == "\"10\"" ]; then
 JVM="\
 -Xms512m \
 -Xmx512m \
 -server \
+-XX:+UseG1GC \
+-XX:MaxGCPauseMillis=200 \
 -XX:+AggressiveOpts \
+-XX:+HeapDumpOnOutOfMemoryError \
 -XX:SoftRefLRUPolicyMSPerMB=1000 \
--Xlog:gc:log/gc.log \
+-Xlog:gc=info,gc+heap=info:log/gc.log:time \
 -Dsun.stdout.encoding=utf-8 \
 -Dsun.stderr.encoding=utf-8"
 else
@@ -20,6 +23,7 @@ JVM="\
 -server \
 -XX:+UseConcMarkSweepGC \
 -XX:+AggressiveOpts \
+-XX:+HeapDumpOnOutOfMemoryError \
 -XX:SoftRefLRUPolicyMSPerMB=1000 \
 -Xloggc:log/gc.log \
 -XX:+PrintGCDetails \
@@ -40,17 +44,6 @@ fi
 # -Dcom.sun.management.jmxremote.access.file=jmxremote.access"
 
 # -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1234
-
-# JVM="\
-# -Xms512m \
-# -Xmx512m \
-# -server \
-# -XX:+UseG1GC \
-# -XX:MaxGCPauseMillis=20 \
-# -Xloggc:log/gc.log \
-# -XX:+PrintGCDateStamps \
-# -Dsun.stdout.encoding=utf-8 \
-# -Dsun.stderr.encoding=utf-8"
 
 LIB="\
 lib/slf4j-api-1.7.25.jar:\

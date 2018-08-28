@@ -3,15 +3,18 @@ setlocal
 pushd %~dp0
 
 for /f "tokens=3" %%g in ('java -version 2^>^&1 ^| findstr /i "version"') do set JAVA_VER=%%g
-set JAVAVER=%JAVAVER:"=%
+if %JAVA_VER% == "10" set JAVA_VER="9"
 if %JAVA_VER% == "9" (
 set JVM=^
 -Xms128m ^
 -Xmx512m ^
 -server ^
+-XX:+UseG1GC ^
+-XX:MaxGCPauseMillis=200 ^
 -XX:+AggressiveOpts ^
+-XX:+HeapDumpOnOutOfMemoryError ^
 -XX:SoftRefLRUPolicyMSPerMB=1000 ^
--Xlog:gc:log/gc.log ^
+-Xlog:gc=info,gc+heap=info:log/gc.log:time ^
 -Dsun.stdout.encoding=gbk ^
 -Dsun.stderr.encoding=gbk
 ) else (
@@ -21,6 +24,7 @@ set JVM=^
 -server ^
 -XX:+UseConcMarkSweepGC ^
 -XX:+AggressiveOpts ^
+-XX:+HeapDumpOnOutOfMemoryError ^
 -XX:SoftRefLRUPolicyMSPerMB=1000 ^
 -Xloggc:log/gc.log ^
 -XX:+PrintGCDetails ^
@@ -41,15 +45,6 @@ rem -Dcom.sun.management.jmxremote.password.file=jmxremote.password ^
 rem -Dcom.sun.management.jmxremote.access.file=jmxremote.access
 
 rem -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1234
-
-rem set JVM=^
-rem -Xms128m ^
-rem -Xmx512m ^
-rem -server ^
-rem -XX:+UseG1GC ^
-rem -XX:MaxGCPauseMillis=20 ^
-rem -Xloggc:log/gc.log ^
-rem -XX:+PrintGCDateStamps
 
 set LIB=^
 lib/slf4j-api-1.7.25.jar;^
