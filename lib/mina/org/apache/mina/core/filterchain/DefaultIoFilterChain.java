@@ -414,7 +414,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 	@Override
 	public void fireMessageSent(WriteRequest request) {
 		try {
-			request.getFuture().setWritten();
+			request.writeRequestFuture().setWritten();
 		} catch (Exception e) {
 			fireExceptionCaught(e);
 		} catch (Throwable e) {
@@ -437,10 +437,10 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 				session.getProcessor().write(session, writeRequest);
 			}
 		} catch (Exception e) {
-			writeRequest.getFuture().setException(e);
+			writeRequest.writeRequestFuture().setException(e);
 			fireExceptionCaught(e);
 		} catch (Throwable e) {
-			writeRequest.getFuture().setException(e);
+			writeRequest.writeRequestFuture().setException(e);
 			fireExceptionCaught(e);
 			throw e;
 		}

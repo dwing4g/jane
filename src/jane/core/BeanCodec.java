@@ -64,7 +64,7 @@ public class BeanCodec extends IoFilterAdapter
 	@Override
 	public void filterWrite(NextFilter next, IoSession session, WriteRequest writeRequest)
 	{
-		Bean<?> bean = (Bean<?>)writeRequest.getMessage();
+		Bean<?> bean = (Bean<?>)writeRequest.writeRequestMessage();
 		int type = bean.type();
 		if(type == 0)
 		{
@@ -73,7 +73,7 @@ public class BeanCodec extends IoFilterAdapter
 			if(n > 0)
 			{
 				IoBuffer buf = IoBuffer.wrap(rawdata.array(), rawdata.position(), n);
-				WriteFuture wf = writeRequest.getFuture();
+				WriteFuture wf = writeRequest.writeRequestFuture();
 				next.filterWrite(wf == DefaultWriteRequest.UNUSED_FUTURE ? buf : new DefaultWriteRequest(buf, wf));
 			}
 		}
@@ -89,7 +89,7 @@ public class BeanCodec extends IoFilterAdapter
 			os.resize(pos);
 			os.marshalUInt(type).marshal(serial).marshalUInt(len);
 			IoBuffer buf = IoBuffer.wrap(os.array(), pos, end - pos);
-			WriteFuture wf = writeRequest.getFuture();
+			WriteFuture wf = writeRequest.writeRequestFuture();
 			next.filterWrite(wf == DefaultWriteRequest.UNUSED_FUTURE ? buf : new DefaultWriteRequest(buf, wf));
 		}
 	}

@@ -488,14 +488,14 @@ public final class HttpCodec extends IoFilterAdapter
 
 	public static void write(NextFilter next, WriteRequest writeRequest, IoBuffer buf)
 	{
-		WriteFuture wf = writeRequest.getFuture();
+		WriteFuture wf = writeRequest.writeRequestFuture();
 		next.filterWrite(wf == DefaultWriteRequest.UNUSED_FUTURE ? buf : new DefaultWriteRequest(buf, wf));
 	}
 
 	@Override
 	public void filterWrite(NextFilter next, IoSession session, WriteRequest writeRequest)
 	{
-		Object message = writeRequest.getMessage();
+		Object message = writeRequest.writeRequestMessage();
 		if(message instanceof byte[]) // for raw data
 		{
 			byte[] bytes = (byte[])message;

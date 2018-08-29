@@ -119,12 +119,12 @@ public final class DefaultWriteRequest implements WriteRequest {
 	}
 
 	@Override
-	public final Object getMessage() {
+	public final Object writeRequestMessage() {
 		return message;
 	}
 
 	@Override
-	public final WriteFuture getFuture() {
+	public final WriteFuture writeRequestFuture() {
 		return future;
 	}
 

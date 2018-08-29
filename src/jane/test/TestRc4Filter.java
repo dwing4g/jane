@@ -152,7 +152,7 @@ public final class TestRc4Filter extends IoFilterAdapter
 	@Override
 	public void filterWrite(NextFilter nextFilter, IoSession session, WriteRequest writeRequest)
 	{
-		Object message = writeRequest.getMessage();
+		Object message = writeRequest.writeRequestMessage();
 		if(message instanceof IoBuffer)
 		{
 			IoBuffer ioBuf = (IoBuffer)message;

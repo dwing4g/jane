@@ -512,7 +512,7 @@ public final class SslFilter extends IoFilterAdapter {
 					sslHandler.scheduleFilterWrite(nextFilter, writeRequest);
 				} else {
 					// Otherwise, encrypt the buffer.
-					IoBuffer buf = (IoBuffer) writeRequest.getMessage();
+					IoBuffer buf = (IoBuffer) writeRequest.writeRequestMessage();
 
 					if (sslHandler.isWritingEncryptedData()) {
 						// data already encrypted; simply return buffer
@@ -681,12 +681,12 @@ public final class SslFilter extends IoFilterAdapter {
 		}
 
 		@Override
-		public WriteFuture getFuture() {
-			return parentRequest.getFuture();
+		public WriteFuture writeRequestFuture() {
+			return parentRequest.writeRequestFuture();
 		}
 
 		@Override
-		public Object getMessage() {
+		public Object writeRequestMessage() {
 			return encryptedMessage;
 		}
 

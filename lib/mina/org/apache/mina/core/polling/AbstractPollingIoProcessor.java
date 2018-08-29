@@ -593,7 +593,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 					}
 
 					int localWrittenBytes = 0;
-					Object message = req.getMessage();
+					Object message = req.writeRequestMessage();
 
 					if (message instanceof IoBuffer) {
 						IoBuffer buf = (IoBuffer) message;
@@ -602,7 +602,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 								localWrittenBytes = write(session, buf);
 							} catch (IOException ioe) {
 								session.setCurrentWriteRequest(null);
-								req.getFuture().setException(ioe);
+								req.writeRequestFuture().setException(ioe);
 								buf.free();
 								// we have had an issue while trying to send data to the peer, let's close the session
 								session.closeNow();
@@ -657,7 +657,7 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 					session.getFilterChain().fireExceptionCaught(ex);
 				}
 				if (req != null) {
-					req.getFuture().setException(e);
+					req.writeRequestFuture().setException(e);
 				}
 
 				session.getFilterChain().fireExceptionCaught(e);
@@ -707,9 +707,9 @@ public abstract class AbstractPollingIoProcessor<S extends AbstractIoSession> im
 			Throwable cause = (ioe != null ? new WriteToClosedSessionException(ioe) : new WriteToClosedSessionException());
 
 			do {
-				req.getFuture().setException(cause);
+				req.writeRequestFuture().setException(cause);
 
-				Object message = req.getMessage();
+				Object message = req.writeRequestMessage();
 				if (message instanceof IoBuffer) {
 					((IoBuffer) message).free();
 				}

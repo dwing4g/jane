@@ -228,12 +228,12 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	}
 
 	@Override
-	public final Object getMessage() {
+	public final Object writeRequestMessage() {
 		return this;
 	}
 
 	@Override
-	public final WriteFuture getFuture() {
+	public final WriteFuture writeRequestFuture() {
 		return DefaultWriteRequest.UNUSED_FUTURE;
 	}
 

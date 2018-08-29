@@ -30,10 +30,10 @@ public interface WriteRequest {
 	/**
 	 * @return a message object to be written.
 	 */
-	Object getMessage();
+	Object writeRequestMessage();
 
 	/**
 	 * @return {@link WriteFuture} that is associated with this write request.
 	 */
-	WriteFuture getFuture();
+	WriteFuture writeRequestFuture();
 }

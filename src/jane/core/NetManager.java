@@ -516,13 +516,13 @@ public class NetManager implements IoHandler
 		}
 
 		@Override
-		public Object getMessage()
+		public Object writeRequestMessage()
 		{
 			return message;
 		}
 
 		@Override
-		public WriteFuture getFuture()
+		public WriteFuture writeRequestFuture()
 		{
 			return DefaultWriteRequest.UNUSED_FUTURE;
 		}
