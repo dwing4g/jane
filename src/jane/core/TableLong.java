@@ -35,14 +35,13 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	 * @param tableName 表名
 	 * @param stoTable 存储引擎的表对象. null表示此表是内存表
 	 * @param lockName 此表关联的锁名
-	 * @param cacheSize 此表的读缓存记录数量上限. 如果是内存表则表示超过此上限则会自动丢弃
+	 * @param cacheSize 此表的读缓存记录数量上限. 如果是内存表则表示超过此上限则会自动丢弃(<=0表示无上限)
 	 * @param stubV 记录value的存根对象,不要用于记录有用的数据. 这里只用于标记删除的字段,同存根bean
 	 */
 	TableLong(int tableId, String tableName, Storage.TableLong<V> stoTable, String lockName, int cacheSize, V stubV)
 	{
 		super(tableId, tableName, stubV, (lockName != null && !(lockName = lockName.trim()).isEmpty() ? lockName.hashCode() : tableId) * 0x9e3779b1);
 		_stoTable = stoTable;
-		if(cacheSize < 1 && stoTable == null) cacheSize = 1;
 		_cache = Util.newLongConcurrentLRUMap(cacheSize, tableName);
 		_cacheMod = (stoTable != null ? new LongConcurrentHashMap<>() : null);
 		if(stoTable != null) _idCounter.set(_stoTable.getIdCounter());
