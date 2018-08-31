@@ -6,11 +6,11 @@ import java.util.Map;
 import java.util.function.Supplier;
 import jane.core.map.LongMap;
 
-final class HardRef<V> implements Supplier<V>
+final class StrongRef<V> implements Supplier<V>
 {
 	private final V _value;
 
-	HardRef(V v)
+	StrongRef(V v)
 	{
 		_value = v;
 	}

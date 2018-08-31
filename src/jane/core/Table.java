@@ -424,7 +424,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 				v.setSaveState(2);
 			}
 			else
-				_cache.put(k, new HardRef<>(v));
+				_cache.put(k, new StrongRef<>(v));
 		}
 	}
 

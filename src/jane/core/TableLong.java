@@ -466,7 +466,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 				v.setSaveState(2);
 			}
 			else
-				_cache.put(k, new HardRef<>(v));
+				_cache.put(k, new StrongRef<>(v));
 		}
 	}
 
