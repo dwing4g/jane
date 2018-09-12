@@ -37,7 +37,7 @@ public class StatusServer extends NetManager
 	{
 		ArrayList<Object> list = new ArrayList<>();
 
-		long v1 = 0, v2 = 0, v3 = 0, v4 = 0;
+		long v1 = 0, v2 = 0, v3 = 0, v4 = 0, v5 = 0, v6 = 0;
 		for(TableBase<?> table : TableBase.getTables())
 		{
 			ArrayList<Object> strs = new ArrayList<>();
@@ -55,6 +55,15 @@ public class StatusServer extends NetManager
 			strs.add(rc);
 			strs.add(rtc);
 			strs.add(rc > 0 ? String.format("%.2f%%", (double)(rc - rtc) * 100 / rc) : "-.--%");
+			v = table.getAverageValueSize();
+			if(v >= 0)
+			{
+				++v6;
+				v5 += v;
+				strs.add(v);
+			}
+			else
+				strs.add("-");
 			list.add(strs);
 		}
 		if(DBSimpleManager.hasCreated())
@@ -75,6 +84,16 @@ public class StatusServer extends NetManager
 			strs.add(rc);
 			strs.add(rtc);
 			strs.add(rc > 0 ? String.format("%.2f%%", (double)(rc - rtc) * 100 / rc) : "-.--%");
+			v = mgr.getAverageValueSize();
+			if(v >= 0)
+			{
+				++v6;
+				v5 += v;
+				strs.add(v);
+			}
+			else
+				strs.add("-");
+			strs.add(v);
 			list.add(strs);
 		}
 		ArrayList<Object> strs = new ArrayList<>();
@@ -84,6 +103,7 @@ public class StatusServer extends NetManager
 		strs.add(v3);
 		strs.add(v4);
 		strs.add(v3 > 0 ? String.format("%.2f%%", (double)(v3 - v4) * 100 / v3) : "-.--%");
+		strs.add(v6 > 0 ? v5 / v6 : "-");
 		list.add(strs);
 
 		Runtime runtime = Runtime.getRuntime();
@@ -117,7 +137,8 @@ public class StatusServer extends NetManager
 	public static void genStatus(StringBuilder sb)
 	{
 		ArrayList<Object> list = genStatusList();
-		sb.append("<table border=1 style=border-collapse:collapse><tr bgcolor=silver><td><b>Table</b><td><b>RCacheSize</b><td><b>WCacheSize</b><td><b>RCount</b><td><b>RCacheMissCount</b><td><b>RCacheRatio</b>\n");
+		sb.append("<table border=1 style=border-collapse:collapse><tr bgcolor=silver><td><b>Table</b><td><b>RCacheSize</b><td><b>WCacheSize</b>" +
+				"<td><b>RCount</b><td><b>RCacheMissCount</b><td><b>RCacheRatio</b><td><b>AverageSize</b>\n");
 		for(Object obj : list)
 		{
 			if(obj instanceof ArrayList)

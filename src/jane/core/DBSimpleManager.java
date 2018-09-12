@@ -31,15 +31,17 @@ public final class DBSimpleManager
 
 	private static volatile boolean _hasCreated; // 是否创建过此类的对象
 
-	private final CommitThread					_commitThread = new CommitThread();			 // 处理数据提交的线程
-	private final Map<Octets, Octets>			_readCache;									 // 读缓冲区
-	private final ConcurrentMap<Octets, Octets>	_writeCache	  = Util.newConcurrentHashMap(); // 写缓冲区
-	protected final AtomicLong					_readCount	  = new AtomicLong();			 // 读操作次数统计
-	protected final AtomicLong					_readStoCount = new AtomicLong();			 // 读数据库存储的次数统计(即cache-miss的次数统计)
-	private String								_dbFilename;								 // 数据库的文件名(不含父路径,对LevelDB而言是目录名)
-	private String								_dbBackupPath;								 // 数据库的备份路径
-	private StorageLevelDB						_storage;									 // 存储引擎
-	private volatile boolean					_exiting;									 // 是否在退出状态(已经执行了ShutdownHook)
+	private final CommitThread					_commitThread	= new CommitThread();		   // 处理数据提交的线程
+	private final Map<Octets, Octets>			_readCache;									   // 读缓冲区
+	private final ConcurrentMap<Octets, Octets>	_writeCache		= Util.newConcurrentHashMap(); // 写缓冲区
+	protected final AtomicLong					_readCount		= new AtomicLong();			   // 读操作次数统计
+	protected final AtomicLong					_readStoCount	= new AtomicLong();			   // 读数据库存储的次数统计(即cache-miss的次数统计)
+	protected final AtomicLong					_readValueCount	= new AtomicLong();			   // 读数据库存储的值次数统计(即cache-miss且读到值的次数统计)
+	protected final AtomicLong					_readValueSize	= new AtomicLong();			   // 读数据库存储的值大小统计(即cache-miss且读到值的大小统计)
+	private String								_dbFilename;								   // 数据库的文件名(不含父路径,对LevelDB而言是目录名)
+	private String								_dbBackupPath;								   // 数据库的备份路径
+	private StorageLevelDB						_storage;									   // 存储引擎
+	private volatile boolean					_exiting;									   // 是否在退出状态(已经执行了ShutdownHook)
 
 	/**
 	 * 周期向数据库存储提交事务性修改的线程(checkpoint)
@@ -284,6 +286,12 @@ public final class DBSimpleManager
 		return _readStoCount.get();
 	}
 
+	public int getAverageValueSize()
+	{
+		long n = _readValueCount.get();
+		return n > 0 ? (int)(_readValueSize.get() / n) : 0;
+	}
+
 	private static Octets toKeyFrom(int tableId)
 	{
 		return OctetsStream.createSpace(OctetsStream.marshalUIntLen(tableId)).marshalUInt(tableId);
@@ -337,6 +345,8 @@ public final class DBSimpleManager
 				byte[] v = _storage.dbget(key);
 				if(v == null)
 					return null;
+				_readValueCount.getAndIncrement();
+				_readValueSize.getAndAdd(v.length);
 				OctetsStreamEx os = OctetsStreamEx.wrap(v);
 				if(_readCache != null)
 					_readCache.put(key, os);

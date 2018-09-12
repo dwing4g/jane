@@ -138,7 +138,7 @@ public interface Storage extends Closeable
 		}
 	}
 
-	interface Table<K, V extends Bean<V>>
+	interface TableBase
 	{
 		/**
 		 * 获取表ID
@@ -150,6 +150,14 @@ public interface Storage extends Closeable
 		 */
 		String getTableName();
 
+		/**
+		 * 获取记录值序列化的平均大小(-1表示无结果)
+		 */
+		int getAverageValueSize();
+	}
+
+	interface Table<K, V extends Bean<V>> extends TableBase
+	{
 		/**
 		 * 根据记录的key获取value
 		 */
@@ -196,18 +204,8 @@ public interface Storage extends Closeable
 		boolean walk(WalkValueHandler<K, V> handler, V beanStub, K from, K to, boolean inclusive, boolean reverse);
 	}
 
-	interface TableLong<V extends Bean<V>>
+	interface TableLong<V extends Bean<V>> extends TableBase
 	{
-		/**
-		 * 获取表ID
-		 */
-		int getTableId();
-
-		/**
-		 * 获取表名
-		 */
-		String getTableName();
-
 		/**
 		 * 根据记录的key获取value
 		 */

@@ -10,6 +10,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.CRC32;
 
 /**
@@ -266,6 +267,8 @@ public final class StorageLevelDB implements Storage
 		private final int		   _tableIdLen;
 		private final OctetsStream _tableIdCounter;
 		private final V			   _stubV;
+		private final AtomicLong   _getCount = new AtomicLong();
+		private final AtomicLong   _getSize	 = new AtomicLong();
 
 		public TableLong(int tableId, String tableName, V stubV)
 		{
@@ -302,19 +305,25 @@ public final class StorageLevelDB implements Storage
 		}
 
 		@Override
+		public int getAverageValueSize()
+		{
+			long n = _getCount.get();
+			return n > 0 ? (int)(_getSize.get() / n) : -1;
+		}
+
+		@Override
 		public V get(long k)
 		{
 			byte[] buf = dbget(marshalKey(k));
 			if(buf == null) return null;
+			_getCount.getAndIncrement();
+			_getSize.getAndAdd(buf.length);
 			OctetsStreamEx val = OctetsStreamEx.wrap(buf);
 			try
 			{
 				int format = val.unmarshalInt1();
 				if(format != 0)
-				{
-					throw new IllegalStateException("unknown record value format(" + format + ") in table("
-							+ _tableName + ',' + _tableId + "),key=" + k);
-				}
+					throw new IllegalStateException(String.format("unknown record value format(%d) in table(%s,%d),key=%d", format, _tableName, _tableId, k));
 				V v = _stubV.create();
 				v.unmarshal(val);
 				return v;
@@ -522,6 +531,8 @@ public final class StorageLevelDB implements Storage
 		protected final int			 _tableIdLen;
 		protected final OctetsStream _tableIdNext = OctetsStream.createSpace(5);
 		protected final V			 _stubV;
+		protected final AtomicLong	 _getCount	  = new AtomicLong();
+		protected final AtomicLong	 _getSize	  = new AtomicLong();
 
 		protected TableBase(int tableId, String tableName, V stubV)
 		{
@@ -551,6 +562,19 @@ public final class StorageLevelDB implements Storage
 		public String getTableName()
 		{
 			return _tableName;
+		}
+
+		protected void addValueSize(int size)
+		{
+			_getCount.getAndIncrement();
+			_getSize.getAndAdd(size);
+		}
+
+		@Override
+		public int getAverageValueSize()
+		{
+			long n = _getCount.get();
+			return n > 0 ? (int)(_getSize.get() / n) : -1;
 		}
 
 		@Override
@@ -695,15 +719,13 @@ public final class StorageLevelDB implements Storage
 		{
 			byte[] buf = dbget(marshalKey(k));
 			if(buf == null) return null;
+			addValueSize(buf.length);
 			OctetsStreamEx val = OctetsStreamEx.wrap(buf);
 			try
 			{
 				int format = val.unmarshalInt1();
 				if(format != 0)
-				{
-					throw new IllegalStateException("unknown record value format(" + format + ") in table("
-							+ _tableName + ',' + _tableId + "),key=" + k);
-				}
+					throw new IllegalStateException(String.format("unknown record value format(%d) in table(%s,%d),key=%s", format, _tableName, _tableId, k.dump()));
 				V v = _stubV.create();
 				v.unmarshal(val);
 				return v;
@@ -804,15 +826,13 @@ public final class StorageLevelDB implements Storage
 		{
 			byte[] buf = dbget(marshalKey(k));
 			if(buf == null) return null;
+			addValueSize(buf.length);
 			OctetsStreamEx val = OctetsStreamEx.wrap(buf);
 			try
 			{
 				int format = val.unmarshalInt1();
 				if(format != 0)
-				{
-					throw new IllegalStateException("unknown record value format(" + format + ") in table("
-							+ _tableName + ',' + _tableId + "),key=\"" + k + '"');
-				}
+					throw new IllegalStateException(String.format("unknown record value format(%d) in table(%s,%d),key=%s", format, _tableName, _tableId, k));
 				V v = _stubV.create();
 				v.unmarshal(val);
 				return v;
@@ -921,15 +941,13 @@ public final class StorageLevelDB implements Storage
 		{
 			byte[] buf = dbget(marshalKey(k));
 			if(buf == null) return null;
+			addValueSize(buf.length);
 			OctetsStreamEx val = OctetsStreamEx.wrap(buf);
 			try
 			{
 				int format = val.unmarshalInt1();
 				if(format != 0)
-				{
-					throw new IllegalStateException("unknown record value format(" + format + ") in table("
-							+ _tableName + ',' + _tableId + "),key=" + k);
-				}
+					throw new IllegalStateException(String.format("unknown record value format(%d) in table(%s,%d),key=%s", format, _tableName, _tableId, k));
 				V v = _stubV.create();
 				v.unmarshal(val);
 				return v;

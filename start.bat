@@ -3,6 +3,7 @@ setlocal
 pushd %~dp0
 
 for /f "tokens=3" %%g in ('java -version 2^>^&1 ^| findstr /i "version"') do set JAVA_VER=%%g
+if %JAVA_VER% == "11" set JAVA_VER="9"
 if %JAVA_VER% == "10" set JAVA_VER="9"
 if %JAVA_VER% == "9" (
 set JVM=^

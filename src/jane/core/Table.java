@@ -116,18 +116,18 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 		return m;
 	}
 
-	/**
-	 * 获取读缓存记录数
-	 */
+	@Override
+	public int getAverageValueSize()
+	{
+		return _stoTable != null ? _stoTable.getAverageValueSize() : -1;
+	}
+
 	@Override
 	public int getCacheSize()
 	{
 		return _cache.size();
 	}
 
-	/**
-	 * 获取写缓存记录数
-	 */
 	@Override
 	public int getCacheModSize()
 	{

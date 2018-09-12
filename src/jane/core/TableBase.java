@@ -85,6 +85,11 @@ public abstract class TableBase<V extends Bean<V>>
 	}
 
 	/**
+	 * 获取记录值序列化的平均大小(-1表示无结果)
+	 */
+	public abstract int getAverageValueSize();
+
+	/**
 	 * 获取读缓存记录数
 	 */
 	public abstract int getCacheSize();
