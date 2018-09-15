@@ -333,7 +333,7 @@ public class IntHashMap<V> implements Cloneable
 
 	public V get(int key)
 	{
-		if(key == EMPTY) return _hasZeroValue ? _zeroValue : null;
+		if(key == EMPTY) return _zeroValue;
 		int index = key & _mask;
 		if(_keyTable[index] != key)
 		{
@@ -462,9 +462,9 @@ public class IntHashMap<V> implements Cloneable
 			clear();
 			return;
 		}
+		_size = 0;
 		_hasZeroValue = false;
 		_zeroValue = null;
-		_size = 0;
 		resize(maximumCapacity);
 	}
 
@@ -477,9 +477,9 @@ public class IntHashMap<V> implements Cloneable
 		for(int i = 0, n = _tableSize; i < n; ++i)
 			vt[i] = null;
 		_size = 0;
-		_tableSize = _capacity;
 		_hasZeroValue = false;
 		_zeroValue = null;
+		_tableSize = _capacity;
 	}
 
 	public boolean containsValue(Object value, boolean identity)
@@ -489,19 +489,19 @@ public class IntHashMap<V> implements Cloneable
 		{
 			if(_hasZeroValue && _zeroValue == null) return true;
 			int[] kt = _keyTable;
-			for(int i = _tableSize; i-- > 0;)
+			for(int i = 0, n = _tableSize; i < n; ++i)
 				if(kt[i] != EMPTY && vt[i] == null) return true;
 		}
 		else if(identity)
 		{
 			if(value == _zeroValue) return true;
-			for(int i = _tableSize; i-- > 0;)
+			for(int i = 0, n = _tableSize; i < n; ++i)
 				if(vt[i] == value) return true;
 		}
 		else
 		{
 			if(_hasZeroValue && value.equals(_zeroValue)) return true;
-			for(int i = _tableSize; i-- > 0;)
+			for(int i = 0, n = _tableSize; i < n; ++i)
 				if(value.equals(vt[i])) return true;
 		}
 		return false;
@@ -538,19 +538,19 @@ public class IntHashMap<V> implements Cloneable
 		{
 			if(_hasZeroValue && _zeroValue == null) return EMPTY;
 			int[] kt = _keyTable;
-			for(int i = _tableSize; i-- > 0;)
+			for(int i = 0, n = _tableSize; i < n; ++i)
 				if(kt[i] != EMPTY && vt[i] == null) return kt[i];
 		}
 		else if(identity)
 		{
 			if(value == _zeroValue) return EMPTY;
-			for(int i = _tableSize; i-- > 0;)
+			for(int i = 0, n = _tableSize; i < n; ++i)
 				if(vt[i] == value) return _keyTable[i];
 		}
 		else
 		{
 			if(_hasZeroValue && value.equals(_zeroValue)) return EMPTY;
-			for(int i = _tableSize; i-- > 0;)
+			for(int i = 0, n = _tableSize; i < n; ++i)
 				if(value.equals(vt[i])) return _keyTable[i];
 		}
 		return notFound;

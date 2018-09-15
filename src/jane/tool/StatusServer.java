@@ -54,7 +54,7 @@ public class StatusServer extends NetManager
 			v4 += rtc;
 			strs.add(rc);
 			strs.add(rtc);
-			strs.add(rc > 0 ? String.format("%.2f%%", (double)(rc - rtc) * 100 / rc) : "-.--%");
+			strs.add(rc > 0 && rtc > 0 ? String.format("%.2f%%", (double)(rc - rtc) * 100 / rc) : "-.--%");
 			v = table.getAverageValueSize();
 			if(v >= 0)
 			{
@@ -83,7 +83,7 @@ public class StatusServer extends NetManager
 			v4 += rtc;
 			strs.add(rc);
 			strs.add(rtc);
-			strs.add(rc > 0 ? String.format("%.2f%%", (double)(rc - rtc) * 100 / rc) : "-.--%");
+			strs.add(rc > 0 && rtc > 0 ? String.format("%.2f%%", (double)(rc - rtc) * 100 / rc) : "-.--%");
 			v = mgr.getAverageValueSize();
 			if(v >= 0)
 			{
@@ -102,7 +102,7 @@ public class StatusServer extends NetManager
 		strs.add(v2);
 		strs.add(v3);
 		strs.add(v4);
-		strs.add(v3 > 0 ? String.format("%.2f%%", (double)(v3 - v4) * 100 / v3) : "-.--%");
+		strs.add(v3 > 0 && v4 > 0 ? String.format("%.2f%%", (double)(v3 - v4) * 100 / v3) : "-.--%");
 		strs.add(v6 > 0 ? v5 / v6 : "-");
 		list.add(strs);
 
