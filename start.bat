@@ -12,7 +12,6 @@ set JVM=^
 -server ^
 -XX:+UseG1GC ^
 -XX:MaxGCPauseMillis=200 ^
--XX:+AggressiveOpts ^
 -XX:+HeapDumpOnOutOfMemoryError ^
 -XX:SoftRefLRUPolicyMSPerMB=1000 ^
 -Xlog:gc=info,gc+heap=info:log/gc.log:time ^
