@@ -159,8 +159,8 @@ public class TestBean extends Bean<TestBean>
 		if(_b_ == this) return 0;
 		if(_b_ == null) return 1;
 		int _c_;
-		_c_ = this.value1 - _b_.value1; if(_c_ != 0) return _c_;
-		_c_ = Long.signum(this.value2 - _b_.value2); if(_c_ != 0) return _c_;
+		_c_ = Integer.compare(this.value1, _b_.value1); if(_c_ != 0) return _c_;
+		_c_ = Long.compare(this.value2, _b_.value2); if(_c_ != 0) return _c_;
 		return 0;
 	}
 

@@ -155,8 +155,8 @@ namespace Jane.Bean
 		public int CompareTo(TestBean b)
 		{
 			int c;
-			c = this.value1 - b.value1; if(c != 0) return c;
-			c = Math.Sign(this.value2 - b.value2); if(c != 0) return c;
+			c = this.value1.CompareTo(b.value1); if(c != 0) return c;
+			c = this.value2.CompareTo(b.value2); if(c != 0) return c;
 			return 0;
 		}
 

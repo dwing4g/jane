@@ -337,6 +337,7 @@ typedef.int = merge(typedef.byte,
 	type_o = "int",
 	unmarshal = "case #(var.id): this.#(var.name) = s.UnmarshalInt(t);",
 	unmarshal_kv = function(var, kv, t) if kv then return "s.UnmarshalIntKV(" .. t .. ")" end end,
+	compareto = "this.#(var.name).CompareTo(b.#(var.name))",
 })
 typedef.long = merge(typedef.byte,
 {
@@ -346,7 +347,7 @@ typedef.long = merge(typedef.byte,
 	unmarshal = "case #(var.id): this.#(var.name) = s.UnmarshalLong(t);",
 	unmarshal_kv = function(var, kv, t) if kv then return "s.UnmarshalLongKV(" .. t .. ")" end end,
 	hashcode = "(int)this.#(var.name)",
-	compareto = "Math.Sign(this.#(var.name) - b.#(var.name))",
+	compareto = "this.#(var.name).CompareTo(b.#(var.name))",
 })
 typedef.bool = merge(typedef.byte,
 {
@@ -360,7 +361,7 @@ typedef.bool = merge(typedef.byte,
 	unmarshal = "case #(var.id): this.#(var.name) = (s.UnmarshalLong(t) != 0);",
 	unmarshal_kv = function(var, kv, t) if kv then return "(s.UnmarshalLongKV(" .. t .. ") != 0)" end end,
 	hashcode = "(int)(this.#(var.name) ? 0xcafebabe : 0xdeadbeef)",
-	compareto = "(this.#(var.name) == b.#(var.name) ? 0 : (this.#(var.name) ? 1 : -1))",
+	compareto = "this.#(var.name).CompareTo(b.#(var.name))",
 })
 typedef.float = merge(typedef.byte,
 {
@@ -374,7 +375,7 @@ typedef.float = merge(typedef.byte,
 	unmarshal = "case #(var.id): this.#(var.name) = s.UnmarshalFloat(t);",
 	unmarshal_kv = function(var, kv, t) if kv then return "s.UnmarshalFloatKV(" .. t .. ")" end end,
 	hashcode = "(int)((BitConverter.DoubleToInt64Bits(this.#(var.name)) * 0x100000001L) >> 32)",
-	compareto = "Math.Sign(this.#(var.name) - b.#(var.name))",
+	compareto = "this.#(var.name).CompareTo(b.#(var.name))",
 })
 typedef.double = merge(typedef.float,
 {
@@ -387,7 +388,6 @@ typedef.double = merge(typedef.float,
 	end,
 	unmarshal = "case #(var.id): this.#(var.name) = s.UnmarshalDouble(t);",
 	unmarshal_kv = function(var, kv, t) if kv then return "s.UnmarshalDoubleKV(" .. t .. ")" end end,
-	compareto = "Math.Sign(this.#(var.name) - b.#(var.name))",
 })
 typedef.string = merge(typedef.byte,
 {

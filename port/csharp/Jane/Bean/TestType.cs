@@ -615,13 +615,13 @@ namespace Jane.Bean
 		public int CompareTo(TestType b)
 		{
 			int c;
-			c = (this.v1 == b.v1 ? 0 : (this.v1 ? 1 : -1)); if(c != 0) return c;
+			c = this.v1.CompareTo(b.v1); if(c != 0) return c;
 			c = this.v2 - b.v2; if(c != 0) return c;
 			c = this.v3 - b.v3; if(c != 0) return c;
-			c = this.v4 - b.v4; if(c != 0) return c;
-			c = Math.Sign(this.v5 - b.v5); if(c != 0) return c;
-			c = Math.Sign(this.v6 - b.v6); if(c != 0) return c;
-			c = Math.Sign(this.v7 - b.v7); if(c != 0) return c;
+			c = this.v4.CompareTo(b.v4); if(c != 0) return c;
+			c = this.v5.CompareTo(b.v5); if(c != 0) return c;
+			c = this.v6.CompareTo(b.v6); if(c != 0) return c;
+			c = this.v7.CompareTo(b.v7); if(c != 0) return c;
 			c = this.v8.CompareTo(b.v8); if(c != 0) return c;
 			c = this.v9.CompareTo(b.v9); if(c != 0) return c;
 			c = Util.CompareTo(this.v10, b.v10); if(c != 0) return c;

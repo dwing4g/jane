@@ -642,11 +642,11 @@ public final class TestType extends Bean<TestType>
 		if(_b_ == this) return 0;
 		if(_b_ == null) return 1;
 		int _c_;
-		_c_ = (this.v1 == _b_.v1 ? 0 : (this.v1 ? 1 : -1)); if(_c_ != 0) return _c_;
+		_c_ = Boolean.compare(this.v1, _b_.v1); if(_c_ != 0) return _c_;
 		_c_ = this.v2 - _b_.v2; if(_c_ != 0) return _c_;
 		_c_ = this.v3 - _b_.v3; if(_c_ != 0) return _c_;
-		_c_ = this.v4 - _b_.v4; if(_c_ != 0) return _c_;
-		_c_ = Long.signum(this.v5 - _b_.v5); if(_c_ != 0) return _c_;
+		_c_ = Integer.compare(this.v4, _b_.v4); if(_c_ != 0) return _c_;
+		_c_ = Long.compare(this.v5, _b_.v5); if(_c_ != 0) return _c_;
 		_c_ = Float.compare(this.v6, _b_.v6); if(_c_ != 0) return _c_;
 		_c_ = Double.compare(this.v7, _b_.v7); if(_c_ != 0) return _c_;
 		_c_ = this.v8.compareTo(_b_.v8); if(_c_ != 0) return _c_;

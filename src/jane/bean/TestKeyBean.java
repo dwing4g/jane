@@ -137,7 +137,7 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 		if(_b_ == this) return 0;
 		if(_b_ == null) return 1;
 		int _c_;
-		_c_ = this.key1 - _b_.key1; if(_c_ != 0) return _c_;
+		_c_ = Integer.compare(this.key1, _b_.key1); if(_c_ != 0) return _c_;
 		_c_ = this.key2.compareTo(_b_.key2); if(_c_ != 0) return _c_;
 		return 0;
 	}

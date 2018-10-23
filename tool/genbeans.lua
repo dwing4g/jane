@@ -445,6 +445,7 @@ typedef.int = merge(typedef.byte,
 		return var.id > 0 and "\t\t\tcase #(var.id): this.#(var.name) = _s_.unmarshalInt(_t_); break;\n" or ""
 	end,
 	unmarshal_kv = function(var, kv, t) if kv then return "_s_.unmarshalIntKV(" .. t .. ")" end end,
+	compareto = "Integer.compare(this.#(var.name), _b_.#(var.name))",
 })
 typedef.long = merge(typedef.byte,
 {
@@ -456,7 +457,7 @@ typedef.long = merge(typedef.byte,
 	end,
 	unmarshal_kv = function(var, kv, t) if kv then return "_s_.unmarshalLongKV(" .. t .. ")" end end,
 	hashcode = "(int)this.#(var.name)",
-	compareto = "Long.signum(this.#(var.name) - _b_.#(var.name))",
+	compareto = "Long.compare(this.#(var.name), _b_.#(var.name))",
 })
 typedef.bool = merge(typedef.byte,
 {
@@ -473,7 +474,7 @@ typedef.bool = merge(typedef.byte,
 	end,
 	unmarshal_kv = function(var, kv, t) if kv then return "(_s_.unmarshalLongKV(" .. t .. ") != 0)" end end,
 	hashcode = "(this.#(var.name) ? 0xcafebabe : 0xdeadbeef)",
-	compareto = "(this.#(var.name) == _b_.#(var.name) ? 0 : (this.#(var.name) ? 1 : -1))",
+	compareto = "Boolean.compare(this.#(var.name), _b_.#(var.name))",
 })
 typedef.float = merge(typedef.byte,
 {
