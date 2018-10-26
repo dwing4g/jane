@@ -31,6 +31,7 @@ License:
  * 概念和实现简单清晰
 
 依赖库:
+ * JRE模块: java.base, jdk.unsupported, java.xml, java.naming, java.logging, java.security.sasl
  * 日志库: slf4j-1.7.x logback-1.2.x
  * 网络库: mina-core-2.0.x (已精简优化并内置到jane中)
  * 数据库: leveldb-jni

@@ -2,8 +2,8 @@
 
 cd `dirname $0`
 
-JAVA_VER=`java -version 2>&1 | awk '/version/{print $3}'`
-if [ "$JAVA_VER" == "\"9\"" ] || [ "$JAVA_VER" == "\"10\"" ] || [ "$JAVA_VER" == "\"11\"" ]; then
+JAVA_VER=`java -version 2>&1 | awk -F "[. \"]" '/version/{print $4}'`
+if [[ $JAVA_VER > 1.9 ]] || [[ $JAVA_VER > 10 ]]; then
 JVM="\
 -Xms512m \
 -Xmx512m \
