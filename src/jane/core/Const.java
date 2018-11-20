@@ -3,7 +3,6 @@ package jane.core;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.nio.charset.Charset;
 import java.util.Properties;
 import jane.core.map.IntHashMap;
 
@@ -14,9 +13,8 @@ import jane.core.map.IntHashMap;
  */
 public final class Const
 {
-	public static final long		startupTime		 = System.currentTimeMillis();
-	private static final Properties	_property		 = new Properties();
-	public static final Charset		stringCharsetGBK = Charset.forName("gbk");
+	public static final long		startupTime	= System.currentTimeMillis();
+	private static final Properties	_property	= new Properties();
 	public static final int			connectTimeout;
 	public static final int			closeOnFlushTimeout;
 	public static final int			askCheckInterval;
