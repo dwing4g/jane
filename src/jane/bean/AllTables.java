@@ -41,9 +41,6 @@ public final class AllTables
 	 */
 	public static final TableLong<TestBean, TestBean.Safe> Benchmark = _dbm.<TestBean, TestBean.Safe>openTable(3, "Benchmark", "bench", 0, TestBean.BEAN_STUB);
 
-	/**
-	 * 以下内部类可以单独使用,避免初始化前面的表对象
-	 */
 	public static final class MetaTable
 	{
 		private static final ArrayList<MetaTable> metaList = new ArrayList<>(4);
@@ -59,23 +56,16 @@ public final class AllTables
 			table = tbl;
 			keyBeanStub = kbs;
 			valueBeanStub = vbs;
+			idMetas.put(tbl.getTableId(), this);
+			nameMetas.put(tbl.getTableName(), this);
 		}
 
 		static
 		{
-			MetaTable mt;
-			metaList.add(mt = new MetaTable(TestTable, Long.class, TestType.BEAN_STUB));
-			idMetas.put(1, mt);
-			nameMetas.put("TestTable", mt);
-			metaList.add(mt = new MetaTable(BeanTable, TestKeyBean.BEAN_STUB, TestBean.BEAN_STUB));
-			idMetas.put(2, mt);
-			nameMetas.put("BeanTable", mt);
-			metaList.add(mt = new MetaTable(OctetsTable, Octets.class, TestEmpty.BEAN_STUB));
-			idMetas.put(-1, mt);
-			nameMetas.put("OctetsTable", mt);
-			metaList.add(mt = new MetaTable(Benchmark, Long.class, TestBean.BEAN_STUB));
-			idMetas.put(3, mt);
-			nameMetas.put("Benchmark", mt);
+			metaList.add(new MetaTable(TestTable, Long.class, TestType.BEAN_STUB));
+			metaList.add(new MetaTable(BeanTable, TestKeyBean.BEAN_STUB, TestBean.BEAN_STUB));
+			metaList.add(new MetaTable(OctetsTable, Octets.class, TestEmpty.BEAN_STUB));
+			metaList.add(new MetaTable(Benchmark, Long.class, TestBean.BEAN_STUB));
 		}
 
 		public static MetaTable get(int tableId)
@@ -89,6 +79,54 @@ public final class AllTables
 		}
 
 		public static void foreach(Consumer<MetaTable> consumer)
+		{
+			metaList.forEach(consumer);
+		}
+	}
+
+	/**
+	 * 以下内部类可以单独使用,避免初始化前面的表对象
+	 */
+	public static final class SimpleMetaTable
+	{
+		private static final ArrayList<SimpleMetaTable> metaList = new ArrayList<>(4);
+		private static final IntHashMap<SimpleMetaTable> idMetas = new IntHashMap<>(4 * 2);
+		private static final HashMap<String, SimpleMetaTable> nameMetas = new HashMap<>(4 * 2);
+
+		public final int tableId;
+		public final String tableName;
+		public final Object keyBeanStub; // Class<?> or Bean<?>
+		public final Bean<?> valueBeanStub;
+
+		private SimpleMetaTable(int id, String name, Object kbs, Bean<?> vbs)
+		{
+			tableId = id;
+			tableName = name;
+			keyBeanStub = kbs;
+			valueBeanStub = vbs;
+			idMetas.put(id, this);
+			nameMetas.put(name, this);
+		}
+
+		static
+		{
+			metaList.add(new SimpleMetaTable(1, "TestTable", Long.class, TestType.BEAN_STUB));
+			metaList.add(new SimpleMetaTable(2, "BeanTable", TestKeyBean.BEAN_STUB, TestBean.BEAN_STUB));
+			metaList.add(new SimpleMetaTable(-1, "OctetsTable", Octets.class, TestEmpty.BEAN_STUB));
+			metaList.add(new SimpleMetaTable(3, "Benchmark", Long.class, TestBean.BEAN_STUB));
+		}
+
+		public static SimpleMetaTable get(int tableId)
+		{
+			return idMetas.get(tableId);
+		}
+
+		public static SimpleMetaTable get(String tableName)
+		{
+			return nameMetas.get(tableName);
+		}
+
+		public static void foreach(Consumer<SimpleMetaTable> consumer)
 		{
 			metaList.forEach(consumer);
 		}

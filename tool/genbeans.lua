@@ -268,9 +268,6 @@ public final class AllTables
 #>#
 #(#	#(table.comment)public static final #(table.table)<#(table.key)#(table.comma)#(table.value), #(table.value).Safe> #(table.name) = _dbm.<#(table.key)#(table.comma)#(table.value), #(table.value).Safe>openTable(#(table.id), "#(table.name)", "#(table.lock)", #(table.cachesize)#(table.comma)#(table.keys), #(table.values));
 #)#
-	/**
-	 * 以下内部类可以单独使用,避免初始化前面的表对象
-	 */
 	public static final class MetaTable
 	{
 		private static final ArrayList<MetaTable> metaList = new ArrayList<>(#(tables.count));
@@ -286,14 +283,13 @@ public final class AllTables
 			table = tbl;
 			keyBeanStub = kbs;
 			valueBeanStub = vbs;
+			idMetas.put(tbl.getTableId(), this);
+			nameMetas.put(tbl.getTableName(), this);
 		}
 #<#
 		static
 		{
-			MetaTable mt;
-#(#			metaList.add(mt = new MetaTable(#(table.name), #(table.keyg), #(table.value).BEAN_STUB));
-			idMetas.put(#(table.id), mt);
-			nameMetas.put("#(table.name)", mt);
+#(#			metaList.add(new MetaTable(#(table.name), #(table.keyg), #(table.value).BEAN_STUB));
 #)#		}
 #>#
 		public static MetaTable get(int tableId)
@@ -307,6 +303,51 @@ public final class AllTables
 		}
 
 		public static void foreach(Consumer<MetaTable> consumer)
+		{
+			metaList.forEach(consumer);
+		}
+	}
+
+	/**
+	 * 以下内部类可以单独使用,避免初始化前面的表对象
+	 */
+	public static final class SimpleMetaTable
+	{
+		private static final ArrayList<SimpleMetaTable> metaList = new ArrayList<>(#(tables.count));
+		private static final IntHashMap<SimpleMetaTable> idMetas = new IntHashMap<>(#(tables.count) * 2);
+		private static final HashMap<String, SimpleMetaTable> nameMetas = new HashMap<>(#(tables.count) * 2);
+
+		public final int tableId;
+		public final String tableName;
+		public final Object keyBeanStub; // Class<?> or Bean<?>
+		public final Bean<?> valueBeanStub;
+
+		private SimpleMetaTable(int id, String name, Object kbs, Bean<?> vbs)
+		{
+			tableId = id;
+			tableName = name;
+			keyBeanStub = kbs;
+			valueBeanStub = vbs;
+			idMetas.put(id, this);
+			nameMetas.put(name, this);
+		}
+#<#
+		static
+		{
+#(#			metaList.add(new SimpleMetaTable(#(table.id), "#(table.name)", #(table.keyg), #(table.value).BEAN_STUB));
+#)#		}
+#>#
+		public static SimpleMetaTable get(int tableId)
+		{
+			return idMetas.get(tableId);
+		}
+
+		public static SimpleMetaTable get(String tableName)
+		{
+			return nameMetas.get(tableName);
+		}
+
+		public static void foreach(Consumer<SimpleMetaTable> consumer)
 		{
 			metaList.forEach(consumer);
 		}
