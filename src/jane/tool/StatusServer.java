@@ -168,16 +168,7 @@ public class StatusServer extends NetManager
 
 	public static void genLevelDBInfo(StringBuilder sb)
 	{
-		sb.append("<table border=1 style=border-collapse:collapse><tr bgcolor=silver><td><b>property</b><td><b>value</b>\n");
-		for(int i = 0; i < 7; ++i)
-		{
-			sb.append("<tr><td bgcolor=silver>").append("num-files-at-level" + i);
-			sb.append("<td align=right>").append(StorageLevelDB.instance().getProperty("leveldb.num-files-at-level" + i)).append('\n');
-		}
-		sb.append("<tr><td bgcolor=silver>").append("approximate-memory-usage");
-		sb.append("<td align=right>").append(StorageLevelDB.instance().getProperty("leveldb.approximate-memory-usage")).append('\n');
-		sb.append("</table>\n");
-		sb.append("<p><b>stats</b><br><pre>");
+		sb.append("<p><b>LevelDB stats</b> (memory: ").append(StorageLevelDB.instance().getProperty("leveldb.approximate-memory-usage")).append(")<br><pre>");
 		sb.append(StorageLevelDB.instance().getProperty("leveldb.stats")).append("</pre>\n");
 		// sb.append("<b>sstables</b><br><pre>");
 		// sb.append(StorageLevelDB.instance().getProperty("leveldb.sstables")).append("</pre>\n");
