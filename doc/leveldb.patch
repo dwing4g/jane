@@ -12,12 +12,20 @@
  crc32c/crc32c_sse42.cc            |  256 +++++
  crc32c/crc32c_sse42.h             |   31 +
  crc32c/crc32c_sse42_check.h       |   48 +
- db/db_impl.cc                     |    4 +
+ db/db_bench.cc                    |   10 +-
+ db/db_impl.cc                     |   17 +-
  db/db_impl.h                      |    3 +
- db/write_batch.cc                 |   53 +-
+ db/dumpfile.cc                    |    2 +-
+ db/log_reader.cc                  |   55 +-
+ db/log_reader.h                   |   14 +-
+ db/repair.cc                      |    3 +-
+ db/table_cache.h                  |    2 +
+ db/version_set.cc                 |    2 +-
+ db/write_batch.cc                 |   55 +-
  db/write_batch_internal.h         |   31 +-
  gendef.lua                        |   33 +
- include/leveldb/write_batch.h     |    3 +-
+ include/leveldb/table.h           |    2 +
+ include/leveldb/write_batch.h     |    4 +-
  leveldb.def                       |   83 ++
  leveldb.sln                       |   93 ++
  leveldb.vcxproj                   |  319 ++++++
@@ -52,10 +60,11 @@
  snappy/snappy-stubs-public.h      |   94 ++
  snappy/snappy.cc                  | 1515 ++++++++++++++++++++++++++++
  snappy/snappy.h                   |  203 ++++
+ table/table.cc                    |   23 +
  util/env_windows.cc               |  457 +++++++++
- util/jni.cc                       |  554 +++++++++++
+ util/jni.cc                       |  551 +++++++++++
  util/logging.cc                   |    2 +-
- 57 files changed, 9617 insertions(+), 21 deletions(-)
+ 66 files changed, 9669 insertions(+), 95 deletions(-)
 
 diff --git a/.gitignore b/.gitignore
 index 0630251..bbfce0d 100644
@@ -1235,8 +1244,50 @@ index 0000000..ad380dd
 +#endif  // HAVE_SSE42 && (defined(_M_X64) || defined(__x86_64__))
 +
 +#endif  // CRC32C_CRC32C_SSE42_CHECK_H_
+diff --git a/db/db_bench.cc b/db/db_bench.cc
+index 920f119..3c67d4a 100644
+--- a/db/db_bench.cc
++++ b/db/db_bench.cc
+@@ -261,7 +261,7 @@ class Stats {
+       // elapsed times.
+       double elapsed = (finish_ - start_) * 1e-6;
+       char rate[100];
+-      snprintf(rate, sizeof(rate), "%6.1f MB/s",
++      snprintf(rate, sizeof(rate), "%7.1f MB/s",
+                (bytes_ / 1048576.0) / elapsed);
+       extra = rate;
+     }
+@@ -340,7 +340,7 @@ class Benchmark {
+             (((kKeySize + FLAGS_value_size * FLAGS_compression_ratio) * num_)
+              / 1048576.0));
+     PrintWarnings();
+-    fprintf(stdout, "------------------------------------------------\n");
++    fprintf(stdout, "--------------------------------------------------\n");
+   }
+ 
+   void PrintWarnings() {
+@@ -521,6 +521,10 @@ class Benchmark {
+         PrintStats("leveldb.stats");
+       } else if (name == Slice("sstables")) {
+         PrintStats("leveldb.sstables");
++      } else if (name == Slice("usage")) {
++        PrintStats("leveldb.approximate-memory-usage");
++      } else if (name == Slice("usages")) {
++        PrintStats("leveldb.approximate-memory-usages");
+       } else {
+         if (name != Slice()) {  // No error message for empty name
+           fprintf(stderr, "unknown benchmark '%s'\n", name.ToString().c_str());
+@@ -925,7 +929,7 @@ class Benchmark {
+     if (!db_->GetProperty(key, &stats)) {
+       stats = "(failed)";
+     }
+-    fprintf(stdout, "\n%s\n", stats.c_str());
++    fprintf(stdout, "%s:\n%s\n", key, stats.c_str());
+   }
+ 
+   static void WriteToFile(void* arg, const char* buf, int n) {
 diff --git a/db/db_impl.cc b/db/db_impl.cc
-index 8484e46..4526f25 100644
+index 8484e46..d2a1658 100644
 --- a/db/db_impl.cc
 +++ b/db/db_impl.cc
 @@ -37,6 +37,8 @@
@@ -1248,7 +1299,17 @@ index 8484e46..4526f25 100644
  const int kNumNonTableCacheFiles = 10;
  
  // Information kept for every waiting writer
-@@ -667,7 +669,9 @@ void DBImpl::MaybeScheduleCompaction() {
+@@ -404,8 +406,7 @@ Status DBImpl::RecoverLogFile(uint64_t log_number, bool last_log,
+   // paranoid_checks==false so that corruptions cause entire commits
+   // to be skipped instead of propagating bad information (like overly
+   // large sequence numbers).
+-  log::Reader reader(file, &reporter, true/*checksum*/,
+-                     0/*initial_offset*/);
++  log::Reader reader(file, &reporter, true/*checksum*/);
+   Log(options_.info_log, "Recovering log #%llu",
+       (unsigned long long) log_number);
+ 
+@@ -667,7 +668,9 @@ void DBImpl::MaybeScheduleCompaction() {
  }
  
  void DBImpl::BGWork(void* db) {
@@ -1258,6 +1319,23 @@ index 8484e46..4526f25 100644
  }
  
  void DBImpl::BackgroundCall() {
+@@ -1448,6 +1451,16 @@ bool DBImpl::GetProperty(const Slice& property, std::string* value) {
+              static_cast<unsigned long long>(total_usage));
+     value->append(buf);
+     return true;
++  } else if (in == "approximate-memory-usages") {
++    char buf[200];
++    snprintf(buf, sizeof(buf), "mem_table=%lluK+%lluK; table_cache=%lluK(%llu); block_cache=%lluK",
++             static_cast<unsigned long long>(mem_ ? mem_->ApproximateMemoryUsage() >> 10 : 0),
++             static_cast<unsigned long long>(imm_ ? imm_->ApproximateMemoryUsage() >> 10 : 0),
++             static_cast<unsigned long long>(Table::GetTableMemory() >> 10),
++             static_cast<unsigned long long>(table_cache_->TotalCharge()),
++             static_cast<unsigned long long>(options_.block_cache->TotalCharge() >> 10));
++    value->append(buf);
++    return true;
+   }
+ 
+   return false;
 diff --git a/db/db_impl.h b/db/db_impl.h
 index 6344112..ad13572 100644
 --- a/db/db_impl.h
@@ -1272,8 +1350,194 @@ index 6344112..ad13572 100644
   private:
    friend class DB;
    struct CompactionState;
+diff --git a/db/dumpfile.cc b/db/dumpfile.cc
+index 61c47c2..dd5b05e 100644
+--- a/db/dumpfile.cc
++++ b/db/dumpfile.cc
+@@ -57,7 +57,7 @@ Status PrintLogContents(Env* env, const std::string& fname,
+   }
+   CorruptionReporter reporter;
+   reporter.dst_ = dst;
+-  log::Reader reader(file, &reporter, true, 0);
++  log::Reader reader(file, &reporter, true);
+   Slice record;
+   std::string scratch;
+   while (reader.ReadRecord(&record, &scratch)) {
+diff --git a/db/log_reader.cc b/db/log_reader.cc
+index 48ae863..598c176 100644
+--- a/db/log_reader.cc
++++ b/db/log_reader.cc
+@@ -15,8 +15,7 @@ namespace log {
+ Reader::Reporter::~Reporter() {
+ }
+ 
+-Reader::Reader(SequentialFile* file, Reporter* reporter, bool checksum,
+-               uint64_t initial_offset)
++Reader::Reader(SequentialFile* file, Reporter* reporter, bool checksum)
+     : file_(file),
+       reporter_(reporter),
+       checksum_(checksum),
+@@ -24,45 +23,14 @@ Reader::Reader(SequentialFile* file, Reporter* reporter, bool checksum,
+       buffer_(),
+       eof_(false),
+       last_record_offset_(0),
+-      end_of_buffer_offset_(0),
+-      initial_offset_(initial_offset),
+-      resyncing_(initial_offset > 0) {
++      end_of_buffer_offset_(0) {
+ }
+ 
+ Reader::~Reader() {
+   delete[] backing_store_;
+ }
+ 
+-bool Reader::SkipToInitialBlock() {
+-  const size_t offset_in_block = initial_offset_ % kBlockSize;
+-  uint64_t block_start_location = initial_offset_ - offset_in_block;
+-
+-  // Don't search a block if we'd be in the trailer
+-  if (offset_in_block > kBlockSize - 6) {
+-    block_start_location += kBlockSize;
+-  }
+-
+-  end_of_buffer_offset_ = block_start_location;
+-
+-  // Skip to start of first block that can contain the initial record
+-  if (block_start_location > 0) {
+-    Status skip_status = file_->Skip(block_start_location);
+-    if (!skip_status.ok()) {
+-      ReportDrop(block_start_location, skip_status);
+-      return false;
+-    }
+-  }
+-
+-  return true;
+-}
+-
+ bool Reader::ReadRecord(Slice* record, std::string* scratch) {
+-  if (last_record_offset_ < initial_offset_) {
+-    if (!SkipToInitialBlock()) {
+-      return false;
+-    }
+-  }
+-
+   scratch->clear();
+   record->clear();
+   bool in_fragmented_record = false;
+@@ -80,17 +48,6 @@ bool Reader::ReadRecord(Slice* record, std::string* scratch) {
+     uint64_t physical_record_offset =
+         end_of_buffer_offset_ - buffer_.size() - kHeaderSize - fragment.size();
+ 
+-    if (resyncing_) {
+-      if (record_type == kMiddleType) {
+-        continue;
+-      } else if (record_type == kLastType) {
+-        resyncing_ = false;
+-        continue;
+-      } else {
+-        resyncing_ = false;
+-      }
+-    }
+-
+     switch (record_type) {
+       case kFullType:
+         if (in_fragmented_record) {
+@@ -185,8 +142,7 @@ void Reader::ReportCorruption(uint64_t bytes, const char* reason) {
+ }
+ 
+ void Reader::ReportDrop(uint64_t bytes, const Status& reason) {
+-  if (reporter_ != NULL &&
+-      end_of_buffer_offset_ - buffer_.size() - bytes >= initial_offset_) {
++  if (reporter_ && end_of_buffer_offset_ - buffer_.size() - bytes >= 0) {
+     reporter_->Corruption(static_cast<size_t>(bytes), reason);
+   }
+ }
+@@ -263,9 +219,8 @@ unsigned int Reader::ReadPhysicalRecord(Slice* result) {
+ 
+     buffer_.remove_prefix(kHeaderSize + length);
+ 
+-    // Skip physical record that started before initial_offset_
+-    if (end_of_buffer_offset_ - buffer_.size() - kHeaderSize - length <
+-        initial_offset_) {
++    // Skip physical record that started before 0
++    if (end_of_buffer_offset_ - buffer_.size() - kHeaderSize - length < 0) {
+       result->clear();
+       return kBadRecord;
+     }
+diff --git a/db/log_reader.h b/db/log_reader.h
+index 8389d61..51f7244 100644
+--- a/db/log_reader.h
++++ b/db/log_reader.h
+@@ -37,11 +37,7 @@ class Reader {
+   // live while this Reader is in use.
+   //
+   // If "checksum" is true, verify checksums if available.
+-  //
+-  // The Reader will start reading at the first record located at physical
+-  // position >= initial_offset within the file.
+-  Reader(SequentialFile* file, Reporter* reporter, bool checksum,
+-         uint64_t initial_offset);
++  Reader(SequentialFile* file, Reporter* reporter, bool checksum);
+ 
+   ~Reader();
+ 
+@@ -70,14 +66,6 @@ class Reader {
+   // Offset of the first location past the end of buffer_.
+   uint64_t end_of_buffer_offset_;
+ 
+-  // Offset at which to start looking for the first record to return
+-  uint64_t const initial_offset_;
+-
+-  // True if we are resynchronizing after a seek (initial_offset_ > 0). In
+-  // particular, a run of kMiddleType and kLastType records can be silently
+-  // skipped in this mode
+-  bool resyncing_;
+-
+   // Extend record types with the following special values
+   enum {
+     kEof = kMaxRecordType + 1,
+diff --git a/db/repair.cc b/db/repair.cc
+index c10da82..9afaf0b 100644
+--- a/db/repair.cc
++++ b/db/repair.cc
+@@ -190,8 +190,7 @@ class Repairer {
+     // corruptions cause entire commits to be skipped instead of
+     // propagating bad information (like overly large sequence
+     // numbers).
+-    log::Reader reader(lfile, &reporter, false/*do not checksum*/,
+-                       0/*initial_offset*/);
++    log::Reader reader(lfile, &reporter, false/*do not checksum*/);
+ 
+     // Read all the records and add to a memtable
+     std::string scratch;
+diff --git a/db/table_cache.h b/db/table_cache.h
+index e9191dc..cfa81cf 100644
+--- a/db/table_cache.h
++++ b/db/table_cache.h
+@@ -47,6 +47,8 @@ class TableCache {
+   // Evict any entry for the specified file number
+   void Evict(uint64_t file_number);
+ 
++  size_t TotalCharge() const { return cache_->TotalCharge(); }
++
+  private:
+   Env* const env_;
+   const std::string dbname_;
+diff --git a/db/version_set.cc b/db/version_set.cc
+index 7022b27..15c356d 100644
+--- a/db/version_set.cc
++++ b/db/version_set.cc
+@@ -945,7 +945,7 @@ Status VersionSet::Recover(bool *save_manifest) {
+   {
+     LogReporter reporter;
+     reporter.status = &s;
+-    log::Reader reader(file, &reporter, true/*checksum*/, 0/*initial_offset*/);
++    log::Reader reader(file, &reporter, true/*checksum*/);
+     Slice record;
+     std::string scratch;
+     while (reader.ReadRecord(&record, &scratch) && s.ok()) {
 diff --git a/db/write_batch.cc b/db/write_batch.cc
-index 7f8f3e8..02714d9 100644
+index 7f8f3e8..7c63640 100644
 --- a/db/write_batch.cc
 +++ b/db/write_batch.cc
 @@ -26,25 +26,28 @@ namespace leveldb {
@@ -1379,8 +1643,9 @@ index 7f8f3e8..02714d9 100644
  
  void WriteBatchInternal::Append(WriteBatch* dst, const WriteBatch* src) {
    SetCount(dst, Count(dst) + Count(src));
-   assert(src->rep_.size() >= kHeader);
+-  assert(src->rep_.size() >= kHeader);
 -  dst->rep_.append(src->rep_.data() + kHeader, src->rep_.size() - kHeader);
++  assert(src->size_ >= kHeader);
 +  Append(dst, src->buf_ + kHeader, src->size_ - kHeader);
  }
  
@@ -1476,11 +1741,32 @@ index 0000000..8aae3d3
 +f:close()
 +
 +print "done!"
+diff --git a/include/leveldb/table.h b/include/leveldb/table.h
+index 2f54c4e..0640ad4 100644
+--- a/include/leveldb/table.h
++++ b/include/leveldb/table.h
+@@ -56,6 +56,8 @@ class LEVELDB_EXPORT Table {
+   // be close to the file length.
+   uint64_t ApproximateOffsetOf(const Slice& key) const;
+ 
++  static size_t GetTableMemory();
++
+  private:
+   struct Rep;
+   Rep* rep_;
 diff --git a/include/leveldb/write_batch.h b/include/leveldb/write_batch.h
-index 40ceb03..08cf1c8 100644
+index 40ceb03..e116214 100644
 --- a/include/leveldb/write_batch.h
 +++ b/include/leveldb/write_batch.h
-@@ -61,7 +61,8 @@ class LEVELDB_EXPORT WriteBatch {
+@@ -21,7 +21,6 @@
+ #ifndef STORAGE_LEVELDB_INCLUDE_WRITE_BATCH_H_
+ #define STORAGE_LEVELDB_INCLUDE_WRITE_BATCH_H_
+ 
+-#include <string>
+ #include "leveldb/export.h"
+ #include "leveldb/status.h"
+ 
+@@ -61,7 +60,8 @@ class LEVELDB_EXPORT WriteBatch {
   private:
    friend class WriteBatchInternal;
  
@@ -9117,6 +9403,71 @@ index 0000000..4568db8
 +}  // end namespace snappy
 +
 +#endif  // THIRD_PARTY_SNAPPY_SNAPPY_H__
+diff --git a/table/table.cc b/table/table.cc
+index ff73cee..55517d4 100644
+--- a/table/table.cc
++++ b/table/table.cc
+@@ -14,14 +14,29 @@
+ #include "table/format.h"
+ #include "table/two_level_iterator.h"
+ #include "util/coding.h"
++#include "util/mutexlock.h"
+ 
+ namespace leveldb {
+ 
++static size_t table_memory = 0;
++static port::Mutex table_memory_mutex;
++
++static void ChangeTableMemory(size_t delta) {
++    MutexLock l(&table_memory_mutex);
++    table_memory += delta;
++}
++
++size_t Table::GetTableMemory() {
++    MutexLock l(&table_memory_mutex);
++    return table_memory;
++}
++
+ struct Table::Rep {
+   ~Rep() {
+     delete filter;
+     delete [] filter_data;
+     delete index_block;
++    ChangeTableMemory(-heap_size);
+   }
+ 
+   Options options;
+@@ -30,6 +45,7 @@ struct Table::Rep {
+   uint64_t cache_id;
+   FilterBlockReader* filter;
+   const char* filter_data;
++  size_t heap_size;
+ 
+   BlockHandle metaindex_handle;  // Handle to metaindex_block: saved from footer
+   Block* index_block;
+@@ -76,8 +92,14 @@ Status Table::Open(const Options& options,
+     rep->cache_id = (options.block_cache ? options.block_cache->NewId() : 0);
+     rep->filter_data = NULL;
+     rep->filter = NULL;
++    rep->heap_size = 0;
+     *table = new Table(rep);
+     (*table)->ReadMeta(footer);
++
++    if (index_block_contents.heap_allocated) {
++        rep->heap_size += index_block_contents.data.size();
++    }
++    ChangeTableMemory(rep->heap_size);
+   }
+ 
+   return s;
+@@ -131,6 +153,7 @@ void Table::ReadFilter(const Slice& filter_handle_value) {
+   }
+   if (block.heap_allocated) {
+     rep_->filter_data = block.data.data();     // Will need to delete later
++    rep_->heap_size += block.data.size();
+   }
+   rep_->filter = new FilterBlockReader(rep_->options.filter_policy, block.data);
+ }
 diff --git a/util/env_windows.cc b/util/env_windows.cc
 new file mode 100644
 index 0000000..b296991
@@ -9582,10 +9933,10 @@ index 0000000..b296991
 +#endif
 diff --git a/util/jni.cc b/util/jni.cc
 new file mode 100644
-index 0000000..e3f4f06
+index 0000000..3ebf0a9
 --- /dev/null
 +++ b/util/jni.cc
-@@ -0,0 +1,554 @@
+@@ -0,0 +1,551 @@
 +// Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file. See the AUTHORS file for names of contributors.
@@ -9626,10 +9977,7 @@ index 0000000..e3f4f06
 +
 +using namespace leveldb;
 +
-+static const jint	WRITE_BUFSIZE_MIN	= 1 << 20;
-+static const jint	OPEN_FILES_MIN		= 1000;
 +static const jint	CACHE_SIZE_MIN		= 1 << 20;
-+static const jint	FILE_SIZE_MIN		= 1 << 20;
 +static const int	BLOOM_FILTER_BITS	= 10;
 +static const size_t	FILE_BUF_SIZE		= 1 << 16;
 +
@@ -9674,7 +10022,7 @@ index 0000000..e3f4f06
 +	jenv->ReleaseStringUTFChars(path, pathptr);
 +	Options opt;
 +	opt.create_if_missing = true;
-+	if(write_bufsize > 0) opt.write_buffer_size = (write_bufsize > WRITE_BUFSIZE_MIN ? write_bufsize : WRITE_BUFSIZE_MIN);
++	if(write_bufsize > 0) opt.write_buffer_size = write_bufsize;
 +	if(cache_size > 0) opt.block_cache = NewLRUCache(cache_size > CACHE_SIZE_MIN ? cache_size : CACHE_SIZE_MIN);
 +	opt.compression = (use_snappy ? kSnappyCompression : kNoCompression);
 +	opt.filter_policy = (g_fp ? g_fp : (g_fp = NewBloomFilterPolicy(BLOOM_FILTER_BITS)));
@@ -9696,9 +10044,9 @@ index 0000000..e3f4f06
 +	jenv->ReleaseStringUTFChars(path, pathptr);
 +	Options opt;
 +	opt.create_if_missing = true;
-+	if(write_bufsize > 0) opt.write_buffer_size = (write_bufsize > WRITE_BUFSIZE_MIN ? write_bufsize : WRITE_BUFSIZE_MIN);
++	if(write_bufsize > 0) opt.write_buffer_size = write_bufsize;
 +	if(cache_size > 0) opt.block_cache = NewLRUCache(cache_size > CACHE_SIZE_MIN ? cache_size : CACHE_SIZE_MIN);
-+	if(file_size > 0) opt.max_file_size = (file_size > FILE_SIZE_MIN ? file_size : FILE_SIZE_MIN);
++	if(file_size > 0) opt.max_file_size = file_size;
 +	opt.compression = (use_snappy ? kSnappyCompression : kNoCompression);
 +	opt.filter_policy = (g_fp ? g_fp : (g_fp = NewBloomFilterPolicy(BLOOM_FILTER_BITS)));
 +	g_ro_nocached.fill_cache = false;
@@ -9719,10 +10067,10 @@ index 0000000..e3f4f06
 +	jenv->ReleaseStringUTFChars(path, pathptr);
 +	Options opt;
 +	opt.create_if_missing = true;
-+	if(write_bufsize > 0) opt.write_buffer_size = (write_bufsize > WRITE_BUFSIZE_MIN ? write_bufsize : WRITE_BUFSIZE_MIN);
-+	if(max_open_files > 0) opt.max_open_files = (max_open_files > OPEN_FILES_MIN ? max_open_files : OPEN_FILES_MIN);
++	if(write_bufsize > 0) opt.write_buffer_size = write_bufsize;
++	if(max_open_files > 0) opt.max_open_files = max_open_files;
 +	if(cache_size > 0) opt.block_cache = NewLRUCache(cache_size > CACHE_SIZE_MIN ? cache_size : CACHE_SIZE_MIN);
-+	if(file_size > 0) opt.max_file_size = (file_size > FILE_SIZE_MIN ? file_size : FILE_SIZE_MIN);
++	if(file_size > 0) opt.max_file_size = file_size;
 +	opt.compression = (use_snappy ? kSnappyCompression : kNoCompression);
 +	opt.reuse_logs = reuse_logs;
 +	opt.filter_policy = (g_fp ? g_fp : (g_fp = NewBloomFilterPolicy(BLOOM_FILTER_BITS)));

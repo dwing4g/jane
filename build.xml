@@ -58,6 +58,8 @@
 				<exclude name="**/jane/bean/**"/>
 				<exclude name="**/jane/handler/**"/>
 				<exclude name="**/jane/test/**"/>
+				<exclude name="logback.xml"/>
+				<exclude name="jane.properties"/>
 			</fileset>
 			<fileset dir="${lib}/mina/"/>
 		</jar>
@@ -76,6 +78,10 @@
 				<attribute name="Created-Time" value="${time}"/>
 				<attribute name="Main-Class" value="jane.test.TestMain"/>
 			</manifest>
+			<fileset dir="${src}">
+				<include name="logback.xml"/>
+				<include name="jane.properties"/>
+			</fileset>
 		</jar>
 		<jar jarfile="${root}/jane-test-all.jar" basedir="${classes}" includes="**/jane/bean/**,**/jane/handler/**,**/jane/test/**" level="9">
 			<manifest>
@@ -91,7 +97,7 @@
 				<include name="*.so"/>
 				<include name="*.dylib"/>
 			</fileset>
-			<fileset dir="${root}">
+			<fileset dir="${src}">
 				<include name="logback.xml"/>
 				<include name="jane.properties"/>
 			</fileset>

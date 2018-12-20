@@ -297,9 +297,9 @@ public final class SContext
 	}
 
 	@SuppressWarnings("unchecked")
-	static <V, S> S safe(Safe<?> _owner, V v)
+	static <V, S> S safe(Safe<?> owner, V v)
 	{
-		return (S)(v instanceof Bean ? ((Bean<?>)v).safe(_owner) : v);
+		return (S)(v instanceof Bean ? ((Bean<?>)v).safe(owner) : v);
 	}
 
 	@SuppressWarnings("unchecked")

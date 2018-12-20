@@ -168,10 +168,13 @@ public class StatusServer extends NetManager
 
 	public static void genLevelDBInfo(StringBuilder sb)
 	{
-		sb.append("<p><b>LevelDB stats</b> (memory: ").append(StorageLevelDB.instance().getProperty("leveldb.approximate-memory-usage")).append(")<br><pre>");
-		sb.append(StorageLevelDB.instance().getProperty("leveldb.stats")).append("</pre>\n");
+		@SuppressWarnings("resource")
+		StorageLevelDB sto = StorageLevelDB.instance();
+		sb.append("<p><b>LevelDB stats</b> (").append(sto.getProperty("leveldb.approximate-memory-usage")).append("B: ");
+		sb.append(sto.getProperty("leveldb.approximate-memory-usages")).append(")<br><pre>");
+		sb.append(sto.getProperty("leveldb.stats")).append("</pre>\n");
 		// sb.append("<b>sstables</b><br><pre>");
-		// sb.append(StorageLevelDB.instance().getProperty("leveldb.sstables")).append("</pre>\n");
+		// sb.append(sto.getProperty("leveldb.sstables")).append("</pre>\n");
 	}
 
 	@Override
