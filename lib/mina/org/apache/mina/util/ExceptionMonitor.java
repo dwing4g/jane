@@ -39,7 +39,7 @@ public class ExceptionMonitor {
 	/**
 	 * @return the current exception monitor.
 	 */
-	public static ExceptionMonitor getInstance() {
+	public static ExceptionMonitor getInstance() { //NOSONAR
 		ExceptionMonitor monitor = instance;
 		if (monitor == null) {
 			synchronized(ExceptionMonitor.class) {

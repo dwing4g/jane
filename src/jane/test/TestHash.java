@@ -25,6 +25,6 @@ public final class TestHash
 				++cur;
 		}
 
-		System.out.println(cur + " / " + all + " = " + (cur * 100 / all) + '%');
+		System.out.println(cur + " / " + all + " = " + (cur * 100 / all) + '%'); //NOSONAR
 	}
 }

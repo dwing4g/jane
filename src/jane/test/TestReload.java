@@ -8,13 +8,13 @@ import jane.tool.ClassReloader;
 // java -javaagent:jane-core.jar -cp bin jane.test.TestReload
 public final class TestReload
 {
-	private final int a = 123;
+	private final int a = 123; //NOSONAR
 
 	public void test()
 	{
 		System.out.println("func-1");
 
-		new Runnable()
+		new Runnable() //NOSONAR
 		{
 			@Override
 			public void run()

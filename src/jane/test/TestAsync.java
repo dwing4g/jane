@@ -29,7 +29,7 @@ public class TestAsync
 			}
 		});
 
-		for(;;)
+		for(;;) //NOSONAR
 		{
 			if(AsyncManager.get().tick() == 0)
 				Thread.sleep(10);

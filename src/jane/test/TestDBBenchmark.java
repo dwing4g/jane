@@ -26,7 +26,7 @@ public final class TestDBBenchmark
 		Log.info("begin: key: {}/{}, count: {}*{}", keyWinCount, keyAllCount, countIn, countOut);
 		DBManager.instance().startup();
 		AllTables.register();
-		System.gc();
+		System.gc(); //NOSONAR
 		System.runFinalization();
 		Log.info("start");
 
@@ -50,7 +50,7 @@ public final class TestDBBenchmark
 
 				for(int j = 0; j < countIn; ++j)
 				{
-					final long id = keyFrom + Util.getRand().nextInt(keyWinCount);
+					final long id = (long)keyFrom + Util.getRand().nextInt(keyWinCount);
 					final long t0 = System.currentTimeMillis();
 					new Procedure()
 					{
@@ -83,7 +83,7 @@ public final class TestDBBenchmark
 				{
 					long rc = Benchmark.getReadCount();
 					long rtc = Benchmark.getReadStoCount();
-					Log.info("{}ms checked={}/{} {}%", System.currentTimeMillis() - t, checked.get(), logCount * countIn, (rc - rtc) * 10000 / rc * 0.01);
+					Log.info("{}ms checked={}/{} {}%", System.currentTimeMillis() - t, checked.get(), logCount * countIn, (rc - rtc) * 100.0 / rc);
 					t = System.currentTimeMillis();
 					checked.set(0);
 				}

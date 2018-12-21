@@ -90,7 +90,7 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 
 		// accept the connection from the client
 		try {
-			SocketChannel ch = (channel != null ? channel.accept() : null);
+			SocketChannel ch = (channel != null ? channel.accept() : null); //NOSONAR
 
 			return ch != null ? new NioSession(this, processor, ch) : null;
 		} catch (Throwable t) {
@@ -118,7 +118,7 @@ public final class NioSocketAcceptor extends AbstractPollingIoAcceptor {
 	@Override
 	protected ServerSocketChannel open(SocketAddress localAddress) throws IOException {
 		// Creates the listening ServerSocket
-		ServerSocketChannel channel = ServerSocketChannel.open();
+		ServerSocketChannel channel = ServerSocketChannel.open(); //NOSONAR
 
 		try {
 			channel.configureBlocking(false);

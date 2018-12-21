@@ -86,7 +86,7 @@ public final class TestEchoAio extends TcpManager
 		// System.gc();
 		long time = System.currentTimeMillis();
 		@SuppressWarnings("resource")
-		TestEchoAio mgr = new TestEchoAio();
+		TestEchoAio mgr = new TestEchoAio(); //NOSONAR
 		mgr.startServer(new InetSocketAddress("0.0.0.0", 9123));
 		for(int i = 0; i < TEST_CLIENT_COUNT; ++i)
 			mgr.startClient(new InetSocketAddress("127.0.0.1", 9123));

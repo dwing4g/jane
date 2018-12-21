@@ -72,7 +72,7 @@ public final class TestHttpServer extends NetManager
 			try
 			{
 				param.add("Content-Type: application/octet-stream");
-				final FileInputStream fis = new FileInputStream('.' + path);
+				final FileInputStream fis = new FileInputStream('.' + path); //NOSONAR
 				final FileChannel fc = fis.getChannel();
 				FileRegion fr = new DefaultFileRegion(fc);
 				HttpCodec.sendHead(session, "200 OK", fr.getRemainingBytes(), param);

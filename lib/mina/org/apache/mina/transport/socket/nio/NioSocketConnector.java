@@ -114,7 +114,7 @@ public final class NioSocketConnector extends AbstractPollingIoConnector {
 	@Override
 	protected SocketChannel newHandle(SocketAddress localAddress) throws IOException {
 		@SuppressWarnings("resource")
-		SocketChannel ch = SocketChannel.open();
+		SocketChannel ch = SocketChannel.open(); //NOSONAR
 
 		int receiveBufferSize = getSessionConfig().getReceiveBufferSize();
 

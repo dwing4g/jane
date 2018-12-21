@@ -8,8 +8,6 @@ import jane.core.DBManager;
 import jane.core.Octets;
 import jane.core.ProcThread;
 import jane.core.Procedure;
-import jane.core.SContext.Rec;
-import jane.core.SMap.SMapListener;
 import jane.bean.AllTables;
 import jane.bean.TestBean;
 import jane.bean.TestType;
@@ -90,16 +88,12 @@ public final class TestUndo
 				}
 			}.run();
 
-			TestType.Safe.onListenV18(new SMapListener<Octets, TestBean>()
+			TestType.Safe.onListenV18((rec, changed) ->
 			{
-				@Override
-				public void onChanged(Rec rec, Map<Octets, TestBean> changed)
-				{
-					System.out.println("changed key: " + rec.getKey());
-					System.out.println("changed value:");
-					for(Entry<?, ?> e : changed.entrySet())
-						System.out.println(((Octets)e.getKey()).dump() + ": " + e.getValue());
-				}
+				System.out.println("changed key: " + rec.getKey());
+				System.out.println("changed value:");
+				for(Entry<?, ?> e : changed.entrySet())
+					System.out.println(((Octets)e.getKey()).dump() + ": " + e.getValue());
 			});
 
 			new Procedure()

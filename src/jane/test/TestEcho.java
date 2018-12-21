@@ -94,7 +94,7 @@ public final class TestEcho extends NetManager
 		}
 	};
 
-	public static final TestPerf[] perf = new TestPerf[20];
+	private static final TestPerf[] perf = new TestPerf[20];
 
 	static
 	{

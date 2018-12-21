@@ -126,7 +126,7 @@ public final class NioProcessor extends AbstractPollingIoProcessor<NioSession> {
 	@Override
 	protected void registerNewSelector() throws IOException {
 		// Open a new selector
-		Selector newSelector = Selector.open();
+		Selector newSelector = Selector.open(); //NOSONAR
 
 		// Loop on all the registered keys, and register them on the new selector
 		for (SelectionKey key : selector.keys()) {

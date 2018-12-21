@@ -173,7 +173,7 @@ public abstract class AbstractIoService implements IoService {
 	 * @return A Map of the managed {@link IoSession}s
 	 */
 	@Override
-	public final Map<Long, IoSession> getManagedSessions() {
+	public final Map<Long, IoSession> getManagedSessions() { //NOSONAR
 		return readOnlyManagedSessions;
 	}
 

@@ -533,7 +533,7 @@ public final class SslHandler {
 
 				createOutNetBuffer(0);
 
-				for (;;) {
+				for (;;) { //NOSONAR
 					SSLEngineResult result = sslEngine.wrap(SimpleBufferAllocator.emptyBuffer.buf(), outNetBuffer.buf());
 					if (result.getStatus() != Status.BUFFER_OVERFLOW) {
 						handshakeStatus = result.getHandshakeStatus();

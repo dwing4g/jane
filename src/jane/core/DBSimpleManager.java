@@ -49,8 +49,8 @@ public final class DBSimpleManager
 	private final class CommitThread extends Thread
 	{
 		private final SimpleDateFormat _sdf			 = new SimpleDateFormat("yy-MM-dd-HH-mm-ss");  // 备份文件后缀名的时间格式
-		private final long			   _commitPeriod = Const.dbCommitPeriod * 1000;				   // 提交数据库的周期
-		private final long			   _backupPeriod = Const.dbBackupPeriod * 1000;				   // 备份数据库的周期
+		private final long			   _commitPeriod = Const.dbCommitPeriod * 1000;				   // 提交数据库的周期 //NOSONAR
+		private final long			   _backupPeriod = Const.dbBackupPeriod * 1000;				   // 备份数据库的周期 //NOSONAR
 		private volatile long		   _commitTime	 = System.currentTimeMillis() + _commitPeriod; // 下次提交数据库的时间
 		private volatile long		   _backupTime	 = Long.MAX_VALUE;							   // 下次备份数据库的时间(默认不备份)
 
@@ -380,7 +380,7 @@ public final class DBSimpleManager
 		}
 		catch(Exception e)
 		{
-			Log.error("get record exception: tableId=" + tableId + ", key=" + key + ", type=" + beanStub.typeName(), e);
+			Log.error(e, "get record exception: tableId={}, key={}, type={}", tableId, key, beanStub.typeName());
 			return null;
 		}
 	}
@@ -393,7 +393,7 @@ public final class DBSimpleManager
 		}
 		catch(Exception e)
 		{
-			Log.error("get record exception: tableId=" + tableId + ", key=" + key.dump() + ", type=" + beanStub.typeName(), e);
+			Log.error(e, "get record exception: tableId={}, key={}, type={}", tableId, key.dump(), beanStub.typeName());
 			return null;
 		}
 	}
@@ -406,7 +406,7 @@ public final class DBSimpleManager
 		}
 		catch(Exception e)
 		{
-			Log.error("get record exception: tableId=" + tableId + ", key='" + key + "', type=" + beanStub.typeName(), e);
+			Log.error(e, "get record exception: tableId={}, key=\"{}\", type={}", tableId, key, beanStub.typeName());
 			return null;
 		}
 	}

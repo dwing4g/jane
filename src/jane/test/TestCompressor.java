@@ -142,7 +142,7 @@ public final class TestCompressor
 		for(srcLen += srcPos - 2; srcPos < srcLen;)
 		{
 			a = b; b = src[srcPos + 1];
-			h = ((a << 8) ^ b) & 0xffff;
+			h = ((a << 8) ^ b) & 0xffff; //NOSONAR
 			p = _hash[h];
 			_hash[h] = srcPos;
 			f = srcPos - p;
@@ -187,15 +187,15 @@ public final class TestCompressor
 		_comPos = srcPos;
 		_bits = _cache = 0;
 		int n, f = 1, f2 = 2, f3 = 3, f4 = 4;
-		for(dstLen += dstPos; dstPos < dstLen;)
+		for(dstLen += dstPos; dstPos < dstLen;) //NOSONAR
 		{
 			     if(getbit() >= 0)  dst[dstPos++] = (byte)getbits(7);
 			else if(getbit() >= 0)  dst[dstPos++] = (byte)(getbits(7) + 0x80);
 			else{if(getbit() >= 0)
-			    {if(getbit() <  0)
+			    {if(getbit() <  0) //NOSONAR
 			     if(getbit() >= 0) {n = f2; f2=f;f=n;}
 			     else              {n = f3; f3=f2;f2=f;f=n;}}
-			else{if(getbit() >= 0)
+			else{if(getbit() >= 0) //NOSONAR
 			     if(getbit() >= 0)  n = f4;
 			     else               n = getbits(7) + 1;
 			else if(getbit() >= 0)  n = getbits(13) + 0x81;

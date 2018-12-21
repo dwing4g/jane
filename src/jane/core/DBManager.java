@@ -44,8 +44,8 @@ public final class DBManager
 	{
 		private final SimpleDateFormat _sdf			 = new SimpleDateFormat("yy-MM-dd-HH-mm-ss");  // 备份文件后缀名的时间格式
 		private final long[]		   _counts		 = new long[3];								   // 3个统计数量值,分别是统计前数量,统计后数量,处理过的数量
-		private final long			   _commitPeriod = Const.dbCommitPeriod * 1000;				   // 提交数据库的周期
-		private final long			   _backupPeriod = Const.dbBackupPeriod * 1000;				   // 备份数据库的周期
+		private final long			   _commitPeriod = Const.dbCommitPeriod * 1000;				   // 提交数据库的周期 //NOSONAR
+		private final long			   _backupPeriod = Const.dbBackupPeriod * 1000;				   // 备份数据库的周期 //NOSONAR
 		private volatile long		   _commitTime	 = System.currentTimeMillis() + _commitPeriod; // 下次提交数据库的时间
 		private volatile long		   _backupTime;												   // 下次备份数据库的时间
 
@@ -484,7 +484,7 @@ public final class DBManager
 	 * 一般在长时间间隔(如备份周期)的定时任务中调用
 	 * @param counts 输出回收前后的两个队列数量值
 	 */
-	private void collectQueue(long[] counts)
+	private void collectQueue(long[] counts) //NOSONAR
 	{
 		counts[0] = _qmap.size();
 		_qmap.forEach((sid, q) ->

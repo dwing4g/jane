@@ -271,7 +271,7 @@ public final class TestStress extends Procedure
 			DBManager.instance().submit(i, new TestStress(i));
 
 		long lastRemoveCount = 0;
-		for(;;)
+		for(;;) //NOSONAR
 		{
 			long curRemoveCount = CacheRef.getRefRemoveCount();
 			Log.info("TQ=" + dbm.getProcThreads().getQueue().size() +
