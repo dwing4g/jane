@@ -302,7 +302,6 @@ public abstract class Procedure implements Runnable
 		if(pt == null) throw new IllegalStateException("invalid lock/unlock out of procedure");
 		int lockCount = pt.lockCount;
 		if(lockCount == 0) return;
-		if(pt.sctx.hasDirty()) throw new IllegalStateException("invalid unlock after any dirty record");
 		IndexLock[] locks = pt.locks;
 		for(int i = lockCount - 1; i >= 0; --i)
 		{
@@ -316,6 +315,7 @@ public abstract class Procedure implements Runnable
 			}
 		}
 		pt.lockCount = 0;
+		if(pt.sctx.hasDirty()) throw new IllegalStateException("invalid unlock after any dirty record");
 	}
 
 	/**
@@ -832,9 +832,10 @@ public abstract class Procedure implements Runnable
 			}
 			return false;
 		}
-		finally
+		finally // 以下代码绝不能抛出异常
 		{
-			unlock();
+			if(_pt != null)
+				unlock();
 			synchronized(this)
 			{
 				_pt = null;
