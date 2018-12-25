@@ -518,14 +518,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	@Override
 	public final Map<K, V> clone()
 	{
-		try
-		{
-			return Util.appendDeep(_map, _map.getClass().newInstance());
-		}
-		catch(Exception e)
-		{
-			throw new Error(e);
-		}
+		return Util.appendDeep(_map, Util.newInstance(_map.getClass()));
 	}
 
 	@Override

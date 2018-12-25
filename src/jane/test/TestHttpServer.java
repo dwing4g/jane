@@ -7,8 +7,6 @@ import java.net.InetSocketAddress;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import org.apache.mina.core.file.DefaultFileRegion;
 import org.apache.mina.core.file.FileRegion;
@@ -53,16 +51,16 @@ public final class TestHttpServer extends NetManager
 		System.out.println("verb: " + HttpCodec.getHeadVerb(os));
 		String path = HttpCodec.getHeadPath(os);
 		System.out.println("path: " + path);
-		Map<String, String> params = new HashMap<>();
+		HashMap<String, String> params = new HashMap<>();
 		HttpCodec.getHeadParams(os, params);
 		for(Entry<String, String> e : params.entrySet())
 			System.out.println("param: " + e.getKey() + ": " + e.getValue());
 		System.out.println("charset: " + HttpCodec.getHeadCharset(os));
-		Map<String, String> cookies = new HashMap<>();
+		HashMap<String, String> cookies = new HashMap<>();
 		HttpCodec.getHeadCookie(os, cookies);
 		for(Entry<String, String> e : cookies.entrySet())
 			System.out.println("cookie: " + e.getKey() + ": " + e.getValue());
-		List<String> param = new ArrayList<>();
+		ArrayList<String> param = new ArrayList<>();
 		param.add("Server: jane");
 		param.add("Connection: keep-alive");
 		param.add("Cache-Control: no-cache");

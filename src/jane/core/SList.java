@@ -177,7 +177,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 	@Override
 	public boolean addAll(int idx, Collection<? extends S> c)
 	{
-		List<V> list = new ArrayList<>(c.size());
+		ArrayList<V> list = new ArrayList<>(c.size());
 		for(S s : c)
 			list.add(SContext.unsafe(s));
 		return addAllDirect(idx, list);
@@ -255,7 +255,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 	{
 		if(_list.isEmpty()) return;
 		SContext ctx = sContext();
-		List<V> saved = new ArrayList<>(_list);
+		ArrayList<V> saved = new ArrayList<>(_list);
 		_list.clear();
 		ctx.addOnRollback(() ->
 		{
@@ -448,25 +448,25 @@ public final class SList<V, S> implements List<S>, Cloneable
 		return true;
 	}
 
-	public SList<V, S> append(List<V> list)
+	public SList<V, S> append(Collection<V> list)
 	{
 		Util.appendDeep(list, _list);
 		return this;
 	}
 
-	public SList<V, S> assign(List<V> list)
+	public SList<V, S> assign(Collection<V> list)
 	{
 		clear();
 		Util.appendDeep(list, _list);
 		return this;
 	}
 
-	public void appendTo(List<V> list)
+	public void appendTo(Collection<V> list)
 	{
 		Util.appendDeep(_list, list);
 	}
 
-	public void cloneTo(List<V> list)
+	public void cloneTo(Collection<V> list)
 	{
 		list.clear();
 		Util.appendDeep(_list, list);
@@ -476,14 +476,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 	@Override
 	public List<V> clone()
 	{
-		try
-		{
-			return (List<V>)Util.appendDeep(_list, _list.getClass().newInstance());
-		}
-		catch(Exception e)
-		{
-			throw new Error(e);
-		}
+		return (List<V>)Util.appendDeep(_list, Util.newInstance(_list.getClass()));
 	}
 
 	@Override

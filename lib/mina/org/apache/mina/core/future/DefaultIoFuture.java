@@ -19,7 +19,6 @@
 package org.apache.mina.core.future;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.mina.core.polling.AbstractPollingIoProcessor;
 import org.apache.mina.core.service.IoProcessor;
@@ -42,7 +41,7 @@ public class DefaultIoFuture implements IoFuture {
 	private IoFutureListener<?> firstListener;
 
 	/** All the other listeners, in case we have more than one */
-	private List<IoFutureListener<?>> otherListeners;
+	private ArrayList<IoFutureListener<?>> otherListeners;
 
 	private Object result;
 
@@ -336,10 +335,9 @@ public class DefaultIoFuture implements IoFuture {
 			firstListener = null;
 
 			if (otherListeners != null) {
-				for (IoFutureListener<?> listener : otherListeners) {
-					notifyListener(listener);
+				for (int i = 0, n = otherListeners.size(); i < n; i++) {
+					notifyListener(otherListeners.get(i));
 				}
-
 				otherListeners = null;
 			}
 		}

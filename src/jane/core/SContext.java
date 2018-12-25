@@ -1,7 +1,6 @@
 package jane.core;
 
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  * 安全修改的上下文类
@@ -18,8 +17,8 @@ public final class SContext
 		protected SContext	  _sctx;
 		private Rec			  _rec;
 		private Runnable	  _onDirty;
-		protected boolean	  _fullUndo;
 		private boolean		  _dirty;
+		protected boolean	  _fullUndo;
 
 		protected Safe(B bean, Safe<?> parent)
 		{
@@ -285,11 +284,11 @@ public final class SContext
 		}
 	}
 
-	private final List<Record<?, ?, ?>>	 _records	  = new ArrayList<>();
-	private final List<RecordLong<?, ?>> _recordLongs = new ArrayList<>();
-	private final List<Runnable>		 _onRollbacks = new ArrayList<>();
-	private final List<Runnable>		 _onCommits	  = new ArrayList<>();
-	private boolean						 _hasDirty;
+	private final ArrayList<Record<?, ?, ?>>  _records	   = new ArrayList<>();
+	private final ArrayList<RecordLong<?, ?>> _recordLongs = new ArrayList<>();
+	private final ArrayList<Runnable>		  _onRollbacks = new ArrayList<>();
+	private final ArrayList<Runnable>		  _onCommits   = new ArrayList<>();
+	private boolean							  _hasDirty;
 
 	public static SContext current()
 	{
@@ -337,8 +336,9 @@ public final class SContext
 	@SuppressWarnings("unchecked")
 	<K, V extends Bean<V>, S extends Safe<V>> S getRecord(Table<K, V, S> table, K key)
 	{
-		for(Record<?, ?, ?> r : _records)
+		for(int i = 0, n = _records.size(); i < n; ++i)
 		{
+			Record<?, ?, ?> r = _records.get(i);
 			if(r.getKey().equals(key) && r.getTable() == table)
 				return (S)r.getValue();
 		}
@@ -348,8 +348,9 @@ public final class SContext
 	@SuppressWarnings("unchecked")
 	<V extends Bean<V>, S extends Safe<V>> S getRecord(TableLong<V, S> table, long key)
 	{
-		for(RecordLong<?, ?> r : _recordLongs)
+		for(int i = 0, n = _recordLongs.size(); i < n; ++i)
 		{
+			RecordLong<?, ?> r = _recordLongs.get(i);
 			if(r.getKeyLong() == key && r.getTable() == table)
 				return (S)r.getValue();
 		}
@@ -359,14 +360,14 @@ public final class SContext
 	public boolean hasDirty()
 	{
 		if(_hasDirty) return true;
-		for(Record<?, ?, ?> r : _records)
+		for(int i = 0, n = _records.size(); i < n; ++i)
 		{
-			if(r._value.isDirty())
+			if(_records.get(i)._value.isDirty())
 				return true;
 		}
-		for(RecordLong<?, ?> r : _recordLongs)
+		for(int i = 0, n = _recordLongs.size(); i < n; ++i)
 		{
-			if(r._value.isDirty())
+			if(_recordLongs.get(i)._value.isDirty())
 				return true;
 		}
 		return false;
@@ -392,32 +393,53 @@ public final class SContext
 	{
 		_onRollbacks.clear();
 
-		for(Record<?, ?, ?> r : _records)
+		int n = _records.size();
+		if(n > 0)
 		{
-			if(r._value.isDirtyAndClear())
-				r._table.modify(r._key, r._value.unsafe());
-		}
-		_records.clear();
-
-		for(RecordLong<?, ?> r : _recordLongs)
-		{
-			if(r._value.isDirtyAndClear())
-				r._table.modify(r._key, r._value.unsafe());
-		}
-		_recordLongs.clear();
-
-		for(Runnable r : _onCommits)
-		{
-			try
+			int i = 0;
+			do
 			{
-				r.run();
+				Record<?, ?, ?> r = _records.get(i);
+				if(r._value.isDirtyAndClear())
+					r._table.modify(r._key, r._value.unsafe());
 			}
-			catch(Throwable e)
-			{
-				Log.error("onCommit exception:", e);
-			}
+			while(++i < n);
+			_records.clear();
 		}
-		_onCommits.clear();
+
+		n = _recordLongs.size();
+		if(n > 0)
+		{
+			int i = 0;
+			do
+			{
+				RecordLong<?, ?> r = _recordLongs.get(i);
+				if(r._value.isDirtyAndClear())
+					r._table.modify(r._key, r._value.unsafe());
+			}
+			while(++i < n);
+			_recordLongs.clear();
+		}
+
+		n = _onCommits.size();
+		if(n > 0)
+		{
+			int i = 0;
+			do
+			{
+				try
+				{
+					_onCommits.get(i).run();
+				}
+				catch(Throwable e)
+				{
+					Log.error("onCommit exception:", e);
+				}
+			}
+			while(++i < n);
+			_onCommits.clear();
+		}
+
 		_hasDirty = false;
 	}
 

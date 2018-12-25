@@ -24,7 +24,7 @@ public final class FastRWLock extends AtomicLong
 	{
 		for(;;)
 		{
-			long s = get();
+			final long s = get();
 			if(s < 0) return false;
 			if(compareAndSet(s, s + 1)) return true;
 		}
@@ -34,7 +34,7 @@ public final class FastRWLock extends AtomicLong
 	{
 		for(;;)
 		{
-			long c = get();
+			final long c = get();
 			if(c < 0)
 				wait1();
 			else if(compareAndSet(c, c + 1)) return;
@@ -50,7 +50,7 @@ public final class FastRWLock extends AtomicLong
 	{
 		for(;;)
 		{
-			long s = get();
+			final long s = get();
 			if(s == 0) return;
 			if(s == WRITE_WAIT_FLAG)
 			{
@@ -65,7 +65,7 @@ public final class FastRWLock extends AtomicLong
 	{
 		for(;;)
 		{
-			long s = get();
+			final long s = get();
 			if((s & LOCK_MASK) == 0) // 如果没有读标记和写独占
 			{
 				if(compareAndSet(s, WRITE_LOCK_FLAG)) return; // 加写独占标记,阻止其它读写操作

@@ -8,7 +8,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -36,6 +36,18 @@ public final class Util
 	public static ThreadLocalRandom getRand()
 	{
 		return ThreadLocalRandom.current();
+	}
+
+	public static <T> T newInstance(Class<T> cls)
+	{
+		try
+		{
+			return cls.newInstance();
+		}
+		catch(Exception e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 
 	/**
@@ -262,7 +274,7 @@ public final class Util
 	 * @param dstFile 目标文件(所在目录会自动创建)
 	 * @return 返回复制的字节数量
 	 */
-	public static long copyFile(FileChannel srcFc, File dstFile) throws IOException
+	public static long copyFile(ReadableByteChannel srcChan, File dstFile) throws IOException
 	{
 		File dstParent = dstFile.getParentFile();
 		if(dstParent != null && !dstParent.exists())
@@ -271,7 +283,7 @@ public final class Util
 		try(FileOutputStream fos = new FileOutputStream(dstFile))
 		{
 			ByteBuffer bb = ByteBuffer.allocate(32768);
-			for(int n; (n = srcFc.read(bb)) != -1;)
+			for(int n; (n = srcChan.read(bb)) != -1;)
 			{
 				bb.flip();
 				fos.write(bb.array(), 0, bb.limit());

@@ -139,24 +139,27 @@ public class StatusServer extends NetManager
 		ArrayList<Object> list = genStatusList();
 		sb.append("<table border=1 style=border-collapse:collapse><tr bgcolor=silver><td><b>Table</b><td><b>RCacheSize</b><td><b>WCacheSize</b>" +
 				"<td><b>RCount</b><td><b>RCacheMissCount</b><td><b>RCacheRatio</b><td><b>AverageSize</b>\n");
-		for(Object obj : list)
+		int n = list.size();
+		for(int i = 0; i < n; ++i)
 		{
+			Object obj = list.get(i);
 			if(obj instanceof ArrayList)
 			{
 				ArrayList<Object> objs = (ArrayList<Object>)obj;
-				int n = objs.size();
-				if(n > 0)
+				int m = objs.size();
+				if(m > 0)
 				{
 					sb.append("<tr><td bgcolor=silver>").append(objs.get(0));
-					for(int i = 1; i < n; ++i)
-						sb.append("<td align=right>").append(objs.get(i));
+					for(int j = 1; j < m; ++j)
+						sb.append("<td align=right>").append(objs.get(j));
 					sb.append('\n');
 				}
 			}
 		}
 		sb.append("</table>\n<p>\n<table border=1 style=border-collapse:collapse>\n");
-		for(Object obj : list)
+		for(int i = 0; i < n; ++i)
 		{
+			Object obj = list.get(i);
 			if(obj instanceof Entry)
 			{
 				Entry<String, Object> e = (Entry<String, Object>)obj;

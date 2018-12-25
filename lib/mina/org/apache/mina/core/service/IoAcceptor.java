@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -84,7 +84,7 @@ public interface IoAcceptor extends IoService {
 	 * @param localAddresses The local address we will be bound to
 	 * @throws IOException if failed to bind
 	 */
-	void bind(List<? extends SocketAddress> localAddresses) throws IOException;
+	void bind(Collection<? extends SocketAddress> localAddresses) throws IOException;
 
 	/**
 	 * Unbinds from all local addresses that this service is bound to and stops to accept incoming connections.
@@ -109,5 +109,5 @@ public interface IoAcceptor extends IoService {
 	 *
 	 * @param localAddresses The local address we will be unbound from
 	 */
-	void unbind(List<? extends SocketAddress> localAddresses);
+	void unbind(Collection<? extends SocketAddress> localAddresses);
 }

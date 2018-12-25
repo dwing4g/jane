@@ -12,8 +12,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.zip.ZipEntry;
@@ -38,7 +36,7 @@ public final class XlsxExport
 	 * @param sheetId 指定输入xlsx文件中的页ID
 	 * @return 一定不会返回null
 	 */
-	public static Map<Integer, List<Entry<Integer, String>>> xlsx2Maps(InputStream isXlsx, int sheetId) throws Exception
+	public static TreeMap<Integer, ArrayList<Entry<Integer, String>>> xlsx2Maps(InputStream isXlsx, int sheetId) throws Exception
 	{
 		Octets xmlStr = null, xmlSheet = null;
 		String fileSheet = "xl/worksheets/sheet" + sheetId + ".xml";
@@ -91,7 +89,7 @@ public final class XlsxExport
 			}
 		}
 
-		Map<Integer, List<Entry<Integer, String>>> res = new TreeMap<>();
+		TreeMap<Integer, ArrayList<Entry<Integer, String>>> res = new TreeMap<>();
 		xmlReader = xmlFactory.createXMLStreamReader(new ByteArrayInputStream(xmlSheet.array(), 0, xmlSheet.size()));
 		while(xmlReader.hasNext()) // <c r="A1" s="1" t="s/b"><v>0</v></c>
 		{
@@ -143,7 +141,7 @@ public final class XlsxExport
 							x += (a - 'A') * 26 + 27;
 							y = Integer.parseInt(r.substring(2));
 						}
-						List<Entry<Integer, String>> list = res.get(y);
+						ArrayList<Entry<Integer, String>> list = res.get(y);
 						if(list == null) res.put(y, list = new ArrayList<>());
 						list.add(new SimpleEntry<>(x, v));
 					}
@@ -155,7 +153,7 @@ public final class XlsxExport
 		return res;
 	}
 
-	public static Map<Integer, List<Entry<Integer, String>>> xlsx2Maps(String filename, int sheetId) throws Exception
+	public static TreeMap<Integer, ArrayList<Entry<Integer, String>>> xlsx2Maps(String filename, int sheetId) throws Exception
 	{
 		try(InputStream is = new FileInputStream(filename))
 		{
@@ -174,7 +172,7 @@ public final class XlsxExport
 	public static void xlsx2Txt(InputStream isXlsx, int sheetId, OutputStream outTxt) throws Exception
 	{
 		Charset cs = StandardCharsets.UTF_8;
-		for(Entry<Integer, List<Entry<Integer, String>>> e : xlsx2Maps(isXlsx, sheetId).entrySet())
+		for(Entry<Integer, ArrayList<Entry<Integer, String>>> e : xlsx2Maps(isXlsx, sheetId).entrySet())
 		{
 			int y = e.getKey();
 			for(Entry<Integer, String> e2 : e.getValue())

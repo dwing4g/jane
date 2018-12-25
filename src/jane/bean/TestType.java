@@ -410,9 +410,11 @@ public final class TestType extends Bean<TestType>
 		if(!this.v9.isEmpty()) _s_.marshal1((byte)0x25).marshal(this.v9);
 		if(!this.v10.isEmpty())
 		{
-			_s_.marshal2(0x2b00).marshalUInt(this.v10.size());
-			for(Boolean v : this.v10)
-				_s_.marshal(v);
+			int _i_ = 0, _n_ = this.v10.size();
+			_s_.marshal2(0x2b00).marshalUInt(_n_);
+			do
+				_s_.marshal(this.v10.get(_i_));
+			while(++_i_ < _n_);
 		}
 		if(!this.v11.isEmpty())
 		{

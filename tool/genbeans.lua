@@ -724,18 +724,22 @@ typedef.vector = merge(typedef.octets,
 		return var.id < 63 and
 			format([[		if(!this.#(var.name).isEmpty())
 		{
-			_s_.marshal2(0x%04x).marshalUInt(this.#(var.name).size());
-			for(%s v : this.#(var.name))
-				_s_.marshal(v);
+			int _i_ = 0, _n_ = this.#(var.name).size();
+			_s_.marshal2(0x%04x).marshalUInt(_n_);
+			do
+				_s_.marshal(this.#(var.name).get(_i_));
+			while(++_i_ < _n_);
 		}
-]], var.id * 0x400 + 0x300 + subtypeid(var.k), subtypename(var, var.k)) or
+]], var.id * 0x400 + 0x300 + subtypeid(var.k)) or
 			format([[		if(!this.#(var.name).isEmpty())
 		{
-			_s_.marshal3(0x%06x).marshalUInt(this.#(var.name).size());
-			for(%s v : this.#(var.name))
-				_s_.marshal(v);
+			int _i_ = 0, _n_ = this.#(var.name).size();
+			_s_.marshal3(0x%06x).marshalUInt(_n_);
+			do
+				_s_.marshal(this.#(var.name).get(_i_));
+			while(++_i_ < _n_);
 		}
-]], 0xff0000 + (var.id - 63) * 0x100 + subtypeid(var.k), subtypename(var, var.k))
+]], 0xff0000 + (var.id - 63) * 0x100 + subtypeid(var.k))
 	end,
 	unmarshal = function(var)
 		return var.id <= 0 and "" or format([[
@@ -761,6 +765,24 @@ typedef.list = merge(typedef.vector,
 	type = function(var) return "LinkedList<" .. subtypename(var, var.k) .. ">" end,
 	new = function(var) return "\t\t#(var.name) = new LinkedList<>();\n" end,
 	init = function(var) return "Util.appendDeep(#(var.name), this.#(var.name) = new LinkedList<>())" end,
+	marshal = function(var)
+		if var.id <= 0 then return "" end
+		return var.id < 63 and
+			format([[		if(!this.#(var.name).isEmpty())
+		{
+			_s_.marshal2(0x%04x).marshalUInt(this.#(var.name).size());
+			for(%s v : this.#(var.name))
+				_s_.marshal(v);
+		}
+]], var.id * 0x400 + 0x300 + subtypeid(var.k), subtypename(var, var.k)) or
+			format([[		if(!this.#(var.name).isEmpty())
+		{
+			_s_.marshal3(0x%06x).marshalUInt(this.#(var.name).size());
+			for(%s v : this.#(var.name))
+				_s_.marshal(v);
+		}
+]], 0xff0000 + (var.id - 63) * 0x100 + subtypeid(var.k), subtypename(var, var.k))
+	end,
 	unmarshal = function(var)
 		return var.id <= 0 and "" or format([[
 			case #(var.id):

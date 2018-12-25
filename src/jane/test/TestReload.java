@@ -1,7 +1,6 @@
 package jane.test;
 
 import java.util.ArrayList;
-import java.util.List;
 import jane.core.Util;
 import jane.tool.ClassReloader;
 
@@ -32,7 +31,7 @@ public final class TestReload
 		System.out.print("now modify TestReload classes and press enter ... ");
 		System.in.read();
 
-		List<byte[]> classes = new ArrayList<>();
+		ArrayList<byte[]> classes = new ArrayList<>();
 		classes.add(Util.readFileData("bin/jane/test/TestReload.class"));
 		classes.add(Util.readFileData("bin/jane/test/TestReload$1.class"));
 		ClassReloader.reloadClasses(classes);

@@ -26,10 +26,10 @@ import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -296,13 +296,13 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoService implem
 			throw new IllegalArgumentException("null localAddress");
 		}
 
-		List<SocketAddress> localAddresses = new ArrayList<>(1);
+		ArrayList<SocketAddress> localAddresses = new ArrayList<>(1);
 		localAddresses.add(localAddress);
 		bind(localAddresses);
 	}
 
 	@Override
-	public final void bind(List<? extends SocketAddress> localAddresses) throws IOException {
+	public final void bind(Collection<? extends SocketAddress> localAddresses) throws IOException {
 		if (isDisposing()) {
 			throw new IllegalStateException("The Accpetor disposed is being disposed.");
 		}
@@ -349,13 +349,13 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoService implem
 			throw new IllegalArgumentException("null localAddress");
 		}
 
-		List<SocketAddress> localAddresses = new ArrayList<>(1);
+		ArrayList<SocketAddress> localAddresses = new ArrayList<>(1);
 		localAddresses.add(localAddress);
 		unbind(localAddresses);
 	}
 
 	@Override
-	public final void unbind(List<? extends SocketAddress> localAddresses) {
+	public final void unbind(Collection<? extends SocketAddress> localAddresses) {
 		if (localAddresses == null) {
 			throw new IllegalArgumentException("null localAddresses");
 		}
@@ -366,7 +366,7 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoService implem
 		boolean deactivate = false;
 		synchronized (bindLock) {
 			synchronized (boundAddresses) {
-				List<SocketAddress> localAddressesCopy = new ArrayList<>(localAddresses);
+				ArrayList<SocketAddress> localAddressesCopy = new ArrayList<>(localAddresses);
 				localAddressesCopy.retainAll(boundAddresses);
 
 				if (!localAddressesCopy.isEmpty()) {
@@ -397,7 +397,7 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoService implem
 	 * @param localAddresses The address to bind to
 	 * @throws Exception If the bind failed
 	 */
-	private void bind0(List<? extends SocketAddress> localAddresses) throws Exception {
+	private void bind0(Collection<? extends SocketAddress> localAddresses) throws Exception {
 		// Create a bind request as a Future operation. When the selector
 		// have handled the registration, it will signal this future.
 		AcceptorOperationFuture request = new AcceptorOperationFuture(localAddresses);
@@ -441,7 +441,7 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoService implem
 	 * @param localAddresses The address to unbind from
 	 * @throws Exception If the unbind failed
 	 */
-	private void unbind0(List<? extends SocketAddress> localAddresses) throws Exception {
+	private void unbind0(Collection<? extends SocketAddress> localAddresses) throws Exception {
 		AcceptorOperationFuture future = new AcceptorOperationFuture(localAddresses);
 
 		cancelQueue.add(future);
@@ -615,16 +615,16 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoService implem
 					return 0;
 				}
 
-				List<SocketAddress> localAddresses = future.getLocalAddresses();
+				ArrayList<SocketAddress> localAddresses = future.getLocalAddresses();
 				// We create a temporary map to store the bound handles,
 				// as we may have to remove them all if there is an exception during the sockets opening.
-				Map<SocketAddress, ServerSocketChannel> newHandles = new HashMap<>(localAddresses.size());
+				HashMap<SocketAddress, ServerSocketChannel> newHandles = new HashMap<>(localAddresses.size());
 
 				try {
 					// Process all the addresses
-					for (SocketAddress sa : localAddresses) {
+					for (int i = 0, n = localAddresses.size(); i < n; i++) {
 						@SuppressWarnings("resource")
-						ServerSocketChannel channel = open(sa);
+						ServerSocketChannel channel = open(localAddresses.get(i));
 						newHandles.put(localAddress(channel), channel);
 					}
 
@@ -670,9 +670,10 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoService implem
 				}
 
 				// close the channels
-				for (SocketAddress sa : future.getLocalAddresses()) {
+				ArrayList<SocketAddress> sas = future.getLocalAddresses();
+				for (int i = 0, n = sas.size(); i < n; i++) {
 					@SuppressWarnings("resource")
-					ServerSocketChannel channel = boundHandles.remove(sa);
+					ServerSocketChannel channel = boundHandles.remove(sas.get(i));
 					if (channel == null) {
 						continue;
 					}
@@ -693,39 +694,33 @@ public abstract class AbstractPollingIoAcceptor extends AbstractIoService implem
 	}
 
 	private static final class AcceptorOperationFuture extends ServiceOperationFuture {
-		private final List<SocketAddress> localAddresses;
+		private final ArrayList<SocketAddress> localAddresses;
 
 		/**
 		 * Creates a new AcceptorOperationFuture instance
 		 *
 		 * @param localAddresses The list of local addresses to listen to
 		 */
-		AcceptorOperationFuture(List<? extends SocketAddress> localAddresses) {
+		AcceptorOperationFuture(Collection<? extends SocketAddress> localAddresses) {
 			this.localAddresses = new ArrayList<>(localAddresses);
 		}
 
 		/**
 		 * @return The list of local addresses we listen to
 		 */
-		List<SocketAddress> getLocalAddresses() {
+		ArrayList<SocketAddress> getLocalAddresses() {
 			return localAddresses;
 		}
 
 		@Override
 		public String toString() {
 			StringBuilder sb = new StringBuilder("Acceptor operation: ");
-
 			if (localAddresses != null) {
-				boolean isFirst = true;
-
-				for (SocketAddress address : localAddresses) {
-					if (isFirst) {
-						isFirst = false;
-					} else {
+				for (int i = 0, n = localAddresses.size(); i < n; i++) {
+					if (i > 0) {
 						sb.append(',');
 					}
-
-					sb.append(address);
+					sb.append(localAddresses.get(i));
 				}
 			}
 			return sb.toString();

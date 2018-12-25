@@ -21,8 +21,8 @@ package org.apache.mina.core.buffer;
 import java.nio.ByteBuffer;
 
 /**
- * Allocates {@link IoBuffer}s and manages them.  Please implement this
- * interface if you need more advanced memory management scheme.
+ * Allocates {@link IoBuffer}s and manages them.
+ * Please implement this interface if you need more advanced memory management scheme.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */

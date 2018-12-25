@@ -2,8 +2,8 @@ package jane.core;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -363,7 +363,7 @@ public class NetManager implements IoHandler
 		getAcceptor().bind(addr);
 	}
 
-	public void startServer(List<? extends SocketAddress> addrs) throws IOException
+	public void startServer(Collection<? extends SocketAddress> addrs) throws IOException
 	{
 		StringBuilder sb = new StringBuilder();
 		for(SocketAddress addr : addrs)
@@ -377,6 +377,7 @@ public class NetManager implements IoHandler
 	 * <p>
 	 * 此操作是异步的,失败会在另一线程回调onConnectFailed
 	 * @param ctx 此次连接的用户对象,用于传回onConnectFailed的回调中
+	 * @return 返回的ConnectFuture仅用于第一次连接,不适用于onConnectFailed返回后的再次连接,因此同步调用需由调用方实现重连
 	 */
 	public ConnectFuture startClient(SocketAddress addr, Object ctx)
 	{
@@ -424,6 +425,7 @@ public class NetManager implements IoHandler
 	 * 启动客户端的连接
 	 * <p>
 	 * 此操作是异步的,失败会在另一线程回调onConnectFailed
+	 * @return 返回的ConnectFuture仅用于第一次连接,不适用于onConnectFailed返回后的再次连接,因此同步调用需由调用方实现重连
 	 */
 	public ConnectFuture startClient(SocketAddress addr)
 	{

@@ -52,8 +52,7 @@ import org.apache.mina.util.ExceptionMonitor;
  * we'll require outNetBuffer be completely flushed before trying to wrap any more data.
  * <p/>
  * This class is not to be used by any client, it's closely associated with the SSL Filter.
- * None of its methods are public as they should not be used by any other class but from
- * the SslFilter class, in the same package
+ * None of its methods are public as they should not be used by any other class but from the SslFilter class, in the same package
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
@@ -166,8 +165,7 @@ public final class SslHandler {
 		// Default value
 		writingEncryptedData = false;
 
-		// We haven't yet started a SSL negotiation
-		// set the flags accordingly
+		// We haven't yet started a SSL negotiation set the flags accordingly
 		firstSSLNegociation = true;
 		handshakeComplete = false;
 	}
@@ -685,8 +683,7 @@ public final class SslHandler {
 			localHandshakeStatus = res.getHandshakeStatus();
 
 			if (status == Status.BUFFER_OVERFLOW) {
-				// We have to grow the target buffer, it's too small.
-				// Then we can call the unwrap method again
+				// We have to grow the target buffer, it's too small. Then we can call the unwrap method again
 				int newCapacity = sslEngine.getSession().getApplicationBufferSize();
 
 				if (appBuffer.remaining() >= newCapacity) {

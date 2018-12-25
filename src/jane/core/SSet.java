@@ -123,7 +123,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 		return addDirect(SContext.unsafe(s));
 	}
 
-	public boolean addAllDirect(Collection<? extends V> c)
+	public boolean addAllDirect(Iterable<? extends V> c)
 	{
 		boolean r = false;
 		for(V v : c)
@@ -282,14 +282,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	@Override
 	public final Set<V> clone()
 	{
-		try
-		{
-			return (Set<V>)Util.appendDeep(_set, _set.getClass().newInstance());
-		}
-		catch(Exception e)
-		{
-			throw new Error(e);
-		}
+		return (Set<V>)Util.appendDeep(_set, Util.newInstance(_set.getClass()));
 	}
 
 	@Override

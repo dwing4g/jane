@@ -36,16 +36,15 @@ import org.apache.mina.core.write.WriteRequest;
 
 /**
  * An SSL filter that encrypts and decrypts the data exchanged in the session.
- * Adding this filter triggers SSL handshake procedure immediately by sending
- * a SSL 'hello' message, so you don't need to call
- * {@link #startSsl(IoSession)} manually unless you are implementing StartTLS
- * (see below).  If you don't want the handshake procedure to start
- * immediately, please specify {@code false} as {@code autoStart} parameter in
- * the constructor.
+ * Adding this filter triggers SSL handshake procedure immediately by sending a SSL 'hello' message,
+ * so you don't need to call {@link #startSsl(IoSession)} manually
+ * unless you are implementing StartTLS (see below).
+ * If you don't want the handshake procedure to start immediately,
+ * please specify {@code false} as {@code autoStart} parameter in the constructor.
  * <p>
- * This filter uses an {@link SSLEngine} which was introduced in Java 5, so
- * Java version 5 or above is mandatory to use this filter. And please note that
- * this filter only works for TCP/IP connections.
+ * This filter uses an {@link SSLEngine} which was introduced in Java 5,
+ * so Java version 5 or above is mandatory to use this filter.
+ * And please note that this filter only works for TCP/IP connections.
  *
  * <h2>Implementing StartTLS</h2>
  * <p>
@@ -74,30 +73,26 @@ import org.apache.mina.core.write.WriteRequest;
  */
 public final class SslFilter extends IoFilterAdapter {
 	/**
-	 * A session attribute key that makes next one write request bypass
-	 * this filter (not encrypting the data).  This is a marker attribute,
-	 * which means that you can put whatever as its value. ({@link Boolean#TRUE}
-	 * is preferred.)  The attribute is automatically removed from the session
-	 * attribute map as soon as {@link IoSession#write(Object)} is invoked,
-	 * and therefore should be put again if you want to make more messages
-	 * bypass this filter.  This is especially useful when you implement StartTLS.
+	 * A session attribute key that makes next one write request bypass this filter (not encrypting the data).
+	 * This is a marker attribute, which means that you can put whatever as its value. ({@link Boolean#TRUE} is preferred.)
+	 * The attribute is automatically removed from the session attribute map as soon as {@link IoSession#write(Object)} is invoked,
+	 * and therefore should be put again if you want to make more messages bypass this filter.
+	 * This is especially useful when you implement StartTLS.
 	 */
 	public static final String DISABLE_ENCRYPTION_ONCE = "SslFilter.disableOnce";
 
 	/**
-	 * A session attribute key that makes this filter to emit a
-	 * {@link IoHandler#messageReceived(IoSession, Object)} event with a
-	 * special message ({@link #SESSION_SECURED} or {@link #SESSION_UNSECURED}).
-	 * This is a marker attribute, which means that you can put whatever as its
-	 * value. ({@link Boolean#TRUE} is preferred.)  By default, this filter
-	 * doesn't emit any events related with SSL session flow control.
+	 * A session attribute key that makes this filter to emit a {@link IoHandler#messageReceived(IoSession, Object)} event
+	 * with a special message ({@link #SESSION_SECURED} or {@link #SESSION_UNSECURED}).
+	 * This is a marker attribute, which means that you can put whatever as its value. ({@link Boolean#TRUE} is preferred.)
+	 * By default, this filter doesn't emit any events related with SSL session flow control.
 	 */
 	public static final String USE_NOTIFICATION = "SslFilter.useNotification";
 
 	/**
 	 * A session attribute key that should be set to an {@link InetSocketAddress}.
-	 * Setting this attribute causes {@link SSLContext#createSSLEngine(String, int)} to be called passing
-	 * the hostname and port of the {@link InetSocketAddress} to get an {@link SSLEngine} instance.
+	 * Setting this attribute causes {@link SSLContext#createSSLEngine(String, int)} to be called passing the hostname
+	 * and port of the {@link InetSocketAddress} to get an {@link SSLEngine} instance.
 	 * If not set {@link SSLContext#createSSLEngine()} will be called.
 	 * <br>
 	 * Using this feature {@link SSLSession} objects may be cached and reused when in client mode.
@@ -109,14 +104,14 @@ public final class SslFilter extends IoFilterAdapter {
 	public static final String SSL_HANDLER = "SslFilter.handler";
 
 	/**
-	 * A special message object which is emitted with a {@link IoHandler#messageReceived(IoSession, Object)}
-	 * event when the session is secured and its {@link #USE_NOTIFICATION} attribute is set.
+	 * A special message object which is emitted with a {@link IoHandler#messageReceived(IoSession, Object)} event
+	 * when the session is secured and its {@link #USE_NOTIFICATION} attribute is set.
 	 */
 	public static final SslFilterMessage SESSION_SECURED = new SslFilterMessage("SESSION_SECURED");
 
 	/**
-	 * A special message object which is emitted with a {@link IoHandler#messageReceived(IoSession, Object)}
-	 * event when the session is not secure anymore and its {@link #USE_NOTIFICATION} attribute is set.
+	 * A special message object which is emitted with a {@link IoHandler#messageReceived(IoSession, Object)} event
+	 * when the session is not secure anymore and its {@link #USE_NOTIFICATION} attribute is set.
 	 */
 	public static final SslFilterMessage SESSION_UNSECURED = new SslFilterMessage("SESSION_UNSECURED");
 
@@ -183,10 +178,9 @@ public final class SslFilter extends IoFilterAdapter {
 	}
 
 	/**
-	 * @return <tt>true</tt> if and only if the specified <tt>session</tt> is
-	 * encrypted/decrypted over SSL/TLS currently. This method will start
-	 * to return <tt>false</tt> after TLS <tt>close_notify</tt> message
-	 * is sent and any messages written after then is not going to get encrypted.
+	 * @return <tt>true</tt> if and only if the specified <tt>session</tt> is encrypted/decrypted over SSL/TLS currently.
+	 * This method will start to return <tt>false</tt> after TLS <tt>close_notify</tt> message is sent
+	 * and any messages written after then is not going to get encrypted.
 	 *
 	 * @param session the session we want to check
 	 */
@@ -203,8 +197,7 @@ public final class SslFilter extends IoFilterAdapter {
 	}
 
 	/**
-	 * @return <tt>true</tt> if and only if the conditions for
-	 * {@link #isSslStarted(IoSession)} are met, and the handhake has completed.
+	 * @return <tt>true</tt> if and only if the conditions for {@link #isSslStarted(IoSession)} are met, and the handhake has completed.
 	 *
 	 * @param session the session we want to check
 	 */

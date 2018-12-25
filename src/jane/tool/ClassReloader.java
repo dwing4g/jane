@@ -6,8 +6,8 @@ import java.io.IOException;
 import java.lang.instrument.ClassDefinition;
 import java.lang.instrument.Instrumentation;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Enumeration;
-import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import jane.core.Util;
@@ -89,7 +89,7 @@ public final class ClassReloader
 		_inst.redefineClasses(new ClassDefinition(Class.forName(getClassPathFromData(classData)), classData));
 	}
 
-	public static void reloadClasses(List<byte[]> classDatas) throws Exception, Error
+	public static void reloadClasses(Collection<byte[]> classDatas) throws Exception, Error
 	{
 		if(_inst == null)
 			throw new NullPointerException("Instrumentation not initialized");
@@ -104,7 +104,7 @@ public final class ClassReloader
 	{
 		if(_inst == null)
 			throw new NullPointerException("Instrumentation not initialized");
-		List<byte[]> classDatas = new ArrayList<>();
+		ArrayList<byte[]> classDatas = new ArrayList<>();
 		for(Enumeration<? extends ZipEntry> zipEnum = zipFile.entries(); zipEnum.hasMoreElements();)
 		{
 			ZipEntry ze = zipEnum.nextElement();

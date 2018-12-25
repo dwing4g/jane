@@ -479,14 +479,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	@Override
 	public Deque<V> clone()
 	{
-		try
-		{
-			return (Deque<V>)Util.appendDeep(_deque, _deque.getClass().newInstance());
-		}
-		catch(Exception e)
-		{
-			throw new Error(e);
-		}
+		return (Deque<V>)Util.appendDeep(_deque, Util.newInstance(_deque.getClass()));
 	}
 
 	@Override

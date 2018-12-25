@@ -24,6 +24,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.NodeList;
 import jane.core.Octets;
+import jane.core.Util;
 
 public final class TestUtil
 {
@@ -245,7 +246,7 @@ public final class TestUtil
 					throw new IllegalStateException("invalid key in record=" + i + ", str=\"" + str +
 							"\" in " + xmlFile, e);
 				}
-				B bean = beanCls.newInstance();
+				B bean = Util.newInstance(beanCls);
 				for(int j = 0; j < nField; ++j)
 				{
 					Field field = fields[j];

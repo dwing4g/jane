@@ -18,17 +18,7 @@
  */
 package org.apache.mina.core.buffer;
 
-import java.nio.BufferOverflowException;
-import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.CharBuffer;
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
-import java.nio.charset.CharsetEncoder;
-import java.nio.charset.CoderResult;
-import java.nio.charset.StandardCharsets;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.write.DefaultWriteRequest;
 import org.apache.mina.core.write.WriteRequest;
@@ -40,8 +30,7 @@ import org.apache.mina.core.write.WriteRequest;
  * Please refer to {@link ByteBuffer} documentation for preliminary usage.
  * MINA does not use NIO {@link ByteBuffer} directly for two reasons:
  * <ul>
- *   <li>It doesn't provide useful getters and putters such as <code>fill</code>,
- *       <code>get/putString</code>, and <code>get/putAsciiInt()</code> enough.</li>
+ *   <li>It doesn't provide useful getters and putters such as <code>fill</code> enough.</li>
  * </ul>
  *
  * <h2>Allocation</h2>
@@ -70,18 +59,16 @@ import org.apache.mina.core.write.WriteRequest;
  *
  * <h2>Wrapping existing NIO buffers and arrays</h2>
  * <p>
- *   This class provides a few <tt>wrap(...)</tt> methods that wraps any NIO
- *   buffers and byte arrays.
+ *   This class provides a few <tt>wrap(...)</tt> methods that wraps any NIO buffers and byte arrays.
  *
  * <h2>Changing Buffer Allocation Policy</h2>
  * <p>
- *   The {@link IoBufferAllocator} interface lets you override the default buffer
- *   management behavior. There is only one allocator provided out-of-the-box:
+ *   The {@link IoBufferAllocator} interface lets you override the default buffer management behavior.
+ *   There is only one allocator provided out-of-the-box:
  *   <ul>
  *     <li>{@link SimpleBufferAllocator} (default)</li>
  *   </ul>
- *   You can implement your own allocator and use it by calling
- *   {@link #setAllocator(IoBufferAllocator)}.
+ *   You can implement your own allocator and use it by calling {@link #setAllocator(IoBufferAllocator)}.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
@@ -168,14 +155,13 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 
 		int limit = buf.limit();
 		int pos = buf.position();
-		ByteOrder bo = buf.buf().order();
 
 		IoBuffer newBuf = allocate(capacity, buf.isDirect());
 		buf.clear();
 		newBuf.put(buf);
 		newBuf.limit(limit);
 		newBuf.position(pos);
-		newBuf.buf().order(bo);
+		newBuf.buf().order(buf.buf().order());
 		buf.free();
 
 		return newBuf;
@@ -332,8 +318,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 * @return the modified IoBuffer
 	 */
 	public final IoBuffer sweep() {
-		clear();
-		return fillAndReset(remaining());
+		return clear().fillAndReset(remaining());
 	}
 
 	/**
@@ -344,8 +329,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 * @return the modified IoBuffer
 	 */
 	public final IoBuffer sweep(byte value) {
-		clear();
-		return fillAndReset(value, remaining());
+		return clear().fillAndReset(value, remaining());
 	}
 
 	/**
@@ -427,7 +411,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 *
 	 * @return the unsigned byte at the current position
 	 */
-	public final int getUnsigned() {
+	public final int getUnsignedByte() {
 		return get() & 0xff;
 	}
 
@@ -605,285 +589,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 		return out.toString();
 	}
 
-	////////////////////////////////
-	// String getters and putters //
-	////////////////////////////////
-
-	private static boolean isUtf16(Charset charset) {
-		return	charset.equals(StandardCharsets.UTF_16) ||
-				charset.equals(StandardCharsets.UTF_16BE) ||
-				charset.equals(StandardCharsets.UTF_16LE);
-	}
-
-	/**
-	 * Reads a <code>NUL</code>-terminated string from this buffer using the specified <code>decoder</code> and returns it.
-	 * This method reads until the limit of this buffer if no <tt>NUL</tt> is found.
-	 *
-	 * @param decoder The {@link CharsetDecoder} to use
-	 * @return the read String
-	 * @exception CharacterCodingException Thrown when an error occurred while decoding the buffer
-	 */
-	public final String getString(CharsetDecoder decoder) throws CharacterCodingException {
-		if (!hasRemaining()) {
-			return "";
-		}
-
-		int oldPos = position();
-		int oldLimit = limit();
-		int end = -1;
-		int newPos;
-
-		if (!isUtf16(decoder.charset())) {
-			end = indexOf((byte) 0);
-			if (end < 0) {
-				newPos = end = oldLimit;
-			} else {
-				newPos = end + 1;
-			}
-		} else {
-			int i = oldPos;
-			for (;;) {
-				boolean wasZero = get(i) == 0;
-
-				if (++i >= oldLimit) {
-					break;
-				}
-
-				if (get(i) != 0) {
-					if (++i >= oldLimit) {
-						break;
-					}
-				}
-				else if (wasZero) {
-					end = i - 1;
-					break;
-				}
-			}
-
-			if (end < 0) {
-				newPos = end = oldPos + ((oldLimit - oldPos) & 0xfffffffe);
-			} else {
-				newPos = (end + 2 <= oldLimit ? end + 2 : end);
-			}
-		}
-
-		if (oldPos == end) {
-			position(newPos);
-			return "";
-		}
-
-		limit(end);
-		decoder.reset();
-
-		int expectedLength = (int) (remaining() * decoder.averageCharsPerByte()) + 1;
-		CharBuffer out = CharBuffer.allocate(expectedLength);
-		for (;;) {
-			CoderResult cr = (hasRemaining() ? decoder.decode(buf(), out, true) : decoder.flush(out));
-			if (cr.isUnderflow()) {
-				break;
-			}
-
-			if (cr.isOverflow()) {
-				CharBuffer o = CharBuffer.allocate(out.capacity() + expectedLength);
-				out.flip();
-				o.put(out);
-				out = o;
-			}
-			else if (cr.isError()) {
-				// Revert the buffer back to the previous state.
-				limit(oldLimit);
-				position(oldPos);
-				cr.throwException();
-			}
-		}
-
-		limit(oldLimit);
-		position(newPos);
-		return out.flip().toString();
-	}
-
-	private static void checkFieldSize(int fieldSize) {
-		if (fieldSize < 0) {
-			throw new IllegalArgumentException("fieldSize cannot be negative: " + fieldSize);
-		}
-	}
-
-	/**
-	 * Reads a <code>NUL</code>-terminated string from this buffer using the specified <code>decoder</code> and returns it.
-	 *
-	 * @param fieldSize the maximum number of bytes to read
-	 * @param decoder The {@link CharsetDecoder} to use
-	 * @return the read String
-	 * @exception CharacterCodingException Thrown when an error occurred while decoding the buffer
-	 */
-	public final String getString(int fieldSize, CharsetDecoder decoder) throws CharacterCodingException {
-		checkFieldSize(fieldSize);
-
-		if (fieldSize == 0 || !hasRemaining()) {
-			return "";
-		}
-
-		boolean utf16 = isUtf16(decoder.charset());
-
-		if (utf16 && (fieldSize & 1) != 0) {
-			throw new IllegalArgumentException("fieldSize is not even.");
-		}
-
-		int oldPos = position();
-		int oldLimit = limit();
-		int end = oldPos + fieldSize;
-
-		if (oldLimit < end) {
-			throw new BufferUnderflowException();
-		}
-
-		int i;
-		if (!utf16) {
-			for (i = oldPos; i < end; i++) {
-				if (get(i) == 0) {
-					break;
-				}
-			}
-		} else {
-			for (i = oldPos; i < end; i += 2) {
-				if (get(i) == 0 && get(i + 1) == 0) {
-					break;
-				}
-			}
-		}
-		limit(i);
-
-		if (!hasRemaining()) {
-			limit(oldLimit);
-			position(end);
-			return "";
-		}
-		decoder.reset();
-
-		int expectedLength = (int) (remaining() * decoder.averageCharsPerByte()) + 1;
-		CharBuffer out = CharBuffer.allocate(expectedLength);
-		for (;;) {
-			CoderResult cr = (hasRemaining() ? decoder.decode(buf(), out, true) : decoder.flush(out));
-			if (cr.isUnderflow()) {
-				break;
-			}
-
-			if (cr.isOverflow()) {
-				CharBuffer o = CharBuffer.allocate(out.capacity() + expectedLength);
-				out.flip();
-				o.put(out);
-				out = o;
-			}
-			else if (cr.isError()) {
-				// Revert the buffer back to the previous state.
-				limit(oldLimit);
-				position(oldPos);
-				cr.throwException();
-			}
-		}
-
-		limit(oldLimit);
-		position(end);
-		return out.flip().toString();
-	}
-
-	/**
-	 * Writes the content of <code>in</code> into this buffer using the specified <code>encoder</code>.
-	 * This method doesn't terminate string with <tt>NUL</tt>. You have to do it by yourself.
-	 *
-	 * @param val The CharSequence to put in the IoBuffer
-	 * @param encoder The CharsetEncoder to use
-	 * @return The modified IoBuffer
-	 * @throws CharacterCodingException When we have an error while decoding the String
-	 */
-	public final IoBuffer putString(CharSequence val, CharsetEncoder encoder) throws CharacterCodingException {
-		if (val.length() == 0) {
-			return this;
-		}
-
-		CharBuffer in = CharBuffer.wrap(val);
-		encoder.reset();
-
-		for (;;) {
-			CoderResult cr = (in.hasRemaining() ? encoder.encode(in, buf(), true) : encoder.flush(buf()));
-			if (cr.isUnderflow()) {
-				break;
-			}
-			cr.throwException();
-		}
-		return this;
-	}
-
-	/**
-	 * Writes the content of <code>in</code> into this buffer as a
-	 * <code>NUL</code>-terminated string using the specified <code>encoder</code>.
-	 * <p>
-	 * If the charset name of the encoder is UTF-16, you cannot specify odd <code>fieldSize</code>,
-	 * and this method will append two <code>NUL</code>s as a terminator.
-	 * <p>
-	 * Please note that this method doesn't terminate with <code>NUL</code> if
-	 * the input string is longer than <tt>fieldSize</tt>.
-	 *
-	 * @param val The CharSequence to put in the IoBuffer
-	 * @param fieldSize the maximum number of bytes to write
-	 * @param encoder The CharsetEncoder to use
-	 * @return The modified IoBuffer
-	 * @throws CharacterCodingException When we have an error while decoding the String
-	 */
-	public final IoBuffer putString(CharSequence val, int fieldSize, CharsetEncoder encoder) throws CharacterCodingException {
-		checkFieldSize(fieldSize);
-
-		if (fieldSize == 0) {
-			return this;
-		}
-
-		boolean utf16 = isUtf16(encoder.charset());
-
-		if (utf16 && (fieldSize & 1) != 0) {
-			throw new IllegalArgumentException("fieldSize is not even.");
-		}
-
-		int oldLimit = limit();
-		int end = position() + fieldSize;
-
-		if (oldLimit < end) {
-			throw new BufferOverflowException();
-		}
-
-		if (val.length() == 0) {
-			put((byte) 0);
-			if (utf16) {
-				put((byte) 0);
-			}
-			position(end);
-			return this;
-		}
-
-		CharBuffer in = CharBuffer.wrap(val);
-		limit(end);
-		encoder.reset();
-
-		for (;;) {
-			CoderResult cr = (in.hasRemaining() ? encoder.encode(in, buf(), true) : encoder.flush(buf()));
-			if (cr.isUnderflow() || cr.isOverflow()) {
-				break;
-			}
-			cr.throwException();
-		}
-
-		limit(oldLimit);
-
-		if (position() < end) {
-			put((byte) 0);
-			if (utf16) {
-				put((byte) 0);
-			}
-		}
-
-		position(end);
-		return this;
-	}
-
 	/////////////////////
 	// IndexOf methods //
 	/////////////////////
@@ -897,26 +602,20 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 */
 	public final int indexOf(byte b) {
 		if (hasArray()) {
-			int arrayOffset = arrayOffset();
-			int limit = arrayOffset + limit();
 			byte[] array = array();
-
-			for (int i = arrayOffset + position(); i < limit; i++) {
+			int arrayOffset = arrayOffset();
+			for (int i = arrayOffset + position(), limit = arrayOffset + limit(); i < limit; i++) {
 				if (array[i] == b) {
 					return i - arrayOffset;
 				}
 			}
 		} else {
-			int beginPos = position();
-			int limit = limit();
-
-			for (int i = beginPos; i < limit; i++) {
+			for (int i = position(), limit = limit(); i < limit; i++) {
 				if (get(i) == b) {
 					return i;
 				}
 			}
 		}
-
 		return -1;
 	}
 
@@ -942,36 +641,32 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 * @return The modified IoBuffer
 	 */
 	public final IoBuffer fill(byte value, int size) {
-		int q = size >>> 3;
-		int r = size & 7;
 		ByteBuffer bb = buf();
 
-		if (q > 0) {
-			int intValue = value & 0xff | (value << 8) & 0xff00 | (value << 16) & 0xff0000 | value << 24;
-			long longValue = intValue & 0xffffffffL | (long)intValue << 32;
-
-			for (int i = q; i > 0; i--) {
+		if (size >= 8) {
+			long longValue = value & 0xffL;
+			longValue |= longValue << 8;
+			longValue |= longValue << 16;
+			longValue |= longValue << 32;
+			do {
 				bb.putLong(longValue);
-			}
+			} while ((size -= 8) >= 8);
 		}
 
-		q = r >>> 2;
-		r = r & 3;
-
-		if (q > 0) {
-			int intValue = value & 0xff | (value << 8) & 0xff00 | (value << 16) & 0xff0000 | (value << 24);
+		if (size >= 4) {
+			size -= 4;
+			int intValue = value & 0xff;
+			intValue |= intValue << 8;
+			intValue |= intValue << 16;
 			bb.putInt(intValue);
 		}
 
-		q = r >> 1;
-		r = r & 1;
-
-		if (q > 0) {
-			short shortValue = (short) (value & 0xff | (value << 8));
-			bb.putShort(shortValue);
+		if (size >= 2) {
+			size -= 2;
+			bb.putShort((short)(value & 0xff | (value << 8)));
 		}
 
-		if (r > 0) {
+		if (size > 0) {
 			bb.put(value);
 		}
 
@@ -1002,30 +697,24 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 * @return The modified IoBuffer
 	 */
 	public final IoBuffer fill(int size) {
-		int q = size >>> 3;
-		int r = size & 7;
 		ByteBuffer bb = buf();
 
-		for (int i = q; i > 0; i--) {
+		for (; size >= 8; size -= 8) {
 			bb.putLong(0L);
 		}
 
-		q = r >>> 2;
-		r = r & 3;
-
-		if (q > 0) {
+		if (size >= 4) {
+			size -= 4;
 			bb.putInt(0);
 		}
 
-		q = r >> 1;
-		r = r & 1;
-
-		if (q > 0) {
-			bb.putShort((short) 0);
+		if (size >= 2) {
+			size -= 2;
+			bb.putShort((short)0);
 		}
 
-		if (r > 0) {
-			bb.put((byte) 0);
+		if (size > 0) {
+			bb.put((byte)0);
 		}
 
 		return this;
@@ -1044,7 +733,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 		} finally {
 			position(pos);
 		}
-
 		return this;
 	}
 
