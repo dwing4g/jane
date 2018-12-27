@@ -20,9 +20,9 @@ package org.apache.mina.core.future;
 
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
-import org.apache.mina.core.polling.AbstractPollingIoProcessor;
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.session.IoSession;
+import org.apache.mina.transport.socket.nio.NioProcessor;
 import org.apache.mina.util.ExceptionMonitor;
 
 /**
@@ -206,7 +206,7 @@ public class DefaultIoFuture implements IoFuture {
 
 		// Simple and quick check.
 		for (StackTraceElement stackElement : stackTrace) {
-			if (AbstractPollingIoProcessor.class.getName().equals(stackElement.getClassName())) {
+			if (NioProcessor.class.getName().equals(stackElement.getClassName())) {
 				// new IllegalStateException("t").getStackTrace();
 				throw new IllegalStateException("DEAD LOCK: " + IoFuture.class.getSimpleName()
 						+ ".await() was invoked from an I/O processor thread. Please use "

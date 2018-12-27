@@ -22,9 +22,9 @@ import java.util.ArrayList;
 import org.apache.mina.core.filterchain.IoFilter.NextFilter;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.future.IoFuture;
-import org.apache.mina.core.session.AbstractIoSession;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequest;
+import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.mina.util.ExceptionMonitor;
 
 /**
@@ -42,7 +42,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 	public static final Object SESSION_CREATED_FUTURE = DefaultIoFilterChain.class;
 
 	/** The associated session */
-	private final AbstractIoSession session;
+	private final NioSession session;
 
 	/** The chain head */
 	private EntryImpl head;
@@ -56,7 +56,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 	 *
 	 * @param session The session associated with the created filter chain
 	 */
-	public DefaultIoFilterChain(AbstractIoSession session) {
+	public DefaultIoFilterChain(NioSession session) {
 		if (session == null) {
 			throw new IllegalArgumentException("session");
 		}
@@ -65,7 +65,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 	}
 
 	@Override
-	public IoSession getSession() {
+	public NioSession getSession() {
 		return session;
 	}
 
@@ -428,7 +428,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		callPreviousFilterWrite(tail, writeRequest);
 	}
 
-	@SuppressWarnings("unchecked")
 	private void callPreviousFilterWrite(Entry entry, WriteRequest writeRequest) {
 		try {
 			if (entry != null) {
@@ -451,7 +450,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		callPreviousFilterClose(tail);
 	}
 
-	@SuppressWarnings("unchecked")
 	private void callPreviousFilterClose(Entry entry) {
 		try {
 			if (entry != null) {

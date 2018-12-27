@@ -68,6 +68,89 @@ public interface IoSession {
 	long getId();
 
 	/**
+	 * @return the socket address of local machine which is associated with this session.
+	 */
+	InetSocketAddress getLocalAddress();
+
+	/**
+	 * @return the socket address of remote peer.
+	 */
+	InetSocketAddress getRemoteAddress();
+
+	/**
+	 * Is read operation is suspended for this session.
+	 *
+	 * @return <tt>true</tt> if suspended
+	 */
+	boolean isReadSuspended();
+
+	/**
+	 * Is write operation is suspended for this session.
+	 *
+	 * @return <tt>true</tt> if suspended
+	 */
+	boolean isWriteSuspended();
+
+	/**
+	 * Suspends read operations for this session.
+	 */
+	void suspendRead();
+
+	/**
+	 * Suspends write operations for this session.
+	 */
+	void suspendWrite();
+
+	/**
+	 * Resumes read operations for this session.
+	 */
+	void resumeRead();
+
+	/**
+	 * Resumes write operations for this session.
+	 */
+	void resumeWrite();
+
+	/**
+	 * @return <tt>true</tt> if this session is active.
+	 */
+	boolean isActive();
+
+	/**
+	 * @return <tt>true</tt> if this session is connected with remote peer.
+	 */
+	boolean isConnected();
+
+	/**
+	 * @return <tt>true</tt> if and only if this session is being closed
+	 * (but not disconnected yet) or is closed.
+	 */
+	boolean isClosing();
+
+	/**
+	 * @return the {@link CloseFuture} of this session.
+	 * This method returns the same instance whenever user calls it.
+	 */
+	CloseFuture getCloseFuture();
+
+	/**
+	 * Closes this session immediately.  This operation is asynchronous, it returns a {@link CloseFuture}.
+	 *
+	 * @return The {@link CloseFuture} that can be use to wait for the completion of this operation
+	 */
+	CloseFuture closeNow();
+
+	/**
+	 * Closes this session after all queued write requests are flushed. This operation is asynchronous.
+	 * Wait for the returned {@link CloseFuture} if you want to wait for the session actually closed.
+	 *
+	 * @return The associated CloseFuture
+	 */
+	CloseFuture closeOnFlush();
+
+	void shutdownOnFlush();
+
+	/**
 	 * @return the {@link IoService} which provides I/O service to this session.
 	 */
 	IoService getService();
@@ -98,6 +181,20 @@ public interface IoSession {
 	WriteRequestQueue getWriteRequestQueue();
 
 	/**
+	 * Returns the {@link WriteRequest} which is being processed by {@link IoService}.
+	 *
+	 * @return <tt>null</tt> if and if only no message is being written
+	 */
+	WriteRequest getCurrentWriteRequest();
+
+	/**
+	 * Associate the current write request with the session
+	 *
+	 * @param currentWriteRequest the current write request to associate
+	 */
+	void setCurrentWriteRequest(WriteRequest currentWriteRequest);
+
+	/**
 	 * Writes the specified <code>message</code> to remote peer. This operation is asynchronous.
 	 * You can wait for the returned {@link WriteFuture} if you want to wait for the message actually written.
 	 *
@@ -105,21 +202,6 @@ public interface IoSession {
 	 * @return The associated WriteFuture
 	 */
 	WriteFuture write(Object message);
-
-	/**
-	 * Closes this session immediately.  This operation is asynchronous, it returns a {@link CloseFuture}.
-	 *
-	 * @return The {@link CloseFuture} that can be use to wait for the completion of this operation
-	 */
-	CloseFuture closeNow();
-
-	/**
-	 * Closes this session after all queued write requests are flushed. This operation is asynchronous.
-	 * Wait for the returned {@link CloseFuture} if you want to wait for the session actually closed.
-	 *
-	 * @return The associated CloseFuture
-	 */
-	CloseFuture closeOnFlush();
 
 	/**
 	 * Returns an attachment of this session.
@@ -247,84 +329,4 @@ public interface IoSession {
 	 * @return the set of keys of all user-defined attributes.
 	 */
 	Set<Object> getAttributeKeys();
-
-	/**
-	 * @return <tt>true</tt> if this session is connected with remote peer.
-	 */
-	boolean isConnected();
-
-	/**
-	 * @return <tt>true</tt> if this session is active.
-	 */
-	boolean isActive();
-
-	/**
-	 * @return <tt>true</tt> if and only if this session is being closed
-	 * (but not disconnected yet) or is closed.
-	 */
-	boolean isClosing();
-
-	/**
-	 * @return the {@link CloseFuture} of this session.
-	 * This method returns the same instance whenever user calls it.
-	 */
-	CloseFuture getCloseFuture();
-
-	/**
-	 * @return the socket address of local machine which is associated with this session.
-	 */
-	InetSocketAddress getLocalAddress();
-
-	/**
-	 * @return the socket address of remote peer.
-	 */
-	InetSocketAddress getRemoteAddress();
-
-	/**
-	 * Returns the {@link WriteRequest} which is being processed by {@link IoService}.
-	 *
-	 * @return <tt>null</tt> if and if only no message is being written
-	 */
-	WriteRequest getCurrentWriteRequest();
-
-	/**
-	 * Associate the current write request with the session
-	 *
-	 * @param currentWriteRequest the current write request to associate
-	 */
-	void setCurrentWriteRequest(WriteRequest currentWriteRequest);
-
-	/**
-	 * Suspends read operations for this session.
-	 */
-	void suspendRead();
-
-	/**
-	 * Suspends write operations for this session.
-	 */
-	void suspendWrite();
-
-	/**
-	 * Resumes read operations for this session.
-	 */
-	void resumeRead();
-
-	/**
-	 * Resumes write operations for this session.
-	 */
-	void resumeWrite();
-
-	/**
-	 * Is read operation is suspended for this session.
-	 *
-	 * @return <tt>true</tt> if suspended
-	 */
-	boolean isReadSuspended();
-
-	/**
-	 * Is write operation is suspended for this session.
-	 *
-	 * @return <tt>true</tt> if suspended
-	 */
-	boolean isWriteSuspended();
 }

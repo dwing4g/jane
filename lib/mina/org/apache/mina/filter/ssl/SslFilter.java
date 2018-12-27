@@ -162,7 +162,7 @@ public final class SslFilter extends IoFilterAdapter {
 	 */
 	public static String getSessionInfo(IoSession session) {
 		StringBuilder sb = new StringBuilder();
-		sb.append(session.getService() instanceof IoAcceptor ? "Session Server" : "Session Client");
+		sb.append(session.getService() instanceof IoAcceptor ? "session server" : "session client");
 		sb.append('[').append(session.getId()).append(']');
 
 		SslHandler sslHandler = (SslHandler) session.getAttribute(SSL_HANDLER);
@@ -371,7 +371,7 @@ public final class SslFilter extends IoFilterAdapter {
 	public void onPreAdd(IoFilterChain chain, String name, NextFilter nextFilter) throws SSLException {
 		// Check that we don't have a SSL filter already present in the chain
 		if (chain.getEntry(SslFilter.class) != null) {
-			throw new IllegalStateException("Only one SSL filter is permitted in a chain.");
+			throw new IllegalStateException("only one SSL filter is permitted in a chain");
 		}
 
 		IoSession session = chain.getSession();
@@ -432,7 +432,7 @@ public final class SslFilter extends IoFilterAdapter {
 				try {
 					if (sslHandler.isOutboundDone()) {
 						sslHandler.destroy();
-						throw new SSLException("Outbound done");
+						throw new SSLException("outbound done");
 					}
 
 					// forward read encrypted data to SSL handler
@@ -469,7 +469,7 @@ public final class SslFilter extends IoFilterAdapter {
 					}
 				} catch (SSLException se) {
 					if (!sslHandler.isHandshakeComplete()) {
-						SSLException newSe = new SSLHandshakeException("SSL handshake failed.");
+						SSLException newSe = new SSLHandshakeException("SSL handshake failed");
 						newSe.initCause(se);
 						se = newSe;
 
@@ -601,7 +601,7 @@ public final class SslFilter extends IoFilterAdapter {
 			synchronized(sslHandler) {
 				if (!sslHandler.closeOutbound()) {
 					return DefaultWriteFuture.newNotWrittenFuture(session,
-							new IllegalStateException("SSL session is shut down already."));
+							new IllegalStateException("SSL session is shut down already"));
 				}
 
 				// there might be data to write out here?
@@ -636,7 +636,7 @@ public final class SslFilter extends IoFilterAdapter {
 
 		synchronized(sslHandler) {
 			if (sslHandler.getSslFilter() != this) {
-				throw new IllegalArgumentException("Not managed by this filter.");
+				throw new IllegalArgumentException("not managed by this filter");
 			}
 		}
 
@@ -685,7 +685,7 @@ public final class SslFilter extends IoFilterAdapter {
 
 		@Override
 		public String toString() {
-			return "(Encrypted)" + parentRequest.toString();
+			return "(encrypted)" + parentRequest.toString();
 		}
 	}
 }

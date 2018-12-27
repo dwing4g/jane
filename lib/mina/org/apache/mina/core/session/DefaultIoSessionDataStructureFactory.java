@@ -18,6 +18,7 @@
  */
 package org.apache.mina.core.session;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Queue;
 import java.util.Set;
@@ -25,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.mina.core.write.WriteRequest;
 import org.apache.mina.core.write.WriteRequestQueue;
+import org.apache.mina.transport.socket.nio.NioSession;
 
 /**
  * The default {@link IoSessionDataStructureFactory} implementation
@@ -125,8 +127,15 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 		public WriteRequest poll() {
 			WriteRequest wr = q.poll();
 
-			if (wr == AbstractIoSession.CLOSE_REQUEST) {
+			if (wr == NioSession.CLOSE_REQUEST) {
 				s.closeNow();
+				dispose();
+				wr = null;
+			} else if (wr == NioSession.SHUTDOWN_REQUEST) {
+				try {
+					((NioSession)s).getChannel().shutdownOutput();
+				} catch(IOException e) {
+				}
 				dispose();
 				wr = null;
 			}

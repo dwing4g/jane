@@ -18,78 +18,103 @@
  */
 package org.apache.mina.transport.socket.nio;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
-import java.nio.channels.Channel;
+import java.nio.channels.FileChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.mina.core.buffer.IoBuffer;
+import org.apache.mina.core.file.DefaultFileRegion;
+import org.apache.mina.core.file.FileRegion;
 import org.apache.mina.core.filterchain.DefaultIoFilterChain;
 import org.apache.mina.core.filterchain.IoFilterChain;
+import org.apache.mina.core.future.CloseFuture;
+import org.apache.mina.core.future.DefaultCloseFuture;
+import org.apache.mina.core.future.DefaultWriteFuture;
+import org.apache.mina.core.future.WriteFuture;
+import org.apache.mina.core.service.AbstractIoService;
+import org.apache.mina.core.service.IoAcceptor;
+import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.IoService;
-import org.apache.mina.core.session.AbstractIoSession;
 import org.apache.mina.core.session.IoSession;
+import org.apache.mina.core.session.IoSessionAttributeMap;
+import org.apache.mina.core.session.SessionState;
+import org.apache.mina.core.write.DefaultWriteRequest;
+import org.apache.mina.core.write.WriteRequest;
+import org.apache.mina.core.write.WriteRequestQueue;
+import org.apache.mina.core.write.WriteToClosedSessionException;
 import org.apache.mina.transport.socket.AbstractSocketSessionConfig;
+import org.apache.mina.util.ExceptionMonitor;
 
 /**
  * An {@link IoSession} which is managed by the NIO socket transport (TCP/IP).
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public final class NioSession extends AbstractIoSession {
-	/** The NioSession processor */
+public final class NioSession implements IoSession {
+	/** Internal write request objects that trigger session close and shutdown */
+	public static final WriteRequest CLOSE_REQUEST = new DefaultWriteRequest("CLOSE_REQUEST", null);
+	public static final WriteRequest SHUTDOWN_REQUEST = new DefaultWriteRequest("SHUTDOWN_REQUEST", null);
+
+	private static final AtomicIntegerFieldUpdater<NioSession> scheduledForFlushUpdater
+			= AtomicIntegerFieldUpdater.newUpdater(NioSession.class, "scheduledForFlush");
+	private static final AtomicIntegerFieldUpdater<NioSession> scheduledForRemoveUpdater
+			= AtomicIntegerFieldUpdater.newUpdater(NioSession.class, "scheduledForRemove");
+
+	/** An id generator guaranteed to generate unique IDs for the session */
+	private static final AtomicLong idGenerator = new AtomicLong();
+
+	private final AbstractIoService service;
 	private final IoProcessor<NioSession> processor;
-
-	/** The communication channel */
-	private final SocketChannel channel;
-
-	/** The FilterChain created for this session */
-	private final IoFilterChain filterChain;
-
-	/** The session config */
-	private final AbstractSocketSessionConfig config;
-
-	/** The SelectionKey used for this session */
-	private SelectionKey key;
-
 	private NioProcessor nioProcessor;
+
+	private final SocketChannel channel;
+	private SelectionKey selKey;
+	private final AbstractSocketSessionConfig config;
+	private final IoFilterChain filterChain = new DefaultIoFilterChain(this);
+
+	private WriteRequestQueue writeRequestQueue;
+	private WriteRequest currentWriteRequest;
+
+	private IoSessionAttributeMap attributes;
+	private Object attachment;
+
+	private final long sessionId = idGenerator.incrementAndGet();
+
+	@SuppressWarnings("unused")
+	private volatile int scheduledForFlush;
+	@SuppressWarnings("unused")
+	private volatile int scheduledForRemove;
+
+	/** A future that will be set 'closed' when the connection is closed */
+	private final CloseFuture closeFuture = new DefaultCloseFuture(this);
+
+	private volatile boolean closing;
+
+	private boolean deferDecreaseReadBuffer = true;
+
+	private boolean readSuspended;
+	private boolean writeSuspended;
 
 	/**
 	 * Creates a new instance of NioSession, with its associated IoProcessor.
-	 *
-	 * @param service The associated {@link IoService}
-	 * @param processor The associated {@link IoProcessor}
-	 * @param channel The associated {@link Channel}
 	 */
-	NioSession(IoService service, IoProcessor<NioSession> processor, SocketChannel channel) {
-		super(service);
+	NioSession(AbstractIoService service, IoProcessor<NioSession> processor, SocketChannel channel) {
+		this.service = service;
 		this.processor = processor;
 		this.channel = channel;
-		filterChain = new DefaultIoFilterChain(this);
 		config = new SessionConfigImpl(service);
 	}
 
 	@Override
-	public IoProcessor<NioSession> getProcessor() {
-		return processor;
-	}
-
-	/**
-	 * @return The SocketChannel associated with this {@link IoSession}
-	 */
-	SocketChannel getChannel() {
-		return channel;
-	}
-
-	@Override
-	public IoFilterChain getFilterChain() {
-		return filterChain;
-	}
-
-	@Override
-	public AbstractSocketSessionConfig getConfig() {
-		return config;
+	public long getId() {
+		return sessionId;
 	}
 
 	@Override
@@ -103,28 +128,142 @@ public final class NioSession extends AbstractIoSession {
 	}
 
 	@Override
-	public boolean isActive() {
-		return key != null && key.isValid();
+	public boolean isReadSuspended() {
+		return readSuspended;
 	}
 
-	private Socket getSocket() {
+	@Override
+	public boolean isWriteSuspended() {
+		return writeSuspended;
+	}
+
+	@Override
+	public void suspendRead() {
+		readSuspended = true;
+		if (!closing && !closeFuture.isClosed()) {
+			processor.updateTrafficControl(this);
+		}
+	}
+
+	@Override
+	public void suspendWrite() {
+		writeSuspended = true;
+		if (!closing && !closeFuture.isClosed()) {
+			processor.updateTrafficControl(this);
+		}
+	}
+
+	@Override
+	public void resumeRead() {
+		readSuspended = false;
+		if (!closing && !closeFuture.isClosed()) {
+			processor.updateTrafficControl(this);
+		}
+	}
+
+	@Override
+	public void resumeWrite() {
+		writeSuspended = false;
+		if (!closing && !closeFuture.isClosed()) {
+			processor.updateTrafficControl(this);
+		}
+	}
+
+	@Override
+	public boolean isActive() {
+		return selKey != null && selKey.isValid();
+	}
+
+	@Override
+	public boolean isConnected() {
+		return !closeFuture.isClosed();
+	}
+
+	@Override
+	public boolean isClosing() {
+		return closing || closeFuture.isClosed();
+	}
+
+	@Override
+	public CloseFuture getCloseFuture() {
+		return closeFuture;
+	}
+
+	@Override
+	public CloseFuture closeNow() {
+		synchronized (closeFuture) {
+			if (isClosing()) {
+				return closeFuture;
+			}
+			closing = true;
+		}
+
+		filterChain.fireFilterClose();
+		return closeFuture;
+	}
+
+	@Override
+	public CloseFuture closeOnFlush() {
+		if (!isClosing()) {
+			writeRequestQueue.offer(CLOSE_REQUEST);
+			processor.flush(this);
+		}
+		return closeFuture;
+	}
+
+	@Override
+	public void shutdownOnFlush() {
+		if (!isClosing()) {
+			writeRequestQueue.offer(SHUTDOWN_REQUEST);
+			processor.flush(this);
+		}
+	}
+
+	@Override
+	public IoService getService() {
+		return service;
+	}
+
+	@Override
+	public IoHandler getHandler() {
+		return service.getHandler();
+	}
+
+	@Override
+	public AbstractSocketSessionConfig getConfig() {
+		return config;
+	}
+
+	@Override
+	public IoFilterChain getFilterChain() {
+		return filterChain;
+	}
+
+	@Override
+	public WriteRequestQueue getWriteRequestQueue() {
+		return writeRequestQueue;
+	}
+
+	@Override
+	public WriteRequest getCurrentWriteRequest() {
+		return currentWriteRequest;
+	}
+
+	@Override
+	public void setCurrentWriteRequest(WriteRequest currentWriteRequest) {
+		this.currentWriteRequest = currentWriteRequest;
+	}
+
+	public SocketChannel getChannel() {
+		return channel;
+	}
+
+	public Socket getSocket() {
 		return channel.socket();
 	}
 
-	/**
-	 * @return The {@link SelectionKey} associated with this {@link IoSession}
-	 */
-	SelectionKey getSelectionKey() {
-		return key;
-	}
-
-	/**
-	 * Sets the {@link SelectionKey} for this {@link IoSession}
-	 *
-	 * @param key The new {@link SelectionKey}
-	 */
-	void setSelectionKey(SelectionKey key) {
-		this.key = key;
+	public IoProcessor<NioSession> getProcessor() {
+		return processor;
 	}
 
 	public NioProcessor getNioProcessor() {
@@ -135,14 +274,362 @@ public final class NioSession extends AbstractIoSession {
 		nioProcessor = processor;
 	}
 
-	@Override
 	public boolean isInProcessorThread() {
 		return nioProcessor.isInProcessorThread();
 	}
 
-	@Override
 	public boolean isInterestedInWrite() {
-		return key != null && key.isValid() && ((key.interestOps() & SelectionKey.OP_WRITE) != 0);
+		return selKey != null && selKey.isValid() && (selKey.interestOps() & SelectionKey.OP_WRITE) != 0;
+	}
+
+	void setSelectionKey(SelectionKey key) {
+		selKey = key;
+	}
+
+	/**
+	 * Get the state of a session (One of OPENING, OPEN, CLOSING)
+	 */
+	SessionState getState() {
+		SelectionKey key = selKey;
+		if (key == null) {
+			// The channel is not yet regisetred to a selector
+			return SessionState.OPENING;
+		}
+		return key.isValid() ? SessionState.OPENED : SessionState.CLOSING;
+	}
+
+	/**
+	 * Destroy the underlying client socket handle
+	 *
+	 * @throws IOException any exception thrown by the underlying system calls
+	 */
+	void destroy() throws IOException {
+		SelectionKey key = selKey;
+		if (key != null) {
+			key.cancel();
+		}
+		channel.close();
+	}
+
+	/**
+	 * Set the session to be informed when a read event should be processed
+	 *
+	 * @param isInterested <tt>true</tt> for registering, <tt>false</tt> for removing
+	 * @throws Exception If there was a problem while registering the session
+	 */
+	void setInterestedInRead(boolean isInterested) {
+		SelectionKey key = selKey;
+		if (key == null || !key.isValid()) {
+			return;
+		}
+
+		int oldInterestOps = key.interestOps();
+		int newInterestOps = oldInterestOps;
+
+		if (isInterested) {
+			newInterestOps |= SelectionKey.OP_READ;
+		} else {
+			newInterestOps &= ~SelectionKey.OP_READ;
+		}
+
+		if (oldInterestOps != newInterestOps) {
+			key.interestOps(newInterestOps);
+		}
+	}
+
+	/**
+	 * Set the session to be informed when a write event should be processed
+	 *
+	 * @param isInterested <tt>true</tt> for registering, <tt>false</tt> for removing
+	 * @throws Exception If there was a problem while registering the session
+	 */
+	void setInterestedInWrite(boolean isInterested) {
+		SelectionKey key = selKey;
+		if (key == null || !key.isValid()) {
+			return;
+		}
+
+		int oldInterestOps = key.interestOps();
+		int newInterestOps = oldInterestOps;
+
+		if (isInterested) {
+			newInterestOps |= SelectionKey.OP_WRITE;
+		} else {
+			newInterestOps &= ~SelectionKey.OP_WRITE;
+		}
+
+		if (oldInterestOps != newInterestOps) {
+			key.interestOps(newInterestOps);
+		}
+	}
+
+	/**
+	 * Set the scheduledForFLush flag.
+	 * As we may have concurrent access to this flag, we compare and set it in one call.
+	 *
+	 * @param schedule the new value to set if not already set.
+	 * @return true if the session flag has been set, and if it wasn't set already.
+	 */
+	boolean setScheduledForFlush(boolean schedule) {
+		if (schedule) {
+			// If the current tag is set to false, switch it to true,
+			// otherwise, we do nothing but return false: the session is already scheduled for flush
+			return scheduledForFlushUpdater.compareAndSet(this, 0, 1);
+		}
+
+		scheduledForFlush = 0;
+		return true;
+	}
+
+	/**
+	 * Change the session's status: it's not anymore scheduled for flush
+	 */
+	void unscheduledForFlush() {
+		scheduledForFlush = 0;
+	}
+
+	boolean setScheduledForRemove() {
+		return scheduledForRemoveUpdater.compareAndSet(this, 0, 1);
+	}
+
+	void removeNow(IOException ioe) {
+		clearWriteRequestQueue(ioe);
+
+		try {
+			destroy();
+		} catch (Exception e) {
+			filterChain.fireExceptionCaught(e);
+		} finally {
+			try {
+				clearWriteRequestQueue(null);
+				service.fireSessionDestroyed(this);
+			} catch (Exception e) {
+				// The session was either destroyed or not at this point.
+				// We do not want any exception thrown from this "cleanup" code
+				// to change the return value by bubbling up.
+				filterChain.fireExceptionCaught(e);
+			}
+		}
+	}
+
+	private void clearWriteRequestQueue(IOException ioe) {
+		WriteRequest req = currentWriteRequest;
+		if (req == null) {
+			req = writeRequestQueue.poll();
+			if (req == null) {
+				return;
+			}
+		} else {
+			setCurrentWriteRequest(null);
+		}
+
+		Exception ex = (ioe != null ? new WriteToClosedSessionException(ioe) : new WriteToClosedSessionException());
+
+		do {
+			req.writeRequestFuture().setException(ex);
+
+			Object message = req.writeRequestMessage();
+			if (message instanceof IoBuffer) {
+				((IoBuffer) message).free();
+			}
+		} while ((req = writeRequestQueue.poll()) != null);
+
+		filterChain.fireExceptionCaught(ex);
+	}
+
+	private void increaseReadBufferSize() {
+		AbstractSocketSessionConfig cfg = config;
+		int readBufferSize = cfg.getReadBufferSize() << 1;
+		if (readBufferSize <= cfg.getMaxReadBufferSize()) {
+			cfg.setReadBufferSize(readBufferSize);
+		}
+
+		deferDecreaseReadBuffer = true;
+	}
+
+	private void decreaseReadBufferSize() {
+		if (deferDecreaseReadBuffer) {
+			deferDecreaseReadBuffer = false;
+			return;
+		}
+
+		AbstractSocketSessionConfig cfg = config;
+		int readBufferSize = cfg.getReadBufferSize() >> 1;
+		if (readBufferSize >= cfg.getMinReadBufferSize()) {
+			cfg.setReadBufferSize(readBufferSize);
+		}
+
+		deferDecreaseReadBuffer = true;
+	}
+
+	void read() {
+		try {
+			int readBufferSize = config.getReadBufferSize();
+			IoBuffer buf = IoBuffer.allocate(readBufferSize);
+			int readBytes = channel.read(buf.buf());
+
+			if (readBytes > 0) {
+				if ((readBytes << 1) < readBufferSize) {
+					decreaseReadBufferSize();
+				} else if (readBytes >= readBufferSize) {
+					increaseReadBufferSize();
+				}
+				filterChain.fireMessageReceived(buf.flip());
+			} else {
+				// release temporary buffer when read nothing
+				buf.free();
+				if (readBytes < 0) {
+					filterChain.fireInputClosed();
+				}
+			}
+		} catch (IOException e) {
+			closeNow();
+			filterChain.fireExceptionCaught(e);
+		} catch (Exception e) {
+			filterChain.fireExceptionCaught(e);
+		}
+	}
+
+	/**
+	 * Write a part of a file to a {@link IoSession}, if the underlying API isn't supporting
+	 * system calls like sendfile(), you can throw a {@link UnsupportedOperationException}
+	 * so the file will be send using usual {@link #write(AbstractIoSession, IoBuffer, int)} call.
+	 *
+	 * @param region the file region to write
+	 * @param length the length of the portion to send
+	 * @return the number of written bytes
+	 * @throws IOException any exception thrown by the underlying system calls
+	 */
+	int transferFile(FileRegion region, int length) throws IOException {
+		try {
+			return (int) region.getFileChannel().transferTo(region.getPosition(), length, channel);
+		} catch (IOException e) {
+			// Check to see if the IOException is being thrown due to
+			// http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=5103988
+			String message = e.getMessage();
+			if (message != null && message.contains("temporarily unavailable")) {
+				return 0;
+			}
+			throw e;
+		}
+	}
+
+	@Override
+	public WriteFuture write(Object message) {
+		if (message == null) {
+			throw new IllegalArgumentException("trying to write a null message: not allowed");
+		}
+
+		// If the session has been closed or is closing, we can't either send a message to the remote side.
+		// We generate a future containing an exception.
+		if (isClosing() || !isConnected()) {
+			return DefaultWriteFuture.newNotWrittenFuture(this, new WriteToClosedSessionException());
+		}
+
+		try {
+			if ((message instanceof IoBuffer) && !((IoBuffer) message).hasRemaining()) {
+				// Nothing to write: probably an error in the user code
+				throw new IllegalArgumentException("message is empty, forgot to call flip()?");
+			} else if (message instanceof FileChannel) {
+				FileChannel fileChannel = (FileChannel) message;
+				message = new DefaultFileRegion(fileChannel, 0, fileChannel.size());
+			}
+		} catch (IOException e) {
+			ExceptionMonitor.getInstance().exceptionCaught(e);
+			return DefaultWriteFuture.newNotWrittenFuture(this, e);
+		}
+
+		// Now, we can write the message.
+		WriteFuture writeFuture = new DefaultWriteFuture(this);
+		WriteRequest writeRequest = new DefaultWriteRequest(message, writeFuture);
+		filterChain.fireFilterWrite(writeRequest);
+		return writeFuture;
+	}
+
+	@Override
+	public Object getAttachment() {
+		return attachment;
+	}
+
+	@Override
+	public Object setAttachment(Object attachment) {
+		Object old = this.attachment;
+		this.attachment = attachment;
+		return old;
+	}
+
+	@Override
+	public Object getAttribute(Object key) {
+		return getAttribute(key, null);
+	}
+
+	@Override
+	public Object getAttribute(Object key, Object defaultValue) {
+		return attributes.getAttribute(key, defaultValue);
+	}
+
+	@Override
+	public Object setAttribute(Object key, Object value) {
+		return attributes.setAttribute(key, value);
+	}
+
+	@Override
+	public Object setAttributeIfAbsent(Object key, Object value) {
+		return attributes.setAttributeIfAbsent(key, value);
+	}
+
+	@Override
+	public Object removeAttribute(Object key) {
+		return attributes.removeAttribute(key);
+	}
+
+	@Override
+	public boolean removeAttribute(Object key, Object value) {
+		return attributes.removeAttribute(key, value);
+	}
+
+	@Override
+	public boolean replaceAttribute(Object key, Object oldValue, Object newValue) {
+		return attributes.replaceAttribute(key, oldValue, newValue);
+	}
+
+	@Override
+	public boolean containsAttribute(Object key) {
+		return attributes.containsAttribute(key);
+	}
+
+	@Override
+	public Set<Object> getAttributeKeys() {
+		return attributes.getAttributeKeys();
+	}
+
+	public IoSessionAttributeMap getAttributeMap() {
+		return attributes;
+	}
+
+	public void setAttributeMap(IoSessionAttributeMap attributes) {
+		this.attributes = attributes;
+	}
+
+	public void setWriteRequestQueue(WriteRequestQueue writeRequestQueue) {
+		this.writeRequestQueue = writeRequestQueue;
+	}
+
+	@Override
+	public String toString() {
+		String local, remote;
+		try {
+			local = String.valueOf(getLocalAddress());
+		} catch (Exception e) {
+			local = e.getMessage();
+		}
+		try {
+			remote = String.valueOf(getRemoteAddress());
+		} catch (Exception e) {
+			remote = e.getMessage();
+		}
+		return String.format(service instanceof IoAcceptor ?
+				"(%d: nio server: %s <= %s)" : "(%d: nio client: %s => %s)", sessionId, local, remote);
 	}
 
 	/**

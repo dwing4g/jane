@@ -446,7 +446,7 @@ public final class SslHandler {
 			SSLEngineResult result = sslEngine.wrap(SimpleBufferAllocator.emptyBuffer.buf(), outNetBuffer.buf());
 			if (result.getStatus() != Status.BUFFER_OVERFLOW) {
 				if (result.getStatus() != Status.CLOSED) {
-					throw new SSLException("Improper close state: " + result);
+					throw new SSLException("improper close state: " + result);
 				}
 				break;
 			}
@@ -546,8 +546,8 @@ public final class SslHandler {
 				break;
 
 			default:
-				String msg = "Invalid Handshaking State" + handshakeStatus +
-						" while processing the Handshake for session " + session.getId();
+				String msg = "invalid handshaking state" + handshakeStatus +
+						" while processing the handshake for session " + session.getId();
 				ExceptionMonitor.getInstance().error(msg);
 				throw new IllegalStateException(msg);
 			}
@@ -587,7 +587,7 @@ public final class SslHandler {
 				try {
 					handshake(nextFilter);
 				} catch (SSLException ssle) {
-					SSLException newSsle = new SSLHandshakeException("SSL handshake failed.");
+					SSLException newSsle = new SSLHandshakeException("SSL handshake failed");
 					newSsle.initCause(ssle);
 					throw newSsle;
 				}
@@ -721,10 +721,10 @@ public final class SslHandler {
 		if (handshakeComplete) {
 			sb.append("SSL established");
 		} else {
-			sb.append("Processing Handshake; Status:").append(handshakeStatus);
+			sb.append("processing handshake; status:").append(handshakeStatus);
 		}
 
-		return sb.append("; HandshakeComplete:").append(handshakeComplete).append('>').toString();
+		return sb.append("; handshakeComplete:").append(handshakeComplete).append('>').toString();
 	}
 
 	/**

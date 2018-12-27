@@ -8,11 +8,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.future.ConnectFuture;
-import org.apache.mina.core.session.AbstractIoSession;
 import org.apache.mina.core.session.DefaultIoSessionDataStructureFactory;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequest;
 import org.apache.mina.core.write.WriteRequestQueue;
+import org.apache.mina.transport.socket.nio.NioSession;
 import jane.core.Log;
 import jane.core.NetManager;
 import jane.tool.CachedIoBufferAllocator;
@@ -65,11 +65,23 @@ public final class TestEcho extends NetManager
 					{
 						wr = _wrq.pollFirst();
 					}
-					if(wr == AbstractIoSession.CLOSE_REQUEST)
+					if(wr == NioSession.CLOSE_REQUEST)
 					{
 						wr = null;
 						session.closeNow();
 						dispose();
+					}
+					else if(wr == NioSession.SHUTDOWN_REQUEST)
+					{
+						try
+						{
+							((NioSession)session).getChannel().shutdownOutput();
+						}
+						catch(IOException e)
+						{
+						}
+						dispose();
+						wr = null;
 					}
 					return wr;
 				}

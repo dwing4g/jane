@@ -853,7 +853,11 @@ public class NetManager implements IoHandler
 	{
 		Supplier<IoFilter> codecFactory = _codecFactory;
 		if(codecFactory != null)
-			session.getFilterChain().addLast("codec", codecFactory.get());
+		{
+			IoFilter codec = codecFactory.get();
+			if(codec != null)
+				session.getFilterChain().addLast("codec", codec);
+		}
 	}
 
 	@Override
