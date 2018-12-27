@@ -55,12 +55,8 @@ import org.apache.mina.util.ExceptionMonitor;
  * This class handle the logic behind binding, accepting and disposing the server sockets.
  * An {@link Executor} will be used for running client accepting and a {@link NioProcessor}
  * will be used for processing client I/O operations like reading, writing and closing.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class NioSocketAcceptor extends AbstractIoService implements IoAcceptor {
-	private Selector selector;
-
 	private final ArrayList<InetSocketAddress> boundAddresses = new ArrayList<>(0);
 
 	/**
@@ -72,15 +68,11 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 	/** A lock used to protect the selector to be waked up before it's created */
 	private final Semaphore lock = new Semaphore(1);
 
-	private final IoProcessor<NioSession> processor;
-
 	private final Queue<AcceptorOperationFuture> registerQueue = new ConcurrentLinkedQueue<>();
 	private final Queue<AcceptorOperationFuture> cancelQueue = new ConcurrentLinkedQueue<>();
 
 	private final Map<SocketAddress, ServerSocketChannel> boundHandles =
 			Collections.synchronizedMap(new HashMap<SocketAddress, ServerSocketChannel>(0));
-
-	private final ServiceOperationFuture disposalFuture = new ServiceOperationFuture();
 
 	/** The thread responsible of accepting incoming requests */
 	private final AtomicReference<Acceptor> acceptorRef = new AtomicReference<>();
@@ -90,9 +82,6 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 	 * Default to 50 (as in the SocketServer default).
 	 */
 	private int backlog = 50;
-
-	/** A flag set when the acceptor has been created and initialized */
-	private volatile boolean selectable;
 
 	private boolean reuseAddress = true;
 	private boolean disconnectOnUnbind = true;
@@ -124,7 +113,7 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 	 *            triggering events to the bound {@link IoHandler} and processing the chains of {@link IoFilter}
 	 */
 	public NioSocketAcceptor(IoProcessor<NioSession> processor) {
-		this.processor = processor;
+		super(processor);
 
 		try {
 			selector = Selector.open();
@@ -149,10 +138,8 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 	 */
 	public void setBacklog(int backlog) {
 		synchronized (bindLock) {
-			if (isActive()) {
+			if (isActive())
 				throw new IllegalStateException("backlog can't be set while the acceptor is bound");
-			}
-
 			this.backlog = backlog;
 		}
 	}
@@ -173,10 +160,8 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 	 */
 	public void setReuseAddress(boolean reuseAddress) {
 		synchronized (bindLock) {
-			if (isActive()) {
+			if (isActive())
 				throw new IllegalStateException("backlog can't be set while the acceptor is bound");
-			}
-
 			this.reuseAddress = reuseAddress;
 		}
 	}
@@ -208,9 +193,8 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 
 	@Override
 	public void bind(SocketAddress localAddress) throws IOException {
-		if (localAddress == null) {
+		if (localAddress == null)
 			throw new IllegalArgumentException("null localAddress");
-		}
 
 		ArrayList<SocketAddress> localAddresses = new ArrayList<>(1);
 		localAddresses.add(localAddress);
@@ -232,13 +216,11 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 
 		boolean activate = false;
 		synchronized (bindLock) {
-			if (getHandler() == null) {
+			if (getHandler() == null)
 				throw new IllegalStateException("the handler is not set");
-			}
 
-			if (boundAddresses.isEmpty()) {
+			if (boundAddresses.isEmpty())
 				activate = true;
-			}
 
 			try {
 				bind0(localAddresses);
@@ -249,9 +231,8 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 			}
 		}
 
-		if (activate) {
+		if (activate)
 			fireServiceActivated();
-		}
 	}
 
 	@Override
@@ -261,9 +242,8 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 
 	@Override
 	public void unbind(SocketAddress localAddress) {
-		if (localAddress == null) {
+		if (localAddress == null)
 			throw new IllegalArgumentException("null localAddress");
-		}
 
 		ArrayList<SocketAddress> localAddresses = new ArrayList<>(1);
 		localAddresses.add(localAddress);
@@ -272,12 +252,10 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 
 	@Override
 	public void unbind(Collection<? extends SocketAddress> localAddresses) {
-		if (localAddresses == null) {
+		if (localAddresses == null)
 			throw new IllegalArgumentException("null localAddresses");
-		}
-		if (localAddresses.isEmpty()) {
+		if (localAddresses.isEmpty())
 			throw new IllegalArgumentException("empty localAddresses");
-		}
 
 		boolean deactivate = false;
 		synchronized (bindLock) {
@@ -295,16 +273,14 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 					}
 
 					boundAddresses.removeAll(localAddressesCopy);
-					if (boundAddresses.isEmpty()) {
+					if (boundAddresses.isEmpty())
 						deactivate = true;
-					}
 				}
 			}
 		}
 
-		if (deactivate) {
+		if (deactivate)
 			fireServiceDeactivated();
-		}
 	}
 
 	/**
@@ -337,16 +313,14 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 		// Now, we wait until this request is completed.
 		request.awaitUninterruptibly();
 
-		if (request.getException() != null) {
+		if (request.getException() != null)
 			throw request.getException();
-		}
 
 		synchronized (boundAddresses) {
 			for (ServerSocketChannel channel : boundHandles.values()) {
 				InetSocketAddress sa = (InetSocketAddress)channel.socket().getLocalSocketAddress();
-				if (sa != null) {
+				if (sa != null)
 					boundAddresses.add(sa);
-				}
 			}
 		}
 	}
@@ -364,9 +338,8 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 		selector.wakeup();
 
 		future.awaitUninterruptibly();
-		if (future.getException() != null) {
+		if (future.getException() != null)
 			throw future.getException();
-		}
 	}
 
 	/**
@@ -389,11 +362,10 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 			lock.acquire();
 			acceptor = new Acceptor();
 
-			if (acceptorRef.compareAndSet(null, acceptor)) {
+			if (acceptorRef.compareAndSet(null, acceptor))
 				executeWorker(acceptor);
-			} else {
+			else
 				lock.release();
-			}
 		}
 	}
 
@@ -440,15 +412,12 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 					if (nHandles == 0) {
 						acceptorRef.set(null);
 
-						if (registerQueue.isEmpty() && cancelQueue.isEmpty() || !acceptorRef.compareAndSet(null, this)) {
+						if (registerQueue.isEmpty() && cancelQueue.isEmpty() || !acceptorRef.compareAndSet(null, this))
 							break;
-						}
 					}
 
-					if (selected > 0) {
-						// We have some connection request, let's process them here.
-						processHandles(selector.selectedKeys());
-					}
+					if (selected > 0)
+						processHandles(selector.selectedKeys()); // We have some connection request, let's process them here
 
 					// check to see if any cancellation request has been made.
 					nHandles -= unregisterHandles();
@@ -475,9 +444,8 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 				} finally {
 					try {
 						synchronized (getSessionConfig()) {
-							if (isDisposing() && selector != null) {
+							if (isDisposing() && selector != null)
 								selector.close();
-							}
 						}
 					} catch (Exception e) {
 						ExceptionMonitor.getInstance().exceptionCaught(e);
@@ -499,19 +467,15 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 		@SuppressWarnings("resource")
 		private NioSession accept(IoProcessor<NioSession> proc, ServerSocketChannel channel) throws IOException {
 			SelectionKey key = null;
-
-			if (channel != null) {
+			if (channel != null)
 				key = channel.keyFor(selector);
-			}
 
-			if (key == null || !key.isValid() || !key.isAcceptable()) {
+			if (key == null || !key.isValid() || !key.isAcceptable())
 				return null;
-			}
 
 			// accept the connection from the client
 			try {
 				SocketChannel ch = (channel != null ? channel.accept() : null); //NOSONAR
-
 				return ch != null ? new NioSession(NioSocketAcceptor.this, proc, ch) : null;
 			} catch (Throwable t) {
 				if(t.getMessage().equals("Too many open files")) {
@@ -523,14 +487,10 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 						// NOTE : this is a workaround, there is no way we can handle this exception in any smarter way...
 						Thread.sleep(50L);
 					} catch (InterruptedException ie) {
-						// Nothing to do
 					}
-				} else {
-					throw t;
+					return null; // No session when we have met an exception
 				}
-
-				// No session when we have met an exception
-				return null;
+				throw t;
 			}
 		}
 
@@ -546,29 +506,17 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 			for (Iterator<SelectionKey> it = keys.iterator(); it.hasNext();) {
 				SelectionKey key = it.next();
 				@SuppressWarnings("resource")
-				ServerSocketChannel channel = (key.isValid() && key.isAcceptable() ? (ServerSocketChannel) key.channel() : null);
+				ServerSocketChannel channel = (key.isValid() && key.isAcceptable() ? (ServerSocketChannel)key.channel() : null);
 				it.remove();
 
 				// Associates a new created connection to a processor, and get back a session
 				NioSession session = accept(processor, channel);
-				if (session == null) {
+				if (session == null)
 					continue;
-				}
 
 				initSession(session, null);
-
-				// add the session to the SocketIoProcessor
-				session.getProcessor().add(session);
+				session.getProcessor().add(session); // add the session to the SocketIoProcessor
 			}
-		}
-
-		private void close(ServerSocketChannel channel) throws IOException {
-			SelectionKey key = channel.keyFor(selector);
-			if (key != null) {
-				key.cancel();
-			}
-
-			channel.close();
 		}
 
 		/**
@@ -617,9 +565,8 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 			for (;;) {
 				// The register queue contains the list of services to manage in this acceptor.
 				AcceptorOperationFuture future = registerQueue.poll();
-				if (future == null) {
+				if (future == null)
 					return 0;
-				}
 
 				ArrayList<SocketAddress> localAddresses = future.getLocalAddresses();
 				// We create a temporary map to store the bound handles,
@@ -671,18 +618,16 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 		private int unregisterHandles() {
 			for (int cancelledHandles = 0;;) {
 				AcceptorOperationFuture future = cancelQueue.poll();
-				if (future == null) {
+				if (future == null)
 					return cancelledHandles;
-				}
 
 				// close the channels
 				ArrayList<SocketAddress> sas = future.getLocalAddresses();
 				for (int i = 0, n = sas.size(); i < n; i++) {
 					@SuppressWarnings("resource")
 					ServerSocketChannel channel = boundHandles.remove(sas.get(i));
-					if (channel == null) {
+					if (channel == null)
 						continue;
-					}
 
 					try {
 						close(channel);
@@ -723,9 +668,8 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 			StringBuilder sb = new StringBuilder("acceptor operation: ");
 			if (localAddresses != null) {
 				for (int i = 0, n = localAddresses.size(); i < n; i++) {
-					if (i > 0) {
+					if (i > 0)
 						sb.append(',');
-					}
 					sb.append(localAddresses.get(i));
 				}
 			}

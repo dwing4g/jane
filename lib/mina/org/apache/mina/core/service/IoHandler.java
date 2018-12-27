@@ -23,8 +23,6 @@ import org.apache.mina.core.session.IoSession;
 
 /**
  * Handles all I/O events fired by MINA.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface IoHandler {
 	/**

@@ -22,8 +22,6 @@ import java.net.Socket;
 
 /**
  * The TCP transport session configuration.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public abstract class AbstractSocketSessionConfig {
 	/** The default size of the buffer used to read incoming data */
@@ -50,9 +48,8 @@ public abstract class AbstractSocketSessionConfig {
 	 * @param readBufferSize The size of the read buffer
 	 */
 	public void setReadBufferSize(int readBufferSize) {
-		if (readBufferSize <= 0) {
+		if (readBufferSize <= 0)
 			throw new IllegalArgumentException("readBufferSize: " + readBufferSize + " (expected: 1+)");
-		}
 		this.readBufferSize = readBufferSize;
 	}
 
@@ -71,12 +68,10 @@ public abstract class AbstractSocketSessionConfig {
 	 * @param minReadBufferSize The minimum size of the read buffer
 	 */
 	public void setMinReadBufferSize(int minReadBufferSize) {
-		if (minReadBufferSize <= 0) {
+		if (minReadBufferSize <= 0)
 			throw new IllegalArgumentException("minReadBufferSize: " + minReadBufferSize + " (expected: 1+)");
-		}
-		if (minReadBufferSize > maxReadBufferSize) {
+		if (minReadBufferSize > maxReadBufferSize)
 			throw new IllegalArgumentException("minReadBufferSize: " + minReadBufferSize + " (expected: smaller than " + maxReadBufferSize + ')');
-		}
 		this.minReadBufferSize = minReadBufferSize;
 	}
 
@@ -95,12 +90,10 @@ public abstract class AbstractSocketSessionConfig {
 	 * @param maxReadBufferSize The maximum size of the read buffer
 	 */
 	public void setMaxReadBufferSize(int maxReadBufferSize) {
-		if (maxReadBufferSize <= 0) {
+		if (maxReadBufferSize <= 0)
 			throw new IllegalArgumentException("maxReadBufferSize: " + maxReadBufferSize + " (expected: 1+)");
-		}
-		if (maxReadBufferSize < minReadBufferSize) {
+		if (maxReadBufferSize < minReadBufferSize)
 			throw new IllegalArgumentException("maxReadBufferSize: " + maxReadBufferSize + " (expected: greater than " + minReadBufferSize + ')');
-		}
 		this.maxReadBufferSize = maxReadBufferSize;
 	}
 
@@ -110,39 +103,30 @@ public abstract class AbstractSocketSessionConfig {
 	 * @param config The configuration to use
 	 */
 	public void setAll(AbstractSocketSessionConfig config) {
-		if (config == null) {
+		if (config == null)
 			throw new IllegalArgumentException("config");
-		}
 
 		setReadBufferSize(config.getReadBufferSize());
 		setMinReadBufferSize(config.getMinReadBufferSize());
 		setMaxReadBufferSize(config.getMaxReadBufferSize());
 
 		// Minimize unnecessary system calls by checking all 'propertyChanged' properties.
-		if (config.isReceiveBufferSizeChanged()) {
+		if (config.isReceiveBufferSizeChanged())
 			setReceiveBufferSize(config.getReceiveBufferSize());
-		}
-		if (config.isSendBufferSizeChanged()) {
+		if (config.isSendBufferSizeChanged())
 			setSendBufferSize(config.getSendBufferSize());
-		}
-		if (config.isSoLingerChanged()) {
+		if (config.isSoLingerChanged())
 			setSoLinger(config.getSoLinger());
-		}
-		if (config.isTrafficClassChanged() && getTrafficClass() != config.getTrafficClass()) {
+		if (config.isTrafficClassChanged() && getTrafficClass() != config.getTrafficClass())
 			setTrafficClass(config.getTrafficClass());
-		}
-		if (config.isReuseAddressChanged()) {
+		if (config.isReuseAddressChanged())
 			setReuseAddress(config.isReuseAddress());
-		}
-		if (config.isTcpNoDelayChanged()) {
+		if (config.isTcpNoDelayChanged())
 			setTcpNoDelay(config.isTcpNoDelay());
-		}
-		if (config.isKeepAliveChanged()) {
+		if (config.isKeepAliveChanged())
 			setKeepAlive(config.isKeepAlive());
-		}
-		if (config.isOobInlineChanged()) {
+		if (config.isOobInlineChanged())
 			setOobInline(config.isOobInline());
-		}
 	}
 
 	/**

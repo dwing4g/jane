@@ -30,8 +30,6 @@ import org.apache.mina.util.ExceptionMonitor;
 /**
  * A default implementation of {@link IoFilterChain} that provides all operations
  * for developers who want to implement their own transport layer once used with {@link AbstractIoSession}.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class DefaultIoFilterChain implements IoFilterChain {
 	/**
@@ -57,10 +55,8 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 	 * @param session The session associated with the created filter chain
 	 */
 	public DefaultIoFilterChain(NioSession session) {
-		if (session == null) {
+		if (session == null)
 			throw new IllegalArgumentException("session");
-		}
-
 		this.session = session;
 	}
 
@@ -72,9 +68,8 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 	@Override
 	public synchronized EntryImpl getEntry(String name) {
 		for (EntryImpl e = head; e != null; e = e.nextEntry) {
-			if (e.getName().equals(name)) {
+			if (e.getName().equals(name))
 				return e;
-			}
 		}
 		return null;
 	}
@@ -82,9 +77,8 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 	@Override
 	public synchronized EntryImpl getEntry(IoFilter filter) {
 		for (EntryImpl e = head; e != null; e = e.nextEntry) {
-			if (e.getFilter() == filter) {
+			if (e.getFilter() == filter)
 				return e;
-			}
 		}
 		return null;
 	}
@@ -92,9 +86,8 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 	@Override
 	public synchronized EntryImpl getEntry(Class<? extends IoFilter> filterType) {
 		for (EntryImpl e = head; e != null; e = e.nextEntry) {
-			if (filterType.isAssignableFrom(e.getFilter().getClass())) {
+			if (filterType.isAssignableFrom(e.getFilter().getClass()))
 				return e;
-			}
 		}
 		return null;
 	}
@@ -102,20 +95,16 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 	@Override
 	public synchronized ArrayList<Entry> getAll() {
 		ArrayList<Entry> list = new ArrayList<>();
-		for (EntryImpl e = head; e != null; e = e.nextEntry) {
+		for (EntryImpl e = head; e != null; e = e.nextEntry)
 			list.add(e);
-		}
-
 		return list;
 	}
 
 	@Override
 	public synchronized ArrayList<Entry> getAllReversed() {
 		ArrayList<Entry> list = new ArrayList<>();
-		for (EntryImpl e = tail; e != null; e = e.prevEntry) {
+		for (EntryImpl e = tail; e != null; e = e.prevEntry)
 			list.add(e);
-		}
-
 		return list;
 	}
 
@@ -178,17 +167,15 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 			throw new RuntimeException("onPreAdd(): " + name + ':' + filter + " in " + getSession(), e);
 		}
 
-		if (prevEntry != null) {
+		if (prevEntry != null)
 			prevEntry.nextEntry = newEntry;
-		} else {
+		else
 			head = newEntry;
-		}
 
-		if (nextEntry != null) {
+		if (nextEntry != null)
 			nextEntry.prevEntry = newEntry;
-		} else {
+		else
 			tail = newEntry;
-		}
 
 		try {
 			filter.onPostAdd(this, name, newEntry);
@@ -219,16 +206,14 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 	private void deregister0(EntryImpl entry) {
 		EntryImpl prevEntry = entry.prevEntry;
 		EntryImpl nextEntry = entry.nextEntry;
-		if (prevEntry != null) {
+		if (prevEntry != null)
 			prevEntry.nextEntry = nextEntry;
-		} else {
+		else
 			head = nextEntry;
-		}
-		if (nextEntry != null) {
+		if (nextEntry != null)
 			nextEntry.prevEntry = prevEntry;
-		} else {
+		else
 			tail = prevEntry;
-		}
 		entry.prevEntry = null;
 		entry.nextEntry = null;
 	}
@@ -240,10 +225,8 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 	 */
 	private EntryImpl checkOldName(String baseName) {
 		EntryImpl e = getEntry(baseName);
-		if (e == null) {
-			throw new IllegalArgumentException("Filter not found: " + baseName);
-		}
-
+		if (e == null)
+			throw new IllegalArgumentException("filter not found: " + baseName);
 		return e;
 	}
 
@@ -252,7 +235,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 	 */
 	private void checkAddable(String name) {
 		if (getEntry(name) != null) {
-			throw new IllegalArgumentException("Other filter is using the same name: " + name);
+			throw new IllegalArgumentException("other filter is using the same name: " + name);
 		}
 	}
 
@@ -270,10 +253,9 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 					session.getHandler().sessionCreated(session);
 				} finally {
 					// Notify the related future.
-					ConnectFuture future = (ConnectFuture) session.removeAttribute(SESSION_CREATED_FUTURE);
-					if (future != null) {
+					ConnectFuture future = (ConnectFuture)session.removeAttribute(SESSION_CREATED_FUTURE);
+					if (future != null)
 						future.setSession(session);
-					}
 				}
 			}
 		} catch (Exception e) {
@@ -291,11 +273,10 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 
 	private void callNextSessionOpened(Entry entry) {
 		try {
-			if (entry != null) {
+			if (entry != null)
 				entry.getFilter().sessionOpened(entry.getNextFilter(), session);
-			} else {
+			else
 				session.getHandler().sessionOpened(session);
-			}
 		} catch (Exception e) {
 			fireExceptionCaught(e);
 		} catch (Throwable e) {
@@ -322,9 +303,9 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 
 	private void callNextSessionClosed(Entry entry) {
 		try {
-			if (entry != null) {
+			if (entry != null)
 				entry.getFilter().sessionClosed(entry.getNextFilter(), session);
-			} else {
+			else {
 				try {
 					session.getHandler().sessionClosed(session);
 				} finally {
@@ -351,24 +332,21 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 
 	private void callNextExceptionCaught(Entry entry, Throwable cause) {
 		// Notify the related future.
-		ConnectFuture future = (ConnectFuture) session.removeAttribute(SESSION_CREATED_FUTURE);
+		ConnectFuture future = (ConnectFuture)session.removeAttribute(SESSION_CREATED_FUTURE);
 		if (future == null) {
 			try {
-				if (entry != null) {
+				if (entry != null)
 					entry.getFilter().exceptionCaught(entry.getNextFilter(), session, cause);
-				} else {
+				else
 					session.getHandler().exceptionCaught(session, cause);
-				}
 			} catch (Throwable e) {
 				ExceptionMonitor.getInstance().exceptionCaught(e);
 			}
 		} else {
 			// Please note that this place is not the only place that
 			// calls ConnectFuture.setException().
-			if (!session.isClosing()) {
-				// Call the closeNow method only if needed
-				session.closeNow();
-			}
+			if (!session.isClosing())
+				session.closeNow(); // Call the closeNow method only if needed
 
 			future.setException(cause);
 		}
@@ -381,11 +359,10 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 
 	private void callNextInputClosed(Entry entry) {
 		try {
-			if (entry != null) {
+			if (entry != null)
 				entry.getFilter().inputClosed(entry.getNextFilter(), session);
-			} else {
+			else
 				session.getHandler().inputClosed(session);
-			}
 		} catch (Throwable e) {
 			fireExceptionCaught(e);
 		}
@@ -398,11 +375,10 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 
 	private void callNextMessageReceived(Entry entry, Object message) {
 		try {
-			if (entry != null) {
+			if (entry != null)
 				entry.getFilter().messageReceived(entry.getNextFilter(), session, message);
-			} else {
+			else
 				session.getHandler().messageReceived(session, message);
-			}
 		} catch (Exception e) {
 			fireExceptionCaught(e);
 		} catch (Throwable e) {
@@ -430,11 +406,10 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 
 	private void callPreviousFilterWrite(Entry entry, WriteRequest writeRequest) {
 		try {
-			if (entry != null) {
+			if (entry != null)
 				entry.getFilter().filterWrite(entry.getNextFilter(), session, writeRequest);
-			} else {
+			else
 				session.getProcessor().write(session, writeRequest);
-			}
 		} catch (Exception e) {
 			writeRequest.writeRequestFuture().setException(e);
 			fireExceptionCaught(e);
@@ -452,11 +427,10 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 
 	private void callPreviousFilterClose(Entry entry) {
 		try {
-			if (entry != null) {
+			if (entry != null)
 				entry.getFilter().filterClose(entry.getNextFilter(), session);
-			} else {
+			else
 				session.getProcessor().remove(session);
-			}
 		} catch (Exception e) {
 			fireExceptionCaught(e);
 		} catch (Throwable e) {
@@ -468,22 +442,19 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 	@Override
 	public synchronized String toString() {
 		StringBuilder buf = new StringBuilder().append('{');
-
 		boolean empty = true;
 
 		for (EntryImpl e = head; e != null; e = e.nextEntry) {
-			if (!empty) {
+			if (!empty)
 				buf.append(", ");
-			} else {
+			else
 				empty = false;
-			}
 
 			buf.append('(').append(e.getName()).append(':').append(e.getFilter()).append(')');
 		}
 
-		if (empty) {
+		if (empty)
 			buf.append("empty");
-		}
 
 		return buf.append('}').toString();
 	}
@@ -495,12 +466,10 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		private final IoFilter filter;
 
 		EntryImpl(EntryImpl prevEntry, EntryImpl nextEntry, String name, IoFilter filter) {
-			if (name == null) {
+			if (name == null)
 				throw new IllegalArgumentException("name");
-			}
-			if (filter == null) {
+			if (filter == null)
 				throw new IllegalArgumentException("filter");
-			}
 
 			this.prevEntry = prevEntry;
 			this.nextEntry = nextEntry;
@@ -533,20 +502,18 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 			// Add the previous filter
 			sb.append(", prev:'");
 
-			if (prevEntry != null) {
+			if (prevEntry != null)
 				sb.append(prevEntry.name).append(':').append(prevEntry.getFilter().getClass().getSimpleName());
-			} else {
+			else
 				sb.append("null");
-			}
 
 			// Add the next filter
 			sb.append("', next:'");
 
-			if (nextEntry != null) {
+			if (nextEntry != null)
 				sb.append(nextEntry.name).append(':').append(nextEntry.getFilter().getClass().getSimpleName());
-			} else {
+			else
 				sb.append("null");
-			}
 
 			return sb.append("')").toString();
 		}

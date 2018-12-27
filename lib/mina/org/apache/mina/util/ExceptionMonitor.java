@@ -28,8 +28,6 @@ import org.slf4j.LoggerFactory;
  * You can monitor any uncaught exceptions by setting {@link ExceptionMonitor}
  * by calling {@link #setInstance(ExceptionMonitor)}.
  * The default monitor logs all caught exceptions in <tt>ERROR</tt> level using SLF4J.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public class ExceptionMonitor {
 	private static volatile ExceptionMonitor instance;
@@ -44,9 +42,8 @@ public class ExceptionMonitor {
 		if (monitor == null) {
 			synchronized(ExceptionMonitor.class) {
 				monitor = instance;
-				if (monitor == null) {
+				if (monitor == null)
 					instance = monitor = new ExceptionMonitor();
-				}
 			}
 		}
 		return monitor;
@@ -83,10 +80,9 @@ public class ExceptionMonitor {
 	 * @param cause The caught exception
 	 */
 	public void exceptionCaught(Throwable cause) {
-		if (cause instanceof Error) {
-			throw (Error) cause;
-		}
+		if (cause instanceof Error)
+			throw (Error)cause;
 
-		logger.error("Unexpected exception:", cause);
+		logger.error("unexpected exception:", cause);
 	}
 }

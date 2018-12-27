@@ -22,8 +22,6 @@ import java.nio.ByteBuffer;
 
 /**
  * A simplistic singleton {@link IoBufferAllocator} which simply allocates a new buffer every time.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class SimpleBufferAllocator implements IoBufferAllocator {
 	public static final SimpleBufferAllocator instance = new SimpleBufferAllocator();
@@ -35,9 +33,8 @@ public final class SimpleBufferAllocator implements IoBufferAllocator {
 
 	@Override
 	public IoBuffer allocate(int capacity, boolean direct) {
-		if (capacity <= 0) {
+		if (capacity <= 0)
 			return direct ? emptyDirectBuffer : emptyBuffer;
-		}
 		return new SimpleIoBuffer(capacity, direct);
 	}
 

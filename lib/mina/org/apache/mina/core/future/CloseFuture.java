@@ -32,8 +32,6 @@ package org.apache.mina.core.future;
  * // Now connection should be closed.
  * assert future.isClosed();
  * </pre>
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface CloseFuture extends IoFuture {
 	/**

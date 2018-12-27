@@ -63,8 +63,6 @@ import org.apache.mina.core.write.WriteRequest;
  *       notify that the filter is removed from the chain.</li>
  * </ol>
  *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
- *
  * @see IoFilterAdapter
  */
 public interface IoFilter {

@@ -18,6 +18,10 @@
  */
 package org.apache.mina.core.service;
 
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.spi.AbstractSelectableChannel;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,17 +52,19 @@ import org.apache.mina.util.ExceptionMonitor;
  * Base implementation of {@link IoService}s.
  *
  * An instance of IoService contains an Executor which will handle the incoming events.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public abstract class AbstractIoService implements IoService {
 	private static final AtomicInteger idGenerator = new AtomicInteger();
 
+	protected final IoProcessor<NioSession> processor;
+
 	/** The associated executor, responsible for handling execution of I/O events */
 	private final ExecutorService executor;
 
+	protected Selector selector;
+
 	/** The default {@link AbstractSocketSessionConfig} which will be used to configure new sessions */
-	private final DefaultSocketSessionConfig sessionConfig = new DefaultSocketSessionConfig();
+	private final DefaultSocketSessionConfig sessionConfig;
 
 	private IoFilterChainBuilder filterChainBuilder = new DefaultIoFilterChainBuilder();
 
@@ -75,18 +81,24 @@ public abstract class AbstractIoService implements IoService {
 
 	private final AtomicBoolean activated = new AtomicBoolean();
 
+	protected final ServiceOperationFuture disposalFuture = new ServiceOperationFuture();
+
+	/** A flag set when the acceptor/connector has been created and initialized */
+	protected volatile boolean selectable;
+
 	private volatile boolean disposing;
 	private volatile boolean disposed;
 
-	protected AbstractIoService() {
+	protected AbstractIoService(IoProcessor<NioSession> proc) {
+		processor = proc;
 		int id = idGenerator.incrementAndGet();
 		executor = new ThreadPoolExecutor(0, 1, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(),
 				r -> new Thread(r, getClass().getSimpleName() + '-' + id));
-		sessionConfig.init(this);
+		sessionConfig = new DefaultSocketSessionConfig(this);
 	}
 
 	@Override
-	public DefaultSocketSessionConfig getSessionConfig() {
+	public final DefaultSocketSessionConfig getSessionConfig() {
 		return sessionConfig;
 	}
 
@@ -102,16 +114,11 @@ public abstract class AbstractIoService implements IoService {
 
 	@Override
 	public final DefaultIoFilterChainBuilder getDefaultIoFilterChainBuilder() {
-		if (filterChainBuilder instanceof DefaultIoFilterChainBuilder) {
-			return (DefaultIoFilterChainBuilder) filterChainBuilder;
-		}
-
-		throw new IllegalStateException("Current filter chain builder is not a DefaultIoFilterChainBuilder.");
+		if (filterChainBuilder instanceof DefaultIoFilterChainBuilder)
+			return (DefaultIoFilterChainBuilder)filterChainBuilder;
+		throw new IllegalStateException("current filter chain builder is not a DefaultIoFilterChainBuilder");
 	}
 
-	/**
-	 * @return true if the instance is active
-	 */
 	@Override
 	public final boolean isActive() {
 		return activated.get();
@@ -134,14 +141,12 @@ public abstract class AbstractIoService implements IoService {
 
 	@Override
 	public final void dispose(boolean awaitTermination) {
-		if (disposed) {
+		if (disposed)
 			return;
-		}
 
 		synchronized (sessionConfig) {
 			if (!disposing) {
 				disposing = true;
-
 				try {
 					dispose0();
 				} catch (Exception e) {
@@ -169,17 +174,19 @@ public abstract class AbstractIoService implements IoService {
 	 */
 	protected abstract void dispose0() throws Exception;
 
-	/**
-	 * @return A Map of the managed {@link IoSession}s
-	 */
+	protected void close(AbstractSelectableChannel channel) throws IOException {
+		SelectionKey key = channel.keyFor(selector);
+		if (key != null)
+			key.cancel();
+
+		channel.close();
+	}
+
 	@Override
 	public final Map<Long, IoSession> getManagedSessions() { //NOSONAR
 		return readOnlyManagedSessions;
 	}
 
-	/**
-	 * @return The number of managed {@link IoSession}s
-	 */
 	@Override
 	public final int getManagedSessionCount() {
 		return managedSessions.size();
@@ -192,13 +199,10 @@ public abstract class AbstractIoService implements IoService {
 
 	@Override
 	public final void setHandler(IoHandler handler) {
-		if (handler == null) {
+		if (handler == null)
 			throw new IllegalArgumentException("handler cannot be null");
-		}
-
-		if (isActive()) {
-			throw new IllegalStateException("handler cannot be set while the service is active.");
-		}
+		if (isActive())
+			throw new IllegalStateException("handler cannot be set while the service is active");
 
 		this.handler = handler;
 	}
@@ -210,13 +214,10 @@ public abstract class AbstractIoService implements IoService {
 
 	@Override
 	public final void setSessionDataStructureFactory(IoSessionDataStructureFactory sessionDataStructureFactory) {
-		if (sessionDataStructureFactory == null) {
+		if (sessionDataStructureFactory == null)
 			throw new IllegalArgumentException("sessionDataStructureFactory");
-		}
-
-		if (isActive()) {
-			throw new IllegalStateException("sessionDataStructureFactory cannot be set while the service is active.");
-		}
+		if (isActive())
+			throw new IllegalStateException("sessionDataStructureFactory cannot be set while the service is active");
 
 		this.sessionDataStructureFactory = sessionDataStructureFactory;
 	}
@@ -232,21 +233,15 @@ public abstract class AbstractIoService implements IoService {
 	 * Calls {@link IoServiceListener#serviceDeactivated(IoService)} for all registered listeners.
 	 */
 	protected final void fireServiceDeactivated() {
-		if (!activated.compareAndSet(true, false)) {
-			// The instance is already desactivated
-			return;
-		}
+		if (!activated.compareAndSet(true, false))
+			return; // The instance is already desactivated
 
 		// Close all the sessions
 
-		if (!(this instanceof IoAcceptor)) {
-			// We don't disconnect sessions for anything but an Acceptor
+		if (!(this instanceof IoAcceptor))
+			return; // We don't disconnect sessions for anything but an Acceptor
+		if (!((IoAcceptor)this).isCloseOnDeactivation())
 			return;
-		}
-
-		if (!((IoAcceptor) this).isCloseOnDeactivation()) {
-			return;
-		}
 
 		Object lock = new Object();
 		// A listener in charge of releasing the lock when the close has been completed
@@ -256,18 +251,15 @@ public abstract class AbstractIoService implements IoService {
 			}
 		};
 
-		for (IoSession s : managedSessions.values()) {
+		for (IoSession s : managedSessions.values())
 			s.closeNow().addListener(listener);
-		}
 
 		try {
 			synchronized (lock) {
-				while (!managedSessions.isEmpty()) {
+				while (!managedSessions.isEmpty())
 					lock.wait(500);
-				}
 			}
 		} catch (InterruptedException ie) {
-			// Ignored
 		}
 	}
 
@@ -277,23 +269,14 @@ public abstract class AbstractIoService implements IoService {
 	 * @param session The session which has been created
 	 */
 	public final void fireSessionCreated(IoSession session) {
-		boolean firstSession = false;
+		boolean firstSession = (session.getService() instanceof IoConnector && managedSessions.isEmpty());
 
-		if (session.getService() instanceof IoConnector) {
-			firstSession = managedSessions.isEmpty();
-		}
-
-		// If already registered, ignore.
-		if (managedSessions.putIfAbsent(session.getId(), session) != null) {
+		if (managedSessions.putIfAbsent(session.getId(), session) != null) // If already registered, ignore
 			return;
-		}
 
-		// If the first connector session, fire a virtual service activation event.
-		if (firstSession) {
+		if (firstSession) // If the first connector session, fire a virtual service activation event.
 			fireServiceActivated();
-		}
 
-		// Fire session events.
 		IoFilterChain filterChain = session.getFilterChain();
 		filterChain.fireSessionCreated();
 		filterChain.fireSessionOpened();
@@ -306,11 +289,9 @@ public abstract class AbstractIoService implements IoService {
 	 */
 	public final void fireSessionDestroyed(IoSession session) {
 		// Try to remove the remaining empty session set after removal.
-		if (managedSessions.remove(session.getId()) == null) {
+		if (managedSessions.remove(session.getId()) == null)
 			return;
-		}
 
-		// Fire session events.
 		session.getFilterChain().fireSessionClosed();
 
 		// Fire a virtual service deactivation event for the last session of the connector.
@@ -348,9 +329,6 @@ public abstract class AbstractIoService implements IoService {
 		// Do nothing. Extended class might add some specific code
 	}
 
-	/**
-	 * A {@link IoFuture} dedicated class for
-	 */
 	protected static class ServiceOperationFuture extends DefaultIoFuture {
 		public ServiceOperationFuture() {
 			super(null);
@@ -366,14 +344,12 @@ public abstract class AbstractIoService implements IoService {
 		}
 
 		public final Exception getException() {
-			return getValue() instanceof Exception ? (Exception) getValue() : null;
+			return getValue() instanceof Exception ? (Exception)getValue() : null;
 		}
 
 		public final void setException(Exception exception) {
-			if (exception == null) {
+			if (exception == null)
 				throw new IllegalArgumentException("exception");
-			}
-
 			setValue(exception);
 		}
 	}

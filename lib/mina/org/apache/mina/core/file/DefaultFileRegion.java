@@ -24,8 +24,6 @@ import java.nio.channels.FileChannel;
 /**
  * Manage a File to be sent to a remote host.
  * We keep a track on the current position, and the number of already written bytes.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class DefaultFileRegion implements FileRegion {
 	/** The channel used to manage the file */
@@ -58,17 +56,12 @@ public final class DefaultFileRegion implements FileRegion {
 	 * @param remainingBytes The remaining bytes
 	 */
 	public DefaultFileRegion(FileChannel channel, long position, long remainingBytes) {
-		if (channel == null) {
+		if (channel == null)
 			throw new IllegalArgumentException("channel can not be null");
-		}
-
-		if (position < 0) {
+		if (position < 0)
 			throw new IllegalArgumentException("position may not be less than 0");
-		}
-
-		if (remainingBytes < 0) {
+		if (remainingBytes < 0)
 			throw new IllegalArgumentException("remainingBytes may not be less than 0");
-		}
 
 		this.channel = channel;
 		this.originalPosition = position;

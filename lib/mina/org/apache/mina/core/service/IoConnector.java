@@ -29,8 +29,6 @@ import org.apache.mina.core.future.ConnectFuture;
  * <p>
  * Threads connect to endpoint start automatically when {@link #connect(SocketAddress)} is invoked,
  * and stop when all connection attempts are finished.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface IoConnector extends IoService {
 	/**

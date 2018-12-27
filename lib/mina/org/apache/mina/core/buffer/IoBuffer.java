@@ -69,8 +69,6 @@ import org.apache.mina.core.write.WriteRequest;
  *     <li>{@link SimpleBufferAllocator} (default)</li>
  *   </ul>
  *   You can implement your own allocator and use it by calling {@link #setAllocator(IoBufferAllocator)}.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	/** The allocator used to create new buffers */
@@ -92,9 +90,8 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 * @param newAllocator the new allocator to use
 	 */
 	public static void setAllocator(IoBufferAllocator newAllocator) {
-		if (newAllocator == null) {
+		if (newAllocator == null)
 			throw new IllegalArgumentException("allocator");
-		}
 
 		IoBufferAllocator oldAllocator = allocator;
 		allocator = newAllocator;
@@ -141,17 +138,15 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 * @return a direct or heap  IoBuffer which can hold up to capacity bytes
 	 */
 	public static IoBuffer allocate(int capacity, boolean isDirectBuffer) {
-		if (capacity < 0) {
+		if (capacity < 0)
 			throw new IllegalArgumentException("capacity: " + capacity);
-		}
 
 		return allocator.allocate(capacity, isDirectBuffer);
 	}
 
 	public static IoBuffer reallocate(IoBuffer buf, int capacity) {
-		if (buf.capacity() >= capacity) {
+		if (buf.capacity() >= capacity)
 			return buf;
-		}
 
 		int limit = buf.limit();
 		int pos = buf.position();
@@ -555,36 +550,31 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 * @return hexidecimal representation of this buffer
 	 */
 	public final String getHexDump(int lengthLimit) {
-		if (lengthLimit <= 0) {
+		if (lengthLimit <= 0)
 			throw new IllegalArgumentException("lengthLimit: " + lengthLimit + " (expected: 1+)");
-		}
 
 		int limit = limit();
 		int pos = position();
 		int len = limit - pos;
-		if (len <= 0) {
+		if (len <= 0)
 			return "empty";
-		}
 		boolean truncate = len > lengthLimit;
-		if (truncate) {
+		if (truncate)
 			limit = pos + (len = lengthLimit);
-		}
 
 		StringBuilder out = new StringBuilder(len * 3 + 2);
 
 		for (;;) {
 			int byteValue = get(pos) & 0xff;
-			out.append((char) digits[byteValue >> 4]);
-			out.append((char) digits[byteValue & 15]);
-			if (++pos >= limit) {
+			out.append((char)digits[byteValue >> 4]);
+			out.append((char)digits[byteValue & 15]);
+			if (++pos >= limit)
 				break;
-			}
 			out.append(' ');
 		}
 
-		if (truncate) {
+		if (truncate)
 			out.append("...");
-		}
 
 		return out.toString();
 	}
@@ -605,15 +595,13 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 			byte[] array = array();
 			int arrayOffset = arrayOffset();
 			for (int i = arrayOffset + position(), limit = arrayOffset + limit(); i < limit; i++) {
-				if (array[i] == b) {
+				if (array[i] == b)
 					return i - arrayOffset;
-				}
 			}
 		} else {
 			for (int i = position(), limit = limit(); i < limit; i++) {
-				if (get(i) == b) {
+				if (get(i) == b)
 					return i;
-				}
 			}
 		}
 		return -1;
@@ -648,9 +636,9 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 			longValue |= longValue << 8;
 			longValue |= longValue << 16;
 			longValue |= longValue << 32;
-			do {
+			do
 				bb.putLong(longValue);
-			} while ((size -= 8) >= 8);
+			while ((size -= 8) >= 8);
 		}
 
 		if (size >= 4) {
@@ -666,9 +654,8 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 			bb.putShort((short)(value & 0xff | (value << 8)));
 		}
 
-		if (size > 0) {
+		if (size > 0)
 			bb.put(value);
-		}
 
 		return this;
 	}
@@ -699,9 +686,8 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	public final IoBuffer fill(int size) {
 		ByteBuffer bb = buf();
 
-		for (; size >= 8; size -= 8) {
+		for (; size >= 8; size -= 8)
 			bb.putLong(0L);
-		}
 
 		if (size >= 4) {
 			size -= 4;
@@ -713,9 +699,8 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 			bb.putShort((short)0);
 		}
 
-		if (size > 0) {
+		if (size > 0)
 			bb.put((byte)0);
-		}
 
 		return this;
 	}
@@ -739,27 +724,23 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	@Override
 	public int hashCode() {
 		int h = remaining();
-		for (int i = position(), n = limit(); i < n; i++) {
+		for (int i = position(), n = limit(); i < n; i++)
 			h = h * 16777619 + get(i);
-		}
 		return h;
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof IoBuffer)) {
+		if (!(o instanceof IoBuffer))
 			return false;
-		}
 
-		IoBuffer that = (IoBuffer) o;
-		if (this.remaining() != that.remaining()) {
+		IoBuffer that = (IoBuffer)o;
+		if (this.remaining() != that.remaining())
 			return false;
-		}
 
 		for (int i = this.limit() - 1, j = that.limit() - 1, p = this.position(); i >= p; i--, j--) {
-			if (this.get(i) != that.get(j)) {
+			if (this.get(i) != that.get(j))
 				return false;
-			}
 		}
 		return true;
 	}
@@ -769,9 +750,8 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 		int r0 = this.remaining(), r1 = that.remaining();
 		for (int i = this.position(), j = that.position(), n = i + Math.min(r0, r1); i < n; i++, j++) {
 			int d = this.get(i) - that.get(j);
-			if (d != 0) {
+			if (d != 0)
 				return d;
-			}
 		}
 		return r0 - r1;
 	}

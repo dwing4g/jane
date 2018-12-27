@@ -22,8 +22,6 @@ import java.io.IOException;
 
 /**
  * An exception which is thrown when one or more write operations were attempted on a closed session.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class WriteToClosedSessionException extends IOException {
 	private static final long serialVersionUID = 1L;

@@ -54,8 +54,6 @@ import org.apache.mina.util.ExceptionMonitor;
 
 /**
  * An {@link IoSession} which is managed by the NIO socket transport (TCP/IP).
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class NioSession implements IoSession {
 	/** Internal write request objects that trigger session close and shutdown */
@@ -119,12 +117,12 @@ public final class NioSession implements IoSession {
 
 	@Override
 	public InetSocketAddress getLocalAddress() {
-		return (InetSocketAddress) getSocket().getLocalSocketAddress();
+		return (InetSocketAddress)getSocket().getLocalSocketAddress();
 	}
 
 	@Override
 	public InetSocketAddress getRemoteAddress() {
-		return (InetSocketAddress) getSocket().getRemoteSocketAddress();
+		return (InetSocketAddress)getSocket().getRemoteSocketAddress();
 	}
 
 	@Override
@@ -140,33 +138,29 @@ public final class NioSession implements IoSession {
 	@Override
 	public void suspendRead() {
 		readSuspended = true;
-		if (!closing && !closeFuture.isClosed()) {
+		if (!closing && !closeFuture.isClosed())
 			processor.updateTrafficControl(this);
-		}
 	}
 
 	@Override
 	public void suspendWrite() {
 		writeSuspended = true;
-		if (!closing && !closeFuture.isClosed()) {
+		if (!closing && !closeFuture.isClosed())
 			processor.updateTrafficControl(this);
-		}
 	}
 
 	@Override
 	public void resumeRead() {
 		readSuspended = false;
-		if (!closing && !closeFuture.isClosed()) {
+		if (!closing && !closeFuture.isClosed())
 			processor.updateTrafficControl(this);
-		}
 	}
 
 	@Override
 	public void resumeWrite() {
 		writeSuspended = false;
-		if (!closing && !closeFuture.isClosed()) {
+		if (!closing && !closeFuture.isClosed())
 			processor.updateTrafficControl(this);
-		}
 	}
 
 	@Override
@@ -192,9 +186,8 @@ public final class NioSession implements IoSession {
 	@Override
 	public CloseFuture closeNow() {
 		synchronized (closeFuture) {
-			if (isClosing()) {
+			if (isClosing())
 				return closeFuture;
-			}
 			closing = true;
 		}
 
@@ -291,10 +284,8 @@ public final class NioSession implements IoSession {
 	 */
 	SessionState getState() {
 		SelectionKey key = selKey;
-		if (key == null) {
-			// The channel is not yet regisetred to a selector
-			return SessionState.OPENING;
-		}
+		if (key == null)
+			return SessionState.OPENING; // The channel is not yet regisetred to a selector
 		return key.isValid() ? SessionState.OPENED : SessionState.CLOSING;
 	}
 
@@ -305,9 +296,8 @@ public final class NioSession implements IoSession {
 	 */
 	void destroy() throws IOException {
 		SelectionKey key = selKey;
-		if (key != null) {
+		if (key != null)
 			key.cancel();
-		}
 		channel.close();
 	}
 
@@ -319,22 +309,19 @@ public final class NioSession implements IoSession {
 	 */
 	void setInterestedInRead(boolean isInterested) {
 		SelectionKey key = selKey;
-		if (key == null || !key.isValid()) {
+		if (key == null || !key.isValid())
 			return;
-		}
 
 		int oldInterestOps = key.interestOps();
 		int newInterestOps = oldInterestOps;
 
-		if (isInterested) {
+		if (isInterested)
 			newInterestOps |= SelectionKey.OP_READ;
-		} else {
+		else
 			newInterestOps &= ~SelectionKey.OP_READ;
-		}
 
-		if (oldInterestOps != newInterestOps) {
+		if (oldInterestOps != newInterestOps)
 			key.interestOps(newInterestOps);
-		}
 	}
 
 	/**
@@ -345,22 +332,19 @@ public final class NioSession implements IoSession {
 	 */
 	void setInterestedInWrite(boolean isInterested) {
 		SelectionKey key = selKey;
-		if (key == null || !key.isValid()) {
+		if (key == null || !key.isValid())
 			return;
-		}
 
 		int oldInterestOps = key.interestOps();
 		int newInterestOps = oldInterestOps;
 
-		if (isInterested) {
+		if (isInterested)
 			newInterestOps |= SelectionKey.OP_WRITE;
-		} else {
+		else
 			newInterestOps &= ~SelectionKey.OP_WRITE;
-		}
 
-		if (oldInterestOps != newInterestOps) {
+		if (oldInterestOps != newInterestOps)
 			key.interestOps(newInterestOps);
-		}
 	}
 
 	/**
@@ -416,9 +400,8 @@ public final class NioSession implements IoSession {
 		WriteRequest req = currentWriteRequest;
 		if (req == null) {
 			req = writeRequestQueue.poll();
-			if (req == null) {
+			if (req == null)
 				return;
-			}
 		} else {
 			setCurrentWriteRequest(null);
 		}
@@ -429,9 +412,8 @@ public final class NioSession implements IoSession {
 			req.writeRequestFuture().setException(ex);
 
 			Object message = req.writeRequestMessage();
-			if (message instanceof IoBuffer) {
-				((IoBuffer) message).free();
-			}
+			if (message instanceof IoBuffer)
+				((IoBuffer)message).free();
 		} while ((req = writeRequestQueue.poll()) != null);
 
 		filterChain.fireExceptionCaught(ex);
@@ -440,9 +422,8 @@ public final class NioSession implements IoSession {
 	private void increaseReadBufferSize() {
 		AbstractSocketSessionConfig cfg = config;
 		int readBufferSize = cfg.getReadBufferSize() << 1;
-		if (readBufferSize <= cfg.getMaxReadBufferSize()) {
+		if (readBufferSize <= cfg.getMaxReadBufferSize())
 			cfg.setReadBufferSize(readBufferSize);
-		}
 
 		deferDecreaseReadBuffer = true;
 	}
@@ -455,9 +436,8 @@ public final class NioSession implements IoSession {
 
 		AbstractSocketSessionConfig cfg = config;
 		int readBufferSize = cfg.getReadBufferSize() >> 1;
-		if (readBufferSize >= cfg.getMinReadBufferSize()) {
+		if (readBufferSize >= cfg.getMinReadBufferSize())
 			cfg.setReadBufferSize(readBufferSize);
-		}
 
 		deferDecreaseReadBuffer = true;
 	}
@@ -469,18 +449,16 @@ public final class NioSession implements IoSession {
 			int readBytes = channel.read(buf.buf());
 
 			if (readBytes > 0) {
-				if ((readBytes << 1) < readBufferSize) {
+				if ((readBytes << 1) < readBufferSize)
 					decreaseReadBufferSize();
-				} else if (readBytes >= readBufferSize) {
+				else if (readBytes >= readBufferSize)
 					increaseReadBufferSize();
-				}
 				filterChain.fireMessageReceived(buf.flip());
 			} else {
 				// release temporary buffer when read nothing
 				buf.free();
-				if (readBytes < 0) {
+				if (readBytes < 0)
 					filterChain.fireInputClosed();
-				}
 			}
 		} catch (IOException e) {
 			closeNow();
@@ -502,36 +480,33 @@ public final class NioSession implements IoSession {
 	 */
 	int transferFile(FileRegion region, int length) throws IOException {
 		try {
-			return (int) region.getFileChannel().transferTo(region.getPosition(), length, channel);
+			return (int)region.getFileChannel().transferTo(region.getPosition(), length, channel);
 		} catch (IOException e) {
 			// Check to see if the IOException is being thrown due to
 			// http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=5103988
 			String message = e.getMessage();
-			if (message != null && message.contains("temporarily unavailable")) {
+			if (message != null && message.contains("temporarily unavailable"))
 				return 0;
-			}
 			throw e;
 		}
 	}
 
 	@Override
 	public WriteFuture write(Object message) {
-		if (message == null) {
+		if (message == null)
 			throw new IllegalArgumentException("trying to write a null message: not allowed");
-		}
 
 		// If the session has been closed or is closing, we can't either send a message to the remote side.
 		// We generate a future containing an exception.
-		if (isClosing() || !isConnected()) {
+		if (isClosing() || !isConnected())
 			return DefaultWriteFuture.newNotWrittenFuture(this, new WriteToClosedSessionException());
-		}
 
 		try {
-			if ((message instanceof IoBuffer) && !((IoBuffer) message).hasRemaining()) {
+			if ((message instanceof IoBuffer) && !((IoBuffer)message).hasRemaining()) {
 				// Nothing to write: probably an error in the user code
 				throw new IllegalArgumentException("message is empty, forgot to call flip()?");
 			} else if (message instanceof FileChannel) {
-				FileChannel fileChannel = (FileChannel) message;
+				FileChannel fileChannel = (FileChannel)message;
 				message = new DefaultFileRegion(fileChannel, 0, fileChannel.size());
 			}
 		} catch (IOException e) {
@@ -689,11 +664,10 @@ public final class NioSession implements IoSession {
 		@Override
 		public void setSoLinger(int linger) {
 			try {
-				if (linger < 0) {
+				if (linger < 0)
 					getSocket().setSoLinger(false, 0);
-				} else {
+				else
 					getSocket().setSoLinger(true, linger);
-				}
 			} catch (SocketException e) {
 				throw new RuntimeException(e);
 			}

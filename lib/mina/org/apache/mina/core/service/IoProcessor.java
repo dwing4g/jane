@@ -25,8 +25,6 @@ import org.apache.mina.core.write.WriteRequest;
  * An internal interface to represent an 'I/O processor' that performs actual I/O operations for {@link IoSession}s.
  * It abstracts existing reactor frameworks such as Java NIO once again to simplify transport implementations.
  *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
- *
  * @param <S> the type of the {@link IoSession} this processor can handle
  */
 public interface IoProcessor<S extends IoSession> {

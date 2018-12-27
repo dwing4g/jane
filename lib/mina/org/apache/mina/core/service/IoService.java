@@ -28,8 +28,6 @@ import org.apache.mina.transport.socket.DefaultSocketSessionConfig;
 
 /**
  * Base interface for all {@link IoAcceptor}s and {@link IoConnector}s that provide I/O service and manage {@link IoSession}s.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface IoService {
 	/**

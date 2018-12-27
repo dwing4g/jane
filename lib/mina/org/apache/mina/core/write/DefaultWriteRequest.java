@@ -25,11 +25,8 @@ import org.apache.mina.core.session.IoSession;
 
 /**
  * The default implementation of {@link WriteRequest}.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class DefaultWriteRequest implements WriteRequest {
-	/** An empty FUTURE */
 	public static final WriteFuture UNUSED_FUTURE = new WriteFuture() {
 		@Override
 		public boolean isWritten() {
@@ -38,7 +35,6 @@ public final class DefaultWriteRequest implements WriteRequest {
 
 		@Override
 		public void setWritten() {
-			// Do nothing
 		}
 
 		@Override
@@ -53,12 +49,12 @@ public final class DefaultWriteRequest implements WriteRequest {
 
 		@Override
 		public WriteFuture addListener(IoFutureListener<?> listener) {
-			throw new IllegalStateException("You can't add a listener to a dummy future.");
+			throw new IllegalStateException("you can't add a listener to a dummy future");
 		}
 
 		@Override
 		public WriteFuture removeListener(IoFutureListener<?> listener) {
-			throw new IllegalStateException("You can't add a listener to a dummy future.");
+			throw new IllegalStateException("you can't add a listener to a dummy future");
 		}
 
 		@Override
@@ -98,7 +94,6 @@ public final class DefaultWriteRequest implements WriteRequest {
 
 		@Override
 		public void setException(Throwable cause) {
-			// Do nothing
 		}
 	};
 
@@ -110,10 +105,8 @@ public final class DefaultWriteRequest implements WriteRequest {
 	 * @param future a future that needs to be notified when an operation is finished
 	 */
 	public DefaultWriteRequest(Object message, WriteFuture future) {
-		if (message == null) {
+		if (message == null)
 			throw new IllegalArgumentException("message");
-		}
-
 		this.message = message;
 		this.future = (future != null ? future : UNUSED_FUTURE);
 	}

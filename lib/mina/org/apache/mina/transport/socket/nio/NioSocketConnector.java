@@ -51,26 +51,15 @@ import org.apache.mina.util.ExceptionMonitor;
  * This class handle the logic behind binding, connecting and disposing the client sockets.
  * An {@link Executor} will be used for running client connection, and a {@link NioProcessor}
  * will be used for processing connected client I/O operations like reading, writing and closing.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class NioSocketConnector extends AbstractIoService implements IoConnector {
-	private Selector selector;
-
 	private final Queue<ConnectionRequest> connectQueue = new ConcurrentLinkedQueue<>();
 	private final Queue<ConnectionRequest> cancelQueue = new ConcurrentLinkedQueue<>();
-
-	private final IoProcessor<NioSession> processor;
-
-	private final ServiceOperationFuture disposalFuture = new ServiceOperationFuture();
 
 	/** The connector thread */
 	private final AtomicReference<Connector> connectorRef = new AtomicReference<>();
 
 	private int connectTimeoutInMillis = 60 * 1000; // 1 minute by default
-
-	/** A flag set when the connector has been created and initialized */
-	private volatile boolean selectable;
 
 	/**
 	 * You need to provide a default session configuration, a class of {@link IoProcessor}
@@ -99,7 +88,7 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 	 *            triggering events to the bound {@link IoHandler} and processing the chains of {@link IoFilter}
 	 */
 	public NioSocketConnector(IoProcessor<NioSession> processor) {
-		this.processor = processor;
+		super(processor);
 
 		try {
 			selector = Selector.open();
@@ -120,9 +109,8 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 		SocketChannel ch = SocketChannel.open(); //NOSONAR
 
 		int receiveBufferSize = getSessionConfig().getReceiveBufferSize();
-		if (receiveBufferSize > 65535) {
+		if (receiveBufferSize > 65535)
 			ch.socket().setReceiveBufferSize(receiveBufferSize);
-		}
 
 		if (localAddress != null) {
 			try {
@@ -130,24 +118,13 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 			} catch (IOException ioe) {
 				// Add some info regarding the address we try to bind to the message
 				String newMessage = "error while binding on " + localAddress + "\noriginal message: " + ioe.getMessage();
-
-				// Preemptively close the channel
-				ch.close();
+				ch.close(); // Preemptively close the channel
 				throw new IOException(newMessage, ioe);
 			}
 		}
 
 		ch.configureBlocking(false);
 		return ch;
-	}
-
-	private void close(SocketChannel channel) throws IOException {
-		SelectionKey key = channel.keyFor(selector);
-		if (key != null) {
-			key.cancel();
-		}
-
-		channel.close();
 	}
 
 	@Override
@@ -167,24 +144,16 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 
 	@Override
 	public ConnectFuture connect(SocketAddress remoteAddress, SocketAddress localAddress) {
-		if (isDisposing()) {
+		if (isDisposing())
 			throw new IllegalStateException("the connector is being disposed");
-		}
-
-		if (remoteAddress == null) {
+		if (remoteAddress == null)
 			throw new IllegalArgumentException("null remoteAddress");
-		}
-		if (!InetSocketAddress.class.isAssignableFrom(remoteAddress.getClass())) {
+		if (!InetSocketAddress.class.isAssignableFrom(remoteAddress.getClass()))
 			throw new IllegalArgumentException("remoteAddress type: " + remoteAddress.getClass() + " (expected: InetSocketAddress)");
-		}
-
-		if (localAddress != null && !InetSocketAddress.class.isAssignableFrom(localAddress.getClass())) {
+		if (localAddress != null && !InetSocketAddress.class.isAssignableFrom(localAddress.getClass()))
 			throw new IllegalArgumentException("localAddress type: " + localAddress.getClass() + " (expected: InetSocketAddress)");
-		}
-
-		if (getHandler() == null) {
+		if (getHandler() == null)
 			throw new IllegalStateException("the handler is not set");
-		}
 
 		return connect0(remoteAddress, localAddress);
 	}
@@ -242,9 +211,8 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 		Connector connector = connectorRef.get();
 		if (connector == null) {
 			connector = new Connector();
-			if (connectorRef.compareAndSet(null, connector)) {
+			if (connectorRef.compareAndSet(null, connector))
 				executeWorker(connector);
-			}
 		}
 	}
 
@@ -257,9 +225,8 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 		// In case that ConnectFuture.cancel() is invoked before setSession() is invoked,
 		// add a listener that closes the connection immediately on cancellation.
 		future.addListener((ConnectFuture future1) -> {
-			if (future1.isCanceled()) {
+			if (future1.isCanceled())
 				session.closeNow();
-			}
 		});
 	}
 
@@ -290,14 +257,12 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 					if (nHandles == 0) {
 						connectorRef.set(null);
 
-						if (connectQueue.isEmpty() || !connectorRef.compareAndSet(null, this)) {
+						if (connectQueue.isEmpty() || !connectorRef.compareAndSet(null, this))
 							break;
-						}
 					}
 
-					if (selected > 0) {
+					if (selected > 0)
 						nHandles -= processConnections(selector.selectedKeys());
-					}
 
 					processTimedOutSessions(selector.keys());
 
@@ -324,9 +289,8 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 				} finally {
 					try {
 						synchronized (getSessionConfig()) {
-							if (isDisposing() && selector != null) {
+							if (isDisposing() && selector != null)
 								selector.close();
-							}
 						}
 					} catch (Exception e) {
 						ExceptionMonitor.getInstance().exceptionCaught(e);
@@ -340,9 +304,8 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 		private int registerNew() {
 			for (int nHandles = 0;;) {
 				ConnectionRequest req = connectQueue.poll();
-				if (req == null) {
+				if (req == null)
 					return nHandles;
-				}
 
 				SocketChannel channel = req.channel;
 				try {
@@ -363,9 +326,8 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 			for (int nHandles = 0;; ++nHandles) {
 				ConnectionRequest req = cancelQueue.poll();
 				if (req == null) {
-					if (nHandles > 0) {
+					if (nHandles > 0)
 						selector.wakeup();
-					}
 					return nHandles;
 				}
 
@@ -385,7 +347,7 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 		 */
 		private ConnectionRequest getConnectionRequest(SocketChannel channel) {
 			SelectionKey key = channel.keyFor(selector);
-			return key != null && key.isValid() ? (ConnectionRequest) key.attachment() : null;
+			return key != null && key.isValid() ? (ConnectionRequest)key.attachment() : null;
 		}
 
 		/**
@@ -398,9 +360,8 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 		private boolean finishConnect(SocketChannel channel) throws IOException {
 			if (channel.finishConnect()) {
 				SelectionKey key = channel.keyFor(selector);
-				if (key != null) {
+				if (key != null)
 					key.cancel();
-				}
 				return true;
 			}
 			return false;
@@ -415,31 +376,27 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 			// Loop on each connection request
 			for (Iterator<SelectionKey> it = keys.iterator(); it.hasNext();) {
 				@SuppressWarnings("resource")
-				SocketChannel channel = (SocketChannel) it.next().channel();
+				SocketChannel channel = (SocketChannel)it.next().channel();
 				it.remove();
 
 				ConnectionRequest connectionRequest = getConnectionRequest(channel);
-				if (connectionRequest == null) {
+				if (connectionRequest == null)
 					continue;
-				}
 
 				boolean success = false;
 				try {
 					if (finishConnect(channel)) {
 						NioSession session = new NioSession(NioSocketConnector.this, processor, channel);
 						initSession(session, connectionRequest);
-						// Forward the remaining process to the IoProcessor.
-						session.getProcessor().add(session);
+						session.getProcessor().add(session); // Forward the remaining process to the IoProcessor
 						nHandles++;
 					}
 					success = true;
 				} catch (Exception e) {
 					connectionRequest.setException(e);
 				} finally {
-					if (!success) {
-						// The connection failed, we have to cancel it.
-						cancelQueue.offer(connectionRequest);
-					}
+					if (!success)
+						cancelQueue.offer(connectionRequest); // The connection failed, we have to cancel it
 				}
 			}
 			return nHandles;
@@ -449,7 +406,7 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 			long currentTime = System.currentTimeMillis();
 
 			for (SelectionKey key : keys) {
-				ConnectionRequest connectionRequest = getConnectionRequest((SocketChannel) key.channel());
+				ConnectionRequest connectionRequest = getConnectionRequest((SocketChannel)key.channel());
 				if (connectionRequest != null && currentTime >= connectionRequest.deadline) {
 					connectionRequest.setException(new ConnectException("connection timed out"));
 					cancelQueue.offer(connectionRequest);

@@ -31,8 +31,6 @@ import org.apache.mina.core.session.IoSession;
  *     }
  * }
  * </pre>
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface IoFilterChainBuilder {
 	/**

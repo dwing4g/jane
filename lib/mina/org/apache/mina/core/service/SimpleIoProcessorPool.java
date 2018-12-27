@@ -54,8 +54,6 @@ import org.apache.mina.transport.socket.nio.NioSession;
  * acceptor.dispose();
  * pool.dispose();
  * </code></pre>
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class SimpleIoProcessorPool implements IoProcessor<NioSession> {
 	/** The default pool size, when no size is provided. */
@@ -86,9 +84,8 @@ public final class SimpleIoProcessorPool implements IoProcessor<NioSession> {
 	 * @param size The number of IoProcessor in the pool
 	 */
 	public SimpleIoProcessorPool(int size) {
-		if (size <= 0) {
+		if (size <= 0)
 			throw new IllegalArgumentException("size: " + size + " (expected: positive integer)");
-		}
 
 		executor = Executors.newFixedThreadPool(size,
 				r -> new Thread(r, NioProcessor.class.getSimpleName() + '-' + idGenerator.incrementAndGet()));
@@ -97,16 +94,14 @@ public final class SimpleIoProcessorPool implements IoProcessor<NioSession> {
 
 		boolean success = false;
 		try {
-			for (int i = 0; i < pool.length; i++) {
+			for (int i = 0; i < pool.length; i++)
 				pool[i] = new NioProcessor(executor);
-			}
 			success = true;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		} finally {
-			if (!success) {
+			if (!success)
 				dispose();
-			}
 		}
 	}
 
@@ -118,15 +113,12 @@ public final class SimpleIoProcessorPool implements IoProcessor<NioSession> {
 		NioProcessor processor = session.getNioProcessor();
 
 		if (processor == null) {
-			if (disposing) {
+			if (disposing)
 				throw new IllegalStateException(getClass().getSimpleName() + " is disposed");
-			}
 
-			processor = pool[(int) ((session.getId() & Long.MAX_VALUE) % pool.length)];
-			if (processor == null) {
+			processor = pool[(int)((session.getId() & Long.MAX_VALUE) % pool.length)];
+			if (processor == null)
 				throw new IllegalStateException("null processor in pool");
-			}
-
 			session.setNioProcessor(processor);
 		}
 
@@ -170,25 +162,19 @@ public final class SimpleIoProcessorPool implements IoProcessor<NioSession> {
 
 	@Override
 	public final void dispose() {
-		if (disposing) {
+		if (disposing)
 			return;
-		}
 
 		synchronized (pool) {
-			if (disposing) {
+			if (disposing)
 				return;
-			}
 			disposing = true;
 
 			for (NioProcessor ioProcessor : pool) {
-				if (ioProcessor == null) {
-					// Special case if the pool has not been initialized properly
+				if (ioProcessor == null)
+					continue; // Special case if the pool has not been initialized properly
+				if (ioProcessor.isDisposing())
 					continue;
-				}
-
-				if (ioProcessor.isDisposing()) {
-					continue;
-				}
 
 				ioProcessor.dispose();
 			}

@@ -42,8 +42,6 @@ import org.apache.mina.util.ExceptionMonitor;
 /**
  * A processor implements of {@link IoProcessor} for incoming and outgoing data got and written on a TCP socket.
  * This class is in charge of active polling a set of {@link IoSession} and trigger events when some I/O operation is possible.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class NioProcessor implements IoProcessor<NioSession> {
 	private static final long SELECT_TIMEOUT = 1000L;
@@ -73,9 +71,8 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 	 * @param executor the {@link Executor} for handling I/O events
 	 */
 	public NioProcessor(Executor executor) throws IOException {
-		if (executor == null) {
+		if (executor == null)
 			throw new IllegalArgumentException("executor");
-		}
 		this.executor = executor;
 
 		selector = Selector.open();
@@ -91,9 +88,8 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 
 	@Override
 	public void add(NioSession session) {
-		if (disposing) {
+		if (disposing)
 			throw new IllegalStateException("already disposed");
-		}
 
 		// Adds the session to the newSession queue and starts the worker
 		newSessions.add(session);
@@ -107,18 +103,16 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 	}
 
 	private void scheduleRemove(NioSession session) {
-		if (session.setScheduledForRemove()) {
+		if (session.setScheduledForRemove())
 			removingSessions.add(session);
-		}
 	}
 
 	@Override
 	public void write(NioSession session, WriteRequest writeRequest) {
 		session.getWriteRequestQueue().offer(writeRequest);
 
-		if (!session.isWriteSuspended()) {
+		if (!session.isWriteSuspended())
 			flush(session);
-		}
 	}
 
 	public boolean isInProcessorThread() {
@@ -153,9 +147,8 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 		try {
 			boolean isInterested = (!session.getWriteRequestQueue().isEmpty() && !session.isWriteSuspended());
 			session.setInterestedInWrite(isInterested);
-			if (isInterested) {
+			if (isInterested)
 				flush(session);
-			}
 		} catch (Exception e) {
 			session.getFilterChain().fireExceptionCaught(e);
 		}
@@ -173,14 +166,12 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 
 	@Override
 	public void dispose() {
-		if (disposing) {
+		if (disposing)
 			return;
-		}
 
 		synchronized (this) {
-			if (disposing) {
+			if (disposing)
 				return;
-			}
 			disposing = true;
 
 			startupProcessor();
@@ -198,9 +189,8 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 		Processor processor = processorRef.get();
 		if (processor == null) {
 			processor = new Processor();
-			if (processorRef.compareAndSet(null, processor)) {
+			if (processorRef.compareAndSet(null, processor))
 				executor.execute(processor);
-			}
 		}
 
 		// Just stop the selector.select() and start it again, so that the processor can be activated immediately.
@@ -234,9 +224,9 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 						}
 
 						// Last chance: the select() may have been interrupted because we have had an closed channel.
-						if (isBrokenConnection()) {
+						if (isBrokenConnection())
 							ExceptionMonitor.getInstance().warn("broken connection");
-						} else {
+						else {
 							// Ok, we are hit by the nasty epoll spinning.
 							// Basically, there is a race condition which causes a closing file descriptor not to be
 							// considered as available as a selected channel, but it stopped the select.
@@ -247,34 +237,27 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 								ExceptionMonitor.getInstance().warn("create a new selector. selected is 0, delta = " + delta);
 								registerNewSelector();
 								nbTries = 10;
-							} else {
+							} else
 								nbTries--;
-							}
 						}
-					} else {
+					} else
 						nbTries = 10;
-					}
 
 					// Manage newly created session first
 					if (handleNewSessions() == 0 && selector.keys().isEmpty()) {
 						// Get a chance to exit the infinite loop if there are no more sessions on this Processor
 						processorRef.set(null);
 
-						if (newSessions.isEmpty() && selector.keys().isEmpty()) {
-							// newSessions.add() precedes startupProcessor
-							break;
-						}
+						if (newSessions.isEmpty() && selector.keys().isEmpty())
+							break; // newSessions.add() precedes startupProcessor
 
-						if (!processorRef.compareAndSet(null, this)) {
-							// startupProcessor won race, so must exit processor
-							break;
-						}
+						if (!processorRef.compareAndSet(null, this))
+							break; // startupProcessor won race, so must exit processor
 					}
 
 					// Now, if we have had some incoming or outgoing events, deal with them
-					if (selected > 0) {
+					if (selected > 0)
 						process();
-					}
 
 					// Write the pending requests
 					flush();
@@ -284,10 +267,8 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 
 					// Disconnect all sessions immediately if disposal has been requested so that we exit this loop eventually.
 					if (isDisposing()) {
-						for (Iterator<SelectionKey> it = selector.keys().iterator(); it.hasNext();) {
-							NioSession session = (NioSession)it.next().attachment();
-							scheduleRemove(session);
-						}
+						for (Iterator<SelectionKey> it = selector.keys().iterator(); it.hasNext();)
+							scheduleRemove((NioSession)it.next().attachment());
 						wakeup();
 					}
 				} catch (ClosedSelectorException cse) {
@@ -307,9 +288,8 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 
 			try {
 				synchronized (NioProcessor.this) {
-					if (isDisposing()) {
+					if (isDisposing())
 						selector.close();
-					}
 				}
 			} catch (Exception e) {
 				ExceptionMonitor.getInstance().exceptionCaught(e);
@@ -324,16 +304,11 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 				NioSession session = (NioSession)key.attachment();
 				int ops = key.readyOps();
 
-				// Process reads
-				if ((ops & SelectionKey.OP_READ) != 0 && !session.isReadSuspended()) {
+				if ((ops & SelectionKey.OP_READ) != 0 && !session.isReadSuspended())
 					session.read();
-				}
 
-				// Process writes
-				if ((ops & SelectionKey.OP_WRITE) != 0 && !session.isWriteSuspended()) {
-					// add the session to the queue, if it's not already there
-					scheduleFlush(session);
-				}
+				if ((ops & SelectionKey.OP_WRITE) != 0 && !session.isWriteSuspended())
+					scheduleFlush(session); // add the session to the queue, if it's not already there
 			}
 		}
 		/**
@@ -349,7 +324,7 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 
 			// Loop on all the keys to see if one of them has a closed channel
 			for (SelectionKey key : selector.keys()) {
-				if (!((SocketChannel) key.channel()).isConnected()) {
+				if (!((SocketChannel)key.channel()).isConnected()) {
 					// The channel is not connected anymore. Cancel the associated key then.
 					key.cancel();
 
@@ -368,13 +343,12 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 		 * @throws IOException If we got an exception
 		 */
 		private void registerNewSelector() throws IOException {
-			// Open a new selector
 			Selector newSelector = Selector.open(); //NOSONAR
 
 			// Loop on all the registered keys, and register them on the new selector
 			for (SelectionKey key : selector.keys()) {
 				// Don't forget to attache the session, and back!
-				NioSession session = (NioSession) key.attachment();
+				NioSession session = (NioSession)key.attachment();
 				session.setSelectionKey(key.channel().register(newSelector, key.interestOps(), session));
 			}
 
@@ -382,7 +356,6 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 			selector.close();
 			selector = newSelector;
 		}
-
 
 		/**
 		 * Loops over the new sessions blocking queue and returns the number of sessions which are effectively created
@@ -392,14 +365,10 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 		private int handleNewSessions() {
 			int addedSessions = 0;
 			NioSession session;
-
 			while ((session = newSessions.poll()) != null) {
-				if (addNow(session)) {
-					// A new session has been created
-					addedSessions++;
-				}
+				if (addNow(session))
+					addedSessions++; // A new session has been created
 			}
-
 			return addedSessions;
 		}
 
@@ -421,7 +390,7 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 
 				// DefaultIoFilterChain.CONNECT_FUTURE is cleared inside here in AbstractIoFilterChain.fireSessionOpened().
 				// Propagate the SESSION_CREATED event up to the chain
-				((AbstractIoService) session.getService()).fireSessionCreated(session);
+				((AbstractIoService)session.getService()).fireSessionCreated(session);
 			} catch (Exception e) {
 				ExceptionMonitor.getInstance().exceptionCaught(e);
 
@@ -486,9 +455,8 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 
 		private void scheduleFlush(NioSession session) {
 			// add the session to the queue if it's not already in the queue
-			if (session.setScheduledForFlush(true)) {
+			if (session.setScheduledForFlush(true))
 				flushingSessions.add(session);
-			}
 		}
 
 		void flushNow(NioSession session) {
@@ -522,7 +490,7 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 					Object message = req.writeRequestMessage();
 
 					if (message instanceof IoBuffer) {
-						IoBuffer buf = (IoBuffer) message;
+						IoBuffer buf = (IoBuffer)message;
 						if (buf.hasRemaining()) {
 							try {
 								localWrittenBytes = session.getChannel().write(buf.buf());
@@ -542,8 +510,8 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 							}
 						}
 					} else if (message instanceof FileRegion) {
-						FileRegion region = (FileRegion) message;
-						int length = (int) Math.min(region.getRemainingBytes(), (long)maxWrittenBytes - writtenBytes);
+						FileRegion region = (FileRegion)message;
+						int length = (int)Math.min(region.getRemainingBytes(), (long)maxWrittenBytes - writtenBytes);
 						if (length > 0) {
 							localWrittenBytes = session.transferFile(region, length);
 							region.update(localWrittenBytes);
@@ -564,9 +532,8 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 					session.setCurrentWriteRequest(null);
 					session.getFilterChain().fireMessageSent(req);
 
-					if (message instanceof IoBuffer) {
-						((IoBuffer) message).free();
-					}
+					if (message instanceof IoBuffer)
+						((IoBuffer)message).free();
 
 					writtenBytes += localWrittenBytes;
 					if (writtenBytes >= maxWrittenBytes) {
@@ -582,9 +549,8 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 				} catch(Exception ex) {
 					session.getFilterChain().fireExceptionCaught(ex);
 				}
-				if (req != null) {
+				if (req != null)
 					req.writeRequestFuture().setException(e);
-				}
 
 				session.getFilterChain().fireExceptionCaught(e);
 			}

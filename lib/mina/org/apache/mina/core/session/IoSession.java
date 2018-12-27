@@ -57,8 +57,6 @@ import org.apache.mina.transport.socket.AbstractSocketSessionConfig;
  * We can't base a method which is designed to create a unique ID on the hashCode method.
  * {@link Object#equals(Object)} and {@link Object#hashCode()} shall not be overriden
  * to the default behavior that is defined in {@link Object}.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface IoSession {
 	/**

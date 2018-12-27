@@ -25,8 +25,6 @@ package org.apache.mina.core.session;
  *   <li>OPENED: The session is opened</li>
  *   <li>CLOSING:  The session is closing</li>
  * </ul>
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public enum SessionState {
 	/** Session being created, not yet completed */

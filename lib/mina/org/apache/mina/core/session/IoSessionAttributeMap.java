@@ -23,8 +23,6 @@ import java.util.Set;
 /**
  * Stores the user-defined attributes which is provided per {@link IoSession}.
  * All user-defined attribute accesses in {@link IoSession} are forwarded to the instance of {@link IoSessionAttributeMap}.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface IoSessionAttributeMap {
 	/**

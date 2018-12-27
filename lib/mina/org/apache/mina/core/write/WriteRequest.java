@@ -23,8 +23,6 @@ import org.apache.mina.core.session.IoSession;
 
 /**
  * Represents write request fired by {@link IoSession#write(Object)}.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface WriteRequest {
 	/**

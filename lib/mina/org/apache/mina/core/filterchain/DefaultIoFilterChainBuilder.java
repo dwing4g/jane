@@ -45,8 +45,6 @@ import org.apache.mina.core.session.IoSession;
  * builder.addLast("myFilter", new MyFilter());
  * ...
  * </pre>
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 	/** The list of filters */
@@ -76,9 +74,8 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 	 */
 	public Entry getEntry(String name) {
 		for (Entry e : entries) {
-			if (e.getName().equals(name)) {
+			if (e.getName().equals(name))
 				return e;
-			}
 		}
 
 		return null;
@@ -92,9 +89,8 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 	 */
 	public Entry getEntry(IoFilter filter) {
 		for (Entry e : entries) {
-			if (e.getFilter() == filter) {
+			if (e.getFilter() == filter)
 				return e;
-			}
 		}
 
 		return null;
@@ -108,9 +104,8 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 	 */
 	public Entry getEntry(Class<? extends IoFilter> filterType) {
 		for (Entry e : entries) {
-			if (filterType.isAssignableFrom(e.getFilter().getClass())) {
+			if (filterType.isAssignableFrom(e.getFilter().getClass()))
 				return e;
-			}
 		}
 
 		return null;
@@ -133,7 +128,6 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 	public ArrayList<Entry> getAllReversed() {
 		ArrayList<Entry> result = getAll();
 		Collections.reverse(result);
-
 		return result;
 	}
 
@@ -172,7 +166,7 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 			}
 		}
 
-		throw new IllegalArgumentException("Unknown filter baseName: " + baseName);
+		throw new IllegalArgumentException("unknown filter baseName: " + baseName);
 	}
 
 	/**
@@ -190,7 +184,7 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 			}
 		}
 
-		throw new IllegalArgumentException("Unknown filter baseName: " + baseName);
+		throw new IllegalArgumentException("unknown filter baseName: " + baseName);
 	}
 
 	/**
@@ -208,7 +202,7 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 			}
 		}
 
-		throw new IllegalArgumentException("Unknown filter name: " + name);
+		throw new IllegalArgumentException("unknown filter name: " + name);
 	}
 
 	/**
@@ -219,10 +213,9 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 	 * @return The replaced filter
 	 */
 	public synchronized IoFilter replace(String name, IoFilter newFilter) {
-		EntryImpl e = (EntryImpl) getEntry(name);
-		if (e == null) {
-			throw new IllegalArgumentException("Unknown filter name: " + name);
-		}
+		EntryImpl e = (EntryImpl)getEntry(name);
+		if (e == null)
+			throw new IllegalArgumentException("unknown filter name: " + name);
 		IoFilter oldFilter = e.filter;
 		e.filter = newFilter;
 		return oldFilter;
@@ -237,9 +230,8 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 
 	@Override
 	public void buildFilterChain(IoFilterChain chain) throws Exception {
-		for (Entry e : entries) {
+		for (Entry e : entries)
 			chain.addLast(e.getName(), e.getFilter());
-		}
 	}
 
 	@Override
@@ -249,28 +241,23 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 		boolean empty = true;
 
 		for (Entry e : entries) {
-			if (!empty) {
+			if (!empty)
 				buf.append(", ");
-			} else {
+			else
 				empty = false;
-			}
 
-			buf.append('(');
-			buf.append(e.getName()).append(':').append(e.getFilter());
-			buf.append(')');
+			buf.append('(').append(e.getName()).append(':').append(e.getFilter()).append(')');
 		}
 
-		if (empty) {
+		if (empty)
 			buf.append("empty");
-		}
 
 		return buf.append(" }").toString();
 	}
 
 	private void register(int index, Entry e) {
-		if (getEntry(e.getName()) != null) {
-			throw new IllegalArgumentException("Other filter is using the same name: " + e.getName());
-		}
+		if (getEntry(e.getName()) != null)
+			throw new IllegalArgumentException("other filter is using the same name: " + e.getName());
 
 		entries.add(index, e);
 	}
@@ -280,12 +267,10 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 		volatile IoFilter filter;
 
 		EntryImpl(String name, IoFilter filter) {
-			if (name == null) {
+			if (name == null)
 				throw new IllegalArgumentException("name");
-			}
-			if (filter == null) {
+			if (filter == null)
 				throw new IllegalArgumentException("filter");
-			}
 
 			this.name = name;
 			this.filter = filter;

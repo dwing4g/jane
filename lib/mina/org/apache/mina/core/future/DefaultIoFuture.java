@@ -27,8 +27,6 @@ import org.apache.mina.util.ExceptionMonitor;
 
 /**
  * A default implementation of {@link IoFuture} associated with an {@link IoSession}.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public class DefaultIoFuture implements IoFuture {
 	/** A number of milliseconds to wait between two deadlock controls ( 5 seconds ) */
@@ -78,9 +76,8 @@ public class DefaultIoFuture implements IoFuture {
 				} finally {
 					waiters--;
 
-					if (!ready) {
+					if (!ready)
 						checkDeadLock();
-					}
 				}
 			}
 		}
@@ -139,16 +136,14 @@ public class DefaultIoFuture implements IoFuture {
 	private boolean await0(long timeoutMillis, boolean interruptable) throws InterruptedException {
 		long endTime = System.currentTimeMillis() + timeoutMillis;
 
-		if (endTime < 0) {
+		if (endTime < 0)
 			endTime = Long.MAX_VALUE;
-		}
 
 		synchronized (this) {
 			// We can quit if the ready flag is set to true, or if
 			// the timeout is set to 0 or below: we don't wait in this case.
-			if (ready || timeoutMillis <= 0) {
+			if (ready || timeoutMillis <= 0)
 				return ready;
-			}
 
 			// The operation is not completed: we have to wait
 			waiters++;
@@ -162,14 +157,12 @@ public class DefaultIoFuture implements IoFuture {
 						// but every DEAD_LOCK_CHECK_INTERVAL seconds, we will check that we aren't blocked.
 						wait(timeout);
 					} catch (InterruptedException e) {
-						if (interruptable) {
+						if (interruptable)
 							throw e;
-						}
 					}
 
-					if (ready || (endTime < System.currentTimeMillis())) {
+					if (ready || (endTime < System.currentTimeMillis()))
 						return ready;
-					}
 					// Take a chance, detect a potential deadlock
 					checkDeadLock();
 				}
@@ -181,9 +174,8 @@ public class DefaultIoFuture implements IoFuture {
 				// In any case, we decrement the number of waiters, and we get out.
 				waiters--;
 
-				if (!ready) {
+				if (!ready)
 					checkDeadLock();
-				}
 			}
 		}
 	}
@@ -193,9 +185,8 @@ public class DefaultIoFuture implements IoFuture {
 	 */
 	private void checkDeadLock() {
 		// Only read / write / connect / write future can cause dead lock.
-		if (!(this instanceof CloseFuture || this instanceof WriteFuture || this instanceof ConnectFuture)) {
+		if (!(this instanceof CloseFuture || this instanceof WriteFuture || this instanceof ConnectFuture))
 			return;
-		}
 
 		// Get the current thread stackTrace.
 		// Using Thread.currentThread().getStackTrace() is the best solution,
@@ -210,7 +201,7 @@ public class DefaultIoFuture implements IoFuture {
 				// new IllegalStateException("t").getStackTrace();
 				throw new IllegalStateException("DEAD LOCK: " + IoFuture.class.getSimpleName()
 						+ ".await() was invoked from an I/O processor thread. Please use "
-						+ IoFutureListener.class.getSimpleName() + " or configure a proper thread model alternatively.");
+						+ IoFutureListener.class.getSimpleName() + " or configure a proper thread model alternatively");
 			}
 		}
 
@@ -223,10 +214,9 @@ public class DefaultIoFuture implements IoFuture {
 					throw new IllegalStateException("DEAD LOCK: " + IoFuture.class.getSimpleName()
 							+ ".await() was invoked from an I/O processor thread. Please use "
 							+ IoFutureListener.class.getSimpleName()
-							+ " or configure a proper thread model alternatively.");
+							+ " or configure a proper thread model alternatively");
 				}
-			} catch (ClassNotFoundException cnfe) {
-				// Ignore
+			} catch (ClassNotFoundException e) {
 			}
 		}
 	}
@@ -248,17 +238,15 @@ public class DefaultIoFuture implements IoFuture {
 	public boolean setValue(Object newValue) {
 		synchronized (this) {
 			// Allowed only once.
-			if (ready) {
+			if (ready)
 				return false;
-			}
 
 			result = newValue;
 			ready = true;
 
 			// Now, if we have waiters, notify them that the operation has completed
-			if (waiters > 0) {
+			if (waiters > 0)
 				notifyAll();
-			}
 		}
 
 		// Last, not least, inform the listeners
@@ -276,9 +264,8 @@ public class DefaultIoFuture implements IoFuture {
 
 	@Override
 	public IoFuture addListener(IoFutureListener<?> listener) {
-		if (listener == null) {
+		if (listener == null)
 			throw new IllegalArgumentException("listener");
-		}
 
 		synchronized (this) {
 			if (ready) {
@@ -286,13 +273,11 @@ public class DefaultIoFuture implements IoFuture {
 				// The existing listeners have already been notified anyway, when the 'ready' flag has been set.
 				notifyListener(listener);
 			} else {
-				if (firstListener == null) {
+				if (firstListener == null)
 					firstListener = listener;
-				} else {
-					if (otherListeners == null) {
+				else {
+					if (otherListeners == null)
 						otherListeners = new ArrayList<>(1);
-					}
-
 					otherListeners.add(listener);
 				}
 			}
@@ -303,21 +288,18 @@ public class DefaultIoFuture implements IoFuture {
 
 	@Override
 	public IoFuture removeListener(IoFutureListener<?> listener) {
-		if (listener == null) {
+		if (listener == null)
 			throw new IllegalArgumentException("listener");
-		}
 
 		synchronized (this) {
 			if (!ready) {
 				if (listener == firstListener) {
-					if ((otherListeners != null) && !otherListeners.isEmpty()) {
+					if ((otherListeners != null) && !otherListeners.isEmpty())
 						firstListener = otherListeners.remove(0);
-					} else {
+					else
 						firstListener = null;
-					}
-				} else if (otherListeners != null) {
+				} else if (otherListeners != null)
 					otherListeners.remove(listener);
-				}
 			}
 		}
 
@@ -335,9 +317,8 @@ public class DefaultIoFuture implements IoFuture {
 			firstListener = null;
 
 			if (otherListeners != null) {
-				for (int i = 0, n = otherListeners.size(); i < n; i++) {
+				for (int i = 0, n = otherListeners.size(); i < n; i++)
 					notifyListener(otherListeners.get(i));
-				}
 				otherListeners = null;
 			}
 		}

@@ -22,8 +22,6 @@ import org.apache.mina.core.session.IoSession;
 
 /**
  * A default implementation of {@link WriteFuture}.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class DefaultWriteFuture extends DefaultIoFuture implements WriteFuture {
 	/**
@@ -42,7 +40,6 @@ public final class DefaultWriteFuture extends DefaultIoFuture implements WriteFu
 	public static WriteFuture newWrittenFuture(IoSession session) {
 		DefaultWriteFuture writtenFuture = new DefaultWriteFuture(session);
 		writtenFuture.setWritten();
-
 		return writtenFuture;
 	}
 
@@ -56,7 +53,6 @@ public final class DefaultWriteFuture extends DefaultIoFuture implements WriteFu
 	public static WriteFuture newNotWrittenFuture(IoSession session, Throwable cause) {
 		DefaultWriteFuture unwrittenFuture = new DefaultWriteFuture(session);
 		unwrittenFuture.setException(cause);
-
 		return unwrittenFuture;
 	}
 
@@ -64,10 +60,8 @@ public final class DefaultWriteFuture extends DefaultIoFuture implements WriteFu
 	public boolean isWritten() {
 		if (isDone()) {
 			Object v = getValue();
-
-			if (v instanceof Boolean) {
-				return ((Boolean) v).booleanValue();
-			}
+			if (v instanceof Boolean)
+				return ((Boolean)v).booleanValue();
 		}
 
 		return false;
@@ -77,10 +71,8 @@ public final class DefaultWriteFuture extends DefaultIoFuture implements WriteFu
 	public Throwable getException() {
 		if (isDone()) {
 			Object v = getValue();
-
-			if (v instanceof Throwable) {
-				return (Throwable) v;
-			}
+			if (v instanceof Throwable)
+				return (Throwable)v;
 		}
 
 		return null;
@@ -93,30 +85,29 @@ public final class DefaultWriteFuture extends DefaultIoFuture implements WriteFu
 
 	@Override
 	public void setException(Throwable exception) {
-		if (exception == null) {
+		if (exception == null)
 			throw new IllegalArgumentException("exception");
-		}
 
 		setValue(exception);
 	}
 
 	@Override
 	public WriteFuture await() throws InterruptedException {
-		return (WriteFuture) super.await();
+		return (WriteFuture)super.await();
 	}
 
 	@Override
 	public WriteFuture awaitUninterruptibly() {
-		return (WriteFuture) super.awaitUninterruptibly();
+		return (WriteFuture)super.awaitUninterruptibly();
 	}
 
 	@Override
 	public WriteFuture addListener(IoFutureListener<?> listener) {
-		return (WriteFuture) super.addListener(listener);
+		return (WriteFuture)super.addListener(listener);
 	}
 
 	@Override
 	public WriteFuture removeListener(IoFutureListener<?> listener) {
-		return (WriteFuture) super.removeListener(listener);
+		return (WriteFuture)super.removeListener(listener);
 	}
 }

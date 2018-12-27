@@ -24,8 +24,6 @@ import org.apache.mina.core.session.IoSession;
 /**
  * Represents the completion of an asynchronous I/O operation on an {@link IoSession}.
  * Can be listened for completion using a {@link IoFutureListener}.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface IoFuture {
 	/**

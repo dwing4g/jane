@@ -25,8 +25,6 @@ import org.apache.mina.core.write.WriteRequest;
  * An adapter class for {@link IoFilter}.
  * You can extend this class and selectively override required event filter methods only.
  * All methods forwards events to the next filter by default.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public class IoFilterAdapter implements IoFilter {
 	@Override

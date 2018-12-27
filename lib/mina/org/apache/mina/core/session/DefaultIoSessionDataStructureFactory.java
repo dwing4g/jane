@@ -20,7 +20,6 @@ package org.apache.mina.core.session;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -32,8 +31,6 @@ import org.apache.mina.transport.socket.nio.NioSession;
  * The default {@link IoSessionDataStructureFactory} implementation
  * that creates a new {@link HashMap}-based {@link IoSessionAttributeMap}
  * instance and a new synchronized {@link ConcurrentLinkedQueue} instance per {@link IoSession}.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public class DefaultIoSessionDataStructureFactory implements IoSessionDataStructureFactory {
 	@Override
@@ -97,7 +94,7 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 
 	private static final class DefaultWriteRequestQueue implements WriteRequestQueue {
 		/** A queue to store incoming write requests */
-		private final Queue<WriteRequest> q = new ConcurrentLinkedQueue<>();
+		private final ConcurrentLinkedQueue<WriteRequest> q = new ConcurrentLinkedQueue<>();
 		private final IoSession s;
 
 		DefaultWriteRequestQueue(IoSession session) {

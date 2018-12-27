@@ -23,8 +23,6 @@ import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 
 /**
  * A default implementation of {@link AbstractSocketSessionConfig}.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class DefaultSocketSessionConfig extends AbstractSocketSessionConfig {
 	private static final int DEFAULT_SO_LINGER = -1;
@@ -45,11 +43,9 @@ public final class DefaultSocketSessionConfig extends AbstractSocketSessionConfi
 	private boolean oobInline = DEFAULT_OOB_INLINE;
 
 	/**
-	 * Initialize this configuration.
-	 *
 	 * @param p The parent IoService.
 	 */
-	public void init(IoService p) {
+	public DefaultSocketSessionConfig(IoService p) {
 		reuseAddress = defaultReuseAddress = (p instanceof NioSocketAcceptor || DEFAULT_REUSE_ADDRESS);
 	}
 

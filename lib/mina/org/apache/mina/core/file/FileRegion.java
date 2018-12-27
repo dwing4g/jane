@@ -22,8 +22,6 @@ import java.nio.channels.FileChannel;
 
 /**
  * Indicates the region of a file to be sent to the remote host.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface FileRegion {
 	/**

@@ -36,8 +36,6 @@ package org.apache.mina.core.future;
  *     // (e.g. Connection is closed)
  * }
  * </pre>
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface WriteFuture extends IoFuture {
 	/**

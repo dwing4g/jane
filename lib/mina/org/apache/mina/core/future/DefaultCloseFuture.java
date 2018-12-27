@@ -22,8 +22,6 @@ import org.apache.mina.core.session.IoSession;
 
 /**
  * A default implementation of {@link CloseFuture}.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class DefaultCloseFuture extends DefaultIoFuture implements CloseFuture {
 	/**
@@ -35,7 +33,7 @@ public final class DefaultCloseFuture extends DefaultIoFuture implements CloseFu
 
 	@Override
 	public boolean isClosed() {
-		return isDone() && ((Boolean) getValue()).booleanValue();
+		return isDone() && ((Boolean)getValue()).booleanValue();
 	}
 
 	@Override
@@ -45,21 +43,21 @@ public final class DefaultCloseFuture extends DefaultIoFuture implements CloseFu
 
 	@Override
 	public CloseFuture await() throws InterruptedException {
-		return (CloseFuture) super.await();
+		return (CloseFuture)super.await();
 	}
 
 	@Override
 	public CloseFuture awaitUninterruptibly() {
-		return (CloseFuture) super.awaitUninterruptibly();
+		return (CloseFuture)super.awaitUninterruptibly();
 	}
 
 	@Override
 	public CloseFuture addListener(IoFutureListener<?> listener) {
-		return (CloseFuture) super.addListener(listener);
+		return (CloseFuture)super.addListener(listener);
 	}
 
 	@Override
 	public CloseFuture removeListener(IoFutureListener<?> listener) {
-		return (CloseFuture) super.removeListener(listener);
+		return (CloseFuture)super.removeListener(listener);
 	}
 }

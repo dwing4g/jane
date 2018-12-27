@@ -22,8 +22,6 @@ import org.apache.mina.core.session.IoSession;
 
 /**
  * A default implementation of {@link ConnectFuture}.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public class DefaultConnectFuture extends DefaultIoFuture implements ConnectFuture {
 	/** A static object stored into the ConnectFuture when teh connection has been cancelled */
@@ -42,31 +40,27 @@ public class DefaultConnectFuture extends DefaultIoFuture implements ConnectFutu
 	public static ConnectFuture newFailedFuture(Throwable exception) {
 		DefaultConnectFuture failedFuture = new DefaultConnectFuture();
 		failedFuture.setException(exception);
-
 		return failedFuture;
 	}
 
 	@Override
 	public IoSession getSession() {
 		Object v = getValue();
-
-		if (v instanceof IoSession) {
-			return (IoSession) v;
-		} else if (v instanceof RuntimeException) {
-			throw (RuntimeException) v;
-		} else if (v instanceof Error) {
-			throw (Error) v;
-		} else if (v instanceof Throwable) {
-			throw new RuntimeException("Failed to get the session.", (Throwable) v);
-		} else {
-			return null;
-		}
+		if (v instanceof IoSession)
+			return (IoSession)v;
+		if (v instanceof RuntimeException)
+			throw (RuntimeException)v;
+		if (v instanceof Error)
+			throw (Error)v;
+		if (v instanceof Throwable)
+			throw new RuntimeException("failed to get the session", (Throwable)v);
+		return null;
 	}
 
 	@Override
 	public Throwable getException() {
 		Object v = getValue();
-		return (v instanceof Throwable) ? (Throwable) v : null;
+		return (v instanceof Throwable) ? (Throwable)v : null;
 	}
 
 	@Override
@@ -81,19 +75,15 @@ public class DefaultConnectFuture extends DefaultIoFuture implements ConnectFutu
 
 	@Override
 	public void setSession(IoSession session) {
-		if (session == null) {
+		if (session == null)
 			throw new IllegalArgumentException("session");
-		}
-
 		setValue(session);
 	}
 
 	@Override
 	public void setException(Throwable exception) {
-		if (exception == null) {
+		if (exception == null)
 			throw new IllegalArgumentException("exception");
-		}
-
 		setValue(exception);
 	}
 
@@ -104,21 +94,21 @@ public class DefaultConnectFuture extends DefaultIoFuture implements ConnectFutu
 
 	@Override
 	public ConnectFuture await() throws InterruptedException {
-		return (ConnectFuture) super.await();
+		return (ConnectFuture)super.await();
 	}
 
 	@Override
 	public ConnectFuture awaitUninterruptibly() {
-		return (ConnectFuture) super.awaitUninterruptibly();
+		return (ConnectFuture)super.awaitUninterruptibly();
 	}
 
 	@Override
 	public ConnectFuture addListener(IoFutureListener<?> listener) {
-		return (ConnectFuture) super.addListener(listener);
+		return (ConnectFuture)super.addListener(listener);
 	}
 
 	@Override
 	public ConnectFuture removeListener(IoFutureListener<?> listener) {
-		return (ConnectFuture) super.removeListener(listener);
+		return (ConnectFuture)super.removeListener(listener);
 	}
 }

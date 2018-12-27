@@ -28,8 +28,6 @@ import org.apache.mina.core.write.WriteRequest;
  * A container of {@link IoFilter}s that forwards {@link IoHandler} events
  * to the consisting filters and terminal {@link IoHandler} sequentially.
  * Every {@link IoSession} has its own {@link IoFilterChain} (1-to-1 relationship).
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface IoFilterChain {
 	/**
