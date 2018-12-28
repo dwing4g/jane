@@ -36,7 +36,7 @@ public final class TestCompressor
 	 */
 	public static int maxCompressedSize(int srcLen)
 	{
-		return srcLen + (srcLen + 7) / 8;
+		return srcLen + ((srcLen + 7) >> 3);
 	}
 
 	private void putbits(int v, int n) // n = 2~24

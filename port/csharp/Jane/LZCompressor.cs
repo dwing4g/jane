@@ -32,7 +32,7 @@ namespace Jane
 		 */
 		public static int MaxCompressedSize(int srclen)
 		{
-			return srclen + (srclen + 7) / 8;
+			return srclen + ((srclen + 7) >> 3);
 		}
 
 		void PutBits(int v, int n) // n = 2~24

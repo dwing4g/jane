@@ -55,7 +55,7 @@ public class LongHashMap<V> implements Cloneable
 			loadFactor = 1f;
 
 		_capacity = _tableSize = initialCapacity = IntHashMap.nextPowerOfTwo(initialCapacity); // [1,0x40000000]
-		_pushIterations = (short)Math.max(Math.min(initialCapacity, 8), (int)Math.sqrt(initialCapacity) / 8); // [1,2,4,...,4096]
+		_pushIterations = (short)Math.max(Math.min(initialCapacity, 8), (int)Math.sqrt(initialCapacity) >> 3); // [1,2,4,...,4096]
 		_hashShift = 31 - Integer.numberOfTrailingZeros(initialCapacity); // [31,...,1]
 		_mask = initialCapacity - 1; // [0,0x3fffffff]
 		_threshold = (int)Math.ceil(initialCapacity * loadFactor); // [1,0x40000000]
@@ -561,7 +561,7 @@ public class LongHashMap<V> implements Cloneable
 		int oldEndIndex = _tableSize;
 
 		_capacity = _tableSize = newSize;
-		_pushIterations = (short)Math.max(Math.min(newSize, 8), (int)Math.sqrt(newSize) / 8);
+		_pushIterations = (short)Math.max(Math.min(newSize, 8), (int)Math.sqrt(newSize) >> 3);
 		_hashShift = 31 - Integer.numberOfTrailingZeros(newSize);
 		_mask = newSize - 1;
 		_threshold = (int)Math.ceil(newSize * _loadFactor);

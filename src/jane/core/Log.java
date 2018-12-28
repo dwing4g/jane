@@ -60,7 +60,7 @@ public final class Log
 				System.getProperty("os.name"), System.getProperty("os.version"), System.getProperty("os.arch"));
 		Runtime runtime = Runtime.getRuntime();
 		log.info("processors = {}; jvm.heap = {}/{}M; file.encoding = {}", runtime.availableProcessors(),
-				runtime.totalMemory() / 0x100000, runtime.maxMemory() / 0x100000, System.getProperty("file.encoding"));
+				runtime.totalMemory() >> 20, runtime.maxMemory() >> 20, System.getProperty("file.encoding"));
 		log.info("user.name = {}; user.dir = {}", System.getProperty("user.name"), System.getProperty("user.dir"));
 		log.info("java.class.path = {}", System.getProperty("java.class.path"));
 		URL url = new ContextInitializer(logCtx).findURLOfDefaultConfigurationFile(true);

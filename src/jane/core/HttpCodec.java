@@ -296,7 +296,7 @@ public final class HttpCodec extends IoFilterAdapter
 		}
 		while(value > 0);
 		byte[] b = buf.array();
-		for(int n = pos + buf.size(), e = n / 2; pos < e; ++pos) // reverse
+		for(int n = pos + buf.size(), e = n >> 1; pos < e; ++pos) // reverse
 		{
 			int pos2 = n - pos - 1;
 			byte t = b[pos];
@@ -307,7 +307,7 @@ public final class HttpCodec extends IoFilterAdapter
 
 	private static IoBuffer createHexLine(int value)
 	{
-		int bytes = (67 - Long.numberOfLeadingZeros(value)) / 4;
+		int bytes = (67 - Long.numberOfLeadingZeros(value)) >> 2;
 		if(bytes == 0) bytes = 1;
 		byte[] buf = new byte[bytes + 2];
 		buf[bytes] = '\r';

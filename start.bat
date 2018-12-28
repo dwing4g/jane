@@ -10,8 +10,9 @@ set JVM=^
 -server ^
 -XX:+UseG1GC ^
 -XX:MaxGCPauseMillis=200 ^
--XX:+HeapDumpOnOutOfMemoryError ^
+-XX:AutoBoxCacheMax=65535 ^
 -XX:SoftRefLRUPolicyMSPerMB=1000 ^
+-XX:+HeapDumpOnOutOfMemoryError ^
 -Xlog:gc=info,gc+heap=info:log/gc.log:time ^
 -Dsun.stdout.encoding=gbk ^
 -Dsun.stderr.encoding=gbk
@@ -22,11 +23,13 @@ set JVM=^
 -server ^
 -XX:+UseConcMarkSweepGC ^
 -XX:+AggressiveOpts ^
--XX:+HeapDumpOnOutOfMemoryError ^
+-XX:AutoBoxCacheMax=65535 ^
 -XX:SoftRefLRUPolicyMSPerMB=1000 ^
+-XX:+HeapDumpOnOutOfMemoryError ^
 -Xloggc:log/gc.log ^
 -XX:+PrintGCDetails ^
 -XX:+PrintGCDateStamps ^
+-XX:+PrintReferenceGC ^
 -verbose:gc ^
 -Dsun.stdout.encoding=gbk ^
 -Dsun.stderr.encoding=gbk

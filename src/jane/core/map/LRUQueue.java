@@ -81,7 +81,7 @@ final class LRUQueue<T extends CacheEntryBase<?>>
 
 	private void downHeap(T node)
 	{
-		for(int i = 1, j = 2, k = 3;;) // j = i << 1 (find smaller child); k = j + 1;
+		for(int i = 1, j = 2, k = 3;;) // j = i + i (find smaller child); k = j + 1;
 		{
 			if(k <= size && heap[k].lessThan(heap[j]))
 				j = k;
@@ -92,7 +92,7 @@ final class LRUQueue<T extends CacheEntryBase<?>>
 			}
 			heap[i] = heap[j]; // shift up child
 			i = j;
-			j = i << 1;
+			j += j;
 			k = j + 1;
 		}
 	}
