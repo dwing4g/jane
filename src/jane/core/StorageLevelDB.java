@@ -1029,9 +1029,15 @@ public final class StorageLevelDB implements Storage
 
 	public synchronized String getProperty(String prop)
 	{
+		if(prop == null) return String.valueOf(_db);
 		if(_db == 0) return "";
 		String value = leveldb_property(_db, prop);
 		return value != null ? value : "";
+	}
+
+	public synchronized boolean compact()
+	{
+		return _db != 0 && leveldb_compact(_db, null, 0, null, 0);
 	}
 
 	/**
