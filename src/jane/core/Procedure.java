@@ -762,7 +762,7 @@ public abstract class Procedure implements Runnable
 		}
 		catch(Throwable e)
 		{
-			Log.error("procedure fatal exception: " + toString(), e);
+			Log.error(e, "procedure fatal exception: {}", toString());
 		}
 	}
 
@@ -776,7 +776,7 @@ public abstract class Procedure implements Runnable
 	{
 		if(DBManager.instance().isExiting())
 		{
-			Log.info("procedure canceled: " + toString());
+			Log.info("procedure canceled: {}", toString());
 			return false;
 		}
 		ProcThread pt = (ProcThread)Thread.currentThread();
@@ -818,13 +818,13 @@ public abstract class Procedure implements Runnable
 			try
 			{
 				if(e instanceof InterruptedException && DBManager.instance().isExiting())
-					Log.info("procedure canceled: " + toString());
+					Log.info("procedure canceled: {}", toString());
 				else if(e != Undo._instance)
 					onException(e);
 			}
 			catch(Throwable ex)
 			{
-				Log.error("procedure.onException exception: " + toString(), ex);
+				Log.error(ex, "procedure.onException exception: {}", toString());
 			}
 			finally
 			{
@@ -859,7 +859,7 @@ public abstract class Procedure implements Runnable
 		if(_defaultEh != null)
 			_defaultEh.onException(e);
 		else
-			Log.error("procedure exception: " + toString(), e);
+			Log.error(e, "procedure exception: {}", toString());
 	}
 
 	@Override

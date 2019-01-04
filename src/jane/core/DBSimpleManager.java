@@ -419,7 +419,7 @@ public final class DBSimpleManager
 		}
 		catch(Exception e)
 		{
-			Log.error("get record exception: tableId=" + tableId + ", key=" + key + ", type=" + beanStub.typeName(), e);
+			Log.error(e, "get record exception: tableId={}, key={}, type={}", tableId, key, beanStub.typeName());
 			return null;
 		}
 	}

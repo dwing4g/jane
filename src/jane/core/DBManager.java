@@ -574,7 +574,7 @@ public final class DBManager
 						}
 						catch(Throwable e)
 						{
-							Log.error("procedure(sid=" + sid + ") exception:", e);
+							Log.error(e, "procedure(sid={}) exception:", sid);
 						}
 						synchronized(_q)
 						{
@@ -593,7 +593,7 @@ public final class DBManager
 					if(e instanceof RejectedExecutionException && _exiting)
 						Log.info("procedure queue canceled. sid={}, queueSize={}", sid, _q.size());
 					else
-						Log.error("procedure(sid=" + sid + ") fatal exception:", e);
+						Log.error(e, "procedure(sid={}) fatal exception:", sid);
 				}
 			}
 		});

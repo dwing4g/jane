@@ -36,7 +36,7 @@ public abstract class TableBase<V extends Bean<V>>
 			}
 			catch(Throwable e)
 			{
-				Log.error("db-commit thread exception(trySaveModified:" + table.getTableName() + "):", e);
+				Log.error(e, "db-commit thread exception(trySaveModified:{}):", table.getTableName());
 			}
 		}
 	}
@@ -56,7 +56,7 @@ public abstract class TableBase<V extends Bean<V>>
 			}
 			catch(Throwable e)
 			{
-				Log.error("db-commit thread exception(saveModified:" + table.getTableName() + "):", e);
+				Log.error(e, "db-commit thread exception(saveModified:{}):", table.getTableName());
 			}
 		}
 		return m;

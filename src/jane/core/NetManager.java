@@ -644,7 +644,7 @@ public class NetManager implements IoHandler
 				}
 				catch(Throwable e)
 				{
-					Log.error(_name + '(' + session.getId() + "): callback exception: " + bean.typeName(), e);
+					Log.error(e, "{}({}): callback exception: {}", _name, session.getId(), bean.typeName());
 				}
 			}) == null) return false;
 		}
@@ -978,9 +978,9 @@ public class NetManager implements IoHandler
 	public void exceptionCaught(IoSession session, Throwable cause)
 	{
 		if(cause instanceof IOException)
-			Log.error(_name + '(' + session.getId() + ',' + session.getRemoteAddress() + "): exception: {}: {}", cause.getClass().getSimpleName(), cause.getMessage());
+			Log.error("{}({},{}): exception: {}: {}", _name, session.getId(), session.getRemoteAddress(), cause.getClass().getSimpleName(), cause.getMessage());
 		else
-			Log.error(_name + '(' + session.getId() + ',' + session.getRemoteAddress() + "): exception:", cause);
+			Log.error(cause, "{}({},{}): exception:", _name, session.getId(), session.getRemoteAddress());
 		session.closeNow();
 	}
 }

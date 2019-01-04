@@ -1122,6 +1122,20 @@ public class OctetsStream extends Octets
 		}
 	}
 
+	public OctetsStream unmarshalSkipUInt() throws MarshalException
+	{
+		int b = unmarshalInt1(), s;
+		switch(b >> 4)
+		{
+		case  0: case  1: case  2: case  3: case 4: case 5: case 6: case 7: return this;
+		case  8: case  9: case 10: case 11: s = 1; break;
+		case 12: case 13:                   s = 2; break;
+		case 14:                            s = 3; break;
+		default:                            s = 4; break;
+		}
+		return unmarshalSkip(s);
+	}
+
 	public int unmarshalUInt() throws MarshalException
 	{
 		int b = unmarshalInt1();
@@ -1133,6 +1147,28 @@ public class OctetsStream extends Octets
 		case 14:                            return ((b & 0x0f) << 24) + unmarshalInt3();
 		default:                            return                      unmarshalInt4();
 		}
+	}
+
+	public OctetsStream unmarshalSkipULong() throws MarshalException
+	{
+		int b = unmarshalInt1(), s;
+		switch(b >> 4)
+		{
+		case  0: case  1: case  2: case  3: case 4: case 5: case 6: case 7: return this;
+		case  8: case  9: case 10: case 11: s = 1; break;
+		case 12: case 13:                   s = 2; break;
+		case 14:                            s = 3; break;
+		default:
+			switch(b & 15)
+			{
+			case  0: case  1: case  2: case  3: case 4: case 5: case 6: case 7: s = 4; break;
+			case  8: case  9: case 10: case 11:                                 s = 5; break;
+			case 12: case 13:                                                   s = 6; break;
+			case 14:                                                            s = 7; break;
+			default:                                                            s = 8; break;
+			}
+		}
+		return unmarshalSkip(s);
 	}
 
 	public long unmarshalULong() throws MarshalException
