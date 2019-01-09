@@ -213,7 +213,7 @@ public final class AllBeans
 
 	public static IntHashMap<BeanHandler<?>> get#(hdl.name)Handlers(IntHashMap<BeanHandler<?>> r)
 	{
-		if(r == null) r = new IntHashMap<>(#(hdl.count) * 4);
+		if(r == null) r = new IntHashMap<>(#(hdl.count) * 2);
 #(#		r.put(#(bean.type), new #(hdl.path).#(bean.name)Handler());
 #)#		return r;
 	}

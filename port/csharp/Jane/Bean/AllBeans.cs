@@ -9,7 +9,7 @@ namespace Jane.Bean
 		/** 获取全部bean的创建代理 */
 		public static IDictionary<int, NetManager.BeanDelegate> GetAllBeans()
 		{
-			IDictionary<int, NetManager.BeanDelegate> r = new Dictionary<int, NetManager.BeanDelegate>(2 * 4);
+			IDictionary<int, NetManager.BeanDelegate> r = new Dictionary<int, NetManager.BeanDelegate>(2 * 2);
 			r.Add(1, TestBean.CreateIBean);
 			r.Add(2, TestType.CreateIBean);
 			return r;
@@ -17,7 +17,7 @@ namespace Jane.Bean
 
 		public static IDictionary<int, NetManager.HandlerDelegate> GetTestClientHandlers()
 		{
-			IDictionary<int, NetManager.HandlerDelegate> r = new Dictionary<int, NetManager.HandlerDelegate>(2 * 4);
+			IDictionary<int, NetManager.HandlerDelegate> r = new Dictionary<int, NetManager.HandlerDelegate>(2 * 2);
 			r.Add(1, Jane.Handler.TestBeanHandler.OnProcess);
 			r.Add(2, Jane.Handler.TestTypeHandler.OnProcess);
 			return r;

@@ -213,14 +213,14 @@ namespace ]=] .. namespace .. [=[
 		/** 获取全部bean的创建代理 */
 		public static IDictionary<int, NetManager.BeanDelegate> GetAllBeans()
 		{
-			IDictionary<int, NetManager.BeanDelegate> r = new Dictionary<int, NetManager.BeanDelegate>(#(bean.count) * 4);
+			IDictionary<int, NetManager.BeanDelegate> r = new Dictionary<int, NetManager.BeanDelegate>(#(bean.count) * 2);
 #(#			r.Add(#(bean.type), #(bean.name).CreateIBean);
 #)#			return r;
 		}
 #[#
 		public static IDictionary<int, NetManager.HandlerDelegate> Get#(hdl.name)Handlers()
 		{
-			IDictionary<int, NetManager.HandlerDelegate> r = new Dictionary<int, NetManager.HandlerDelegate>(#(hdl.count) * 4);
+			IDictionary<int, NetManager.HandlerDelegate> r = new Dictionary<int, NetManager.HandlerDelegate>(#(hdl.count) * 2);
 #(#			r.Add(#(bean.type), #(hdl.path).#(bean.name)Handler.OnProcess);
 #)#			return r;
 		}
