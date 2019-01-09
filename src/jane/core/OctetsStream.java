@@ -993,7 +993,7 @@ public class OctetsStream extends Octets
 		int keytype = (subType >> 3) & 7;
 		subType &= 7;
 		int n = unmarshalUInt();
-		Map<Object, Object> map = new HashMap<>(n < 0x10000 ? n : 0x10000);
+		Map<Object, Object> map = new HashMap<>(n < 0xc000 ? ((n + 2) / 3) * 4 : 0x10000);
 		for(; n > 0; --n)
 			map.put(unmarshalKV(keytype), unmarshalKV(subType));
 		return map;

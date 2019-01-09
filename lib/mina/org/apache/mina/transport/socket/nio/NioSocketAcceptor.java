@@ -569,34 +569,39 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 					return 0;
 
 				ArrayList<SocketAddress> localAddresses = future.getLocalAddresses();
-				// We create a temporary map to store the bound handles,
+				// We create 2 temporary arrays to store the bound handles,
 				// as we may have to remove them all if there is an exception during the sockets opening.
-				HashMap<SocketAddress, ServerSocketChannel> newHandles = new HashMap<>(localAddresses.size());
+				int size = localAddresses.size();
+				ServerSocketChannel[] newChannels = new ServerSocketChannel[size];
+				SocketAddress[] newAddress = new SocketAddress[size];
 
 				try {
 					// Process all the addresses
-					for (int i = 0, n = localAddresses.size(); i < n; i++) {
+					for (int i = 0; i < size; i++) {
 						@SuppressWarnings("resource")
 						ServerSocketChannel channel = open(localAddresses.get(i));
-						newHandles.put(channel.socket().getLocalSocketAddress(), channel);
+						newChannels[i] = channel;
+						newAddress[i] = channel.socket().getLocalSocketAddress();
 					}
 
 					// Everything went ok, we can now update the map storing all the bound sockets.
-					boundHandles.putAll(newHandles);
+					for (int i = 0; i < size; i++)
+						boundHandles.put(newAddress[i], newChannels[i]);
 
 					// and notify.
 					future.setDone();
 
-					return newHandles.size();
+					return size;
 				} catch (Exception e) {
 					// We store the exception in the future
 					future.setException(e);
 				} finally {
 					// Roll back if failed to bind all addresses.
 					if (future.getException() != null) {
-						for (ServerSocketChannel channel : newHandles.values()) {
+						for (ServerSocketChannel channel : newChannels) {
 							try {
-								close(channel);
+								if (channel != null)
+									close(channel);
 							} catch (Exception e) {
 								ExceptionMonitor.getInstance().exceptionCaught(e);
 							}
