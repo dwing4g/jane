@@ -1118,7 +1118,7 @@ function handler(hdls)
 		for hdlname, hdlpath in pairs(hdl) do
 			if type(handlers[hdlname]) ~= "string" then
 				handlers[hdlname] = hdlpath
-				if hdlname ~= "dbt" then
+				if hdlname ~= "dbt" and hdlpath ~= true then
 					has_handler = true
 				end
 			end
@@ -1225,7 +1225,7 @@ function bean(bean)
 	bean.param_warning = (#vartypes > 1 and "" or "/** @param _b_ unused */\n\t")
 	code = code_conv(code, "bean", bean):
 		gsub("\r", ""):
-		gsub(#vartypes > 1 and "#[<>]#" or "#<#(.-)#>#", ""):
+		gsub(#vartypes > 1 and "#[<>]#" or "#<#.-#>#", ""):
 		gsub("\n\t\tstatic\n\t\t{\n\t\t\ttry\n\t\t\t{\n\t\t\t\tClass<.-> _c_ = .-%.class;\n\t\t\t}\n\t\t\tcatch%(Exception e%)\n\t\t\t{\n\t\t\t\tthrow new Error%(e%);\n\t\t\t}\n\t\t}\n\n", ""):
 		gsub("int h = (%(int%)serialVersionUID;)\n\t\treturn h;", "return %1"):
 		gsub("\t+/%*%* @return  %*/\n", ""):
@@ -1386,7 +1386,7 @@ checksave(outpath .. namespace_path .. "/AllBeans.java", (template_allbeans:gsub
 		end
 	end
 	return concat(subcode)
-end):gsub(has_handler and "#[<>]#" or "#%<#(.-)#%>#", ""):gsub("\r", "")), 0)
+end):gsub(has_handler and "#[<>]#" or "#<#.-#>#", ""):gsub("\r", "")), 0)
 
 tables.count = #tables
 tables.imports["java.util.ArrayList"] = true
@@ -1409,7 +1409,7 @@ if tables.count > 0 then
 			subcode[#subcode + 1] = code_conv(code_conv(body, "table", table), "table", table)
 		end
 		return concat(subcode)
-	end), "tables", tables):gsub(#tables > 0 and "#[<>]#" or "#<#(.-)#>#", ""):gsub("\r", "")), 0)
+	end), "tables", tables):gsub(#tables > 0 and "#[<>]#" or "#<#.-#>#", ""):gsub("\r", "")), 0)
 end
 
 for beanname, safe in spairs(need_save) do

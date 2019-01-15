@@ -491,7 +491,9 @@ function handler(hdls)
 		for hdlname, hdlpath in pairs(hdl) do
 			if type(handlers[hdlname]) ~= "string" then
 				handlers[hdlname] = hdlpath
-				has_handler = true
+				if hdlname ~= "dbt" and hdlpath ~= true then
+					has_handler = true
+				end
 			end
 		end
 	end
@@ -557,7 +559,7 @@ function bean(bean)
 	if not bean.maxsize then bean.maxsize = 0x7fffffff end
 	if not bean.initsize then bean.initsize = 0 end
 	name_code[bean.name] = code_conv(code, "bean", bean)
-		:gsub(#vartypes > 1 and "#[<>]#" or "#<#(.-)#>#", "")
+		:gsub(#vartypes > 1 and "#[<>]#" or "#<#.-#>#", "")
 		:gsub("static const char%* const", "// static const char* const")
 		:gsub("\r", "")
 	if bean.type > 0 then
@@ -651,6 +653,6 @@ end):gsub("#%(#(.-)#%)#", function(body)
 		end
 	end
 	return concat(subcode)
-end)):gsub(has_handler and "#[<>]#" or "#%<#(.-)#%>#", ""):gsub("#%(bean.count%)", bean_count):gsub("\r", ""), 0)
+end)):gsub(has_handler and "#[<>]#" or "#<#.-#>#", ""):gsub("#%(bean.count%)", bean_count):gsub("\r", ""), 0)
 
 print((arg[2] or "") .. " ... done!")
