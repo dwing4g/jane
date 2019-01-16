@@ -25,6 +25,13 @@ import org.apache.mina.core.session.IoSession;
  */
 public interface WriteRequestQueue {
 	/**
+	 * Add a new WriteRequest to the session write's queue
+	 *
+	 * @param writeRequest The writeRequest to add
+	 */
+	void offer(WriteRequest writeRequest);
+
+	/**
 	 * Get the first request available in the queue for a session.
 	 *
 	 * @return The first available request, if any.
@@ -32,11 +39,9 @@ public interface WriteRequestQueue {
 	WriteRequest poll();
 
 	/**
-	 * Add a new WriteRequest to the session write's queue
-	 *
-	 * @param writeRequest The writeRequest to add
+	 * @return the number of objects currently stored in the queue.
 	 */
-	void offer(WriteRequest writeRequest);
+	int size();
 
 	/**
 	 * Tells if the WriteRequest queue is empty or not for a session
@@ -54,10 +59,6 @@ public interface WriteRequestQueue {
 	 * Disposes any releases associated with the session.
 	 * This method is invoked on disconnection.
 	 */
-	void dispose();
-
-	/**
-	 * @return the number of objects currently stored in the queue.
-	 */
-	int size();
+	default void dispose() {
+	}
 }

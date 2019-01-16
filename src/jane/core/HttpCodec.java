@@ -17,7 +17,7 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 import org.apache.mina.core.buffer.IoBuffer;
-import org.apache.mina.core.filterchain.IoFilterAdapter;
+import org.apache.mina.core.filterchain.IoFilter;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.DefaultWriteRequest;
@@ -35,7 +35,7 @@ import jane.core.Util.SundaySearch;
  * 输出处理: 固定长度输出,chunked方式输出<br>
  * 不直接支持: mime, Connection:close/timeout, Accept-Encoding, Set-Cookie, Multi-Part, encodeUrl
  */
-public final class HttpCodec extends IoFilterAdapter
+public final class HttpCodec implements IoFilter
 {
 	private static final SundaySearch SS_CONT_CHUNK		= new SundaySearch("\nTransfer-Encoding: chunked");
 	private static final SundaySearch SS_CONT_LEN		= new SundaySearch("\nContent-Length: ");

@@ -25,7 +25,7 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSession;
 import org.apache.mina.core.buffer.IoBuffer;
-import org.apache.mina.core.filterchain.IoFilterAdapter;
+import org.apache.mina.core.filterchain.IoFilter;
 import org.apache.mina.core.filterchain.IoFilterChain;
 import org.apache.mina.core.future.DefaultWriteFuture;
 import org.apache.mina.core.future.WriteFuture;
@@ -69,7 +69,7 @@ import org.apache.mina.core.write.WriteRequest;
  * }
  * </pre>
  */
-public final class SslFilter extends IoFilterAdapter {
+public final class SslFilter implements IoFilter {
 	/**
 	 * A session attribute key that makes next one write request bypass this filter (not encrypting the data).
 	 * This is a marker attribute, which means that you can put whatever as its value. ({@link Boolean#TRUE} is preferred.)
@@ -412,6 +412,7 @@ public final class SslFilter extends IoFilterAdapter {
 				sslHandler.scheduleMessageReceived(nextFilter, message);
 			} else {
 				IoBuffer buf = (IoBuffer)message;
+				boolean bufUsed = false;
 
 				try {
 					if (sslHandler.isOutboundDone()) {
@@ -443,8 +444,10 @@ public final class SslFilter extends IoFilterAdapter {
 						else
 							initiateClosure(nextFilter, session);
 
-						if (buf.hasRemaining())
+						if (buf.hasRemaining()) {
+							bufUsed = true;
 							sslHandler.scheduleMessageReceived(nextFilter, buf); // Forward the data received after closure
+						}
 					}
 				} catch (SSLException se) {
 					if (!sslHandler.isHandshakeComplete()) {
@@ -458,6 +461,9 @@ public final class SslFilter extends IoFilterAdapter {
 						sslHandler.release(); // Free the SSL Handler buffers
 
 					throw se;
+				} finally {
+					if (!bufUsed)
+						buf.free();
 				}
 			}
 		}
@@ -566,13 +572,11 @@ public final class SslFilter extends IoFilterAdapter {
 		SslHandler sslHandler = getSslSessionHandler(session);
 		WriteFuture future;
 
-		// if already shut down
+		// if already shutdown
 		try {
 			synchronized (sslHandler) {
-				if (!sslHandler.closeOutbound()) {
-					return DefaultWriteFuture.newNotWrittenFuture(session,
-							new IllegalStateException("SSL session is shut down already"));
-				}
+				if (!sslHandler.closeOutbound())
+					return DefaultWriteFuture.newNotWrittenFuture(session, new IllegalStateException("SSL session is shutdown already"));
 
 				// there might be data to write out here?
 				future = sslHandler.writeNetBuffer(nextFilter, true);
@@ -610,8 +614,6 @@ public final class SslFilter extends IoFilterAdapter {
 
 	/**
 	 * A message that is sent from {@link SslFilter} when the connection became secure or is not secure anymore.
-	 *
-	 * @author <a href="http://mina.apache.org">Apache MINA Project</a>
 	 */
 	public static final class SslFilterMessage {
 		private final String message;

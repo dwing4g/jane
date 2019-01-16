@@ -86,10 +86,6 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 		public Set<Object> getAttributeKeys() {
 			return attributes.keySet();
 		}
-
-		@Override
-		public void dispose() throws Exception {
-		}
 	}
 
 	private static final class DefaultWriteRequestQueue implements WriteRequestQueue {
@@ -99,20 +95,6 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 
 		DefaultWriteRequestQueue(IoSession session) {
 			s = session;
-		}
-
-		@Override
-		public void dispose() {
-		}
-
-		@Override
-		public void clear() {
-			q.clear();
-		}
-
-		@Override
-		public boolean isEmpty() {
-			return q.isEmpty();
 		}
 
 		@Override
@@ -141,13 +123,23 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 		}
 
 		@Override
-		public String toString() {
-			return q.toString();
+		public int size() {
+			return q.size();
 		}
 
 		@Override
-		public int size() {
-			return q.size();
+		public boolean isEmpty() {
+			return q.isEmpty();
+		}
+
+		@Override
+		public void clear() {
+			q.clear();
+		}
+
+		@Override
+		public String toString() {
+			return q.toString();
 		}
 	}
 }

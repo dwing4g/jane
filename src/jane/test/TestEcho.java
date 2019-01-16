@@ -40,21 +40,9 @@ public final class TestEcho extends NetManager
 				private final ArrayDeque<WriteRequest> _wrq = new ArrayDeque<>();
 
 				@Override
-				public synchronized int size()
+				public synchronized void offer(WriteRequest writeRequest) // message must be IoBuffer or FileRegion
 				{
-					return _wrq.size();
-				}
-
-				@Override
-				public synchronized boolean isEmpty()
-				{
-					return _wrq.isEmpty();
-				}
-
-				@Override
-				public synchronized void clear()
-				{
-					_wrq.clear();
+					_wrq.addLast(writeRequest);
 				}
 
 				@Override
@@ -87,14 +75,21 @@ public final class TestEcho extends NetManager
 				}
 
 				@Override
-				public synchronized void offer(WriteRequest writeRequest) // message must be IoBuffer or FileRegion
+				public synchronized int size()
 				{
-					_wrq.addLast(writeRequest);
+					return _wrq.size();
 				}
 
 				@Override
-				public void dispose()
+				public synchronized boolean isEmpty()
 				{
+					return _wrq.isEmpty();
+				}
+
+				@Override
+				public synchronized void clear()
+				{
+					_wrq.clear();
 				}
 
 				@Override

@@ -135,5 +135,6 @@ public interface IoSessionAttributeMap {
 	 *
 	 * @throws Exception If the session can't be disposed
 	 */
-	void dispose() throws Exception;
+	default void dispose() throws Exception {
+	}
 }

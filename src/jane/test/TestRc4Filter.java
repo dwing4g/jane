@@ -2,7 +2,7 @@ package jane.test;
 
 import java.nio.ByteBuffer;
 import org.apache.mina.core.buffer.IoBuffer;
-import org.apache.mina.core.filterchain.IoFilterAdapter;
+import org.apache.mina.core.filterchain.IoFilter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequest;
 
@@ -18,7 +18,7 @@ import org.apache.mina.core.write.WriteRequest;
  * session.getFilterChain().addFirst("enc", filter);
  * </pre></code>
  */
-public final class TestRc4Filter extends IoFilterAdapter
+public final class TestRc4Filter implements IoFilter
 {
 	private final byte[] _ctxI = new byte[256];
 	private final byte[] _ctxO = new byte[256];

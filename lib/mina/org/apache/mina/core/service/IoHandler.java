@@ -47,12 +47,13 @@ public interface IoHandler {
 	void sessionOpened(IoSession session) throws Exception;
 
 	/**
-	 * Invoked when a connection is closed.
+	 * Invoked when a message is received.
 	 *
-	 * @param session The session being closed
-	 * @throws Exception If we get an exception while processing the close event
+	 * @param session The session that is receiving a message
+	 * @param message The received message
+	 * @throws Exception If we get an exception while processing the received message
 	 */
-	void sessionClosed(IoSession session) throws Exception;
+	void messageReceived(IoSession session, Object message) throws Exception;
 
 	/**
 	 * Handle the closure of an half-duplex TCP channel
@@ -63,13 +64,12 @@ public interface IoHandler {
 	void inputClosed(IoSession session) throws Exception;
 
 	/**
-	 * Invoked when a message is received.
+	 * Invoked when a connection is closed.
 	 *
-	 * @param session The session that is receiving a message
-	 * @param message The received message
-	 * @throws Exception If we get an exception while processing the received message
+	 * @param session The session being closed
+	 * @throws Exception If we get an exception while processing the close event
 	 */
-	void messageReceived(IoSession session, Object message) throws Exception;
+	void sessionClosed(IoSession session) throws Exception;
 
 	/**
 	 * Invoked when any exception is thrown by user {@link IoHandler} implementation or by MINA.

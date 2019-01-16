@@ -121,11 +121,6 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 		return SimpleBufferAllocator.instance.wrap(bb);
 	}
 
-	@Override
-	public void dispose()
-	{
-	}
-
 	private final class CachedBuffer extends IoBuffer
 	{
 		private final ByteBuffer buf;

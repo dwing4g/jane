@@ -43,10 +43,6 @@ public final class SimpleBufferAllocator implements IoBufferAllocator {
 		return new SimpleIoBuffer(bb);
 	}
 
-	@Override
-	public void dispose() {
-	}
-
 	private static final class SimpleIoBuffer extends IoBuffer {
 		private final ByteBuffer buf;
 

@@ -497,13 +497,13 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 			StringBuilder sb = new StringBuilder("('");
 
 			// Add the current filter
-			sb.append(getName()).append('\'');
+			sb.append(getName());
 
 			// Add the previous filter
-			sb.append(", prev:'");
+			sb.append("', prev:'");
 
 			if (prevEntry != null)
-				sb.append(prevEntry.name).append(':').append(prevEntry.getFilter().getClass().getSimpleName());
+				sb.append(prevEntry.name).append(':').append(prevEntry.getFilter());
 			else
 				sb.append("null");
 
@@ -511,7 +511,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 			sb.append("', next:'");
 
 			if (nextEntry != null)
-				sb.append(nextEntry.name).append(':').append(nextEntry.getFilter().getClass().getSimpleName());
+				sb.append(nextEntry.name).append(':').append(nextEntry.getFilter());
 			else
 				sb.append("null");
 
@@ -544,21 +544,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		}
 
 		@Override
-		public void sessionClosed() {
-			callNextSessionClosed(nextEntry);
-		}
-
-		@Override
-		public void exceptionCaught(Throwable cause) {
-			callNextExceptionCaught(nextEntry, cause);
-		}
-
-		@Override
-		public void inputClosed() {
-			callNextInputClosed(nextEntry);
-		}
-
-		@Override
 		public void messageReceived(Object message) {
 			callNextMessageReceived(nextEntry, message);
 		}
@@ -571,6 +556,21 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		@Override
 		public void filterClose() {
 			callPreviousFilterClose(prevEntry);
+		}
+
+		@Override
+		public void inputClosed() {
+			callNextInputClosed(nextEntry);
+		}
+
+		@Override
+		public void sessionClosed() {
+			callNextSessionClosed(nextEntry);
+		}
+
+		@Override
+		public void exceptionCaught(Throwable cause) {
+			callNextExceptionCaught(nextEntry, cause);
 		}
 	}
 }

@@ -46,5 +46,6 @@ public interface IoBufferAllocator {
 	/**
 	 * Dispose of this allocator.
 	 */
-	void dispose();
+	default void dispose() {
+	}
 }
