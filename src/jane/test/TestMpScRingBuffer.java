@@ -4,15 +4,26 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 无锁的单消费者的定长非blocking的Ring Buffer. 消费者只能固定一个线程访问. 缓存Object的队列,非字符流/字节流的buffer
+ * result: 334ms / 1000_0000
  */
 public final class TestMpScRingBuffer
 {
-	private final Object[]	 buffer;
-	private final int		 idxMask;
-	private final AtomicLong writeIdx = new AtomicLong();
+	static class PaddingAtomicLong extends AtomicLong
+	{
+		private static final long serialVersionUID = 1L;
+		long					  v3, v4, v5, v6, v7;
+	}
+
+	private final Object[]			buffer;
+	private final int				idxMask;
+	private final PaddingAtomicLong	writeIdx = new PaddingAtomicLong();
+	private final PaddingAtomicLong	readIdx	 = new PaddingAtomicLong();
 	@SuppressWarnings("restriction")
 	@sun.misc.Contended //NOSONAR
-	private volatile long	 readIdx;
+	private long					writeCacheIdx;
+	@SuppressWarnings("restriction")
+	@sun.misc.Contended //NOSONAR
+	private long					readCacheIdx;
 
 	/**
 	 * @param bufSize buffer数组的长度. 必须是2的幂,至少是2. 实际的buffer长度是bufSize-1
@@ -32,7 +43,8 @@ public final class TestMpScRingBuffer
 		for(;;)
 		{
 			long wi = writeIdx.get();
-			if(readIdx + idxMask <= wi)
+			long p = wi - idxMask;
+			if(readCacheIdx <= p && (readCacheIdx = readIdx.get()) <= p)
 				return false;
 			if(writeIdx.compareAndSet(wi, wi + 1))
 			{
@@ -46,10 +58,10 @@ public final class TestMpScRingBuffer
 	{
 		for(;;)
 		{
-			long ri = readIdx;
-			if(ri == writeIdx.get())
+			long ri = readIdx.get();
+			if(ri == writeCacheIdx && ri == (writeCacheIdx = writeIdx.get()))
 				return null;
-			readIdx = ri + 1;
+			readIdx.lazySet(ri + 1);
 			for(int i = (int)ri & idxMask, n = 0;;)
 			{
 				Object obj = buffer[i];
@@ -68,7 +80,7 @@ public final class TestMpScRingBuffer
 	{
 		for(;;)
 		{
-			long ri = readIdx;
+			long ri = readIdx.get();
 			if(ri == writeIdx.get())
 				return null;
 			for(int i = (int)ri & idxMask, n = 0;;)
@@ -86,25 +98,24 @@ public final class TestMpScRingBuffer
 	{
 		final long t = System.nanoTime();
 
-		final long TEST_COUNT = 10_000_000;
-		final int BUF_SIZE = 1024;
+		final long TEST_COUNT = 1000_0000;
+		final int BUF_SIZE = 32 * 1024;
 		final int WRITER_COUNT = 1;
 
 		final TestMpScRingBuffer buf = new TestMpScRingBuffer(BUF_SIZE);
-		final AtomicLong wc = new AtomicLong(TEST_COUNT);
-		final AtomicLong rc = new AtomicLong(TEST_COUNT);
-		final AtomicLong wr = new AtomicLong();
-		final AtomicLong rr = new AtomicLong();
+		final long[] wrs = new long[WRITER_COUNT * 8];
+		final long[] rrs = new long[1];
 		final Thread[] wts = new Thread[WRITER_COUNT];
 
 		for(int i = 0; i < WRITER_COUNT; ++i)
 		{
+			final int k = i;
 			wts[i] = new Thread(() ->
 			{
-				for(long c; (c = wc.decrementAndGet()) >= 0;)
+				for(int j = k; j < TEST_COUNT; j += WRITER_COUNT)
 				{
-					int v = (int)c & 127;
-					wr.addAndGet(v);
+					int v = j & 127;
+					wrs[k * 8] += v;
 					while(!buf.offer(Integer.valueOf(v)))
 						Thread.yield();
 				}
@@ -114,20 +125,24 @@ public final class TestMpScRingBuffer
 
 		final Thread rt = new Thread(() ->
 		{
-			while(rc.decrementAndGet() >= 0)
+			for(int i = 0; i < TEST_COUNT; ++i)
 			{
 				Object v;
 				while((v = buf.poll()) == null)
 					Thread.yield();
-				rr.addAndGet((Integer)v);
+				rrs[0] += (Integer)v;
 			}
 		}, "ReaderThread");
 		rt.start();
 
+		long wr = 0;
 		for(int i = 0; i < WRITER_COUNT; ++i)
+		{
 			wts[i].join();
+			wr += wrs[i * 8];
+		}
 		rt.join();
 
-		System.out.format("wr = %d%nrr = %d%ntime = %d ms%n", wr.get(), rr.get(), (System.nanoTime() - t) / 1_000_000);
+		System.out.format("wr = %d%nrr = %d%ntime = %d ms%n", wr, rrs[0], (System.nanoTime() - t) / 1_000_000);
 	}
 }
