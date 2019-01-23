@@ -99,8 +99,7 @@ public interface IoFuture {
 	IoFuture addListener(IoFutureListener<?> listener);
 
 	/**
-	 * Removes an existing event <tt>listener</tt>
-	 * so it won't be notified when the future is completed.
+	 * Removes an existing event <tt>listener</tt> so it won't be notified when the future is completed.
 	 *
 	 * @param listener The listener to remove
 	 * @return the current IoFuture

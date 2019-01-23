@@ -35,7 +35,7 @@ public interface IoFutureListener<F extends IoFuture> extends EventListener {
 	 * Invoked when the operation associated with the {@link IoFuture}
 	 * has been completed even if you add the listener after the completion.
 	 *
-	 * @param future  The source {@link IoFuture} which called this callback.
+	 * @param future The source {@link IoFuture} which called this callback.
 	 */
 	void operationComplete(F future);
 }

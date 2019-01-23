@@ -3,8 +3,8 @@ package jane.test;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * 无锁的单生产者单消费者的定长非blocking的Ring Buffer. 生产者和消费者分别只能固定一个线程访问. 缓存Object的队列,非字符流/字节流的buffer
- * result: 493ms / 1_0000_0000
+ * 无锁的单生产者单消费者的定长非blocking的Object Ring Buffer队列. 生产者和消费者分别只能固定一个线程访问
+ * result: 486ms / 1_0000_0000
  */
 public final class TestSpScRingBuffer
 {
@@ -87,7 +87,7 @@ public final class TestSpScRingBuffer
 		final long t = System.nanoTime();
 
 		final long TEST_COUNT = 1_0000_0000;
-		final int BUF_SIZE = 32 * 1024;
+		final int BUF_SIZE = 64 * 1024;
 
 		final TestSpScRingBuffer buf = new TestSpScRingBuffer(BUF_SIZE);
 		final long[] wrs = new long[6];

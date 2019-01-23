@@ -64,7 +64,7 @@ public abstract class AbstractIoService implements IoService {
 	protected Selector selector;
 
 	/** The default {@link AbstractSocketSessionConfig} which will be used to configure new sessions */
-	private final DefaultSocketSessionConfig sessionConfig;
+	private final DefaultSocketSessionConfig sessionConfig = new DefaultSocketSessionConfig(this);
 
 	private IoFilterChainBuilder filterChainBuilder = new DefaultIoFilterChainBuilder();
 
@@ -94,7 +94,6 @@ public abstract class AbstractIoService implements IoService {
 		int id = idGenerator.incrementAndGet();
 		executor = new ThreadPoolExecutor(0, 1, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(),
 				r -> new Thread(r, getClass().getSimpleName() + '-' + id));
-		sessionConfig = new DefaultSocketSessionConfig(this);
 	}
 
 	@Override

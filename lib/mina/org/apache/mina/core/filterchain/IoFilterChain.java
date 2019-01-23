@@ -46,7 +46,7 @@ public interface IoFilterChain {
 	/**
 	 * Returns the {@link Entry} with the specified <tt>filter</tt> in this chain.
 	 *
-	 * @param filter  The Filter we are looking for
+	 * @param filter The Filter we are looking for
 	 * @return <tt>null</tt> if there's no such filter in this chain
 	 */
 	Entry getEntry(IoFilter filter);

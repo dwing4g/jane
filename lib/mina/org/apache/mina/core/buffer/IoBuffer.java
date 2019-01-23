@@ -241,7 +241,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	/**
 	 * @see ByteBuffer#isDirect()
 	 *
-	 * @return <tt>True</tt> if this is a direct buffer
+	 * @return <tt>true</tt> if this is a direct buffer
 	 */
 	public final boolean isDirect() {
 		return buf().isDirect();

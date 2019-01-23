@@ -203,16 +203,13 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 
 	@Override
 	public void bind(Collection<? extends SocketAddress> localAddresses) throws IOException {
-		if (isDisposing()) {
+		if (isDisposing())
 			throw new IllegalStateException("the Accpetor disposed is being disposed");
-		}
 
-		if (localAddresses == null) {
+		if (localAddresses == null)
 			throw new IllegalArgumentException("null localAddresses");
-		}
-		if (localAddresses.isEmpty()) {
+		if (localAddresses.isEmpty())
 			throw new IllegalArgumentException("empty localAddresses");
-		}
 
 		boolean activate = false;
 		synchronized (bindLock) {

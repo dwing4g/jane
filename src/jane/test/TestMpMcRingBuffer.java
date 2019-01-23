@@ -3,10 +3,10 @@ package jane.test;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * 无锁的定长非blocking的Ring Buffer. 缓存Object的队列,非字符流/字节流的buffer
- * result: 1008ms / 1000_0000
+ * 无锁的定长Object Ring Buffer队列
+ * result: 501ms / 1000_0000
  */
-public final class TestMpMcRingBuffer
+public final class TestMpMcRingBuffer<T>
 {
 	static class PaddingAtomicLong extends AtomicLong
 	{
@@ -33,7 +33,12 @@ public final class TestMpMcRingBuffer
 		idxMask = bufSize - 1;
 	}
 
-	public boolean offer(Object obj)
+	public int size()
+	{
+		return (int)(writeIdx.get() - readHeadIdx.get());
+	}
+
+	public boolean offer(T obj)
 	{
 		if(obj == null)
 			throw new NullPointerException();
@@ -51,7 +56,8 @@ public final class TestMpMcRingBuffer
 		}
 	}
 
-	public Object poll()
+	@SuppressWarnings("unchecked")
+	public T poll()
 	{
 		for(;;)
 		{
@@ -70,7 +76,7 @@ public final class TestMpMcRingBuffer
 						for(n = 0;;)
 						{
 							if(readTailIdx.compareAndSet(ri, ri1))
-								return obj;
+								return (T)obj;
 							if(++n > 127)
 								Thread.yield();
 						}
@@ -82,7 +88,8 @@ public final class TestMpMcRingBuffer
 		}
 	}
 
-	public Object peek()
+	@SuppressWarnings("unchecked")
+	public T peek()
 	{
 		for(int n = 0;;)
 		{
@@ -91,8 +98,35 @@ public final class TestMpMcRingBuffer
 				return null;
 			Object obj = buffer[(int)ri & idxMask];
 			if(obj != null && readHeadIdx.get() == ri)
-				return obj;
+				return (T)obj;
 			if(++n > 127)
+				Thread.yield();
+		}
+	}
+
+	public void put(T obj) throws InterruptedException
+	{
+		for(int n = 0;;)
+		{
+			if(offer(obj))
+				return;
+			if(++n > 1000)
+				Thread.sleep(50);
+			else if(n > 10)
+				Thread.yield();
+		}
+	}
+
+	public T take() throws InterruptedException
+	{
+		for(int n = 0;;)
+		{
+			T obj = poll();
+			if(obj != null)
+				return obj;
+			if(++n > 1000)
+				Thread.sleep(50);
+			else if(n > 10)
 				Thread.yield();
 		}
 	}
@@ -102,11 +136,11 @@ public final class TestMpMcRingBuffer
 		final long t = System.nanoTime();
 
 		final long TEST_COUNT = 1000_0000;
-		final int BUF_SIZE = 32 * 1024;
-		final int WRITER_COUNT = 2;
-		final int READER_COUNT = 2;
+		final int BUF_SIZE = 64 * 1024;
+		final int WRITER_COUNT = 1;
+		final int READER_COUNT = 1;
 
-		final TestMpMcRingBuffer buf = new TestMpMcRingBuffer(BUF_SIZE);
+		final TestMpMcRingBuffer<Integer> buf = new TestMpMcRingBuffer<>(BUF_SIZE);
 		final long[] wrs = new long[WRITER_COUNT * 8];
 		final long[] rrs = new long[READER_COUNT * 8];
 		final Thread[] wts = new Thread[WRITER_COUNT];
@@ -117,12 +151,18 @@ public final class TestMpMcRingBuffer
 			final int k = i;
 			wts[i] = new Thread(() ->
 			{
-				for(int j = k; j < TEST_COUNT; j += WRITER_COUNT)
+				try
 				{
-					int v = j & 127;
-					wrs[k * 8] += v;
-					while(!buf.offer(Integer.valueOf(v)))
-						Thread.yield();
+					for(int j = k; j < TEST_COUNT; j += WRITER_COUNT)
+					{
+						int v = j & 127;
+						wrs[k * 8] += v;
+						buf.put(Integer.valueOf(v));
+					}
+				}
+				catch(InterruptedException e)
+				{
+					e.printStackTrace();
 				}
 			}, "WriterThread" + i);
 			wts[i].start();
@@ -133,12 +173,14 @@ public final class TestMpMcRingBuffer
 			final int k = i;
 			rts[i] = new Thread(() ->
 			{
-				for(int j = k; j < TEST_COUNT; j += WRITER_COUNT)
+				try
 				{
-					Object v;
-					while((v = buf.poll()) == null)
-						Thread.yield();
-					rrs[k * 8] += (Integer)v;
+					for(int j = k; j < TEST_COUNT; j += WRITER_COUNT)
+						rrs[k * 8] += buf.take();
+				}
+				catch(InterruptedException e)
+				{
+					e.printStackTrace();
 				}
 			}, "ReaderThread" + i);
 			rts[i].start();

@@ -103,9 +103,6 @@ public final class SslHandler {
 	/** A counter of schedules events */
 	private final AtomicInteger scheduledEvents = new AtomicInteger();
 
-	/**
-	 * Create a new SSL Handler, and initialize it.
-	 */
 	SslHandler(SslFilter sslFilter, IoSession session) {
 		this.sslFilter = sslFilter;
 		this.session = session;
@@ -152,12 +149,12 @@ public final class SslHandler {
 
 		handshakeStatus = sslEngine.getHandshakeStatus();
 
-		// Default value
-		writingEncryptedData = false;
-
 		// We haven't yet started a SSL negotiation set the flags accordingly
 		firstSSLNegociation = true;
 		handshakeComplete = false;
+
+		// Default value
+		writingEncryptedData = false;
 	}
 
 	/**
@@ -286,8 +283,8 @@ public final class SslHandler {
 	 * Call when data are read from net.
 	 * It will perform the initial hanshake or decrypt the data if SSL has been initialiaed.
 	 *
-	 * @param buf buffer to decrypt
 	 * @param nextFilter Next filter in chain
+	 * @param buf buffer to decrypt
 	 * @throws SSLException on errors
 	 */
 	void messageReceived(NextFilter nextFilter, ByteBuffer buf) throws SSLException {
@@ -306,7 +303,6 @@ public final class SslHandler {
 		else {
 			// Prepare the net data for reading.
 			inNetBuffer.flip();
-
 			if (!inNetBuffer.hasRemaining())
 				return;
 
@@ -432,13 +428,11 @@ public final class SslHandler {
 	}
 
 	private void checkStatus(SSLEngineResult res) throws SSLException {
-		/*
-		 * The status may be:
-		 * OK - Normal operation
-		 * OVERFLOW - Should never happen since the application buffer is sized to hold the maximum packet size.
-		 * UNDERFLOW - Need to read more data from the socket. It's normal.
-		 * CLOSED - The other peer closed the socket. Also normal.
-		 */
+		// The status may be:
+		// OK - Normal operation
+		// OVERFLOW - Should never happen since the application buffer is sized to hold the maximum packet size.
+		// UNDERFLOW - Need to read more data from the socket. It's normal.
+		// CLOSED - The other peer closed the socket. Also normal.
 		Status status = res.getStatus();
 		if (status == Status.BUFFER_OVERFLOW)
 			throw new SSLException("SSLEngine error during decrypt: " + status + " inNetBuffer: " + inNetBuffer + "appBuffer: " + appBuffer);
@@ -469,13 +463,11 @@ public final class SslHandler {
 				// }
 
 				return;
-
 			case NEED_TASK:
 				// LOGGER.debug("{} processing the NEED_TASK state", SslFilter.getSessionInfo(session));
 
 				handshakeStatus = doTasks();
 				break;
-
 			case NEED_UNWRAP:
 				// LOGGER.debug("{} processing the NEED_UNWRAP state", SslFilter.getSessionInfo(session));
 
@@ -484,14 +476,12 @@ public final class SslHandler {
 					return; // We need more data or the session is closed
 
 				break;
-
 			case NEED_WRAP:
 			case NOT_HANDSHAKING:
 				// LOGGER.debug("{} processing the NEED_WRAP state", SslFilter.getSessionInfo(session));
 
 				// First make sure that the out buffer is completely empty.
-				// Since we
-				// cannot call wrap with data left on the buffer
+				// Since we cannot call wrap with data left on the buffer
 				if (outNetBuffer != null && outNetBuffer.hasRemaining())
 					return;
 
@@ -510,7 +500,6 @@ public final class SslHandler {
 				outNetBuffer.flip();
 				writeNetBuffer(nextFilter, false);
 				break;
-
 			default:
 				String msg = "invalid handshaking state" + handshakeStatus + " while processing the handshake for session " + session.getId();
 				ExceptionMonitor.getInstance().error(msg);

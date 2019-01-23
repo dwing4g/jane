@@ -111,7 +111,6 @@ public final class SimpleIoProcessorPool implements IoProcessor<NioSession> {
 	 */
 	private NioProcessor getProcessor(NioSession session) {
 		NioProcessor processor = session.getNioProcessor();
-
 		if (processor == null) {
 			if (disposing)
 				throw new IllegalStateException(getClass().getSimpleName() + " is disposed");

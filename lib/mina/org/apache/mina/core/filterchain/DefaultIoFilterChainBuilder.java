@@ -237,7 +237,6 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 	@Override
 	public String toString() {
 		StringBuilder buf = new StringBuilder("{ ");
-
 		boolean empty = true;
 
 		for (Entry e : entries) {

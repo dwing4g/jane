@@ -1,12 +1,14 @@
 package jane.test;
 
 import java.util.concurrent.atomic.AtomicLong;
+import sun.misc.Contended; //NOSONAR
 
 /**
- * 无锁的单消费者的定长非blocking的Ring Buffer. 消费者只能固定一个线程访问. 缓存Object的队列,非字符流/字节流的buffer
- * result: 334ms / 1000_0000
+ * 无锁的单消费者的定长Object Ring Buffer队列. 消费者只能固定一个线程访问
+ * result: 381ms / 1000_0000
  */
-public final class TestMpScRingBuffer
+@SuppressWarnings("restriction")
+public final class TestMpScRingBuffer<T>
 {
 	static class PaddingAtomicLong extends AtomicLong
 	{
@@ -18,12 +20,8 @@ public final class TestMpScRingBuffer
 	private final int				idxMask;
 	private final PaddingAtomicLong	writeIdx = new PaddingAtomicLong();
 	private final PaddingAtomicLong	readIdx	 = new PaddingAtomicLong();
-	@SuppressWarnings("restriction")
-	@sun.misc.Contended //NOSONAR
-	private long					writeCacheIdx;
-	@SuppressWarnings("restriction")
-	@sun.misc.Contended //NOSONAR
-	private long					readCacheIdx;
+	private @Contended long			writeCacheIdx;
+	private @Contended long			readCacheIdx;
 
 	/**
 	 * @param bufSize buffer数组的长度. 必须是2的幂,至少是2. 实际的buffer长度是bufSize-1
@@ -36,7 +34,12 @@ public final class TestMpScRingBuffer
 		idxMask = bufSize - 1;
 	}
 
-	public boolean offer(Object obj)
+	public int size()
+	{
+		return (int)(writeIdx.get() - readIdx.get());
+	}
+
+	public boolean offer(T obj)
 	{
 		if(obj == null)
 			throw new NullPointerException();
@@ -54,7 +57,8 @@ public final class TestMpScRingBuffer
 		}
 	}
 
-	public Object poll()
+	@SuppressWarnings("unchecked")
+	public T poll()
 	{
 		for(;;)
 		{
@@ -68,15 +72,16 @@ public final class TestMpScRingBuffer
 				if(obj != null)
 				{
 					buffer[i] = null;
-					return obj;
+					return (T)obj;
 				}
-				if(++n > 127)
+				if(++n > 50)
 					Thread.yield();
 			}
 		}
 	}
 
-	public Object peek()
+	@SuppressWarnings("unchecked")
+	public T peek()
 	{
 		for(;;)
 		{
@@ -87,10 +92,37 @@ public final class TestMpScRingBuffer
 			{
 				Object obj = buffer[i];
 				if(obj != null)
-					return obj;
-				if(++n > 127)
+					return (T)obj;
+				if(++n > 50)
 					Thread.yield();
 			}
+		}
+	}
+
+	public void put(T obj) throws InterruptedException
+	{
+		for(int n = 0;;)
+		{
+			if(offer(obj))
+				return;
+			if(++n > 1000)
+				Thread.sleep(50);
+			else if(n > 10)
+				Thread.yield();
+		}
+	}
+
+	public T take() throws InterruptedException
+	{
+		for(int n = 0;;)
+		{
+			T obj = poll();
+			if(obj != null)
+				return obj;
+			if(++n > 1000)
+				Thread.sleep(50);
+			else if(n > 10)
+				Thread.yield();
 		}
 	}
 
@@ -99,10 +131,10 @@ public final class TestMpScRingBuffer
 		final long t = System.nanoTime();
 
 		final long TEST_COUNT = 1000_0000;
-		final int BUF_SIZE = 32 * 1024;
+		final int BUF_SIZE = 64 * 1024;
 		final int WRITER_COUNT = 1;
 
-		final TestMpScRingBuffer buf = new TestMpScRingBuffer(BUF_SIZE);
+		final TestMpScRingBuffer<Integer> buf = new TestMpScRingBuffer<>(BUF_SIZE);
 		final long[] wrs = new long[WRITER_COUNT * 8];
 		final long[] rrs = new long[1];
 		final Thread[] wts = new Thread[WRITER_COUNT];
@@ -112,12 +144,18 @@ public final class TestMpScRingBuffer
 			final int k = i;
 			wts[i] = new Thread(() ->
 			{
-				for(int j = k; j < TEST_COUNT; j += WRITER_COUNT)
+				try
 				{
-					int v = j & 127;
-					wrs[k * 8] += v;
-					while(!buf.offer(Integer.valueOf(v)))
-						Thread.yield();
+					for(int j = k; j < TEST_COUNT; j += WRITER_COUNT)
+					{
+						int v = j & 127;
+						wrs[k * 8] += v;
+						buf.put(Integer.valueOf(v));
+					}
+				}
+				catch(InterruptedException e)
+				{
+					e.printStackTrace();
 				}
 			}, "WriterThread" + i);
 			wts[i].start();
@@ -125,12 +163,14 @@ public final class TestMpScRingBuffer
 
 		final Thread rt = new Thread(() ->
 		{
-			for(int i = 0; i < TEST_COUNT; ++i)
+			try
 			{
-				Object v;
-				while((v = buf.poll()) == null)
-					Thread.yield();
-				rrs[0] += (Integer)v;
+				for(int i = 0; i < TEST_COUNT; ++i)
+					rrs[0] += buf.take();
+			}
+			catch(InterruptedException e)
+			{
+				e.printStackTrace();
 			}
 		}, "ReaderThread");
 		rt.start();

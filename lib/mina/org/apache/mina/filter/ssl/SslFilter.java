@@ -94,8 +94,6 @@ public final class SslFilter implements IoFilter {
 	 * If not set {@link SSLContext#createSSLEngine()} will be called.
 	 * <br>
 	 * Using this feature {@link SSLSession} objects may be cached and reused when in client mode.
-	 *
-	 * @see SSLContext#createSSLEngine(String, int)
 	 */
 	public static final String PEER_ADDRESS = "SslFilter.peerAddress";
 
@@ -113,7 +111,6 @@ public final class SslFilter implements IoFilter {
 	 */
 	public static final SslFilterMessage SESSION_UNSECURED = new SslFilterMessage("SESSION_UNSECURED");
 
-	/** The SslContext used */
 	final SSLContext sslContext;
 
 	/** A flag used to tell the filter to start the handshake immediately */
@@ -173,11 +170,10 @@ public final class SslFilter implements IoFilter {
 	}
 
 	/**
+	 * @param session the session we want to check
 	 * @return <tt>true</tt> if and only if the specified <tt>session</tt> is encrypted/decrypted over SSL/TLS currently.
 	 * This method will start to return <tt>false</tt> after TLS <tt>close_notify</tt> message is sent
 	 * and any messages written after then is not going to get encrypted.
-	 *
-	 * @param session the session we want to check
 	 */
 	public static boolean isSslStarted(IoSession session) {
 		SslHandler sslHandler = (SslHandler)session.getAttribute(SSL_HANDLER);
@@ -190,9 +186,8 @@ public final class SslFilter implements IoFilter {
 	}
 
 	/**
-	 * @return <tt>true</tt> if and only if the conditions for {@link #isSslStarted(IoSession)} are met, and the handhake has completed.
-	 *
 	 * @param session the session we want to check
+	 * @return <tt>true</tt> if and only if the conditions for {@link #isSslStarted(IoSession)} are met, and the handhake has completed.
 	 */
 	public static boolean isSecured(IoSession session) {
 		SslHandler sslHandler = (SslHandler)session.getAttribute(SSL_HANDLER);
@@ -257,8 +252,8 @@ public final class SslFilter implements IoFilter {
 	}
 
 	/**
-	 * @return the list of cipher suites to be enabled when {@link SSLEngine}
-	 * is initialized. <tt>null</tt> means 'use {@link SSLEngine}'s default.'
+	 * @return the list of cipher suites to be enabled when {@link SSLEngine} is initialized.
+	 * <tt>null</tt> means 'use {@link SSLEngine}'s default.'
 	 */
 	public String[] getEnabledCipherSuites() {
 		return enabledCipherSuites;
@@ -274,8 +269,8 @@ public final class SslFilter implements IoFilter {
 	}
 
 	/**
-	 * @return the list of protocols to be enabled when {@link SSLEngine}
-	 * is initialized. <tt>null</tt> means 'use {@link SSLEngine}'s default.'
+	 * @return the list of protocols to be enabled when {@link SSLEngine} is initialized.
+	 * <tt>null</tt> means 'use {@link SSLEngine}'s default.'
 	 */
 	public String[] getEnabledProtocols() {
 		return enabledProtocols;
@@ -332,20 +327,18 @@ public final class SslFilter implements IoFilter {
 	 */
 	public WriteFuture stopSsl(IoSession session) throws SSLException {
 		SslHandler sslHandler = getSslSessionHandler(session);
-		WriteFuture future;
 
 		try {
+			WriteFuture future;
 			synchronized (sslHandler) {
 				future = initiateClosure(sslHandler.getNextFilter(), session);
 			}
-
 			sslHandler.flushScheduledEvents();
+			return future;
 		} catch (SSLException se) {
 			sslHandler.release();
 			throw se;
 		}
-
-		return future;
 	}
 
 	/**
@@ -363,15 +356,14 @@ public final class SslFilter implements IoFilter {
 		if (chain.getEntry(SslFilter.class) != null)
 			throw new IllegalStateException("only one SSL filter is permitted in a chain");
 
-		IoSession session = chain.getSession();
-
-		// Create a SSL handler and start handshake.
-		SslHandler sslHandler = new SslHandler(this, session);
-
 		// Adding the supported ciphers in the SSLHandler
 		if (enabledCipherSuites == null || enabledCipherSuites.length == 0)
 			enabledCipherSuites = sslContext.getServerSocketFactory().getSupportedCipherSuites();
 
+		IoSession session = chain.getSession();
+
+		// Create a SSL handler and start handshake.
+		SslHandler sslHandler = new SslHandler(this, session);
 		sslHandler.init();
 
 		session.setAttribute(SSL_HANDLER, sslHandler);
@@ -398,7 +390,7 @@ public final class SslFilter implements IoFilter {
 				sslHandler.destroy(); // release resources
 			}
 		} finally {
-			nextFilter.sessionClosed(); // notify closed session
+			nextFilter.sessionClosed();
 		}
 	}
 
@@ -446,7 +438,7 @@ public final class SslFilter implements IoFilter {
 
 						if (buf.hasRemaining()) {
 							bufUsed = true;
-							sslHandler.scheduleMessageReceived(nextFilter, buf); // Forward the data received after closure
+							sslHandler.scheduleMessageReceived(nextFilter, buf); // forward the data received after closure
 						}
 					}
 				} catch (SSLException se) {
@@ -454,11 +446,9 @@ public final class SslFilter implements IoFilter {
 						SSLException newSe = new SSLHandshakeException("SSL handshake failed");
 						newSe.initCause(se);
 						se = newSe;
-
-						// Close the session immediately, the handshake has failed
-						session.closeNow();
+						session.closeNow(); // close the session immediately, the handshake has failed
 					} else
-						sslHandler.release(); // Free the SSL Handler buffers
+						sslHandler.release(); // free the SSL Handler buffers
 
 					throw se;
 				} finally {
@@ -485,8 +475,7 @@ public final class SslFilter implements IoFilter {
 					// Remove the marker attribute because it is temporary.
 					session.removeAttribute(DISABLE_ENCRYPTION_ONCE);
 					sslHandler.scheduleFilterWrite(nextFilter, writeRequest);
-				} else {
-					// Otherwise, encrypt the buffer.
+				} else { // Otherwise, encrypt the buffer.
 					IoBuffer buf = (IoBuffer)writeRequest.writeRequestMessage();
 
 					if (sslHandler.isWritingEncryptedData())
@@ -515,7 +504,6 @@ public final class SslFilter implements IoFilter {
 	@Override
 	public void filterClose(final NextFilter nextFilter, final IoSession session) throws SSLException {
 		SslHandler sslHandler = (SslHandler)session.getAttribute(SSL_HANDLER);
-
 		if (sslHandler == null) {
 			// The connection might already have closed, or SSL might have not started yet.
 			nextFilter.filterClose();
@@ -523,7 +511,6 @@ public final class SslFilter implements IoFilter {
 		}
 
 		WriteFuture future = null;
-
 		try {
 			synchronized (sslHandler) {
 				if (isSslStarted(session)) {
@@ -603,11 +590,8 @@ public final class SslFilter implements IoFilter {
 		SslHandler sslHandler = (SslHandler)session.getAttribute(SSL_HANDLER);
 		if (sslHandler == null)
 			throw new IllegalStateException("no sslHandler");
-
-		synchronized (sslHandler) {
-			if (sslHandler.getSslFilter() != this)
-				throw new IllegalArgumentException("not managed by this filter");
-		}
+		if (sslHandler.getSslFilter() != this)
+			throw new IllegalArgumentException("not managed by this filter");
 
 		return sslHandler;
 	}
