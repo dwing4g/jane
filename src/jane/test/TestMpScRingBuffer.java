@@ -60,42 +60,36 @@ public final class TestMpScRingBuffer<T>
 	@SuppressWarnings("unchecked")
 	public T poll()
 	{
-		for(;;)
+		long ri = readIdx.get();
+		if(ri == writeCacheIdx && ri == (writeCacheIdx = writeIdx.get()))
+			return null;
+		readIdx.lazySet(ri + 1);
+		for(int i = (int)ri & idxMask, n = 0;;)
 		{
-			long ri = readIdx.get();
-			if(ri == writeCacheIdx && ri == (writeCacheIdx = writeIdx.get()))
-				return null;
-			readIdx.lazySet(ri + 1);
-			for(int i = (int)ri & idxMask, n = 0;;)
+			Object obj = buffer[i];
+			if(obj != null)
 			{
-				Object obj = buffer[i];
-				if(obj != null)
-				{
-					buffer[i] = null;
-					return (T)obj;
-				}
-				if(++n > 50)
-					Thread.yield();
+				buffer[i] = null;
+				return (T)obj;
 			}
+			if(++n > 50)
+				Thread.yield();
 		}
 	}
 
 	@SuppressWarnings("unchecked")
 	public T peek()
 	{
-		for(;;)
+		long ri = readIdx.get();
+		if(ri == writeIdx.get())
+			return null;
+		for(int i = (int)ri & idxMask, n = 0;;)
 		{
-			long ri = readIdx.get();
-			if(ri == writeIdx.get())
-				return null;
-			for(int i = (int)ri & idxMask, n = 0;;)
-			{
-				Object obj = buffer[i];
-				if(obj != null)
-					return (T)obj;
-				if(++n > 50)
-					Thread.yield();
-			}
+			Object obj = buffer[i];
+			if(obj != null)
+				return (T)obj;
+			if(++n > 50)
+				Thread.yield();
 		}
 	}
 
