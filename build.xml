@@ -16,6 +16,7 @@
 	<tstamp>
 		<format property="time" pattern="yyyy-MM-dd HH:mm:ss:SSS Z"/>
 	</tstamp>
+	<echo message="ant.java.version = ${ant.java.version}"/><!-- 1.8; 9; 10; 11 -->
 
 	<target name="clean">
 		<delete dir="${classes}"/>
@@ -37,7 +38,6 @@
 			<!--compilerarg value="-Xlint:deprecation"/-->
 			<!--compilerarg value="-Xlint:unchecked"/-->
 			<compilerarg value="-XDignore.symbol.file"/><!-- suppress "Sun proprietary api" warning -->
-			<compilerarg value="-XX:-RestrictContended"/>
 			<src path="${src}/"/>
 			<src path="${lib}/mina/"/>
 		</javac>

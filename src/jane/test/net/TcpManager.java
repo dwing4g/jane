@@ -191,17 +191,19 @@ public class TcpManager implements Closeable
 		}
 	}
 
-	final void removeSession(TcpSession session, int reason)
+	final boolean removeSession(TcpSession session, int reason)
 	{
+		if(_sessions.remove(session) == null)
+			return false;
 		try
 		{
-			if(_sessions.remove(session) != null)
-				onSessionClosed(session, reason);
+			onSessionClosed(session, reason);
 		}
 		catch(Throwable e)
 		{
 			doException(session, e);
 		}
+		return true;
 	}
 
 	/**
@@ -265,10 +267,9 @@ public class TcpManager implements Closeable
 	/**
 	 * 已成功发送数据到本地网络待发缓冲区时的响应. 需要开启_enableOnSend时才会响应
 	 * @param session
-	 * @param bb 已经发送到TCP协议栈的缓冲区的数据,已发送的是[0,position]部分. 可能跟TcpSession.send传入的对象不同
-	 * @param bbNext 下一个待发送的缓冲区,有效数据是[0,limit]部分,禁止改动. 可能为null(暂时没有待发数据)
+	 * @param bb 已经完整发送到TCP协议栈的缓冲区的ByteBuffer. 同send传入的对象
 	 */
-	public void onSent(TcpSession session, ByteBuffer bb, ByteBuffer bbNext)
+	public void onSent(TcpSession session, ByteBuffer bb)
 	{
 	}
 
