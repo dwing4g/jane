@@ -12,8 +12,8 @@ import java.nio.charset.StandardCharsets;
  */
 public class Octets implements Cloneable, Comparable<Octets>
 {
-	private static final char[] HEX = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-	public static final int     HASH_PRIME      = 16777619;               // from Fowler–Noll–Vo hash function
+	private static final byte[] HEX             = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+	public static final int     HASH_PRIME      = 16777619;               // from Fowler-Noll-Vo hash function
 	public static final byte[]  EMPTY           = new byte[0];            // 共享的空缓冲区
 	public static final int     DEFAULT_SIZE    = 16;                     // 默认的缓冲区
 	private static Charset      _defaultCharset = StandardCharsets.UTF_8; // 本类的默认字符集
@@ -566,7 +566,7 @@ public class Octets implements Cloneable, Comparable<Octets>
 
 	public static char toHexNumber(int v)
 	{
-		return HEX[v & 15];
+		return (char)HEX[v & 15];
 	}
 
 	public StringBuilder dump(StringBuilder s)
@@ -579,8 +579,8 @@ public class Octets implements Cloneable, Comparable<Octets>
 		for(int i = 0;;)
 		{
 			int b = buf[i];
-			s.append(HEX[(b >> 4) & 15]);
-			s.append(HEX[b & 15]);
+			s.append((char)HEX[(b >> 4) & 15]);
+			s.append((char)HEX[b & 15]);
 			if(++i >= n) return s.append(']');
 			s.append(' ');
 		}
@@ -602,8 +602,8 @@ public class Octets implements Cloneable, Comparable<Octets>
 		{
 			int b = buf[i];
 			s.append('\\').append('x');
-			s.append(HEX[(b >> 4) & 15]);
-			s.append(HEX[b & 15]);
+			s.append((char)HEX[(b >> 4) & 15]);
+			s.append((char)HEX[b & 15]);
 			if(++i >= n) return s.append('"');
 		}
 	}

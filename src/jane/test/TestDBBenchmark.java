@@ -1,13 +1,13 @@
 package jane.test;
 
 import static jane.bean.AllTables.Benchmark;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import jane.core.CacheRef;
 import jane.core.DBManager;
 import jane.core.Log;
 import jane.core.ProcThread;
 import jane.core.Procedure;
-import jane.core.Util;
 import jane.bean.AllTables;
 import jane.bean.TestBean;
 
@@ -50,7 +50,7 @@ public final class TestDBBenchmark
 
 				for(int j = 0; j < countIn; ++j)
 				{
-					final long id = (long)keyFrom + Util.getRand().nextInt(keyWinCount);
+					final long id = (long)keyFrom + ThreadLocalRandom.current().nextInt(keyWinCount);
 					final long t0 = System.currentTimeMillis();
 					new Procedure()
 					{

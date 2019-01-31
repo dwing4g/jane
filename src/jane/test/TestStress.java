@@ -1,7 +1,7 @@
 package jane.test;
 
 import java.lang.reflect.Field;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import jane.core.Bean;
 import jane.core.CacheRef;
@@ -13,7 +13,6 @@ import jane.core.Procedure;
 import jane.core.SBase;
 import jane.core.SContext;
 import jane.core.TableLong;
-import jane.core.Util;
 import jane.core.map.LongConcurrentHashMap;
 
 /**
@@ -30,7 +29,6 @@ public final class TestStress extends Procedure
 
 	private static final AtomicLong						  counter  = new AtomicLong();							// 事务完成次数统计
 	private static final LongConcurrentHashMap<Integer>	  checkMap = new LongConcurrentHashMap<>(RECORD_COUNT);	// 用于验证数据正确性的内存表
-	private static final Random							  rand	   = Util.getRand();
 	private static TableLong<StressBean, StressBean.Safe> stressTable;
 
 	private final int id;
@@ -198,6 +196,7 @@ public final class TestStress extends Procedure
 		boolean redo = false;
 		try
 		{
+			ThreadLocalRandom rand = ThreadLocalRandom.current();
 			int id1 = rand.nextInt() & (RECORD_COUNT - 1);
 			StressBean.Safe b1 = lockGet(stressTable, id1);
 			Integer c1 = checkMap.get(id1);

@@ -9,6 +9,7 @@ import java.util.Date;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -507,6 +508,14 @@ public final class DBManager
 	public void submit(Procedure p)
 	{
 		_procThreads.execute(p);
+	}
+
+	/**
+	 * 向工作线程池提交一个事务,并获取异步执行的future,可用于同步等待
+	 */
+	public Future<?> submitFuture(Procedure p)
+	{
+		return _procThreads.submit(p);
 	}
 
 	/**

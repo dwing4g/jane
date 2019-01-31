@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import jane.core.map.ConcurrentLRUMap;
@@ -33,11 +32,6 @@ import jane.core.map.LongMap;
  */
 public final class Util
 {
-	public static ThreadLocalRandom getRand()
-	{
-		return ThreadLocalRandom.current();
-	}
-
 	public static <T> T newInstance(Class<T> cls)
 	{
 		try

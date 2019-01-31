@@ -584,8 +584,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	/////////////////////
 
 	/**
-	 * Returns the first occurrence position of the specified byte from the
-	 * current position to the current limit.
+	 * Returns the first occurrence position of the specified byte from the current position to the current limit.
 	 *
 	 * @param b The byte we are looking for
 	 * @return <tt>-1</tt> if the specified byte is not found

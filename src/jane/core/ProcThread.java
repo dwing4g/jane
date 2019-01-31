@@ -14,7 +14,7 @@ public class ProcThread extends Thread
 	final SContext	  sctx	   = new SContext();						   // 当前线程上的安全修改的上下文
 	Procedure		  proc;												   // 当前运行的事务
 	long			  beginTime;										   // 当前/上个事务运行的起始时间. 用于判断是否超时
-	final int[]		  versions = new int[Const.maxLockPerProcedure];	   // 当前线程已经加过的锁版本号(只在需要时临时设置,这里只是为了避免反复分配)
+	final long[]	  versions = new long[Const.maxLockPerProcedure];	   // 当前线程已经加过的锁版本号(只在需要时临时设置,这里只是为了避免反复分配)
 
 	public ProcThread(String name)
 	{

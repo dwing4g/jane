@@ -138,7 +138,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	 * 根据记录的key获取value
 	 * <p>
 	 * 会自动添加到读cache中<br>
-	 * 必须在事务中已加锁的状态下调用此方法
+	 * 没有加锁检查,通常不要调用此方法获取记录,不加锁时严禁修改和访问容器字段
 	 */
 	@Deprecated
 	public V getUnsafe(K k)
@@ -168,11 +168,24 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	}
 
 	/**
-	 * 同getUnsafe,但同时设置修改标记
+	 * 同getUnsafe,但有加锁检查
+	 */
+	@Deprecated
+	public V getReadOnly(K k)
+	{
+		if(!Procedure.isLockedByCurrentThread(lockId(k)))
+			throw new IllegalAccessError("get unlocked record! table=" + _tableName + ",key=" + k);
+		return getUnsafe(k);
+	}
+
+	/**
+	 * 同getUnsafe,但有加锁检查,同时设置修改标记
 	 */
 	@Deprecated
 	public V getModified(K k)
 	{
+		if(!Procedure.isLockedByCurrentThread(lockId(k)))
+			throw new IllegalAccessError("get unlocked record! table=" + _tableName + ",key=" + k);
 		V v = getUnsafe(k);
 		if(v != null) modify(k, v);
 		return v;
@@ -182,7 +195,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	 * 同getUnsafe,但增加的安全封装,可回滚修改,但没有加锁检查
 	 */
 	@Deprecated
-	public S getNoLock(K k)
+	S getNoLock(K k)
 	{
 		V v = getUnsafe(k);
 		SContext sctx = SContext.current();
@@ -264,17 +277,6 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	public S lockGetOrNew(K k) throws InterruptedException
 	{
 		return lockGetOrNew(k, _deleted::create);
-	}
-
-	/**
-	 * 同getUnsafe,但有加锁检查
-	 */
-	@Deprecated
-	public V getReadOnly(K k)
-	{
-		if(!Procedure.isLockedByCurrentThread(lockId(k)))
-			throw new IllegalAccessError("get unlocked record! table=" + _tableName + ",key=" + k);
-		return getUnsafe(k);
 	}
 
 	/**
@@ -434,6 +436,8 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	 */
 	public V put(K k, V v)
 	{
+		if(v == null)
+			throw new NullPointerException();
 		if(!Procedure.isLockedByCurrentThread(lockId(k)))
 			throw new IllegalAccessError("put unlocked record! table=" + _tableName + ",key=" + k);
 		V vOld = getNoCacheUnsafe(k);

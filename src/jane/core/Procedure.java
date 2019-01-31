@@ -3,7 +3,7 @@ package jane.core;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -31,12 +31,12 @@ public abstract class Procedure implements Runnable
 		}
 	}
 
-	private static final IndexLock[]					 _lockPool	   = new IndexLock[Const.lockPoolSize];			 // 全局共享的锁池
-	private static final AtomicIntegerArray				 _lockVersions = new AtomicIntegerArray(Const.lockPoolSize); // 全局共享的锁版本号池
-	private static final AtomicReferenceArray<IndexLock> _lockCreator  = new AtomicReferenceArray<>(_lockPool);		 // 锁池中锁的线程安全创造器(副本)
-	private static final int							 _lockMask	   = Const.lockPoolSize - 1;					 // 锁池下标的掩码
-	private static final FastRWLock						 _rwlCommit	   = new FastRWLock();							 // 用于数据提交的读写锁
-	private static ExceptionHandler						 _defaultEh;												 // 默认的全局异常处理
+	private static final IndexLock[]					 _lockPool	   = new IndexLock[Const.lockPoolSize];		  // 全局共享的锁池
+	private static final AtomicLongArray				 _lockVersions = new AtomicLongArray(Const.lockPoolSize); // 全局共享的锁版本号池
+	private static final AtomicReferenceArray<IndexLock> _lockCreator  = new AtomicReferenceArray<>(_lockPool);	  // 锁池中锁的线程安全创造器(副本)
+	private static final int							 _lockMask	   = Const.lockPoolSize - 1;				  // 锁池下标的掩码
+	private static final FastRWLock						 _rwlCommit	   = new FastRWLock();						  // 用于数据提交的读写锁
+	private static ExceptionHandler						 _defaultEh;											  // 默认的全局异常处理
 
 	private ProcThread _pt;	 // 事务所属的线程上下文. 只在事务运行中有效
 	private Object	   _sid; // 事务绑定的SessionId
@@ -427,7 +427,7 @@ public abstract class Procedure implements Runnable
 		}
 		if(pt.sctx.hasDirty()) // 必须要解部分锁了,所以确保之前不能有修改操作
 			throw new IllegalStateException("invalid appendLock after any dirty record");
-		final int[] versions = pt.versions;
+		final long[] versions = pt.versions;
 		for(int j = n - 1; j >= i; --j)
 		{
 			lastLock = locks[j];

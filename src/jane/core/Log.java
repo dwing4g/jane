@@ -56,21 +56,21 @@ public final class Log
 	 */
 	public static void logSystemProperties(String[] args)
 	{
-		log.info("java.version = {}; os = {}, {}, {}", System.getProperty("java.version"),
+		info("java.version = {}; os = {}, {}, {}", System.getProperty("java.version"),
 				System.getProperty("os.name"), System.getProperty("os.version"), System.getProperty("os.arch"));
 		Runtime runtime = Runtime.getRuntime();
-		log.info("processors = {}; jvm.heap = {}/{}M; file.encoding = {}", runtime.availableProcessors(),
+		info("processors = {}; jvm.heap = {}/{}M; file.encoding = {}", runtime.availableProcessors(),
 				runtime.totalMemory() >> 20, runtime.maxMemory() >> 20, System.getProperty("file.encoding"));
-		log.info("user.name = {}; user.dir = {}", System.getProperty("user.name"), System.getProperty("user.dir"));
-		log.info("java.class.path = {}", System.getProperty("java.class.path"));
+		info("user.name = {}; user.dir = {}", System.getProperty("user.name"), System.getProperty("user.dir"));
+		info("java.class.path = {}", System.getProperty("java.class.path"));
 		URL url = new ContextInitializer(logCtx).findURLOfDefaultConfigurationFile(true);
 		if(url == null)
 			throw new Error("not found logback.xml from classpath");
-		log.info("logback.path = {}", url.getPath());
+		info("logback.path = {}", url.getPath());
 		if(args != null)
 		{
 			for(int i = 0, n = args.length; i < n; ++i)
-				log.info("arg{} = {}", i, args[i]);
+				info("arg{} = {}", i, args[i]);
 		}
 	}
 
