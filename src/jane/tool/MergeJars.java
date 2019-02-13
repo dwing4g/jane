@@ -27,31 +27,33 @@ public final class MergeJars
 		byte[] buf = new byte[0x10000];
 
 		osLog.println("= " + jarNames[jarNames.length - 1]);
-		try(ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(jarNames[jarNames.length - 1]))))
+		try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(jarNames[jarNames.length - 1]))))
 		{
 			zos.setMethod(ZipOutputStream.DEFLATED);
 			zos.setLevel(Deflater.BEST_COMPRESSION);
-			for(int i = jarNames.length - 2; i >= 0; --i)
+			for (int i = jarNames.length - 2; i >= 0; --i)
 			{
 				osLog.println("+ " + jarNames[i]);
-				try(ZipFile zipFile = new ZipFile(jarNames[i]))
+				try (ZipFile zipFile = new ZipFile(jarNames[i]))
 				{
-					for(Enumeration<? extends ZipEntry> zipEnum = zipFile.entries(); zipEnum.hasMoreElements();)
+					for (Enumeration<? extends ZipEntry> zipEnum = zipFile.entries(); zipEnum.hasMoreElements();)
 					{
 						ZipEntry ze = zipEnum.nextElement();
-						if(!ze.isDirectory())
+						if (!ze.isDirectory())
 							++count0;
-						if(mergedPathes.contains(ze.getName())) continue;
+						if (mergedPathes.contains(ze.getName()))
+							continue;
 						mergedPathes.add(ze.getName());
-						if(ze.isDirectory())
+						if (ze.isDirectory())
 						{
 							zos.putNextEntry(new ZipEntry(ze.getName()));
 							zos.closeEntry();
 							continue;
 						}
 						int len = (int)ze.getSize();
-						if(len < 0) continue;
-						if(len > buf.length)
+						if (len < 0)
+							continue;
+						if (len > buf.length)
 							buf = new byte[len];
 						Util.readStream(zipFile.getInputStream(ze), ze.getName(), buf, len);
 						zos.putNextEntry(new ZipEntry(ze.getName()));
@@ -63,7 +65,7 @@ public final class MergeJars
 			}
 		}
 
-		if(counts != null && counts.length >= 2)
+		if (counts != null && counts.length >= 2)
 		{
 			counts[0] = count0;
 			counts[1] = count1;
@@ -72,7 +74,7 @@ public final class MergeJars
 
 	public static void main(String[] args) throws Exception
 	{
-		if(args.length < 2)
+		if (args.length < 2)
 		{
 			System.err.println("USAGE: java -cp jane-core.jar jane.tool.MergeJars <file1.jar> [file2.jar ...] <merge.jar>");
 			return;

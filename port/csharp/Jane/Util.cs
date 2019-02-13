@@ -202,14 +202,14 @@ namespace Jane
 		public static int CompareTo<T>(ICollection<T> a, ICollection<T> b) where T : IComparable<T>
 		{
 			int c = a.Count - b.Count;
-			if(c != 0) return c;
+			if (c != 0) return c;
 			using(IEnumerator<T> ia = a.GetEnumerator(), ib = b.GetEnumerator())
 			{
-				while(ia.MoveNext())
+				while (ia.MoveNext())
 				{
 					ib.MoveNext();
 					c = ia.Current.CompareTo(ib.Current);
-					if(c != 0) return c;
+					if (c != 0) return c;
 				}
 			}
 			return 0;
@@ -221,18 +221,18 @@ namespace Jane
 		public static int CompareTo<K, V>(IDictionary<K, V> a, IDictionary<K, V> b) where K : IComparable<K> where V : IComparable<V>
 		{
 			int c = a.Count - b.Count;
-			if(c != 0) return c;
+			if (c != 0) return c;
 			using(IEnumerator<KeyValuePair<K, V>> ea = a.GetEnumerator(), eb = b.GetEnumerator())
 			{
-				while(ea.MoveNext())
+				while (ea.MoveNext())
 				{
 					eb.MoveNext();
 					KeyValuePair<K, V> pa = ea.Current;
 					KeyValuePair<K, V> pb = eb.Current;
 					c = pa.Key.CompareTo(pb.Key);
-					if(c != 0) return c;
+					if (c != 0) return c;
 					c = pa.Value.CompareTo(pb.Value);
-					if(c != 0) return c;
+					if (c != 0) return c;
 				}
 			}
 			return 0;
@@ -243,7 +243,7 @@ namespace Jane
 		 */
 		public static StringBuilder Append<T>(StringBuilder s, ICollection<T> list)
 		{
-			if(list == null || list.Count <= 0) return s.Append("{},");
+			if (list == null || list.Count <= 0) return s.Append("{},");
 			s.Append('{');
 			foreach(T e in list)
 				s.Append(e).Append(',');
@@ -256,7 +256,7 @@ namespace Jane
 		 */
 		public static StringBuilder Append<K, V>(StringBuilder s, IDictionary<K, V> dic)
 		{
-			if(dic == null || dic.Count <= 0) return s.Append("{},");
+			if (dic == null || dic.Count <= 0) return s.Append("{},");
 			s.Append('{');
 			foreach(KeyValuePair<K, V> p in dic)
 				s.Append(p.Key).Append(',').Append(p.Value).Append(';');
@@ -277,13 +277,13 @@ namespace Jane
 		 */
 		public static StringBuilder AppendJson(StringBuilder s, object o)
 		{
-			if(o is bool)
+			if (o is bool)
 				return s.Append((bool)o ? "true" : "false");
-			else if(o is char)
+			else if (o is char)
 				return s.Append((int)(char)o);
-			else if(o is Octets)
+			else if (o is Octets)
 				return ((Octets)o).DumpJStr(s);
-			else if(o is IBean)
+			else if (o is IBean)
 				return ((IBean)o).ToJson(s);
 			else
 				return ToJStr(s, o.ToString());
@@ -294,7 +294,7 @@ namespace Jane
 		 */
 		public static StringBuilder AppendJson<T>(StringBuilder s, ICollection<T> list)
 		{
-			if(list.Count <= 0) return s.Append("[],");
+			if (list.Count <= 0) return s.Append("[],");
 			s.Append('[');
 			foreach(T o in list)
 				AppendJson(s, o).Append(',');
@@ -307,7 +307,7 @@ namespace Jane
 		 */
 		public static StringBuilder AppendJson<K, V>(StringBuilder s, IDictionary<K, V> dic)
 		{
-			if(dic.Count <= 0) return s.Append("{},");
+			if (dic.Count <= 0) return s.Append("{},");
 			s.Append('{');
 			foreach(KeyValuePair<K, V> p in dic)
 			{
@@ -323,13 +323,13 @@ namespace Jane
 		 */
 		public static StringBuilder AppendLua(StringBuilder s, object o)
 		{
-			if(o is bool)
+			if (o is bool)
 				return s.Append((bool)o ? "true" : "false");
-			else if(o is char)
+			else if (o is char)
 				return s.Append((int)(char)o);
-			else if(o is Octets)
+			else if (o is Octets)
 				return ((Octets)o).DumpJStr(s);
-			else if(o is IBean)
+			else if (o is IBean)
 				return ((IBean)o).ToLua(s);
 			else
 				return ToJStr(s, o.ToString());
@@ -340,7 +340,7 @@ namespace Jane
 		 */
 		public static StringBuilder AppendLua<T>(StringBuilder s, ICollection<T> list)
 		{
-			if(list.Count <= 0) return s.Append("{},");
+			if (list.Count <= 0) return s.Append("{},");
 			s.Append('{');
 			foreach(T o in list)
 				AppendLua(s, o).Append(',');
@@ -353,7 +353,7 @@ namespace Jane
 		 */
 		public static StringBuilder AppendLua<K, V>(StringBuilder s, IDictionary<K, V> dic)
 		{
-			if(dic.Count <= 0) return s.Append("{},");
+			if (dic.Count <= 0) return s.Append("{},");
 			s.Append('{');
 			foreach(KeyValuePair<K, V> p in dic)
 			{

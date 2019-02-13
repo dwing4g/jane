@@ -91,7 +91,7 @@ public interface Storage extends Closeable
 			{
 				return handler.onWalk(k);
 			}
-			catch(Exception e)
+			catch (Exception e)
 			{
 				Log.error("walk exception:", e);
 				return false;
@@ -104,7 +104,7 @@ public interface Storage extends Closeable
 			{
 				return handler.onWalk(k, v);
 			}
-			catch(Exception e)
+			catch (Exception e)
 			{
 				Log.error("walk exception:", e);
 				return false;
@@ -117,7 +117,7 @@ public interface Storage extends Closeable
 			{
 				return handler.onWalk(k);
 			}
-			catch(Exception e)
+			catch (Exception e)
 			{
 				Log.error("walk exception:", e);
 				return false;
@@ -130,7 +130,7 @@ public interface Storage extends Closeable
 			{
 				return handler.onWalk(k, v);
 			}
-			catch(Exception e)
+			catch (Exception e)
 			{
 				Log.error("walk exception:", e);
 				return false;

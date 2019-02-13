@@ -68,14 +68,14 @@ public final class DBSimpleManager
 
 		void enableBackup(boolean enabled)
 		{
-			if(enabled)
+			if (enabled)
 			{
 				try
 				{
 					long base = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(Const.dbBackupBase).getTime();
 					_backupTime = base + (Math.floorDiv(System.currentTimeMillis() - base, _backupPeriod) + 1) * _backupPeriod;
 				}
-				catch(ParseException e)
+				catch (ParseException e)
 				{
 					throw new IllegalStateException("parse dbBackupBase(" + Const.dbBackupBase + ") failed", e);
 				}
@@ -92,17 +92,17 @@ public final class DBSimpleManager
 		@Override
 		public void run()
 		{
-			for(;;)
+			for (;;)
 			{
 				try
 				{
 					Thread.sleep(1000);
 				}
-				catch(InterruptedException e)
+				catch (InterruptedException e)
 				{
 					break;
 				}
-				if(!tryCommit(false))
+				if (!tryCommit(false))
 					break;
 			}
 		}
@@ -114,18 +114,21 @@ public final class DBSimpleManager
 				long t = System.currentTimeMillis();
 				ConcurrentMap<Octets, Octets> writeCache = _writeCache;
 				long commitTime = _commitTime;
-				if(t < commitTime && writeCache.size() < Const.dbCommitModCount) return true;
-				synchronized(DBSimpleManager.this)
+				if (t < commitTime && writeCache.size() < Const.dbCommitModCount)
+					return true;
+				synchronized (DBSimpleManager.this)
 				{
 					commitTime = (commitTime <= t ? commitTime : t) + _commitPeriod;
-					if(commitTime <= t) commitTime = t + _commitPeriod;
+					if (commitTime <= t)
+						commitTime = t + _commitPeriod;
 					_commitTime = commitTime;
-					if(Thread.interrupted() && !force) return false;
+					if (Thread.interrupted() && !force)
+						return false;
 					StorageLevelDB storage = getStorage();
-					if(storage != null)
+					if (storage != null)
 					{
 						long t1, modCount = writeCache.size();
-						if(modCount == 0)
+						if (modCount == 0)
 						{
 							Log.info("db-commit not found modified record");
 							t1 = System.currentTimeMillis();
@@ -136,14 +139,14 @@ public final class DBSimpleManager
 							long t0 = System.currentTimeMillis();
 							Log.info("db-commit saving: {}...", modCount);
 							ArrayList<Entry<Octets, Octets>> writeBuf = new ArrayList<>(writeCache.size());
-							for(Entry<Octets, Octets> e : writeCache.entrySet())
+							for (Entry<Octets, Octets> e : writeCache.entrySet())
 								writeBuf.add(new SimpleImmutableEntry<>(e.getKey(), e.getValue()));
 							Log.info("db-commit committing: {}...", writeBuf.size());
-							if(storage.dbcommit(writeBuf.iterator()))
+							if (storage.dbcommit(writeBuf.iterator()))
 							{
 								Log.info("db-commit cleaning...");
 								int n = writeCache.size();
-								for(Entry<Octets, Octets> e : writeBuf)
+								for (Entry<Octets, Octets> e : writeBuf)
 									writeCache.remove(e.getKey(), e.getValue());
 								writeBuf.clear();
 								t1 = System.currentTimeMillis();
@@ -156,13 +159,14 @@ public final class DBSimpleManager
 						// 2.判断备份周期并启动备份
 						long backupTime = _backupTime;
 						String dbBackupPath = _dbBackupPath;
-						if(backupTime <= t1 && dbBackupPath != null)
+						if (backupTime <= t1 && dbBackupPath != null)
 						{
 							Log.info("db-commit backup begin...");
-							if(backupTime >= 0)
+							if (backupTime >= 0)
 							{
 								backupTime += _backupPeriod;
-								if(backupTime <= t1) backupTime += ((t1 - backupTime) / _backupPeriod + 1) * _backupPeriod;
+								if (backupTime <= t1)
+									backupTime += ((t1 - backupTime) / _backupPeriod + 1) * _backupPeriod;
 								_backupTime = backupTime;
 							}
 							else
@@ -174,7 +178,7 @@ public final class DBSimpleManager
 					}
 				}
 			}
-			catch(Throwable e)
+			catch (Throwable e)
 			{
 				Log.error("db-commit fatal exception:", e);
 			}
@@ -216,14 +220,18 @@ public final class DBSimpleManager
 	 */
 	public synchronized void startup(StorageLevelDB sto, String dbFilename, String dbBackupPath) throws IOException
 	{
-		if(_exiting) throw new IllegalArgumentException("can not startup when exiting");
-		if(_storage != null) throw new IllegalArgumentException("already started");
-		if(sto == null) throw new IllegalArgumentException("no StorageLevelDB specified");
-		if(dbFilename == null || dbFilename.trim().isEmpty()) throw new IllegalArgumentException("no dbFilename specified");
+		if (_exiting)
+			throw new IllegalArgumentException("can not startup when exiting");
+		if (_storage != null)
+			throw new IllegalArgumentException("already started");
+		if (sto == null)
+			throw new IllegalArgumentException("no StorageLevelDB specified");
+		if (dbFilename == null || dbFilename.trim().isEmpty())
+			throw new IllegalArgumentException("no dbFilename specified");
 		shutdown();
 		File dbfile = new File(dbFilename);
 		File dbpath = dbfile.getParentFile();
-		if(dbpath != null && !dbpath.isDirectory() && !dbpath.mkdirs())
+		if (dbpath != null && !dbpath.isDirectory() && !dbpath.mkdirs())
 			throw new IOException("create db path failed: " + dbFilename);
 		_dbFilename = dbfile.getName();
 		_dbBackupPath = dbBackupPath;
@@ -234,7 +242,7 @@ public final class DBSimpleManager
 			Log.info("DBSimpleManager.OnJVMShutDown: db shutdown");
 			try
 			{
-				synchronized(DBSimpleManager.this)
+				synchronized (DBSimpleManager.this)
 				{
 					_exiting = true;
 				}
@@ -314,14 +322,14 @@ public final class DBSimpleManager
 		int bn = OctetsStream.marshalStrLen(key);
 		OctetsStream os = OctetsStream.createSpace(tableIdLen + bn).marshalUInt(tableId);
 		int cn = key.length();
-		if(bn == cn)
+		if (bn == cn)
 		{
-			for(int i = 0; i < cn; ++i)
+			for (int i = 0; i < cn; ++i)
 				os.marshal1((byte)key.charAt(i));
 		}
 		else
 		{
-			for(int i = 0; i < cn; ++i)
+			for (int i = 0; i < cn; ++i)
 				os.marshalUTF8(key.charAt(i));
 		}
 		return os;
@@ -336,23 +344,23 @@ public final class DBSimpleManager
 	{
 		_readCount.getAndIncrement();
 		Octets val = (_readCache != null ? _readCache.get(key) : null);
-		if(val == null)
+		if (val == null)
 		{
 			val = _writeCache.get(key);
-			if(val == null)
+			if (val == null)
 			{
 				_readStoCount.getAndIncrement();
 				byte[] v = _storage.dbget(key);
-				if(v == null)
+				if (v == null)
 					return null;
 				_readValueCount.getAndIncrement();
 				_readValueSize.getAndAdd(v.length);
 				OctetsStreamEx os = OctetsStreamEx.wrap(v);
-				if(_readCache != null)
+				if (_readCache != null)
 					_readCache.put(key, os);
 				return StorageLevelDB.toBean(os, beanStub);
 			}
-			if(val.size() <= 0)
+			if (val.size() <= 0)
 				return null;
 		}
 		return StorageLevelDB.toBean(val, beanStub);
@@ -361,14 +369,14 @@ public final class DBSimpleManager
 	private void put0(Octets key, Octets value)
 	{
 		_writeCache.put(key, value);
-		if(_readCache != null)
+		if (_readCache != null)
 			_readCache.put(key, value);
 	}
 
 	private void remove0(Octets key)
 	{
 		_writeCache.put(key, StorageLevelDB.deleted());
-		if(_readCache != null)
+		if (_readCache != null)
 			_readCache.remove(key);
 	}
 
@@ -378,7 +386,7 @@ public final class DBSimpleManager
 		{
 			return get0(toKey(tableId, key), beanStub);
 		}
-		catch(Exception e)
+		catch (Exception e)
 		{
 			Log.error(e, "get record exception: tableId={}, key={}, type={}", tableId, key, beanStub.typeName());
 			return null;
@@ -391,7 +399,7 @@ public final class DBSimpleManager
 		{
 			return get0(toKey(tableId, key), beanStub);
 		}
-		catch(Exception e)
+		catch (Exception e)
 		{
 			Log.error(e, "get record exception: tableId={}, key={}, type={}", tableId, key.dump(), beanStub.typeName());
 			return null;
@@ -404,7 +412,7 @@ public final class DBSimpleManager
 		{
 			return get0(toKey(tableId, key), beanStub);
 		}
-		catch(Exception e)
+		catch (Exception e)
 		{
 			Log.error(e, "get record exception: tableId={}, key=\"{}\", type={}", tableId, key, beanStub.typeName());
 			return null;
@@ -417,7 +425,7 @@ public final class DBSimpleManager
 		{
 			return get0(toKey(tableId, key), beanStub);
 		}
-		catch(Exception e)
+		catch (Exception e)
 		{
 			Log.error(e, "get record exception: tableId={}, key={}, type={}", tableId, key, beanStub.typeName());
 			return null;
@@ -509,7 +517,7 @@ public final class DBSimpleManager
 		{
 			os.setPosition(0);
 			int tid = os.wraps(key).unmarshalUInt();
-			if(tid != tableId)
+			if (tid != tableId)
 			{
 				finished.set(true);
 				return false;
@@ -537,7 +545,7 @@ public final class DBSimpleManager
 		{
 			os.setPosition(0);
 			int tid = os.wraps(key).unmarshalUInt();
-			if(tid != tableId)
+			if (tid != tableId)
 			{
 				finished.set(true);
 				return false;
@@ -578,7 +586,7 @@ public final class DBSimpleManager
 	 */
 	public synchronized void startCommitThread()
 	{
-		if(!_commitThread.isAlive())
+		if (!_commitThread.isAlive())
 			_commitThread.start();
 	}
 
@@ -624,12 +632,12 @@ public final class DBSimpleManager
 	 */
 	public void shutdown()
 	{
-		synchronized(this)
+		synchronized (this)
 		{
-			if(_commitThread.isAlive())
+			if (_commitThread.isAlive())
 				_commitThread.interrupt();
 			StorageLevelDB sto = _storage;
-			if(sto != null)
+			if (sto != null)
 			{
 				checkpoint();
 				_storage = null;
@@ -640,7 +648,7 @@ public final class DBSimpleManager
 		{
 			_commitThread.join();
 		}
-		catch(InterruptedException e)
+		catch (InterruptedException e)
 		{
 			Log.error("DBSimpleManager.shutdown: exception:", e);
 		}

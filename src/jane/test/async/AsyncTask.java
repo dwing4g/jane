@@ -28,7 +28,7 @@ public interface AsyncTask extends Runnable
 	default void awaitReadFile(String path, AsyncHandler<byte[]> handler)
 	{
 		int len = (int)new File(path).length();
-		if(len > 0)
+		if (len > 0)
 		{
 			try
 			{
@@ -46,7 +46,7 @@ public interface AsyncTask extends Runnable
 							{
 								afc2.close();
 							}
-							catch(IOException e)
+							catch (IOException e)
 							{
 								AsyncManager.onException(AsyncTask.this, e);
 							}
@@ -61,7 +61,7 @@ public interface AsyncTask extends Runnable
 						{
 							afc2.close();
 						}
-						catch(IOException e)
+						catch (IOException e)
 						{
 							AsyncManager.onException(AsyncTask.this, e);
 						}
@@ -69,7 +69,7 @@ public interface AsyncTask extends Runnable
 					}
 				});
 			}
-			catch(IOException e)
+			catch (IOException e)
 			{
 				AsyncManager.onException(AsyncTask.this, e);
 				handler.onHandler(null);
@@ -96,7 +96,7 @@ public interface AsyncTask extends Runnable
 						{
 							afc2.close();
 						}
-						catch(IOException e)
+						catch (IOException e)
 						{
 							AsyncManager.onException(AsyncTask.this, e);
 						}
@@ -111,7 +111,7 @@ public interface AsyncTask extends Runnable
 					{
 						afc2.close();
 					}
-					catch(IOException e)
+					catch (IOException e)
 					{
 						AsyncManager.onException(AsyncTask.this, e);
 					}
@@ -119,7 +119,7 @@ public interface AsyncTask extends Runnable
 				}
 			});
 		}
-		catch(IOException e)
+		catch (IOException e)
 		{
 			AsyncManager.onException(AsyncTask.this, e);
 			handler.onHandler(false);

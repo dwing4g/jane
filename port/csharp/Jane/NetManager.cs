@@ -101,23 +101,23 @@ namespace Jane
 		{
 			OctetsStream recvBuf = session.recvBuf;
 			OctetsStream os = OnDecode(session, recvBuf.Array(), recvBuf.Size(), size);
-			if(os != null)
+			if (os != null)
 				recvBuf.Append(os.Array(), os.Position(), os.Remain());
 			else
 				recvBuf.Resize(recvBuf.Size() + size);
 			int pos = 0;
 			try
 			{
-				while(recvBuf.Remain() >= 4) // type+serial+size+bean;
+				while (recvBuf.Remain() >= 4) // type+serial+size+bean;
 				{
 					int ptype = recvBuf.UnmarshalUInt();
 					int pserial = recvBuf.UnmarshalInt();
 					int psize = recvBuf.UnmarshalUInt();
-					if(psize > recvBuf.Remain()) break;
+					if (psize > recvBuf.Remain()) break;
 					int ppos = recvBuf.Position();
 					pos = ppos + psize;
 					BeanDelegate create;
-					if(BeanMap == null || !BeanMap.TryGetValue(ptype, out create))
+					if (BeanMap == null || !BeanMap.TryGetValue(ptype, out create))
 					{
 						OnRecvUnknownBean(session, ptype, pserial, psize);
 						recvBuf.SetPosition(pos);
@@ -127,7 +127,7 @@ namespace Jane
 						IBean bean = create();
 						bean.Unmarshal(recvBuf);
 						int realsize = recvBuf.Position() - ppos;
-						if(realsize > psize)
+						if (realsize > psize)
 							throw new Exception("bean realsize overflow: type=" + ptype + ",serial=" + pserial + ",size=" + psize + ",realsize=" + realsize);
 						bean.Serial = pserial;
 						OnRecvBean(session, bean);
@@ -154,14 +154,14 @@ namespace Jane
 		protected bool ProcessBean(NetSession session, IBean bean) // 同步处理bean,异常会抛出;
 		{
 			int serial = bean.Serial;
-			if(serial < 0)
+			if (serial < 0)
 			{
 				BeanContext beanCtx;
-				if(_beanCtxMap.TryGetValue(-serial, out beanCtx))
+				if (_beanCtxMap.TryGetValue(-serial, out beanCtx))
 				{
 					_beanCtxMap.Remove(-serial);
 					AnswerDelegate onAnswer = beanCtx.onAnswer;
-					if(onAnswer != null)
+					if (onAnswer != null)
 					{
 						try
 						{
@@ -173,7 +173,7 @@ namespace Jane
 				}
 			}
 			HandlerDelegate handler;
-			if(HandlerMap == null || !HandlerMap.TryGetValue(bean.Type(), out handler)) return false;
+			if (HandlerMap == null || !HandlerMap.TryGetValue(bean.Type(), out handler)) return false;
 			handler(session, bean);
 			return true;
 		}
@@ -228,7 +228,7 @@ namespace Jane
 		{
 			Socket s = (Socket)res.AsyncState;
 			Socket soc = s.EndAccept(res);
-			if(s == _listener)
+			if (s == _listener)
 			{
 				s.BeginAccept(AddEventAccept, s);
 				AddSession(soc);
@@ -250,7 +250,7 @@ namespace Jane
 			{
 				ex = e;
 			}
-			if(soc.Connected)
+			if (soc.Connected)
 				AddSession(soc);
 			else
 				OnAbortSession(pair.Value, ex);
@@ -265,7 +265,7 @@ namespace Jane
 			{
 				SocketError errCode;
 				size = session.socket.EndReceive(res, out errCode);
-				if(errCode != SocketError.Success)
+				if (errCode != SocketError.Success)
 					throw new SocketException((int)errCode);
 			}
 			catch(Exception e)
@@ -273,7 +273,7 @@ namespace Jane
 				ex = e;
 				size = 0;
 			}
-			if(size <= 0)
+			if (size <= 0)
 			{
 				Close(session, CLOSE_READ, ex);
 				return;
@@ -299,7 +299,7 @@ namespace Jane
 			{
 				SocketError errCode;
 				size = session.socket.EndSend(res, out errCode);
-				if(errCode != SocketError.Success)
+				if (errCode != SocketError.Success)
 					throw new Exception(errCode.ToString());
 			}
 			catch(Exception e)
@@ -307,7 +307,7 @@ namespace Jane
 				ex = e;
 				size = 0;
 			}
-			if(size <= 0)
+			if (size <= 0)
 			{
 				Close(session, CLOSE_WRITE, ex);
 				return;
@@ -316,7 +316,7 @@ namespace Jane
 			OctetsStream buf = sendQueue.Peek();
 			int pos = session.sendPos + size;
 			int leftSize = buf.Size() - pos;
-			if(leftSize <= 0)
+			if (leftSize <= 0)
 			{
 				sendQueue.Dequeue();
 				try
@@ -324,7 +324,7 @@ namespace Jane
 					OnSent(session, buf.Remain());
 				}
 				catch(Exception) {}
-				if(sendQueue.Count <= 0)
+				if (sendQueue.Count <= 0)
 				{
 					session.sendPos = 0;
 					return;
@@ -347,25 +347,25 @@ namespace Jane
 		public bool Tick() // 在网络开始连接和已经连接时,要频繁调用此方法来及时处理网络接收和发送,返回是否处理了至少一个网络事件;
 		{
 			bool hasNetEvent = (_eventQueue.Count > 0); // 这里并发脏读,应该没问题的;
-			if(hasNetEvent)
+			if (hasNetEvent)
 			{
-				for(NetEvent e;;)
+				for (NetEvent e;;)
 				{
 					lock(_eventQueue)
 					{
-						if(_eventQueue.Count <= 0) break;
+						if (_eventQueue.Count <= 0) break;
 						e = _eventQueue.Dequeue();
 					}
 					switch(e.type)
 					{
-						case NetEvent.EVENT_RECV:    OnEventRecv(e.res);    break;
-						case NetEvent.EVENT_SEND:    OnEventSend(e.res);    break;
-						case NetEvent.EVENT_ACCEPT:  OnEventAccept(e.res);  break;
-						case NetEvent.EVENT_CONNECT: OnEventConnect(e.res); break;
+					case NetEvent.EVENT_RECV:    OnEventRecv(e.res);    break;
+					case NetEvent.EVENT_SEND:    OnEventSend(e.res);    break;
+					case NetEvent.EVENT_ACCEPT:  OnEventAccept(e.res);  break;
+					case NetEvent.EVENT_CONNECT: OnEventConnect(e.res); break;
 					}
 				}
 			}
-			if(_beanCtxQueue.Count > 0)
+			if (_beanCtxQueue.Count > 0)
 				CheckAskTimeout();
 			return hasNetEvent;
 		}
@@ -373,7 +373,7 @@ namespace Jane
 		// 开始异步监听连接,一个NetManager只能监听一个地址和端口,否则会抛异常;
 		public void Listen(IPAddress ip, int port, int backlog = 100)
 		{
-			if(_listener != null)
+			if (_listener != null)
 				throw new InvalidOperationException("already listened");
 			EndPoint host = new IPEndPoint(ip, port);
 			Socket soc = new Socket(host.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
@@ -405,9 +405,9 @@ namespace Jane
 		// buf不会经过OnEncode处理,直接放入待发送队列准备发送,回调了本次发送对应的OnSent确保发送完成后才能修改buf;
 		public virtual void SendDirect(NetSession session, OctetsStream buf)
 		{
-			if(buf == null || buf.Remain() <= 0) return;
+			if (buf == null || buf.Remain() <= 0) return;
 			session.sendQueue.Enqueue(buf);
-			if(session.sendQueue.Count > 1) return;
+			if (session.sendQueue.Count > 1) return;
 			session.sendPos = buf.Position();
 			try
 			{
@@ -422,7 +422,7 @@ namespace Jane
 		// 序列化bean,经过OnEncode处理后,放入待发送队列准备发送,调用后可以修改bean;
 		public virtual void Send(NetSession session, IBean bean)
 		{
-			if(session.Closed || bean == null) return;
+			if (session.Closed || bean == null) return;
 			int type = bean.Type();
 			int serial = bean.Serial;
 			int reserveLen = OctetsStream.MarshalUIntLen(type) + OctetsStream.MarshalLen(serial) + 5;
@@ -441,13 +441,13 @@ namespace Jane
 
 		public bool Ask(NetSession session, IBean bean, AnswerDelegate onAnswer = null)
 		{
-			if(session.Closed || bean == null) return false;
-			for(BeanContext beanCtx;;)
+			if (session.Closed || bean == null) return false;
+			for (BeanContext beanCtx;;)
 			{
 				int serial = ++_serialCounter;
-				if(serial > 0)
+				if (serial > 0)
 				{
-					if(_beanCtxMap.ContainsKey(serial)) continue; // 确保一下;
+					if (_beanCtxMap.ContainsKey(serial)) continue; // 确保一下;
 					_beanCtxMap.Add(serial, beanCtx = new BeanContext(serial, onAnswer));
 					_beanCtxQueue.Enqueue(beanCtx);
 					bean.Serial = serial;
@@ -460,14 +460,14 @@ namespace Jane
 
 		void CheckAskTimeout()
 		{
-			for(int nowSec = (int)((DateTime.Now.Ticks - startTicks) / 10000000); _beanCtxQueue.Count > 0;)
+			for (int nowSec = (int)((DateTime.Now.Ticks - startTicks) / 10000000); _beanCtxQueue.Count > 0;)
 			{
 				BeanContext beanCtx = _beanCtxQueue.Peek();
-				if(nowSec - beanCtx.askSec <= ASK_TIMEOUT) return;
+				if (nowSec - beanCtx.askSec <= ASK_TIMEOUT) return;
 				_beanCtxQueue.Dequeue();
 				_beanCtxMap.Remove(beanCtx.serial);
 				AnswerDelegate onAnswer = beanCtx.onAnswer;
-				if(onAnswer != null)
+				if (onAnswer != null)
 				{
 					try
 					{
@@ -487,7 +487,7 @@ namespace Jane
 				session.socket.Close();
 			}
 			catch(Exception) {}
-			if(!session.Closed)
+			if (!session.Closed)
 			{
 				session.Closed = true;
 				OnDelSession(session, code, e);

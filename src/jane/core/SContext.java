@@ -39,10 +39,11 @@ public final class SContext
 
 		public Safe<?> owner()
 		{
-			for(Safe<?> parent = _parent;;)
+			for (Safe<?> parent = _parent;;)
 			{
 				Safe<?> o = parent._parent;
-				if(o == parent) return parent;
+				if (o == parent)
+					return parent;
 				parent = o;
 			}
 		}
@@ -54,7 +55,8 @@ public final class SContext
 
 		public final void checkLock()
 		{
-			if(_rec != null) _rec.checkLock();
+			if (_rec != null)
+				_rec.checkLock();
 		}
 
 		void record(Rec rec)
@@ -81,11 +83,11 @@ public final class SContext
 
 		public void dirty()
 		{
-			if(_parent == this)
+			if (_parent == this)
 				_dirty = true;
 			else
 				_parent.dirty();
-			if(_onDirty != null)
+			if (_onDirty != null)
 			{
 				_onDirty.run();
 				_onDirty = null;
@@ -94,11 +96,13 @@ public final class SContext
 
 		protected boolean initSContext()
 		{
-			if(_rec != null) _rec.checkLock();
-			if(_fullUndo) return false;
-			if(_sctx == null)
+			if (_rec != null)
+				_rec.checkLock();
+			if (_fullUndo)
+				return false;
+			if (_sctx == null)
 			{
-				if(_onDirty != null)
+				if (_onDirty != null)
 				{
 					_onDirty.run();
 					_onDirty = null;
@@ -111,7 +115,8 @@ public final class SContext
 
 		public void addFullUndo()
 		{
-			if(!initSContext()) return;
+			if (!initSContext())
+				return;
 			B saved = _bean.clone();
 			_sctx.addOnRollback(() -> _bean.assign(saved));
 			_fullUndo = true;
@@ -125,7 +130,8 @@ public final class SContext
 
 		public void assign(B b)
 		{
-			if(b == _bean) return;
+			if (b == _bean)
+				return;
 			addFullUndo();
 			_bean.assign(b);
 		}
@@ -232,7 +238,7 @@ public final class SContext
 		@Override
 		public void checkLock()
 		{
-			if(!Procedure.isLockedByCurrentThread(_lockId))
+			if (!Procedure.isLockedByCurrentThread(_lockId))
 				throw new IllegalAccessError("write unlocked record! table=" + _table.getTableName() + ",key=" + _key);
 		}
 	}
@@ -279,7 +285,7 @@ public final class SContext
 		@Override
 		public void checkLock()
 		{
-			if(!Procedure.isLockedByCurrentThread(_lockId))
+			if (!Procedure.isLockedByCurrentThread(_lockId))
 				throw new IllegalAccessError("write unlocked record! table=" + _table.getTableName() + ",key=" + _key);
 		}
 	}
@@ -336,10 +342,10 @@ public final class SContext
 	@SuppressWarnings("unchecked")
 	<K, V extends Bean<V>, S extends Safe<V>> S getRecord(Table<K, V, S> table, K key)
 	{
-		for(int i = 0, n = _records.size(); i < n; ++i)
+		for (int i = 0, n = _records.size(); i < n; ++i)
 		{
 			Record<?, ?, ?> r = _records.get(i);
-			if(r.getKey().equals(key) && r.getTable() == table)
+			if (r.getKey().equals(key) && r.getTable() == table)
 				return (S)r.getValue();
 		}
 		return null;
@@ -348,10 +354,10 @@ public final class SContext
 	@SuppressWarnings("unchecked")
 	<V extends Bean<V>, S extends Safe<V>> S getRecord(TableLong<V, S> table, long key)
 	{
-		for(int i = 0, n = _recordLongs.size(); i < n; ++i)
+		for (int i = 0, n = _recordLongs.size(); i < n; ++i)
 		{
 			RecordLong<?, ?> r = _recordLongs.get(i);
-			if(r.getKeyLong() == key && r.getTable() == table)
+			if (r.getKeyLong() == key && r.getTable() == table)
 				return (S)r.getValue();
 		}
 		return null;
@@ -359,15 +365,16 @@ public final class SContext
 
 	public boolean hasDirty()
 	{
-		if(_hasDirty) return true;
-		for(int i = 0, n = _records.size(); i < n; ++i)
+		if (_hasDirty)
+			return true;
+		for (int i = 0, n = _records.size(); i < n; ++i)
 		{
-			if(_records.get(i)._value.isDirty())
+			if (_records.get(i)._value.isDirty())
 				return true;
 		}
-		for(int i = 0, n = _recordLongs.size(); i < n; ++i)
+		for (int i = 0, n = _recordLongs.size(); i < n; ++i)
 		{
-			if(_recordLongs.get(i)._value.isDirty())
+			if (_recordLongs.get(i)._value.isDirty())
 				return true;
 		}
 		return false;
@@ -394,35 +401,35 @@ public final class SContext
 		_onRollbacks.clear();
 
 		int n = _records.size();
-		if(n > 0)
+		if (n > 0)
 		{
 			int i = 0;
 			do
 			{
 				Record<?, ?, ?> r = _records.get(i);
-				if(r._value.isDirtyAndClear())
+				if (r._value.isDirtyAndClear())
 					r._table.modify(r._key, r._value.unsafe());
 			}
-			while(++i < n);
+			while (++i < n);
 			_records.clear();
 		}
 
 		n = _recordLongs.size();
-		if(n > 0)
+		if (n > 0)
 		{
 			int i = 0;
 			do
 			{
 				RecordLong<?, ?> r = _recordLongs.get(i);
-				if(r._value.isDirtyAndClear())
+				if (r._value.isDirtyAndClear())
 					r._table.modify(r._key, r._value.unsafe());
 			}
-			while(++i < n);
+			while (++i < n);
 			_recordLongs.clear();
 		}
 
 		n = _onCommits.size();
-		if(n > 0)
+		if (n > 0)
 		{
 			int i = 0;
 			do
@@ -431,12 +438,12 @@ public final class SContext
 				{
 					_onCommits.get(i).run();
 				}
-				catch(Throwable e)
+				catch (Throwable e)
 				{
 					Log.error("onCommit exception:", e);
 				}
 			}
-			while(++i < n);
+			while (++i < n);
 			_onCommits.clear();
 		}
 
@@ -449,13 +456,13 @@ public final class SContext
 		_recordLongs.clear();
 		_onCommits.clear();
 
-		for(int i = _onRollbacks.size(); --i >= 0;)
+		for (int i = _onRollbacks.size(); --i >= 0;)
 		{
 			try
 			{
 				_onRollbacks.get(i).run();
 			}
-			catch(Throwable e)
+			catch (Throwable e)
 			{
 				Log.error("onRollback exception:", e);
 			}

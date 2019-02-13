@@ -14,15 +14,15 @@ namespace Jane
 
 		static void SetKey(byte[] ctx, byte[] key, int len)
 		{
-			for(int i = 0; i < 256; ++i)
+			for (int i = 0; i < 256; ++i)
 				ctx[i] = (byte)i;
-			if(len > key.Length) len = key.Length;
-			if(len <= 0) return;
-			for(int i = 0, j = 0, k = 0; i < 256; ++i)
+			if (len > key.Length) len = key.Length;
+			if (len <= 0) return;
+			for (int i = 0, j = 0, k = 0; i < 256; ++i)
 			{
 				byte t = ctx[i];
 				k = (k + t + key[j]) & 0xff;
-				if(++j >= len) j = 0;
+				if (++j >= len) j = 0;
 				ctx[i] = ctx[k];
 				ctx[k] = t;
 			}
@@ -48,7 +48,7 @@ namespace Jane
 
 		static int Update(byte[] ctx, int idx1, int idx2, byte[] buf, int pos, int len)
 		{
-			for(len += pos; pos < len; ++pos)
+			for (len += pos; pos < len; ++pos)
 			{
 				idx1 = (idx1 + 1) & 0xff;
 				byte a = ctx[idx1];

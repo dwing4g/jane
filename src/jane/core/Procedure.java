@@ -115,7 +115,7 @@ public abstract class Procedure implements Runnable
 	protected final synchronized void setUnintterrupted()
 	{
 		ProcThread pt = _pt;
-		if(pt != null)
+		if (pt != null)
 			pt.beginTime = Long.MAX_VALUE;
 	}
 
@@ -183,10 +183,10 @@ public abstract class Procedure implements Runnable
 	public final <V extends Bean<V>, S extends Safe<V>> S lockGetOrNew(TableLong<V, S> t, long k, Supplier<V> supplier) throws InterruptedException
 	{
 		S s = lockGet(t, k);
-		if(s == null)
+		if (s == null)
 		{
 			V v = supplier.get();
-			if(v != null)
+			if (v != null)
 			{
 				t.put(k, v);
 				s = (S)v.safe();
@@ -204,10 +204,10 @@ public abstract class Procedure implements Runnable
 	public final <K, V extends Bean<V>, S extends Safe<V>> S lockGetOrNew(Table<K, V, S> t, K k, Supplier<V> supplier) throws InterruptedException
 	{
 		S s = lockGet(t, k);
-		if(s == null)
+		if (s == null)
 		{
 			V v = supplier.get();
-			if(v != null)
+			if (v != null)
 			{
 				t.put(k, v);
 				s = (S)v.safe();
@@ -223,72 +223,86 @@ public abstract class Procedure implements Runnable
 
 	public static void check(boolean a, boolean b)
 	{
-		if(a != b) throw Redo._instance;
+		if (a != b)
+			throw Redo._instance;
 	}
 
 	public static void check(int a, int b)
 	{
-		if(a != b) throw Redo._instance;
+		if (a != b)
+			throw Redo._instance;
 	}
 
 	public static void check(long a, long b)
 	{
-		if(a != b) throw Redo._instance;
+		if (a != b)
+			throw Redo._instance;
 	}
 
 	public static void check(float a, float b)
 	{
-		if(a != b) throw Redo._instance;
+		if (a != b)
+			throw Redo._instance;
 	}
 
 	public static void check(double a, double b)
 	{
-		if(a != b) throw Redo._instance;
+		if (a != b)
+			throw Redo._instance;
 	}
 
 	public static void check(Object a, Object b)
 	{
-		if(!a.equals(b)) throw Redo._instance;
+		if (!a.equals(b))
+			throw Redo._instance;
 	}
 
 	public static void check(Object a)
 	{
-		if(a == null) throw Redo._instance;
+		if (a == null)
+			throw Redo._instance;
 	}
 
 	public static void checkNot(boolean a, boolean b)
 	{
-		if(a == b) throw Redo._instance;
+		if (a == b)
+			throw Redo._instance;
 	}
 
 	public static void checkNot(int a, int b)
 	{
-		if(a == b) throw Redo._instance;
+		if (a == b)
+			throw Redo._instance;
 	}
 
 	public static void checkNot(long a, long b)
 	{
-		if(a == b) throw Redo._instance;
+		if (a == b)
+			throw Redo._instance;
 	}
 
 	public static void checkNot(float a, float b)
 	{
-		if(a == b) throw Redo._instance;
+		if (a == b)
+			throw Redo._instance;
 	}
 
 	public static void checkNot(double a, double b)
 	{
-		if(a == b) throw Redo._instance;
+		if (a == b)
+			throw Redo._instance;
 	}
 
 	public static void checkNot(Object a, Object b)
 	{
-		if(a.equals(b)) throw Redo._instance;
+		if (a.equals(b))
+			throw Redo._instance;
 	}
 
 	public static void checkNull(Object a)
 	{
-		if(a != null) throw Redo._instance;
+		if (a != null)
+			throw Redo._instance;
 	}
 
 	/**
@@ -299,23 +313,26 @@ public abstract class Procedure implements Runnable
 	protected final void unlock()
 	{
 		ProcThread pt = _pt;
-		if(pt == null) throw new IllegalStateException("invalid lock/unlock out of procedure");
+		if (pt == null)
+			throw new IllegalStateException("invalid lock/unlock out of procedure");
 		int lockCount = pt.lockCount;
-		if(lockCount == 0) return;
+		if (lockCount == 0)
+			return;
 		IndexLock[] locks = pt.locks;
-		for(int i = lockCount - 1; i >= 0; --i)
+		for (int i = lockCount - 1; i >= 0; --i)
 		{
 			try
 			{
 				locks[i].unlock();
 			}
-			catch(Throwable e)
+			catch (Throwable e)
 			{
 				Log.error("UNLOCK FAILED!!!", e);
 			}
 		}
 		pt.lockCount = 0;
-		if(pt.sctx.hasDirty()) throw new IllegalStateException("invalid unlock after any dirty record");
+		if (pt.sctx.hasDirty())
+			throw new IllegalStateException("invalid unlock after any dirty record");
 	}
 
 	/**
@@ -324,8 +341,9 @@ public abstract class Procedure implements Runnable
 	private static IndexLock getLock(int lockIdx)
 	{
 		IndexLock lock = _lockPool[lockIdx];
-		if(lock != null) return lock;
-		if(!_lockCreator.compareAndSet(lockIdx, null, lock = new IndexLock(lockIdx))) // ensure init lock object only once
+		if (lock != null)
+			return lock;
+		if (!_lockCreator.compareAndSet(lockIdx, null, lock = new IndexLock(lockIdx))) // ensure init lock object only once
 			lock = _lockCreator.get(lockIdx); // should not be null
 		_lockPool[lockIdx] = lock; // still safe when overwritten
 		return lock;
@@ -381,12 +399,13 @@ public abstract class Procedure implements Runnable
 	protected final void appendLock(int lockId) throws InterruptedException
 	{
 		final ProcThread pt = _pt;
-		if(pt == null) throw new IllegalStateException("invalid appendLock out of procedure");
+		if (pt == null)
+			throw new IllegalStateException("invalid appendLock out of procedure");
 		final IndexLock[] locks = pt.locks;
 		final int lockIdx = lockId & _lockMask;
 		final int n = pt.lockCount;
 		IndexLock lock = getLock(lockIdx);
-		if(n == 0)
+		if (n == 0)
 		{
 			(locks[0] = lock).lockInterruptibly(); // 之前没有加任何锁则可以直接加锁
 			pt.lockCount = 1;
@@ -394,11 +413,11 @@ public abstract class Procedure implements Runnable
 		}
 		IndexLock lastLock = locks[n - 1];
 		int lastLockIdx = lastLock.index;
-		if(lastLockIdx <= lockIdx)
+		if (lastLockIdx <= lockIdx)
 		{
-			if(lastLockIdx != lockIdx)
+			if (lastLockIdx != lockIdx)
 			{
-				if(n >= Const.maxLockPerProcedure)
+				if (n >= Const.maxLockPerProcedure)
 					throw new IllegalStateException("appendLock exceed: " + (n + 1) + '>' + Const.maxLockPerProcedure);
 				(locks[n] = lock).lockInterruptibly(); // 要加的锁比之前的锁都大则直接加锁
 				pt.lockCount = n + 1;
@@ -406,29 +425,30 @@ public abstract class Procedure implements Runnable
 			return;
 		}
 		int i = n - 1;
-		for(; i > 0; --i) // 算出需要插入锁的下标位置i时跳出循环
+		for (; i > 0; --i) // 算出需要插入锁的下标位置i时跳出循环
 		{
 			lastLockIdx = locks[i - 1].index;
-			if(lastLockIdx <= lockIdx)
+			if (lastLockIdx <= lockIdx)
 			{
-				if(lastLockIdx == lockIdx) return; // 之前加过当前锁则直接返回
+				if (lastLockIdx == lockIdx)
+					return; // 之前加过当前锁则直接返回
 				break;
 			}
 		}
-		if(n >= Const.maxLockPerProcedure)
+		if (n >= Const.maxLockPerProcedure)
 			throw new IllegalStateException("appendLock exceed: " + (n + 1) + '>' + Const.maxLockPerProcedure);
-		if(lock.tryLock()) // 尝试直接加锁,成功则直接按顺序插入锁
+		if (lock.tryLock()) // 尝试直接加锁,成功则直接按顺序插入锁
 		{
-			for(int j = n - 1; j >= i; --j)
+			for (int j = n - 1; j >= i; --j)
 				locks[j + 1] = locks[j];
 			locks[i] = lock;
 			pt.lockCount = n + 1;
 			return;
 		}
-		if(pt.sctx.hasDirty()) // 必须要解部分锁了,所以确保之前不能有修改操作
+		if (pt.sctx.hasDirty()) // 必须要解部分锁了,所以确保之前不能有修改操作
 			throw new IllegalStateException("invalid appendLock after any dirty record");
 		final long[] versions = pt.versions;
-		for(int j = n - 1; j >= i; --j)
+		for (int j = n - 1; j >= i; --j)
 		{
 			lastLock = locks[j];
 			versions[j] = _lockVersions.get(lastLock.index);
@@ -437,14 +457,15 @@ public abstract class Procedure implements Runnable
 		pt.lockCount = i;
 		(locks[i] = lock).lockInterruptibly(); // 加当前锁
 		pt.lockCount = ++i;
-		for(;;)
+		for (;;)
 		{
 			lock = locks[i];
 			(locks[i] = lastLock).lockInterruptibly(); // 继续加比当前锁大的所有锁
 			pt.lockCount = ++i;
-			if(_lockVersions.get(lastLock.index) != versions[i - 2])
+			if (_lockVersions.get(lastLock.index) != versions[i - 2])
 				redo(); // 发现解锁和加锁期间有版本变化则回滚重做
-			if(i > n) return;
+			if (i > n)
+				return;
 			lastLock = lock;
 		}
 	}
@@ -460,14 +481,14 @@ public abstract class Procedure implements Runnable
 	{
 		unlock();
 		int n = lockIds.length;
-		if(n > Const.maxLockPerProcedure)
+		if (n > Const.maxLockPerProcedure)
 			throw new IllegalStateException("lock exceed: " + n + '>' + Const.maxLockPerProcedure);
-		for(int i = 0; i < n; ++i)
+		for (int i = 0; i < n; ++i)
 			lockIds[i] &= _lockMask;
 		Arrays.sort(lockIds);
 		ProcThread pt = _pt;
 		IndexLock[] locks = pt.locks;
-		for(int i = 0; i < n;)
+		for (int i = 0; i < n;)
 		{
 			(locks[i] = getLock(lockIds[i])).lockInterruptibly();
 			pt.lockCount = ++i;
@@ -485,25 +506,25 @@ public abstract class Procedure implements Runnable
 	{
 		unlock();
 		int n = lockIds.size();
-		if(n > Const.maxLockPerProcedure)
+		if (n > Const.maxLockPerProcedure)
 			throw new IllegalStateException("lock exceed: " + n + '>' + Const.maxLockPerProcedure);
 		int[] idxes = new int[n];
 		int i = 0;
-		if(lockIds instanceof ArrayList)
+		if (lockIds instanceof ArrayList)
 		{
 			ArrayList<Integer> lockList = (ArrayList<Integer>)lockIds;
-			for(; i < n; ++i)
+			for (; i < n; ++i)
 				idxes[i] = lockList.get(i) & _lockMask;
 		}
 		else
 		{
-			for(int lockId : lockIds)
+			for (int lockId : lockIds)
 				idxes[i++] = lockId & _lockMask;
 		}
 		Arrays.sort(idxes);
 		ProcThread pt = _pt;
 		IndexLock[] locks = pt.locks;
-		for(i = 0; i < n;)
+		for (i = 0; i < n;)
 		{
 			(locks[i] = getLock(idxes[i])).lockInterruptibly();
 			pt.lockCount = ++i;
@@ -519,7 +540,7 @@ public abstract class Procedure implements Runnable
 	protected final void lock(int lockId0, int lockId1, int lockId2, int lockId3, int... lockIds) throws InterruptedException
 	{
 		int n = lockIds.length;
-		if(n + 4 > Const.maxLockPerProcedure)
+		if (n + 4 > Const.maxLockPerProcedure)
 			throw new IllegalStateException("lock exceed: " + (n + 4) + '>' + Const.maxLockPerProcedure);
 		lockIds = Arrays.copyOf(lockIds, n + 4);
 		lockIds[n] = lockId0;
@@ -538,7 +559,7 @@ public abstract class Procedure implements Runnable
 		ProcThread pt = _pt;
 		IndexLock[] locks = pt.locks;
 		int i = pt.lockCount;
-		if(lockIdx0 < lockIdx1)
+		if (lockIdx0 < lockIdx1)
 		{
 			(locks[i] = getLock(lockIdx0)).lockInterruptibly();
 			pt.lockCount = ++i;
@@ -563,9 +584,9 @@ public abstract class Procedure implements Runnable
 		ProcThread pt = _pt;
 		IndexLock[] locks = pt.locks;
 		int i = pt.lockCount;
-		if(lockIdx0 <= lockIdx1)
+		if (lockIdx0 <= lockIdx1)
 		{
-			if(lockIdx0 < lockIdx2)
+			if (lockIdx0 < lockIdx2)
 			{
 				(locks[i] = getLock(lockIdx0)).lockInterruptibly();
 				pt.lockCount = ++i;
@@ -583,7 +604,7 @@ public abstract class Procedure implements Runnable
 		}
 		else
 		{
-			if(lockIdx1 < lockIdx2)
+			if (lockIdx1 < lockIdx2)
 			{
 				(locks[i] = getLock(lockIdx1)).lockInterruptibly();
 				pt.lockCount = ++i;
@@ -644,11 +665,11 @@ public abstract class Procedure implements Runnable
 		ProcThread pt = _pt;
 		IndexLock[] locks = pt.locks;
 		int i = 0;
-		if(lockId0 <= lockId1)
+		if (lockId0 <= lockId1)
 		{
-			if(lockId0 < lockId2)
+			if (lockId0 < lockId2)
 			{
-				if(lockId0 < lockId3)
+				if (lockId0 < lockId3)
 				{
 					(locks[i] = getLock(lockId0)).lockInterruptibly();
 					pt.lockCount = ++i;
@@ -663,11 +684,11 @@ public abstract class Procedure implements Runnable
 					lock2(lockId1, lockId2);
 				}
 			}
-			else if(lockId2 < lockId3)
+			else if (lockId2 < lockId3)
 			{
 				(locks[i] = getLock(lockId2)).lockInterruptibly();
 				pt.lockCount = ++i;
-				if(lockId0 < lockId3)
+				if (lockId0 < lockId3)
 				{
 					(locks[i] = getLock(lockId0)).lockInterruptibly();
 					pt.lockCount = ++i;
@@ -697,9 +718,9 @@ public abstract class Procedure implements Runnable
 		}
 		else
 		{
-			if(lockId1 < lockId2)
+			if (lockId1 < lockId2)
 			{
-				if(lockId1 < lockId3)
+				if (lockId1 < lockId3)
 				{
 					(locks[i] = getLock(lockId1)).lockInterruptibly();
 					pt.lockCount = ++i;
@@ -714,11 +735,11 @@ public abstract class Procedure implements Runnable
 					lock2(lockId0, lockId2);
 				}
 			}
-			else if(lockId2 < lockId3)
+			else if (lockId2 < lockId3)
 			{
 				(locks[i] = getLock(lockId2)).lockInterruptibly();
 				pt.lockCount = ++i;
-				if(lockId1 < lockId3)
+				if (lockId1 < lockId3)
 				{
 					(locks[i] = getLock(lockId1)).lockInterruptibly();
 					pt.lockCount = ++i;
@@ -760,7 +781,7 @@ public abstract class Procedure implements Runnable
 		{
 			execute();
 		}
-		catch(Throwable e)
+		catch (Throwable e)
 		{
 			Log.error(e, "procedure fatal exception: {}", toString());
 		}
@@ -774,7 +795,7 @@ public abstract class Procedure implements Runnable
 	 */
 	public boolean execute() throws Exception
 	{
-		if(DBManager.instance().isExiting())
+		if (DBManager.instance().isExiting())
 		{
 			Log.info("procedure canceled: {}", toString());
 			return false;
@@ -784,45 +805,45 @@ public abstract class Procedure implements Runnable
 		_rwlCommit.readLock();
 		try
 		{
-			synchronized(this)
+			synchronized (this)
 			{
-				if(pt.proc != null) // 防止嵌套调用
+				if (pt.proc != null) // 防止嵌套调用
 					throw new IllegalStateException("procedure can not be reentrant: " + toString());
-				if(_pt != null) // 防止多线程并发
+				if (_pt != null) // 防止多线程并发
 					throw new IllegalStateException("procedure is running already: " + toString());
 				pt.beginTime = NetManager.getTimeSec();
 				pt.proc = this;
 				_pt = pt;
 			}
-			for(int n = Const.maxProceduerRedo;;)
+			for (int n = Const.maxProceduerRedo;;)
 			{
 				try
 				{
 					onProcess();
 					break;
 				}
-				catch(Redo e)
+				catch (Redo e)
 				{
 				}
 				sctx.rollback();
 				unlock();
-				if(--n <= 0)
+				if (--n <= 0)
 					throw new Exception("procedure redo too many times=" + Const.maxProceduerRedo + ": " + toString());
 				Log.info("procedure redo({}): {}", Const.maxProceduerRedo - n, toString());
 			}
 			sctx.commit();
 			return true;
 		}
-		catch(Throwable e)
+		catch (Throwable e)
 		{
 			try
 			{
-				if(e instanceof InterruptedException && DBManager.instance().isExiting())
+				if (e instanceof InterruptedException && DBManager.instance().isExiting())
 					Log.info("procedure canceled: {}", toString());
-				else if(e != Undo._instance)
+				else if (e != Undo._instance)
 					onException(e);
 			}
-			catch(Throwable ex)
+			catch (Throwable ex)
 			{
 				Log.error(ex, "procedure.onException exception: {}", toString());
 			}
@@ -834,9 +855,9 @@ public abstract class Procedure implements Runnable
 		}
 		finally // 以下代码绝不能抛出异常
 		{
-			if(_pt != null)
+			if (_pt != null)
 				unlock();
-			synchronized(this)
+			synchronized (this)
 			{
 				_pt = null;
 				pt.proc = null;
@@ -856,7 +877,7 @@ public abstract class Procedure implements Runnable
 	 */
 	protected void onException(Throwable e)
 	{
-		if(_defaultEh != null)
+		if (_defaultEh != null)
 			_defaultEh.onException(e);
 		else
 			Log.error(e, "procedure exception: {}", toString());

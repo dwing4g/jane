@@ -35,16 +35,16 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	{
 		_owner = owner;
 		_set = set;
-		if(listener != null)
+		if (listener != null)
 		{
 			Rec rec = owner.record();
-			if(rec != null)
+			if (rec != null)
 			{
 				_added = new HashSet<>();
 				_removed = new HashSet<>();
 				SContext.current().addOnCommit(() ->
 				{
-					if(!_added.isEmpty() || !_removed.isEmpty())
+					if (!_added.isEmpty() || !_removed.isEmpty())
 						listener.onChanged(rec, _added, _removed);
 				});
 			}
@@ -54,20 +54,23 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	protected SContext sContext()
 	{
 		_owner.checkLock();
-		if(_sctx != null) return _sctx;
+		if (_sctx != null)
+			return _sctx;
 		_owner.dirty();
 		return _sctx = SContext.current();
 	}
 
 	protected void addUndoAdd(SContext ctx, V v)
 	{
-		if(_added != null) _added.add(v);
+		if (_added != null)
+			_added.add(v);
 		ctx.addOnRollback(() -> _set.remove(v));
 	}
 
 	protected void addUndoRemove(SContext ctx, V v)
 	{
-		if(_removed != null) _removed.add(v);
+		if (_removed != null)
+			_removed.add(v);
 		ctx.addOnRollback(() -> _set.add(v));
 	}
 
@@ -112,7 +115,8 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	public boolean addDirect(V v)
 	{
 		SContext ctx = sContext();
-		if(!_set.add(v)) return false;
+		if (!_set.add(v))
+			return false;
 		addUndoAdd(ctx, v);
 		return true;
 	}
@@ -126,8 +130,9 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	public boolean addAllDirect(Iterable<? extends V> c)
 	{
 		boolean r = false;
-		for(V v : c)
-			if(addDirect(v)) r = true;
+		for (V v : c)
+			if (addDirect(v))
+				r = true;
 		return r;
 	}
 
@@ -135,8 +140,9 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	public boolean addAll(Collection<? extends S> c)
 	{
 		boolean r = false;
-		for(S s : c)
-			if(add(s)) r = true;
+		for (S s : c)
+			if (add(s))
+				r = true;
 		return r;
 	}
 
@@ -145,7 +151,8 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	{
 		SContext ctx = sContext();
 		V v = SContext.unsafe(s);
-		if(!_set.remove(v)) return false;
+		if (!_set.remove(v))
+			return false;
 		addUndoRemove(ctx, v);
 		return true;
 	}
@@ -153,26 +160,29 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	@Override
 	public boolean removeAll(Collection<?> c)
 	{
-		if(_set.isEmpty()) return false;
-		if(_set == c || this == c)
+		if (_set.isEmpty())
+			return false;
+		if (_set == c || this == c)
 		{
 			clear();
 			return true;
 		}
 		boolean r = false;
-		for(Object v : c)
-			if(remove(v)) r = true;
+		for (Object v : c)
+			if (remove(v))
+				r = true;
 		return r;
 	}
 
 	@Override
 	public boolean retainAll(Collection<?> c)
 	{
-		if(_set.isEmpty() || _set == c || this == c) return false;
+		if (_set.isEmpty() || _set == c || this == c)
+			return false;
 		boolean r = false;
-		for(SIterator it = iterator(); it.hasNext();)
+		for (SIterator it = iterator(); it.hasNext();)
 		{
-			if(!c.contains(it.nextUnsafe()))
+			if (!c.contains(it.nextUnsafe()))
 			{
 				it.remove();
 				r = true;
@@ -184,12 +194,13 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	@Override
 	public void clear()
 	{
-		if(_set.isEmpty()) return;
+		if (_set.isEmpty())
+			return;
 		SContext ctx = sContext();
 		Set<V> saved = (_set instanceof LinkedHashSet ? new LinkedHashSet<>(_set) : new HashSet<>(_set));
-		if(_removed != null)
+		if (_removed != null)
 		{
-			for(V v : _set)
+			for (V v : _set)
 				_removed.add(v);
 		}
 		_set.clear();
@@ -246,9 +257,9 @@ public class SSet<V, S> implements Set<S>, Cloneable
 
 	public boolean foreachFilter(Predicate<V> filter, Predicate<S> consumer)
 	{
-		for(V v : _set)
+		for (V v : _set)
 		{
-			if(filter.test(v) && !consumer.test(SContext.safe(_owner, v)))
+			if (filter.test(v) && !consumer.test(SContext.safe(_owner, v)))
 				return false;
 		}
 		return true;

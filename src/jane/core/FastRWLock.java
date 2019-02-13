@@ -15,29 +15,32 @@ public final class FastRWLock extends AtomicLong
 		{
 			Thread.sleep(1); // 忙等,主要用于竞争不多也不着急的情况
 		}
-		catch(InterruptedException e)
+		catch (InterruptedException e)
 		{
 		}
 	}
 
 	public boolean tryReadLock()
 	{
-		for(;;)
+		for (;;)
 		{
 			final long s = get();
-			if(s < 0) return false;
-			if(compareAndSet(s, s + 1)) return true;
+			if (s < 0)
+				return false;
+			if (compareAndSet(s, s + 1))
+				return true;
 		}
 	}
 
 	public void readLock()
 	{
-		for(;;)
+		for (;;)
 		{
 			final long c = get();
-			if(c < 0)
+			if (c < 0)
 				wait1();
-			else if(compareAndSet(c, c + 1)) return;
+			else if (compareAndSet(c, c + 1))
+				return;
 		}
 	}
 
@@ -48,29 +51,32 @@ public final class FastRWLock extends AtomicLong
 
 	public void waitLock() // 等到没有读写锁的时刻返回
 	{
-		for(;;)
+		for (;;)
 		{
 			final long s = get();
-			if(s == 0) return;
-			if(s == WRITE_WAIT_FLAG)
+			if (s == 0)
+				return;
+			if (s == WRITE_WAIT_FLAG)
 			{
-				if(compareAndSet(s, 0)) return;
+				if (compareAndSet(s, 0))
+					return;
 			}
-			else if(s < 0 || compareAndSet(s, s | WRITE_WAIT_FLAG)) // 如果只有读标记,那么加写等待标记,阻止读锁
+			else if (s < 0 || compareAndSet(s, s | WRITE_WAIT_FLAG)) // 如果只有读标记,那么加写等待标记,阻止读锁
 				wait1();
 		}
 	}
 
 	public void writeLock()
 	{
-		for(;;)
+		for (;;)
 		{
 			final long s = get();
-			if((s & LOCK_MASK) == 0) // 如果没有读标记和写独占
+			if ((s & LOCK_MASK) == 0) // 如果没有读标记和写独占
 			{
-				if(compareAndSet(s, WRITE_LOCK_FLAG)) return; // 加写独占标记,阻止其它读写操作
+				if (compareAndSet(s, WRITE_LOCK_FLAG))
+					return; // 加写独占标记,阻止其它读写操作
 			}
-			else if(s < 0 || compareAndSet(s, s | WRITE_WAIT_FLAG)) // 如果只有读标记,那么加写等待标记,阻止读锁
+			else if (s < 0 || compareAndSet(s, s | WRITE_WAIT_FLAG)) // 如果只有读标记,那么加写等待标记,阻止读锁
 				wait1();
 		}
 	}

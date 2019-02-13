@@ -27,7 +27,8 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	private SContext sContext()
 	{
 		_owner.checkLock();
-		if(_sctx != null) return _sctx;
+		if (_sctx != null)
+			return _sctx;
 		_owner.dirty();
 		return _sctx = SContext.current();
 	}
@@ -145,7 +146,8 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	public boolean addDirect(V v)
 	{
 		SContext ctx = sContext();
-		if(!_deque.add(v)) return false;
+		if (!_deque.add(v))
+			return false;
 		ctx.addOnRollback(_deque::removeLast);
 		return true;
 	}
@@ -229,10 +231,11 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	{
 		SContext ctx = sContext();
 		int n = c.size();
-		if(!_deque.addAll(c)) return false;
+		if (!_deque.addAll(c))
+			return false;
 		ctx.addOnRollback(() ->
 		{
-			for(int i = 0; i < n; ++i)
+			for (int i = 0; i < n; ++i)
 				_deque.removeLast();
 		});
 		return true;
@@ -243,11 +246,11 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	{
 		SContext ctx = sContext();
 		int n = c.size();
-		for(S s : c)
+		for (S s : c)
 			_deque.addLast(SContext.unsafe(s));
 		ctx.addOnRollback(() ->
 		{
-			for(int i = 0; i < n; ++i)
+			for (int i = 0; i < n; ++i)
 				_deque.removeLast();
 		});
 		return true;
@@ -317,7 +320,8 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	{
 		SContext ctx = sContext();
 		V vOld = _deque.poll();
-		if(vOld == null) return null;
+		if (vOld == null)
+			return null;
 		ctx.addOnRollback(() -> _deque.addFirst(vOld));
 		return vOld;
 	}
@@ -343,7 +347,8 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	{
 		SContext ctx = sContext();
 		V vOld = _deque.pollLast();
-		if(vOld == null) return null;
+		if (vOld == null)
+			return null;
 		ctx.addOnRollback(() -> _deque.addLast(vOld));
 		return vOld;
 	}
@@ -382,7 +387,8 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	@Override
 	public void clear()
 	{
-		if(_deque.isEmpty()) return;
+		if (_deque.isEmpty())
+			return;
 		SContext ctx = sContext();
 		Deque<V> saved = new ArrayDeque<>(_deque);
 		_deque.clear();
@@ -443,9 +449,9 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 
 	public boolean foreachFilter(Predicate<V> filter, Predicate<S> consumer)
 	{
-		for(V v : _deque)
+		for (V v : _deque)
 		{
-			if(filter.test(v) && !consumer.test(SContext.safe(_owner, v)))
+			if (filter.test(v) && !consumer.test(SContext.safe(_owner, v)))
 				return false;
 		}
 		return true;

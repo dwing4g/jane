@@ -33,10 +33,10 @@ public abstract class CacheRef<V> extends SoftReference<V> implements Supplier<V
 		{
 			try
 			{
-				for(;; ++_refRemoveCount)
+				for (;; ++_refRemoveCount)
 					((Runnable)_refQueue.remove()).run();
 			}
-			catch(InterruptedException e)
+			catch (InterruptedException e)
 			{
 				Log.error("SoftRefCleanerThread interrupted:", e);
 			}
@@ -72,7 +72,7 @@ final class CacheRefK<K, V> extends CacheRef<V>
 	public void run()
 	{
 		Supplier<V> oldRef = _map.get(_key);
-		if(oldRef != null && oldRef.get() == null)
+		if (oldRef != null && oldRef.get() == null)
 			_map.remove(_key, oldRef);
 	}
 }
@@ -93,7 +93,7 @@ final class CacheRefLong<V> extends CacheRef<V>
 	public void run()
 	{
 		Supplier<V> oldRef = _map.get(_key);
-		if(oldRef != null && oldRef.get() == null)
+		if (oldRef != null && oldRef.get() == null)
 			_map.remove(_key, oldRef);
 	}
 }

@@ -40,7 +40,7 @@ public final class Log
 			{
 				error(e, "thread({}): uncaught fatal exception:", t);
 			}
-			catch(Throwable ex)
+			catch (Throwable ex)
 			{
 				ex.printStackTrace();
 			}
@@ -64,12 +64,12 @@ public final class Log
 		info("user.name = {}; user.dir = {}", System.getProperty("user.name"), System.getProperty("user.dir"));
 		info("java.class.path = {}", System.getProperty("java.class.path"));
 		URL url = new ContextInitializer(logCtx).findURLOfDefaultConfigurationFile(true);
-		if(url == null)
+		if (url == null)
 			throw new Error("not found logback.xml from classpath");
 		info("logback.path = {}", url.getPath());
-		if(args != null)
+		if (args != null)
 		{
-			for(int i = 0, n = args.length; i < n; ++i)
+			for (int i = 0, n = args.length; i < n; ++i)
 				info("arg{} = {}", i, args[i]);
 		}
 	}
@@ -81,13 +81,14 @@ public final class Log
 	{
 		String TAG = "Created-Time";
 		Enumeration<URL> urls = Log.class.getClassLoader().getResources("META-INF/MANIFEST.MF");
-		while(urls.hasMoreElements())
+		while (urls.hasMoreElements())
 		{
 			URL url = urls.nextElement();
-			try(InputStream is = url.openStream())
+			try (InputStream is = url.openStream())
 			{
 				String time = new Manifest(is).getMainAttributes().getValue(TAG);
-				if(time != null) info("{}#{} = {}", url.getPath(), TAG, time);
+				if (time != null)
+					info("{}#{} = {}", url.getPath(), TAG, time);
 			}
 		}
 	}
@@ -97,7 +98,7 @@ public final class Log
 	 */
 	public static void removeAppender(String name)
 	{
-		for(ch.qos.logback.classic.Logger lc : logCtx.getLoggerList())
+		for (ch.qos.logback.classic.Logger lc : logCtx.getLoggerList())
 			lc.detachAppender(name);
 	}
 
@@ -106,9 +107,9 @@ public final class Log
 	 */
 	public static void removeAppendersFromArgs(String[] args)
 	{
-		for(String s : args)
+		for (String s : args)
 		{
-			if(s.startsWith("removeAppender="))
+			if (s.startsWith("removeAppender="))
 				removeAppender(s.substring("removeAppender=".length()));
 		}
 	}
@@ -125,102 +126,122 @@ public final class Log
 
 	public static void trace(String msg)
 	{
-		if(hasTrace) log.trace(msg);
+		if (hasTrace)
+			log.trace(msg);
 	}
 
 	public static void trace(String msg, Object arg)
 	{
-		if(hasTrace) log.trace(msg, arg);
+		if (hasTrace)
+			log.trace(msg, arg);
 	}
 
 	public static void trace(String msg, Object arg1, Object arg2)
 	{
-		if(hasTrace) log.trace(msg, arg1, arg2);
+		if (hasTrace)
+			log.trace(msg, arg1, arg2);
 	}
 
 	public static void trace(String msg, Object... args)
 	{
-		if(hasTrace) log.trace(msg, args);
+		if (hasTrace)
+			log.trace(msg, args);
 	}
 
 	public static void trace(String msg, Throwable t)
 	{
-		if(hasTrace) log.trace(msg, t);
+		if (hasTrace)
+			log.trace(msg, t);
 	}
 
 	public static void debug(String msg)
 	{
-		if(hasDebug) log.debug(msg);
+		if (hasDebug)
+			log.debug(msg);
 	}
 
 	public static void debug(String msg, Object arg)
 	{
-		if(hasDebug) log.debug(msg, arg);
+		if (hasDebug)
+			log.debug(msg, arg);
 	}
 
 	public static void debug(String msg, Object arg1, Object arg2)
 	{
-		if(hasDebug) log.debug(msg, arg1, arg2);
+		if (hasDebug)
+			log.debug(msg, arg1, arg2);
 	}
 
 	public static void debug(String msg, Object... args)
 	{
-		if(hasDebug) log.debug(msg, args);
+		if (hasDebug)
+			log.debug(msg, args);
 	}
 
 	public static void debug(String msg, Throwable t)
 	{
-		if(hasDebug) log.debug(msg, t);
+		if (hasDebug)
+			log.debug(msg, t);
 	}
 
 	public static void info(String msg)
 	{
-		if(hasInfo) log.info(msg);
+		if (hasInfo)
+			log.info(msg);
 	}
 
 	public static void info(String msg, Object arg)
 	{
-		if(hasInfo) log.info(msg, arg);
+		if (hasInfo)
+			log.info(msg, arg);
 	}
 
 	public static void info(String msg, Object arg1, Object arg2)
 	{
-		if(hasInfo) log.info(msg, arg1, arg2);
+		if (hasInfo)
+			log.info(msg, arg1, arg2);
 	}
 
 	public static void info(String msg, Object... args)
 	{
-		if(hasInfo) log.info(msg, args);
+		if (hasInfo)
+			log.info(msg, args);
 	}
 
 	public static void info(String msg, Throwable t)
 	{
-		if(hasInfo) log.info(msg, t);
+		if (hasInfo)
+			log.info(msg, t);
 	}
 
 	public static void warn(String msg)
 	{
-		if(hasWarn) log.warn(msg);
+		if (hasWarn)
+			log.warn(msg);
 	}
 
 	public static void warn(String msg, Object arg)
 	{
-		if(hasWarn) log.warn(msg, arg);
+		if (hasWarn)
+			log.warn(msg, arg);
 	}
 
 	public static void warn(String msg, Object arg1, Object arg2)
 	{
-		if(hasWarn) log.warn(msg, arg1, arg2);
+		if (hasWarn)
+			log.warn(msg, arg1, arg2);
 	}
 
 	public static void warn(String msg, Object... args)
 	{
-		if(hasWarn) log.warn(msg, args);
+		if (hasWarn)
+			log.warn(msg, args);
 	}
 
 	public static void warn(String msg, Throwable t)
 	{
-		if(hasWarn) log.warn(msg, t);
+		if (hasWarn)
+			log.warn(msg, t);
 	}
 
 	public static void error(String msg)
@@ -250,7 +271,8 @@ public final class Log
 
 	public static void error(Throwable t, String msg, Object... args)
 	{
-		if(hasError) log.error(MessageFormatter.arrayFormat(msg, args).getMessage(), t);
+		if (hasError)
+			log.error(MessageFormatter.arrayFormat(msg, args).getMessage(), t);
 	}
 
 	private Log()

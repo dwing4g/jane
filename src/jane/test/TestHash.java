@@ -16,12 +16,12 @@ public final class TestHash
 		int cur = 0;
 		int all = 0;
 		OctetsStream os = new OctetsStream();
-		for(long i = begin; i <= end; i += stride)
+		for (long i = begin; i <= end; i += stride)
 		{
 			os.clear();
 			os.marshalUInt(tableId).marshal(i);
 			++all;
-			if(set.put(os.hashCode(), Boolean.TRUE) == null)
+			if (set.put(os.hashCode(), Boolean.TRUE) == null)
 				++cur;
 		}
 

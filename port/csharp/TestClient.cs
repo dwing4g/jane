@@ -56,9 +56,9 @@ namespace Jane
 
 		public void AddTask(int delayMs, Task task)
 		{
-			for(long time = DateTime.Now.Ticks + delayMs * 10000;; ++time)
+			for (long time = DateTime.Now.Ticks + delayMs * 10000;; ++time)
 			{
-				if(!_timerTaskMap.ContainsKey(time))
+				if (!_timerTaskMap.ContainsKey(time))
 				{
 					_timerTaskMap.Add(time, task);
 					break;
@@ -69,13 +69,13 @@ namespace Jane
 		void DoTask()
 		{
 			long now = DateTime.Now.Ticks;
-			while(_timerTaskMap.Count > 0)
+			while (_timerTaskMap.Count > 0)
 			{
 				var en = _timerTaskMap.GetEnumerator();
 				en.MoveNext();
 				var p = en.Current;
 				long time = p.Key;
-				if(now < time) break;
+				if (now < time) break;
 				Task task = p.Value;
 				_timerTaskMap.Remove(time);
 				try
@@ -121,7 +121,7 @@ namespace Jane
 		 */
 		protected override OctetsStream OnEncode(NetSession session, byte[] buf, int pos, int len)
 		{
-			if(_filter != null)
+			if (_filter != null)
 				_filter.UpdateOutput(buf, pos, len);
 			return null;
 		}
@@ -132,7 +132,7 @@ namespace Jane
 		 */
 		protected override OctetsStream OnDecode(NetSession session, byte[] buf, int pos, int len)
 		{
-			if(_filter != null)
+			if (_filter != null)
 				_filter.UpdateInput(buf, pos, len);
 			return null;
 		}
@@ -179,7 +179,7 @@ namespace Jane
 			mgr.SetServerAddr(ip, 9123); // 连接前先设置好服务器的地址和端口;
 			mgr.Connect(); // 开始异步连接,成功或失败反馈到回调方法;
 			LogInfo("press CTRL+C or close this window to exit ...");
-			for(;;) // 工作线程的主循环;
+			for (;;) // 工作线程的主循环;
 			{
 				mgr.Tick(); // 在当前线程处理网络事件,很多回调方法在此同步执行;
 				Thread.Sleep(100); // 可替换成其它工作事务;

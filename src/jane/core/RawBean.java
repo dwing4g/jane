@@ -62,7 +62,7 @@ public final class RawBean extends Bean<RawBean>
 		serial(serial);
 
 		OctetsStream os;
-		if(_data instanceof OctetsStream)
+		if (_data instanceof OctetsStream)
 		{
 			os = (OctetsStream)_data;
 			os.clear();
@@ -109,7 +109,7 @@ public final class RawBean extends Bean<RawBean>
 	public void reset()
 	{
 		_type = 0;
-		if(_data != null)
+		if (_data != null)
 			_data.clear();
 	}
 
@@ -118,7 +118,7 @@ public final class RawBean extends Bean<RawBean>
 	{
 		os.marshalUInt(_type);
 		os.marshal(serial());
-		if(_data != null)
+		if (_data != null)
 			os.marshal(_data);
 		else
 			os.marshalZero();
@@ -130,7 +130,7 @@ public final class RawBean extends Bean<RawBean>
 	{
 		_type = os.unmarshalUInt();
 		serial(os.unmarshalInt());
-		if(_data == null)
+		if (_data == null)
 			_data = new Octets();
 		return os.unmarshal(_data);
 	}
@@ -150,10 +150,12 @@ public final class RawBean extends Bean<RawBean>
 	@Override
 	public int compareTo(RawBean b)
 	{
-		if(b == this) return 0;
+		if (b == this)
+			return 0;
 		int c = _type - b._type;
-		if(c != 0) return c;
-		if(_data == null)
+		if (c != 0)
+			return c;
+		if (_data == null)
 			return b._data != null ? 1 : 0;
 		return _data.compareTo(b._data);
 	}
@@ -161,10 +163,13 @@ public final class RawBean extends Bean<RawBean>
 	@Override
 	public boolean equals(Object o)
 	{
-		if(this == o) return true;
-		if(!(o instanceof RawBean)) return false;
+		if (this == o)
+			return true;
+		if (!(o instanceof RawBean))
+			return false;
 		RawBean rb = (RawBean)o;
-		if(_type != rb._type) return false;
+		if (_type != rb._type)
+			return false;
 		return _data != null ? _data.equals(rb._data) : rb._data == null;
 	}
 

@@ -43,8 +43,8 @@ public class TestBean extends Bean<TestBean>
 	@Override
 	public void assign(TestBean _b_)
 	{
-		if(_b_ == this) return;
-		if(_b_ == null) { reset(); return; }
+		if (_b_ == this) return;
+		if (_b_ == null) { reset(); return; }
 		this.value1 = _b_.value1;
 		this.value2 = _b_.value2;
 	}
@@ -118,7 +118,7 @@ public class TestBean extends Bean<TestBean>
 	@Override
 	public OctetsStream unmarshal(OctetsStream _s_) throws MarshalException
 	{
-		for(;;) { int _i_ = _s_.unmarshalInt1(), _t_ = _i_ & 3; if((_i_ >>= 2) == 63) _i_ += _s_.unmarshalInt1(); switch(_i_)
+		for (;;) { int _i_ = _s_.unmarshalInt1(), _t_ = _i_ & 3; if ((_i_ >>= 2) == 63) _i_ += _s_.unmarshalInt1(); switch(_i_)
 		{
 			case 0: return _s_;
 			case 1: this.value1 = _s_.unmarshalInt(_t_); break;
@@ -145,22 +145,22 @@ public class TestBean extends Bean<TestBean>
 	@Override
 	public boolean equals(Object o)
 	{
-		if(o == this) return true;
-		if(!(o instanceof TestBean)) return false;
+		if (o == this) return true;
+		if (!(o instanceof TestBean)) return false;
 		TestBean _b_ = (TestBean)o;
-		if(this.value1 != _b_.value1) return false;
-		if(this.value2 != _b_.value2) return false;
+		if (this.value1 != _b_.value1) return false;
+		if (this.value2 != _b_.value2) return false;
 		return true;
 	}
 
 	@Override
 	public int compareTo(TestBean _b_)
 	{
-		if(_b_ == this) return 0;
-		if(_b_ == null) return 1;
+		if (_b_ == this) return 0;
+		if (_b_ == null) return 1;
 		int _c_;
-		_c_ = Integer.compare(this.value1, _b_.value1); if(_c_ != 0) return _c_;
-		_c_ = Long.compare(this.value2, _b_.value2); if(_c_ != 0) return _c_;
+		_c_ = Integer.compare(this.value1, _b_.value1); if (_c_ != 0) return _c_;
+		_c_ = Long.compare(this.value2, _b_.value2); if (_c_ != 0) return _c_;
 		return 0;
 	}
 
@@ -199,7 +199,7 @@ public class TestBean extends Bean<TestBean>
 				FIELD_value1 = _c_.getDeclaredField("value1"); FIELD_value1.setAccessible(true);
 				FIELD_value2 = _c_.getDeclaredField("value2"); FIELD_value2.setAccessible(true);
 			}
-			catch(Exception e)
+			catch (Exception e)
 			{
 				throw new Error(e);
 			}
@@ -219,7 +219,7 @@ public class TestBean extends Bean<TestBean>
 		/** @param value1 字段的注释 */
 		public void setValue1(int value1)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SInteger(_bean, FIELD_value1, _bean.getValue1()));
+			if (initSContext()) _sctx.addOnRollback(new SBase.SInteger(_bean, FIELD_value1, _bean.getValue1()));
 			_bean.setValue1(value1);
 		}
 
@@ -230,7 +230,7 @@ public class TestBean extends Bean<TestBean>
 
 		public void setValue2(long value2)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SLong(_bean, FIELD_value2, _bean.getValue2()));
+			if (initSContext()) _sctx.addOnRollback(new SBase.SLong(_bean, FIELD_value2, _bean.getValue2()));
 			_bean.setValue2(value2);
 		}
 	}

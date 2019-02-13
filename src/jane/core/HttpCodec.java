@@ -88,12 +88,12 @@ public final class HttpCodec implements IoFilter
 	public static byte[] getDateLine()
 	{
 		long sec = NetManager.getTimeSec();
-		if(sec != _lastSec)
+		if (sec != _lastSec)
 		{
 			Date date = new Date(sec * 1000);
-			synchronized(_sdf)
+			synchronized (_sdf)
 			{
-				if(sec != _lastSec)
+				if (sec != _lastSec)
 				{
 					_dateLine = ("\r\nDate: " + _sdf.format(date)).getBytes(StandardCharsets.UTF_8);
 					_lastSec = sec;
@@ -129,33 +129,36 @@ public final class HttpCodec implements IoFilter
 
 	public static String decodeUrl(byte[] src, int srcPos, int srcLen)
 	{
-		if(srcPos < 0) srcPos = 0;
-		if(srcPos + srcLen > src.length) srcLen = src.length - srcPos;
-		if(srcLen <= 0) return "";
+		if (srcPos < 0)
+			srcPos = 0;
+		if (srcPos + srcLen > src.length)
+			srcLen = src.length - srcPos;
+		if (srcLen <= 0)
+			return "";
 		byte[] dst = new byte[srcLen];
 		int dstPos = 0;
-		for(int srcEnd = srcPos + srcLen; srcPos < srcEnd;)
+		for (int srcEnd = srcPos + srcLen; srcPos < srcEnd;)
 		{
 			int c = src[srcPos++];
-			switch(c)
+			switch (c)
 			{
-				case '+':
-					dst[dstPos++] = (byte)' ';
+			case '+':
+				dst[dstPos++] = (byte)' ';
+				break;
+			case '%':
+				if (srcPos + 1 < srcEnd)
+				{
+					c = src[srcPos++];
+					int v = (c < 'A' ? c - '0' : c - 'A' + 10) << 4;
+					c = src[srcPos++];
+					v += (c < 'A' ? c - '0' : c - 'A' + 10);
+					dst[dstPos++] = (byte)v;
 					break;
-				case '%':
-					if(srcPos + 1 < srcEnd)
-					{
-						c = src[srcPos++];
-						int v = (c < 'A' ? c - '0' : c - 'A' + 10) << 4;
-						c = src[srcPos++];
-						v += (c < 'A' ? c - '0' : c - 'A' + 10);
-						dst[dstPos++] = (byte)v;
-						break;
-					}
-					//$FALL-THROUGH$
-				default:
-					dst[dstPos++] = (byte)c;
-					break;
+				}
+				//$FALL-THROUGH$
+			default:
+				dst[dstPos++] = (byte)c;
+				break;
 			}
 		}
 		return new String(dst, 0, dstPos, StandardCharsets.UTF_8);
@@ -178,11 +181,14 @@ public final class HttpCodec implements IoFilter
 	{
 		int e = head.position();
 		int p = head.find(0, e, (byte)' ');
-		if(p < 0) return "";
+		if (p < 0)
+			return "";
 		int q = head.find(++p, e, (byte)' ');
-		if(q < 0) return "";
+		if (q < 0)
+			return "";
 		int r = head.find(p, q, (byte)'?');
-		if(r >= p && r < q) q = r;
+		if (r >= p && r < q)
+			q = r;
 		return decodeUrl(head.array(), p, q - p);
 	}
 
@@ -190,9 +196,11 @@ public final class HttpCodec implements IoFilter
 	{
 		int e = head.position();
 		int p = head.find(0, e, (byte)' ');
-		if(p < 0) return "";
+		if (p < 0)
+			return "";
 		int q = head.find(++p, e, (byte)' ');
-		if(q < 0) return "";
+		if (q < 0)
+			return "";
 		return decodeUrl(head.array(), p, q - p);
 	}
 
@@ -202,17 +210,21 @@ public final class HttpCodec implements IoFilter
 	public static int getParams(Octets oct, int pos, int len, Map<String, String> params)
 	{
 		byte[] buf = oct.array();
-		if(pos < 0) pos = 0;
-		if(pos + len > buf.length) len = buf.length - pos;
-		if(len <= 0) return 0;
+		if (pos < 0)
+			pos = 0;
+		if (pos + len > buf.length)
+			len = buf.length - pos;
+		if (len <= 0)
+			return 0;
 		int end = pos + len;
 		int n = 0;
-		for(int p; pos < end; pos = p + 1, ++n)
+		for (int p; pos < end; pos = p + 1, ++n)
 		{
 			p = oct.find(pos, end, (byte)'&');
-			if(p < 0) p = end;
+			if (p < 0)
+				p = end;
 			int r = oct.find(pos, p, (byte)'=');
-			if(r >= pos)
+			if (r >= pos)
 			{
 				String k = decodeUrl(buf, pos, r - pos);
 				String v = decodeUrl(buf, r + 1, p - r - 1);
@@ -230,16 +242,22 @@ public final class HttpCodec implements IoFilter
 	public static int getHeadParams(Octets oct, int pos, int len, Map<String, String> params)
 	{
 		byte[] buf = oct.array();
-		if(pos < 0) pos = 0;
-		if(pos + len > buf.length) len = buf.length - pos;
-		if(len <= 0) return 0;
+		if (pos < 0)
+			pos = 0;
+		if (pos + len > buf.length)
+			len = buf.length - pos;
+		if (len <= 0)
+			return 0;
 		int e = pos + len;
 		int q = oct.find(0, e, (byte)'\r');
-		if(q < 0) return 0;
+		if (q < 0)
+			return 0;
 		int p = oct.find(0, q, (byte)'?');
-		if(p < 0) return 0;
+		if (p < 0)
+			return 0;
 		q = oct.find(++p, q, (byte)' ');
-		if(q < p) return 0;
+		if (q < p)
+			return 0;
 		return getParams(oct, p, q - p, params);
 	}
 
@@ -279,9 +297,10 @@ public final class HttpCodec implements IoFilter
 	private static long getHeadLongValue(OctetsStream head, int pos)
 	{
 		int e = head.find(pos, (byte)'\r');
-		if(e < 0) return -1;
+		if (e < 0)
+			return -1;
 		long r = 0;
-		for(byte[] buf = head.array(); pos < e; ++pos)
+		for (byte[] buf = head.array(); pos < e; ++pos)
 			r = r * 10 + (buf[pos] - 0x30);
 		return r;
 	}
@@ -294,9 +313,9 @@ public final class HttpCodec implements IoFilter
 			buf.append((byte)('0' + value % 10));
 			value /= 10;
 		}
-		while(value > 0);
+		while (value > 0);
 		byte[] b = buf.array();
-		for(int n = pos + buf.size(), e = n >> 1; pos < e; ++pos) // reverse
+		for (int n = pos + buf.size(), e = n >> 1; pos < e; ++pos) // reverse
 		{
 			int pos2 = n - pos - 1;
 			byte t = b[pos];
@@ -308,7 +327,8 @@ public final class HttpCodec implements IoFilter
 	private static IoBuffer createHexLine(int value)
 	{
 		int bytes = (67 - Long.numberOfLeadingZeros(value)) >> 2;
-		if(bytes == 0) bytes = 1;
+		if (bytes == 0)
+			bytes = 1;
 		byte[] buf = new byte[bytes + 2];
 		buf[bytes] = '\r';
 		buf[bytes + 1] = '\n';
@@ -317,7 +337,7 @@ public final class HttpCodec implements IoFilter
 			buf[--bytes] = HEX[value & 15];
 			value >>= 4;
 		}
-		while(value > 0);
+		while (value > 0);
 		return IoBuffer.wrap(buf);
 	}
 
@@ -353,7 +373,8 @@ public final class HttpCodec implements IoFilter
 	public static String getHeadCharset(OctetsStream head)
 	{
 		String conttype = getHeadField(head, SS_CONT_TYPE);
-		if(conttype.isEmpty()) return DEF_CONT_CHARSET; // default charset
+		if (conttype.isEmpty())
+			return DEF_CONT_CHARSET; // default charset
 		Matcher mat = PATTERN_CHARSET.matcher(conttype);
 		return mat.find() ? mat.group(1) : DEF_CONT_CHARSET;
 	}
@@ -367,10 +388,11 @@ public final class HttpCodec implements IoFilter
 	public static int getHeadCookie(OctetsStream head, Map<String, String> cookies)
 	{
 		String cookie = getHeadField(head, SS_COOKIE);
-		if(cookie.isEmpty()) return 0;
+		if (cookie.isEmpty())
+			return 0;
 		Matcher mat = PATTERN_COOKIE.matcher(cookie);
 		int n = 0;
-		for(; mat.find(); ++n)
+		for (; mat.find(); ++n)
 			cookies.put(mat.group(1), mat.group(2));
 		return n;
 	}
@@ -382,9 +404,9 @@ public final class HttpCodec implements IoFilter
 	public static Octets createExtraHead(Iterable<String> heads)
 	{
 		Octets buf = new Octets();
-		if(heads != null)
+		if (heads != null)
 		{
-			for(String head : heads)
+			for (String head : heads)
 				buf.append((byte)'\r').append((byte)'\n').append(head.getBytes(StandardCharsets.UTF_8));
 		}
 		return buf;
@@ -403,23 +425,25 @@ public final class HttpCodec implements IoFilter
 	@SuppressWarnings("null")
 	public static boolean sendHead(IoSession session, String code, long len, Octets extraHead, Octets data)
 	{
-		if(session.isClosing()) return false;
+		if (session.isClosing())
+			return false;
 		int dataLen = (data != null ? data.remain() : 0);
 		Octets buf = new Octets(900 + dataLen);
-		if(code == null)
+		if (code == null)
 			buf.append(RES_HEAD_OK);
 		else
 			buf.append(RES_HEAD_OK, 0, 9).append(code.getBytes(StandardCharsets.UTF_8));
 		buf.append(getDateLine());
-		if(len == 0) len = dataLen;
-		if(len >= 0)
+		if (len == 0)
+			len = dataLen;
+		if (len >= 0)
 			appendInt(buf.append(RES_HEAD_CONT_LEN), len);
 		else
 			buf.append(RES_HEAD_CHUNKED);
-		if(extraHead != null)
+		if (extraHead != null)
 			buf.append(extraHead);
 		buf.append(RES_HEAD_END);
-		if(dataLen > 0)
+		if (dataLen > 0)
 			buf.append(data.array(), data.position(), dataLen);
 		return send(session, buf);
 	}
@@ -496,24 +520,24 @@ public final class HttpCodec implements IoFilter
 	public void filterWrite(NextFilter next, IoSession session, WriteRequest writeRequest)
 	{
 		Object message = writeRequest.writeRequestMessage();
-		if(message instanceof byte[]) // for raw data
+		if (message instanceof byte[]) // for raw data
 		{
 			byte[] bytes = (byte[])message;
-			if(bytes.length > 0)
+			if (bytes.length > 0)
 				write(next, writeRequest, IoBuffer.wrap(bytes));
 		}
-		else if(message instanceof ByteBuffer) // for chunked data
+		else if (message instanceof ByteBuffer) // for chunked data
 		{
 			ByteBuffer bb = (ByteBuffer)message;
 			write(next, createHexLine((bb).remaining()));
 			write(next, IoBuffer.wrap(bb));
 			write(next, writeRequest, IoBuffer.wrap(RES_HEAD_END, 0, 2));
 		}
-		else if(message instanceof Octets) // for raw data
+		else if (message instanceof Octets) // for raw data
 		{
 			Octets oct = (Octets)message;
 			int n = oct.remain();
-			if(n > 0)
+			if (n > 0)
 				write(next, writeRequest, IoBuffer.wrap(oct.array(), oct.position(), n));
 		}
 		else
@@ -529,135 +553,139 @@ public final class HttpCodec implements IoFilter
 		{
 			final OctetsStream buf = _buf;
 			int n, inLeft = inBuf.remaining();
-			while(inLeft > 0)
+			while (inLeft > 0)
 			{
-				switch(state)
+				switch (state)
 				{
-					case 0: // head
-						final int oldSize = buf.size();
-						n = Math.min(inLeft, Const.httpHeadMaxSize - oldSize);
-						if(n <= 0)
-							throw new DecodeException("http head size overflow: maxsize=" + Const.httpHeadMaxSize);
-						buf.resize(oldSize + n);
-						final byte[] b = buf.array();
-						inBuf.get(b, oldSize, n);
-						inLeft -= n;
-						n += oldSize;
-						for(int i = Math.max(17, oldSize); i < n; ++i) // minimum head: size("GET / HTTP/1.1\r\n\r\n") = 18
+				case 0: // head
+					final int oldSize = buf.size();
+					n = Math.min(inLeft, Const.httpHeadMaxSize - oldSize);
+					if (n <= 0)
+						throw new DecodeException("http head size overflow: maxsize=" + Const.httpHeadMaxSize);
+					buf.resize(oldSize + n);
+					final byte[] b = buf.array();
+					inBuf.get(b, oldSize, n);
+					inLeft -= n;
+					n += oldSize;
+					for (int i = Math.max(17, oldSize); i < n; ++i) // minimum head: size("GET / HTTP/1.1\r\n\r\n") = 18
+					{
+						if (b[i] == '\n' && b[i - 2] == '\n') // not strict check but enough
 						{
-							if(b[i] == '\n' && b[i - 2] == '\n') // not strict check but enough
+							buf.setPosition(++i);
+							if (SS_CONT_CHUNK.find(b, 15, i - 19) < 0) // empty or fix-sized body
 							{
-								buf.setPosition(++i);
-								if(SS_CONT_CHUNK.find(b, 15, i - 19) < 0) // empty or fix-sized body
+								final long n2 = getHeadLong(buf, SS_CONT_LEN);
+								if (n2 > _maxHttpBodySize)
+									throw new DecodeException("http body size overflow: bodysize=" + n2 + ",maxsize=" + _maxHttpBodySize);
+								final int left = i + (int)n2 - n;
+								if (left <= 0)
 								{
-									final long n2 = getHeadLong(buf, SS_CONT_LEN);
-									if(n2 > _maxHttpBodySize)
-										throw new DecodeException("http body size overflow: bodysize=" + n2 + ",maxsize=" + _maxHttpBodySize);
-									final int left = i + (int)n2 - n;
-									if(left <= 0)
+									if (left < 0) // unlikely over read
 									{
-										if(left < 0) // unlikely over read
-										{
-											buf.resize(n + left);
-											inBuf.position(inBuf.position() + left);
-											inLeft -= left;
-										}
-										next.messageReceived(buf);
-										buf.clear();
-										if(_maxHttpBodySize < 0)
-											next.messageReceived(null);
+										buf.resize(n + left);
+										inBuf.position(inBuf.position() + left);
+										inLeft -= left;
 									}
-									else
-									{
-										_bodyLeft = left;
-										state = 1; // to read body
-									}
+									next.messageReceived(buf);
+									buf.clear();
+									if (_maxHttpBodySize < 0)
+										next.messageReceived(null);
 								}
-								else // chunked body
+								else
 								{
-									n -= i;
-									buf.resize(i);
-									inBuf.position(inBuf.position() - n);
-									inLeft += n;
-									state = 3; // to read chunk size
-									if(_maxHttpBodySize < 0)
-									{
-										next.messageReceived(buf);
-										buf.clear();
-										buf.setPosition(0);
-									}
+									_bodyLeft = left;
+									state = 1; // to read body
 								}
-								break;
 							}
+							else // chunked body
+							{
+								n -= i;
+								buf.resize(i);
+								inBuf.position(inBuf.position() - n);
+								inLeft += n;
+								state = 3; // to read chunk size
+								if (_maxHttpBodySize < 0)
+								{
+									next.messageReceived(buf);
+									buf.clear();
+									buf.setPosition(0);
+								}
+							}
+							break;
 						}
-						break;
-					case 1: // body/chunkBody
-						final int i = buf.size();
-						n = Math.min(inLeft, _bodyLeft);
-						buf.resize(i + n);
-						inBuf.get(buf.array(), i, n);
-						inLeft -= n;
-						if((_bodyLeft -= n) <= 0 && (state = _skipLeft) == 0 || _maxHttpBodySize < 0)
+					}
+					break;
+				case 1: // body/chunkBody
+					final int i = buf.size();
+					n = Math.min(inLeft, _bodyLeft);
+					buf.resize(i + n);
+					inBuf.get(buf.array(), i, n);
+					inLeft -= n;
+					if ((_bodyLeft -= n) <= 0 && (state = _skipLeft) == 0 || _maxHttpBodySize < 0)
+					{
+						next.messageReceived(buf);
+						buf.clear();
+						buf.setPosition(0);
+						if (state == 0 && _maxHttpBodySize < 0)
+							next.messageReceived(null);
+					}
+					break;
+				case 2: // chunkPreSize
+					n = Math.min(inLeft, _skipLeft);
+					inBuf.skip(n);
+					inLeft -= n;
+					if (_skipLeft > n)
+					{
+						_skipLeft -= n;
+						return; // inLeft must be 0
+					}
+					state = 3;
+					if (inLeft <= 0)
+						return;
+					//$FALL-THROUGH$
+				case 3: // chunkSize
+					for (;;)
+					{
+						--inLeft;
+						final byte c = inBuf.get();
+						if (c < (byte)'0')
+						{
+							if (buf.remain() + (_bodyLeft & 0xffff_ffffL) > _maxHttpBodySize)
+								throw new DecodeException(
+										"http body size overflow: bodysize=" + buf.remain() + '+' + _bodyLeft + ",maxsize=" + _maxHttpBodySize);
+							_skipLeft = (_bodyLeft > 0 ? 1 : 3); // \n : \n\r\n
+							break;
+						}
+						_bodyLeft = (_bodyLeft << 4) + (c <= '9' ? c - '0' : 9 + (c & 7));
+						if (inLeft <= 0)
+							return;
+					}
+					state = 4;
+					if (inLeft <= 0)
+						return;
+					//$FALL-THROUGH$
+				case 4: // chunkPostSize
+					n = Math.min(inLeft, _skipLeft);
+					inBuf.skip(n);
+					inLeft -= n;
+					if (_skipLeft > n)
+						_skipLeft -= n;
+					else if (_bodyLeft <= 0) // end mark
+					{
+						_skipLeft = state = 0;
+						if (buf.size() > 0)
 						{
 							next.messageReceived(buf);
 							buf.clear();
-							buf.setPosition(0);
-							if(state == 0 && _maxHttpBodySize < 0)
-								next.messageReceived(null);
 						}
-						break;
-					case 2: // chunkPreSize
-						n = Math.min(inLeft, _skipLeft);
-						inBuf.skip(n);
-						inLeft -= n;
-						if(_skipLeft > n)
-						{
-							_skipLeft -= n;
-							return; // inLeft must be 0
-						}
-						state = 3;
-						if(inLeft <= 0) return;
-						//$FALL-THROUGH$
-					case 3: // chunkSize
-						for(;;)
-						{
-							--inLeft;
-							final byte c = inBuf.get();
-							if(c < (byte)'0')
-							{
-								if(buf.remain() + (_bodyLeft & 0xffff_ffffL) > _maxHttpBodySize)
-									throw new DecodeException("http body size overflow: bodysize=" + buf.remain() + '+' + _bodyLeft + ",maxsize=" + _maxHttpBodySize);
-								_skipLeft = (_bodyLeft > 0 ? 1 : 3); // \n : \n\r\n
-								break;
-							}
-							_bodyLeft = (_bodyLeft << 4) + (c <= '9' ? c - '0' : 9 + (c & 7));
-							if(inLeft <= 0) return;
-						}
-						state = 4;
-						if(inLeft <= 0) return;
-						//$FALL-THROUGH$
-					case 4: // chunkPostSize
-						n = Math.min(inLeft, _skipLeft);
-						inBuf.skip(n);
-						inLeft -= n;
-						if(_skipLeft > n)
-							_skipLeft -= n;
-						else if(_bodyLeft <= 0) // end mark
-						{
-							_skipLeft = state = 0;
-							if(buf.size() > 0)
-							{
-								next.messageReceived(buf);
-								buf.clear();
-							}
-							if(_maxHttpBodySize < 0)
-								next.messageReceived(null);
-						}
-						else
-						{
-							state = 1; // to read chunk body
-							_skipLeft = 2; // next state & pre size("\r\n")
-						}
+						if (_maxHttpBodySize < 0)
+							next.messageReceived(null);
+					}
+					else
+					{
+						state = 1; // to read chunk body
+						_skipLeft = 2; // next state & pre size("\r\n")
+					}
 				}
 			}
 		}

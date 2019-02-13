@@ -31,7 +31,7 @@ public final class ByteBufferPool
 			@SuppressWarnings("unchecked")
 			ArrayDeque<ByteBuffer>[] poolMap = new ArrayDeque[32];
 			poolMap[0] = new ArrayDeque<>();
-			for(int k = 1; k <= _maxCachedBufferSize; k += k)
+			for (int k = 1; k <= _maxCachedBufferSize; k += k)
 				poolMap[getIdx(k)] = new ArrayDeque<>();
 			return poolMap;
 		}
@@ -60,15 +60,17 @@ public final class ByteBufferPool
 
 	public ByteBuffer allocateDirect(int capacity)
 	{
-		if(capacity < 0) capacity = 0;
+		if (capacity < 0)
+			capacity = 0;
 		int actualCapacity = Integer.highestOneBit(capacity);
-		if(actualCapacity < capacity)
+		if (actualCapacity < capacity)
 		{
 			actualCapacity += actualCapacity;
-			if(actualCapacity < 0) actualCapacity = capacity;
+			if (actualCapacity < 0)
+				actualCapacity = capacity;
 		}
 		ByteBuffer bb;
-		if(actualCapacity <= _maxCachedBufferSize && (bb = _directBuffers.get()[getIdx(actualCapacity)].pollFirst()) != null)
+		if (actualCapacity <= _maxCachedBufferSize && (bb = _directBuffers.get()[getIdx(actualCapacity)].pollFirst()) != null)
 		{
 			bb.clear();
 			bb.order(ByteOrder.BIG_ENDIAN);
@@ -85,11 +87,13 @@ public final class ByteBufferPool
 
 	public void free(ByteBuffer bb)
 	{
-		if(bb == null || !bb.isDirect()) return;
+		if (bb == null || !bb.isDirect())
+			return;
 		int actualCapacity = Integer.highestOneBit(bb.capacity());
-		if(actualCapacity > _maxCachedBufferSize) return;
+		if (actualCapacity > _maxCachedBufferSize)
+			return;
 		ArrayDeque<ByteBuffer> bufQueue = _directBuffers.get()[getIdx(actualCapacity)];
-		if(bufQueue.size() < _maxPoolSize)
+		if (bufQueue.size() < _maxPoolSize)
 		{
 			bufQueue.addFirst(bb);
 			// offerCount.getAndIncrement();

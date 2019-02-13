@@ -25,13 +25,13 @@ public final class TestObjectPool<T extends TestObjectPool.Node<T>>
 
 	public T alloc()
 	{
-		for(;;)
+		for (;;)
 		{
 			T obj = head.get();
-			if(obj == null)
+			if (obj == null)
 				return factory.get();
 			T next = obj.getNext();
-			if(head.compareAndSet(obj, next))
+			if (head.compareAndSet(obj, next))
 			{
 				obj.setNext(null);
 				return obj;
@@ -41,11 +41,11 @@ public final class TestObjectPool<T extends TestObjectPool.Node<T>>
 
 	public void free(T obj)
 	{
-		for(;;)
+		for (;;)
 		{
 			T next = head.get();
 			obj.setNext(next);
-			if(head.compareAndSet(next, obj))
+			if (head.compareAndSet(next, obj))
 				break;
 		}
 	}

@@ -35,12 +35,12 @@ public final class TestAutoLock
 				Thread.sleep(1000);
 				TestType.Safe t2 = AllTables.TestTable.lockGet(k2);
 				System.out.println("A2: " + (t2 != null ? t2.getV4() : 0));
-				if(t1 == null)
+				if (t1 == null)
 				{
 					t1 = new TestType().safe();
 					AllTables.TestTable.put(k1, t1);
 				}
-				if(t2 == null)
+				if (t2 == null)
 				{
 					t2 = new TestType().safe();
 					AllTables.TestTable.put(k2, t2);
@@ -67,12 +67,12 @@ public final class TestAutoLock
 				Thread.sleep(1000);
 				TestType.Safe t1 = AllTables.TestTable.lockGet(k1);
 				System.out.println("B1: " + (t1 != null ? t1.getV4() : 0));
-				if(t1 == null)
+				if (t1 == null)
 				{
 					t1 = new TestType().safe();
 					AllTables.TestTable.put(k1, t1);
 				}
-				if(t2 == null)
+				if (t2 == null)
 				{
 					t2 = new TestType().safe();
 					AllTables.TestTable.put(k2, t2);

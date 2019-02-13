@@ -56,7 +56,7 @@ public final class AsyncManager
 	static void onException(Runnable r, Throwable e)
 	{
 		AsyncException ae = _ae;
-		if(ae != null)
+		if (ae != null)
 			ae.onException(r, e);
 	}
 
@@ -67,46 +67,49 @@ public final class AsyncManager
 
 	public void submit(AsyncTimerTask task)
 	{
-		if(task != null)
+		if (task != null)
 			_taskQueue.offer(task);
 	}
 
 	public void submit(int delayMs, Runnable r)
 	{
-		if(r != null)
+		if (r != null)
 			_taskQueue.offer(new TaskWrap(delayMs, r));
 	}
 
 	public int tick()
 	{
 		int done = 0;
-		for(long time = System.currentTimeMillis();;)
+		for (long time = System.currentTimeMillis();;)
 		{
 			AsyncTimerTask task = _taskQueue.peek();
-			if(task == null || task._time > time) break;
+			if (task == null || task._time > time)
+				break;
 			try
 			{
 				task = _taskQueue.poll();
-				if(task == null) break;
+				if (task == null)
+					break;
 				task.run();
 				++done;
 			}
-			catch(Throwable e)
+			catch (Throwable e)
 			{
 				AsyncManager.onException(task, e);
 			}
 		}
 
-		for(int n = _readyQueue.size(); n > 0; --n)
+		for (int n = _readyQueue.size(); n > 0; --n)
 		{
 			Runnable r = _readyQueue.poll();
-			if(r == null) break;
+			if (r == null)
+				break;
 			try
 			{
 				r.run();
 				++done;
 			}
-			catch(Throwable e)
+			catch (Throwable e)
 			{
 				onException(r, e);
 			}

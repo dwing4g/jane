@@ -114,7 +114,7 @@ public final class TestHttpClient
 				return t;
 			});
 		}
-		catch(Exception e)
+		catch (Exception e)
 		{
 			throw new RuntimeException(e);
 		}
@@ -126,7 +126,7 @@ public final class TestHttpClient
 		{
 			return conn.getInputStream();
 		}
-		catch(IOException e)
+		catch (IOException e)
 		{
 			InputStream is = conn.getErrorStream();
 			return is != null ? is : new ByteArrayInputStream(Octets.EMPTY);
@@ -143,17 +143,17 @@ public final class TestHttpClient
 	private static void workThread(RequestQueue reqQueue)
 	{
 		byte[] buf = tlBuf.get();
-		if(buf == null)
+		if (buf == null)
 			tlBuf.set(buf = new byte[BUF_INIT_SIZE]);
-		for(;;)
+		for (;;)
 		{
 			Request req = null;
 			try
 			{
-				synchronized(reqQueue)
+				synchronized (reqQueue)
 				{
 					req = reqQueue.pollFirst();
-					if(req == null)
+					if (req == null)
 					{
 						--reqQueue.threadCount;
 						return;
@@ -171,37 +171,37 @@ public final class TestHttpClient
 				// conn.setRequestProperty("User-Agent", "jane"); // default: "Java/1.8.0_162"
 				// conn.setRequestProperty("Accept-Encoding", "gzip, deflate"); // deflate maybe has decoding bug
 				// conn.setRequestProperty("Accept-Charset", "utf-8");
-				if(req.postData != null)
+				if (req.postData != null)
 				{
 					byte[] postData = req.postData.getBytes(StandardCharsets.UTF_8);
 					conn.setDoOutput(true);
 					conn.setFixedLengthStreamingMode(postData.length);
 					// conn.setRequestProperty("Content-Length", String.valueOf(postData.length));
 					// conn.setRequestProperty("Content-Type","application/json; charset=UTF-8"); // default: "application/x-www-form-urlencoded"
-					try(OutputStream os = conn.getOutputStream())
+					try (OutputStream os = conn.getOutputStream())
 					{
 						os.write(postData);
 					}
 				}
-				if(conn instanceof HttpsURLConnection)
+				if (conn instanceof HttpsURLConnection)
 				{
 					HttpsURLConnection sconn = (HttpsURLConnection)conn;
 					sconn.setSSLSocketFactory(trustAllFactory);
 					sconn.setHostnameVerifier(trustAllVerifier);
 				}
 				int code = conn.getResponseCode(), size = 0, len;
-				try(InputStream is = getInputStream(conn))
+				try (InputStream is = getInputStream(conn))
 				{
 					// if(conn.getContentLength() > RESPONSE_DATA_MAX_SIZE) ...
 					// if("gzip".equalsIgnoreCase(conn.getContentEncoding())) in = new GZIPInputStream(in);
-					while((len = is.read(buf, size, buf.length - size)) > 0)
+					while ((len = is.read(buf, size, buf.length - size)) > 0)
 					{
-						if((size += len) >= buf.length)
+						if ((size += len) >= buf.length)
 						{
 							int newSize = buf.length * 2;
-							if(newSize > RESPONSE_DATA_MAX_SIZE)
+							if (newSize > RESPONSE_DATA_MAX_SIZE)
 							{
-								if(buf.length >= RESPONSE_DATA_MAX_SIZE)
+								if (buf.length >= RESPONSE_DATA_MAX_SIZE)
 								{
 									code = -3;
 									size = 0;
@@ -213,35 +213,35 @@ public final class TestHttpClient
 						}
 					}
 				}
-				if(req.callback != null)
+				if (req.callback != null)
 				{
 					String content;
-					if(size <= 0)
+					if (size <= 0)
 						content = "";
 					else
 					{
 						content = null;
 						String ct = conn.getContentType();
-						if(ct != null)
+						if (ct != null)
 						{
 							Matcher mat = patCharset.matcher(ct);
-							if(mat.find())
+							if (mat.find())
 							{
 								String cs = mat.group(1);
-								if(!cs.equalsIgnoreCase("utf-8") && Charset.isSupported(cs))
+								if (!cs.equalsIgnoreCase("utf-8") && Charset.isSupported(cs))
 									content = new String(buf, 0, size, cs);
 							}
 						}
-						if(content == null)
+						if (content == null)
 							content = new String(buf, 0, size, StandardCharsets.UTF_8);
 					}
 					req.callback.onCompleted(code, content);
 				}
 			}
-			catch(Throwable e)
+			catch (Throwable e)
 			{
 				Log.error("http client exception:", e);
-				if(req != null && req.callback != null)
+				if (req != null && req.callback != null)
 					req.callback.onCompleted(-2, getStackTrace(e));
 			}
 		}
@@ -252,14 +252,14 @@ public final class TestHttpClient
 		boolean appended = false;
 		try
 		{
-			for(Entry<String, String> e : paramIter)
+			for (Entry<String, String> e : paramIter)
 			{
-				if(appended)
+				if (appended)
 					sb.append('&');
 				else
 				{
 					appended = true;
-					if(sb.length() > 0)
+					if (sb.length() > 0)
 						sb.append('?');
 				}
 				sb.append(URLEncoder.encode(e.getKey(), "utf-8"));
@@ -267,7 +267,7 @@ public final class TestHttpClient
 				sb.append(URLEncoder.encode(e.getValue(), "utf-8"));
 			}
 		}
-		catch(UnsupportedEncodingException e)
+		catch (UnsupportedEncodingException e)
 		{
 			throw new RuntimeException(e);
 		}
@@ -276,30 +276,30 @@ public final class TestHttpClient
 
 	public static void doReq(String method, String url, String postData, ResponseCallback callback)
 	{
-		if(Log.hasDebug)
+		if (Log.hasDebug)
 			Log.debug("{}: {}{}", method, url, (postData != null ? " +" + postData.length() : ""));
 		URL u;
 		try
 		{
 			u = new URL(url);
 		}
-		catch(MalformedURLException e)
+		catch (MalformedURLException e)
 		{
 			throw new RuntimeException(e);
 		}
 		Request req = new Request(method, u, postData, callback);
-		for(String host = u.getHost();;)
+		for (String host = u.getHost();;)
 		{
 			RequestQueue reqQueue = reqQueues.computeIfAbsent(host, __ -> new RequestQueue());
-			synchronized(reqQueue)
+			synchronized (reqQueue)
 			{
-				if(reqQueue != reqQueues.get(host))
+				if (reqQueue != reqQueues.get(host))
 					continue;
 				int size = reqQueue.size() + 1;
-				if(size > REQ_QUEUE_MAX_SIZE)
+				if (size > REQ_QUEUE_MAX_SIZE)
 					throw new RuntimeException("reqQueue size > " + REQ_QUEUE_MAX_SIZE + " for " + url);
 				reqQueue.addLast(req);
-				if((size >> (reqQueue.threadCount * 3)) > 0) // 1t:<8q, 2t:<64q, 3t:<512q, 4t:<4kq, 5t:<32kq, ...
+				if ((size >> (reqQueue.threadCount * 3)) > 0) // 1t:<8q, 2t:<64q, 3t:<512q, 4t:<4kq, 5t:<32kq, ...
 				{
 					++reqQueue.threadCount;
 					threadPool.execute(() -> workThread(reqQueue));
@@ -311,10 +311,10 @@ public final class TestHttpClient
 
 	public static void doGet(String url, Iterable<Entry<String, String>> paramIter, ResponseCallback onResponse)
 	{
-		if(paramIter != null)
+		if (paramIter != null)
 		{
 			StringBuilder sb = new StringBuilder(url);
-			if(appendParams(sb, paramIter))
+			if (appendParams(sb, paramIter))
 				url = sb.toString();
 		}
 		doReq("GET", url, null, onResponse);
@@ -322,12 +322,12 @@ public final class TestHttpClient
 
 	public static void doPost(String url, Iterable<Entry<String, String>> paramIter, String postData, ResponseCallback onResponse)
 	{
-		if(paramIter != null)
+		if (paramIter != null)
 		{
 			StringBuilder sb = (postData != null ? new StringBuilder(url) : new StringBuilder());
-			if(appendParams(sb, paramIter))
+			if (appendParams(sb, paramIter))
 			{
-				if(postData != null) // 指定了POST数据则把参数放链接上
+				if (postData != null) // 指定了POST数据则把参数放链接上
 					url = sb.toString();
 				else // 没有指定数据则表示把参数放数据中
 					postData = sb.toString();
@@ -345,9 +345,9 @@ public final class TestHttpClient
 	{
 		reqQueues.forEach((host, reqQueue) ->
 		{
-			synchronized(reqQueue)
+			synchronized (reqQueue)
 			{
-				if(reqQueue.isEmpty())
+				if (reqQueue.isEmpty())
 					reqQueues.remove(host, reqQueue);
 			}
 		});

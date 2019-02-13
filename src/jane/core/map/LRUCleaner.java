@@ -36,14 +36,15 @@ final class LRUCleaner
 
 	static void submit(AtomicInteger status, Cleanable c)
 	{
-		if(!status.compareAndSet(0, 1)) return;
+		if (!status.compareAndSet(0, 1))
+			return;
 		Singleton.instance.cleanerThread.submit(() ->
 		{
 			try
 			{
 				c.sweep();
 			}
-			catch(Throwable e)
+			catch (Throwable e)
 			{
 				Log.error("LRUCleaner fatal exception:", e);
 			}

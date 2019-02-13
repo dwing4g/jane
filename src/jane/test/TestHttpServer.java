@@ -21,7 +21,7 @@ public final class TestHttpServer extends NetManager
 {
 	public TestHttpServer(String key_file, String key_pw) throws Exception
 	{
-		if(key_file != null && key_pw != null)
+		if (key_file != null && key_pw != null)
 		{
 			SslFilter sf = HttpCodec.getSslFilter(key_file, key_pw);
 			sf.setUseClientMode(false);
@@ -53,19 +53,19 @@ public final class TestHttpServer extends NetManager
 		System.out.println("path: " + path);
 		HashMap<String, String> params = new HashMap<>();
 		HttpCodec.getHeadParams(os, params);
-		for(Entry<String, String> e : params.entrySet())
+		for (Entry<String, String> e : params.entrySet())
 			System.out.println("param: " + e.getKey() + ": " + e.getValue());
 		System.out.println("charset: " + HttpCodec.getHeadCharset(os));
 		HashMap<String, String> cookies = new HashMap<>();
 		HttpCodec.getHeadCookie(os, cookies);
-		for(Entry<String, String> e : cookies.entrySet())
+		for (Entry<String, String> e : cookies.entrySet())
 			System.out.println("cookie: " + e.getKey() + ": " + e.getValue());
 		ArrayList<String> param = new ArrayList<>();
 		param.add("Server: jane");
 		param.add("Connection: keep-alive");
 		param.add("Cache-Control: no-cache");
 		param.add("Pragma: no-cache");
-		if(params.containsKey("file"))
+		if (params.containsKey("file"))
 		{
 			try
 			{
@@ -76,7 +76,8 @@ public final class TestHttpServer extends NetManager
 				HttpCodec.sendHead(session, "200 OK", fr.getRemainingBytes(), param);
 				WriteFuture wf = session.write(fr);
 				Throwable e = wf.getException();
-				if(e != null) throw e;
+				if (e != null)
+					throw e;
 				wf.addListener(future ->
 				{
 					try
@@ -84,13 +85,13 @@ public final class TestHttpServer extends NetManager
 						fc.close();
 						fis.close();
 					}
-					catch(IOException ex)
+					catch (IOException ex)
 					{
 						ex.printStackTrace();
 					}
 				});
 			}
-			catch(Throwable e)
+			catch (Throwable e)
 			{
 				param.add("Content-Type: text/html; charset=utf-8");
 				HttpCodec.sendHead(session, "404 Not Found", -1, param);
@@ -110,7 +111,7 @@ public final class TestHttpServer extends NetManager
 	public static void main(String[] args) throws Exception
 	{
 		new TestHttpServer(null, null).startServer(new InetSocketAddress("0.0.0.0", 80));
-		if(new File("server.keystore").exists())
+		if (new File("server.keystore").exists())
 			new TestHttpServer("server.keystore", "123456").startServer(new InetSocketAddress("0.0.0.0", 443));
 	}
 }

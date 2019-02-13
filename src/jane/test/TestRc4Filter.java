@@ -27,15 +27,18 @@ public final class TestRc4Filter implements IoFilter
 
 	private static void setKey(byte[] ctx, byte[] key, int len)
 	{
-		for(int i = 0; i < 256; ++i)
+		for (int i = 0; i < 256; ++i)
 			ctx[i] = (byte)i;
-		if(len > key.length) len = key.length;
-		if(len <= 0) return;
-		for(int i = 0, j = 0, k = 0; i < 256; ++i)
+		if (len > key.length)
+			len = key.length;
+		if (len <= 0)
+			return;
+		for (int i = 0, j = 0, k = 0; i < 256; ++i)
 		{
 			byte t = ctx[i];
 			k = (k + t + key[j]) & 0xff;
-			if(++j >= len) j = 0;
+			if (++j >= len)
+				j = 0;
 			ctx[i] = ctx[k];
 			ctx[k] = t;
 		}
@@ -67,7 +70,7 @@ public final class TestRc4Filter implements IoFilter
 
 	private static int update(byte[] ctx, int idx1, int idx2, byte[] buf, int pos, int len)
 	{
-		for(len += pos; pos < len; ++pos)
+		for (len += pos; pos < len; ++pos)
 		{
 			idx1 = (idx1 + 1) & 0xff;
 			byte a = ctx[idx1];
@@ -82,7 +85,7 @@ public final class TestRc4Filter implements IoFilter
 
 	private static int update(byte[] ctx, int idx1, int idx2, ByteBuffer buf, int pos, int len)
 	{
-		for(len += pos; pos < len; ++pos)
+		for (len += pos; pos < len; ++pos)
 		{
 			idx1 = (idx1 + 1) & 0xff;
 			byte a = ctx[idx1];
@@ -138,10 +141,10 @@ public final class TestRc4Filter implements IoFilter
 	@Override
 	public void messageReceived(NextFilter nextFilter, IoSession session, Object message)
 	{
-		if(message instanceof IoBuffer)
+		if (message instanceof IoBuffer)
 		{
 			IoBuffer ioBuf = (IoBuffer)message;
-			if(ioBuf.hasArray())
+			if (ioBuf.hasArray())
 				updateInput(ioBuf.array(), ioBuf.position(), ioBuf.remaining());
 			else
 				updateInput(ioBuf.buf(), ioBuf.position(), ioBuf.remaining());
@@ -153,10 +156,10 @@ public final class TestRc4Filter implements IoFilter
 	public void filterWrite(NextFilter nextFilter, IoSession session, WriteRequest writeRequest)
 	{
 		Object message = writeRequest.writeRequestMessage();
-		if(message instanceof IoBuffer)
+		if (message instanceof IoBuffer)
 		{
 			IoBuffer ioBuf = (IoBuffer)message;
-			if(ioBuf.hasArray())
+			if (ioBuf.hasArray())
 				updateOutput(ioBuf.array(), ioBuf.position(), ioBuf.remaining());
 			else
 				updateOutput(ioBuf.buf(), ioBuf.position(), ioBuf.remaining());

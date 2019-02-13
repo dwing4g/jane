@@ -104,7 +104,7 @@ public class ProcThread extends Thread
 
 	static
 	{
-		if(Const.deadlockCheckInterval > 0)
+		if (Const.deadlockCheckInterval > 0)
 		{
 			NetManager.scheduleWithFixedDelay(Const.deadlockCheckInterval, Const.deadlockCheckInterval, () ->
 			{
@@ -116,45 +116,45 @@ public class ProcThread extends Thread
 					long procTimeout = Const.procedureTimeout;
 					long procDeadlockTimeout = Const.procedureDeadlockTimeout;
 					long procTimoutMin = Math.min(procTimeout, procDeadlockTimeout);
-					for(ProcThread pt : _procThreads)
+					for (ProcThread pt : _procThreads)
 					{
-						if(pt.isAlive())
+						if (pt.isAlive())
 						{
 							Procedure p = pt.proc; // 虽然非volatile读,但因为对及时性要求不高,而且下面有double check,所以没什么问题
-							if(p != null && now - pt.beginTime > procTimoutMin) // beginTime的问题同上
+							if (p != null && now - pt.beginTime > procTimoutMin) // beginTime的问题同上
 							{
-								synchronized(p)
+								synchronized (p)
 								{
-									if(p == pt.proc)
+									if (p == pt.proc)
 									{
 										long timeout = now - pt.beginTime;
-										if(timeout > procTimeout)
+										if (timeout > procTimeout)
 										{
 											StringBuilder sb = new StringBuilder(2000);
 											sb.append("procedure({}) in {} interrupted for timeout ({} ms): sid={}\n");
-											for(StackTraceElement ste : pt.getStackTrace())
+											for (StackTraceElement ste : pt.getStackTrace())
 												sb.append("\tat ").append(ste).append('\n');
 											Log.error(sb.toString(), p.getClass().getName(), pt, timeout, p.getSid());
 											++_interruptCount;
 											pt.interrupt();
 										}
-										else if(timeout > procDeadlockTimeout)
+										else if (timeout > procDeadlockTimeout)
 										{
-											if(!foundDeadlock)
+											if (!foundDeadlock)
 											{
 												foundDeadlock = true;
 												tids = ManagementFactory.getThreadMXBean().findDeadlockedThreads();
 											}
-											if(tids != null)
+											if (tids != null)
 											{
 												long tid = pt.getId();
-												for(int i = tids.length - 1; i >= 0; --i)
+												for (int i = tids.length - 1; i >= 0; --i)
 												{
-													if(tids[i] == tid)
+													if (tids[i] == tid)
 													{
 														StringBuilder sb = new StringBuilder(2000);
 														sb.append("procedure({}) in {} interrupted for deadlock timeout({} ms): sid={}\n");
-														for(StackTraceElement ste : pt.getStackTrace())
+														for (StackTraceElement ste : pt.getStackTrace())
 															sb.append("\tat ").append(ste).append('\n');
 														Log.error(sb.toString(), p.getClass().getName(), pt, timeout, p.getSid());
 														++_interruptCount;
@@ -172,7 +172,7 @@ public class ProcThread extends Thread
 							_procThreads.remove(pt);
 					}
 				}
-				catch(Throwable e)
+				catch (Throwable e)
 				{
 					Log.error("procedure timeout fatal exception:", e);
 				}

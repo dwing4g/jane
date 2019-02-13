@@ -38,7 +38,7 @@ public final class Util
 		{
 			return cls.newInstance();
 		}
-		catch(Exception e)
+		catch (Exception e)
 		{
 			throw new RuntimeException(e);
 		}
@@ -79,10 +79,11 @@ public final class Util
 	{
 		int n1 = data1.length, n2 = data2.length;
 		int n = (n1 < n2 ? n1 : n2);
-		for(int i = 0; i < n; ++i)
+		for (int i = 0; i < n; ++i)
 		{
 			int c = (data1[i] & 0xff) - (data2[i] & 0xff);
-			if(c != 0) return c;
+			if (c != 0)
+				return c;
 		}
 		return n1 - n2;
 	}
@@ -93,13 +94,15 @@ public final class Util
 	public static <T extends Comparable<T>> int compareTo(Collection<T> a, Collection<T> b)
 	{
 		int c = a.size() - b.size();
-		if(c != 0) return c;
+		if (c != 0)
+			return c;
 		Iterator<T> ia = a.iterator();
 		Iterator<T> ib = b.iterator();
-		while(ia.hasNext())
+		while (ia.hasNext())
 		{
 			c = ia.next().compareTo(ib.next());
-			if(c != 0) return c;
+			if (c != 0)
+				return c;
 		}
 		return 0;
 	}
@@ -110,17 +113,20 @@ public final class Util
 	public static <K extends Comparable<K>, V extends Comparable<V>> int compareTo(Map<K, V> a, Map<K, V> b)
 	{
 		int c = a.size() - b.size();
-		if(c != 0) return c;
+		if (c != 0)
+			return c;
 		Iterator<Entry<K, V>> ia = a.entrySet().iterator();
 		Iterator<Entry<K, V>> ib = b.entrySet().iterator();
-		while(ia.hasNext())
+		while (ia.hasNext())
 		{
 			Entry<K, V> ea = ia.next();
 			Entry<K, V> eb = ib.next();
 			c = ea.getKey().compareTo(eb.getKey());
-			if(c != 0) return c;
+			if (c != 0)
+				return c;
 			c = ea.getValue().compareTo(eb.getValue());
-			if(c != 0) return c;
+			if (c != 0)
+				return c;
 		}
 		return 0;
 	}
@@ -132,12 +138,12 @@ public final class Util
 	@SuppressWarnings("unchecked")
 	public static <V> Collection<V> appendDeep(Collection<V> src, Collection<V> dst)
 	{
-		if(src != null && !src.isEmpty() && src != dst)
+		if (src != null && !src.isEmpty() && src != dst)
 		{
 			V v = src.iterator().next();
-			if(v instanceof Bean)
+			if (v instanceof Bean)
 			{
-				for(V vv : src)
+				for (V vv : src)
 					dst.add((V)((Bean<?>)vv).clone());
 			}
 			else
@@ -153,12 +159,12 @@ public final class Util
 	@SuppressWarnings("unchecked")
 	public static <K, V> Map<K, V> appendDeep(Map<K, V> src, Map<K, V> dst)
 	{
-		if(src != null && !src.isEmpty() && src != dst)
+		if (src != null && !src.isEmpty() && src != dst)
 		{
 			V v = src.values().iterator().next();
-			if(v instanceof Bean)
+			if (v instanceof Bean)
 			{
-				for(Entry<K, V> e : src.entrySet())
+				for (Entry<K, V> e : src.entrySet())
 					dst.put(e.getKey(), (V)((Bean<?>)e.getValue()).clone());
 			}
 			else
@@ -172,9 +178,10 @@ public final class Util
 	 */
 	public static StringBuilder append(StringBuilder s, Collection<?> c)
 	{
-		if(c.isEmpty()) return s.append("{},");
+		if (c.isEmpty())
+			return s.append("{},");
 		s.append('{');
-		for(Object o : c)
+		for (Object o : c)
 			s.append(o).append(',');
 		s.setCharAt(s.length() - 1, '}');
 		return s.append(',');
@@ -185,9 +192,10 @@ public final class Util
 	 */
 	public static StringBuilder append(StringBuilder s, Map<?, ?> m)
 	{
-		if(m.isEmpty()) return s.append("{},");
+		if (m.isEmpty())
+			return s.append("{},");
 		s.append('{');
-		for(Entry<?, ?> e : m.entrySet())
+		for (Entry<?, ?> e : m.entrySet())
 			s.append(e.getKey()).append('=').append(e.getValue()).append(',');
 		s.setCharAt(s.length() - 1, '}');
 		return s.append(',');
@@ -198,10 +206,10 @@ public final class Util
 	 */
 	public static byte[] readStream(InputStream is, String isName, byte[] buf, int len) throws IOException
 	{
-		for(int n = 0; n < len;)
+		for (int n = 0; n < len;)
 		{
 			int r = is.read(buf, n, len - n);
-			if(r <= 0)
+			if (r <= 0)
 				throw new IOException(String.format("read interrupt(%s:%d/%d)", isName, n, len));
 			n += r;
 		}
@@ -213,14 +221,16 @@ public final class Util
 	 */
 	public static Octets readStream(InputStream is) throws IOException
 	{
-		if(is == null) return null;
+		if (is == null)
+			return null;
 		Octets res = new Octets();
-		for(int size = 0;;)
+		for (int size = 0;;)
 		{
 			res.reserve(size + 8192);
 			byte[] buf = res.array();
 			int n = is.read(buf, size, buf.length - size);
-			if(n <= 0) break;
+			if (n <= 0)
+				break;
 			res.resize(size += n);
 		}
 		return res;
@@ -248,9 +258,9 @@ public final class Util
 	{
 		File file = new File(fileName);
 		File parent = file.getParentFile();
-		if(parent != null && !parent.exists())
+		if (parent != null && !parent.exists())
 			parent.mkdirs();
-		try(OutputStream os = new FileOutputStream(file))
+		try (OutputStream os = new FileOutputStream(file))
 		{
 			os.write(data, dataPos, dataLen);
 		}
@@ -271,13 +281,13 @@ public final class Util
 	public static long copyFile(ReadableByteChannel srcChan, File dstFile) throws IOException
 	{
 		File dstParent = dstFile.getParentFile();
-		if(dstParent != null && !dstParent.exists())
+		if (dstParent != null && !dstParent.exists())
 			dstParent.mkdirs();
 		long r = 0;
-		try(FileOutputStream fos = new FileOutputStream(dstFile))
+		try (FileOutputStream fos = new FileOutputStream(dstFile))
 		{
 			ByteBuffer bb = ByteBuffer.allocate(32768);
-			for(int n; (n = srcChan.read(bb)) != -1;)
+			for (int n; (n = srcChan.read(bb)) != -1;)
 			{
 				bb.flip();
 				fos.write(bb.array(), 0, bb.limit());
@@ -290,7 +300,7 @@ public final class Util
 
 	public static long copyFile(File srcFile, File dstFile) throws IOException
 	{
-		try(FileInputStream fis = new FileInputStream(srcFile))
+		try (FileInputStream fis = new FileInputStream(srcFile))
 		{
 			return copyFile(fis.getChannel(), dstFile);
 		}
@@ -344,17 +354,17 @@ public final class Util
 
 		public void reset(byte[] pat, int patLen, boolean copyPat)
 		{
-			if(patLen < 0)
+			if (patLen < 0)
 				patLen = 0;
-			else if(patLen > pat.length)
+			else if (patLen > pat.length)
 				patLen = pat.length;
 			_patLen = patLen;
-			if(copyPat)
+			if (copyPat)
 				pat = Arrays.copyOf(pat, patLen);
 			_pat = pat;
 			int[] skip = _skip;
 			Arrays.fill(skip, patLen + 1);
-			for(int i = 0; i < patLen; ++i)
+			for (int i = 0; i < patLen; ++i)
 				skip[pat[i] & 0xff] = patLen - i;
 		}
 
@@ -366,29 +376,37 @@ public final class Util
 		public int find(byte[] src, int srcPos, int srcLen)
 		{
 			int patLen = _patLen;
-			if(patLen <= 0) return 0;
-			if(srcPos < 0) srcPos = 0;
-			if(srcPos + srcLen > src.length) srcLen = src.length - srcPos;
-			if(srcLen <= 0) return -1;
+			if (patLen <= 0)
+				return 0;
+			if (srcPos < 0)
+				srcPos = 0;
+			if (srcPos + srcLen > src.length)
+				srcLen = src.length - srcPos;
+			if (srcLen <= 0)
+				return -1;
 			byte[] pat = _pat;
 			byte c = pat[0];
 			int[] skip = _skip;
-			for(int srcEnd = srcPos + srcLen - patLen; srcPos <= srcEnd;)
+			for (int srcEnd = srcPos + srcLen - patLen; srcPos <= srcEnd;)
 			{
-				if(src[srcPos] == c)
+				if (src[srcPos] == c)
 				{
-					for(int k = 1;; ++k)
+					for (int k = 1;; ++k)
 					{
-						if(k >= patLen) return srcPos;
-						if(src[srcPos + k] != pat[k]) break;
+						if (k >= patLen)
+							return srcPos;
+						if (src[srcPos + k] != pat[k])
+							break;
 					}
 				}
-				for(;;)
+				for (;;)
 				{
-					if(srcPos >= srcEnd) return -1;
+					if (srcPos >= srcEnd)
+						return -1;
 					int s = skip[src[srcPos + patLen] & 0xff];
 					srcPos += s;
-					if(s <= patLen) break;
+					if (s <= patLen)
+						break;
 					--srcPos;
 				}
 			}
@@ -409,7 +427,7 @@ public final class Util
 
 	public static Octets readDataInZip(ZipFile zipFile, String path) throws IOException
 	{
-		try(InputStream is = createStreamInZip(zipFile, path))
+		try (InputStream is = createStreamInZip(zipFile, path))
 		{
 			return readStream(is);
 		}
@@ -417,7 +435,7 @@ public final class Util
 
 	public static Octets readDataInZip(String zipPath, String path) throws IOException
 	{
-		try(ZipFile zf = new ZipFile(zipPath))
+		try (ZipFile zf = new ZipFile(zipPath))
 		{
 			return readDataInZip(zf, path);
 		}
@@ -431,7 +449,7 @@ public final class Util
 
 	public static Octets readDataInJar(Class<?> cls, String path) throws IOException
 	{
-		try(InputStream is = createStreamInJar(cls, path))
+		try (InputStream is = createStreamInJar(cls, path))
 		{
 			return readStream(is);
 		}

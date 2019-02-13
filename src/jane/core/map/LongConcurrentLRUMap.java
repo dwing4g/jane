@@ -49,8 +49,10 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 
 	public LongConcurrentLRUMap(int upperSize, int lowerSize, int acceptSize, int initialSize, float loadFactor, String name)
 	{
-		if(lowerSize <= 0) throw new IllegalArgumentException("lowerSize must be > 0");
-		if(upperSize <= lowerSize) throw new IllegalArgumentException("upperSize must be > lowerSize");
+		if (lowerSize <= 0)
+			throw new IllegalArgumentException("lowerSize must be > 0");
+		if (upperSize <= lowerSize)
+			throw new IllegalArgumentException("upperSize must be > lowerSize");
 		map = new LongConcurrentHashMap<>(initialSize, loadFactor);
 		this.upperSize = upperSize;
 		this.lowerSize = lowerSize;
@@ -92,7 +94,7 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 	public V get(long key)
 	{
 		CacheEntry<V> e = map.get(key);
-		if(e == null)
+		if (e == null)
 			return null;
 		e.version = versionCounter.getAndIncrement();
 		return e.value;
@@ -101,12 +103,12 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 	@Override
 	public V put(long key, V value)
 	{
-		if(value == null)
+		if (value == null)
 			return null;
 		CacheEntry<V> ceOld = map.put(key, new CacheEntry<>(key, value, versionCounter.getAndIncrement()));
-		if(ceOld != null)
+		if (ceOld != null)
 			return ceOld.value;
-		if(size.getAndIncrement() >= upperSize && sweepStatus.get() == 0)
+		if (size.getAndIncrement() >= upperSize && sweepStatus.get() == 0)
 			LRUCleaner.submit(sweepStatus, this);
 		return null;
 	}
@@ -115,7 +117,7 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 	public V remove(long key)
 	{
 		CacheEntry<V> ceOld = map.remove(key);
-		if(ceOld == null)
+		if (ceOld == null)
 			return null;
 		size.getAndDecrement();
 		return ceOld.value;
@@ -124,7 +126,7 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 	@Override
 	public boolean remove(long key, V value)
 	{
-		if(!map.remove(key, value))
+		if (!map.remove(key, value))
 			return false;
 		size.getAndDecrement();
 		return true;
@@ -140,7 +142,8 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 	private void evictEntry(long key)
 	{
 		CacheEntry<V> o = map.remove(key);
-		if(o == null) return;
+		if (o == null)
+			return;
 		size.getAndDecrement();
 		// evictedEntry(o.key, o.value);
 	}
@@ -173,7 +176,8 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 
 		final long time = (Log.hasDebug ? System.currentTimeMillis() : 0);
 		final int sizeOld = size.get();
-		if(sizeOld <= newLowerSize) return;
+		if (sizeOld <= newLowerSize)
+			return;
 		try
 		{
 			final long nextV = versionCounter.get();
@@ -188,42 +192,46 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 			CacheEntry<?>[] eList = new CacheEntry<?>[sizeOld];
 			int eSize = 0;
 
-			for(final CacheEntry<V> ce : map)
+			for (final CacheEntry<V> ce : map)
 			{
 				final long v = ce.version;
 				ce.versionCopy = v;
 
 				// since the numToKeep group is likely to be bigger than numToRemove, check it first
-				if(v >= nextV - numToKeep)
+				if (v >= nextV - numToKeep)
 				{
 					// this entry is guaranteed not to be in the bottom group, so do nothing
 					numKept++;
-					if(minVNew > v) minVNew = v;
+					if (minVNew > v)
+						minVNew = v;
 				}
-				else if(v < minV + numToRemove) // entry in bottom group?
+				else if (v < minV + numToRemove) // entry in bottom group?
 				{
 					// this entry is guaranteed to be in the bottom group, so immediately remove it from the map
 					evictEntry(ce.key);
 					numRemoved++;
 				}
-				else if(eSize < sizeOld - 1)
+				else if (eSize < sizeOld - 1)
 				{
 					// This entry *could* be in the bottom group.
 					// Collect these entries to avoid another full pass...
 					// this is wasted effort if enough entries are normally removed in this first pass.
 					// An alternate impl could make a full second pass.
 					eList[eSize++] = ce;
-					if(maxVNew < v) maxVNew = v;
-					if(minVNew > v) minVNew = v;
+					if (maxVNew < v)
+						maxVNew = v;
+					if (minVNew > v)
+						minVNew = v;
 				}
 			}
 
 			// int numPasses = 1; // maximum number of linear passes over the data
 
 			// if we didn't remove enough entries, then make more passes over the values we collected, with updated min and max values
-			if(sizeOld - numRemoved > newAcceptSize) // while(sizeOld - numRemoved > newAcceptSize && --numPasses >= 0)
+			if (sizeOld - numRemoved > newAcceptSize) // while(sizeOld - numRemoved > newAcceptSize && --numPasses >= 0)
 			{
-				if(minVNew != Long.MAX_VALUE) minV = minVNew;
+				if (minVNew != Long.MAX_VALUE)
+					minV = minVNew;
 				minVNew = Long.MAX_VALUE;
 				final long maxV = maxVNew;
 				maxVNew = -1;
@@ -231,19 +239,20 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 				numToRemove = sizeOld - newLowerSize - numRemoved;
 
 				// iterate backward to make it easy to remove items
-				for(int i = eSize - 1; i >= 0; --i)
+				for (int i = eSize - 1; i >= 0; --i)
 				{
 					final CacheEntry<?> ce = eList[i];
 					final long v = ce.versionCopy;
 
-					if(v > maxV - numToKeep)
+					if (v > maxV - numToKeep)
 					{
 						// this entry is guaranteed not to be in the bottom group, so do nothing but remove it from the eList
 						numKept++;
 						eList[i] = eList[--eSize]; // remove the entry by moving the last element to its position
-						if(minVNew > v) minVNew = v;
+						if (minVNew > v)
+							minVNew = v;
 					}
-					else if(v < minV + numToRemove) // entry in bottom group?
+					else if (v < minV + numToRemove) // entry in bottom group?
 					{
 						// this entry is guaranteed to be in the bottom group, so immediately remove it from the map
 						evictEntry(ce.key);
@@ -253,16 +262,19 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 					else
 					{
 						// This entry *could* be in the bottom group, so keep it in the eList, and update the stats
-						if(maxVNew < v) maxVNew = v;
-						if(minVNew > v) minVNew = v;
+						if (maxVNew < v)
+							maxVNew = v;
+						if (minVNew > v)
+							minVNew = v;
 					}
 				}
 			}
 
 			// if we still didn't remove enough entries, then make another pass while inserting into a priority queue
-			if(sizeOld - numRemoved > newAcceptSize)
+			if (sizeOld - numRemoved > newAcceptSize)
 			{
-				if(minVNew != Long.MAX_VALUE) minV = minVNew;
+				if (minVNew != Long.MAX_VALUE)
+					minV = minVNew;
 				minVNew = Long.MAX_VALUE;
 				final long maxV = maxVNew;
 				maxVNew = -1;
@@ -270,18 +282,19 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 				numToRemove = sizeOld - newLowerSize - numRemoved;
 				final LRUQueue<CacheEntry<?>> queue = new LRUQueue<>(numToRemove, new CacheEntry<?>[LRUQueue.calHeapSize(numToRemove)]);
 
-				for(int i = eSize - 1; i >= 0; --i)
+				for (int i = eSize - 1; i >= 0; --i)
 				{
 					final CacheEntry<?> ce = eList[i];
 					final long v = ce.versionCopy;
 
-					if(v > maxV - numToKeep)
+					if (v > maxV - numToKeep)
 					{
 						// this entry is guaranteed not to be in the bottom group, so do nothing but remove it from the eList
 						numKept++;
-						if(minVNew > v) minVNew = v;
+						if (minVNew > v)
+							minVNew = v;
 					}
-					else if(v < minV + numToRemove) // entry in bottom group?
+					else if (v < minV + numToRemove) // entry in bottom group?
 					{
 						// this entry is guaranteed to be in the bottom group so immediately remove it
 						evictEntry(ce.key);
@@ -296,22 +309,26 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 						// the number of items we have already removed while executing this loop so far.
 						final int maxSize = sizeOld - newLowerSize - numRemoved;
 						queue.maxSize = maxSize;
-						while(queue.size > maxSize && queue.size > 0)
+						while (queue.size > maxSize && queue.size > 0)
 						{
 							final long otherEntryV = queue.pop().versionCopy;
-							if(minVNew > otherEntryV) minVNew = otherEntryV;
+							if (minVNew > otherEntryV)
+								minVNew = otherEntryV;
 						}
-						if(maxSize <= 0) break;
+						if (maxSize <= 0)
+							break;
 
 						final CacheEntry<?> o = queue.insertWithOverflow(ce);
-						if(o != null && minVNew > o.versionCopy) minVNew = o.versionCopy;
+						if (o != null && minVNew > o.versionCopy)
+							minVNew = o.versionCopy;
 					}
 				}
 
 				// Now delete everything in the priority queue. avoid using pop() since order doesn't matter anymore
-				for(final CacheEntry<?> ce : queue.heap)
+				for (final CacheEntry<?> ce : queue.heap)
 				{
-					if(ce == null) continue;
+					if (ce == null)
+						continue;
 					evictEntry(ce.key);
 					numRemoved++;
 				}
@@ -323,7 +340,7 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 		}
 		finally
 		{
-			if(Log.hasDebug)
+			if (Log.hasDebug)
 				Log.debug("LRUMap.sweep({}: {}=>{}, {}ms)", name, sizeOld, size.get(), System.currentTimeMillis() - time);
 		}
 	}

@@ -26,7 +26,8 @@ public final class SList<V, S> implements List<S>, Cloneable
 	private SContext sContext()
 	{
 		_owner.checkLock();
-		if(_sctx != null) return _sctx;
+		if (_sctx != null)
+			return _sctx;
 		_owner.dirty();
 		return _sctx = SContext.current();
 	}
@@ -93,7 +94,8 @@ public final class SList<V, S> implements List<S>, Cloneable
 	public boolean addDirect(V v)
 	{
 		SContext ctx = sContext();
-		if(!_list.add(v)) return false;
+		if (!_list.add(v))
+			return false;
 		ctx.addOnRollback(() -> _list.remove(_list.size() - 1));
 		return true;
 	}
@@ -121,12 +123,13 @@ public final class SList<V, S> implements List<S>, Cloneable
 	{
 		SContext ctx = sContext();
 		int n = _list.size();
-		if(!_list.addAll(c)) return false;
+		if (!_list.addAll(c))
+			return false;
 		ctx.addOnRollback(() ->
 		{
-			if(n > 0)
+			if (n > 0)
 			{
-				for(int i = _list.size() - 1; i >= n; --i)
+				for (int i = _list.size() - 1; i >= n; --i)
 					_list.remove(i);
 			}
 			else
@@ -140,13 +143,13 @@ public final class SList<V, S> implements List<S>, Cloneable
 	{
 		SContext ctx = sContext();
 		int n = _list.size();
-		for(S s : c)
+		for (S s : c)
 			_list.add(SContext.unsafe(s));
 		ctx.addOnRollback(() ->
 		{
-			if(n > 0)
+			if (n > 0)
 			{
-				for(int i = _list.size() - 1; i >= n; --i)
+				for (int i = _list.size() - 1; i >= n; --i)
 					_list.remove(i);
 			}
 			else
@@ -159,13 +162,14 @@ public final class SList<V, S> implements List<S>, Cloneable
 	{
 		SContext ctx = sContext();
 		int n = _list.size();
-		if(!_list.addAll(idx, c)) return false;
+		if (!_list.addAll(idx, c))
+			return false;
 		int n2 = _list.size() - n;
 		ctx.addOnRollback(() ->
 		{
-			if(n2 < _list.size())
+			if (n2 < _list.size())
 			{
-				for(int i = idx + n2 - 1; i >= idx; --i)
+				for (int i = idx + n2 - 1; i >= idx; --i)
 					_list.remove(i);
 			}
 			else
@@ -178,7 +182,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 	public boolean addAll(int idx, Collection<? extends S> c)
 	{
 		ArrayList<V> list = new ArrayList<>(c.size());
-		for(S s : c)
+		for (S s : c)
 			list.add(SContext.unsafe(s));
 		return addAllDirect(idx, list);
 	}
@@ -215,7 +219,8 @@ public final class SList<V, S> implements List<S>, Cloneable
 	public boolean remove(Object o)
 	{
 		int idx = indexOf(o);
-		if(idx < 0) return false;
+		if (idx < 0)
+			return false;
 		removeDirect(idx);
 		return true;
 	}
@@ -224,9 +229,9 @@ public final class SList<V, S> implements List<S>, Cloneable
 	public boolean removeAll(Collection<?> c)
 	{
 		boolean r = false;
-		for(SIterator it = iterator(); it.hasNext();)
+		for (SIterator it = iterator(); it.hasNext();)
 		{
-			if(c.contains(it.nextUnsafe()))
+			if (c.contains(it.nextUnsafe()))
 			{
 				it.remove();
 				r = true;
@@ -239,9 +244,9 @@ public final class SList<V, S> implements List<S>, Cloneable
 	public boolean retainAll(Collection<?> c)
 	{
 		boolean r = false;
-		for(SIterator it = iterator(); it.hasNext();)
+		for (SIterator it = iterator(); it.hasNext();)
 		{
-			if(!c.contains(it.nextUnsafe()))
+			if (!c.contains(it.nextUnsafe()))
 			{
 				it.remove();
 				r = true;
@@ -253,7 +258,8 @@ public final class SList<V, S> implements List<S>, Cloneable
 	@Override
 	public void clear()
 	{
-		if(_list.isEmpty()) return;
+		if (_list.isEmpty())
+			return;
 		SContext ctx = sContext();
 		ArrayList<V> saved = new ArrayList<>(_list);
 		_list.clear();
@@ -440,9 +446,9 @@ public final class SList<V, S> implements List<S>, Cloneable
 
 	public boolean foreachFilter(Predicate<V> filter, Predicate<S> consumer)
 	{
-		for(V v : _list)
+		for (V v : _list)
 		{
-			if(filter.test(v) && !consumer.test(SContext.safe(_owner, v)))
+			if (filter.test(v) && !consumer.test(SContext.safe(_owner, v)))
 				return false;
 		}
 		return true;

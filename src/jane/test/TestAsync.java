@@ -16,7 +16,7 @@ public class TestAsync
 			@Override
 			public void run()
 			{
-				if(i < 10)
+				if (i < 10)
 				{
 					System.out.println(i++);
 					yield(this);
@@ -29,9 +29,9 @@ public class TestAsync
 			}
 		});
 
-		for(;;) //NOSONAR
+		for (;;) //NOSONAR
 		{
-			if(AsyncManager.get().tick() == 0)
+			if (AsyncManager.get().tick() == 0)
 				Thread.sleep(10);
 		}
 	}

@@ -12,7 +12,7 @@ public final class LevelDBExport
 
 	public static void main(String[] args)
 	{
-		if(args.length < 1)
+		if (args.length < 1)
 		{
 			System.err.println("USAGE: java jane.tool.LevelDBExport <databasePath> [tableId]");
 			return;
@@ -20,18 +20,19 @@ public final class LevelDBExport
 		String pathname = args[0].trim();
 		int tableId = (args.length == 2 ? Integer.parseInt(args[1]) : -1);
 		OctetsStream tableIdOs = new OctetsStream(5);
-		if(tableId >= 0) tableIdOs.marshalUInt(tableId);
+		if (tableId >= 0)
+			tableIdOs.marshalUInt(tableId);
 
 		long t = System.currentTimeMillis();
 		System.err.println("INFO: opening " + pathname + " ...");
 		long db = StorageLevelDB.leveldb_open3(pathname, 0, 0, 0, 0, true, true);
-		if(db == 0)
+		if (db == 0)
 		{
 			System.err.println("ERROR: leveldb_open failed");
 			return;
 		}
 		long iter = StorageLevelDB.leveldb_iter_new(db, tableIdOs.array(), tableIdOs.size(), 2);
-		if(iter == 0)
+		if (iter == 0)
 		{
 			System.err.println("ERROR: leveldb_iter_new failed");
 			StorageLevelDB.leveldb_close(db);
@@ -42,19 +43,22 @@ public final class LevelDBExport
 		System.out.println("return{");
 		StringBuilder sb = new StringBuilder(1024);
 		long count = 0;
-		for(;;)
+		for (;;)
 		{
 			byte[] val = StorageLevelDB.leveldb_iter_value(iter);
-			if(val == null) break;
+			if (val == null)
+				break;
 			byte[] key = StorageLevelDB.leveldb_iter_next(iter);
-			if(key == null) break;
+			if (key == null)
+				break;
 			sb.setLength(0);
 			sb.append('[');
 			Octets keyO = Octets.wrap(key);
-			if(tableId >= 0)
+			if (tableId >= 0)
 			{
 				keyO.resize(tableIdOs.size());
-				if(!keyO.equals(tableIdOs)) break;
+				if (!keyO.equals(tableIdOs))
+					break;
 				keyO.resize(key.length);
 			}
 			keyO.dumpJStr(sb);

@@ -26,7 +26,8 @@ public final class TestCompressor
 	 */
 	public void reset()
 	{
-		if(_hash != null) Arrays.fill(_hash, 0);
+		if (_hash != null)
+			Arrays.fill(_hash, 0);
 		_com = null;
 		_comPos = _bits = _cache = 0;
 	}
@@ -43,7 +44,7 @@ public final class TestCompressor
 	{
 		// System.out.format("\t0x%X %d\n", v, n);
 		int b = _bits + n, c = _cache + (v << (32 - b));
-		if(b < 8)
+		if (b < 8)
 		{
 			_bits = b;
 			_cache = c;
@@ -54,12 +55,12 @@ public final class TestCompressor
 			byte[] d = _com;
 			int p = _comPos;
 			d[p++] = (byte)(c >> 24);
-			if(b < 16)
+			if (b < 16)
 				_cache = c << 8;
 			else
 			{
 				d[p++] = (byte)(c >> 16);
-				if(b < 24)
+				if (b < 24)
 					_cache = c << 16;
 				else
 				{
@@ -73,7 +74,7 @@ public final class TestCompressor
 
 	private void putflush()
 	{
-		if(_bits > 0)
+		if (_bits > 0)
 		{
 			_com[_comPos++] = (byte)(_cache >> 24);
 			_bits = 0;
@@ -83,7 +84,7 @@ public final class TestCompressor
 
 	private int getbit() // the highest bit
 	{
-		if(--_bits >= 0)
+		if (--_bits >= 0)
 		{
 			int c = _cache;
 			_cache = c << 1;
@@ -98,17 +99,17 @@ public final class TestCompressor
 	private int getbits(int n) // n = 2~19
 	{
 		int b = _bits, c = _cache;
-		if(b < n)
+		if (b < n)
 		{
 			byte[] s = _com;
 			int p = _comPos;
 			c += (s[p++] & 0xff) << (24 - b);
 			b += 8;
-			if(b < n)
+			if (b < n)
 			{
 				c += (s[p++] & 0xff) << (24 - b);
 				b += 8;
-				if(b < n)
+				if (b < n)
 				{
 					c += (s[p++] & 0xff) << (24 - b);
 					b += 8;
@@ -224,12 +225,12 @@ public final class TestCompressor
 	{
 		long srcpos, srclen;
 		byte[] src;
-		try(FileInputStream fis = new FileInputStream(args[0]))
+		try (FileInputStream fis = new FileInputStream(args[0]))
 		{
 			srcpos = (args.length > 1 ? Long.parseLong(args[1]) : 0);
 			srclen = (args.length > 2 ? Long.parseLong(args[2]) : fis.getChannel().size());
 			src = new byte[(int)srclen];
-			if(fis.skip(srcpos) != srcpos)
+			if (fis.skip(srcpos) != srcpos)
 			{
 				System.out.println("ERROR: skip file failed");
 				return;
@@ -250,7 +251,7 @@ public final class TestCompressor
 
 		md5.reset();
 		byte[] dstmd5 = md5.digest(src);
-		if(!Arrays.equals(srcmd5, dstmd5))
+		if (!Arrays.equals(srcmd5, dstmd5))
 			System.out.println("ERROR: unmatched compressed/decompressed data!");
 
 		System.out.println(args[0] + ": " + dstlen + ' ' + tc + '/' + td);

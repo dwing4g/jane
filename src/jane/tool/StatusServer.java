@@ -38,7 +38,7 @@ public class StatusServer extends NetManager
 		ArrayList<Object> list = new ArrayList<>();
 
 		long v1 = 0, v2 = 0, v3 = 0, v4 = 0, v5 = 0, v6 = 0;
-		for(TableBase<?> table : TableBase.getTables())
+		for (TableBase<?> table : TableBase.getTables())
 		{
 			ArrayList<Object> strs = new ArrayList<>();
 			strs.add(table.getTableName());
@@ -56,7 +56,7 @@ public class StatusServer extends NetManager
 			strs.add(rtc);
 			strs.add(rc > 0 && rtc > 0 ? String.format("%.2f%%", (double)(rc - rtc) * 100 / rc) : "-.--%");
 			v = table.getAverageValueSize();
-			if(v >= 0)
+			if (v >= 0)
 			{
 				++v6;
 				v5 += v;
@@ -66,7 +66,7 @@ public class StatusServer extends NetManager
 				strs.add("-");
 			list.add(strs);
 		}
-		if(DBSimpleManager.hasCreated())
+		if (DBSimpleManager.hasCreated())
 		{
 			DBSimpleManager mgr = DBSimpleManager.instance();
 			ArrayList<Object> strs = new ArrayList<>();
@@ -85,7 +85,7 @@ public class StatusServer extends NetManager
 			strs.add(rtc);
 			strs.add(rc > 0 && rtc > 0 ? String.format("%.2f%%", (double)(rc - rtc) * 100 / rc) : "-.--%");
 			v = mgr.getAverageValueSize();
-			if(v >= 0)
+			if (v >= 0)
 			{
 				++v6;
 				v5 += v;
@@ -116,7 +116,7 @@ public class StatusServer extends NetManager
 		list.add(new SimpleEntry<String, Object>("usedMemory", formatter.format(totalMem - freeMem)));
 		list.add(new SimpleEntry<String, Object>("freeMemory", formatter.format(freeMem)));
 
-		if(DBManager.hasCreated())
+		if (DBManager.hasCreated())
 		{
 			DBManager dbMgr = DBManager.instance();
 			ThreadPoolExecutor tpe = dbMgr.getProcThreads();
@@ -140,27 +140,27 @@ public class StatusServer extends NetManager
 		sb.append("<table border=1 style=border-collapse:collapse><tr bgcolor=silver><td><b>Table</b><td><b>RCacheSize</b><td><b>WCacheSize</b>" +
 				"<td><b>RCount</b><td><b>RCacheMissCount</b><td><b>RCacheRatio</b><td><b>AverageSize</b>\n");
 		int n = list.size();
-		for(int i = 0; i < n; ++i)
+		for (int i = 0; i < n; ++i)
 		{
 			Object obj = list.get(i);
-			if(obj instanceof ArrayList)
+			if (obj instanceof ArrayList)
 			{
 				ArrayList<Object> objs = (ArrayList<Object>)obj;
 				int m = objs.size();
-				if(m > 0)
+				if (m > 0)
 				{
 					sb.append("<tr><td bgcolor=silver>").append(objs.get(0));
-					for(int j = 1; j < m; ++j)
+					for (int j = 1; j < m; ++j)
 						sb.append("<td align=right>").append(objs.get(j));
 					sb.append('\n');
 				}
 			}
 		}
 		sb.append("</table>\n<p>\n<table border=1 style=border-collapse:collapse>\n");
-		for(int i = 0; i < n; ++i)
+		for (int i = 0; i < n; ++i)
 		{
 			Object obj = list.get(i);
-			if(obj instanceof Entry)
+			if (obj instanceof Entry)
 			{
 				Entry<String, Object> e = (Entry<String, Object>)obj;
 				sb.append("<tr><td bgcolor=silver>").append(e.getKey()).append("<td align=right>").append(e.getValue()).append('\n');
@@ -183,7 +183,7 @@ public class StatusServer extends NetManager
 	@Override
 	public void messageReceived(IoSession session, Object message)
 	{
-		if(HttpCodec.getHeadPath((OctetsStream)message).endsWith("/favicon.ico"))
+		if (HttpCodec.getHeadPath((OctetsStream)message).endsWith("/favicon.ico"))
 			HttpCodec.sendHead(session, "404 Not Found", 0, extraHead);
 		else
 		{

@@ -41,14 +41,15 @@ public final class DiffJars
 	public static void ensurePath(ZipOutputStream zos, HashSet<String> pathes, String path) throws IOException
 	{
 		int p = path.lastIndexOf('/');
-		if(p < 0 || pathes.contains(path.substring(0, p + 1)))
+		if (p < 0 || pathes.contains(path.substring(0, p + 1)))
 			return;
-		for(p = 0;;)
+		for (p = 0;;)
 		{
 			p = path.indexOf('/', p);
-			if(p < 0) break;
+			if (p < 0)
+				break;
 			String subPath = path.substring(0, ++p);
-			if(!pathes.contains(subPath))
+			if (!pathes.contains(subPath))
 			{
 				pathes.add(subPath);
 				zos.putNextEntry(new ZipEntry(subPath));
@@ -64,35 +65,39 @@ public final class DiffJars
 		HashSet<String> pathes = new HashSet<>();
 		byte[] buf = new byte[0x10000];
 
-		for(Enumeration<? extends ZipEntry> zipEnum = jar1.entries(); zipEnum.hasMoreElements();)
+		for (Enumeration<? extends ZipEntry> zipEnum = jar1.entries(); zipEnum.hasMoreElements();)
 		{
 			ZipEntry ze = zipEnum.nextElement();
-			if(ze.isDirectory()) continue;
+			if (ze.isDirectory())
+				continue;
 			int len = (int)ze.getSize();
-			if(len < 0) continue;
-			if(len > buf.length)
+			if (len < 0)
+				continue;
+			if (len > buf.length)
 				buf = new byte[len];
 			Util.readStream(jar1.getInputStream(ze), ze.getName(), buf, len);
 			jar1Md5s.put(ze.getName(), getMd5(buf, 0, len));
 		}
 
-		try(ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(osJar)))
+		try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(osJar)))
 		{
 			zos.setMethod(ZipOutputStream.DEFLATED);
 			zos.setLevel(Deflater.BEST_COMPRESSION);
-			for(Enumeration<? extends ZipEntry> zipEnum = jar2.entries(); zipEnum.hasMoreElements();)
+			for (Enumeration<? extends ZipEntry> zipEnum = jar2.entries(); zipEnum.hasMoreElements();)
 			{
 				ZipEntry ze = zipEnum.nextElement();
-				if(ze.isDirectory()) continue;
+				if (ze.isDirectory())
+					continue;
 				int len = (int)ze.getSize();
-				if(len < 0) continue;
-				if(len > buf.length)
+				if (len < 0)
+					continue;
+				if (len > buf.length)
 					buf = new byte[len];
 				String name = ze.getName();
 				Util.readStream(jar2.getInputStream(ze), name, buf, len);
-				if(Arrays.equals(getMd5(buf, 0, len), jar1Md5s.get(name)))
+				if (Arrays.equals(getMd5(buf, 0, len), jar1Md5s.get(name)))
 					continue;
-				if(osLog != null)
+				if (osLog != null)
 					osLog.println(name);
 				ensurePath(zos, pathes, name);
 				zos.putNextEntry(new ZipEntry(name));
@@ -106,7 +111,7 @@ public final class DiffJars
 
 	public static void main(String[] args) throws Exception
 	{
-		if(args.length < 3)
+		if (args.length < 3)
 		{
 			System.err.println("USAGE: java -cp jane-core.jar jane.tool.DiffJars <file1.jar> <file2.jar> <diff.jar>");
 			return;
@@ -114,7 +119,7 @@ public final class DiffJars
 
 		System.out.println(String.format("%s -> %s = %s ... ", args[0], args[1], args[2]));
 		int count;
-		try(ZipFile jar1 = new ZipFile(args[0]); ZipFile jar2 = new ZipFile(args[1]); FileOutputStream osJar = new FileOutputStream(args[2]))
+		try (ZipFile jar1 = new ZipFile(args[0]); ZipFile jar2 = new ZipFile(args[1]); FileOutputStream osJar = new FileOutputStream(args[2]))
 		{
 			count = new DiffJars().diffJars(jar1, jar2, osJar, System.out);
 		}

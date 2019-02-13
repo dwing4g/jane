@@ -96,15 +96,15 @@ namespace Jane.Bean
 
 		public OctetsStream Marshal(OctetsStream s)
 		{
-			if(this.value1 != 0) s.Marshal1((byte)0x04).Marshal(this.value1);
-			if(this.value2 != 0) s.Marshal1((byte)0x08).Marshal(this.value2);
+			if (this.value1 != 0) s.Marshal1((byte)0x04).Marshal(this.value1);
+			if (this.value2 != 0) s.Marshal1((byte)0x08).Marshal(this.value2);
 			return s.Marshal1((byte)0);
 		}
 
 		public OctetsStream Unmarshal(OctetsStream s)
 		{
 			Init();
-			for(;;) { int i = s.UnmarshalUInt1(), t = i & 3; if((i >>= 2) == 63) i += s.UnmarshalUInt1(); switch(i)
+			for (;;) { int i = s.UnmarshalUInt1(), t = i & 3; if ((i >>= 2) == 63) i += s.UnmarshalUInt1(); switch(i)
 			{
 				case 0: return s;
 				case 1: this.value1 = s.UnmarshalInt(t); break;
@@ -128,17 +128,17 @@ namespace Jane.Bean
 
 		public bool Equals(TestBean b)
 		{
-			if(this.value1 != b.value1) return false;
-			if(this.value2 != b.value2) return false;
+			if (this.value1 != b.value1) return false;
+			if (this.value2 != b.value2) return false;
 			return true;
 		}
 
 		public override bool Equals(object o)
 		{
-			if(!(o is TestBean)) return false;
+			if (!(o is TestBean)) return false;
 			TestBean b = (TestBean)o;
-			if(this.value1 != b.value1) return false;
-			if(this.value2 != b.value2) return false;
+			if (this.value1 != b.value1) return false;
+			if (this.value2 != b.value2) return false;
 			return true;
 		}
 
@@ -155,8 +155,8 @@ namespace Jane.Bean
 		public int CompareTo(TestBean b)
 		{
 			int c;
-			c = this.value1.CompareTo(b.value1); if(c != 0) return c;
-			c = this.value2.CompareTo(b.value2); if(c != 0) return c;
+			c = this.value1.CompareTo(b.value1); if (c != 0) return c;
+			c = this.value2.CompareTo(b.value2); if (c != 0) return c;
 			return 0;
 		}
 
@@ -181,7 +181,7 @@ namespace Jane.Bean
 #if TO_JSON_LUA
 		public StringBuilder ToJson(StringBuilder s)
 		{
-			if(s == null) s = new StringBuilder(1024);
+			if (s == null) s = new StringBuilder(1024);
 			s.Append('{');
 			s.Append("\"value1\":").Append(this.value1).Append(',');
 			s.Append("\"value2\":").Append(this.value2).Append(',');
@@ -196,7 +196,7 @@ namespace Jane.Bean
 
 		public StringBuilder ToLua(StringBuilder s)
 		{
-			if(s == null) s = new StringBuilder(1024);
+			if (s == null) s = new StringBuilder(1024);
 			s.Append('{');
 			s.Append("value1=").Append(this.value1).Append(',');
 			s.Append("value2=").Append(this.value2).Append(',');

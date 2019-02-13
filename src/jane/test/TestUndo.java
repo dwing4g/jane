@@ -30,7 +30,7 @@ public final class TestUndo
 				protected void onProcess() throws Exception
 				{
 					TestBean.Safe a = Benchmark.lockGet(id);
-					if(a == null)
+					if (a == null)
 					{
 						TestBean aa = new TestBean();
 						aa.setValue1(v);
@@ -40,7 +40,7 @@ public final class TestUndo
 					else
 					{
 						System.out.println("get: " + a.getValue1());
-						if(a.getValue1() != v)
+						if (a.getValue1() != v)
 						{
 							a.setValue1(v);
 							System.out.println("set: " + a.getValue1());
@@ -92,7 +92,7 @@ public final class TestUndo
 			{
 				System.out.println("changed key: " + rec.getKey());
 				System.out.println("changed value:");
-				for(Entry<?, ?> e : changed.entrySet())
+				for (Entry<?, ?> e : changed.entrySet())
 					System.out.println(((Octets)e.getKey()).dump() + ": " + e.getValue());
 			});
 

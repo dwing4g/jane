@@ -26,7 +26,8 @@ public final class TestLevelDB
 	private static void dbflush()
 	{
 		int r = StorageLevelDB.leveldb_write(_db, _writebuf.entrySet().iterator());
-		if(r != 0) System.err.println("ERROR: leveldb_write=" + r);
+		if (r != 0)
+			System.err.println("ERROR: leveldb_write=" + r);
 		_writebuf.clear();
 	}
 
@@ -46,7 +47,7 @@ public final class TestLevelDB
 	{
 		System.out.println("begin");
 		_db = StorageLevelDB.leveldb_open("db/testleveldb", 0, 0, true);
-		if(_db == 0)
+		if (_db == 0)
 		{
 			System.err.println("ERROR: leveldb_open failed");
 			return;

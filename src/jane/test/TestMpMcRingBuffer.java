@@ -27,7 +27,7 @@ public final class TestMpMcRingBuffer<T>
 	 */
 	public TestMpMcRingBuffer(int bufSize)
 	{
-		if(bufSize <= 0 || Integer.highestOneBit(bufSize) != bufSize)
+		if (bufSize <= 0 || Integer.highestOneBit(bufSize) != bufSize)
 			throw new IllegalArgumentException();
 		buffer = new Object[bufSize];
 		idxMask = bufSize - 1;
@@ -40,15 +40,15 @@ public final class TestMpMcRingBuffer<T>
 
 	public boolean offer(T obj)
 	{
-		if(obj == null)
+		if (obj == null)
 			throw new NullPointerException();
-		for(;;)
+		for (;;)
 		{
 			long wi = writeIdx.get();
 			long p = wi - idxMask;
-			if(readCacheIdx < p && (readCacheIdx = readTailIdx.get()) < p)
+			if (readCacheIdx < p && (readCacheIdx = readTailIdx.get()) < p)
 				return false;
-			if(writeIdx.compareAndSet(wi, wi + 1))
+			if (writeIdx.compareAndSet(wi, wi + 1))
 			{
 				buffer[(int)wi & idxMask] = obj;
 				return true;
@@ -59,29 +59,29 @@ public final class TestMpMcRingBuffer<T>
 	@SuppressWarnings("unchecked")
 	public T poll()
 	{
-		for(;;)
+		for (;;)
 		{
 			long ri = readHeadIdx.get();
-			if(ri == writeCacheIdx && ri == (writeCacheIdx = writeIdx.get()))
+			if (ri == writeCacheIdx && ri == (writeCacheIdx = writeIdx.get()))
 				return null;
 			long ri1 = ri + 1;
-			if(readHeadIdx.compareAndSet(ri, ri1))
+			if (readHeadIdx.compareAndSet(ri, ri1))
 			{
-				for(int i = (int)ri & idxMask, n = 0;;)
+				for (int i = (int)ri & idxMask, n = 0;;)
 				{
 					Object obj = buffer[i];
-					if(obj != null)
+					if (obj != null)
 					{
 						buffer[i] = null;
-						for(n = 0;;)
+						for (n = 0;;)
 						{
-							if(readTailIdx.compareAndSet(ri, ri1))
+							if (readTailIdx.compareAndSet(ri, ri1))
 								return (T)obj;
-							if(++n > 127)
+							if (++n > 127)
 								Thread.yield();
 						}
 					}
-					if(++n > 127)
+					if (++n > 127)
 						Thread.yield();
 				}
 			}
@@ -91,42 +91,42 @@ public final class TestMpMcRingBuffer<T>
 	@SuppressWarnings("unchecked")
 	public T peek()
 	{
-		for(int n = 0;;)
+		for (int n = 0;;)
 		{
 			long ri = readHeadIdx.get();
-			if(ri == writeIdx.get())
+			if (ri == writeIdx.get())
 				return null;
 			Object obj = buffer[(int)ri & idxMask];
-			if(obj != null && readHeadIdx.get() == ri)
+			if (obj != null && readHeadIdx.get() == ri)
 				return (T)obj;
-			if(++n > 127)
+			if (++n > 127)
 				Thread.yield();
 		}
 	}
 
 	public void put(T obj) throws InterruptedException
 	{
-		for(int n = 0;;)
+		for (int n = 0;;)
 		{
-			if(offer(obj))
+			if (offer(obj))
 				return;
-			if(++n > 1000)
+			if (++n > 1000)
 				Thread.sleep(50);
-			else if(n > 10)
+			else if (n > 10)
 				Thread.yield();
 		}
 	}
 
 	public T take() throws InterruptedException
 	{
-		for(int n = 0;;)
+		for (int n = 0;;)
 		{
 			T obj = poll();
-			if(obj != null)
+			if (obj != null)
 				return obj;
-			if(++n > 1000)
+			if (++n > 1000)
 				Thread.sleep(50);
-			else if(n > 10)
+			else if (n > 10)
 				Thread.yield();
 		}
 	}
@@ -146,21 +146,21 @@ public final class TestMpMcRingBuffer<T>
 		final Thread[] wts = new Thread[WRITER_COUNT];
 		final Thread[] rts = new Thread[READER_COUNT];
 
-		for(int i = 0; i < WRITER_COUNT; ++i)
+		for (int i = 0; i < WRITER_COUNT; ++i)
 		{
 			final int k = i;
 			wts[i] = new Thread(() ->
 			{
 				try
 				{
-					for(int j = k; j < TEST_COUNT; j += WRITER_COUNT)
+					for (int j = k; j < TEST_COUNT; j += WRITER_COUNT)
 					{
 						int v = j & 127;
 						wrs[k * 8] += v;
 						buf.put(Integer.valueOf(v));
 					}
 				}
-				catch(InterruptedException e)
+				catch (InterruptedException e)
 				{
 					e.printStackTrace();
 				}
@@ -168,17 +168,17 @@ public final class TestMpMcRingBuffer<T>
 			wts[i].start();
 		}
 
-		for(int i = 0; i < READER_COUNT; ++i)
+		for (int i = 0; i < READER_COUNT; ++i)
 		{
 			final int k = i;
 			rts[i] = new Thread(() ->
 			{
 				try
 				{
-					for(int j = k; j < TEST_COUNT; j += WRITER_COUNT)
+					for (int j = k; j < TEST_COUNT; j += WRITER_COUNT)
 						rrs[k * 8] += buf.take();
 				}
-				catch(InterruptedException e)
+				catch (InterruptedException e)
 				{
 					e.printStackTrace();
 				}
@@ -187,12 +187,12 @@ public final class TestMpMcRingBuffer<T>
 		}
 
 		long wr = 0, rr = 0;
-		for(int i = 0; i < WRITER_COUNT; ++i)
+		for (int i = 0; i < WRITER_COUNT; ++i)
 		{
 			wts[i].join();
 			wr += wrs[i * 8];
 		}
-		for(int i = 0; i < READER_COUNT; ++i)
+		for (int i = 0; i < READER_COUNT; ++i)
 		{
 			rts[i].join();
 			rr += rrs[i * 8];

@@ -31,7 +31,7 @@ public final class TestIterator
 					{
 						TestType aa = new TestType();
 						LinkedHashMap<Octets, TestBean> map = aa.getV18();
-						for(int i = 0; i < 256; ++i)
+						for (int i = 0; i < 256; ++i)
 						{
 							Octets o = new Octets();
 							o.append((byte)i);
@@ -42,9 +42,9 @@ public final class TestIterator
 				}
 			}.run();
 
-			if(args.length == 0)
+			if (args.length == 0)
 			{
-				for(int i = 0; i < 1000000; ++i)
+				for (int i = 0; i < 1000000; ++i)
 				{
 					new Procedure()
 					{
@@ -52,9 +52,9 @@ public final class TestIterator
 						protected void onProcess() throws Exception
 						{
 							TestType.Safe a = TestTable.lockGet(id);
-							for(Entry<Octets, TestBean.Safe> e : a.getV18().entrySet())
+							for (Entry<Octets, TestBean.Safe> e : a.getV18().entrySet())
 							{
-								if(e.getValue().getValue1() == 1)
+								if (e.getValue().getValue1() == 1)
 									break;
 							}
 						}
@@ -63,7 +63,7 @@ public final class TestIterator
 			}
 			else
 			{
-				for(int i = 0; i < 1000000; ++i)
+				for (int i = 0; i < 1000000; ++i)
 				{
 					new Procedure()
 					{

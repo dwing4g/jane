@@ -85,17 +85,17 @@ public class NetManager implements IoHandler
 			t.setDaemon(true);
 			return t;
 		});
-		if(Const.askCheckInterval > 0)
+		if (Const.askCheckInterval > 0)
 		{
 			scheduleWithFixedDelay(Const.askCheckInterval, Const.askCheckInterval, () ->
 			{
 				try
 				{
 					int now = (int)_timeSec;
-					for(MapIterator<BeanContext<?>> it = _beanCtxMap.entryIterator(); it.moveToNext();)
+					for (MapIterator<BeanContext<?>> it = _beanCtxMap.entryIterator(); it.moveToNext();)
 					{
 						BeanContext<?> beanCtx = it.value();
-						if(now - beanCtx.askTime > beanCtx.timeout && _beanCtxMap.remove(it.key(), beanCtx))
+						if (now - beanCtx.askTime > beanCtx.timeout && _beanCtxMap.remove(it.key(), beanCtx))
 						{
 							IoSession session = beanCtx.session;
 							Bean<?> askBean = beanCtx.askBean;
@@ -103,12 +103,12 @@ public class NetManager implements IoHandler
 							beanCtx.session = null;
 							beanCtx.askBean = null;
 							beanCtx.answerHandler = null;
-							if(session != null)
+							if (session != null)
 								((NetManager)session.getHandler()).onAnswer(session, answerHandler, askBean, null);
 						}
 					}
 				}
-				catch(Throwable e)
+				catch (Throwable e)
 				{
 					Log.error("NetManager: ask check fatal exception:", e);
 				}
@@ -120,20 +120,22 @@ public class NetManager implements IoHandler
 			{
 				int timeSec = (int)(_timeSec = System.currentTimeMillis() / 1000);
 				IoSession session = _closings.peek();
-				if(session == null) return;
+				if (session == null)
+					return;
 				do
 				{
-					if(!session.isClosing())
+					if (!session.isClosing())
 					{
 						Object v = session.getAttribute("closeOnFlushTime");
-						if(v instanceof Integer && timeSec < (Integer)v) break;
+						if (v instanceof Integer && timeSec < (Integer)v)
+							break;
 						session.closeNow();
 					}
 					_closings.poll();
 				}
-				while((session = _closings.peek()) != null);
+				while ((session = _closings.peek()) != null);
 			}
-			catch(Throwable e)
+			catch (Throwable e)
 			{
 				Log.error("NetManager: close check fatal exception:", e);
 			}
@@ -185,11 +187,11 @@ public class NetManager implements IoHandler
 
 	private static SimpleIoProcessorPool getSharedIoProcessorPool()
 	{
-		if(_sharedIoProcessorPool == null || _sharedIoProcessorPool.isDisposing())
+		if (_sharedIoProcessorPool == null || _sharedIoProcessorPool.isDisposing())
 		{
-			synchronized(NetManager.class)
+			synchronized (NetManager.class)
 			{
-				if(_sharedIoProcessorPool == null || _sharedIoProcessorPool.isDisposing())
+				if (_sharedIoProcessorPool == null || _sharedIoProcessorPool.isDisposing())
 					_sharedIoProcessorPool = new SimpleIoProcessorPool(_sharedIoThreadCount > 0 ? _sharedIoThreadCount : DEFAULT_IO_THREAD_COUNT);
 			}
 		}
@@ -212,17 +214,17 @@ public class NetManager implements IoHandler
 	public final NioSocketAcceptor getAcceptor()
 	{
 		NioSocketAcceptor acceptor = _acceptor;
-		if(acceptor == null || acceptor.isDisposed())
+		if (acceptor == null || acceptor.isDisposed())
 		{
-			synchronized(this)
+			synchronized (this)
 			{
 				acceptor = _acceptor;
-				if(acceptor == null || acceptor.isDisposed())
+				if (acceptor == null || acceptor.isDisposed())
 				{
 					NioSocketAcceptor t;
-					if(_ioThreadCount == 0)
+					if (_ioThreadCount == 0)
 						t = new NioSocketAcceptor(getSharedIoProcessorPool());
-					else if(_ioThreadCount > 0)
+					else if (_ioThreadCount > 0)
 						t = new NioSocketAcceptor(_ioThreadCount);
 					else
 						t = new NioSocketAcceptor(DEFAULT_IO_THREAD_COUNT);
@@ -241,17 +243,17 @@ public class NetManager implements IoHandler
 	public final NioSocketConnector getConnector()
 	{
 		NioSocketConnector connector = _connector;
-		if(connector == null || connector.isDisposed())
+		if (connector == null || connector.isDisposed())
 		{
-			synchronized(this)
+			synchronized (this)
 			{
 				connector = _connector;
-				if(connector == null || connector.isDisposed())
+				if (connector == null || connector.isDisposed())
 				{
 					NioSocketConnector t;
-					if(_ioThreadCount == 0)
+					if (_ioThreadCount == 0)
 						t = new NioSocketConnector(getSharedIoProcessorPool());
-					else if(_ioThreadCount > 0)
+					else if (_ioThreadCount > 0)
 						t = new NioSocketConnector(_ioThreadCount);
 					else
 						t = new NioSocketConnector(DEFAULT_IO_THREAD_COUNT);
@@ -287,9 +289,11 @@ public class NetManager implements IoHandler
 	{
 		long sid = session.getId();
 		NioSocketAcceptor acceptor = _acceptor;
-		if(acceptor != null && acceptor.getManagedSessions().containsKey(sid)) return true;
+		if (acceptor != null && acceptor.getManagedSessions().containsKey(sid))
+			return true;
 		NioSocketConnector connector = _connector;
-		if(connector != null && connector.getManagedSessions().containsKey(sid)) return true;
+		if (connector != null && connector.getManagedSessions().containsKey(sid))
+			return true;
 		return false;
 	}
 
@@ -349,7 +353,8 @@ public class NetManager implements IoHandler
 	 */
 	public final void setHandlers(IntHashMap<BeanHandler<?>> handlers)
 	{
-		if(handlers != null) _handlers = handlers;
+		if (handlers != null)
+			_handlers = handlers;
 	}
 
 	/**
@@ -366,7 +371,7 @@ public class NetManager implements IoHandler
 	public void startServer(Collection<? extends SocketAddress> addrs) throws IOException
 	{
 		StringBuilder sb = new StringBuilder();
-		for(SocketAddress addr : addrs)
+		for (SocketAddress addr : addrs)
 			sb.append(addr).append(';');
 		Log.info("{}: listening addr={}", _name, sb);
 		getAcceptor().bind(addrs);
@@ -389,14 +394,14 @@ public class NetManager implements IoHandler
 			@Override
 			public void operationComplete(ConnectFuture future)
 			{
-				if(!future.isConnected())
+				if (!future.isConnected())
 				{
 					try
 					{
 						++_count;
 						Log.warn("{}: connect failed: addr={},count={}", getName(), addr, _count);
 						int delayMs = onConnectFailed(future, addr, _count, ctx);
-						if(delayMs >= 0) // 可能在同线程同步回调,为避免无限递归,统一放线程池里调度
+						if (delayMs >= 0) // 可能在同线程同步回调,为避免无限递归,统一放线程池里调度
 						{
 							scheduleMs(delayMs, () ->
 							{
@@ -405,14 +410,14 @@ public class NetManager implements IoHandler
 									Log.info("{}: reconnecting addr={},count={}", getName(), addr, _count);
 									getConnector().connect(addr).addListener(this);
 								}
-								catch(Throwable e)
+								catch (Throwable e)
 								{
 									Log.error("NetManager.startClient.operationComplete: scheduled exception:", e);
 								}
 							});
 						}
 					}
-					catch(Throwable e)
+					catch (Throwable e)
 					{
 						Log.error("NetManager.startClient.operationComplete: exception:", e);
 					}
@@ -439,7 +444,7 @@ public class NetManager implements IoHandler
 	public void stopServer(SocketAddress addr)
 	{
 		NioSocketAcceptor acceptor = getAcceptor();
-		if(addr != null)
+		if (addr != null)
 			acceptor.unbind(addr);
 		else
 			acceptor.unbind();
@@ -452,11 +457,11 @@ public class NetManager implements IoHandler
 	public void stopAllClients(boolean force)
 	{
 		NioSocketConnector connector = _connector;
-		if(connector != null)
+		if (connector != null)
 		{
-			for(IoSession session : connector.getManagedSessions().values())
+			for (IoSession session : connector.getManagedSessions().values())
 			{
-				if(force)
+				if (force)
 					session.closeNow();
 				else
 					closeOnFlush(session);
@@ -541,9 +546,10 @@ public class NetManager implements IoHandler
 	 */
 	public static boolean write(IoSession session, WriteRequest wr)
 	{
-		if(session.isClosing() || wr == null) return false;
+		if (session.isClosing() || wr == null)
+			return false;
 		IoFilterChain ifc = session.getFilterChain();
-		synchronized(session)
+		synchronized (session)
 		{
 			ifc.fireFilterWrite(wr);
 		}
@@ -552,10 +558,11 @@ public class NetManager implements IoHandler
 
 	public static boolean write(IoSession session, Object obj)
 	{
-		if(session.isClosing() || obj == null) return false;
+		if (session.isClosing() || obj == null)
+			return false;
 		IoFilterChain ifc = session.getFilterChain();
 		WriteRequest wr = (obj instanceof WriteRequest ? (WriteRequest)obj : new SimpleWriteRequest(obj));
-		synchronized(session)
+		synchronized (session)
 		{
 			ifc.fireFilterWrite(wr);
 		}
@@ -567,12 +574,14 @@ public class NetManager implements IoHandler
 	 */
 	public static WriteFuture write(IoSession session, Object obj, IoFutureListener<?> listener)
 	{
-		if(session.isClosing() || obj == null) return null;
+		if (session.isClosing() || obj == null)
+			return null;
 		IoFilterChain ifc = session.getFilterChain();
 		WriteFuture wf = new DefaultWriteFuture(session);
-		if(listener != null) wf.addListener(listener);
+		if (listener != null)
+			wf.addListener(listener);
 		DefaultWriteRequest dwr = new DefaultWriteRequest(obj, wf);
-		synchronized(session)
+		synchronized (session)
 		{
 			ifc.fireFilterWrite(dwr);
 		}
@@ -588,8 +597,10 @@ public class NetManager implements IoHandler
 	 */
 	public boolean sendRaw(IoSession session, Object obj)
 	{
-		if(!write(session, obj)) return false;
-		if(_enableTrace) Log.trace("{}({}): send: raw:{}", _name, session.getId(), obj);
+		if (!write(session, obj))
+			return false;
+		if (_enableTrace)
+			Log.trace("{}({}): send: raw:{}", _name, session.getId(), obj);
 		return true;
 	}
 
@@ -603,14 +614,17 @@ public class NetManager implements IoHandler
 	public boolean send(IoSession session, Bean<?> bean)
 	{
 		bean.serial(0);
-		if(!write(session, bean)) return false;
-		if(_enableTrace) Log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.typeName(), bean);
+		if (!write(session, bean))
+			return false;
+		if (_enableTrace)
+			Log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.typeName(), bean);
 		return true;
 	}
 
 	public boolean sendSafe(IoSession session, Bean<?> bean)
 	{
-		if(session.isClosing() || bean == null) return false;
+		if (session.isClosing() || bean == null)
+			return false;
 		bean.serial(0);
 		RawBean rawbean = new RawBean(bean);
 		SContext.current().addOnCommit(() -> send(session, rawbean));
@@ -627,34 +641,40 @@ public class NetManager implements IoHandler
 	 */
 	public <B extends Bean<B>> boolean send(IoSession session, B bean, Runnable onSent)
 	{
-		if(bean == null) return false;
+		if (bean == null)
+			return false;
 		bean.serial(0);
-		if(onSent == null)
+		if (onSent == null)
 		{
-			if(!write(session, bean)) return false;
+			if (!write(session, bean))
+				return false;
 		}
 		else
 		{
-			if(session.isClosing()) return false;
-			if(write(session, bean, future ->
+			if (session.isClosing())
+				return false;
+			if (write(session, bean, future ->
 			{
 				try
 				{
 					onSent.run();
 				}
-				catch(Throwable e)
+				catch (Throwable e)
 				{
 					Log.error(e, "{}({}): callback exception: {}", _name, session.getId(), bean.typeName());
 				}
-			}) == null) return false;
+			}) == null)
+				return false;
 		}
-		if(_enableTrace) Log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.typeName(), bean);
+		if (_enableTrace)
+			Log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.typeName(), bean);
 		return true;
 	}
 
 	public <B extends Bean<B>> boolean sendSafe(IoSession session, B bean, Runnable callback)
 	{
-		if(session.isClosing() || bean == null) return false;
+		if (session.isClosing() || bean == null)
+			return false;
 		bean.serial(0);
 		RawBean rawbean = new RawBean(bean);
 		SContext.current().addOnCommit(() -> send(session, rawbean, callback));
@@ -667,12 +687,12 @@ public class NetManager implements IoHandler
 		beanCtx.session = session;
 		beanCtx.askBean = bean;
 		beanCtx.answerHandler = onAnswer;
-		for(;;)
+		for (;;)
 		{
 			int serial = _serialCounter.getAndIncrement();
-			if(serial > 0)
+			if (serial > 0)
 			{
-				if(_beanCtxMap.putIfAbsent(serial, beanCtx) == null)
+				if (_beanCtxMap.putIfAbsent(serial, beanCtx) == null)
 				{
 					bean.serial(serial);
 					return beanCtx;
@@ -685,8 +705,10 @@ public class NetManager implements IoHandler
 
 	private boolean send0(IoSession session, Bean<?> bean)
 	{
-		if(!write(session, bean)) return false;
-		if(_enableTrace) Log.trace("{}({}): send: {}({}):{}", _name, session.getId(), bean.typeName(), bean.serial(), bean);
+		if (!write(session, bean))
+			return false;
+		if (_enableTrace)
+			Log.trace("{}({}): send: {}({}):{}", _name, session.getId(), bean.typeName(), bean.serial(), bean);
 		return true;
 	}
 
@@ -700,11 +722,12 @@ public class NetManager implements IoHandler
 	 */
 	public <B extends Bean<B>> boolean ask(IoSession session, Bean<?> bean, int timeout, AnswerHandler<B> onAnswer)
 	{
-		if(session.isClosing() || bean == null) return false;
+		if (session.isClosing() || bean == null)
+			return false;
 		BeanContext<B> beanCtx = allocBeanContext(bean, session, onAnswer);
-		if(!send0(session, bean))
+		if (!send0(session, bean))
 		{
-			if(_beanCtxMap.remove(bean.serial(), beanCtx))
+			if (_beanCtxMap.remove(bean.serial(), beanCtx))
 			{
 				beanCtx.session = null;
 				beanCtx.askBean = null;
@@ -748,12 +771,13 @@ public class NetManager implements IoHandler
 	 */
 	public <B extends Bean<B>> CompletableFuture<B> askAsync(IoSession session, Bean<?> bean, int timeout)
 	{
-		if(session.isClosing() || bean == null) return null;
+		if (session.isClosing() || bean == null)
+			return null;
 		CompletableFuture<B> cf = new CompletableFuture<>();
 		BeanContext<B> beanCtx = allocBeanContext(bean, session, cf::complete);
-		if(!send0(session, bean))
+		if (!send0(session, bean))
 		{
-			if(_beanCtxMap.remove(bean.serial(), beanCtx))
+			if (_beanCtxMap.remove(bean.serial(), beanCtx))
 			{
 				beanCtx.session = null;
 				beanCtx.askBean = null;
@@ -777,7 +801,8 @@ public class NetManager implements IoHandler
 	 */
 	public <B extends Bean<B>> boolean askSafe(IoSession session, Bean<?> bean, AnswerHandler<B> onAnswer)
 	{
-		if(session.isClosing() || bean == null) return false;
+		if (session.isClosing() || bean == null)
+			return false;
 		SContext.current().addOnCommit(() -> ask(session, bean, onAnswer));
 		return true;
 	}
@@ -787,7 +812,8 @@ public class NetManager implements IoHandler
 	 */
 	public boolean answerSafe(IoSession session, Bean<?> askBean, Bean<?> answerBean)
 	{
-		if(session.isClosing() || askBean == null || answerBean == null) return false;
+		if (session.isClosing() || askBean == null || answerBean == null)
+			return false;
 		int askSerial = askBean.serial();
 		answerBean.serial(askSerial > 0 ? -askSerial : 0);
 		RawBean rawbean = new RawBean(answerBean);
@@ -797,7 +823,8 @@ public class NetManager implements IoHandler
 
 	public boolean answerSafe(IoSession session, int askSerial, Bean<?> answerBean)
 	{
-		if(session.isClosing() || answerBean == null) return false;
+		if (session.isClosing() || answerBean == null)
+			return false;
 		answerBean.serial(askSerial > 0 ? -askSerial : 0);
 		RawBean rawbean = new RawBean(answerBean);
 		SContext.current().addOnCommit(() -> send0(session, rawbean));
@@ -811,7 +838,7 @@ public class NetManager implements IoHandler
 	 */
 	public static boolean closeOnFlush(IoSession session)
 	{
-		if(session.setAttributeIfAbsent("closeOnFlushTime", (int)_timeSec + Const.closeOnFlushTimeout) != null)
+		if (session.setAttributeIfAbsent("closeOnFlushTime", (int)_timeSec + Const.closeOnFlushTimeout) != null)
 			return false;
 		session.closeOnFlush();
 		_closings.offer(session);
@@ -852,10 +879,10 @@ public class NetManager implements IoHandler
 	public void sessionCreated(IoSession session) throws Exception
 	{
 		Supplier<IoFilter> codecFactory = _codecFactory;
-		if(codecFactory != null)
+		if (codecFactory != null)
 		{
 			IoFilter codec = codecFactory.get();
-			if(codec != null)
+			if (codec != null)
 				session.getFilterChain().addLast("codec", codec);
 		}
 	}
@@ -863,14 +890,16 @@ public class NetManager implements IoHandler
 	@Override
 	public void sessionOpened(IoSession session)
 	{
-		if(Log.hasDebug) Log.debug("{}({}): open: {}", _name, session.getId(), session.getRemoteAddress());
+		if (Log.hasDebug)
+			Log.debug("{}({}): open: {}", _name, session.getId(), session.getRemoteAddress());
 		onAddSession(session);
 	}
 
 	@Override
 	public void sessionClosed(IoSession session)
 	{
-		if(Log.hasDebug) Log.debug("{}({}): close: {}", _name, session.getId(), session.getRemoteAddress());
+		if (Log.hasDebug)
+			Log.debug("{}({}): close: {}", _name, session.getId(), session.getRemoteAddress());
 		onDelSession(session);
 	}
 
@@ -885,19 +914,21 @@ public class NetManager implements IoHandler
 	{
 		Bean<?> bean = (Bean<?>)message;
 		int serial = bean.serial();
-		if(_enableTrace) Log.trace("{}({}): recv: {}({}):{}", _name, session.getId(), bean.typeName(), serial, bean);
-		if(serial < 0)
+		if (_enableTrace)
+			Log.trace("{}({}): recv: {}({}):{}", _name, session.getId(), bean.typeName(), serial, bean);
+		if (serial < 0)
 		{
 			BeanContext<?> beanCtx = _beanCtxMap.get(-serial);
-			if(beanCtx != null && beanCtx.session == session) // 判断session是否一致,避免伪造影响其它session的answer处理
+			if (beanCtx != null && beanCtx.session == session) // 判断session是否一致,避免伪造影响其它session的answer处理
 			{
-				if(!_beanCtxMap.remove(-serial, beanCtx)) return; // 异常情况,刚刚被其它地方处理了,所以不再继续处理了
+				if (!_beanCtxMap.remove(-serial, beanCtx))
+					return; // 异常情况,刚刚被其它地方处理了,所以不再继续处理了
 				Bean<?> askBean = beanCtx.askBean;
 				AnswerHandler<?> answerHandler = beanCtx.answerHandler;
 				beanCtx.session = null;
 				beanCtx.askBean = null;
 				beanCtx.answerHandler = null;
-				if(onAnswer(session, answerHandler, askBean, bean))
+				if (onAnswer(session, answerHandler, askBean, bean))
 					return;
 			}
 		}
@@ -916,30 +947,31 @@ public class NetManager implements IoHandler
 	{
 		String askTypeName = null;
 		int askSerial = 0;
-		if(answerBean == null)
+		if (answerBean == null)
 		{
-			if(askBean != null)
+			if (askBean != null)
 			{
 				askTypeName = askBean.typeName();
 				askSerial = askBean.serial();
 			}
 			Log.warn("{}({}): ask timeout: {}({}):{}", _name, session.getId(), askTypeName, askSerial, askBean);
 		}
-		if(answerHandler == null) return false;
+		if (answerHandler == null)
+			return false;
 		try
 		{
 			answerHandler.doAnswer(answerBean);
 		}
-		catch(Throwable e)
+		catch (Throwable e)
 		{
-			if(askTypeName == null && askBean != null)
+			if (askTypeName == null && askBean != null)
 			{
 				askTypeName = askBean.typeName();
 				askSerial = askBean.serial();
 			}
 			String answerTypeName = null;
 			int answerSerial = 0;
-			if(answerBean != null)
+			if (answerBean != null)
 			{
 				answerTypeName = answerBean.typeName();
 				answerSerial = answerBean.serial();
@@ -958,7 +990,7 @@ public class NetManager implements IoHandler
 	 */
 	protected void onProcess(IoSession session, BeanHandler<?> handler, Bean<?> bean)
 	{
-		if(handler == null) // 当收到一个没有注册处理器的bean时的回调
+		if (handler == null) // 当收到一个没有注册处理器的bean时的回调
 		{
 			Log.warn("{}({}): unhandled bean: {}({}):{}", _name, session.getId(), bean.typeName(), bean.serial(), bean);
 			// session.closeNow();
@@ -968,7 +1000,7 @@ public class NetManager implements IoHandler
 		{
 			handler.process(this, session, bean);
 		}
-		catch(Throwable e)
+		catch (Throwable e)
 		{
 			Log.error(e, "{}({}): onProcess exception: {}({}):{}", _name, session.getId(), bean.typeName(), bean.serial(), bean);
 		}
@@ -977,7 +1009,7 @@ public class NetManager implements IoHandler
 	@Override
 	public void exceptionCaught(IoSession session, Throwable cause)
 	{
-		if(cause instanceof IOException)
+		if (cause instanceof IOException)
 			Log.error("{}({},{}): exception: {}: {}", _name, session.getId(), session.getRemoteAddress(), cause.getClass().getSimpleName(), cause.getMessage());
 		else
 			Log.error(cause, "{}({},{}): exception:", _name, session.getId(), session.getRemoteAddress());

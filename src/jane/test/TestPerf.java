@@ -22,16 +22,18 @@ public final class TestPerf
 
 	public void begin()
 	{
-		if(!ENABLE) return;
+		if (!ENABLE)
+			return;
 		_startTime.set(System.nanoTime());
 	}
 
 	public void end()
 	{
-		if(!ENABLE) return;
+		if (!ENABLE)
+			return;
 		long t = System.nanoTime();
 		Long s = _startTime.get();
-		if(s != null)
+		if (s != null)
 		{
 			_allTime.getAndAdd(t - s);
 			_allCount.getAndIncrement();

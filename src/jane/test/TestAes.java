@@ -27,7 +27,7 @@ public final class TestAes
 	{
 		String filename = System.mapLibraryName("aesjni64");
 		File file = new File("lib", filename);
-		if(!file.exists())
+		if (!file.exists())
 			file = new File(filename);
 		System.load(file.getAbsolutePath());
 	}
@@ -48,7 +48,7 @@ public final class TestAes
 		aes.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(new byte[16], "AES"));
 		byte[] src = new byte[16];
 		long t = System.currentTimeMillis();
-		for(int i = 0; i < 10000000; ++i)
+		for (int i = 0; i < 10000000; ++i)
 			aes.update(src, 0, src.length, src, 0);
 		System.out.println(System.currentTimeMillis() - t);
 	}
@@ -59,7 +59,7 @@ public final class TestAes
 		aes.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(new byte[16], "AES"), new IvParameterSpec(new byte[16]));
 		byte[] src = new byte[16];
 		long t = System.currentTimeMillis();
-		for(int i = 0; i < 10000000; ++i)
+		for (int i = 0; i < 10000000; ++i)
 			aes.update(src, 0, src.length, src, 0);
 		System.out.println(System.currentTimeMillis() - t);
 	}
@@ -78,7 +78,7 @@ public final class TestAes
 		methodInit.invoke(aesCrypt, false, "AES", new byte[16]);
 		byte[] src = new byte[16];
 		long t = System.currentTimeMillis();
-		for(int i = 0; i < 10000000; ++i)
+		for (int i = 0; i < 10000000; ++i)
 			methodEncrypt.invoke(aesCrypt, src, 0, src, 0); // support "-XX:+UseAES -XX:+UseAESIntrinsics" optimization
 		System.out.println(System.currentTimeMillis() - t);
 //		System.out.println(src[0]);
@@ -98,7 +98,7 @@ public final class TestAes
 
 		byte[] src = new byte[16];
 		Object[] holds = new Object[100000];
-		for(int i = 0; i < holds.length; ++i)
+		for (int i = 0; i < holds.length; ++i)
 		{
 			holds[i] = cons.newInstance();
 			methodInit.invoke(holds[i], false, "AES", new byte[16]);
@@ -124,10 +124,10 @@ public final class TestAes
 		byte[] src = new byte[16];
 		byte[] dst = new byte[16];
 		long t = System.currentTimeMillis();
-		for(int i = 0; i < 10000000; ++i)
+		for (int i = 0; i < 10000000; ++i)
 		{
 			methodEncrypt.invoke(aesCrypt, src, 0, src, 0);
-			for(int j = 0; j < 16; ++j)
+			for (int j = 0; j < 16; ++j)
 				dst[j] ^= src[j];
 		}
 		System.out.println(System.currentTimeMillis() - t);
@@ -139,7 +139,7 @@ public final class TestAes
 
 		byte[] src = new byte[16];
 		long t = System.currentTimeMillis();
-		for(int i = 0; i < 10000000; ++i)
+		for (int i = 0; i < 10000000; ++i)
 			aes_encrypt(aes, src, 0);
 		System.out.println(System.currentTimeMillis() - t);
 //		System.out.println(src[0]);
@@ -155,7 +155,7 @@ public final class TestAes
 		rc4.setInputKey(new byte[16], 16);
 		byte[] src = new byte[16];
 		long t = System.currentTimeMillis();
-		for(int i = 0; i < 10000000; ++i)
+		for (int i = 0; i < 10000000; ++i)
 			rc4.updateInput(src, 0, src.length);
 		System.out.println(System.currentTimeMillis() - t);
 	}

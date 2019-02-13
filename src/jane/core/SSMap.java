@@ -111,7 +111,8 @@ public final class SSMap<K, V, S> extends SMap<K, V, S> implements NavigableMap<
 	{
 		SContext ctx = sContext();
 		Entry<K, V> e = ((NavigableMap<K, V>)_map).pollFirstEntry();
-		if(e == null) return null;
+		if (e == null)
+			return null;
 		addUndoRemove(ctx, e.getKey(), e.getValue());
 		return new SEntry(e);
 	}
@@ -121,7 +122,8 @@ public final class SSMap<K, V, S> extends SMap<K, V, S> implements NavigableMap<
 	{
 		SContext ctx = sContext();
 		Entry<K, V> e = ((NavigableMap<K, V>)_map).pollLastEntry();
-		if(e == null) return null;
+		if (e == null)
+			return null;
 		addUndoRemove(ctx, e.getKey(), e.getValue());
 		return new SEntry(e);
 	}

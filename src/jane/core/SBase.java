@@ -33,7 +33,7 @@ public abstract class SBase implements Runnable
 			{
 				_field.setBoolean(_bean, _saved);
 			}
-			catch(Exception e)
+			catch (Exception e)
 			{
 				throw new Error(e);
 			}
@@ -57,7 +57,7 @@ public abstract class SBase implements Runnable
 			{
 				_field.setChar(_bean, _saved);
 			}
-			catch(Exception e)
+			catch (Exception e)
 			{
 				throw new Error(e);
 			}
@@ -81,7 +81,7 @@ public abstract class SBase implements Runnable
 			{
 				_field.setByte(_bean, _saved);
 			}
-			catch(Exception e)
+			catch (Exception e)
 			{
 				throw new Error(e);
 			}
@@ -105,7 +105,7 @@ public abstract class SBase implements Runnable
 			{
 				_field.setShort(_bean, _saved);
 			}
-			catch(Exception e)
+			catch (Exception e)
 			{
 				throw new Error(e);
 			}
@@ -129,7 +129,7 @@ public abstract class SBase implements Runnable
 			{
 				_field.setInt(_bean, _saved);
 			}
-			catch(Exception e)
+			catch (Exception e)
 			{
 				throw new Error(e);
 			}
@@ -153,7 +153,7 @@ public abstract class SBase implements Runnable
 			{
 				_field.setLong(_bean, _saved);
 			}
-			catch(Exception e)
+			catch (Exception e)
 			{
 				throw new Error(e);
 			}
@@ -177,7 +177,7 @@ public abstract class SBase implements Runnable
 			{
 				_field.setFloat(_bean, _saved);
 			}
-			catch(Exception e)
+			catch (Exception e)
 			{
 				throw new Error(e);
 			}
@@ -201,7 +201,7 @@ public abstract class SBase implements Runnable
 			{
 				_field.setDouble(_bean, _saved);
 			}
-			catch(Exception e)
+			catch (Exception e)
 			{
 				throw new Error(e);
 			}
@@ -225,7 +225,7 @@ public abstract class SBase implements Runnable
 			{
 				_field.set(_bean, _saved);
 			}
-			catch(Exception e)
+			catch (Exception e)
 			{
 				throw new Error(e);
 			}
@@ -249,7 +249,7 @@ public abstract class SBase implements Runnable
 			{
 				_field.set(_bean, _saved);
 			}
-			catch(Exception e)
+			catch (Exception e)
 			{
 				throw new Error(e);
 			}

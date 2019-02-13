@@ -12,7 +12,7 @@ public class TestCache
 		System.out.print('[');
 		System.out.print(m.size());
 		System.out.print(']');
-		for(LongIterator it = m.keyIterator(); it.hasNext();)
+		for (LongIterator it = m.keyIterator(); it.hasNext();)
 		{
 			System.out.print(' ');
 			System.out.print(it.next());
@@ -22,7 +22,7 @@ public class TestCache
 
 	public static void test(LongMap<Integer> m)
 	{
-		for(int i = 0; i < 10; ++i)
+		for (int i = 0; i < 10; ++i)
 			m.put(i, i);
 		printMap(m);
 		m.put(10, 10);

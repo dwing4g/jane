@@ -40,7 +40,7 @@ public final class TestEchoAio extends TcpManager
 		SessionContext ctx = new SessionContext();
 		session.setUserObject(ctx);
 		byte[] buf = new byte[TEST_ECHO_SIZE];
-		for(int i = 0; i < 1; ++i)
+		for (int i = 0; i < 1; ++i)
 		{
 			ByteBuffer bb = ByteBufferPool.def().allocateDirect(TEST_ECHO_SIZE);
 			bb.put(buf);
@@ -63,7 +63,7 @@ public final class TestEchoAio extends TcpManager
 		SessionContext ctx = (SessionContext)session.getUserObject();
 		int recvSize = ctx.recvSize.addAndGet(size);
 		int sendSize = ctx.sendSize.get();
-		if(sendSize < TEST_ECHO_SIZE_ALL)
+		if (sendSize < TEST_ECHO_SIZE_ALL)
 		{
 			ByteBuffer bbSend = ByteBufferPool.def().allocateDirect(size);
 			bb.limit(size);
@@ -72,15 +72,18 @@ public final class TestEchoAio extends TcpManager
 			ctx.sendSize.getAndAdd(size);
 			session.send(bbSend);
 		}
-		else if(recvSize >= sendSize)
+		else if (recvSize >= sendSize)
 			session.close();
 	}
 
 	public static void main(String[] args) throws InterruptedException
 	{
-		if(args.length > 0) TEST_ECHO_SIZE = Integer.parseInt(args[0]);
-		if(args.length > 1) TEST_ECHO_SIZE_ALL = Integer.parseInt(args[1]);
-		if(args.length > 2) TEST_CLIENT_COUNT = Integer.parseInt(args[2]);
+		if (args.length > 0)
+			TEST_ECHO_SIZE = Integer.parseInt(args[0]);
+		if (args.length > 1)
+			TEST_ECHO_SIZE_ALL = Integer.parseInt(args[1]);
+		if (args.length > 2)
+			TEST_CLIENT_COUNT = Integer.parseInt(args[2]);
 		System.out.println("TestEchoAio: start(" + TEST_CLIENT_COUNT + ')');
 		_closedCount = new CountDownLatch(TEST_CLIENT_COUNT * 2);
 		// System.gc();
@@ -88,7 +91,7 @@ public final class TestEchoAio extends TcpManager
 		@SuppressWarnings("resource")
 		TestEchoAio mgr = new TestEchoAio(); //NOSONAR
 		mgr.startServer(new InetSocketAddress("0.0.0.0", 9123));
-		for(int i = 0; i < TEST_CLIENT_COUNT; ++i)
+		for (int i = 0; i < TEST_CLIENT_COUNT; ++i)
 			mgr.startClient(new InetSocketAddress("127.0.0.1", 9123));
 		_closedCount.await();
 		System.out.println("TestEchoAio: end (" + (System.currentTimeMillis() - time) + " ms)");

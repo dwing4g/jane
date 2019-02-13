@@ -10,7 +10,7 @@ public final class LevelDBCompact
 
 	public static void main(String[] args)
 	{
-		if(args.length < 1)
+		if (args.length < 1)
 		{
 			System.err.println("USAGE: java jane.tool.LevelDBCompact <database_file>");
 			return;
@@ -20,7 +20,7 @@ public final class LevelDBCompact
 		long t = System.currentTimeMillis();
 		System.err.println("INFO: opening " + filename + " ...");
 		long db = StorageLevelDB.leveldb_open3(filename, 0, 0, 0, 0, true, false);
-		if(db == 0)
+		if (db == 0)
 		{
 			System.err.println("ERROR: leveldb_open failed");
 			return;

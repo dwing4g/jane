@@ -35,20 +35,20 @@ public final class TestDBBenchmark
 			long t = System.currentTimeMillis();
 			final AtomicInteger checked = new AtomicInteger();
 			int logCount = Math.max(10000000 / countIn, 1);
-			for(int i = 0, keyFrom = KEY_BEGIN, keyDelta = -1; i < countOut; keyFrom += keyDelta, ++i)
+			for (int i = 0, keyFrom = KEY_BEGIN, keyDelta = -1; i < countOut; keyFrom += keyDelta, ++i)
 			{
-				if(keyFrom < KEY_BEGIN)
+				if (keyFrom < KEY_BEGIN)
 				{
 					keyFrom = KEY_BEGIN;
 					keyDelta = 1;
 				}
-				else if(keyFrom > KEY_BEGIN + keyAllCount - keyWinCount)
+				else if (keyFrom > KEY_BEGIN + keyAllCount - keyWinCount)
 				{
 					keyFrom = KEY_BEGIN + keyAllCount - keyWinCount;
 					keyDelta = -1;
 				}
 
-				for(int j = 0; j < countIn; ++j)
+				for (int j = 0; j < countIn; ++j)
 				{
 					final long id = (long)keyFrom + ThreadLocalRandom.current().nextInt(keyWinCount);
 					final long t0 = System.currentTimeMillis();
@@ -59,9 +59,10 @@ public final class TestDBBenchmark
 						{
 							long t1 = System.currentTimeMillis();
 							long tt = t1 - t0;
-							if(tt >= 250) Log.info("proc delay={}ms", tt);
+							if (tt >= 250)
+								Log.info("proc delay={}ms", tt);
 							TestBean.Safe a = lockGet(Benchmark, id);
-							if(a == null)
+							if (a == null)
 							{
 								TestBean aa = new TestBean();
 								aa.setValue2(id);
@@ -69,17 +70,18 @@ public final class TestDBBenchmark
 							}
 							else
 							{
-								if(a.getValue2() == id)
+								if (a.getValue2() == id)
 									checked.getAndIncrement();
 								else
 									a.setValue2(id);
 							}
 							tt = System.currentTimeMillis() - t1;
-							if(tt >= 250) Log.info("proc timeout={}ms", tt);
+							if (tt >= 250)
+								Log.info("proc timeout={}ms", tt);
 						}
 					}.run();
 				}
-				if(i % logCount == logCount - 1)
+				if (i % logCount == logCount - 1)
 				{
 					long rc = Benchmark.getReadCount();
 					long rtc = Benchmark.getReadStoCount();

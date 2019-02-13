@@ -53,25 +53,25 @@ public final class Const
 	{
 		String janeProp = System.getProperty("jane.prop");
 		boolean hasJainProp = (janeProp != null && !(janeProp = janeProp.trim()).isEmpty());
-		if(!hasJainProp)
+		if (!hasJainProp)
 			janeProp = "jane.properties";
-		try(InputStream isProp = (new File(janeProp).exists() ? new FileInputStream(janeProp) : Util.createStreamInJar(Const.class, janeProp)))
+		try (InputStream isProp = (new File(janeProp).exists() ? new FileInputStream(janeProp) : Util.createStreamInJar(Const.class, janeProp)))
 		{
-			if(isProp != null)
+			if (isProp != null)
 			{
 				Log.info("{}: load {} in {}", Const.class.getName(), janeProp, isProp.getClass().getSimpleName());
 				Properties props = new Properties();
 				props.load(isProp);
-				for(Entry<Object, Object> e : props.entrySet())
+				for (Entry<Object, Object> e : props.entrySet())
 				{
 					String k = (String)e.getKey();
 					System.setProperty(k.startsWith("jane.") ? k : "jane." + k, (String)e.getValue());
 				}
 			}
-			else if(hasJainProp)
+			else if (hasJainProp)
 				throw new FileNotFoundException();
 		}
-		catch(Exception e)
+		catch (Exception e)
 		{
 			Log.error(e, "{}: load {} failed", Const.class.getName(), janeProp);
 		}

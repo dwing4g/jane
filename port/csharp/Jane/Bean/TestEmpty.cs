@@ -63,7 +63,7 @@ namespace Jane.Bean
 		public OctetsStream Unmarshal(OctetsStream s)
 		{
 			Init();
-			for(;;) { int i = s.UnmarshalUInt1(), t = i & 3; if((i >>= 2) == 63) i += s.UnmarshalUInt1(); switch(i)
+			for (;;) { int i = s.UnmarshalUInt1(), t = i & 3; if ((i >>= 2) == 63) i += s.UnmarshalUInt1(); switch(i)
 			{
 				case 0: return s;
 				default: s.UnmarshalSkipVar(t); break;
@@ -88,7 +88,7 @@ namespace Jane.Bean
 
 		public override bool Equals(object o)
 		{
-			if(!(o is TestEmpty)) return false;
+			if (!(o is TestEmpty)) return false;
 			return true;
 		}
 
@@ -125,7 +125,7 @@ namespace Jane.Bean
 #if TO_JSON_LUA
 		public StringBuilder ToJson(StringBuilder s)
 		{
-			if(s == null) s = new StringBuilder(1024);
+			if (s == null) s = new StringBuilder(1024);
 			s.Append('{');
 			return s.Append('}');
 		}
@@ -137,7 +137,7 @@ namespace Jane.Bean
 
 		public StringBuilder ToLua(StringBuilder s)
 		{
-			if(s == null) s = new StringBuilder(1024);
+			if (s == null) s = new StringBuilder(1024);
 			s.Append('{');
 			return s.Append('}');
 		}

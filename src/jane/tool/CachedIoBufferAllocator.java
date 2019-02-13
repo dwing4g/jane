@@ -34,7 +34,7 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 			@SuppressWarnings("unchecked")
 			ArrayDeque<CachedBuffer>[] poolMap = new ArrayDeque[32];
 			poolMap[0] = new ArrayDeque<>();
-			for(int k = 1; k <= maxCachedBufferSize; k += k)
+			for (int k = 1; k <= maxCachedBufferSize; k += k)
 			{
 				int i = getIdx(k);
 				poolMap[i] = new ArrayDeque<>();
@@ -47,7 +47,8 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 	public static void globalSet(boolean useDirectBuffer, int maxPoolSize, int maxCachedBufferSize)
 	{
 		IoBuffer.setUseDirectBuffer(useDirectBuffer);
-		IoBuffer.setAllocator(maxPoolSize > 0 && maxCachedBufferSize > 0 ? new CachedIoBufferAllocator(maxPoolSize, maxCachedBufferSize) : SimpleBufferAllocator.instance);
+		IoBuffer.setAllocator(
+				maxPoolSize > 0 && maxCachedBufferSize > 0 ? new CachedIoBufferAllocator(maxPoolSize, maxCachedBufferSize) : SimpleBufferAllocator.instance);
 	}
 
 	public static long getAllocCount()
@@ -84,20 +85,21 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 	@Override
 	public IoBuffer allocate(int requestedCapacity, boolean direct)
 	{
-		if(requestedCapacity <= 0)
+		if (requestedCapacity <= 0)
 			return direct ? SimpleBufferAllocator.emptyDirectBuffer : SimpleBufferAllocator.emptyBuffer;
 
 		int actualCapacity = Integer.highestOneBit(requestedCapacity);
-		if(actualCapacity < requestedCapacity)
+		if (actualCapacity < requestedCapacity)
 		{
 			actualCapacity += actualCapacity;
-			if(actualCapacity < 0) actualCapacity = requestedCapacity; // must be > 0x4000_0000
+			if (actualCapacity < 0)
+				actualCapacity = requestedCapacity; // must be > 0x4000_0000
 		}
 		IoBuffer buf;
-		if(actualCapacity <= maxCachedBufferSize)
+		if (actualCapacity <= maxCachedBufferSize)
 		{
 			buf = (direct ? directBuffers : heapBuffers).get()[getIdx(actualCapacity)].pollFirst();
-			if(buf != null)
+			if (buf != null)
 			{
 				buf.clear();
 				buf.buf().order(ByteOrder.BIG_ENDIAN);
@@ -146,7 +148,7 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 		public void free() //NOTE: DO NOT double free
 		{
 			ArrayDeque<CachedBuffer> pool = (buf.isDirect() ? directBuffers : heapBuffers).get()[getIdx(buf.capacity())];
-			if(pool.size() < maxPoolSize)
+			if (pool.size() < maxPoolSize)
 			{
 				pool.addFirst(this);
 				freeCount.getAndIncrement();

@@ -25,7 +25,7 @@ public final class TestMain
 			Log.info("================================ startup: end");
 			ExitManager.waitStdInToExit();
 		}
-		catch(Throwable e)
+		catch (Throwable e)
 		{
 			Log.error("startup exception:", e);
 			e.printStackTrace(System.err);

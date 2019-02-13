@@ -29,10 +29,10 @@ public abstract class UdpManager
 	 */
 	public static DatagramPacket allocPacket()
 	{
-		synchronized(freeList)
+		synchronized (freeList)
 		{
 			int size = freeSize;
-			if(size > 0)
+			if (size > 0)
 			{
 				freeSize = --size;
 				DatagramPacket packet = freeList[size];
@@ -49,10 +49,10 @@ public abstract class UdpManager
 	 */
 	public static void freePacket(DatagramPacket packet)
 	{
-		synchronized(freeList)
+		synchronized (freeList)
 		{
 			final int size = freeSize;
-			if(size < PACKET_BUFFER_CAPACITY)
+			if (size < PACKET_BUFFER_CAPACITY)
 			{
 				freeList[size] = packet;
 				freeSize = size + 1;
@@ -70,7 +70,7 @@ public abstract class UdpManager
 	 */
 	public synchronized void start(SocketAddress addr) throws IOException
 	{
-		if(isRunning())
+		if (isRunning())
 			throw new IllegalStateException(name + " has already started");
 
 		final DatagramSocket s = new DatagramSocket(addr != null ? addr : new InetSocketAddress(0));
@@ -87,28 +87,28 @@ public abstract class UdpManager
 				Log.info("{} started", threadName);
 				try
 				{
-					for(;;)
+					for (;;)
 					{
 						try
 						{
-							if(s.isClosed())
+							if (s.isClosed())
 								break;
 							final DatagramPacket packet = allocPacket();
 							s.receive(packet); // 当前socket缓冲区为空时会阻塞. 返回时会为packet设置地址. 出错时会抛各种异常
 							onReceive(packet); // 业务处理可能会抛各种异常
 						}
-						catch(InterruptedException e)
+						catch (InterruptedException e)
 						{
 							throw e;
 						}
-						catch(Throwable e)
+						catch (Throwable e)
 						{
 							Log.error(e, "{} exception:", threadName);
 							Thread.sleep(1); // 避免频繁出错
 						}
 					}
 				}
-				catch(InterruptedException interruptedException)
+				catch (InterruptedException interruptedException)
 				{
 					Log.info("{} interrupted", threadName);
 				}
@@ -128,14 +128,14 @@ public abstract class UdpManager
 	 */
 	public synchronized void stop() throws InterruptedException
 	{
-		if(socket != null)
+		if (socket != null)
 		{
 			final SocketAddress addr = socket.getLocalSocketAddress();
 			socket.close();
 			socket = null;
 			Log.info("{}({}): stopped", name, addr);
 		}
-		if(receiveThread != null)
+		if (receiveThread != null)
 		{
 			receiveThread.interrupt();
 			receiveThread.join();
@@ -154,7 +154,7 @@ public abstract class UdpManager
 	public boolean send(DatagramPacket packet) throws IOException
 	{
 		final DatagramSocket s = socket;
-		if(s == null)
+		if (s == null)
 			return false;
 		s.send(packet);
 		return true;

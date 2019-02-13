@@ -101,26 +101,28 @@ public final class TestStress extends Procedure
 		@Override
 		public OctetsStream marshal(OctetsStream os)
 		{
-			if(value1 != 0) os.marshal1((byte)4).marshal(value1);
+			if (value1 != 0)
+				os.marshal1((byte)4).marshal(value1);
 			return os.marshalZero();
 		}
 
 		@Override
 		public OctetsStream unmarshal(OctetsStream os) throws MarshalException
 		{
-			for(;;)
+			for (;;)
 			{
 				int i = os.unmarshalInt1(), t = i & 3;
-				if((i >>= 2) == 63) i += os.unmarshalInt1();
-				switch(i)
+				if ((i >>= 2) == 63)
+					i += os.unmarshalInt1();
+				switch (i)
 				{
-					case 0:
-						return os;
-					case 1:
-						value1 = os.unmarshalInt(t);
-						break;
-					default:
-						os.unmarshalSkipVar(t);
+				case 0:
+					return os;
+				case 1:
+					value1 = os.unmarshalInt(t);
+					break;
+				default:
+					os.unmarshalSkipVar(t);
 				}
 			}
 		}
@@ -166,7 +168,7 @@ public final class TestStress extends Procedure
 					FIELD_value1 = StressBean.class.getDeclaredField("value1");
 					FIELD_value1.setAccessible(true);
 				}
-				catch(Exception e)
+				catch (Exception e)
 				{
 					throw new Error(e);
 				}
@@ -184,7 +186,8 @@ public final class TestStress extends Procedure
 
 			public void setValue1(int value1)
 			{
-				if(initSContext()) _sctx.addOnRollback(new SBase.SInteger(_bean, FIELD_value1, _bean.getValue1()));
+				if (initSContext())
+					_sctx.addOnRollback(new SBase.SInteger(_bean, FIELD_value1, _bean.getValue1()));
 				_bean.setValue1(value1);
 			}
 		}
@@ -200,40 +203,40 @@ public final class TestStress extends Procedure
 			int id1 = rand.nextInt() & (RECORD_COUNT - 1);
 			StressBean.Safe b1 = lockGet(stressTable, id1);
 			Integer c1 = checkMap.get(id1);
-			if(c1 == null)
+			if (c1 == null)
 			{
 				int v1 = rand.nextInt();
 				checkMap.put(id1, v1);
 				stressTable.put(id1, new StressBean(v1));
 				return;
 			}
-			if(b1 == null)
+			if (b1 == null)
 				throw new Exception("check 11 failed: b1 = null");
 			int v11 = b1.getValue1();
-			if(v11 != c1.intValue())
+			if (v11 != c1.intValue())
 				throw new Exception("check 12 failed: " + v11 + " != " + c1.intValue());
 
 			int id2 = v11 & (RECORD_COUNT - 1);
 			StressBean.Safe b2 = stressTable.lockGet(id2);
 			int v1 = b1.getValue1();
-			if(v1 != v11)
+			if (v1 != v11)
 				throw new Exception("check 21 failed: " + v1 + " != " + v11);
-			if(v1 != c1.intValue())
+			if (v1 != c1.intValue())
 				throw new Exception("check 22 failed: " + v1 + " != " + c1.intValue());
-			if(c1 != checkMap.get(id1))
+			if (c1 != checkMap.get(id1))
 				throw new Exception("check 23 failed: " + c1 + " != " + checkMap.get(id1));
 			Integer c2 = checkMap.get(id2);
-			if(c2 == null)
+			if (c2 == null)
 			{
 				int v2 = rand.nextInt();
 				checkMap.put(id2, v2);
 				stressTable.put(id2, new StressBean(v2));
 				return;
 			}
-			if(b2 == null)
+			if (b2 == null)
 				throw new Exception("check 24 failed: b2 = null");
 			int v2 = b2.getValue1();
-			if(v2 != c2.intValue())
+			if (v2 != c2.intValue())
 				throw new Exception("check 25 failed: " + v2 + " != " + c2.intValue());
 
 			v1 = rand.nextInt();
@@ -244,15 +247,15 @@ public final class TestStress extends Procedure
 			b2.setValue1(v2);
 			counter.getAndIncrement();
 		}
-		catch(Error e)
+		catch (Error e)
 		{
-			if(e == redoException())
+			if (e == redoException())
 				redo = true;
 			throw e;
 		}
 		finally
 		{
-			if(!redo && !DBManager.instance().isExiting())
+			if (!redo && !DBManager.instance().isExiting())
 				DBManager.instance().submit(id, new TestStress(id)); // 也可以用this,但跟实际用途不太相符
 		}
 	}
@@ -266,11 +269,11 @@ public final class TestStress extends Procedure
 		dbm.startCommitThread();
 
 		Log.info("start... (press CTRL+C to stop)");
-		for(int i = 0; i < CONCURRENT_COUNT; ++i)
+		for (int i = 0; i < CONCURRENT_COUNT; ++i)
 			DBManager.instance().submit(i, new TestStress(i));
 
 		long lastRemoveCount = 0;
-		for(;;) //NOSONAR
+		for (;;) //NOSONAR
 		{
 			long curRemoveCount = CacheRef.getRefRemoveCount();
 			Log.info("TQ=" + dbm.getProcThreads().getQueue().size() +

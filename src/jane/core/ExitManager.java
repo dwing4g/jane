@@ -18,32 +18,32 @@ public final class ExitManager
 			try
 			{
 				Log.info("ExitManager: shutdown begin");
-				for(Runnable r : getShutdownUserCallbacks())
+				for (Runnable r : getShutdownUserCallbacks())
 				{
 					try
 					{
 						r.run();
 					}
-					catch(Throwable e)
+					catch (Throwable e)
 					{
 						Log.error("ExitManager: user callback exception:", e);
 					}
 				}
 				getShutdownUserCallbacks().clear();
-				for(Runnable r : getShutdownSystemCallbacks())
+				for (Runnable r : getShutdownSystemCallbacks())
 				{
 					try
 					{
 						r.run();
 					}
-					catch(Throwable e)
+					catch (Throwable e)
 					{
 						Log.error("ExitManager: system callback exception:", e);
 					}
 				}
 				getShutdownSystemCallbacks().clear();
 			}
-			catch(Throwable e)
+			catch (Throwable e)
 			{
 				Log.error("ExitManager: fatal exception:", e);
 			}
@@ -79,7 +79,7 @@ public final class ExitManager
 	 */
 	public static void waitStdInToExit() throws IOException
 	{
-		for(byte[] inbuf = new byte[4];;)
+		for (byte[] inbuf = new byte[4];;)
 		{
 			int n;
 			IOException ex = null;
@@ -87,17 +87,17 @@ public final class ExitManager
 			{
 				n = System.in.read(inbuf);
 			}
-			catch(IOException e)
+			catch (IOException e)
 			{
 				n = -1;
 				ex = e;
 			}
-			if(n < 0)
+			if (n < 0)
 			{
 				System.out.println("!!!STDIN TRIGGER DISABLED!!! (" + n + (ex != null ? ", " + ex.getMessage() : "") + ')');
 				return;
 			}
-			if(n == 4 && inbuf[0] == '!' && inbuf[1] == '@' && inbuf[2] == '#' && inbuf[3] == '$')
+			if (n == 4 && inbuf[0] == '!' && inbuf[1] == '@' && inbuf[2] == '#' && inbuf[3] == '$')
 			{
 				Log.info("STDIN TRIGGERED EXIT");
 				System.out.println("!!!STDIN TRIGGERED EXIT!!!");

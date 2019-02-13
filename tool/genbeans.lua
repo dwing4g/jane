@@ -53,8 +53,8 @@ public #(bean.final)class #(bean.name) extends Bean<#(bean.name)>
 	#(bean.param_warning)@Override
 	public void assign(#(bean.name) _b_)
 	{#<#
-		if(_b_ == this) return;
-		if(_b_ == null) { reset(); return; }#>#
+		if (_b_ == this) return;
+		if (_b_ == null) { reset(); return; }#>#
 #(#		#(var.assign);
 #)#	}
 #(#
@@ -109,7 +109,7 @@ public #(bean.final)class #(bean.name) extends Bean<#(bean.name)>
 	@Override
 	public OctetsStream unmarshal(OctetsStream _s_) throws MarshalException
 	{
-		for(;;) { int _i_ = _s_.unmarshalInt1(), _t_ = _i_ & 3; if((_i_ >>= 2) == 63) _i_ += _s_.unmarshalInt1(); switch(_i_)
+		for (;;) { int _i_ = _s_.unmarshalInt1(), _t_ = _i_ & 3; if ((_i_ >>= 2) == 63) _i_ += _s_.unmarshalInt1(); switch(_i_)
 		{
 			case 0: return _s_;
 #(##(var.unmarshal)#)#			default: _s_.unmarshalSkipVar(_t_);
@@ -133,20 +133,20 @@ public #(bean.final)class #(bean.name) extends Bean<#(bean.name)>
 	@Override
 	public boolean equals(Object o)
 	{
-		if(o == this) return true;
-		if(!(o instanceof #(bean.name))) return false;#<#
+		if (o == this) return true;
+		if (!(o instanceof #(bean.name))) return false;#<#
 		#(bean.name) _b_ = (#(bean.name))o;#>#
-#(#		if(#(var.equals)) return false;
+#(#		if (#(var.equals)) return false;
 #)#		return true;
 	}
 
 	@Override
 	public int compareTo(#(bean.name) _b_)
 	{
-		if(_b_ == this) return 0;
-		if(_b_ == null) return 1;#<#
+		if (_b_ == this) return 0;
+		if (_b_ == null) return 1;#<#
 		int _c_;#>#
-#(#		_c_ = #(var.compareto); if(_c_ != 0) return _c_;
+#(#		_c_ = #(var.compareto); if (_c_ != 0) return _c_;
 #)#		return 0;
 	}
 
@@ -180,7 +180,7 @@ public #(bean.final)class #(bean.name) extends Bean<#(bean.name)>
 			{
 				Class<#(bean.name)> _c_ = #(bean.name).class;
 #(##(var.fieldget)#)#			}
-			catch(Exception e)
+			catch (Exception e)
 			{
 				throw new Error(e);
 			}
@@ -213,7 +213,7 @@ public final class AllBeans
 
 	public static IntHashMap<BeanHandler<?>> get#(hdl.name)Handlers(IntHashMap<BeanHandler<?>> r)
 	{
-		if(r == null) r = new IntHashMap<>(#(hdl.count) * 2);
+		if (r == null) r = new IntHashMap<>(#(hdl.count) * 2);
 #(#		r.put(#(bean.type), new #(hdl.path).#(bean.name)Handler());
 #)#		return r;
 	}
@@ -456,7 +456,7 @@ typedef.byte =
 		/** @param #(var.name) #(var.comment1) */
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.S#(var.type_o)(_bean, FIELD_#(var.name), _bean.get#(var.name_u)()));
+			if (initSContext()) _sctx.addOnRollback(new SBase.S#(var.type_o)(_bean, FIELD_#(var.name), _bean.get#(var.name_u)()));
 			_bean.set#(var.name_u)(#(var.name));
 		}
 ]],
@@ -573,7 +573,7 @@ typedef.string = merge(typedef.byte,
 		/** @param #(var.name) #(var.comment1) */
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SObject(_bean, FIELD_#(var.name), _bean.get#(var.name_u)()));
+			if (initSContext()) _sctx.addOnRollback(new SBase.SObject(_bean, FIELD_#(var.name), _bean.get#(var.name_u)()));
 			_bean.set#(var.name_u)((#(var.name) != null ? #(var.name) : ""));
 		}
 ]],
@@ -598,7 +598,7 @@ typedef.octets = merge(typedef.string,
 	new = "\t\t#(var.name) = new Octets(#(var.cap));\n",
 	init = "this.#(var.name) = (#(var.name) != null ? #(var.name) : new Octets(#(var.cap)))",
 	reset = "#(var.name).clear()",
-	assign = "if(_b_.#(var.name) != null) this.#(var.name).replace(_b_.#(var.name)); else this.#(var.name).clear()",
+	assign = "if (_b_.#(var.name) != null) this.#(var.name).replace(_b_.#(var.name)); else this.#(var.name).clear()",
 	set = [[
 
 	/** @param #(var.name) #(var.comment1) */
@@ -643,7 +643,7 @@ typedef.octets = merge(typedef.string,
 		/** @param #(var.name) #(var.comment1) */
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.get#(var.name_u)(), false));
+			if (initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.get#(var.name_u)(), false));
 			_bean.set#(var.name_u)((#(var.name) != null ? #(var.name).clone() : new Octets(#(var.cap))));
 		}
 
@@ -656,7 +656,7 @@ typedef.octets = merge(typedef.string,
 		/** #(var.comment1) */
 		public void marshal#(var.name_u)(Bean<?> _b_)
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.get#(var.name_u)(), false));
+			if (initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.get#(var.name_u)(), false));
 			_bean.set#(var.name_u)(_b_.marshal(new OctetsStream(_b_.initSize())));
 		}
 
@@ -722,22 +722,22 @@ typedef.vector = merge(typedef.octets,
 	marshal = function(var)
 		if var.id <= 0 then return "" end
 		return var.id < 63 and
-			format([[		if(!this.#(var.name).isEmpty())
+			format([[		if (!this.#(var.name).isEmpty())
 		{
 			int _i_ = 0, _n_ = this.#(var.name).size();
 			_s_.marshal2(0x%04x).marshalUInt(_n_);
 			do
 				_s_.marshal(this.#(var.name).get(_i_));
-			while(++_i_ < _n_);
+			while (++_i_ < _n_);
 		}
 ]], var.id * 0x400 + 0x300 + subtypeid(var.k)) or
-			format([[		if(!this.#(var.name).isEmpty())
+			format([[		if (!this.#(var.name).isEmpty())
 		{
 			int _i_ = 0, _n_ = this.#(var.name).size();
 			_s_.marshal3(0x%06x).marshalUInt(_n_);
 			do
 				_s_.marshal(this.#(var.name).get(_i_));
-			while(++_i_ < _n_);
+			while (++_i_ < _n_);
 		}
 ]], 0xff0000 + (var.id - 63) * 0x100 + subtypeid(var.k))
 	end,
@@ -746,12 +746,12 @@ typedef.vector = merge(typedef.octets,
 			case #(var.id):
 			{
 				this.#(var.name).clear();
-				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
+				if (_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
 				_t_ = _s_.unmarshalInt1();
-				if(_t_ >= 8) { _s_.unmarshalSkipVarSub(_t_); break; }
+				if (_t_ >= 8) { _s_.unmarshalSkipVarSub(_t_); break; }
 				int _n_ = _s_.unmarshalUInt();
 				this.#(var.name).ensureCapacity(_n_ < 1000 ? _n_ : 1000);
-				for(; _n_ > 0; --_n_)
+				for (; _n_ > 0; --_n_)
 					this.#(var.name).add(%s);
 			} break;
 ]], get_unmarshal_kv(var, "k", "_t_"))
@@ -768,17 +768,17 @@ typedef.list = merge(typedef.vector,
 	marshal = function(var)
 		if var.id <= 0 then return "" end
 		return var.id < 63 and
-			format([[		if(!this.#(var.name).isEmpty())
+			format([[		if (!this.#(var.name).isEmpty())
 		{
 			_s_.marshal2(0x%04x).marshalUInt(this.#(var.name).size());
-			for(%s v : this.#(var.name))
+			for (%s v : this.#(var.name))
 				_s_.marshal(v);
 		}
 ]], var.id * 0x400 + 0x300 + subtypeid(var.k), subtypename(var, var.k)) or
-			format([[		if(!this.#(var.name).isEmpty())
+			format([[		if (!this.#(var.name).isEmpty())
 		{
 			_s_.marshal3(0x%06x).marshalUInt(this.#(var.name).size());
-			for(%s v : this.#(var.name))
+			for (%s v : this.#(var.name))
 				_s_.marshal(v);
 		}
 ]], 0xff0000 + (var.id - 63) * 0x100 + subtypeid(var.k), subtypename(var, var.k))
@@ -788,10 +788,10 @@ typedef.list = merge(typedef.vector,
 			case #(var.id):
 			{
 				this.#(var.name).clear();
-				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
+				if (_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
 				_t_ = _s_.unmarshalInt1();
-				if(_t_ >= 8) { _s_.unmarshalSkipVarSub(_t_); break; }
-				for(int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
+				if (_t_ >= 8) { _s_.unmarshalSkipVarSub(_t_); break; }
+				for (int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
 					this.#(var.name).add(%s);
 			} break;
 ]], get_unmarshal_kv(var, "k", "_t_"))
@@ -827,7 +827,7 @@ typedef.hashset = merge(typedef.list,
 		/** @return #(var.comment1) */
 		public #(var.stype) get#(var.name_u)()
 		{
-			if(CACHE_#(var.name) == null) CACHE_#(var.name) = new #(var.stype)(this, _bean.get#(var.name_u)(), LISTENER_#(var.name));
+			if (CACHE_#(var.name) == null) CACHE_#(var.name) = new #(var.stype)(this, _bean.get#(var.name_u)(), LISTENER_#(var.name));
 			return CACHE_#(var.name);
 		}
 
@@ -877,7 +877,7 @@ typedef.hashmap = merge(typedef.list,
 		/** @return #(var.comment1) */
 		public #(var.stype) get#(var.name_u)()
 		{
-			if(CACHE_#(var.name) == null) CACHE_#(var.name) = new #(var.stype)(this, _bean.get#(var.name_u)(), LISTENER_#(var.name));
+			if (CACHE_#(var.name) == null) CACHE_#(var.name) = new #(var.stype)(this, _bean.get#(var.name_u)(), LISTENER_#(var.name));
 			return CACHE_#(var.name);
 		}
 
@@ -891,17 +891,17 @@ typedef.hashmap = merge(typedef.list,
 	marshal = function(var)
 		if var.id <= 0 then return "" end
 		return var.id < 63 and
-			format([[		if(!this.#(var.name).isEmpty())
+			format([[		if (!this.#(var.name).isEmpty())
 		{
 			_s_.marshal2(0x%04x).marshalUInt(this.#(var.name).size());
-			for(Entry<%s, %s> e : this.#(var.name).entrySet())
+			for (Entry<%s, %s> e : this.#(var.name).entrySet())
 				_s_.marshal(e.getKey()).marshal(e.getValue());
 		}
 ]], var.id * 0x400 + 0x340 + subtypeid(var.k) * 8 + subtypeid(var.v), subtypename(var, var.k), subtypename(var, var.v)) or
-			format([[		if(!this.#(var.name).isEmpty())
+			format([[		if (!this.#(var.name).isEmpty())
 		{
 			_s_.marshal3(0x%06x).marshalUInt(this.#(var.name).size());
-			for(Entry<%s, %s> e : this.#(var.name).entrySet())
+			for (Entry<%s, %s> e : this.#(var.name).entrySet())
 				_s_.marshal(e.getKey()).marshal(e.getValue());
 		}
 ]], 0xff0040 + (var.id - 63) * 0x100 + subtypeid(var.k) * 8 + subtypeid(var.v), subtypename(var, var.k), subtypename(var, var.v))
@@ -911,11 +911,11 @@ typedef.hashmap = merge(typedef.list,
 			case #(var.id):
 			{
 				this.#(var.name).clear();
-				if(_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
+				if (_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
 				_t_ = _s_.unmarshalInt1();
-				if((_t_ >> 6) != 1) { _s_.unmarshalSkipVarSub(_t_); break; }
+				if ((_t_ >> 6) != 1) { _s_.unmarshalSkipVarSub(_t_); break; }
 				int _k_ = (_t_ >> 3) & 7; _t_ &= 7;
-				for(int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
+				for (int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
 					this.#(var.name).put(%s, %s);
 			} break;
 ]], get_unmarshal_kv(var, "k", "_k_"), get_unmarshal_kv(var, "v", "_t_"))
@@ -974,14 +974,14 @@ typedef.bean = merge(typedef.octets,
 		{
 			int _n_ = _s_.size();
 			this.#(var.name).marshal(_s_.marshal1((byte)0x%02x));
-			if(_s_.size() - _n_ < 3) _s_.resize(_n_);
+			if (_s_.size() - _n_ < 3) _s_.resize(_n_);
 		}
 ]], var.id * 4 + 2) or
 			format([[
 		{
 			int _n_ = _s_.size();
 			this.#(var.name).marshal(_s_.marshal2(0x%04x));
-			if(_s_.size() - _n_ < 3) _s_.resize(_n_);
+			if (_s_.size() - _n_ < 3) _s_.resize(_n_);
 		}
 ]], 0xfe00 + var.id - 63)
 	end,
@@ -1021,7 +1021,7 @@ typedef.ref = merge(typedef.bean,
 		/** @param #(var.name) #(var.comment1) */
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			if(initSContext()) _sctx.addOnRollback(new SBase.SObject(_bean, FIELD_#(var.name), _bean.get#(var.name_u)()));
+			if (initSContext()) _sctx.addOnRollback(new SBase.SObject(_bean, FIELD_#(var.name), _bean.get#(var.name_u)()));
 			_bean.set#(var.name_u)(#(var.name));
 		}
 ]] end,
@@ -1226,15 +1226,15 @@ function bean(bean)
 	code = code_conv(code, "bean", bean):
 		gsub("\r", ""):
 		gsub(#vartypes > 1 and "#[<>]#" or "#<#.-#>#", ""):
-		gsub("\n\t\tstatic\n\t\t{\n\t\t\ttry\n\t\t\t{\n\t\t\t\tClass<.-> _c_ = .-%.class;\n\t\t\t}\n\t\t\tcatch%(Exception e%)\n\t\t\t{\n\t\t\t\tthrow new Error%(e%);\n\t\t\t}\n\t\t}\n\n", ""):
+		gsub("\n\t\tstatic\n\t\t{\n\t\t\ttry\n\t\t\t{\n\t\t\t\tClass<.-> _c_ = .-%.class;\n\t\t\t}\n\t\t\tcatch %(Exception e%)\n\t\t\t{\n\t\t\t\tthrow new Error%(e%);\n\t\t\t}\n\t\t}\n\n", ""):
 		gsub("int h = (%(int%)serialVersionUID;)\n\t\treturn h;", "return %1"):
 		gsub("\t+/%*%* @return  %*/\n", ""):
 		gsub("\t+/%*%* @param [%w_]+  %*/\n", ""):
 		gsub("\t+/%*%*  %*/\n", ""):
 		gsub("\n\t{\n\n\t\t", "\n\t{\n\t\t"):
 		gsub("\t\t_h_ = _h_ %* 16777619 %+ 0;\n", ""):
-		gsub("\t\tif%(%) return false;\n", ""):
-		gsub("\t\t_c_ = 0; if%(_c_ != 0%) return _c_;\n", ""):
+		gsub("\t\tif %(%) return false;\n", ""):
+		gsub("\t\t_c_ = 0; if %(_c_ != 0%) return _c_;\n", ""):
 		gsub("( new %w+)<.->", "%1<>"):
 		gsub("\n\n\n", "\n\n")
 	if not code:find("\tprivate static final Field ") then
@@ -1248,7 +1248,7 @@ function bean(bean)
 		{
 			Class<[%w_%.]+> _c_ = [%w_%.]+%.class;
 		}
-		catch%(Exception e%)
+		catch %(Exception e%)
 		{
 		}
 	}

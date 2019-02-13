@@ -43,10 +43,11 @@ public abstract class ActorThread<T> extends Thread
 	protected ActorThread(String threadName)
 	{
 		super(threadName);
-		for(Method method : getClass().getDeclaredMethods())
+		for (Method method : getClass().getDeclaredMethods())
 		{
 			Event anno = method.getAnnotation(Event.class);
-			if(anno == null) continue;
+			if (anno == null)
+				continue;
 			method.setAccessible(true);
 			dispatcher.put(anno.value(), method);
 		}
@@ -85,18 +86,18 @@ public abstract class ActorThread<T> extends Thread
 
 	public void postMsg(T msg)
 	{
-		if(msg != null)
+		if (msg != null)
 			msgQueue.offer(msg);
 	}
 
 	public void postDelayMsg(long delayMs, T msg)
 	{
-		if(delayMs <= 0)
+		if (delayMs <= 0)
 		{
 			postMsg(msg);
 			return;
 		}
-		if(msg == null)
+		if (msg == null)
 			return;
 		delayExecutor.schedule(() -> postMsg(msg), delayMs, TimeUnit.MILLISECONDS);
 	}
@@ -104,35 +105,36 @@ public abstract class ActorThread<T> extends Thread
 	@Override
 	public void run()
 	{
-		if(Thread.currentThread() != this || started)
+		if (Thread.currentThread() != this || started)
 			throw new IllegalStateException();
-		for(started = true;;)
+		for (started = true;;)
 		{
 			try
 			{
 				long timeBegin = System.currentTimeMillis();
-				for(;;)
+				for (;;)
 				{
 					T msg = msgQueue.poll();
-					if(msg == null)
+					if (msg == null)
 						break;
 					Method method = dispatcher.get(msg.getClass());
-					if(method != null)
+					if (method != null)
 						method.invoke(this, msg);
 					else
 						onUnknown(msg);
 				}
 				onIdle();
 				long sleepTime = periodMs - (System.currentTimeMillis() - timeBegin);
-				if(sleepTime > 0) Thread.sleep(sleepTime);
+				if (sleepTime > 0)
+					Thread.sleep(sleepTime);
 			}
-			catch(InterruptedException e)
+			catch (InterruptedException e)
 			{
-				if(onInterrupted())
+				if (onInterrupted())
 					break;
 				interrupted(); // clear status
 			}
-			catch(Throwable e)
+			catch (Throwable e)
 			{
 				onException(e);
 			}

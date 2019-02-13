@@ -49,23 +49,23 @@ public final class TestEcho extends NetManager
 				public WriteRequest poll()
 				{
 					WriteRequest wr;
-					synchronized(this)
+					synchronized (this)
 					{
 						wr = _wrq.pollFirst();
 					}
-					if(wr == NioSession.CLOSE_REQUEST)
+					if (wr == NioSession.CLOSE_REQUEST)
 					{
 						wr = null;
 						session.closeNow();
 						dispose();
 					}
-					else if(wr == NioSession.SHUTDOWN_REQUEST)
+					else if (wr == NioSession.SHUTDOWN_REQUEST)
 					{
 						try
 						{
 							((NioSession)session).getChannel().shutdownOutput();
 						}
-						catch(IOException e)
+						catch (IOException e)
 						{
 						}
 						dispose();
@@ -105,7 +105,7 @@ public final class TestEcho extends NetManager
 
 	static
 	{
-		for(int i = 0; i < perf.length; ++i)
+		for (int i = 0; i < perf.length; ++i)
 			perf[i] = new TestPerf();
 	}
 
@@ -113,7 +113,7 @@ public final class TestEcho extends NetManager
 	public synchronized void startServer(SocketAddress addr) throws IOException
 	{
 		// setIoThreadCount(TEST_THREAD_COUNT / 2);
-		if(getAcceptor().getSessionDataStructureFactory() != _dsFactory)
+		if (getAcceptor().getSessionDataStructureFactory() != _dsFactory)
 			getAcceptor().setSessionDataStructureFactory(_dsFactory);
 		getServerConfig().setReuseAddress(true);
 		getServerConfig().setTcpNoDelay(true);
@@ -124,7 +124,7 @@ public final class TestEcho extends NetManager
 	public synchronized ConnectFuture startClient(SocketAddress addr)
 	{
 		// setIoThreadCount(TEST_THREAD_COUNT / 2);
-		if(getConnector().getSessionDataStructureFactory() != _dsFactory)
+		if (getConnector().getSessionDataStructureFactory() != _dsFactory)
 			getConnector().setSessionDataStructureFactory(_dsFactory);
 		getClientConfig().setTcpNoDelay(true);
 		return super.startClient(addr);
@@ -158,7 +158,7 @@ public final class TestEcho extends NetManager
 	@Override
 	public void messageReceived(IoSession session, Object message)
 	{
-		if(_recvCount.getAndIncrement() < TEST_ECHO_COUNT)
+		if (_recvCount.getAndIncrement() < TEST_ECHO_COUNT)
 		{
 //			perf[6].begin();
 			write(session, message);
@@ -171,10 +171,14 @@ public final class TestEcho extends NetManager
 	public static void main(String[] args) throws IOException, InterruptedException
 	{
 		Log.removeAppendersFromArgs(args);
-		if(args.length > 0) TEST_THREAD_COUNT = Integer.parseInt(args[0]);
-		if(args.length > 1) TEST_CLIENT_COUNT = Integer.parseInt(args[1]);
-		if(args.length > 2) TEST_ECHO_SIZE = Integer.parseInt(args[2]);
-		if(args.length > 3) TEST_ECHO_COUNT = Integer.parseInt(args[3]);
+		if (args.length > 0)
+			TEST_THREAD_COUNT = Integer.parseInt(args[0]);
+		if (args.length > 1)
+			TEST_CLIENT_COUNT = Integer.parseInt(args[1]);
+		if (args.length > 2)
+			TEST_ECHO_SIZE = Integer.parseInt(args[2]);
+		if (args.length > 3)
+			TEST_ECHO_COUNT = Integer.parseInt(args[3]);
 		System.out.println("TestEcho: start: " + TEST_CLIENT_COUNT);
 		_closedCount = new CountDownLatch(TEST_CLIENT_COUNT * 2);
 		CachedIoBufferAllocator.globalSet((args.length > 4 ? Integer.parseInt(args[4]) : 0) > 0,
@@ -185,7 +189,7 @@ public final class TestEcho extends NetManager
 //		perf[0].begin();
 		TestEcho mgr = new TestEcho();
 		mgr.startServer(new InetSocketAddress("0.0.0.0", 9123));
-		for(int i = 0; i < TEST_CLIENT_COUNT; ++i)
+		for (int i = 0; i < TEST_CLIENT_COUNT; ++i)
 			mgr.startClient(new InetSocketAddress("127.0.0.1", 9123));
 //		perf[0].end();
 //		perf[1].begin();

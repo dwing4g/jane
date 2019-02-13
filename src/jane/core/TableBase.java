@@ -27,14 +27,14 @@ public abstract class TableBase<V extends Bean<V>>
 	 */
 	static void trySaveModifiedAll(long[] counts)
 	{
-		for(int i = 0, n = _tables.size(); i < n; ++i)
+		for (int i = 0, n = _tables.size(); i < n; ++i)
 		{
 			TableBase<?> table = _tables.get(i);
 			try
 			{
 				table.trySaveModified(counts);
 			}
-			catch(Throwable e)
+			catch (Throwable e)
 			{
 				Log.error(e, "db-commit thread exception(trySaveModified:{}):", table.getTableName());
 			}
@@ -47,14 +47,14 @@ public abstract class TableBase<V extends Bean<V>>
 	static int saveModifiedAll()
 	{
 		int m = 0;
-		for(int i = 0, n = _tables.size(); i < n; ++i)
+		for (int i = 0, n = _tables.size(); i < n; ++i)
 		{
 			TableBase<?> table = _tables.get(i);
 			try
 			{
 				m += table.saveModified();
 			}
-			catch(Throwable e)
+			catch (Throwable e)
 			{
 				Log.error(e, "db-commit thread exception(saveModified:{}):", table.getTableName());
 			}

@@ -45,7 +45,7 @@ public class TcpManager implements Closeable
 				return t;
 			});
 		}
-		catch(IOException e)
+		catch (IOException e)
 		{
 			throw new Error(e);
 		}
@@ -58,14 +58,14 @@ public class TcpManager implements Closeable
 		{
 			_acceptor = AsynchronousServerSocketChannel.open(group);
 			int backlog = onAcceptorCreated(_acceptor, attachment);
-			if(backlog >= 0)
+			if (backlog >= 0)
 			{
 				_acceptor.bind(addr, backlog);
 				beginAccept();
 				return;
 			}
 		}
-		catch(Throwable e)
+		catch (Throwable e)
 		{
 			doException(null, e);
 		}
@@ -88,7 +88,7 @@ public class TcpManager implements Closeable
 	public synchronized void stopServer()
 	{
 		AsynchronousServerSocketChannel acceptor = _acceptor;
-		if(acceptor != null)
+		if (acceptor != null)
 		{
 			_acceptor = null;
 			closeChannel(acceptor);
@@ -112,12 +112,12 @@ public class TcpManager implements Closeable
 		{
 			channel = AsynchronousSocketChannel.open(group);
 			int recvBufSize = onChannelCreated(channel, attachment);
-			if(recvBufSize >= 0)
+			if (recvBufSize >= 0)
 				channel.connect(addr, new ConnectParam(channel, recvBufSize), _connectHandler);
 			else
 				channel.close();
 		}
-		catch(Throwable e)
+		catch (Throwable e)
 		{
 			doException(null, e);
 			closeChannel(channel);
@@ -150,7 +150,7 @@ public class TcpManager implements Closeable
 		{
 			onException(session, e);
 		}
-		catch(Throwable ex)
+		catch (Throwable ex)
 		{
 			ex.printStackTrace();
 		}
@@ -162,7 +162,7 @@ public class TcpManager implements Closeable
 		{
 			_acceptor.accept(null, _acceptHandler);
 		}
-		catch(Throwable e)
+		catch (Throwable e)
 		{
 			doException(null, e);
 			stopServer();
@@ -173,19 +173,19 @@ public class TcpManager implements Closeable
 	{
 		try
 		{
-			if(channel instanceof AsynchronousSocketChannel)
+			if (channel instanceof AsynchronousSocketChannel)
 				((AsynchronousSocketChannel)channel).shutdownOutput();
 		}
-		catch(Throwable e)
+		catch (Throwable e)
 		{
 			doException(null, e);
 		}
 		try
 		{
-			if(channel != null)
+			if (channel != null)
 				channel.close();
 		}
-		catch(Throwable e)
+		catch (Throwable e)
 		{
 			doException(null, e);
 		}
@@ -193,13 +193,13 @@ public class TcpManager implements Closeable
 
 	final boolean removeSession(TcpSession session, int reason)
 	{
-		if(_sessions.remove(session) == null)
+		if (_sessions.remove(session) == null)
 			return false;
 		try
 		{
 			onSessionClosed(session, reason);
 		}
-		catch(Throwable e)
+		catch (Throwable e)
 		{
 			doException(session, e);
 		}
@@ -289,7 +289,7 @@ public class TcpManager implements Closeable
 	@SuppressWarnings("static-method")
 	public void onException(TcpSession session, Throwable ex)
 	{
-		if(!(ex instanceof ClosedChannelException) && !(ex instanceof IOException))
+		if (!(ex instanceof ClosedChannelException) && !(ex instanceof IOException))
 			ex.printStackTrace();
 	}
 
@@ -304,7 +304,7 @@ public class TcpManager implements Closeable
 			try
 			{
 				int recvBufSize = onChannelCreated(channel, attachment);
-				if(recvBufSize < 0)
+				if (recvBufSize < 0)
 				{
 					channel.close();
 					return;
@@ -314,10 +314,10 @@ public class TcpManager implements Closeable
 				onSessionCreated(session);
 				session.beginRecv();
 			}
-			catch(Throwable e)
+			catch (Throwable e)
 			{
 				doException(session, e);
-				if(session != null)
+				if (session != null)
 					session.close(TcpSession.CLOSE_EXCEPTION);
 				else
 					closeChannel(channel);
@@ -357,10 +357,10 @@ public class TcpManager implements Closeable
 				onSessionCreated(session);
 				session.beginRecv();
 			}
-			catch(Throwable e)
+			catch (Throwable e)
 			{
 				doException(session, e);
-				if(session != null)
+				if (session != null)
 					session.close(TcpSession.CLOSE_EXCEPTION);
 			}
 		}
@@ -375,7 +375,7 @@ public class TcpManager implements Closeable
 				closeChannel(channel);
 				onConnectFailed(addr, ex);
 			}
-			catch(Exception e)
+			catch (Exception e)
 			{
 				closeChannel(channel);
 				doException(null, e);

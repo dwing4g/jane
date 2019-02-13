@@ -163,7 +163,7 @@ public final class LongConcurrentHashMapWrap<V> extends LongMap<V>
 		@Override
 		public boolean moveToNext()
 		{
-			if(!it.hasNext())
+			if (!it.hasNext())
 				return false;
 			Entry<Long, V> e = it.next();
 			key = e.getKey();

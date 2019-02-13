@@ -28,7 +28,7 @@ public final class TestMpScRingBuffer<T>
 	 */
 	public TestMpScRingBuffer(int bufSize)
 	{
-		if(bufSize < 2 || Integer.highestOneBit(bufSize) != bufSize)
+		if (bufSize < 2 || Integer.highestOneBit(bufSize) != bufSize)
 			throw new IllegalArgumentException();
 		buffer = new Object[bufSize];
 		idxMask = bufSize - 1;
@@ -41,15 +41,15 @@ public final class TestMpScRingBuffer<T>
 
 	public boolean offer(T obj)
 	{
-		if(obj == null)
+		if (obj == null)
 			throw new NullPointerException();
-		for(;;)
+		for (;;)
 		{
 			long wi = writeIdx.get();
 			long p = wi - idxMask;
-			if(readCacheIdx <= p && (readCacheIdx = readIdx.get()) <= p)
+			if (readCacheIdx <= p && (readCacheIdx = readIdx.get()) <= p)
 				return false;
-			if(writeIdx.compareAndSet(wi, wi + 1))
+			if (writeIdx.compareAndSet(wi, wi + 1))
 			{
 				buffer[(int)wi & idxMask] = obj;
 				return true;
@@ -61,18 +61,18 @@ public final class TestMpScRingBuffer<T>
 	public T poll()
 	{
 		long ri = readIdx.get();
-		if(ri == writeCacheIdx && ri == (writeCacheIdx = writeIdx.get()))
+		if (ri == writeCacheIdx && ri == (writeCacheIdx = writeIdx.get()))
 			return null;
 		readIdx.lazySet(ri + 1);
-		for(int i = (int)ri & idxMask, n = 0;;)
+		for (int i = (int)ri & idxMask, n = 0;;)
 		{
 			Object obj = buffer[i];
-			if(obj != null)
+			if (obj != null)
 			{
 				buffer[i] = null;
 				return (T)obj;
 			}
-			if(++n > 50)
+			if (++n > 50)
 				Thread.yield();
 		}
 	}
@@ -81,41 +81,41 @@ public final class TestMpScRingBuffer<T>
 	public T peek()
 	{
 		long ri = readIdx.get();
-		if(ri == writeIdx.get())
+		if (ri == writeIdx.get())
 			return null;
-		for(int i = (int)ri & idxMask, n = 0;;)
+		for (int i = (int)ri & idxMask, n = 0;;)
 		{
 			Object obj = buffer[i];
-			if(obj != null)
+			if (obj != null)
 				return (T)obj;
-			if(++n > 50)
+			if (++n > 50)
 				Thread.yield();
 		}
 	}
 
 	public void put(T obj) throws InterruptedException
 	{
-		for(int n = 0;;)
+		for (int n = 0;;)
 		{
-			if(offer(obj))
+			if (offer(obj))
 				return;
-			if(++n > 1000)
+			if (++n > 1000)
 				Thread.sleep(50);
-			else if(n > 10)
+			else if (n > 10)
 				Thread.yield();
 		}
 	}
 
 	public T take() throws InterruptedException
 	{
-		for(int n = 0;;)
+		for (int n = 0;;)
 		{
 			T obj = poll();
-			if(obj != null)
+			if (obj != null)
 				return obj;
-			if(++n > 1000)
+			if (++n > 1000)
 				Thread.sleep(50);
-			else if(n > 10)
+			else if (n > 10)
 				Thread.yield();
 		}
 	}
@@ -133,21 +133,21 @@ public final class TestMpScRingBuffer<T>
 		final long[] rrs = new long[1];
 		final Thread[] wts = new Thread[WRITER_COUNT];
 
-		for(int i = 0; i < WRITER_COUNT; ++i)
+		for (int i = 0; i < WRITER_COUNT; ++i)
 		{
 			final int k = i;
 			wts[i] = new Thread(() ->
 			{
 				try
 				{
-					for(int j = k; j < TEST_COUNT; j += WRITER_COUNT)
+					for (int j = k; j < TEST_COUNT; j += WRITER_COUNT)
 					{
 						int v = j & 127;
 						wrs[k * 8] += v;
 						buf.put(Integer.valueOf(v));
 					}
 				}
-				catch(InterruptedException e)
+				catch (InterruptedException e)
 				{
 					e.printStackTrace();
 				}
@@ -159,10 +159,10 @@ public final class TestMpScRingBuffer<T>
 		{
 			try
 			{
-				for(int i = 0; i < TEST_COUNT; ++i)
+				for (int i = 0; i < TEST_COUNT; ++i)
 					rrs[0] += buf.take();
 			}
-			catch(InterruptedException e)
+			catch (InterruptedException e)
 			{
 				e.printStackTrace();
 			}
@@ -170,7 +170,7 @@ public final class TestMpScRingBuffer<T>
 		rt.start();
 
 		long wr = 0;
-		for(int i = 0; i < WRITER_COUNT; ++i)
+		for (int i = 0; i < WRITER_COUNT; ++i)
 		{
 			wts[i].join();
 			wr += wrs[i * 8];

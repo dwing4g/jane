@@ -94,7 +94,7 @@ namespace ]=] .. namespace .. [=[
 
 		virtual BeanOctetsStream& Unmarshal(BeanOctetsStream& _s_) override
 		{
-			for(;;) { int _i_ = _s_.pop_byte(), _t_ = _i_ & 3; if((_i_ >>= 2) == 63) _i_ += _s_.pop_byte(); switch(_i_)
+			for (;;) { int _i_ = _s_.pop_byte(), _t_ = _i_ & 3; if ((_i_ >>= 2) == 63) _i_ += _s_.pop_byte(); switch(_i_)
 			{
 				case 0: return _s_;
 #(#				#(var.unmarshal) break;
@@ -178,8 +178,8 @@ typedef.byte =
 	reset = "#(var.name) = 0",
 	marshal = function(var)
 		return var.id < 63 and
-			format("if(#(var.name) != 0) _s_.push_byte((char)0x%02x) << #(var.name);", var.id * 4) or
-			format("if(#(var.name) != 0) _s_.push_int16(0x%04x) << #(var.name);", 0xfc00 + var.id - 63)
+			format("if (#(var.name) != 0) _s_.push_byte((char)0x%02x) << #(var.name);", var.id * 4) or
+			format("if (#(var.name) != 0) _s_.push_int16(0x%04x) << #(var.name);", 0xfc00 + var.id - 63)
 	end,
 	unmarshal = "case #(var.id): #(var.name) = (#(var.type))_s_.UnmarshalInt(_t_);",
 	unmarshal_kv = function(var, kv, t) if kv then return "(" .. typename(var, var[kv]) .. ")_s_.UnmarshalIntKV(" .. t .. ")" end end,
@@ -206,8 +206,8 @@ typedef.bool = merge(typedef.byte,
 	reset = "#(var.name) = false",
 	marshal = function(var)
 		return var.id < 63 and
-			format("if(#(var.name)) _s_.push_int16(0x%04x);", var.id * 0x400 + 1) or
-			format("if(#(var.name)) _s_.push_int24(0x%06x);", 0xfc0001 + (var.id - 63) * 0x100)
+			format("if (#(var.name)) _s_.push_int16(0x%04x);", var.id * 0x400 + 1) or
+			format("if (#(var.name)) _s_.push_int24(0x%06x);", 0xfc0001 + (var.id - 63) * 0x100)
 	end,
 	unmarshal = "case #(var.id): #(var.name) = (_s_.UnmarshalLong(_t_) != 0);",
 	unmarshal_kv = function(var, kv, t) if kv then return "(_s_.UnmarshalLongKV(" .. t .. ") != 0)" end end,
@@ -218,8 +218,8 @@ typedef.float = merge(typedef.byte,
 	subtypeid = 4,
 	marshal = function(var)
 		return var.id < 63 and
-			format("if(#(var.name) != 0) _s_.push_int16(0x%04x) << #(var.name);", var.id * 0x400 + 0x308) or
-			format("if(#(var.name) != 0) _s_.push_int24(0x%06x) << #(var.name);", 0xff0008 + (var.id - 63) * 0x100)
+			format("if (#(var.name) != 0) _s_.push_int16(0x%04x) << #(var.name);", var.id * 0x400 + 0x308) or
+			format("if (#(var.name) != 0) _s_.push_int24(0x%06x) << #(var.name);", 0xff0008 + (var.id - 63) * 0x100)
 	end,
 	unmarshal = "case #(var.id): #(var.name) = _s_.UnmarshalFloat(_t_);",
 	unmarshal_kv = function(var, kv, t) if kv then return "_s_.UnmarshalFloatKV(" .. t .. ")" end end,
@@ -230,8 +230,8 @@ typedef.double = merge(typedef.float,
 	subtypeid = 5,
 	marshal = function(var)
 		return var.id < 63 and
-			format("if(#(var.name) != 0) _s_.push_int16(0x%04x) << #(var.name);", var.id * 0x400 + 0x309) or
-			format("if(#(var.name) != 0) _s_.push_int24(0x%06x) << #(var.name);", 0xff0009 + (var.id - 63) * 0x100)
+			format("if (#(var.name) != 0) _s_.push_int16(0x%04x) << #(var.name);", var.id * 0x400 + 0x309) or
+			format("if (#(var.name) != 0) _s_.push_int24(0x%06x) << #(var.name);", 0xff0009 + (var.id - 63) * 0x100)
 	end,
 	unmarshal = "case #(var.id): #(var.name) = _s_.UnmarshalDouble(_t_);",
 	unmarshal_kv = function(var, kv, t) if kv then return "_s_.UnmarshalDoubleKV(" .. t .. ")" end end,
@@ -245,8 +245,8 @@ typedef.string = merge(typedef.byte,
 	reset = "#(var.name).clear()",
 	marshal = function(var)
 		return var.id < 63 and
-			format("if(!#(var.name).empty()) _s_.push_byte((char)0x%02x) << #(var.name);", var.id * 4 + 1) or
-			format("if(!#(var.name).empty()) _s_.push_int16(0x%04x) << #(var.name);", 0xfd00 + var.id - 63)
+			format("if (!#(var.name).empty()) _s_.push_byte((char)0x%02x) << #(var.name);", var.id * 4 + 1) or
+			format("if (!#(var.name).empty()) _s_.push_int16(0x%04x) << #(var.name);", 0xfd00 + var.id - 63)
 	end,
 	unmarshal = "case #(var.id): _s_.UnmarshalString(#(var.name), _t_);",
 	unmarshal_kv = function(var, kv, t) if kv then return "_s_.UnmarshalStringKV(" .. t .. ")" end end,
@@ -268,35 +268,35 @@ typedef.vector = merge(typedef.octets,
 	assign = "#(var.name).assign(_b_.#(var.name).begin(), _b_.#(var.name).end())",
 	marshal = function(var)
 		return var.id < 63 and
-			format([[if(!#(var.name).empty())
+			format([[if (!#(var.name).empty())
 			{
 				_s_.push_int16(0x%04x).compact_uint32(#(var.name).size());
-				for(const auto& _e_ : #(var.name))
+				for (const auto& _e_ : #(var.name))
 					_s_ << _e_;
 			}]], var.id * 0x400 + 0x300 + subtypeid(var.k)) or
-			format([[if(!#(var.name).empty())
+			format([[if (!#(var.name).empty())
 			{
 				_s_.push_int24(0x%06x).compact_uint32(#(var.name).size());
-				for(const auto& _e_ : #(var.name))
+				for (const auto& _e_ : #(var.name))
 					_s_ << _e_;
 			}]], 0xff0000 + (var.id - 63) * 0x100 + subtypeid(var.k))
 	end,
 	unmarshal = function(var) return format([[case #(var.id):
 				{
 					#(var.name).clear();
-					if(_t_ != 3) { _s_.UnmarshalSkipVar(_t_); break; }
+					if (_t_ != 3) { _s_.UnmarshalSkipVar(_t_); break; }
 					_t_ = _s_.pop_byte();
-					if(_t_ >= 8) { _s_.UnmarshalSkipVarSub(_t_); break; }
+					if (_t_ >= 8) { _s_.UnmarshalSkipVarSub(_t_); break; }
 					unsigned int n = 0;
 					_s_.uncompact_uint32(n);
 					#(var.name).reserve(n < 0x10000 ? n : 0x10000);
-					for(; n > 0; --n)
+					for (; n > 0; --n)
 						#(var.name).emplace_back(%s);
 				}]], get_unmarshal_kv(var, "k", "_t_")) end,
 	tostring = [[_s_ << '{';
-			for(const auto& _e_ : #(var.name))
+			for (const auto& _e_ : #(var.name))
 				_s_ << _e_ << ',';
-			if(!#(var.name).empty())
+			if (!#(var.name).empty())
 				_s_.seekp(-1, std::ios::cur);
 			_s_ << "},"]]
 })
@@ -309,12 +309,12 @@ typedef.list = merge(typedef.vector,
 	unmarshal = function(var) return format([[case #(var.id):
 				{
 					#(var.name).clear();
-					if(_t_ != 3) { _s_.UnmarshalSkipVar(_t_); break; }
+					if (_t_ != 3) { _s_.UnmarshalSkipVar(_t_); break; }
 					_t_ = _s_.pop_byte();
-					if(_t_ >= 8) { _s_.UnmarshalSkipVarSub(_t_); break; }
+					if (_t_ >= 8) { _s_.UnmarshalSkipVarSub(_t_); break; }
 					unsigned int n = 0;
 					_s_.uncompact_uint32(n);
-					for(; n > 0; --n)
+					for (; n > 0; --n)
 						#(var.name).emplace_back(%s);
 				}]], get_unmarshal_kv(var, "k", "_t_")) end,
 })
@@ -329,12 +329,12 @@ typedef.hashset = merge(typedef.vector,
 	unmarshal = function(var) return format([[case #(var.id):
 				{
 					#(var.name).clear();
-					if(_t_ != 3) { _s_.UnmarshalSkipVar(_t_); break; }
+					if (_t_ != 3) { _s_.UnmarshalSkipVar(_t_); break; }
 					_t_ = _s_.pop_byte();
-					if(_t_ >= 8) { _s_.UnmarshalSkipVarSub(_t_); break; }
+					if (_t_ >= 8) { _s_.UnmarshalSkipVarSub(_t_); break; }
 					unsigned int n = 0;
 					_s_.uncompact_uint32(n);
-					for(; n > 0; --n)
+					for (; n > 0; --n)
 						#(var.name).emplace(%s);
 				}]], get_unmarshal_kv(var, "k", "_t_")) end,
 })
@@ -353,38 +353,38 @@ typedef.hashmap = merge(typedef.hashset,
 	assign = "#(var.name).clear(); #(var.name).insert(_b_.#(var.name).begin(), _b_.#(var.name).end())",
 	marshal = function(var)
 		return var.id < 63 and
-			format([[if(!#(var.name).empty())
+			format([[if (!#(var.name).empty())
 			{
 				_s_.push_int16(0x%04x).compact_uint32(#(var.name).size());
-				for(const auto& _p_ : #(var.name))
+				for (const auto& _p_ : #(var.name))
 					_s_ << _p_.first << _p_.second;
 			}]], var.id * 0x400 + 0x340 + subtypeid(var.k) * 8 + subtypeid(var.v), subtypename(var, var.k), subtypename(var, var.v)) or
-			format([[if(!#(var.name).empty())
+			format([[if (!#(var.name).empty())
 			{
 				_s_.push_int16(0x%04x).compact_uint32(#(var.name).size());
-				for(const auto& _p_ : #(var.name))
+				for (const auto& _p_ : #(var.name))
 					_s_ << _p_.first << _p_.second;
 			}]], 0xff0040 + (var.id - 63) * 0x100 + subtypeid(var.k) * 8 + subtypeid(var.v), subtypename(var, var.k), subtypename(var, var.v))
 	end,
 	unmarshal = function(var) return format([[case #(var.id):
 				{
 					#(var.name).clear();
-					if(_t_ != 3) { _s_.UnmarshalSkipVar(_t_); break; }
+					if (_t_ != 3) { _s_.UnmarshalSkipVar(_t_); break; }
 					_t_ = _s_.pop_byte();
-					if((_t_ >> 6) != 1) { _s_.UnmarshalSkipVarSub(_t_); break; }
+					if ((_t_ >> 6) != 1) { _s_.UnmarshalSkipVarSub(_t_); break; }
 					int _k_ = (_t_ >> 3) & 7; _t_ &= 7;
 					unsigned int n = 0;
 					_s_.uncompact_uint32(n);
-					for(; n > 0; --n)
+					for (; n > 0; --n)
 						#(var.name).emplace(%s, %s);
 				}]], get_unmarshal_kv(var, "k", "_k_"), get_unmarshal_kv(var, "v", "_t_")) end,
 	tostring = [[_s_ << '{';
-			for(const auto& _p_ : #(var.name))
+			for (const auto& _p_ : #(var.name))
 			{
 				_s_ << _p_.first << '=';
 				_s_ << _p_.second << ',';
 			}
-			if(!#(var.name).empty())
+			if (!#(var.name).empty())
 				_s_.seekp(-1, std::ios::cur);
 			_s_ << "},"]]
 })
@@ -409,12 +409,12 @@ typedef.bean = merge(typedef.octets,
 			format([[{
 				auto _n_ = _s_.size();
 				_s_.push_byte((char)0x%02x) << #(var.name);
-				if(_s_.size() - _n_ < 3) _s_.resize(_n_);
+				if (_s_.size() - _n_ < 3) _s_.resize(_n_);
 			}]], var.id * 4 + 2) or
 			format([[{
 				auto _n_ = _s_.size();
 				_s_.push_byte((char)0x%02x) << #(var.name);
-				if(_s_.size() - _n_ < 3) _s_.resize(_n_);
+				if (_s_.size() - _n_ < 3) _s_.resize(_n_);
 			}]], 0xfe00 + var.id - 63)
 	end,
 	unmarshal = "case #(var.id): _s_.UnmarshalBean(#(var.name), _t_);",

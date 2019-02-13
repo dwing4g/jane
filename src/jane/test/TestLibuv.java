@@ -29,7 +29,7 @@ public final class TestLibuv implements Libuv.LibuvLoopHandler
 	{
 		// System.out.println("onRecv(" + handle_stream + "): " + len);
 		// Libuv.libuv_tcp_send(handle_stream, bb, 0, len);
-		if(_recvCount.getAndIncrement() < TEST_ECHO_COUNT)
+		if (_recvCount.getAndIncrement() < TEST_ECHO_COUNT)
 			Libuv.libuv_tcp_send(handle_stream, bb, 0, len);
 		else
 			Libuv.libuv_tcp_close(handle_stream, 4321);
@@ -51,7 +51,7 @@ public final class TestLibuv implements Libuv.LibuvLoopHandler
 	{
 		String filename = System.mapLibraryName("uvjni64");
 		File file = new File("lib", filename);
-		if(!file.exists())
+		if (!file.exists())
 			file = new File(filename);
 		System.load(file.getAbsolutePath());
 	}
@@ -62,7 +62,8 @@ public final class TestLibuv implements Libuv.LibuvLoopHandler
 
 		long hloop = Libuv.libuv_loop_create(new TestLibuv());
 		System.out.println("libuv_loop_create: " + hloop);
-		if(hloop == 0) return;
+		if (hloop == 0)
+			return;
 
 		bb = Libuv.libuv_loop_buffer(hloop);
 		System.out.println("libuv_loop_buffer: pos=" + bb.position());
@@ -92,33 +93,37 @@ public final class TestLibuv implements Libuv.LibuvLoopHandler
 
 	public static void main(String[] args)
 	{
-		if(args.length > 0) TEST_CLIENT_COUNT = Integer.parseInt(args[0]);
-		if(args.length > 1) TEST_ECHO_SIZE = Integer.parseInt(args[1]);
-		if(args.length > 2) TEST_ECHO_COUNT = Integer.parseInt(args[2]);
+		if (args.length > 0)
+			TEST_CLIENT_COUNT = Integer.parseInt(args[0]);
+		if (args.length > 1)
+			TEST_ECHO_SIZE = Integer.parseInt(args[1]);
+		if (args.length > 2)
+			TEST_ECHO_COUNT = Integer.parseInt(args[2]);
 
 		System.out.println("TestLibuv: start: " + TEST_CLIENT_COUNT);
 		_closedCount = new CountDownLatch(TEST_CLIENT_COUNT * 2);
 		long time = System.currentTimeMillis();
 
 		long hloop = Libuv.libuv_loop_create(new TestLibuv());
-		if(hloop == 0)
+		if (hloop == 0)
 		{
 			System.out.println("libuv_loop_create: " + hloop);
 			return;
 		}
 		bb = Libuv.libuv_loop_buffer(hloop);
 		int r = Libuv.libuv_tcp_bind(hloop, null, 9123, 10);
-		if(r != 0)
+		if (r != 0)
 		{
 			System.out.println("libuv_tcp_bind: " + r);
 			return;
 		}
-		for(int i = 0; i < TEST_CLIENT_COUNT; ++i)
+		for (int i = 0; i < TEST_CLIENT_COUNT; ++i)
 			Libuv.libuv_tcp_connect(hloop, "127.0.0.1", 9123);
-		for(;;)
+		for (;;)
 		{
 			Libuv.libuv_loop_run(hloop, 2);
-			if(_closedCount.getCount() == 0) break;
+			if (_closedCount.getCount() == 0)
+				break;
 		}
 		System.out.println("TestLibuv: end (" + (System.currentTimeMillis() - time) + " ms)");
 		System.exit(0);

@@ -12,9 +12,9 @@ public class OctetsStreamEx extends OctetsStream
 	{
 		OctetsStreamEx os = new OctetsStreamEx();
 		os._buffer = data;
-		if(size > data.length) os._count = data.length;
-		else if(size < 0)      os._count = 0;
-		else                   os._count = size;
+		if (size > data.length) os._count = data.length;
+		else if (size < 0)      os._count = 0;
+		else                    os._count = size;
 		os._pos = pos;
 		return os;
 	}
@@ -23,15 +23,15 @@ public class OctetsStreamEx extends OctetsStream
 	{
 		OctetsStreamEx os = new OctetsStreamEx();
 		os._buffer = data;
-		if(size > data.length) os._count = data.length;
-		else if(size < 0)      os._count = 0;
-		else                   os._count = size;
+		if (size > data.length) os._count = data.length;
+		else if (size < 0)      os._count = 0;
+		else                    os._count = size;
 		return os;
 	}
 
 	public static OctetsStreamEx wrap(byte[] data)
 	{
-		if(data == null) throw new NullPointerException();
+		if (data == null) throw new NullPointerException();
 		OctetsStreamEx os = new OctetsStreamEx();
 		os._buffer = data;
 		os._count = data.length;
@@ -49,7 +49,7 @@ public class OctetsStreamEx extends OctetsStream
 	public static OctetsStreamEx createSpace(int size)
 	{
 		OctetsStreamEx os = new OctetsStreamEx();
-		if(size > 0)
+		if (size > 0)
 			os._buffer = new byte[size];
 		return os;
 	}

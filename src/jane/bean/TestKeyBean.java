@@ -96,7 +96,7 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 	@Override
 	public OctetsStream unmarshal(OctetsStream _s_) throws MarshalException
 	{
-		for(;;) { int _i_ = _s_.unmarshalInt1(), _t_ = _i_ & 3; if((_i_ >>= 2) == 63) _i_ += _s_.unmarshalInt1(); switch(_i_)
+		for (;;) { int _i_ = _s_.unmarshalInt1(), _t_ = _i_ & 3; if ((_i_ >>= 2) == 63) _i_ += _s_.unmarshalInt1(); switch(_i_)
 		{
 			case 0: return _s_;
 			case 1: this.key1 = _s_.unmarshalInt(_t_); break;
@@ -123,22 +123,22 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 	@Override
 	public boolean equals(Object o)
 	{
-		if(o == this) return true;
-		if(!(o instanceof TestKeyBean)) return false;
+		if (o == this) return true;
+		if (!(o instanceof TestKeyBean)) return false;
 		TestKeyBean _b_ = (TestKeyBean)o;
-		if(this.key1 != _b_.key1) return false;
-		if(!this.key2.equals(_b_.key2)) return false;
+		if (this.key1 != _b_.key1) return false;
+		if (!this.key2.equals(_b_.key2)) return false;
 		return true;
 	}
 
 	@Override
 	public int compareTo(TestKeyBean _b_)
 	{
-		if(_b_ == this) return 0;
-		if(_b_ == null) return 1;
+		if (_b_ == this) return 0;
+		if (_b_ == null) return 1;
 		int _c_;
-		_c_ = Integer.compare(this.key1, _b_.key1); if(_c_ != 0) return _c_;
-		_c_ = this.key2.compareTo(_b_.key2); if(_c_ != 0) return _c_;
+		_c_ = Integer.compare(this.key1, _b_.key1); if (_c_ != 0) return _c_;
+		_c_ = this.key2.compareTo(_b_.key2); if (_c_ != 0) return _c_;
 		return 0;
 	}
 

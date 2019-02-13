@@ -48,7 +48,8 @@ public final class DynBean extends Bean<DynBean>
 
 	public Object setField(int id, Object o)
 	{
-		if(id < 1 || id > 190) throw new IllegalArgumentException("field id must be in [1,190]: " + id);
+		if (id < 1 || id > 190)
+			throw new IllegalArgumentException("field id must be in [1,190]: " + id);
 		return _fields.put(id, o);
 	}
 
@@ -91,7 +92,7 @@ public final class DynBean extends Bean<DynBean>
 	@Override
 	public OctetsStream marshal(OctetsStream os)
 	{
-		for(Entry<Integer, Object> e : _fields.entrySet())
+		for (Entry<Integer, Object> e : _fields.entrySet())
 			os.marshalVar(e.getKey(), e.getValue());
 		return os.marshalZero();
 	}
@@ -99,11 +100,13 @@ public final class DynBean extends Bean<DynBean>
 	@Override
 	public OctetsStream unmarshal(OctetsStream os) throws MarshalException
 	{
-		for(_fields.clear();;)
+		for (_fields.clear();;)
 		{
 			int b = os.unmarshalInt1();
-			if(b == 0) return os;
-			if(b > 251) b += os.unmarshalInt1() << 2;
+			if (b == 0)
+				return os;
+			if (b > 251)
+				b += os.unmarshalInt1() << 2;
 			_fields.put(b >> 2, os.unmarshalVar(b & 3));
 		}
 	}
@@ -125,8 +128,10 @@ public final class DynBean extends Bean<DynBean>
 	@Override
 	public boolean equals(Object o)
 	{
-		if(this == o) return true;
-		if(!(o instanceof DynBean)) return false;
+		if (this == o)
+			return true;
+		if (!(o instanceof DynBean))
+			return false;
 		DynBean rb = (DynBean)o;
 		return _type == rb._type && _fields.equals(rb._fields);
 	}
@@ -136,7 +141,7 @@ public final class DynBean extends Bean<DynBean>
 	{
 		StringBuilder s = new StringBuilder(_fields.size() * 16 + 16);
 		s.append("{t:").append(_type).append(",s:").append(serial());
-		for(Entry<Integer, Object> e : _fields.entrySet())
+		for (Entry<Integer, Object> e : _fields.entrySet())
 			s.append(',').append(e.getKey()).append(':').append(e.getValue());
 		return s.append('}').toString();
 	}

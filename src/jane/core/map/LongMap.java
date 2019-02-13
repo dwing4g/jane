@@ -100,9 +100,9 @@ public abstract class LongMap<V> implements Iterable<V>
 	{
 		final StringBuilder sb = new StringBuilder().append(getClass().getSimpleName()).append('[');
 		boolean first = true;
-		for(MapIterator<V> it = entryIterator(); it.moveToNext();)
+		for (MapIterator<V> it = entryIterator(); it.moveToNext();)
 		{
-			if(first)
+			if (first)
 				first = false;
 			else
 				sb.append(", ");

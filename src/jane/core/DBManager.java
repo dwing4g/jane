@@ -60,7 +60,7 @@ public final class DBManager
 				long base = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(Const.dbBackupBase).getTime();
 				_backupTime = base + (Math.floorDiv(System.currentTimeMillis() - base, _backupPeriod) + 1) * _backupPeriod;
 			}
-			catch(ParseException e)
+			catch (ParseException e)
 			{
 				throw new IllegalStateException("parse dbBackupBase(" + Const.dbBackupBase + ") failed", e);
 			}
@@ -79,17 +79,17 @@ public final class DBManager
 		@Override
 		public void run()
 		{
-			for(;;)
+			for (;;)
 			{
 				try
 				{
 					Thread.sleep(1000);
 				}
-				catch(InterruptedException e)
+				catch (InterruptedException e)
 				{
 					break;
 				}
-				if(!tryCommit(false))
+				if (!tryCommit(false))
 					break;
 			}
 		}
@@ -100,18 +100,21 @@ public final class DBManager
 			{
 				long t = System.currentTimeMillis();
 				long commitTime = _commitTime;
-				if(t < commitTime && _modCount.get() < Const.dbCommitModCount) return true;
-				synchronized(DBManager.this)
+				if (t < commitTime && _modCount.get() < Const.dbCommitModCount)
+					return true;
+				synchronized (DBManager.this)
 				{
 					commitTime = (commitTime <= t ? commitTime : t) + _commitPeriod;
-					if(commitTime <= t) commitTime = t + _commitPeriod;
+					if (commitTime <= t)
+						commitTime = t + _commitPeriod;
 					_commitTime = commitTime;
-					if(Thread.interrupted() && !force) return false;
+					if (Thread.interrupted() && !force)
+						return false;
 					Storage storage = getStorage();
-					if(storage != null)
+					if (storage != null)
 					{
 						long t3, modCount = _modCount.get();
-						if(modCount == 0 && !force)
+						if (modCount == 0 && !force)
 						{
 							Log.info("db-commit not found modified record");
 							t3 = System.currentTimeMillis();
@@ -125,14 +128,14 @@ public final class DBManager
 							storage.putBegin();
 							TableBase.trySaveModifiedAll(_counts);
 							// 2.如果前一轮遍历之后仍然有过多的修改记录,则再试一轮
-							if(_counts[1] >= Const.dbCommitResaveCount)
+							if (_counts[1] >= Const.dbCommitResaveCount)
 							{
 								Log.info("db-commit saved: {}=>{}({}), try again...", _counts[0], _counts[1], _counts[2]);
 								_counts[0] = _counts[1] = 0;
 								TableBase.trySaveModifiedAll(_counts);
 							}
 							// 3.然后加全局事务锁,待其它事务都停止等待时,保存剩余已修改的记录. 只有此步骤不能和其它事务并发
-							if(_counts[2] != 0 || _counts[1] != 0 || _counts[0] != 0 || force)
+							if (_counts[2] != 0 || _counts[1] != 0 || _counts[0] != 0 || force)
 							{
 								Log.info("db-commit saved: {}=>{}({}), flushing...", _counts[0], _counts[1], _counts[2]);
 								storage.putFlush(false);
@@ -151,7 +154,7 @@ public final class DBManager
 									Procedure.writeUnlock();
 								}
 								t1 = System.currentTimeMillis() - t1;
-								if(storage instanceof StorageLevelDB)
+								if (storage instanceof StorageLevelDB)
 								{
 									StorageLevelDB stoLDB = (StorageLevelDB)storage;
 									Log.info("db-commit procedure continued, committing({}:{})...", stoLDB.getPutCount(), stoLDB.getPutSize());
@@ -171,14 +174,15 @@ public final class DBManager
 						// 5.判断备份周期并启动备份
 						long backupTime = _backupTime;
 						String dbBackupPath = _dbBackupPath;
-						if(backupTime <= t3 && dbBackupPath != null)
+						if (backupTime <= t3 && dbBackupPath != null)
 						{
 							backupTime += _backupPeriod;
-							if(backupTime <= t3) backupTime += ((t3 - backupTime) / _backupPeriod + 1) * _backupPeriod;
+							if (backupTime <= t3)
+								backupTime += ((t3 - backupTime) / _backupPeriod + 1) * _backupPeriod;
 							_backupTime = backupTime;
 							Log.info("db-commit backup begin...");
 							long r = storage.backup(new File(dbBackupPath, _dbFilename + '.' + _sdf.format(new Date())));
-							if(r >= 0)
+							if (r >= 0)
 								Log.info("db-commit backup end ({} bytes) ({} ms)", r, System.currentTimeMillis() - t);
 							else
 								Log.error("db-commit backup error({}) ({} ms)", r, System.currentTimeMillis() - t);
@@ -187,11 +191,11 @@ public final class DBManager
 
 					// 6.清理一遍事务队列
 					collectQueue(_counts);
-					if(_counts[0] != 0 || _counts[1] != 0)
+					if (_counts[0] != 0 || _counts[1] != 0)
 						Log.info("db-commit collect queue: {}=>{}", _counts[0], _counts[1]);
 				}
 			}
-			catch(Throwable e)
+			catch (Throwable e)
 			{
 				Log.error("db-commit fatal exception:", e);
 			}
@@ -256,14 +260,18 @@ public final class DBManager
 	 */
 	public synchronized void startup(Storage sto, String dbFilename, String dbBackupPath) throws IOException
 	{
-		if(_exiting) throw new IllegalArgumentException("can not startup when exiting");
-		if(_storage != null) throw new IllegalArgumentException("already started");
-		if(sto == null) throw new IllegalArgumentException("no Storage specified");
-		if(dbFilename == null || dbFilename.trim().isEmpty()) throw new IllegalArgumentException("no dbFilename specified");
+		if (_exiting)
+			throw new IllegalArgumentException("can not startup when exiting");
+		if (_storage != null)
+			throw new IllegalArgumentException("already started");
+		if (sto == null)
+			throw new IllegalArgumentException("no Storage specified");
+		if (dbFilename == null || dbFilename.trim().isEmpty())
+			throw new IllegalArgumentException("no dbFilename specified");
 		shutdown();
 		File dbfile = new File(dbFilename);
 		File dbpath = dbfile.getParentFile();
-		if(dbpath != null && !dbpath.isDirectory() && !dbpath.mkdirs())
+		if (dbpath != null && !dbpath.isDirectory() && !dbpath.mkdirs())
 			throw new IOException("create db path failed: " + dbFilename);
 		_dbFilename = dbfile.getName();
 		_dbBackupPath = dbBackupPath;
@@ -274,7 +282,7 @@ public final class DBManager
 			Log.info("DBManager.OnJVMShutDown: db shutdown");
 			try
 			{
-				synchronized(DBManager.this)
+				synchronized (DBManager.this)
 				{
 					_exiting = true;
 					_procThreads.shutdownNow();
@@ -310,9 +318,11 @@ public final class DBManager
 	 * @param stubV 记录value的存根对象,不要用于记录有用的数据
 	 * @return Table
 	 */
-	public synchronized <K, V extends Bean<V>, S extends Safe<V>> Table<K, V, S> openTable(int tableId, String tableName, String lockName, int cacheSize, Object stubK, V stubV)
+	public synchronized <K, V extends Bean<V>, S extends Safe<V>> Table<K, V, S> openTable(int tableId, String tableName, String lockName, int cacheSize,
+			Object stubK, V stubV)
 	{
-		if(_storage == null) throw new IllegalArgumentException("call DBManager.startup before open any table");
+		if (_storage == null)
+			throw new IllegalArgumentException("call DBManager.startup before open any table");
 		tableName = (tableName != null && !(tableName = tableName.trim()).isEmpty() ? tableName : '[' + String.valueOf(tableId) + ']');
 		Storage.Table<K, V> stoTable = (tableId >= 0 ? _storage.<K, V>openTable(tableId, tableName, stubK, stubV) : null);
 		return new Table<>(tableId, tableName, stoTable, lockName, cacheSize, stubV);
@@ -331,7 +341,8 @@ public final class DBManager
 	 */
 	public synchronized <V extends Bean<V>, S extends Safe<V>> TableLong<V, S> openTable(int tableId, String tableName, String lockName, int cacheSize, V stubV)
 	{
-		if(_storage == null) throw new IllegalArgumentException("call DBManager.startup before open any table");
+		if (_storage == null)
+			throw new IllegalArgumentException("call DBManager.startup before open any table");
 		tableName = (tableName != null && !(tableName = tableName.trim()).isEmpty() ? tableName : '[' + String.valueOf(tableId) + ']');
 		Storage.TableLong<V> stoTable = (tableId >= 0 ? _storage.openTable(tableId, tableName, stubV) : null);
 		return new TableLong<>(tableId, tableName, stoTable, lockName, cacheSize, stubV);
@@ -344,7 +355,7 @@ public final class DBManager
 	 */
 	public synchronized void startCommitThread()
 	{
-		if(!_commitThread.isAlive())
+		if (!_commitThread.isAlive())
 			_commitThread.start();
 	}
 
@@ -382,12 +393,12 @@ public final class DBManager
 	 */
 	public void shutdown()
 	{
-		synchronized(this)
+		synchronized (this)
 		{
-			if(_commitThread.isAlive())
+			if (_commitThread.isAlive())
 				_commitThread.interrupt();
 			Storage sto = _storage;
-			if(sto != null)
+			if (sto != null)
 			{
 				checkpoint();
 				_storage = null;
@@ -398,7 +409,7 @@ public final class DBManager
 		{
 			_commitThread.join();
 		}
-		catch(InterruptedException e)
+		catch (InterruptedException e)
 		{
 			Log.error("DBManager.shutdown: exception:", e);
 		}
@@ -465,9 +476,9 @@ public final class DBManager
 			protected void onProcess()
 			{
 				ArrayDeque<Procedure> q = _qmap.get(sid);
-				if(q != null)
+				if (q != null)
 				{
-					synchronized(q)
+					synchronized (q)
 					{
 						_procCount.getAndAdd(1L - q.size());
 						q.clear();
@@ -490,11 +501,11 @@ public final class DBManager
 		counts[0] = _qmap.size();
 		_qmap.forEach((sid, q) ->
 		{
-			if(q.isEmpty())
+			if (q.isEmpty())
 			{
-				synchronized(q)
+				synchronized (q)
 				{
-					if(q.isEmpty())
+					if (q.isEmpty())
 						_qmap.remove(sid, q);
 				}
 			}
@@ -538,25 +549,27 @@ public final class DBManager
 	public void submit(Executor executor, Object sid, Procedure p)
 	{
 		p.setSid(sid);
-		if(sid == null)
+		if (sid == null)
 		{
 			executor.execute(p);
 			return;
 		}
 		ArrayDeque<Procedure> q;
-		for(;;)
+		for (;;)
 		{
 			q = _qmap.computeIfAbsent(sid, __ -> new ArrayDeque<>()); // _qmap增加队列的地方只有这一处
-			synchronized(q)
+			synchronized (q)
 			{
-				if(q != _qmap.get(sid)) continue; // maybe just collected
+				if (q != _qmap.get(sid))
+					continue; // maybe just collected
 				int qs = q.size();
-				if(qs >= Const.maxSessionProcedure)
+				if (qs >= Const.maxSessionProcedure)
 					throw new IllegalStateException("procedure overflow: procedure=" + p.getClass().getName() +
 							",sid=" + sid + ",size=" + q.size() + ",maxsize=" + Const.maxSessionProcedure);
 				q.addLast(p);
 				_procCount.getAndIncrement();
-				if(qs > 0) return;
+				if (qs > 0)
+					return;
 			}
 			break;
 		}
@@ -568,38 +581,40 @@ public final class DBManager
 			{
 				try
 				{
-					for(int n = Const.maxBatchProceduer;;) // 一次调度可运行多个事务,避免切换调度导致的效率损失
+					for (int n = Const.maxBatchProceduer;;) // 一次调度可运行多个事务,避免切换调度导致的效率损失
 					{
 						Procedure proc;
-						synchronized(_q)
+						synchronized (_q)
 						{
 							proc = _q.peekFirst(); // 这里只能先peek而不能poll或remove,否则可能和下次commit并发
 						}
-						if(proc == null) return;
+						if (proc == null)
+							return;
 						_procCount.getAndDecrement();
 						try
 						{
 							proc.execute();
 						}
-						catch(Throwable e)
+						catch (Throwable e)
 						{
 							Log.error(e, "procedure(sid={}) exception:", sid);
 						}
-						synchronized(_q)
+						synchronized (_q)
 						{
 							_q.pollFirst();
-							if(_q.isEmpty()) return;
+							if (_q.isEmpty())
+								return;
 						}
-						if(--n <= 0)
+						if (--n <= 0)
 						{
 							executor.execute(this);
 							return;
 						}
 					}
 				}
-				catch(Throwable e)
+				catch (Throwable e)
 				{
-					if(e instanceof RejectedExecutionException && _exiting)
+					if (e instanceof RejectedExecutionException && _exiting)
 						Log.info("procedure queue canceled. sid={}, queueSize={}", sid, _q.size());
 					else
 						Log.error(e, "procedure(sid={}) fatal exception:", sid);

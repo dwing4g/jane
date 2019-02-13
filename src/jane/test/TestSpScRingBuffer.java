@@ -11,7 +11,7 @@ public final class TestSpScRingBuffer
 
 	public TestSpScRingBuffer(int bufSize) // 必须是2的幂,至少是1
 	{
-		if(bufSize < 1 || Integer.highestOneBit(bufSize) != bufSize)
+		if (bufSize < 1 || Integer.highestOneBit(bufSize) != bufSize)
 			throw new IllegalArgumentException();
 		buffer = new Object[bufSize];
 		idxMask = bufSize - 1;
@@ -19,10 +19,10 @@ public final class TestSpScRingBuffer
 
 	public boolean offer(long writeIdx, Object v) // 生产者只能固定一个线程调用; writeIdx初始为0,每次返回true时需递增
 	{
-		if(v == null)
+		if (v == null)
 			throw new NullPointerException();
 		int i = (int)writeIdx & idxMask;
-		if(buffer[i] != null)
+		if (buffer[i] != null)
 			return false;
 		buffer[i] = v;
 		return true;
@@ -32,7 +32,7 @@ public final class TestSpScRingBuffer
 	{
 		int i = (int)readIdx & idxMask;
 		Object v = buffer[i];
-		if(v == null)
+		if (v == null)
 			return null;
 		buffer[i] = null;
 		return v;
@@ -48,11 +48,11 @@ public final class TestSpScRingBuffer
 
 		final Thread wt = new Thread(() ->
 		{
-			for(long i = 0; i < TEST_COUNT; ++i)
+			for (long i = 0; i < TEST_COUNT; ++i)
 			{
 				int v = (int)i & 127;
 				wr[0] += v;
-				for(Integer obj = Integer.valueOf(v); !buf.offer(i, obj);)
+				for (Integer obj = Integer.valueOf(v); !buf.offer(i, obj);)
 					Thread.yield();
 			}
 		}, "WriterThread");
@@ -61,9 +61,9 @@ public final class TestSpScRingBuffer
 		final Thread rt = new Thread(() ->
 		{
 			Object obj;
-			for(long i = 0; i < TEST_COUNT; ++i)
+			for (long i = 0; i < TEST_COUNT; ++i)
 			{
-				while((obj = buf.poll(i)) == null)
+				while ((obj = buf.poll(i)) == null)
 					Thread.yield();
 				rr[0] += (Integer)obj;
 			}
