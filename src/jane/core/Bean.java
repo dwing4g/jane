@@ -103,7 +103,7 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	@SuppressWarnings("deprecation")
 	public void assign(Safe<B> b)
 	{
-		assign(b.unsafe());
+		assign(b != null ? b.unsafe() : null);
 	}
 
 	/**

@@ -120,15 +120,15 @@ public class StatusServer extends NetManager
 		{
 			DBManager dbMgr = DBManager.instance();
 			ThreadPoolExecutor tpe = dbMgr.getProcThreads();
-			list.add(new SimpleEntry<String, Object>("jane.ProcSessionCount", dbMgr.getSessionCount()));
-			list.add(new SimpleEntry<String, Object>("jane.ProcWaitingCount", dbMgr.getProcQueuedCount()));
-			list.add(new SimpleEntry<String, Object>("jane.ProcQueueCount", tpe.getQueue().size()));
+			list.add(new SimpleEntry<String, Object>("jane.ProcSessionCount", formatter.format(dbMgr.getSessionCount())));
+			list.add(new SimpleEntry<String, Object>("jane.ProcWaitingCount", formatter.format(dbMgr.getProcQueuedCount())));
+			list.add(new SimpleEntry<String, Object>("jane.ProcQueueCount", formatter.format(tpe.getQueue().size())));
 			list.add(new SimpleEntry<String, Object>("jane.ProcThreadCount", tpe.getActiveCount() + "/" + tpe.getPoolSize() + "/" + tpe.getLargestPoolSize()));
-			list.add(new SimpleEntry<String, Object>("jane.ProcCompletedCount", tpe.getCompletedTaskCount()));
+			list.add(new SimpleEntry<String, Object>("jane.ProcCompletedCount", formatter.format(tpe.getCompletedTaskCount())));
 		}
-		list.add(new SimpleEntry<String, Object>("jane.CacheRefRemoveCount", CacheRef.getRefRemoveCount()));
-		list.add(new SimpleEntry<String, Object>("jane.ProcInterruptCount", ProcThread.getInterruptCount()));
-		list.add(new SimpleEntry<String, Object>("jane.AskWaitingCount", NetManager.getAskCount()));
+		list.add(new SimpleEntry<String, Object>("jane.CacheRefRemoveCount", formatter.format(CacheRef.getRefRemoveCount())));
+		list.add(new SimpleEntry<String, Object>("jane.ProcInterruptCount", formatter.format(ProcThread.getInterruptCount())));
+		list.add(new SimpleEntry<String, Object>("jane.AskWaitingCount", formatter.format(NetManager.getAskCount())));
 
 		return list;
 	}

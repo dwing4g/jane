@@ -385,13 +385,14 @@ public final class NioSession implements IoSession {
 			filterChain.fireExceptionCaught(e);
 		} finally {
 			try {
-				clearWriteRequestQueue(null);
 				service.fireSessionDestroyed(this);
 			} catch (Exception e) {
 				// The session was either destroyed or not at this point.
 				// We do not want any exception thrown from this "cleanup" code
 				// to change the return value by bubbling up.
 				filterChain.fireExceptionCaught(e);
+			} finally {
+				clearWriteRequestQueue(null);
 			}
 		}
 	}
