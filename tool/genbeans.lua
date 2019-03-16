@@ -1321,7 +1321,7 @@ function dbt(table)
 		table.table = "TableLong"
 		table.key = ""
 		table.keys = ""
-		table.keyg = "Long.class"
+		table.keyg = "long.class"
 		table.comma = ""
 		tables.imports["jane.core.TableLong"] = true
 	else

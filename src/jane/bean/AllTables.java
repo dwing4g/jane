@@ -62,10 +62,10 @@ public final class AllTables
 
 		static
 		{
-			metaList.add(new MetaTable(TestTable, Long.class, TestType.BEAN_STUB));
+			metaList.add(new MetaTable(TestTable, long.class, TestType.BEAN_STUB));
 			metaList.add(new MetaTable(BeanTable, TestKeyBean.BEAN_STUB, TestBean.BEAN_STUB));
 			metaList.add(new MetaTable(OctetsTable, Octets.class, TestEmpty.BEAN_STUB));
-			metaList.add(new MetaTable(Benchmark, Long.class, TestBean.BEAN_STUB));
+			metaList.add(new MetaTable(Benchmark, long.class, TestBean.BEAN_STUB));
 		}
 
 		public static MetaTable get(int tableId)
@@ -110,10 +110,10 @@ public final class AllTables
 
 		static
 		{
-			metaList.add(new SimpleMetaTable(1, "TestTable", Long.class, TestType.BEAN_STUB));
+			metaList.add(new SimpleMetaTable(1, "TestTable", long.class, TestType.BEAN_STUB));
 			metaList.add(new SimpleMetaTable(2, "BeanTable", TestKeyBean.BEAN_STUB, TestBean.BEAN_STUB));
 			metaList.add(new SimpleMetaTable(-1, "OctetsTable", Octets.class, TestEmpty.BEAN_STUB));
-			metaList.add(new SimpleMetaTable(3, "Benchmark", Long.class, TestBean.BEAN_STUB));
+			metaList.add(new SimpleMetaTable(3, "Benchmark", long.class, TestBean.BEAN_STUB));
 		}
 
 		public static SimpleMetaTable get(int tableId)
