@@ -223,7 +223,7 @@ public final class TestStress extends Procedure
 				throw new Exception("check 21 failed: " + v1 + " != " + v11);
 			if (v1 != c1.intValue())
 				throw new Exception("check 22 failed: " + v1 + " != " + c1.intValue());
-			if (c1 != checkMap.get(id1))
+			if (c1 != checkMap.get(id1)) //NOSONAR
 				throw new Exception("check 23 failed: " + c1 + " != " + checkMap.get(id1));
 			Integer c2 = checkMap.get(id2);
 			if (c2 == null)

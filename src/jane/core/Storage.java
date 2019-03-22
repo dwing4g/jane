@@ -16,12 +16,12 @@ public interface Storage extends Closeable
 	 * <p>
 	 * 适用于key是非id类型的表
 	 */
-	interface WalkHandler<K>
+	public interface WalkHandler<K>
 	{
 		/**
 		 * 每次遍历一个记录都会调用此接口
 		 * <p>
-		 * 实现时要先对key加锁再调用getNoCache(推荐)或get获取记录value
+		 * 需要value时要先对key加锁再调用getNoCache(推荐)或get获取
 		 * @param k 记录的key
 		 * @return 返回true表示继续遍历, 返回false表示中断遍历
 		 */
@@ -33,16 +33,33 @@ public interface Storage extends Closeable
 	 * <p>
 	 * 适用于key是非id类型的表
 	 */
-	interface WalkValueHandler<K, V extends Bean<V>>
+	public interface WalkValueHandler<K, V extends Bean<V>>
 	{
 		/**
 		 * 每次遍历一个记录都会调用此接口
 		 * <p>
 		 * @param k 记录的key
-		 * @param v 记录的value. 只读
+		 * @param v 记录的value. 修改不会影响数据库中的值
 		 * @return 返回true表示继续遍历, 返回false表示中断遍历
 		 */
 		boolean onWalk(K k, V v) throws Exception;
+	}
+
+	/**
+	 * 遍历数据库表的用户接口(遍历key和原始value数据)
+	 * <p>
+	 * 适用于key是非id类型的表
+	 */
+	public interface WalkRawHandler<K>
+	{
+		/**
+		 * 每次遍历一个记录都会调用此接口
+		 * <p>
+		 * @param k 记录的key
+		 * @param v 记录的value. 修改不会影响数据库中的值
+		 * @return 返回true表示继续遍历, 返回false表示中断遍历
+		 */
+		boolean onWalk(K k, byte[] v) throws Exception;
 	}
 
 	/**
@@ -50,12 +67,12 @@ public interface Storage extends Closeable
 	 * <p>
 	 * 适用于key是id类型的表
 	 */
-	interface WalkHandlerLong
+	public interface WalkLongHandler
 	{
 		/**
 		 * 每次遍历一个记录都会调用此接口
 		 * <p>
-		 * 实现时要先对key加锁再调用getNoCache(推荐)或get获取记录value
+		 * 需要value时要先对key加锁再调用getNoCache(推荐)或get获取
 		 * @param k 记录的key
 		 * @return 返回true表示继续遍历, 返回false表示中断遍历
 		 */
@@ -67,16 +84,33 @@ public interface Storage extends Closeable
 	 * <p>
 	 * 适用于key是id类型的表
 	 */
-	interface WalkValueHandlerLong<V extends Bean<V>>
+	public interface WalkLongValueHandler<V extends Bean<V>>
 	{
 		/**
 		 * 每次遍历一个记录都会调用此接口
 		 * <p>
 		 * @param k 记录的key
-		 * @param v 记录的value. 只读
+		 * @param v 记录的value. 修改不会影响数据库中的值
 		 * @return 返回true表示继续遍历, 返回false表示中断遍历
 		 */
-		boolean onWalk(long k, V b) throws Exception;
+		boolean onWalk(long k, V v) throws Exception;
+	}
+
+	/**
+	 * 遍历数据库表的用户接口(遍历key和原始value数据)
+	 * <p>
+	 * 适用于key是id类型的表
+	 */
+	public interface WalkLongRawHandler
+	{
+		/**
+		 * 每次遍历一个记录都会调用此接口
+		 * <p>
+		 * @param k 记录的key
+		 * @param v 记录的原始value数据. 修改不会影响数据库中的值
+		 * @return 返回true表示继续遍历, 返回false表示中断遍历
+		 */
+		boolean onWalk(long k, byte[] v) throws Exception;
 	}
 
 	public static final class Helper
@@ -98,7 +132,7 @@ public interface Storage extends Closeable
 			}
 		}
 
-		public static <K, V extends Bean<V>> boolean onWalkSafe(WalkValueHandler<K, V> handler, K k, V v)
+		public static <K, V extends Bean<V>> boolean onWalkValueSafe(WalkValueHandler<K, V> handler, K k, V v)
 		{
 			try
 			{
@@ -111,7 +145,20 @@ public interface Storage extends Closeable
 			}
 		}
 
-		public static boolean onWalkSafe(WalkHandlerLong handler, long k)
+		public static <K> boolean onWalkRawSafe(WalkRawHandler<K> handler, K k, byte[] v)
+		{
+			try
+			{
+				return handler.onWalk(k, v);
+			}
+			catch (Exception e)
+			{
+				Log.error("walk exception:", e);
+				return false;
+			}
+		}
+
+		public static boolean onWalkLongSafe(WalkLongHandler handler, long k)
 		{
 			try
 			{
@@ -124,7 +171,20 @@ public interface Storage extends Closeable
 			}
 		}
 
-		public static <V extends Bean<V>> boolean onWalkSafe(WalkValueHandlerLong<V> handler, long k, V v)
+		public static <V extends Bean<V>> boolean onWalkLongValueSafe(WalkLongValueHandler<V> handler, long k, V v)
+		{
+			try
+			{
+				return handler.onWalk(k, v);
+			}
+			catch (Exception e)
+			{
+				Log.error("walk exception:", e);
+				return false;
+			}
+		}
+
+		public static <V extends Bean<V>> boolean onWalkLongRawSafe(WalkLongRawHandler handler, long k, byte[] v)
 		{
 			try
 			{
@@ -138,7 +198,7 @@ public interface Storage extends Closeable
 		}
 	}
 
-	interface TableBase
+	public interface TableBase
 	{
 		/**
 		 * 获取表ID
@@ -156,7 +216,7 @@ public interface Storage extends Closeable
 		int getAverageValueSize();
 	}
 
-	interface Table<K, V extends Bean<V>> extends TableBase
+	public interface Table<K, V extends Bean<V>> extends TableBase
 	{
 		/**
 		 * 根据记录的key获取value
@@ -201,10 +261,22 @@ public interface Storage extends Closeable
 		 * @param reverse 是否按反序遍历
 		 * @return 返回true表示已完全遍历, 返回false表示被用户中断
 		 */
-		boolean walk(WalkValueHandler<K, V> handler, V beanStub, K from, K to, boolean inclusive, boolean reverse);
+		boolean walkValue(WalkValueHandler<K, V> handler, V beanStub, K from, K to, boolean inclusive, boolean reverse);
+
+		/**
+		 * 按记录key的顺序遍历此表的所有key和原始value数据
+		 * <p>
+		 * @param handler 遍历过程中返回false可中断遍历
+		 * @param from 需要遍历的最小key. null表示最小值
+		 * @param to 需要遍历的最大key. null表示最大值
+		 * @param inclusive 遍历是否包含from和to的key
+		 * @param reverse 是否按反序遍历
+		 * @return 返回true表示已完全遍历, 返回false表示被用户中断
+		 */
+		boolean walkRaw(WalkRawHandler<K> handler, K from, K to, boolean inclusive, boolean reverse);
 	}
 
-	interface TableLong<V extends Bean<V>> extends TableBase
+	public interface TableLong<V extends Bean<V>> extends TableBase
 	{
 		/**
 		 * 根据记录的key获取value
@@ -250,7 +322,7 @@ public interface Storage extends Closeable
 		 * @param reverse 是否按反序遍历
 		 * @return 返回true表示已完全遍历, 返回false表示被用户中断
 		 */
-		boolean walk(WalkHandlerLong handler, long from, long to, boolean inclusive, boolean reverse);
+		boolean walk(WalkLongHandler handler, long from, long to, boolean inclusive, boolean reverse);
 
 		/**
 		 * 按记录key的顺序遍历此表的所有key和value
@@ -263,7 +335,19 @@ public interface Storage extends Closeable
 		 * @param reverse 是否按反序遍历
 		 * @return 返回true表示已完全遍历, 返回false表示被用户中断
 		 */
-		boolean walk(WalkValueHandlerLong<V> handler, V beanStub, long from, long to, boolean inclusive, boolean reverse);
+		boolean walkValue(WalkLongValueHandler<V> handler, V beanStub, long from, long to, boolean inclusive, boolean reverse);
+
+		/**
+		 * 按记录key的顺序遍历此表的所有key和原始value数据
+		 * <p>
+		 * @param handler 遍历过程中返回false可中断遍历
+		 * @param from 需要遍历的最小key
+		 * @param to 需要遍历的最大key
+		 * @param inclusive 遍历是否包含from和to的key
+		 * @param reverse 是否按反序遍历
+		 * @return 返回true表示已完全遍历, 返回false表示被用户中断
+		 */
+		boolean walkRaw(WalkLongRawHandler handler, long from, long to, boolean inclusive, boolean reverse);
 	}
 
 	/**

@@ -13,6 +13,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import jane.core.Storage.WalkLongValueHandler;
 
 /**
  * 数据库管理器(单件)的简单版
@@ -472,16 +473,7 @@ public final class DBSimpleManager
 		remove0(toKey(tableId, key));
 	}
 
-	public interface WalkHandlerLongValue<B extends Bean<B>>
-	{
-		/**
-		 * 每次遍历一个记录都会调用此接口
-		 * @return 返回true表示继续遍历, 返回false表示中断遍历
-		 */
-		boolean onWalk(long key, B value) throws Exception;
-	}
-
-	public <B extends Bean<B>> boolean walkTable(int tableId, long keyFrom, long keyTo, B beanStub, WalkHandlerLongValue<B> handler)
+	public <B extends Bean<B>> boolean walkLongTable(int tableId, long keyFrom, long keyTo, B beanStub, WalkLongValueHandler<B> handler)
 	{
 		OctetsStreamEx os = new OctetsStreamEx();
 		int tableIdLen = OctetsStream.marshalUIntLen(tableId);
@@ -494,12 +486,12 @@ public final class DBSimpleManager
 		});
 	}
 
-	public <B extends Bean<B>> boolean walkTable(int tableId, B beanStub, WalkHandlerLongValue<B> handler)
+	public <B extends Bean<B>> boolean walkLongTable(int tableId, B beanStub, WalkLongValueHandler<B> handler)
 	{
-		return walkTable(tableId, 0, -1, beanStub, handler);
+		return walkLongTable(tableId, 0, -1, beanStub, handler);
 	}
 
-	public interface WalkHandlerOctetsValue<B extends Bean<B>>
+	public interface WalkOctetsValueHandler<B extends Bean<B>>
 	{
 		/**
 		 * 每次遍历一个记录都会调用此接口
@@ -508,7 +500,7 @@ public final class DBSimpleManager
 		boolean onWalk(byte[] key, B value) throws Exception;
 	}
 
-	public <B extends Bean<B>> boolean walkTable(int tableId, B beanStub, WalkHandlerOctetsValue<B> handler)
+	public <B extends Bean<B>> boolean walkOctetsTable(int tableId, B beanStub, WalkOctetsValueHandler<B> handler)
 	{
 		OctetsStreamEx os = new OctetsStreamEx();
 		int tableIdLen = OctetsStream.marshalUIntLen(tableId);
@@ -528,7 +520,7 @@ public final class DBSimpleManager
 		}) || finished.get();
 	}
 
-	public interface WalkHandlerStringValue<B extends Bean<B>>
+	public interface WalkStringValueHandler<B extends Bean<B>>
 	{
 		/**
 		 * 每次遍历一个记录都会调用此接口
@@ -537,7 +529,7 @@ public final class DBSimpleManager
 		boolean onWalk(String key, B value) throws Exception;
 	}
 
-	public <B extends Bean<B>> boolean walkTable(int tableId, B beanStub, WalkHandlerStringValue<B> handler)
+	public <B extends Bean<B>> boolean walkStringTable(int tableId, B beanStub, WalkStringValueHandler<B> handler)
 	{
 		OctetsStreamEx os = new OctetsStreamEx();
 		AtomicBoolean finished = new AtomicBoolean();
@@ -556,7 +548,7 @@ public final class DBSimpleManager
 		}) || finished.get();
 	}
 
-	public interface WalkHandlerBeanValue<K extends Bean<K>, B extends Bean<B>>
+	public interface WalkBeanValueHandler<K extends Bean<K>, B extends Bean<B>>
 	{
 		/**
 		 * 每次遍历一个记录都会调用此接口
@@ -565,7 +557,7 @@ public final class DBSimpleManager
 		boolean onWalk(K key, B value) throws Exception;
 	}
 
-	public <K extends Bean<K>, B extends Bean<B>> boolean walkTable(int tableId, K keyStub, B beanStub, WalkHandlerBeanValue<K, B> handler)
+	public <K extends Bean<K>, B extends Bean<B>> boolean walkBeanTable(int tableId, K keyStub, B beanStub, WalkBeanValueHandler<K, B> handler)
 	{
 		OctetsStreamEx os = new OctetsStreamEx();
 		int tableIdLen = OctetsStream.marshalUIntLen(tableId);

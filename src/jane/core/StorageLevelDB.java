@@ -138,7 +138,7 @@ public final class StorageLevelDB implements Storage
 		System.load(file.getAbsolutePath());
 	}
 
-	static <B extends Bean<B>> B toBean(OctetsStreamEx os, B beanStub) throws MarshalException
+	public static <B extends Bean<B>> B toBean(OctetsStreamEx os, B beanStub) throws MarshalException
 	{
 		if (os == null)
 			return null;
@@ -150,14 +150,14 @@ public final class StorageLevelDB implements Storage
 		return bean;
 	}
 
-	static <B extends Bean<B>> B toBean(Octets data, B beanStub) throws MarshalException
+	public static <B extends Bean<B>> B toBean(Octets data, B beanStub) throws MarshalException
 	{
 		if (data == null || data == StorageLevelDB.deleted())
 			return null;
 		return toBean(OctetsStreamEx.wrap(data), beanStub);
 	}
 
-	static <B extends Bean<B>> B toBean(byte[] data, B beanStub) throws MarshalException
+	public static <B extends Bean<B>> B toBean(byte[] data, B beanStub) throws MarshalException
 	{
 		if (data == null)
 			return null;
@@ -416,7 +416,7 @@ public final class StorageLevelDB implements Storage
 		}
 
 		@Override
-		public boolean walk(WalkHandlerLong handler, long from, long to, boolean inclusive, boolean reverse)
+		public boolean walk(WalkLongHandler handler, long from, long to, boolean inclusive, boolean reverse)
 		{
 			if (_db == 0)
 				throw new IllegalStateException("db closed");
@@ -444,7 +444,7 @@ public final class StorageLevelDB implements Storage
 						if (comp >= 0 && (comp > 0 || !inclusive))
 							break;
 						keyOs.setPosition(_tableIdLen);
-						if (!Helper.onWalkSafe(handler, keyOs.unmarshalLong()))
+						if (!Helper.onWalkLongSafe(handler, keyOs.unmarshalLong()))
 							return false;
 					}
 				}
@@ -461,7 +461,7 @@ public final class StorageLevelDB implements Storage
 						if (comp <= 0 && (comp < 0 || !inclusive))
 							break;
 						keyOs.setPosition(_tableIdLen);
-						if (!Helper.onWalkSafe(handler, keyOs.unmarshalLong()))
+						if (!Helper.onWalkLongSafe(handler, keyOs.unmarshalLong()))
 							return false;
 					}
 				}
@@ -479,7 +479,13 @@ public final class StorageLevelDB implements Storage
 		}
 
 		@Override
-		public boolean walk(WalkValueHandlerLong<V> handler, V beanStub, long from, long to, boolean inclusive, boolean reverse)
+		public boolean walkValue(WalkLongValueHandler<V> handler, V beanStub, long from, long to, boolean inclusive, boolean reverse)
+		{
+			return walkRaw((k, v) -> handler.onWalk(k, toBean(v, beanStub)), from, to, inclusive, reverse);
+		}
+
+		@Override
+		public boolean walkRaw(WalkLongRawHandler handler, long from, long to, boolean inclusive, boolean reverse)
 		{
 			if (_db == 0)
 				throw new IllegalStateException("db closed");
@@ -511,8 +517,7 @@ public final class StorageLevelDB implements Storage
 							break;
 						keyOs.setPosition(_tableIdLen);
 						long k = keyOs.unmarshalLong();
-						V v = toBean(value, beanStub);
-						if (!Helper.onWalkSafe(handler, k, v))
+						if (!Helper.onWalkLongRawSafe(handler, k, value))
 							return false;
 					}
 				}
@@ -533,8 +538,7 @@ public final class StorageLevelDB implements Storage
 							break;
 						keyOs.setPosition(_tableIdLen);
 						long k = keyOs.unmarshalLong();
-						V v = toBean(value, beanStub);
-						if (!Helper.onWalkSafe(handler, k, v))
+						if (!Helper.onWalkLongRawSafe(handler, k, value))
 							return false;
 					}
 				}
@@ -576,9 +580,7 @@ public final class StorageLevelDB implements Storage
 
 		protected abstract OctetsStream marshalKey(K k);
 
-		protected abstract boolean onWalk(WalkHandler<K> handler, OctetsStream k) throws MarshalException;
-
-		protected abstract boolean onWalk(WalkValueHandler<K, V> handler, OctetsStream k, V v) throws MarshalException;
+		protected abstract K unmarshalKey(OctetsStream keyOs) throws MarshalException;
 
 		@Override
 		public int getTableId()
@@ -634,7 +636,7 @@ public final class StorageLevelDB implements Storage
 						if (comp >= 0 && (comp > 0 || !inclusive))
 							break;
 						keyOs.setPosition(_tableIdLen);
-						if (!onWalk(handler, keyOs))
+						if (!Helper.onWalkSafe(handler, unmarshalKey(keyOs)))
 							return false;
 					}
 				}
@@ -651,7 +653,7 @@ public final class StorageLevelDB implements Storage
 						if (comp <= 0 && (comp < 0 || !inclusive))
 							break;
 						keyOs.setPosition(_tableIdLen);
-						if (!onWalk(handler, keyOs))
+						if (!Helper.onWalkSafe(handler, unmarshalKey(keyOs)))
 							return false;
 					}
 				}
@@ -669,7 +671,13 @@ public final class StorageLevelDB implements Storage
 		}
 
 		@Override
-		public boolean walk(WalkValueHandler<K, V> handler, V beanStub, K from, K to, boolean inclusive, boolean reverse)
+		public boolean walkValue(WalkValueHandler<K, V> handler, V beanStub, K from, K to, boolean inclusive, boolean reverse)
+		{
+			return walkRaw((k, v) -> handler.onWalk(k, toBean(v, beanStub)), from, to, inclusive, reverse);
+		}
+
+		@Override
+		public boolean walkRaw(WalkRawHandler<K> handler, K from, K to, boolean inclusive, boolean reverse)
 		{
 			if (_db == 0)
 				throw new IllegalStateException("db closed");
@@ -700,8 +708,7 @@ public final class StorageLevelDB implements Storage
 						if (comp >= 0 && (comp > 0 || !inclusive))
 							break;
 						keyOs.setPosition(_tableIdLen);
-						V v = toBean(value, beanStub);
-						if (!onWalk(handler, keyOs, v))
+						if (!Helper.onWalkRawSafe(handler, unmarshalKey(keyOs), value))
 							return false;
 					}
 				}
@@ -721,8 +728,7 @@ public final class StorageLevelDB implements Storage
 						if (comp <= 0 && (comp < 0 || !inclusive))
 							break;
 						keyOs.setPosition(_tableIdLen);
-						V v = toBean(value, beanStub);
-						if (!onWalk(handler, keyOs, v))
+						if (!Helper.onWalkRawSafe(handler, unmarshalKey(keyOs), value))
 							return false;
 					}
 				}
@@ -758,6 +764,12 @@ public final class StorageLevelDB implements Storage
 				keyOs.marshalUInt(_tableId);
 			keyOs.append(k);
 			return keyOs;
+		}
+
+		@Override
+		protected Octets unmarshalKey(OctetsStream keyOs)
+		{
+			return new Octets(keyOs.array(), keyOs.position(), keyOs.remain());
 		}
 
 		@Override
@@ -824,18 +836,6 @@ public final class StorageLevelDB implements Storage
 			System.arraycopy(k.array(), 0, buf, pos, ksize);
 			_writeMap.put(new Slice(buf, kpos, klen), _deletedSlice);
 		}
-
-		@Override
-		protected boolean onWalk(WalkHandler<Octets> handler, OctetsStream k)
-		{
-			return Helper.onWalkSafe(handler, new Octets(k.array(), k.position(), k.remain()));
-		}
-
-		@Override
-		protected boolean onWalk(WalkValueHandler<Octets, V> handler, OctetsStream k, V v) throws MarshalException
-		{
-			return Helper.onWalkSafe(handler, new Octets(k.array(), k.position(), k.remain()), v);
-		}
 	}
 
 	private final class TableString<V extends Bean<V>> extends TableBase<String, V>
@@ -867,6 +867,12 @@ public final class StorageLevelDB implements Storage
 					keyOs.marshalUTF8(k.charAt(i));
 			}
 			return keyOs;
+		}
+
+		@Override
+		protected String unmarshalKey(OctetsStream keyOs)
+		{
+			return new String(keyOs.array(), keyOs.position(), keyOs.remain(), StandardCharsets.UTF_8);
 		}
 
 		@Override
@@ -947,18 +953,6 @@ public final class StorageLevelDB implements Storage
 			}
 			_writeMap.put(new Slice(os.array(), kpos, klen), _deletedSlice);
 		}
-
-		@Override
-		protected boolean onWalk(WalkHandler<String> handler, OctetsStream k)
-		{
-			return Helper.onWalkSafe(handler, new String(k.array(), k.position(), k.remain(), StandardCharsets.UTF_8));
-		}
-
-		@Override
-		protected boolean onWalk(WalkValueHandler<String, V> handler, OctetsStream k, V v) throws MarshalException
-		{
-			return Helper.onWalkSafe(handler, new String(k.array(), k.position(), k.remain(), StandardCharsets.UTF_8), v);
-		}
 	}
 
 	private final class TableBean<K, V extends Bean<V>> extends TableBase<K, V>
@@ -983,6 +977,15 @@ public final class StorageLevelDB implements Storage
 			else
 				keyOs.marshalUInt(_tableId);
 			return kb.marshal(keyOs);
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		protected K unmarshalKey(OctetsStream keyOs) throws MarshalException
+		{
+			Bean<?> key = _stubK.create();
+			key.unmarshal(keyOs);
+			return (K)key;
 		}
 
 		@Override
@@ -1029,24 +1032,6 @@ public final class StorageLevelDB implements Storage
 			os.marshalZero(); // leveldb::ValueType::kTypeDeletion
 			int kpos = writeValue((Bean<?>)k);
 			_writeMap.put(new Slice(os.array(), kpos, os.size() - kpos), _deletedSlice);
-		}
-
-		@SuppressWarnings("unchecked")
-		@Override
-		protected boolean onWalk(WalkHandler<K> handler, OctetsStream k) throws MarshalException
-		{
-			Bean<?> key = _stubK.create();
-			k.unmarshal(key);
-			return Helper.onWalkSafe(handler, (K)key);
-		}
-
-		@SuppressWarnings("unchecked")
-		@Override
-		protected boolean onWalk(WalkValueHandler<K, V> handler, OctetsStream k, V v) throws MarshalException
-		{
-			Bean<?> key = _stubK.create();
-			k.unmarshal(key);
-			return Helper.onWalkSafe(handler, (K)key, v);
 		}
 	}
 

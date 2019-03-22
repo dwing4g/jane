@@ -7,8 +7,9 @@ import java.util.function.Supplier;
 import jane.core.SContext.RecordLong;
 import jane.core.SContext.Safe;
 import jane.core.Storage.Helper;
-import jane.core.Storage.WalkHandlerLong;
-import jane.core.Storage.WalkValueHandlerLong;
+import jane.core.Storage.WalkLongHandler;
+import jane.core.Storage.WalkLongRawHandler;
+import jane.core.Storage.WalkLongValueHandler;
 import jane.core.map.LongConcurrentHashMap;
 import jane.core.map.LongMap;
 import jane.core.map.LongMap.LongIterator;
@@ -606,10 +607,10 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	 * 注意此遍历方法是无序的
 	 * @param handler 遍历过程中返回false可中断遍历
 	 */
-	public boolean walkCache(WalkHandlerLong handler)
+	public boolean walkCache(WalkLongHandler handler)
 	{
 		for (LongIterator it = _cache.keyIterator(); it.hasNext();)
-			if (!Helper.onWalkSafe(handler, it.next()))
+			if (!Helper.onWalkLongSafe(handler, it.next()))
 				return false;
 		return true;
 	}
@@ -625,17 +626,17 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	 * @param inclusive 遍历是否包含from和to的key
 	 * @param reverse 是否按反序遍历
 	 */
-	public boolean walk(WalkHandlerLong handler, long from, long to, boolean inclusive, boolean reverse)
+	public boolean walk(WalkLongHandler handler, long from, long to, boolean inclusive, boolean reverse)
 	{
 		return _stoTable != null ? _stoTable.walk(handler, from, to, inclusive, reverse) : walkCache(handler);
 	}
 
-	public boolean walk(WalkHandlerLong handler, boolean reverse)
+	public boolean walk(WalkLongHandler handler, boolean reverse)
 	{
 		return walk(handler, 0, -1, true, reverse);
 	}
 
-	public boolean walk(WalkHandlerLong handler)
+	public boolean walk(WalkLongHandler handler)
 	{
 		return walk(handler, 0, -1, true, false);
 	}
@@ -650,18 +651,43 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	 * @param inclusive 遍历是否包含from和to的key
 	 * @param reverse 是否按反序遍历
 	 */
-	public boolean walk(WalkValueHandlerLong<V> handler, long from, long to, boolean inclusive, boolean reverse)
+	public boolean walkValue(WalkLongValueHandler<V> handler, long from, long to, boolean inclusive, boolean reverse)
 	{
-		return _stoTable.walk(handler, _deleted, from, to, inclusive, reverse);
+		return _stoTable.walkValue(handler, _deleted, from, to, inclusive, reverse);
 	}
 
-	public boolean walk(WalkValueHandlerLong<V> handler, boolean reverse)
+	public boolean walkValue(WalkLongValueHandler<V> handler, boolean reverse)
 	{
-		return walk(handler, 0, -1, true, reverse);
+		return walkValue(handler, 0, -1, true, reverse);
 	}
 
-	public boolean walk(WalkValueHandlerLong<V> handler)
+	public boolean walkValue(WalkLongValueHandler<V> handler)
 	{
-		return walk(handler, 0, -1, true, false);
+		return walkValue(handler, 0, -1, true, false);
+	}
+
+	/**
+	 * 按记录key的顺序遍历此表的所有key和原始value数据
+	 * <p>
+	 * 注意: 遍历仅从数据库存储层获取(遍历内存表会抛出异常),当前没有checkpoint的cache记录会被无视,所以遍历获取的key和value可能不是最新,修改value不会改动数据库
+	 * @param handler 遍历过程中返回false可中断遍历
+	 * @param from 需要遍历的最小key. null表示最小值
+	 * @param to 需要遍历的最大key. null表示最大值
+	 * @param inclusive 遍历是否包含from和to的key
+	 * @param reverse 是否按反序遍历
+	 */
+	public boolean walkRaw(WalkLongRawHandler handler, long from, long to, boolean inclusive, boolean reverse)
+	{
+		return _stoTable.walkRaw(handler, from, to, inclusive, reverse);
+	}
+
+	public boolean walkRaw(WalkLongRawHandler handler, boolean reverse)
+	{
+		return walkRaw(handler, 0, -1, true, reverse);
+	}
+
+	public boolean walkRaw(WalkLongRawHandler handler)
+	{
+		return walkRaw(handler, 0, -1, true, false);
 	}
 }
