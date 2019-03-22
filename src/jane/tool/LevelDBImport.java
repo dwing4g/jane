@@ -60,6 +60,7 @@ public final class LevelDBImport
 		long t = System.currentTimeMillis();
 		long count = 0;
 		long db;
+		Octets deleted = new Octets();
 		ArrayList<Entry<Octets, Octets>> buf = new ArrayList<>(10000);
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(dumpname), s_cs88591)))
 		{
@@ -89,9 +90,9 @@ public final class LevelDBImport
 				else if ((mat = patPut3.matcher(line)).find())
 					v = str2Oct(mat.group(2));
 				else if ((mat = patDel1.matcher(line)).find())
-					v = StorageLevelDB.deleted();
+					v = deleted;
 				else if ((mat = patDel2.matcher(line)).find())
-					v = StorageLevelDB.deleted();
+					v = deleted;
 				else
 					continue;
 

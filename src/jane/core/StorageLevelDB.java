@@ -21,7 +21,6 @@ import java.util.zip.CRC32;
 public final class StorageLevelDB implements Storage
 {
 	private static final StorageLevelDB	_instance	  = new StorageLevelDB();
-	private static final Octets			_deleted	  = new Octets();							   // 表示已删除的值
 	private static final Slice			_deletedSlice = new Slice(null, 0, 0);					   // 表示已删除的slice
 	private int							_writeCount;											   // 提交中的写缓冲区记录数量
 	private final OctetsStreamEx		_writeBuf	  = new OctetsStreamEx(0x10000);			   // 提交中的写缓冲区
@@ -148,20 +147,6 @@ public final class StorageLevelDB implements Storage
 		B bean = beanStub.create();
 		bean.unmarshal(os);
 		return bean;
-	}
-
-	public static <B extends Bean<B>> B toBean(Octets data, B beanStub) throws MarshalException
-	{
-		if (data == null || data == StorageLevelDB.deleted())
-			return null;
-		return toBean(OctetsStreamEx.wrap(data), beanStub);
-	}
-
-	public static <B extends Bean<B>> B toBean(byte[] data, B beanStub) throws MarshalException
-	{
-		if (data == null)
-			return null;
-		return toBean(OctetsStreamEx.wrap(data), beanStub);
 	}
 
 	private static int writeVarUInt2(byte[] buf, int pos, int v)
@@ -481,7 +466,12 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public boolean walkValue(WalkLongValueHandler<V> handler, V beanStub, long from, long to, boolean inclusive, boolean reverse)
 		{
-			return walkRaw((k, v) -> handler.onWalk(k, toBean(v, beanStub)), from, to, inclusive, reverse);
+			OctetsStreamEx os = new OctetsStreamEx();
+			return walkRaw((k, v) ->
+			{
+				os.wraps(v).setPosition(0);
+				return handler.onWalk(k, toBean(os, beanStub));
+			}, from, to, inclusive, reverse);
 		}
 
 		@Override
@@ -673,7 +663,12 @@ public final class StorageLevelDB implements Storage
 		@Override
 		public boolean walkValue(WalkValueHandler<K, V> handler, V beanStub, K from, K to, boolean inclusive, boolean reverse)
 		{
-			return walkRaw((k, v) -> handler.onWalk(k, toBean(v, beanStub)), from, to, inclusive, reverse);
+			OctetsStreamEx os = new OctetsStreamEx();
+			return walkRaw((k, v) ->
+			{
+				os.wraps(v).setPosition(0);
+				return handler.onWalk(k, toBean(os, beanStub));
+			}, from, to, inclusive, reverse);
 		}
 
 		@Override
@@ -1261,11 +1256,6 @@ public final class StorageLevelDB implements Storage
 				leveldb_iter_delete(iter);
 		}
 		return true;
-	}
-
-	public static Octets deleted()
-	{
-		return _deleted;
 	}
 
 	@Override

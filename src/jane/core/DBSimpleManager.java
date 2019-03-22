@@ -13,7 +13,10 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import jane.core.Storage.WalkLongRawHandler;
 import jane.core.Storage.WalkLongValueHandler;
+import jane.core.Storage.WalkRawHandler;
+import jane.core.Storage.WalkValueHandler;
 
 /**
  * 数据库管理器(单件)的简单版
@@ -30,7 +33,8 @@ public final class DBSimpleManager
 		public static final DBSimpleManager instance = new DBSimpleManager(Const.dbSimpleCacheSize);
 	}
 
-	private static volatile boolean _hasCreated; // 是否创建过此类的对象
+	private static final Octets		_deleted = new Octets(); // 表示已删除的值
+	private static volatile boolean	_hasCreated;			 // 是否创建过此类的对象
 
 	private final CommitThread					_commitThread	= new CommitThread();		   // 处理数据提交的线程
 	private final Map<Octets, Octets>			_readCache;									   // 读缓冲区
@@ -364,7 +368,7 @@ public final class DBSimpleManager
 			if (val.size() <= 0)
 				return null;
 		}
-		return StorageLevelDB.toBean(val, beanStub);
+		return StorageLevelDB.toBean(OctetsStreamEx.wrap(val), beanStub);
 	}
 
 	private void put0(Octets key, Octets value)
@@ -376,7 +380,7 @@ public final class DBSimpleManager
 
 	private void remove0(Octets key)
 	{
-		_writeCache.put(key, StorageLevelDB.deleted());
+		_writeCache.put(key, _deleted);
 		if (_readCache != null)
 			_readCache.remove(key);
 	}
@@ -476,13 +480,21 @@ public final class DBSimpleManager
 	public <B extends Bean<B>> boolean walkLongTable(int tableId, long keyFrom, long keyTo, B beanStub, WalkLongValueHandler<B> handler)
 	{
 		OctetsStreamEx os = new OctetsStreamEx();
-		int tableIdLen = OctetsStream.marshalUIntLen(tableId);
-		return _storage.dbwalk(toKey(tableId, keyFrom), toKey(tableId, keyTo), true, false, (key, value) ->
+		return walkRawLongTable(tableId, keyFrom, keyTo, (k, v) ->
 		{
-			os.wraps(key).setPosition(tableIdLen);
-			long k = os.unmarshalLong();
-			os.wraps(value).setPosition(0);
+			os.wraps(v).setPosition(0);
 			return handler.onWalk(k, StorageLevelDB.toBean(os, beanStub));
+		});
+	}
+
+	public <B extends Bean<B>> boolean walkRawLongTable(int tableId, long keyFrom, long keyTo, WalkLongRawHandler handler)
+	{
+		OctetsStreamEx os = new OctetsStreamEx();
+		int tableIdLen = OctetsStream.marshalUIntLen(tableId);
+		return _storage.dbwalk(toKey(tableId, keyFrom), toKey(tableId, keyTo), true, false, (k, v) ->
+		{
+			os.wraps(k).setPosition(tableIdLen);
+			return handler.onWalk(os.unmarshalLong(), v);
 		});
 	}
 
@@ -491,83 +503,86 @@ public final class DBSimpleManager
 		return walkLongTable(tableId, 0, -1, beanStub, handler);
 	}
 
-	public interface WalkOctetsValueHandler<B extends Bean<B>>
+	public <B extends Bean<B>> boolean walkRawLongTable(int tableId, WalkLongRawHandler handler)
 	{
-		/**
-		 * 每次遍历一个记录都会调用此接口
-		 * @return 返回true表示继续遍历, 返回false表示中断遍历
-		 */
-		boolean onWalk(byte[] key, B value) throws Exception;
+		return walkRawLongTable(tableId, 0, -1, handler);
 	}
 
-	public <B extends Bean<B>> boolean walkOctetsTable(int tableId, B beanStub, WalkOctetsValueHandler<B> handler)
+	public <B extends Bean<B>> boolean walkOctetsTable(int tableId, B beanStub, WalkValueHandler<byte[], B> handler)
+	{
+		OctetsStreamEx os = new OctetsStreamEx();
+		return walkRawOctetsTable(tableId, (k, v) ->
+		{
+			os.wraps(v).setPosition(0);
+			return handler.onWalk(k, StorageLevelDB.toBean(os, beanStub));
+		});
+	}
+
+	public <B extends Bean<B>> boolean walkRawOctetsTable(int tableId, WalkRawHandler<byte[]> handler)
 	{
 		OctetsStreamEx os = new OctetsStreamEx();
 		int tableIdLen = OctetsStream.marshalUIntLen(tableId);
 		AtomicBoolean finished = new AtomicBoolean();
-		return _storage.dbwalk(toKeyFrom(tableId), null, true, false, (key, value) ->
+		return _storage.dbwalk(toKeyFrom(tableId), null, true, false, (k, v) ->
 		{
 			os.setPosition(0);
-			int tid = os.wraps(key).unmarshalUInt();
+			int tid = os.wraps(k).unmarshalUInt();
 			if (tid != tableId)
 			{
 				finished.set(true);
 				return false;
 			}
-			byte[] k = os.getBytes(tableIdLen, Integer.MAX_VALUE);
-			os.wraps(value).setPosition(0);
-			return handler.onWalk(k, StorageLevelDB.toBean(os, beanStub));
+			return handler.onWalk(os.getBytes(tableIdLen, Integer.MAX_VALUE), v);
 		}) || finished.get();
 	}
 
-	public interface WalkStringValueHandler<B extends Bean<B>>
+	public <B extends Bean<B>> boolean walkStringTable(int tableId, B beanStub, WalkValueHandler<String, B> handler)
 	{
-		/**
-		 * 每次遍历一个记录都会调用此接口
-		 * @return 返回true表示继续遍历, 返回false表示中断遍历
-		 */
-		boolean onWalk(String key, B value) throws Exception;
+		OctetsStreamEx os = new OctetsStreamEx();
+		return walkRawStringTable(tableId, (k, v) ->
+		{
+			os.wraps(v).setPosition(0);
+			return handler.onWalk(k, StorageLevelDB.toBean(os, beanStub));
+		});
 	}
 
-	public <B extends Bean<B>> boolean walkStringTable(int tableId, B beanStub, WalkStringValueHandler<B> handler)
+	public <B extends Bean<B>> boolean walkRawStringTable(int tableId, WalkRawHandler<String> handler)
 	{
 		OctetsStreamEx os = new OctetsStreamEx();
 		AtomicBoolean finished = new AtomicBoolean();
-		return _storage.dbwalk(toKeyFrom(tableId), null, true, false, (key, value) ->
+		return _storage.dbwalk(toKeyFrom(tableId), null, true, false, (k, v) ->
 		{
 			os.setPosition(0);
-			int tid = os.wraps(key).unmarshalUInt();
+			int tid = os.wraps(k).unmarshalUInt();
 			if (tid != tableId)
 			{
 				finished.set(true);
 				return false;
 			}
-			String keyStr = new String(os.array(), os.position(), os.remain(), StandardCharsets.UTF_8);
-			os.wraps(value).setPosition(0);
-			return handler.onWalk(keyStr, StorageLevelDB.toBean(os, beanStub));
+			return handler.onWalk(new String(os.array(), os.position(), os.remain(), StandardCharsets.UTF_8), v);
 		}) || finished.get();
 	}
 
-	public interface WalkBeanValueHandler<K extends Bean<K>, B extends Bean<B>>
+	public <K extends Bean<K>, B extends Bean<B>> boolean walkBeanTable(int tableId, K keyStub, B beanStub, WalkValueHandler<K, B> handler)
 	{
-		/**
-		 * 每次遍历一个记录都会调用此接口
-		 * @return 返回true表示继续遍历, 返回false表示中断遍历
-		 */
-		boolean onWalk(K key, B value) throws Exception;
+		OctetsStreamEx os = new OctetsStreamEx();
+		return walkRawBeanTable(tableId, keyStub, (k, v) ->
+		{
+			os.wraps(v).setPosition(0);
+			return handler.onWalk(k, StorageLevelDB.toBean(os, beanStub));
+		});
 	}
 
-	public <K extends Bean<K>, B extends Bean<B>> boolean walkBeanTable(int tableId, K keyStub, B beanStub, WalkBeanValueHandler<K, B> handler)
+	public <K extends Bean<K>, B extends Bean<B>> boolean walkRawBeanTable(int tableId, K keyStub, WalkRawHandler<K> handler)
 	{
 		OctetsStreamEx os = new OctetsStreamEx();
 		int tableIdLen = OctetsStream.marshalUIntLen(tableId);
-		return _storage.dbwalk(toKeyFrom(tableId), toKeyFrom(tableId + 1), false, false, (key, value) ->
+		return _storage.dbwalk(toKeyFrom(tableId), toKeyFrom(tableId + 1), false, false, (k, v) ->
 		{
-			os.wraps(key).setPosition(tableIdLen);
-			K k = keyStub.create();
-			k.unmarshal(os);
-			os.wraps(value).setPosition(0);
-			return handler.onWalk(k, StorageLevelDB.toBean(os, beanStub));
+			os.wraps(k).setPosition(tableIdLen);
+			K kb = keyStub.create();
+			kb.unmarshal(os);
+			return handler.onWalk(kb, v);
 		});
 	}
 
