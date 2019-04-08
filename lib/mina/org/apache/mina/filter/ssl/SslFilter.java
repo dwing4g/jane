@@ -612,7 +612,7 @@ public final class SslFilter implements IoFilter {
 		}
 	}
 
-	private static final class EncryptedWriteRequest implements WriteRequest {
+	static final class EncryptedWriteRequest implements WriteRequest {
 		private final WriteRequest parentRequest;
 		private final IoBuffer encryptedMessage;
 

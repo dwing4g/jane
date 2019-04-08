@@ -434,8 +434,37 @@ public final class SslHandler {
 		// UNDERFLOW - Need to read more data from the socket. It's normal.
 		// CLOSED - The other peer closed the socket. Also normal.
 		Status status = res.getStatus();
-		if (status == Status.BUFFER_OVERFLOW)
+		switch (status) {
+		case BUFFER_OVERFLOW:
 			throw new SSLException("SSLEngine error during decrypt: " + status + " inNetBuffer: " + inNetBuffer + "appBuffer: " + appBuffer);
+		case CLOSED:
+			Exception exception = new RuntimeException("SSL/TLS close_notify received");
+
+			// Empty the Ssl queue
+			for (Entry<NextFilter, WriteRequest> event : filterWriteEventQueue) {
+				WriteFuture writeFuture = event.getValue().writeRequestFuture();
+				synchronized (writeFuture) {
+					writeFuture.setException(exception);
+					writeFuture.notifyAll();
+				}
+			}
+
+			// Empty the session queue
+			WriteRequest writeRequest;
+			while ((writeRequest = session.getWriteRequestQueue().poll()) != null) {
+				WriteFuture writeFuture = writeRequest.writeRequestFuture();
+				synchronized (writeFuture) {
+					writeFuture.setException(exception);
+					writeFuture.notifyAll();
+				}
+			}
+
+			// We *must* shutdown session
+			session.closeNow();
+			break;
+		default:
+			break;
+		}
 	}
 
 	/**

@@ -242,10 +242,11 @@ public abstract class AbstractIoService implements IoService {
 		if (!((IoAcceptor)this).isCloseOnDeactivation())
 			return;
 
-		Object lock = new Object();
+		AtomicBoolean lock = new AtomicBoolean();
 		// A listener in charge of releasing the lock when the close has been completed
 		IoFutureListener<IoFuture> listener = __ -> {
 			synchronized (lock) {
+				lock.set(true);
 				lock.notifyAll();
 			}
 		};
@@ -255,7 +256,7 @@ public abstract class AbstractIoService implements IoService {
 
 		try {
 			synchronized (lock) {
-				while (!managedSessions.isEmpty())
+				while (!managedSessions.isEmpty() && !lock.get())
 					lock.wait(500);
 			}
 		} catch (InterruptedException ie) {
