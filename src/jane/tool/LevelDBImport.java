@@ -51,7 +51,7 @@ public final class LevelDBImport
 	{
 		if (args.length < 1)
 		{
-			System.err.println("USAGE: java jane.tool.LevelDBImport <databasePath> <dumpFile>");
+			System.err.println("USAGE: java -cp jane-core.jar jane.tool.LevelDBImport <databasePath> <dumpFile>");
 			return;
 		}
 		String pathname = args[0].trim();

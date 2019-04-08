@@ -12,7 +12,7 @@ public final class LevelDBCompact
 	{
 		if (args.length < 1)
 		{
-			System.err.println("USAGE: java jane.tool.LevelDBCompact <database_file>");
+			System.err.println("USAGE: java -cp jane-core.jar jane.tool.LevelDBCompact <database_file>");
 			return;
 		}
 		String filename = args[0].trim();

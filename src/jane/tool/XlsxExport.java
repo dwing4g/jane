@@ -200,7 +200,7 @@ public final class XlsxExport
 	{
 		if (args.length < 3)
 		{
-			System.err.println("USAGE: java jane.tool.XlsxTool txt <filenameInput.xlsx> <filenameOutput.txt> [sheetId=1]");
+			System.err.println("USAGE: java -cp jane-core.jar jane.tool.XlsxExport txt <filenameInput.xlsx> <filenameOutput.txt> [sheetId=1]");
 			return;
 		}
 

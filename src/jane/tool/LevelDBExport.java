@@ -14,7 +14,7 @@ public final class LevelDBExport
 	{
 		if (args.length < 1)
 		{
-			System.err.println("USAGE: java jane.tool.LevelDBExport <databasePath> [tableId]");
+			System.err.println("USAGE: java -cp jane-core.jar jane.tool.LevelDBExport <databasePath> [tableId]");
 			return;
 		}
 		String pathname = args[0].trim();
