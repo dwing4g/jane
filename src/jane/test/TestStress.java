@@ -8,6 +8,7 @@ import jane.core.CacheRef;
 import jane.core.DBManager;
 import jane.core.Log;
 import jane.core.MarshalException;
+import jane.core.Octets;
 import jane.core.OctetsStream;
 import jane.core.Procedure;
 import jane.core.SBase;
@@ -99,7 +100,7 @@ public final class TestStress extends Procedure
 		}
 
 		@Override
-		public OctetsStream marshal(OctetsStream os)
+		public Octets marshal(Octets os)
 		{
 			if (value1 != 0)
 				os.marshal1((byte)4).marshal(value1);

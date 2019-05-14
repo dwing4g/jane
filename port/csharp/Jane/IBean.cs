@@ -50,7 +50,7 @@ namespace Jane
 		 * 序列化此bean到os中;
 		 * @return 必须是参数os;
 		 */
-		OctetsStream Marshal(OctetsStream os);
+		Octets Marshal(Octets os);
 
 		/**
 		 * 从os中反序列化到此bean中;

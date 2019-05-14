@@ -80,12 +80,12 @@ public class BeanCodec implements IoFilter
 		else
 		{
 			int serial = bean.serial();
-			int reserveLen = OctetsStream.marshalUIntLen(type) + OctetsStream.marshalLen(serial) + 5;
-			OctetsStream os = new OctetsStream(reserveLen + bean.initSize());
+			int reserveLen = Octets.marshalUIntLen(type) + Octets.marshalLen(serial) + 5;
+			Octets os = new Octets(reserveLen + bean.initSize());
 			os.resize(reserveLen);
 			int end = bean.marshalProtocol(os).size();
 			int len = end - reserveLen;
-			int pos = 5 - OctetsStream.marshalUIntLen(len);
+			int pos = 5 - Octets.marshalUIntLen(len);
 			os.resize(pos);
 			os.marshalUInt(type).marshal(serial).marshalUInt(len);
 			IoBuffer buf = IoBuffer.wrap(os.array(), pos, end - pos);

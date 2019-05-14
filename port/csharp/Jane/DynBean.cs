@@ -80,7 +80,7 @@ namespace Jane
 			if (_fields != null) _fields.Clear();
 		}
 
-		public OctetsStream Marshal(OctetsStream os)
+		public Octets Marshal(Octets os)
 		{
 			if (_fields != null)
 			{

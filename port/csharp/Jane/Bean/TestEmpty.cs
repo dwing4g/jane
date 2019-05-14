@@ -55,7 +55,7 @@ namespace Jane.Bean
 			return b;
 		}
 
-		public OctetsStream Marshal(OctetsStream s)
+		public Octets Marshal(Octets s)
 		{
 			return s.Marshal1((byte)0);
 		}

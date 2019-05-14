@@ -3,6 +3,7 @@ package jane.bean;
 
 import jane.core.Bean;
 import jane.core.MarshalException;
+import jane.core.Octets;
 import jane.core.OctetsStream;
 
 /**
@@ -85,7 +86,7 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 	}
 
 	@Override
-	public OctetsStream marshal(OctetsStream _s_)
+	public Octets marshal(Octets _s_)
 	{
 		if(this.key1 != 0) _s_.marshal1((byte)0x04).marshal(this.key1);
 		if(!this.key2.isEmpty()) _s_.marshal1((byte)0x09).marshal(this.key2);

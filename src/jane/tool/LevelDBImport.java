@@ -11,7 +11,6 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import jane.core.Octets;
-import jane.core.OctetsStream;
 import jane.core.StorageLevelDB;
 
 public final class LevelDBImport
@@ -23,14 +22,14 @@ public final class LevelDBImport
 	{
 	}
 
-	private static OctetsStream str2Oct(String str)
+	private static Octets str2Oct(String str)
 	{
 		String matchStr = "";
 		try
 		{
 			Matcher mat = s_patHex.matcher(str);
 			if (!mat.find())
-				return OctetsStream.wrap(str.getBytes(s_cs88591));
+				return Octets.wrap(str.getBytes(s_cs88591));
 			StringBuffer sb = new StringBuffer(str.length());
 			do
 			{
@@ -38,7 +37,7 @@ public final class LevelDBImport
 				mat.appendReplacement(sb, Matcher.quoteReplacement(String.valueOf((char)(Integer.parseInt(matchStr, 16)))));
 			}
 			while (mat.find());
-			return OctetsStream.wrap(mat.appendTail(sb).toString().getBytes(s_cs88591));
+			return Octets.wrap(mat.appendTail(sb).toString().getBytes(s_cs88591));
 		}
 		catch (RuntimeException e)
 		{
@@ -96,7 +95,7 @@ public final class LevelDBImport
 				else
 					continue;
 
-				buf.add(new SimpleEntry<Octets, Octets>(str2Oct(mat.group(1)), v));
+				buf.add(new SimpleEntry<>(str2Oct(mat.group(1)), v));
 				if (buf.size() >= 10000)
 				{
 					count += buf.size();

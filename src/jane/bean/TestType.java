@@ -254,11 +254,9 @@ public final class TestType extends Bean<TestType>
 	/** 二进制数据(Octets) */
 	public void marshalV8(Bean<?> _b_)
 	{
-		OctetsStream _os_ = OctetsStream.wrap(this.v8);
-		_os_.resize(0);
-		_os_.reserve(_b_.initSize());
-		this.v8 = _os_;
-		_b_.marshal(_os_);
+		this.v8.resize(0);
+		this.v8.reserve(_b_.initSize());
+		_b_.marshal(this.v8);
 	}
 
 	/** 二进制数据(Octets) */
@@ -397,7 +395,7 @@ public final class TestType extends Bean<TestType>
 	}
 
 	@Override
-	public OctetsStream marshal(OctetsStream _s_)
+	public Octets marshal(Octets _s_)
 	{
 		if(this.v1) _s_.marshal2(0x0401);
 		if(this.v2 != 0) _s_.marshal1((byte)0x08).marshal(this.v2);
@@ -875,7 +873,7 @@ public final class TestType extends Bean<TestType>
 		public void marshalV8(Bean<?> _b_)
 		{
 			if (initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_v8, _bean.getV8(), false));
-			_bean.setV8(_b_.marshal(new OctetsStream(_b_.initSize())));
+			_bean.setV8(_b_.marshal(new Octets(_b_.initSize())));
 		}
 
 		/** 二进制数据(Octets) */

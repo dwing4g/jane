@@ -51,7 +51,7 @@ public final class LevelDBClear
 		ArrayList<Entry<Octets, Octets>> buf = new ArrayList<>(10000);
 		long count = 0;
 
-		Octets keyFrom = (tableId > 0 ? new OctetsStream().marshalUInt(tableId) : new Octets());
+		Octets keyFrom = (tableId > 0 ? new Octets().marshalUInt(tableId) : new Octets());
 		Octets keyTo;
 		if (tableId < 0)
 			keyTo = null;

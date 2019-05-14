@@ -57,7 +57,7 @@ public final class RawBean extends Bean<RawBean>
 	{
 		int type = bean.type();
 		int serial = bean.serial();
-		int reserveLen = OctetsStream.marshalUIntLen(type) + OctetsStream.marshalLen(serial) + 5;
+		int reserveLen = Octets.marshalUIntLen(type) + Octets.marshalLen(serial) + 5;
 		_type = type;
 		serial(serial);
 
@@ -73,7 +73,7 @@ public final class RawBean extends Bean<RawBean>
 		os.resize(reserveLen);
 		int end = bean.marshalProtocol(os).size();
 		int len = end - reserveLen;
-		int pos = 5 - OctetsStream.marshalUIntLen(len);
+		int pos = 5 - Octets.marshalUIntLen(len);
 		os.resize(pos);
 		os.marshalUInt(type).marshal(serial).marshalUInt(len);
 		os.resize(end);
@@ -114,7 +114,7 @@ public final class RawBean extends Bean<RawBean>
 	}
 
 	@Override
-	public OctetsStream marshal(OctetsStream os)
+	public Octets marshal(Octets os)
 	{
 		os.marshalUInt(_type);
 		os.marshal(serial());

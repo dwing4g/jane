@@ -1,7 +1,6 @@
 package jane.tool;
 
 import jane.core.Octets;
-import jane.core.OctetsStream;
 import jane.core.StorageLevelDB;
 
 public final class LevelDBExport
@@ -19,7 +18,7 @@ public final class LevelDBExport
 		}
 		String pathname = args[0].trim();
 		int tableId = (args.length == 2 ? Integer.parseInt(args[1]) : -1);
-		OctetsStream tableIdOs = new OctetsStream(5);
+		Octets tableIdOs = new Octets(5);
 		if (tableId >= 0)
 			tableIdOs.marshalUInt(tableId);
 

@@ -101,7 +101,7 @@ public #(bean.final)class #(bean.name) extends Bean<#(bean.name)>
 	}
 
 	@Override
-	public OctetsStream marshal(OctetsStream _s_)
+	public Octets marshal(Octets _s_)
 	{
 #(##(var.marshal)#)#		return _s_.marshalZero();
 	}
@@ -610,11 +610,9 @@ typedef.octets = merge(typedef.string,
 	/** #(var.comment1) */
 	public void marshal#(var.name_u)(Bean<?> _b_)
 	{
-		OctetsStream _os_ = OctetsStream.wrap(this.#(var.name));
-		_os_.resize(0);
-		_os_.reserve(_b_.initSize());
-		this.#(var.name) = _os_;
-		_b_.marshal(_os_);
+		this.#(var.name).resize(0);
+		this.#(var.name).reserve(_b_.initSize());
+		_b_.marshal(this.#(var.name));
 	}
 
 	/** #(var.comment1) */
@@ -657,7 +655,7 @@ typedef.octets = merge(typedef.string,
 		public void marshal#(var.name_u)(Bean<?> _b_)
 		{
 			if (initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.get#(var.name_u)(), false));
-			_bean.set#(var.name_u)(_b_.marshal(new OctetsStream(_b_.initSize())));
+			_bean.set#(var.name_u)(_b_.marshal(new Octets(_b_.initSize())));
 		}
 
 		/** #(var.comment1) */
@@ -1186,7 +1184,7 @@ end
 function bean(bean)
 	bean_common(bean)
 
-	bean.import = { ["jane.core.Bean"] = true, ["jane.core.MarshalException"] = true, ["jane.core.OctetsStream"] = true, ["jane.core.SContext"] = true }
+	bean.import = { ["jane.core.Bean"] = true, ["jane.core.MarshalException"] = true, ["jane.core.Octets"] = true, ["jane.core.OctetsStream"] = true, ["jane.core.SContext"] = true }
 	local vartypes = { bean.name }
 	local id_used = {}
 	for _, var in ipairs(bean) do

@@ -425,12 +425,12 @@ namespace Jane
 			if (session.Closed || bean == null) return;
 			int type = bean.Type();
 			int serial = bean.Serial;
-			int reserveLen = OctetsStream.MarshalUIntLen(type) + OctetsStream.MarshalLen(serial) + 5;
+			int reserveLen = Octets.MarshalUIntLen(type) + Octets.MarshalLen(serial) + 5;
 			OctetsStream buf = new OctetsStream(reserveLen + bean.InitSize());
 			buf.Resize(reserveLen);
 			int end = bean.Marshal(buf).Size();
 			int len = end - reserveLen;
-			int pos = 5 - OctetsStream.MarshalUIntLen(len);
+			int pos = 5 - Octets.MarshalUIntLen(len);
 			buf.Resize(pos);
 			buf.MarshalUInt(type).Marshal(serial).MarshalUInt(len);
 			buf.SetPosition(pos);

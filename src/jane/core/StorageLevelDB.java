@@ -23,7 +23,7 @@ public final class StorageLevelDB implements Storage
 	private static final StorageLevelDB	_instance	  = new StorageLevelDB();
 	private static final Slice			_deletedSlice = new Slice(null, 0, 0);					   // 表示已删除的slice
 	private int							_writeCount;											   // 提交中的写缓冲区记录数量
-	private final OctetsStreamEx		_writeBuf	  = new OctetsStreamEx(0x10000);			   // 提交中的写缓冲区
+	private final Octets				_writeBuf	  = new Octets(0x10000);					   // 提交中的写缓冲区
 	private final Map<Slice, Slice>		_writeMap	  = Util.newConcurrentHashMap();			   // 提交中的写记录
 	private final FastRWLock			_writeBufLock = new FastRWLock();						   // 访问_writeBuf和_writeMap的读写锁
 	private long						_db;													   // LevelDB的数据库对象句柄
@@ -176,7 +176,7 @@ public final class StorageLevelDB implements Storage
 
 	private int writeVarUInt(int v)
 	{
-		OctetsStreamEx os = _writeBuf;
+		Octets os = _writeBuf;
 		if (v < 0x80)
 			return os.marshal1((byte)v).size();
 		int size = os.size();
@@ -189,16 +189,16 @@ public final class StorageLevelDB implements Storage
 	private int writeValue(Bean<?> bean) // size(VarUInt) + data
 	{
 		int maxSize = 1 + bean.maxSize(); // 1 for format
-		int initLenLen = OctetsStream.marshalUIntLen(maxSize > 1 ? maxSize : Integer.MAX_VALUE);
+		int initLenLen = Octets.marshalUIntLen(maxSize > 1 ? maxSize : Integer.MAX_VALUE);
 
-		OctetsStreamEx os = _writeBuf;
+		Octets os = _writeBuf;
 		int pos = os.size(); // 记录当前位置,之后写大小
 		int vpos = pos + initLenLen;
 		os.resize(vpos); // 跳过估计大小的长度
 		os.marshalZero(); // format
 		bean.marshal(os);
 		int len = os.size() - vpos; // 实际的bean序列化大小
-		int lenLen = OctetsStream.marshalUIntLen(len); // 实际大小的长度
+		int lenLen = Octets.marshalUIntLen(len); // 实际大小的长度
 		byte[] buf;
 		if (lenLen <= initLenLen) // 正常情况不会超
 		{
@@ -254,28 +254,28 @@ public final class StorageLevelDB implements Storage
 
 	private final class TableLong<V extends Bean<V>> implements Storage.TableLong<V>
 	{
-		private final String	   _tableName;
-		private final int		   _tableId;
-		private final int		   _tableIdLen;
-		private final OctetsStream _tableIdCounter;
-		private final V			   _stubV;
-		private final AtomicLong   _getCount = new AtomicLong();
-		private final AtomicLong   _getSize	 = new AtomicLong();
+		private final String	 _tableName;
+		private final int		 _tableId;
+		private final int		 _tableIdLen;
+		private final Octets	 _tableIdCounter;
+		private final V			 _stubV;
+		private final AtomicLong _getCount = new AtomicLong();
+		private final AtomicLong _getSize  = new AtomicLong();
 
 		public TableLong(int tableId, String tableName, V stubV)
 		{
 			_tableName = tableName;
 			_tableId = tableId;
-			_tableIdLen = OctetsStream.marshalUIntLen(tableId);
-			_tableIdCounter = OctetsStream.createSpace(1 + OctetsStream.marshalUIntLen(tableId))
+			_tableIdLen = Octets.marshalUIntLen(tableId);
+			_tableIdCounter = Octets.createSpace(1 + Octets.marshalUIntLen(tableId))
 					.marshal1((byte)0xf1).marshalUInt(tableId); // 0xf1前缀用于idcounter
 			_stubV = stubV;
 		}
 
-		private OctetsStream marshalKey(long k)
+		private Octets marshalKey(long k)
 		{
 			int tableIdLen = _tableIdLen;
-			OctetsStream keyOs = OctetsStream.createSpace(tableIdLen + OctetsStream.marshalLen(k));
+			Octets keyOs = Octets.createSpace(tableIdLen + Octets.marshalLen(k));
 			if (tableIdLen == 1)
 				keyOs.marshal1((byte)_tableId);
 			else
@@ -331,9 +331,9 @@ public final class StorageLevelDB implements Storage
 		public void put(long k, V v)
 		{
 			incWriteCount();
-			OctetsStreamEx os = _writeBuf;
+			Octets os = _writeBuf;
 			os.marshal1((byte)1); // leveldb::ValueType::kTypeValue
-			int klen = _tableIdLen + OctetsStream.marshalLen(k);
+			int klen = _tableIdLen + Octets.marshalLen(k);
 			os.marshal1((byte)klen);
 			int kpos = os.size();
 			if (_tableIdLen == 1)
@@ -350,9 +350,9 @@ public final class StorageLevelDB implements Storage
 		public void remove(long k)
 		{
 			incWriteCount();
-			OctetsStreamEx os = _writeBuf;
+			Octets os = _writeBuf;
 			os.marshalZero(); // leveldb::ValueType::kTypeDeletion
-			int klen = _tableIdLen + OctetsStream.marshalLen(k);
+			int klen = _tableIdLen + Octets.marshalLen(k);
 			os.marshal1((byte)klen);
 			int kpos = os.size();
 			if (_tableIdLen == 1)
@@ -386,13 +386,13 @@ public final class StorageLevelDB implements Storage
 			if (v == getIdCounter())
 				return;
 			incWriteCount();
-			OctetsStreamEx os = _writeBuf;
+			Octets os = _writeBuf;
 			os.marshal1((byte)1); // leveldb::ValueType::kTypeValue
 			int klen = _tableIdCounter.size();
 			os.marshal1((byte)klen);
 			int kpos = os.size();
 			os.append(_tableIdCounter);
-			int vlen = OctetsStream.marshalLen(v);
+			int vlen = Octets.marshalLen(v);
 			os.marshal1((byte)vlen);
 			int vpos = os.size();
 			os.marshal(v);
@@ -424,7 +424,7 @@ public final class StorageLevelDB implements Storage
 						byte[] key = leveldb_iter_next(iter);
 						if (key == null)
 							break;
-						OctetsStream keyOs = OctetsStream.wrap(key);
+						OctetsStreamEx keyOs = OctetsStreamEx.wrap(key);
 						int comp = keyOs.compareTo(keyTo);
 						if (comp >= 0 && (comp > 0 || !inclusive))
 							break;
@@ -441,7 +441,7 @@ public final class StorageLevelDB implements Storage
 						byte[] key = leveldb_iter_prev(iter);
 						if (key == null)
 							break;
-						OctetsStream keyOs = OctetsStream.wrap(key);
+						OctetsStreamEx keyOs = OctetsStreamEx.wrap(key);
 						int comp = keyOs.compareTo(keyFrom);
 						if (comp <= 0 && (comp < 0 || !inclusive))
 							break;
@@ -501,7 +501,7 @@ public final class StorageLevelDB implements Storage
 						byte[] key = leveldb_iter_next(iter);
 						if (key == null)
 							break;
-						OctetsStream keyOs = OctetsStream.wrap(key);
+						OctetsStreamEx keyOs = OctetsStreamEx.wrap(key);
 						int comp = keyOs.compareTo(keyTo);
 						if (comp >= 0 && (comp > 0 || !inclusive))
 							break;
@@ -522,7 +522,7 @@ public final class StorageLevelDB implements Storage
 						byte[] key = leveldb_iter_prev(iter);
 						if (key == null)
 							break;
-						OctetsStream keyOs = OctetsStream.wrap(key);
+						OctetsStreamEx keyOs = OctetsStreamEx.wrap(key);
 						int comp = keyOs.compareTo(keyFrom);
 						if (comp <= 0 && (comp < 0 || !inclusive))
 							break;
@@ -548,19 +548,19 @@ public final class StorageLevelDB implements Storage
 
 	private abstract class TableBase<K, V extends Bean<V>> implements Storage.Table<K, V>
 	{
-		protected final String		 _tableName;
-		protected final int			 _tableId;
-		protected final int			 _tableIdLen;
-		protected final OctetsStream _tableIdNext = OctetsStream.createSpace(5);
-		protected final V			 _stubV;
-		protected final AtomicLong	 _getCount	  = new AtomicLong();
-		protected final AtomicLong	 _getSize	  = new AtomicLong();
+		protected final String	   _tableName;
+		protected final int		   _tableId;
+		protected final int		   _tableIdLen;
+		protected final Octets	   _tableIdNext	= Octets.createSpace(5);
+		protected final V		   _stubV;
+		protected final AtomicLong _getCount	= new AtomicLong();
+		protected final AtomicLong _getSize		= new AtomicLong();
 
 		protected TableBase(int tableId, String tableName, V stubV)
 		{
 			_tableName = tableName;
 			_tableId = tableId;
-			_tableIdLen = OctetsStream.marshalUIntLen(tableId);
+			_tableIdLen = Octets.marshalUIntLen(tableId);
 			if (tableId < Integer.MAX_VALUE)
 				_tableIdNext.marshalUInt(tableId + 1);
 			else
@@ -568,7 +568,7 @@ public final class StorageLevelDB implements Storage
 			_stubV = stubV;
 		}
 
-		protected abstract OctetsStream marshalKey(K k);
+		protected abstract Octets marshalKey(K k);
 
 		protected abstract K unmarshalKey(OctetsStream keyOs) throws MarshalException;
 
@@ -602,7 +602,7 @@ public final class StorageLevelDB implements Storage
 		{
 			if (_db == 0)
 				throw new IllegalStateException("db closed");
-			Octets keyFrom = (from != null ? marshalKey(from) : OctetsStream.createSpace(5).marshalUInt(_tableId));
+			Octets keyFrom = (from != null ? marshalKey(from) : Octets.createSpace(5).marshalUInt(_tableId));
 			Octets keyTo = (to != null ? marshalKey(to) : _tableIdNext);
 			if (keyFrom.compareTo(keyTo) > 0)
 			{
@@ -621,7 +621,7 @@ public final class StorageLevelDB implements Storage
 						byte[] key = leveldb_iter_next(iter);
 						if (key == null)
 							break;
-						OctetsStream keyOs = OctetsStream.wrap(key);
+						OctetsStreamEx keyOs = OctetsStreamEx.wrap(key);
 						int comp = keyOs.compareTo(keyTo);
 						if (comp >= 0 && (comp > 0 || !inclusive))
 							break;
@@ -638,7 +638,7 @@ public final class StorageLevelDB implements Storage
 						byte[] key = leveldb_iter_prev(iter);
 						if (key == null)
 							break;
-						OctetsStream keyOs = OctetsStream.wrap(key);
+						OctetsStreamEx keyOs = OctetsStreamEx.wrap(key);
 						int comp = keyOs.compareTo(keyFrom);
 						if (comp <= 0 && (comp < 0 || !inclusive))
 							break;
@@ -676,7 +676,7 @@ public final class StorageLevelDB implements Storage
 		{
 			if (_db == 0)
 				throw new IllegalStateException("db closed");
-			Octets keyFrom = (from != null ? marshalKey(from) : OctetsStream.createSpace(5).marshalUInt(_tableId));
+			Octets keyFrom = (from != null ? marshalKey(from) : Octets.createSpace(5).marshalUInt(_tableId));
 			Octets keyTo = (to != null ? marshalKey(to) : _tableIdNext);
 			if (keyFrom.compareTo(keyTo) > 0)
 			{
@@ -698,7 +698,7 @@ public final class StorageLevelDB implements Storage
 						byte[] key = leveldb_iter_next(iter);
 						if (key == null)
 							break;
-						OctetsStream keyOs = OctetsStream.wrap(key);
+						OctetsStreamEx keyOs = OctetsStreamEx.wrap(key);
 						int comp = keyOs.compareTo(keyTo);
 						if (comp >= 0 && (comp > 0 || !inclusive))
 							break;
@@ -718,7 +718,7 @@ public final class StorageLevelDB implements Storage
 						byte[] key = leveldb_iter_prev(iter);
 						if (key == null)
 							break;
-						OctetsStream keyOs = OctetsStream.wrap(key);
+						OctetsStreamEx keyOs = OctetsStreamEx.wrap(key);
 						int comp = keyOs.compareTo(keyFrom);
 						if (comp <= 0 && (comp < 0 || !inclusive))
 							break;
@@ -749,10 +749,10 @@ public final class StorageLevelDB implements Storage
 		}
 
 		@Override
-		protected OctetsStream marshalKey(Octets k)
+		protected Octets marshalKey(Octets k)
 		{
 			int tableIdLen = _tableIdLen;
-			OctetsStream keyOs = OctetsStream.createSpace(tableIdLen + k.size());
+			Octets keyOs = Octets.createSpace(tableIdLen + k.size());
 			if (tableIdLen == 1)
 				keyOs.marshal1((byte)_tableId);
 			else
@@ -795,7 +795,7 @@ public final class StorageLevelDB implements Storage
 		public void put(Octets k, V v)
 		{
 			incWriteCount();
-			OctetsStreamEx os = _writeBuf;
+			Octets os = _writeBuf;
 			os.marshal1((byte)1); // leveldb::ValueType::kTypeValue
 			int ksize = k.size();
 			int klen = _tableIdLen + ksize;
@@ -816,7 +816,7 @@ public final class StorageLevelDB implements Storage
 		public void remove(Octets k)
 		{
 			incWriteCount();
-			OctetsStreamEx os = _writeBuf;
+			Octets os = _writeBuf;
 			os.marshalZero(); // leveldb::ValueType::kTypeDeletion
 			int ksize = k.size();
 			int klen = _tableIdLen + ksize;
@@ -841,11 +841,11 @@ public final class StorageLevelDB implements Storage
 		}
 
 		@Override
-		protected OctetsStream marshalKey(String k)
+		protected Octets marshalKey(String k)
 		{
 			int tableIdLen = _tableIdLen;
-			int bn = OctetsStream.marshalStrLen(k);
-			OctetsStream keyOs = OctetsStream.createSpace(tableIdLen + bn);
+			int bn = Octets.marshalStrLen(k);
+			Octets keyOs = Octets.createSpace(tableIdLen + bn);
 			if (tableIdLen == 1)
 				keyOs.marshal1((byte)_tableId);
 			else
@@ -897,9 +897,9 @@ public final class StorageLevelDB implements Storage
 		public void put(String k, V v)
 		{
 			incWriteCount();
-			OctetsStreamEx os = _writeBuf;
+			Octets os = _writeBuf;
 			os.marshal1((byte)1); // leveldb::ValueType::kTypeValue
-			int bn = OctetsStream.marshalStrLen(k);
+			int bn = Octets.marshalStrLen(k);
 			int klen = _tableIdLen + bn;
 			int kpos = writeVarUInt(klen);
 			if (_tableIdLen == 1)
@@ -926,9 +926,9 @@ public final class StorageLevelDB implements Storage
 		public void remove(String k)
 		{
 			incWriteCount();
-			OctetsStreamEx os = _writeBuf;
+			Octets os = _writeBuf;
 			os.marshalZero(); // leveldb::ValueType::kTypeDeletion
-			int bn = OctetsStream.marshalStrLen(k);
+			int bn = Octets.marshalStrLen(k);
 			int klen = _tableIdLen + bn;
 			int kpos = writeVarUInt(klen);
 			if (_tableIdLen == 1)
@@ -961,12 +961,12 @@ public final class StorageLevelDB implements Storage
 		}
 
 		@Override
-		protected OctetsStream marshalKey(K k)
+		protected Octets marshalKey(K k)
 		{
 			@SuppressWarnings("unchecked")
 			Bean<V> kb = (Bean<V>)k;
 			int tableIdLen = _tableIdLen;
-			OctetsStream keyOs = new OctetsStream(tableIdLen + kb.initSize());
+			Octets keyOs = new Octets(tableIdLen + kb.initSize());
 			if (tableIdLen == 1)
 				keyOs.marshal1((byte)_tableId);
 			else
@@ -1010,7 +1010,7 @@ public final class StorageLevelDB implements Storage
 		public void put(K k, V v)
 		{
 			incWriteCount();
-			OctetsStreamEx os = _writeBuf;
+			Octets os = _writeBuf;
 			os.marshal1((byte)1); // leveldb::ValueType::kTypeValue
 			int kpos = writeValue((Bean<?>)k);
 			int klen = os.size() - kpos;
@@ -1023,7 +1023,7 @@ public final class StorageLevelDB implements Storage
 		public void remove(K k)
 		{
 			incWriteCount();
-			OctetsStreamEx os = _writeBuf;
+			Octets os = _writeBuf;
 			os.marshalZero(); // leveldb::ValueType::kTypeDeletion
 			int kpos = writeValue((Bean<?>)k);
 			_writeMap.put(new Slice(os.array(), kpos, os.size() - kpos), _deletedSlice);
@@ -1111,12 +1111,12 @@ public final class StorageLevelDB implements Storage
 		incWriteCount();
 		int klen = key.size();
 		int vlen = value.size();
-		int klenlen = OctetsStream.marshalUIntLen(klen);
-		OctetsStreamEx os = _writeBuf;
+		int klenlen = Octets.marshalUIntLen(klen);
+		Octets os = _writeBuf;
 		int pos = os.size();
 		if (vlen > 0)
 		{
-			int vlenlen = OctetsStream.marshalUIntLen(vlen);
+			int vlenlen = Octets.marshalUIntLen(vlen);
 			os.resize(pos + 1 + klenlen + klen + vlenlen + vlen);
 			byte[] buf = os.array();
 			buf[pos++] = 1; // leveldb::ValueType::kTypeValue

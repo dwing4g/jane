@@ -141,7 +141,7 @@ public final class SContext
 			assign(s.unsafe());
 		}
 
-		public OctetsStream marshal(OctetsStream s)
+		public Octets marshal(Octets s)
 		{
 			return _bean.marshal(s);
 		}

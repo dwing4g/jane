@@ -137,7 +137,7 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	 * 序列化此bean到os中(用于数据库的记录)
 	 * @return 必须是参数os
 	 */
-	public abstract OctetsStream marshal(OctetsStream os);
+	public abstract Octets marshal(Octets os);
 
 	/**
 	 * 从os中反序列化到此bean中(用于数据库的记录)
@@ -153,7 +153,7 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	 * 默认等同于数据库记录的序列化
 	 * @return 必须是参数os
 	 */
-	public OctetsStream marshalProtocol(OctetsStream os)
+	public Octets marshalProtocol(Octets os)
 	{
 		return marshal(os);
 	}

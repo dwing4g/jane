@@ -90,7 +90,7 @@ public final class DynBean extends Bean<DynBean>
 	}
 
 	@Override
-	public OctetsStream marshal(OctetsStream os)
+	public Octets marshal(Octets os)
 	{
 		for (Entry<Integer, Object> e : _fields.entrySet())
 			os.marshalVar(e.getKey(), e.getValue());

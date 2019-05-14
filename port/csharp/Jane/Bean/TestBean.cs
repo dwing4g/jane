@@ -94,7 +94,7 @@ namespace Jane.Bean
 			return b;
 		}
 
-		public OctetsStream Marshal(OctetsStream s)
+		public Octets Marshal(Octets s)
 		{
 			if (this.value1 != 0) s.Marshal1((byte)0x04).Marshal(this.value1);
 			if (this.value2 != 0) s.Marshal1((byte)0x08).Marshal(this.value2);

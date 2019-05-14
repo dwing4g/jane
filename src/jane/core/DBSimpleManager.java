@@ -307,25 +307,25 @@ public final class DBSimpleManager
 
 	private static Octets toKeyFrom(int tableId)
 	{
-		return OctetsStream.createSpace(OctetsStream.marshalUIntLen(tableId)).marshalUInt(tableId);
+		return Octets.createSpace(Octets.marshalUIntLen(tableId)).marshalUInt(tableId);
 	}
 
 	private static Octets toKey(int tableId, long key)
 	{
-		return OctetsStream.createSpace(OctetsStream.marshalUIntLen(tableId) + OctetsStream.marshalLen(key))
+		return Octets.createSpace(Octets.marshalUIntLen(tableId) + Octets.marshalLen(key))
 				.marshalUInt(tableId).marshal(key);
 	}
 
 	private static Octets toKey(int tableId, Octets key)
 	{
-		return OctetsStream.createSpace(OctetsStream.marshalUIntLen(tableId) + key.size()).marshalUInt(tableId).append(key);
+		return Octets.createSpace(Octets.marshalUIntLen(tableId) + key.size()).marshalUInt(tableId).append(key);
 	}
 
 	private static Octets toKey(int tableId, String key)
 	{
-		int tableIdLen = OctetsStream.marshalUIntLen(tableId);
-		int bn = OctetsStream.marshalStrLen(key);
-		OctetsStream os = OctetsStream.createSpace(tableIdLen + bn).marshalUInt(tableId);
+		int tableIdLen = Octets.marshalUIntLen(tableId);
+		int bn = Octets.marshalStrLen(key);
+		Octets os = Octets.createSpace(tableIdLen + bn).marshalUInt(tableId);
 		int cn = key.length();
 		if (bn == cn)
 		{
@@ -342,7 +342,7 @@ public final class DBSimpleManager
 
 	private static Octets toKey(int tableId, Bean<?> key)
 	{
-		return new OctetsStream(5 + key.initSize()).marshalUInt(tableId).marshal(key);
+		return new Octets(5 + key.initSize()).marshalUInt(tableId).marshal(key);
 	}
 
 	private <B extends Bean<B>> B get0(Octets key, B beanStub) throws MarshalException
@@ -439,22 +439,22 @@ public final class DBSimpleManager
 
 	public void put(int tableId, long key, Bean<?> bean)
 	{
-		put0(toKey(tableId, key), new OctetsStream(bean.initSize()).marshalZero().marshal(bean)); // format
+		put0(toKey(tableId, key), new Octets(bean.initSize()).marshalZero().marshal(bean)); // format
 	}
 
 	public void put(int tableId, Octets key, Bean<?> bean)
 	{
-		put0(toKey(tableId, key), new OctetsStream(bean.initSize()).marshalZero().marshal(bean)); // format
+		put0(toKey(tableId, key), new Octets(bean.initSize()).marshalZero().marshal(bean)); // format
 	}
 
 	public void put(int tableId, String key, Bean<?> bean)
 	{
-		put0(toKey(tableId, key), new OctetsStream(bean.initSize()).marshalZero().marshal(bean)); // format
+		put0(toKey(tableId, key), new Octets(bean.initSize()).marshalZero().marshal(bean)); // format
 	}
 
 	public void put(int tableId, Bean<?> key, Bean<?> bean)
 	{
-		put0(toKey(tableId, key), new OctetsStream(bean.initSize()).marshalZero().marshal(bean)); // format
+		put0(toKey(tableId, key), new Octets(bean.initSize()).marshalZero().marshal(bean)); // format
 	}
 
 	public void remove(int tableId, long key)
@@ -490,7 +490,7 @@ public final class DBSimpleManager
 	public <B extends Bean<B>> boolean walkRawLongTable(int tableId, long keyFrom, long keyTo, WalkLongRawHandler handler)
 	{
 		OctetsStreamEx os = new OctetsStreamEx();
-		int tableIdLen = OctetsStream.marshalUIntLen(tableId);
+		int tableIdLen = Octets.marshalUIntLen(tableId);
 		return _storage.dbwalk(toKey(tableId, keyFrom), toKey(tableId, keyTo), true, false, (k, v) ->
 		{
 			os.wraps(k).setPosition(tableIdLen);
@@ -521,7 +521,7 @@ public final class DBSimpleManager
 	public <B extends Bean<B>> boolean walkRawOctetsTable(int tableId, WalkRawHandler<byte[]> handler)
 	{
 		OctetsStreamEx os = new OctetsStreamEx();
-		int tableIdLen = OctetsStream.marshalUIntLen(tableId);
+		int tableIdLen = Octets.marshalUIntLen(tableId);
 		AtomicBoolean finished = new AtomicBoolean();
 		return _storage.dbwalk(toKeyFrom(tableId), null, true, false, (k, v) ->
 		{
@@ -576,7 +576,7 @@ public final class DBSimpleManager
 	public <K extends Bean<K>, B extends Bean<B>> boolean walkRawBeanTable(int tableId, K keyStub, WalkRawHandler<K> handler)
 	{
 		OctetsStreamEx os = new OctetsStreamEx();
-		int tableIdLen = OctetsStream.marshalUIntLen(tableId);
+		int tableIdLen = Octets.marshalUIntLen(tableId);
 		return _storage.dbwalk(toKeyFrom(tableId), toKeyFrom(tableId + 1), false, false, (k, v) ->
 		{
 			os.wraps(k).setPosition(tableIdLen);

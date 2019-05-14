@@ -91,7 +91,7 @@ namespace ]=] .. namespace .. [=[
 			return b;
 		}
 
-		public OctetsStream Marshal(OctetsStream s)
+		public Octets Marshal(Octets s)
 		{
 #(#			#(var.marshal)
 #)#			return s.Marshal1((byte)0);

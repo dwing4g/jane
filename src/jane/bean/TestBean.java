@@ -4,6 +4,7 @@ package jane.bean;
 import java.lang.reflect.Field;
 import jane.core.Bean;
 import jane.core.MarshalException;
+import jane.core.Octets;
 import jane.core.OctetsStream;
 import jane.core.SBase;
 import jane.core.SContext;
@@ -108,7 +109,7 @@ public class TestBean extends Bean<TestBean>
 	}
 
 	@Override
-	public OctetsStream marshal(OctetsStream _s_)
+	public Octets marshal(Octets _s_)
 	{
 		if(this.value1 != 0) _s_.marshal1((byte)0x04).marshal(this.value1);
 		if(this.value2 != 0) _s_.marshal1((byte)0x08).marshal(this.value2);

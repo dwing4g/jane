@@ -3,6 +3,7 @@ package jane.bean;
 
 import jane.core.Bean;
 import jane.core.MarshalException;
+import jane.core.Octets;
 import jane.core.OctetsStream;
 import jane.core.SContext;
 
@@ -64,7 +65,7 @@ public final class TestEmpty extends Bean<TestEmpty>
 	}
 
 	@Override
-	public OctetsStream marshal(OctetsStream _s_)
+	public Octets marshal(Octets _s_)
 	{
 		return _s_.marshalZero();
 	}
