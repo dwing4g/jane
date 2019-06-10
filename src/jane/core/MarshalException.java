@@ -9,49 +9,48 @@ package jane.core;
 public class MarshalException extends Exception
 {
 	/**
-	 * 不带栈信息的MarshalException
-	 */
-	public static final class WithoutTrace extends MarshalException
-	{
-		private static final WithoutTrace _instance = new WithoutTrace();
-
-		public static WithoutTrace instance()
-		{
-			return _instance;
-		}
-
-		@SuppressWarnings("sync-override")
-		@Override
-		public Throwable fillInStackTrace()
-		{
-			return this;
-		}
-	}
-
-	/**
 	 * 反序列化超过数据结尾的异常类
 	 */
 	public static class EOF extends MarshalException
 	{
+		private static final EOF _withoutTraceEOF = new EOF(false);
+
+		/**
+		 * 不带栈信息的EOF
+		 */
+		public static EOF withoutTrace()
+		{
+			return _withoutTraceEOF;
+		}
+
+		public EOF()
+		{
+			super();
+		}
+
+		private EOF(boolean withTrace)
+		{
+			super(withTrace);
+		}
 	}
 
+	private static final MarshalException _withoutTrace = new MarshalException(false);
+
 	/**
-	 * 不带栈信息的EOF
+	 * 不带栈信息的MarshalException
 	 */
-	public static final class EOFWithoutTrace extends EOF
+	public static MarshalException withoutTrace()
 	{
-		private static final EOFWithoutTrace _instance = new EOFWithoutTrace();
+		return _withoutTrace;
+	}
 
-		public static EOFWithoutTrace instance()
-		{
-			return _instance;
-		}
+	public MarshalException()
+	{
+		super(null, null, false, true);
+	}
 
-		@SuppressWarnings("sync-override")
-		@Override
-		public Throwable fillInStackTrace()
-		{
-			return this;
-		}
+	private MarshalException(boolean withTrace)
+	{
+		super(null, null, false, withTrace);
 	}
 }

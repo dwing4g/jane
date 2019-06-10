@@ -5,8 +5,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import jane.core.MarshalException.EOF;
-import jane.core.MarshalException.EOFWithoutTrace;
-import jane.core.MarshalException.WithoutTrace;
 
 /**
  * 基于{@link Octets}的可扩展字节流的类型
@@ -160,7 +158,7 @@ public class OctetsStream extends Octets
 	@SuppressWarnings("static-method")
 	public MarshalException getMarshalException()
 	{
-		return WithoutTrace.instance();
+		return MarshalException.withoutTrace();
 	}
 
 	/**
@@ -169,7 +167,7 @@ public class OctetsStream extends Octets
 	@SuppressWarnings("static-method")
 	public EOF getEOFException()
 	{
-		return EOFWithoutTrace.instance();
+		return MarshalException.EOF.withoutTrace();
 	}
 
 	public byte unmarshalByte() throws MarshalException
