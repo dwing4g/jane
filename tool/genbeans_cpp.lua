@@ -653,6 +653,6 @@ end):gsub("#%(#(.-)#%)#", function(body)
 		end
 	end
 	return concat(subcode)
-end)):gsub(has_handler and "#[<>]#" or "#<#.-#>#", ""):gsub("#%(bean.count%)", bean_count):gsub("\r", ""), 0)
+end)):gsub(has_handler and "#[<>]#" or "#<#.-#>#", ""):gsub("#%(bean%.count%)", bean_count):gsub("\r", ""), 0)
 
 print((arg[2] or "") .. " ... done!")

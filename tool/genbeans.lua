@@ -1236,7 +1236,7 @@ function bean(bean)
 		gsub("( new %w+)<.->", "%1<>"):
 		gsub("\n\n\n", "\n\n")
 	if not code:find("\tprivate static final Field ") then
-		code = code:gsub("import java.lang.reflect.Field;\n", "")
+		code = code:gsub("import java%.lang%.reflect%.Field;\n", "")
 	end
 	if bean.const then code = bean_const(code) end
 	local c, n = code:gsub([[
@@ -1252,7 +1252,7 @@ function bean(bean)
 	}
 
 ]], "")
-	if n > 0 then code = c:gsub("import java.lang.reflect.Field;\n", "") end
+	if n > 0 then code = c:gsub("import java%.lang%.reflect%.Field;\n", "") end
 	name_code[bean.name] = code
 	name_code[lower(bean.name)] = code
 end
