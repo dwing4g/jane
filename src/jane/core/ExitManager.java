@@ -103,7 +103,7 @@ public final class ExitManager
 				System.out.println("!!!STDIN TRIGGERED EXIT!!!");
 				System.exit(1);
 			}
-			System.in.skip(Integer.MAX_VALUE); // 尽可能忽略行后的内容. 但传入Long.MAX_VALUE可能导致IOException
+			System.in.skip(System.in.available()); // 尽可能忽略行后的内容
 		}
 	}
 
