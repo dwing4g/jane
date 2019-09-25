@@ -6,12 +6,14 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayDeque;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import jane.core.SContext.Safe;
@@ -285,8 +287,19 @@ public final class DBManager
 				synchronized (DBManager.this)
 				{
 					_exiting = true;
-					_procThreads.shutdownNow();
+					_procThreads.shutdown();
+					if (!_procThreads.awaitTermination(5, TimeUnit.SECONDS))
+					{
+						List<Runnable> procs = _procThreads.shutdownNow();
+						Log.warn("DBManager.OnJVMShutDown: {} procedures aborted", procs.size());
+						if (!_procThreads.awaitTermination(1, TimeUnit.SECONDS))
+							Log.warn("DBManager.OnJVMShutDown: current procedures aborted");
+					}
 				}
+			}
+			catch (InterruptedException e)
+			{
+				Log.info("DBManager.OnJVMShutDown: procThreads interrupted");
 			}
 			finally
 			{
