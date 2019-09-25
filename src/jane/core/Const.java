@@ -40,6 +40,8 @@ public final class Const
 	public static final long   dbBackupPeriod;
 	public static final int	   procedureTimeout;
 	public static final int	   procedureDeadlockTimeout;
+	public static final int	   procedureShutdownTimeout;
+	public static final int	   procedureShutdownNowTimeout;
 	public static final int	   autoIdBegin;
 	public static final int	   autoIdStride;
 	public static final String levelDBNativePath;
@@ -100,6 +102,8 @@ public final class Const
 		dbBackupPeriod = getPropLong("jane.dbBackupPeriod", 3600, 1, 86400L * 366 * 10000); // 0x49_A06B_5000L
 		procedureTimeout = getPropInt("jane.procedureTimeout", 60, 1);
 		procedureDeadlockTimeout = getPropInt("jane.procedureDeadlockTimeout", 5, 1);
+		procedureShutdownTimeout = getPropInt("jane.procedureShutdownTimeout", 5, 0);
+		procedureShutdownNowTimeout = getPropInt("jane.procedureShutdownNowTimeout", 1, 0);
 		autoIdBegin = getPropInt("jane.autoIdBegin", 1, 1);
 		autoIdStride = getPropInt("jane.autoIdStride", 1, 1);
 		levelDBNativePath = System.getProperty("jane.levelDBNativePath", "lib");

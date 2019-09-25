@@ -288,11 +288,11 @@ public final class DBManager
 				{
 					_exiting = true;
 					_procThreads.shutdown();
-					if (!_procThreads.awaitTermination(5, TimeUnit.SECONDS))
+					if (!_procThreads.awaitTermination(Const.procedureShutdownTimeout, TimeUnit.SECONDS))
 					{
 						List<Runnable> procs = _procThreads.shutdownNow();
 						Log.warn("DBManager.OnJVMShutDown: {} procedures aborted", procs.size());
-						if (!_procThreads.awaitTermination(1, TimeUnit.SECONDS))
+						if (!_procThreads.awaitTermination(Const.procedureShutdownNowTimeout, TimeUnit.SECONDS))
 							Log.warn("DBManager.OnJVMShutDown: current procedures aborted");
 					}
 				}
