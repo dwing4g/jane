@@ -56,7 +56,7 @@ public final class DBManager
 		{
 			super("CommitThread");
 			setDaemon(true);
-			setPriority(Thread.NORM_PRIORITY + 1);
+			setPriority(Thread.NORM_PRIORITY + 2);
 			try
 			{
 				long base = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(Const.dbBackupBase).getTime();

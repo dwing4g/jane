@@ -29,7 +29,7 @@ final class LRUCleaner
 		{
 			Thread t = new Thread(r, "LRUMapCleanerThread");
 			t.setDaemon(true);
-			t.setPriority(Thread.NORM_PRIORITY + 1);
+			t.setPriority(Thread.NORM_PRIORITY + 2);
 			return t;
 		});
 	}

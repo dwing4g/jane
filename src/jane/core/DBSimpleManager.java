@@ -63,7 +63,7 @@ public final class DBSimpleManager
 		{
 			super("CommitThread");
 			setDaemon(true);
-			setPriority(Thread.NORM_PRIORITY + 1);
+			setPriority(Thread.NORM_PRIORITY + 2);
 		}
 
 		void commitNext()
