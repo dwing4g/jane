@@ -1009,7 +1009,7 @@ public class NetManager implements IoHandler
 	@Override
 	public void exceptionCaught(IoSession session, Throwable cause)
 	{
-		if (cause instanceof IOException)
+		if (cause instanceof IOException && cause.getMessage() != null)
 			Log.error("{}({},{}): exception: {}: {}", _name, session.getId(), session.getRemoteAddress(), cause.getClass().getSimpleName(), cause.getMessage());
 		else
 			Log.error(cause, "{}({},{}): exception:", _name, session.getId(), session.getRemoteAddress());
