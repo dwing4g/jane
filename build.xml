@@ -89,7 +89,7 @@
 				<attribute name="Created-Time" value="${time}"/>
 				<attribute name="Main-Class" value="jane.test.TestMain"/>
 			</manifest>
-			<zipfileset src="${lib}/slf4j-api-1.7.26.jar"/>
+			<zipfileset src="${lib}/slf4j-api-1.7.28.jar"/>
 			<zipfileset src="${lib}/logback-core-1.2.3.jar"/>
 			<zipfileset src="${lib}/logback-classic-1.2.3.jar"/>
 			<zipfileset src="${root}/jane-core.jar"/>
