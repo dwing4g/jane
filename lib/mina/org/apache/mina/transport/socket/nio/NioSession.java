@@ -19,8 +19,10 @@
 package org.apache.mina.transport.socket.nio;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.net.SocketException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SelectionKey;
@@ -120,9 +122,15 @@ public final class NioSession implements IoSession {
 		return (InetSocketAddress)getSocket().getLocalSocketAddress();
 	}
 
+	@SuppressWarnings("resource")
 	@Override
 	public InetSocketAddress getRemoteAddress() {
-		return (InetSocketAddress)getSocket().getRemoteSocketAddress();
+		Socket socket = getSocket();
+		SocketAddress sa = socket.getRemoteSocketAddress();
+		if (sa instanceof InetSocketAddress)
+			return (InetSocketAddress)sa;
+		InetAddress ia = socket.getInetAddress();
+		return ia != null ? new InetSocketAddress(ia, socket.getPort()) : null;
 	}
 
 	@Override
