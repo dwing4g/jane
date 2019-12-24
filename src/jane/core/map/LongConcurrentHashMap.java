@@ -1070,8 +1070,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 						if (counterCells == as) // Expand table unless stale
 						{
 							CounterCell[] rs = new CounterCell[n << 1];
-							for (int i = 0; i < n; ++i)
-								rs[i] = as[i];
+							System.arraycopy(as, 0, rs, 0, n);
 							counterCells = rs;
 						}
 					}
