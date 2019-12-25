@@ -508,7 +508,7 @@ public class IntHashMap<V> implements Cloneable
 		{
 			for (; i < n; i++)
 			{
-				long key = kt[i];
+				int key = kt[i];
 				if (key != EMPTY)
 				{
 					s.append(key).append('=').append(vt[i++]);
@@ -518,7 +518,7 @@ public class IntHashMap<V> implements Cloneable
 		}
 		for (; i < n; i++)
 		{
-			long key = kt[i];
+			int key = kt[i];
 			if (key != EMPTY)
 				s.append(',').append(key).append('=').append(vt[i]);
 		}
