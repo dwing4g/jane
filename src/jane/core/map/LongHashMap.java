@@ -16,7 +16,7 @@ import java.util.function.LongConsumer;
 public class LongHashMap<V> implements Cloneable
 {
 	public static final long EMPTY = 0;
-	private int				 mask;			 // [0,0x3fffffff]
+	private int				 mask;			 // [0,0x3fff_ffff]
 	private long[]			 keyTable;
 	private V[]				 valueTable;
 	private V				 zeroValue;
@@ -45,7 +45,7 @@ public class LongHashMap<V> implements Cloneable
 		initialCapacity = IntHashMap.normalizeCapacity(initialCapacity);
 		loadFactor = IntHashMap.normalizeLoadFactor(loadFactor);
 
-		mask = initialCapacity - 1; // [0,0x3fffffff]
+		mask = initialCapacity - 1; // [0,0x3fff_ffff]
 		pushIterations = (short)Math.max(Math.min(initialCapacity, 8), (int)Math.sqrt(initialCapacity) >> 3); // [1,2,4,8,8,...,4096=8,11,16,22,...,4096]
 		hashShift = 31 - Integer.numberOfTrailingZeros(initialCapacity); // [0,1,...30]
 		capacity = tableSize = initialCapacity; // [1,2,4,8,...,0x4000_0000]

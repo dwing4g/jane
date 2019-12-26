@@ -19,7 +19,7 @@ public class IntHashMap<V> implements Cloneable
 	public static final int	  PRIME3			  = 0xb4b82e39;
 	public static final float DEFAULT_LOAD_FACTOR = 0.8f;
 	public static final int	  EMPTY				  = 0;
-	private int				  mask;							   // [0,0x3fffffff]
+	private int				  mask;							   // [0,0x3fff_ffff]
 	private int[]			  keyTable;
 	private V[]				  valueTable;
 	private V				  zeroValue;
@@ -63,7 +63,7 @@ public class IntHashMap<V> implements Cloneable
 		initialCapacity = normalizeCapacity(initialCapacity);
 		loadFactor = normalizeLoadFactor(loadFactor);
 
-		mask = initialCapacity - 1; // [0,0x3fffffff]
+		mask = initialCapacity - 1; // [0,0x3fff_ffff]
 		pushIterations = (short)Math.max(Math.min(initialCapacity, 8), (int)Math.sqrt(initialCapacity) >> 3); // [1,2,4,8,8,...,4096=8,11,16,22,...,4096]
 		hashShift = 31 - Integer.numberOfTrailingZeros(initialCapacity); // [0,1,...30]
 		capacity = tableSize = initialCapacity; // [1,2,4,8,...,0x4000_0000]
