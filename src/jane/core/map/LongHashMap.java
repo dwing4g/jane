@@ -239,9 +239,10 @@ public class LongHashMap<V> implements Cloneable
 		int m = mask;
 		long evictedKey;
 		V evictedValue;
+		ThreadLocalRandom rand = ThreadLocalRandom.current();
 		for (int i = 0, pis = pushIterations;;)
 		{
-			switch (ThreadLocalRandom.current().nextInt(3))
+			switch (rand.nextInt(3))
 			{
 			case 0:
 				evictedKey = key1;

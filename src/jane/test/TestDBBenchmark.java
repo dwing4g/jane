@@ -34,7 +34,8 @@ public final class TestDBBenchmark
 		{
 			long t = System.currentTimeMillis();
 			final AtomicInteger checked = new AtomicInteger();
-			int logCount = Math.max(10000000 / countIn, 1);
+			final int logCount = Math.max(10000000 / countIn, 1);
+			final ThreadLocalRandom rand = ThreadLocalRandom.current();
 			for (int i = 0, keyFrom = KEY_BEGIN, keyDelta = -1; i < countOut; keyFrom += keyDelta, ++i)
 			{
 				if (keyFrom < KEY_BEGIN)
@@ -50,7 +51,7 @@ public final class TestDBBenchmark
 
 				for (int j = 0; j < countIn; ++j)
 				{
-					final long id = (long)keyFrom + ThreadLocalRandom.current().nextInt(keyWinCount);
+					final long id = (long)keyFrom + rand.nextInt(keyWinCount);
 					final long t0 = System.currentTimeMillis();
 					new Procedure()
 					{

@@ -1,13 +1,13 @@
 package jane.test;
 
 import java.util.concurrent.atomic.AtomicLong;
-import sun.misc.Contended; //NOSONAR
+// import sun.misc.Contended; //NOSONAR
 
 /**
  * 无锁的单消费者的定长Object Ring Buffer队列. 消费者只能固定一个线程访问
  * result: 381ms / 1000_0000
  */
-@SuppressWarnings("restriction")
+// @SuppressWarnings("restriction")
 public final class TestMpScRingBuffer<T>
 {
 	static class PaddingAtomicLong extends AtomicLong
@@ -20,8 +20,8 @@ public final class TestMpScRingBuffer<T>
 	private final int				idxMask;
 	private final PaddingAtomicLong	writeIdx = new PaddingAtomicLong();
 	private final PaddingAtomicLong	readIdx	 = new PaddingAtomicLong();
-	private @Contended long			writeCacheIdx;
-	private @Contended long			readCacheIdx;
+	private /*@Contended*/ long		writeCacheIdx;
+	private /*@Contended*/ long		readCacheIdx;
 
 	/**
 	 * @param bufSize buffer数组的长度. 必须是2的幂,至少是2. 实际的buffer长度是bufSize-1
