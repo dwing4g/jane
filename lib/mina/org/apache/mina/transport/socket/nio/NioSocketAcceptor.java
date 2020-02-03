@@ -24,7 +24,6 @@ import java.net.ServerSocket;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
@@ -92,7 +91,7 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 	 * The default pool size will be used.
 	 */
 	public NioSocketAcceptor() {
-		this(new SimpleIoProcessorPool());
+		super(new SimpleIoProcessorPool());
 	}
 
 	/**
@@ -103,7 +102,7 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 	 * @param processorCount the number of processor to create and place in a {@link SimpleIoProcessorPool}
 	 */
 	public NioSocketAcceptor(int processorCount) {
-		this(new SimpleIoProcessorPool(processorCount));
+		super(new SimpleIoProcessorPool(processorCount));
 	}
 
 	/**
@@ -114,14 +113,6 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 	 */
 	public NioSocketAcceptor(IoProcessor<NioSession> processor) {
 		super(processor);
-
-		try {
-			selector = Selector.open();
-			// The selector is now ready, we can switch the flag to true so that incoming connection can be accepted
-			selectable = true;
-		} catch (IOException e) {
-			throw new RuntimeException("failed to initialize", e);
-		}
 	}
 
 	/**
@@ -454,26 +445,17 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 		}
 
 		/**
-		 * Accept a client connection for a server socket and return a new {@link IoSession}
-		 * associated with the given {@link IoProcessor}
-		 *
-		 * @param ioProcessor the {@link IoProcessor} to associate with the {@link IoSession}
-		 * @param channel the server handle
-		 * @return the created {@link IoSession}
+		 * Accept a client connection for a server socket and return a new {@link SocketChannel}
 		 */
-		@SuppressWarnings("resource")
-		private NioSession accept(IoProcessor<NioSession> proc, ServerSocketChannel channel) throws IOException {
-			SelectionKey key = null;
-			if (channel != null)
-				key = channel.keyFor(selector);
-
-			if (key == null || !key.isValid() || !key.isAcceptable())
+		private SocketChannel accept(SelectionKey key) throws IOException {
+			@SuppressWarnings("resource")
+			ServerSocketChannel channel = (key.isValid() && key.isAcceptable() ? (ServerSocketChannel)key.channel() : null);
+			if (channel == null)
 				return null;
 
 			// accept the connection from the client
 			try {
-				SocketChannel ch = (channel != null ? channel.accept() : null); //NOSONAR
-				return ch != null ? new NioSession(NioSocketAcceptor.this, proc, ch) : null;
+				return channel.accept();
 			} catch (Throwable t) {
 				if(t.getMessage().equals("Too many open files")) {
 					ExceptionMonitor.getInstance().error("error calling accept on socket - sleeping acceptor thread. check the ulimit parameter", t);
@@ -502,17 +484,12 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 		private void processHandles(Set<SelectionKey> keys) throws IOException {
 			for (Iterator<SelectionKey> it = keys.iterator(); it.hasNext();) {
 				SelectionKey key = it.next();
-				@SuppressWarnings("resource")
-				ServerSocketChannel channel = (key.isValid() && key.isAcceptable() ? (ServerSocketChannel)key.channel() : null);
 				it.remove();
 
-				// Associates a new created connection to a processor, and get back a session
-				NioSession session = accept(processor, channel);
-				if (session == null)
-					continue;
-
-				initSession(session, null);
-				session.getProcessor().add(session); // add the session to the SocketIoProcessor
+				@SuppressWarnings("resource")
+				SocketChannel newChannel = accept(key);
+				if (newChannel != null)
+					processor.add(new NioSession(NioSocketAcceptor.this, processor, newChannel, null));
 			}
 		}
 

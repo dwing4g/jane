@@ -515,7 +515,7 @@ public final class SslFilter implements IoFilter {
 			synchronized (sslHandler) {
 				if (isSslStarted(session)) {
 					future = initiateClosure(nextFilter, session);
-					future.addListener(ioFuture -> nextFilter.filterClose());
+					future.addListener(__ -> nextFilter.filterClose());
 				}
 			}
 

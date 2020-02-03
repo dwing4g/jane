@@ -32,11 +32,9 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.mina.core.filterchain.DefaultIoFilterChain;
 import org.apache.mina.core.filterchain.DefaultIoFilterChainBuilder;
 import org.apache.mina.core.filterchain.IoFilterChain;
 import org.apache.mina.core.filterchain.IoFilterChainBuilder;
-import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.future.DefaultIoFuture;
 import org.apache.mina.core.future.IoFuture;
 import org.apache.mina.core.future.IoFutureListener;
@@ -61,7 +59,7 @@ public abstract class AbstractIoService implements IoService {
 	/** The associated executor, responsible for handling execution of I/O events */
 	private final ExecutorService executor;
 
-	protected Selector selector;
+	protected final Selector selector;
 
 	/** The default {@link AbstractSocketSessionConfig} which will be used to configure new sessions */
 	private final DefaultSocketSessionConfig sessionConfig = new DefaultSocketSessionConfig(this);
@@ -94,6 +92,13 @@ public abstract class AbstractIoService implements IoService {
 		int id = idGenerator.incrementAndGet();
 		executor = new ThreadPoolExecutor(0, 1, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(),
 				r -> new Thread(r, getClass().getSimpleName() + '-' + id));
+
+		try {
+			selector = Selector.open();
+			selectable = true;
+		} catch (IOException e) {
+			throw new RuntimeException("failed to initialize", e);
+		}
 	}
 
 	@Override
@@ -301,32 +306,6 @@ public abstract class AbstractIoService implements IoService {
 
 	protected final void executeWorker(Runnable worker) {
 		executor.execute(worker);
-	}
-
-	protected final void initSession(NioSession session, IoFuture future) {
-		// Every property but attributeMap should be set now. Now initialize the attributeMap.
-		// The reason why we initialize the attributeMap at last is to make sure all session properties
-		// such as remoteAddress are provided to IoSessionDataStructureFactory.
-		session.setAttributeMap(session.getService().getSessionDataStructureFactory().getAttributeMap(session));
-		session.setWriteRequestQueue(session.getService().getSessionDataStructureFactory().getWriteRequestQueue(session));
-
-		if (future instanceof ConnectFuture) {
-			// DefaultIoFilterChain will notify the future. (We support ConnectFuture only for now).
-			session.setAttribute(DefaultIoFilterChain.SESSION_CREATED_FUTURE, future);
-		}
-
-		finishSessionInitialization0(session, future);
-	}
-
-	/**
-	 * Implement this method to perform additional tasks required for session initialization.
-	 * Do not call this method directly; {@link #initSession(NioSession, IoFuture)} will call this method instead.
-	 *
-	 * @param session The session to initialize
-	 * @param future The Future to use
-	 */
-	protected void finishSessionInitialization0(IoSession session, IoFuture future) {
-		// Do nothing. Extended class might add some specific code
 	}
 
 	protected static class ServiceOperationFuture extends DefaultIoFuture {

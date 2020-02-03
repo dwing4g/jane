@@ -121,7 +121,7 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 
 	@Override
 	public void flush(NioSession session) {
-		if (session.isInProcessorThread() && !session.isInterestedInWrite()) {
+		if (isInProcessorThread() && !session.isInterestedInWrite()) {
 			Processor processor = processorRef.get();
 			if (processor != null) {
 				processor.flushNow(session);
@@ -130,7 +130,7 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 		}
 
 		// add the session to the queue if it's not already in the queue, then wake up the selector.select()
-		if (session.setScheduledForFlush(true)) {
+		if (session.setScheduledForFlush()) {
 			flushingSessions.add(session);
 			wakeup();
 		}
@@ -267,8 +267,8 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 
 					// Disconnect all sessions immediately if disposal has been requested so that we exit this loop eventually.
 					if (isDisposing()) {
-						for (Iterator<SelectionKey> it = selector.keys().iterator(); it.hasNext();)
-							scheduleRemove((NioSession)it.next().attachment());
+						for (SelectionKey key : selector.keys())
+							scheduleRemove((NioSession)key.attachment());
 						wakeup();
 					}
 				} catch (ClosedSelectorException cse) {
@@ -455,7 +455,7 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 
 		private void scheduleFlush(NioSession session) {
 			// add the session to the queue if it's not already in the queue
-			if (session.setScheduledForFlush(true))
+			if (session.setScheduledForFlush())
 				flushingSessions.add(session);
 		}
 

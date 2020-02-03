@@ -24,7 +24,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.Queue;
@@ -35,8 +34,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.mina.core.filterchain.IoFilter;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.future.DefaultConnectFuture;
-import org.apache.mina.core.future.IoFuture;
-import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.service.AbstractIoService;
 import org.apache.mina.core.service.IoConnector;
 import org.apache.mina.core.service.IoHandler;
@@ -67,7 +64,7 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 	 * The default pool size will be used.
 	 */
 	public NioSocketConnector() {
-		this(new SimpleIoProcessorPool());
+		super(new SimpleIoProcessorPool());
 	}
 
 	/**
@@ -78,7 +75,7 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 	 * @param processorCount the number of processor to create and place in a {@link SimpleIoProcessorPool}
 	 */
 	public NioSocketConnector(int processorCount) {
-		this(new SimpleIoProcessorPool(processorCount));
+		super(new SimpleIoProcessorPool(processorCount));
 	}
 
 	/**
@@ -89,42 +86,6 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 	 */
 	public NioSocketConnector(IoProcessor<NioSession> processor) {
 		super(processor);
-
-		try {
-			selector = Selector.open();
-			selectable = true;
-		} catch (IOException e) {
-			throw new RuntimeException("failed to initialize", e);
-		}
-	}
-
-	/**
-	 * Create a new client socket handle from a local {@link SocketAddress}
-	 *
-	 * @param localAddress the socket address for binding the new client socket
-	 * @return a new client socket handle
-	 */
-	private SocketChannel newHandle(SocketAddress localAddress) throws IOException {
-		@SuppressWarnings("resource")
-		SocketChannel ch = SocketChannel.open(); //NOSONAR
-
-		int receiveBufferSize = getSessionConfig().getReceiveBufferSize();
-		if (receiveBufferSize > 65535)
-			ch.socket().setReceiveBufferSize(receiveBufferSize);
-
-		if (localAddress != null) {
-			try {
-				ch.socket().bind(localAddress);
-			} catch (IOException ioe) {
-				// Add some info regarding the address we try to bind to the message
-				String newMessage = "error while binding on " + localAddress + "\noriginal message: " + ioe.getMessage();
-				ch.close(); // Preemptively close the channel
-				throw new IOException(newMessage, ioe);
-			}
-		}
-
-		ch.configureBlocking(false);
-		return ch;
 	}
 
 	@Override
@@ -142,6 +103,7 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 		return connect(remoteAddress, null);
 	}
 
+	@SuppressWarnings("resource")
 	@Override
 	public ConnectFuture connect(SocketAddress remoteAddress, SocketAddress localAddress) {
 		if (isDisposing())
@@ -155,51 +117,55 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 		if (getHandler() == null)
 			throw new IllegalStateException("the handler is not set");
 
-		return connect0(remoteAddress, localAddress);
-	}
-
-	/**
-	 * Implement this method to perform the actual connect operation.
-	 *
-	 * @param remoteAddress The remote address to connect from
-	 * @param localAddress <tt>null</tt> if no local address is specified
-	 * @return The ConnectFuture associated with this asynchronous operation
-	 */
-	@SuppressWarnings("resource")
-	private ConnectFuture connect0(SocketAddress remoteAddress, SocketAddress localAddress) {
 		SocketChannel channel = null;
-		boolean success = false;
 		try {
-			channel = newHandle(localAddress);
-			if (channel.connect(remoteAddress)) {
-				ConnectFuture future = new DefaultConnectFuture();
-				NioSession session = new NioSession(this, processor, channel);
-				initSession(session, future);
-				// Forward the remaining process to the IoProcessor.
-				session.getProcessor().add(session);
-				success = true;
-				return future;
-			}
+			channel = SocketChannel.open();
 
-			success = true;
-		} catch (Exception e) {
-			return DefaultConnectFuture.newFailedFuture(e);
-		} finally {
-			if (!success && channel != null) {
+			int receiveBufferSize = getSessionConfig().getReceiveBufferSize();
+			if (receiveBufferSize > 65535)
+				channel.socket().setReceiveBufferSize(receiveBufferSize);
+
+			if (localAddress != null) {
 				try {
-					close(channel);
-				} catch (Exception e) {
-					ExceptionMonitor.getInstance().exceptionCaught(e);
+					channel.socket().bind(localAddress);
+				} catch (IOException ioe) {
+					// Add some info regarding the address we try to bind to the message
+					throw new IOException("error while binding on " + localAddress + "\noriginal message: " + ioe.getMessage(), ioe);
 				}
 			}
+
+			channel.configureBlocking(false);
+			if (channel.connect(remoteAddress)) {
+				ConnectFuture future = new DefaultConnectFuture();
+				// Forward the remaining process to the IoProcessor.
+				processor.add(new NioSession(this, processor, channel, future));
+				return future;
+			}
+		} catch (Exception e) {
+			if (channel != null) {
+				try {
+					close(channel);
+				} catch (Exception e2) {
+					ExceptionMonitor.getInstance().exceptionCaught(e2);
+				}
+			}
+			return DefaultConnectFuture.newFailedFuture(e);
 		}
 
 		ConnectionRequest request = new ConnectionRequest(channel);
 		connectQueue.add(request);
 		startupWorker();
-		selector.wakeup();
-
 		return request;
+	}
+
+	@Override
+	protected void dispose0() throws IOException {
+		startupWorker();
+	}
+
+	@Override
+	public String toString() {
+		return "(nio socket connector: managedSessionCount: " + getManagedSessionCount() + ')';
 	}
 
 	private void startupWorker() {
@@ -214,31 +180,8 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 			if (connectorRef.compareAndSet(null, connector))
 				executeWorker(connector);
 		}
-	}
 
-	/**
-	 * Adds required internal attributes and {@link IoFutureListener}s related with event notifications
-	 * to the specified {@code session} and {@code future}.  Do not call this method directly;
-	 */
-	@Override
-	protected void finishSessionInitialization0(IoSession session, IoFuture future) {
-		// In case that ConnectFuture.cancel() is invoked before setSession() is invoked,
-		// add a listener that closes the connection immediately on cancellation.
-		future.addListener((ConnectFuture future1) -> {
-			if (future1.isCanceled())
-				session.closeNow();
-		});
-	}
-
-	@Override
-	protected void dispose0() throws IOException {
-		startupWorker();
 		selector.wakeup();
-	}
-
-	@Override
-	public String toString() {
-		return "(nio socket connector: managedSessionCount: " + getManagedSessionCount() + ')';
 	}
 
 	private final class Connector implements Runnable {
@@ -264,7 +207,7 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 					if (selected > 0)
 						nHandles -= processConnections(selector.selectedKeys());
 
-					processTimedOutSessions(selector.keys());
+					processTimedOutSessions();
 
 					nHandles -= cancelKeys();
 				} catch (ClosedSelectorException cse) {
@@ -340,34 +283,6 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 		}
 
 		/**
-		 * get the {@link ConnectionRequest} for a given client socket handle
-		 *
-		 * @param channel the socket client handle
-		 * @return the connection request if the socket is connecting otherwise <code>null</code>
-		 */
-		private ConnectionRequest getConnectionRequest(SocketChannel channel) {
-			SelectionKey key = channel.keyFor(selector);
-			return key != null && key.isValid() ? (ConnectionRequest)key.attachment() : null;
-		}
-
-		/**
-		 * Finish the connection process of a client socket after it was marked as ready to process
-		 * by the selector.select(int) call. The socket will be connected or reported as connection failed.
-		 *
-		 * @param channel the client socket handle to finish to connect
-		 * @return true if the socket is connected
-		 */
-		private boolean finishConnect(SocketChannel channel) throws IOException {
-			if (channel.finishConnect()) {
-				SelectionKey key = channel.keyFor(selector);
-				if (key != null)
-					key.cancel();
-				return true;
-			}
-			return false;
-		}
-
-		/**
 		 * Process the incoming connections, creating a new session for each valid connection.
 		 */
 		private int processConnections(Set<SelectionKey> keys) {
@@ -375,68 +290,54 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 
 			// Loop on each connection request
 			for (Iterator<SelectionKey> it = keys.iterator(); it.hasNext();) {
+				SelectionKey key = it.next();
 				@SuppressWarnings("resource")
-				SocketChannel channel = (SocketChannel)it.next().channel();
+				SocketChannel channel = (SocketChannel)key.channel();
 				it.remove();
 
-				ConnectionRequest connectionRequest = getConnectionRequest(channel);
+				ConnectionRequest connectionRequest = (key.isValid() ? (ConnectionRequest)key.attachment() : null);
 				if (connectionRequest == null)
 					continue;
 
-				boolean success = false;
 				try {
-					if (finishConnect(channel)) {
-						NioSession session = new NioSession(NioSocketConnector.this, processor, channel);
-						initSession(session, connectionRequest);
-						session.getProcessor().add(session); // Forward the remaining process to the IoProcessor
+					if (channel.finishConnect()) {
+						key.cancel();
+						// Forward the remaining process to the IoProcessor
+						processor.add(new NioSession(NioSocketConnector.this, processor, channel, connectionRequest));
 						nHandles++;
 					}
-					success = true;
 				} catch (Exception e) {
+					cancelQueue.offer(connectionRequest); // The connection failed, we have to cancel it
 					connectionRequest.setException(e);
-				} finally {
-					if (!success)
-						cancelQueue.offer(connectionRequest); // The connection failed, we have to cancel it
 				}
 			}
 			return nHandles;
 		}
 
-		private void processTimedOutSessions(Set<SelectionKey> keys) {
+		private void processTimedOutSessions() {
 			long currentTime = System.currentTimeMillis();
 
-			for (SelectionKey key : keys) {
-				ConnectionRequest connectionRequest = getConnectionRequest((SocketChannel)key.channel());
+			for (SelectionKey key : selector.keys()) {
+				ConnectionRequest connectionRequest = (key.isValid() ? (ConnectionRequest)key.attachment() : null);
 				if (connectionRequest != null && currentTime >= connectionRequest.deadline) {
-					connectionRequest.setException(new ConnectException("connection timed out"));
 					cancelQueue.offer(connectionRequest);
+					connectionRequest.setException(new ConnectException("connection timed out"));
 				}
 			}
 		}
 	}
 
-	public final class ConnectionRequest extends DefaultConnectFuture {
+	final class ConnectionRequest extends DefaultConnectFuture {
 		/** The handle associated with this connection request */
-		private final SocketChannel channel;
+		final SocketChannel channel;
 
 		/** The time up to this connection request will be valid */
-		private final long deadline;
+		final long deadline;
 
-		public ConnectionRequest(SocketChannel channel) {
+		ConnectionRequest(SocketChannel channel) {
 			this.channel = channel;
 			int timeout = getConnectTimeoutMillis();
 			deadline = (timeout > 0 ? System.currentTimeMillis() + timeout : Long.MAX_VALUE);
-		}
-
-		public SocketChannel getHandle() {
-			return channel;
-		}
-
-		/**
-		 * @return The connection deadline
-		 */
-		public long getDeadline() {
-			return deadline;
 		}
 
 		@Override
@@ -445,7 +346,6 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 				// We haven't cancelled the request before, so add the future in the cancel queue.
 				cancelQueue.add(this);
 				startupWorker();
-				selector.wakeup();
 			}
 
 			return true;

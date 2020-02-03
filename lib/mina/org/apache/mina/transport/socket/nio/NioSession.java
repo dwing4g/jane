@@ -36,6 +36,7 @@ import org.apache.mina.core.file.FileRegion;
 import org.apache.mina.core.filterchain.DefaultIoFilterChain;
 import org.apache.mina.core.filterchain.IoFilterChain;
 import org.apache.mina.core.future.CloseFuture;
+import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.future.DefaultCloseFuture;
 import org.apache.mina.core.future.DefaultWriteFuture;
 import org.apache.mina.core.future.WriteFuture;
@@ -46,6 +47,7 @@ import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.IoService;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.session.IoSessionAttributeMap;
+import org.apache.mina.core.session.IoSessionDataStructureFactory;
 import org.apache.mina.core.session.SessionState;
 import org.apache.mina.core.write.DefaultWriteRequest;
 import org.apache.mina.core.write.WriteRequest;
@@ -79,10 +81,10 @@ public final class NioSession implements IoSession {
 	private final AbstractSocketSessionConfig config;
 	private final IoFilterChain filterChain = new DefaultIoFilterChain(this);
 
-	private WriteRequestQueue writeRequestQueue;
+	private final WriteRequestQueue writeRequestQueue;
 	private WriteRequest currentWriteRequest;
 
-	private IoSessionAttributeMap attributes;
+	private final IoSessionAttributeMap attributes;
 	private Object attachment;
 
 	private final long sessionId = idGenerator.incrementAndGet();
@@ -102,14 +104,24 @@ public final class NioSession implements IoSession {
 	private boolean readSuspended;
 	private boolean writeSuspended;
 
-	/**
-	 * Creates a new instance of NioSession, with its associated IoProcessor.
-	 */
-	NioSession(AbstractIoService service, IoProcessor<NioSession> processor, SocketChannel channel) {
+	NioSession(AbstractIoService service, IoProcessor<NioSession> processor, SocketChannel channel, ConnectFuture future) {
 		this.service = service;
 		this.processor = processor;
 		this.channel = channel;
 		config = new SessionConfigImpl(service);
+		IoSessionDataStructureFactory factory = service.getSessionDataStructureFactory();
+		attributes = factory.getAttributeMap(this);
+		writeRequestQueue = factory.getWriteRequestQueue(this);
+		if (future != null) {
+			// DefaultIoFilterChain will notify the future. (We support ConnectFuture only for now).
+			setAttribute(DefaultIoFilterChain.SESSION_CREATED_FUTURE, future);
+			// In case that ConnectFuture.cancel() is invoked before setSession() is invoked,
+			// add a listener that closes the connection immediately on cancellation.
+			future.addListener((ConnectFuture cf) -> {
+				if (cf.isCanceled())
+					closeNow();
+			});
+		}
 	}
 
 	@Override
@@ -275,10 +287,6 @@ public final class NioSession implements IoSession {
 		nioProcessor = processor;
 	}
 
-	public boolean isInProcessorThread() {
-		return nioProcessor.isInProcessorThread();
-	}
-
 	public boolean isInterestedInWrite() {
 		return selKey != null && selKey.isValid() && (selKey.interestOps() & SelectionKey.OP_WRITE) != 0;
 	}
@@ -359,18 +367,12 @@ public final class NioSession implements IoSession {
 	 * Set the scheduledForFLush flag.
 	 * As we may have concurrent access to this flag, we compare and set it in one call.
 	 *
-	 * @param schedule the new value to set if not already set.
 	 * @return true if the session flag has been set, and if it wasn't set already.
 	 */
-	boolean setScheduledForFlush(boolean schedule) {
-		if (schedule) {
-			// If the current tag is set to false, switch it to true,
-			// otherwise, we do nothing but return false: the session is already scheduled for flush
-			return scheduledForFlushUpdater.compareAndSet(this, 0, 1);
-		}
-
-		scheduledForFlush = 0;
-		return true;
+	boolean setScheduledForFlush() {
+		// If the current tag is set to false, switch it to true,
+		// otherwise, we do nothing but return false: the session is already scheduled for flush
+		return scheduledForFlushUpdater.compareAndSet(this, 0, 1);
 	}
 
 	/**
@@ -589,14 +591,6 @@ public final class NioSession implements IoSession {
 
 	public IoSessionAttributeMap getAttributeMap() {
 		return attributes;
-	}
-
-	public void setAttributeMap(IoSessionAttributeMap attributes) {
-		this.attributes = attributes;
-	}
-
-	public void setWriteRequestQueue(WriteRequestQueue writeRequestQueue) {
-		this.writeRequestQueue = writeRequestQueue;
 	}
 
 	@Override
