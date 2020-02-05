@@ -1,7 +1,7 @@
 package jane.core;
 
 import java.io.IOException;
-import java.net.SocketAddress;
+import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -362,16 +362,16 @@ public class NetManager implements IoHandler
 	 * <p>
 	 * 监听的参数要提前设置. 此操作是异步的,失败会抛出IOException异常
 	 */
-	public void startServer(SocketAddress addr) throws IOException
+	public void startServer(InetSocketAddress addr) throws IOException
 	{
 		Log.info("{}: listening addr={}", _name, addr);
 		getAcceptor().bind(addr);
 	}
 
-	public void startServer(Collection<? extends SocketAddress> addrs) throws IOException
+	public void startServer(Collection<? extends InetSocketAddress> addrs) throws IOException
 	{
 		StringBuilder sb = new StringBuilder();
-		for (SocketAddress addr : addrs)
+		for (InetSocketAddress addr : addrs)
 			sb.append(addr).append(';');
 		Log.info("{}: listening addr={}", _name, sb);
 		getAcceptor().bind(addrs);
@@ -384,7 +384,7 @@ public class NetManager implements IoHandler
 	 * @param ctx 此次连接的用户对象,用于传回onConnectFailed的回调中
 	 * @return 返回的ConnectFuture仅用于第一次连接,不适用于onConnectFailed返回后的再次连接,因此同步调用需由调用方实现重连
 	 */
-	public ConnectFuture startClient(SocketAddress addr, Object ctx)
+	public ConnectFuture startClient(InetSocketAddress addr, Object ctx)
 	{
 		Log.info("{}: connecting addr={}", _name, addr);
 		return getConnector().connect(addr).addListener(new IoFutureListener<ConnectFuture>()
@@ -432,7 +432,7 @@ public class NetManager implements IoHandler
 	 * 此操作是异步的,失败会在另一线程回调onConnectFailed
 	 * @return 返回的ConnectFuture仅用于第一次连接,不适用于onConnectFailed返回后的再次连接,因此同步调用需由调用方实现重连
 	 */
-	public ConnectFuture startClient(SocketAddress addr)
+	public ConnectFuture startClient(InetSocketAddress addr)
 	{
 		return startClient(addr, null);
 	}
@@ -441,7 +441,7 @@ public class NetManager implements IoHandler
 	 * 停止服务器端的监听并断开相关的连接
 	 * @param addr 指定停止的地址/端口. 如果为null则停止全部监听地址/端口
 	 */
-	public void stopServer(SocketAddress addr)
+	public void stopServer(InetSocketAddress addr)
 	{
 		NioSocketAcceptor acceptor = getAcceptor();
 		if (addr != null)
@@ -870,7 +870,7 @@ public class NetManager implements IoHandler
 	 * @return 返回下次重连的时间间隔(毫秒)
 	 */
 	@SuppressWarnings("static-method")
-	protected int onConnectFailed(ConnectFuture future, SocketAddress addr, int count, Object ctx)
+	protected int onConnectFailed(ConnectFuture future, InetSocketAddress addr, int count, Object ctx)
 	{
 		return -1;
 	}

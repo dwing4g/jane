@@ -221,10 +221,8 @@ public class DefaultIoFuture implements IoFuture {
 	}
 
 	@Override
-	public boolean isDone() {
-		synchronized (this) {
-			return ready;
-		}
+	public synchronized boolean isDone() {
+		return ready;
 	}
 
 	/**
@@ -257,7 +255,7 @@ public class DefaultIoFuture implements IoFuture {
 	/**
 	 * @return the result of the asynchronous operation.
 	 */
-	protected synchronized Object getValue() {
+	public synchronized Object getValue() {
 		return result;
 	}
 

@@ -233,7 +233,7 @@ public final class NioSession implements IoSession {
 	}
 
 	@Override
-	public IoService getService() {
+	public AbstractIoService getService() {
 		return service;
 	}
 

@@ -18,7 +18,7 @@
  */
 package org.apache.mina.core.service;
 
-import java.net.SocketAddress;
+import java.net.InetSocketAddress;
 import org.apache.mina.core.future.ConnectFuture;
 
 /**
@@ -27,7 +27,7 @@ import org.apache.mina.core.future.ConnectFuture;
  * You should connect to the desired socket address to start communication,
  * and then events for incoming connections will be sent to the specified default {@link IoHandler}.
  * <p>
- * Threads connect to endpoint start automatically when {@link #connect(SocketAddress)} is invoked,
+ * Threads connect to endpoint start automatically when {@link #connect(InetSocketAddress)} is invoked,
  * and stop when all connection attempts are finished.
  */
 public interface IoConnector extends IoService {
@@ -50,7 +50,7 @@ public interface IoConnector extends IoService {
 	 * @return the {@link ConnectFuture} instance which is completed when the
 	 *         connection attempt initiated by this call succeeds or fails.
 	 */
-	ConnectFuture connect(SocketAddress remoteAddress);
+	ConnectFuture connect(InetSocketAddress remoteAddress);
 
 	/**
 	 * Connects to the specified remote address binding to the specified local address.
@@ -61,5 +61,5 @@ public interface IoConnector extends IoService {
 	 * @return the {@link ConnectFuture} instance which is completed when the
 	 *         connection attempt initiated by this call succeeds or fails.
 	 */
-	ConnectFuture connect(SocketAddress remoteAddress, SocketAddress localAddress);
+	ConnectFuture connect(InetSocketAddress remoteAddress, InetSocketAddress localAddress);
 }

@@ -2,7 +2,6 @@ package jane.test;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.util.ArrayDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -110,7 +109,7 @@ public final class TestEcho extends NetManager
 	}
 
 	@Override
-	public synchronized void startServer(SocketAddress addr) throws IOException
+	public synchronized void startServer(InetSocketAddress addr) throws IOException
 	{
 		// setIoThreadCount(TEST_THREAD_COUNT / 2);
 		if (getAcceptor().getSessionDataStructureFactory() != _dsFactory)
@@ -121,7 +120,7 @@ public final class TestEcho extends NetManager
 	}
 
 	@Override
-	public synchronized ConnectFuture startClient(SocketAddress addr)
+	public synchronized ConnectFuture startClient(InetSocketAddress addr)
 	{
 		// setIoThreadCount(TEST_THREAD_COUNT / 2);
 		if (getConnector().getSessionDataStructureFactory() != _dsFactory)
@@ -131,7 +130,7 @@ public final class TestEcho extends NetManager
 	}
 
 	@Override
-	protected int onConnectFailed(ConnectFuture future, SocketAddress addr, int count, Object ctx)
+	protected int onConnectFailed(ConnectFuture future, InetSocketAddress addr, int count, Object ctx)
 	{
 		return 0;
 	}

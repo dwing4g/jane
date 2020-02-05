@@ -113,11 +113,6 @@ public interface IoService {
 	DefaultIoFilterChainBuilder getDefaultIoFilterChainBuilder();
 
 	/**
-	 * @return a value of whether or not this service is active
-	 */
-	boolean isActive();
-
-	/**
 	 * @return the {@link IoSessionDataStructureFactory} that provides related data structures for a new session created by this service.
 	 */
 	IoSessionDataStructureFactory getSessionDataStructureFactory();

@@ -299,8 +299,9 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 		}
 
 		private void process() {
-			for (Iterator<SelectionKey> it = selector.selectedKeys().iterator(); it.hasNext(); it.remove()) {
+			for (Iterator<SelectionKey> it = selector.selectedKeys().iterator(); it.hasNext();) {
 				SelectionKey key = it.next();
+				it.remove();
 				NioSession session = (NioSession)key.attachment();
 				int ops = key.readyOps();
 
@@ -366,45 +367,24 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 			int addedSessions = 0;
 			NioSession session;
 			while ((session = newSessions.poll()) != null) {
-				if (addNow(session))
-					addedSessions++; // A new session has been created
-			}
-			return addedSessions;
-		}
-
-		/**
-		 * Process a new session: - initialize it - create its chain - fire the CREATED listeners if any
-		 *
-		 * @param session The session to create
-		 * @return <tt>true</tt> if the session has been registered
-		 */
-		private boolean addNow(NioSession session) {
-			boolean registered = false;
-
-			try {
-				session.setSelectionKey(session.getChannel().configureBlocking(false).register(selector, SelectionKey.OP_READ, session));
-				registered = true;
-
-				// Build the filter chain of this session.
-				session.getService().getFilterChainBuilder().buildFilterChain(session.getFilterChain());
-
-				// DefaultIoFilterChain.CONNECT_FUTURE is cleared inside here in AbstractIoFilterChain.fireSessionOpened().
-				// Propagate the SESSION_CREATED event up to the chain
-				((AbstractIoService)session.getService()).fireSessionCreated(session);
-			} catch (Exception e) {
-				ExceptionMonitor.getInstance().exceptionCaught(e);
-
 				try {
-					session.destroy();
-				} catch (Exception e1) {
-					ExceptionMonitor.getInstance().exceptionCaught(e1);
-				} finally {
-					registered = false;
-					session.setScheduledForRemove();
+					session.setSelectionKey(session.getChannel().configureBlocking(false).register(selector, SelectionKey.OP_READ, session));
+					AbstractIoService service = session.getService();
+					service.getFilterChainBuilder().buildFilterChain(session.getFilterChain());
+					service.fireSessionCreated(session);
+					addedSessions++;
+				} catch (Exception e) {
+					ExceptionMonitor.getInstance().exceptionCaught(e);
+					try {
+						session.destroy();
+					} catch (Exception e1) {
+						ExceptionMonitor.getInstance().exceptionCaught(e1);
+					} finally {
+						session.setScheduledForRemove();
+					}
 				}
 			}
-
-			return registered;
+			return addedSessions;
 		}
 
 		private void removeSessions() {

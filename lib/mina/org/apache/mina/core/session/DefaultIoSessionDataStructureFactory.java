@@ -33,6 +33,8 @@ import org.apache.mina.transport.socket.nio.NioSession;
  * instance and a new synchronized {@link ConcurrentLinkedQueue} instance per {@link IoSession}.
  */
 public class DefaultIoSessionDataStructureFactory implements IoSessionDataStructureFactory {
+	public static final DefaultIoSessionDataStructureFactory instance = new DefaultIoSessionDataStructureFactory();
+
 	@Override
 	public IoSessionAttributeMap getAttributeMap(IoSession session) {
 		return new DefaultIoSessionAttributeMap();

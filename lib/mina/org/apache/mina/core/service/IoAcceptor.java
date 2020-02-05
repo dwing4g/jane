@@ -20,7 +20,6 @@ package org.apache.mina.core.service;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
@@ -31,7 +30,7 @@ import java.util.Set;
  * You should bind to the desired socket address to accept incoming connections,
  * and then events for incoming connections will be sent to the specified default {@link IoHandler}.
  * <p>
- * Threads accept incoming connections start automatically when {@link #bind(SocketAddress)} is invoked,
+ * Threads accept incoming connections start automatically when {@link #bind(InetSocketAddress)} is invoked,
  * and stop when {@link #unbind()} is invoked.
  */
 public interface IoAcceptor extends IoService {
@@ -52,29 +51,13 @@ public interface IoAcceptor extends IoService {
 	ArrayList<InetSocketAddress> getLocalAddresses();
 
 	/**
-	 * Returns <tt>true</tt> if and only if all clients are closed when this
-	 * acceptor unbinds from all the related local address (i.e. when the service is deactivated).
-	 *
-	 * @return <tt>true</tt> if the service sets the closeOnDeactivation flag
-	 */
-	boolean isCloseOnDeactivation();
-
-	/**
-	 * Sets whether all client sessions are closed when this acceptor unbinds from all the related
-	 * local addresses (i.e. when the service is deactivated). The default value is <tt>true</tt>.
-	 *
-	 * @param closeOnDeactivation <tt>true</tt> if we should close on deactivation
-	 */
-	void setCloseOnDeactivation(boolean closeOnDeactivation);
-
-	/**
 	 * Binds to the specified local address and start to accept incoming connections.
 	 *
-	 * @param localAddress The SocketAddress to bind to
+	 * @param localAddress The InetSocketAddress to bind to
 	 *
 	 * @throws IOException if failed to bind
 	 */
-	void bind(SocketAddress localAddress) throws IOException;
+	void bind(InetSocketAddress localAddress) throws IOException;
 
 	/**
 	 * Binds to the specified local addresses and start to accept incoming connections.
@@ -82,7 +65,7 @@ public interface IoAcceptor extends IoService {
 	 * @param localAddresses The local address we will be bound to
 	 * @throws IOException if failed to bind
 	 */
-	void bind(Collection<? extends SocketAddress> localAddresses) throws IOException;
+	void bind(Collection<? extends InetSocketAddress> localAddresses) throws IOException;
 
 	/**
 	 * Unbinds from all local addresses that this service is bound to and stops to accept incoming connections.
@@ -98,7 +81,7 @@ public interface IoAcceptor extends IoService {
 	 *
 	 * @param localAddress The local address we will be unbound from
 	 */
-	void unbind(SocketAddress localAddress);
+	void unbind(InetSocketAddress localAddress);
 
 	/**
 	 * Unbinds from the specified local addresses and stop to accept incoming connections.
@@ -107,5 +90,5 @@ public interface IoAcceptor extends IoService {
 	 *
 	 * @param localAddresses The local address we will be unbound from
 	 */
-	void unbind(Collection<? extends SocketAddress> localAddresses);
+	void unbind(Collection<? extends InetSocketAddress> localAddresses);
 }

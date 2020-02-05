@@ -252,7 +252,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 				try {
 					session.getHandler().sessionCreated(session);
 				} finally {
-					// Notify the related future.
 					ConnectFuture future = (ConnectFuture)session.removeAttribute(SESSION_CREATED_FUTURE);
 					if (future != null)
 						future.setSession(session);
@@ -331,7 +330,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 	}
 
 	private void callNextExceptionCaught(Entry entry, Throwable cause) {
-		// Notify the related future.
 		ConnectFuture future = (ConnectFuture)session.removeAttribute(SESSION_CREATED_FUTURE);
 		if (future == null) {
 			try {
@@ -343,11 +341,8 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 				ExceptionMonitor.getInstance().exceptionCaught(e);
 			}
 		} else {
-			// Please note that this place is not the only place that
-			// calls ConnectFuture.setException().
-			if (!session.isClosing())
-				session.closeNow(); // Call the closeNow method only if needed
-
+			// Please note that this place is not the only place that calls ConnectFuture.setException().
+			session.closeNow();
 			future.setException(cause);
 		}
 	}
