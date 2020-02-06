@@ -51,7 +51,6 @@ public abstract class AbstractIoService implements IoService {
 	private static final AtomicInteger idGenerator = new AtomicInteger();
 
 	protected final Selector selector;
-
 	protected final IoProcessor<NioSession> processor;
 
 	/** The associated executor, responsible for handling execution of I/O events */
@@ -61,7 +60,6 @@ public abstract class AbstractIoService implements IoService {
 	private final DefaultSocketSessionConfig sessionConfig = new DefaultSocketSessionConfig(this);
 
 	private IoFilterChainBuilder filterChainBuilder = new DefaultIoFilterChainBuilder();
-
 	private IoSessionDataStructureFactory sessionDataStructureFactory = DefaultIoSessionDataStructureFactory.instance;
 
 	/** The IoHandler in charge of managing all the I/O Events */
@@ -80,13 +78,17 @@ public abstract class AbstractIoService implements IoService {
 		try {
 			selector = Selector.open();
 		} catch (IOException e) {
-			throw new RuntimeException("failed to initialize", e);
+			throw new RuntimeException("failed to open selector", e);
 		}
 
 		processor = proc;
 		String threadName = getClass().getSimpleName() + '-' + idGenerator.incrementAndGet();
 		executor = new ThreadPoolExecutor(0, 1, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(),
 				r -> new Thread(r, threadName));
+	}
+
+	public final IoProcessor<NioSession> getProcessor() {
+		return processor;
 	}
 
 	@Override
@@ -108,7 +110,7 @@ public abstract class AbstractIoService implements IoService {
 	public final DefaultIoFilterChainBuilder getDefaultIoFilterChainBuilder() {
 		if (filterChainBuilder instanceof DefaultIoFilterChainBuilder)
 			return (DefaultIoFilterChainBuilder)filterChainBuilder;
-		throw new IllegalStateException("current filter chain builder is not a DefaultIoFilterChainBuilder");
+		throw new IllegalStateException("not DefaultIoFilterChainBuilder");
 	}
 
 	@Override
@@ -128,31 +130,28 @@ public abstract class AbstractIoService implements IoService {
 
 	@Override
 	public final void dispose(boolean awaitTermination) {
-		if (disposed)
-			return;
-
 		synchronized (sessionConfig) {
-			if (!disposing) {
-				disposing = true;
+			if (disposing)
+				return;
+			disposing = true;
+			try {
+				dispose0();
+			} catch (Exception e) {
+				ExceptionMonitor.getInstance().exceptionCaught(e);
+			}
+
+			executor.shutdownNow();
+			if (awaitTermination) {
 				try {
-					dispose0();
-				} catch (Exception e) {
-					ExceptionMonitor.getInstance().exceptionCaught(e);
+					executor.awaitTermination(Integer.MAX_VALUE, TimeUnit.SECONDS);
+				} catch (InterruptedException e1) {
+					ExceptionMonitor.getInstance().warn("awaitTermination on [" + this + "] was interrupted");
+					// Restore the interrupted status
+					Thread.currentThread().interrupt();
 				}
 			}
+			disposed = true;
 		}
-
-		executor.shutdownNow();
-		if (awaitTermination) {
-			try {
-				executor.awaitTermination(Integer.MAX_VALUE, TimeUnit.SECONDS);
-			} catch (InterruptedException e1) {
-				ExceptionMonitor.getInstance().warn("awaitTermination on [" + this + "] was interrupted");
-				// Restore the interrupted status
-				Thread.currentThread().interrupt();
-			}
-		}
-		disposed = true;
 	}
 
 	/**
@@ -221,19 +220,15 @@ public abstract class AbstractIoService implements IoService {
 	}
 
 	public final void fireSessionCreated(IoSession session) {
-		if (managedSessions.putIfAbsent(session.getId(), session) != null) // If already registered, ignore
-			return;
-
-		IoFilterChain filterChain = session.getFilterChain();
-		filterChain.fireSessionCreated();
-		filterChain.fireSessionOpened();
+		if (managedSessions.putIfAbsent(session.getId(), session) == null) {
+			IoFilterChain filterChain = session.getFilterChain();
+			filterChain.fireSessionCreated();
+			filterChain.fireSessionOpened();
+		}
 	}
 
 	public final void fireSessionDestroyed(IoSession session) {
-		// Try to remove the remaining empty session set after removal.
-		if (managedSessions.remove(session.getId()) == null)
-			return;
-
-		session.getFilterChain().fireSessionClosed();
+		if (managedSessions.remove(session.getId()) != null)
+			session.getFilterChain().fireSessionClosed();
 	}
 }

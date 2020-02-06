@@ -215,7 +215,7 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 	}
 
 	@Override
-	protected synchronized void dispose0() throws Exception {
+	protected void dispose0() throws Exception {
 		AcceptorFuture future;
 		synchronized (this) {
 	   		future = bind1(null, false, true);
@@ -343,7 +343,7 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 					@SuppressWarnings("resource")
 					SocketChannel newChannel = ((ServerSocketChannel)key.channel()).accept();
 					if (newChannel != null)
-						processor.add(new NioSession(NioSocketAcceptor.this, processor, newChannel, null));
+						processor.add(new NioSession(NioSocketAcceptor.this, newChannel, null));
 				} catch (Exception e) {
 					ExceptionMonitor.getInstance().exceptionCaught(e);
 					try {

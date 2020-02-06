@@ -43,11 +43,8 @@ public class DefaultIoFuture implements IoFuture {
 
 	private Object result;
 
-	/** A counter for the number of threads waiting on this future */
+	/** A counter for the number of threads waiting on this future. highest bit is used to determinate if completed */
 	private int waiters;
-
-	/** The flag used to determinate if the Future is completed or not */
-	private boolean ready;
 
 	/**
 	 * Creates a new instance associated with an {@link IoSession}.
@@ -66,17 +63,14 @@ public class DefaultIoFuture implements IoFuture {
 	@Override
 	public IoFuture await() throws InterruptedException {
 		synchronized (this) {
-			while (!ready) {
+			while (waiters >= 0) {
 				waiters++;
-
 				try {
 					// Wait for a notify, or if no notify is called,
 					// assume that we have a deadlock and exit the loop to check for a potential deadlock.
 					wait(DEAD_LOCK_CHECK_INTERVAL);
 				} finally {
-					waiters--;
-
-					if (!ready)
+					if (--waiters >= 0)
 						checkDeadLock();
 				}
 			}
@@ -135,15 +129,14 @@ public class DefaultIoFuture implements IoFuture {
 	 */
 	private boolean await0(long timeoutMillis, boolean interruptable) throws InterruptedException {
 		long endTime = System.currentTimeMillis() + timeoutMillis;
-
 		if (endTime < 0)
 			endTime = Long.MAX_VALUE;
 
 		synchronized (this) {
 			// We can quit if the ready flag is set to true, or if
 			// the timeout is set to 0 or below: we don't wait in this case.
-			if (ready || timeoutMillis <= 0)
-				return ready;
+			if (waiters < 0 || timeoutMillis <= 0)
+				return waiters < 0;
 
 			// The operation is not completed: we have to wait
 			waiters++;
@@ -151,18 +144,16 @@ public class DefaultIoFuture implements IoFuture {
 			try {
 				for (;;) {
 					try {
-						long timeout = Math.min(timeoutMillis, DEAD_LOCK_CHECK_INTERVAL);
-
 						// Wait for the requested period of time,
 						// but every DEAD_LOCK_CHECK_INTERVAL seconds, we will check that we aren't blocked.
-						wait(timeout);
+						wait(Math.min(timeoutMillis, DEAD_LOCK_CHECK_INTERVAL));
 					} catch (InterruptedException e) {
 						if (interruptable)
 							throw e;
 					}
 
-					if (ready || (endTime < System.currentTimeMillis()))
-						return ready;
+					if (waiters < 0 || endTime < System.currentTimeMillis())
+						return waiters < 0;
 					// Take a chance, detect a potential deadlock
 					checkDeadLock();
 				}
@@ -172,9 +163,7 @@ public class DefaultIoFuture implements IoFuture {
 				// 2) We have reached the timeout
 				// 3) The thread has been interrupted
 				// In any case, we decrement the number of waiters, and we get out.
-				waiters--;
-
-				if (!ready)
+				if (--waiters >= 0)
 					checkDeadLock();
 			}
 		}
@@ -222,7 +211,14 @@ public class DefaultIoFuture implements IoFuture {
 
 	@Override
 	public synchronized boolean isDone() {
-		return ready;
+		return waiters < 0;
+	}
+
+	/**
+	 * @return the result of the asynchronous operation.
+	 */
+	public synchronized Object getValue() {
+		return result;
 	}
 
 	/**
@@ -235,14 +231,15 @@ public class DefaultIoFuture implements IoFuture {
 	public boolean setValue(Object newValue) {
 		synchronized (this) {
 			// Allowed only once.
-			if (ready)
+			int w = waiters;
+			if (w < 0)
 				return false;
 
 			result = newValue;
-			ready = true;
+			waiters = w | 0x8000_0000;
 
 			// Now, if we have waiters, notify them that the operation has completed
-			if (waiters > 0)
+			if (w > 0)
 				notifyAll();
 		}
 
@@ -252,20 +249,13 @@ public class DefaultIoFuture implements IoFuture {
 		return true;
 	}
 
-	/**
-	 * @return the result of the asynchronous operation.
-	 */
-	public synchronized Object getValue() {
-		return result;
-	}
-
 	@Override
 	public IoFuture addListener(IoFutureListener<?> listener) {
 		if (listener == null)
 			throw new IllegalArgumentException("listener");
 
 		synchronized (this) {
-			if (ready) {
+			if (waiters < 0) {
 				// Shortcut: if the operation has completed, no need to add a new listener, we just have to notify it.
 				// The existing listeners have already been notified anyway, when the 'ready' flag has been set.
 				notifyListener(listener);
@@ -289,7 +279,7 @@ public class DefaultIoFuture implements IoFuture {
 			throw new IllegalArgumentException("listener");
 
 		synchronized (this) {
-			if (!ready) {
+			if (waiters >= 0) {
 				if (listener == firstListener) {
 					if ((otherListeners != null) && !otherListeners.isEmpty())
 						firstListener = otherListeners.remove(0);

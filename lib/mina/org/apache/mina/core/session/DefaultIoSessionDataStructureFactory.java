@@ -45,54 +45,57 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 		return new DefaultWriteRequestQueue(session);
 	}
 
-	private static final class DefaultIoSessionAttributeMap implements IoSessionAttributeMap {
-		private final ConcurrentHashMap<Object, Object> attributes = new ConcurrentHashMap<>(4);
+	private static final class DefaultIoSessionAttributeMap extends ConcurrentHashMap<Object, Object> implements IoSessionAttributeMap {
+		private static final long serialVersionUID = 1L;
+
+		DefaultIoSessionAttributeMap() {
+			super(4);
+		}
 
 		@Override
 		public Object getAttribute(Object key, Object defaultValue) {
-			Object value = attributes.get(key);
+			Object value = get(key);
 			return value != null ? value : defaultValue;
 		}
 
 		@Override
 		public Object setAttribute(Object key, Object value) {
-			return value != null ? attributes.put(key, value) : attributes.remove(key);
+			return value != null ? put(key, value) : remove(key);
 		}
 
 		@Override
 		public Object setAttributeIfAbsent(Object key, Object value) {
-			return value != null ? attributes.putIfAbsent(key, value) : null;
+			return value != null ? putIfAbsent(key, value) : null;
 		}
 
 		@Override
 		public Object removeAttribute(Object key) {
-			return attributes.remove(key);
+			return remove(key);
 		}
 
 		@Override
 		public boolean removeAttribute(Object key, Object value) {
-			return attributes.remove(key, value);
+			return remove(key, value);
 		}
 
 		@Override
 		public boolean replaceAttribute(Object key, Object oldValue, Object newValue) {
-			return attributes.replace(key, oldValue, newValue);
+			return replace(key, oldValue, newValue);
 		}
 
 		@Override
 		public boolean containsAttribute(Object key) {
-			return attributes.containsKey(key);
+			return containsKey(key);
 		}
 
 		@Override
 		public Set<Object> getAttributeKeys() {
-			return attributes.keySet();
+			return keySet();
 		}
 	}
 
-	private static final class DefaultWriteRequestQueue implements WriteRequestQueue {
-		/** A queue to store incoming write requests */
-		private final ConcurrentLinkedQueue<WriteRequest> q = new ConcurrentLinkedQueue<>();
+	private static final class DefaultWriteRequestQueue extends ConcurrentLinkedQueue<WriteRequest> implements WriteRequestQueue {
+		private static final long serialVersionUID = 1L;
 		private final IoSession s;
 
 		DefaultWriteRequestQueue(IoSession session) {
@@ -100,13 +103,8 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 		}
 
 		@Override
-		public void offer(WriteRequest writeRequest) {
-			q.offer(writeRequest);
-		}
-
-		@Override
 		public WriteRequest poll() {
-			WriteRequest wr = q.poll();
+			WriteRequest wr = super.poll();
 
 			if (wr == NioSession.CLOSE_REQUEST) {
 				s.closeNow();
@@ -122,26 +120,6 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 			}
 
 			return wr;
-		}
-
-		@Override
-		public int size() {
-			return q.size();
-		}
-
-		@Override
-		public boolean isEmpty() {
-			return q.isEmpty();
-		}
-
-		@Override
-		public void clear() {
-			q.clear();
-		}
-
-		@Override
-		public String toString() {
-			return q.toString();
 		}
 	}
 }

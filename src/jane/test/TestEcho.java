@@ -39,9 +39,10 @@ public final class TestEcho extends NetManager
 				private final ArrayDeque<WriteRequest> _wrq = new ArrayDeque<>();
 
 				@Override
-				public synchronized void offer(WriteRequest writeRequest) // message must be IoBuffer or FileRegion
+				public synchronized boolean offer(WriteRequest writeRequest) // message must be IoBuffer or FileRegion
 				{
 					_wrq.addLast(writeRequest);
+					return true;
 				}
 
 				@Override

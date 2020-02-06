@@ -127,7 +127,7 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 			channel.configureBlocking(false);
 			if (channel.connect(remoteAddress)) {
 				ConnectFuture future = new DefaultConnectFuture();
-				processor.add(new NioSession(this, processor, channel, future));
+				processor.add(new NioSession(this, channel, future));
 				return future;
 			}
 		} catch (Exception e) {
@@ -246,7 +246,7 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 					SocketChannel channel = (SocketChannel)key.channel();
 					if (channel.finishConnect()) {
 						key.cancel();
-						processor.add(new NioSession(NioSocketConnector.this, processor, channel, req));
+						processor.add(new NioSession(NioSocketConnector.this, channel, req));
 					}
 				} catch (Exception e) {
 					close(key);

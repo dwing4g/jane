@@ -66,14 +66,11 @@ public final class NioSession implements IoSession {
 
 	private static final AtomicIntegerFieldUpdater<NioSession> scheduledForFlushUpdater
 			= AtomicIntegerFieldUpdater.newUpdater(NioSession.class, "scheduledForFlush");
-	private static final AtomicIntegerFieldUpdater<NioSession> scheduledForRemoveUpdater
-			= AtomicIntegerFieldUpdater.newUpdater(NioSession.class, "scheduledForRemove");
 
 	/** An id generator guaranteed to generate unique IDs for the session */
 	private static final AtomicLong idGenerator = new AtomicLong();
 
 	private final AbstractIoService service;
-	private final IoProcessor<NioSession> processor;
 	private NioProcessor nioProcessor;
 
 	private final SocketChannel channel;
@@ -81,18 +78,15 @@ public final class NioSession implements IoSession {
 	private final AbstractSocketSessionConfig config;
 	private final IoFilterChain filterChain = new DefaultIoFilterChain(this);
 
-	private final WriteRequestQueue writeRequestQueue;
-	private WriteRequest currentWriteRequest;
-
 	private final IoSessionAttributeMap attributes;
 	private Object attachment;
 
+	private final WriteRequestQueue writeRequestQueue;
+	private WriteRequest currentWriteRequest;
+
 	private final long sessionId = idGenerator.incrementAndGet();
 
-	@SuppressWarnings("unused")
 	private volatile int scheduledForFlush;
-	@SuppressWarnings("unused")
-	private volatile int scheduledForRemove;
 
 	/** A future that will be set 'closed' when the connection is closed */
 	private final CloseFuture closeFuture = new DefaultCloseFuture(this);
@@ -104,9 +98,8 @@ public final class NioSession implements IoSession {
 	private boolean readSuspended;
 	private boolean writeSuspended;
 
-	NioSession(AbstractIoService service, IoProcessor<NioSession> processor, SocketChannel channel, ConnectFuture future) {
+	NioSession(AbstractIoService service, SocketChannel channel, ConnectFuture future) {
 		this.service = service;
-		this.processor = processor;
 		this.channel = channel;
 		config = new SessionConfigImpl(service);
 		IoSessionDataStructureFactory factory = service.getSessionDataStructureFactory();
@@ -159,28 +152,28 @@ public final class NioSession implements IoSession {
 	public void suspendRead() {
 		readSuspended = true;
 		if (!closing && !closeFuture.isClosed())
-			processor.updateTrafficControl(this);
+			getProcessor().updateTrafficControl(this);
 	}
 
 	@Override
 	public void suspendWrite() {
 		writeSuspended = true;
 		if (!closing && !closeFuture.isClosed())
-			processor.updateTrafficControl(this);
+			getProcessor().updateTrafficControl(this);
 	}
 
 	@Override
 	public void resumeRead() {
 		readSuspended = false;
 		if (!closing && !closeFuture.isClosed())
-			processor.updateTrafficControl(this);
+			getProcessor().updateTrafficControl(this);
 	}
 
 	@Override
 	public void resumeWrite() {
 		writeSuspended = false;
 		if (!closing && !closeFuture.isClosed())
-			processor.updateTrafficControl(this);
+			getProcessor().updateTrafficControl(this);
 	}
 
 	@Override
@@ -219,7 +212,7 @@ public final class NioSession implements IoSession {
 	public CloseFuture closeOnFlush() {
 		if (!isClosing()) {
 			writeRequestQueue.offer(CLOSE_REQUEST);
-			processor.flush(this);
+			getProcessor().flush(this);
 		}
 		return closeFuture;
 	}
@@ -228,7 +221,7 @@ public final class NioSession implements IoSession {
 	public void shutdownOnFlush() {
 		if (!isClosing()) {
 			writeRequestQueue.offer(SHUTDOWN_REQUEST);
-			processor.flush(this);
+			getProcessor().flush(this);
 		}
 	}
 
@@ -276,7 +269,7 @@ public final class NioSession implements IoSession {
 	}
 
 	public IoProcessor<NioSession> getProcessor() {
-		return processor;
+		return service.getProcessor();
 	}
 
 	public NioProcessor getNioProcessor() {
@@ -379,11 +372,17 @@ public final class NioSession implements IoSession {
 	 * Change the session's status: it's not anymore scheduled for flush
 	 */
 	void unscheduledForFlush() {
-		scheduledForFlush = 0;
+		scheduledForFlushUpdater.compareAndSet(this, 1, 0);
 	}
 
 	boolean setScheduledForRemove() {
-		return scheduledForRemoveUpdater.compareAndSet(this, 0, 1);
+		for (;;) {
+			int v = scheduledForFlush;
+			if (v < 0)
+				return false;
+			if (scheduledForFlushUpdater.compareAndSet(this, v, -1))
+				return true;
+		}
 	}
 
 	void removeNow(IOException ioe) {

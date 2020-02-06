@@ -195,10 +195,10 @@ public final class TestCompressor
 			else{if(getbit() >= 0)
 			    {if(getbit() <  0) //NOSONAR
 			     if(getbit() >= 0) {n = f2; f2=f;f=n;}
-			     else              {n = f3; f3=f2;f2=f;f=n;}}
+			     else              {n = f3; f3=f2;f2=f;f=n;}} //NOSONAR
 			else{if(getbit() >= 0) //NOSONAR
 			     if(getbit() >= 0)  n = f4;
-			     else               n = getbits(7) + 1;
+			     else               n = getbits(7) + 1; //NOSONAR
 			else if(getbit() >= 0)  n = getbits(13) + 0x81;
 			     else               n = getbits(19) + 0x2081; f4=f3;f3=f2;f2=f;f=n;}
 			     if(getbit() >= 0)  n =(getbit() >>> 31) + 3;

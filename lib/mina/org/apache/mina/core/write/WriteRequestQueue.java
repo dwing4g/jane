@@ -28,8 +28,9 @@ public interface WriteRequestQueue {
 	 * Add a new WriteRequest to the session write's queue
 	 *
 	 * @param writeRequest The writeRequest to add
+	 * @return {@code true} if the writeRequest was added to this queue, else {@code false}
 	 */
-	void offer(WriteRequest writeRequest);
+	boolean offer(WriteRequest writeRequest);
 
 	/**
 	 * Get the first request available in the queue for a session.
