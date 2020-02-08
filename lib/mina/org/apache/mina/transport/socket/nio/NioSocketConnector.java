@@ -177,7 +177,6 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 						processConnections();
 					processTimedOutSessions();
 				} catch (ClosedSelectorException cse) {
-					// If the selector has been closed, we can exit the loop
 					ExceptionMonitor.getInstance().exceptionCaught(cse);
 					break;
 				} catch (Exception e) {
@@ -185,7 +184,9 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 					try {
 						Thread.sleep(1000);
 					} catch (InterruptedException e1) {
+						connectorRef.compareAndSet(this, null);
 						ExceptionMonitor.getInstance().exceptionCaught(e1);
+						break;
 					}
 				}
 			}

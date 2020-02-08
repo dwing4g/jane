@@ -178,6 +178,8 @@ public interface IoSession {
 	 */
 	WriteRequestQueue getWriteRequestQueue();
 
+	WriteRequest pollWriteRequest();
+
 	/**
 	 * Returns the {@link WriteRequest} which is being processed by {@link IoService}.
 	 *

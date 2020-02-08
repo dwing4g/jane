@@ -18,14 +18,12 @@
  */
 package org.apache.mina.core.session;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.mina.core.write.WriteRequest;
 import org.apache.mina.core.write.WriteRequestQueue;
-import org.apache.mina.transport.socket.nio.NioSession;
 
 /**
  * The default {@link IoSessionDataStructureFactory} implementation
@@ -42,7 +40,7 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 
 	@Override
 	public WriteRequestQueue getWriteRequestQueue(IoSession session) {
-		return new DefaultWriteRequestQueue(session);
+		return new DefaultWriteRequestQueue();
 	}
 
 	private static final class DefaultIoSessionAttributeMap extends ConcurrentHashMap<Object, Object> implements IoSessionAttributeMap {
@@ -96,30 +94,5 @@ public class DefaultIoSessionDataStructureFactory implements IoSessionDataStruct
 
 	private static final class DefaultWriteRequestQueue extends ConcurrentLinkedQueue<WriteRequest> implements WriteRequestQueue {
 		private static final long serialVersionUID = 1L;
-		private final IoSession s;
-
-		DefaultWriteRequestQueue(IoSession session) {
-			s = session;
-		}
-
-		@Override
-		public WriteRequest poll() {
-			WriteRequest wr = super.poll();
-
-			if (wr == NioSession.CLOSE_REQUEST) {
-				s.closeNow();
-				dispose();
-				wr = null;
-			} else if (wr == NioSession.SHUTDOWN_REQUEST) {
-				try {
-					((NioSession)s).getChannel().shutdownOutput();
-				} catch(IOException e) {
-				}
-				dispose();
-				wr = null;
-			}
-
-			return wr;
-		}
 	}
 }

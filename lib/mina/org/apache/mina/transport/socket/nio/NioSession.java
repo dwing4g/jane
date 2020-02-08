@@ -48,7 +48,6 @@ import org.apache.mina.core.service.IoService;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.session.IoSessionAttributeMap;
 import org.apache.mina.core.session.IoSessionDataStructureFactory;
-import org.apache.mina.core.session.SessionState;
 import org.apache.mina.core.write.DefaultWriteRequest;
 import org.apache.mina.core.write.WriteRequest;
 import org.apache.mina.core.write.WriteRequestQueue;
@@ -151,34 +150,35 @@ public final class NioSession implements IoSession {
 	@Override
 	public void suspendRead() {
 		readSuspended = true;
-		if (!closing && !closeFuture.isClosed())
+		if (!isClosing())
 			getProcessor().updateTrafficControl(this);
 	}
 
 	@Override
 	public void suspendWrite() {
 		writeSuspended = true;
-		if (!closing && !closeFuture.isClosed())
+		if (!isClosing())
 			getProcessor().updateTrafficControl(this);
 	}
 
 	@Override
 	public void resumeRead() {
 		readSuspended = false;
-		if (!closing && !closeFuture.isClosed())
+		if (!isClosing())
 			getProcessor().updateTrafficControl(this);
 	}
 
 	@Override
 	public void resumeWrite() {
 		writeSuspended = false;
-		if (!closing && !closeFuture.isClosed())
+		if (!isClosing())
 			getProcessor().updateTrafficControl(this);
 	}
 
 	@Override
 	public boolean isActive() {
-		return selKey != null && selKey.isValid();
+		SelectionKey key = selKey;
+		return key != null && key.isValid();
 	}
 
 	@Override
@@ -251,6 +251,26 @@ public final class NioSession implements IoSession {
 	}
 
 	@Override
+	public WriteRequest pollWriteRequest() {
+		WriteRequestQueue wrq = writeRequestQueue;
+		WriteRequest wr = wrq.poll();
+		if (wr == CLOSE_REQUEST) {
+			closeNow();
+			wrq.dispose();
+			return null;
+		}
+		if (wr == SHUTDOWN_REQUEST) {
+			try {
+				channel.shutdownOutput();
+			} catch(IOException e) {
+			}
+			wrq.dispose();
+			return null;
+		}
+		return wr;
+	}
+
+	@Override
 	public WriteRequest getCurrentWriteRequest() {
 		return currentWriteRequest;
 	}
@@ -281,21 +301,16 @@ public final class NioSession implements IoSession {
 	}
 
 	public boolean isInterestedInWrite() {
-		return selKey != null && selKey.isValid() && (selKey.interestOps() & SelectionKey.OP_WRITE) != 0;
+		SelectionKey key = selKey;
+		return key != null && key.isValid() && (key.interestOps() & SelectionKey.OP_WRITE) != 0;
 	}
 
 	void setSelectionKey(SelectionKey key) {
 		selKey = key;
 	}
 
-	/**
-	 * Get the state of a session (One of OPENING, OPEN, CLOSING)
-	 */
-	SessionState getState() {
-		SelectionKey key = selKey;
-		if (key == null)
-			return SessionState.OPENING; // The channel is not yet regisetred to a selector
-		return key.isValid() ? SessionState.OPENED : SessionState.CLOSING;
+	boolean isOpening() {
+		return selKey == null;
 	}
 
 	/**
@@ -409,7 +424,7 @@ public final class NioSession implements IoSession {
 	private void clearWriteRequestQueue(IOException ioe) {
 		WriteRequest req = currentWriteRequest;
 		if (req == null) {
-			req = writeRequestQueue.poll();
+			req = pollWriteRequest();
 			if (req == null)
 				return;
 		} else {
@@ -424,7 +439,7 @@ public final class NioSession implements IoSession {
 			Object message = req.writeRequestMessage();
 			if (message instanceof IoBuffer)
 				((IoBuffer)message).free();
-		} while ((req = writeRequestQueue.poll()) != null);
+		} while ((req = pollWriteRequest()) != null);
 
 		filterChain.fireExceptionCaught(ex);
 	}

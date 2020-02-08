@@ -451,7 +451,7 @@ public final class SslHandler {
 
 			// Empty the session queue
 			WriteRequest writeRequest;
-			while ((writeRequest = session.getWriteRequestQueue().poll()) != null) {
+			while ((writeRequest = session.pollWriteRequest()) != null) {
 				WriteFuture writeFuture = writeRequest.writeRequestFuture();
 				synchronized (writeFuture) {
 					writeFuture.setException(exception);

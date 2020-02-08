@@ -170,16 +170,11 @@ public final class SimpleIoProcessorPool implements IoProcessor<NioSession> {
 			disposing = true;
 
 			for (NioProcessor ioProcessor : pool) {
-				if (ioProcessor == null)
-					continue; // Special case if the pool has not been initialized properly
-				if (ioProcessor.isDisposing())
-					continue;
-
-				ioProcessor.dispose();
+				if (ioProcessor != null)
+					ioProcessor.dispose();
 			}
 
 			executor.shutdown();
-
 			Arrays.fill(pool, null);
 			disposed = true;
 		}

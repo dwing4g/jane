@@ -36,7 +36,6 @@ import org.apache.mina.core.service.AbstractIoService;
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequest;
-import org.apache.mina.core.write.WriteRequestQueue;
 import org.apache.mina.util.ExceptionMonitor;
 
 /**
@@ -44,43 +43,27 @@ import org.apache.mina.util.ExceptionMonitor;
  * This class is in charge of active polling a set of {@link IoSession} and trigger events when some I/O operation is possible.
  */
 public final class NioProcessor implements IoProcessor<NioSession> {
-	private static final long SELECT_TIMEOUT = 1000L;
-
-	/** The executor to use when we need to start the inner Processor */
 	private final Executor executor;
-
 	private Selector selector;
-
-	private final Queue<NioSession> newSessions = new ConcurrentLinkedQueue<>();
-	private final Queue<NioSession> removingSessions = new ConcurrentLinkedQueue<>();
-	private final Queue<NioSession> flushingSessions = new ConcurrentLinkedQueue<>();
-
-	/** The processor thread: it handles the incoming messages */
 	private final AtomicReference<Processor> processorRef = new AtomicReference<>();
+
+	private final Queue<NioSession> creatingSessions = new ConcurrentLinkedQueue<>();
+	private final Queue<NioSession> flushingSessions = new ConcurrentLinkedQueue<>();
+	private final Queue<NioSession> removingSessions = new ConcurrentLinkedQueue<>();
 
 	private final DefaultIoFuture disposalFuture = new DefaultIoFuture(null);
 	private final AtomicBoolean wakeupCalled = new AtomicBoolean();
 	private Thread processorThread;
 
 	private volatile boolean disposing;
-	private volatile boolean disposed;
 
-	/**
-	 * Create an {@link NioProcessor} with the given {@link Executor} for handling I/Os events.
-	 *
-	 * @param executor the {@link Executor} for handling I/O events
-	 */
 	public NioProcessor(Executor executor) throws IOException {
 		if (executor == null)
 			throw new IllegalArgumentException("executor");
 		this.executor = executor;
-
 		selector = Selector.open();
 	}
 
-	/**
-	 * Interrupt the selector.select(long) call.
-	 */
 	private void wakeup() {
 		wakeupCalled.set(true);
 		selector.wakeup();
@@ -88,11 +71,11 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 
 	@Override
 	public void add(NioSession session) {
-		if (disposing)
-			throw new IllegalStateException("already disposed");
-
-		// Adds the session to the newSession queue and starts the worker
-		newSessions.add(session);
+		synchronized (creatingSessions) {
+			if (disposing)
+				throw new IllegalStateException("disposed processor");
+			creatingSessions.add(session);
+		}
 		startupProcessor();
 	}
 
@@ -129,7 +112,6 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 			}
 		}
 
-		// add the session to the queue if it's not already in the queue, then wake up the selector.select()
 		if (session.setScheduledForFlush()) {
 			flushingSessions.add(session);
 			wakeup();
@@ -161,218 +143,91 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 
 	@Override
 	public boolean isDisposed() {
-		return disposed;
+		return disposalFuture.isDone();
 	}
 
 	@Override
 	public void dispose() {
-		if (disposing)
-			return;
-
-		synchronized (this) {
+		synchronized (creatingSessions) {
 			if (disposing)
 				return;
 			disposing = true;
-
 			startupProcessor();
+			disposalFuture.awaitUninterruptibly();
 		}
-
-		disposalFuture.awaitUninterruptibly();
-		disposed = true;
 	}
 
-	/**
-	 * Starts the inner Processor, asking the executor to pick a thread in its pool.
-	 * The Runnable will be renamed
-	 */
 	private void startupProcessor() {
 		Processor processor = processorRef.get();
-		if (processor == null) {
-			processor = new Processor();
-			if (processorRef.compareAndSet(null, processor))
-				executor.execute(processor);
-		}
-
-		// Just stop the selector.select() and start it again, so that the processor can be activated immediately.
-		wakeup();
+		if (processor == null && processorRef.compareAndSet(null, processor = new Processor()))
+			executor.execute(processor);
+		else
+			wakeup();
 	}
 
-	/**
-	 * The main loop. This is the place in charge to poll the Selector, and to
-	 * process the active sessions. It's done in - handle the newly created sessions -
-	 */
 	private final class Processor implements Runnable {
 		@Override
 		public void run() {
 			processorThread = Thread.currentThread();
-
 			for (int nbTries = 10;;) {
+				if (disposing) {
+					if (!isDisposed()) {
+						try {
+							for (SelectionKey key : selector.keys())
+								scheduleRemove((NioSession)key.attachment());
+							removeSessions();
+							selector.close();
+						} catch (Exception e) {
+							ExceptionMonitor.getInstance().exceptionCaught(e);
+						} finally {
+							disposalFuture.setValue(true);
+						}
+					}
+					return;
+				}
 				try {
-					// This select has a timeout so that we can manage idle session when we get out of the select every second.
-					// (note: this is a hack to avoid creating a dedicated thread).
+					createSessions();
+					if (selector.keys().isEmpty()) {
+						processorRef.set(null);
+						if (creatingSessions.isEmpty() || !processorRef.compareAndSet(null, this))
+							return;
+					}
+
 					long t0 = System.currentTimeMillis();
-					int selected = selector.select(SELECT_TIMEOUT);
-
-					long delta;
-					if (!wakeupCalled.getAndSet(false) && selected == 0 && (delta = System.currentTimeMillis() - t0) < 100) {
-						if (Thread.interrupted()) {
-							// Thread was interrupted so reset selected keys and break so we not run into a busy loop.
-							// As this is most likely a bug in the handler of the user or it's client library we will also log it.
-							// See https://github.com/netty/netty/issues/2426
-							ExceptionMonitor.getInstance().error("selector.select() returned prematurely because Thread.interrupted()");
-							break;
-						}
-
-						// Last chance: the select() may have been interrupted because we have had an closed channel.
-						if (isBrokenConnection())
-							ExceptionMonitor.getInstance().warn("broken connection");
-						else {
-							// Ok, we are hit by the nasty epoll spinning.
-							// Basically, there is a race condition which causes a closing file descriptor not to be
-							// considered as available as a selected channel, but it stopped the select.
-							// The next time we will call select(), it will exit immediately for the same reason,
-							// and do so forever, consuming 100% CPU.
-							// We have to destroy the selector, and register all the socket on a new one.
-							if (nbTries == 0) {
-								ExceptionMonitor.getInstance().warn("create a new selector. selected is 0, delta = " + delta);
-								registerNewSelector();
-								nbTries = 10;
-							} else
-								nbTries--;
-						}
+					int selected = selector.select();
+					long selectTime;
+					if (!wakeupCalled.getAndSet(false) && selected == 0 && (selectTime = System.currentTimeMillis() - t0) < 100) {
+						if ((nbTries = fixSelector(nbTries, selectTime)) < 0)
+							return;
 					} else
 						nbTries = 10;
 
-					// Manage newly created session first
-					if (handleNewSessions() == 0 && selector.keys().isEmpty()) {
-						// Get a chance to exit the infinite loop if there are no more sessions on this Processor
-						processorRef.set(null);
-
-						if (newSessions.isEmpty() && selector.keys().isEmpty())
-							break; // newSessions.add() precedes startupProcessor
-
-						if (!processorRef.compareAndSet(null, this))
-							break; // startupProcessor won race, so must exit processor
-					}
-
-					// Now, if we have had some incoming or outgoing events, deal with them
 					if (selected > 0)
 						process();
-
-					// Write the pending requests
-					flush();
-
-					// And manage removed sessions
+					flushSessions();
 					removeSessions();
-
-					// Disconnect all sessions immediately if disposal has been requested so that we exit this loop eventually.
-					if (isDisposing()) {
-						for (SelectionKey key : selector.keys())
-							scheduleRemove((NioSession)key.attachment());
-						wakeup();
-					}
 				} catch (ClosedSelectorException cse) {
-					// If the selector has been closed, we can exit the loop But first, dump a stack trace
 					ExceptionMonitor.getInstance().exceptionCaught(cse);
-					break;
 				} catch (Exception e) {
 					ExceptionMonitor.getInstance().exceptionCaught(e);
-
 					try {
 						Thread.sleep(1000);
 					} catch (InterruptedException e1) {
+						processorRef.compareAndSet(this, null);
 						ExceptionMonitor.getInstance().exceptionCaught(e1);
 					}
 				}
 			}
-
-			try {
-				synchronized (NioProcessor.this) {
-					if (isDisposing())
-						selector.close();
-				}
-			} catch (Exception e) {
-				ExceptionMonitor.getInstance().exceptionCaught(e);
-			} finally {
-				disposalFuture.setValue(true);
-			}
 		}
 
-		private void process() {
-			for (Iterator<SelectionKey> it = selector.selectedKeys().iterator(); it.hasNext();) {
-				SelectionKey key = it.next();
-				it.remove();
-				NioSession session = (NioSession)key.attachment();
-				int ops = key.readyOps();
-
-				if ((ops & SelectionKey.OP_READ) != 0 && !session.isReadSuspended())
-					session.read();
-
-				if ((ops & SelectionKey.OP_WRITE) != 0 && !session.isWriteSuspended())
-					scheduleFlush(session); // add the session to the queue, if it's not already there
-			}
-		}
-		/**
-		 * Check that the select() has not exited immediately just because of a
-		 * broken connection. In this case, this is a standard case, and we just have to loop.
-		 *
-		 * @return <tt>true</tt> if a connection has been brutally closed.
-		 * @throws IOException If we got an exception
-		 */
-		private boolean isBrokenConnection() {
-			// A flag set to true if we find a broken session
-			boolean brokenSession = false;
-
-			// Loop on all the keys to see if one of them has a closed channel
-			for (SelectionKey key : selector.keys()) {
-				if (!((SocketChannel)key.channel()).isConnected()) {
-					// The channel is not connected anymore. Cancel the associated key then.
-					key.cancel();
-
-					// Set the flag to true to avoid a selector switch
-					brokenSession = true;
-				}
-			}
-
-			return brokenSession;
-		}
-
-		/**
-		 * In the case we are using the java select() method, this method is used to
-		 * trash the buggy selector and create a new one, registering all the sockets on it.
-		 *
-		 * @throws IOException If we got an exception
-		 */
-		private void registerNewSelector() throws IOException {
-			Selector newSelector = Selector.open(); //NOSONAR
-
-			// Loop on all the registered keys, and register them on the new selector
-			for (SelectionKey key : selector.keys()) {
-				// Don't forget to attache the session, and back!
-				NioSession session = (NioSession)key.attachment();
-				session.setSelectionKey(key.channel().register(newSelector, key.interestOps(), session));
-			}
-
-			// Now we can close the old selector and switch it
-			selector.close();
-			selector = newSelector;
-		}
-
-		/**
-		 * Loops over the new sessions blocking queue and returns the number of sessions which are effectively created
-		 *
-		 * @return The number of new sessions
-		 */
-		private int handleNewSessions() {
-			int addedSessions = 0;
+		private void createSessions() {
 			NioSession session;
-			while ((session = newSessions.poll()) != null) {
+			while ((session = creatingSessions.poll()) != null) {
 				try {
 					session.setSelectionKey(session.getChannel().configureBlocking(false).register(selector, SelectionKey.OP_READ, session));
 					AbstractIoService service = session.getService();
 					service.getFilterChainBuilder().buildFilterChain(session.getFilterChain());
 					service.fireSessionCreated(session);
-					addedSessions++;
 				} catch (Exception e) {
 					ExceptionMonitor.getInstance().exceptionCaught(e);
 					try {
@@ -384,59 +239,58 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 					}
 				}
 			}
-			return addedSessions;
+		}
+
+		private void process() {
+			for (Iterator<SelectionKey> it = selector.selectedKeys().iterator(); it.hasNext();) {
+				SelectionKey key = it.next();
+				it.remove();
+
+				NioSession session = (NioSession)key.attachment();
+				int ops = key.readyOps();
+				if ((ops & SelectionKey.OP_READ) != 0 && !session.isReadSuspended())
+					session.read();
+				if ((ops & SelectionKey.OP_WRITE) != 0 && !session.isWriteSuspended())
+					scheduleFlush(session);
+			}
+		}
+
+		private void scheduleFlush(NioSession session) {
+			if (session.setScheduledForFlush())
+				flushingSessions.add(session);
+		}
+
+		private void flushSessions() {
+			NioSession session;
+			while ((session = flushingSessions.poll()) != null) {
+				// Reset the Schedule for flush flag for this session, as we are flushing it now
+				session.unscheduledForFlush();
+				if (session.isActive()) {
+					try {
+						flushNow(session);
+					} catch (Exception e) {
+						session.closeNow();
+						session.getFilterChain().fireExceptionCaught(e);
+					}
+				} else if (session.isOpening()) {
+					// Retry later if session is not yet fully initialized.
+					// (In case that Session.write() is called before addSession() is processed)
+					scheduleFlush(session);
+					return;
+				}
+			}
 		}
 
 		private void removeSessions() {
 			NioSession session;
 			while ((session = removingSessions.poll()) != null) {
-				// Now deal with the removal accordingly to the session's state
-				switch (session.getState()) {
-					case OPENING: // Remove session from the newSessions queue and remove it
-						newSessions.remove(session);
-						//$FALL-THROUGH$
-					case OPENED: // Try to remove this session
-						session.removeNow(null);
-						//$FALL-THROUGH$
-					case CLOSING: // Skip if channel is already closed In any case, remove the session from the queue
-						break;
+				if (session.isActive())
+					session.removeNow(null);
+				else if (session.isOpening()) {
+					creatingSessions.remove(session);
+					session.removeNow(null);
 				}
 			}
-		}
-
-		/**
-		 * Write all the pending messages
-		 */
-		private void flush() {
-			NioSession session;
-			while ((session = flushingSessions.poll()) != null) { // the same one with firstSession
-				// Reset the Schedule for flush flag for this session, as we are flushing it now
-				session.unscheduledForFlush();
-
-				switch (session.getState()) {
-					case OPENING:
-						// Retry later if session is not yet fully initialized.
-						// (In case that Session.write() is called before addSession() is processed)
-						scheduleFlush(session);
-						return;
-					case OPENED:
-						try {
-							flushNow(session);
-						} catch (Exception e) {
-							session.closeNow();
-							session.getFilterChain().fireExceptionCaught(e);
-						}
-						//$FALL-THROUGH$
-					case CLOSING: // Skip if the channel is already closed.
-						break;
-				}
-			}
-		}
-
-		private void scheduleFlush(NioSession session) {
-			// add the session to the queue if it's not already in the queue
-			if (session.setScheduledForFlush())
-				flushingSessions.add(session);
 		}
 
 		void flushNow(NioSession session) {
@@ -444,8 +298,6 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 				scheduleRemove(session);
 				return;
 			}
-
-			final WriteRequestQueue writeRequestQueue = session.getWriteRequestQueue();
 
 			// Set limitation for the number of written bytes for read-write fairness.
 			// I used maxReadBufferSize * 3 / 2, which yields best performance in my experience while not breaking fairness much.
@@ -457,7 +309,7 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 				for(;;) {
 					req = session.getCurrentWriteRequest(); // Check for pending writes.
 					if (req == null) {
-						req = writeRequestQueue.poll();
+						req = session.pollWriteRequest();
 						if (req == null) {
 							session.setInterestedInWrite(false);
 							return;
@@ -505,9 +357,8 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 							session.setInterestedInWrite(true);
 							return;
 						}
-					} else {
+					} else
 						throw new IllegalStateException("unknown message type for writting: " + message.getClass().getName() + ": " + message);
-					}
 
 					session.setCurrentWriteRequest(null);
 					session.getFilterChain().fireMessageSent(req);
@@ -516,8 +367,7 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 						((IoBuffer)message).free();
 
 					writtenBytes += localWrittenBytes;
-					if (writtenBytes >= maxWrittenBytes) {
-						// Wrote too much
+					if (writtenBytes >= maxWrittenBytes) { // Wrote too much
 						scheduleFlush(session);
 						session.setInterestedInWrite(false);
 						return;
@@ -531,9 +381,60 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 				}
 				if (req != null)
 					req.writeRequestFuture().setException(e);
-
 				session.getFilterChain().fireExceptionCaught(e);
 			}
+		}
+
+		private int fixSelector(int nbTries, long selectTime) throws IOException {
+			if (Thread.interrupted()) {
+				// Thread was interrupted so reset selected keys and break so we not run into a busy loop.
+				// As this is most likely a bug in the handler of the user or it's client library we will also log it.
+				// See https://github.com/netty/netty/issues/2426
+				ExceptionMonitor.getInstance().error("selector.select() returned prematurely because Thread.interrupted()");
+				processorRef.compareAndSet(this, null);
+				return -1;
+			}
+
+			// Last chance: the select() may have been interrupted because we have had an closed channel.
+			// Check that the select() has not exited immediately just because of a broken connection.
+			// In this case, this is a standard case, and we just have to loop.
+			boolean brokenSession = false;
+			for (SelectionKey key : selector.keys()) {
+				if (!((SocketChannel)key.channel()).isConnected()) {
+					key.cancel();
+					brokenSession = true;
+				}
+			}
+			if (brokenSession)
+				ExceptionMonitor.getInstance().warn("fixed broken connection");
+			else {
+				// Ok, we are hit by the nasty epoll spinning.
+				// Basically, there is a race condition which causes a closing file descriptor not to be
+				// considered as available as a selected channel, but it stopped the select.
+				// The next time we will call select(), it will exit immediately for the same reason,
+				// and do so forever, consuming 100% CPU.
+				// We have to destroy the selector, and register all the socket on a new one.
+				if (nbTries <= 0) {
+					ExceptionMonitor.getInstance().warn("create a new selector. select time = " + selectTime);
+					// In the case we are using the java select() method,
+					// this method is used to trash the buggy selector and create a new one, registering all the sockets on it.
+					Selector newSelector = Selector.open(); //NOSONAR
+
+					// Loop on all the registered keys, and register them on the new selector
+					for (SelectionKey key : selector.keys()) {
+						// Don't forget to attache the session, and back!
+						NioSession session = (NioSession)key.attachment();
+						session.setSelectionKey(key.channel().register(newSelector, key.interestOps(), session));
+					}
+
+					// Now we can close the old selector and switch it
+					selector.close();
+					selector = newSelector;
+					nbTries = 10;
+				} else
+					nbTries--;
+			}
+			return nbTries;
 		}
 	}
 }
