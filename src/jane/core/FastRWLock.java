@@ -29,6 +29,7 @@ public final class FastRWLock extends AtomicLong
 				return false;
 			if (compareAndSet(s, s + 1))
 				return true;
+			Thread.onSpinWait();
 		}
 	}
 
@@ -41,6 +42,8 @@ public final class FastRWLock extends AtomicLong
 				wait1();
 			else if (compareAndSet(c, c + 1))
 				return;
+			else
+				Thread.onSpinWait();
 		}
 	}
 
@@ -62,7 +65,11 @@ public final class FastRWLock extends AtomicLong
 					return;
 			}
 			else if (s < 0 || compareAndSet(s, s | WRITE_WAIT_FLAG)) // 如果只有读标记,那么加写等待标记,阻止读锁
+			{
 				wait1();
+				continue;
+			}
+			Thread.onSpinWait();
 		}
 	}
 
@@ -77,7 +84,11 @@ public final class FastRWLock extends AtomicLong
 					return; // 加写独占标记,阻止其它读写操作
 			}
 			else if (s < 0 || compareAndSet(s, s | WRITE_WAIT_FLAG)) // 如果只有读标记,那么加写等待标记,阻止读锁
+			{
 				wait1();
+				continue;
+			}
+			Thread.onSpinWait();
 		}
 	}
 

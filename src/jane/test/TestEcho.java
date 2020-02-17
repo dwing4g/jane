@@ -89,9 +89,7 @@ public final class TestEcho extends NetManager
 	public synchronized void startServer(InetSocketAddress addr) throws IOException
 	{
 		// setIoThreadCount(TEST_THREAD_COUNT / 2);
-		if (getAcceptor().getSessionDataStructureFactory() != _dsFactory)
-			getAcceptor().setSessionDataStructureFactory(_dsFactory);
-		getServerConfig().setReuseAddress(true);
+		getAcceptor().setSessionDataStructureFactory(_dsFactory);
 		getServerConfig().setTcpNoDelay(true);
 		super.startServer(addr);
 	}
@@ -100,8 +98,7 @@ public final class TestEcho extends NetManager
 	public synchronized ConnectFuture startClient(InetSocketAddress addr)
 	{
 		// setIoThreadCount(TEST_THREAD_COUNT / 2);
-		if (getConnector().getSessionDataStructureFactory() != _dsFactory)
-			getConnector().setSessionDataStructureFactory(_dsFactory);
+		getConnector().setSessionDataStructureFactory(_dsFactory);
 		getClientConfig().setTcpNoDelay(true);
 		return super.startClient(addr);
 	}
@@ -118,7 +115,7 @@ public final class TestEcho extends NetManager
 	}
 
 	@Override
-	protected void onAddSession(IoSession session)
+	public void sessionOpened(IoSession session)
 	{
 //		perf[6].begin();
 		write(session, IoBuffer.allocate(TEST_ECHO_SIZE).sweep());
@@ -126,7 +123,7 @@ public final class TestEcho extends NetManager
 	}
 
 	@Override
-	protected void onDelSession(IoSession session)
+	public void sessionClosed(IoSession session)
 	{
 		_closedCount.countDown();
 	}

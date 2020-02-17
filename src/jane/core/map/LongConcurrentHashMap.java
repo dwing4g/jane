@@ -14,7 +14,6 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@SuppressWarnings("restriction")
 public final class LongConcurrentHashMap<V> extends LongMap<V>
 {
 	/**

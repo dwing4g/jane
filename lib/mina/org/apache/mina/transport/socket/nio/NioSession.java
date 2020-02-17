@@ -335,17 +335,10 @@ public final class NioSession implements IoSession {
 		SelectionKey key = selKey;
 		if (key == null || !key.isValid())
 			return;
-
-		int oldInterestOps = key.interestOps();
-		int newInterestOps = oldInterestOps;
-
 		if (isInterested)
-			newInterestOps |= SelectionKey.OP_READ;
+			key.interestOpsOr(SelectionKey.OP_READ);
 		else
-			newInterestOps &= ~SelectionKey.OP_READ;
-
-		if (oldInterestOps != newInterestOps)
-			key.interestOps(newInterestOps);
+			key.interestOpsAnd(~SelectionKey.OP_READ);
 	}
 
 	/**
@@ -358,17 +351,10 @@ public final class NioSession implements IoSession {
 		SelectionKey key = selKey;
 		if (key == null || !key.isValid())
 			return;
-
-		int oldInterestOps = key.interestOps();
-		int newInterestOps = oldInterestOps;
-
 		if (isInterested)
-			newInterestOps |= SelectionKey.OP_WRITE;
+			key.interestOpsOr(SelectionKey.OP_WRITE);
 		else
-			newInterestOps &= ~SelectionKey.OP_WRITE;
-
-		if (oldInterestOps != newInterestOps)
-			key.interestOps(newInterestOps);
+			key.interestOpsAnd(~SelectionKey.OP_WRITE);
 	}
 
 	/**

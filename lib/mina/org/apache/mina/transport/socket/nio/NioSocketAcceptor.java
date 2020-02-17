@@ -29,12 +29,12 @@ import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.apache.mina.core.filterchain.IoFilter;
 import org.apache.mina.core.future.DefaultIoFuture;
 import org.apache.mina.core.service.AbstractIoService;
@@ -228,7 +228,7 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 		return "(nio socket acceptor: localAddresses: " + getLocalAddresses() + ", managedSessionCount: " + getManagedSessionCount() + ')';
 	}
 
-	private final class Acceptor implements Runnable {
+	private final class Acceptor implements Runnable, Consumer<SelectionKey> {
 		@Override
 		public void run() {
 			for (;;) {
@@ -239,8 +239,7 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 							break;
 					}
 
-					if (selector.select() > 0)
-						processHandles();
+					selector.select(this);
 				} catch (ClosedSelectorException e) {
 					break;
 				} catch (Exception e) {
@@ -252,6 +251,26 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 						ExceptionMonitor.getInstance().exceptionCaught(e1);
 						break;
 					}
+				}
+			}
+		}
+
+		@Override
+		public void accept(SelectionKey key) {
+			try {
+				@SuppressWarnings("resource")
+				SocketChannel newChannel = ((ServerSocketChannel)key.channel()).accept();
+				if (newChannel != null)
+					processor.add(new NioSession(NioSocketAcceptor.this, newChannel, null));
+			} catch (Exception e) {
+				ExceptionMonitor.getInstance().exceptionCaught(e);
+				try {
+					// Sleep 50 ms, so that the select does not spin like crazy doing nothing but eating CPU
+					// This is typically what will happen if we don't have any more File handle on the server
+					// Check the ulimit parameter
+					// NOTE : this is a workaround, there is no way we can handle this exception in any smarter way...
+					Thread.sleep(50);
+				} catch (InterruptedException e1) {
 				}
 			}
 		}
@@ -331,30 +350,6 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 					}
 				}
 				future.setValue(Boolean.TRUE);
-			}
-		}
-
-		private void processHandles() {
-			for (Iterator<SelectionKey> it = selector.selectedKeys().iterator(); it.hasNext();) {
-				SelectionKey key = it.next();
-				it.remove();
-
-				try {
-					@SuppressWarnings("resource")
-					SocketChannel newChannel = ((ServerSocketChannel)key.channel()).accept();
-					if (newChannel != null)
-						processor.add(new NioSession(NioSocketAcceptor.this, newChannel, null));
-				} catch (Exception e) {
-					ExceptionMonitor.getInstance().exceptionCaught(e);
-					try {
-						// Sleep 50 ms, so that the select does not spin like crazy doing nothing but eating CPU
-						// This is typically what will happen if we don't have any more File handle on the server
-						// Check the ulimit parameter
-						// NOTE : this is a workaround, there is no way we can handle this exception in any smarter way...
-						Thread.sleep(50);
-					} catch (InterruptedException e1) {
-					}
-				}
 			}
 		}
 	}

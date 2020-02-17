@@ -30,7 +30,7 @@ public final class LevelDBImport
 			Matcher mat = s_patHex.matcher(str);
 			if (!mat.find())
 				return Octets.wrap(str.getBytes(s_cs88591));
-			StringBuffer sb = new StringBuffer(str.length());
+			StringBuilder sb = new StringBuilder(str.length());
 			do
 			{
 				matchStr = mat.group(1);

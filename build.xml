@@ -2,7 +2,7 @@
 <project name="jane" default="jar">
 	<!-- install jdk,ant first:
 		example: add this line in linux ~/.bash_profile:
-		export PATH=$PATH:$HOME/apache-ant-1.9.8/bin
+		export PATH=$PATH:$HOME/apache-ant-1.9.10/bin
 	-->
 	<!-- compile by ecj:
 		ant -Dbuild.compiler=org.eclipse.jdt.core.JDTCompilerAdapter
@@ -33,7 +33,7 @@
 				<include name="*.jar"/>
 			</fileset>
 		</path>
-		<javac destdir="${classes}" encoding="utf-8" classpathref="classpath" source="1.8" target="1.8" debug="on" debuglevel="lines,vars,source" includeantruntime="false">
+		<javac destdir="${classes}" encoding="utf-8" classpathref="classpath" source="11" target="11" debug="on" debuglevel="lines,vars,source" includeantruntime="false">
 			<compilerarg value="-nowarn"/>
 			<!--compilerarg value="-Xlint:deprecation"/-->
 			<!--compilerarg value="-Xlint:unchecked"/-->

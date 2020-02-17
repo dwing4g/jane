@@ -16,13 +16,13 @@ License:
  * GNU Lesser GPL
 
 平台:
- * Oracle/Open JDK 8+ (需要ant作为构建环境, 推荐最新版本)
+ * Oracle/Open JDK 11+ (需要ant作为构建环境, 推荐最新版本)
  * Linux 2.6+(64-bit)/Windows 7+(64-bit)/Mac OS X 10.9+ (开发和运行环境, 推荐4核4GB内存以上)
  * Eclipse 4.4+ (主要的Java开发环境, 推荐最新版本)
  * Visual Studio 2015+ (C#的开发环境, 推荐最新版本)
 
 语言:
- * Java 8+ (框架和逻辑编写的主语言)
+ * Java 11+ (框架和逻辑编写的主语言)
  * Lua 5.1 (Lua版本的bean和网络部分实现, 也用于代码生成等工具脚本)
  * C# 3.5+ (C#版本的bean和网络部分实现)
 
@@ -94,4 +94,4 @@ License:
  * 提供简单实用的压缩和加密算法
  * 提供简单高效的基于自动线程池的HTTP客户端异步请求
  * 透明的基于文件和内存的面向对象数据库的操作、缓存、事务型持久化、热备份和增量备份, 基于记录加锁，支持死锁超时打断
- * jane-core.jar仅有400KB, jane-native.jar仅有650KB
+ * jane-core.jar仅有400KB左右, jane-native.jar仅有680KB左右

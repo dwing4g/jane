@@ -23,12 +23,12 @@ import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.file.FileRegion;
 import org.apache.mina.core.future.DefaultIoFuture;
@@ -165,7 +165,7 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 			wakeup();
 	}
 
-	private final class Processor implements Runnable {
+	private final class Processor implements Runnable, Consumer<SelectionKey> {
 		@Override
 		public void run() {
 			processorThread = Thread.currentThread();
@@ -194,7 +194,7 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 					}
 
 					long t0 = System.currentTimeMillis();
-					int selected = selector.select();
+					int selected = selector.select(this);
 					long selectTime;
 					if (!wakeupCalled.getAndSet(false) && selected == 0 && (selectTime = System.currentTimeMillis() - t0) < 100) {
 						if ((nbTries = fixSelector(nbTries, selectTime)) < 0)
@@ -202,8 +202,6 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 					} else
 						nbTries = 10;
 
-					if (selected > 0)
-						process();
 					flushSessions();
 					removeSessions();
 				} catch (ClosedSelectorException cse) {
@@ -218,6 +216,16 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 					}
 				}
 			}
+		}
+
+		@Override
+		public void accept(SelectionKey key) {
+			NioSession session = (NioSession)key.attachment();
+			int ops = key.readyOps();
+			if ((ops & SelectionKey.OP_READ) != 0 && !session.isReadSuspended())
+				session.read();
+			if ((ops & SelectionKey.OP_WRITE) != 0 && !session.isWriteSuspended())
+				scheduleFlush(session);
 		}
 
 		private void createSessions() {
@@ -238,20 +246,6 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 						session.setScheduledForRemove();
 					}
 				}
-			}
-		}
-
-		private void process() {
-			for (Iterator<SelectionKey> it = selector.selectedKeys().iterator(); it.hasNext();) {
-				SelectionKey key = it.next();
-				it.remove();
-
-				NioSession session = (NioSession)key.attachment();
-				int ops = key.readyOps();
-				if ((ops & SelectionKey.OP_READ) != 0 && !session.isReadSuspended())
-					session.read();
-				if ((ops & SelectionKey.OP_WRITE) != 0 && !session.isWriteSuspended())
-					scheduleFlush(session);
 			}
 		}
 
@@ -301,8 +295,7 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 
 			// Set limitation for the number of written bytes for read-write fairness.
 			// I used maxReadBufferSize * 3 / 2, which yields best performance in my experience while not breaking fairness much.
-			final int maxWrittenBytes = session.getConfig().getMaxReadBufferSize() + (session.getConfig().getMaxReadBufferSize() >>> 1);
-			int writtenBytes = 0;
+			int maxWrittenBytes, writtenBytes = 0;
 			WriteRequest req = null;
 
 			try {
@@ -341,7 +334,9 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 								return;
 							}
 						}
+						maxWrittenBytes = session.getConfig().getMaxReadBufferSize() + (session.getConfig().getMaxReadBufferSize() >>> 1);
 					} else if (message instanceof FileRegion) {
+						maxWrittenBytes = session.getConfig().getMaxReadBufferSize() + (session.getConfig().getMaxReadBufferSize() >>> 1);
 						FileRegion region = (FileRegion)message;
 						int length = (int)Math.min(region.getRemainingBytes(), (long)maxWrittenBytes - writtenBytes);
 						if (length > 0) {

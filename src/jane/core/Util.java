@@ -32,6 +32,7 @@ import jane.core.map.LongMap;
  */
 public final class Util
 {
+	@SuppressWarnings("deprecation")
 	public static <T> T newInstance(Class<T> cls)
 	{
 		try

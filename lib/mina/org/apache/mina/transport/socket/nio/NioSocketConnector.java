@@ -24,11 +24,11 @@ import java.net.InetSocketAddress;
 import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.apache.mina.core.filterchain.IoFilter;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.future.DefaultConnectFuture;
@@ -161,7 +161,7 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 		return "(nio socket connector: managedSessionCount: " + getManagedSessionCount() + ')';
 	}
 
-	private final class Connector implements Runnable {
+	private final class Connector implements Runnable, Consumer<SelectionKey> {
 		@Override
 		public void run() {
 			for (;;) {
@@ -173,8 +173,7 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 					}
 
 					// the timeout for select shall be smaller of the connect timeout or 1 second...
-					if (selector.select(Math.min(getConnectTimeoutMillis(), 1000)) > 0)
-						processConnections();
+					selector.select(this, Math.min(getConnectTimeoutMillis(), 1000));
 					processTimedOutSessions();
 				} catch (ClosedSelectorException cse) {
 					ExceptionMonitor.getInstance().exceptionCaught(cse);
@@ -189,6 +188,22 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 						break;
 					}
 				}
+			}
+		}
+
+		@Override
+		public void accept(SelectionKey key) {
+			ConnectionRequest req = (ConnectionRequest)key.attachment();
+			try {
+				@SuppressWarnings("resource")
+				SocketChannel channel = (SocketChannel)key.channel();
+				if (channel.finishConnect()) {
+					key.cancel();
+					processor.add(new NioSession(NioSocketConnector.this, channel, req));
+				}
+			} catch (Exception e) {
+				close(key);
+				req.setException(e);
 			}
 		}
 
@@ -232,26 +247,6 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 						}
 					}
 					return false;
-				}
-			}
-		}
-
-		private void processConnections() {
-			for (Iterator<SelectionKey> it = selector.selectedKeys().iterator(); it.hasNext();) {
-				SelectionKey key = it.next();
-				it.remove();
-
-				ConnectionRequest req = (ConnectionRequest)key.attachment();
-				try {
-					@SuppressWarnings("resource")
-					SocketChannel channel = (SocketChannel)key.channel();
-					if (channel.finishConnect()) {
-						key.cancel();
-						processor.add(new NioSession(NioSocketConnector.this, channel, req));
-					}
-				} catch (Exception e) {
-					close(key);
-					req.setException(e);
 				}
 			}
 		}

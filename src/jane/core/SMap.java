@@ -316,7 +316,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		@Override
 		public SIterator<Entry<K, S>> iterator()
 		{
-			return new SIterator<Entry<K, S>>()
+			return new SIterator<>()
 			{
 				@Override
 				public SEntry next()
@@ -368,7 +368,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		@Override
 		public SIterator<K> iterator()
 		{
-			return new SIterator<K>()
+			return new SIterator<>()
 			{
 				@Override
 				public K next()
@@ -412,7 +412,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		@Override
 		public SIterator<S> iterator()
 		{
-			return new SIterator<S>()
+			return new SIterator<>()
 			{
 				@Override
 				public S next()
