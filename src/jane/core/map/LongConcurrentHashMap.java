@@ -183,7 +183,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	 */
 	private static int spread(long key)
 	{
-		int h = (int)key; // for faster inner using (key is multiple of prime number)
+		int h = (int)key; //NOSONAR. for faster inner using (key is multiple of prime number)
 		return h; // (h ^ (h >>> 16)) & HASH_BITS;
 	}
 
@@ -1280,9 +1280,9 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 
 	private static final class KeyIterator<V> extends BaseIterator<V> implements LongIterator
 	{
-		private KeyIterator(Node<V>[] tab, int index, int size)
+		private KeyIterator(Node<V>[] tab, int size, int index)
 		{
-			super(tab, index, size);
+			super(tab, size, index);
 		}
 
 		@Override
@@ -1299,9 +1299,9 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 
 	private static final class ValueIterator<V> extends BaseIterator<V> implements Iterator<V>
 	{
-		private ValueIterator(Node<V>[] tab, int index, int size)
+		private ValueIterator(Node<V>[] tab, int size, int index)
 		{
-			super(tab, index, size);
+			super(tab, size, index);
 		}
 
 		@Override
@@ -1320,9 +1320,9 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	{
 		private Node<V> node;
 
-		EntryIterator(Node<V>[] tab, int index, int size)
+		EntryIterator(Node<V>[] tab, int size, int index)
 		{
-			super(tab, index, size);
+			super(tab, size, index);
 		}
 
 		@Override
@@ -1374,7 +1374,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		}
 		try
 		{
-			return AccessController.doPrivileged((PrivilegedExceptionAction<sun.misc.Unsafe>)() ->
+			return AccessController.doPrivileged((PrivilegedExceptionAction<sun.misc.Unsafe>)() -> //NOSONAR
 			{
 				Class<sun.misc.Unsafe> k = sun.misc.Unsafe.class;
 				for (Field f : k.getDeclaredFields())
