@@ -3,6 +3,7 @@ package jane.core;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -112,9 +113,9 @@ public final class StorageLevelDB implements Storage
 		File file = new File(Const.levelDBNativePath, nativeLibName);
 		if (!file.exists())
 		{
-			try
+			try (InputStream is = Util.createStreamInJar(StorageLevelDB.class, nativeLibName))
 			{
-				Octets data = Util.readStream(Util.createStreamInJar(StorageLevelDB.class, nativeLibName));
+				Octets data = Util.readStream(is);
 				if (data != null)
 				{
 					CRC32 crc32 = new CRC32();

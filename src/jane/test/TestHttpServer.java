@@ -42,7 +42,6 @@ public final class TestHttpServer extends NetManager
 		System.out.println("onDelSession");
 	}
 
-	@SuppressWarnings("resource")
 	@Override
 	public void messageReceived(IoSession session, Object message)
 	{

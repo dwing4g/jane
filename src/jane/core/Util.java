@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -301,9 +302,9 @@ public final class Util
 
 	public static long copyFile(File srcFile, File dstFile) throws IOException
 	{
-		try (FileInputStream fis = new FileInputStream(srcFile))
+		try (FileInputStream fis = new FileInputStream(srcFile); FileChannel fc = fis.getChannel())
 		{
-			return copyFile(fis.getChannel(), dstFile);
+			return copyFile(fc, dstFile);
 		}
 	}
 

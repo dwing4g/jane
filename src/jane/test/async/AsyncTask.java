@@ -32,7 +32,6 @@ public interface AsyncTask extends Runnable
 		{
 			try
 			{
-				@SuppressWarnings("resource")
 				AsynchronousFileChannel afc = AsynchronousFileChannel.open(Paths.get(path), StandardOpenOption.READ);
 				final ByteBuffer bb = ByteBuffer.wrap(new byte[len]);
 				afc.read(bb, len, afc, new CompletionHandler<Integer, AsynchronousFileChannel>()
@@ -83,7 +82,6 @@ public interface AsyncTask extends Runnable
 	{
 		try
 		{
-			@SuppressWarnings("resource")
 			AsynchronousFileChannel afc = AsynchronousFileChannel.open(Paths.get(path), StandardOpenOption.WRITE, StandardOpenOption.CREATE);
 			afc.write(ByteBuffer.wrap(data), 0, afc, new CompletionHandler<Integer, AsynchronousFileChannel>()
 			{

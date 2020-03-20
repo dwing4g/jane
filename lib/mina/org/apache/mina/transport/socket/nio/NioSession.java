@@ -126,7 +126,6 @@ public final class NioSession implements IoSession {
 		return (InetSocketAddress)getSocket().getLocalSocketAddress();
 	}
 
-	@SuppressWarnings("resource")
 	@Override
 	public InetSocketAddress getRemoteAddress() {
 		Socket socket = getSocket();

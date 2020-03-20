@@ -97,7 +97,6 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 		return connect(remoteAddress, null);
 	}
 
-	@SuppressWarnings("resource")
 	@Override
 	public ConnectFuture connect(InetSocketAddress remoteAddress, InetSocketAddress localAddress) {
 		if (isDisposing())
@@ -195,7 +194,6 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 		public void accept(SelectionKey key) {
 			ConnectionRequest req = (ConnectionRequest)key.attachment();
 			try {
-				@SuppressWarnings("resource")
 				SocketChannel channel = (SocketChannel)key.channel();
 				if (channel.finishConnect()) {
 					key.cancel();

@@ -104,7 +104,6 @@ public class TcpManager implements Closeable
 		stopServer();
 	}
 
-	@SuppressWarnings("resource")
 	public void startClient(SocketAddress addr, Object attachment, AsynchronousChannelGroup group)
 	{
 		AsynchronousSocketChannel channel = null;
@@ -295,7 +294,6 @@ public class TcpManager implements Closeable
 
 	private final class AcceptHandler implements CompletionHandler<AsynchronousSocketChannel, Object>
 	{
-		@SuppressWarnings("resource")
 		@Override
 		public void completed(AsynchronousSocketChannel channel, Object attachment)
 		{
@@ -345,7 +343,6 @@ public class TcpManager implements Closeable
 
 	private final class ConnectHandler implements CompletionHandler<Void, ConnectParam>
 	{
-		@SuppressWarnings("resource")
 		@Override
 		public void completed(Void result, ConnectParam param)
 		{

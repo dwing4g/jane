@@ -3,6 +3,7 @@ package jane.tool;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.instrument.ClassDefinition;
 import java.lang.instrument.Instrumentation;
 import java.util.ArrayList;
@@ -114,7 +115,10 @@ public final class ClassReloader
 			if (len > 0)
 			{
 				byte[] classData = new byte[len];
-				Util.readStream(zipFile.getInputStream(ze), ze.getName(), classData, len);
+				try (InputStream is = zipFile.getInputStream(ze))
+				{
+					Util.readStream(is, ze.getName(), classData, len);
+				}
 				classDatas.add(classData);
 			}
 		}

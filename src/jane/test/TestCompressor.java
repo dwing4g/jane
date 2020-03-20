@@ -1,6 +1,7 @@
 package jane.test;
 
 import java.io.FileInputStream;
+import java.nio.channels.FileChannel;
 import java.security.MessageDigest;
 import java.util.Arrays;
 
@@ -225,10 +226,10 @@ public final class TestCompressor
 	{
 		long srcpos, srclen;
 		byte[] src;
-		try (FileInputStream fis = new FileInputStream(args[0]))
+		try (FileInputStream fis = new FileInputStream(args[0]); FileChannel fc = fis.getChannel())
 		{
 			srcpos = (args.length > 1 ? Long.parseLong(args[1]) : 0);
-			srclen = (args.length > 2 ? Long.parseLong(args[2]) : fis.getChannel().size());
+			srclen = (args.length > 2 ? Long.parseLong(args[2]) : fc.size());
 			src = new byte[(int)srclen];
 			if (fis.skip(srcpos) != srcpos)
 			{

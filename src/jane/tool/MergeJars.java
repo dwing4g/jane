@@ -3,6 +3,7 @@ package jane.tool;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -55,7 +56,10 @@ public final class MergeJars
 							continue;
 						if (len > buf.length)
 							buf = new byte[len];
-						Util.readStream(zipFile.getInputStream(ze), ze.getName(), buf, len);
+						try (InputStream is = zipFile.getInputStream(ze))
+						{
+							Util.readStream(is, ze.getName(), buf, len);
+						}
 						zos.putNextEntry(new ZipEntry(ze.getName()));
 						zos.write(buf, 0, len);
 						zos.closeEntry();

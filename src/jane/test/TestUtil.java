@@ -2,7 +2,6 @@ package jane.test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
@@ -330,7 +329,6 @@ public final class TestUtil
 		}
 
 		HttpURLConnection conn = null;
-		InputStream is = null;
 		byte[] body = (post != null ? post.getBytes(StandardCharsets.UTF_8) : null);
 		try //NOSONAR
 		{
@@ -365,30 +363,22 @@ public final class TestUtil
 				}
 			}
 
-			is = conn.getInputStream();
-			byte[] buf = new byte[HTTP_RES_BUFFER_SIZE];
-			ByteArrayOutputStream bs = new ByteArrayOutputStream(HTTP_RES_BUFFER_SIZE);
-			for (;;)
+			try (InputStream is = conn.getInputStream())
 			{
-				int n = is.read(buf);
-				if (n < 0)
-					break;
-				bs.write(buf, 0, n);
+				byte[] buf = new byte[HTTP_RES_BUFFER_SIZE];
+				ByteArrayOutputStream bs = new ByteArrayOutputStream(HTTP_RES_BUFFER_SIZE);
+				for (;;)
+				{
+					int n = is.read(buf);
+					if (n < 0)
+						break;
+					bs.write(buf, 0, n);
+				}
+				return bs.toString(encoding);
 			}
-			return bs.toString(encoding);
 		}
 		finally
 		{
-			if (is != null)
-			{
-				try
-				{
-					is.close();
-				}
-				catch (IOException e)
-				{
-				}
-			}
 			if (conn != null)
 				conn.disconnect();
 		}

@@ -258,7 +258,6 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 		@Override
 		public void accept(SelectionKey key) {
 			try {
-				@SuppressWarnings("resource")
 				SocketChannel newChannel = ((ServerSocketChannel)key.channel()).accept();
 				if (newChannel != null)
 					processor.add(new NioSession(NioSocketAcceptor.this, newChannel, null));
@@ -319,7 +318,6 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 						for (Object obj : selector.keys().toArray()) {
 							try {
 								SelectionKey key = (SelectionKey)obj;
-								@SuppressWarnings("resource")
 								ServerSocketChannel channel = (ServerSocketChannel)key.channel();
 								if (localAddresses == null || localAddresses.contains(channel.getLocalAddress())) {
 									key.cancel();

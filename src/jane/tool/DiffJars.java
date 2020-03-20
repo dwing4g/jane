@@ -3,6 +3,7 @@ package jane.tool;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.security.MessageDigest;
@@ -75,7 +76,10 @@ public final class DiffJars
 				continue;
 			if (len > buf.length)
 				buf = new byte[len];
-			Util.readStream(jar1.getInputStream(ze), ze.getName(), buf, len);
+			try (InputStream is = jar1.getInputStream(ze))
+			{
+				Util.readStream(is, ze.getName(), buf, len);
+			}
 			jar1Md5s.put(ze.getName(), getMd5(buf, 0, len));
 		}
 
@@ -94,7 +98,10 @@ public final class DiffJars
 				if (len > buf.length)
 					buf = new byte[len];
 				String name = ze.getName();
-				Util.readStream(jar2.getInputStream(ze), name, buf, len);
+				try (InputStream is = jar2.getInputStream(ze))
+				{
+					Util.readStream(is, name, buf, len);
+				}
 				if (Arrays.equals(getMd5(buf, 0, len), jar1Md5s.get(name)))
 					continue;
 				if (osLog != null)
