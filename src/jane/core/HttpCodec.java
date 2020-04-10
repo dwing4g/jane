@@ -286,7 +286,7 @@ public final class HttpCodec implements IoFilter
 	public static long getHeadLong(OctetsStream head, SundaySearch ss)
 	{
 		int p = ss.find(head.array(), 15, head.position() - 19);
-		return p >= 0 ? getHeadLongValue(head, p + ss.getPatLen()) : -1;
+		return p >= 0 ? getHeadLongValue(head, p + ss.getPatLen()) : 0;
 	}
 
 	public static long getHeadLong(OctetsStream head, String key)
