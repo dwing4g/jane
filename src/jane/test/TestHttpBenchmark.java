@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import org.apache.mina.core.session.IoSession;
 import jane.core.HttpCodec;
+import jane.core.Log;
 import jane.core.NetManager;
 import jane.core.Octets;
 
@@ -27,6 +28,12 @@ public final class TestHttpBenchmark extends NetManager
 	}
 
 	@Override
+	protected void onAddSession(IoSession session)
+	{
+		session.getConfig().setTcpNoDelay(true);
+	}
+
+	@Override
 	public void messageReceived(IoSession session, Object message)
 	{
 		HttpCodec.sendHead(session, "200 OK", 0, extraHead, body);
@@ -34,6 +41,9 @@ public final class TestHttpBenchmark extends NetManager
 
 	public static void main(String[] args) throws Exception
 	{
-		new TestHttpBenchmark().startServer(new InetSocketAddress("0.0.0.0", 80));
+		Log.removeAppender("ASYNC_FILE");
+		Log.removeAppender("ASYNC_STDOUT");
+		setSharedIoThreadCount(args.length > 0 ? Integer.parseInt(args[0]) : Runtime.getRuntime().availableProcessors());
+		new TestHttpBenchmark().startServer(new InetSocketAddress("0.0.0.0", args.length > 1 ? Integer.parseInt(args[1]) : 80));
 	}
 }
