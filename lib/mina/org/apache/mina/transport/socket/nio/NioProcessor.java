@@ -64,7 +64,7 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 		selector = Selector.open();
 	}
 
-	private void wakeup() {
+	public void wakeup() {
 		wakeupCalled.set(true);
 		selector.wakeup();
 	}
@@ -93,9 +93,7 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 	@Override
 	public void write(NioSession session, WriteRequest writeRequest) {
 		session.getWriteRequestQueue().offer(writeRequest);
-
-		if (!session.isWriteSuspended())
-			flush(session);
+		flush(session);
 	}
 
 	public boolean isInProcessorThread() {
@@ -115,24 +113,6 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 		if (session.setScheduledForFlush()) {
 			flushingSessions.add(session);
 			wakeup();
-		}
-	}
-
-	@Override
-	public void updateTrafficControl(NioSession session) {
-		try {
-			session.setInterestedInRead(!session.isReadSuspended());
-		} catch (Exception e) {
-			session.getFilterChain().fireExceptionCaught(e);
-		}
-
-		try {
-			boolean isInterested = (!session.getWriteRequestQueue().isEmpty() && !session.isWriteSuspended());
-			session.setInterestedInWrite(isInterested);
-			if (isInterested)
-				flush(session);
-		} catch (Exception e) {
-			session.getFilterChain().fireExceptionCaught(e);
 		}
 	}
 
@@ -222,9 +202,9 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 		public void accept(SelectionKey key) {
 			NioSession session = (NioSession)key.attachment();
 			int ops = key.readyOps();
-			if ((ops & SelectionKey.OP_READ) != 0 && !session.isReadSuspended())
+			if ((ops & SelectionKey.OP_READ) != 0)
 				session.read();
-			if ((ops & SelectionKey.OP_WRITE) != 0 && !session.isWriteSuspended())
+			if ((ops & SelectionKey.OP_WRITE) != 0)
 				scheduleFlush(session);
 		}
 
@@ -293,32 +273,26 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 				return;
 			}
 
-			// Set limitation for the number of written bytes for read-write fairness.
-			// I used maxReadBufferSize * 3 / 2, which yields best performance in my experience while not breaking fairness much.
-			int maxWrittenBytes, writtenBytes = 0;
 			WriteRequest req = null;
 
 			try {
 				for(;;) {
-					req = session.getCurrentWriteRequest(); // Check for pending writes.
+					req = session.getCurrentWriteRequest(); // check for pending writes
 					if (req == null) {
 						req = session.pollWriteRequest();
 						if (req == null) {
 							session.setInterestedInWrite(false);
 							return;
 						}
-
 						session.setCurrentWriteRequest(req);
 					}
 
-					int localWrittenBytes = 0;
 					Object message = req.writeRequestMessage();
-
 					if (message instanceof IoBuffer) {
 						IoBuffer buf = (IoBuffer)message;
 						if (buf.hasRemaining()) {
 							try {
-								localWrittenBytes = session.getChannel().write(buf.buf());
+								session.getChannel().write(buf.buf());
 							} catch (IOException ioe) {
 								session.setCurrentWriteRequest(null);
 								req.writeRequestFuture().setException(ioe);
@@ -334,15 +308,14 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 								return;
 							}
 						}
-						maxWrittenBytes = session.getConfig().getMaxReadBufferSize() + (session.getConfig().getMaxReadBufferSize() >>> 1);
+						session.setCurrentWriteRequest(null);
+						session.getFilterChain().fireMessageSent(req);
+						buf.free();
 					} else if (message instanceof FileRegion) {
-						maxWrittenBytes = session.getConfig().getMaxReadBufferSize() + (session.getConfig().getMaxReadBufferSize() >>> 1);
 						FileRegion region = (FileRegion)message;
-						int length = (int)Math.min(region.getRemainingBytes(), (long)maxWrittenBytes - writtenBytes);
-						if (length > 0) {
-							localWrittenBytes = session.transferFile(region, length);
-							region.update(localWrittenBytes);
-						}
+						int length = (int)Math.min(region.getRemainingBytes(), Integer.MAX_VALUE);
+						if (length > 0)
+							region.update(session.transferFile(region, length));
 
 						// Fix for Java bug on Linux
 						// http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=5103988
@@ -352,21 +325,10 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 							session.setInterestedInWrite(true);
 							return;
 						}
+						session.setCurrentWriteRequest(null);
+						session.getFilterChain().fireMessageSent(req);
 					} else
 						throw new IllegalStateException("unknown message type for writting: " + message.getClass().getName() + ": " + message);
-
-					session.setCurrentWriteRequest(null);
-					session.getFilterChain().fireMessageSent(req);
-
-					if (message instanceof IoBuffer)
-						((IoBuffer)message).free();
-
-					writtenBytes += localWrittenBytes;
-					if (writtenBytes >= maxWrittenBytes) { // Wrote too much
-						scheduleFlush(session);
-						session.setInterestedInWrite(false);
-						return;
-					}
 				}
 			} catch (Exception e) {
 				try {

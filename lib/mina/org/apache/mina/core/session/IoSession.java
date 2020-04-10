@@ -83,31 +83,14 @@ public interface IoSession {
 	boolean isReadSuspended();
 
 	/**
-	 * Is write operation is suspended for this session.
-	 *
-	 * @return <tt>true</tt> if suspended
-	 */
-	boolean isWriteSuspended();
-
-	/**
 	 * Suspends read operations for this session.
 	 */
 	void suspendRead();
 
 	/**
-	 * Suspends write operations for this session.
-	 */
-	void suspendWrite();
-
-	/**
 	 * Resumes read operations for this session.
 	 */
 	void resumeRead();
-
-	/**
-	 * Resumes write operations for this session.
-	 */
-	void resumeWrite();
 
 	/**
 	 * @return <tt>true</tt> if this session is active.

@@ -86,7 +86,7 @@ public final class TestHttpServer extends NetManager
 					}
 					catch (IOException ex)
 					{
-						ex.printStackTrace();
+						ex.printStackTrace(); //NOSONAR
 					}
 				});
 			}

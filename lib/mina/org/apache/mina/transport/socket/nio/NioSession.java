@@ -95,7 +95,6 @@ public final class NioSession implements IoSession {
 	private boolean deferDecreaseReadBuffer = true;
 
 	private boolean readSuspended;
-	private boolean writeSuspended;
 
 	NioSession(AbstractIoService service, SocketChannel channel, ConnectFuture future) {
 		this.service = service;
@@ -142,36 +141,13 @@ public final class NioSession implements IoSession {
 	}
 
 	@Override
-	public boolean isWriteSuspended() {
-		return writeSuspended;
-	}
-
-	@Override
 	public void suspendRead() {
-		readSuspended = true;
-		if (!isClosing())
-			getProcessor().updateTrafficControl(this);
-	}
-
-	@Override
-	public void suspendWrite() {
-		writeSuspended = true;
-		if (!isClosing())
-			getProcessor().updateTrafficControl(this);
+		setInterestedInRead(false);
 	}
 
 	@Override
 	public void resumeRead() {
-		readSuspended = false;
-		if (!isClosing())
-			getProcessor().updateTrafficControl(this);
-	}
-
-	@Override
-	public void resumeWrite() {
-		writeSuspended = false;
-		if (!isClosing())
-			getProcessor().updateTrafficControl(this);
+		setInterestedInRead(true);
 	}
 
 	@Override
@@ -331,13 +307,23 @@ public final class NioSession implements IoSession {
 	 * @throws Exception If there was a problem while registering the session
 	 */
 	void setInterestedInRead(boolean isInterested) {
+		if (isClosing())
+			return;
 		SelectionKey key = selKey;
 		if (key == null || !key.isValid())
 			return;
-		if (isInterested)
-			key.interestOpsOr(SelectionKey.OP_READ);
-		else
-			key.interestOpsAnd(~SelectionKey.OP_READ);
+		readSuspended = !isInterested;
+		try {
+			final boolean modified;
+			if (isInterested)
+				modified = (key.interestOpsOr(SelectionKey.OP_READ) & SelectionKey.OP_READ) == 0;
+			else
+				modified = (key.interestOpsAnd(~SelectionKey.OP_READ) & SelectionKey.OP_READ) != 0;
+			if (modified && !nioProcessor.isInProcessorThread())
+				nioProcessor.wakeup();
+		} catch (Exception e) {
+			filterChain.fireExceptionCaught(e);
+		}
 	}
 
 	/**

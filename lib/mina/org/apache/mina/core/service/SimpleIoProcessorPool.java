@@ -145,11 +145,6 @@ public final class SimpleIoProcessorPool implements IoProcessor<NioSession> {
 	}
 
 	@Override
-	public final void updateTrafficControl(NioSession session) {
-		getProcessor(session).updateTrafficControl(session);
-	}
-
-	@Override
 	public boolean isDisposed() {
 		return disposed;
 	}

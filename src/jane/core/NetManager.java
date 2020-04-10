@@ -292,9 +292,7 @@ public class NetManager implements IoHandler
 		if (acceptor != null && acceptor.getManagedSessions().containsKey(sid))
 			return true;
 		NioSocketConnector connector = _connector;
-		if (connector != null && connector.getManagedSessions().containsKey(sid))
-			return true;
-		return false;
+		return connector != null && connector.getManagedSessions().containsKey(sid);
 	}
 
 	/**

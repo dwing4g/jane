@@ -61,14 +61,6 @@ public interface IoProcessor<S extends IoSession> {
 	void flush(S session);
 
 	/**
-	 * Controls the traffic of the specified {@code session} depending of the
-	 * {@link IoSession#isReadSuspended()} and {@link IoSession#isWriteSuspended()} flags
-	 *
-	 * @param session The session to be updated
-	 */
-	void updateTrafficControl(S session);
-
-	/**
 	 * @return <tt>true</tt> if and if only {@link #dispose()} method has been called.
 	 * Please note that this method will return <tt>true</tt> even after all the related resources are released.
 	 */
