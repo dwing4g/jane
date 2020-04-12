@@ -286,7 +286,7 @@ public final class HttpCodec implements IoFilter
 	public static long getHeadLong(OctetsStream head, SundaySearch ss)
 	{
 		int p = ss.find(head.array(), 15, head.position() - 19);
-		return p >= 0 ? getHeadLongValue(head, p + ss.getPatLen()) : 0;
+		return p >= 0 ? getHeadLongValue(head, p + ss.getPatLen()) : -1;
 	}
 
 	public static long getHeadLong(OctetsStream head, String key)
@@ -577,7 +577,7 @@ public final class HttpCodec implements IoFilter
 								final long n2 = getHeadLong(buf, SS_CONT_LEN);
 								if (n2 > _maxHttpBodySize)
 									throw new DecodeException("http body size overflow: bodysize=" + n2 + ",maxsize=" + _maxHttpBodySize);
-								final int left = i + (int)n2 - n;
+								final int left = i + (n2 > 0 ? (int)n2 : 0) - n;
 								if (left <= 0)
 								{
 									if (left < 0) // unlikely over read
