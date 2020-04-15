@@ -113,7 +113,7 @@ public class BeanCodec implements IoFilter
 			int maxSize = getBeanMaxSize(_ptype);
 			if (maxSize < 0)
 				maxSize = Const.beanDefaultMaxSize;
-			if (_psize > maxSize)
+			if (_psize < 0 | _psize > maxSize) //NOSONAR
 				throw new DecodeException("bean maxSize overflow: type=" + _ptype + ",serial=" + _pserial + ",size=" + _psize + ",maxSize=" + maxSize);
 		}
 		if (_psize > os.remain())
