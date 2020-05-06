@@ -625,24 +625,22 @@ public class OctetsStream extends Octets //NOSONAR
 
 	public int unmarshalUTF8() throws MarshalException
 	{
-		int b1 = unmarshalByte();
-		if (b1 >= 0)
-			return b1;
-		int b2 = unmarshalByte() & 0x3f;
-		if (b1 < -0x20)
-			return ((b1 & 0x1f) << 6) + b2;
-		int b3 = unmarshalByte() & 0x3f;
-		if (b1 < -0x10)
-			return ((b1 & 0xf) << 12) + (b2 << 6) + b3;
-		int b4 = unmarshalByte() & 0x3f;
-		if (b1 < -8)
-			return ((b1 & 7) << 18) + (b2 << 12) + (b3 << 6) + b4;
-		int b5 = unmarshalByte() & 0x3f;
-		if (b1 < -4)
-			return ((b1 & 3) << 24) + (b2 << 18) + (b3 << 12) + (b4 << 6) + b5;
-		int b6 = unmarshalByte() & 0x3f;
-		// if (b1 < -2)
-		return ((b1 & 1) << 30) + (b2 << 24) + (b3 << 18) + (b4 << 12) + (b5 << 6) + b6;
+		int c = unmarshalByte();
+		if (c >= 0)
+			return c;
+		c = (c << 6) + (unmarshalByte() & 0x3f);
+		if (c < -0x800)
+			return c & 0x7ff;
+		c = (c << 6) + (unmarshalByte() & 0x3f);
+		if (c < -0x1_0000)
+			return c & 0xffff;
+		c = (c << 6) + (unmarshalByte() & 0x3f);
+		if (c < -0x20_0000)
+			return c & 0x1f_ffff;
+		c = (c << 6) + (unmarshalByte() & 0x3f);
+		if (c < -0x400_0000)
+			return c & 0x3ff_ffff;
+		return (c << 6) + (unmarshalByte() & 0x3f);
 	}
 
 	public int unmarshalInt(int type) throws MarshalException
