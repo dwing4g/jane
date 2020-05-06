@@ -12,7 +12,7 @@ import jane.core.MarshalException.EOF;
  * 包括各种所需的序列化/反序列化
  * @formatter:off
  */
-public class OctetsStream extends Octets
+public class OctetsStream extends Octets //NOSONAR
 {
 	protected int _pos; // 当前的读位置(写是在_count位置之后追加)
 
@@ -623,15 +623,26 @@ public class OctetsStream extends Octets
 		}
 	}
 
-	public char unmarshalUTF8() throws MarshalException
+	public int unmarshalUTF8() throws MarshalException
 	{
-		int b = unmarshalByte();
-		if (b >= 0)
-			return (char)b;
-		if (b < -0x20)
-			return (char)(((b & 0x1f) << 6) + (unmarshalByte() & 0x3f));
-		int c = unmarshalByte();
-		return (char)(((b & 0xf) << 12) + ((c & 0x3f) << 6) + (unmarshalByte() & 0x3f));
+		int b1 = unmarshalByte();
+		if (b1 >= 0)
+			return b1;
+		int b2 = unmarshalByte() & 0x3f;
+		if (b1 < -0x20)
+			return ((b1 & 0x1f) << 6) + b2;
+		int b3 = unmarshalByte() & 0x3f;
+		if (b1 < -0x10)
+			return ((b1 & 0xf) << 12) + (b2 << 6) + b3;
+		int b4 = unmarshalByte() & 0x3f;
+		if (b1 < -8)
+			return ((b1 & 7) << 18) + (b2 << 12) + (b3 << 6) + b4;
+		int b5 = unmarshalByte() & 0x3f;
+		if (b1 < -4)
+			return ((b1 & 3) << 24) + (b2 << 18) + (b3 << 12) + (b4 << 6) + b5;
+		int b6 = unmarshalByte() & 0x3f;
+		// if (b1 < -2)
+		return ((b1 & 1) << 30) + (b2 << 24) + (b3 << 18) + (b4 << 12) + (b5 << 6) + b6;
 	}
 
 	public int unmarshalInt(int type) throws MarshalException
@@ -865,7 +876,7 @@ public class OctetsStream extends Octets
 		char[] tmp = new char[size];
 		int n = 0;
 		while (_pos < posNew)
-			tmp[n++] = unmarshalUTF8();
+			tmp[n++] = (char)unmarshalUTF8();
 		_pos = posNew;
 		return new String(tmp, 0, n);
 	}

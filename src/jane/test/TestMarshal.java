@@ -53,9 +53,9 @@ public final class TestMarshal
 	{
 		OctetsStream os = new OctetsStream();
 		os.marshalUTF8(x);
-		char y = os.unmarshalUTF8();
+		int y = os.unmarshalUTF8();
 		if (x != y)
-			throw new Error("unmarshal wrong value: " + (int)x + " -> " + (int)y + " dump: " + os.dump());
+			throw new Error("unmarshal wrong value: " + (int)x + " -> " + y + " dump: " + os.dump());
 		if (os.position() != os.size())
 			throw new Error("unmarshal wrong position: " + (int)x);
 	}
