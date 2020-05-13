@@ -115,7 +115,7 @@ public final class HttpCodec implements IoFilter
 		TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 		tmf.init(ts);
 
-		SSLContext ctx = SSLContext.getInstance("TLS");
+		SSLContext ctx = SSLContext.getInstance("TLS"); // "TLSv1.2"
 		ctx.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
 		return new SslFilter(ctx);
 	}

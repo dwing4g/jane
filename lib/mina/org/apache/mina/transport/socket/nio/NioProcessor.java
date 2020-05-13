@@ -237,7 +237,8 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 		private void flushSessions() {
 			NioSession session;
 			while ((session = flushingSessions.poll()) != null) {
-				// Reset the Schedule for flush flag for this session, as we are flushing it now
+				// Reset the Schedule for flush flag for this session, as we are flushing it now.
+				// This allows another thread to enqueue data to be written without corrupting the selector interest state.
 				session.unscheduledForFlush();
 				if (session.isActive()) {
 					try {

@@ -85,7 +85,7 @@ public final class TestHttpClient
 	{
 		try
 		{
-			SSLContext sc = SSLContext.getInstance("TLS");
+			SSLContext sc = SSLContext.getInstance("TLS"); // "TLSv1.2"
 			sc.init(null, new TrustManager[] { new X509TrustManager() // 信任任何证书
 			{
 				@Override

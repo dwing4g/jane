@@ -44,6 +44,7 @@ import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.SimpleIoProcessorPool;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.AbstractSocketSessionConfig;
+import org.apache.mina.transport.socket.DefaultSocketSessionConfig;
 import org.apache.mina.util.ExceptionMonitor;
 
 /**
@@ -281,10 +282,16 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 			try {
 				channel.configureBlocking(false);
 				channel.setOption(StandardSocketOptions.SO_REUSEADDR, Boolean.valueOf(reuseAddress));
+				DefaultSocketSessionConfig config = getSessionConfig();
+				if (config.getSendBufferSize() >= 0)
+					channel.setOption(StandardSocketOptions.SO_SNDBUF, config.getSendBufferSize());
+				if (config.getReceiveBufferSize() >= 0)
+					channel.setOption(StandardSocketOptions.SO_RCVBUF, config.getReceiveBufferSize());
 				try {
 					channel.bind(localAddress, backlog);
 				} catch (IOException ioe) {
-					throw new IOException("error while binding on " + localAddress + "\noriginal message: " + ioe.getMessage(), ioe);
+					close(channel);
+					throw new IOException("error while binding on " + localAddress, ioe);
 				}
 				channel.register(selector, SelectionKey.OP_ACCEPT);
 				return channel;
