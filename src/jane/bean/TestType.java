@@ -60,7 +60,7 @@ public final class TestType extends Bean<TestType>
 	private /* 17*/ final TreeMap<TestBean, Boolean> v17; // 排序映射容器(TreeMap)
 	private /* 18*/ final LinkedHashMap<Octets, TestBean> v18; // 有序映射容器(LinkedHashMap)
 	private /* 19*/ final TestBean v19; // 嵌入其它bean
-	private /*  0*/ java.lang.String v20; // 非序列化字段
+	private /*  0*/ transient java.lang.String v20; // 非序列化字段
 
 	public TestType()
 	{

@@ -221,9 +221,8 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 					}
 				} else if (channel != null) {
 					SelectionKey key = channel.keyFor(selector);
-					if (key != null) {
+					if (key != null)
 						close(key);
-					}
 				} else {
 					try {
 						for (Object obj : selector.keys().toArray())
