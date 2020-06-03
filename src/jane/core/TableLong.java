@@ -47,7 +47,6 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 		_cacheMod = (stoTable != null ? new LongConcurrentHashMap<>() : null);
 		if (stoTable != null)
 			_idCounter.set(_stoTable.getIdCounter());
-		_tables.add(this);
 	}
 
 	/**

@@ -1,66 +1,15 @@
 package jane.core;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class TableBase<V extends Bean<V>>
 {
-	protected static final ArrayList<TableBase<?>> _tables		 = new ArrayList<>(16);	// 所有表的容器
-	protected final String						   _tableName;							// 表名
-	protected final int							   _tableId;							// 表ID
-	protected final int							   _lockId;								// 当前表的锁ID. 即锁名的hash值,一般和记录key的hash值计算得出记录的lockId
-	protected final V							   _deleted;							// 表示已删除的value. 同存根bean
-	protected final AtomicLong					   _readCount	 = new AtomicLong();	// 读操作次数统计
-	protected final AtomicLong					   _readStoCount = new AtomicLong();	// 读数据库存储的次数统计(即cache-miss的次数统计)
-
-	public static List<TableBase<?>> getTables()
-	{
-		return Collections.unmodifiableList(_tables);
-	}
-
-	/**
-	 * 尝试依次加锁并保存全部表已修改的记录
-	 * <p>
-	 * @param counts 长度必须>=3,用于保存3个统计值,分别是保存前所有修改的记录数,保存后的剩余记录数,保存的记录数
-	 */
-	static void trySaveModifiedAll(long[] counts)
-	{
-		for (int i = 0, n = _tables.size(); i < n; ++i)
-		{
-			TableBase<?> table = _tables.get(i);
-			try
-			{
-				table.trySaveModified(counts);
-			}
-			catch (Throwable e)
-			{
-				Log.error(e, "db-commit thread exception(trySaveModified:{}):", table.getTableName());
-			}
-		}
-	}
-
-	/**
-	 * 在所有事务暂停的情况下直接依次保存全部表已修改的记录
-	 */
-	static int saveModifiedAll()
-	{
-		int m = 0;
-		for (int i = 0, n = _tables.size(); i < n; ++i)
-		{
-			TableBase<?> table = _tables.get(i);
-			try
-			{
-				m += table.saveModified();
-			}
-			catch (Throwable e)
-			{
-				Log.error(e, "db-commit thread exception(saveModified:{}):", table.getTableName());
-			}
-		}
-		return m;
-	}
+	protected final String	   _tableName;						 // 表名
+	protected final int		   _tableId;						 // 表ID
+	protected final int		   _lockId;							 // 当前表的锁ID. 即锁名的hash值,一般和记录key的hash值计算得出记录的lockId
+	protected final V		   _deleted;						 // 表示已删除的value. 同存根bean
+	protected final AtomicLong _readCount	 = new AtomicLong(); // 读操作次数统计
+	protected final AtomicLong _readStoCount = new AtomicLong(); // 读数据库存储的次数统计(即cache-miss的次数统计)
 
 	protected TableBase(int tableId, String tableName, V stubV, int lockId)
 	{

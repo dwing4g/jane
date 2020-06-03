@@ -38,33 +38,36 @@ public class StatusServer extends NetManager
 		ArrayList<Object> list = new ArrayList<>();
 
 		long v1 = 0, v2 = 0, v3 = 0, v4 = 0, v5 = 0, v6 = 0;
-		for (TableBase<?> table : TableBase.getTables())
+		if (DBManager.hasCreated())
 		{
-			ArrayList<Object> strs = new ArrayList<>();
-			strs.add(table.getTableName());
-			int v = table.getCacheSize();
-			v1 += v;
-			strs.add(v);
-			v = table.getCacheModSize();
-			v2 += v;
-			strs.add(v);
-			long rc = table.getReadCount();
-			long rtc = table.getReadStoCount();
-			v3 += rc;
-			v4 += rtc;
-			strs.add(rc);
-			strs.add(rtc);
-			strs.add(rc > 0 && rtc > 0 ? String.format("%.2f%%", (double)(rc - rtc) * 100 / rc) : "-.--%");
-			v = table.getAverageValueSize();
-			if (v >= 0)
+			for (TableBase<?> table : DBManager.instance().getTables())
 			{
-				++v6;
-				v5 += v;
+				ArrayList<Object> strs = new ArrayList<>();
+				strs.add(table.getTableName());
+				int v = table.getCacheSize();
+				v1 += v;
 				strs.add(v);
+				v = table.getCacheModSize();
+				v2 += v;
+				strs.add(v);
+				long rc = table.getReadCount();
+				long rtc = table.getReadStoCount();
+				v3 += rc;
+				v4 += rtc;
+				strs.add(rc);
+				strs.add(rtc);
+				strs.add(rc > 0 && rtc > 0 ? String.format("%.2f%%", (double)(rc - rtc) * 100 / rc) : "-.--%");
+				v = table.getAverageValueSize();
+				if (v >= 0)
+				{
+					++v6;
+					v5 += v;
+					strs.add(v);
+				}
+				else
+					strs.add("-");
+				list.add(strs);
 			}
-			else
-				strs.add("-");
-			list.add(strs);
 		}
 		if (DBSimpleManager.hasCreated())
 		{

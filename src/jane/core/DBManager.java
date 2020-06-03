@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
@@ -30,6 +32,7 @@ public final class DBManager
 
 	private static volatile boolean _hasCreated; // 是否创建过此类的对象
 
+	private final ArrayList<TableBase<?>>					   _tables		 = new ArrayList<>(16);			// 所有表的容器
 	private final CommitThread								   _commitThread = new CommitThread();			// 处理数据提交的线程
 	private final ThreadPoolExecutor						   _procThreads;								// 事务线程池
 	private final ConcurrentMap<Object, ArrayDeque<Procedure>> _qmap		 = Util.newConcurrentHashMap();	// 当前sid队列的数量
@@ -128,13 +131,13 @@ public final class DBManager
 							Log.info("db-commit saving: {}...", modCount);
 							_counts[0] = _counts[1] = _counts[2] = 0;
 							storage.putBegin();
-							TableBase.trySaveModifiedAll(_counts);
+							trySaveModifiedAll(_counts);
 							// 2.如果前一轮遍历之后仍然有过多的修改记录,则再试一轮
 							if (_counts[1] >= Const.dbCommitResaveCount)
 							{
 								Log.info("db-commit saved: {}=>{}({}), try again...", _counts[0], _counts[1], _counts[2]);
 								_counts[0] = _counts[1] = 0;
-								TableBase.trySaveModifiedAll(_counts);
+								trySaveModifiedAll(_counts);
 							}
 							// 3.然后加全局事务锁,待其它事务都停止等待时,保存剩余已修改的记录. 只有此步骤不能和其它事务并发
 							if (_counts[2] != 0 || _counts[1] != 0 || _counts[0] != 0 || force)
@@ -148,7 +151,7 @@ public final class DBManager
 								{
 									_modCount.set(0);
 									Log.info("db-commit saving left...");
-									Log.info("db-commit saved: {}, flushing left...", TableBase.saveModifiedAll());
+									Log.info("db-commit saved: {}, flushing left...", saveModifiedAll());
 									storage.putFlush(true);
 								}
 								finally
@@ -252,13 +255,60 @@ public final class DBManager
 		return _exiting;
 	}
 
+	public List<TableBase<?>> getTables()
+	{
+		return Collections.unmodifiableList(_tables);
+	}
+
+	/**
+	 * 尝试依次加锁并保存全部表已修改的记录
+	 * <p>
+	 * @param counts 长度必须>=3,用于保存3个统计值,分别是保存前所有修改的记录数,保存后的剩余记录数,保存的记录数
+	 */
+	void trySaveModifiedAll(long[] counts)
+	{
+		for (int i = 0, n = _tables.size(); i < n; ++i)
+		{
+			TableBase<?> table = _tables.get(i);
+			try
+			{
+				table.trySaveModified(counts);
+			}
+			catch (Throwable e)
+			{
+				Log.error(e, "db-commit thread exception(trySaveModified:{}):", table.getTableName());
+			}
+		}
+	}
+
+	/**
+	 * 在所有事务暂停的情况下直接依次保存全部表已修改的记录
+	 */
+	int saveModifiedAll()
+	{
+		int m = 0;
+		for (int i = 0, n = _tables.size(); i < n; ++i)
+		{
+			TableBase<?> table = _tables.get(i);
+			try
+			{
+				m += table.saveModified();
+			}
+			catch (Throwable e)
+			{
+				Log.error(e, "db-commit thread exception(saveModified:{}):", table.getTableName());
+			}
+		}
+		return m;
+	}
+
 	/**
 	 * 启动数据库系统
 	 * <p>
 	 * 必须在openTable和操作数据库之前启动
 	 * @param sto 数据库存储引擎的实例. 如: StorageLevelDB.instance()
 	 * @param dbFilename 数据库的文件名(不含父路径,对LevelDB而言是目录名)
-	 * @param dbBackupPath 数据库的备份目录
+	 * @param dbBackupPath 数据库的备份目录(null表示不会触发备份操作)
 	 */
 	public synchronized void startup(Storage sto, String dbFilename, String dbBackupPath) throws IOException
 	{
@@ -323,7 +373,7 @@ public final class DBManager
 	/**
 	 * 获取或创建一个数据库表
 	 * <p>
-	 * 必须先启动数据库系统(startup)后再调用此方法
+	 * 非内存表必须先启动数据库系统(startup)后再调用此方法
 	 * @param tableName 表名. 如果<0则表示此表是内存表
 	 * @param lockName 此表关联的锁名
 	 * @param cacheSize 此表的读缓存记录数量上限. 如果是内存表则表示超过此上限则会自动丢弃
@@ -334,18 +384,25 @@ public final class DBManager
 	public synchronized <K, V extends Bean<V>, S extends Safe<V>> Table<K, V, S> openTable(int tableId, String tableName, String lockName, int cacheSize,
 			Object stubK, V stubV)
 	{
-		if (_storage == null)
-			throw new IllegalArgumentException("call DBManager.startup before open any table");
 		tableName = (tableName != null && !(tableName = tableName.trim()).isEmpty() ? tableName : '[' + String.valueOf(tableId) + ']');
-		Storage.Table<K, V> stoTable = (tableId >= 0 ? _storage.<K, V>openTable(tableId, tableName, stubK, stubV) : null);
-		return new Table<>(tableId, tableName, stoTable, lockName, cacheSize, stubV);
+		Storage.Table<K, V> stoTable = null;
+		if (tableId >= 0)
+		{
+			Storage sto = _storage;
+			if (sto == null)
+				throw new IllegalArgumentException("call DBManager.startup before open this table");
+			stoTable = sto.<K, V>openTable(tableId, tableName, stubK, stubV);
+		}
+		Table<K, V, S> table = new Table<>(tableId, tableName, stoTable, lockName, cacheSize, stubV);
+		_tables.add(table);
+		return table;
 	}
 
 	/**
 	 * 获取或创建一个以ID为key的数据库表
 	 * <p>
 	 * 此表的key只能是>=0的long值,一般用于id,比直接用Long类型作key效率高一些<br>
-	 * 必须先启动数据库系统(startup)后再调用此方法
+	 * 非内存表必须先启动数据库系统(startup)后再调用此方法
 	 * @param tableName 表名. 如果<0则表示此表是内存表
 	 * @param lockName 此表关联的锁名
 	 * @param cacheSize 此表的读缓存记录数量上限. 如果是内存表则表示超过此上限则会自动丢弃
@@ -354,11 +411,18 @@ public final class DBManager
 	 */
 	public synchronized <V extends Bean<V>, S extends Safe<V>> TableLong<V, S> openTable(int tableId, String tableName, String lockName, int cacheSize, V stubV)
 	{
-		if (_storage == null)
-			throw new IllegalArgumentException("call DBManager.startup before open any table");
 		tableName = (tableName != null && !(tableName = tableName.trim()).isEmpty() ? tableName : '[' + String.valueOf(tableId) + ']');
-		Storage.TableLong<V> stoTable = (tableId >= 0 ? _storage.openTable(tableId, tableName, stubV) : null);
-		return new TableLong<>(tableId, tableName, stoTable, lockName, cacheSize, stubV);
+		Storage.TableLong<V> stoTable = null;
+		if (tableId >= 0)
+		{
+			Storage sto = _storage;
+			if (sto == null)
+				throw new IllegalArgumentException("call DBManager.startup before open this table");
+			stoTable = sto.openTable(tableId, tableName, stubV);
+		}
+		TableLong<V, S> table = new TableLong<>(tableId, tableName, stoTable, lockName, cacheSize, stubV);
+		_tables.add(table);
+		return table;
 	}
 
 	/**

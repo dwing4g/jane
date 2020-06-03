@@ -35,7 +35,6 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 		_stoTable = stoTable;
 		_cache = Util.newConcurrentLRUMap(cacheSize, tableName);
 		_cacheMod = (stoTable != null ? Util.newConcurrentHashMap() : null);
-		_tables.add(this);
 	}
 
 	/**
