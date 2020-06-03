@@ -29,9 +29,9 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	 * @param cacheSize 此表的读缓存记录数量上限. 如果是内存表则表示超过此上限则会自动丢弃(<=0表示无上限)
 	 * @param stubV 记录value的存根对象,不要用于记录有用的数据. 这里只用于标记删除的字段,同存根bean
 	 */
-	Table(int tableId, String tableName, Storage.Table<K, V> stoTable, String lockName, int cacheSize, V stubV)
+	Table(DBManager dbm, int tableId, String tableName, Storage.Table<K, V> stoTable, String lockName, int cacheSize, V stubV)
 	{
-		super(tableId, tableName, stubV, (lockName != null && !(lockName = lockName.trim()).isEmpty() ? lockName.hashCode() : tableId) * 0x9e3779b1);
+		super(dbm, tableId, tableName, stubV, (lockName != null && !(lockName = lockName.trim()).isEmpty() ? lockName.hashCode() : tableId) * 0x9e3779b1);
 		_stoTable = stoTable;
 		_cache = Util.newConcurrentLRUMap(cacheSize, tableName);
 		_cacheMod = (stoTable != null ? Util.newConcurrentHashMap() : null);
@@ -377,7 +377,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 		{
 			V vOld = _cacheMod.put(k, v);
 			if (vOld == null)
-				DBManager.instance().incModCount();
+				_dbm.incModCount();
 			else if (vOld != v)
 			{
 				_cacheMod.put(k, vOld);
@@ -398,7 +398,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 		{
 			V vOld = _cacheMod.put(k, v);
 			if (vOld == null)
-				DBManager.instance().incModCount();
+				_dbm.incModCount();
 			else if (vOld != v)
 			{
 				// 可能之前已经覆盖或删除过记录,然后再modify的话,就忽略本次modify了,因为SContext.commit无法识别这种情况
@@ -434,7 +434,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 				_cache.put(k, new CacheRefK<>(_cache, k, v));
 				V vOld = _cacheMod.put(k, v);
 				if (vOld == null)
-					DBManager.instance().incModCount();
+					_dbm.incModCount();
 				v.setSaveState(2);
 			}
 			else
@@ -494,7 +494,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 		Procedure.incVersion(lockId(k));
 		_cache.remove(k);
 		if (_cacheMod != null && _cacheMod.put(k, _deleted) == null)
-			DBManager.instance().incModCount();
+			_dbm.incModCount();
 	}
 
 	/**

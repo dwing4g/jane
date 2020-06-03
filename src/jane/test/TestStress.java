@@ -256,7 +256,7 @@ public final class TestStress extends Procedure
 		}
 		finally
 		{
-			if (!redo && !DBManager.instance().isExiting())
+			if (!redo && !DBManager.isExiting())
 				DBManager.instance().submit(id, new TestStress(id)); // 也可以用this,但跟实际用途不太相符
 		}
 	}

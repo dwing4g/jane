@@ -795,7 +795,7 @@ public abstract class Procedure implements Runnable
 	 */
 	public boolean execute() throws Exception
 	{
-		if (DBManager.instance().isExiting())
+		if (DBManager.isExiting())
 		{
 			Log.info("procedure canceled: {}", toString());
 			return false;
@@ -838,7 +838,7 @@ public abstract class Procedure implements Runnable
 		{
 			try
 			{
-				if (e instanceof InterruptedException && DBManager.instance().isExiting())
+				if (e instanceof InterruptedException && DBManager.isExiting())
 					Log.info("procedure canceled: {}", toString());
 				else if (e != Undo._instance)
 					onException(e);

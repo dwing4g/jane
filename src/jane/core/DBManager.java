@@ -30,7 +30,8 @@ public final class DBManager
 		public static final DBManager instance = new DBManager();
 	}
 
-	private static volatile boolean _hasCreated; // 是否创建过此类的对象
+	private static volatile boolean	_hasCreated; // 是否创建过此类的对象
+	private static volatile boolean	_exiting;	 // 是否在退出状态(已经执行了ShutdownHook)
 
 	private final ArrayList<TableBase<?>>					   _tables		 = new ArrayList<>(16);			// 所有表的容器
 	private final CommitThread								   _commitThread = new CommitThread();			// 处理数据提交的线程
@@ -41,7 +42,6 @@ public final class DBManager
 	private String											   _dbFilename;									// 数据库的文件名(不含父路径,对LevelDB而言是目录名)
 	private String											   _dbBackupPath;								// 数据库的备份路径
 	private Storage											   _storage;									// 存储引擎
-	private volatile boolean								   _exiting;									// 是否在退出状态(已经执行了ShutdownHook)
 
 	/**
 	 * 周期向数据库存储提交事务性修改的线程(checkpoint)
@@ -218,6 +218,14 @@ public final class DBManager
 		return _hasCreated;
 	}
 
+	/**
+	 * 判断是否在退出前的shutdown状态下
+	 */
+	public static boolean isExiting()
+	{
+		return _exiting;
+	}
+
 	private DBManager()
 	{
 		_hasCreated = true;
@@ -245,14 +253,6 @@ public final class DBManager
 	void incModCount()
 	{
 		_modCount.getAndIncrement();
-	}
-
-	/**
-	 * 判断是否在退出前的shutdown状态下
-	 */
-	public boolean isExiting()
-	{
-		return _exiting;
 	}
 
 	public List<TableBase<?>> getTables()
@@ -393,7 +393,7 @@ public final class DBManager
 				throw new IllegalArgumentException("call DBManager.startup before open this table");
 			stoTable = sto.<K, V>openTable(tableId, tableName, stubK, stubV);
 		}
-		Table<K, V, S> table = new Table<>(tableId, tableName, stoTable, lockName, cacheSize, stubV);
+		Table<K, V, S> table = new Table<>(this, tableId, tableName, stoTable, lockName, cacheSize, stubV);
 		_tables.add(table);
 		return table;
 	}
@@ -420,7 +420,7 @@ public final class DBManager
 				throw new IllegalArgumentException("call DBManager.startup before open this table");
 			stoTable = sto.openTable(tableId, tableName, stubV);
 		}
-		TableLong<V, S> table = new TableLong<>(tableId, tableName, stoTable, lockName, cacheSize, stubV);
+		TableLong<V, S> table = new TableLong<>(this, tableId, tableName, stoTable, lockName, cacheSize, stubV);
 		_tables.add(table);
 		return table;
 	}

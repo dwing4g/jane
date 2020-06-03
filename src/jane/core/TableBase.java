@@ -4,6 +4,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class TableBase<V extends Bean<V>>
 {
+	protected final DBManager  _dbm;							 // 所属的DBManager实例
 	protected final String	   _tableName;						 // 表名
 	protected final int		   _tableId;						 // 表ID
 	protected final int		   _lockId;							 // 当前表的锁ID. 即锁名的hash值,一般和记录key的hash值计算得出记录的lockId
@@ -11,8 +12,9 @@ public abstract class TableBase<V extends Bean<V>>
 	protected final AtomicLong _readCount	 = new AtomicLong(); // 读操作次数统计
 	protected final AtomicLong _readStoCount = new AtomicLong(); // 读数据库存储的次数统计(即cache-miss的次数统计)
 
-	protected TableBase(int tableId, String tableName, V stubV, int lockId)
+	protected TableBase(DBManager dbm, int tableId, String tableName, V stubV, int lockId)
 	{
+		_dbm = dbm;
 		_tableName = tableName;
 		_tableId = tableId;
 		_lockId = lockId;
