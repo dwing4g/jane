@@ -49,6 +49,7 @@ public final class ExitManager
 			}
 			finally
 			{
+				Log.info("ExitManager: shutdown end");
 				Log.shutdown();
 			}
 		}, "ExitHookThread"));
