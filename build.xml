@@ -41,13 +41,13 @@
 			<src path="${src}/"/>
 			<src path="${lib}/mina/"/>
 		</javac>
-		<exec executable="git" output="${classes}/META-INF/version.txt">
+		<exec executable="git" output="${classes}/META-INF/jane-version.txt">
 			<arg value="log"/>
 			<arg value="-n"/>
 			<arg value="1"/>
 			<arg value="--date=iso"/>
 		</exec>
-		<exec executable="git" output="${classes}/META-INF/version.txt" append="true">
+		<exec executable="git" output="${classes}/META-INF/jane-version.txt" append="true">
 			<arg value="status"/>
 			<arg value="-s"/>
 		</exec>
@@ -74,7 +74,7 @@
 			</fileset>
 			<fileset dir="${lib}/mina/"/>
 			<fileset dir="${classes}/">
-				<include name="META-INF/version.txt"/>
+				<include name="META-INF/jane-version.txt"/>
 			</fileset>
 		</jar>
 		<jar jarfile="${root}/jane-native.jar" level="9">
@@ -87,7 +87,7 @@
 				<include name="*.dylib"/>
 			</fileset>
 			<fileset dir="${classes}/">
-				<include name="META-INF/version.txt"/>
+				<include name="META-INF/jane-version.txt"/>
 			</fileset>
 		</jar>
 		<jar jarfile="${root}/jane-test.jar" basedir="${classes}" includes="**/jane/bean/**,**/jane/handler/**,**/jane/test/**,META-INF/**" level="9">
