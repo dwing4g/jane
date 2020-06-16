@@ -27,7 +27,7 @@
 	</target>
 
 	<target name="compile">
-		<mkdir dir="${classes}"/>
+		<mkdir dir="${classes}/META-INF"/>
 		<path id="classpath">
 			<fileset dir="${lib}">
 				<include name="*.jar"/>
@@ -41,6 +41,16 @@
 			<src path="${src}/"/>
 			<src path="${lib}/mina/"/>
 		</javac>
+		<exec executable="git" output="${classes}/META-INF/version.txt">
+			<arg value="log"/>
+			<arg value="-n"/>
+			<arg value="1"/>
+			<arg value="--date=iso"/>
+		</exec>
+		<exec executable="git" output="${classes}/META-INF/version.txt" append="true">
+			<arg value="status"/>
+			<arg value="-s"/>
+		</exec>
 	</target>
 
 	<target name="jar" depends="clean, compile">
@@ -63,6 +73,9 @@
 				<exclude name="jane.properties"/>
 			</fileset>
 			<fileset dir="${lib}/mina/"/>
+			<fileset dir="${classes}/">
+				<include name="META-INF/version.txt"/>
+			</fileset>
 		</jar>
 		<jar jarfile="${root}/jane-native.jar" level="9">
 			<manifest>
@@ -73,8 +86,11 @@
 				<include name="*.so"/>
 				<include name="*.dylib"/>
 			</fileset>
+			<fileset dir="${classes}/">
+				<include name="META-INF/version.txt"/>
+			</fileset>
 		</jar>
-		<jar jarfile="${root}/jane-test.jar" basedir="${classes}" includes="**/jane/bean/**,**/jane/handler/**,**/jane/test/**" level="9">
+		<jar jarfile="${root}/jane-test.jar" basedir="${classes}" includes="**/jane/bean/**,**/jane/handler/**,**/jane/test/**,META-INF/**" level="9">
 			<manifest>
 				<attribute name="Created-Time" value="${time}"/>
 				<attribute name="Main-Class" value="jane.test.TestMain"/>
