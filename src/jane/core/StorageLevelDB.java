@@ -851,18 +851,7 @@ public final class StorageLevelDB implements Storage
 				keyOs.marshal1((byte)_tableId);
 			else
 				keyOs.marshalUInt(_tableId);
-			int cn = k.length();
-			if (bn == cn)
-			{
-				for (int i = 0; i < cn; ++i)
-					keyOs.marshal1((byte)k.charAt(i));
-			}
-			else
-			{
-				for (int i = 0; i < cn; ++i)
-					keyOs.marshalUTF8(k.charAt(i));
-			}
-			return keyOs;
+			return keyOs.append(k);
 		}
 
 		@Override
@@ -907,17 +896,7 @@ public final class StorageLevelDB implements Storage
 				os.marshal1((byte)_tableId);
 			else
 				os.marshalUInt(_tableId);
-			int cn = k.length();
-			if (bn == cn)
-			{
-				for (int i = 0; i < cn; ++i)
-					os.marshal1((byte)k.charAt(i));
-			}
-			else
-			{
-				for (int i = 0; i < cn; ++i)
-					os.marshalUTF8(k.charAt(i));
-			}
+			os.append(k);
 			int vpos = writeValue(v);
 			byte[] buf = os.array();
 			_writeMap.put(new Slice(buf, kpos, klen), new Slice(buf, vpos, os.size() - vpos));
@@ -936,17 +915,7 @@ public final class StorageLevelDB implements Storage
 				os.marshal1((byte)_tableId);
 			else
 				os.marshalUInt(_tableId);
-			int cn = k.length();
-			if (bn == cn)
-			{
-				for (int i = 0; i < cn; ++i)
-					os.marshal1((byte)k.charAt(i));
-			}
-			else
-			{
-				for (int i = 0; i < cn; ++i)
-					os.marshalUTF8(k.charAt(i));
-			}
+			os.append(k);
 			_writeMap.put(new Slice(os.array(), kpos, klen), _deletedSlice);
 		}
 	}

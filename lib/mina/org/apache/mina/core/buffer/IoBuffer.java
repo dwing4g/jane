@@ -19,8 +19,6 @@
 package org.apache.mina.core.buffer;
 
 import java.nio.ByteBuffer;
-import org.apache.mina.core.future.WriteFuture;
-import org.apache.mina.core.write.DefaultWriteRequest;
 import org.apache.mina.core.write.WriteRequest;
 
 /**
@@ -206,16 +204,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 */
 	public static IoBuffer wrap(byte[] byteArray, int offset, int length) {
 		return wrap(ByteBuffer.wrap(byteArray, offset, length));
-	}
-
-	@Override
-	public final Object writeRequestMessage() {
-		return this;
-	}
-
-	@Override
-	public final WriteFuture writeRequestFuture() {
-		return DefaultWriteRequest.UNUSED_FUTURE;
 	}
 
 	/**

@@ -401,13 +401,14 @@ public final class HttpCodec implements IoFilter
 	 * 创建额外发送的HTTP头的缓冲区
 	 * @param heads 每个元素表示一行文字(不含换行符),没有做验证,所以小心使用,可传null表示无任何额外的头信息
 	 */
-	public static Octets createExtraHead(Iterable<String> heads)
+	public static Octets createExtraHead(String... heads)
 	{
 		Octets buf = new Octets();
 		if (heads != null)
 		{
 			for (String head : heads)
-				buf.append((byte)'\r').append((byte)'\n').append(head.getBytes(StandardCharsets.UTF_8));
+				if (head != null && !head.isEmpty())
+					buf.append((byte)'\r').append((byte)'\n').append(head.getBytes(StandardCharsets.UTF_8));
 		}
 		return buf;
 	}
@@ -427,13 +428,21 @@ public final class HttpCodec implements IoFilter
 	{
 		if (session.isClosing())
 			return false;
+		byte[] dateLine = getDateLine();
+		int size = (code == null ? RES_HEAD_OK.length : 9 + Octets.marshalStrLen(code)) + dateLine.length +
+				RES_HEAD_CONT_LEN.length + 20 + RES_HEAD_END.length;
+		if (extraHead != null)
+			size += extraHead.size();
+		final int APPEND_DATA_MAX = 64;
 		int dataLen = (data != null ? data.remain() : 0);
-		Octets buf = new Octets(900 + dataLen);
+		if (dataLen <= APPEND_DATA_MAX)
+			size += dataLen;
+		Octets buf = new Octets(size);
 		if (code == null)
 			buf.append(RES_HEAD_OK);
 		else
-			buf.append(RES_HEAD_OK, 0, 9).append(code.getBytes(StandardCharsets.UTF_8));
-		buf.append(getDateLine());
+			buf.append(RES_HEAD_OK, 0, 9).append(code);
+		buf.append(dateLine);
 		if (len == 0)
 			len = dataLen;
 		if (len >= 0)
@@ -443,24 +452,24 @@ public final class HttpCodec implements IoFilter
 		if (extraHead != null)
 			buf.append(extraHead);
 		buf.append(RES_HEAD_END);
-		if (dataLen > 0)
+		if (dataLen > 0 && dataLen <= APPEND_DATA_MAX)
 			buf.append(data.array(), data.position(), dataLen);
-		return send(session, buf);
+		return send(session, buf) && (dataLen <= APPEND_DATA_MAX || send(session, data));
 	}
 
 	public static boolean sendHead(IoSession session, String code, long len, Octets extraHead)
 	{
-		return sendHead(session, code, len, extraHead, null);
+		return sendHead(session, code, len, extraHead, (Octets)null);
 	}
 
-	public static boolean sendHead(IoSession session, String code, long len, Iterable<String> extraHead, Octets data)
+	public static boolean sendHead(IoSession session, String code, long len, Octets data, String... extraHead)
 	{
 		return sendHead(session, code, len, createExtraHead(extraHead), data);
 	}
 
-	public static boolean sendHead(IoSession session, String code, long len, Iterable<String> extraHead)
+	public static boolean sendHead(IoSession session, String code, long len, String... extraHead)
 	{
-		return sendHead(session, code, len, extraHead, null);
+		return sendHead(session, code, len, null, extraHead);
 	}
 
 	public static boolean send(IoSession session, byte[] data)

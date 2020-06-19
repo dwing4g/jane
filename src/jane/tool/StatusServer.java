@@ -4,7 +4,6 @@ import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Map.Entry;
 import java.util.concurrent.ThreadPoolExecutor;
 import org.apache.mina.core.session.IoSession;
@@ -21,12 +20,12 @@ import jane.core.TableBase;
 
 public class StatusServer extends NetManager
 {
-	private static final Octets extraHead = HttpCodec.createExtraHead(Arrays.asList(
+	private static final Octets extraHead = HttpCodec.createExtraHead(
 			"Server: jane",
 			"Content-Type: text/html; charset=utf-8",
 			"Connection: keep-alive",
 			"Cache-Control: no-cache",
-			"Pragma: no-cache"));
+			"Pragma: no-cache");
 
 	public StatusServer()
 	{

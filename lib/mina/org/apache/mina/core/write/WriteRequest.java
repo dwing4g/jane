@@ -28,10 +28,14 @@ public interface WriteRequest {
 	/**
 	 * @return a message object to be written.
 	 */
-	Object writeRequestMessage();
+	default Object writeRequestMessage() {
+		return this;
+	}
 
 	/**
 	 * @return {@link WriteFuture} that is associated with this write request.
 	 */
-	WriteFuture writeRequestFuture();
+	default WriteFuture writeRequestFuture() {
+		return DefaultWriteRequest.UNUSED_FUTURE;
+	}
 }

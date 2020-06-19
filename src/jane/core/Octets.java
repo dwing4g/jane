@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
+import org.apache.mina.core.write.WriteRequest;
 
 /**
  * 用于存储可扩展字节序列的类型
@@ -13,7 +14,7 @@ import java.util.Map.Entry;
  * 一个Octets及其子类的实例不能同时由多个线程同时访问
  * @formatter:off
  */
-public class Octets implements Cloneable, Comparable<Octets>
+public class Octets implements Cloneable, Comparable<Octets>, WriteRequest
 {
 	private static final byte[] HEX             = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 	public static final int     HASH_PRIME      = 16777619;               // from Fowler-Noll-Vo hash function
@@ -341,6 +342,44 @@ public class Octets implements Cloneable, Comparable<Octets>
 	public Octets append(Octets o)
 	{
 		return append(o._buffer, 0, o._count);
+	}
+
+	public Octets append(String str)
+	{
+		int bn = marshalStrLen(str);
+		if (bn <= 0)
+			return this;
+		int n = _count;
+		reserve(n + bn);
+		byte[] buf = _buffer;
+		int cn = str.length();
+		if (bn == cn)
+		{
+			for (int i = 0; i < cn; ++i)
+				buf[n++] = (byte)str.charAt(i);
+		}
+		else
+		{
+			for (int i = 0; i < cn; ++i)
+			{
+				int x = str.charAt(i);
+				if (x < 0x80)
+					buf[n++] = (byte)x; // 0xxx xxxx
+				else if (x < 0x800)
+				{
+					buf[n++] = (byte)(0xc0 + (x >> 6)); // 110x xxxx  10xx xxxx
+					buf[n++] = (byte)(0x80 + (x & 0x3f));
+				}
+				else
+				{
+					buf[n++] = (byte)(0xe0 + (x >> 12)); // 1110 xxxx  10xx xxxx  10xx xxxx
+					buf[n++] = (byte)(0x80 + ((x >> 6) & 0x3f));
+					buf[n++] = (byte)(0x80 + (x & 0x3f));
+				}
+			}
+		}
+		_count = n;
+		return this;
 	}
 
 	public Octets insert(int from, int size)
@@ -1104,17 +1143,35 @@ public class Octets implements Cloneable, Comparable<Octets>
 			return marshalZero();
 		reserve(_count + marshalUIntLen(bn) + bn);
 		marshalUInt(bn);
+		byte[] buf = _buffer;
+		int n = _count;
 		int cn = str.length();
 		if (bn == cn)
 		{
 			for (int i = 0; i < cn; ++i)
-				marshal1((byte)str.charAt(i));
+				buf[n++] = (byte)str.charAt(i);
 		}
 		else
 		{
 			for (int i = 0; i < cn; ++i)
-				marshalUTF8(str.charAt(i));
+			{
+				int x = str.charAt(i);
+				if (x < 0x80)
+					buf[n++] = (byte)x; // 0xxx xxxx
+				else if (x < 0x800)
+				{
+					buf[n++] = (byte)(0xc0 + (x >> 6)); // 110x xxxx  10xx xxxx
+					buf[n++] = (byte)(0x80 + (x & 0x3f));
+				}
+				else
+				{
+					buf[n++] = (byte)(0xe0 + (x >> 12)); // 1110 xxxx  10xx xxxx  10xx xxxx
+					buf[n++] = (byte)(0x80 + ((x >> 6) & 0x3f));
+					buf[n++] = (byte)(0x80 + (x & 0x3f));
+				}
+			}
 		}
+		_count = n;
 		return this;
 	}
 

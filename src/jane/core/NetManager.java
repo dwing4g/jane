@@ -527,12 +527,6 @@ public class NetManager implements IoHandler
 		}
 
 		@Override
-		public WriteFuture writeRequestFuture()
-		{
-			return DefaultWriteRequest.UNUSED_FUTURE;
-		}
-
-		@Override
 		public String toString()
 		{
 			return "WriteRequest: " + message;

@@ -2,7 +2,6 @@ package jane.test;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import org.apache.mina.core.session.IoSession;
 import jane.core.HttpCodec;
 import jane.core.Log;
@@ -14,11 +13,10 @@ public final class TestHttpBenchmark extends NetManager
 	private static final Octets extraHead;
 	static
 	{
-		ArrayList<String> params = new ArrayList<>();
-		params.add("Server: jane");
-		params.add("Connection: keep-alive");
-		params.add("Content-Type: text/plain; charset=UTF-8");
-		extraHead = HttpCodec.createExtraHead(params);
+		extraHead = HttpCodec.createExtraHead(
+				"Server: jane",
+				"Connection: keep-alive",
+				"Content-Type: text/plain; charset=UTF-8");
 	}
 	private static final Octets body = Octets.wrap("Hello, World!\r\n".getBytes(StandardCharsets.UTF_8));
 

@@ -54,7 +54,7 @@ public final class DefaultWriteRequest implements WriteRequest {
 
 		@Override
 		public WriteFuture removeListener(IoFutureListener<?> listener) {
-			throw new IllegalStateException("you can't add a listener to a dummy future");
+			throw new IllegalStateException("you can't remove a listener from a dummy future");
 		}
 
 		@Override

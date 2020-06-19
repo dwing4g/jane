@@ -323,21 +323,7 @@ public final class DBSimpleManager
 
 	private static Octets toKey(int tableId, String key)
 	{
-		int tableIdLen = Octets.marshalUIntLen(tableId);
-		int bn = Octets.marshalStrLen(key);
-		Octets os = Octets.createSpace(tableIdLen + bn).marshalUInt(tableId);
-		int cn = key.length();
-		if (bn == cn)
-		{
-			for (int i = 0; i < cn; ++i)
-				os.marshal1((byte)key.charAt(i));
-		}
-		else
-		{
-			for (int i = 0; i < cn; ++i)
-				os.marshalUTF8(key.charAt(i));
-		}
-		return os;
+		return Octets.createSpace(Octets.marshalUIntLen(tableId) + Octets.marshalStrLen(key)).marshalUInt(tableId).append(key);
 	}
 
 	private static Octets toKey(int tableId, Bean<?> key)

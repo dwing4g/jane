@@ -5,7 +5,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.FileChannel;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import org.apache.mina.core.file.DefaultFileRegion;
@@ -59,20 +58,21 @@ public final class TestHttpServer extends NetManager
 		HttpCodec.getHeadCookie(os, cookies);
 		for (Entry<String, String> e : cookies.entrySet())
 			System.out.println("cookie: " + e.getKey() + ": " + e.getValue());
-		ArrayList<String> param = new ArrayList<>();
-		param.add("Server: jane");
-		param.add("Connection: keep-alive");
-		param.add("Cache-Control: no-cache");
-		param.add("Pragma: no-cache");
+		String[] heads = new String[] {
+				"Server: jane",
+				"Connection: keep-alive",
+				"Cache-Control: no-cache",
+				"Pragma: no-cache",
+				null };
 		if (params.containsKey("file"))
 		{
 			try
 			{
-				param.add("Content-Type: application/octet-stream");
+				heads[4] = "Content-Type: application/octet-stream";
 				final FileInputStream fis = new FileInputStream('.' + path); //NOSONAR
 				final FileChannel fc = fis.getChannel();
 				FileRegion fr = new DefaultFileRegion(fc);
-				HttpCodec.sendHead(session, "200 OK", fr.getRemainingBytes(), param);
+				HttpCodec.sendHead(session, "200 OK", fr.getRemainingBytes(), heads);
 				WriteFuture wf = session.write(fr);
 				Throwable e = wf.getException();
 				if (e != null)
@@ -92,16 +92,16 @@ public final class TestHttpServer extends NetManager
 			}
 			catch (Throwable e)
 			{
-				param.add("Content-Type: text/html; charset=utf-8");
-				HttpCodec.sendHead(session, "404 Not Found", -1, param);
+				heads[4] = "Content-Type: text/html; charset=utf-8";
+				HttpCodec.sendHead(session, "404 Not Found", -1, heads);
 				HttpCodec.sendChunk(session, "<html><body><pre>" + e + "</pre></body></html>");
 				HttpCodec.sendChunkEnd(session);
 			}
 		}
 		else
 		{
-			param.add("Content-Type: text/html; charset=utf-8");
-			HttpCodec.sendHead(session, "200", -1, param);
+			heads[4] = "Content-Type: text/html; charset=utf-8";
+			HttpCodec.sendHead(session, "200", -1, heads);
 			HttpCodec.sendChunk(session, "<html><body>TestHttpServer OK</body></html>");
 			HttpCodec.sendChunkEnd(session);
 		}

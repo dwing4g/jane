@@ -1,8 +1,6 @@
 package jane.core;
 
 import java.io.Serializable;
-import org.apache.mina.core.future.WriteFuture;
-import org.apache.mina.core.write.DefaultWriteRequest;
 import org.apache.mina.core.write.WriteRequest;
 import jane.core.SContext.Safe;
 
@@ -197,17 +195,5 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	public Safe<B> safe()
 	{
 		return safe(null);
-	}
-
-	@Override
-	public final Object writeRequestMessage()
-	{
-		return this;
-	}
-
-	@Override
-	public final WriteFuture writeRequestFuture()
-	{
-		return DefaultWriteRequest.UNUSED_FUTURE;
 	}
 }
