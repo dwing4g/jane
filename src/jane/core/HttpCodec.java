@@ -5,12 +5,12 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
-import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.net.ssl.KeyManagerFactory;
@@ -50,7 +50,7 @@ public final class HttpCodec implements IoFilter
 	private static final String		  DEF_CONT_CHARSET	= "utf-8";
 	private static final Pattern	  PATTERN_COOKIE	= Pattern.compile("(\\w+)=(.*?)(; |$)");
 	private static final Pattern	  PATTERN_CHARSET	= Pattern.compile("charset=([\\w-]+)");
-	private static final DateFormat	  _sdf				= new SimpleDateFormat("E, dd MMM yyyy HH:mm:ss z", Locale.ENGLISH);
+	private static final ZoneId		  ZONE_ID			= ZoneId.of("GMT");
 	private static byte[]			  _dateLine;
 	private static long				  _lastSec;
 
@@ -80,25 +80,14 @@ public final class HttpCodec implements IoFilter
 		}
 	}
 
-	static
-	{
-		_sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
-	}
-
 	public static byte[] getDateLine()
 	{
 		long sec = NetManager.getTimeSec();
 		if (sec != _lastSec)
 		{
-			Date date = new Date(sec * 1000);
-			synchronized (_sdf)
-			{
-				if (sec != _lastSec)
-				{
-					_dateLine = ("\r\nDate: " + _sdf.format(date)).getBytes(StandardCharsets.UTF_8);
-					_lastSec = sec;
-				}
-			}
+			_lastSec = sec;
+			_dateLine = ("\r\nDate: " + DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.of(
+					LocalDateTime.ofEpochSecond(sec, 0, ZoneOffset.UTC), ZONE_ID))).getBytes(StandardCharsets.UTF_8);
 		}
 		return _dateLine;
 	}
