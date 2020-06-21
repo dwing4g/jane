@@ -26,9 +26,6 @@ import java.io.IOException;
 public final class WriteToClosedSessionException extends IOException {
 	private static final long serialVersionUID = 1L;
 
-	public WriteToClosedSessionException() {
-	}
-
 	public WriteToClosedSessionException(Throwable cause) {
 		super(cause);
 	}

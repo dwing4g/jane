@@ -45,6 +45,12 @@ public final class TestEcho extends NetManager
 				}
 
 				@Override
+				public synchronized WriteRequest peek()
+				{
+					return _wrq.peekFirst();
+				}
+
+				@Override
 				public synchronized WriteRequest poll()
 				{
 					return _wrq.pollFirst();

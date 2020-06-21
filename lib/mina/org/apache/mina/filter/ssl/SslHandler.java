@@ -41,6 +41,7 @@ import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.DefaultWriteRequest;
 import org.apache.mina.core.write.WriteRequest;
+import org.apache.mina.core.write.WriteRequestQueue;
 import org.apache.mina.util.ExceptionMonitor;
 
 /**
@@ -450,8 +451,9 @@ public final class SslHandler {
 			}
 
 			// Empty the session queue
+			WriteRequestQueue writeQueue = session.getWriteRequestQueue();
 			WriteRequest writeRequest;
-			while ((writeRequest = session.pollWriteRequest()) != null) {
+			while ((writeRequest = writeQueue.poll()) != null) {
 				WriteFuture writeFuture = writeRequest.writeRequestFuture();
 				synchronized (writeFuture) {
 					writeFuture.setException(exception);

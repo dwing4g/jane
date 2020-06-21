@@ -166,7 +166,7 @@ public abstract class AbstractIoService implements IoService {
 		try {
 			key.cancel();
 			key.channel().close();
-		} catch(Exception e) {
+		} catch (Exception e) {
 			ExceptionMonitor.getInstance().exceptionCaught(e);
 		}
 	}
@@ -179,7 +179,7 @@ public abstract class AbstractIoService implements IoService {
 			if (key != null)
 				key.cancel();
 			channel.close();
-		} catch(Exception e) {
+		} catch (Exception e) {
 			ExceptionMonitor.getInstance().exceptionCaught(e);
 		}
 	}

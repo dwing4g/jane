@@ -161,22 +161,6 @@ public interface IoSession {
 	 */
 	WriteRequestQueue getWriteRequestQueue();
 
-	WriteRequest pollWriteRequest();
-
-	/**
-	 * Returns the {@link WriteRequest} which is being processed by {@link IoService}.
-	 *
-	 * @return <tt>null</tt> if and if only no message is being written
-	 */
-	WriteRequest getCurrentWriteRequest();
-
-	/**
-	 * Associate the current write request with the session
-	 *
-	 * @param currentWriteRequest the current write request to associate
-	 */
-	void setCurrentWriteRequest(WriteRequest currentWriteRequest);
-
 	/**
 	 * Writes the specified <code>message</code> to remote peer. This operation is asynchronous.
 	 * You can wait for the returned {@link WriteFuture} if you want to wait for the message actually written.

@@ -32,11 +32,6 @@ public final class DefaultCloseFuture extends DefaultIoFuture implements CloseFu
 	}
 
 	@Override
-	public boolean isClosed() {
-		return isDone() && ((Boolean)getValue()).booleanValue();
-	}
-
-	@Override
 	public void setClosed() {
 		setValue(Boolean.TRUE);
 	}

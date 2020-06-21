@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.file.DefaultFileRegion;
-import org.apache.mina.core.file.FileRegion;
 import org.apache.mina.core.filterchain.DefaultIoFilterChain;
 import org.apache.mina.core.filterchain.IoFilterChain;
 import org.apache.mina.core.future.CloseFuture;
@@ -81,7 +80,6 @@ public final class NioSession implements IoSession {
 	private Object attachment;
 
 	private final WriteRequestQueue writeRequestQueue;
-	private WriteRequest currentWriteRequest;
 
 	private final long sessionId = idGenerator.incrementAndGet();
 
@@ -158,12 +156,12 @@ public final class NioSession implements IoSession {
 
 	@Override
 	public boolean isConnected() {
-		return !closeFuture.isClosed();
+		return !closeFuture.isDone();
 	}
 
 	@Override
 	public boolean isClosing() {
-		return closing || closeFuture.isClosed();
+		return closing || closeFuture.isDone();
 	}
 
 	@Override
@@ -223,36 +221,6 @@ public final class NioSession implements IoSession {
 	@Override
 	public WriteRequestQueue getWriteRequestQueue() {
 		return writeRequestQueue;
-	}
-
-	@Override
-	public WriteRequest pollWriteRequest() {
-		WriteRequestQueue wrq = writeRequestQueue;
-		WriteRequest wr = wrq.poll();
-		if (wr == CLOSE_REQUEST) {
-			closeNow();
-			wrq.dispose();
-			return null;
-		}
-		if (wr == SHUTDOWN_REQUEST) {
-			try {
-				channel.shutdownOutput();
-			} catch(IOException e) {
-			}
-			wrq.dispose();
-			return null;
-		}
-		return wr;
-	}
-
-	@Override
-	public WriteRequest getCurrentWriteRequest() {
-		return currentWriteRequest;
-	}
-
-	@Override
-	public void setCurrentWriteRequest(WriteRequest currentWriteRequest) {
-		this.currentWriteRequest = currentWriteRequest;
 	}
 
 	public SocketChannel getChannel() {
@@ -373,46 +341,30 @@ public final class NioSession implements IoSession {
 
 	void removeNow(IOException ioe) {
 		clearWriteRequestQueue(ioe);
+		if (ioe != null)
+			filterChain.fireExceptionCaught(ioe);
 
 		try {
 			destroy();
 		} catch (Exception e) {
 			filterChain.fireExceptionCaught(e);
 		} finally {
-			try {
-				service.fireSessionDestroyed(this);
-			} catch (Exception e) {
-				// The session was either destroyed or not at this point.
-				// We do not want any exception thrown from this "cleanup" code
-				// to change the return value by bubbling up.
-				filterChain.fireExceptionCaught(e);
-			} finally {
-				clearWriteRequestQueue(null);
-			}
+			service.fireSessionDestroyed(this);
 		}
 	}
 
 	private void clearWriteRequestQueue(IOException ioe) {
-		WriteRequest req = currentWriteRequest;
-		if (req == null) {
-			req = pollWriteRequest();
-			if (req == null)
-				return;
-		} else {
-			setCurrentWriteRequest(null);
-		}
+		WriteRequest req = writeRequestQueue.poll();
+		if (req == null)
+			return;
 
-		Exception ex = (ioe != null ? new WriteToClosedSessionException(ioe) : new WriteToClosedSessionException());
-
+		Exception ex = new WriteToClosedSessionException(ioe);
 		do {
 			req.writeRequestFuture().setException(ex);
-
 			Object message = req.writeRequestMessage();
 			if (message instanceof IoBuffer)
 				((IoBuffer)message).free();
-		} while ((req = pollWriteRequest()) != null);
-
-		filterChain.fireExceptionCaught(ex);
+		} while ((req = writeRequestQueue.poll()) != null);
 	}
 
 	private void increaseReadBufferSize() {
@@ -464,29 +416,6 @@ public final class NioSession implements IoSession {
 		}
 	}
 
-	/**
-	 * Write a part of a file to a {@link IoSession}, if the underlying API isn't supporting
-	 * system calls like sendfile(), you can throw a {@link UnsupportedOperationException}
-	 * so the file will be send using usual {@link #write(AbstractIoSession, IoBuffer, int)} call.
-	 *
-	 * @param region the file region to write
-	 * @param length the length of the portion to send
-	 * @return the number of written bytes
-	 * @throws IOException any exception thrown by the underlying system calls
-	 */
-	int transferFile(FileRegion region, int length) throws IOException {
-		try {
-			return (int)region.getFileChannel().transferTo(region.getPosition(), length, channel);
-		} catch (IOException e) {
-			// Check to see if the IOException is being thrown due to
-			// http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=5103988
-			String message = e.getMessage();
-			if (message != null && message.contains("temporarily unavailable"))
-				return 0;
-			throw e;
-		}
-	}
-
 	@Override
 	public WriteFuture write(Object message) {
 		if (message == null)
@@ -495,7 +424,7 @@ public final class NioSession implements IoSession {
 		// If the session has been closed or is closing, we can't either send a message to the remote side.
 		// We generate a future containing an exception.
 		if (isClosing() || !isConnected())
-			return DefaultWriteFuture.newNotWrittenFuture(this, new WriteToClosedSessionException());
+			return DefaultWriteFuture.newNotWrittenFuture(this, new WriteToClosedSessionException(null));
 
 		try {
 			if ((message instanceof IoBuffer) && !((IoBuffer)message).hasRemaining()) {

@@ -259,9 +259,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 			}
 		} catch (Exception e) {
 			fireExceptionCaught(e);
-		} catch (Throwable e) {
-			fireExceptionCaught(e);
-			throw e;
 		}
 	}
 
@@ -278,25 +275,17 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 				session.getHandler().sessionOpened(session);
 		} catch (Exception e) {
 			fireExceptionCaught(e);
-		} catch (Throwable e) {
-			fireExceptionCaught(e);
-			throw e;
 		}
 	}
 
 	@Override
 	public void fireSessionClosed() {
-		// Update future.
 		try {
 			session.getCloseFuture().setClosed();
 		} catch (Exception e) {
 			fireExceptionCaught(e);
-		} catch (Throwable e) {
-			fireExceptionCaught(e);
-			throw e;
 		}
 
-		// And start the chain.
 		callNextSessionClosed(head);
 	}
 
@@ -305,21 +294,10 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 			if (entry != null)
 				entry.getFilter().sessionClosed(entry.getNextFilter(), session);
 			else {
-				try {
-					session.getHandler().sessionClosed(session);
-				} finally {
-					try {
-						session.getWriteRequestQueue().dispose();
-					} finally {
-						try {
-							session.getAttributeMap().dispose();
-						} finally {
-							session.getFilterChain().clear();
-						}
-					}
-				}
+				session.getHandler().sessionClosed(session);
+				session.getFilterChain().clear();
 			}
-		} catch (Throwable e) {
+		} catch (Exception e) {
 			fireExceptionCaught(e);
 		}
 	}
@@ -337,7 +315,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 					entry.getFilter().exceptionCaught(entry.getNextFilter(), session, cause);
 				else
 					session.getHandler().exceptionCaught(session, cause);
-			} catch (Throwable e) {
+			} catch (Exception e) {
 				ExceptionMonitor.getInstance().exceptionCaught(e);
 			}
 		} else {
@@ -358,7 +336,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 				entry.getFilter().inputClosed(entry.getNextFilter(), session);
 			else
 				session.getHandler().inputClosed(session);
-		} catch (Throwable e) {
+		} catch (Exception e) {
 			fireExceptionCaught(e);
 		}
 	}
@@ -376,21 +354,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 				session.getHandler().messageReceived(session, message);
 		} catch (Exception e) {
 			fireExceptionCaught(e);
-		} catch (Throwable e) {
-			fireExceptionCaught(e);
-			throw e;
-		}
-	}
-
-	@Override
-	public void fireMessageSent(WriteRequest request) {
-		try {
-			request.writeRequestFuture().setWritten();
-		} catch (Exception e) {
-			fireExceptionCaught(e);
-		} catch (Throwable e) {
-			fireExceptionCaught(e);
-			throw e;
 		}
 	}
 
@@ -408,10 +371,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		} catch (Exception e) {
 			writeRequest.writeRequestFuture().setException(e);
 			fireExceptionCaught(e);
-		} catch (Throwable e) {
-			writeRequest.writeRequestFuture().setException(e);
-			fireExceptionCaught(e);
-			throw e;
 		}
 	}
 
@@ -428,9 +387,6 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 				session.getProcessor().remove(session);
 		} catch (Exception e) {
 			fireExceptionCaught(e);
-		} catch (Throwable e) {
-			fireExceptionCaught(e);
-			throw e;
 		}
 	}
 

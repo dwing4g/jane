@@ -128,13 +128,4 @@ public interface IoSessionAttributeMap {
 	 * @return the set of keys of all user-defined attributes.
 	 */
 	Set<Object> getAttributeKeys();
-
-	/**
-	 * Disposes any releases associated with the session.
-	 * This method is invoked on disconnection.
-	 *
-	 * @throws Exception If the session can't be disposed
-	 */
-	default void dispose() throws Exception {
-	}
 }

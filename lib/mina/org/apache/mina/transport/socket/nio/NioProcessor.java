@@ -19,7 +19,6 @@
 package org.apache.mina.transport.socket.nio;
 
 import java.io.IOException;
-import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -36,6 +35,7 @@ import org.apache.mina.core.service.AbstractIoService;
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequest;
+import org.apache.mina.core.write.WriteRequestQueue;
 import org.apache.mina.util.ExceptionMonitor;
 
 /**
@@ -65,8 +65,8 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 	}
 
 	public void wakeup() {
-		wakeupCalled.set(true);
-		selector.wakeup();
+		if (wakeupCalled.compareAndSet(false, true))
+			selector.wakeup();
 	}
 
 	@Override
@@ -173,19 +173,14 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 							return;
 					}
 
-					long t0 = System.currentTimeMillis();
 					int selected = selector.select(this);
-					long selectTime;
-					if (!wakeupCalled.getAndSet(false) && selected == 0 && (selectTime = System.currentTimeMillis() - t0) < 100) {
-						if ((nbTries = fixSelector(nbTries, selectTime)) < 0)
-							return;
-					} else
+					if (wakeupCalled.compareAndSet(true, false) || selected > 0)
 						nbTries = 10;
+					else if ((nbTries = fixSelector(nbTries)) < 0)
+						return;
 
 					flushSessions();
 					removeSessions();
-				} catch (ClosedSelectorException cse) {
-					ExceptionMonitor.getInstance().exceptionCaught(cse);
 				} catch (Exception e) {
 					ExceptionMonitor.getInstance().exceptionCaught(e);
 					try {
@@ -240,19 +235,8 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 				// Reset the Schedule for flush flag for this session, as we are flushing it now.
 				// This allows another thread to enqueue data to be written without corrupting the selector interest state.
 				session.unscheduledForFlush();
-				if (session.isActive()) {
-					try {
-						flushNow(session);
-					} catch (Exception e) {
-						session.closeNow();
-						session.getFilterChain().fireExceptionCaught(e);
-					}
-				} else if (session.isOpening()) {
-					// Retry later if session is not yet fully initialized.
-					// (In case that Session.write() is called before addSession() is processed)
-					scheduleFlush(session);
-					return;
-				}
+				if (session.isActive())
+					flushNow(session);
 			}
 		}
 
@@ -269,81 +253,65 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 		}
 
 		void flushNow(NioSession session) {
-			if (!session.isConnected()) {
-				scheduleRemove(session);
+			if (session.isClosing())
 				return;
-			}
 
+			WriteRequestQueue writeQueue = session.getWriteRequestQueue();
 			WriteRequest req = null;
-
 			try {
-				for(;;) {
-					req = session.getCurrentWriteRequest(); // check for pending writes
-					if (req == null) {
-						req = session.pollWriteRequest();
-						if (req == null) {
-							session.setInterestedInWrite(false);
-							return;
-						}
-						session.setCurrentWriteRequest(req);
-					}
-
+				for (; (req = writeQueue.peek()) != null; writeQueue.poll()) {
 					Object message = req.writeRequestMessage();
 					if (message instanceof IoBuffer) {
 						IoBuffer buf = (IoBuffer)message;
 						if (buf.hasRemaining()) {
-							try {
-								session.getChannel().write(buf.buf());
-							} catch (IOException ioe) {
-								session.setCurrentWriteRequest(null);
-								req.writeRequestFuture().setException(ioe);
-								buf.free();
-								// we have had an issue while trying to send data to the peer, let's close the session
-								session.closeNow();
-								session.removeNow(ioe);
-								return;
-							}
-
-							if (buf.hasRemaining()) { // the buffer isn't empty, we re-interest it in writing
+							session.getChannel().write(buf.buf());
+							if (buf.hasRemaining()) {
 								session.setInterestedInWrite(true);
 								return;
 							}
 						}
-						session.setCurrentWriteRequest(null);
-						session.getFilterChain().fireMessageSent(req);
+						req.writeRequestFuture().setWritten();
 						buf.free();
 					} else if (message instanceof FileRegion) {
 						FileRegion region = (FileRegion)message;
-						int length = (int)Math.min(region.getRemainingBytes(), Integer.MAX_VALUE);
-						if (length > 0)
-							region.update(session.transferFile(region, length));
-
-						// Fix for Java bug on Linux
-						// http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=5103988
-						// If there's still data to be written in the FileRegion,
-						// return 0 indicating that we need to pause until writing may resume.
-						if (region.getRemainingBytes() > 0) {
-							session.setInterestedInWrite(true);
-							return;
+						long len = region.getRemainingBytes();
+						if (len > 0) {
+							region.update(region.getFileChannel().transferTo(region.getPosition(), len, session.getChannel()));
+    						if (region.getRemainingBytes() > 0) {
+    							session.setInterestedInWrite(true);
+    							return;
+    						}
 						}
-						session.setCurrentWriteRequest(null);
-						session.getFilterChain().fireMessageSent(req);
+						req.writeRequestFuture().setWritten();
+					} else if (req == NioSession.CLOSE_REQUEST) {
+						session.closeNow();
+						return;
+					} else if (req == NioSession.SHUTDOWN_REQUEST) {
+						try {
+							session.setInterestedInWrite(false);
+							session.getChannel().shutdownOutput();
+						} catch (Exception e) {
+						}
+						return;
 					} else
 						throw new IllegalStateException("unknown message type for writting: " + message.getClass().getName() + ": " + message);
 				}
+				session.setInterestedInWrite(false);
 			} catch (Exception e) {
-				try {
-					session.setInterestedInWrite(false);
-				} catch(Exception ex) {
-					session.getFilterChain().fireExceptionCaught(ex);
-				}
-				if (req != null)
+				if (req != null) {
+					writeQueue.poll();
 					req.writeRequestFuture().setException(e);
-				session.getFilterChain().fireExceptionCaught(e);
+				}
+				if (e instanceof IOException) {
+					// we have had an issue while trying to send data to the peer, let's close the session
+					session.closeNow();
+					session.removeNow((IOException)e);
+				} else
+					session.getFilterChain().fireExceptionCaught(e);
 			}
 		}
 
-		private int fixSelector(int nbTries, long selectTime) throws IOException {
+		private int fixSelector(int nbTries) throws IOException {
 			if (Thread.interrupted()) {
 				// Thread was interrupted so reset selected keys and break so we not run into a busy loop.
 				// As this is most likely a bug in the handler of the user or it's client library we will also log it.
@@ -373,7 +341,7 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 				// and do so forever, consuming 100% CPU.
 				// We have to destroy the selector, and register all the socket on a new one.
 				if (nbTries <= 0) {
-					ExceptionMonitor.getInstance().warn("create a new selector. select time = " + selectTime);
+					ExceptionMonitor.getInstance().warn("create a new selector");
 					// In the case we are using the java select() method,
 					// this method is used to trash the buggy selector and create a new one, registering all the sockets on it.
 					Selector newSelector = Selector.open(); //NOSONAR

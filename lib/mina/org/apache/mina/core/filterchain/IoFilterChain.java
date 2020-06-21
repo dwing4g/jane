@@ -166,15 +166,6 @@ public interface IoFilterChain {
 	void fireMessageReceived(Object message);
 
 	/**
-	 * Fires a {@link IoHandler#messageSent(IoSession, Object)} event.
-	 * Most users don't need to call this method at all.
-	 * Please use this method only when you implement a new transport or fire a virtual event.
-	 *
-	 * @param request The sent request
-	 */
-	void fireMessageSent(WriteRequest request);
-
-	/**
 	 * Fires a {@link IoSession#write(Object)} event.
 	 * Most users don't need to call this method at all.
 	 * Please use this method only when you implement a new transport or fire a virtual event.

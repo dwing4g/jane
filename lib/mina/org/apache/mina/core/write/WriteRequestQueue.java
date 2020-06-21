@@ -25,7 +25,7 @@ import org.apache.mina.core.session.IoSession;
  */
 public interface WriteRequestQueue {
 	/**
-	 * Add a new WriteRequest to the session write's queue
+	 * Add a new WriteRequest to the session write's queue at last
 	 *
 	 * @param writeRequest The writeRequest to add
 	 * @return {@code true} if the writeRequest was added to this queue, else {@code false}
@@ -33,7 +33,14 @@ public interface WriteRequestQueue {
 	boolean offer(WriteRequest writeRequest);
 
 	/**
-	 * Get the first request available in the queue for a session.
+	 * Peek the first request available in the queue for a session.
+	 *
+	 * @return The first available request, if any.
+	 */
+	WriteRequest peek();
+
+	/**
+	 * Poll the first request available in the queue for a session.
 	 *
 	 * @return The first available request, if any.
 	 */
@@ -55,11 +62,4 @@ public interface WriteRequestQueue {
 	 * Removes all the requests from this session's queue.
 	 */
 	void clear();
-
-	/**
-	 * Disposes any releases associated with the session.
-	 * This method is invoked on disconnection.
-	 */
-	default void dispose() {
-	}
 }
