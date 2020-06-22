@@ -83,13 +83,14 @@ public final class HttpCodec implements IoFilter
 	public static byte[] getDateLine()
 	{
 		long sec = NetManager.getTimeSec();
-		if (sec != _lastSec)
+		byte[] dateLine;
+		if (sec != _lastSec || (dateLine = _dateLine) == null)
 		{
 			_lastSec = sec;
-			_dateLine = ("\r\nDate: " + DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.of(
+			_dateLine = dateLine = ("\r\nDate: " + DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.of(
 					LocalDateTime.ofEpochSecond(sec, 0, ZoneOffset.UTC), ZONE_ID))).getBytes(StandardCharsets.UTF_8);
 		}
-		return _dateLine;
+		return dateLine;
 	}
 
 	public static SslFilter getSslFilter(InputStream keyIs, char[] keyPw, InputStream trustIs, char[] trustPw) throws Exception
