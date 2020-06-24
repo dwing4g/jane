@@ -74,13 +74,6 @@ public class DefaultConnectFuture extends DefaultIoFuture implements ConnectFutu
 	}
 
 	@Override
-	public void setSession(IoSession session) {
-		if (session == null)
-			throw new IllegalArgumentException("session");
-		setValue(session);
-	}
-
-	@Override
 	public void setException(Throwable exception) {
 		if (exception == null)
 			throw new IllegalArgumentException("exception");

@@ -294,7 +294,7 @@ public final class SslFilter implements IoFilter {
 	 * @return <tt>true</tt> if the SSL session has been started, <tt>false</tt> if already started.
 	 * @throws SSLException if failed to start the SSL session
 	 */
-	public boolean startSsl(IoSession session) throws SSLException {
+	public boolean startSsl(IoSession session) throws Exception {
 		SslHandler sslHandler = getSslSessionHandler(session);
 		boolean started;
 
@@ -310,9 +310,9 @@ public final class SslFilter implements IoFilter {
 			}
 
 			sslHandler.flushScheduledEvents();
-		} catch (SSLException se) {
+		} catch (Exception e) {
 			sslHandler.release();
-			throw se;
+			throw e;
 		}
 
 		return started;
@@ -325,7 +325,7 @@ public final class SslFilter implements IoFilter {
 	 * @return The Future for the initiated closure
 	 * @throws SSLException if failed to initiate TLS closure
 	 */
-	public WriteFuture stopSsl(IoSession session) throws SSLException {
+	public WriteFuture stopSsl(IoSession session) throws Exception {
 		SslHandler sslHandler = getSslSessionHandler(session);
 
 		try {
@@ -370,20 +370,20 @@ public final class SslFilter implements IoFilter {
 	}
 
 	@Override
-	public void onPostAdd(IoFilterChain chain, String name, NextFilter nextFilter) throws SSLException {
+	public void onPostAdd(IoFilterChain chain, String name, NextFilter nextFilter) throws Exception {
 		if (autoStart)
 			initiateHandshake(nextFilter, chain.getSession());
 	}
 
 	@Override
-	public void onPreRemove(IoFilterChain chain, String name, NextFilter nextFilter) throws SSLException {
+	public void onPreRemove(IoFilterChain chain, String name, NextFilter nextFilter) throws Exception {
 		IoSession session = chain.getSession();
 		stopSsl(session);
 		session.removeAttribute(SSL_HANDLER);
 	}
 
 	@Override
-	public void sessionClosed(NextFilter nextFilter, IoSession session) throws SSLException {
+	public void sessionClosed(NextFilter nextFilter, IoSession session) throws Exception {
 		try {
 			SslHandler sslHandler = getSslSessionHandler(session);
 			synchronized (sslHandler) {
@@ -395,7 +395,7 @@ public final class SslFilter implements IoFilter {
 	}
 
 	@Override
-	public void messageReceived(NextFilter nextFilter, IoSession session, Object message) throws SSLException {
+	public void messageReceived(NextFilter nextFilter, IoSession session, Object message) throws Exception {
 		SslHandler sslHandler = getSslSessionHandler(session);
 		synchronized (sslHandler) {
 			if (!isSslStarted(session) && sslHandler.isInboundDone()) {
@@ -462,7 +462,7 @@ public final class SslFilter implements IoFilter {
 	}
 
 	@Override
-	public void filterWrite(NextFilter nextFilter, IoSession session, WriteRequest writeRequest) throws SSLException {
+	public void filterWrite(NextFilter nextFilter, IoSession session, WriteRequest writeRequest) throws Exception {
 		SslHandler sslHandler = getSslSessionHandler(session);
 
 		try {
@@ -502,7 +502,7 @@ public final class SslFilter implements IoFilter {
 	}
 
 	@Override
-	public void filterClose(final NextFilter nextFilter, final IoSession session) throws SSLException {
+	public void filterClose(final NextFilter nextFilter, final IoSession session) throws Exception {
 		SslHandler sslHandler = (SslHandler)session.getAttribute(SSL_HANDLER);
 		if (sslHandler == null) {
 			// The connection might already have closed, or SSL might have not started yet.
@@ -536,11 +536,11 @@ public final class SslFilter implements IoFilter {
 	 * @param session The session for which the SSL handshake should be done
 	 * @throws SSLException If the handshake failed
 	 */
-	public void initiateHandshake(IoSession session) throws SSLException {
+	public void initiateHandshake(IoSession session) throws Exception {
 		initiateHandshake(null, session);
 	}
 
-	private void initiateHandshake(NextFilter nextFilter, IoSession session) throws SSLException {
+	private void initiateHandshake(NextFilter nextFilter, IoSession session) throws Exception {
 		SslHandler sslHandler = getSslSessionHandler(session);
 
 		try {
@@ -555,7 +555,7 @@ public final class SslFilter implements IoFilter {
 		}
 	}
 
-	private WriteFuture initiateClosure(NextFilter nextFilter, IoSession session) throws SSLException {
+	private WriteFuture initiateClosure(NextFilter nextFilter, IoSession session) throws Exception {
 		SslHandler sslHandler = getSslSessionHandler(session);
 		WriteFuture future;
 

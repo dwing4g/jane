@@ -139,7 +139,7 @@ public final class TestRc4Filter implements IoFilter
 	}
 
 	@Override
-	public void messageReceived(NextFilter nextFilter, IoSession session, Object message)
+	public void messageReceived(NextFilter nextFilter, IoSession session, Object message) throws Exception
 	{
 		if (message instanceof IoBuffer)
 		{
@@ -153,7 +153,7 @@ public final class TestRc4Filter implements IoFilter
 	}
 
 	@Override
-	public void filterWrite(NextFilter nextFilter, IoSession session, WriteRequest writeRequest)
+	public void filterWrite(NextFilter nextFilter, IoSession session, WriteRequest writeRequest) throws Exception
 	{
 		Object message = writeRequest.writeRequestMessage();
 		if (message instanceof IoBuffer)

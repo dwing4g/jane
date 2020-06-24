@@ -229,47 +229,47 @@ public interface IoFilter {
 		/**
 		 * Forwards <tt>sessionCreated</tt> event to next filter.
 		 */
-		void sessionCreated();
+		void sessionCreated() throws Exception;
 
 		/**
 		 * Forwards <tt>sessionOpened</tt> event to next filter.
 		 */
-		void sessionOpened();
+		void sessionOpened() throws Exception;
 
 		/**
 		 * Forwards <tt>messageReceived</tt> event to next filter.
 		 *
 		 * @param message The received message
 		 */
-		void messageReceived(Object message);
+		void messageReceived(Object message) throws Exception;
 
 		/**
 		 * Forwards <tt>filterWrite</tt> event to next filter.
 		 *
 		 * @param writeRequest The {@link WriteRequest} to process
 		 */
-		void filterWrite(WriteRequest writeRequest);
+		void filterWrite(WriteRequest writeRequest) throws Exception;
 
 		/**
 		 * Forwards <tt>filterClose</tt> event to next filter.
 		 */
-		void filterClose();
+		void filterClose() throws Exception;
 
 		/**
 		 * Forwards <tt>inputClosed</tt> event to next filter.
 		 */
-		void inputClosed();
+		void inputClosed() throws Exception;
 
 		/**
 		 * Forwards <tt>sessionClosed</tt> event to next filter.
 		 */
-		void sessionClosed();
+		void sessionClosed() throws Exception;
 
 		/**
 		 * Forwards <tt>exceptionCaught</tt> event to next filter.
 		 *
 		 * @param cause The exception that cause this event to be received
 		 */
-		void exceptionCaught(Throwable cause);
+		void exceptionCaught(Throwable cause) throws Exception;
 	}
 }

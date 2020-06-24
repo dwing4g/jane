@@ -45,21 +45,4 @@ public interface WriteRequestQueue {
 	 * @return The first available request, if any.
 	 */
 	WriteRequest poll();
-
-	/**
-	 * @return the number of objects currently stored in the queue.
-	 */
-	int size();
-
-	/**
-	 * Tells if the WriteRequest queue is empty or not for a session
-	 *
-	 * @return <tt>true</tt> if the writeRequest is empty
-	 */
-	boolean isEmpty();
-
-	/**
-	 * Removes all the requests from this session's queue.
-	 */
-	void clear();
 }

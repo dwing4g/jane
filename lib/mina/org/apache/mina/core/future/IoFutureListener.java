@@ -37,5 +37,5 @@ public interface IoFutureListener<F extends IoFuture> extends EventListener {
 	 *
 	 * @param future The source {@link IoFuture} which called this callback.
 	 */
-	void operationComplete(F future);
+	void operationComplete(F future) throws Exception;
 }

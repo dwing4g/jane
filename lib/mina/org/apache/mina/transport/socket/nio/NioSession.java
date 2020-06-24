@@ -394,7 +394,15 @@ public final class NioSession implements IoSession {
 		try {
 			int readBufferSize = config.getReadBufferSize();
 			IoBuffer buf = IoBuffer.allocate(readBufferSize);
-			int readBytes = channel.read(buf.buf());
+			int readBytes;
+			try {
+				readBytes = channel.read(buf.buf());
+			} catch (Exception e) {
+				buf.free();
+				closeNow();
+				filterChain.fireExceptionCaught(e);
+				return;
+			}
 
 			if (readBytes > 0) {
 				if ((readBytes << 1) < readBufferSize)
@@ -408,9 +416,6 @@ public final class NioSession implements IoSession {
 				if (readBytes < 0)
 					filterChain.fireInputClosed();
 			}
-		} catch (IOException e) {
-			closeNow();
-			filterChain.fireExceptionCaught(e);
 		} catch (Exception e) {
 			filterChain.fireExceptionCaught(e);
 		}

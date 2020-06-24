@@ -57,24 +57,6 @@ public final class TestEcho extends NetManager
 				}
 
 				@Override
-				public synchronized int size()
-				{
-					return _wrq.size();
-				}
-
-				@Override
-				public synchronized boolean isEmpty()
-				{
-					return _wrq.isEmpty();
-				}
-
-				@Override
-				public synchronized void clear()
-				{
-					_wrq.clear();
-				}
-
-				@Override
 				public synchronized String toString()
 				{
 					return _wrq.toString();

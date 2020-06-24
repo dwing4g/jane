@@ -149,7 +149,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 			try {
 				deregister(entry);
 			} catch (Exception e) {
-				throw new RuntimeException("clear(): " + entry.getName() + " in " + getSession(), e);
+				throw new RuntimeException("clear: " + entry.getName() + " in " + getSession(), e);
 			}
 		}
 	}
@@ -164,7 +164,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		try {
 			filter.onPreAdd(this, name, newEntry);
 		} catch (Exception e) {
-			throw new RuntimeException("onPreAdd(): " + name + ':' + filter + " in " + getSession(), e);
+			throw new RuntimeException("onPreAdd: " + name + ':' + filter + " in " + getSession(), e);
 		}
 
 		if (prevEntry != null)
@@ -181,7 +181,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 			filter.onPostAdd(this, name, newEntry);
 		} catch (Exception e) {
 			deregister0(newEntry);
-			throw new RuntimeException("onPostAdd(): " + name + ':' + filter + " in " + getSession(), e);
+			throw new RuntimeException("onPostAdd: " + name + ':' + filter + " in " + getSession(), e);
 		}
 	}
 
@@ -191,7 +191,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		try {
 			filter.onPreRemove(this, entry.getName(), entry);
 		} catch (Exception e) {
-			throw new RuntimeException("onPreRemove(): " + entry.getName() + ':' + filter + " in " + getSession(), e);
+			throw new RuntimeException("onPreRemove: " + entry.getName() + ':' + filter + " in " + getSession(), e);
 		}
 
 		deregister0(entry);
@@ -199,7 +199,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		try {
 			filter.onPostRemove(this, entry.getName(), entry);
 		} catch (Exception e) {
-			throw new RuntimeException("onPostRemove(): " + entry.getName() + ':' + filter + " in " + getSession(), e);
+			throw new RuntimeException("onPostRemove: " + entry.getName() + ':' + filter + " in " + getSession(), e);
 		}
 	}
 
@@ -241,41 +241,41 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 
 	@Override
 	public void fireSessionCreated() {
-		callNextSessionCreated(head);
-	}
-
-	private void callNextSessionCreated(Entry entry) {
 		try {
-			if (entry != null) {
-				entry.getFilter().sessionCreated(entry.getNextFilter(), session);
-			} else {
-				try {
-					session.getHandler().sessionCreated(session);
-				} finally {
-					ConnectFuture future = (ConnectFuture)session.removeAttribute(SESSION_CREATED_FUTURE);
-					if (future != null)
-						future.setSession(session);
-				}
-			}
+			callNextSessionCreated(head);
 		} catch (Exception e) {
 			fireExceptionCaught(e);
+		}
+	}
+
+	private void callNextSessionCreated(Entry entry) throws Exception {
+		if (entry != null) {
+			entry.getFilter().sessionCreated(entry.getNextFilter(), session);
+		} else {
+			try {
+				session.getHandler().sessionCreated(session);
+			} finally {
+				ConnectFuture future = (ConnectFuture)session.removeAttribute(SESSION_CREATED_FUTURE);
+				if (future != null)
+					future.setValue(session);
+			}
 		}
 	}
 
 	@Override
 	public void fireSessionOpened() {
-		callNextSessionOpened(head);
-	}
-
-	private void callNextSessionOpened(Entry entry) {
 		try {
-			if (entry != null)
-				entry.getFilter().sessionOpened(entry.getNextFilter(), session);
-			else
-				session.getHandler().sessionOpened(session);
+			callNextSessionOpened(head);
 		} catch (Exception e) {
 			fireExceptionCaught(e);
 		}
+	}
+
+	private void callNextSessionOpened(Entry entry) throws Exception {
+		if (entry != null)
+			entry.getFilter().sessionOpened(entry.getNextFilter(), session);
+		else
+			session.getHandler().sessionOpened(session);
 	}
 
 	@Override
@@ -285,36 +285,28 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		} catch (Exception e) {
 			fireExceptionCaught(e);
 		}
-
-		callNextSessionClosed(head);
-	}
-
-	private void callNextSessionClosed(Entry entry) {
 		try {
-			if (entry != null)
-				entry.getFilter().sessionClosed(entry.getNextFilter(), session);
-			else {
-				session.getHandler().sessionClosed(session);
-				session.getFilterChain().clear();
-			}
+			callNextSessionClosed(head);
 		} catch (Exception e) {
 			fireExceptionCaught(e);
 		}
 	}
 
-	@Override
-	public void fireExceptionCaught(Throwable cause) {
-		callNextExceptionCaught(head, cause);
+	private void callNextSessionClosed(Entry entry) throws Exception {
+		if (entry != null)
+			entry.getFilter().sessionClosed(entry.getNextFilter(), session);
+		else {
+			session.getHandler().sessionClosed(session);
+			session.getFilterChain().clear();
+		}
 	}
 
-	private void callNextExceptionCaught(Entry entry, Throwable cause) {
+	@Override
+	public void fireExceptionCaught(Throwable cause) {
 		ConnectFuture future = (ConnectFuture)session.removeAttribute(SESSION_CREATED_FUTURE);
 		if (future == null) {
 			try {
-				if (entry != null)
-					entry.getFilter().exceptionCaught(entry.getNextFilter(), session, cause);
-				else
-					session.getHandler().exceptionCaught(session, cause);
+				callNextExceptionCaught(head, cause);
 			} catch (Exception e) {
 				ExceptionMonitor.getInstance().exceptionCaught(e);
 			}
@@ -325,69 +317,68 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		}
 	}
 
+	private void callNextExceptionCaught(Entry entry, Throwable cause) throws Exception {
+		if (entry != null)
+			entry.getFilter().exceptionCaught(entry.getNextFilter(), session, cause);
+		else
+			session.getHandler().exceptionCaught(session, cause);
+	}
+
 	@Override
-	public void fireInputClosed() {
+	public void fireInputClosed() throws Exception {
 		callNextInputClosed(head);
 	}
 
-	private void callNextInputClosed(Entry entry) {
-		try {
-			if (entry != null)
-				entry.getFilter().inputClosed(entry.getNextFilter(), session);
-			else
-				session.getHandler().inputClosed(session);
-		} catch (Exception e) {
-			fireExceptionCaught(e);
-		}
+	private void callNextInputClosed(Entry entry) throws Exception {
+		if (entry != null)
+			entry.getFilter().inputClosed(entry.getNextFilter(), session);
+		else
+			session.getHandler().inputClosed(session);
 	}
 
 	@Override
-	public void fireMessageReceived(Object message) {
+	public void fireMessageReceived(Object message) throws Exception {
 		callNextMessageReceived(head, message);
 	}
 
-	private void callNextMessageReceived(Entry entry, Object message) {
-		try {
-			if (entry != null)
-				entry.getFilter().messageReceived(entry.getNextFilter(), session, message);
-			else
-				session.getHandler().messageReceived(session, message);
-		} catch (Exception e) {
-			fireExceptionCaught(e);
-		}
+	private void callNextMessageReceived(Entry entry, Object message) throws Exception {
+		if (entry != null)
+			entry.getFilter().messageReceived(entry.getNextFilter(), session, message);
+		else
+			session.getHandler().messageReceived(session, message);
 	}
 
 	@Override
 	public void fireFilterWrite(WriteRequest writeRequest) {
-		callPreviousFilterWrite(tail, writeRequest);
-	}
-
-	private void callPreviousFilterWrite(Entry entry, WriteRequest writeRequest) {
 		try {
-			if (entry != null)
-				entry.getFilter().filterWrite(entry.getNextFilter(), session, writeRequest);
-			else
-				session.getProcessor().write(session, writeRequest);
+			callPreviousFilterWrite(tail, writeRequest);
 		} catch (Exception e) {
 			writeRequest.writeRequestFuture().setException(e);
 			fireExceptionCaught(e);
 		}
 	}
 
-	@Override
-	public void fireFilterClose() {
-		callPreviousFilterClose(tail);
+	private void callPreviousFilterWrite(Entry entry, WriteRequest writeRequest) throws Exception {
+		if (entry != null)
+			entry.getFilter().filterWrite(entry.getNextFilter(), session, writeRequest);
+		else
+			session.getProcessor().write(session, writeRequest);
 	}
 
-	private void callPreviousFilterClose(Entry entry) {
+	@Override
+	public void fireFilterClose() {
 		try {
-			if (entry != null)
-				entry.getFilter().filterClose(entry.getNextFilter(), session);
-			else
-				session.getProcessor().remove(session);
+			callPreviousFilterClose(tail);
 		} catch (Exception e) {
 			fireExceptionCaught(e);
 		}
+	}
+
+	private void callPreviousFilterClose(Entry entry) throws Exception {
+		if (entry != null)
+			entry.getFilter().filterClose(entry.getNextFilter(), session);
+		else
+			session.getProcessor().remove(session);
 	}
 
 	@Override
@@ -485,42 +476,42 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		}
 
 		@Override
-		public void sessionCreated() {
+		public void sessionCreated() throws Exception {
 			callNextSessionCreated(nextEntry);
 		}
 
 		@Override
-		public void sessionOpened() {
+		public void sessionOpened() throws Exception {
 			callNextSessionOpened(nextEntry);
 		}
 
 		@Override
-		public void messageReceived(Object message) {
+		public void messageReceived(Object message) throws Exception {
 			callNextMessageReceived(nextEntry, message);
 		}
 
 		@Override
-		public void filterWrite(WriteRequest writeRequest) {
+		public void filterWrite(WriteRequest writeRequest) throws Exception {
 			callPreviousFilterWrite(prevEntry, writeRequest);
 		}
 
 		@Override
-		public void filterClose() {
+		public void filterClose() throws Exception {
 			callPreviousFilterClose(prevEntry);
 		}
 
 		@Override
-		public void inputClosed() {
+		public void inputClosed() throws Exception {
 			callNextInputClosed(nextEntry);
 		}
 
 		@Override
-		public void sessionClosed() {
+		public void sessionClosed() throws Exception {
 			callNextSessionClosed(nextEntry);
 		}
 
 		@Override
-		public void exceptionCaught(Throwable cause) {
+		public void exceptionCaught(Throwable cause) throws Exception {
 			callNextExceptionCaught(nextEntry, cause);
 		}
 	}

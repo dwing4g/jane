@@ -237,7 +237,7 @@ public final class SslHandler {
 		preHandshakeEventQueue.add(new SimpleEntry<>(nextFilter, writeRequest));
 	}
 
-	void flushPreHandshakeEvents() throws SSLException {
+	void flushPreHandshakeEvents() throws Exception {
 		Entry<NextFilter, WriteRequest> event;
 		while ((event = preHandshakeEventQueue.poll()) != null)
 			sslFilter.filterWrite(event.getKey(), session, event.getValue());
@@ -257,7 +257,7 @@ public final class SslHandler {
 		messageReceivedEventQueue.add(new SimpleEntry<>(nextFilter, message));
 	}
 
-	void flushScheduledEvents() {
+	void flushScheduledEvents() throws Exception {
 		scheduledEvents.getAndIncrement();
 
 		// Fire events only when the lock is available for this handler.
@@ -288,7 +288,7 @@ public final class SslHandler {
 	 * @param buf buffer to decrypt
 	 * @throws SSLException on errors
 	 */
-	void messageReceived(NextFilter nextFilter, ByteBuffer buf) throws SSLException {
+	void messageReceived(NextFilter nextFilter, ByteBuffer buf) throws Exception {
 		// LOGGER.debug("{} Processing the received message", SslFilter.getSessionInfo(session));
 
 		// append buf to inNetBuffer
@@ -472,7 +472,7 @@ public final class SslHandler {
 	/**
 	 * Perform any handshaking processing.
 	 */
-	void handshake(NextFilter nextFilter) throws SSLException {
+	void handshake(NextFilter nextFilter) throws Exception {
 		for (;;) {
 			switch (handshakeStatus) {
 			case FINISHED:
@@ -549,7 +549,7 @@ public final class SslHandler {
 			outNetBuffer = IoBuffer.allocate(capacity);
 	}
 
-	WriteFuture writeNetBuffer(NextFilter nextFilter, boolean needFuture) throws SSLException {
+	WriteFuture writeNetBuffer(NextFilter nextFilter, boolean needFuture) throws Exception {
 		// Check if any net data needed to be writen
 		if (outNetBuffer == null || !outNetBuffer.hasRemaining())
 			return null; // no; bail out
@@ -587,7 +587,7 @@ public final class SslHandler {
 		return writeFuture;
 	}
 
-	private Status unwrapHandshake(NextFilter nextFilter) throws SSLException {
+	private Status unwrapHandshake(NextFilter nextFilter) throws Exception {
 		// Prepare the net data for reading.
 		if (inNetBuffer != null)
 			inNetBuffer.flip();
@@ -626,7 +626,7 @@ public final class SslHandler {
 		return res.getStatus();
 	}
 
-	private void renegotiateIfNeeded(NextFilter nextFilter, SSLEngineResult res) throws SSLException {
+	private void renegotiateIfNeeded(NextFilter nextFilter, SSLEngineResult res) throws Exception {
 		if (res.getStatus() != Status.CLOSED && res.getStatus() != Status.BUFFER_UNDERFLOW
 				&& res.getHandshakeStatus() != HandshakeStatus.NOT_HANDSHAKING) {
 			// Renegotiation required.

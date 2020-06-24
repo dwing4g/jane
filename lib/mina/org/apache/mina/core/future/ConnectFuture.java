@@ -66,7 +66,7 @@ public interface ConnectFuture extends IoFuture {
 	 *
 	 * @param session The created session to store in the ConnectFuture insteance
 	 */
-	void setSession(IoSession session);
+	boolean setValue(Object session);
 
 	/**
 	 * Sets the exception caught due to connection failure and notifies all threads waiting for this future.

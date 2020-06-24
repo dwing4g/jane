@@ -62,7 +62,7 @@ public class BeanCodec implements IoFilter
 	}
 
 	@Override
-	public void filterWrite(NextFilter next, IoSession session, WriteRequest writeRequest)
+	public void filterWrite(NextFilter next, IoSession session, WriteRequest writeRequest) throws Exception
 	{
 		Bean<?> bean = (Bean<?>)writeRequest.writeRequestMessage();
 		int type = bean.type();

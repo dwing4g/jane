@@ -125,33 +125,44 @@ public final class HttpCodec implements IoFilter
 			srcLen = src.length - srcPos;
 		if (srcLen <= 0)
 			return "";
-		byte[] dst = new byte[srcLen];
-		int dstPos = 0;
-		for (int srcEnd = srcPos + srcLen; srcPos < srcEnd;)
+
+		int p = srcPos, e = srcPos + srcLen;
+		for (; p < e; ++p)
 		{
-			int c = src[srcPos++];
-			switch (c)
+			byte b = src[p];
+			if (b == '%' || b == '+')
+				break;
+		}
+		if (p == e)
+			return new String(src, srcPos, srcLen, StandardCharsets.UTF_8);
+
+		byte[] dst = new byte[srcLen];
+		int q = p - srcPos;
+		System.arraycopy(src, srcPos, dst, 0, q);
+		while (p < e)
+		{
+			int b = src[p++];
+			switch (b)
 			{
 			case '+':
-				dst[dstPos++] = (byte)' ';
+				dst[q++] = (byte)' ';
 				break;
 			case '%':
-				if (srcPos + 1 < srcEnd)
+				if (p + 1 < e)
 				{
-					c = src[srcPos++];
-					int v = (c < 'A' ? c - '0' : c - 'A' + 10) << 4;
-					c = src[srcPos++];
-					v += (c < 'A' ? c - '0' : c - 'A' + 10);
-					dst[dstPos++] = (byte)v;
+					b = src[p++];
+					int v = (b < 'A' ? b - '0' : b - 'A' + 10) << 4;
+					b = src[p++];
+					v += (b < 'A' ? b - '0' : b - 'A' + 10);
+					dst[q++] = (byte)v;
 					break;
 				}
 				//$FALL-THROUGH$
 			default:
-				dst[dstPos++] = (byte)c;
-				break;
+				dst[q++] = (byte)b;
 			}
 		}
-		return new String(dst, 0, dstPos, StandardCharsets.UTF_8);
+		return new String(dst, 0, q, StandardCharsets.UTF_8);
 	}
 
 	public static String getHeadLine(OctetsStream head)
@@ -169,29 +180,31 @@ public final class HttpCodec implements IoFilter
 	// GET /path/name.html?k=v&a=b HTTP/1.1
 	public static String getHeadPath(OctetsStream head)
 	{
-		int e = head.position();
-		int p = head.find(0, e, (byte)' ');
-		if (p < 0)
-			return "";
-		int q = head.find(++p, e, (byte)' ');
-		if (q < 0)
-			return "";
-		int r = head.find(p, q, (byte)'?');
-		if (r >= p && r < q)
-			q = r;
-		return decodeUrl(head.array(), p, q - p);
+		byte[] buf = head.array();
+		int p, q, e = head.position();
+		for (p = 0; p < e;)
+			if (buf[p++] == ' ')
+				break;
+		for (q = p; q < e; ++q)
+		{
+			byte b = buf[q];
+			if (b == ' ' || b == '?')
+				break;
+		}
+		return decodeUrl(buf, p, q - p);
 	}
 
 	public static String getHeadPathParams(OctetsStream head)
 	{
-		int e = head.position();
-		int p = head.find(0, e, (byte)' ');
-		if (p < 0)
-			return "";
-		int q = head.find(++p, e, (byte)' ');
-		if (q < 0)
-			return "";
-		return decodeUrl(head.array(), p, q - p);
+		byte[] buf = head.array();
+		int p, q, e = head.position();
+		for (p = 0; p < e;)
+			if (buf[p++] == ' ')
+				break;
+		for (q = p; q < e; ++q)
+			if (buf[q] == ' ')
+				break;
+		return decodeUrl(buf, p, q - p);
 	}
 
 	/**
@@ -297,21 +310,24 @@ public final class HttpCodec implements IoFilter
 
 	private static void appendInt(Octets buf, long value)
 	{
-		int pos = buf.size();
+		int n;
+		if (value < 1_000_000_000_000_000_000L) // 0x7fff_ffff_ffff_ffff = 9,223,372,036,854,775,807
+		{
+			n = 1;
+			for (long i = 10; i <= value; i *= 10)
+				n++;
+		}
+		else
+			n = 19;
+		n += buf.size();
+		buf.resize(n);
+		byte[] b = buf.array();
 		do
 		{
-			buf.append((byte)('0' + value % 10));
+			b[--n] = (byte)('0' + value % 10);
 			value /= 10;
 		}
 		while (value > 0);
-		byte[] b = buf.array();
-		for (int n = pos + buf.size(), e = n >> 1; pos < e; ++pos) // reverse
-		{
-			int pos2 = n - pos - 1;
-			byte t = b[pos];
-			b[pos] = b[pos2];
-			b[pos2] = t;
-		}
 	}
 
 	private static IoBuffer createHexLine(int value)
@@ -504,22 +520,29 @@ public final class HttpCodec implements IoFilter
 		_maxHttpBodySize = maxHttpBodySize;
 	}
 
-	public static void write(NextFilter next, IoBuffer buf)
+	public static void write(NextFilter next, IoBuffer buf) throws Exception
 	{
 		next.filterWrite(buf);
 	}
 
-	public static void write(NextFilter next, WriteRequest writeRequest, IoBuffer buf)
+	public static void write(NextFilter next, WriteRequest writeRequest, IoBuffer buf) throws Exception
 	{
 		WriteFuture wf = writeRequest.writeRequestFuture();
 		next.filterWrite(wf == DefaultWriteRequest.UNUSED_FUTURE ? buf : new DefaultWriteRequest(buf, wf));
 	}
 
 	@Override
-	public void filterWrite(NextFilter next, IoSession session, WriteRequest writeRequest)
+	public void filterWrite(NextFilter next, IoSession session, WriteRequest writeRequest) throws Exception
 	{
 		Object message = writeRequest.writeRequestMessage();
-		if (message instanceof byte[]) // for raw data
+		if (message instanceof Octets) // for raw data
+		{
+			Octets oct = (Octets)message;
+			int n = oct.remain();
+			if (n > 0)
+				write(next, writeRequest, IoBuffer.wrap(oct.array(), oct.position(), n));
+		}
+		else if (message instanceof byte[]) // for raw data
 		{
 			byte[] bytes = (byte[])message;
 			if (bytes.length > 0)
@@ -531,13 +554,6 @@ public final class HttpCodec implements IoFilter
 			write(next, createHexLine((bb).remaining()));
 			write(next, IoBuffer.wrap(bb));
 			write(next, writeRequest, IoBuffer.wrap(RES_HEAD_END, 0, 2));
-		}
-		else if (message instanceof Octets) // for raw data
-		{
-			Octets oct = (Octets)message;
-			int n = oct.remain();
-			if (n > 0)
-				write(next, writeRequest, IoBuffer.wrap(oct.array(), oct.position(), n));
 		}
 		else
 			next.filterWrite(writeRequest);

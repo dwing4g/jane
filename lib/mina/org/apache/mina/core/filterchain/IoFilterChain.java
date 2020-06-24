@@ -154,7 +154,7 @@ public interface IoFilterChain {
 	 * Most users don't need to call this method at all.
 	 * Please use this method only when you implement a new transport or fire a virtual event.
 	 */
-	void fireInputClosed();
+	void fireInputClosed() throws Exception;
 
 	/**
 	 * Fires a {@link IoHandler#messageReceived(IoSession, Object)} event.
@@ -163,7 +163,7 @@ public interface IoFilterChain {
 	 *
 	 * @param message The received message
 	 */
-	void fireMessageReceived(Object message);
+	void fireMessageReceived(Object message) throws Exception;
 
 	/**
 	 * Fires a {@link IoSession#write(Object)} event.
