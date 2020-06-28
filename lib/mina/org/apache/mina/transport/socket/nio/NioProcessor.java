@@ -81,13 +81,15 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 
 	@Override
 	public void remove(NioSession session) {
-		scheduleRemove(session);
-		startupProcessor();
+		if (scheduleRemove(session))
+			startupProcessor();
 	}
 
-	private void scheduleRemove(NioSession session) {
-		if (session.setScheduledForRemove())
-			removingSessions.add(session);
+	private boolean scheduleRemove(NioSession session) {
+		if (!session.setScheduledForRemove())
+			return false;
+		removingSessions.add(session);
+		return true;
 	}
 
 	@Override

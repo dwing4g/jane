@@ -371,14 +371,14 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 			callPreviousFilterClose(tail);
 		} catch (Exception e) {
 			fireExceptionCaught(e);
+		} finally {
+			session.getProcessor().remove(session);
 		}
 	}
 
 	private void callPreviousFilterClose(Entry entry) throws Exception {
 		if (entry != null)
 			entry.getFilter().filterClose(entry.getNextFilter(), session);
-		else
-			session.getProcessor().remove(session);
 	}
 
 	@Override

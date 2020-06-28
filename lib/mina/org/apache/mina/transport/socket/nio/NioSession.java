@@ -397,10 +397,10 @@ public final class NioSession implements IoSession {
 			int readBytes;
 			try {
 				readBytes = channel.read(buf.buf());
-			} catch (Exception e) {
+			} catch (Exception e) { // TCP RST
 				buf.free();
-				closeNow();
 				filterChain.fireExceptionCaught(e);
+				closeNow();
 				return;
 			}
 
@@ -410,7 +410,7 @@ public final class NioSession implements IoSession {
 				else if (readBytes >= readBufferSize)
 					increaseReadBufferSize();
 				filterChain.fireMessageReceived(buf.flip());
-			} else {
+			} else { // TCP FIN
 				// release temporary buffer when read nothing
 				buf.free();
 				if (readBytes < 0)

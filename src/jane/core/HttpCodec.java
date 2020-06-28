@@ -308,18 +308,20 @@ public final class HttpCodec implements IoFilter
 		return r;
 	}
 
-	private static void appendInt(Octets buf, long value)
+	private static int getUIntLen(long value)
 	{
 		int n;
-		if (value < 1_000_000_000_000_000_000L) // 0x7fff_ffff_ffff_ffff = 9,223,372,036,854,775,807
-		{
-			n = 1;
-			for (long i = 10; i <= value; i *= 10)
-				n++;
-		}
-		else
-			n = 19;
-		n += buf.size();
+		if (value >= 1_000_000_000_000_000_000L) // 0x7fff_ffff_ffff_ffff = 9,223,372,036,854,775,807
+			return 19;
+		n = 1;
+		for (long i = 10; i <= value; i *= 10)
+			n++;
+		return n;
+	}
+
+	private static void appendUInt(Octets buf, long value)
+	{
+		int n = buf.size() + getUIntLen(value);
 		buf.resize(n);
 		byte[] b = buf.array();
 		do
@@ -404,18 +406,16 @@ public final class HttpCodec implements IoFilter
 	}
 
 	/**
-	 * 创建额外发送的HTTP头的缓冲区
+	 * 创建额外发送的HTTP头的缓冲区(除了首行HTTP状态,Date,Content-Length,Transfer-Encoding)
 	 * @param heads 每个元素表示一行文字(不含换行符),没有做验证,所以小心使用,可传null表示无任何额外的头信息
 	 */
 	public static Octets createExtraHead(String... heads)
 	{
 		Octets buf = new Octets();
 		if (heads != null)
-		{
 			for (String head : heads)
 				if (head != null && !head.isEmpty())
-					buf.append((byte)'\r').append((byte)'\n').append(head.getBytes(StandardCharsets.UTF_8));
-		}
+					buf.marshal2(0x0d0a).append(head);
 		return buf;
 	}
 
@@ -434,30 +434,30 @@ public final class HttpCodec implements IoFilter
 	{
 		if (session.isClosing())
 			return false;
+		int dataLen = (data != null ? data.remain() : 0);
+		if (len == 0)
+			len = dataLen;
 		byte[] dateLine = getDateLine();
 		int size = (code == null ? RES_HEAD_OK.length : 9 + Octets.marshalStrLen(code)) + dateLine.length +
-				RES_HEAD_CONT_LEN.length + 20 + RES_HEAD_END.length;
+				(len >= 0 ? RES_HEAD_CONT_LEN.length + getUIntLen(len) : RES_HEAD_CHUNKED.length) + 4;
 		if (extraHead != null)
 			size += extraHead.size();
 		final int APPEND_DATA_MAX = 64;
-		int dataLen = (data != null ? data.remain() : 0);
 		if (dataLen <= APPEND_DATA_MAX)
 			size += dataLen;
-		Octets buf = new Octets(size);
+		Octets buf = Octets.createSpace(size);
 		if (code == null)
 			buf.append(RES_HEAD_OK);
 		else
 			buf.append(RES_HEAD_OK, 0, 9).append(code);
 		buf.append(dateLine);
-		if (len == 0)
-			len = dataLen;
 		if (len >= 0)
-			appendInt(buf.append(RES_HEAD_CONT_LEN), len);
+			appendUInt(buf.append(RES_HEAD_CONT_LEN), len);
 		else
 			buf.append(RES_HEAD_CHUNKED);
 		if (extraHead != null)
 			buf.append(extraHead);
-		buf.append(RES_HEAD_END);
+		buf.marshal4(0x0d0a0d0a);
 		if (dataLen > 0 && dataLen <= APPEND_DATA_MAX)
 			buf.append(data.array(), data.position(), dataLen);
 		return send(session, buf) && (dataLen <= APPEND_DATA_MAX || send(session, data));
