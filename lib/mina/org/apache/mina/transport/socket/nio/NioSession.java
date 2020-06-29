@@ -339,26 +339,26 @@ public final class NioSession implements IoSession {
 		}
 	}
 
-	void removeNow(IOException ioe) {
-		clearWriteRequestQueue(ioe);
-		if (ioe != null)
-			filterChain.fireExceptionCaught(ioe);
+	void removeNow(Exception e) {
+		clearWriteRequestQueue(e);
+		if (e != null)
+			filterChain.fireExceptionCaught(e);
 
 		try {
 			destroy();
-		} catch (Exception e) {
-			filterChain.fireExceptionCaught(e);
+		} catch (Exception ex) {
+			filterChain.fireExceptionCaught(ex);
 		} finally {
 			service.fireSessionDestroyed(this);
 		}
 	}
 
-	private void clearWriteRequestQueue(IOException ioe) {
+	private void clearWriteRequestQueue(Exception e) {
 		WriteRequest req = writeRequestQueue.poll();
 		if (req == null)
 			return;
 
-		Exception ex = new WriteToClosedSessionException(ioe);
+		Exception ex = new WriteToClosedSessionException(e);
 		do {
 			req.writeRequestFuture().setException(ex);
 			Object message = req.writeRequestMessage();

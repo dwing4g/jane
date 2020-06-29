@@ -257,11 +257,9 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 		void flushNow(NioSession session) {
 			if (session.isClosing())
 				return;
-
-			WriteRequestQueue writeQueue = session.getWriteRequestQueue();
-			WriteRequest req = null;
 			try {
-				for (; (req = writeQueue.peek()) != null; writeQueue.poll()) {
+				WriteRequestQueue writeQueue = session.getWriteRequestQueue();
+				for (WriteRequest req; (req = writeQueue.peek()) != null; writeQueue.poll()) {
 					Object message = req.writeRequestMessage();
 					if (message instanceof IoBuffer) {
 						IoBuffer buf = (IoBuffer)message;
@@ -287,29 +285,17 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 						req.writeRequestFuture().setWritten();
 					} else if (req == NioSession.CLOSE_REQUEST) {
 						session.closeNow();
-						return;
+						break;
 					} else if (req == NioSession.SHUTDOWN_REQUEST) {
-						try {
-							session.setInterestedInWrite(false);
-							session.getChannel().shutdownOutput();
-						} catch (Exception e) {
-						}
-						return;
+						session.getChannel().shutdownOutput();
+						break;
 					} else
 						throw new IllegalStateException("unknown message type for writting: " + message.getClass().getName() + ": " + message);
 				}
 				session.setInterestedInWrite(false);
 			} catch (Exception e) {
-				if (req != null) {
-					writeQueue.poll();
-					req.writeRequestFuture().setException(e);
-				}
-				if (e instanceof IOException) {
-					// we have had an issue while trying to send data to the peer, let's close the session
-					session.closeNow();
-					session.removeNow((IOException)e);
-				} else
-					session.getFilterChain().fireExceptionCaught(e);
+				session.closeNow();
+				session.removeNow(e);
 			}
 		}
 
