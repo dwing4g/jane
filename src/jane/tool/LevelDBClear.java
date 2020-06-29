@@ -69,7 +69,7 @@ public final class LevelDBClear
 			OctetsStream keyOs = OctetsStream.wrap(key);
 			if (keyTo != null && keyOs.compareTo(keyTo) >= 0)
 				break;
-			buf.add(new SimpleEntry<Octets, Octets>(keyOs, deleted));
+			buf.add(new SimpleEntry<>(keyOs, deleted));
 			if (buf.size() >= 10000)
 			{
 				count += buf.size();

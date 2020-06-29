@@ -69,7 +69,7 @@ public final class TestHttpServer extends NetManager
 			try
 			{
 				heads[4] = "Content-Type: application/octet-stream";
-				final FileInputStream fis = new FileInputStream('.' + path); //NOSONAR
+				final FileInputStream fis = new FileInputStream('.' + path);
 				final FileChannel fc = fis.getChannel();
 				FileRegion fr = new DefaultFileRegion(fc);
 				HttpCodec.sendHead(session, "200 OK", fr.getRemainingBytes(), heads);
@@ -86,7 +86,7 @@ public final class TestHttpServer extends NetManager
 					}
 					catch (IOException ex)
 					{
-						ex.printStackTrace(); //NOSONAR
+						ex.printStackTrace();
 					}
 				});
 			}

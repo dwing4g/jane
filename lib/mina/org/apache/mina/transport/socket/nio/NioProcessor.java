@@ -332,7 +332,7 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 					ExceptionMonitor.getInstance().warn("create a new selector");
 					// In the case we are using the java select() method,
 					// this method is used to trash the buggy selector and create a new one, registering all the sockets on it.
-					Selector newSelector = Selector.open(); //NOSONAR
+					Selector newSelector = Selector.open();
 
 					// Loop on all the registered keys, and register them on the new selector
 					for (SelectionKey key : selector.keys()) {

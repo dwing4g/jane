@@ -41,11 +41,11 @@ public final class HttpCodec implements IoFilter
 	private static final SundaySearch SS_CONT_LEN		= new SundaySearch("\nContent-Length: ");
 	private static final SundaySearch SS_CONT_TYPE		= new SundaySearch("\nContent-Type: ");
 	private static final SundaySearch SS_COOKIE			= new SundaySearch("\nCookie: ");
-	private static final byte[]		  RES_HEAD_OK		= "HTTP/1.1 200 OK".getBytes(StandardCharsets.UTF_8);
-	private static final byte[]		  RES_HEAD_CONT_LEN	= "\r\nContent-Length: ".getBytes(StandardCharsets.UTF_8);
-	private static final byte[]		  RES_HEAD_CHUNKED	= "\r\nTransfer-Encoding: chunked".getBytes(StandardCharsets.UTF_8);
-	private static final byte[]		  RES_HEAD_END		= "\r\n\r\n".getBytes(StandardCharsets.UTF_8);
-	private static final byte[]		  RES_CHUNK_END		= "0\r\n\r\n".getBytes(StandardCharsets.UTF_8);
+	private static final byte[]		  RES_HEAD_OK		= "HTTP/1.1 200 OK".getBytes(StandardCharsets.ISO_8859_1);
+	private static final byte[]		  RES_HEAD_CONT_LEN	= "\r\nContent-Length: ".getBytes(StandardCharsets.ISO_8859_1);
+	private static final byte[]		  RES_HEAD_CHUNKED	= "\r\nTransfer-Encoding: chunked".getBytes(StandardCharsets.ISO_8859_1);
+	private static final byte[]		  RES_HEAD_END		= "\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1);
+	private static final byte[]		  RES_CHUNK_END		= "0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1);
 	private static final byte[]		  HEX				= { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
 	private static final String		  DEF_CONT_CHARSET	= "utf-8";
 	private static final Pattern	  PATTERN_COOKIE	= Pattern.compile("(\\w+)=(.*?)(; |$)");
@@ -88,7 +88,7 @@ public final class HttpCodec implements IoFilter
 		{
 			_lastSec = sec;
 			_dateLine = dateLine = ("\r\nDate: " + DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.of(
-					LocalDateTime.ofEpochSecond(sec, 0, ZoneOffset.UTC), ZONE_ID))).getBytes(StandardCharsets.UTF_8);
+					LocalDateTime.ofEpochSecond(sec, 0, ZoneOffset.UTC), ZONE_ID))).getBytes(StandardCharsets.ISO_8859_1);
 		}
 		return dateLine;
 	}

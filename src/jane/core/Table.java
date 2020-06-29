@@ -61,7 +61,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 		long n = 0;
 		try
 		{
-			for (K k : _cacheMod.keySet()) //NOSONAR
+			for (K k : _cacheMod.keySet())
 			{
 				Lock lock = Procedure.tryLock(lockId(k));
 				if (lock != null)

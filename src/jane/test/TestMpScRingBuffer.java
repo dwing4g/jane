@@ -1,7 +1,7 @@
 package jane.test;
 
 import java.util.concurrent.atomic.AtomicLong;
-// import sun.misc.Contended; //NOSONAR
+// import sun.misc.Contended;
 
 /**
  * 无锁的单消费者的定长Object Ring Buffer队列. 消费者只能固定一个线程访问

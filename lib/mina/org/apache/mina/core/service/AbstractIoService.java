@@ -83,7 +83,7 @@ public abstract class AbstractIoService implements IoService {
 
 		processor = proc;
 		String threadName = getClass().getSimpleName() + '-' + idGenerator.incrementAndGet();
-		executor = new ThreadPoolExecutor(0, 1, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(),
+		executor = new ThreadPoolExecutor(0, 1, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(),
 				r -> new Thread(r, threadName));
 	}
 

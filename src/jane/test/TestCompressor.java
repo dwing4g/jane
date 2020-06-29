@@ -189,15 +189,15 @@ public final class TestCompressor
 		_comPos = srcPos;
 		_bits = _cache = 0;
 		int n, f = 1, f2 = 2, f3 = 3, f4 = 4;
-		for(dstLen += dstPos; dstPos < dstLen;) //NOSONAR
+		for(dstLen += dstPos; dstPos < dstLen;)
 		{
 			     if(getbit() >= 0)  dst[dstPos++] = (byte)getbits(7);
 			else if(getbit() >= 0)  dst[dstPos++] = (byte)(getbits(7) + 0x80);
 			else{if(getbit() >= 0)
-			    {if(getbit() <  0) //NOSONAR
+			    {if(getbit() <  0)
 			     if(getbit() >= 0) {n = f2; f2=f;f=n;}
 			     else              {n = f3; f3=f2;f2=f;f=n;}} //NOSONAR
-			else{if(getbit() >= 0) //NOSONAR
+			else{if(getbit() >= 0)
 			     if(getbit() >= 0)  n = f4;
 			     else               n = getbits(7) + 1; //NOSONAR
 			else if(getbit() >= 0)  n = getbits(13) + 0x81;
@@ -247,7 +247,7 @@ public final class TestCompressor
 		int dstlen = lzc.compress(src, 0, src.length, dst, 0);
 		long td = System.currentTimeMillis();
 		tc = td - tc;
-		lzc.decompress(dst, 0, src, 0, (int)srclen);
+		lzc.decompress(dst, 0, src, 0, (int)srclen); //NOSONAR
 		td = System.currentTimeMillis() - td;
 
 		md5.reset();

@@ -44,7 +44,7 @@ public final class TestAes
 
 	public static void testAesEcb() throws Exception
 	{
-		Cipher aes = Cipher.getInstance("AES/ECB/NoPadding");
+		Cipher aes = Cipher.getInstance("AES/ECB/NoPadding"); //NOSONAR
 		aes.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(new byte[16], "AES"));
 		byte[] src = new byte[16];
 		long t = System.currentTimeMillis();
@@ -75,7 +75,7 @@ public final class TestAes
 		methodEncrypt.setAccessible(true);
 
 		Object aesCrypt = cons.newInstance();
-		methodInit.invoke(aesCrypt, false, "AES", new byte[16]);
+		methodInit.invoke(aesCrypt, false, "AES", new byte[16]); //NOSONAR
 		byte[] src = new byte[16];
 		long t = System.currentTimeMillis();
 		for (int i = 0; i < 10000000; ++i)
@@ -101,7 +101,7 @@ public final class TestAes
 		for (int i = 0; i < holds.length; ++i)
 		{
 			holds[i] = cons.newInstance();
-			methodInit.invoke(holds[i], false, "AES", new byte[16]);
+			methodInit.invoke(holds[i], false, "AES", new byte[16]); //NOSONAR
 			methodEncrypt.invoke(holds[i], src, 0, src, 0);
 		}
 
@@ -120,7 +120,7 @@ public final class TestAes
 		methodEncrypt.setAccessible(true);
 
 		Object aesCrypt = cons.newInstance();
-		methodInit.invoke(aesCrypt, false, "AES", new byte[16]);
+		methodInit.invoke(aesCrypt, false, "AES", new byte[16]); //NOSONAR
 		byte[] src = new byte[16];
 		byte[] dst = new byte[16];
 		long t = System.currentTimeMillis();

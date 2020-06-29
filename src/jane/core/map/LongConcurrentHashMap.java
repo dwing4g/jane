@@ -1348,7 +1348,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	}
 
 	// Unsafe mechanics
-	private static final sun.misc.Unsafe U;			   //NOSONAR
+	private static final sun.misc.Unsafe U;
 	private static final long			 SIZECTL;
 	private static final long			 TRANSFERINDEX;
 	private static final long			 BASECOUNT;

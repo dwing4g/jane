@@ -25,7 +25,7 @@ final class LRUCleaner
 
 	private LRUCleaner()
 	{
-		cleanerThread = new ThreadPoolExecutor(0, 1, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(), r ->
+		cleanerThread = new ThreadPoolExecutor(0, 1, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<>(), r ->
 		{
 			Thread t = new Thread(r, "LRUMapCleanerThread");
 			t.setDaemon(true);

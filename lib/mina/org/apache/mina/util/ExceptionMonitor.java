@@ -37,7 +37,7 @@ public class ExceptionMonitor {
 	/**
 	 * @return the current exception monitor.
 	 */
-	public static ExceptionMonitor getInstance() { //NOSONAR
+	public static ExceptionMonitor getInstance() {
 		ExceptionMonitor monitor = instance;
 		if (monitor == null) {
 			synchronized(ExceptionMonitor.class) {
@@ -55,7 +55,7 @@ public class ExceptionMonitor {
 	 *
 	 * @param monitor A new instance of {@link ExceptionMonitor} is set if <tt>null</tt> is specified.
 	 */
-	public static synchronized void setInstance(ExceptionMonitor monitor) {
+	public static void setInstance(ExceptionMonitor monitor) {
 		instance = (monitor != null ? monitor : new ExceptionMonitor());
 	}
 

@@ -12,7 +12,7 @@ import jane.core.MarshalException.EOF;
  * 包括各种所需的序列化/反序列化
  * @formatter:off
  */
-public class OctetsStream extends Octets //NOSONAR
+public class OctetsStream extends Octets
 {
 	protected int _pos; // 当前的读位置(写是在_count位置之后追加)
 

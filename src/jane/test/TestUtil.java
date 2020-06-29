@@ -330,7 +330,7 @@ public final class TestUtil
 
 		HttpURLConnection conn = null;
 		byte[] body = (post != null ? post.getBytes(StandardCharsets.UTF_8) : null);
-		try //NOSONAR
+		try
 		{
 			conn = (HttpURLConnection)new URL(url).openConnection();
 			conn.setUseCaches(false);

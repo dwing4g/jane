@@ -50,8 +50,8 @@ public final class DBManager
 	{
 		private final SimpleDateFormat _sdf			 = new SimpleDateFormat("yy-MM-dd-HH-mm-ss");  // 备份文件后缀名的时间格式
 		private final long[]		   _counts		 = new long[3];								   // 3个统计数量值,分别是统计前数量,统计后数量,处理过的数量
-		private final long			   _commitPeriod = Const.dbCommitPeriod * 1000;				   // 提交数据库的周期 //NOSONAR
-		private final long			   _backupPeriod = Const.dbBackupPeriod * 1000;				   // 备份数据库的周期 //NOSONAR
+		private final long			   _commitPeriod = Const.dbCommitPeriod * 1000;				   // 提交数据库的周期
+		private final long			   _backupPeriod = Const.dbBackupPeriod * 1000;				   // 备份数据库的周期
 		private volatile long		   _commitTime	 = System.currentTimeMillis() + _commitPeriod; // 下次提交数据库的时间
 		private volatile long		   _backupTime;												   // 下次备份数据库的时间
 
