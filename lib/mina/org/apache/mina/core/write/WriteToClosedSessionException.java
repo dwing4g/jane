@@ -23,9 +23,8 @@ import java.io.IOException;
 /**
  * An exception which is thrown when one or more write operations were attempted on a closed session.
  */
+@SuppressWarnings("serial")
 public final class WriteToClosedSessionException extends IOException {
-	private static final long serialVersionUID = 1L;
-
 	public WriteToClosedSessionException(Throwable cause) {
 		super(cause);
 	}

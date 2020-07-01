@@ -1,15 +1,16 @@
 package jane.core;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.List;
+import java.util.Vector;
 
 /**
  * 全局唯一的退出处理管理器
  */
 public final class ExitManager
 {
-	private static final ArrayList<Runnable> _shutdownUserCallbacks	  = new ArrayList<>(); // 退出时的用户回调列表
-	private static final ArrayList<Runnable> _shutdownSystemCallbacks = new ArrayList<>(); // 退出时的系统回调列表
+	private static final List<Runnable>	_shutdownUserCallbacks	 = new Vector<>(); // 退出时的用户回调列表
+	private static final List<Runnable>	_shutdownSystemCallbacks = new Vector<>(); // 退出时的系统回调列表
 
 	static
 	{
@@ -60,7 +61,7 @@ public final class ExitManager
 	 * <p>
 	 * 在关闭数据库前按顺序调用,每次回调的异常会记录日志并忽略,严禁出现死循环,不要出现较长(>1秒)的IO等待
 	 */
-	public static ArrayList<Runnable> getShutdownUserCallbacks()
+	public static List<Runnable> getShutdownUserCallbacks()
 	{
 		return _shutdownUserCallbacks;
 	}
@@ -68,7 +69,7 @@ public final class ExitManager
 	/**
 	 * 同getShutdownUserCallbacks, 但会在所有user级回调全部执行完后再执行system级, 没有特殊需要不要使用system级
 	 */
-	public static ArrayList<Runnable> getShutdownSystemCallbacks()
+	public static List<Runnable> getShutdownSystemCallbacks()
 	{
 		return _shutdownSystemCallbacks;
 	}

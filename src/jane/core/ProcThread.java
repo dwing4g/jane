@@ -9,6 +9,7 @@ public class ProcThread extends Thread
 	private static final ConcurrentLinkedQueue<ProcThread> _procThreads	= new ConcurrentLinkedQueue<>(); // 当前运行的全部事务线程. 用于判断是否超时
 	private static volatile long						   _interruptCount;								 // 事务被打断的次数统计
 
+	final DBManager	  dbm;												   // 所属的DBManager实例
 	final IndexLock[] locks	   = new IndexLock[Const.maxLockPerProcedure]; // 当前线程已经加过的锁
 	int				  lockCount;										   // 当前进程已经加过锁的数量
 	final SContext	  sctx	   = new SContext();						   // 当前线程上的安全修改的上下文
@@ -16,14 +17,15 @@ public class ProcThread extends Thread
 	long			  beginTime;										   // 当前/上个事务运行的起始时间. 用于判断是否超时
 	final long[]	  versions = new long[Const.maxLockPerProcedure];	   // 当前线程已经加过的锁版本号(只在需要时临时设置,这里只是为了避免反复分配)
 
-	public ProcThread(String name)
+	public ProcThread(DBManager dbm, String name)
 	{
-		this(name, null);
+		this(dbm, name, null);
 	}
 
-	public ProcThread(String name, Runnable r)
+	public ProcThread(DBManager dbm, String name, Runnable r)
 	{
 		super(r, name != null ? name : "ProcThread");
+		this.dbm = dbm;
 		_procThreads.add(this);
 	}
 

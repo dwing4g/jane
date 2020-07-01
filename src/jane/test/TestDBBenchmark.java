@@ -30,7 +30,7 @@ public final class TestDBBenchmark
 		System.runFinalization();
 		Log.info("start");
 
-		Thread pt = new ProcThread(null, () ->
+		Thread pt = new ProcThread(DBManager.instance(), null, () ->
 		{
 			long t = System.currentTimeMillis();
 			final AtomicInteger checked = new AtomicInteger();

@@ -30,11 +30,15 @@ public final class DBSimpleManager
 {
 	private static final class InstanceHolder
 	{
-		public static final DBSimpleManager instance = new DBSimpleManager(Const.dbSimpleCacheSize);
+		static final DBSimpleManager _instance = new DBSimpleManager(Const.dbSimpleCacheSize);
+		static
+		{
+			_instanceCreated = true;
+		}
 	}
 
 	private static final Octets		_deleted = new Octets(); // 表示已删除的值
-	private static volatile boolean	_hasCreated;			 // 是否创建过此类的对象
+	private static volatile boolean	_instanceCreated;		 // 是否创建过全局实例
 
 	private final CommitThread					_commitThread	= new CommitThread();		   // 处理数据提交的线程
 	private final Map<Octets, Octets>			_readCache;									   // 读缓冲区
@@ -46,7 +50,6 @@ public final class DBSimpleManager
 	private String								_dbFilename;								   // 数据库的文件名(不含父路径,对LevelDB而言是目录名)
 	private String								_dbBackupPath;								   // 数据库的备份路径
 	private StorageLevelDB						_storage;									   // 存储引擎
-	private volatile boolean					_exiting;									   // 是否在退出状态(已经执行了ShutdownHook)
 
 	/**
 	 * 周期向数据库存储提交事务性修改的线程(checkpoint)
@@ -193,17 +196,16 @@ public final class DBSimpleManager
 
 	public static DBSimpleManager instance()
 	{
-		return InstanceHolder.instance;
+		return InstanceHolder._instance;
 	}
 
-	public static boolean hasCreated()
+	public static boolean instanceCreated()
 	{
-		return _hasCreated;
+		return _instanceCreated;
 	}
 
 	public DBSimpleManager(int readCacheSize)
 	{
-		_hasCreated = true;
 		_readCache = (readCacheSize > 0 ? Util.newConcurrentLRUMap(readCacheSize, "SimpleReadCache") : null);
 	}
 
@@ -225,8 +227,6 @@ public final class DBSimpleManager
 	 */
 	public synchronized void startup(StorageLevelDB sto, String dbFilename, String dbBackupPath) throws IOException
 	{
-		if (_exiting)
-			throw new IllegalArgumentException("can not startup when exiting");
 		if (_storage != null)
 			throw new IllegalArgumentException("already started");
 		if (sto == null)
@@ -244,19 +244,9 @@ public final class DBSimpleManager
 		sto.openDB(dbfile);
 		ExitManager.getShutdownSystemCallbacks().add(() ->
 		{
-			Log.info("DBSimpleManager.OnJVMShutDown: db shutdown");
-			try
-			{
-				synchronized (DBSimpleManager.this)
-				{
-					_exiting = true;
-				}
-			}
-			finally
-			{
-				shutdown();
-			}
-			Log.info("DBSimpleManager.OnJVMShutDown: db closed");
+			Log.info("DBSimpleManager.OnJvmShutDown({}): db shutdown", dbFilename);
+			shutdown();
+			Log.info("DBSimpleManager.OnJvmShutDown({}): db closed", dbFilename);
 		});
 	}
 

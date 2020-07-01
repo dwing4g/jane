@@ -120,7 +120,7 @@ public final class Log
 	 * <p>
 	 * 应在系统退出前(ShutdownHook)最后执行
 	 */
-	public static void shutdown()
+	public static synchronized void shutdown()
 	{
 		logCtx.stop();
 	}

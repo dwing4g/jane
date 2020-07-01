@@ -2,7 +2,7 @@ package jane.tool;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.buffer.IoBufferAllocator;
@@ -20,24 +20,24 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 	private static final AtomicLong	reuseCount = new AtomicLong();
 	private static final AtomicLong	freeCount  = new AtomicLong();
 
-	private final int									  maxPoolSize;
-	private final int									  maxCachedBufferSize;					 // 2^n:[0,0x4000_4000]
-	private final ThreadLocal<ArrayDeque<CachedBuffer>[]> heapBuffers	= new CacheThreadLocal();
-	private final ThreadLocal<ArrayDeque<CachedBuffer>[]> directBuffers	= new CacheThreadLocal();
-	private final int[]									  checkPoolSize	= new int[32];
+	private final int									 maxPoolSize;
+	private final int									 maxCachedBufferSize;					// 2^n:[0,0x4000_4000]
+	private final ThreadLocal<ArrayList<CachedBuffer>[]> heapBuffers   = new CacheThreadLocal();
+	private final ThreadLocal<ArrayList<CachedBuffer>[]> directBuffers = new CacheThreadLocal();
+	private final int[]									 checkPoolSize = new int[32];
 
-	private final class CacheThreadLocal extends ThreadLocal<ArrayDeque<CachedBuffer>[]>
+	private final class CacheThreadLocal extends ThreadLocal<ArrayList<CachedBuffer>[]>
 	{
 		@Override
-		protected ArrayDeque<CachedBuffer>[] initialValue()
+		protected ArrayList<CachedBuffer>[] initialValue()
 		{
 			@SuppressWarnings("unchecked")
-			ArrayDeque<CachedBuffer>[] poolMap = new ArrayDeque[32];
-			poolMap[0] = new ArrayDeque<>();
+			ArrayList<CachedBuffer>[] poolMap = new ArrayList[32];
+			poolMap[0] = new ArrayList<>();
 			for (int k = 1; k <= maxCachedBufferSize; k += k)
 			{
 				int i = getIdx(k);
-				poolMap[i] = new ArrayDeque<>();
+				poolMap[i] = new ArrayList<>();
 				checkPoolSize[i] = k;
 			}
 			return poolMap;
@@ -98,9 +98,11 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 		IoBuffer buf;
 		if (actualCapacity <= maxCachedBufferSize)
 		{
-			buf = (direct ? directBuffers : heapBuffers).get()[getIdx(actualCapacity)].pollFirst();
-			if (buf != null)
+			ArrayList<CachedBuffer> bufs = (direct ? directBuffers : heapBuffers).get()[getIdx(actualCapacity)];
+			int size;
+			if (bufs != null && (size = bufs.size()) > 0)
 			{
+				buf = bufs.remove(size - 1).clearFreed();
 				buf.clear();
 				buf.buf().order(ByteOrder.BIG_ENDIAN);
 				reuseCount.getAndIncrement();
@@ -126,6 +128,7 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 	private final class CachedBuffer extends IoBuffer
 	{
 		private final ByteBuffer buf;
+		private boolean			 freed;
 
 		CachedBuffer(int capacity, boolean direct)
 		{
@@ -144,13 +147,22 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 			return SimpleBufferAllocator.instance.wrap(buf.duplicate());
 		}
 
-		@Override
-		public void free() //NOTE: DO NOT double free
+		CachedBuffer clearFreed()
 		{
-			ArrayDeque<CachedBuffer> pool = (buf.isDirect() ? directBuffers : heapBuffers).get()[getIdx(buf.capacity())];
+			freed = false;
+			return this;
+		}
+
+		@Override
+		public void free()
+		{
+			if (freed)
+				return;
+			freed = true;
+			ArrayList<CachedBuffer> pool = (buf.isDirect() ? directBuffers : heapBuffers).get()[getIdx(buf.capacity())];
 			if (pool.size() < maxPoolSize)
 			{
-				pool.addFirst(this);
+				pool.add(this);
 				freeCount.getAndIncrement();
 			}
 		}

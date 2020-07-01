@@ -20,7 +20,7 @@ public final class TestIterator
 		System.out.println("start");
 		final long id = 1;
 
-		Thread pt = new ProcThread(null, () ->
+		Thread pt = new ProcThread(DBManager.instance(), null, () ->
 		{
 			new Procedure()
 			{

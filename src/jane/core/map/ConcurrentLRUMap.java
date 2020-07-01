@@ -26,7 +26,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import jane.core.Log;
-import jane.core.map.LRUCleaner.Cleanable;
 
 /**
  * A LRU cache implementation based upon ConcurrentHashMap and other techniques to reduce
@@ -127,7 +126,7 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 		if (ceOld != null)
 			return ceOld.value;
 		if (size.getAndIncrement() >= upperSize && sweepStatus.get() == 0)
-			LRUCleaner.submit(sweepStatus, this);
+			Cleanable.submit(sweepStatus, this);
 		return null;
 	}
 

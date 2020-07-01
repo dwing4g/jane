@@ -22,7 +22,7 @@ public final class TestUndo
 		final long id = 1;
 		final int v = 1;
 
-		Thread pt = new ProcThread(null, () ->
+		Thread pt = new ProcThread(DBManager.instance(), null, () ->
 		{
 			new Procedure()
 			{

@@ -27,11 +27,14 @@ public final class DBManager
 {
 	private static final class InstanceHolder
 	{
-		public static final DBManager instance = new DBManager();
+		static final DBManager _instance = new DBManager();
+		static
+		{
+			_instanceCreated = true;
+		}
 	}
 
-	private static volatile boolean	_hasCreated; // 是否创建过此类的对象
-	private static volatile boolean	_exiting;	 // 是否在退出状态(已经执行了ShutdownHook)
+	private static volatile boolean _instanceCreated; // 是否创建过全局实例
 
 	private final ArrayList<TableBase<?>>					   _tables		 = new ArrayList<>(16);			// 所有表的容器
 	private final CommitThread								   _commitThread = new CommitThread();			// 处理数据提交的线程
@@ -39,6 +42,7 @@ public final class DBManager
 	private final ConcurrentMap<Object, ArrayDeque<Procedure>> _qmap		 = Util.newConcurrentHashMap();	// 当前sid队列的数量
 	private final AtomicLong								   _procCount	 = new AtomicLong();			// 绑定过sid的在队列中未运行的事务数量
 	private final AtomicLong								   _modCount	 = new AtomicLong();			// 当前缓存修改的记录数
+	private final FastRWLock								   _rwlCommit	 = new FastRWLock();			// 用于数据提交的读写锁
 	private String											   _dbFilename;									// 数据库的文件名(不含父路径,对LevelDB而言是目录名)
 	private String											   _dbBackupPath;								// 数据库的备份路径
 	private Storage											   _storage;									// 存储引擎
@@ -146,7 +150,7 @@ public final class DBManager
 								storage.putFlush(false);
 								Log.info("db-commit procedure pausing...");
 								t1 = System.currentTimeMillis();
-								Procedure.writeLock();
+								_rwlCommit.writeLock();
 								try
 								{
 									_modCount.set(0);
@@ -156,7 +160,7 @@ public final class DBManager
 								}
 								finally
 								{
-									Procedure.writeUnlock();
+									_rwlCommit.writeUnlock();
 								}
 								t1 = System.currentTimeMillis() - t1;
 								if (storage instanceof StorageLevelDB)
@@ -210,30 +214,21 @@ public final class DBManager
 
 	public static DBManager instance()
 	{
-		return InstanceHolder.instance;
+		return InstanceHolder._instance;
 	}
 
-	public static boolean hasCreated()
+	public static boolean instanceCreated()
 	{
-		return _hasCreated;
-	}
-
-	/**
-	 * 判断是否在退出前的shutdown状态下
-	 */
-	public static boolean isExiting()
-	{
-		return _exiting;
+		return _instanceCreated;
 	}
 
 	private DBManager()
 	{
-		_hasCreated = true;
 		AtomicInteger counter = new AtomicInteger();
 		_procThreads = (ThreadPoolExecutor)Executors.newFixedThreadPool(
 				Const.dbThreadCount > 0 ? Const.dbThreadCount : Runtime.getRuntime().availableProcessors(), r ->
 				{
-					Thread t = new ProcThread("ProcThread-" + counter.incrementAndGet(), r);
+					Thread t = new ProcThread(this, "ProcThread-" + counter.incrementAndGet(), r);
 					t.setDaemon(true);
 					return t;
 				});
@@ -312,8 +307,6 @@ public final class DBManager
 	 */
 	public synchronized void startup(Storage sto, String dbFilename, String dbBackupPath) throws IOException
 	{
-		if (_exiting)
-			throw new IllegalArgumentException("can not startup when exiting");
 		if (_storage != null)
 			throw new IllegalArgumentException("already started");
 		if (sto == null)
@@ -331,31 +324,30 @@ public final class DBManager
 		sto.openDB(dbfile);
 		ExitManager.getShutdownSystemCallbacks().add(() ->
 		{
-			Log.info("DBManager.OnJVMShutDown: db shutdown");
+			Log.info("DBManager.OnJvmShutDown({}): db shutdown", dbFilename);
 			try
 			{
 				synchronized (DBManager.this)
 				{
-					_exiting = true;
 					_procThreads.shutdown();
 					if (!_procThreads.awaitTermination(Const.procedureShutdownTimeout, TimeUnit.SECONDS))
 					{
 						List<Runnable> procs = _procThreads.shutdownNow();
-						Log.warn("DBManager.OnJVMShutDown: {} procedures aborted", procs.size());
+						Log.warn("DBManager.OnJvmShutDown({}): {} procedures aborted", dbFilename, procs.size());
 						if (!_procThreads.awaitTermination(Const.procedureShutdownNowTimeout, TimeUnit.SECONDS))
-							Log.warn("DBManager.OnJVMShutDown: current procedures aborted");
+							Log.warn("DBManager.OnJvmShutDown({}): current procedures aborted", dbFilename);
 					}
 				}
 			}
 			catch (InterruptedException e)
 			{
-				Log.info("DBManager.OnJVMShutDown: procThreads interrupted");
+				Log.info("DBManager.OnJvmShutDown({}): procThreads interrupted", dbFilename);
 			}
 			finally
 			{
 				shutdown();
 			}
-			Log.info("DBManager.OnJVMShutDown: db closed");
+			Log.info("DBManager.OnJvmShutDown({}): db closed", dbFilename);
 		});
 	}
 
@@ -423,6 +415,16 @@ public final class DBManager
 		TableLong<V, S> table = new TableLong<>(this, tableId, tableName, stoTable, lockName, cacheSize, stubV);
 		_tables.add(table);
 		return table;
+	}
+
+	void readLock()
+	{
+		_rwlCommit.readLock();
+	}
+
+	void readUnlock()
+	{
+		_rwlCommit.readUnlock();
 	}
 
 	/**
@@ -689,12 +691,13 @@ public final class DBManager
 						}
 					}
 				}
+				catch (RejectedExecutionException e)
+				{
+					Log.info("procedure queue canceled. sid={}, queueSize={}", sid, _q.size());
+				}
 				catch (Throwable e)
 				{
-					if (e instanceof RejectedExecutionException && _exiting)
-						Log.info("procedure queue canceled. sid={}, queueSize={}", sid, _q.size());
-					else
-						Log.error(e, "procedure(sid={}) fatal exception:", sid);
+					Log.error(e, "procedure(sid={}) fatal exception:", sid);
 				}
 			}
 		});

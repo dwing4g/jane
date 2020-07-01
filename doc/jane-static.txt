@@ -1,0 +1,28 @@
+=================================
+■ jane-core中的static变量说明 ■
+=================================
+
+static final数值/字符串类型(可安全共享)除外
+
+CacheRef: _refQueue和_refRemoveCount用于全局管理弱/软引用,并只在全局SoftRefCleanerThread中修改
+DBManager: InstanceHolder._instance用于大多数工程的唯一实例,可不创建; _instanceCreated用于记录是否创建(只修改成true)
+DBSimpleManager: 同上; _deleted用于内部共享不可变的空值
+DynBean: BEAN_STUB
+ExitManager: 全局共享的_shutdownUserCallbacks和_shutdownSystemCallbacks(线程安全)
+HttpCodec: 有几个SundaySearch,byte[],Pattern,ZoneId全局实例,均不可变访问; _dateLine和_lastSec用于更新时间(线程安全)
+Log: 全局的log和logCtx
+MarshalException: _withoutTrace和EOF._withoutTraceEOF可全局共享
+NetManager: _beanCtxMap,_closings,_scheduledThread,_serialCounter,_sharedIoProcessorPool,_sharedIoThreadCount,_timeSec全局管理
+Octets: HEX和_defaultCharset仅内部只读访问; EMPTY不可变
+Procedure: _lockPool,_lockVersions,_lockCreator,_defaultEh全局管理
+ProcThread: _procThreads和_interruptCount全局管理
+RawBean: BEAN_STUB
+StorageLevelDB: _instance大多数工程的唯一实例; _deletedSlice用于内部共享不可变的空值
+
+Cleanable: cleanerThread是全局LRUMapCleanerThread
+LongConcurrentHashMap: U,ThreadLocalRandom.probeGenerator,ThreadLocalRandom.tlProb仿照ConcurrentHashMap
+
+CachedIoBufferAllocator: allocCount,reuseCount,freeCount是全局的线程安全统计值
+ClassReloader: _inst是启动时初始化的全局对象
+LevelDBImport: s_patHex和s_cs88591内部全局实例,均不可变访问
+StatusServer: extraHead内部全局实例,不可变访问

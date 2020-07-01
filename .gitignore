@@ -13,10 +13,12 @@
 /port/csharp/project.lock.json
 /port/.vs/
 /port/lua/bin/
-jane-*.jar
+/jane-*.jar
+/.idea/
+/*.iml
+
 *.keystore
 .eclipse-pmd
 ~$*.*
-
 uvjni64.dll
 aesjni64.dll

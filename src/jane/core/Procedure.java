@@ -19,10 +19,9 @@ public abstract class Procedure implements Runnable
 		void onException(Throwable e);
 	}
 
+	@SuppressWarnings("serial")
 	static final class IndexLock extends ReentrantLock
 	{
-		private static final long serialVersionUID = 1L;
-
 		final int index;
 
 		IndexLock(int i)
@@ -35,7 +34,6 @@ public abstract class Procedure implements Runnable
 	private static final AtomicLongArray				 _lockVersions = new AtomicLongArray(Const.lockPoolSize); // 全局共享的锁版本号池
 	private static final AtomicReferenceArray<IndexLock> _lockCreator  = new AtomicReferenceArray<>(_lockPool);	  // 锁池中锁的线程安全创造器(副本)
 	private static final int							 _lockMask	   = Const.lockPoolSize - 1;				  // 锁池下标的掩码
-	private static final FastRWLock						 _rwlCommit	   = new FastRWLock();						  // 用于数据提交的读写锁
 	private static ExceptionHandler						 _defaultEh;											  // 默认的全局异常处理
 
 	private ProcThread _pt;	 // 事务所属的线程上下文. 只在事务运行中有效
@@ -44,21 +42,6 @@ public abstract class Procedure implements Runnable
 	static void incVersion(int lockId)
 	{
 		_lockVersions.getAndIncrement(lockId & _lockMask);
-	}
-
-	/**
-	 * 加提交的写锁
-	 * <p>
-	 * 用于提交线程暂停工作线程之用
-	 */
-	static void writeLock()
-	{
-		_rwlCommit.writeLock();
-	}
-
-	static void writeUnlock()
-	{
-		_rwlCommit.writeUnlock();
 	}
 
 	/**
@@ -120,49 +103,35 @@ public abstract class Procedure implements Runnable
 	}
 
 	@SuppressWarnings("serial")
-	private static final class Redo extends Error
+	private static final class ProcException extends RuntimeException
 	{
-		static final Redo _instance = new Redo();
+		static final ProcException _redo = new ProcException();
+		static final ProcException _undo = new ProcException();
 
-		@SuppressWarnings("sync-override")
-		@Override
-		public Throwable fillInStackTrace()
+		private ProcException()
 		{
-			return this;
+			super(null, null, false, false);
 		}
 	}
 
-	@SuppressWarnings("serial")
-	private static final class Undo extends Error
+	public static RuntimeException redoException()
 	{
-		static final Undo _instance = new Undo();
-
-		@SuppressWarnings("sync-override")
-		@Override
-		public Throwable fillInStackTrace()
-		{
-			return this;
-		}
+		return ProcException._redo;
 	}
 
-	public static Error redoException()
+	public static RuntimeException undoException()
 	{
-		return Redo._instance;
-	}
-
-	public static Error undoException()
-	{
-		return Undo._instance;
+		return ProcException._undo;
 	}
 
 	public static void redo()
 	{
-		throw Redo._instance;
+		throw ProcException._redo;
 	}
 
 	public static void undo()
 	{
-		throw Undo._instance;
+		throw ProcException._undo;
 	}
 
 	@SuppressWarnings("deprecation")
@@ -224,85 +193,85 @@ public abstract class Procedure implements Runnable
 	public static void check(boolean a, boolean b)
 	{
 		if (a != b)
-			throw Redo._instance;
+			throw ProcException._redo;
 	}
 
 	public static void check(int a, int b)
 	{
 		if (a != b)
-			throw Redo._instance;
+			throw ProcException._redo;
 	}
 
 	public static void check(long a, long b)
 	{
 		if (a != b)
-			throw Redo._instance;
+			throw ProcException._redo;
 	}
 
 	public static void check(float a, float b)
 	{
 		if (a != b)
-			throw Redo._instance;
+			throw ProcException._redo;
 	}
 
 	public static void check(double a, double b)
 	{
 		if (a != b)
-			throw Redo._instance;
+			throw ProcException._redo;
 	}
 
 	public static void check(Object a, Object b)
 	{
 		if (!a.equals(b))
-			throw Redo._instance;
+			throw ProcException._redo;
 	}
 
 	public static void check(Object a)
 	{
 		if (a == null)
-			throw Redo._instance;
+			throw ProcException._redo;
 	}
 
 	public static void checkNot(boolean a, boolean b)
 	{
 		if (a == b)
-			throw Redo._instance;
+			throw ProcException._redo;
 	}
 
 	public static void checkNot(int a, int b)
 	{
 		if (a == b)
-			throw Redo._instance;
+			throw ProcException._redo;
 	}
 
 	public static void checkNot(long a, long b)
 	{
 		if (a == b)
-			throw Redo._instance;
+			throw ProcException._redo;
 	}
 
 	public static void checkNot(float a, float b)
 	{
 		if (a == b)
-			throw Redo._instance;
+			throw ProcException._redo;
 	}
 
 	public static void checkNot(double a, double b)
 	{
 		if (a == b)
-			throw Redo._instance;
+			throw ProcException._redo;
 	}
 
 	public static void checkNot(Object a, Object b)
 	{
 		if (a.equals(b))
-			throw Redo._instance;
+			throw ProcException._redo;
 	}
 
 	public static void checkNull(Object a)
 	{
 		if (a != null)
-			throw Redo._instance;
+			throw ProcException._redo;
 	}
 
 	/**
@@ -792,17 +761,14 @@ public abstract class Procedure implements Runnable
 	 * <p>
 	 * 必须在ProcThread类的线程上运行. 一般应通过调度来运行({@link DBManager#submit})<br>
 	 * 如果确保没有顺序问题,也可以由用户直接调用,但不能在事务中嵌套调用
+	 * @return 是否正常完成事务
 	 */
 	public boolean execute() throws Exception
 	{
-		if (DBManager.isExiting())
-		{
-			Log.info("procedure canceled: {}", toString());
-			return false;
-		}
 		ProcThread pt = (ProcThread)Thread.currentThread();
 		SContext sctx = pt.sctx;
-		_rwlCommit.readLock();
+		DBManager dbm = pt.dbm;
+		dbm.readLock();
 		try
 		{
 			synchronized (this)
@@ -822,10 +788,12 @@ public abstract class Procedure implements Runnable
 					onProcess();
 					break;
 				}
-				catch (Redo e)
+				catch (ProcException e)
 				{
+					sctx.rollback();
+					if (e == ProcException._undo)
+						return false;
 				}
-				sctx.rollback();
 				unlock();
 				if (--n <= 0)
 					throw new Exception("procedure redo too many times=" + Const.maxProceduerRedo + ": " + toString());
@@ -838,9 +806,9 @@ public abstract class Procedure implements Runnable
 		{
 			try
 			{
-				if (e instanceof InterruptedException && DBManager.isExiting())
+				if (e instanceof InterruptedException)
 					Log.info("procedure canceled: {}", toString());
-				else if (e != Undo._instance)
+				else
 					onException(e);
 			}
 			catch (Throwable ex)
@@ -863,7 +831,7 @@ public abstract class Procedure implements Runnable
 				pt.proc = null;
 				Thread.interrupted(); // 清除interrupted标识
 			}
-			_rwlCommit.readUnlock();
+			dbm.readUnlock();
 		}
 	}
 

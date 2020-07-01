@@ -18,26 +18,6 @@ public class BeanCodec implements IoFilter
 	protected int				 _pserial;					  // 当前数据缓存中获得的协议序列号
 	protected int				 _psize	= -1;				  // 当前数据缓存中获得的协议大小. -1表示没获取到
 
-	/**
-	 * 不带栈信息的解码错误异常
-	 */
-	public static final class DecodeException extends Exception
-	{
-		private static final long serialVersionUID = 1L;
-
-		public DecodeException(String cause)
-		{
-			super(cause);
-		}
-
-		@SuppressWarnings("sync-override")
-		@Override
-		public Throwable fillInStackTrace()
-		{
-			return this;
-		}
-	}
-
 	public BeanCodec(NetManager mgr)
 	{
 		_mgr = mgr;

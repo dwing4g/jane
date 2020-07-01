@@ -248,7 +248,7 @@ public final class TestStress extends Procedure
 			b2.setValue1(v2);
 			counter.getAndIncrement();
 		}
-		catch (Error e)
+		catch (RuntimeException e)
 		{
 			if (e == redoException())
 				redo = true;
@@ -256,7 +256,7 @@ public final class TestStress extends Procedure
 		}
 		finally
 		{
-			if (!redo && !DBManager.isExiting())
+			if (!redo)
 				DBManager.instance().submit(id, new TestStress(id)); // 也可以用this,但跟实际用途不太相符
 		}
 	}

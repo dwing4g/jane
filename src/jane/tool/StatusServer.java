@@ -37,7 +37,7 @@ public class StatusServer extends NetManager
 		ArrayList<Object> list = new ArrayList<>();
 
 		long v1 = 0, v2 = 0, v3 = 0, v4 = 0, v5 = 0, v6 = 0;
-		if (DBManager.hasCreated())
+		if (DBManager.instanceCreated())
 		{
 			for (TableBase<?> table : DBManager.instance().getTables())
 			{
@@ -68,7 +68,7 @@ public class StatusServer extends NetManager
 				list.add(strs);
 			}
 		}
-		if (DBSimpleManager.hasCreated())
+		if (DBSimpleManager.instanceCreated())
 		{
 			DBSimpleManager mgr = DBSimpleManager.instance();
 			ArrayList<Object> strs = new ArrayList<>();
@@ -118,7 +118,7 @@ public class StatusServer extends NetManager
 		list.add(new SimpleEntry<String, Object>("usedMemory", formatter.format(totalMem - freeMem)));
 		list.add(new SimpleEntry<String, Object>("freeMemory", formatter.format(freeMem)));
 
-		if (DBManager.hasCreated())
+		if (DBManager.instanceCreated())
 		{
 			DBManager dbMgr = DBManager.instance();
 			ThreadPoolExecutor tpe = dbMgr.getProcThreads();

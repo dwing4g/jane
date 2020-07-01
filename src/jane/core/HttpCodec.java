@@ -60,26 +60,6 @@ public final class HttpCodec implements IoFilter
 	private int				   _bodyLeft;						// 当前数据部分所需的剩余大小
 	private int				   _skipLeft;						// chunked模式时当前需要跳过的剩余大小
 
-	/**
-	 * 不带栈信息的解码错误异常
-	 */
-	public static final class DecodeException extends Exception
-	{
-		private static final long serialVersionUID = 1L;
-
-		public DecodeException(String cause)
-		{
-			super(cause);
-		}
-
-		@SuppressWarnings("sync-override")
-		@Override
-		public Throwable fillInStackTrace()
-		{
-			return this;
-		}
-	}
-
 	public static byte[] getDateLine()
 	{
 		long sec = NetManager.getTimeSec();
