@@ -5,8 +5,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
+import java.io.Writer;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -133,11 +133,46 @@ public final class TestHttpClient
 		}
 	}
 
-	private static String getStackTrace(Throwable e)
+	private static String getStackTrace(Throwable t)
 	{
+/*
 		StringWriter sw = new StringWriter(1024);
-		e.printStackTrace(new PrintWriter(sw));
+		t.printStackTrace(new PrintWriter(sw));
 		return sw.toString(); // 结尾带换行符
+*/
+		StringBuilder sb = new StringBuilder(1024);
+		new Throwable().printStackTrace(new PrintWriter(Writer.nullWriter())
+		{
+			@Override
+			public void println(Object x)
+			{
+				sb.append(x).append('\n');
+			}
+		});
+		return sb.toString(); // 结尾带换行符
+/*
+		for (StringBuilder sb = new StringBuilder(1024);;)
+		{
+			sb.append(t.getClass().getName());
+			String msg = t.getLocalizedMessage();
+			if (msg != null)
+				sb.append(':').append(' ').append(msg);
+			sb.append('\n');
+			for (StackTraceElement e : t.getStackTrace())
+			{
+				sb.append("\tat ").append(e.getClassName()).append('.').append(e.getMethodName());
+				String fn = e.getFileName();
+				if (fn != null)
+					sb.append('(').append(fn).append(':').append(e.getLineNumber()).append(')').append('\n');
+				else
+					sb.append(e.isNativeMethod() ? "<native>\n" : "<unknown>\n");
+			}
+			t = t.getCause();
+			if (t == null)
+				return sb.toString();
+			sb.append("Caused by: ");
+		}
+*/
 	}
 
 	private static void workThread(RequestQueue reqQueue)

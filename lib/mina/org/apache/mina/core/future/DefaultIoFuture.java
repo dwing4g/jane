@@ -185,8 +185,8 @@ public class DefaultIoFuture implements IoFuture {
 		StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
 
 		// Simple and quick check.
-		for (StackTraceElement stackElement : stackTrace) {
-			if (NioProcessor.class.getName().equals(stackElement.getClassName())) {
+		for (StackTraceElement s : stackTrace) {
+			if (NioProcessor.class.getName().equals(s.getClassName())) {
 				// new IllegalStateException("t").getStackTrace();
 				throw new IllegalStateException("DEAD LOCK: " + IoFuture.class.getSimpleName()
 						+ ".await() was invoked from an I/O processor thread. Please use "
