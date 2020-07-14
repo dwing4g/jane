@@ -20,7 +20,7 @@ public final class TestHttpBenchmark extends NetManager
 	}
 	private static final Octets body = Octets.wrap("Hello, World!\r\n".getBytes(StandardCharsets.UTF_8));
 
-	public TestHttpBenchmark() throws Exception
+	public TestHttpBenchmark()
 	{
 		setCodecFactory(HttpCodec::new);
 	}
@@ -37,7 +37,7 @@ public final class TestHttpBenchmark extends NetManager
 		HttpCodec.sendHead(session, "200 OK", 0, extraHead, body);
 	}
 
-	public static void main(String[] args) throws Exception
+	public static void main(String[] args)
 	{
 		Log.removeAppender("ASYNC_FILE");
 		Log.removeAppender("ASYNC_STDOUT");

@@ -526,7 +526,7 @@ public class IntHashMap<V> implements Cloneable
 		return s.append('}').toString();
 	}
 
-	public static interface IntObjectConsumer<V>
+	public interface IntObjectConsumer<V>
 	{
 		void accept(int key, V value);
 	}

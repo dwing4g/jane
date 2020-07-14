@@ -272,7 +272,6 @@ public final class NioSession implements IoSession {
 	 * Set the session to be informed when a read event should be processed
 	 *
 	 * @param isInterested <tt>true</tt> for registering, <tt>false</tt> for removing
-	 * @throws Exception If there was a problem while registering the session
 	 */
 	void setInterestedInRead(boolean isInterested) {
 		if (isClosing())
@@ -298,7 +297,6 @@ public final class NioSession implements IoSession {
 	 * Set the session to be informed when a write event should be processed
 	 *
 	 * @param isInterested <tt>true</tt> for registering, <tt>false</tt> for removing
-	 * @throws Exception If there was a problem while registering the session
 	 */
 	void setInterestedInWrite(boolean isInterested) {
 		SelectionKey key = selKey;

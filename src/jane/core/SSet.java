@@ -109,6 +109,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	@Override
 	public <T> T[] toArray(T[] a)
 	{
+		//noinspection SuspiciousToArrayCall
 		return _set.toArray(a);
 	}
 
@@ -164,6 +165,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 			return false;
 		if (_set == c || this == c)
 		{
+			//noinspection ConstantConditions
 			clear();
 			return true;
 		}
@@ -199,10 +201,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 		SContext ctx = sContext();
 		Set<V> saved = (_set instanceof LinkedHashSet ? new LinkedHashSet<>(_set) : new HashSet<>(_set));
 		if (_removed != null)
-		{
-			for (V v : _set)
-				_removed.add(v);
-		}
+			_removed.addAll(_set);
 		_set.clear();
 		ctx.addOnRollback(() ->
 		{

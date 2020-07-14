@@ -204,7 +204,7 @@ public class DefaultIoFuture implements IoFuture {
 							+ ".await() was invoked from an I/O processor thread. Please use "
 							+ IoFutureListener.class.getSimpleName() + " or configure a proper thread model alternatively");
 				}
-			} catch (ClassNotFoundException e) {
+			} catch (ClassNotFoundException ignored) {
 			}
 		}
 	}

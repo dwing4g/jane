@@ -22,6 +22,7 @@ public final class TestMap
 		return ThreadLocalRandom.current().nextInt(n);
 	}
 
+	@SuppressWarnings("SameParameterValue")
 	private static int rand(int m, int n)
 	{
 		return ThreadLocalRandom.current().nextInt(m, n);

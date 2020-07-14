@@ -23,12 +23,7 @@ public class MarshalException extends Exception
 			return _withoutTraceEOF;
 		}
 
-		public EOF()
-		{
-			super();
-		}
-
-		private EOF(boolean withTrace)
+		public EOF(boolean withTrace)
 		{
 			super(withTrace);
 		}
@@ -44,12 +39,7 @@ public class MarshalException extends Exception
 		return _withoutTrace;
 	}
 
-	public MarshalException()
-	{
-		super(null, null, false, true);
-	}
-
-	private MarshalException(boolean withTrace)
+	public MarshalException(boolean withTrace)
 	{
 		super(null, null, false, withTrace);
 	}

@@ -180,7 +180,7 @@ public final class SslHandler {
 			do
 				outNetBuffer.clear();
 			while (sslEngine.wrap(SimpleBufferAllocator.emptyBuffer.buf(), outNetBuffer.buf()).bytesProduced() > 0);
-		} catch (SSLException e) {
+		} catch (SSLException ignored) {
 		} finally {
 			outNetBuffer.free();
 			outNetBuffer = null;

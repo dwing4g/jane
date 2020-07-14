@@ -42,7 +42,7 @@ public class NetManager implements IoHandler
 {
 	public static final int DEFAULT_IO_THREAD_COUNT = 1;
 
-	public static interface AnswerHandler<B extends Bean<B>>
+	public interface AnswerHandler<B extends Bean<B>>
 	{
 		void onAnswer(B bean); // 如果超时无回复,会回调null
 
@@ -302,7 +302,7 @@ public class NetManager implements IoHandler
 	public final Map<Long, IoSession> getServerSessions()
 	{
 		NioSocketAcceptor acceptor = _acceptor;
-		return acceptor != null ? acceptor.getManagedSessions() : Collections.<Long, IoSession>emptyMap();
+		return acceptor != null ? acceptor.getManagedSessions() : Collections.emptyMap();
 	}
 
 	/**
@@ -312,7 +312,7 @@ public class NetManager implements IoHandler
 	public final Map<Long, IoSession> getClientSessions()
 	{
 		NioSocketConnector connector = _connector;
-		return connector != null ? connector.getManagedSessions() : Collections.<Long, IoSession>emptyMap();
+		return connector != null ? connector.getManagedSessions() : Collections.emptyMap();
 	}
 
 	/**
@@ -360,13 +360,13 @@ public class NetManager implements IoHandler
 	 * <p>
 	 * 监听的参数要提前设置. 此操作是异步的,失败会抛出IOException异常
 	 */
-	public void startServer(InetSocketAddress addr) throws IOException
+	public void startServer(InetSocketAddress addr)
 	{
 		Log.info("{}: listening addr={}", _name, addr);
 		getAcceptor().bind(addr);
 	}
 
-	public void startServer(Collection<? extends InetSocketAddress> addrs) throws IOException
+	public void startServer(Collection<? extends InetSocketAddress> addrs)
 	{
 		StringBuilder sb = new StringBuilder();
 		for (InetSocketAddress addr : addrs)
@@ -868,7 +868,7 @@ public class NetManager implements IoHandler
 	}
 
 	@Override
-	public void sessionCreated(IoSession session) throws Exception
+	public void sessionCreated(IoSession session)
 	{
 		Supplier<IoFilter> codecFactory = _codecFactory;
 		if (codecFactory != null)

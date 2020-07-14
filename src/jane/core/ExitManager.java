@@ -105,6 +105,7 @@ public final class ExitManager
 				System.out.println("!!!STDIN TRIGGERED EXIT!!!");
 				System.exit(1);
 			}
+			//noinspection ResultOfMethodCallIgnored
 			System.in.skip(System.in.available()); // 尽可能忽略行后的内容
 		}
 	}

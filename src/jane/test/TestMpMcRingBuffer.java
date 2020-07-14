@@ -157,7 +157,7 @@ public final class TestMpMcRingBuffer<T>
 					{
 						int v = j & 127;
 						wrs[k * 8] += v;
-						buf.put(Integer.valueOf(v));
+						buf.put(v);
 					}
 				}
 				catch (InterruptedException e)

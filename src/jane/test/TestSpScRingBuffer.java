@@ -52,7 +52,7 @@ public final class TestSpScRingBuffer
 			{
 				int v = (int)i & 127;
 				wr[0] += v;
-				for (Integer obj = Integer.valueOf(v); !buf.offer(i, obj);)
+				for (Integer obj = v; !buf.offer(i, obj);)
 					Thread.yield();
 			}
 		}, "WriterThread");

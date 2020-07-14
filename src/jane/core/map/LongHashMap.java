@@ -510,7 +510,7 @@ public class LongHashMap<V> implements Cloneable
 		return s.append('}').toString();
 	}
 
-	public static interface LongObjectConsumer<V>
+	public interface LongObjectConsumer<V>
 	{
 		void accept(long key, V value);
 	}

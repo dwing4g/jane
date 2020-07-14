@@ -13,7 +13,7 @@ public final class LevelDBClear
 	{
 	}
 
-	public static void main(String[] args) throws Exception
+	public static void main(String[] args)
 	{
 		if (args.length < 1)
 		{
@@ -28,7 +28,7 @@ public final class LevelDBClear
 			{
 				tableId = Integer.parseInt(args[1]);
 			}
-			catch (NumberFormatException e)
+			catch (NumberFormatException ignored)
 			{
 			}
 			if (tableId < 0)

@@ -383,7 +383,7 @@ public final class DBManager
 			Storage sto = _storage;
 			if (sto == null)
 				throw new IllegalArgumentException("call DBManager.startup before open this table");
-			stoTable = sto.<K, V>openTable(tableId, tableName, stubK, stubV);
+			stoTable = sto.openTable(tableId, tableName, stubK, stubV);
 		}
 		Table<K, V, S> table = new Table<>(this, tableId, tableName, stoTable, lockName, cacheSize, stubV);
 		_tables.add(table);

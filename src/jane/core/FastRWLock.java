@@ -15,7 +15,7 @@ public final class FastRWLock extends AtomicLong
 		{
 			Thread.sleep(1); // 忙等,主要用于竞争不多也不着急的情况
 		}
-		catch (InterruptedException e)
+		catch (InterruptedException ignored)
 		{
 		}
 	}

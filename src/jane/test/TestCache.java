@@ -42,7 +42,7 @@ public class TestCache
 		final int COUNT = 10;
 
 		test(new ConcurrentLinkedHashMap.Builder().concurrencyLevel(1)
-				.maximumWeightedCapacity(COUNT).initialCapacity(COUNT).<Integer>buildLong());
+				.maximumWeightedCapacity(COUNT).initialCapacity(COUNT).buildLong());
 		test(new LongConcurrentLRUMap<>(COUNT, 0.75f, "Test"));
 	}
 }

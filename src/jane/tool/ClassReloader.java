@@ -37,12 +37,12 @@ public final class ClassReloader
 		return _inst;
 	}
 
-	/** @param args */
-	public static void premain(String args, Instrumentation inst)
+	public static void premain(@SuppressWarnings("unused") String args, Instrumentation inst)
 	{
 		_inst = inst;
 	}
 
+	@SuppressWarnings("ResultOfMethodCallIgnored")
 	public static String getClassPathFromData(byte[] classData) throws IOException
 	{
 		DataInputStream dis = new DataInputStream(new ByteArrayInputStream(classData));

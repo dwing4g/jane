@@ -96,6 +96,7 @@ public final class StorageLevelDB implements Storage
 				int n = _len;
 				if (n != oct.size())
 					return false;
+				//noinspection UnnecessaryLocalVariable
 				byte[] b0 = _buf;
 				byte[] b1 = oct.array();
 				for (int i = 0, p = _pos; i < n; ++i, ++p)
@@ -1052,6 +1053,7 @@ public final class StorageLevelDB implements Storage
 		{
 			try
 			{
+				//noinspection SuspiciousMethodCalls
 				@SuppressWarnings("unlikely-arg-type")
 				Slice s = _writeMap.get(k); // Octets类型可以在Slice的key中匹配,兼容hashCode和equals方法
 				if (s == _deletedSlice)

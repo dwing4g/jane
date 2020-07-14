@@ -36,7 +36,7 @@ public final class DefaultSocketSessionConfig extends AbstractSocketSessionConfi
 	private int sendBufferSize = -1; // The SO_SNDBUF parameter. Set to -1 (ie, will default to OS default)
 	private int soLinger = DEFAULT_SO_LINGER;
 	private int trafficClass = DEFAULT_TRAFFIC_CLASS;
-	private boolean defaultReuseAddress;
+	private final boolean defaultReuseAddress;
 	private boolean reuseAddress;
 	private boolean tcpNoDelay = DEFAULT_TCP_NO_DELAY;
 	private boolean keepAlive = DEFAULT_KEEP_ALIVE;

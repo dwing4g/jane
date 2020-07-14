@@ -125,6 +125,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	@Deprecated
 	public V getUnsafe(Object k)
 	{
+		//noinspection SuspiciousMethodCalls
 		return _map.get(k);
 	}
 
@@ -181,6 +182,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	public V removeDirect(Object k)
 	{
 		SContext ctx = sContext();
+		//noinspection SuspiciousMethodCalls
 		V vOld = _map.remove(k);
 		if (vOld == null)
 			return null;
@@ -316,11 +318,13 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		@Override
 		public SIterator<Entry<K, S>> iterator()
 		{
+			//noinspection unchecked
 			return new SIterator<>()
 			{
 				@Override
 				public SEntry next()
 				{
+					//noinspection unchecked
 					return nextEntry();
 				}
 			};
@@ -368,12 +372,15 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		@Override
 		public SIterator<K> iterator()
 		{
+			//noinspection unchecked
 			return new SIterator<>()
 			{
+				@SuppressWarnings("cast")
 				@Override
 				public K next()
 				{
-					return nextEntry().getKey();
+					//noinspection unchecked
+					return (K)nextEntry().getKey();
 				}
 			};
 		}
@@ -412,12 +419,15 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		@Override
 		public SIterator<S> iterator()
 		{
+			//noinspection unchecked
 			return new SIterator<>()
 			{
+				@SuppressWarnings("cast")
 				@Override
 				public S next()
 				{
-					return nextEntry().getValue();
+					//noinspection unchecked
+					return (S)nextEntry().getValue();
 				}
 			};
 		}

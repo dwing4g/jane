@@ -58,7 +58,7 @@ public final class TestLibuv implements Libuv.LibuvLoopHandler
 
 	public static void main2(@SuppressWarnings("unused") String[] args)
 	{
-		int r = 0;
+		int r;
 
 		long hloop = Libuv.libuv_loop_create(new TestLibuv());
 		System.out.println("libuv_loop_create: " + hloop);
@@ -119,12 +119,9 @@ public final class TestLibuv implements Libuv.LibuvLoopHandler
 		}
 		for (int i = 0; i < TEST_CLIENT_COUNT; ++i)
 			Libuv.libuv_tcp_connect(hloop, "127.0.0.1", 9123);
-		for (;;)
-		{
+		do
 			Libuv.libuv_loop_run(hloop, 2);
-			if (_closedCount.getCount() == 0)
-				break;
-		}
+		while (_closedCount.getCount() != 0);
 		System.out.println("TestLibuv: end (" + (System.currentTimeMillis() - time) + " ms)");
 		System.exit(0);
 	}

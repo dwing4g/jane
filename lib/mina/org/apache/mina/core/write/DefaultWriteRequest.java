@@ -58,17 +58,17 @@ public final class DefaultWriteRequest implements WriteRequest {
 		}
 
 		@Override
-		public WriteFuture await() throws InterruptedException {
+		public WriteFuture await() {
 			return this;
 		}
 
 		@Override
-		public boolean await(long timeout, TimeUnit unit) throws InterruptedException {
+		public boolean await(long timeout, TimeUnit unit) {
 			return true;
 		}
 
 		@Override
-		public boolean await(long timeoutMillis) throws InterruptedException {
+		public boolean await(long timeoutMillis) {
 			return true;
 		}
 

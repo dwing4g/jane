@@ -49,6 +49,7 @@ public final class Log
 				e.printStackTrace();
 			}
 		});
+		//noinspection ResultOfMethodCallIgnored
 		ExitManager.getShutdownSystemCallbacks(); // ensure ExitManager initialized
 	}
 

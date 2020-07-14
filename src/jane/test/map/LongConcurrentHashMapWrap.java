@@ -90,6 +90,7 @@ public final class LongConcurrentHashMapWrap<V> extends LongMap<V>
 	@Override
 	public boolean remove(long key, Object value)
 	{
+		//noinspection SuspiciousMethodCalls
 		return map.remove(key, value);
 	}
 

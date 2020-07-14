@@ -22,7 +22,7 @@ public abstract class ActorThread<T> extends Thread
 	@Retention(RetentionPolicy.RUNTIME)
 	public @interface Event
 	{
-		public Class<?> value();
+		Class<?> value();
 	}
 
 	static
@@ -64,8 +64,7 @@ public abstract class ActorThread<T> extends Thread
 		return this;
 	}
 
-	/** @param msg */
-	protected void onUnknown(T msg)
+	protected void onUnknown(@SuppressWarnings("unused") T msg)
 	{
 	}
 
@@ -79,8 +78,7 @@ public abstract class ActorThread<T> extends Thread
 		return true;
 	}
 
-	/** @param e */
-	protected void onException(Throwable e)
+	protected void onException(@SuppressWarnings("unused") Throwable e)
 	{
 	}
 
@@ -132,6 +130,7 @@ public abstract class ActorThread<T> extends Thread
 			{
 				if (onInterrupted())
 					break;
+				//noinspection ResultOfMethodCallIgnored
 				interrupted(); // clear status
 			}
 			catch (Throwable e)

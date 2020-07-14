@@ -13,7 +13,7 @@ interface Cleanable
 
 	void sweep(int newLowerSize, int newAcceptSize);
 
-	static final ExecutorService cleanerThread =
+	ExecutorService cleanerThread =
 			new ThreadPoolExecutor(0, 1, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<>(), r ->
 			{
 				Thread t = new Thread(r, "LRUMapCleanerThread");

@@ -156,6 +156,7 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 
 	private void evictEntry(Object key)
 	{
+		//noinspection SuspiciousMethodCalls
 		CacheEntry<K, V> o = map.remove(key);
 		if (o == null)
 			return;
@@ -163,7 +164,7 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 		// evictedEntry(o.key, o.value);
 	}
 
-	/** override this method to get notified about evicted entries*/
+	/** override this method to get notified about evicted entries */
 	// private void evictedEntry(K key, V value) {}
 
 	/**
@@ -291,8 +292,8 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 				if (minVNew != Long.MAX_VALUE)
 					minV = minVNew;
 				minVNew = Long.MAX_VALUE;
+				//noinspection UnnecessaryLocalVariable
 				final long maxV = maxVNew;
-				maxVNew = -1;
 				numToKeep = newLowerSize - numKept;
 				numToRemove = sizeOld - newLowerSize - numRemoved;
 				final LRUQueue<CacheEntry<?, ?>> queue = new LRUQueue<>(numToRemove, new CacheEntry<?, ?>[LRUQueue.calHeapSize(numToRemove)]);
@@ -326,6 +327,7 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 						queue.maxSize = maxSize;
 						while (queue.size > maxSize && queue.size > 0)
 						{
+							//noinspection ConstantConditions
 							final long otherEntryV = queue.pop().versionCopy;
 							if (minVNew > otherEntryV)
 								minVNew = otherEntryV;

@@ -1,4 +1,5 @@
 /bin/
+/out/
 /classes/
 /db/
 /log/
@@ -14,8 +15,6 @@
 /port/.vs/
 /port/lua/bin/
 /jane-*.jar
-/.idea/
-/*.iml
 
 *.keystore
 .eclipse-pmd

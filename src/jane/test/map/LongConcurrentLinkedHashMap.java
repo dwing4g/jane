@@ -30,13 +30,12 @@ import jane.test.map.ConcurrentLinkedHashMap.DrainStatus;
 import jane.test.map.ConcurrentLinkedHashMap.WeightedValue;
 
 /**
- * @see {@link ConcurrentLinkedHashMap}
+ * @see ConcurrentLinkedHashMap
  */
 // @ThreadSafe
 public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
   // The backing data store holding the key-value associations
   private final LongConcurrentHashMap<Node<V>> data;
-  private final int concurrencyLevel;
 
   // These fields provide support to bound the map by a maximum capacity
   // @GuardedBy("evictionLock")
@@ -63,7 +62,7 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
   @SuppressWarnings({"unchecked"})
   LongConcurrentLinkedHashMap(Builder builder) {
     // The data store and its maximum capacity
-    concurrencyLevel = builder.concurrencyLevel;
+    int concurrencyLevel = builder.concurrencyLevel;
     capacity = new AtomicLong(Math.min(builder.capacity, ConcurrentLinkedHashMap.MAXIMUM_CAPACITY));
     data = new LongConcurrentHashMap<>(builder.initialCapacity, 0.75f, concurrencyLevel);
 
@@ -146,6 +145,7 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
       }
 
       // Notify the listener only if the entry was evicted
+      //noinspection StatementWithEmptyBody
       if (data.remove(node.key, node)) {
       }
 
@@ -499,7 +499,6 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
    * @return the prior value in the data store or null if no mapping was found
    */
   private V put(long key, V value, boolean onlyIfAbsent) {
-    ConcurrentLinkedHashMap.checkNotNull(key);
     ConcurrentLinkedHashMap.checkNotNull(value);
 
     final int weight = 1;
@@ -575,7 +574,6 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
   }
 
   public V replace(long key, V value) {
-    ConcurrentLinkedHashMap.checkNotNull(key);
     ConcurrentLinkedHashMap.checkNotNull(value);
 
     final int weight = 1;
@@ -603,7 +601,6 @@ public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
   }
 
   public boolean replace(long key, V oldValue, V newValue) {
-    ConcurrentLinkedHashMap.checkNotNull(key);
     ConcurrentLinkedHashMap.checkNotNull(oldValue);
     ConcurrentLinkedHashMap.checkNotNull(newValue);
 

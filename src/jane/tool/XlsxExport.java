@@ -146,10 +146,7 @@ public final class XlsxExport
 							x += (a - 'A') * 26 + 27;
 							y = Integer.parseInt(r.substring(2));
 						}
-						ArrayList<Entry<Integer, String>> list = res.get(y);
-						if (list == null)
-							res.put(y, list = new ArrayList<>());
-						list.add(new SimpleEntry<>(x, v));
+						res.computeIfAbsent(y, k -> new ArrayList<>()).add(new SimpleEntry<>(x, v));
 					}
 					else if (type == XMLStreamConstants.END_ELEMENT && xmlReader.getLocalName().charAt(0) == 'c')
 						break;

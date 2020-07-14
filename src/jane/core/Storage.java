@@ -16,7 +16,7 @@ public interface Storage extends Closeable
 	 * <p>
 	 * 适用于key是非id类型的表
 	 */
-	public interface WalkHandler<K>
+	interface WalkHandler<K>
 	{
 		/**
 		 * 每次遍历一个记录都会调用此接口
@@ -33,7 +33,7 @@ public interface Storage extends Closeable
 	 * <p>
 	 * 适用于key是非id类型的表
 	 */
-	public interface WalkValueHandler<K, V extends Bean<V>>
+	interface WalkValueHandler<K, V extends Bean<V>>
 	{
 		/**
 		 * 每次遍历一个记录都会调用此接口
@@ -50,7 +50,7 @@ public interface Storage extends Closeable
 	 * <p>
 	 * 适用于key是非id类型的表
 	 */
-	public interface WalkRawHandler<K>
+	interface WalkRawHandler<K>
 	{
 		/**
 		 * 每次遍历一个记录都会调用此接口
@@ -67,7 +67,7 @@ public interface Storage extends Closeable
 	 * <p>
 	 * 适用于key是id类型的表
 	 */
-	public interface WalkLongHandler
+	interface WalkLongHandler
 	{
 		/**
 		 * 每次遍历一个记录都会调用此接口
@@ -84,7 +84,7 @@ public interface Storage extends Closeable
 	 * <p>
 	 * 适用于key是id类型的表
 	 */
-	public interface WalkLongValueHandler<V extends Bean<V>>
+	interface WalkLongValueHandler<V extends Bean<V>>
 	{
 		/**
 		 * 每次遍历一个记录都会调用此接口
@@ -101,7 +101,7 @@ public interface Storage extends Closeable
 	 * <p>
 	 * 适用于key是id类型的表
 	 */
-	public interface WalkLongRawHandler
+	interface WalkLongRawHandler
 	{
 		/**
 		 * 每次遍历一个记录都会调用此接口
@@ -113,7 +113,7 @@ public interface Storage extends Closeable
 		boolean onWalk(long k, byte[] v) throws Exception;
 	}
 
-	public static final class Helper
+	final class Helper
 	{
 		private Helper()
 		{
@@ -198,7 +198,7 @@ public interface Storage extends Closeable
 		}
 	}
 
-	public interface TableBase
+	interface TableBase
 	{
 		/**
 		 * 获取表ID
@@ -216,7 +216,7 @@ public interface Storage extends Closeable
 		int getAverageValueSize();
 	}
 
-	public interface Table<K, V extends Bean<V>> extends TableBase
+	interface Table<K, V extends Bean<V>> extends TableBase
 	{
 		/**
 		 * 根据记录的key获取value
@@ -276,7 +276,7 @@ public interface Storage extends Closeable
 		boolean walkRaw(WalkRawHandler<K> handler, K from, K to, boolean inclusive, boolean reverse);
 	}
 
-	public interface TableLong<V extends Bean<V>> extends TableBase
+	interface TableLong<V extends Bean<V>> extends TableBase
 	{
 		/**
 		 * 根据记录的key获取value

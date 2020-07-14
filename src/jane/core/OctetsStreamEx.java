@@ -81,13 +81,13 @@ public class OctetsStreamEx extends OctetsStream
 	@Override
 	public MarshalException getMarshalException()
 	{
-		return new MarshalException();
+		return new MarshalException(true);
 	}
 
 	@Override
 	public EOF getEOFException()
 	{
-		return new EOF();
+		return new EOF(true);
 	}
 
 	@Override

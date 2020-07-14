@@ -2,6 +2,7 @@ package jane.test;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.concurrent.ThreadLocalRandom;
 
 public final class TestCalPerf
@@ -189,7 +190,7 @@ public final class TestCalPerf
 	{
 		int v = 0;
 		Method[] methods = TestCalPerf.class.getMethods();
-		Arrays.sort(methods, (a, b) -> a.getName().compareTo(b.getName()));
+		Arrays.sort(methods, Comparator.comparing(Method::getName));
 		for (Method method : methods)
 		{
 			String name = method.getName();

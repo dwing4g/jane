@@ -533,15 +533,14 @@ public abstract class Procedure implements Runnable
 			(locks[i] = getLock(lockIdx0)).lockInterruptibly();
 			pt.lockCount = ++i;
 			(locks[i] = getLock(lockIdx1)).lockInterruptibly();
-			pt.lockCount = ++i;
 		}
 		else
 		{
 			(locks[i] = getLock(lockIdx1)).lockInterruptibly();
 			pt.lockCount = ++i;
 			(locks[i] = getLock(lockIdx0)).lockInterruptibly();
-			pt.lockCount = ++i;
 		}
+		pt.lockCount = ++i;
 	}
 
 	/**
@@ -763,7 +762,7 @@ public abstract class Procedure implements Runnable
 	 * 如果确保没有顺序问题,也可以由用户直接调用,但不能在事务中嵌套调用
 	 * @return 是否正常完成事务
 	 */
-	public boolean execute() throws Exception
+	public boolean execute()
 	{
 		ProcThread pt = (ProcThread)Thread.currentThread();
 		SContext sctx = pt.sctx;
@@ -829,6 +828,7 @@ public abstract class Procedure implements Runnable
 			{
 				_pt = null;
 				pt.proc = null;
+				//noinspection ResultOfMethodCallIgnored
 				Thread.interrupted(); // 清除interrupted标识
 			}
 			dbm.readUnlock();

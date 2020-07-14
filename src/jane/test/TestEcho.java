@@ -1,6 +1,5 @@
 package jane.test;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayDeque;
 import java.util.concurrent.CountDownLatch;
@@ -65,16 +64,16 @@ public final class TestEcho extends NetManager
 		}
 	};
 
-	private static final TestPerf[] perf = new TestPerf[20];
+//	private static final TestPerf[] perf = new TestPerf[20];
 
-	static
-	{
-		for (int i = 0; i < perf.length; ++i)
-			perf[i] = new TestPerf();
-	}
+//	static
+//	{
+//		for (int i = 0; i < perf.length; ++i)
+//			perf[i] = new TestPerf();
+//	}
 
 	@Override
-	public synchronized void startServer(InetSocketAddress addr) throws IOException
+	public synchronized void startServer(InetSocketAddress addr)
 	{
 		// setIoThreadCount(TEST_THREAD_COUNT / 2);
 		getAcceptor().setSessionDataStructureFactory(_dsFactory);
@@ -98,7 +97,7 @@ public final class TestEcho extends NetManager
 	}
 
 	@Override
-	public void sessionCreated(IoSession session) throws Exception
+	public void sessionCreated(IoSession session)
 	{
 	}
 
@@ -129,7 +128,7 @@ public final class TestEcho extends NetManager
 			session.closeNow();
 	}
 
-	public static void main(String[] args) throws IOException, InterruptedException
+	public static void main(String[] args) throws InterruptedException
 	{
 		Log.removeAppendersFromArgs(args);
 		if (args.length > 0)

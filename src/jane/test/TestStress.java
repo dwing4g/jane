@@ -214,16 +214,18 @@ public final class TestStress extends Procedure
 			if (b1 == null)
 				throw new Exception("check 11 failed: b1 = null");
 			int v11 = b1.getValue1();
-			if (v11 != c1.intValue())
-				throw new Exception("check 12 failed: " + v11 + " != " + c1.intValue());
+			if (v11 != c1)
+				throw new Exception("check 12 failed: " + v11 + " != " + c1);
 
 			int id2 = v11 & (RECORD_COUNT - 1);
 			StressBean.Safe b2 = stressTable.lockGet(id2);
 			int v1 = b1.getValue1();
 			if (v1 != v11)
 				throw new Exception("check 21 failed: " + v1 + " != " + v11);
-			if (v1 != c1.intValue())
-				throw new Exception("check 22 failed: " + v1 + " != " + c1.intValue());
+			//noinspection ConstantConditions
+			if (v1 != c1)
+				throw new Exception("check 22 failed: " + v1 + " != " + c1);
+			//noinspection NumberEquality
 			if (c1 != checkMap.get(id1)) //NOSONAR
 				throw new Exception("check 23 failed: " + c1 + " != " + checkMap.get(id1));
 			Integer c2 = checkMap.get(id2);
@@ -237,8 +239,8 @@ public final class TestStress extends Procedure
 			if (b2 == null)
 				throw new Exception("check 24 failed: b2 = null");
 			int v2 = b2.getValue1();
-			if (v2 != c2.intValue())
-				throw new Exception("check 25 failed: " + v2 + " != " + c2.intValue());
+			if (v2 != c2)
+				throw new Exception("check 25 failed: " + v2 + " != " + c2);
 
 			v1 = rand.nextInt();
 			v2 = rand.nextInt();
@@ -266,7 +268,7 @@ public final class TestStress extends Procedure
 		Log.removeAppendersFromArgs(args);
 		DBManager dbm = DBManager.instance();
 		dbm.startup();
-		stressTable = dbm.<StressBean, StressBean.Safe>openTable(TABLE_ID, "stressTable", "stress", TABLE_CACHE, StressBean.BEAN_STUB);
+		stressTable = dbm.openTable(TABLE_ID, "stressTable", "stress", TABLE_CACHE, StressBean.BEAN_STUB);
 		dbm.startCommitThread();
 
 		Log.info("start... (press CTRL+C to stop)");
@@ -274,6 +276,7 @@ public final class TestStress extends Procedure
 			DBManager.instance().submit(i, new TestStress(i));
 
 		long lastRemoveCount = 0;
+		//noinspection InfiniteLoopStatement
 		for (;;) //NOSONAR
 		{
 			long curRemoveCount = CacheRef.getRefRemoveCount();

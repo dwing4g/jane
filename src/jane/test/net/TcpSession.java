@@ -207,7 +207,7 @@ public final class TcpSession implements Channel
 		@Override
 		public void completed(Integer result, ByteBuffer bb)
 		{
-			int size = result.intValue();
+			int size = result;
 			if (size <= 0)
 			{
 				ByteBufferPool.def().free(bb);
@@ -243,7 +243,7 @@ public final class TcpSession implements Channel
 		@Override
 		public void completed(Long result, Void __)
 		{
-			long size = result.longValue();
+			long size = result;
 			if (size <= 0)
 			{
 				close(CLOSE_SEND);

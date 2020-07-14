@@ -122,6 +122,7 @@ public final class TestAes
 		Object aesCrypt = cons.newInstance();
 		methodInit.invoke(aesCrypt, false, "AES", new byte[16]); //NOSONAR
 		byte[] src = new byte[16];
+		//noinspection MismatchedReadAndWriteOfArray
 		byte[] dst = new byte[16];
 		long t = System.currentTimeMillis();
 		for (int i = 0; i < 10000000; ++i)

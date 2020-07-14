@@ -7,7 +7,7 @@ public class TestAsync
 {
 	public static void main(String[] args) throws InterruptedException
 	{
-		AsyncManager.setAsyncException((r, e) -> System.err.println(e));
+		AsyncManager.setAsyncException((r, e) -> e.printStackTrace(System.err));
 
 		AsyncManager.get().submit(new AsyncTask()
 		{
@@ -29,6 +29,7 @@ public class TestAsync
 			}
 		});
 
+		//noinspection InfiniteLoopStatement
 		for (;;) //NOSONAR
 		{
 			if (AsyncManager.get().tick() == 0)

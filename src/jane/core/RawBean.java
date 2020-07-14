@@ -1,5 +1,7 @@
 package jane.core;
 
+import java.util.Objects;
+
 /**
  * 用于表示未知类型的bean
  * <p>
@@ -168,9 +170,7 @@ public final class RawBean extends Bean<RawBean>
 		if (!(o instanceof RawBean))
 			return false;
 		RawBean rb = (RawBean)o;
-		if (_type != rb._type)
-			return false;
-		return _data != null ? _data.equals(rb._data) : rb._data == null;
+		return _type == rb._type && Objects.equals(_data, rb._data);
 	}
 
 	@Override

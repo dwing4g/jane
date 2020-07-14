@@ -68,6 +68,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	@Override
 	public <T> T[] toArray(T[] a)
 	{
+		//noinspection SuspiciousToArrayCall
 		return _deque.toArray(a);
 	}
 

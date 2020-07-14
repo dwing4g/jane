@@ -229,7 +229,7 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 	}
 
 	@Override
-	public void buildFilterChain(IoFilterChain chain) throws Exception {
+	public void buildFilterChain(IoFilterChain chain) {
 		for (Entry e : entries)
 			chain.addLast(e.getName(), e.getFilter());
 	}

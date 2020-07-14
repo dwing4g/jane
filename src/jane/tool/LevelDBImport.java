@@ -72,11 +72,11 @@ public final class LevelDBImport
 			}
 
 			System.err.println("INFO: importing db ...");
-			Pattern patPut1 = Pattern.compile("put '(.*)' '(.*)'"); // the official leveldb log dump file
-			Pattern patPut2 = Pattern.compile("'(.*)' @ \\d+ : val => '(.*)'"); // the official leveldb ldb dump file
-			Pattern patPut3 = Pattern.compile("[\"(.*)\"]=\"(.*)\""); // LevelDBExport dump file
-			Pattern patDel1 = Pattern.compile("del '(.*)'"); // the official leveldb log dump file
-			Pattern patDel2 = Pattern.compile("'(.*)' @ \\d+ : del"); // the official leveldb ldb dump file
+			Pattern patPut1 = Pattern.compile("put '([^']*)' '([^']*)'"); // the official leveldb log dump file
+			Pattern patPut2 = Pattern.compile("'([^']*)' @ \\d+ : val => '([^']*)'"); // the official leveldb ldb dump file
+			Pattern patPut3 = Pattern.compile("\\[\"([^\"]*)\"]=\"([^\"]*)\""); // LevelDBExport dump file
+			Pattern patDel1 = Pattern.compile("del '([^']*)'"); // the official leveldb log dump file
+			Pattern patDel2 = Pattern.compile("'([^']*)' @ \\d+ : del"); // the official leveldb ldb dump file
 			String line;
 			while ((line = br.readLine()) != null)
 			{

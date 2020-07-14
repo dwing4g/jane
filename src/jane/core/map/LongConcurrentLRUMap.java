@@ -275,8 +275,8 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 				if (minVNew != Long.MAX_VALUE)
 					minV = minVNew;
 				minVNew = Long.MAX_VALUE;
+				//noinspection UnnecessaryLocalVariable
 				final long maxV = maxVNew;
-				maxVNew = -1;
 				numToKeep = newLowerSize - numKept;
 				numToRemove = sizeOld - newLowerSize - numRemoved;
 				final LRUQueue<CacheEntry<?>> queue = new LRUQueue<>(numToRemove, new CacheEntry<?>[LRUQueue.calHeapSize(numToRemove)]);
@@ -310,6 +310,7 @@ public final class LongConcurrentLRUMap<V> extends LongMap<V> implements Cleanab
 						queue.maxSize = maxSize;
 						while (queue.size > maxSize && queue.size > 0)
 						{
+							//noinspection ConstantConditions
 							final long otherEntryV = queue.pop().versionCopy;
 							if (minVNew > otherEntryV)
 								minVNew = otherEntryV;

@@ -123,10 +123,10 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 					SocketAddress localAddress = ((ServerSocketChannel)key.channel()).getLocalAddress();
 					if (localAddress != null)
 						return (InetSocketAddress)localAddress;
-				} catch (Exception e) {
+				} catch (Exception ignored) {
 				}
 			}
-		} catch (Exception e) {
+		} catch (Exception ignored) {
 		}
 		return null;
 	}
@@ -141,7 +141,7 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 					SocketAddress localAddress = ((ServerSocketChannel)key.channel()).getLocalAddress();
 					if (localAddress != null)
 						addresses.add((InetSocketAddress)localAddress);
-				} catch (Exception e) {
+				} catch (Exception ignored) {
 				}
 			}
 			return addresses;
@@ -151,7 +151,7 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 	}
 
 	@Override
-	public void bind(InetSocketAddress localAddress) throws IOException {
+	public void bind(InetSocketAddress localAddress) {
 		if (localAddress != null) {
 			ArrayList<InetSocketAddress> localAddresses = new ArrayList<>(1);
 			localAddresses.add(localAddress);
@@ -160,7 +160,7 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 	}
 
 	@Override
-	public void bind(Collection<? extends InetSocketAddress> localAddresses) throws IOException {
+	public void bind(Collection<? extends InetSocketAddress> localAddresses) {
 		if (localAddresses != null && !localAddresses.isEmpty())
 			bind0(localAddresses, true);
 	}
@@ -216,7 +216,7 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 	}
 
 	@Override
-	protected void dispose0() throws Exception {
+	protected void dispose0() {
 		AcceptorFuture future;
 		synchronized (this) {
 	   		future = bind1(null, false, true);
@@ -270,7 +270,7 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 					// Check the ulimit parameter
 					// NOTE : this is a workaround, there is no way we can handle this exception in any smarter way...
 					Thread.sleep(50);
-				} catch (InterruptedException e1) {
+				} catch (InterruptedException ignored) {
 				}
 			}
 		}
@@ -281,7 +281,7 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 			ServerSocketChannel channel = ServerSocketChannel.open();
 			try {
 				channel.configureBlocking(false);
-				channel.setOption(StandardSocketOptions.SO_REUSEADDR, Boolean.valueOf(reuseAddress));
+				channel.setOption(StandardSocketOptions.SO_REUSEADDR, reuseAddress);
 				DefaultSocketSessionConfig config = getSessionConfig();
 				if (config.getSendBufferSize() >= 0)
 					channel.setOption(StandardSocketOptions.SO_SNDBUF, config.getSendBufferSize());
@@ -326,6 +326,7 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 							try {
 								SelectionKey key = (SelectionKey)obj;
 								ServerSocketChannel channel = (ServerSocketChannel)key.channel();
+								//noinspection SuspiciousMethodCalls
 								if (localAddresses == null || localAddresses.contains(channel.getLocalAddress())) {
 									key.cancel();
 									channel.close();

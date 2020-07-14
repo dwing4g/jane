@@ -351,7 +351,7 @@ public final class SslFilter implements IoFilter {
 	 * </ul>
 	 */
 	@Override
-	public void onPreAdd(IoFilterChain chain, String name, NextFilter nextFilter) throws SSLException {
+	public void onPreAdd(IoFilterChain chain, String name, NextFilter nextFilter) {
 		// Check that we don't have a SSL filter already present in the chain
 		if (chain.getEntry(SslFilter.class) != null)
 			throw new IllegalStateException("only one SSL filter is permitted in a chain");

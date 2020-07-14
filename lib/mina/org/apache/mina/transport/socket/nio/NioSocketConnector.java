@@ -151,7 +151,7 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 	}
 
 	@Override
-	protected void dispose0() throws IOException {
+	protected void dispose0() {
 		connect0(null, false).awaitUninterruptibly();
 	}
 

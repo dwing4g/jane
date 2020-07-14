@@ -33,7 +33,7 @@ public final class AsyncManager
 		}
 	}
 
-	private static AsyncManager							_instance	= new AsyncManager();
+	private static final AsyncManager					_instance	= new AsyncManager();
 	private static AsyncException						_ae;
 	private final ConcurrentLinkedQueue<Runnable>		_readyQueue	= new ConcurrentLinkedQueue<>();
 	private final PriorityBlockingQueue<AsyncTimerTask>	_taskQueue	= new PriorityBlockingQueue<>(16, new TaskComparator());

@@ -13,6 +13,7 @@ public final class TestReload
 	{
 		System.out.println("func-1");
 
+		//noinspection Convert2Lambda,TrivialFunctionalExpressionUsage
 		new Runnable() //NOSONAR
 		{
 			@Override
@@ -29,6 +30,7 @@ public final class TestReload
 		a.test();
 
 		System.out.print("now modify TestReload classes and press enter ... ");
+		//noinspection ResultOfMethodCallIgnored
 		System.in.read();
 
 		ArrayList<byte[]> classes = new ArrayList<>();

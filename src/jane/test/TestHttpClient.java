@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -133,7 +132,7 @@ public final class TestHttpClient
 		}
 	}
 
-	private static String getStackTrace(Throwable t)
+	private static String getStackTrace(@SuppressWarnings("unused") Throwable t)
 	{
 /*
 		StringWriter sw = new StringWriter(1024);
@@ -285,26 +284,19 @@ public final class TestHttpClient
 	private static boolean appendParams(StringBuilder sb, Iterable<Entry<String, String>> paramIter)
 	{
 		boolean appended = false;
-		try
+		for (Entry<String, String> e : paramIter)
 		{
-			for (Entry<String, String> e : paramIter)
+			if (appended)
+				sb.append('&');
+			else
 			{
-				if (appended)
-					sb.append('&');
-				else
-				{
-					appended = true;
-					if (sb.length() > 0)
-						sb.append('?');
-				}
-				sb.append(URLEncoder.encode(e.getKey(), "utf-8"));
-				sb.append('=');
-				sb.append(URLEncoder.encode(e.getValue(), "utf-8"));
+				appended = true;
+				if (sb.length() > 0)
+					sb.append('?');
 			}
-		}
-		catch (UnsupportedEncodingException e)
-		{
-			throw new RuntimeException(e);
+			sb.append(URLEncoder.encode(e.getKey(), StandardCharsets.UTF_8));
+			sb.append('=');
+			sb.append(URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8));
 		}
 		return appended;
 	}

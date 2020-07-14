@@ -261,6 +261,7 @@ public final class Util
 		File file = new File(fileName);
 		File parent = file.getParentFile();
 		if (parent != null && !parent.exists())
+			//noinspection ResultOfMethodCallIgnored
 			parent.mkdirs();
 		try (OutputStream os = new FileOutputStream(file))
 		{
@@ -284,6 +285,7 @@ public final class Util
 	{
 		File dstParent = dstFile.getParentFile();
 		if (dstParent != null && !dstParent.exists())
+			//noinspection ResultOfMethodCallIgnored
 			dstParent.mkdirs();
 		long r = 0;
 		try (FileOutputStream fos = new FileOutputStream(dstFile))
@@ -388,6 +390,7 @@ public final class Util
 				return -1;
 			byte[] pat = _pat;
 			byte c = pat[0];
+			//noinspection UnnecessaryLocalVariable
 			int[] skip = _skip;
 			for (int srcEnd = srcPos + srcLen - patLen; srcPos <= srcEnd;)
 			{

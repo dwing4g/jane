@@ -236,6 +236,7 @@ public final class TestCompressor
 				System.out.println("ERROR: skip file failed");
 				return;
 			}
+			//noinspection ResultOfMethodCallIgnored
 			fis.read(src);
 		}
 		byte[] dst = new byte[TestCompressor.maxCompressedSize((int)srclen)];

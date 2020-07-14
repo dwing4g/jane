@@ -144,14 +144,13 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
   /** The maximum number of write operations to perform per amortized drain. */
   static final int WRITE_BUFFER_DRAIN_THRESHOLD = 16;
 
-  private static int ceilingNextPowerOfTwo(int x) {
+  private static int ceilingNextPowerOfTwo(@SuppressWarnings("SameParameterValue") int x) {
     // From Hacker's Delight, Chapter 3, Harry S. Warren Jr.
     return 1 << (Integer.SIZE - Integer.numberOfLeadingZeros(x - 1));
   }
 
   // The backing data store holding the key-value associations
   private final ConcurrentMap<K, Node<K, V>> data;
-  private final int concurrencyLevel;
 
   // These fields provide support to bound the map by a maximum capacity
   // @GuardedBy("evictionLock")
@@ -182,7 +181,7 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
   @SuppressWarnings({"unchecked"})
   private ConcurrentLinkedHashMap(Builder builder) {
     // The data store and its maximum capacity
-    concurrencyLevel = builder.concurrencyLevel;
+    int concurrencyLevel = builder.concurrencyLevel;
     capacity = new AtomicLong(Math.min(builder.capacity, MAXIMUM_CAPACITY));
     data = new ConcurrentHashMap<>(builder.initialCapacity, 0.75f, concurrencyLevel);
 
@@ -286,6 +285,7 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
       }
 
       // Notify the listener only if the entry was evicted
+      //noinspection StatementWithEmptyBody
       if (data.remove(node.key, node)) {
       }
 
@@ -636,6 +636,7 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
    * @throws NullPointerException if the specified key is null
    */
   public V getQuietly(Object key) {
+    //noinspection SuspiciousMethodCalls
     final Node<K, V> node = data.get(key);
     return (node == null) ? null : node.getValue();
   }
@@ -710,6 +711,7 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
 
   @Override
   public boolean remove(Object key, Object value) {
+    //noinspection SuspiciousMethodCalls
     final Node<K, V> node = data.get(key);
     if ((node == null) || (value == null)) {
       return false;
@@ -814,7 +816,7 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
   }
 
   /** The draining status of the buffers. */
-  static enum DrainStatus {
+  enum DrainStatus {
 
     /** A drain is not taking place. */
     IDLE {
@@ -952,6 +954,7 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
 
     @Override
     public <T> T[] toArray(T[] array) {
+      //noinspection SuspiciousToArrayCall
       return data.keySet().toArray(array);
     }
   }
@@ -1022,6 +1025,7 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
         return false;
       }
       Entry<?, ?> entry = (Entry<?, ?>) obj;
+      //noinspection SuspiciousMethodCalls
       Node<K, V> node = data.get(entry.getKey());
       return (node != null) && (node.getValue().equals(entry.getValue()));
     }

@@ -79,6 +79,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 	@Override
 	public <T> T[] toArray(T[] a)
 	{
+		//noinspection SuspiciousToArrayCall
 		return _list.toArray(a);
 	}
 
@@ -94,6 +95,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 	public boolean addDirect(V v)
 	{
 		SContext ctx = sContext();
+		//noinspection ConstantConditions
 		if (!_list.add(v))
 			return false;
 		ctx.addOnRollback(() -> _list.remove(_list.size() - 1));

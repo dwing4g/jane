@@ -10,7 +10,6 @@ import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.Channel;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.CompletionHandler;
 import java.util.Iterator;
 import java.util.Map;
@@ -24,8 +23,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class TcpManager implements Closeable
 {
-	public static final int					DEF_TCP_THREAD_COUNT = Runtime.getRuntime().availableProcessors() * 2;
-	private static AsynchronousChannelGroup	_defGroup;
+	public static final int						  DEF_TCP_THREAD_COUNT = Runtime.getRuntime().availableProcessors() * 2;
+	private static final AsynchronousChannelGroup _defGroup;
 
 	private AsynchronousServerSocketChannel	  _acceptor;
 	private final Map<TcpSession, TcpSession> _sessions		  = new ConcurrentHashMap<>();
@@ -207,7 +206,6 @@ public class TcpManager implements Closeable
 
 	/**
 	 * 服务器开始监听前响应一次. 可以修改一些监听的设置
-	 * @param acceptor
 	 * @param attachment startServer传入的参数
 	 * @return 返回>=0表示监听的backlog值(0表示取默认值);返回<0表示关闭服务器监听
 	 */
@@ -221,7 +219,6 @@ public class TcpManager implements Closeable
 
 	/**
 	 * 连接创建且在TcpSession创建前响应一次. 可以修改一些连接的设置
-	 * @param channel
 	 * @param attachment 作为客户端建立的连接时为startClient传入的参数; 作为服务器建立的连接时为null
 	 * @return 返回>=0表示读缓冲区大小(每次最多读的字节数,0表示取默认值);返回<0表示断开连接,不再创建TcpSession
 	 */
@@ -239,45 +236,40 @@ public class TcpManager implements Closeable
 
 	/**
 	 * TcpSession在刚刚连接上时响应一次
-	 * @param session
 	 */
-	public void onSessionCreated(TcpSession session)
+	public void onSessionCreated(@SuppressWarnings("unused") TcpSession session)
 	{
 	}
 
 	/**
 	 * 已连接的TcpSession在断开后响应一次
-	 * @param session
 	 * @param reason 断开原因. 见TcpSession.CLOSE_*
 	 */
-	public void onSessionClosed(TcpSession session, int reason)
+	public void onSessionClosed(@SuppressWarnings("unused") TcpSession session, int reason)
 	{
 	}
 
 	/**
 	 * 已连接的TcpSession接收一次数据的响应
-	 * @param session
 	 * @param bb 接收的数据缓冲区,有效范围是[0,limit]部分,只在函数内有效,里面的数据在函数调用后失效
 	 */
-	public void onReceived(TcpSession session, ByteBuffer bb)
+	public void onReceived(@SuppressWarnings("unused") TcpSession session, ByteBuffer bb)
 	{
 	}
 
 	/**
 	 * 已成功发送数据到本地网络待发缓冲区时的响应. 需要开启_enableOnSend时才会响应
-	 * @param session
 	 * @param bb 已经完整发送到TCP协议栈的缓冲区的ByteBuffer. 同send传入的对象
 	 */
-	public void onSent(TcpSession session, ByteBuffer bb)
+	public void onSent(@SuppressWarnings("unused") TcpSession session, ByteBuffer bb)
 	{
 	}
 
 	/**
 	 * 作为客户端连接失败后响应一次
 	 * @param addr 远程连接的地址. 可能为null
-	 * @param ex
 	 */
-	public void onConnectFailed(SocketAddress addr, Throwable ex)
+	public void onConnectFailed(SocketAddress addr, @SuppressWarnings("unused") Throwable ex)
 	{
 	}
 
@@ -288,7 +280,7 @@ public class TcpManager implements Closeable
 	@SuppressWarnings("static-method")
 	public void onException(TcpSession session, Throwable ex)
 	{
-		if (!(ex instanceof ClosedChannelException) && !(ex instanceof IOException))
+		if (!(ex instanceof IOException))
 			ex.printStackTrace();
 	}
 

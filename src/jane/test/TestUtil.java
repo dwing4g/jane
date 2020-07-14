@@ -294,6 +294,7 @@ public final class TestUtil
 				if (nAttr > 0)
 				{
 					StringBuilder sb = new StringBuilder("unknown field name(s) \"");
+					//noinspection InfiniteLoopStatement
 					for (int j = 0;;)
 					{
 						sb.append(nnm.item(j).getNodeName());

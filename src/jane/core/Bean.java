@@ -88,9 +88,8 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 
 	/**
 	 * 从另一个bean赋值到自身
-	 * @param b
 	 */
-	public void assign(B b)
+	public void assign(@SuppressWarnings("unused") B b)
 	{
 		throw new UnsupportedOperationException();
 	}
@@ -185,9 +184,8 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 
 	/**
 	 * 获取自身的安全封装(在事务中支持异常回滚)
-	 * @param parent
 	 */
-	public Safe<B> safe(Safe<?> parent)
+	public Safe<B> safe(@SuppressWarnings("unused") Safe<?> parent)
 	{
 		throw new UnsupportedOperationException();
 	}

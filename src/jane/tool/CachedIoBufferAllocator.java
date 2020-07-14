@@ -24,7 +24,7 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 	private final int									 maxCachedBufferSize;					// 2^n:[0,0x4000_4000]
 	private final ThreadLocal<ArrayList<CachedBuffer>[]> heapBuffers   = new CacheThreadLocal();
 	private final ThreadLocal<ArrayList<CachedBuffer>[]> directBuffers = new CacheThreadLocal();
-	private final int[]									 checkPoolSize = new int[32];
+//	private final int[]									 checkPoolSize = new int[32];
 
 	private final class CacheThreadLocal extends ThreadLocal<ArrayList<CachedBuffer>[]>
 	{
@@ -38,7 +38,7 @@ public final class CachedIoBufferAllocator implements IoBufferAllocator
 			{
 				int i = getIdx(k);
 				poolMap[i] = new ArrayList<>();
-				checkPoolSize[i] = k;
+//				checkPoolSize[i] = k;
 			}
 			return poolMap;
 		}
