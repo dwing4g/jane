@@ -18,7 +18,6 @@
  */
 package org.apache.mina.core.service;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -54,18 +53,15 @@ public interface IoAcceptor extends IoService {
 	 * Binds to the specified local address and start to accept incoming connections.
 	 *
 	 * @param localAddress The InetSocketAddress to bind to
-	 *
-	 * @throws IOException if failed to bind
 	 */
-	void bind(InetSocketAddress localAddress) throws IOException;
+	void bind(InetSocketAddress localAddress);
 
 	/**
 	 * Binds to the specified local addresses and start to accept incoming connections.
 	 *
 	 * @param localAddresses The local address we will be bound to
-	 * @throws IOException if failed to bind
 	 */
-	void bind(Collection<? extends InetSocketAddress> localAddresses) throws IOException;
+	void bind(Collection<? extends InetSocketAddress> localAddresses);
 
 	/**
 	 * Unbinds from all local addresses that this service is bound to and stops to accept incoming connections.

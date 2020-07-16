@@ -158,7 +158,7 @@ public abstract class AbstractIoService implements IoService {
 	 * Implement this method to release any acquired resources.
 	 * This method is invoked only once by {@link #dispose()}.
 	 */
-	protected abstract void dispose0() throws Exception;
+	protected abstract void dispose0();
 
 	protected static void close(SelectionKey key) {
 		if (key == null)

@@ -131,19 +131,6 @@ public interface Storage extends Closeable
 			}
 		}
 
-		public static <K, V extends Bean<V>> boolean onWalkValueSafe(WalkValueHandler<K, V> handler, K k, V v)
-		{
-			try
-			{
-				return handler.onWalk(k, v);
-			}
-			catch (Exception e)
-			{
-				Log.error("walk exception:", e);
-				return false;
-			}
-		}
-
 		public static <K> boolean onWalkRawSafe(WalkRawHandler<K> handler, K k, byte[] v)
 		{
 			try
@@ -162,19 +149,6 @@ public interface Storage extends Closeable
 			try
 			{
 				return handler.onWalk(k);
-			}
-			catch (Exception e)
-			{
-				Log.error("walk exception:", e);
-				return false;
-			}
-		}
-
-		public static <V extends Bean<V>> boolean onWalkLongValueSafe(WalkLongValueHandler<V> handler, long k, V v)
-		{
-			try
-			{
-				return handler.onWalk(k, v);
 			}
 			catch (Exception e)
 			{

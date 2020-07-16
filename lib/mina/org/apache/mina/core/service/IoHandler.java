@@ -18,7 +18,6 @@
  */
 package org.apache.mina.core.service;
 
-import java.io.IOException;
 import org.apache.mina.core.session.IoSession;
 
 /**
@@ -73,7 +72,6 @@ public interface IoHandler {
 
 	/**
 	 * Invoked when any exception is thrown by user {@link IoHandler} implementation or by MINA.
-	 * If <code>cause</code> is an instance of {@link IOException}, MINA will close the connection automatically.
 	 *
 	 * @param session The session for which we have got an exception
 	 * @param cause The exception that has been caught
