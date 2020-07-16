@@ -1231,14 +1231,17 @@ public final class StorageLevelDB implements Storage
 	}
 
 	@Override
-	public synchronized void openDB(File file) throws IOException
+	public synchronized void openDB(String dbPathName) throws IOException
 	{
 		close();
-		_db = leveldb_open3(file.getAbsolutePath(), Const.levelDBWriteBufferSize << 20, Const.levelDBMaxOpenFiles,
+		File dbFile = new File(dbPathName);
+		if (!dbFile.isDirectory() && !dbFile.mkdirs())
+			throw new IOException("create db path failed: " + dbPathName);
+		_db = leveldb_open3(dbFile.getAbsolutePath(), Const.levelDBWriteBufferSize << 20, Const.levelDBMaxOpenFiles,
 				Const.levelDBCacheSize << 20, Const.levelDBFileSize << 20, _useSnappy, _reuseLogs);
 		if (_db == 0)
-			throw new IOException("StorageLevelDB.openDB: leveldb_open3 failed: " + file.getAbsolutePath());
-		_dbFile = file;
+			throw new IOException("StorageLevelDB.openDB: leveldb_open3 failed: " + dbFile.getAbsolutePath());
+		_dbFile = dbFile;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -1325,22 +1328,17 @@ public final class StorageLevelDB implements Storage
 	}
 
 	@Override
-	public synchronized long backup(File fdst) throws IOException
+	public synchronized long backup(String dbBackupPath) throws IOException
 	{
 		if (_db == 0)
 			throw new IllegalStateException("db closed");
-		String dstPath = fdst.getAbsolutePath();
-		int pos = dstPath.lastIndexOf('.');
-		if (pos <= 0)
-			throw new IOException("invalid db backup path: " + dstPath);
-		dstPath = dstPath.substring(0, pos);
-		long period = Const.levelDBFullBackupPeriod * 1000;
 		long time = System.currentTimeMillis();
-		Date backupDate = new Date(_backupBase + Math.floorDiv(time - _backupBase, period) * period);
-		dstPath += '.' + _sdf.format(backupDate);
-		File path = new File(dstPath).getParentFile();
-		if (path != null && !path.isDirectory() && !path.mkdirs())
-			throw new IOException("create db backup path failed: " + dstPath);
-		return leveldb_backup(_db, _dbFile.getAbsolutePath(), dstPath, _sdf.format(new Date(time)));
+		long period = Const.levelDBFullBackupPeriod * 1000;
+		String backupPath = new File(dbBackupPath, _dbFile.getName()).getAbsolutePath() + '.' +
+				_sdf.format(new Date(_backupBase + Math.floorDiv(time - _backupBase, period) * period));
+		File path = new File(backupPath);
+		if (!path.isDirectory() && !path.mkdirs())
+			throw new IOException("create db backup path failed: " + backupPath);
+		return leveldb_backup(_db, _dbFile.getAbsolutePath(), backupPath, _sdf.format(new Date(time)));
 	}
 }

@@ -1,13 +1,11 @@
 package jane.core;
 
-import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
@@ -43,7 +41,6 @@ public final class DBManager
 	private final AtomicLong								   _procCount	 = new AtomicLong();			// 绑定过sid的在队列中未运行的事务数量
 	private final AtomicLong								   _modCount	 = new AtomicLong();			// 当前缓存修改的记录数
 	private final FastRWLock								   _rwlCommit	 = new FastRWLock();			// 用于数据提交的读写锁
-	private String											   _dbFilename;									// 数据库的文件名(不含父路径,对LevelDB而言是目录名)
 	private String											   _dbBackupPath;								// 数据库的备份路径
 	private Storage											   _storage;									// 存储引擎
 
@@ -52,12 +49,11 @@ public final class DBManager
 	 */
 	private final class CommitThread extends Thread
 	{
-		private final SimpleDateFormat _sdf			 = new SimpleDateFormat("yy-MM-dd-HH-mm-ss");  // 备份文件后缀名的时间格式
-		private final long[]		   _counts		 = new long[3];								   // 3个统计数量值,分别是统计前数量,统计后数量,处理过的数量
-		private final long			   _commitPeriod = Const.dbCommitPeriod * 1000;				   // 提交数据库的周期
-		private final long			   _backupPeriod = Const.dbBackupPeriod * 1000;				   // 备份数据库的周期
-		private volatile long		   _commitTime	 = System.currentTimeMillis() + _commitPeriod; // 下次提交数据库的时间
-		private volatile long		   _backupTime;												   // 下次备份数据库的时间
+		private final long[]  _counts		= new long[3];								  // 3个统计数量值,分别是统计前数量,统计后数量,处理过的数量
+		private final long	  _commitPeriod	= Const.dbCommitPeriod * 1000;				  // 提交数据库的周期
+		private final long	  _backupPeriod	= Const.dbBackupPeriod * 1000;				  // 备份数据库的周期
+		private volatile long _commitTime	= System.currentTimeMillis() + _commitPeriod; // 下次提交数据库的时间
+		private volatile long _backupTime;												  // 下次备份数据库的时间
 
 		CommitThread()
 		{
@@ -190,7 +186,7 @@ public final class DBManager
 								backupTime += ((t3 - backupTime) / _backupPeriod + 1) * _backupPeriod;
 							_backupTime = backupTime;
 							Log.info("db-commit backup begin...");
-							long r = storage.backup(new File(dbBackupPath, _dbFilename + '.' + _sdf.format(new Date())));
+							long r = storage.backup(dbBackupPath);
 							if (r >= 0)
 								Log.info("db-commit backup end ({} bytes) ({} ms)", r, System.currentTimeMillis() - t);
 							else
@@ -314,14 +310,9 @@ public final class DBManager
 		if (dbFilename == null || dbFilename.trim().isEmpty())
 			throw new IllegalArgumentException("no dbFilename specified");
 		shutdown();
-		File dbfile = new File(dbFilename);
-		File dbpath = dbfile.getParentFile();
-		if (dbpath != null && !dbpath.isDirectory() && !dbpath.mkdirs())
-			throw new IOException("create db path failed: " + dbFilename);
-		_dbFilename = dbfile.getName();
+		sto.openDB(dbFilename);
 		_dbBackupPath = dbBackupPath;
 		_storage = sto;
-		sto.openDB(dbfile);
 		ExitManager.getShutdownSystemCallbacks().add(() ->
 		{
 			Log.info("DBManager.OnJvmShutDown({}): db shutdown", dbFilename);

@@ -1,7 +1,6 @@
 package jane.core;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 
 /**
@@ -354,9 +353,9 @@ public interface Storage extends Closeable
 	 * 打开数据库
 	 * <p>
 	 * 打开失败会抛出IOException或Error或RuntimeException异常
-	 * @param file 数据库文件名. 所在目录必须已经存在,文件不存在时会自动创建新的数据库
+	 * @param dbFilename 数据库文件名或路径名. 文件或目录不存在时会自动创建新的数据库
 	 */
-	void openDB(File file) throws IOException;
+	void openDB(String dbFilename) throws IOException;
 
 	/**
 	 * 打开数据库表
@@ -416,8 +415,8 @@ public interface Storage extends Closeable
 	 * <p>
 	 * 备份当前打开的数据库到新建的数据库中<br>
 	 * 备份创建失败会抛出IOException或Error或RuntimeException异常
-	 * @param file 备份目标的数据库文件名. 所在目录必须已经存在,文件已存在时会自动删除再执行备份
+	 * @param dbBackupPath 备份的目标目录. 目录不存在时会自动创建
 	 * @return 返回备份操作写入磁盘的字节数量. <0表示失败
 	 */
-	long backup(File file) throws IOException;
+	long backup(String dbBackupPath) throws IOException;
 }
