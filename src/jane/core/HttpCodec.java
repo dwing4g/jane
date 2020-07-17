@@ -562,52 +562,72 @@ public final class HttpCodec implements IoFilter
 					inBuf.get(b, oldSize, n);
 					inLeft -= n;
 					n += oldSize;
-					for (int i = Math.max(17, oldSize); i < n; ++i) // minimum head: size("GET / HTTP/1.1\r\n\r\n") = 18
+					for (int i = Math.max(17, oldSize); i < n; i += 4) // minimum head: size("GET / HTTP/1.1\r\n\r\n") = 18
 					{
-						if (b[i] == '\n' && b[i - 2] == '\n') // not strict check but enough
+						final int c = b[i];
+						if (c == '\n') // not strict check but enough
 						{
-							buf.setPosition(++i);
-							if (SS_CONT_CHUNK.find(b, 15, i - 19) < 0) // empty or fix-sized body
+							if (b[i - 2] == '\n')
+								i++;
+							else
 							{
-								final long n2 = getHeadLong(buf, SS_CONT_LEN);
-								if (n2 > _maxHttpBodySize)
-									throw new DecodeException("http body size overflow: bodysize=" + n2 + ",maxsize=" + _maxHttpBodySize);
-								final int left = i + (n2 > 0 ? (int)n2 : 0) - n;
-								if (left <= 0)
-								{
-									if (left < 0) // unlikely over read
-									{
-										buf.resize(n + left);
-										inBuf.position(inBuf.position() + left);
-										inLeft -= left;
-									}
-									next.messageReceived(buf);
-									buf.clear();
-									if (_maxHttpBodySize < 0)
-										next.messageReceived(null);
-								}
-								else
-								{
-									_bodyLeft = left;
-									state = 1; // to read body
-								}
+								if (i + 2 >= n || b[i + 2] != '\n')
+									continue;
+								i += 3;
 							}
-							else // chunked body
-							{
-								n -= i;
-								buf.resize(i);
-								inBuf.position(inBuf.position() - n);
-								inLeft += n;
-								state = 3; // to read chunk size
-								if (_maxHttpBodySize < 0)
-								{
-									next.messageReceived(buf);
-									buf.clear();
-									buf.setPosition(0);
-								}
-							}
-							break;
 						}
+						else if (c == '\r')
+						{
+							if (b[i - 1] == '\n')
+								i += 2;
+							else
+							{
+								if (i + 3 >= n || b[i + 3] != '\n')
+									continue;
+								i += 4;
+							}
+						}
+						buf.setPosition(i);
+						if (SS_CONT_CHUNK.find(b, 15, i - 19) < 0) // empty or fix-sized body
+						{
+							final long n2 = getHeadLong(buf, SS_CONT_LEN);
+							if (n2 > _maxHttpBodySize)
+								throw new DecodeException("http body size overflow: bodysize=" + n2 + ",maxsize=" + _maxHttpBodySize);
+							final int left = i + (n2 > 0 ? (int)n2 : 0) - n;
+							if (left <= 0)
+							{
+								if (left < 0) // unlikely over read
+								{
+									buf.resize(n + left);
+									inBuf.position(inBuf.position() + left);
+									inLeft -= left;
+								}
+								next.messageReceived(buf);
+								buf.clear();
+								if (_maxHttpBodySize < 0)
+									next.messageReceived(null);
+							}
+							else
+							{
+								_bodyLeft = left;
+								state = 1; // to read body
+							}
+						}
+						else // chunked body
+						{
+							n -= i;
+							buf.resize(i);
+							inBuf.position(inBuf.position() - n);
+							inLeft += n;
+							state = 3; // to read chunk size
+							if (_maxHttpBodySize < 0)
+							{
+								next.messageReceived(buf);
+								buf.clear();
+								buf.setPosition(0);
+							}
+						}
+						break;
 					}
 					break;
 				case 1: // body/chunkBody
