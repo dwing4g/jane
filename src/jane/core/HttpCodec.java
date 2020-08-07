@@ -562,7 +562,7 @@ public final class HttpCodec implements IoFilter
 					inBuf.get(b, oldSize, n);
 					inLeft -= n;
 					n += oldSize;
-					for (int i = Math.max(17, oldSize); i < n; i += 4) // minimum head: size("GET / HTTP/1.1\r\n\r\n") = 18
+					for (int i = Math.max(17, oldSize); i < n; i += 4) // minimum head: "GET / HTTP/1.1\r\n\r\n".length = 18
 					{
 						final int c = b[i];
 						if (c == '\n') // not strict check but enough
@@ -587,6 +587,8 @@ public final class HttpCodec implements IoFilter
 								i += 4;
 							}
 						}
+						else
+							continue;
 						buf.setPosition(i);
 						if (SS_CONT_CHUNK.find(b, 15, i - 19) < 0) // empty or fix-sized body
 						{
