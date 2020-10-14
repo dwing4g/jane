@@ -206,18 +206,10 @@ public final class DBSimpleManager
 	}
 
 	/**
-	 * 判断是否在退出前的shutdown状态下
-	 */
-	public synchronized boolean isExiting()
-	{
-		return _storage == null;
-	}
-
-	/**
 	 * 启动数据库系统
 	 * <p>
 	 * 必须在操作数据库之前启动
-	 * @param sto LevelDB存储引擎的实例. 如: StorageLevelDB.instance()
+	 * @param sto LevelDB存储引擎的实例. 如StorageLevelDB
 	 * @param dbFilename 数据库的文件名(不含父路径,对LevelDB而言是目录名)
 	 * @param dbBackupPath 数据库的备份目录
 	 */
@@ -245,7 +237,7 @@ public final class DBSimpleManager
 	 * 启动数据库系统
 	 * <p>
 	 * 必须在操作数据库之前启动<br>
-	 * 默认使用StorageLevelDB.instance()作为存储引擎
+	 * 默认使用新的StorageLevelDB作为存储引擎
 	 */
 	public void startup() throws IOException
 	{

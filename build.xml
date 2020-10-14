@@ -39,7 +39,6 @@
 			<!--compilerarg value="-Xlint:unchecked"/-->
 			<compilerarg value="-XDignore.symbol.file"/><!-- suppress "Sun proprietary api" warning -->
 			<src path="${src}/"/>
-			<src path="${lib}/mina/"/>
 		</javac>
 		<exec executable="git" output="${classes}/META-INF/jane-version.txt">
 			<arg value="log"/>
@@ -72,7 +71,6 @@
 				<exclude name="logback.xml"/>
 				<exclude name="jane.properties"/>
 			</fileset>
-			<fileset dir="${lib}/mina/"/>
 			<fileset dir="${classes}/">
 				<include name="META-INF/jane-version.txt"/>
 			</fileset>

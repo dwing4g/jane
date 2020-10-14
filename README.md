@@ -18,8 +18,8 @@ License:
 平台:
  * Oracle/Open JDK 11+(64-bit) (需要ant作为构建环境, 推荐最新版本)
  * Linux 2.6+(64-bit)/Windows 7+(64-bit)/Mac OS X 10.9+ (开发和运行环境, 推荐4核4GB内存以上)
- * Eclipse 或 IntelliJ IDEA (主要的Java开发环境, 推荐最新版本, IDEA可用社区版)
- * Visual Studio (C#的开发环境, 推荐最新版本)
+ * Eclipse 或 IntelliJ IDEA (Java开发环境, 推荐最新版本, IDEA可用社区版)
+ * Visual Studio (C#开发环境, 推荐最新版本)
 
 语言:
  * Java 11+ (框架和逻辑编写的主语言)
