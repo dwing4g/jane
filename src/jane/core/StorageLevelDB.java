@@ -21,18 +21,17 @@ import java.util.zip.CRC32;
  */
 public final class StorageLevelDB implements Storage
 {
-	private static final StorageLevelDB	_instance	  = new StorageLevelDB();
-	private static final Slice			_deletedSlice = new Slice(null, 0, 0);					   // 表示已删除的slice
-	private int							_writeCount;											   // 提交中的写缓冲区记录数量
-	private final Octets				_writeBuf	  = new Octets(0x10000);					   // 提交中的写缓冲区
-	private final Map<Slice, Slice>		_writeMap	  = Util.newConcurrentHashMap();			   // 提交中的写记录
-	private final FastRWLock			_writeBufLock = new FastRWLock();						   // 访问_writeBuf和_writeMap的读写锁
-	private long						_db;													   // LevelDB的数据库对象句柄
-	private File						_dbFile;												   // 当前数据库的文件
-	private final SimpleDateFormat		_sdf		  = new SimpleDateFormat("yy-MM-dd-HH-mm-ss"); // 备份文件后缀名的时间格式
-	private final long					_backupBase;											   // 备份数据的基准时间
-	private boolean						_useSnappy	  = true;									   // 是否使用LevelDB内置的snappy压缩
-	private boolean						_reuseLogs	  = true;									   // 是否使用LevelDB内置的reuse_logs功能
+	private static final Slice		_deletedSlice = new Slice(null, 0, 0);					   // 表示已删除的slice
+	private int						_writeCount;											   // 提交中的写缓冲区记录数量
+	private final Octets			_writeBuf	  = new Octets(0x10000);					   // 提交中的写缓冲区
+	private final Map<Slice, Slice>	_writeMap	  = Util.newConcurrentHashMap();			   // 提交中的写记录
+	private final FastRWLock		_writeBufLock = new FastRWLock();						   // 访问_writeBuf和_writeMap的读写锁
+	private long					_db;													   // LevelDB的数据库对象句柄
+	private File					_dbFile;												   // 当前数据库的文件
+	private final SimpleDateFormat	_sdf		  = new SimpleDateFormat("yy-MM-dd-HH-mm-ss"); // 备份文件后缀名的时间格式
+	private final long				_backupBase;											   // 备份数据的基准时间
+	private boolean					_useSnappy	  = true;									   // 是否使用LevelDB内置的snappy压缩
+	private boolean					_reuseLogs	  = true;									   // 是否使用LevelDB内置的reuse_logs功能
 
 	private static final class Slice
 	{
@@ -999,11 +998,6 @@ public final class StorageLevelDB implements Storage
 			int kpos = writeValue((Bean<?>)k);
 			_writeMap.put(new Slice(os.array(), kpos, os.size() - kpos), _deletedSlice);
 		}
-	}
-
-	public static StorageLevelDB instance()
-	{
-		return _instance;
 	}
 
 	public StorageLevelDB()

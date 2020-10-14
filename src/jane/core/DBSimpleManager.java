@@ -249,7 +249,7 @@ public final class DBSimpleManager
 	 */
 	public void startup() throws IOException
 	{
-		startup(StorageLevelDB.instance(), Const.dbFilename, Const.dbBackupPath);
+		startup(new StorageLevelDB(), Const.dbFilename, Const.dbBackupPath);
 	}
 
 	/**
