@@ -20,12 +20,14 @@
  db/log_reader.h                   |   14 +-
  db/repair.cc                      |    3 +-
  db/table_cache.h                  |    2 +
- db/version_set.cc                 |    2 +-
- db/write_batch.cc                 |   55 +-
+ db/version_set.cc                 |   84 +-
+ db/version_set_test.cc            |  158 ++-
+ db/write_batch.cc                 |   57 +-
  db/write_batch_internal.h         |   31 +-
  gendef.lua                        |   33 +
  include/leveldb/table.h           |    2 +
- include/leveldb/write_batch.h     |    4 +-
+ include/leveldb/write_batch.h     |    6 +-
+ issues/issue320_test.cc           |  134 +++
  leveldb.def                       |   83 ++
  leveldb.sln                       |   93 ++
  leveldb.vcxproj                   |  319 ++++++
@@ -40,10 +42,10 @@
  leveldbtestenv.vcxproj.filters    |    8 +
  leveldbutil.vcxproj               |  194 ++++
  leveldbutil.vcxproj.filters       |    7 +
- make_linux.sh                     |  130 +++
- make_linux_jemalloc.sh            |  131 +++
- make_mac.sh                       |  127 +++
- make_mingw.bat                    |  133 +++
+ make_linux.sh                     |  134 +++
+ make_linux_jemalloc.sh            |  135 +++
+ make_mac.sh                       |  130 +++
+ make_mingw.bat                    |  135 +++
  port/atomic_pointer.h             |    1 +
  port/endian.h                     |    5 +
  port/vs/jni/jni.h                 | 1960 +++++++++++++++++++++++++++++++++++++
@@ -61,10 +63,11 @@
  snappy/snappy.cc                  | 1515 ++++++++++++++++++++++++++++
  snappy/snappy.h                   |  203 ++++
  table/table.cc                    |   23 +
- util/env_windows.cc               |  457 +++++++++
+ util/coding.cc                    |    2 +-
+ util/env_windows.cc               |  438 +++++++++
  util/jni.cc                       |  551 +++++++++++
- util/logging.cc                   |    2 +-
- 66 files changed, 9669 insertions(+), 95 deletions(-)
+ util/logging.cc                   |   51 +-
+ 69 files changed, 10067 insertions(+), 120 deletions(-)
 
 diff --git a/.gitignore b/.gitignore
 index 0630251..bbfce0d 100644
@@ -1524,7 +1527,7 @@ index e9191dc..cfa81cf 100644
    Env* const env_;
    const std::string dbname_;
 diff --git a/db/version_set.cc b/db/version_set.cc
-index 7022b27..15c356d 100644
+index 7022b27..3250046 100644
 --- a/db/version_set.cc
 +++ b/db/version_set.cc
 @@ -945,7 +945,7 @@ Status VersionSet::Recover(bool *save_manifest) {
@@ -1536,8 +1539,275 @@ index 7022b27..15c356d 100644
      Slice record;
      std::string scratch;
      while (reader.ReadRecord(&record, &scratch) && s.ok()) {
+@@ -1346,9 +1346,90 @@ Compaction* VersionSet::PickCompaction() {
+   return c;
+ }
+ 
++// Finds the largest key in a vector of files. Returns true if files it not
++// empty.
++bool FindLargestKey(const InternalKeyComparator& icmp,
++                    const std::vector<FileMetaData*>& files,
++                    InternalKey* largest_key) {
++  if (files.empty()) {
++    return false;
++  }
++  *largest_key = files[0]->largest;
++  for (size_t i = 1; i < files.size(); ++i) {
++    FileMetaData* f = files[i];
++    if (icmp.Compare(f->largest, *largest_key) > 0) {
++      *largest_key = f->largest;
++    }
++  }
++  return true;
++}
++
++// Finds minimum file b2=(l2, u2) in level file for which l2 > u1 and
++// user_key(l2) = user_key(u1)
++FileMetaData* FindSmallestBoundaryFile(
++    const InternalKeyComparator& icmp,
++    const std::vector<FileMetaData*>& level_files,
++    const InternalKey& largest_key) {
++  const Comparator* user_cmp = icmp.user_comparator();
++  FileMetaData* smallest_boundary_file = 0;
++  for (size_t i = 0; i < level_files.size(); ++i) {
++    FileMetaData* f = level_files[i];
++    if (icmp.Compare(f->smallest, largest_key) > 0 &&
++        user_cmp->Compare(f->smallest.user_key(), largest_key.user_key()) ==
++            0) {
++      if (smallest_boundary_file == 0 ||
++          icmp.Compare(f->smallest, smallest_boundary_file->smallest) < 0) {
++        smallest_boundary_file = f;
++      }
++    }
++  }
++  return smallest_boundary_file;
++}
++
++// Extracts the largest file b1 from |compaction_files| and then searches for a
++// b2 in |level_files| for which user_key(u1) = user_key(l2). If it finds such a
++// file b2 (known as a boundary file) it adds it to |compaction_files| and then
++// searches again using this new upper bound.
++//
++// If there are two blocks, b1=(l1, u1) and b2=(l2, u2) and
++// user_key(u1) = user_key(l2), and if we compact b1 but not b2 then a
++// subsequent get operation will yield an incorrect result because it will
++// return the record from b2 in level i rather than from b1 because it searches
++// level by level for records matching the supplied user key.
++//
++// parameters:
++//   in     level_files:      List of files to search for boundary files.
++//   in/out compaction_files: List of files to extend by adding boundary files.
++void AddBoundaryInputs(const InternalKeyComparator& icmp,
++                       const std::vector<FileMetaData*>& level_files,
++                       std::vector<FileMetaData*>* compaction_files) {
++  InternalKey largest_key;
++
++  // Quick return if compaction_files is empty.
++  if (!FindLargestKey(icmp, *compaction_files, &largest_key)) {
++    return;
++  }
++
++  bool continue_searching = true;
++  while (continue_searching) {
++    FileMetaData* smallest_boundary_file =
++        FindSmallestBoundaryFile(icmp, level_files, largest_key);
++
++    // If a boundary file was found advance largest_key, otherwise we're done.
++    if (smallest_boundary_file != NULL) {
++      compaction_files->push_back(smallest_boundary_file);
++      largest_key = smallest_boundary_file->largest;
++    } else {
++      continue_searching = false;
++    }
++  }
++}
++
+ void VersionSet::SetupOtherInputs(Compaction* c) {
+   const int level = c->level();
+   InternalKey smallest, largest;
++
++  AddBoundaryInputs(icmp_, current_->files_[level], &c->inputs_[0]);
+   GetRange(c->inputs_[0], &smallest, &largest);
+ 
+   current_->GetOverlappingInputs(level+1, &smallest, &largest, &c->inputs_[1]);
+@@ -1362,6 +1443,7 @@ void VersionSet::SetupOtherInputs(Compaction* c) {
+   if (!c->inputs_[1].empty()) {
+     std::vector<FileMetaData*> expanded0;
+     current_->GetOverlappingInputs(level, &all_start, &all_limit, &expanded0);
++    AddBoundaryInputs(icmp_, current_->files_[level], &expanded0);
+     const int64_t inputs0_size = TotalFileSize(c->inputs_[0]);
+     const int64_t inputs1_size = TotalFileSize(c->inputs_[1]);
+     const int64_t expanded0_size = TotalFileSize(expanded0);
+diff --git a/db/version_set_test.cc b/db/version_set_test.cc
+index 501e34d..c914a78 100644
+--- a/db/version_set_test.cc
++++ b/db/version_set_test.cc
+@@ -172,8 +172,160 @@ TEST(FindFileTest, OverlappingFiles) {
+   ASSERT_TRUE(Overlaps("600", "700"));
+ }
+ 
+-}  // namespace leveldb
++void AddBoundaryInputs(const InternalKeyComparator& icmp,
++                       const std::vector<FileMetaData*>& level_files,
++                       std::vector<FileMetaData*>* compaction_files);
++
++class AddBoundaryInputsTest {
++ public:
++  std::vector<FileMetaData*> level_files_;
++  std::vector<FileMetaData*> compaction_files_;
++  std::vector<FileMetaData*> all_files_;
++  InternalKeyComparator icmp_;
++
++  AddBoundaryInputsTest() : icmp_(BytewiseComparator()){};
++
++  ~AddBoundaryInputsTest() {
++    for (size_t i = 0; i < all_files_.size(); ++i) {
++      delete all_files_[i];
++    }
++    all_files_.clear();
++  };
++
++  FileMetaData* CreateFileMetaData(uint64_t number, InternalKey smallest,
++                                   InternalKey largest) {
++    FileMetaData* f = new FileMetaData();
++    f->number = number;
++    f->smallest = smallest;
++    f->largest = largest;
++    all_files_.push_back(f);
++    return f;
++  }
++};
+ 
+-int main(int argc, char** argv) {
+-  return leveldb::test::RunAllTests();
++TEST(AddBoundaryInputsTest, TestEmptyFileSets) {
++  AddBoundaryInputs(icmp_, level_files_, &compaction_files_);
++  ASSERT_TRUE(compaction_files_.empty());
++  ASSERT_TRUE(level_files_.empty());
+ }
++
++TEST(AddBoundaryInputsTest, TestEmptyLevelFiles) {
++  FileMetaData* f1 =
++      CreateFileMetaData(1, InternalKey("100", 2, kTypeValue),
++                         InternalKey(InternalKey("100", 1, kTypeValue)));
++  compaction_files_.push_back(f1);
++
++  AddBoundaryInputs(icmp_, level_files_, &compaction_files_);
++  ASSERT_EQ(1, compaction_files_.size());
++  ASSERT_EQ(f1, compaction_files_[0]);
++  ASSERT_TRUE(level_files_.empty());
++}
++
++TEST(AddBoundaryInputsTest, TestEmptyCompactionFiles) {
++  FileMetaData* f1 =
++      CreateFileMetaData(1, InternalKey("100", 2, kTypeValue),
++                         InternalKey(InternalKey("100", 1, kTypeValue)));
++  level_files_.push_back(f1);
++
++  AddBoundaryInputs(icmp_, level_files_, &compaction_files_);
++  ASSERT_TRUE(compaction_files_.empty());
++  ASSERT_EQ(1, level_files_.size());
++  ASSERT_EQ(f1, level_files_[0]);
++}
++
++TEST(AddBoundaryInputsTest, TestNoBoundaryFiles) {
++  FileMetaData* f1 =
++      CreateFileMetaData(1, InternalKey("100", 2, kTypeValue),
++                         InternalKey(InternalKey("100", 1, kTypeValue)));
++  FileMetaData* f2 =
++      CreateFileMetaData(1, InternalKey("200", 2, kTypeValue),
++                         InternalKey(InternalKey("200", 1, kTypeValue)));
++  FileMetaData* f3 =
++      CreateFileMetaData(1, InternalKey("300", 2, kTypeValue),
++                         InternalKey(InternalKey("300", 1, kTypeValue)));
++
++  level_files_.push_back(f3);
++  level_files_.push_back(f2);
++  level_files_.push_back(f1);
++  compaction_files_.push_back(f2);
++  compaction_files_.push_back(f3);
++
++  AddBoundaryInputs(icmp_, level_files_, &compaction_files_);
++  ASSERT_EQ(2, compaction_files_.size());
++}
++
++TEST(AddBoundaryInputsTest, TestOneBoundaryFiles) {
++  FileMetaData* f1 =
++      CreateFileMetaData(1, InternalKey("100", 3, kTypeValue),
++                         InternalKey(InternalKey("100", 2, kTypeValue)));
++  FileMetaData* f2 =
++      CreateFileMetaData(1, InternalKey("100", 1, kTypeValue),
++                         InternalKey(InternalKey("200", 3, kTypeValue)));
++  FileMetaData* f3 =
++      CreateFileMetaData(1, InternalKey("300", 2, kTypeValue),
++                         InternalKey(InternalKey("300", 1, kTypeValue)));
++
++  level_files_.push_back(f3);
++  level_files_.push_back(f2);
++  level_files_.push_back(f1);
++  compaction_files_.push_back(f1);
++
++  AddBoundaryInputs(icmp_, level_files_, &compaction_files_);
++  ASSERT_EQ(2, compaction_files_.size());
++  ASSERT_EQ(f1, compaction_files_[0]);
++  ASSERT_EQ(f2, compaction_files_[1]);
++}
++
++TEST(AddBoundaryInputsTest, TestTwoBoundaryFiles) {
++  FileMetaData* f1 =
++      CreateFileMetaData(1, InternalKey("100", 6, kTypeValue),
++                         InternalKey(InternalKey("100", 5, kTypeValue)));
++  FileMetaData* f2 =
++      CreateFileMetaData(1, InternalKey("100", 2, kTypeValue),
++                         InternalKey(InternalKey("300", 1, kTypeValue)));
++  FileMetaData* f3 =
++      CreateFileMetaData(1, InternalKey("100", 4, kTypeValue),
++                         InternalKey(InternalKey("100", 3, kTypeValue)));
++
++  level_files_.push_back(f2);
++  level_files_.push_back(f3);
++  level_files_.push_back(f1);
++  compaction_files_.push_back(f1);
++
++  AddBoundaryInputs(icmp_, level_files_, &compaction_files_);
++  ASSERT_EQ(3, compaction_files_.size());
++  ASSERT_EQ(f1, compaction_files_[0]);
++  ASSERT_EQ(f3, compaction_files_[1]);
++  ASSERT_EQ(f2, compaction_files_[2]);
++}
++
++TEST(AddBoundaryInputsTest, TestDisjoinFilePointers) {
++  FileMetaData* f1 =
++      CreateFileMetaData(1, InternalKey("100", 6, kTypeValue),
++                         InternalKey(InternalKey("100", 5, kTypeValue)));
++  FileMetaData* f2 =
++      CreateFileMetaData(1, InternalKey("100", 6, kTypeValue),
++                         InternalKey(InternalKey("100", 5, kTypeValue)));
++  FileMetaData* f3 =
++      CreateFileMetaData(1, InternalKey("100", 2, kTypeValue),
++                         InternalKey(InternalKey("300", 1, kTypeValue)));
++  FileMetaData* f4 =
++      CreateFileMetaData(1, InternalKey("100", 4, kTypeValue),
++                         InternalKey(InternalKey("100", 3, kTypeValue)));
++
++  level_files_.push_back(f2);
++  level_files_.push_back(f3);
++  level_files_.push_back(f4);
++
++  compaction_files_.push_back(f1);
++
++  AddBoundaryInputs(icmp_, level_files_, &compaction_files_);
++  ASSERT_EQ(3, compaction_files_.size());
++  ASSERT_EQ(f1, compaction_files_[0]);
++  ASSERT_EQ(f4, compaction_files_[1]);
++  ASSERT_EQ(f3, compaction_files_[2]);
++}
++
++}  // namespace leveldb
++
++int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }
 diff --git a/db/write_batch.cc b/db/write_batch.cc
-index 7f8f3e8..7c63640 100644
+index 7f8f3e8..15bc6d0 100644
 --- a/db/write_batch.cc
 +++ b/db/write_batch.cc
 @@ -26,25 +26,28 @@ namespace leveldb {
@@ -1564,8 +1834,9 @@ index 7f8f3e8..7c63640 100644
 +  memset(buf_, 0, kHeader);
  }
  
- size_t WriteBatch::ApproximateSize() {
+-size_t WriteBatch::ApproximateSize() {
 -  return rep_.size();
++size_t WriteBatch::ApproximateSize() const {
 +  return size_;
  }
  
@@ -1755,7 +2026,7 @@ index 2f54c4e..0640ad4 100644
    struct Rep;
    Rep* rep_;
 diff --git a/include/leveldb/write_batch.h b/include/leveldb/write_batch.h
-index 40ceb03..e116214 100644
+index 40ceb03..34cf359 100644
 --- a/include/leveldb/write_batch.h
 +++ b/include/leveldb/write_batch.h
 @@ -21,7 +21,6 @@
@@ -1766,6 +2037,15 @@ index 40ceb03..e116214 100644
  #include "leveldb/export.h"
  #include "leveldb/status.h"
  
+@@ -47,7 +46,7 @@ class LEVELDB_EXPORT WriteBatch {
+   //
+   // This number is tied to implementation details, and may change across
+   // releases. It is intended for LevelDB usage metrics.
+-  size_t ApproximateSize();
++  size_t ApproximateSize() const;
+ 
+   // Support for iterating over the contents of a batch.
+   class Handler {
 @@ -61,7 +60,8 @@ class LEVELDB_EXPORT WriteBatch {
   private:
    friend class WriteBatchInternal;
@@ -1776,6 +2056,146 @@ index 40ceb03..e116214 100644
  
    // Intentionally copyable
  };
+diff --git a/issues/issue320_test.cc b/issues/issue320_test.cc
+new file mode 100644
+index 0000000..0b3bb0b
+--- /dev/null
++++ b/issues/issue320_test.cc
+@@ -0,0 +1,134 @@
++// Copyright (c) 2019 The LevelDB Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file. See the AUTHORS file for names of contributors.
++
++#include <cstdint>
++#include <cstdlib>
++#include <iostream>
++#include <memory>
++#include <string>
++#include <vector>
++
++#include "leveldb/db.h"
++#include "leveldb/write_batch.h"
++#include "util/testharness.h"
++
++namespace leveldb {
++
++namespace {
++
++// Creates a random number in the range of [0, max).
++int GenerateRandomNumber(int max) { return std::rand() % max; }
++
++std::string CreateRandomString(int32_t index) {
++  static const size_t len = 1024;
++  char bytes[len];
++  size_t i = 0;
++  while (i < 8) {
++    bytes[i] = 'a' + ((index >> (4 * i)) & 0xf);
++    ++i;
++  }
++  while (i < sizeof(bytes)) {
++    bytes[i] = 'a' + GenerateRandomNumber(26);
++    ++i;
++  }
++  return std::string(bytes, sizeof(bytes));
++}
++
++}  // namespace
++
++class Issue320 {};
++
++TEST(Issue320, Test) {
++  std::srand(0);
++
++  bool delete_before_put = false;
++  bool keep_snapshots = true;
++
++  std::vector<std::pair<std::string, std::string>*> test_map(10000, (std::pair<std::string, std::string>*)0);
++  std::vector<Snapshot const*> snapshots(100, (Snapshot const*)0);
++
++  DB* db;
++  Options options;
++  options.create_if_missing = true;
++
++  std::string dbpath = test::TmpDir() + "/leveldb_issue320_test";
++  ASSERT_OK(DB::Open(options, dbpath, &db));
++
++  uint32_t target_size = 10000;
++  uint32_t num_items = 0;
++  uint32_t count = 0;
++  std::string key;
++  std::string value, old_value;
++
++  WriteOptions writeOptions;
++  ReadOptions readOptions;
++  while (count < 200000) {
++    if ((++count % 1000) == 0) {
++      std::cout << "count: " << count << std::endl;
++    }
++
++    int index = GenerateRandomNumber(test_map.size());
++    WriteBatch batch;
++
++    if (test_map[index] == 0) {
++      num_items++;
++      test_map[index] = new std::pair<std::string, std::string>(
++          CreateRandomString(index), CreateRandomString(index));
++      batch.Put(test_map[index]->first, test_map[index]->second);
++    } else {
++      ASSERT_OK(db->Get(readOptions, test_map[index]->first, &old_value));
++      if (old_value != test_map[index]->second) {
++        std::cout << "ERROR incorrect value returned by Get" << std::endl;
++        std::cout << "  count=" << count << std::endl;
++        std::cout << "  old value=" << old_value << std::endl;
++        std::cout << "  test_map[index]->second=" << test_map[index]->second << std::endl;
++        std::cout << "  test_map[index]->first=" << test_map[index]->first << std::endl;
++        std::cout << "  index=" << index << std::endl;
++        ASSERT_EQ(old_value, test_map[index]->second);
++      }
++
++      if (num_items >= target_size && GenerateRandomNumber(100) > 30) {
++        batch.Delete(test_map[index]->first);
++        delete test_map[index];
++        test_map[index] = 0;
++        --num_items;
++      } else {
++        test_map[index]->second = CreateRandomString(index);
++        if (delete_before_put) batch.Delete(test_map[index]->first);
++        batch.Put(test_map[index]->first, test_map[index]->second);
++      }
++    }
++
++    ASSERT_OK(db->Write(writeOptions, &batch));
++
++    if (keep_snapshots && GenerateRandomNumber(10) == 0) {
++      int i = GenerateRandomNumber(snapshots.size());
++      if (snapshots[i] != 0) {
++        db->ReleaseSnapshot(snapshots[i]);
++      }
++      snapshots[i] = db->GetSnapshot();
++    }
++  }
++
++  for (std::vector<Snapshot const*>::const_iterator it = snapshots.begin(), ie = snapshots.end(); it != ie; ++it) {
++  	Snapshot const* snapshot = *it;
++    if (snapshot) {
++      db->ReleaseSnapshot(snapshot);
++    }
++  }
++
++  for (size_t i = 0; i < test_map.size(); ++i) {
++    if (test_map[i] != 0) {
++      delete test_map[i];
++      test_map[i] = 0;
++    }
++  }
++
++  delete db;
++  DestroyDB(dbpath, options);
++}
++
++}  // namespace leveldb
++
++int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }
 diff --git a/leveldb.def b/leveldb.def
 new file mode 100644
 index 0000000..0a23812
@@ -3767,10 +4187,10 @@ index 0000000..1fb0903
 \ No newline at end of file
 diff --git a/make_linux.sh b/make_linux.sh
 new file mode 100755
-index 0000000..9ea87e7
+index 0000000..cbbce1b
 --- /dev/null
 +++ b/make_linux.sh
-@@ -0,0 +1,130 @@
+@@ -0,0 +1,134 @@
 +#!/bin/sh
 +
 +cd `dirname $0`
@@ -3778,7 +4198,10 @@ index 0000000..9ea87e7
 +# note:
 +# 1. if gcc supports c++11 (4.8+), remove "-Dconstexpr= -Doverride="
 +
-+if [ "$JAVA_HOME" = "" ]; then JAVA_HOME=/usr/java/default; fi
++if [ -z $JAVA_HOME ]; then JAVA_HOME=/usr/java/default; fi
++
++JAVA_VER=`$JAVA_HOME/bin/java -version 2>&1 | awk -F "[ \"]" '/version/{print $4}'`
++if [[ $JAVA_VER < 1.8 ]]; then echo 'ERROR: JDK 1.8 or later is required!'; exit 1; fi
 +
 +CORE_FILES="\
 +db/builder.cc \
@@ -3883,7 +4306,7 @@ index 0000000..9ea87e7
 +testharness.o \
 +"
 +
-+COMPILE="g++ -std=c++0x -DOS_LINUX=1 -DLEVELDB_PLATFORM_POSIX=1 -DHAVE_CRC32C=1 -DHAVE_SNAPPY=1 -DHAVE_BUILTIN_EXPECT=1 -DHAVE_BYTESWAP_H=1 -DHAVE_BUILTIN_CTZ=1 -DENABLE_JNI -DNDEBUG -Dconstexpr= -Doverride= -I. -Iinclude -Isnappy -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -m64 -O3 -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -fPIC -pipe -pthread"
++COMPILE="g++ -std=c++0x -DOS_LINUX=1 -DLEVELDB_PLATFORM_POSIX=1 -DHAVE_CRC32C=1 -DHAVE_SNAPPY=1 -DHAVE_BUILTIN_EXPECT=1 -DHAVE_BYTESWAP_H=1 -DHAVE_BUILTIN_CTZ=1 -DENABLE_JNI -DNDEBUG -Dconstexpr= -Doverride= -I. -Iinclude -Isnappy -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -m64 -O3 -fweb -fno-strict-aliasing -fwrapv -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -fPIC -pipe -pthread"
 +
 +$COMPILE -c          -o crc32c_.o      crc32c/crc32c.cc
 +$COMPILE -c -msse4.2 -o crc32c_sse42.o crc32c/crc32c_sse42.cc
@@ -3897,16 +4320,17 @@ index 0000000..9ea87e7
 +rm -f *.o 2> /dev/null
 +
 +echo building db-tools ...
-+$COMPILE -o leveldbutil db/leveldbutil.cc libleveldb.a
-+$COMPILE -o db_bench    db/db_bench.cc    libleveldb.a
-+$COMPILE -o db_test     db/db_test.cc     libleveldb.a
-+$COMPILE -o env_test    util/env_test.cc  libleveldb.a
++$COMPILE -o leveldbutil      db/leveldbutil.cc      libleveldb.a
++$COMPILE -o db_bench         db/db_bench.cc         libleveldb.a
++$COMPILE -o db_test          db/db_test.cc          libleveldb.a
++$COMPILE -o env_test         util/env_test.cc       libleveldb.a
++$COMPILE -o version_set_test db/version_set_test.cc libleveldb.a
 diff --git a/make_linux_jemalloc.sh b/make_linux_jemalloc.sh
 new file mode 100755
-index 0000000..07c8de3
+index 0000000..a203351
 --- /dev/null
 +++ b/make_linux_jemalloc.sh
-@@ -0,0 +1,131 @@
+@@ -0,0 +1,135 @@
 +#!/bin/sh
 +
 +cd `dirname $0`
@@ -3915,7 +4339,10 @@ index 0000000..07c8de3
 +# 1. if gcc supports c++11 (4.8+), remove "-Dconstexpr= -Doverride="
 +# 2. configure and make jemalloc, then put the result "lib/libjemalloc.a" and "lib/libjemalloc_pic.a" in this path
 +
-+if [ "$JAVA_HOME" = "" ]; then JAVA_HOME=/usr/java/default; fi
++if [ -z $JAVA_HOME ]; then JAVA_HOME=/usr/java/default; fi
++
++JAVA_VER=`$JAVA_HOME/bin/java -version 2>&1 | awk -F "[ \"]" '/version/{print $4}'`
++if [[ $JAVA_VER < 1.8 ]]; then echo 'ERROR: JDK 1.8 or later is required!'; exit 1; fi
 +
 +CORE_FILES="\
 +db/builder.cc \
@@ -4020,7 +4447,7 @@ index 0000000..07c8de3
 +testharness.o \
 +"
 +
-+COMPILE="g++ -std=c++0x -DOS_LINUX=1 -DLEVELDB_PLATFORM_POSIX=1 -DHAVE_CRC32C=1 -DHAVE_SNAPPY=1 -DHAVE_BUILTIN_EXPECT=1 -DHAVE_BYTESWAP_H=1 -DHAVE_BUILTIN_CTZ=1 -DENABLE_JNI -DNDEBUG -Dconstexpr= -Doverride= -I. -Iinclude -Isnappy -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -m64 -O3 -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -fPIC -pipe -pthread -ldl"
++COMPILE="g++ -std=c++0x -DOS_LINUX=1 -DLEVELDB_PLATFORM_POSIX=1 -DHAVE_CRC32C=1 -DHAVE_SNAPPY=1 -DHAVE_BUILTIN_EXPECT=1 -DHAVE_BYTESWAP_H=1 -DHAVE_BUILTIN_CTZ=1 -DENABLE_JNI -DNDEBUG -Dconstexpr= -Doverride= -I. -Iinclude -Isnappy -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -m64 -O3 -fweb -fno-strict-aliasing -fwrapv -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -fPIC -pipe -pthread -ldl"
 +
 +$COMPILE -c          -o crc32c_.o      crc32c/crc32c.cc
 +$COMPILE -c -msse4.2 -o crc32c_sse42.o crc32c/crc32c_sse42.cc
@@ -4034,19 +4461,23 @@ index 0000000..07c8de3
 +rm -f *.o 2> /dev/null
 +
 +echo building db-tools ...
-+$COMPILE      -o leveldbutil db/leveldbutil.cc libleveldb.a libjemalloc.a
-+$COMPILE -lrt -o db_bench    db/db_bench.cc    libleveldb.a libjemalloc.a
-+$COMPILE -lrt -o db_test     db/db_test.cc     libleveldb.a libjemalloc.a
-+$COMPILE      -o env_test    util/env_test.cc  libleveldb.a libjemalloc.a
++$COMPILE      -o leveldbutil      db/leveldbutil.cc      libleveldb.a libjemalloc.a
++$COMPILE -lrt -o db_bench         db/db_bench.cc         libleveldb.a libjemalloc.a
++$COMPILE -lrt -o db_test          db/db_test.cc          libleveldb.a libjemalloc.a
++$COMPILE      -o env_test         util/env_test.cc       libleveldb.a libjemalloc.a
++$COMPILE -lrt -o version_set_test db/version_set_test.cc libleveldb.a libjemalloc.a
 diff --git a/make_mac.sh b/make_mac.sh
-new file mode 100644
-index 0000000..ae09186
+new file mode 100755
+index 0000000..9a3e7f9
 --- /dev/null
 +++ b/make_mac.sh
-@@ -0,0 +1,127 @@
+@@ -0,0 +1,130 @@
 +#!/bin/sh
 +
 +cd `dirname $0`
++
++# note:
++# 1. install JDK 8 or later and set $JAVA_INCLUDE if JDK is not in default path
 +
 +if [ "$JAVA_INCLUDE" = "" ]; then JAVA_INCLUDE=/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers; fi
 +
@@ -4153,7 +4584,7 @@ index 0000000..ae09186
 +testharness.o \
 +"
 +
-+COMPILE="g++ -std=c++0x -mmacosx-version-min=10.9 -DOS_LINUX=1 -DLEVELDB_PLATFORM_POSIX=1 -DHAVE_CRC32C=1 -DHAVE_SNAPPY=1 -DHAVE_BUILTIN_EXPECT=1 -DHAVE_BYTESWAP_H=1 -DHAVE_BUILTIN_CTZ=1 -DENABLE_JNI -DNDEBUG -I. -Iinclude -Isnappy -I${JAVA_INCLUDE} -m64 -O3 -ffast-math -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -fPIC -pipe -pthread"
++COMPILE="g++ -std=c++0x -mmacosx-version-min=10.9 -DOS_LINUX=1 -DLEVELDB_PLATFORM_POSIX=1 -DHAVE_CRC32C=1 -DHAVE_SNAPPY=1 -DHAVE_BUILTIN_EXPECT=1 -DHAVE_BYTESWAP_H=1 -DHAVE_BUILTIN_CTZ=1 -DENABLE_JNI -DNDEBUG -I. -Iinclude -Isnappy -I${JAVA_INCLUDE} -m64 -O3 -fno-strict-aliasing -fwrapv -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -fPIC -pipe -pthread"
 +
 +$COMPILE -c          -o crc32c_.o      crc32c/crc32c.cc
 +$COMPILE -c -msse4.2 -o crc32c_sse42.o crc32c/crc32c_sse42.cc
@@ -4173,10 +4604,10 @@ index 0000000..ae09186
 +$COMPILE -o env_test    util/env_test.cc  libleveldb.a
 diff --git a/make_mingw.bat b/make_mingw.bat
 new file mode 100644
-index 0000000..4a67be7
+index 0000000..3e50275
 --- /dev/null
 +++ b/make_mingw.bat
-@@ -0,0 +1,133 @@
+@@ -0,0 +1,135 @@
 +@echo off
 +setlocal
 +pushd %~dp0
@@ -4283,7 +4714,7 @@ index 0000000..4a67be7
 +testutil.o ^
 +testharness.o
 +
-+set COMPILE=-std=c++0x -DNDEBUG -DOS_WIN=1 -D_POSIX -DLEVELDB_PLATFORM_POSIX=1 -DHAVE_CRC32C=1 -DHAVE_SNAPPY=1 -DHAVE_BUILTIN_EXPECT=1 -DHAVE_BYTESWAP_H=1 -DHAVE_BUILTIN_CTZ=1 -DENABLE_JNI -D__USE_MINGW_ANSI_STDIO=1 -I. -Iinclude -Isnappy -Iport -Iport/vs/jni -Ofast -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -flto -fwhole-program -pipe -pthread -static -lpthread
++set COMPILE=-std=c++0x -DNDEBUG -DOS_WIN=1 -D_POSIX -DLEVELDB_PLATFORM_POSIX=1 -DHAVE_CRC32C=1 -DHAVE_SNAPPY=1 -DHAVE_BUILTIN_EXPECT=1 -DHAVE_BYTESWAP_H=1 -DHAVE_BUILTIN_CTZ=1 -DENABLE_JNI -D__USE_MINGW_ANSI_STDIO=1 -I. -Iinclude -Isnappy -Iport -Iport/vs/jni -O3 -fweb -fno-strict-aliasing -fwrapv -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -flto -fwhole-program -pipe -pthread -static -lpthread
 +
 +set COMPILE32=i686-w64-mingw32-g++.exe -m32 -march=i686 %COMPILE% -Wl,--enable-stdcall-fixup
 +set COMPILE64=x86_64-w64-mingw32-g++.exe -m64 %COMPILE%
@@ -4298,14 +4729,16 @@ index 0000000..4a67be7
 +%COMPILE64% -DLEVELDB_SHARED_LIBRARY -DLEVELDB_COMPILE_LIBRARY -shared -Wl,--image-base,0x10000000 -Wl,--kill-at -Wl,-soname -Wl,leveldbjni64.dll -o leveldbjni64.dll %CORE_FILES% crc32c_sse42_64.o
 +
 +echo building db-tools ...
-+%COMPILE32% -o leveldbutil32.exe db/leveldbutil.cc %CORE_FILES% %TEST_FILES% crc32c_sse42_32.o
-+%COMPILE64% -o leveldbutil64.exe db/leveldbutil.cc %CORE_FILES% %TEST_FILES% crc32c_sse42_64.o
-+%COMPILE32% -o db_bench32.exe    db/db_bench.cc    %CORE_FILES% %TEST_FILES% crc32c_sse42_32.o
-+%COMPILE64% -o db_bench64.exe    db/db_bench.cc    %CORE_FILES% %TEST_FILES% crc32c_sse42_64.o
-+%COMPILE32% -o db_test32.exe     db/db_test.cc     %CORE_FILES% %TEST_FILES% crc32c_sse42_32.o
-+%COMPILE64% -o db_test64.exe     db/db_test.cc     %CORE_FILES% %TEST_FILES% crc32c_sse42_64.o
-+%COMPILE32% -o env_test32.exe    util/env_test.cc  %CORE_FILES% %TEST_FILES% crc32c_sse42_32.o
-+%COMPILE64% -o env_test64.exe    util/env_test.cc  %CORE_FILES% %TEST_FILES% crc32c_sse42_64.o
++%COMPILE32% -o leveldbutil32.exe      db/leveldbutil.cc      %CORE_FILES% %TEST_FILES% crc32c_sse42_32.o
++%COMPILE64% -o leveldbutil64.exe      db/leveldbutil.cc      %CORE_FILES% %TEST_FILES% crc32c_sse42_64.o
++%COMPILE32% -o db_bench32.exe         db/db_bench.cc         %CORE_FILES% %TEST_FILES% crc32c_sse42_32.o
++%COMPILE64% -o db_bench64.exe         db/db_bench.cc         %CORE_FILES% %TEST_FILES% crc32c_sse42_64.o
++%COMPILE32% -o db_test32.exe          db/db_test.cc          %CORE_FILES% %TEST_FILES% crc32c_sse42_32.o
++%COMPILE64% -o db_test64.exe          db/db_test.cc          %CORE_FILES% %TEST_FILES% crc32c_sse42_64.o
++%COMPILE32% -o env_test32.exe         util/env_test.cc       %CORE_FILES% %TEST_FILES% crc32c_sse42_32.o
++%COMPILE64% -o env_test64.exe         util/env_test.cc       %CORE_FILES% %TEST_FILES% crc32c_sse42_64.o
++%COMPILE32% -o version_set_test32.exe db/version_set_test.cc %CORE_FILES% %TEST_FILES% crc32c_sse42_32.o
++%COMPILE64% -o version_set_test64.exe db/version_set_test.cc %CORE_FILES% %TEST_FILES% crc32c_sse42_64.o
 +
 +del crc32c_sse42_??.o
 +
@@ -9468,12 +9901,25 @@ index ff73cee..55517d4 100644
    }
    rep_->filter = new FilterBlockReader(rep_->options.filter_policy, block.data);
  }
+diff --git a/util/coding.cc b/util/coding.cc
+index 21e3186..2e56c35 100644
+--- a/util/coding.cc
++++ b/util/coding.cc
+@@ -82,7 +82,7 @@ char* EncodeVarint64(char* dst, uint64_t v) {
+   static const int B = 128;
+   unsigned char* ptr = reinterpret_cast<unsigned char*>(dst);
+   while (v >= B) {
+-    *(ptr++) = (v & (B-1)) | B;
++    *(ptr++) = v | B;
+     v >>= 7;
+   }
+   *(ptr++) = static_cast<unsigned char>(v);
 diff --git a/util/env_windows.cc b/util/env_windows.cc
 new file mode 100644
-index 0000000..b296991
+index 0000000..a747db5
 --- /dev/null
 +++ b/util/env_windows.cc
-@@ -0,0 +1,457 @@
+@@ -0,0 +1,438 @@
 +// Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file. See the AUTHORS file for names of contributors.
@@ -9626,25 +10072,6 @@ index 0000000..b296991
 +		bool success = (file_ == INVALID_HANDLE_VALUE || CloseHandle(file_));
 +		file_ = INVALID_HANDLE_VALUE;
 +		return success;
-+	}
-+};
-+
-+class WindowsLogger : public Logger {
-+	WritableFile* log_;
-+
-+public:
-+	WindowsLogger(WritableFile* log) : log_(log) {}
-+	virtual ~WindowsLogger() { delete log_; }
-+
-+	// Write an entry to the log file with the specified format.
-+	virtual void Logv(const char* format, va_list ap) {
-+		const size_t kBufSize = 4096;
-+		char buffer[kBufSize];
-+		int written = vsnprintf(buffer, kBufSize - 1, format, ap);
-+		if(written < 0) written = kBufSize - 1;
-+		buffer[written++] = '\n';
-+		log_->Append(Slice(buffer, written));
-+		log_->Flush();
 +	}
 +};
 +
@@ -9933,7 +10360,7 @@ index 0000000..b296991
 +#endif
 diff --git a/util/jni.cc b/util/jni.cc
 new file mode 100644
-index 0000000..3ebf0a9
+index 0000000..6230b69
 --- /dev/null
 +++ b/util/jni.cc
 @@ -0,0 +1,551 @@
@@ -10085,14 +10512,12 @@ index 0000000..3ebf0a9
 +extern "C" JNIEXPORT void JNICALL DEF_JAVA(leveldb_1close)
 +	(JNIEnv* jenv, jclass jcls, jlong handle)
 +{
-+	if(handle)
-+	{
-+		DB* db = (DBImpl*)handle;
-+		DBImpl* dbi = dynamic_cast<DBImpl*>(db);
-+		Cache* cache = (dbi ? dbi->GetOptions().block_cache : 0);
-+		delete db;
-+		if(cache) delete cache;
-+	}
++	DB* db = (DBImpl*)handle;
++	if(!db) return;
++	DBImpl* dbi = dynamic_cast<DBImpl*>(db);
++	Cache* cache = (dbi ? dbi->GetOptions().block_cache : 0);
++	delete db;
++	if(cache) delete cache;
 +}
 +
 +// public static native byte[] leveldb_get(long handle, byte[] key, int keylen); // return null for not found
@@ -10148,7 +10573,9 @@ index 0000000..3ebf0a9
 +		mid_getKey = jenv->GetMethodID(cls_entry, "getKey", "()Ljava/lang/Object;");
 +		mid_getValue = jenv->GetMethodID(cls_entry, "getValue", "()Ljava/lang/Object;");
 +		fid_buffer = jenv->GetFieldID(cls_octets, "_buffer", "[B");
++		if(!fid_buffer) fid_buffer = jenv->GetFieldID(cls_octets, "buffer", "[B");
 +		fid_count = jenv->GetFieldID(cls_octets, "_count", "I");
++		if(!fid_count) fid_count = jenv->GetFieldID(cls_octets, "count", "I");
 +		if(!mid_hasNext || !mid_next || !mid_getKey || !mid_getValue || !fid_buffer || !fid_count) return s_err = 3;
 +		s_err = 0;
 +	}
@@ -10477,7 +10904,7 @@ index 0000000..3ebf0a9
 +	(JNIEnv* jenv, jclass jcls, jlong handle, jstring property)
 +{
 +	DB* db = (DB*)handle;
-+	if(!db) return 0;
++	if(!db || !property) return 0;
 +	std::string result;
 +	const char* propptr = jenv->GetStringUTFChars(property, 0);
 +	if(!propptr) return 0;
@@ -10489,10 +10916,18 @@ index 0000000..3ebf0a9
 +#endif
 +#endif
 diff --git a/util/logging.cc b/util/logging.cc
-index d48b6dd..f2505ed 100644
+index d48b6dd..317af03 100644
 --- a/util/logging.cc
 +++ b/util/logging.cc
-@@ -22,7 +22,7 @@ void AppendNumberTo(std::string* str, uint64_t num) {
+@@ -8,6 +8,7 @@
+ #include <stdarg.h>
+ #include <stdio.h>
+ #include <stdlib.h>
++#include <limits>
+ #include "leveldb/env.h"
+ #include "leveldb/slice.h"
+ 
+@@ -22,7 +23,7 @@ void AppendNumberTo(std::string* str, uint64_t num) {
  void AppendEscapedStringTo(std::string* str, const Slice& value) {
    for (size_t i = 0; i < value.size(); i++) {
      char c = value[i];
@@ -10501,3 +10936,61 @@ index d48b6dd..f2505ed 100644
        str->push_back(c);
      } else {
        char buf[10];
+@@ -46,28 +47,38 @@ std::string EscapeString(const Slice& value) {
+ }
+ 
+ bool ConsumeDecimalNumber(Slice* in, uint64_t* val) {
+-  uint64_t v = 0;
+-  int digits = 0;
+-  while (!in->empty()) {
+-    char c = (*in)[0];
+-    if (c >= '0' && c <= '9') {
+-      ++digits;
+-      // |delta| intentionally unit64_t to avoid Android crash (see log).
+-      const uint64_t delta = (c - '0');
+-      static const uint64_t kMaxUint64 = ~static_cast<uint64_t>(0);
+-      if (v > kMaxUint64/10 ||
+-          (v == kMaxUint64/10 && delta > kMaxUint64%10)) {
+-        // Overflow
+-        return false;
+-      }
+-      v = (v * 10) + delta;
+-      in->remove_prefix(1);
+-    } else {
++  // Constants that will be optimized away.
++  constexpr const uint64_t kMaxUint64 = std::numeric_limits<uint64_t>::max();
++  constexpr const char kLastDigitOfMaxUint64 =
++      '0' + static_cast<char>(kMaxUint64 % 10);
++
++  uint64_t value = 0;
++
++  // reinterpret_cast-ing from char* to unsigned char* to avoid signedness.
++  const unsigned char* start =
++      reinterpret_cast<const unsigned char*>(in->data());
++
++  const unsigned char* end = start + in->size();
++  const unsigned char* current = start;
++  for (; current != end; ++current) {
++    const unsigned char ch = *current;
++    if (ch < '0' || ch > '9')
+       break;
++
++    // Overflow check.
++    // kMaxUint64 / 10 is also constant and will be optimized away.
++    if (value > kMaxUint64 / 10 ||
++        (value == kMaxUint64 / 10 && ch > kLastDigitOfMaxUint64)) {
++      return false;
+     }
++
++    value = (value * 10) + (ch - '0');
+   }
+-  *val = v;
+-  return (digits > 0);
++
++  *val = value;
++  const size_t digits_consumed = current - start;
++  in->remove_prefix(digits_consumed);
++  return digits_consumed != 0;
+ }
+ 
+ }  // namespace leveldb
