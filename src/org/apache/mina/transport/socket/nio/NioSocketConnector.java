@@ -111,7 +111,7 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 			channel = SocketChannel.open();
 
 			int receiveBufferSize = getSessionConfig().getReceiveBufferSize();
-			if (receiveBufferSize > 65535)
+			if (receiveBufferSize > 0)
 				channel.socket().setReceiveBufferSize(receiveBufferSize);
 
 			if (localAddress != null) {

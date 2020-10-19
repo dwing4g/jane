@@ -1002,7 +1002,12 @@ public class NetManager implements IoHandler
 	public void exceptionCaught(IoSession session, Throwable cause)
 	{
 		if (cause instanceof IOException && cause.getMessage() != null)
-			Log.error("{}({},{}): exception: {}: {}", _name, session.getId(), session.getRemoteAddress(), cause.getClass().getSimpleName(), cause.getMessage());
+		{
+			StringBuilder msg = new StringBuilder(256).append(cause.getClass().getName()).append(": ").append(cause.getMessage());
+			while ((cause = cause.getCause()) != null)
+				msg.append("\n\tCaused by: ").append(cause.getClass().getName()).append(": ").append(cause.getMessage());
+			Log.error("{}({},{}): exception: {}", _name, session.getId(), session.getRemoteAddress(), msg.toString());
+		}
 		else
 			Log.error(cause, "{}({},{}): exception:", _name, session.getId(), session.getRemoteAddress());
 		session.closeNow();

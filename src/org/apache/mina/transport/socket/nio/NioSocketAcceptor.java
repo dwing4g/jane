@@ -283,9 +283,9 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 				channel.configureBlocking(false);
 				channel.setOption(StandardSocketOptions.SO_REUSEADDR, reuseAddress);
 				DefaultSocketSessionConfig config = getSessionConfig();
-				if (config.getSendBufferSize() >= 0)
+				if (config.getSendBufferSize() >= 0 && channel.supportedOptions().contains(StandardSocketOptions.SO_SNDBUF))
 					channel.setOption(StandardSocketOptions.SO_SNDBUF, config.getSendBufferSize());
-				if (config.getReceiveBufferSize() >= 0)
+				if (config.getReceiveBufferSize() >= 0 && channel.supportedOptions().contains(StandardSocketOptions.SO_RCVBUF))
 					channel.setOption(StandardSocketOptions.SO_RCVBUF, config.getReceiveBufferSize());
 				try {
 					channel.bind(localAddress, backlog);
