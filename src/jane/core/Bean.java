@@ -182,6 +182,17 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 		throw new UnsupportedOperationException();
 	}
 
+	public StringBuilder toStringBuilder(StringBuilder sb)
+	{
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public String toString()
+	{
+		return toStringBuilder(new StringBuilder(2 + initSize() * 2)).toString();
+	}
+
 	/**
 	 * 获取自身的安全封装(在事务中支持异常回滚)
 	 */

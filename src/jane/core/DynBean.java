@@ -137,12 +137,15 @@ public final class DynBean extends Bean<DynBean>
 	}
 
 	@Override
+	public StringBuilder toStringBuilder(StringBuilder sb)
+	{
+		sb.append("{t:").append(_type).append(",s:").append(serial()).append(",f:");
+		return Util.append(sb, _fields).append('}');
+	}
+
+	@Override
 	public String toString()
 	{
-		StringBuilder s = new StringBuilder(_fields.size() * 16 + 16);
-		s.append("{t:").append(_type).append(",s:").append(serial());
-		for (Entry<Integer, Object> e : _fields.entrySet())
-			s.append(',').append(e.getKey()).append(':').append(e.getValue());
-		return s.append('}').toString();
+		return toStringBuilder(new StringBuilder(_fields.size() * 16 + 16)).toString();
 	}
 }

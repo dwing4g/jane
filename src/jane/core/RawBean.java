@@ -174,8 +174,15 @@ public final class RawBean extends Bean<RawBean>
 	}
 
 	@Override
+	public StringBuilder toStringBuilder(StringBuilder sb)
+	{
+		sb.append("{t:").append(_type).append(",s:").append(serial()).append(",d:");
+		return _data.toStringBuilder(sb).append('}');
+	}
+
+	@Override
 	public String toString()
 	{
-		return "{t:" + _type + ",s:" + serial() + ",d:" + _data + "}";
+		return toStringBuilder(new StringBuilder(24)).toString();
 	}
 }

@@ -609,11 +609,11 @@ public final class TestType extends Bean<TestType>
 	}
 
 	@Override
-	public boolean equals(Object o)
+	public boolean equals(Object _o_)
 	{
-		if (o == this) return true;
-		if (!(o instanceof TestType)) return false;
-		TestType _b_ = (TestType)o;
+		if (_o_ == this) return true;
+		if (!(_o_ instanceof TestType)) return false;
+		TestType _b_ = (TestType)_o_;
 		if (this.v1 != _b_.v1) return false;
 		if (this.v2 != _b_.v2) return false;
 		if (this.v3 != _b_.v3) return false;
@@ -665,9 +665,9 @@ public final class TestType extends Bean<TestType>
 	}
 
 	@Override
-	public String toString()
+	public StringBuilder toStringBuilder(StringBuilder _s_)
 	{
-		StringBuilder _s_ = new StringBuilder(16 + 256 * 2).append('{');
+		_s_.append('{');
 		_s_.append(this.v1).append(',');
 		_s_.append(this.v2).append(',');
 		_s_.append(this.v3).append(',');
@@ -675,21 +675,20 @@ public final class TestType extends Bean<TestType>
 		_s_.append(this.v5).append(',');
 		_s_.append(this.v6).append(',');
 		_s_.append(this.v7).append(',');
-		_s_.append(this.v8).append(',');
+		this.v8.toStringBuilder(_s_).append(',');
 		_s_.append(this.v9).append(',');
-		Util.append(_s_, this.v10);
-		Util.append(_s_, this.v11);
-		Util.append(_s_, this.v12);
-		Util.append(_s_, this.v13);
-		Util.append(_s_, this.v14);
-		Util.append(_s_, this.v15);
-		Util.append(_s_, this.v16);
-		Util.append(_s_, this.v17);
-		Util.append(_s_, this.v18);
-		_s_.append(this.v19).append(',');
-		_s_.append(this.v20).append(',');
-		_s_.setLength(_s_.length() - 1);
-		return _s_.append('}').toString();
+		Util.append(_s_, this.v10).append(',');
+		Util.append(_s_, this.v11).append(',');
+		Util.append(_s_, this.v12).append(',');
+		Util.append(_s_, this.v13).append(',');
+		Util.append(_s_, this.v14).append(',');
+		Util.append(_s_, this.v15).append(',');
+		Util.append(_s_, this.v16).append(',');
+		Util.append(_s_, this.v17).append(',');
+		Util.append(_s_, this.v18).append(',');
+		this.v19.toStringBuilder(_s_).append(',');
+		_s_.append(this.v20);
+		return _s_.append('}');
 	}
 
 	// attach java code here

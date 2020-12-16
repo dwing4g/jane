@@ -180,13 +180,23 @@ public final class Util
 	 */
 	public static StringBuilder append(StringBuilder s, Collection<?> c)
 	{
-		if (c.isEmpty())
-			return s.append("{},");
 		s.append('{');
-		for (Object o : c)
-			s.append(o).append(',');
+		if (c.isEmpty())
+			return s.append('}');
+		for (Object v : c)
+		{
+			if (v instanceof Integer)
+				s.append(((Integer)v).intValue());
+			else if (v instanceof Long)
+				s.append(((Long)v).longValue());
+			else if (v instanceof Bean)
+				((Bean<?>)v).toStringBuilder(s);
+			else
+				s.append(v);
+			s.append(',');
+		}
 		s.setCharAt(s.length() - 1, '}');
-		return s.append(',');
+		return s;
 	}
 
 	/**
@@ -194,13 +204,34 @@ public final class Util
 	 */
 	public static StringBuilder append(StringBuilder s, Map<?, ?> m)
 	{
-		if (m.isEmpty())
-			return s.append("{},");
 		s.append('{');
+		if (m.isEmpty())
+			return s.append('}');
 		for (Entry<?, ?> e : m.entrySet())
-			s.append(e.getKey()).append('=').append(e.getValue()).append(',');
+		{
+			Object k = e.getKey();
+			if (k instanceof Integer)
+				s.append(((Integer)k).intValue());
+			else if (k instanceof Long)
+				s.append(((Long)k).longValue());
+			else if (k instanceof Bean)
+				((Bean<?>)k).toStringBuilder(s);
+			else
+				s.append(k);
+			s.append('=');
+			Object v = e.getValue();
+			if (v instanceof Integer)
+				s.append(((Integer)v).intValue());
+			else if (v instanceof Long)
+				s.append(((Long)v).longValue());
+			else if (v instanceof Bean)
+				((Bean<?>)v).toStringBuilder(s);
+			else
+				s.append(v);
+			s.append(',');
+		}
 		s.setCharAt(s.length() - 1, '}');
-		return s.append(',');
+		return s;
 	}
 
 	/**

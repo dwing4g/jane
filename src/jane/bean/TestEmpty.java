@@ -94,10 +94,10 @@ public final class TestEmpty extends Bean<TestEmpty>
 	}
 
 	@Override
-	public boolean equals(Object o)
+	public boolean equals(Object _o_)
 	{
-		if (o == this) return true;
-		if (!(o instanceof TestEmpty)) return false;
+		if (_o_ == this) return true;
+		if (!(_o_ instanceof TestEmpty)) return false;
 		return true;
 	}
 
@@ -110,10 +110,10 @@ public final class TestEmpty extends Bean<TestEmpty>
 	}
 
 	@Override
-	public String toString()
+	public StringBuilder toStringBuilder(StringBuilder _s_)
 	{
-		StringBuilder _s_ = new StringBuilder(16 + 0 * 2).append('{');
-		return _s_.append('}').toString();
+		_s_.append('{');
+		return _s_.append('}');
 	}
 
 	@Override

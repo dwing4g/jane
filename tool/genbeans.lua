@@ -131,11 +131,11 @@ public #(bean.final)class #(bean.name) extends Bean<#(bean.name)>
 	}
 
 	@Override
-	public boolean equals(Object o)
+	public boolean equals(Object _o_)
 	{
-		if (o == this) return true;
-		if (!(o instanceof #(bean.name))) return false;#<#
-		#(bean.name) _b_ = (#(bean.name))o;#>#
+		if (_o_ == this) return true;
+		if (!(_o_ instanceof #(bean.name))) return false;#<#
+		#(bean.name) _b_ = (#(bean.name))_o_;#>#
 #(#		if (#(var.equals)) return false;
 #)#		return true;
 	}
@@ -151,12 +151,11 @@ public #(bean.final)class #(bean.name) extends Bean<#(bean.name)>
 	}
 
 	@Override
-	public String toString()
+	public StringBuilder toStringBuilder(StringBuilder _s_)
 	{
-		StringBuilder _s_ = new StringBuilder(16 + #(bean.initsize) * 2).append('{');#<#
-#(#		#(var.tostring);
-#)#		_s_.setLength(_s_.length() - 1);#>#
-		return _s_.append('}').toString();
+		_s_.append('{');
+#(#		#(var.tostring).append(',');
+#)#		return _s_.append('}');
 	}
 #(bean.attach_java)
 	@Override
@@ -473,7 +472,7 @@ typedef.byte =
 	hashcode = "this.#(var.name)",
 	equals = "this.#(var.name) != _b_.#(var.name)",
 	compareto = "this.#(var.name) - _b_.#(var.name)",
-	tostring = "_s_.append(this.#(var.name)).append(',')",
+	tostring = "_s_.append(this.#(var.name))",
 }
 typedef.char  = merge(typedef.byte, { type = "char",  type_i = "char",  type_o = "Char"  })
 typedef.short = merge(typedef.byte, { type = "short", type_i = "short", type_o = "Short" })
@@ -688,6 +687,7 @@ typedef.octets = merge(typedef.string,
 		return var.id > 0 and "\t\t\tcase #(var.id): _s_.unmarshal(this.#(var.name), _t_); break;\n" or ""
 	end,
 	unmarshal_kv = function(var, kv, t) if kv then return "_s_.unmarshalOctetsKV(" .. t .. ")" end end,
+	tostring = "this.#(var.name).toStringBuilder(_s_)",
 })
 typedef.vector = merge(typedef.octets,
 {
@@ -1029,6 +1029,7 @@ typedef.ref = merge(typedef.bean,
 	hashcode = "0",
 	equals = "",
 	compareto = "0",
+	tostring = "_s_.append(this.#(var.name))",
 })
 typedef.boolean = typedef.bool
 typedef.integer = typedef.int
@@ -1234,6 +1235,7 @@ function bean(bean)
 		gsub("\t\tif %(%) return false;\n", ""):
 		gsub("\t\t_c_ = 0; if %(_c_ != 0%) return _c_;\n", ""):
 		gsub("( new %w+)<.->", "%1<>"):
+		gsub("%.append%(','%);\n\t\treturn _s_", ";\n\t\treturn _s_"):
 		gsub("\n\n\n", "\n\n")
 	if not code:find("\tprivate static final Field ") then
 		code = code:gsub("import java%.lang%.reflect%.Field;\n", "")

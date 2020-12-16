@@ -122,11 +122,11 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 	}
 
 	@Override
-	public boolean equals(Object o)
+	public boolean equals(Object _o_)
 	{
-		if (o == this) return true;
-		if (!(o instanceof TestKeyBean)) return false;
-		TestKeyBean _b_ = (TestKeyBean)o;
+		if (_o_ == this) return true;
+		if (!(_o_ instanceof TestKeyBean)) return false;
+		TestKeyBean _b_ = (TestKeyBean)_o_;
 		if (this.key1 != _b_.key1) return false;
 		if (!this.key2.equals(_b_.key2)) return false;
 		return true;
@@ -144,12 +144,11 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 	}
 
 	@Override
-	public String toString()
+	public StringBuilder toStringBuilder(StringBuilder _s_)
 	{
-		StringBuilder _s_ = new StringBuilder(16 + 16 * 2).append('{');
+		_s_.append('{');
 		_s_.append(this.key1).append(',');
-		_s_.append(this.key2).append(',');
-		_s_.setLength(_s_.length() - 1);
-		return _s_.append('}').toString();
+		_s_.append(this.key2);
+		return _s_.append('}');
 	}
 }

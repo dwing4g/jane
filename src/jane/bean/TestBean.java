@@ -144,11 +144,11 @@ public class TestBean extends Bean<TestBean>
 	}
 
 	@Override
-	public boolean equals(Object o)
+	public boolean equals(Object _o_)
 	{
-		if (o == this) return true;
-		if (!(o instanceof TestBean)) return false;
-		TestBean _b_ = (TestBean)o;
+		if (_o_ == this) return true;
+		if (!(_o_ instanceof TestBean)) return false;
+		TestBean _b_ = (TestBean)_o_;
 		if (this.value1 != _b_.value1) return false;
 		if (this.value2 != _b_.value2) return false;
 		return true;
@@ -166,13 +166,12 @@ public class TestBean extends Bean<TestBean>
 	}
 
 	@Override
-	public String toString()
+	public StringBuilder toStringBuilder(StringBuilder _s_)
 	{
-		StringBuilder _s_ = new StringBuilder(16 + 16 * 2).append('{');
+		_s_.append('{');
 		_s_.append(this.value1).append(',');
-		_s_.append(this.value2).append(',');
-		_s_.setLength(_s_.length() - 1);
-		return _s_.append('}').toString();
+		_s_.append(this.value2);
+		return _s_.append('}');
 	}
 
 	@Override

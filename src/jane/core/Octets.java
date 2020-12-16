@@ -665,10 +665,15 @@ public class Octets implements Cloneable, Comparable<Octets>, WriteRequest
 		return true;
 	}
 
+	public StringBuilder toStringBuilder(StringBuilder sb)
+	{
+		return sb.append('[').append(_count).append('/').append(_buffer.length).append(']');
+	}
+
 	@Override
 	public String toString()
 	{
-		return "[" + _count + '/' + _buffer.length + ']';
+		return toStringBuilder(new StringBuilder(16)).toString();
 	}
 
 	public static char toHexNumber(int v)
