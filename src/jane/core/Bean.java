@@ -1,8 +1,8 @@
 package jane.core;
 
 import java.io.Serializable;
-import org.apache.mina.core.write.WriteRequest;
 import jane.core.SContext.Safe;
+import org.apache.mina.core.write.WriteRequest;
 
 /**
  * bean的基类(抽象类)
@@ -182,7 +182,8 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 		throw new UnsupportedOperationException();
 	}
 
-	public StringBuilder toStringBuilder(StringBuilder sb)
+	@SuppressWarnings("static-method")
+	public StringBuilder toStringBuilder(@SuppressWarnings("unused") StringBuilder sb)
 	{
 		throw new UnsupportedOperationException();
 	}
