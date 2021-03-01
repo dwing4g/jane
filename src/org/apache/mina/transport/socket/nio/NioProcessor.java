@@ -293,7 +293,7 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 						throw new IllegalStateException("unknown message type for writting: " + message.getClass().getName() + ": " + message);
 				}
 				session.setInterestedInWrite(false);
-			} catch (Exception e) {
+			} catch (Exception e) { // TCP RST
 				session.closeNow();
 				session.removeNow(e);
 			}

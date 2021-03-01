@@ -898,7 +898,7 @@ public class NetManager implements IoHandler
 	@Override
 	public void inputClosed(IoSession session)
 	{
-		session.closeNow();
+		session.closeNow(); // session.suspendRead();
 	}
 
 	@Override

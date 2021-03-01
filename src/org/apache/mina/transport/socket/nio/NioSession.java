@@ -397,8 +397,8 @@ public final class NioSession implements IoSession {
 				readBytes = channel.read(buf.buf());
 			} catch (Exception e) { // TCP RST
 				buf.free();
-				filterChain.fireExceptionCaught(e);
 				closeNow();
+				removeNow(e);
 				return;
 			}
 
