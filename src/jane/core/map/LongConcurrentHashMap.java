@@ -10,6 +10,7 @@ import java.lang.reflect.Field;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -1072,11 +1073,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 					try
 					{
 						if (counterCells == as) // Expand table unless stale
-						{
-							CounterCell[] rs = new CounterCell[n << 1];
-							System.arraycopy(as, 0, rs, 0, n);
-							counterCells = rs;
-						}
+							counterCells = Arrays.copyOf(as, n << 1, CounterCell[].class);
 					}
 					finally
 					{
