@@ -1,9 +1,7 @@
 package jane.core;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -12,7 +10,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.zip.CRC32;
 
 /**
  * LevelDB存储引擎的实现
@@ -109,33 +106,7 @@ public final class StorageLevelDB implements Storage
 
 	static
 	{
-		String nativeLibName = System.mapLibraryName("leveldbjni" + System.getProperty("sun.arch.data.model"));
-		File file = new File(Const.levelDBNativePath, nativeLibName);
-		if (!file.exists())
-		{
-			try (InputStream is = Util.createStreamInJar(StorageLevelDB.class, nativeLibName))
-			{
-				Octets data = Util.readStream(is);
-				if (data != null)
-				{
-					CRC32 crc32 = new CRC32();
-					crc32.update(data.array(), 0, data.size());
-					file = new File(System.getProperty("java.io.tmpdir") + '/' + crc32.getValue() + '_' + nativeLibName);
-					if (file.length() != data.size())
-					{
-						try (FileOutputStream fos = new FileOutputStream(file))
-						{
-							fos.write(data.array(), 0, data.size());
-						}
-					}
-				}
-			}
-			catch (Exception e)
-			{
-				throw new Error("create temp library failed: " + file.getAbsolutePath(), e);
-			}
-		}
-		System.load(file.getAbsolutePath());
+		Util.loadNativeLib(StorageLevelDB.class.getClassLoader(), Const.levelDBNativePath, "leveldbjni");
 	}
 
 	public static <B extends Bean<B>> B toBean(OctetsStreamEx os, B beanStub) throws MarshalException

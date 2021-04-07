@@ -6,7 +6,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.JarURLConnection;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
@@ -21,6 +23,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.jar.JarEntry;
+import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import jane.core.map.ConcurrentLRUMap;
@@ -489,6 +493,59 @@ public final class Util
 		{
 			return readStream(is);
 		}
+	}
+
+	public static void loadNativeLib(ClassLoader classLoader, String libPathDefault, String libNamePrefix)
+	{
+		String nativeLibName = System.mapLibraryName(libNamePrefix + System.getProperty("sun.arch.data.model"));
+		File file = new File(libPathDefault, nativeLibName);
+		if (!file.exists())
+		{
+			try
+			{
+				long crc = -1;
+				Enumeration<URL> urls = classLoader.getResources(nativeLibName);
+				URLConnection urlConn = urls.hasMoreElements() ? urls.nextElement().openConnection() : null;
+				if (urlConn instanceof JarURLConnection)
+				{
+					JarEntry je = ((JarURLConnection)urlConn).getJarEntry();
+					if (je != null)
+					{
+						crc = je.getCrc();
+						file = new File(System.getProperty("java.io.tmpdir") + '/' + crc + '_' + nativeLibName);
+						if (file.length() == je.getSize())
+							urlConn = null;
+					}
+				}
+				try (InputStream is = urlConn != null ? urlConn.getInputStream() : null)
+				{
+					Octets data = Util.readStream(is);
+					if (data != null)
+					{
+						if (crc < 0)
+						{
+							CRC32 crc32 = new CRC32();
+							crc32.update(data.array(), 0, data.size());
+							file = new File(System.getProperty("java.io.tmpdir") + '/' + crc32.getValue() + '_' + nativeLibName);
+							if (file.length() == data.size())
+								data = null;
+						}
+						if (data != null)
+						{
+							try (FileOutputStream fos = new FileOutputStream(file))
+							{
+								fos.write(data.array(), 0, data.size());
+							}
+						}
+					}
+				}
+			}
+			catch (Exception e)
+			{
+				throw new Error("create temp library failed: " + file.getAbsolutePath(), e);
+			}
+		}
+		System.load(file.getAbsolutePath());
 	}
 
 	private Util()
