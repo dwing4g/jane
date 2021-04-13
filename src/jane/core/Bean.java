@@ -65,26 +65,46 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	/**
 	 * bean的类型值
 	 * <p>
-	 * 用于区别于其它bean的类型值. 标准的bean子类必须大于0且不能重复, 0仅用于RawBean等特定类型
+	 * 用于区别于其它bean的类型值. 标准的bean子类必须大于0且不能重复, 0仅用于RawBean等特定或未知类型
 	 */
-	public abstract int type();
+	public int type()
+	{
+		return 0;
+	}
 
 	/**
 	 * bean的类型名
 	 */
-	public abstract String typeName();
+	public String typeName()
+	{
+		return getClass().getSimpleName();
+	}
 
 	/**
 	 * 获取此bean类唯一的stub对象
 	 */
-	public abstract B stub();
+	public B stub()
+	{
+		throw new UnsupportedOperationException();
+	}
 
 	/**
 	 * 创建一个新的bean实例
 	 * <p>
 	 * 子类的实现一般是new B(),返回对象的所有字段只有初始的默认值
 	 */
-	public abstract B create();
+	@SuppressWarnings("unchecked")
+	public B create()
+	{
+		try
+		{
+			return (B)getClass().newInstance();
+		}
+		catch (Exception e)
+		{
+			throw new RuntimeException(e);
+		}
+	}
 
 	/**
 	 * 从另一个bean赋值到自身
@@ -128,13 +148,19 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	/**
 	 * 重置bean的所有字段为初始的默认值
 	 */
-	public abstract void reset();
+	public void reset()
+	{
+		throw new UnsupportedOperationException();
+	}
 
 	/**
 	 * 序列化此bean到os中(用于数据库的记录)
 	 * @return 必须是参数os
 	 */
-	public abstract Octets marshal(Octets os);
+	public Octets marshal(@SuppressWarnings("unused") Octets os)
+	{
+		throw new UnsupportedOperationException();
+	}
 
 	/**
 	 * 从os中反序列化到此bean中(用于数据库的记录)
@@ -142,7 +168,10 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	 * 如果反序列化失败则抛出MarshalException
 	 * @return 必须是参数os
 	 */
-	public abstract OctetsStream unmarshal(OctetsStream os) throws MarshalException;
+	public OctetsStream unmarshal(@SuppressWarnings("unused") OctetsStream os) throws MarshalException
+	{
+		throw new UnsupportedOperationException();
+	}
 
 	/**
 	 * 序列化此bean到os中(用于网络协议)
@@ -167,17 +196,22 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 		return unmarshal(os);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public abstract B clone();
+	public B clone()
+	{
+		try
+		{
+			return (B)super.clone();
+		}
+		catch (CloneNotSupportedException e)
+		{
+			throw new RuntimeException(e);
+		}
+	}
 
 	@Override
-	public abstract int hashCode();
-
-	@Override
-	public abstract boolean equals(Object o);
-
-	@Override
-	public int compareTo(B b)
+	public int compareTo(@SuppressWarnings("unused") B b)
 	{
 		throw new UnsupportedOperationException();
 	}

@@ -430,7 +430,6 @@ typedef.byte =
 	field = "\t\tprivate static final Field FIELD_#(var.name);\n",
 	fieldget = "\t\t\t\tFIELD_#(var.name) = _c_.getDeclaredField(\"#(var.name)\"); FIELD_#(var.name).setAccessible(true);\n",
 	safecache = "",
-	new = "",
 	init = "this.#(var.name) = #(var.name)",
 	reset = "#(var.name) = 0",
 	assign = "this.#(var.name) = _b_.#(var.name)",
