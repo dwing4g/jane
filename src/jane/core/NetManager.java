@@ -924,7 +924,7 @@ public class NetManager implements IoHandler
 					return;
 			}
 		}
-		onProcess(session, _handlers.get(bean.type()), bean);
+		onProcess(session, getHandler(bean.type()), bean);
 	}
 
 	/**

@@ -23,24 +23,6 @@ public class BeanCodec implements IoFilter
 		_mgr = mgr;
 	}
 
-	/**
-	 * 获取某个类型bean的最大空间限制(字节)
-	 */
-	public int getBeanMaxSize(int type)
-	{
-		BeanHandler<?> handler = _mgr.getHandler(type);
-		return handler != null ? handler.beanStub().maxSize() : -1;
-	}
-
-	/**
-	 * 根据类型创建一个默认初始化的bean
-	 */
-	public Bean<?> createBean(int type)
-	{
-		BeanHandler<?> handler = _mgr.getHandler(type);
-		return handler != null ? handler.beanStub().create() : null;
-	}
-
 	@Override
 	public void filterWrite(NextFilter next, IoSession session, WriteRequest writeRequest) throws Exception
 	{
@@ -76,6 +58,7 @@ public class BeanCodec implements IoFilter
 
 	protected boolean decodeProtocol(OctetsStream os, NextFilter next) throws Exception
 	{
+		BeanHandler<?> handler;
 		if (_psize < 0)
 		{
 			int pos = os.position();
@@ -90,16 +73,22 @@ public class BeanCodec implements IoFilter
 				os.setPosition(pos);
 				return false;
 			}
-			int maxSize = getBeanMaxSize(_ptype);
-			if (maxSize < 0)
+			int maxSize;
+			if ((handler = _mgr.getHandler(_ptype)) == null || (maxSize = handler.beanStub().maxSize()) < 0)
 				maxSize = Const.beanDefaultMaxSize;
 			if ((_psize & 0xffff_ffffL) > maxSize)
 				throw new DecodeException("bean maxSize overflow: type=" + _ptype + ",serial=" + _pserial + ",size=" + _psize + ",maxSize=" + maxSize);
+			if (_psize > os.remain())
+				return false;
 		}
-		if (_psize > os.remain())
-			return false;
-		Bean<?> bean = createBean(_ptype);
-		if (bean != null)
+		else
+		{
+			if (_psize > os.remain())
+				return false;
+			handler = _mgr.getHandler(_ptype);
+		}
+		Bean<?> bean;
+		if (handler != null && (bean = handler.beanStub().create()) != null)
 		{
 			int pos = os.position();
 			bean.unmarshalProtocol(os);
