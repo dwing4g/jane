@@ -19,11 +19,11 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.xml.parsers.DocumentBuilderFactory;
+import jane.core.Octets;
+import jane.core.Util;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.NodeList;
-import jane.core.Octets;
-import jane.core.Util;
 
 public final class TestUtil
 {

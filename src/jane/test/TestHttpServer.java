@@ -7,14 +7,14 @@ import java.net.InetSocketAddress;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map.Entry;
+import jane.core.HttpCodec;
+import jane.core.NetManager;
+import jane.core.OctetsStream;
 import org.apache.mina.core.file.DefaultFileRegion;
 import org.apache.mina.core.file.FileRegion;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.ssl.SslFilter;
-import jane.core.HttpCodec;
-import jane.core.NetManager;
-import jane.core.OctetsStream;
 
 public final class TestHttpServer extends NetManager
 {

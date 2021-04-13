@@ -6,7 +6,6 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Map.Entry;
 import java.util.concurrent.ThreadPoolExecutor;
-import org.apache.mina.core.session.IoSession;
 import jane.core.CacheRef;
 import jane.core.DBManager;
 import jane.core.DBSimpleManager;
@@ -17,6 +16,7 @@ import jane.core.OctetsStream;
 import jane.core.ProcThread;
 import jane.core.StorageLevelDB;
 import jane.core.TableBase;
+import org.apache.mina.core.session.IoSession;
 
 public class StatusServer extends NetManager
 {

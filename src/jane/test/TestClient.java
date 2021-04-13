@@ -1,11 +1,11 @@
 package jane.test;
 
 import java.net.InetSocketAddress;
-import org.apache.mina.core.future.ConnectFuture;
-import org.apache.mina.core.session.IoSession;
+import jane.bean.AllBeans;
 import jane.core.Log;
 import jane.core.NetManager;
-import jane.bean.AllBeans;
+import org.apache.mina.core.future.ConnectFuture;
+import org.apache.mina.core.session.IoSession;
 
 public final class TestClient extends NetManager
 {

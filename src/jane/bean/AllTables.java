@@ -27,19 +27,19 @@ public final class AllTables
 	/**
 	 * 数据库表定义. key类型只能是32/64位整数/浮点数或字符串/binary类型或bean类型, id类型表示优化的非负数long类型
 	 */
-	public static final TableLong<TestType, TestType.Safe> TestTable = _dbm.<TestType, TestType.Safe>openTable(1, "TestTable", "test", 65536, TestType.BEAN_STUB);
+	public static final TableLong<TestType, TestType.Safe> TestTable = _dbm.openTable(1, "TestTable", "test", 65536, TestType.BEAN_STUB);
 	/**
 	 * value类型必须是bean定义的类型
 	 */
-	public static final Table<TestKeyBean, TestBean, TestBean.Safe> BeanTable = _dbm.<TestKeyBean, TestBean, TestBean.Safe>openTable(2, "BeanTable", "bean", 65536, TestKeyBean.BEAN_STUB, TestBean.BEAN_STUB);
+	public static final Table<TestKeyBean, TestBean, TestBean.Safe> BeanTable = _dbm.openTable(2, "BeanTable", "bean", 65536, TestKeyBean.BEAN_STUB, TestBean.BEAN_STUB);
 	/**
 	 * 没有定义id或id为负的是内存表. 注意表名和key类型的对应关系是不能改变的
 	 */
-	public static final Table<Octets, TestEmpty, TestEmpty.Safe> OctetsTable = _dbm.<Octets, TestEmpty, TestEmpty.Safe>openTable(-1, "OctetsTable", "bean", 1000, new Octets(), TestEmpty.BEAN_STUB);
+	public static final Table<Octets, TestEmpty, TestEmpty.Safe> OctetsTable = _dbm.openTable(-1, "OctetsTable", "bean", 1000, new Octets(), TestEmpty.BEAN_STUB);
 	/**
 	 * 用于测试数据库的表. cachesize不定义或<=0则靠软引用的生命期决定(内存表则不限制大小)
 	 */
-	public static final TableLong<TestBean, TestBean.Safe> Benchmark = _dbm.<TestBean, TestBean.Safe>openTable(3, "Benchmark", "bench", 0, TestBean.BEAN_STUB);
+	public static final TableLong<TestBean, TestBean.Safe> Benchmark = _dbm.openTable(3, "Benchmark", "bench", 0, TestBean.BEAN_STUB);
 
 	public static final class MetaTable
 	{

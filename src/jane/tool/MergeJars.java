@@ -86,6 +86,6 @@ public final class MergeJars
 
 		int[] counts = new int[2];
 		mergeJars(args, counts, System.out);
-		System.out.println(String.format("done! (%d/%d files)", counts[1], counts[0]));
+		System.out.printf("done! (%d/%d files)%n", counts[1], counts[0]);
 	}
 }

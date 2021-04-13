@@ -3,13 +3,13 @@ package jane.test;
 import static jane.bean.AllTables.Benchmark;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import jane.bean.AllTables;
+import jane.bean.TestBean;
 import jane.core.CacheRef;
 import jane.core.DBManager;
 import jane.core.Log;
 import jane.core.ProcThread;
 import jane.core.Procedure;
-import jane.bean.AllTables;
-import jane.bean.TestBean;
 
 // JVM: -Xms512M -Xmx512M
 // RUN: start.bat b 100000 50000 1000 500000

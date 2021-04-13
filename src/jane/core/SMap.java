@@ -369,18 +369,16 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		{
 		}
 
+		@SuppressWarnings("unused")
 		@Override
 		public SIterator<K> iterator()
 		{
-			//noinspection unchecked
-			return new SIterator<>()
+			return new SIterator<K>()
 			{
-				@SuppressWarnings("cast")
 				@Override
 				public K next()
 				{
-					//noinspection unchecked
-					return (K)nextEntry().getKey();
+					return nextEntry().getKey();
 				}
 			};
 		}
@@ -416,18 +414,16 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		{
 		}
 
+		@SuppressWarnings("unused")
 		@Override
 		public SIterator<S> iterator()
 		{
-			//noinspection unchecked
-			return new SIterator<>()
+			return new SIterator<S>()
 			{
-				@SuppressWarnings("cast")
 				@Override
 				public S next()
 				{
-					//noinspection unchecked
-					return (S)nextEntry().getValue();
+					return nextEntry().getValue();
 				}
 			};
 		}

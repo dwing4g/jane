@@ -1,10 +1,10 @@
 package jane.handler.testserver;
 
-import org.apache.mina.core.session.IoSession;
+import jane.bean.TestType;
 import jane.core.BeanHandler;
 import jane.core.Log;
 import jane.core.NetManager;
-import jane.bean.TestType;
+import org.apache.mina.core.session.IoSession;
 
 public final class TestTypeHandler implements BeanHandler<TestType>
 {

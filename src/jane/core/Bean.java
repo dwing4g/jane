@@ -67,6 +67,7 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	 * <p>
 	 * 用于区别于其它bean的类型值. 标准的bean子类必须大于0且不能重复, 0仅用于RawBean等特定或未知类型
 	 */
+	@SuppressWarnings("static-method")
 	public int type()
 	{
 		return 0;
@@ -93,7 +94,7 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	 * <p>
 	 * 子类的实现一般是new B(),返回对象的所有字段只有初始的默认值
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "deprecation" })
 	public B create()
 	{
 		try
@@ -148,6 +149,7 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	/**
 	 * 重置bean的所有字段为初始的默认值
 	 */
+	@SuppressWarnings("static-method")
 	public void reset()
 	{
 		throw new UnsupportedOperationException();
@@ -157,6 +159,7 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	 * 序列化此bean到os中(用于数据库的记录)
 	 * @return 必须是参数os
 	 */
+	@SuppressWarnings("static-method")
 	public Octets marshal(@SuppressWarnings("unused") Octets os)
 	{
 		throw new UnsupportedOperationException();
@@ -168,7 +171,8 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	 * 如果反序列化失败则抛出MarshalException
 	 * @return 必须是参数os
 	 */
-	public OctetsStream unmarshal(@SuppressWarnings("unused") OctetsStream os) throws MarshalException
+	@SuppressWarnings({ "static-method", "unused" })
+	public OctetsStream unmarshal(OctetsStream os) throws MarshalException
 	{
 		throw new UnsupportedOperationException();
 	}

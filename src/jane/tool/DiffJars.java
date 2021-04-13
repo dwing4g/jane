@@ -124,12 +124,12 @@ public final class DiffJars
 			return;
 		}
 
-		System.out.println(String.format("%s -> %s = %s ... ", args[0], args[1], args[2]));
+		System.out.printf("%s -> %s = %s ... %n", args[0], args[1], args[2]);
 		int count;
 		try (ZipFile jar1 = new ZipFile(args[0]); ZipFile jar2 = new ZipFile(args[1]); FileOutputStream osJar = new FileOutputStream(args[2]))
 		{
 			count = new DiffJars().diffJars(jar1, jar2, osJar, System.out);
 		}
-		System.out.println(String.format("done! (%d files)", count));
+		System.out.printf("done! (%d files)%n", count);
 	}
 }

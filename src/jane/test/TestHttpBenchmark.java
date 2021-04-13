@@ -2,11 +2,11 @@ package jane.test;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
-import org.apache.mina.core.session.IoSession;
 import jane.core.HttpCodec;
 import jane.core.Log;
 import jane.core.NetManager;
 import jane.core.Octets;
+import org.apache.mina.core.session.IoSession;
 
 public final class TestHttpBenchmark extends NetManager
 {

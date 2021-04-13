@@ -1,11 +1,11 @@
 package jane.test;
 
 import java.util.concurrent.CountDownLatch;
+import jane.bean.AllTables;
+import jane.bean.TestType;
 import jane.core.Const;
 import jane.core.DBManager;
 import jane.core.Procedure;
-import jane.bean.AllTables;
-import jane.bean.TestType;
 
 public final class TestAutoLock
 {

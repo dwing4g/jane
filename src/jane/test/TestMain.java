@@ -1,10 +1,10 @@
 package jane.test;
 
 import java.net.InetSocketAddress;
+import jane.bean.AllTables;
 import jane.core.DBManager;
 import jane.core.ExitManager;
 import jane.core.Log;
-import jane.bean.AllTables;
 import jane.tool.StatusServer;
 
 public final class TestMain

@@ -4,13 +4,13 @@ import static jane.bean.AllTables.Benchmark;
 import static jane.bean.AllTables.TestTable;
 import java.util.Map;
 import java.util.Map.Entry;
+import jane.bean.AllTables;
+import jane.bean.TestBean;
+import jane.bean.TestType;
 import jane.core.DBManager;
 import jane.core.Octets;
 import jane.core.ProcThread;
 import jane.core.Procedure;
-import jane.bean.AllTables;
-import jane.bean.TestBean;
-import jane.bean.TestType;
 
 public final class TestUndo
 {

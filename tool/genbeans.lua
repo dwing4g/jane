@@ -265,7 +265,7 @@ public final class AllTables
 	 */
 	public static void register() { _dbm.startCommitThread(); }#<#
 #>#
-#(#	#(table.comment)public static final #(table.table)<#(table.key)#(table.comma)#(table.value), #(table.value).Safe> #(table.name) = _dbm.<#(table.key)#(table.comma)#(table.value), #(table.value).Safe>openTable(#(table.id), "#(table.name)", "#(table.lock)", #(table.cachesize)#(table.comma)#(table.keys), #(table.values));
+#(#	#(table.comment)public static final #(table.table)<#(table.key)#(table.comma)#(table.value), #(table.value).Safe> #(table.name) = _dbm.openTable(#(table.id), "#(table.name)", "#(table.lock)", #(table.cachesize)#(table.comma)#(table.keys), #(table.values));
 #)#
 	public static final class MetaTable
 	{
