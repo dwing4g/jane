@@ -66,8 +66,8 @@ public final class Const
 				props.load(isProp);
 				for (Entry<Object, Object> e : props.entrySet())
 				{
-					String k = (String)e.getKey();
-					System.setProperty(k.startsWith("jane.") ? k : "jane." + k, (String)e.getValue());
+					String k = String.valueOf(e.getKey());
+					System.setProperty(k.startsWith("jane.") ? k : "jane." + k, String.valueOf(e.getValue()));
 				}
 			}
 			else if (hasJainProp)
@@ -82,24 +82,24 @@ public final class Const
 		closeOnFlushTimeout = getPropInt("jane.closeOnFlushTimeout", 5, 1);
 		askCheckInterval = getPropInt("jane.askCheckInterval", 5, 0);
 		askDefaultTimeout = getPropInt("jane.askDefaultTimeout", 30, 1);
-		beanDefaultMaxSize = getPropInt("jane.maxRawBeanSize", 65536, 0);
-		httpHeadMaxSize = getPropInt("jane.maxHttpHeadSize", 4096, 0);
-		httpBodyDefaultMaxSize = getPropInt("jane.maxHttpBodySize", 65536, 0);
+		beanDefaultMaxSize = getPropInt("jane.beanDefaultMaxSize", 65536, 0);
+		httpHeadMaxSize = getPropInt("jane.httpHeadMaxSize", 4096, 0);
+		httpBodyDefaultMaxSize = getPropInt("jane.httpBodyDefaultMaxSize", 65536, 0);
 		dbFilename = System.getProperty("jane.dbFilename", "db/jane");
 		dbBackupPath = System.getProperty("jane.dbBackupPath", "db");
 		dbThreadCount = getPropInt("jane.dbThreadCount", 0, 0);
 		deadlockCheckInterval = getPropInt("jane.deadlockCheckInterval", 10, 0);
-		maxSessionProcedure = getPropInt("jane.maxSessionProceduer", 65536, 1);
+		maxSessionProcedure = getPropInt("jane.maxSessionProcedure", 65536, 1);
 		maxBatchProceduer = getPropInt("jane.maxBatchProceduer", 256, 1);
 		maxProceduerRedo = getPropInt("jane.maxProceduerRedo", 256, 1);
-		lockPoolSize = IntHashMap.nextPowerOfTwo(getPropInt("jane.lockPoolSize", 65536, 1, 0x4000_0000));
+		lockPoolSize = IntHashMap.nextPowerOfTwo(getPropInt("jane.lockPoolSize", 1024, 1, 0x4000_0000));
 		maxLockPerProcedure = getPropInt("jane.maxLockPerProcedure", 16, 4, 256);
 		dbSimpleCacheSize = getPropInt("jane.dbSimpleCacheSize", 10000, 1);
 		dbCommitResaveCount = getPropInt("jane.dbCommitResaveCount", 200000, 1);
 		dbCommitModCount = getPropInt("jane.dbCommitModCount", 200000, 1);
-		dbCommitPeriod = getPropLong("jane.dbCommitPeriod", 60, 1, 86400L * 366 * 10000); // 0x49_A06B_5000L
+		dbCommitPeriod = getPropLong("jane.dbCommitPeriod", 60, 1);
 		dbBackupBase = System.getProperty("jane.dbBackupBase", "2014-01-06 04:00:00");
-		dbBackupPeriod = getPropLong("jane.dbBackupPeriod", 3600, 1, 86400L * 366 * 10000); // 0x49_A06B_5000L
+		dbBackupPeriod = getPropLong("jane.dbBackupPeriod", 3600, 1);
 		procedureTimeout = getPropInt("jane.procedureTimeout", 60, 1);
 		procedureDeadlockTimeout = getPropInt("jane.procedureDeadlockTimeout", 5, 1);
 		procedureShutdownTimeout = getPropInt("jane.procedureShutdownTimeout", 5, 0);
@@ -111,7 +111,7 @@ public final class Const
 		levelDBMaxOpenFiles = getPropInt("jane.levelDBMaxOpenFiles", 1000, 100);
 		levelDBCacheSize = getPropInt("jane.levelDBCacheSize", 32, 1, 1024);
 		levelDBFileSize = getPropInt("jane.levelDBFileSize", 10, 1, 1024);
-		levelDBFullBackupPeriod = getPropLong("jane.levelDBFullBackupPeriod", 604800, 1, 86400L * 366 * 10000); // 0x49_A06B_5000L
+		levelDBFullBackupPeriod = getPropLong("jane.levelDBFullBackupPeriod", 604800, 1);
 	}
 
 	public static int getPropInt(String key, int def, int min)
