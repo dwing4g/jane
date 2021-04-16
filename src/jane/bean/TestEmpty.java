@@ -10,6 +10,7 @@ import jane.core.SContext;
 /**
  * 测试空bean
  */
+@SuppressWarnings({"RedundantIfStatement", "RedundantSuppression", "SwitchStatementWithTooFewBranches", "UnnecessaryLocalVariable"})
 public final class TestEmpty extends Bean<TestEmpty>
 {
 	private static final long serialVersionUID = 0xbeac245da40b43f8L;

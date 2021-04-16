@@ -566,7 +566,7 @@ public final class DBManager
 	 * 一般在长时间间隔(如备份周期)的定时任务中调用
 	 * @param counts 输出回收前后的两个队列数量值
 	 */
-	private void collectQueue(long[] counts) //NOSONAR
+	private void collectQueue(long[] counts)
 	{
 		counts[0] = _qmap.size();
 		_qmap.forEach((sid, q) ->

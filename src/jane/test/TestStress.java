@@ -226,7 +226,7 @@ public final class TestStress extends Procedure
 			if (v1 != c1)
 				throw new Exception("check 22 failed: " + v1 + " != " + c1);
 			//noinspection NumberEquality
-			if (c1 != checkMap.get(id1)) //NOSONAR
+			if (c1 != checkMap.get(id1))
 				throw new Exception("check 23 failed: " + c1 + " != " + checkMap.get(id1));
 			Integer c2 = checkMap.get(id2);
 			if (c2 == null)
@@ -277,7 +277,7 @@ public final class TestStress extends Procedure
 
 		long lastRemoveCount = 0;
 		//noinspection InfiniteLoopStatement
-		for (;;) //NOSONAR
+		for (;;)
 		{
 			long curRemoveCount = CacheRef.getRefRemoveCount();
 			Log.info("TQ=" + dbm.getProcThreads().getQueue().size() +

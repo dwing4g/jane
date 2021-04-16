@@ -9,6 +9,7 @@ import jane.core.OctetsStream;
 /**
  * 作为key或配置的bean
  */
+@SuppressWarnings({"RedundantIfStatement", "RedundantSuppression", "SwitchStatementWithTooFewBranches", "UnnecessaryLocalVariable"})
 public final class TestKeyBean extends Bean<TestKeyBean>
 {
 	private static final long serialVersionUID = 0xbeac0364a4241981L;

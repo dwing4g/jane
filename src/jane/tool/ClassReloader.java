@@ -62,7 +62,7 @@ public final class ClassReloader
 			case 7:
 				classes[i] = dis.readUnsignedShort();
 				break;
-			default: //NOSONAR
+			default:
 				dis.read(); //$FALL-THROUGH$
 			case 15:
 				dis.read(); //$FALL-THROUGH$

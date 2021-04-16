@@ -362,19 +362,19 @@ public class Octets implements Cloneable, Comparable<Octets>, WriteRequest
 		{
 			for (int i = 0; i < cn; ++i)
 			{
-				int x = str.charAt(i);
-				if (x < 0x80)
-					buf[n++] = (byte)x; // 0xxx xxxx
-				else if (x < 0x800)
+				int v = str.charAt(i);
+				if (v < 0x80)
+					buf[n++] = (byte)v; // 0xxx xxxx
+				else if (v < 0x800)
 				{
-					buf[n++] = (byte)(0xc0 + (x >> 6)); // 110x xxxx  10xx xxxx
-					buf[n++] = (byte)(0x80 + (x & 0x3f));
+					buf[n++] = (byte)(0xc0 + (v >> 6)); // 110x xxxx  10xx xxxx
+					buf[n++] = (byte)(0x80 + (v & 0x3f));
 				}
 				else
 				{
-					buf[n++] = (byte)(0xe0 + (x >> 12)); // 1110 xxxx  10xx xxxx  10xx xxxx
-					buf[n++] = (byte)(0x80 + ((x >> 6) & 0x3f));
-					buf[n++] = (byte)(0x80 + (x & 0x3f));
+					buf[n++] = (byte)(0xe0 + (v >> 12)); // 1110 xxxx  10xx xxxx  10xx xxxx
+					buf[n++] = (byte)(0x80 + ((v >> 6) & 0x3f));
+					buf[n++] = (byte)(0x80 + (v & 0x3f));
 				}
 			}
 		}
@@ -741,151 +741,151 @@ public class Octets implements Cloneable, Comparable<Octets>, WriteRequest
 		return this;
 	}
 
-	public Octets marshal1(byte x)
+	public Octets marshal1(byte v)
 	{
 		int count = _count;
 		int countNew = count + 1;
 		reserve(countNew);
-		_buffer[count] = x;
+		_buffer[count] = v;
 		_count = countNew;
 		return this;
 	}
 
-	public Octets marshal2(int x)
+	public Octets marshal2(int v)
 	{
 		int count = _count;
 		int countNew = count + 2;
 		reserve(countNew);
 		byte[] buf = _buffer;
-		buf[count    ] = (byte)(x >> 8);
-		buf[count + 1] = (byte)x;
+		buf[count    ] = (byte)(v >> 8);
+		buf[count + 1] = (byte)v;
 		_count = countNew;
 		return this;
 	}
 
-	public Octets marshal3(int x)
+	public Octets marshal3(int v)
 	{
 		int count = _count;
 		int countNew = count + 3;
 		reserve(countNew);
 		byte[] buf = _buffer;
-		buf[count    ] = (byte)(x >> 16);
-		buf[count + 1] = (byte)(x >> 8);
-		buf[count + 2] = (byte)x;
+		buf[count    ] = (byte)(v >> 16);
+		buf[count + 1] = (byte)(v >> 8);
+		buf[count + 2] = (byte)v;
 		_count = countNew;
 		return this;
 	}
 
-	public Octets marshal4(int x)
+	public Octets marshal4(int v)
 	{
 		int count = _count;
 		int countNew = count + 4;
 		reserve(countNew);
 		byte[] buf = _buffer;
-		buf[count    ] = (byte)(x >> 24);
-		buf[count + 1] = (byte)(x >> 16);
-		buf[count + 2] = (byte)(x >> 8);
-		buf[count + 3] = (byte)x;
+		buf[count    ] = (byte)(v >> 24);
+		buf[count + 1] = (byte)(v >> 16);
+		buf[count + 2] = (byte)(v >> 8);
+		buf[count + 3] = (byte)v;
 		_count = countNew;
 		return this;
 	}
 
-	public Octets marshal5(byte b, int x)
+	public Octets marshal5(byte b, int v)
 	{
 		int count = _count;
 		int countNew = count + 5;
 		reserve(countNew);
 		byte[] buf = _buffer;
 		buf[count    ] = b;
-		buf[count + 1] = (byte)(x >> 24);
-		buf[count + 2] = (byte)(x >> 16);
-		buf[count + 3] = (byte)(x >> 8);
-		buf[count + 4] = (byte)x;
+		buf[count + 1] = (byte)(v >> 24);
+		buf[count + 2] = (byte)(v >> 16);
+		buf[count + 3] = (byte)(v >> 8);
+		buf[count + 4] = (byte)v;
 		_count = countNew;
 		return this;
 	}
 
-	public Octets marshal5(long x)
+	public Octets marshal5(long v)
 	{
 		int count = _count;
 		int countNew = count + 5;
 		reserve(countNew);
 		byte[] buf = _buffer;
-		buf[count    ] = (byte)(x >> 32);
-		buf[count + 1] = (byte)(x >> 24);
-		buf[count + 2] = (byte)(x >> 16);
-		buf[count + 3] = (byte)(x >> 8);
-		buf[count + 4] = (byte)x;
+		buf[count    ] = (byte)(v >> 32);
+		buf[count + 1] = (byte)(v >> 24);
+		buf[count + 2] = (byte)(v >> 16);
+		buf[count + 3] = (byte)(v >> 8);
+		buf[count + 4] = (byte)v;
 		_count = countNew;
 		return this;
 	}
 
-	public Octets marshal6(long x)
+	public Octets marshal6(long v)
 	{
 		int count = _count;
 		int countNew = count + 6;
 		reserve(countNew);
 		byte[] buf = _buffer;
-		buf[count    ] = (byte)(x >> 40);
-		buf[count + 1] = (byte)(x >> 32);
-		buf[count + 2] = (byte)(x >> 24);
-		buf[count + 3] = (byte)(x >> 16);
-		buf[count + 4] = (byte)(x >> 8);
-		buf[count + 5] = (byte)x;
+		buf[count    ] = (byte)(v >> 40);
+		buf[count + 1] = (byte)(v >> 32);
+		buf[count + 2] = (byte)(v >> 24);
+		buf[count + 3] = (byte)(v >> 16);
+		buf[count + 4] = (byte)(v >> 8);
+		buf[count + 5] = (byte)v;
 		_count = countNew;
 		return this;
 	}
 
-	public Octets marshal7(long x)
+	public Octets marshal7(long v)
 	{
 		int count = _count;
 		int countNew = count + 7;
 		reserve(countNew);
 		byte[] buf = _buffer;
-		buf[count    ] = (byte)(x >> 48);
-		buf[count + 1] = (byte)(x >> 40);
-		buf[count + 2] = (byte)(x >> 32);
-		buf[count + 3] = (byte)(x >> 24);
-		buf[count + 4] = (byte)(x >> 16);
-		buf[count + 5] = (byte)(x >> 8);
-		buf[count + 6] = (byte)x;
+		buf[count    ] = (byte)(v >> 48);
+		buf[count + 1] = (byte)(v >> 40);
+		buf[count + 2] = (byte)(v >> 32);
+		buf[count + 3] = (byte)(v >> 24);
+		buf[count + 4] = (byte)(v >> 16);
+		buf[count + 5] = (byte)(v >> 8);
+		buf[count + 6] = (byte)v;
 		_count = countNew;
 		return this;
 	}
 
-	public Octets marshal8(long x)
+	public Octets marshal8(long v)
 	{
 		int count = _count;
 		int countNew = count + 8;
 		reserve(countNew);
 		byte[] buf = _buffer;
-		buf[count    ] = (byte)(x >> 56);
-		buf[count + 1] = (byte)(x >> 48);
-		buf[count + 2] = (byte)(x >> 40);
-		buf[count + 3] = (byte)(x >> 32);
-		buf[count + 4] = (byte)(x >> 24);
-		buf[count + 5] = (byte)(x >> 16);
-		buf[count + 6] = (byte)(x >> 8);
-		buf[count + 7] = (byte)x;
+		buf[count    ] = (byte)(v >> 56);
+		buf[count + 1] = (byte)(v >> 48);
+		buf[count + 2] = (byte)(v >> 40);
+		buf[count + 3] = (byte)(v >> 32);
+		buf[count + 4] = (byte)(v >> 24);
+		buf[count + 5] = (byte)(v >> 16);
+		buf[count + 6] = (byte)(v >> 8);
+		buf[count + 7] = (byte)v;
 		_count = countNew;
 		return this;
 	}
 
-	public Octets marshal9(byte b, long x)
+	public Octets marshal9(byte b, long v)
 	{
 		int count = _count;
 		int countNew = count + 9;
 		reserve(countNew);
 		byte[] buf = _buffer;
 		buf[count    ] = b;
-		buf[count + 1] = (byte)(x >> 56);
-		buf[count + 2] = (byte)(x >> 48);
-		buf[count + 3] = (byte)(x >> 40);
-		buf[count + 4] = (byte)(x >> 32);
-		buf[count + 5] = (byte)(x >> 24);
-		buf[count + 6] = (byte)(x >> 16);
-		buf[count + 7] = (byte)(x >> 8);
-		buf[count + 8] = (byte)x;
+		buf[count + 1] = (byte)(v >> 56);
+		buf[count + 2] = (byte)(v >> 48);
+		buf[count + 3] = (byte)(v >> 40);
+		buf[count + 4] = (byte)(v >> 32);
+		buf[count + 5] = (byte)(v >> 24);
+		buf[count + 6] = (byte)(v >> 16);
+		buf[count + 7] = (byte)(v >> 8);
+		buf[count + 8] = (byte)v;
 		_count = countNew;
 		return this;
 	}
@@ -905,201 +905,201 @@ public class Octets implements Cloneable, Comparable<Octets>, WriteRequest
 		return b != null ? marshal(b.booleanValue()) : marshalZero();
 	}
 
-	public Octets marshal(char x)
+	public Octets marshal(char v)
 	{
-		return marshal((long)x);
+		return marshal((long)v);
 	}
 
-	public Octets marshal(Character x)
+	public Octets marshal(Character v)
 	{
-		return x != null ? marshal((long)x) : marshalZero();
+		return v != null ? marshal((long)v) : marshalZero();
 	}
 
-	public Octets marshal(byte x)
+	public Octets marshal(byte v)
 	{
-		return marshal((long)x);
+		return marshal((long)v);
 	}
 
-	public Octets marshal(Byte x)
+	public Octets marshal(Byte v)
 	{
-		return x != null ? marshal(x.longValue()) : marshalZero();
+		return v != null ? marshal(v.longValue()) : marshalZero();
 	}
 
-	public Octets marshal(short x)
+	public Octets marshal(short v)
 	{
-		return marshal((long)x);
+		return marshal((long)v);
 	}
 
-	public Octets marshal(Short x)
+	public Octets marshal(Short v)
 	{
-		return x != null ? marshal(x.longValue()) : marshalZero();
+		return v != null ? marshal(v.longValue()) : marshalZero();
 	}
 
-	public Octets marshal(long x)
+	public Octets marshal(long v)
 	{
-		if (x >= 0)
+		if (v >= 0)
 		{
-			if (x <                0x40 ) return marshal1((byte)x);                    // 00xx xxxx
-			if (x <              0x2000 ) return marshal2((int)x +           0x4000 ); // 010x xxxx +1B
-			if (x <           0x10_0000 ) return marshal3((int)x +        0x60_0000 ); // 0110 xxxx +2B
-			if (x <          0x800_0000 ) return marshal4((int)x +      0x7000_0000 ); // 0111 0xxx +3B
-			if (x <       0x4_0000_0000L) return marshal5(x +        0x78_0000_0000L); // 0111 10xx +4B
-			if (x <     0x200_0000_0000L) return marshal6(x +      0x7c00_0000_0000L); // 0111 110x +5B
-			if (x <  0x1_0000_0000_0000L) return marshal7(x +   0x7e_0000_0000_0000L); // 0111 1110 +6B
-			if (x < 0x80_0000_0000_0000L) return marshal8(x + 0x7f00_0000_0000_0000L); // 0111 1111 0+7B
-							  return marshal9((byte)0x7f, x + 0x8000_0000_0000_0000L); // 0111 1111 1+8B
+			if (v <                0x40 ) return marshal1((byte)v);                    // 00xx xxxx
+			if (v <              0x2000 ) return marshal2((int)v +           0x4000 ); // 010x xxxx +1B
+			if (v <           0x10_0000 ) return marshal3((int)v +        0x60_0000 ); // 0110 xxxx +2B
+			if (v <          0x800_0000 ) return marshal4((int)v +      0x7000_0000 ); // 0111 0xxx +3B
+			if (v <       0x4_0000_0000L) return marshal5(v +        0x78_0000_0000L); // 0111 10xx +4B
+			if (v <     0x200_0000_0000L) return marshal6(v +      0x7c00_0000_0000L); // 0111 110x +5B
+			if (v <  0x1_0000_0000_0000L) return marshal7(v +   0x7e_0000_0000_0000L); // 0111 1110 +6B
+			if (v < 0x80_0000_0000_0000L) return marshal8(v + 0x7f00_0000_0000_0000L); // 0111 1111 0+7B
+							  return marshal9((byte)0x7f, v + 0x8000_0000_0000_0000L); // 0111 1111 1+8B
 		}
-		if (x >= -                 0x40 ) return marshal1((byte)x);                    // 11xx xxxx
-		if (x >= -               0x2000 ) return marshal2((int)x -           0x4000 ); // 101x xxxx +1B
-		if (x >= -            0x10_0000 ) return marshal3((int)x -        0x60_0000 ); // 1001 xxxx +2B
-		if (x >= -           0x800_0000 ) return marshal4((int)x -      0x7000_0000 ); // 1000 1xxx +3B
-		if (x >= -        0x4_0000_0000L) return marshal5(x -        0x78_0000_0000L); // 1000 01xx +4B
-		if (x >= -      0x200_0000_0000L) return marshal6(x -      0x7c00_0000_0000L); // 1000 001x +5B
-		if (x >= -   0x1_0000_0000_0000L) return marshal7(x -   0x7e_0000_0000_0000L); // 1000 0001 +6B
-		if (x >= -  0x80_0000_0000_0000L) return marshal8(x - 0x7f00_0000_0000_0000L); // 1000 0000 1+7B
-							  return marshal9((byte)0x80, x - 0x8000_0000_0000_0000L); // 1000 0000 0+8B
+		if (v >= -                 0x40 ) return marshal1((byte)v);                    // 11xx xxxx
+		if (v >= -               0x2000 ) return marshal2((int)v -           0x4000 ); // 101x xxxx +1B
+		if (v >= -            0x10_0000 ) return marshal3((int)v -        0x60_0000 ); // 1001 xxxx +2B
+		if (v >= -           0x800_0000 ) return marshal4((int)v -      0x7000_0000 ); // 1000 1xxx +3B
+		if (v >= -        0x4_0000_0000L) return marshal5(v -        0x78_0000_0000L); // 1000 01xx +4B
+		if (v >= -      0x200_0000_0000L) return marshal6(v -      0x7c00_0000_0000L); // 1000 001x +5B
+		if (v >= -   0x1_0000_0000_0000L) return marshal7(v -   0x7e_0000_0000_0000L); // 1000 0001 +6B
+		if (v >= -  0x80_0000_0000_0000L) return marshal8(v - 0x7f00_0000_0000_0000L); // 1000 0000 1+7B
+							  return marshal9((byte)0x80, v - 0x8000_0000_0000_0000L); // 1000 0000 0+8B
 	}
 
-	public Octets marshal(long x, int n)
+	public Octets marshal(long v, int n)
 	{
 		if (n < 9) // ensure bits
 		{
-			if (x < 0)
-				x |= 0x8000_0000_0000_0000L >> (64 - n * 7);
+			if (v < 0)
+				v |= 0x8000_0000_0000_0000L >> (64 - n * 7);
 			else
-				x &= (1 << (n * 7 - 1)) - 1;
+				v &= (1 << (n * 7 - 1)) - 1;
 		}
 		switch (n)
 		{
-		case 1:  return marshal1((byte)x);
-		case 2:  return marshal2((int)x + (x < 0 ? -          0x4000  :                0x4000 ));
-		case 3:  return marshal3((int)x + (x < 0 ? -       0x60_0000  :             0x60_0000 ));
-		case 4:  return marshal4((int)x + (x < 0 ? -     0x7000_0000  :           0x7000_0000 ));
-		case 5:  return marshal5(x + (x < 0 ? -       0x78_0000_0000L :        0x78_0000_0000L));
-		case 6:  return marshal6(x + (x < 0 ? -     0x7c00_0000_0000L :      0x7c00_0000_0000L));
-		case 7:  return marshal7(x + (x < 0 ? -  0x7e_0000_0000_0000L :   0x7e_0000_0000_0000L));
-		case 8:  return marshal8(x + (x < 0 ? -0x7f00_0000_0000_0000L : 0x7f00_0000_0000_0000L));
-		default: return marshal9((byte)(x < 0 ? 0x80 : 0x7f), x +       0x8000_0000_0000_0000L);
+		case 1:  return marshal1((byte)v);
+		case 2:  return marshal2((int)v + (v < 0 ? -          0x4000  :                0x4000 ));
+		case 3:  return marshal3((int)v + (v < 0 ? -       0x60_0000  :             0x60_0000 ));
+		case 4:  return marshal4((int)v + (v < 0 ? -     0x7000_0000  :           0x7000_0000 ));
+		case 5:  return marshal5(v + (v < 0 ? -       0x78_0000_0000L :        0x78_0000_0000L));
+		case 6:  return marshal6(v + (v < 0 ? -     0x7c00_0000_0000L :      0x7c00_0000_0000L));
+		case 7:  return marshal7(v + (v < 0 ? -  0x7e_0000_0000_0000L :   0x7e_0000_0000_0000L));
+		case 8:  return marshal8(v + (v < 0 ? -0x7f00_0000_0000_0000L : 0x7f00_0000_0000_0000L));
+		default: return marshal9((byte)(v < 0 ? 0x80 : 0x7f), v +       0x8000_0000_0000_0000L);
 		}
 	}
 
-	public Octets marshal(Integer x)
+	public Octets marshal(Integer v)
 	{
-		return x != null ? marshal(x.longValue()) : marshalZero();
+		return v != null ? marshal(v.longValue()) : marshalZero();
 	}
 
-	public Octets marshal(Long x)
+	public Octets marshal(Long v)
 	{
-		return x != null ? marshal(x.longValue()) : marshalZero();
+		return v != null ? marshal(v.longValue()) : marshalZero();
 	}
 
-	public static int marshalLen(int x)
+	public static int marshalLen(int v)
 	{
-		return (39 - Integer.numberOfLeadingZeros(x < 0 ? ~x : x)) / 7; // x ^ (x >> 31) is much slower
+		return (39 - Integer.numberOfLeadingZeros(v < 0 ? ~v : v)) / 7; // v ^ (v >> 31) is much slower
 	}
 
-	public static int marshalLen(long x)
+	public static int marshalLen(long v)
 	{
-		int n = (71 - Long.numberOfLeadingZeros(x < 0 ? ~x : x)) / 7; // x ^ (x >> 31) is much slower
+		int n = (71 - Long.numberOfLeadingZeros(v < 0 ? ~v : v)) / 7; // v ^ (v >> 31) is much slower
 		return n < 10 ? n : 9;
 	}
 
-	public static int marshalUIntLen(int x)
+	public static int marshalUIntLen(int v)
 	{
-		// return (31 - Integer.numberOfLeadingZeros(x)) / 7 + 1; // x is very small usually
-		long v = x & 0xffff_ffffL;
-		if (v <        0x80) return 1;
-		if (v <      0x4000) return 2;
-		if (v <   0x20_0000) return 3;
-		if (v < 0x1000_0000) return 4;
+		// return (31 - Integer.numberOfLeadingZeros(v)) / 7 + 1; // v is very small usually
+		long w = v & 0xffff_ffffL;
+		if (w <        0x80) return 1;
+		if (w <      0x4000) return 2;
+		if (w <   0x20_0000) return 3;
+		if (w < 0x1000_0000) return 4;
 							 return 5;
 	}
 
-	public Octets marshalUInt(int x)
+	public Octets marshalUInt(int v)
 	{
-		long v = x & 0xffff_ffffL;
-		if (v <        0x80) return marshal1((byte)x);         // 0xxx xxxx
-		if (v <      0x4000) return marshal2(x +      0x8000); // 10xx xxxx +1B
-		if (v <   0x20_0000) return marshal3(x +   0xc0_0000); // 110x xxxx +2B
-		if (v < 0x1000_0000) return marshal4(x + 0xe000_0000); // 1110 xxxx +3B
-							 return marshal5((byte)0xf0, x);   // 1111 0000 +4B
+		long w = v & 0xffff_ffffL;
+		if (w <        0x80) return marshal1((byte)v);         // 0xxx xxxx
+		if (w <      0x4000) return marshal2(v +      0x8000); // 10xx xxxx +1B
+		if (w <   0x20_0000) return marshal3(v +   0xc0_0000); // 110x xxxx +2B
+		if (w < 0x1000_0000) return marshal4(v + 0xe000_0000); // 1110 xxxx +3B
+							 return marshal5((byte)0xf0, v);   // 1111 0000 +4B
 	}
 
-	public Octets marshalUInt(int x, int n)
+	public Octets marshalUInt(int v, int n)
 	{
 		switch (n)
 		{
-		case 1:  return marshal1((byte)(x & 0x7f));               // 0xxx xxxx
-		case 2:  return marshal2((x &     0x3fff) +      0x8000); // 10xx xxxx +1B
-		case 3:  return marshal3((x &  0x1f_ffff) +   0xc0_0000); // 110x xxxx +2B
-		case 4:  return marshal4((x & 0xfff_ffff) + 0xe000_0000); // 1110 xxxx +3B
-		default: return marshal5((byte)0xf0, x);                  // 1111 0000 +4B
+		case 1:  return marshal1((byte)(v & 0x7f));               // 0xxx xxxx
+		case 2:  return marshal2((v &     0x3fff) +      0x8000); // 10xx xxxx +1B
+		case 3:  return marshal3((v &  0x1f_ffff) +   0xc0_0000); // 110x xxxx +2B
+		case 4:  return marshal4((v & 0xfff_ffff) + 0xe000_0000); // 1110 xxxx +3B
+		default: return marshal5((byte)0xf0, v);                  // 1111 0000 +4B
 		}
 	}
 
-	public static int marshalULongLen(long x)
+	public static int marshalULongLen(long v)
 	{
-		// return (63 - Long.numberOfLeadingZeros(x)) / 7 + 1; // x is very small usually
-		if (x <                    0 ) return 9;
-		if (x <                 0x80 ) return 1;
-		if (x <               0x4000 ) return 2;
-		if (x <            0x20_0000 ) return 3;
-		if (x <          0x1000_0000 ) return 4;
-		if (x <        0x8_0000_0000L) return 5;
-		if (x <      0x400_0000_0000L) return 6;
-		if (x <   0x2_0000_0000_0000L) return 7;
-		if (x < 0x100_0000_0000_0000L) return 8;
+		// return (63 - Long.numberOfLeadingZeros(v)) / 7 + 1; // v is very small usually
+		if (v <                    0 ) return 9;
+		if (v <                 0x80 ) return 1;
+		if (v <               0x4000 ) return 2;
+		if (v <            0x20_0000 ) return 3;
+		if (v <          0x1000_0000 ) return 4;
+		if (v <        0x8_0000_0000L) return 5;
+		if (v <      0x400_0000_0000L) return 6;
+		if (v <   0x2_0000_0000_0000L) return 7;
+		if (v < 0x100_0000_0000_0000L) return 8;
 									   return 9;
 	}
 
-	public Octets marshalULong(long x)
+	public Octets marshalULong(long v)
 	{
-		if (x <                    0 ) return marshal9((byte)0xff, x);              // 1111 1111 +8B
-		if (x <                 0x80 ) return marshal1((byte)x);                    // 0xxx xxxx
-		if (x <               0x4000 ) return marshal2((int)x +           0x8000 ); // 10xx xxxx +1B
-		if (x <            0x20_0000 ) return marshal3((int)x +        0xc0_0000 ); // 110x xxxx +2B
-		if (x <          0x1000_0000 ) return marshal4((int)x +      0xe000_0000 ); // 1110 xxxx +3B
-		if (x <        0x8_0000_0000L) return marshal5(x +        0xf0_0000_0000L); // 1111 0xxx +4B
-		if (x <      0x400_0000_0000L) return marshal6(x +      0xf800_0000_0000L); // 1111 10xx +5B
-		if (x <   0x2_0000_0000_0000L) return marshal7(x +   0xfc_0000_0000_0000L); // 1111 110x +6B
-		if (x < 0x100_0000_0000_0000L) return marshal8(x + 0xfe00_0000_0000_0000L); // 1111 1110 +7B
-									   return marshal9((byte)0xff, x);              // 1111 1111 +8B
+		if (v <                    0 ) return marshal9((byte)0xff, v);              // 1111 1111 +8B
+		if (v <                 0x80 ) return marshal1((byte)v);                    // 0xxx xxxx
+		if (v <               0x4000 ) return marshal2((int)v +           0x8000 ); // 10xx xxxx +1B
+		if (v <            0x20_0000 ) return marshal3((int)v +        0xc0_0000 ); // 110x xxxx +2B
+		if (v <          0x1000_0000 ) return marshal4((int)v +      0xe000_0000 ); // 1110 xxxx +3B
+		if (v <        0x8_0000_0000L) return marshal5(v +        0xf0_0000_0000L); // 1111 0xxx +4B
+		if (v <      0x400_0000_0000L) return marshal6(v +      0xf800_0000_0000L); // 1111 10xx +5B
+		if (v <   0x2_0000_0000_0000L) return marshal7(v +   0xfc_0000_0000_0000L); // 1111 110x +6B
+		if (v < 0x100_0000_0000_0000L) return marshal8(v + 0xfe00_0000_0000_0000L); // 1111 1110 +7B
+									   return marshal9((byte)0xff, v);              // 1111 1111 +8B
 	}
 
-	public Octets marshalULong(long x, int n)
+	public Octets marshalULong(long v, int n)
 	{
 		switch (n)
 		{
-		case 1:  return marshal1((byte)(x &          0x7f));                           // 0xxx xxxx
-		case 2:  return marshal2(((int)x &         0x3fff ) +                0x8000 ); // 10xx xxxx +1B
-		case 3:  return marshal3(((int)x &      0x1f_ffff ) +             0xc0_0000 ); // 110x xxxx +2B
-		case 4:  return marshal4(((int)x &     0xfff_ffff ) +           0xe000_0000 ); // 1110 xxxx +3B
-		case 5:  return marshal5((x &       0x7_ffff_ffffL) +        0xf0_0000_0000L); // 1111 0xxx +4B
-		case 6:  return marshal6((x &     0x3ff_ffff_ffffL) +      0xf800_0000_0000L); // 1111 10xx +5B
-		case 7:  return marshal7((x &  0x1_ffff_ffff_ffffL) +   0xfc_0000_0000_0000L); // 1111 110x +6B
-		case 8:  return marshal8((x & 0xff_ffff_ffff_ffffL) + 0xfe00_0000_0000_0000L); // 1111 1110 +7B
-		default: return marshal9((byte)0xff, x);                                       // 1111 1111 +8B
+		case 1:  return marshal1((byte)(v &          0x7f));                           // 0xxx xxxx
+		case 2:  return marshal2(((int)v &         0x3fff ) +                0x8000 ); // 10xx xxxx +1B
+		case 3:  return marshal3(((int)v &      0x1f_ffff ) +             0xc0_0000 ); // 110x xxxx +2B
+		case 4:  return marshal4(((int)v &     0xfff_ffff ) +           0xe000_0000 ); // 1110 xxxx +3B
+		case 5:  return marshal5((v &       0x7_ffff_ffffL) +        0xf0_0000_0000L); // 1111 0xxx +4B
+		case 6:  return marshal6((v &     0x3ff_ffff_ffffL) +      0xf800_0000_0000L); // 1111 10xx +5B
+		case 7:  return marshal7((v &  0x1_ffff_ffff_ffffL) +   0xfc_0000_0000_0000L); // 1111 110x +6B
+		case 8:  return marshal8((v & 0xff_ffff_ffff_ffffL) + 0xfe00_0000_0000_0000L); // 1111 1110 +7B
+		default: return marshal9((byte)0xff, v);                                       // 1111 1111 +8B
 		}
 	}
 
-	public Octets marshal(float x)
+	public Octets marshal(float v)
 	{
-		return marshal4(Float.floatToRawIntBits(x));
+		return marshal4(Float.floatToRawIntBits(v));
 	}
 
-	public Octets marshal(Float x)
+	public Octets marshal(Float v)
 	{
-		return marshal4(Float.floatToRawIntBits(x != null ? x : 0));
+		return marshal4(Float.floatToRawIntBits(v != null ? v : 0));
 	}
 
-	public Octets marshal(double x)
+	public Octets marshal(double v)
 	{
-		return marshal8(Double.doubleToRawLongBits(x));
+		return marshal8(Double.doubleToRawLongBits(v));
 	}
 
-	public Octets marshal(Double x)
+	public Octets marshal(Double v)
 	{
-		return marshal8(Double.doubleToRawLongBits(x != null ? x : 0));
+		return marshal8(Double.doubleToRawLongBits(v != null ? v : 0));
 	}
 
 	public Octets marshal(byte[] bytes)
@@ -1118,11 +1118,11 @@ public class Octets implements Cloneable, Comparable<Octets>, WriteRequest
 		return this;
 	}
 
-	public Octets marshalUTF8(char x)
+	public Octets marshalUTF8(char v)
 	{
-		if (x < 0x80)  return marshal1((byte)x);                                             // 0xxx xxxx
-		if (x < 0x800) return marshal2(((x << 2) & 0x1f00) + (x & 0x3f) + 0xc080);           // 110x xxxx  10xx xxxx
-		return marshal3(((x << 4) & 0xf0000) + ((x << 2) & 0x3f00) + (x & 0x3f) + 0xe08080); // 1110 xxxx  10xx xxxx  10xx xxxx
+		if (v < 0x80)  return marshal1((byte)v);                                             // 0xxx xxxx
+		if (v < 0x800) return marshal2(((v << 2) & 0x1f00) + (v & 0x3f) + 0xc080);           // 110x xxxx  10xx xxxx
+		return marshal3(((v << 4) & 0xf0000) + ((v << 2) & 0x3f00) + (v & 0x3f) + 0xe08080); // 1110 xxxx  10xx xxxx  10xx xxxx
 	}
 
 	public static int marshalStrLen(String str)
@@ -1160,19 +1160,19 @@ public class Octets implements Cloneable, Comparable<Octets>, WriteRequest
 		{
 			for (int i = 0; i < cn; ++i)
 			{
-				int x = str.charAt(i);
-				if (x < 0x80)
-					buf[n++] = (byte)x; // 0xxx xxxx
-				else if (x < 0x800)
+				int v = str.charAt(i);
+				if (v < 0x80)
+					buf[n++] = (byte)v; // 0xxx xxxx
+				else if (v < 0x800)
 				{
-					buf[n++] = (byte)(0xc0 + (x >> 6)); // 110x xxxx  10xx xxxx
-					buf[n++] = (byte)(0x80 + (x & 0x3f));
+					buf[n++] = (byte)(0xc0 + (v >> 6)); // 110x xxxx  10xx xxxx
+					buf[n++] = (byte)(0x80 + (v & 0x3f));
 				}
 				else
 				{
-					buf[n++] = (byte)(0xe0 + (x >> 12)); // 1110 xxxx  10xx xxxx  10xx xxxx
-					buf[n++] = (byte)(0x80 + ((x >> 6) & 0x3f));
-					buf[n++] = (byte)(0x80 + (x & 0x3f));
+					buf[n++] = (byte)(0xe0 + (v >> 12)); // 1110 xxxx  10xx xxxx  10xx xxxx
+					buf[n++] = (byte)(0x80 + ((v >> 6) & 0x3f));
+					buf[n++] = (byte)(0x80 + (v & 0x3f));
 				}
 			}
 		}

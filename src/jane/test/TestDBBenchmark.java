@@ -26,7 +26,7 @@ public final class TestDBBenchmark
 		Log.info("begin: key: {}/{}, count: {}*{}", keyWinCount, keyAllCount, countIn, countOut);
 		DBManager.instance().startup();
 		AllTables.register();
-		System.gc(); //NOSONAR
+		System.gc();
 		System.runFinalization();
 		Log.info("start");
 

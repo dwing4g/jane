@@ -25,6 +25,7 @@ package ]=] .. namespace .. [=[;
 import java.lang.reflect.Field;#>#
 import #(bean.imports);
 #(bean.comment)
+@SuppressWarnings({"RedundantIfStatement", "RedundantSuppression", "SwitchStatementWithTooFewBranches", "UnnecessaryLocalVariable"})
 public #(bean.final)class #(bean.name) extends Bean<#(bean.name)>
 {
 	private static final long serialVersionUID = #(bean.uid);

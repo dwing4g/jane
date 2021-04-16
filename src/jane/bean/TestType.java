@@ -34,6 +34,7 @@ import jane.core.Util;
 /**
  * 测试生成所有支持的类型
  */
+@SuppressWarnings({"RedundantIfStatement", "RedundantSuppression", "SwitchStatementWithTooFewBranches", "UnnecessaryLocalVariable"})
 public final class TestType extends Bean<TestType>
 {
 	private static final long serialVersionUID = 0xbeacabe90777739dL;

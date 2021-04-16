@@ -30,7 +30,7 @@ public class TestAsync
 		});
 
 		//noinspection InfiniteLoopStatement
-		for (;;) //NOSONAR
+		for (;;)
 		{
 			if (AsyncManager.get().tick() == 0)
 				Thread.sleep(10);

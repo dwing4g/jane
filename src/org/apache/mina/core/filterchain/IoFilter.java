@@ -78,6 +78,7 @@ public interface IoFilter {
 	 *            You can reuse this object until this filter is removed from the chain.
 	 * @throws Exception If an error occurred while processing the event
 	 */
+	@SuppressWarnings("RedundantThrows")
 	default void onPreAdd(IoFilterChain parent, String name, NextFilter nextFilter) throws Exception {
 	}
 

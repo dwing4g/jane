@@ -12,6 +12,7 @@ import jane.core.SContext;
 /**
  * bean的注释
  */
+@SuppressWarnings({"RedundantIfStatement", "RedundantSuppression", "SwitchStatementWithTooFewBranches", "UnnecessaryLocalVariable"})
 public class TestBean extends Bean<TestBean>
 {
 	private static final long serialVersionUID = 0xbeacaa44540448ccL;

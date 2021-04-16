@@ -53,8 +53,8 @@ public final class DBSimpleManager
 	 */
 	private final class CommitThread extends Thread
 	{
-		private final long	  _commitPeriod	= Const.dbCommitPeriod * 1000;				  // 提交数据库的周期 //NOSONAR
-		private final long	  _backupPeriod	= Const.dbBackupPeriod * 1000;				  // 备份数据库的周期 //NOSONAR
+		private final long	  _commitPeriod	= Const.dbCommitPeriod * 1000;				  // 提交数据库的周期
+		private final long	  _backupPeriod	= Const.dbBackupPeriod * 1000;				  // 备份数据库的周期
 		private volatile long _commitTime	= System.currentTimeMillis() + _commitPeriod; // 下次提交数据库的时间
 		private volatile long _backupTime	= Long.MAX_VALUE;							  // 下次备份数据库的时间(默认不备份)
 

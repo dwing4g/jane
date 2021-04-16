@@ -525,12 +525,12 @@ public class OctetsStream extends Octets
 		{
 		case 0x00: case 0x01: case 0x02: case 0x03: case 0x04: case 0x05: case 0x06: case 0x07:
 		case 0x18: case 0x19: case 0x1a: case 0x1b: case 0x1c: case 0x1d: case 0x1e: case 0x1f: return b;
-		case 0x08: case 0x09: case 0x0a: case 0x0b: return ((b - 0x40) <<  8) + unmarshalInt1(); //NOSONAR
-		case 0x14: case 0x15: case 0x16: case 0x17: return ((b + 0x40) <<  8) + unmarshalInt1(); //NOSONAR
-		case 0x0c: case 0x0d:                       return ((b - 0x60) << 16) + unmarshalInt2(); //NOSONAR
-		case 0x12: case 0x13:                       return ((b + 0x60) << 16) + unmarshalInt2(); //NOSONAR
-		case 0x0e:                                  return ((b - 0x70) << 24) + unmarshalInt3(); //NOSONAR
-		case 0x11:                                  return ((b + 0x70) << 24) + unmarshalInt3(); //NOSONAR
+		case 0x08: case 0x09: case 0x0a: case 0x0b: return ((b - 0x40) <<  8) + unmarshalInt1();
+		case 0x14: case 0x15: case 0x16: case 0x17: return ((b + 0x40) <<  8) + unmarshalInt1();
+		case 0x0c: case 0x0d:                       return ((b - 0x60) << 16) + unmarshalInt2();
+		case 0x12: case 0x13:                       return ((b + 0x60) << 16) + unmarshalInt2();
+		case 0x0e:                                  return ((b - 0x70) << 24) + unmarshalInt3();
+		case 0x11:                                  return ((b + 0x70) << 24) + unmarshalInt3();
 		case 0x0f:
 			switch (b & 7)
 			{
@@ -607,9 +607,9 @@ public class OctetsStream extends Octets
 		switch (b >> 4)
 		{
 		case  0: case  1: case  2: case  3: case 4: case 5: case 6: case 7: return b;
-		case  8: case  9: case 10: case 11: return ((b & 0x3f) <<  8) + unmarshalInt1(); //NOSONAR
-		case 12: case 13:                   return ((b & 0x1f) << 16) + unmarshalInt2(); //NOSONAR
-		case 14:                            return ((b & 0x0f) << 24) + unmarshalInt3(); //NOSONAR
+		case  8: case  9: case 10: case 11: return ((b & 0x3f) <<  8) + unmarshalInt1();
+		case 12: case 13:                   return ((b & 0x1f) << 16) + unmarshalInt2();
+		case 14:                            return ((b & 0x0f) << 24) + unmarshalInt3();
 		default:
 			switch (b & 15)
 			{

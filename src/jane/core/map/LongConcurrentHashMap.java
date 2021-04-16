@@ -186,7 +186,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	private static int spread(long key)
 	{
 		//noinspection UnnecessaryLocalVariable
-		int h = (int)key; //NOSONAR. for faster inner using (key is multiple of prime number)
+		int h = (int)key; // for faster inner using (key is multiple of prime number)
 		return h; // (h ^ (h >>> 16)) & HASH_BITS;
 	}
 
@@ -1375,7 +1375,7 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 		}
 		try
 		{
-			return AccessController.doPrivileged((PrivilegedExceptionAction<sun.misc.Unsafe>)() -> //NOSONAR
+			return AccessController.doPrivileged((PrivilegedExceptionAction<sun.misc.Unsafe>)() ->
 			{
 				Class<sun.misc.Unsafe> k = sun.misc.Unsafe.class;
 				for (Field f : k.getDeclaredFields())
