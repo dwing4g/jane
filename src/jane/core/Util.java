@@ -511,8 +511,8 @@ public final class Util
 					JarEntry je = ((JarURLConnection)urlConn).getJarEntry();
 					if (je != null)
 					{
-						crc = je.getCrc();
-						file = new File(System.getProperty("java.io.tmpdir") + '/' + crc + '_' + nativeLibName);
+						crc = je.getCrc() & 0xffff_ffffL;
+						file = new File(String.format("%s/%08x_%s", System.getProperty("java.io.tmpdir"), crc, nativeLibName));
 						if (file.length() == je.getSize())
 							urlConn = null;
 					}
@@ -526,7 +526,7 @@ public final class Util
 						{
 							CRC32 crc32 = new CRC32();
 							crc32.update(data.array(), 0, data.size());
-							file = new File(System.getProperty("java.io.tmpdir") + '/' + crc32.getValue() + '_' + nativeLibName);
+							file = new File(String.format("%s/%08x_%s", System.getProperty("java.io.tmpdir"), crc32.getValue(), nativeLibName));
 							if (file.length() == data.size())
 								data = null;
 						}
