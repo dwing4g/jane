@@ -3,6 +3,7 @@ package jane.core.map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import java.util.function.UnaryOperator;
 
 /**
  * An unordered map that uses long keys.<br>
@@ -228,6 +229,142 @@ public class LongHashMap<V> implements Cloneable
 		}
 
 		if (push(key, value, index1, key1, index2, key2, index3, key3))
+			size++;
+		return null;
+	}
+
+	public V compute(long key, UnaryOperator<V> op)
+	{
+		if (key == EMPTY)
+		{
+			V oldValue = zeroValue;
+			V newValue = op.apply(oldValue);
+			if (oldValue != newValue)
+			{
+				zeroValue = newValue;
+				if (!hasZeroValue)
+				{
+					hasZeroValue = true;
+					size++;
+				}
+			}
+			return oldValue;
+		}
+
+		long[] kt = keyTable;
+		V[] vt = valueTable;
+		int index1 = (int)key & mask;
+		long key1 = kt[index1];
+		if (key1 == key)
+		{
+			V oldValue = vt[index1];
+			V newValue = op.apply(oldValue);
+			if (oldValue != newValue)
+			{
+				vt[index1] = newValue;
+				if (newValue == null)
+				{
+					kt[index1] = EMPTY;
+					size--;
+				}
+			}
+			return oldValue;
+		}
+
+		int index2 = hash2(key);
+		long key2 = kt[index2];
+		if (key2 == key)
+		{
+			V oldValue = vt[index2];
+			V newValue = op.apply(oldValue);
+			if (oldValue != newValue)
+			{
+				vt[index2] = newValue;
+				if (newValue == null)
+				{
+					kt[index2] = EMPTY;
+					size--;
+				}
+			}
+			return oldValue;
+		}
+
+		int index3 = hash3(key);
+		long key3 = kt[index3];
+		if (key3 == key)
+		{
+			V oldValue = vt[index3];
+			V newValue = op.apply(oldValue);
+			if (oldValue != newValue)
+			{
+				vt[index3] = newValue;
+				if (newValue == null)
+				{
+					kt[index3] = EMPTY;
+					size--;
+				}
+			}
+			return oldValue;
+		}
+
+		for (int i = capacity, n = tableSize; i < n; i++)
+		{
+			if (kt[i] == key)
+			{
+				V oldValue = vt[i];
+				V newValue = op.apply(oldValue);
+				if (oldValue != newValue)
+				{
+					if (newValue != null)
+						vt[i] = newValue;
+					else
+					{
+						tableSize = --n;
+						kt[i] = kt[n];
+						vt[i] = vt[n];
+						vt[n] = null;
+						size--;
+					}
+				}
+				return oldValue;
+			}
+		}
+
+		V newValue = op.apply(null);
+		if (newValue == null)
+			return null;
+
+		if (key1 == EMPTY)
+		{
+			kt[index1] = key;
+			vt[index1] = newValue;
+			size++;
+			return null;
+		}
+
+		if (key2 == EMPTY)
+		{
+			kt[index2] = key;
+			vt[index2] = newValue;
+			size++;
+			return null;
+		}
+
+		if (key3 == EMPTY)
+		{
+			kt[index3] = key;
+			vt[index3] = newValue;
+			size++;
+			return null;
+		}
+
+		if (size >= threshold)
+		{
+			resize(capacity << 1);
+			return put(key, newValue);
+		}
+
+		if (push(key, newValue, index1, key1, index2, key2, index3, key3))
 			size++;
 		return null;
 	}
@@ -558,6 +695,72 @@ public class LongHashMap<V> implements Cloneable
 		{
 			if (kt[i] != EMPTY)
 				consumer.accept(vt[i]);
+		}
+	}
+
+	public interface LongObjectFunction<V>
+	{
+		V apply(long key, V value);
+	}
+
+	public void foreachUpdate(LongObjectFunction<V> func)
+	{
+		if (size == 0)
+			return;
+		if (hasZeroValue)
+		{
+			V v = zeroValue;
+			V newV = func.apply(EMPTY, v);
+			if (newV != v)
+			{
+				zeroValue = newV;
+				if (newV == null)
+				{
+					hasZeroValue = false;
+					size--;
+				}
+			}
+		}
+		long[] kt = keyTable;
+		V[] vt = valueTable;
+		int i = 0;
+		for (int n = capacity; i < n; i++)
+		{
+			long key = kt[i];
+			if (key != EMPTY)
+			{
+				V v = vt[i];
+				V newV = func.apply(key, v);
+				if (newV != v)
+				{
+					vt[i] = newV;
+					if (newV == null)
+					{
+						kt[i] = EMPTY;
+						size--;
+					}
+				}
+			}
+		}
+		for (; i < tableSize; i++)
+		{
+			long key = kt[i];
+			V v = vt[i];
+			V newV = func.apply(key, v);
+			if (newV != v)
+			{
+				if (newV != null)
+					vt[i] = newV;
+				else
+				{
+					int e = --tableSize;
+					kt[i] = kt[e];
+					vt[i] = vt[e];
+					vt[e] = null;
+					size--;
+					i--;
+				}
+			}
 		}
 	}
 }
