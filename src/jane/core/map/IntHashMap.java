@@ -258,7 +258,15 @@ public class IntHashMap<V> implements Cloneable
 			if (oldValue != newValue)
 			{
 				zeroValue = newValue;
-				if (!hasZeroValue)
+				if (newValue == null)
+				{
+					if (hasZeroValue)
+					{
+						hasZeroValue = false;
+						size--;
+					}
+				}
+				else if (!hasZeroValue)
 				{
 					hasZeroValue = true;
 					size++;
