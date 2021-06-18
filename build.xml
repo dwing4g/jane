@@ -2,7 +2,7 @@
 <project name="jane" default="jar">
 	<!-- install jdk,ant first:
 		example: add this line in linux ~/.bash_profile:
-		export PATH=$PATH:$HOME/apache-ant-1.9.10/bin
+		export PATH=$PATH:$HOME/apache-ant-1.10.10/bin
 	-->
 	<!-- compile by ecj:
 		ant -Dbuild.compiler=org.eclipse.jdt.core.JDTCompilerAdapter
@@ -98,24 +98,17 @@
 				<include name="jane.properties"/>
 			</fileset>
 		</jar>
-		<jar jarfile="${root}/jane-test-all.jar" basedir="${classes}" includes="**/jane/bean/**,**/jane/handler/**,**/jane/test/**" level="9">
+		<jar jarfile="${root}/jane-test-all.jar" level="9">
 			<manifest>
 				<attribute name="Created-Time" value="${time}"/>
 				<attribute name="Main-Class" value="jane.test.TestMain"/>
 			</manifest>
-			<zipfileset src="${lib}/slf4j-api-1.7.30.jar"/>
-			<zipfileset src="${lib}/logback-core-1.2.3.jar"/>
-			<zipfileset src="${lib}/logback-classic-1.2.3.jar"/>
-			<zipfileset src="${root}/jane-core.jar"/>
-			<fileset dir="${lib}">
-				<include name="*.dll"/>
-				<include name="*.so"/>
-				<include name="*.dylib"/>
-			</fileset>
-			<fileset dir="${src}">
-				<include name="logback.xml"/>
-				<include name="jane.properties"/>
-			</fileset>
+			<zipfileset src="${lib}/slf4j-api-1.7.30.jar" includes="**/*.class"/>
+			<zipfileset src="${lib}/logback-core-1.2.3.jar" includes="**/*.class"/>
+			<zipfileset src="${lib}/logback-classic-1.2.3.jar" includes="**/*.class"/>
+			<zipfileset src="${root}/jane-core.jar" includes="**/*.class"/>
+			<zipfileset src="${root}/jane-native.jar" includes="*.dll,*.so,*.dylib"/>
+			<zipfileset src="${root}/jane-test.jar"/>
 		</jar>
 	</target>
 </project>
