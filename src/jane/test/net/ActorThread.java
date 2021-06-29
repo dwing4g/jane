@@ -1,29 +1,20 @@
 package jane.test.net;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
-public abstract class ActorThread<T> extends Thread
+public abstract class ActorThread extends Thread
 {
 	private static final ScheduledThreadPoolExecutor delayExecutor;
-	private final ConcurrentLinkedQueue<T>			 msgQueue	= new ConcurrentLinkedQueue<>();
-	private final HashMap<Class<?>, Method>			 dispatcher	= new HashMap<>();
-	private int										 periodMs	= 100;
-	private boolean									 started;
-
-	@Target(ElementType.METHOD)
-	@Retention(RetentionPolicy.RUNTIME)
-	public @interface Event
-	{
-		Class<?> value();
-	}
+	private final ConcurrentLinkedQueue<Object>		 msgQueue	= new ConcurrentLinkedQueue<>();
+	private final HashMap<Class<?>, MethodHandle>	 dispatcher	= new HashMap<>();
+	protected long									 lastMsgTimeBegin;
 
 	static
 	{
@@ -43,14 +34,53 @@ public abstract class ActorThread<T> extends Thread
 	protected ActorThread(String threadName)
 	{
 		super(threadName);
-		for (Method method : getClass().getDeclaredMethods())
+		MethodHandles.Lookup lookup = MethodHandles.lookup();
+		for (Class<?> cls = getClass(); cls != null; cls = cls.getSuperclass())
 		{
-			Event anno = method.getAnnotation(Event.class);
-			if (anno == null)
-				continue;
-			method.setAccessible(true);
-			dispatcher.put(anno.value(), method);
+			for (Method method : cls.getDeclaredMethods())
+			{
+				if (method.getName().equals("on") && method.getParameterCount() == 1)
+				{
+					method.setAccessible(true);
+					try
+					{
+						dispatcher.putIfAbsent(method.getParameterTypes()[0], lookup.unreflect(method));
+					}
+					catch (IllegalAccessException ignored)
+					{
+					}
+				}
+			}
 		}
+	}
+
+	protected void on(Object msg)
+	{
+		System.err.println("unknown msg: " + msg);
+	}
+
+	protected void onIdle() throws InterruptedException
+	{
+		long curTime = System.currentTimeMillis();
+		long sleepTime = 100 - (curTime - lastMsgTimeBegin);
+		if (sleepTime > 0)
+		{
+			Thread.sleep(sleepTime);
+			curTime = System.currentTimeMillis();
+		}
+		lastMsgTimeBegin = curTime;
+	}
+
+	protected boolean onException(Throwable e)
+	{
+		if (e instanceof InterruptedException)
+		{
+			//noinspection ResultOfMethodCallIgnored
+			interrupted(); // clear status
+			return false;
+		}
+		e.printStackTrace();
+		return true;
 	}
 
 	public int getMsgQueueSize()
@@ -58,84 +88,99 @@ public abstract class ActorThread<T> extends Thread
 		return msgQueue.size();
 	}
 
-	public ActorThread<T> setPeriodMs(int periodMs)
-	{
-		this.periodMs = periodMs;
-		return this;
-	}
-
-	protected void onUnknown(@SuppressWarnings("unused") T msg)
-	{
-	}
-
-	protected void onIdle()
-	{
-	}
-
-	@SuppressWarnings("static-method")
-	protected boolean onInterrupted()
-	{
-		return true;
-	}
-
-	protected void onException(@SuppressWarnings("unused") Throwable e)
-	{
-	}
-
-	public void postMsg(T msg)
+	public void post(Object msg)
 	{
 		if (msg != null)
 			msgQueue.offer(msg);
 	}
 
-	public void postDelayMsg(long delayMs, T msg)
+	public void postDelay(long delayMs, Object msg)
 	{
 		if (delayMs <= 0)
+			post(msg);
+		else if (msg != null)
+			delayExecutor.schedule(() -> post(msg), delayMs, TimeUnit.MILLISECONDS);
+	}
+
+	public static class Rpc<R>
+	{
+		ActorThread	caller;
+		R			result;
+		Consumer<R>	onResult;
+
+		public void answer(R r)
 		{
-			postMsg(msg);
-			return;
+			result = r;
+			ActorThread caller = this.caller;
+			if (caller != null)
+			{
+				this.caller = null;
+				if (onResult != null)
+					caller.msgQueue.offer(this);
+			}
 		}
-		if (msg == null)
-			return;
-		delayExecutor.schedule(() -> postMsg(msg), delayMs, TimeUnit.MILLISECONDS);
+
+		void onResult()
+		{
+			onResult.accept(result);
+		}
+	}
+
+	public <R, T extends Rpc<R>> void ask(T msg, Consumer<R> onResult)
+	{
+		ask(msg, (ActorThread)currentThread(), onResult);
+	}
+
+	public <R, T extends Rpc<R>> void ask(T msg, ActorThread caller, Consumer<R> onResult)
+	{
+		if (caller == null)
+			throw new NullPointerException("caller");
+		if (msg != null)
+		{
+			msg.caller = caller;
+			msg.onResult = onResult;
+			msgQueue.offer(msg);
+		}
 	}
 
 	@Override
 	public void run()
 	{
-		if (Thread.currentThread() != this || started)
+		if (Thread.currentThread() != this || lastMsgTimeBegin != 0)
 			throw new IllegalStateException();
-		for (started = true;;)
+		for (lastMsgTimeBegin = System.currentTimeMillis();;)
 		{
 			try
 			{
-				long timeBegin = System.currentTimeMillis();
-				for (;;)
+				for (Object msg; (msg = msgQueue.poll()) != null;)
 				{
-					T msg = msgQueue.poll();
-					if (msg == null)
-						break;
-					Method method = dispatcher.get(msg.getClass());
-					if (method != null)
-						method.invoke(this, msg);
-					else
-						onUnknown(msg);
+					Class<?> msgCls = msg.getClass();
+					MethodHandle mh = dispatcher.get(msgCls);
+					if (mh == null)
+					{
+						Class<?> cls = msgCls;
+						do
+							cls = cls.getSuperclass();
+						while ((mh = dispatcher.get(cls)) == null);
+						dispatcher.put(msgCls, mh);
+					}
+					if (msg instanceof Rpc)
+					{
+						Rpc<?> rpcMsg = (Rpc<?>)msg;
+						if (rpcMsg.caller == null)
+						{
+							rpcMsg.onResult();
+							continue;
+						}
+					}
+					mh.invoke(this, msg);
 				}
 				onIdle();
-				long sleepTime = periodMs - (System.currentTimeMillis() - timeBegin);
-				if (sleepTime > 0)
-					Thread.sleep(sleepTime);
-			}
-			catch (InterruptedException e)
-			{
-				if (onInterrupted())
-					break;
-				//noinspection ResultOfMethodCallIgnored
-				interrupted(); // clear status
 			}
 			catch (Throwable e)
 			{
-				onException(e);
+				if (!onException(e))
+					break;
 			}
 		}
 	}

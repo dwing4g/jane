@@ -2,29 +2,32 @@ package jane.test;
 
 import jane.test.net.ActorThread;
 
-public final class TestActor extends ActorThread<Object>
+@SuppressWarnings("unused")
+public final class TestActor extends ActorThread
 {
-	protected TestActor()
+	protected TestActor(int id)
 	{
-		super("TestActorThread");
+		super("TestActor-" + id);
 	}
 
-	@ActorThread.Event(Integer.class)
-	private static void doInteger(int v)
+	private void on(Integer v)
 	{
-		System.out.println(v);
+		System.out.println(Thread.currentThread() + ": " + v);
 	}
 
-	@Override
-	protected void onException(Throwable e)
+	private void on(ActorThread.Rpc<Integer> rpc)
 	{
-		e.printStackTrace();
+		System.out.println(Thread.currentThread() + ": on Rpc");
+		rpc.answer(456);
 	}
 
 	public static void main(String[] args)
 	{
-		TestActor actor = new TestActor();
-		actor.postMsg(123);
-		actor.start();
+		TestActor actor0 = new TestActor(0);
+		TestActor actor1 = new TestActor(1);
+		actor0.start();
+		actor1.start();
+		actor0.post(123);
+		actor1.ask(new ActorThread.Rpc<Integer>(), actor0, r -> System.out.println(Thread.currentThread() + ": " + r));
 	}
 }
