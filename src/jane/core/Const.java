@@ -6,7 +6,6 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.util.Map.Entry;
 import java.util.Properties;
-import jane.core.map.IntHashMap;
 
 /**
  * 定义一些可配置的常量(静态类)
@@ -92,7 +91,7 @@ public final class Const
 		maxSessionProcedure = getPropInt("jane.maxSessionProcedure", 65536, 1);
 		maxBatchProceduer = getPropInt("jane.maxBatchProceduer", 256, 1);
 		maxProceduerRedo = getPropInt("jane.maxProceduerRedo", 256, 1);
-		lockPoolSize = IntHashMap.nextPowerOfTwo(getPropInt("jane.lockPoolSize", 1024, 1, 0x4000_0000));
+		lockPoolSize = Util.nextPowerOfTwo(getPropInt("jane.lockPoolSize", 1024, 1, 0x4000_0000));
 		maxLockPerProcedure = getPropInt("jane.maxLockPerProcedure", 16, 4, 256);
 		dbSimpleCacheSize = getPropInt("jane.dbSimpleCacheSize", 10000, 1);
 		dbCommitResaveCount = getPropInt("jane.dbCommitResaveCount", 200000, 1);

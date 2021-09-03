@@ -1,98 +1,68 @@
 package jane.core.map;
 
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
-import java.util.function.UnaryOperator;
 
-/**
- * An unordered map that uses int keys.<br>
- * This implementation is a cuckoo hash map using 3 hashes, random walking, and a small stash for problematic keys.<br>
- * Null values are allowed. No allocation is done except when growing the table size.<br>
- * This map performs very fast get, containsKey, and remove (typically O(1), worst case O(log(n))).<br>
- * Put may be a bit slower, depending on hash collisions.<br>
- * Load factors greater than 0.91 greatly increase the chances the map will have to rehash to the next higher POT size.<br>
- * @author Nathan Sweet
- */
 public class IntHashMap<V> implements Cloneable
 {
-	public static final int	  PRIME2			  = 0xbe1f14b1;
-	public static final int	  PRIME3			  = 0xb4b82e39;
-	public static final float DEFAULT_LOAD_FACTOR = 0.8f;
-	public static final int	  EMPTY				  = 0;
-	private int				  mask;							   // [0,0x3fff_ffff]
-	private int[]			  keyTable;
-	private V[]				  valueTable;
-	private V				  zeroValue;
-	private boolean			  hasZeroValue;
-	private short			  pushIterations;				   // [1,2,4,8,11,16,22,...,4096]
-	private int				  hashShift;					   // [0,1,...30]
-	private int				  size;
-	private int				  capacity;						   // [1,2,4,8,...,0x4000_0000]
-	private int				  tableSize;					   // capacity + [0,stashSize]
-	private int				  threshold;					   // [1,0x4000_0000]
-	private final float		  loadFactor;					   // (0,1]
-
-	public static int nextPowerOfTwo(int value) // [0,0x4000_0000] => [1,2,4,8,...,0x4000_0000]
-	{
-		return 1 << (32 - Integer.numberOfLeadingZeros(value - 1));
-	}
-
-	public static int normalizeCapacity(int capacity)
-	{
-		return capacity < 1 ? 1 : (capacity > 0x4000_0000 ? 0x4000_0000 : nextPowerOfTwo(capacity));
-	}
-
-	public static float normalizeLoadFactor(float loadFactor)
-	{
-		return loadFactor <= 0 ? DEFAULT_LOAD_FACTOR : (loadFactor > 1 ? 1 : loadFactor);
-	}
+	private int			size;
+	private int[]		keyTable;
+	private V[]			valueTable;
+	private V			zeroValue;
+	private boolean		hasZeroValue;
+	private final float	loadFactor;
+	private int			threshold;
+	private int			mask;
+	private int			shift;
 
 	public IntHashMap()
 	{
-		this(4, DEFAULT_LOAD_FACTOR);
+		this(2, 0.8f);
 	}
 
-	public IntHashMap(int initialCapacity)
+	public IntHashMap(int cap)
 	{
-		this(initialCapacity, DEFAULT_LOAD_FACTOR);
+		this(cap, 0.8f);
 	}
 
-	@SuppressWarnings("unchecked")
-	public IntHashMap(int initialCapacity, float loadFactor)
+	public IntHashMap(int cap, float loadFactor)
 	{
-		initialCapacity = normalizeCapacity(initialCapacity);
-		loadFactor = normalizeLoadFactor(loadFactor);
-
-		mask = initialCapacity - 1; // [0,0x3fff_ffff]
-		pushIterations = (short)Math.max(Math.min(initialCapacity, 8), (int)Math.sqrt(initialCapacity) >> 3); // [1,2,4,8,8,...,4096=8,11,16,22,...,4096]
-		hashShift = 31 - Integer.numberOfTrailingZeros(initialCapacity); // [0,1,...30]
-		capacity = tableSize = initialCapacity; // [1,2,4,8,...,0x4000_0000]
-		threshold = (int)Math.ceil(initialCapacity * loadFactor); // [1,0x4000_0000]
-		this.loadFactor = loadFactor; // (0,1]
-		initialCapacity += (int)Math.ceil(Math.log(initialCapacity)) * 2; // [0,2,4,6,...,42]
-		keyTable = new int[initialCapacity]; // [1+0,2+2,4+4,8+6,...,0x4000_0000+42]
-		valueTable = (V[])new Object[initialCapacity];
+		if (loadFactor <= 0 || loadFactor >= 1)
+			throw new IllegalArgumentException("invalid loadFactor: " + loadFactor);
+		this.loadFactor = loadFactor;
+		final int tableSize = tableSize(Math.max(cap, 0));
+		threshold = (int)(tableSize * loadFactor);
+		mask = tableSize - 1;
+		shift = Long.numberOfLeadingZeros(mask);
+		keyTable = new int[tableSize];
+		//noinspection unchecked
+		valueTable = (V[])new Object[tableSize];
 	}
 
-	public boolean empty()
+	public IntHashMap(IntHashMap<? extends V> map)
 	{
-		return size == 0;
+		size = map.size;
+		keyTable = map.keyTable.clone();
+		valueTable = map.valueTable.clone();
+		zeroValue = map.zeroValue;
+		hasZeroValue = map.hasZeroValue;
+		loadFactor = map.loadFactor;
+		threshold = map.threshold;
+		mask = map.mask;
+		shift = map.shift;
 	}
 
-	public int size()
+	private int tableSize(int cap)
 	{
-		return size;
+		cap = Math.min(Math.max((int)Math.ceil(cap / loadFactor), 2), 1 << 30);
+		return 1 << (32 - Integer.numberOfLeadingZeros(cap - 1)); // [0,1<<30] => [0,1,2,4,8,...,1<<30]
 	}
 
-	public int capacity()
+	private int hash(int key)
 	{
-		return capacity;
-	}
-
-	public int getTableSize()
-	{
-		return tableSize;
+		return (int)((key * 0x9E3779B97F4A7C15L) >>> shift);
 	}
 
 	public int[] getKeyTable()
@@ -100,7 +70,7 @@ public class IntHashMap<V> implements Cloneable
 		return keyTable;
 	}
 
-	public Object[] getValueTable()
+	public V[] getValueTable()
 	{
 		return valueTable;
 	}
@@ -115,150 +85,251 @@ public class IntHashMap<V> implements Cloneable
 		return zeroValue;
 	}
 
-	private int hash2(int h)
+	public float getLoadFactor()
 	{
-		h *= PRIME2;
-		return (h ^ (h >>> hashShift)) & mask;
+		return loadFactor;
 	}
 
-	private int hash3(int h)
+	public int capacity()
 	{
-		h *= PRIME3;
-		return (h ^ (h >>> hashShift)) & mask;
+		return mask + 1;
+	}
+
+	public int size()
+	{
+		return size;
+	}
+
+	public boolean isEmpty()
+	{
+		return size == 0;
 	}
 
 	public boolean containsKey(int key)
 	{
-		return get(key) != null;
+		if (key == 0)
+			return hasZeroValue;
+		final int[] kt = keyTable;
+		final int m = mask;
+		for (int i = hash(key);; i = (i + 1) & m)
+		{
+			final int k = kt[i];
+			if (k == key)
+				return true;
+			if (k == 0)
+				return false;
+		}
+	}
+
+	public boolean containsValue(V value)
+	{
+		if (value == null)
+		{
+			if (hasZeroValue && zeroValue == null)
+				return true;
+			final int[] kt = keyTable;
+			final V[] vt = valueTable;
+			for (int i = 0, n = kt.length; i < n; i++)
+				if (kt[i] != 0 && vt[i] == null)
+					return true;
+		}
+		else
+		{
+			if (hasZeroValue && value.equals(zeroValue))
+				return true;
+			final int[] kt = keyTable;
+			final V[] vt = valueTable;
+			for (int i = 0, n = kt.length; i < n; i++)
+				if (kt[i] != 0 && value.equals(vt[i]))
+					return true;
+		}
+		return false;
 	}
 
 	public V get(int key)
 	{
-		return get(key, null);
+		if (key == 0)
+			return hasZeroValue ? zeroValue : null;
+		final int[] kt = keyTable;
+		final int m = mask;
+		for (int i = hash(key);; i = (i + 1) & m)
+		{
+			final int k = kt[i];
+			if (k == key)
+				return valueTable[i];
+			if (k == 0)
+				return null;
+		}
 	}
 
-	public V get(int key, V defaultValue)
+	public V getOrDefault(int key, V defaultValue)
 	{
-		if (key == EMPTY)
+		if (key == 0)
 			return hasZeroValue ? zeroValue : defaultValue;
-		int[] kt = keyTable;
-		int index = key & mask;
-		if (kt[index] != key)
+		final int[] kt = keyTable;
+		final int m = mask;
+		for (int i = hash(key);; i = (i + 1) & m)
 		{
-			index = hash2(key);
-			if (kt[index] != key)
-			{
-				index = hash3(key);
-				if (kt[index] != key)
-				{
-					for (int i = capacity, n = tableSize; i < n; i++)
-						if (kt[i] == key)
-							return valueTable[i];
-					return defaultValue;
-				}
-			}
+			final int k = kt[i];
+			if (k == key)
+				return valueTable[i];
+			if (k == 0)
+				return defaultValue;
 		}
-		return valueTable[index];
 	}
 
 	public V put(int key, V value)
 	{
-		if (key == EMPTY)
+		if (key == 0)
 		{
-			V oldValue = zeroValue;
+			final V oldV = zeroValue;
 			zeroValue = value;
 			if (!hasZeroValue)
 			{
 				hasZeroValue = true;
 				size++;
 			}
-			return oldValue;
+			return oldV;
 		}
-
-		int[] kt = keyTable;
-		V[] vt = valueTable;
-		int index1 = key & mask;
-		int key1 = kt[index1];
-		if (key1 == key)
+		final int[] kt = keyTable;
+		final V[] vt = valueTable;
+		final int m = mask;
+		for (int i = hash(key);; i = (i + 1) & m)
 		{
-			V oldValue = vt[index1];
-			vt[index1] = value;
-			return oldValue;
-		}
-
-		int index2 = hash2(key);
-		int key2 = kt[index2];
-		if (key2 == key)
-		{
-			V oldValue = vt[index2];
-			vt[index2] = value;
-			return oldValue;
-		}
-
-		int index3 = hash3(key);
-		int key3 = kt[index3];
-		if (key3 == key)
-		{
-			V oldValue = vt[index3];
-			vt[index3] = value;
-			return oldValue;
-		}
-
-		for (int i = capacity, n = tableSize; i < n; i++)
-		{
-			if (kt[i] == key)
+			final int k = kt[i];
+			if (k == 0)
 			{
-				V oldValue = vt[i];
+				kt[i] = key;
 				vt[i] = value;
-				return oldValue;
+				if (++size >= threshold)
+					resize(kt.length << 1);
+				return null;
+			}
+			if (k == key)
+			{
+				final V oldV = vt[i];
+				vt[i] = value;
+				return oldV;
 			}
 		}
-
-		if (key1 == EMPTY)
-		{
-			kt[index1] = key;
-			vt[index1] = value;
-			size++;
-			return null;
-		}
-
-		if (key2 == EMPTY)
-		{
-			kt[index2] = key;
-			vt[index2] = value;
-			size++;
-			return null;
-		}
-
-		if (key3 == EMPTY)
-		{
-			kt[index3] = key;
-			vt[index3] = value;
-			size++;
-			return null;
-		}
-
-		if (size >= threshold)
-		{
-			resize(capacity << 1);
-			return put(key, value);
-		}
-
-		if (push(key, value, index1, key1, index2, key2, index3, key3))
-			size++;
-		return null;
 	}
 
-	public V compute(int key, UnaryOperator<V> op)
+	public void putAll(IntHashMap<? extends V> map)
 	{
-		if (key == EMPTY)
+		if (map.hasZeroValue)
 		{
-			V oldValue = zeroValue;
-			V newValue = op.apply(oldValue);
-			if (oldValue != newValue)
+			hasZeroValue = true;
+			zeroValue = map.zeroValue;
+		}
+		final int[] mapKt = map.keyTable;
+		final V[] mapVt = map.valueTable;
+		for (int i = 0, n = mapKt.length; i < n; i++)
+		{
+			final int k = mapKt[i];
+			if (k != 0)
+				put(k, mapVt[i]);
+		}
+	}
+
+	public V putIfAbsent(int key, V value)
+	{
+		if (key == 0)
+		{
+			final V oldV = zeroValue;
+			if (!hasZeroValue)
 			{
-				zeroValue = newValue;
-				if (newValue == null)
+				hasZeroValue = true;
+				zeroValue = value;
+				size++;
+			}
+			return oldV;
+		}
+		final int[] kt = keyTable;
+		final V[] vt = valueTable;
+		final int m = mask;
+		for (int i = hash(key);; i = (i + 1) & m)
+		{
+			final int k = kt[i];
+			if (k == 0)
+			{
+				kt[i] = key;
+				vt[i] = value;
+				if (++size >= threshold)
+					resize(kt.length << 1);
+				return null;
+			}
+			if (k == key)
+				return vt[i];
+		}
+	}
+
+	public V replace(int key, V value)
+	{
+		if (key == 0)
+		{
+			final V oldV = zeroValue;
+			if (hasZeroValue)
+				zeroValue = value;
+			return oldV;
+		}
+		final int[] kt = keyTable;
+		final V[] vt = valueTable;
+		final int m = mask;
+		for (int i = hash(key);; i = (i + 1) & m)
+		{
+			final int k = kt[i];
+			if (k == 0)
+				return null;
+			if (k == key)
+			{
+				final V oldV = vt[i];
+				vt[i] = value;
+				return oldV;
+			}
+		}
+	}
+
+	public boolean replace(int key, V oldValue, V newValue)
+	{
+		if (key == 0)
+		{
+			if (!hasZeroValue || !Objects.equals(oldValue, zeroValue))
+				return false;
+			zeroValue = newValue;
+			return true;
+		}
+		final int[] kt = keyTable;
+		final V[] vt = valueTable;
+		for (int i = hash(key), m = mask;; i = (i + 1) & m)
+		{
+			final int k = kt[i];
+			if (k == key)
+			{
+				if (!Objects.equals(oldValue, vt[i]))
+					return false;
+				vt[i] = newValue;
+				return true;
+			}
+			if (k == 0)
+				return false;
+		}
+	}
+
+	public interface IntObjectFunction<V>
+	{
+		V apply(int key, V value);
+	}
+
+	public V compute(int key, IntObjectFunction<V> op)
+	{
+		if (key == 0)
+		{
+			final V oldV = zeroValue;
+			final V v = op.apply(key, oldV);
+			if (v != oldV)
+			{
+				zeroValue = v;
+				if (v == null)
 				{
 					if (hasZeroValue)
 					{
@@ -272,272 +343,153 @@ public class IntHashMap<V> implements Cloneable
 					size++;
 				}
 			}
-			return oldValue;
+			return v;
 		}
-
-		int[] kt = keyTable;
-		V[] vt = valueTable;
-		int index1 = key & mask;
-		int key1 = kt[index1];
-		if (key1 == key)
+		final int[] kt = keyTable;
+		final V[] vt = valueTable;
+		for (int i = hash(key), m = mask;; i = (i + 1) & m)
 		{
-			V oldValue = vt[index1];
-			V newValue = op.apply(oldValue);
-			if (oldValue != newValue)
+			final int k = kt[i];
+			if (k == key)
 			{
-				vt[index1] = newValue;
-				if (newValue == null)
+				final V oldV = vt[i];
+				final V v = op.apply(key, oldV);
+				if (v != oldV)
 				{
-					kt[index1] = EMPTY;
-					size--;
-				}
-			}
-			return oldValue;
-		}
-
-		int index2 = hash2(key);
-		int key2 = kt[index2];
-		if (key2 == key)
-		{
-			V oldValue = vt[index2];
-			V newValue = op.apply(oldValue);
-			if (oldValue != newValue)
-			{
-				vt[index2] = newValue;
-				if (newValue == null)
-				{
-					kt[index2] = EMPTY;
-					size--;
-				}
-			}
-			return oldValue;
-		}
-
-		int index3 = hash3(key);
-		int key3 = kt[index3];
-		if (key3 == key)
-		{
-			V oldValue = vt[index3];
-			V newValue = op.apply(oldValue);
-			if (oldValue != newValue)
-			{
-				vt[index3] = newValue;
-				if (newValue == null)
-				{
-					kt[index3] = EMPTY;
-					size--;
-				}
-			}
-			return oldValue;
-		}
-
-		for (int i = capacity, n = tableSize; i < n; i++)
-		{
-			if (kt[i] == key)
-			{
-				V oldValue = vt[i];
-				V newValue = op.apply(oldValue);
-				if (oldValue != newValue)
-				{
-					if (newValue != null)
-						vt[i] = newValue;
-					else
+					vt[i] = v;
+					if (v == null)
 					{
-						tableSize = --n;
-						kt[i] = kt[n];
-						vt[i] = vt[n];
-						vt[n] = null;
+						for (int j = (i + 1) & m; (key = kt[j]) != 0; j = (j + 1) & m)
+						{
+							final int h = hash(key);
+							if (((j - h) & m) > ((i - h) & m))
+							{
+								kt[i] = key;
+								vt[i] = vt[j];
+								i = j;
+							}
+						}
+						kt[i] = 0;
+						vt[i] = null;
 						size--;
 					}
 				}
-				return oldValue;
+				return v;
 			}
-		}
-
-		V newValue = op.apply(null);
-		if (newValue == null)
-			return null;
-
-		if (key1 == EMPTY)
-		{
-			kt[index1] = key;
-			vt[index1] = newValue;
-			size++;
-			return null;
-		}
-
-		if (key2 == EMPTY)
-		{
-			kt[index2] = key;
-			vt[index2] = newValue;
-			size++;
-			return null;
-		}
-
-		if (key3 == EMPTY)
-		{
-			kt[index3] = key;
-			vt[index3] = newValue;
-			size++;
-			return null;
-		}
-
-		if (size >= threshold)
-		{
-			resize(capacity << 1);
-			return put(key, newValue);
-		}
-
-		if (push(key, newValue, index1, key1, index2, key2, index3, key3))
-			size++;
-		return null;
-	}
-
-	private boolean push(int insertKey, V insertValue, int index1, int key1, int index2, int key2, int index3, int key3)
-	{
-		int[] kt = keyTable;
-		V[] vt = valueTable;
-		int m = mask;
-		int evictedKey;
-		V evictedValue;
-		ThreadLocalRandom rand = ThreadLocalRandom.current();
-		for (int i = 0, pis = pushIterations;;)
-		{
-			switch (rand.nextInt(3))
+			if (k == 0)
 			{
-			case 0:
-				evictedKey = key1;
-				evictedValue = vt[index1];
-				kt[index1] = insertKey;
-				vt[index1] = insertValue;
-				break;
-			case 1:
-				evictedKey = key2;
-				evictedValue = vt[index2];
-				kt[index2] = insertKey;
-				vt[index2] = insertValue;
-				break;
-			default:
-				evictedKey = key3;
-				evictedValue = vt[index3];
-				kt[index3] = insertKey;
-				vt[index3] = insertValue;
-				break;
+				final V v = op.apply(key, null);
+				if (v != null)
+				{
+					kt[i] = key;
+					vt[i] = v;
+					if (++size >= threshold)
+						resize(kt.length << 1);
+				}
+				return v;
 			}
-
-			index1 = evictedKey & m;
-			key1 = kt[index1];
-			if (key1 == EMPTY)
-			{
-				kt[index1] = evictedKey;
-				vt[index1] = evictedValue;
-				return true;
-			}
-
-			index2 = hash2(evictedKey);
-			key2 = kt[index2];
-			if (key2 == EMPTY)
-			{
-				kt[index2] = evictedKey;
-				vt[index2] = evictedValue;
-				return true;
-			}
-
-			index3 = hash3(evictedKey);
-			key3 = kt[index3];
-			if (key3 == EMPTY)
-			{
-				kt[index3] = evictedKey;
-				vt[index3] = evictedValue;
-				return true;
-			}
-
-			if (++i == pis)
-				break;
-
-			insertKey = evictedKey;
-			insertValue = evictedValue;
 		}
-
-		if (tableSize == kt.length)
-		{
-			resize(capacity << 1);
-			put(evictedKey, evictedValue);
-			return false;
-		}
-
-		int index = tableSize++;
-		kt[index] = evictedKey;
-		vt[index] = evictedValue;
-		return true;
 	}
 
 	public V remove(int key)
 	{
-		if (key == EMPTY)
+		if (key == 0)
 		{
 			if (!hasZeroValue)
 				return null;
 			hasZeroValue = false;
-			V oldValue = zeroValue;
+			final V oldV = zeroValue;
 			zeroValue = null;
 			size--;
-			return oldValue;
+			return oldV;
 		}
-
-		int[] kt = keyTable;
-		V[] vt = valueTable;
-		int index = key & mask;
-		if (kt[index] != key)
+		final int[] kt = keyTable;
+		final V[] vt = valueTable;
+		final int m = mask;
+		int i;
+		for (i = hash(key);; i = (i + 1) & m)
 		{
-			index = hash2(key);
-			if (kt[index] != key)
+			final int k = kt[i];
+			if (k == key)
+				break;
+			if (k == 0)
+				return null;
+		}
+		final V oldV = vt[i];
+		for (int j = (i + 1) & m; (key = kt[j]) != 0; j = (j + 1) & m)
+		{
+			final int h = hash(key);
+			if (((j - h) & m) > ((i - h) & m))
 			{
-				index = hash3(key);
-				if (kt[index] != key)
-				{
-					for (int i = capacity, n = tableSize; i < n; i++)
-					{
-						if (kt[i] == key)
-						{
-							V oldValue = vt[i];
-							tableSize = --n;
-							kt[i] = kt[n];
-							vt[i] = vt[n];
-							vt[n] = null;
-							size--;
-							return oldValue;
-						}
-					}
-					return null;
-				}
+				kt[i] = key;
+				vt[i] = vt[j];
+				i = j;
 			}
 		}
-		kt[index] = EMPTY;
-		V oldValue = vt[index];
-		vt[index] = null;
+		kt[i] = 0;
+		vt[i] = null;
 		size--;
-		return oldValue;
+		return oldV;
+	}
+
+	public boolean remove(int key, V value)
+	{
+		if (key == 0)
+		{
+			if (!hasZeroValue || !Objects.equals(value, zeroValue))
+				return false;
+			hasZeroValue = false;
+			zeroValue = null;
+			size--;
+			return true;
+		}
+		final int[] kt = keyTable;
+		final V[] vt = valueTable;
+		final int m = mask;
+		int i;
+		for (i = hash(key);; i = (i + 1) & m)
+		{
+			final int k = kt[i];
+			if (k == key)
+			{
+				if (!Objects.equals(value, vt[i]))
+					return false;
+				break;
+			}
+			if (k == 0)
+				return false;
+		}
+		for (int j = (i + 1) & m; (key = kt[j]) != 0; j = (j + 1) & m)
+		{
+			final int h = hash(key);
+			if (((j - h) & m) > ((i - h) & m))
+			{
+				kt[i] = key;
+				vt[i] = vt[j];
+				i = j;
+			}
+		}
+		kt[i] = 0;
+		vt[i] = null;
+		size--;
+		return true;
 	}
 
 	public void clear()
 	{
-		int[] kt = keyTable;
-		V[] vt = valueTable;
-		for (int i = 0, n = capacity; i < n; i++)
-			kt[i] = EMPTY;
-		for (int i = 0, n = tableSize; i < n; i++)
-			vt[i] = null;
+		if (size == 0)
+			return;
 		size = 0;
 		hasZeroValue = false;
 		zeroValue = null;
-		tableSize = capacity;
+		Arrays.fill(keyTable, 0);
+		Arrays.fill(valueTable, null);
 	}
 
-	public void clear(int newCapacity)
+	public void clear(int maxCap)
 	{
-		newCapacity = normalizeCapacity(newCapacity);
-		if (newCapacity >= capacity)
+		final int tableSize = tableSize(Math.max(maxCap, 0));
+		if (tableSize >= keyTable.length)
 		{
 			clear();
 			return;
@@ -545,95 +497,171 @@ public class IntHashMap<V> implements Cloneable
 		size = 0;
 		hasZeroValue = false;
 		zeroValue = null;
-		resize(newCapacity);
+		resize(tableSize);
 	}
 
-	public void ensureCapacity(int newCapacity)
+	public void shrink(int maxCap)
 	{
-		if (newCapacity > 0x4000_0000)
-			newCapacity = 0x4000_0000;
-		if (newCapacity > capacity)
-			resize(IntHashMap.nextPowerOfTwo(newCapacity));
+		final int tableSize = tableSize(Math.max(maxCap, size));
+		if (tableSize < keyTable.length)
+			resize(tableSize);
 	}
 
-	public void shrink(int newCapacity)
+	public void ensureCapacity(int cap)
 	{
-		if (newCapacity < capacity)
+		final int tableSize = tableSize(Math.max(cap, 0));
+		if (tableSize > keyTable.length)
+			resize(tableSize);
+	}
+
+	private void resize(int newSize) // [1,2,4,8,...,0x4000_0000]
+	{
+		threshold = (int)(newSize * loadFactor);
+		final int m = newSize - 1;
+		mask = m;
+		shift = Long.numberOfLeadingZeros(m);
+		final int[] kt = new int[newSize];
+		//noinspection unchecked
+		final V[] vt = (V[])new Object[newSize];
+		if (size != 0)
 		{
-			if (newCapacity > 0x4000_0000)
-				newCapacity = 0x4000_0000;
-			double c = Math.ceil(size / loadFactor);
-			newCapacity = (c < 0x4000_0000 ? IntHashMap.nextPowerOfTwo(Math.max(newCapacity, (int)c)) : 0x4000_0000);
-			if (newCapacity < capacity)
-				resize(newCapacity);
+			final int[] oldKt = keyTable;
+			final V[] oldVt = valueTable;
+			for (int j = 0, n = oldKt.length; j < n; j++)
+			{
+				final int k = oldKt[j];
+				if (k != 0)
+				{
+					for (int i = hash(k);; i = (i + 1) & m)
+					{
+						if (kt[i] == 0)
+						{
+							kt[i] = k;
+							vt[i] = oldVt[j];
+							break;
+						}
+					}
+				}
+			}
+		}
+		keyTable = kt;
+		valueTable = vt;
+	}
+
+	public void foreachKey(IntConsumer consumer)
+	{
+		if (hasZeroValue)
+			consumer.accept(0);
+		for (final int k : keyTable)
+			if (k != 0)
+				consumer.accept(k);
+	}
+
+	public void foreachValue(Consumer<V> consumer)
+	{
+		if (hasZeroValue)
+			consumer.accept(zeroValue);
+		final int[] kt = keyTable;
+		final V[] vt = valueTable;
+		for (int i = 0, n = kt.length; i < n; i++)
+			if (kt[i] != 0)
+				consumer.accept(vt[i]);
+	}
+
+	public interface IntObjectConsumer<V>
+	{
+		void accept(int key, V value);
+	}
+
+	public void foreach(IntObjectConsumer<V> consumer)
+	{
+		if (hasZeroValue)
+			consumer.accept(0, zeroValue);
+		final int[] kt = keyTable;
+		final V[] vt = valueTable;
+		for (int i = 0, n = kt.length; i < n; i++)
+		{
+			final int k = kt[i];
+			if (k != 0)
+				consumer.accept(k, vt[i]);
 		}
 	}
 
-	@SuppressWarnings("unchecked")
-	private void resize(int newCapacity) // [1,2,4,8,...,0x4000_0000]
+	public interface IntObjectMapPredicate<V>
 	{
-		int oldEndIndex = tableSize;
-		mask = newCapacity - 1;
-		pushIterations = (short)Math.max(Math.min(newCapacity, 8), (int)Math.sqrt(newCapacity) >> 3);
-		hashShift = 31 - Integer.numberOfTrailingZeros(newCapacity);
-		capacity = tableSize = newCapacity;
-		threshold = (int)Math.ceil(newCapacity * loadFactor);
+		boolean test(IntHashMap<V> map, int key, V value);
+	}
 
-		newCapacity += (int)Math.ceil(Math.log(newCapacity)) * 2;
-		int[] oldKeyTable = keyTable;
-		V[] oldValueTable = valueTable;
-		int[] kt = new int[newCapacity];
-		V[] vt = (V[])new Object[newCapacity];
-		keyTable = kt;
-		valueTable = vt;
-
-		if (size <= (hasZeroValue ? 1 : 0))
-			return;
-		for (int i = 0; i < oldEndIndex; i++)
+	public boolean foreachTest(IntObjectMapPredicate<V> tester)
+	{
+		if (hasZeroValue && !tester.test(this, 0, zeroValue))
+			return false;
+		final int[] kt = keyTable;
+		final V[] vt = valueTable;
+		for (int i = 0, n = kt.length; i < n; i++)
 		{
-			int key = oldKeyTable[i];
-			if (key == EMPTY)
-				continue;
+			final int k = kt[i];
+			if (k != 0 && !tester.test(this, k, vt[i]))
+				return false;
+		}
+		return true;
+	}
 
-			V value = oldValueTable[i];
-			int index1 = key & mask;
-			int key1 = kt[index1];
-			if (key1 == EMPTY)
+	public void foreachUpdate(IntObjectFunction<V> func)
+	{
+		if (hasZeroValue)
+		{
+			final V oldV = zeroValue;
+			final V v = func.apply(0, oldV);
+			if (v != oldV)
 			{
-				kt[index1] = key;
-				vt[index1] = value;
-				continue;
+				zeroValue = v;
+				if (v == null)
+				{
+					hasZeroValue = false;
+					size--;
+				}
 			}
-
-			int index2 = hash2(key);
-			int key2 = kt[index2];
-			if (key2 == EMPTY)
+		}
+		final int[] kt = keyTable;
+		final V[] vt = valueTable;
+		for (int i = 0, n = kt.length; i < n; i++)
+		{
+			int k = kt[i];
+			if (k != 0)
 			{
-				kt[index2] = key;
-				vt[index2] = value;
-				continue;
+				final V oldV = vt[i];
+				final V v = func.apply(k, oldV);
+				if (v != oldV)
+				{
+					vt[i] = v;
+					if (v == null)
+					{
+						final int m = mask;
+						for (int j = (i + 1) & m; (k = kt[j]) != 0; j = (j + 1) & m)
+						{
+							final int h = hash(k);
+							if (((j - h) & m) > ((i - h) & m))
+							{
+								kt[i] = k;
+								vt[i] = vt[j];
+								i = j;
+							}
+						}
+						kt[i] = 0;
+						vt[i] = null;
+						size--;
+					}
+				}
 			}
-
-			int index3 = hash3(key);
-			int key3 = kt[index3];
-			if (key3 == EMPTY)
-			{
-				kt[index3] = key;
-				vt[index3] = value;
-				continue;
-			}
-
-			push(key, value, index1, key1, index2, key2, index3, key3);
-			kt = keyTable;
-			vt = valueTable;
 		}
 	}
 
 	@Override
 	public IntHashMap<V> clone() throws CloneNotSupportedException
 	{
-		@SuppressWarnings("unchecked")
-		IntHashMap<V> map = (IntHashMap<V>)super.clone();
+		//noinspection unchecked
+		final IntHashMap<V> map = (IntHashMap<V>)super.clone();
 		map.keyTable = keyTable.clone();
 		map.valueTable = valueTable.clone();
 		return map;
@@ -644,147 +672,33 @@ public class IntHashMap<V> implements Cloneable
 	{
 		if (size == 0)
 			return "{}";
-		int[] kt = keyTable;
-		V[] vt = valueTable;
-		int i = 0, n = tableSize;
-		StringBuilder s = new StringBuilder(32).append('{');
+		final StringBuilder sb = new StringBuilder(32).append('{');
+		final int[] kt = keyTable;
+		final V[] vt = valueTable;
+		final int n = Math.min(kt.length, 20);
+		int i = 0;
 		if (hasZeroValue)
-			s.append(EMPTY).append('=').append(zeroValue);
+			sb.append('0').append('=').append(zeroValue);
 		else
 		{
 			for (; i < n; i++)
 			{
-				int key = kt[i];
-				if (key != EMPTY)
+				final int k = kt[i];
+				if (k != 0)
 				{
-					s.append(key).append('=').append(vt[i++]);
+					sb.append(k).append('=').append(vt[i++]);
 					break;
 				}
 			}
 		}
 		for (; i < n; i++)
 		{
-			int key = kt[i];
-			if (key != EMPTY)
-				s.append(',').append(key).append('=').append(vt[i]);
+			final int k = kt[i];
+			if (k != 0)
+				sb.append(',').append(k).append('=').append(vt[i]);
 		}
-		return s.append('}').toString();
-	}
-
-	public interface IntObjectConsumer<V>
-	{
-		void accept(int key, V value);
-	}
-
-	public void foreach(IntObjectConsumer<V> consumer)
-	{
-		if (size == 0)
-			return;
-		if (hasZeroValue)
-			consumer.accept(EMPTY, zeroValue);
-		int[] kt = keyTable;
-		V[] vt = valueTable;
-		for (int i = 0, n = tableSize; i < n; i++)
-		{
-			int key = kt[i];
-			if (key != EMPTY)
-				consumer.accept(key, vt[i]);
-		}
-	}
-
-	public void foreachKey(IntConsumer consumer)
-	{
-		if (size == 0)
-			return;
-		if (hasZeroValue)
-			consumer.accept(EMPTY);
-		int[] kt = keyTable;
-		for (int i = 0, n = tableSize; i < n; i++)
-		{
-			int key = kt[i];
-			if (key != EMPTY)
-				consumer.accept(key);
-		}
-	}
-
-	public void foreachValue(Consumer<V> consumer)
-	{
-		if (size == 0)
-			return;
-		if (hasZeroValue)
-			consumer.accept(zeroValue);
-		int[] kt = keyTable;
-		V[] vt = valueTable;
-		for (int i = 0, n = tableSize; i < n; i++)
-		{
-			if (kt[i] != EMPTY)
-				consumer.accept(vt[i]);
-		}
-	}
-
-	public interface IntObjectFunction<V>
-	{
-		V apply(int key, V value);
-	}
-
-	public void foreachUpdate(IntObjectFunction<V> func)
-	{
-		if (size == 0)
-			return;
-		if (hasZeroValue)
-		{
-			V v = zeroValue;
-			V newV = func.apply(EMPTY, v);
-			if (newV != v)
-			{
-				zeroValue = newV;
-				if (newV == null)
-				{
-					hasZeroValue = false;
-					size--;
-				}
-			}
-		}
-		int[] kt = keyTable;
-		V[] vt = valueTable;
-		int i = 0;
-		for (int n = capacity; i < n; i++)
-		{
-			int key = kt[i];
-			if (key != EMPTY)
-			{
-				V v = vt[i];
-				V newV = func.apply(key, v);
-				if (newV != v)
-				{
-					vt[i] = newV;
-					if (newV == null)
-					{
-						kt[i] = EMPTY;
-						size--;
-					}
-				}
-			}
-		}
-		for (; i < tableSize; i++)
-		{
-			int key = kt[i];
-			V v = vt[i];
-			V newV = func.apply(key, v);
-			if (newV != v)
-			{
-				if (newV != null)
-					vt[i] = newV;
-				else
-				{
-					int e = --tableSize;
-					kt[i] = kt[e];
-					vt[i] = vt[e];
-					vt[e] = null;
-					size--;
-					i--;
-				}
-			}
-		}
+		if (n != kt.length)
+			sb.append(",...");
+		return sb.append('}').toString();
 	}
 }

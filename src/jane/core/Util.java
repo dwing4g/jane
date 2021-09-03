@@ -37,6 +37,11 @@ import jane.core.map.LongMap;
  */
 public final class Util
 {
+	public static int nextPowerOfTwo(int v) // [0,1<<30] => [0,1,2,4,8,...,1<<30]
+	{
+		return 1 << (32 - Integer.numberOfLeadingZeros(v - 1));
+	}
+
 	@SuppressWarnings("deprecation")
 	public static <T> T newInstance(Class<T> cls)
 	{
