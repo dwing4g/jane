@@ -88,7 +88,8 @@ public final class Util
 	 */
 	public static int compareBytes(byte[] data1, byte[] data2)
 	{
-		int n1 = data1.length, n2 = data2.length;
+		int n1 = data1 != null ? data1.length : 0;
+		int n2 = data2 != null ? data2.length : 0;
 		int n = (n1 < n2 ? n1 : n2);
 		for (int i = 0; i < n; ++i)
 		{
@@ -104,9 +105,12 @@ public final class Util
 	 */
 	public static <T extends Comparable<T>> int compareTo(Collection<T> a, Collection<T> b)
 	{
-		int c = a.size() - b.size();
+		int an = a != null ? a.size() : 0;
+		int c = an - (b != null ? b.size() : 0);
 		if (c != 0)
 			return c;
+		if (an == 0)
+			return 0;
 		Iterator<T> ia = a.iterator();
 		Iterator<T> ib = b.iterator();
 		while (ia.hasNext())
@@ -123,9 +127,12 @@ public final class Util
 	 */
 	public static <K extends Comparable<K>, V extends Comparable<V>> int compareTo(Map<K, V> a, Map<K, V> b)
 	{
-		int c = a.size() - b.size();
+		int an = a != null ? a.size() : 0;
+		int c = an - (b != null ? b.size() : 0);
 		if (c != 0)
 			return c;
+		if (an == 0)
+			return 0;
 		Iterator<Entry<K, V>> ia = a.entrySet().iterator();
 		Iterator<Entry<K, V>> ib = b.entrySet().iterator();
 		while (ia.hasNext())
@@ -144,7 +151,7 @@ public final class Util
 
 	/**
 	 * 把src容器的内容深度拷贝覆盖到dst容器中
-	 * @return dst容器
+	 * @return dst容器(不能为null)
 	 */
 	@SuppressWarnings("unchecked")
 	public static <V> Collection<V> appendDeep(Collection<V> src, Collection<V> dst)
@@ -165,7 +172,7 @@ public final class Util
 
 	/**
 	 * 把src容器的内容深度拷贝覆盖到dst容器中
-	 * @return dst容器
+	 * @return dst容器(不能为null)
 	 */
 	@SuppressWarnings("unchecked")
 	public static <K, V> Map<K, V> appendDeep(Map<K, V> src, Map<K, V> dst)
@@ -190,7 +197,7 @@ public final class Util
 	public static StringBuilder append(StringBuilder s, Collection<?> c)
 	{
 		s.append('{');
-		if (c.isEmpty())
+		if (c == null || c.isEmpty())
 			return s.append('}');
 		for (Object v : c)
 		{
@@ -214,7 +221,7 @@ public final class Util
 	public static StringBuilder append(StringBuilder s, Map<?, ?> m)
 	{
 		s.append('{');
-		if (m.isEmpty())
+		if (m == null || m.isEmpty())
 			return s.append('}');
 		for (Entry<?, ?> e : m.entrySet())
 		{
