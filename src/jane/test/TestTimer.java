@@ -1,5 +1,11 @@
 package jane.test;
 
+// java jane.test.TestTimer
+// java -Xms100m -Xmx100m -Xmn80m jane.test.TestTimer
+// java -XX:+UseParallelGC -Xms100m -Xmx100m -Xmn80m jane.test.TestTimer
+// java -XX:+UseShenandoahGC jane.test.TestTimer
+// java -XX:+UseZGC jane.test.TestTimer
+// java -XX:+UnlockExperimentalVMOptions -XX:+UseEpsilonGC jane.test.TestTimer
 public class TestTimer
 {
 	public static abstract class Node
@@ -17,19 +23,21 @@ public class TestTimer
 			return runTime;
 		}
 
-		public void doTimer()
+		public long doTimer()
 		{
 			try
 			{
-				onTimer();
+				return onTimer();
 			}
 			catch (Exception ignored)
 			{
+				return 0;
 			}
 		}
 
-		public void onTimer()
+		public long onTimer()
 		{
+			return 0;
 		}
 	}
 
@@ -57,20 +65,20 @@ public class TestTimer
 			throw new IllegalStateException("added already");
 		final int idx;
 		final long dt = runTime - curTime;
-		if (dt < (1L << SLOT_SHIFT))
+		if (dt < 1L << SLOT_SHIFT)
 		{
 			if (dt < 0)
 				idx = runTime < curTime ? (int)(runTime = curTime) & SLOT_MASK : SLOT_SIZE;
 			else
 				idx = (int)runTime & SLOT_MASK;
 		}
-		else if (dt < (1L << (SLOT_SHIFT * 2)))
+		else if (dt < 1L << (SLOT_SHIFT * 2))
 			idx = (1 << SLOT_SHIFT) + ((int)(runTime >>> SLOT_SHIFT) & SLOT_MASK);
-		else if (dt < (1L << (SLOT_SHIFT * 3)))
+		else if (dt < 1L << (SLOT_SHIFT * 3))
 			idx = (2 << SLOT_SHIFT) + ((int)(runTime >>> (SLOT_SHIFT * 2)) & SLOT_MASK);
-		else if (dt < (1L << (SLOT_SHIFT * 4)))
+		else if (dt < 1L << (SLOT_SHIFT * 4))
 			idx = (3 << SLOT_SHIFT) + ((int)(runTime >>> (SLOT_SHIFT * 3)) & SLOT_MASK);
-		else if (dt < (1L << (SLOT_SHIFT * 5)))
+		else if (dt < 1L << (SLOT_SHIFT * 5))
 			idx = (4 << SLOT_SHIFT) + ((int)(runTime >>> (SLOT_SHIFT * 4)) & SLOT_MASK);
 		else // SLOTS_COUNT overflow
 			idx = SLOT_SIZE;
@@ -106,7 +114,9 @@ public class TestTimer
 					{
 						final Node next = node.next;
 						node.next = null;
-						node.doTimer();
+						final long nextTime = node.doTimer();
+						if (nextTime > 0)
+							add(t + nextTime, node);
 						if (node == head)
 							break;
 						node = next;
@@ -162,34 +172,37 @@ public class TestTimer
 		final long t = System.nanoTime();
 		final var state = new Object()
 		{
-			long runCount;
-			long seed = t;
+			final TestTimer	timer = new TestTimer((int)rand());
+			long			runCount;
+			long			seed;
 
 			long rand()
 			{
-				return seed = seed * 6364136223846793005L + 1442695040888963407L;
+				final long r = seed * 6364136223846793005L + 1442695040888963407L;
+				seed = r;
+				return r;
 			}
 		};
-		final TestTimer timer = new TestTimer((int)state.rand());
-		long curTime = timer.curTime();
-		for (int i = 0; i < 1_000; i++)
+		final TestTimer timer = state.timer;
+		final long curTime = timer.curTime();
+		for (int i = 0; i < 100_000; i++)
 		{
-			timer.add(curTime + (state.rand() & 0x3ff), new Node()
+			timer.add(curTime + (state.rand() & 0x1_ffff), new Node()
 			{
 				@Override
-				public void onTimer()
+				public long onTimer()
 				{
 					final long runTime = runTime();
-					final long curTime = timer.curTime();
+					final long curTime = state.timer.curTime();
 					if (runTime != curTime)
 						throw new AssertionError(String.format("0x%X != 0x%X", runTime, curTime));
 					state.runCount++;
-					timer.add(runTime + (state.rand() & 0x1_ffff), this);
+					return state.rand() & 0x1_ffff;
 				}
 			});
 		}
-		for (int i = 0; i < 100_000_000; i++)
-			timer.update(curTime += 33);
+		for (int i = 0; i < 86_400_000; i += 33)
+			timer.update(curTime + i);
 		System.out.println(state.runCount + ", " + (System.nanoTime() - t) / 1_000_000 + " ms");
 	}
 }
