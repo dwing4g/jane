@@ -103,9 +103,9 @@
 				<attribute name="Created-Time" value="${time}"/>
 				<attribute name="Main-Class" value="jane.test.TestMain"/>
 			</manifest>
-			<zipfileset src="${lib}/slf4j-api-1.7.30.jar" includes="**/*.class"/>
-			<zipfileset src="${lib}/logback-core-1.2.3.jar" includes="**/*.class"/>
-			<zipfileset src="${lib}/logback-classic-1.2.3.jar" includes="**/*.class"/>
+			<zipfileset src="${lib}/slf4j-api-1.7.32.jar" includes="**/*.class"/>
+			<zipfileset src="${lib}/logback-core-1.2.6.jar" includes="**/*.class"/>
+			<zipfileset src="${lib}/logback-classic-1.2.6.jar" includes="**/*.class"/>
 			<zipfileset src="${root}/jane-core.jar" includes="**/*.class"/>
 			<zipfileset src="${root}/jane-native.jar" includes="*.dll,*.so,*.dylib"/>
 			<zipfileset src="${root}/jane-test.jar"/>

@@ -16,18 +16,18 @@
     <orderEntry type="module-library">
       <library name="libs">
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/logback-classic-1.2.3.jar!/" />
-          <root url="jar://$MODULE_DIR$/lib/logback-core-1.2.3.jar!/" />
-          <root url="jar://$MODULE_DIR$/lib/slf4j-api-1.7.30.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib/logback-classic-1.2.6.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib/logback-core-1.2.6.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib/slf4j-api-1.7.32.jar!/" />
         </CLASSES>
         <JAVADOC />
         <NATIVE>
           <root url="file://$MODULE_DIR$/lib" />
         </NATIVE>
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib/logback-classic-1.2.3-sources.jar!/" />
-          <root url="jar://$MODULE_DIR$/lib/logback-core-1.2.3-sources.jar!/" />
-          <root url="jar://$MODULE_DIR$/lib/slf4j-api-1.7.30-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib/logback-classic-1.2.6-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib/logback-core-1.2.6-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib/slf4j-api-1.7.32-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
