@@ -346,20 +346,6 @@ public abstract class Procedure implements Runnable
 	}
 
 	/**
-	 * 加锁一个lockId
-	 * <p>
-	 * lockId通过{@link Table}/{@link TableLong}的lockId方法获取<br>
-	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁
-	 */
-	protected final void lock(int lockId) throws InterruptedException
-	{
-		unlock();
-		ProcThread pt = _pt;
-		(pt.locks[0] = getLock(lockId & _lockMask)).lockInterruptibly();
-		pt.lockCount = 1;
-	}
-
-	/**
 	 * 追加一个lockId的锁
 	 * <p>
 	 * 可能会引发已加锁的重排序并重锁,并检测两次锁之间是否有修改的序列号变化,如果有则抛出Redo异常<br>
@@ -440,27 +426,296 @@ public abstract class Procedure implements Runnable
 	}
 
 	/**
+	 * 加锁1个lockId
+	 * <p>
+	 * lockId通过{@link Table}/{@link TableLong}的lockId方法获取<br>
+	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁
+	 */
+	protected final void lock(int lockId) throws InterruptedException
+	{
+		unlock();
+		ProcThread pt = _pt;
+		(pt.locks[0] = getLock(lockId & _lockMask)).lockInterruptibly();
+		pt.lockCount = 1;
+	}
+
+	/**
+	 * 加锁2个lockId
+	 * <p>
+	 * lockId通过{@link Table}/{@link TableLong}的lockId方法获取<br>
+	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁<br>
+	 * 这个方法比加锁一组lockId的效率高
+	 */
+	protected final void lock(int lockId0, int lockId1) throws InterruptedException
+	{
+		lockId0 &= _lockMask;
+		lockId1 &= _lockMask;
+		//@formatter:off
+		int t = Math.min(lockId0, lockId1); lockId1 ^= lockId0 ^ t; lockId0 = t;
+		//@formatter:on
+		unlock();
+		ProcThread pt = _pt;
+		IndexLock[] locks = pt.locks;
+		int i = 0;
+		if (lockId0 != lockId1)
+		{
+			(locks[0] = getLock(lockId0)).lockInterruptibly();
+			pt.lockCount = i = 1;
+		}
+		(locks[i] = getLock(lockId1)).lockInterruptibly();
+		pt.lockCount = ++i;
+	}
+
+	/**
+	 * 加锁3个lockId
+	 * <p>
+	 * lockId通过{@link Table}/{@link TableLong}的lockId方法获取<br>
+	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁<br>
+	 * 这个方法比加锁一组lockId的效率高
+	 */
+	protected final void lock(int lockId0, int lockId1, int lockId2) throws InterruptedException
+	{
+		lockId0 &= _lockMask;
+		lockId1 &= _lockMask;
+		lockId2 &= _lockMask;
+		int t;
+		//@formatter:off
+		t = Math.min(lockId0, lockId1); lockId1 ^= lockId0 ^ t; lockId0 = t;
+		t = Math.min(lockId0, lockId2); lockId2 ^= lockId0 ^ t; lockId0 = t;
+		t = Math.min(lockId1, lockId2); lockId2 ^= lockId1 ^ t; lockId1 = t;
+		//@formatter:on
+		unlock();
+		ProcThread pt = _pt;
+		IndexLock[] locks = pt.locks;
+		int i = 0;
+		if (lockId0 != lockId1)
+		{
+			(locks[0] = getLock(lockId0)).lockInterruptibly();
+			pt.lockCount = i = 1;
+		}
+		if (lockId1 != lockId2)
+		{
+			(locks[i] = getLock(lockId1)).lockInterruptibly();
+			pt.lockCount = ++i;
+		}
+		(locks[i] = getLock(lockId2)).lockInterruptibly();
+		pt.lockCount = ++i;
+	}
+
+	/**
+	 * 加锁4个lockId
+	 * <p>
+	 * lockId通过{@link Table}/{@link TableLong}的lockId方法获取<br>
+	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁<br>
+	 * 这个方法比加锁一组lockId的效率高
+	 */
+	protected final void lock(int lockId0, int lockId1, int lockId2, int lockId3) throws InterruptedException
+	{
+		lockId0 &= _lockMask;
+		lockId1 &= _lockMask;
+		lockId2 &= _lockMask;
+		lockId3 &= _lockMask;
+		int t;
+		//@formatter:off
+		t = Math.min(lockId0, lockId1); lockId1 ^= lockId0 ^ t; lockId0 = t;
+		t = Math.min(lockId2, lockId3); lockId3 ^= lockId2 ^ t; lockId2 = t;
+		t = Math.min(lockId0, lockId2); lockId2 ^= lockId0 ^ t; lockId0 = t;
+		t = Math.min(lockId1, lockId3); lockId3 ^= lockId1 ^ t; lockId1 = t;
+		t = Math.min(lockId1, lockId2); lockId2 ^= lockId1 ^ t; lockId1 = t;
+		//@formatter:on
+		unlock();
+		ProcThread pt = _pt;
+		IndexLock[] locks = pt.locks;
+		int i = 0;
+		if (lockId0 != lockId1)
+		{
+			(locks[0] = getLock(lockId0)).lockInterruptibly();
+			pt.lockCount = i = 1;
+		}
+		if (lockId1 != lockId2)
+		{
+			(locks[i] = getLock(lockId1)).lockInterruptibly();
+			pt.lockCount = ++i;
+		}
+		if (lockId2 != lockId3)
+		{
+			(locks[i] = getLock(lockId2)).lockInterruptibly();
+			pt.lockCount = ++i;
+		}
+		(locks[i] = getLock(lockId3)).lockInterruptibly();
+		pt.lockCount = ++i;
+	}
+
+	/**
+	 * 加锁5个lockId
+	 * <p>
+	 * lockId通过{@link Table}/{@link TableLong}的lockId方法获取<br>
+	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁<br>
+	 * 这个方法比加锁一组lockId的效率高
+	 */
+	protected final void lock(int lockId0, int lockId1, int lockId2, int lockId3, int lockId4) throws InterruptedException
+	{
+		lockId0 &= _lockMask;
+		lockId1 &= _lockMask;
+		lockId2 &= _lockMask;
+		lockId3 &= _lockMask;
+		lockId4 &= _lockMask;
+		int t;
+		//@formatter:off
+		t = Math.min(lockId1, lockId2); lockId2 ^= lockId1 ^ t; lockId1 = t;
+		t = Math.min(lockId0, lockId2); lockId2 ^= lockId0 ^ t; lockId0 = t;
+		t = Math.min(lockId0, lockId1); lockId1 ^= lockId0 ^ t; lockId0 = t;
+		t = Math.min(lockId3, lockId4); lockId4 ^= lockId3 ^ t; lockId3 = t;
+		t = Math.min(lockId1, lockId4); lockId4 ^= lockId1 ^ t; lockId1 = t;
+		t = Math.min(lockId0, lockId3); lockId3 ^= lockId0 ^ t; lockId0 = t;
+		t = Math.min(lockId1, lockId3); lockId3 ^= lockId1 ^ t; lockId1 = t;
+		t = Math.min(lockId2, lockId4); lockId4 ^= lockId2 ^ t; lockId2 = t;
+		t = Math.min(lockId2, lockId3); lockId3 ^= lockId2 ^ t; lockId2 = t;
+		//@formatter:on
+		unlock();
+		ProcThread pt = _pt;
+		IndexLock[] locks = pt.locks;
+		int i = 0;
+		if (lockId0 != lockId1)
+		{
+			(locks[0] = getLock(lockId0)).lockInterruptibly();
+			pt.lockCount = i = 1;
+		}
+		if (lockId1 != lockId2)
+		{
+			(locks[i] = getLock(lockId1)).lockInterruptibly();
+			pt.lockCount = ++i;
+		}
+		if (lockId2 != lockId3)
+		{
+			(locks[i] = getLock(lockId2)).lockInterruptibly();
+			pt.lockCount = ++i;
+		}
+		if (lockId3 != lockId4)
+		{
+			(locks[i] = getLock(lockId3)).lockInterruptibly();
+			pt.lockCount = ++i;
+		}
+		(locks[i] = getLock(lockId4)).lockInterruptibly();
+		pt.lockCount = ++i;
+	}
+
+	/**
+	 * 加锁6个lockId
+	 * <p>
+	 * lockId通过{@link Table}/{@link TableLong}的lockId方法获取<br>
+	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁<br>
+	 * 这个方法比加锁一组lockId的效率高
+	 */
+	protected final void lock(int lockId0, int lockId1, int lockId2, int lockId3, int lockId4, int lockId5) throws InterruptedException
+	{
+		lockId0 &= _lockMask;
+		lockId1 &= _lockMask;
+		lockId2 &= _lockMask;
+		lockId3 &= _lockMask;
+		lockId4 &= _lockMask;
+		lockId5 &= _lockMask;
+		int t;
+		//@formatter:off
+		t = Math.min(lockId1, lockId2); lockId2 ^= lockId1 ^ t; lockId1 = t;
+		t = Math.min(lockId4, lockId5); lockId5 ^= lockId4 ^ t; lockId4 = t;
+		t = Math.min(lockId0, lockId2); lockId2 ^= lockId0 ^ t; lockId0 = t;
+		t = Math.min(lockId3, lockId5); lockId5 ^= lockId3 ^ t; lockId3 = t;
+		t = Math.min(lockId0, lockId1); lockId1 ^= lockId0 ^ t; lockId0 = t;
+		t = Math.min(lockId3, lockId4); lockId4 ^= lockId3 ^ t; lockId3 = t;
+		t = Math.min(lockId1, lockId4); lockId4 ^= lockId1 ^ t; lockId1 = t;
+		t = Math.min(lockId0, lockId3); lockId3 ^= lockId0 ^ t; lockId0 = t;
+		t = Math.min(lockId2, lockId5); lockId5 ^= lockId2 ^ t; lockId2 = t;
+		t = Math.min(lockId1, lockId3); lockId3 ^= lockId1 ^ t; lockId1 = t;
+		t = Math.min(lockId2, lockId4); lockId4 ^= lockId2 ^ t; lockId2 = t;
+		t = Math.min(lockId2, lockId3); lockId3 ^= lockId2 ^ t; lockId2 = t;
+		//@formatter:on
+		unlock();
+		ProcThread pt = _pt;
+		IndexLock[] locks = pt.locks;
+		int i = 0;
+		if (lockId0 != lockId1)
+		{
+			(locks[0] = getLock(lockId0)).lockInterruptibly();
+			pt.lockCount = i = 1;
+		}
+		if (lockId1 != lockId2)
+		{
+			(locks[i] = getLock(lockId1)).lockInterruptibly();
+			pt.lockCount = ++i;
+		}
+		if (lockId2 != lockId3)
+		{
+			(locks[i] = getLock(lockId2)).lockInterruptibly();
+			pt.lockCount = ++i;
+		}
+		if (lockId3 != lockId4)
+		{
+			(locks[i] = getLock(lockId3)).lockInterruptibly();
+			pt.lockCount = ++i;
+		}
+		if (lockId4 != lockId5)
+		{
+			(locks[i] = getLock(lockId4)).lockInterruptibly();
+			pt.lockCount = ++i;
+		}
+		(locks[i] = getLock(lockId5)).lockInterruptibly();
+		pt.lockCount = ++i;
+	}
+
+	/**
 	 * 加锁一组lockId
 	 * <p>
 	 * lockId通过{@link Table}/{@link TableLong}的lockId方法获取<br>
 	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁
-	 * @param lockIds 注意此数组内的元素会被修改和排序
+	 * @param lockIds 注意传入数组时其中的元素会被排序
 	 */
-	protected final void lock(int[] lockIds) throws InterruptedException
+	protected final void lock(int... lockIds) throws InterruptedException
 	{
-		unlock();
 		int n = lockIds.length;
-		if (n > Const.maxLockPerProcedure)
-			throw new IllegalStateException("lock exceed: " + n + '>' + Const.maxLockPerProcedure);
 		for (int i = 0; i < n; ++i)
 			lockIds[i] &= _lockMask;
 		Arrays.sort(lockIds);
+		unlock();
 		ProcThread pt = _pt;
 		IndexLock[] locks = pt.locks;
-		for (int i = 0; i < n;)
+		for (int i = 0, j = 0, lastIdx = -1; i < n; ++i)
 		{
-			(locks[i] = getLock(lockIds[i])).lockInterruptibly();
-			pt.lockCount = ++i;
+			int lockIdx = lockIds[i];
+			if (lockIdx != lastIdx)
+			{
+				lastIdx = lockIdx;
+				(locks[j] = getLock(lockIdx)).lockInterruptibly();
+				pt.lockCount = ++j;
+			}
+		}
+	}
+
+	/**
+	 * 加锁一组lockId
+	 * <p>
+	 * lockId通过{@link Table}/{@link TableLong}的lockId方法获取<br>
+	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁
+	 * @param lockIds 注意此数组内的前n个元素会被排序
+	 * @param n 只加锁lockIds的前n个
+	 */
+	protected final void lock(int[] lockIds, int n) throws InterruptedException
+	{
+		for (int i = 0; i < n; ++i)
+			lockIds[i] &= _lockMask;
+		Arrays.sort(lockIds, 0, n);
+		unlock();
+		ProcThread pt = _pt;
+		IndexLock[] locks = pt.locks;
+		for (int i = 0, j = 0, lastIdx = -1; i < n; ++i)
+		{
+			int lockIdx = lockIds[i];
+			if (lockIdx != lastIdx)
+			{
+				lastIdx = lockIdx;
+				(locks[j] = getLock(lockIdx)).lockInterruptibly();
+				pt.lockCount = ++j;
+			}
 		}
 	}
 
@@ -473,268 +728,19 @@ public abstract class Procedure implements Runnable
 	 */
 	protected final void lock(Collection<Integer> lockIds) throws InterruptedException
 	{
-		unlock();
-		int n = lockIds.size();
-		if (n > Const.maxLockPerProcedure)
-			throw new IllegalStateException("lock exceed: " + n + '>' + Const.maxLockPerProcedure);
-		int[] idxes = new int[n];
-		int i = 0;
+		int i = 0, n = lockIds.size();
+		int[] lockIdxes = new int[n];
 		if (lockIds instanceof ArrayList)
 		{
-			ArrayList<Integer> lockList = (ArrayList<Integer>)lockIds;
-			for (; i < n; ++i)
-				idxes[i] = lockList.get(i) & _lockMask;
+			for (ArrayList<Integer> lockList = (ArrayList<Integer>)lockIds; i < n; ++i)
+				lockIdxes[i] = lockList.get(i);
 		}
 		else
 		{
 			for (int lockId : lockIds)
-				idxes[i++] = lockId & _lockMask;
+				lockIdxes[i++] = lockId;
 		}
-		Arrays.sort(idxes);
-		ProcThread pt = _pt;
-		IndexLock[] locks = pt.locks;
-		for (i = 0; i < n;)
-		{
-			(locks[i] = getLock(idxes[i])).lockInterruptibly();
-			pt.lockCount = ++i;
-		}
-	}
-
-	/**
-	 * 加锁一组lockId
-	 * <p>
-	 * lockId通过{@link Table}/{@link TableLong}的lockId方法获取<br>
-	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁
-	 */
-	protected final void lock(int lockId0, int lockId1, int lockId2, int lockId3, int... lockIds) throws InterruptedException
-	{
-		int n = lockIds.length;
-		if (n + 4 > Const.maxLockPerProcedure)
-			throw new IllegalStateException("lock exceed: " + (n + 4) + '>' + Const.maxLockPerProcedure);
-		lockIds = Arrays.copyOf(lockIds, n + 4);
-		lockIds[n] = lockId0;
-		lockIds[n + 1] = lockId1;
-		lockIds[n + 2] = lockId2;
-		lockIds[n + 3] = lockId3;
-		lock(lockIds);
-	}
-
-	/**
-	 * 内部用于排序加锁2个lockId
-	 * <p>
-	 */
-	private void lock2(int lockIdx0, int lockIdx1) throws InterruptedException
-	{
-		ProcThread pt = _pt;
-		IndexLock[] locks = pt.locks;
-		int i = pt.lockCount;
-		if (lockIdx0 < lockIdx1)
-		{
-			(locks[i] = getLock(lockIdx0)).lockInterruptibly();
-			pt.lockCount = ++i;
-			(locks[i] = getLock(lockIdx1)).lockInterruptibly();
-		}
-		else
-		{
-			(locks[i] = getLock(lockIdx1)).lockInterruptibly();
-			pt.lockCount = ++i;
-			(locks[i] = getLock(lockIdx0)).lockInterruptibly();
-		}
-		pt.lockCount = ++i;
-	}
-
-	/**
-	 * 内部用于排序加锁3个lockId
-	 * <p>
-	 */
-	private void lock3(int lockIdx0, int lockIdx1, int lockIdx2) throws InterruptedException
-	{
-		ProcThread pt = _pt;
-		IndexLock[] locks = pt.locks;
-		int i = pt.lockCount;
-		if (lockIdx0 <= lockIdx1)
-		{
-			if (lockIdx0 < lockIdx2)
-			{
-				(locks[i] = getLock(lockIdx0)).lockInterruptibly();
-				pt.lockCount = ++i;
-				lock2(lockIdx1, lockIdx2);
-			}
-			else
-			{
-				(locks[i] = getLock(lockIdx2)).lockInterruptibly();
-				pt.lockCount = ++i;
-				(locks[i] = getLock(lockIdx0)).lockInterruptibly();
-				pt.lockCount = ++i;
-				(locks[i] = getLock(lockIdx1)).lockInterruptibly();
-				pt.lockCount = ++i;
-			}
-		}
-		else
-		{
-			if (lockIdx1 < lockIdx2)
-			{
-				(locks[i] = getLock(lockIdx1)).lockInterruptibly();
-				pt.lockCount = ++i;
-				lock2(lockIdx0, lockIdx2);
-			}
-			else
-			{
-				(locks[i] = getLock(lockIdx2)).lockInterruptibly();
-				pt.lockCount = ++i;
-				(locks[i] = getLock(lockIdx1)).lockInterruptibly();
-				pt.lockCount = ++i;
-				(locks[i] = getLock(lockIdx0)).lockInterruptibly();
-				pt.lockCount = ++i;
-			}
-		}
-	}
-
-	/**
-	 * 加锁2个lockId
-	 * <p>
-	 * lockId通过{@link Table}/{@link TableLong}的lockId方法获取<br>
-	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁<br>
-	 * 这个方法比加锁一组lockId的效率高
-	 */
-	protected final void lock(int lockId0, int lockId1) throws InterruptedException
-	{
-		unlock();
-		lock2(lockId0 & _lockMask, lockId1 & _lockMask);
-	}
-
-	/**
-	 * 加锁3个lockId
-	 * <p>
-	 * lockId通过{@link Table}/{@link TableLong}的lockId方法获取<br>
-	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁<br>
-	 * 这个方法比加锁一组lockId的效率高
-	 */
-	protected final void lock(int lockId0, int lockId1, int lockId2) throws InterruptedException
-	{
-		unlock();
-		lock3(lockId0 & _lockMask, lockId1 & _lockMask, lockId2 & _lockMask);
-	}
-
-	/**
-	 * 加锁4个lockId
-	 * <p>
-	 * lockId通过{@link Table}/{@link TableLong}的lockId方法获取<br>
-	 * 只能在事务中调用, 加锁前会释放当前事务已经加过的锁<br>
-	 * 这个方法比加锁一组lockId的效率高
-	 */
-	protected final void lock(int lockId0, int lockId1, int lockId2, int lockId3) throws InterruptedException
-	{
-		unlock();
-		lockId0 &= _lockMask;
-		lockId1 &= _lockMask;
-		lockId2 &= _lockMask;
-		lockId3 &= _lockMask;
-		ProcThread pt = _pt;
-		IndexLock[] locks = pt.locks;
-		int i = 0;
-		if (lockId0 <= lockId1)
-		{
-			if (lockId0 < lockId2)
-			{
-				if (lockId0 < lockId3)
-				{
-					(locks[i] = getLock(lockId0)).lockInterruptibly();
-					pt.lockCount = ++i;
-					lock3(lockId1, lockId2, lockId3);
-				}
-				else
-				{
-					(locks[i] = getLock(lockId3)).lockInterruptibly();
-					pt.lockCount = ++i;
-					(locks[i] = getLock(lockId0)).lockInterruptibly();
-					pt.lockCount = ++i;
-					lock2(lockId1, lockId2);
-				}
-			}
-			else if (lockId2 < lockId3)
-			{
-				(locks[i] = getLock(lockId2)).lockInterruptibly();
-				pt.lockCount = ++i;
-				if (lockId0 < lockId3)
-				{
-					(locks[i] = getLock(lockId0)).lockInterruptibly();
-					pt.lockCount = ++i;
-					lock2(lockId1, lockId3);
-				}
-				else
-				{
-					(locks[i] = getLock(lockId3)).lockInterruptibly();
-					pt.lockCount = ++i;
-					(locks[i] = getLock(lockId0)).lockInterruptibly();
-					pt.lockCount = ++i;
-					(locks[i] = getLock(lockId1)).lockInterruptibly();
-					pt.lockCount = ++i;
-				}
-			}
-			else
-			{
-				(locks[i] = getLock(lockId3)).lockInterruptibly();
-				pt.lockCount = ++i;
-				(locks[i] = getLock(lockId2)).lockInterruptibly();
-				pt.lockCount = ++i;
-				(locks[i] = getLock(lockId0)).lockInterruptibly();
-				pt.lockCount = ++i;
-				(locks[i] = getLock(lockId1)).lockInterruptibly();
-				pt.lockCount = ++i;
-			}
-		}
-		else
-		{
-			if (lockId1 < lockId2)
-			{
-				if (lockId1 < lockId3)
-				{
-					(locks[i] = getLock(lockId1)).lockInterruptibly();
-					pt.lockCount = ++i;
-					lock3(lockId0, lockId2, lockId3);
-				}
-				else
-				{
-					(locks[i] = getLock(lockId3)).lockInterruptibly();
-					pt.lockCount = ++i;
-					(locks[i] = getLock(lockId1)).lockInterruptibly();
-					pt.lockCount = ++i;
-					lock2(lockId0, lockId2);
-				}
-			}
-			else if (lockId2 < lockId3)
-			{
-				(locks[i] = getLock(lockId2)).lockInterruptibly();
-				pt.lockCount = ++i;
-				if (lockId1 < lockId3)
-				{
-					(locks[i] = getLock(lockId1)).lockInterruptibly();
-					pt.lockCount = ++i;
-					lock2(lockId0, lockId3);
-				}
-				else
-				{
-					(locks[i] = getLock(lockId3)).lockInterruptibly();
-					pt.lockCount = ++i;
-					(locks[i] = getLock(lockId1)).lockInterruptibly();
-					pt.lockCount = ++i;
-					(locks[i] = getLock(lockId0)).lockInterruptibly();
-					pt.lockCount = ++i;
-				}
-			}
-			else
-			{
-				(locks[i] = getLock(lockId3)).lockInterruptibly();
-				pt.lockCount = ++i;
-				(locks[i] = getLock(lockId2)).lockInterruptibly();
-				pt.lockCount = ++i;
-				(locks[i] = getLock(lockId1)).lockInterruptibly();
-				pt.lockCount = ++i;
-				(locks[i] = getLock(lockId0)).lockInterruptibly();
-				pt.lockCount = ++i;
-			}
-		}
+		lock(lockIdxes);
 	}
 
 	/**
