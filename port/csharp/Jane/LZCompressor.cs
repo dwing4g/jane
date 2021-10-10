@@ -150,7 +150,7 @@ namespace Jane
 				else if (f < 0x81)   PutBits(f + 0x000e7f, 12);           // 1110 1xxx xxxx
 				else if (f < 0x2081) PutBits(f + 0x03bf7f, 18);           // 11 110x xxxx xxxx xxxx
 				else if (n > 3)      PutBits(f + 0xf7df7f, 24);           // 1111 1xxx xxxx xxxx xxxx xxxx
-					 else          {PutByte(a); ++srcpos; continue;} f4=f3;f3=f2;f2=f1;f1=f;}
+					 else           {PutByte(a); ++srcpos; continue;} f4=f3;f3=f2;f2=f1;f1=f;}
 					 if (n < 5)      PutBits(n - 3, 2);         // 0x
 				else if (n < 9)      PutBits(n + 3, 4);         // 10xx
 				else if (n < 0x11)   PutBits(n + 0x27, 6);      // 11 0xxx
@@ -163,7 +163,7 @@ namespace Jane
 				else if (n < 0x801)  PutBits(n + 0xff3ff, 20);  // 1111 1111 10xx xxxx xxxx
 				else if (n < 0x1001) PutBits(n + 0x3fe7ff, 22); // 11 1111 1111 0xxx xxxx xxxx
 				else if (n < 0x2001) PutBits(n + 0xffcfff, 24); // 1111 1111 1110 xxxx xxxx xxxx
-				else                PutBits(0xfff, 12);        // 1111 1111 1111
+				else                 PutBits(0xfff, 12);        // 1111 1111 1111
 				srcpos += n;
 				if (srcpos < srclen + 2) b = src[srcpos];
 			}
@@ -186,12 +186,12 @@ namespace Jane
 				else{if (GetBit() >= 0)
 					{if (GetBit() <  0)
 					 if (GetBit() >= 0) {n = f2; f2=f;f=n;}
-					 else              {n = f3; f3=f2;f2=f;f=n;}}
+					 else               {n = f3; f3=f2;f2=f;f=n;}}
 				else{if (GetBit() >= 0)
 					 if (GetBit() >= 0)  n = f4;
-					 else               n = GetBits(7) + 1;
+					 else                n = GetBits(7) + 1;
 				else if (GetBit() >= 0)  n = GetBits(13) + 0x81;
-					 else               n = GetBits(19) + 0x2081; f4=f3;f3=f2;f2=f;f=n;}
+					 else                n = GetBits(19) + 0x2081; f4=f3;f3=f2;f2=f;f=n;}
 					 if (GetBit() >= 0)  n = (int)((uint)GetBit() >> 31) + 3;
 				else if (GetBit() >= 0)  n = GetBits(2) + 5;
 				else if (GetBit() >= 0)  n = GetBits(3) + 9;
@@ -204,7 +204,7 @@ namespace Jane
 				else if (GetBit() >= 0)  n = GetBits(10) + 0x401;
 				else if (GetBit() >= 0)  n = GetBits(11) + 0x801;
 				else if (GetBit() >= 0)  n = GetBits(12) + 0x1001;
-				else                    n = 0x2001;
+				else                     n = 0x2001;
 				for (; --n >= 0; ++dstpos)
 					dst[dstpos] = dst[dstpos - f];}
 			}
