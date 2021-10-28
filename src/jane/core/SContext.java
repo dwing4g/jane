@@ -23,7 +23,7 @@ public final class SContext
 		protected Safe(B bean, Safe<?> parent)
 		{
 			_bean = bean;
-			_parent = (parent != null ? parent : this);
+			_parent = parent;
 		}
 
 		@Deprecated
@@ -37,31 +37,24 @@ public final class SContext
 			return _parent;
 		}
 
-		public Safe<?> owner()
-		{
-			for (Safe<?> parent = _parent;;)
-			{
-				Safe<?> o = parent._parent;
-				if (o == parent)
-					return parent;
-				parent = o;
-			}
-		}
-
 		public Rec record()
 		{
-			return _rec;
+			if (_rec != null)
+				return _rec;
+			return _parent != null ? _parent.record() : null;
+		}
+
+		void record(Rec rec)
+		{
+			_rec = rec;
 		}
 
 		public final void checkLock()
 		{
 			if (_rec != null)
 				_rec.checkLock();
-		}
-
-		void record(Rec rec)
-		{
-			_rec = rec;
+			else if (_parent != null)
+				_parent.checkLock();
 		}
 
 		public boolean isDirty()
@@ -71,9 +64,9 @@ public final class SContext
 
 		public boolean isDirtyAndClear()
 		{
-			boolean r = _dirty;
+			boolean dirty = _dirty;
 			_dirty = false;
-			return r;
+			return dirty;
 		}
 
 		public void onDirty(Runnable onDirty)
@@ -83,32 +76,28 @@ public final class SContext
 
 		public void dirty()
 		{
-			if (_parent == this)
-				_dirty = true;
-			else
-				_parent.dirty();
+			_dirty = true;
 			if (_onDirty != null)
 			{
 				_onDirty.run();
 				_onDirty = null;
 			}
+			if (_parent != null)
+				_parent.dirty();
 		}
 
 		protected boolean initSContext()
 		{
 			if (_rec != null)
 				_rec.checkLock();
+			else if (_parent != null)
+				_parent.checkLock();
 			if (_fullUndo)
 				return false;
 			if (_sctx == null)
 			{
-				if (_onDirty != null)
-				{
-					_onDirty.run();
-					_onDirty = null;
-				}
-				_parent.dirty();
 				_sctx = current();
+				dirty();
 			}
 			return true;
 		}
@@ -138,7 +127,7 @@ public final class SContext
 
 		public void assign(Safe<B> s)
 		{
-			assign(s.unsafe());
+			assign(s._bean);
 		}
 
 		public Octets marshal(Octets s)
@@ -167,7 +156,7 @@ public final class SContext
 		@Override
 		public boolean equals(Object o)
 		{
-			return _bean.equals(o instanceof Safe<?> ? ((Safe<?>)o)._bean : o);
+			return _bean.equals(o instanceof Safe ? ((Safe<?>)o)._bean : o);
 		}
 
 		@Override
@@ -302,9 +291,9 @@ public final class SContext
 	}
 
 	@SuppressWarnings("unchecked")
-	static <V, S> S safe(Safe<?> owner, V v)
+	static <V, S> S safe(Safe<?> parent, V v)
 	{
-		return (S)(v instanceof Bean ? ((Bean<?>)v).safe(owner) : v);
+		return (S)(v instanceof Bean ? ((Bean<?>)v).safe(parent) : v);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -314,9 +303,34 @@ public final class SContext
 	}
 
 	@SuppressWarnings("unchecked")
-	static <V> V unsafe(Object v)
+	static <V> V unwrap(Object v)
 	{
-		return (V)(v instanceof Safe ? ((Safe<?>)v).unsafe() : v);
+		return (V)(v instanceof Safe ? ((Safe<?>)v)._bean : v);
+	}
+
+	static void checkUnstored(Object v)
+	{
+		if (v instanceof Bean && ((Bean<?>)v).stored())
+			throw new IllegalAccessError("add/put already stored bean");
+	}
+
+	static void store(Object v)
+	{
+		if (v instanceof Bean)
+			((Bean<?>)v).store();
+	}
+
+	static void checkAndStore(Object v)
+	{
+		if (v instanceof Bean && !((Bean<?>)v).tryStore())
+			throw new IllegalAccessError("add/put already stored bean");
+	}
+
+	static <V> V unstore(V v)
+	{
+		if (v instanceof Bean)
+			((Bean<?>)v).unstore();
+		return v;
 	}
 
 	<K, V extends Bean<V>, S extends Safe<V>> S addRecord(Table<K, V, S> table, K key, V value)
@@ -408,7 +422,7 @@ public final class SContext
 			{
 				Record<?, ?, ?> r = _records.get(i);
 				if (r._value.isDirtyAndClear())
-					r._table.modify(r._key, r._value.unsafe());
+					r._table.modify(r._key, r._value._bean);
 			}
 			while (++i < n);
 			_records.clear();
@@ -422,7 +436,7 @@ public final class SContext
 			{
 				RecordLong<?, ?> r = _recordLongs.get(i);
 				if (r._value.isDirtyAndClear())
-					r._table.modify(r._key, r._value.unsafe());
+					r._table.modify(r._key, r._value._bean);
 			}
 			while (++i < n);
 			_recordLongs.clear();

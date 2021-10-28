@@ -1,6 +1,5 @@
 package jane.core;
 
-import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.Iterator;
@@ -14,22 +13,22 @@ import jane.core.SContext.Safe;
  */
 public final class SDeque<V, S> implements Deque<S>, Cloneable
 {
-	private final Safe<?>  _owner;
+	private final Safe<?>  _parent;
 	private final Deque<V> _deque;
 	private SContext	   _sctx;
 
-	public SDeque(Safe<?> owner, Deque<V> deque)
+	public SDeque(Safe<?> parent, Deque<V> deque)
 	{
-		_owner = owner;
+		_parent = parent;
 		_deque = deque;
 	}
 
 	private SContext sContext()
 	{
-		_owner.checkLock();
+		_parent.checkLock();
 		if (_sctx != null)
 			return _sctx;
-		_owner.dirty();
+		_parent.dirty();
 		return _sctx = SContext.current();
 	}
 
@@ -48,7 +47,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	@Override
 	public boolean contains(Object o)
 	{
-		return _deque.contains(SContext.unsafe(o));
+		return _deque.contains(SContext.unwrap(o));
 	}
 
 	@Override
@@ -61,7 +60,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	@Override
 	public Object[] toArray()
 	{
-		return _deque.toArray();
+		return _deque.toArray(); //unsafe
 	}
 
 	@Deprecated
@@ -69,7 +68,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	public <T> T[] toArray(T[] a)
 	{
 		//noinspection SuspiciousToArrayCall
-		return _deque.toArray(a);
+		return _deque.toArray(a); //unsafe
 	}
 
 	@Deprecated
@@ -81,7 +80,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	@Override
 	public S element()
 	{
-		return SContext.safe(_owner, _deque.element());
+		return SContext.safe(_parent, _deque.element());
 	}
 
 	@Deprecated
@@ -93,7 +92,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	@Override
 	public S peek()
 	{
-		return SContext.safe(_owner, _deque.peek());
+		return SContext.safe(_parent, _deque.peek());
 	}
 
 	@Deprecated
@@ -105,7 +104,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	@Override
 	public S getFirst()
 	{
-		return SContext.safe(_owner, _deque.getFirst());
+		return SContext.safe(_parent, _deque.getFirst());
 	}
 
 	@Deprecated
@@ -117,7 +116,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	@Override
 	public S getLast()
 	{
-		return SContext.safe(_owner, _deque.getLast());
+		return SContext.safe(_parent, _deque.getLast());
 	}
 
 	@Deprecated
@@ -129,7 +128,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	@Override
 	public S peekFirst()
 	{
-		return SContext.safe(_owner, _deque.peekFirst());
+		return SContext.safe(_parent, _deque.peekFirst());
 	}
 
 	@Deprecated
@@ -141,35 +140,37 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	@Override
 	public S peekLast()
 	{
-		return SContext.safe(_owner, _deque.peekLast());
+		return SContext.safe(_parent, _deque.peekLast());
 	}
 
 	public boolean addDirect(V v)
 	{
+		SContext.checkAndStore(v);
 		SContext ctx = sContext();
 		if (!_deque.add(v))
 			return false;
-		ctx.addOnRollback(_deque::removeLast);
+		ctx.addOnRollback(() -> SContext.unstore(_deque.removeLast()));
 		return true;
 	}
 
 	@Override
 	public boolean add(S s)
 	{
-		return addDirect(SContext.unsafe(s));
+		return addDirect(SContext.unwrap(s));
 	}
 
 	public void addFirstDirect(V v)
 	{
+		SContext.checkAndStore(v);
 		SContext ctx = sContext();
 		_deque.addFirst(v);
-		ctx.addOnRollback(_deque::removeFirst);
+		ctx.addOnRollback(() -> SContext.unstore(_deque.removeFirst()));
 	}
 
 	@Override
 	public void addFirst(S s)
 	{
-		addFirstDirect(SContext.unsafe(s));
+		addFirstDirect(SContext.unwrap(s));
 	}
 
 	public void addLastDirect(V v)
@@ -206,9 +207,9 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		return true;
 	}
 
-	public void offerLastDirect(V v)
+	public boolean offerLastDirect(V v)
 	{
-		addDirect(v);
+		return addDirect(v);
 	}
 
 	@Override
@@ -230,30 +231,60 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 
 	public boolean addAllDirect(Collection<? extends V> c)
 	{
-		SContext ctx = sContext();
-		int n = c.size();
-		if (!_deque.addAll(c))
-			return false;
-		ctx.addOnRollback(() ->
+		if (!c.isEmpty())
 		{
-			for (int i = 0; i < n; ++i)
-				_deque.removeLast();
-		});
+			for (V v : c)
+				SContext.checkUnstored(v);
+			int n = _deque.size();
+			SContext ctx = sContext();
+			if (!_deque.addAll(c))
+				return false;
+			for (V v : c)
+				SContext.store(v);
+			ctx.addOnRollback(() ->
+			{
+				if (n > 0)
+				{
+					for (int i = _deque.size() - 1; i >= n; --i)
+						SContext.unstore(_deque.removeLast());
+				}
+				else
+				{
+					_deque.forEach(SContext::unstore);
+					_deque.clear();
+				}
+			});
+		}
 		return true;
 	}
 
 	@Override
 	public boolean addAll(Collection<? extends S> c)
 	{
-		SContext ctx = sContext();
-		int n = c.size();
-		for (S s : c)
-			_deque.addLast(SContext.unsafe(s));
-		ctx.addOnRollback(() ->
+		if (!c.isEmpty())
 		{
-			for (int i = 0; i < n; ++i)
-				_deque.removeLast();
-		});
+			for (S s : c)
+				SContext.checkUnstored(SContext.unwrap(s));
+			for (S s : c)
+				SContext.store(SContext.unwrap(s));
+			int n = _deque.size();
+			SContext ctx = sContext();
+			for (S s : c)
+				_deque.addLast(SContext.unwrap(s));
+			ctx.addOnRollback(() ->
+			{
+				if (n > 0)
+				{
+					for (int i = _deque.size() - 1; i >= n; --i)
+						SContext.unstore(_deque.removeLast());
+				}
+				else
+				{
+					_deque.forEach(SContext::unstore);
+					_deque.clear();
+				}
+			});
+		}
 		return true;
 	}
 
@@ -261,8 +292,12 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	{
 		SContext ctx = sContext();
 		V vOld = _deque.remove();
-		ctx.addOnRollback(() -> _deque.addFirst(vOld));
-		return vOld;
+		ctx.addOnRollback(() ->
+		{
+			SContext.checkAndStore(vOld);
+			_deque.addFirst(vOld);
+		});
+		return SContext.unstore(vOld);
 	}
 
 	@Override
@@ -293,8 +328,12 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	{
 		SContext ctx = sContext();
 		V vOld = _deque.removeLast();
-		ctx.addOnRollback(() -> _deque.addLast(vOld));
-		return vOld;
+		ctx.addOnRollback(() ->
+		{
+			SContext.checkAndStore(vOld);
+			_deque.addLast(vOld);
+		});
+		return SContext.unstore(vOld);
 	}
 
 	@Override
@@ -319,12 +358,16 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 
 	public V pollDirect()
 	{
+		if (_deque.isEmpty())
+			return null;
 		SContext ctx = sContext();
 		V vOld = _deque.poll();
-		if (vOld == null)
-			return null;
-		ctx.addOnRollback(() -> _deque.addFirst(vOld));
-		return vOld;
+		ctx.addOnRollback(() ->
+		{
+			SContext.checkAndStore(vOld);
+			_deque.addFirst(vOld);
+		});
+		return SContext.unstore(vOld);
 	}
 
 	@Override
@@ -346,12 +389,16 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 
 	public V pollLastDirect()
 	{
+		if (_deque.isEmpty())
+			return null;
 		SContext ctx = sContext();
 		V vOld = _deque.pollLast();
-		if (vOld == null)
-			return null;
-		ctx.addOnRollback(() -> _deque.addLast(vOld));
-		return vOld;
+		ctx.addOnRollback(() ->
+		{
+			SContext.checkAndStore(vOld);
+			_deque.addLast(vOld);
+		});
+		return SContext.unstore(vOld);
 	}
 
 	@Override
@@ -388,16 +435,23 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	@Override
 	public void clear()
 	{
-		if (_deque.isEmpty())
+		int n = _deque.size();
+		if (n <= 0)
 			return;
 		SContext ctx = sContext();
-		Deque<V> saved = new ArrayDeque<>(_deque);
-		_deque.clear();
+		@SuppressWarnings("unchecked")
+		V[] saved = (V[])new Object[n];
+		for (int i = 0; i < n; i++)
+			saved[i] = SContext.unstore(_deque.pollFirst());
 		ctx.addOnRollback(() ->
 		{
 			_deque.clear();
-			_deque.addAll(saved);
-			saved.clear();
+			for (int i = 0; i < n; i++)
+			{
+				V v = saved[i];
+				SContext.checkAndStore(v);
+				_deque.addLast(v);
+			}
 		});
 	}
 
@@ -425,7 +479,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		@Override
 		public S next()
 		{
-			return SContext.safe(_owner, _it.next());
+			return SContext.safe(_parent, _it.next());
 		}
 
 		@Deprecated
@@ -451,23 +505,21 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	public boolean foreachFilter(Predicate<V> filter, Predicate<S> consumer)
 	{
 		for (V v : _deque)
-		{
-			if (filter.test(v) && !consumer.test(SContext.safe(_owner, v)))
+			if (filter.test(v) && !consumer.test(SContext.safe(_parent, v)))
 				return false;
-		}
 		return true;
 	}
 
 	public SDeque<V, S> append(Deque<V> deque)
 	{
-		Util.appendDeep(deque, _deque);
+		deque.forEach(this::addLastDirect);
 		return this;
 	}
 
 	public SDeque<V, S> assign(Deque<V> deque)
 	{
 		clear();
-		Util.appendDeep(deque, _deque);
+		deque.forEach(this::addLastDirect);
 		return this;
 	}
 

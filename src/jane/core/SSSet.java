@@ -11,9 +11,9 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 {
 	private final SSetListener<V> _listener;
 
-	public SSSet(Safe<?> owner, NavigableSet<V> set, SSetListener<V> listener)
+	public SSSet(Safe<?> parent, NavigableSet<V> set, SSetListener<V> listener)
 	{
-		super(owner, set, listener);
+		super(parent, set, listener);
 		_listener = listener;
 	}
 
@@ -32,7 +32,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 	@Override
 	public S first()
 	{
-		return SContext.safe(_owner, firstUnsafe());
+		return SContext.safe(_parent, firstUnsafe());
 	}
 
 	@Deprecated
@@ -44,7 +44,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 	@Override
 	public S last()
 	{
-		return SContext.safe(_owner, lastUnsafe());
+		return SContext.safe(_parent, lastUnsafe());
 	}
 
 	@Deprecated
@@ -56,7 +56,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 	@Override
 	public S lower(S s)
 	{
-		return SContext.safe(_owner, lowerUnsafe(SContext.unsafe(s)));
+		return SContext.safe(_parent, lowerUnsafe(SContext.unwrap(s)));
 	}
 
 	@Deprecated
@@ -68,7 +68,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 	@Override
 	public S floor(S s)
 	{
-		return SContext.safe(_owner, floorUnsafe(SContext.unsafe(s)));
+		return SContext.safe(_parent, floorUnsafe(SContext.unwrap(s)));
 	}
 
 	@Deprecated
@@ -80,7 +80,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 	@Override
 	public S ceiling(S s)
 	{
-		return SContext.safe(_owner, ceilingUnsafe(SContext.unsafe(s)));
+		return SContext.safe(_parent, ceilingUnsafe(SContext.unwrap(s)));
 	}
 
 	@Deprecated
@@ -92,7 +92,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 	@Override
 	public S higher(S s)
 	{
-		return SContext.safe(_owner, higherUnsafe(SContext.unsafe(s)));
+		return SContext.safe(_parent, higherUnsafe(SContext.unwrap(s)));
 	}
 
 	public V pollFirstDirect()
@@ -101,7 +101,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 		V v = ((NavigableSet<V>)_set).pollFirst();
 		if (v != null)
 			addUndoRemove(ctx, v);
-		return v;
+		return SContext.unstore(v);
 	}
 
 	@Override
@@ -116,7 +116,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 		V v = ((NavigableSet<V>)_set).pollLast();
 		if (v != null)
 			addUndoRemove(ctx, v);
-		return v;
+		return SContext.unstore(v);
 	}
 
 	@Override
@@ -128,7 +128,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 	@Override
 	public SSSet<V, S> descendingSet()
 	{
-		return new SSSet<>(_owner, ((NavigableSet<V>)_set).descendingSet(), _listener);
+		return new SSSet<>(_parent, ((NavigableSet<V>)_set).descendingSet(), _listener);
 	}
 
 	@Override
@@ -139,35 +139,35 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 
 	public SSSet<V, S> subSetDirect(V from, boolean fromInclusive, V to, boolean toInclusive)
 	{
-		return new SSSet<>(_owner, ((NavigableSet<V>)_set).subSet(from, fromInclusive, to, toInclusive), _listener);
+		return new SSSet<>(_parent, ((NavigableSet<V>)_set).subSet(from, fromInclusive, to, toInclusive), _listener);
 	}
 
 	@Override
 	public SSSet<V, S> subSet(S from, boolean fromInclusive, S to, boolean toInclusive)
 	{
-		return subSetDirect(SContext.unsafe(from), fromInclusive, SContext.unsafe(to), toInclusive);
+		return subSetDirect(SContext.unwrap(from), fromInclusive, SContext.unwrap(to), toInclusive);
 	}
 
 	public SSSet<V, S> headSetDirect(V to, boolean inclusive)
 	{
-		return new SSSet<>(_owner, ((NavigableSet<V>)_set).headSet(to, inclusive), _listener);
+		return new SSSet<>(_parent, ((NavigableSet<V>)_set).headSet(to, inclusive), _listener);
 	}
 
 	@Override
 	public SSSet<V, S> headSet(S to, boolean inclusive)
 	{
-		return headSetDirect(SContext.unsafe(to), inclusive);
+		return headSetDirect(SContext.unwrap(to), inclusive);
 	}
 
 	public SSSet<V, S> tailSetDirect(V from, boolean inclusive)
 	{
-		return new SSSet<>(_owner, ((NavigableSet<V>)_set).tailSet(from, inclusive), _listener);
+		return new SSSet<>(_parent, ((NavigableSet<V>)_set).tailSet(from, inclusive), _listener);
 	}
 
 	@Override
 	public SSSet<V, S> tailSet(S from, boolean inclusive)
 	{
-		return tailSetDirect(SContext.unsafe(from), inclusive);
+		return tailSetDirect(SContext.unwrap(from), inclusive);
 	}
 
 	public SSSet<V, S> subSetDirect(V from, V to)
@@ -178,7 +178,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 	@Override
 	public SSSet<V, S> subSet(S from, S to)
 	{
-		return subSetDirect(SContext.unsafe(from), true, SContext.unsafe(to), false);
+		return subSetDirect(SContext.unwrap(from), true, SContext.unwrap(to), false);
 	}
 
 	public SSSet<V, S> headSetDirect(V to)
@@ -189,7 +189,7 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 	@Override
 	public SSSet<V, S> headSet(S to)
 	{
-		return headSetDirect(SContext.unsafe(to), false);
+		return headSetDirect(SContext.unwrap(to), false);
 	}
 
 	public SSSet<V, S> tailSetDirect(V from)
@@ -200,6 +200,6 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 	@Override
 	public SSSet<V, S> tailSet(S from)
 	{
-		return tailSetDirect(SContext.unsafe(from), true);
+		return tailSetDirect(SContext.unwrap(from), true);
 	}
 }

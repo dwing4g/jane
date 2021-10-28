@@ -13,7 +13,7 @@ import org.apache.mina.core.write.WriteRequest;
 public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneable, Serializable, WriteRequest
 {
 	private static final long serialVersionUID = 1L;
-	private transient int	  _serial;				// 用作协议时的序列号;也用于存储时的状态(0:未存储,1:已存储但未修改,2:已存储且已修改)
+	private transient int	  _serial;				// 0x8000_0000:已存储状态; 其它:协议的序列号
 
 	/**
 	 * 获取协议的序列号
@@ -28,6 +28,7 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	 */
 	final void serial(int s)
 	{
+		assert s != 0x8000_0000;
 		_serial = s;
 	}
 
@@ -39,27 +40,25 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	 */
 	public final boolean stored()
 	{
-		return _serial > 0;
+		return _serial == 0x8000_0000;
 	}
 
-	/**
-	 * 获取修改标记
-	 * <p>
-	 * 作为数据库记录时有效. 标记此记录是否在缓存中有修改(和数据库存储的记录有差异),即脏记录
-	 */
-	public final boolean modified()
+	final void store()
 	{
-		return _serial == 2;
+		_serial = 0x8000_0000;
 	}
 
-	/**
-	 * 设置存储状态
-	 * <p>
-	 * @param saveState 当此记录在事务内有修改时,会设置为2以提示数据库缓存系统在合适的时机提交到数据库存储系统
-	 */
-	final void setSaveState(int saveState)
+	final void unstore()
 	{
-		_serial = saveState;
+		_serial = 0;
+	}
+
+	final boolean tryStore()
+	{
+		if (_serial == 0x8000_0000)
+			return false;
+		_serial = 0x8000_0000;
+		return true;
 	}
 
 	/**

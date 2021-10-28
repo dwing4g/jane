@@ -114,10 +114,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 						if (v == _deleted)
 							_stoTable.remove(k);
 						else
-						{
 							_stoTable.put(k, v);
-							v.setSaveState(1);
-						}
 						_cacheMod.remove(k, v);
 					}
 					finally
@@ -149,10 +146,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 			if (v == _deleted)
 				_stoTable.remove(k);
 			else
-			{
 				_stoTable.put(k, v);
-				v.setSaveState(1);
-			}
 		}
 		int m = _cacheMod.size();
 		_cacheMod.clear();
@@ -189,9 +183,9 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	public V getUnsafe(long k)
 	{
 		_readCount.getAndIncrement();
-		Supplier<V> r = _cache.get(k);
+		Supplier<V> s = _cache.get(k);
 		V v;
-		if (r != null && (v = r.get()) != null)
+		if (s != null && (v = s.get()) != null)
 			return v;
 		if (_cacheMod == null)
 			return null;
@@ -207,11 +201,9 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 		v = _stoTable.get(k);
 		if (v != null)
 		{
-			v.setSaveState(1);
+			v.store();
 			_cache.put(k, new CacheRefLong<>(_cache, k, v));
 		}
-		else if (r != null)
-			_cache.remove(k);
 		return v;
 	}
 
@@ -341,14 +333,10 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	public V getNoCacheUnsafe(long k)
 	{
 		_readCount.getAndIncrement();
-		Supplier<V> r = _cache.get(k);
+		Supplier<V> s = _cache.get(k);
 		V v;
-		if (r != null)
-		{
-			if ((v = r.get()) != null)
-				return v;
-			_cache.remove(k);
-		}
+		if (s != null && (v = s.get()) != null)
+			return v;
 		if (_cacheMod == null)
 			return null;
 		v = _cacheMod.get(k);
@@ -381,14 +369,10 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	public V getCacheUnsafe(long k)
 	{
 		_readCount.getAndIncrement();
-		Supplier<V> r = _cache.get(k);
+		Supplier<V> s = _cache.get(k);
 		V v;
-		if (r != null)
-		{
-			if ((v = r.get()) != null)
-				return v;
-			_cache.remove(k);
-		}
+		if (s != null && (v = s.get()) != null)
+			return v;
 		if (_cacheMod == null)
 			return null;
 		v = _cacheMod.get(k);
@@ -416,38 +400,27 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	public void modify(long k, V v)
 	{
 		Procedure.incVersion(lockId(k));
-		if (!v.modified() && _cacheMod != null)
+		if (_cacheMod != null)
 		{
 			V vOld = _cacheMod.put(k, v);
 			if (vOld == null)
 				_dbm.incModCount();
 			else if (vOld != v)
-			{
-				_cacheMod.put(k, vOld);
-				throw new IllegalStateException("modify unmatched record: t=" +
-						_tableName + ",k=" + k + ",vOld=" + vOld + ",v=" + v);
-			}
-			v.setSaveState(2);
+				_cacheMod.put(k, vOld); // 可能之前已经覆盖或删除过记录,然后再modify的话,就忽略本次modify了,因为SContext.commit无法识别这种情况
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	void modify(long k, Object vo)
 	{
-		V v = (V)vo;
 		Procedure.incVersion(lockId(k));
-		if (!v.modified() && _cacheMod != null)
+		if (_cacheMod != null)
 		{
-			V vOld = _cacheMod.put(k, v);
+			@SuppressWarnings("unchecked")
+			V vOld = _cacheMod.put(k, (V)vo);
 			if (vOld == null)
 				_dbm.incModCount();
-			else if (vOld != v)
-			{
-				// 可能之前已经覆盖或删除过记录,然后再modify的话,就忽略本次modify了,因为SContext.commit无法识别这种情况
-				_cacheMod.put(k, vOld);
-				return;
-			}
-			v.setSaveState(2);
+			else if (vOld != vo)
+				_cacheMod.put(k, vOld); // 可能之前已经覆盖或删除过记录,然后再modify的话,就忽略本次modify了,因为SContext.commit无法识别这种情况
 		}
 	}
 
@@ -463,25 +436,33 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	{
 		if (v == null)
 			throw new NullPointerException();
-		Supplier<V> rOld = _cache.get(k);
-		if (rOld != null && rOld.get() == v)
+		Supplier<V> sOld = _cache.get(k);
+		V vOld = sOld != null ? sOld.get() : null;
+		if (vOld == v)
 			modify(k, v);
 		else
 		{
-			if (v.stored())
-				throw new IllegalStateException("put shared record: t=" + _tableName +
-						",k=" + k + ",vOld=" + (rOld != null ? rOld.get() : null) + ",v=" + v);
+			if (!v.tryStore())
+				throw new IllegalStateException("put already stored bean: t=" +
+						_tableName + ",k=" + k + ",vOld=" + vOld + ",v=" + v);
 			Procedure.incVersion(lockId(k));
 			if (_cacheMod != null)
 			{
 				_cache.put(k, new CacheRefLong<>(_cache, k, v));
-				V vOld = _cacheMod.put(k, v);
-				if (vOld == null)
+				if (vOld != null)
+					vOld.unstore();
+				vOld = _cacheMod.put(k, v);
+				if (vOld != null)
+					vOld.unstore();
+				else
 					_dbm.incModCount();
-				v.setSaveState(2);
 			}
 			else
+			{
 				_cache.put(k, new StrongRef<>(v));
+				if (vOld != null)
+					vOld.unstore();
+			}
 		}
 	}
 
@@ -497,14 +478,18 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 			throw new IllegalAccessError("put unlocked record! table=" + _tableName + ",key=" + k);
 		V vOld = getNoCacheUnsafe(k);
 		if (vOld == v)
+		{
+			if (_cacheMod != null && _cacheMod.get(k) != v)
+				modify(k, v); // 这里不考虑回滚也没什么问题
 			return v;
+		}
 		if (v.stored())
-			throw new IllegalStateException("put shared record: t=" + _tableName + ",k=" + k + ",v=" + v);
+			throw new IllegalStateException("put already stored bean: t=" + _tableName + ",k=" + k + ",v=" + v);
 		SContext.current().addOnRollbackDirty(() ->
 		{
 			if (vOld != null)
 			{
-				vOld.setSaveState(0); // 确保可写入
+				vOld.unstore();
 				putUnsafe(k, vOld);
 			}
 			else
@@ -512,7 +497,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 		});
 		putUnsafe(k, v);
 		if (vOld != null)
-			vOld.setSaveState(0);
+			vOld.unstore();
 		return vOld;
 	}
 
@@ -591,11 +576,11 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 			return null;
 		SContext.current().addOnRollbackDirty(() ->
 		{
-			vOld.setSaveState(0); // 确保可写入
+			vOld.unstore(); // 确保可写入
 			putUnsafe(k, vOld);
 		});
 		removeUnsafe(k);
-		vOld.setSaveState(0);
+		vOld.unstore();
 		return vOld;
 	}
 

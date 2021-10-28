@@ -191,7 +191,7 @@ final class LinkedDeque<E extends Linked<E>> extends AbstractCollection<E> imple
 
   @Override
   public boolean contains(Object o) {
-    return (o instanceof Linked<?>) && contains((Linked<?>) o);
+    return (o instanceof Linked) && contains((Linked<?>) o);
   }
 
   // A fast-path containment check
@@ -325,7 +325,7 @@ final class LinkedDeque<E extends Linked<E>> extends AbstractCollection<E> imple
   @Override
   @SuppressWarnings("unchecked")
   public boolean remove(Object o) {
-    return (o instanceof Linked<?>) && remove((E) o);
+    return (o instanceof Linked) && remove((E) o);
   }
 
   // A fast-path removal

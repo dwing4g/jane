@@ -3,7 +3,6 @@ package jane.core;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Predicate;
 import jane.core.SContext.Rec;
@@ -25,19 +24,19 @@ public class SSet<V, S> implements Set<S>, Cloneable
 		void onChanged(Rec rec, Set<V> added, Set<V> removed);
 	}
 
-	protected final Safe<?>	_owner;
+	protected final Safe<?>	_parent;
 	protected final Set<V>	_set;
 	private SContext		_sctx;
 	protected Set<V>		_added;
 	protected Set<V>		_removed;
 
-	public SSet(Safe<?> owner, Set<V> set, SSetListener<V> listener)
+	public SSet(Safe<?> parent, Set<V> set, SSetListener<V> listener)
 	{
-		_owner = owner;
+		_parent = parent;
 		_set = set;
 		if (listener != null)
 		{
-			Rec rec = owner.record();
+			Rec rec = parent.record();
 			if (rec != null)
 			{
 				_added = new HashSet<>();
@@ -53,10 +52,10 @@ public class SSet<V, S> implements Set<S>, Cloneable
 
 	protected SContext sContext()
 	{
-		_owner.checkLock();
+		_parent.checkLock();
 		if (_sctx != null)
 			return _sctx;
-		_owner.dirty();
+		_parent.dirty();
 		return _sctx = SContext.current();
 	}
 
@@ -64,14 +63,18 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	{
 		if (_added != null)
 			_added.add(v);
-		ctx.addOnRollback(() -> _set.remove(v));
+		ctx.addOnRollback(() -> SContext.unstore(_set.remove(v)));
 	}
 
 	protected void addUndoRemove(SContext ctx, V v)
 	{
 		if (_removed != null)
 			_removed.add(v);
-		ctx.addOnRollback(() -> _set.add(v));
+		ctx.addOnRollback(() ->
+		{
+			SContext.checkAndStore(v);
+			_set.add(v);
+		});
 	}
 
 	@Override
@@ -89,7 +92,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	@Override
 	public boolean contains(Object v)
 	{
-		return _set.contains(SContext.unsafe(v));
+		return _set.contains(SContext.unwrap(v));
 	}
 
 	@Override
@@ -115,6 +118,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 
 	public boolean addDirect(V v)
 	{
+		SContext.checkAndStore(v);
 		SContext ctx = sContext();
 		if (!_set.add(v))
 			return false;
@@ -125,7 +129,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	@Override
 	public boolean add(S s)
 	{
-		return addDirect(SContext.unsafe(s));
+		return addDirect(SContext.unwrap(s));
 	}
 
 	public boolean addAllDirect(Iterable<? extends V> c)
@@ -151,10 +155,10 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	public boolean remove(Object s)
 	{
 		SContext ctx = sContext();
-		V v = SContext.unsafe(s);
+		V v = SContext.unwrap(s);
 		if (!_set.remove(v))
 			return false;
-		addUndoRemove(ctx, v);
+		addUndoRemove(ctx, SContext.unstore(v));
 		return true;
 	}
 
@@ -196,18 +200,24 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	@Override
 	public void clear()
 	{
-		if (_set.isEmpty())
+		int n = _set.size();
+		if (n <= 0)
 			return;
 		SContext ctx = sContext();
-		Set<V> saved = (_set instanceof LinkedHashSet ? new LinkedHashSet<>(_set) : new HashSet<>(_set));
-		if (_removed != null)
-			_removed.addAll(_set);
-		_set.clear();
+		@SuppressWarnings("unchecked")
+		V[] saved = (V[])new Object[n];
+		int i = 0;
+		for (V v : _set)
+			saved[i++] = SContext.unstore(v);
 		ctx.addOnRollback(() ->
 		{
 			_set.clear();
-			_set.addAll(saved);
-			saved.clear();
+			for (int j = 0; j < n; j++)
+			{
+				V v = saved[j];
+				SContext.checkAndStore(v);
+				_set.add(v);
+			}
 		});
 	}
 
@@ -236,7 +246,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 		@Override
 		public S next()
 		{
-			return SContext.safe(_owner, _cur = _it.next());
+			return SContext.safe(_parent, _cur = _it.next());
 		}
 
 		@Override
@@ -258,7 +268,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	{
 		for (V v : _set)
 		{
-			if (filter.test(v) && !consumer.test(SContext.safe(_owner, v)))
+			if (filter.test(v) && !consumer.test(SContext.safe(_parent, v)))
 				return false;
 		}
 		return true;
@@ -266,14 +276,14 @@ public class SSet<V, S> implements Set<S>, Cloneable
 
 	public SSet<V, S> append(Set<V> set)
 	{
-		Util.appendDeep(set, _set);
+		set.forEach(this::addDirect);
 		return this;
 	}
 
 	public SSet<V, S> assign(Set<V> set)
 	{
 		clear();
-		Util.appendDeep(set, _set);
+		set.forEach(this::addDirect);
 		return this;
 	}
 

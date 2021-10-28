@@ -1,6 +1,5 @@
 package jane.core;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -13,22 +12,22 @@ import jane.core.SContext.Safe;
  */
 public final class SList<V, S> implements List<S>, Cloneable
 {
-	private final Safe<?> _owner;
+	private final Safe<?> _parent;
 	private final List<V> _list;
 	private SContext	  _sctx;
 
-	public SList(Safe<?> owner, List<V> list)
+	public SList(Safe<?> parent, List<V> list)
 	{
-		_owner = owner;
+		_parent = parent;
 		_list = list;
 	}
 
 	private SContext sContext()
 	{
-		_owner.checkLock();
+		_parent.checkLock();
 		if (_sctx != null)
 			return _sctx;
-		_owner.dirty();
+		_parent.dirty();
 		return _sctx = SContext.current();
 	}
 
@@ -47,7 +46,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 	@Override
 	public boolean contains(Object o)
 	{
-		return _list.contains(SContext.unsafe(o));
+		return _list.contains(SContext.unwrap(o));
 	}
 
 	@Override
@@ -59,20 +58,20 @@ public final class SList<V, S> implements List<S>, Cloneable
 	@Override
 	public int indexOf(Object o)
 	{
-		return _list.indexOf(SContext.unsafe(o));
+		return _list.indexOf(SContext.unwrap(o));
 	}
 
 	@Override
 	public int lastIndexOf(Object o)
 	{
-		return _list.lastIndexOf(SContext.unsafe(o));
+		return _list.lastIndexOf(SContext.unwrap(o));
 	}
 
 	@Deprecated
 	@Override
 	public Object[] toArray()
 	{
-		return _list.toArray();
+		return _list.toArray(); //unsafe
 	}
 
 	@Deprecated
@@ -80,135 +79,195 @@ public final class SList<V, S> implements List<S>, Cloneable
 	public <T> T[] toArray(T[] a)
 	{
 		//noinspection SuspiciousToArrayCall
-		return _list.toArray(a);
+		return _list.toArray(a); //unsafe
 	}
 
 	@Override
 	public S get(int idx)
 	{
-		return SContext.safe(_owner, _list.get(idx));
+		return SContext.safe(_parent, _list.get(idx));
 	}
 
-	/**
-	 * NOTE: do NOT modify v after called
-	 */
 	public boolean addDirect(V v)
 	{
+		SContext.checkAndStore(v);
 		SContext ctx = sContext();
 		//noinspection ConstantConditions
 		if (!_list.add(v))
 			return false;
-		ctx.addOnRollback(() -> _list.remove(_list.size() - 1));
+		ctx.addOnRollback(() -> SContext.unstore(_list.remove(_list.size() - 1)));
 		return true;
 	}
 
 	@Override
 	public boolean add(S s)
 	{
-		return addDirect(SContext.unsafe(s));
+		return addDirect(SContext.unwrap(s));
 	}
 
 	public void addDirect(int idx, V v)
 	{
+		SContext.checkAndStore(v);
 		SContext ctx = sContext();
 		_list.add(idx, v);
-		ctx.addOnRollback(() -> _list.remove(idx));
+		ctx.addOnRollback(() -> SContext.unstore(_list.remove(idx)));
 	}
 
 	@Override
 	public void add(int idx, S s)
 	{
-		addDirect(idx, SContext.unsafe(s));
+		addDirect(idx, SContext.unwrap(s));
 	}
 
 	public boolean addAllDirect(Collection<? extends V> c)
 	{
-		SContext ctx = sContext();
-		int n = _list.size();
-		if (!_list.addAll(c))
-			return false;
-		ctx.addOnRollback(() ->
+		if (!c.isEmpty())
 		{
-			if (n > 0)
+			for (V v : c)
+				SContext.checkUnstored(v);
+			int n = _list.size();
+			SContext ctx = sContext();
+			if (!_list.addAll(c))
+				return false;
+			for (V v : c)
+				SContext.store(v);
+			ctx.addOnRollback(() ->
 			{
-				for (int i = _list.size() - 1; i >= n; --i)
-					_list.remove(i);
-			}
-			else
-				_list.clear();
-		});
+				if (n > 0)
+				{
+					for (int i = _list.size() - 1; i >= n; --i)
+						SContext.unstore(_list.remove(i));
+				}
+				else
+				{
+					_list.forEach(SContext::unstore);
+					_list.clear();
+				}
+			});
+		}
 		return true;
 	}
 
 	@Override
 	public boolean addAll(Collection<? extends S> c)
 	{
-		SContext ctx = sContext();
-		int n = _list.size();
-		for (S s : c)
-			_list.add(SContext.unsafe(s));
-		ctx.addOnRollback(() ->
+		if (!c.isEmpty())
 		{
-			if (n > 0)
+			for (S s : c)
+				SContext.checkUnstored(SContext.unwrap(s));
+			for (S s : c)
+				SContext.store(SContext.unwrap(s));
+			int n = _list.size();
+			SContext ctx = sContext();
+			for (S s : c)
+				_list.add(SContext.unwrap(s));
+			ctx.addOnRollback(() ->
 			{
-				for (int i = _list.size() - 1; i >= n; --i)
-					_list.remove(i);
-			}
-			else
-				_list.clear();
-		});
+				if (n > 0)
+				{
+					for (int i = _list.size() - 1; i >= n; --i)
+						SContext.unstore(_list.remove(i));
+				}
+				else
+				{
+					_list.forEach(SContext::unstore);
+					_list.clear();
+				}
+			});
+		}
 		return true;
 	}
 
 	public boolean addAllDirect(int idx, Collection<? extends V> c)
 	{
-		SContext ctx = sContext();
-		int n = _list.size();
-		if (!_list.addAll(idx, c))
-			return false;
-		int n2 = _list.size() - n;
-		ctx.addOnRollback(() ->
+		if (!c.isEmpty())
 		{
-			if (n2 < _list.size())
+			for (V v : c)
+				SContext.checkUnstored(v);
+			int n = _list.size();
+			SContext ctx = sContext();
+			if (!_list.addAll(idx, c))
+				return false;
+			for (V v : c)
+				SContext.store(v);
+			int nTail = n - idx;
+			ctx.addOnRollback(() ->
 			{
-				for (int i = idx + n2 - 1; i >= idx; --i)
-					_list.remove(i);
-			}
-			else
-				_list.clear();
-		});
+				if (n > 0)
+				{
+					for (int i = _list.size() - nTail - 1; i >= idx; i--)
+						SContext.unstore(_list.remove(i));
+				}
+				else
+				{
+					_list.forEach(SContext::unstore);
+					_list.clear();
+				}
+			});
+		}
 		return true;
 	}
 
 	@Override
 	public boolean addAll(int idx, Collection<? extends S> c)
 	{
-		ArrayList<V> list = new ArrayList<>(c.size());
-		for (S s : c)
-			list.add(SContext.unsafe(s));
-		return addAllDirect(idx, list);
+		if (!c.isEmpty())
+		{
+			for (S s : c)
+				SContext.checkUnstored(SContext.unwrap(s));
+			for (S s : c)
+				SContext.unstore(SContext.unwrap(s));
+			int n = _list.size();
+			SContext ctx = sContext();
+			for (S s : c)
+				_list.add(SContext.unwrap(s));
+			int nTail = n - idx;
+			ctx.addOnRollback(() ->
+			{
+				if (n > 0)
+				{
+					for (int i = _list.size() - nTail - 1; i >= idx; i--)
+						SContext.unstore(_list.remove(i));
+				}
+				else
+				{
+					_list.forEach(SContext::unstore);
+					_list.clear();
+				}
+			});
+		}
+		return true;
 	}
 
 	public V setDirect(int idx, V v)
 	{
+		SContext.checkAndStore(v);
 		SContext ctx = sContext();
 		V vOld = _list.set(idx, v);
-		ctx.addOnRollback(() -> _list.set(idx, vOld));
-		return vOld;
+		ctx.addOnRollback(() ->
+		{
+			SContext.checkAndStore(vOld);
+			SContext.unstore(_list.set(idx, vOld));
+		});
+		return SContext.unstore(vOld);
 	}
 
 	@Override
 	public S set(int idx, S s)
 	{
-		return SContext.safeAlone(setDirect(idx, SContext.unsafe(s)));
+		return SContext.safeAlone(setDirect(idx, SContext.unwrap(s)));
 	}
 
 	public V removeDirect(int idx)
 	{
 		SContext ctx = sContext();
 		V vOld = _list.remove(idx);
-		ctx.addOnRollback(() -> _list.add(idx, vOld));
-		return vOld;
+		ctx.addOnRollback(() ->
+		{
+			SContext.checkAndStore(vOld);
+			_list.add(idx, vOld);
+		});
+		return SContext.unstore(vOld);
 	}
 
 	@Override
@@ -260,16 +319,24 @@ public final class SList<V, S> implements List<S>, Cloneable
 	@Override
 	public void clear()
 	{
-		if (_list.isEmpty())
+		int n = _list.size();
+		if (n <= 0)
 			return;
 		SContext ctx = sContext();
-		ArrayList<V> saved = new ArrayList<>(_list);
-		_list.clear();
+		@SuppressWarnings("unchecked")
+		V[] saved = (V[])new Object[n];
+		int i = 0;
+		for (V v : _list)
+			saved[i++] = SContext.unstore(v);
 		ctx.addOnRollback(() ->
 		{
 			_list.clear();
-			_list.addAll(saved);
-			saved.clear();
+			for (int j = 0; j < n; j++)
+			{
+				V v = saved[j];
+				SContext.checkAndStore(v);
+				_list.add(v);
+			}
 		});
 	}
 
@@ -300,7 +367,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 		@Override
 		public S next()
 		{
-			return SContext.safe(_owner, nextUnsafe());
+			return SContext.safe(_parent, nextUnsafe());
 		}
 
 		@Override
@@ -309,8 +376,12 @@ public final class SList<V, S> implements List<S>, Cloneable
 			SContext ctx = sContext();
 			_it.remove();
 			int i = _idx--;
-			V v = _cur;
-			ctx.addOnRollback(() -> _list.add(i, v));
+			V v = SContext.unstore(_cur);
+			ctx.addOnRollback(() ->
+			{
+				SContext.checkAndStore(v);
+				_list.add(i, v);
+			});
 		}
 	}
 
@@ -363,7 +434,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 		@Override
 		public S next()
 		{
-			return SContext.safe(_owner, nextUnsafe());
+			return SContext.safe(_parent, nextUnsafe());
 		}
 
 		@Deprecated
@@ -378,7 +449,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 		@Override
 		public S previous()
 		{
-			return SContext.safe(_owner, previousUnsafe());
+			return SContext.safe(_parent, previousUnsafe());
 		}
 
 		@Override
@@ -388,37 +459,47 @@ public final class SList<V, S> implements List<S>, Cloneable
 			_it.remove();
 			int i = _idx + _idxOff;
 			_idx -= 1 - _idxOff;
-			V v = _cur;
-			ctx.addOnRollback(() -> _list.add(i, v));
+			V v = SContext.unstore(_cur);
+			ctx.addOnRollback(() ->
+			{
+				SContext.checkAndStore(v);
+				_list.add(i, v);
+			});
 		}
 
 		public void setDirect(V v)
 		{
+			SContext.checkAndStore(v);
 			SContext ctx = sContext();
 			_it.set(v);
 			int i = _idx + _idxOff;
-			V vOld = _cur;
-			ctx.addOnRollback(() -> _list.set(i, vOld));
+			V vOld = SContext.unstore(_cur);
+			ctx.addOnRollback(() ->
+			{
+				SContext.checkAndStore(vOld);
+				_list.set(i, vOld);
+			});
 		}
 
 		@Override
 		public void set(S s)
 		{
-			setDirect(SContext.unsafe(s));
+			setDirect(SContext.unwrap(s));
 		}
 
 		public void addDirect(V v)
 		{
+			SContext.checkAndStore(v);
 			SContext ctx = sContext();
 			_it.add(v);
 			int i = _idx + 1;
-			ctx.addOnRollback(() -> _list.remove(i));
+			ctx.addOnRollback(() -> SContext.unstore(_list.remove(i)));
 		}
 
 		@Override
 		public void add(S s)
 		{
-			addDirect(SContext.unsafe(s));
+			addDirect(SContext.unwrap(s));
 		}
 	}
 
@@ -443,14 +524,14 @@ public final class SList<V, S> implements List<S>, Cloneable
 	@Override
 	public SList<V, S> subList(int idxFrom, int idxTo)
 	{
-		return new SList<>(_owner, _list.subList(idxFrom, idxTo));
+		return new SList<>(_parent, _list.subList(idxFrom, idxTo));
 	}
 
 	public boolean foreachFilter(Predicate<V> filter, Predicate<S> consumer)
 	{
 		for (V v : _list)
 		{
-			if (filter.test(v) && !consumer.test(SContext.safe(_owner, v)))
+			if (filter.test(v) && !consumer.test(SContext.safe(_parent, v)))
 				return false;
 		}
 		return true;
@@ -458,14 +539,14 @@ public final class SList<V, S> implements List<S>, Cloneable
 
 	public SList<V, S> append(Collection<V> list)
 	{
-		Util.appendDeep(list, _list);
+		list.forEach(this::addDirect);
 		return this;
 	}
 
 	public SList<V, S> assign(Collection<V> list)
 	{
 		clear();
-		Util.appendDeep(list, _list);
+		list.forEach(this::addDirect);
 		return this;
 	}
 

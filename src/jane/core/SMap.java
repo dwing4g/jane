@@ -4,7 +4,6 @@ import java.util.AbstractCollection;
 import java.util.AbstractSet;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiPredicate;
@@ -29,18 +28,18 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		void onChanged(Rec rec, Map<K, V> changed);
 	}
 
-	protected final Safe<?>	  _owner;
+	protected final Safe<?>	  _parent;
 	protected final Map<K, V> _map;
 	private SContext		  _sctx;
 	protected Map<K, V>		  _changed;
 
-	public SMap(Safe<?> owner, Map<K, V> map, SMapListener<K, V> listener)
+	public SMap(Safe<?> parent, Map<K, V> map, SMapListener<K, V> listener)
 	{
-		_owner = owner;
+		_parent = parent;
 		_map = map;
 		if (listener != null)
 		{
-			Rec rec = owner.record();
+			Rec rec = parent.record();
 			if (rec != null)
 			{
 				_changed = new HashMap<>();
@@ -53,19 +52,19 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		}
 	}
 
-	protected SMap(Safe<?> owner, Map<K, V> map, Map<K, V> changed)
+	protected SMap(Safe<?> parent, Map<K, V> map, Map<K, V> changed)
 	{
-		_owner = owner;
+		_parent = parent;
 		_map = map;
 		_changed = changed;
 	}
 
 	protected SContext sContext()
 	{
-		_owner.checkLock();
+		_parent.checkLock();
 		if (_sctx != null)
 			return _sctx;
-		_owner.dirty();
+		_parent.dirty();
 		return _sctx = SContext.current();
 	}
 
@@ -74,7 +73,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	{
 		if (!(v instanceof Bean))
 			return (S)v;
-		Safe<?> s = ((Bean<?>)v).safe(_owner);
+		Safe<?> s = ((Bean<?>)v).safe(_parent);
 		if (_changed != null)
 			s.onDirty(() -> _changed.put((K)k, v));
 		return (S)s;
@@ -85,9 +84,12 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		ctx.addOnRollback(() ->
 		{
 			if (vOld != null)
+			{
+				SContext.checkAndStore(vOld);
 				_map.put(k, vOld);
+			}
 			else
-				_map.remove(k);
+				SContext.unstore(_map.remove(k));
 		});
 	}
 
@@ -95,7 +97,11 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	{
 		if (_changed != null)
 			_changed.put(k, null);
-		ctx.addOnRollback(() -> _map.put(k, vOld));
+		ctx.addOnRollback(() ->
+		{
+			SContext.checkAndStore(vOld);
+			_map.put(k, vOld);
+		});
 	}
 
 	@Override
@@ -119,7 +125,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	@Override
 	public boolean containsValue(Object v)
 	{
-		return _map.containsValue(SContext.unsafe(v));
+		return _map.containsValue(SContext.unwrap(v));
 	}
 
 	@Deprecated
@@ -139,6 +145,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	{
 		if (v == null)
 			throw new NullPointerException();
+		SContext.checkAndStore(v);
 		SContext ctx = sContext();
 		if (_changed != null)
 			_changed.put(k, v);
@@ -150,7 +157,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	@Override
 	public S put(K k, S s)
 	{
-		return SContext.safeAlone(putDirect(k, SContext.unsafe(s)));
+		return SContext.safeAlone(putDirect(k, SContext.unwrap(s)));
 	}
 
 	@Override
@@ -160,7 +167,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 			return;
 		for (Entry<? extends K, ? extends S> e : m.entrySet())
 		{
-			V v = SContext.unsafe(e.getValue());
+			V v = SContext.unwrap(e.getValue());
 			if (v != null)
 				putDirect(e.getKey(), v);
 		}
@@ -199,21 +206,27 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	@Override
 	public void clear()
 	{
-		if (_map.isEmpty())
+		int n = _map.size();
+		if (n <= 0)
 			return;
 		SContext ctx = sContext();
-		Map<K, V> saved = (_map instanceof LinkedHashMap ? new LinkedHashMap<>(_map) : new HashMap<>(_map));
-		if (_changed != null)
+		@SuppressWarnings("unchecked")
+		Entry<K, V>[] saved = (Entry<K, V>[])new Entry[n];
+		int i = 0;
+		for (Entry<K, V> e : _map.entrySet())
 		{
-			for (K k : _map.keySet())
-				_changed.put(k, null);
+			SContext.unstore(e.getValue());
+			saved[i++] = e;
 		}
-		_map.clear();
 		ctx.addOnRollback(() ->
 		{
 			_map.clear();
-			_map.putAll(saved);
-			saved.clear();
+			for (int j = 0; j < n; j++)
+			{
+				Entry<K, V> e = saved[j];
+				SContext.checkAndStore(e.getValue());
+				_map.put(e.getKey(), e.getValue());
+			}
 		});
 	}
 
@@ -248,6 +261,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		{
 			if (v == null)
 				throw new NullPointerException();
+			SContext.checkAndStore(v);
 			SContext ctx = sContext();
 			K k = _e.getKey();
 			if (_changed != null)
@@ -260,7 +274,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		@Override
 		public S setValue(S s)
 		{
-			return SContext.safeAlone(setValueDirect(SContext.unsafe(s)));
+			return SContext.safeAlone(setValueDirect(SContext.unwrap(s)));
 		}
 
 		@Override
@@ -514,14 +528,14 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 
 	public SMap<K, V, S> append(Map<K, V> map)
 	{
-		Util.appendDeep(map, _map);
+		map.forEach(this::putDirect);
 		return this;
 	}
 
 	public SMap<K, V, S> assign(Map<K, V> map)
 	{
 		clear();
-		Util.appendDeep(map, _map);
+		map.forEach(this::putDirect);
 		return this;
 	}
 
