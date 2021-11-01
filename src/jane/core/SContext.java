@@ -310,6 +310,8 @@ public final class SContext
 
 	static void checkUnstored(Object v)
 	{
+		if (v == null)
+			throw new NullPointerException();
 		if (v instanceof Bean && ((Bean<?>)v).stored())
 			throw new IllegalAccessError("add/put already stored bean");
 	}
@@ -322,6 +324,8 @@ public final class SContext
 
 	static void checkAndStore(Object v)
 	{
+		if (v == null)
+			throw new NullPointerException();
 		if (v instanceof Bean && !((Bean<?>)v).tryStore())
 			throw new IllegalAccessError("add/put already stored bean");
 	}

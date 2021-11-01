@@ -8,7 +8,7 @@ import jane.core.SContext.Safe;
 /**
  * NavigableMap类型的安全修改类
  * <p>
- * 不支持value为null
+ * 不支持key或value为null
  */
 public final class SSMap<K, V, S> extends SMap<K, V, S> implements NavigableMap<K, S>
 {
@@ -114,8 +114,8 @@ public final class SSMap<K, V, S> extends SMap<K, V, S> implements NavigableMap<
 		if (e == null)
 			return null;
 		V v = e.getValue();
-		addUndoRemove(ctx, e.getKey(), v);
 		SContext.unstore(v);
+		addUndoRemove(ctx, e.getKey(), v);
 		return new SEntry(e);
 	}
 
@@ -127,8 +127,8 @@ public final class SSMap<K, V, S> extends SMap<K, V, S> implements NavigableMap<
 		if (e == null)
 			return null;
 		V v = e.getValue();
-		addUndoRemove(ctx, e.getKey(), v);
 		SContext.unstore(v);
+		addUndoRemove(ctx, e.getKey(), v);
 		return new SEntry(e);
 	}
 

@@ -14,7 +14,7 @@ import jane.core.SContext.Safe;
 /**
  * Map类型的安全修改类
  * <p>
- * 不支持value为null
+ * 不支持key或value为null
  */
 public class SMap<K, V, S> implements Map<K, S>, Cloneable
 {
@@ -31,25 +31,24 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	protected final Safe<?>	  _parent;
 	protected final Map<K, V> _map;
 	private SContext		  _sctx;
-	protected Map<K, V>		  _changed;
+	protected final Map<K, V> _changed;
 
 	public SMap(Safe<?> parent, Map<K, V> map, SMapListener<K, V> listener)
 	{
 		_parent = parent;
 		_map = map;
-		if (listener != null)
+		Rec rec;
+		if (listener != null && (rec = parent.record()) != null)
 		{
-			Rec rec = parent.record();
-			if (rec != null)
+			_changed = new HashMap<>();
+			SContext.current().addOnCommit(() ->
 			{
-				_changed = new HashMap<>();
-				SContext.current().addOnCommit(() ->
-				{
-					if (!_changed.isEmpty())
-						listener.onChanged(rec, _changed);
-				});
-			}
+				if (!_changed.isEmpty())
+					listener.onChanged(rec, _changed);
+			});
 		}
+		else
+			_changed = null;
 	}
 
 	protected SMap(Safe<?> parent, Map<K, V> map, Map<K, V> changed)
@@ -85,8 +84,8 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		{
 			if (vOld != null)
 			{
-				SContext.checkAndStore(vOld);
-				_map.put(k, vOld);
+				SContext.checkAndStore(vOld); // 这里不应该检查失败
+				SContext.unstore(_map.put(k, vOld));
 			}
 			else
 				SContext.unstore(_map.remove(k));
@@ -99,8 +98,8 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 			_changed.put(k, null);
 		ctx.addOnRollback(() ->
 		{
-			SContext.checkAndStore(vOld);
-			_map.put(k, vOld);
+			SContext.checkAndStore(vOld); // 这里不应该检查失败
+			_map.put(k, vOld); // 一定返回null,所以不用调SContext.unstore
 		});
 	}
 
@@ -141,66 +140,140 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		return safe(k, _map.get(k));
 	}
 
-	public V putDirect(K k, V v)
+	@Deprecated
+	public V putUnsafe(K k, V v)
 	{
-		if (v == null)
-			throw new NullPointerException();
-		SContext.checkAndStore(v);
 		SContext ctx = sContext();
+		SContext.checkAndStore(v);
 		if (_changed != null)
 			_changed.put(k, v);
-		v = _map.put(k, v);
+		v = SContext.unstore(_map.put(k, v));
 		addUndoPut(ctx, k, v);
 		return v;
+	}
+
+	public void putDirect(K k, V v)
+	{
+		putUnsafe(k, v);
 	}
 
 	@Override
 	public S put(K k, S s)
 	{
-		return SContext.safeAlone(putDirect(k, SContext.unwrap(s)));
+		return SContext.safeAlone(putUnsafe(k, SContext.unwrap(s)));
+	}
+
+	private void putAll(SContext ctx, Object[] saved) // (K|V)[] saved
+	{
+		for (int i = 0, n = saved.length; i < n;)
+		{
+			@SuppressWarnings("unchecked")
+			K k = (K)saved[i++];
+			if (k == null)
+				break;
+			@SuppressWarnings("unchecked")
+			V v = (V)saved[i];
+			SContext.store(v);
+			if (_changed != null)
+				_changed.put(k, v);
+			saved[i++] = SContext.unstore(_map.put(k, v));
+		}
+		ctx.addOnRollback(() ->
+		{
+			for (int j = 0, n2 = saved.length; j < n2;)
+			{
+				@SuppressWarnings("unchecked")
+				K k = (K)saved[j++];
+				if (k == null)
+					break;
+				@SuppressWarnings("unchecked")
+				V v = (V)saved[j++];
+				if (v != null)
+				{
+					SContext.checkAndStore(v); // 这里不应该检查失败
+					SContext.unstore(_map.put(k, v));
+				}
+				else
+					SContext.unstore(_map.remove(k));
+			}
+		});
+	}
+
+	public void putAllDirect(Map<? extends K, ? extends V> m)
+	{
+		int n = m.size();
+		if (n <= 0)
+			return;
+		if (_map == m || this == m)
+			return;
+		SContext ctx = sContext();
+		Object[] saved = new Object[n * 2];
+		int i = 0;
+		for (Entry<? extends K, ? extends V> e : m.entrySet())
+		{
+			K k = e.getKey();
+			if (k == null)
+				continue;
+			V v = e.getValue();
+			if (v == null)
+				continue;
+			SContext.checkUnstored(v);
+			saved[i++] = k;
+			saved[i++] = v;
+		}
+		if (i > 0)
+			putAll(ctx, saved);
 	}
 
 	@Override
 	public void putAll(Map<? extends K, ? extends S> m)
 	{
+		int n = m.size();
+		if (n <= 0)
+			return;
 		if (_map == m || this == m)
 			return;
+		SContext ctx = sContext();
+		Object[] saved = new Object[n * 2];
+		int i = 0;
 		for (Entry<? extends K, ? extends S> e : m.entrySet())
 		{
+			K k = e.getKey();
+			if (k == null)
+				continue;
 			V v = SContext.unwrap(e.getValue());
-			if (v != null)
-				putDirect(e.getKey(), v);
+			if (v == null)
+				continue;
+			SContext.checkUnstored(v);
+			saved[i++] = k;
+			saved[i++] = v;
 		}
-	}
-
-	public void putAllDirect(Map<? extends K, ? extends V> m)
-	{
-		if (_map == m || this == m)
-			return;
-		for (Entry<? extends K, ? extends V> e : m.entrySet())
-		{
-			V v = e.getValue();
-			if (v != null)
-				putDirect(e.getKey(), v);
-		}
+		if (i > 0)
+			putAll(ctx, saved);
 	}
 
 	@SuppressWarnings("unchecked")
-	public V removeDirect(Object k)
+	@Deprecated
+	public V removeUnsafe(Object k)
 	{
 		SContext ctx = sContext();
 		//noinspection SuspiciousMethodCalls
-		V vOld = _map.remove(k);
+		V vOld = SContext.unstore(_map.remove(k));
 		if (vOld == null)
 			return null;
 		addUndoRemove(ctx, (K)k, vOld);
 		return vOld;
 	}
 
+	public boolean removeDirect(Object k)
+	{
+		return removeUnsafe(k) != null;
+	}
+
 	@Override
 	public S remove(Object k)
 	{
-		return SContext.safeAlone(removeDirect(k));
+		return SContext.safeAlone(removeUnsafe(k));
 	}
 
 	@Override
@@ -218,14 +291,16 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 			SContext.unstore(e.getValue());
 			saved[i++] = e;
 		}
+		_map.clear();
 		ctx.addOnRollback(() ->
 		{
 			_map.clear();
 			for (int j = 0; j < n; j++)
 			{
 				Entry<K, V> e = saved[j];
-				SContext.checkAndStore(e.getValue());
-				_map.put(e.getKey(), e.getValue());
+				V v = e.getValue();
+				SContext.checkAndStore(v); // 这里不应该检查失败
+				_map.put(e.getKey(), v); // 一定返回null,所以不用调SContext.unstore
 			}
 		});
 	}
@@ -257,24 +332,28 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 			return safe(_e.getKey(), _e.getValue());
 		}
 
-		public V setValueDirect(V v)
+		@Deprecated
+		public V setValueUnsafe(V v)
 		{
-			if (v == null)
-				throw new NullPointerException();
-			SContext.checkAndStore(v);
 			SContext ctx = sContext();
+			SContext.checkAndStore(v);
 			K k = _e.getKey();
 			if (_changed != null)
 				_changed.put(k, v);
-			v = _e.setValue(v);
+			v = SContext.unstore(_e.setValue(v));
 			addUndoPut(ctx, k, v);
 			return v;
+		}
+
+		public void setValueDirect(V v)
+		{
+			setValueUnsafe(v);
 		}
 
 		@Override
 		public S setValue(S s)
 		{
-			return SContext.safeAlone(setValueDirect(SContext.unwrap(s)));
+			return SContext.safeAlone(setValueUnsafe(SContext.unwrap(s)));
 		}
 
 		@Override
@@ -313,11 +392,11 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		@Override
 		public void remove()
 		{
+			SContext ctx = sContext();
 			K k = _cur.getKey();
 			V v = _cur.getValueUnsafe();
-			SContext ctx = sContext();
 			_it.remove();
-			addUndoRemove(ctx, k, v);
+			addUndoRemove(ctx, k, SContext.unstore(v));
 		}
 	}
 
@@ -367,7 +446,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 				e = ((SEntry)e)._e;
 			if (!contains(e))
 				return false;
-			return e instanceof Entry && SMap.this.removeDirect(((Entry<K, ?>)e).getKey()) != null;
+			return e instanceof Entry && SMap.this.removeDirect(((Entry<K, ?>)e).getKey());
 		}
 
 		@Override
@@ -412,7 +491,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		@Override
 		public boolean remove(Object k)
 		{
-			return SMap.this.removeDirect(k) != null;
+			return SMap.this.removeDirect(k);
 		}
 
 		@Override
@@ -524,19 +603,6 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 				return false;
 		}
 		return true;
-	}
-
-	public SMap<K, V, S> append(Map<K, V> map)
-	{
-		map.forEach(this::putDirect);
-		return this;
-	}
-
-	public SMap<K, V, S> assign(Map<K, V> map)
-	{
-		clear();
-		map.forEach(this::putDirect);
-		return this;
 	}
 
 	public void appendTo(Map<K, V> map)

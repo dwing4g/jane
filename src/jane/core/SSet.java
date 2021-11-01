@@ -10,6 +10,8 @@ import jane.core.SContext.Safe;
 
 /**
  * Set类型的安全修改类
+ * <p>
+ * 不支持value为null
  */
 public class SSet<V, S> implements Set<S>, Cloneable
 {
@@ -27,26 +29,27 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	protected final Safe<?>	_parent;
 	protected final Set<V>	_set;
 	private SContext		_sctx;
-	protected Set<V>		_added;
-	protected Set<V>		_removed;
+	private final Set<V>	_added, _removed;
 
 	public SSet(Safe<?> parent, Set<V> set, SSetListener<V> listener)
 	{
 		_parent = parent;
 		_set = set;
-		if (listener != null)
+		Rec rec;
+		if (listener != null && (rec = parent.record()) != null)
 		{
-			Rec rec = parent.record();
-			if (rec != null)
+			_added = new HashSet<>();
+			_removed = new HashSet<>();
+			SContext.current().addOnCommit(() ->
 			{
-				_added = new HashSet<>();
-				_removed = new HashSet<>();
-				SContext.current().addOnCommit(() ->
-				{
-					if (!_added.isEmpty() || !_removed.isEmpty())
-						listener.onChanged(rec, _added, _removed);
-				});
-			}
+				if (!_added.isEmpty() || !_removed.isEmpty())
+					listener.onChanged(rec, _added, _removed);
+			});
+		}
+		else
+		{
+			_added = null;
+			_removed = null;
 		}
 	}
 
@@ -59,15 +62,9 @@ public class SSet<V, S> implements Set<S>, Cloneable
 		return _sctx = SContext.current();
 	}
 
-	protected void addUndoAdd(SContext ctx, V v)
-	{
-		if (_added != null)
-			_added.add(v);
-		ctx.addOnRollback(() -> SContext.unstore(_set.remove(v)));
-	}
-
 	protected void addUndoRemove(SContext ctx, V v)
 	{
+		SContext.unstore(v);
 		if (_removed != null)
 			_removed.add(v);
 		ctx.addOnRollback(() ->
@@ -118,11 +115,13 @@ public class SSet<V, S> implements Set<S>, Cloneable
 
 	public boolean addDirect(V v)
 	{
-		SContext.checkAndStore(v);
 		SContext ctx = sContext();
+		SContext.checkAndStore(v);
 		if (!_set.add(v))
 			return false;
-		addUndoAdd(ctx, v);
+		if (_added != null)
+			_added.add(v);
+		ctx.addOnRollback(() -> _set.remove(SContext.unstore(v)));
 		return true;
 	}
 
@@ -130,6 +129,47 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	public boolean add(S s)
 	{
 		return addDirect(SContext.unwrap(s));
+	}
+
+	private boolean addAll(SContext ctx, V[] saved, int n)
+	{
+		if (n <= 0)
+			return false;
+		for (int i = 0; i < n; i++)
+		{
+			V v = saved[i];
+			SContext.store(v);
+			_set.add(v);
+			if (_added != null)
+				_added.add(v);
+		}
+		ctx.addOnRollback(() ->
+		{
+			for (int j = 0; j < n; j++)
+				_set.remove(SContext.unstore(saved[j]));
+		});
+		return true;
+	}
+
+	public boolean addAllDirect(Collection<? extends V> c)
+	{
+		int n = c.size();
+		if (n <= 0)
+			return false;
+		if (_set == c || this == c)
+			return false;
+		SContext ctx = sContext();
+		@SuppressWarnings("unchecked")
+		V[] saved = (V[])new Object[n];
+		int i = 0;
+		for (V v : c)
+		{
+			if (v == null || _set.contains(v))
+				continue;
+			SContext.checkUnstored(v);
+			saved[i++] = v;
+		}
+		return addAll(ctx, saved, i);
 	}
 
 	public boolean addAllDirect(Iterable<? extends V> c)
@@ -144,11 +184,24 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	@Override
 	public boolean addAll(Collection<? extends S> c)
 	{
-		boolean r = false;
+		int n = c.size();
+		if (n <= 0)
+			return false;
+		if (_set == c || this == c)
+			return false;
+		SContext ctx = sContext();
+		@SuppressWarnings("unchecked")
+		V[] saved = (V[])new Object[n];
+		int i = 0;
 		for (S s : c)
-			if (add(s))
-				r = true;
-		return r;
+		{
+			V v = SContext.unwrap(s);
+			if (v == null || _set.contains(v))
+				continue;
+			SContext.checkUnstored(v);
+			saved[i++] = v;
+		}
+		return addAll(ctx, saved, i);
 	}
 
 	@Override
@@ -158,14 +211,39 @@ public class SSet<V, S> implements Set<S>, Cloneable
 		V v = SContext.unwrap(s);
 		if (!_set.remove(v))
 			return false;
-		addUndoRemove(ctx, SContext.unstore(v));
+		addUndoRemove(ctx, v);
+		return true;
+	}
+
+	private boolean removeAll(SContext ctx, V[] saved, int n)
+	{
+		if (n <= 0)
+			return false;
+		for (int i = 0; i < n; i++)
+		{
+			V v = saved[i];
+			_set.remove(v);
+			SContext.unstore(v);
+			if (_removed != null)
+				_removed.add(v);
+		}
+		ctx.addOnRollback(() ->
+		{
+			for (int j = 0; j < n; j++)
+			{
+				V v = saved[j];
+				SContext.checkAndStore(v);
+				_set.add(v);
+			}
+		});
 		return true;
 	}
 
 	@Override
 	public boolean removeAll(Collection<?> c)
 	{
-		if (_set.isEmpty())
+		int n = c.size();
+		if (_set.isEmpty() || n <= 0)
 			return false;
 		if (_set == c || this == c)
 		{
@@ -173,28 +251,43 @@ public class SSet<V, S> implements Set<S>, Cloneable
 			clear();
 			return true;
 		}
-		boolean r = false;
+		SContext ctx = sContext();
+		@SuppressWarnings("unchecked")
+		V[] saved = (V[])new Object[n];
+		int i = 0;
 		for (Object v : c)
-			if (remove(v))
-				r = true;
-		return r;
+		{
+			//noinspection SuspiciousMethodCalls
+			if (_set.contains(v))
+				//noinspection unchecked
+				saved[i++] = (V)v;
+		}
+		return removeAll(ctx, saved, i);
 	}
 
 	@Override
 	public boolean retainAll(Collection<?> c)
 	{
-		if (_set.isEmpty() || _set == c || this == c)
+		int n = _set.size();
+		if (n <= 0 || _set == c || this == c)
 			return false;
-		boolean r = false;
-		for (SIterator it = iterator(); it.hasNext();)
+		if (c.isEmpty())
 		{
-			if (!c.contains(it.nextUnsafe()))
-			{
-				it.remove();
-				r = true;
-			}
+			clear();
+			return true;
 		}
-		return r;
+		SContext ctx = sContext();
+		@SuppressWarnings("unchecked")
+		V[] saved = (V[])new Object[n];
+		int i = 0;
+		for (Object v : c)
+		{
+			//noinspection SuspiciousMethodCalls
+			if (!_set.contains(v))
+				//noinspection unchecked
+				saved[i++] = (V)v;
+		}
+		return removeAll(ctx, saved, i);
 	}
 
 	@Override
@@ -209,6 +302,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 		int i = 0;
 		for (V v : _set)
 			saved[i++] = SContext.unstore(v);
+		_set.clear();
 		ctx.addOnRollback(() ->
 		{
 			_set.clear();
@@ -272,19 +366,6 @@ public class SSet<V, S> implements Set<S>, Cloneable
 				return false;
 		}
 		return true;
-	}
-
-	public SSet<V, S> append(Set<V> set)
-	{
-		set.forEach(this::addDirect);
-		return this;
-	}
-
-	public SSet<V, S> assign(Set<V> set)
-	{
-		clear();
-		set.forEach(this::addDirect);
-		return this;
 	}
 
 	public void appendTo(Set<V> set)

@@ -9,7 +9,7 @@ import jane.core.SContext.Safe;
 /**
  * Deque类型的安全修改类
  * <p>
- * 只支持无容量限制的ArrayDeque,且不支持删除中间元素
+ * 只支持无容量限制的ArrayDeque,且不支持删除中间元素,也不支持value为null
  */
 public final class SDeque<V, S> implements Deque<S>, Cloneable
 {
@@ -84,66 +84,66 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	}
 
 	@Deprecated
-	public V peekUnsafe()
+	public V peekUnsafe() // =peekfirst, null if empty
 	{
 		return _deque.peek();
 	}
 
 	@Override
-	public S peek()
+	public S peek() // =peekfirst, null if empty
 	{
 		return SContext.safe(_parent, _deque.peek());
 	}
 
 	@Deprecated
-	public V getFirstUnsafe()
+	public V getFirstUnsafe() // exception if empty
 	{
 		return _deque.getFirst();
 	}
 
 	@Override
-	public S getFirst()
+	public S getFirst() // exception if empty
 	{
 		return SContext.safe(_parent, _deque.getFirst());
 	}
 
 	@Deprecated
-	public V getLastUnsafe()
+	public V getLastUnsafe() // exception if empty
 	{
 		return _deque.getLast();
 	}
 
 	@Override
-	public S getLast()
+	public S getLast() // exception if empty
 	{
 		return SContext.safe(_parent, _deque.getLast());
 	}
 
 	@Deprecated
-	public V peekFirstUnsafe()
+	public V peekFirstUnsafe() // =peek, null if empty
 	{
 		return _deque.peekFirst();
 	}
 
 	@Override
-	public S peekFirst()
+	public S peekFirst() // =peek, null if empty
 	{
 		return SContext.safe(_parent, _deque.peekFirst());
 	}
 
 	@Deprecated
-	public V peekLastUnsafe()
+	public V peekLastUnsafe() // null if empty
 	{
 		return _deque.peekLast();
 	}
 
 	@Override
-	public S peekLast()
+	public S peekLast() // null if empty
 	{
 		return SContext.safe(_parent, _deque.peekLast());
 	}
 
-	public boolean addDirect(V v)
+	public boolean addDirect(V v) // =addLast=offerLast=offer
 	{
 		SContext.checkAndStore(v);
 		SContext ctx = sContext();
@@ -154,12 +154,12 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	}
 
 	@Override
-	public boolean add(S s)
+	public boolean add(S s) // =addLast=offerLast=offer
 	{
 		return addDirect(SContext.unwrap(s));
 	}
 
-	public void addFirstDirect(V v)
+	public void addFirstDirect(V v) // =offerFirst=push
 	{
 		SContext.checkAndStore(v);
 		SContext ctx = sContext();
@@ -168,63 +168,63 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	}
 
 	@Override
-	public void addFirst(S s)
+	public void addFirst(S s) // =offerFirst=push
 	{
 		addFirstDirect(SContext.unwrap(s));
 	}
 
-	public void addLastDirect(V v)
+	public void addLastDirect(V v) // =add=offerLast=offer
 	{
 		addDirect(v);
 	}
 
 	@Override
-	public void addLast(S s)
+	public void addLast(S s) // =add=offerLast=offer
 	{
 		add(s);
 	}
 
-	public boolean offerDirect(V v)
+	public boolean offerDirect(V v) // =offerLast=addLast=add
 	{
 		return addDirect(v);
 	}
 
 	@Override
-	public boolean offer(S s)
+	public boolean offer(S s) // =offerLast=addLast=add
 	{
 		return add(s);
 	}
 
-	public void offerFirstDirect(V v)
+	public void offerFirstDirect(V v) // =addFirst
 	{
 		addFirstDirect(v);
 	}
 
 	@Override
-	public boolean offerFirst(S s)
+	public boolean offerFirst(S s) // =addFirst
 	{
 		addFirst(s);
 		return true;
 	}
 
-	public boolean offerLastDirect(V v)
+	public boolean offerLastDirect(V v) // =offer=addLast=add
 	{
 		return addDirect(v);
 	}
 
 	@Override
-	public boolean offerLast(S s)
+	public boolean offerLast(S s) // =offer=addLast=add
 	{
 		return add(s);
 	}
 
-	public void pushDirect(V v)
+	public void pushDirect(V v) // =addFirst=offerFirst
 	{
 		addFirstDirect(v);
 	}
 
 	@Override
-	public void push(S s)
+	public void push(S s) // =addFirst=offerFirst
 	{
 		addFirst(s);
 	}
@@ -288,7 +288,8 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		return true;
 	}
 
-	public V removeDirect()
+	@Deprecated
+	public V removeUnsafe() // =removeFirst=pop, exception if empty
 	{
 		SContext ctx = sContext();
 		V vOld = _deque.remove();
@@ -300,10 +301,15 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		return SContext.unstore(vOld);
 	}
 
-	@Override
-	public S remove()
+	public void removeDirect() // =removeFirst=pop, exception if empty
 	{
-		return SContext.safeAlone(removeDirect());
+		removeUnsafe();
+	}
+
+	@Override
+	public S remove() // =removeFirst=pop, exception if empty
+	{
+		return SContext.safeAlone(removeUnsafe());
 	}
 
 	@Deprecated
@@ -313,18 +319,25 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		throw new UnsupportedOperationException();
 	}
 
-	public V removeFirstDirect()
+	@Deprecated
+	public V removeFirstUnsafe() // =remove=pop, exception if empty
 	{
-		return removeDirect();
+		return removeUnsafe();
+	}
+
+	public void removeFirstDirect() // =remove=pop, exception if empty
+	{
+		removeDirect();
 	}
 
 	@Override
-	public S removeFirst()
+	public S removeFirst() // =remove=pop, exception if empty
 	{
 		return remove();
 	}
 
-	public V removeLastDirect()
+	@Deprecated
+	public V removeLastUnsafe() // exception if empty
 	{
 		SContext ctx = sContext();
 		V vOld = _deque.removeLast();
@@ -336,10 +349,15 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		return SContext.unstore(vOld);
 	}
 
-	@Override
-	public S removeLast()
+	public void removeLastDirect() // exception if empty
 	{
-		return SContext.safeAlone(removeLastDirect());
+		removeLastUnsafe();
+	}
+
+	@Override
+	public S removeLast() // exception if empty
+	{
+		return SContext.safeAlone(removeLastUnsafe());
 	}
 
 	@Deprecated
@@ -356,7 +374,8 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		throw new UnsupportedOperationException();
 	}
 
-	public V pollDirect()
+	@Deprecated
+	public V pollUnsafe() // =pollFirst, null if empty
 	{
 		if (_deque.isEmpty())
 			return null;
@@ -370,24 +389,36 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		return SContext.unstore(vOld);
 	}
 
-	@Override
-	public S poll()
+	public void pollDirect() // =pollFirst, null if empty
 	{
-		return SContext.safeAlone(pollDirect());
-	}
-
-	public V pollFirstDirect()
-	{
-		return pollDirect();
+		pollUnsafe();
 	}
 
 	@Override
-	public S pollFirst()
+	public S poll() // =pollFirst, null if empty
+	{
+		return SContext.safeAlone(pollUnsafe());
+	}
+
+	@Deprecated
+	public V pollFirstUnsafe() // =poll, null if empty
+	{
+		return pollUnsafe();
+	}
+
+	public void pollFirstDirect() // =poll, null if empty
+	{
+		pollUnsafe();
+	}
+
+	@Override
+	public S pollFirst() // =poll, null if empty
 	{
 		return poll();
 	}
 
-	public V pollLastDirect()
+	@Deprecated
+	public V pollLastUnsafe() // null if empty
 	{
 		if (_deque.isEmpty())
 			return null;
@@ -401,19 +432,25 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		return SContext.unstore(vOld);
 	}
 
-	@Override
-	public S pollLast()
+	public void pollLastDirect() // null if empty
 	{
-		return SContext.safeAlone(pollLastDirect());
-	}
-
-	public V popDirect()
-	{
-		return removeDirect();
+		pollLastUnsafe();
 	}
 
 	@Override
-	public S pop()
+	public S pollLast() // null if empty
+	{
+		return SContext.safeAlone(pollLastUnsafe());
+	}
+
+	@Deprecated
+	public V popUnsafe() // =removeFirst=remove, exception if empty
+	{
+		return removeUnsafe();
+	}
+
+	@Override
+	public S pop() // =removeFirst=remove, exception if empty
 	{
 		return remove();
 	}
@@ -508,19 +545,6 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 			if (filter.test(v) && !consumer.test(SContext.safe(_parent, v)))
 				return false;
 		return true;
-	}
-
-	public SDeque<V, S> append(Deque<V> deque)
-	{
-		deque.forEach(this::addLastDirect);
-		return this;
-	}
-
-	public SDeque<V, S> assign(Deque<V> deque)
-	{
-		clear();
-		deque.forEach(this::addLastDirect);
-		return this;
 	}
 
 	public void appendTo(Deque<V> deque)

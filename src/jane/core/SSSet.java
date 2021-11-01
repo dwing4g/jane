@@ -6,6 +6,8 @@ import jane.core.SContext.Safe;
 
 /**
  * NavigableSet类型的安全修改类
+ * <p>
+ * 不支持value为null
  */
 public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 {
@@ -95,34 +97,36 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 		return SContext.safe(_parent, higherUnsafe(SContext.unwrap(s)));
 	}
 
-	public V pollFirstDirect()
+	@Deprecated
+	public V pollFirstUnsafe()
 	{
 		SContext ctx = sContext();
 		V v = ((NavigableSet<V>)_set).pollFirst();
 		if (v != null)
 			addUndoRemove(ctx, v);
-		return SContext.unstore(v);
+		return v;
 	}
 
 	@Override
 	public S pollFirst()
 	{
-		return SContext.safeAlone(pollFirstDirect());
+		return SContext.safeAlone(pollFirstUnsafe());
 	}
 
-	public V pollLastDirect()
+	@Deprecated
+	public V pollLastUnsafe()
 	{
 		SContext ctx = sContext();
 		V v = ((NavigableSet<V>)_set).pollLast();
 		if (v != null)
 			addUndoRemove(ctx, v);
-		return SContext.unstore(v);
+		return v;
 	}
 
 	@Override
 	public S pollLast()
 	{
-		return SContext.safeAlone(pollLastDirect());
+		return SContext.safeAlone(pollLastUnsafe());
 	}
 
 	@Override

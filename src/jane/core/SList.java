@@ -9,6 +9,8 @@ import jane.core.SContext.Safe;
 
 /**
  * List类型的安全修改类
+ * <p>
+ * 不支持value为null
  */
 public final class SList<V, S> implements List<S>, Cloneable
 {
@@ -239,7 +241,8 @@ public final class SList<V, S> implements List<S>, Cloneable
 		return true;
 	}
 
-	public V setDirect(int idx, V v)
+	@Deprecated
+	public V setUnsafe(int idx, V v)
 	{
 		SContext.checkAndStore(v);
 		SContext ctx = sContext();
@@ -252,13 +255,19 @@ public final class SList<V, S> implements List<S>, Cloneable
 		return SContext.unstore(vOld);
 	}
 
+	public void setDirect(int idx, V v)
+	{
+		setUnsafe(idx, v);
+	}
+
 	@Override
 	public S set(int idx, S s)
 	{
-		return SContext.safeAlone(setDirect(idx, SContext.unwrap(s)));
+		return SContext.safeAlone(setUnsafe(idx, SContext.unwrap(s)));
 	}
 
-	public V removeDirect(int idx)
+	@Deprecated
+	public V removeUnsafe(int idx)
 	{
 		SContext ctx = sContext();
 		V vOld = _list.remove(idx);
@@ -270,10 +279,15 @@ public final class SList<V, S> implements List<S>, Cloneable
 		return SContext.unstore(vOld);
 	}
 
+	public void removeDirect(int idx)
+	{
+		removeUnsafe(idx);
+	}
+
 	@Override
 	public S remove(int idx)
 	{
-		return SContext.safeAlone(removeDirect(idx));
+		return SContext.safeAlone(removeUnsafe(idx));
 	}
 
 	@Override
@@ -328,6 +342,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 		int i = 0;
 		for (V v : _list)
 			saved[i++] = SContext.unstore(v);
+		_list.clear();
 		ctx.addOnRollback(() ->
 		{
 			_list.clear();
@@ -535,19 +550,6 @@ public final class SList<V, S> implements List<S>, Cloneable
 				return false;
 		}
 		return true;
-	}
-
-	public SList<V, S> append(Collection<V> list)
-	{
-		list.forEach(this::addDirect);
-		return this;
-	}
-
-	public SList<V, S> assign(Collection<V> list)
-	{
-		clear();
-		list.forEach(this::addDirect);
-		return this;
 	}
 
 	public void appendTo(Collection<V> list)
