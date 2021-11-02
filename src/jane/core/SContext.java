@@ -51,10 +51,19 @@ public final class SContext
 
 		public final void checkLock()
 		{
-			if (_rec != null)
-				_rec.checkLock();
-			else if (_parent != null)
-				_parent.checkLock();
+			Rec rec = _rec;
+			if (rec == null)
+			{
+				for (Safe<?> parent = _parent;; parent = parent._parent)
+				{
+					if (parent == null)
+						return;
+					rec = parent._rec;
+					if (rec != null)
+						break;
+				}
+			}
+			rec.checkLock();
 		}
 
 		public boolean isDirty()
@@ -88,10 +97,7 @@ public final class SContext
 
 		protected boolean initSContext()
 		{
-			if (_rec != null)
-				_rec.checkLock();
-			else if (_parent != null)
-				_parent.checkLock();
+			checkLock();
 			if (_fullUndo)
 				return false;
 			if (_sctx == null)
@@ -275,7 +281,7 @@ public final class SContext
 		public void checkLock()
 		{
 			if (!Procedure.isLockedByCurrentThread(_lockId))
-				throw new IllegalAccessError("write unlocked record! table=" + _table.getTableName() + ",key=" + _key);
+				throw new IllegalAccessError("access unlocked record! table=" + _table.getTableName() + ",key=" + _key);
 		}
 	}
 
@@ -308,32 +314,18 @@ public final class SContext
 		return (V)(v instanceof Safe ? ((Safe<?>)v)._bean : v);
 	}
 
-	static void checkUnstored(Object v)
-	{
-		if (v == null)
-			throw new NullPointerException();
-		if (v instanceof Bean && ((Bean<?>)v).stored())
-			throw new IllegalAccessError("add/put already stored bean");
-	}
-
-	static void store(Object v)
+	static void checkStoreAll(Object v)
 	{
 		if (v instanceof Bean)
-			((Bean<?>)v).store();
-	}
-
-	static void checkAndStore(Object v)
-	{
-		if (v == null)
+			((Bean<?>)v).checkStoreAll();
+		else if (v == null)
 			throw new NullPointerException();
-		if (v instanceof Bean && !((Bean<?>)v).tryStore())
-			throw new IllegalAccessError("add/put already stored bean");
 	}
 
-	static <V> V unstore(V v)
+	static <V> V unstoreAll(V v)
 	{
 		if (v instanceof Bean)
-			((Bean<?>)v).unstore();
+			((Bean<?>)v).unstoreAll();
 		return v;
 	}
 

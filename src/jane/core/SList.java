@@ -92,12 +92,12 @@ public final class SList<V, S> implements List<S>, Cloneable
 
 	public boolean addDirect(V v)
 	{
-		SContext.checkAndStore(v);
+		SContext.checkStoreAll(v);
 		SContext ctx = sContext();
 		//noinspection ConstantConditions
 		if (!_list.add(v))
 			return false;
-		ctx.addOnRollback(() -> SContext.unstore(_list.remove(_list.size() - 1)));
+		ctx.addOnRollback(() -> SContext.unstoreAll(_list.remove(_list.size() - 1)));
 		return true;
 	}
 
@@ -109,10 +109,10 @@ public final class SList<V, S> implements List<S>, Cloneable
 
 	public void addDirect(int idx, V v)
 	{
-		SContext.checkAndStore(v);
+		SContext.checkStoreAll(v);
 		SContext ctx = sContext();
 		_list.add(idx, v);
-		ctx.addOnRollback(() -> SContext.unstore(_list.remove(idx)));
+		ctx.addOnRollback(() -> SContext.unstoreAll(_list.remove(idx)));
 	}
 
 	@Override
@@ -126,23 +126,21 @@ public final class SList<V, S> implements List<S>, Cloneable
 		if (!c.isEmpty())
 		{
 			for (V v : c)
-				SContext.checkUnstored(v);
-			int n = _list.size();
+				SContext.checkStoreAll(v);
 			SContext ctx = sContext();
+			int n = _list.size();
 			if (!_list.addAll(c))
 				return false;
-			for (V v : c)
-				SContext.store(v);
 			ctx.addOnRollback(() ->
 			{
 				if (n > 0)
 				{
 					for (int i = _list.size() - 1; i >= n; --i)
-						SContext.unstore(_list.remove(i));
+						SContext.unstoreAll(_list.remove(i));
 				}
 				else
 				{
-					_list.forEach(SContext::unstore);
+					_list.forEach(SContext::unstoreAll);
 					_list.clear();
 				}
 			});
@@ -156,11 +154,9 @@ public final class SList<V, S> implements List<S>, Cloneable
 		if (!c.isEmpty())
 		{
 			for (S s : c)
-				SContext.checkUnstored(SContext.unwrap(s));
-			for (S s : c)
-				SContext.store(SContext.unwrap(s));
-			int n = _list.size();
+				SContext.checkStoreAll(SContext.unwrap(s));
 			SContext ctx = sContext();
+			int n = _list.size();
 			for (S s : c)
 				_list.add(SContext.unwrap(s));
 			ctx.addOnRollback(() ->
@@ -168,11 +164,11 @@ public final class SList<V, S> implements List<S>, Cloneable
 				if (n > 0)
 				{
 					for (int i = _list.size() - 1; i >= n; --i)
-						SContext.unstore(_list.remove(i));
+						SContext.unstoreAll(_list.remove(i));
 				}
 				else
 				{
-					_list.forEach(SContext::unstore);
+					_list.forEach(SContext::unstoreAll);
 					_list.clear();
 				}
 			});
@@ -185,24 +181,22 @@ public final class SList<V, S> implements List<S>, Cloneable
 		if (!c.isEmpty())
 		{
 			for (V v : c)
-				SContext.checkUnstored(v);
-			int n = _list.size();
+				SContext.checkStoreAll(v);
 			SContext ctx = sContext();
+			int n = _list.size();
 			if (!_list.addAll(idx, c))
 				return false;
-			for (V v : c)
-				SContext.store(v);
 			int nTail = n - idx;
 			ctx.addOnRollback(() ->
 			{
 				if (n > 0)
 				{
 					for (int i = _list.size() - nTail - 1; i >= idx; i--)
-						SContext.unstore(_list.remove(i));
+						SContext.unstoreAll(_list.remove(i));
 				}
 				else
 				{
-					_list.forEach(SContext::unstore);
+					_list.forEach(SContext::unstoreAll);
 					_list.clear();
 				}
 			});
@@ -216,11 +210,9 @@ public final class SList<V, S> implements List<S>, Cloneable
 		if (!c.isEmpty())
 		{
 			for (S s : c)
-				SContext.checkUnstored(SContext.unwrap(s));
-			for (S s : c)
-				SContext.unstore(SContext.unwrap(s));
-			int n = _list.size();
+				SContext.checkStoreAll(SContext.unwrap(s));
 			SContext ctx = sContext();
+			int n = _list.size();
 			for (S s : c)
 				_list.add(SContext.unwrap(s));
 			int nTail = n - idx;
@@ -229,11 +221,11 @@ public final class SList<V, S> implements List<S>, Cloneable
 				if (n > 0)
 				{
 					for (int i = _list.size() - nTail - 1; i >= idx; i--)
-						SContext.unstore(_list.remove(i));
+						SContext.unstoreAll(_list.remove(i));
 				}
 				else
 				{
-					_list.forEach(SContext::unstore);
+					_list.forEach(SContext::unstoreAll);
 					_list.clear();
 				}
 			});
@@ -244,15 +236,15 @@ public final class SList<V, S> implements List<S>, Cloneable
 	@Deprecated
 	public V setUnsafe(int idx, V v)
 	{
-		SContext.checkAndStore(v);
+		SContext.checkStoreAll(v);
 		SContext ctx = sContext();
 		V vOld = _list.set(idx, v);
 		ctx.addOnRollback(() ->
 		{
-			SContext.checkAndStore(vOld);
-			SContext.unstore(_list.set(idx, vOld));
+			SContext.checkStoreAll(vOld);
+			SContext.unstoreAll(_list.set(idx, vOld));
 		});
-		return SContext.unstore(vOld);
+		return SContext.unstoreAll(vOld);
 	}
 
 	public void setDirect(int idx, V v)
@@ -273,10 +265,10 @@ public final class SList<V, S> implements List<S>, Cloneable
 		V vOld = _list.remove(idx);
 		ctx.addOnRollback(() ->
 		{
-			SContext.checkAndStore(vOld);
+			SContext.checkStoreAll(vOld);
 			_list.add(idx, vOld);
 		});
-		return SContext.unstore(vOld);
+		return SContext.unstoreAll(vOld);
 	}
 
 	public void removeDirect(int idx)
@@ -341,7 +333,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 		V[] saved = (V[])new Object[n];
 		int i = 0;
 		for (V v : _list)
-			saved[i++] = SContext.unstore(v);
+			saved[i++] = SContext.unstoreAll(v);
 		_list.clear();
 		ctx.addOnRollback(() ->
 		{
@@ -349,7 +341,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 			for (int j = 0; j < n; j++)
 			{
 				V v = saved[j];
-				SContext.checkAndStore(v);
+				SContext.checkStoreAll(v);
 				_list.add(v);
 			}
 		});
@@ -391,10 +383,10 @@ public final class SList<V, S> implements List<S>, Cloneable
 			SContext ctx = sContext();
 			_it.remove();
 			int i = _idx--;
-			V v = SContext.unstore(_cur);
+			V v = SContext.unstoreAll(_cur);
 			ctx.addOnRollback(() ->
 			{
-				SContext.checkAndStore(v);
+				SContext.checkStoreAll(v);
 				_list.add(i, v);
 			});
 		}
@@ -474,24 +466,24 @@ public final class SList<V, S> implements List<S>, Cloneable
 			_it.remove();
 			int i = _idx + _idxOff;
 			_idx -= 1 - _idxOff;
-			V v = SContext.unstore(_cur);
+			V v = SContext.unstoreAll(_cur);
 			ctx.addOnRollback(() ->
 			{
-				SContext.checkAndStore(v);
+				SContext.checkStoreAll(v);
 				_list.add(i, v);
 			});
 		}
 
 		public void setDirect(V v)
 		{
-			SContext.checkAndStore(v);
+			SContext.checkStoreAll(v);
 			SContext ctx = sContext();
 			_it.set(v);
 			int i = _idx + _idxOff;
-			V vOld = SContext.unstore(_cur);
+			V vOld = SContext.unstoreAll(_cur);
 			ctx.addOnRollback(() ->
 			{
-				SContext.checkAndStore(vOld);
+				SContext.checkStoreAll(vOld);
 				_list.set(i, vOld);
 			});
 		}
@@ -504,11 +496,11 @@ public final class SList<V, S> implements List<S>, Cloneable
 
 		public void addDirect(V v)
 		{
-			SContext.checkAndStore(v);
+			SContext.checkStoreAll(v);
 			SContext ctx = sContext();
 			_it.add(v);
 			int i = _idx + 1;
-			ctx.addOnRollback(() -> SContext.unstore(_list.remove(i)));
+			ctx.addOnRollback(() -> SContext.unstoreAll(_list.remove(i)));
 		}
 
 		@Override

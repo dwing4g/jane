@@ -145,11 +145,11 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 
 	public boolean addDirect(V v) // =addLast=offerLast=offer
 	{
-		SContext.checkAndStore(v);
+		SContext.checkStoreAll(v);
 		SContext ctx = sContext();
 		if (!_deque.add(v))
 			return false;
-		ctx.addOnRollback(() -> SContext.unstore(_deque.removeLast()));
+		ctx.addOnRollback(() -> SContext.unstoreAll(_deque.removeLast()));
 		return true;
 	}
 
@@ -161,10 +161,10 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 
 	public void addFirstDirect(V v) // =offerFirst=push
 	{
-		SContext.checkAndStore(v);
+		SContext.checkStoreAll(v);
 		SContext ctx = sContext();
 		_deque.addFirst(v);
-		ctx.addOnRollback(() -> SContext.unstore(_deque.removeFirst()));
+		ctx.addOnRollback(() -> SContext.unstoreAll(_deque.removeFirst()));
 	}
 
 	@Override
@@ -234,23 +234,21 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		if (!c.isEmpty())
 		{
 			for (V v : c)
-				SContext.checkUnstored(v);
-			int n = _deque.size();
+				SContext.checkStoreAll(v);
 			SContext ctx = sContext();
+			int n = _deque.size();
 			if (!_deque.addAll(c))
 				return false;
-			for (V v : c)
-				SContext.store(v);
 			ctx.addOnRollback(() ->
 			{
 				if (n > 0)
 				{
 					for (int i = _deque.size() - 1; i >= n; --i)
-						SContext.unstore(_deque.removeLast());
+						SContext.unstoreAll(_deque.removeLast());
 				}
 				else
 				{
-					_deque.forEach(SContext::unstore);
+					_deque.forEach(SContext::unstoreAll);
 					_deque.clear();
 				}
 			});
@@ -264,9 +262,7 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		if (!c.isEmpty())
 		{
 			for (S s : c)
-				SContext.checkUnstored(SContext.unwrap(s));
-			for (S s : c)
-				SContext.store(SContext.unwrap(s));
+				SContext.checkStoreAll(SContext.unwrap(s));
 			int n = _deque.size();
 			SContext ctx = sContext();
 			for (S s : c)
@@ -276,11 +272,11 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 				if (n > 0)
 				{
 					for (int i = _deque.size() - 1; i >= n; --i)
-						SContext.unstore(_deque.removeLast());
+						SContext.unstoreAll(_deque.removeLast());
 				}
 				else
 				{
-					_deque.forEach(SContext::unstore);
+					_deque.forEach(SContext::unstoreAll);
 					_deque.clear();
 				}
 			});
@@ -295,10 +291,10 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		V vOld = _deque.remove();
 		ctx.addOnRollback(() ->
 		{
-			SContext.checkAndStore(vOld);
+			SContext.checkStoreAll(vOld);
 			_deque.addFirst(vOld);
 		});
-		return SContext.unstore(vOld);
+		return SContext.unstoreAll(vOld);
 	}
 
 	public void removeDirect() // =removeFirst=pop, exception if empty
@@ -343,10 +339,10 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		V vOld = _deque.removeLast();
 		ctx.addOnRollback(() ->
 		{
-			SContext.checkAndStore(vOld);
+			SContext.checkStoreAll(vOld);
 			_deque.addLast(vOld);
 		});
-		return SContext.unstore(vOld);
+		return SContext.unstoreAll(vOld);
 	}
 
 	public void removeLastDirect() // exception if empty
@@ -383,10 +379,10 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		V vOld = _deque.poll();
 		ctx.addOnRollback(() ->
 		{
-			SContext.checkAndStore(vOld);
+			SContext.checkStoreAll(vOld);
 			_deque.addFirst(vOld);
 		});
-		return SContext.unstore(vOld);
+		return SContext.unstoreAll(vOld);
 	}
 
 	public void pollDirect() // =pollFirst, null if empty
@@ -426,10 +422,10 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		V vOld = _deque.pollLast();
 		ctx.addOnRollback(() ->
 		{
-			SContext.checkAndStore(vOld);
+			SContext.checkStoreAll(vOld);
 			_deque.addLast(vOld);
 		});
-		return SContext.unstore(vOld);
+		return SContext.unstoreAll(vOld);
 	}
 
 	public void pollLastDirect() // null if empty
@@ -479,14 +475,14 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		@SuppressWarnings("unchecked")
 		V[] saved = (V[])new Object[n];
 		for (int i = 0; i < n; i++)
-			saved[i] = SContext.unstore(_deque.pollFirst());
+			saved[i] = SContext.unstoreAll(_deque.pollFirst());
 		ctx.addOnRollback(() ->
 		{
 			_deque.clear();
 			for (int i = 0; i < n; i++)
 			{
 				V v = saved[i];
-				SContext.checkAndStore(v);
+				SContext.checkStoreAll(v);
 				_deque.addLast(v);
 			}
 		});

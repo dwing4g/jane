@@ -84,11 +84,11 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		{
 			if (vOld != null)
 			{
-				SContext.checkAndStore(vOld); // 这里不应该检查失败
-				SContext.unstore(_map.put(k, vOld));
+				SContext.checkStoreAll(vOld); // 这里不应该检查失败
+				SContext.unstoreAll(_map.put(k, vOld));
 			}
 			else
-				SContext.unstore(_map.remove(k));
+				SContext.unstoreAll(_map.remove(k));
 		});
 	}
 
@@ -98,7 +98,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 			_changed.put(k, null);
 		ctx.addOnRollback(() ->
 		{
-			SContext.checkAndStore(vOld); // 这里不应该检查失败
+			SContext.checkStoreAll(vOld); // 这里不应该检查失败
 			_map.put(k, vOld); // 一定返回null,所以不用调SContext.unstore
 		});
 	}
@@ -144,10 +144,10 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	public V putUnsafe(K k, V v)
 	{
 		SContext ctx = sContext();
-		SContext.checkAndStore(v);
+		SContext.checkStoreAll(v);
 		if (_changed != null)
 			_changed.put(k, v);
-		v = SContext.unstore(_map.put(k, v));
+		v = SContext.unstoreAll(_map.put(k, v));
 		addUndoPut(ctx, k, v);
 		return v;
 	}
@@ -173,10 +173,9 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 				break;
 			@SuppressWarnings("unchecked")
 			V v = (V)saved[i];
-			SContext.store(v);
 			if (_changed != null)
 				_changed.put(k, v);
-			saved[i++] = SContext.unstore(_map.put(k, v));
+			saved[i++] = SContext.unstoreAll(_map.put(k, v));
 		}
 		ctx.addOnRollback(() ->
 		{
@@ -190,11 +189,11 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 				V v = (V)saved[j++];
 				if (v != null)
 				{
-					SContext.checkAndStore(v); // 这里不应该检查失败
-					SContext.unstore(_map.put(k, v));
+					SContext.checkStoreAll(v); // 这里不应该检查失败
+					SContext.unstoreAll(_map.put(k, v));
 				}
 				else
-					SContext.unstore(_map.remove(k));
+					SContext.unstoreAll(_map.remove(k));
 			}
 		});
 	}
@@ -217,7 +216,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 			V v = e.getValue();
 			if (v == null)
 				continue;
-			SContext.checkUnstored(v);
+			SContext.checkStoreAll(v);
 			saved[i++] = k;
 			saved[i++] = v;
 		}
@@ -244,7 +243,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 			V v = SContext.unwrap(e.getValue());
 			if (v == null)
 				continue;
-			SContext.checkUnstored(v);
+			SContext.checkStoreAll(v);
 			saved[i++] = k;
 			saved[i++] = v;
 		}
@@ -258,7 +257,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	{
 		SContext ctx = sContext();
 		//noinspection SuspiciousMethodCalls
-		V vOld = SContext.unstore(_map.remove(k));
+		V vOld = SContext.unstoreAll(_map.remove(k));
 		if (vOld == null)
 			return null;
 		addUndoRemove(ctx, (K)k, vOld);
@@ -288,7 +287,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		int i = 0;
 		for (Entry<K, V> e : _map.entrySet())
 		{
-			SContext.unstore(e.getValue());
+			SContext.unstoreAll(e.getValue());
 			saved[i++] = e;
 		}
 		_map.clear();
@@ -299,7 +298,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 			{
 				Entry<K, V> e = saved[j];
 				V v = e.getValue();
-				SContext.checkAndStore(v); // 这里不应该检查失败
+				SContext.checkStoreAll(v); // 这里不应该检查失败
 				_map.put(e.getKey(), v); // 一定返回null,所以不用调SContext.unstore
 			}
 		});
@@ -336,11 +335,11 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		public V setValueUnsafe(V v)
 		{
 			SContext ctx = sContext();
-			SContext.checkAndStore(v);
+			SContext.checkStoreAll(v);
 			K k = _e.getKey();
 			if (_changed != null)
 				_changed.put(k, v);
-			v = SContext.unstore(_e.setValue(v));
+			v = SContext.unstoreAll(_e.setValue(v));
 			addUndoPut(ctx, k, v);
 			return v;
 		}
@@ -396,7 +395,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 			K k = _cur.getKey();
 			V v = _cur.getValueUnsafe();
 			_it.remove();
-			addUndoRemove(ctx, k, SContext.unstore(v));
+			addUndoRemove(ctx, k, SContext.unstoreAll(v));
 		}
 	}
 

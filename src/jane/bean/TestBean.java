@@ -214,6 +214,7 @@ public class TestBean extends Bean<TestBean>
 		/** @return 字段的注释 */
 		public int getValue1()
 		{
+			checkLock();
 			return _bean.getValue1();
 		}
 
@@ -226,6 +227,7 @@ public class TestBean extends Bean<TestBean>
 
 		public long getValue2()
 		{
+			checkLock();
 			return _bean.getValue2();
 		}
 

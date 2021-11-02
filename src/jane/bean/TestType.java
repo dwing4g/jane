@@ -695,6 +695,30 @@ public final class TestType extends Bean<TestType>
 	// attach java code here
 
 	@Override
+	protected void checkStoreAll()
+	{
+		super.checkStoreAll();
+		checkStoreAll(this.v18);
+		checkStoreAll(this.v19);
+	}
+
+	@Override
+	protected void storeAll()
+	{
+		super.storeAll();
+		storeAll(this.v18);
+		storeAll(this.v19);
+	}
+
+	@Override
+	protected void unstoreAll()
+	{
+		super.unstoreAll();
+		unstoreAll(this.v18);
+		unstoreAll(this.v19);
+	}
+
+	@Override
 	public Safe safe(SContext.Safe<?> _parent_)
 	{
 		return new Safe(this, _parent_);
@@ -762,6 +786,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 1字节布尔,0表示假,1表示真,其它默认表示真 */
 		public boolean getV1()
 		{
+			checkLock();
 			return _bean.getV1();
 		}
 
@@ -775,6 +800,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 1字节整数 */
 		public byte getV2()
 		{
+			checkLock();
 			return _bean.getV2();
 		}
 
@@ -788,6 +814,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 2字节整数 */
 		public short getV3()
 		{
+			checkLock();
 			return _bean.getV3();
 		}
 
@@ -801,6 +828,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 4字节整数 */
 		public int getV4()
 		{
+			checkLock();
 			return _bean.getV4();
 		}
 
@@ -814,6 +842,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 8字节整数 */
 		public long getV5()
 		{
+			checkLock();
 			return _bean.getV5();
 		}
 
@@ -827,6 +856,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 4字节浮点数 */
 		public float getV6()
 		{
+			checkLock();
 			return _bean.getV6();
 		}
 
@@ -840,6 +870,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 8字节浮点数 */
 		public double getV7()
 		{
+			checkLock();
 			return _bean.getV7();
 		}
 
@@ -853,6 +884,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 二进制数据(Octets) */
 		public Octets getV8()
 		{
+			checkLock();
 			return _bean.getV8().clone();
 		}
 
@@ -866,6 +898,7 @@ public final class TestType extends Bean<TestType>
 		/** 二进制数据(Octets) */
 		public byte[] copyOfV8()
 		{
+			checkLock();
 			return _bean.getV8().getBytes();
 		}
 
@@ -879,12 +912,14 @@ public final class TestType extends Bean<TestType>
 		/** 二进制数据(Octets) */
 		public <B extends Bean<B>> B unmarshalV8(B _b_) throws MarshalException
 		{
+			checkLock();
 			return _bean.unmarshalV8(_b_);
 		}
 
 		/** 二进制数据(Octets) */
 		public DynBean unmarshalV8() throws MarshalException
 		{
+			checkLock();
 			return _bean.unmarshalV8();
 		}
 
@@ -892,12 +927,14 @@ public final class TestType extends Bean<TestType>
 		@Deprecated
 		public Octets unsafeV8()
 		{
+			checkLock();
 			return _bean.getV8();
 		}
 
 		/** @return 字符串(String) */
 		public String getV9()
 		{
+			checkLock();
 			return _bean.getV9();
 		}
 
@@ -911,6 +948,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 数组容器(ArrayList) */
 		public SList<Boolean, Boolean> getV10()
 		{
+			checkLock();
 			return new SList<>(this, _bean.getV10());
 		}
 
@@ -918,12 +956,14 @@ public final class TestType extends Bean<TestType>
 		@Deprecated
 		public ArrayList<Boolean> unsafeV10()
 		{
+			checkLock();
 			return _bean.getV10();
 		}
 
 		/** @return 链表容器(LinkedList) */
 		public SList<Byte, Byte> getV11()
 		{
+			checkLock();
 			return new SList<>(this, _bean.getV11());
 		}
 
@@ -931,12 +971,14 @@ public final class TestType extends Bean<TestType>
 		@Deprecated
 		public LinkedList<Byte> unsafeV11()
 		{
+			checkLock();
 			return _bean.getV11();
 		}
 
 		/** @return 队列容器(ArrayDeque) */
 		public SDeque<Integer, Integer> getV12()
 		{
+			checkLock();
 			return new SDeque<>(this, _bean.getV12());
 		}
 
@@ -944,6 +986,7 @@ public final class TestType extends Bean<TestType>
 		@Deprecated
 		public ArrayDeque<Integer> unsafeV12()
 		{
+			checkLock();
 			return _bean.getV12();
 		}
 
@@ -956,6 +999,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 无序集合容器(HashSet) */
 		public SSet<Long, Long> getV13()
 		{
+			checkLock();
 			if (CACHE_v13 == null) CACHE_v13 = new SSet<>(this, _bean.getV13(), LISTENER_v13);
 			return CACHE_v13;
 		}
@@ -964,6 +1008,7 @@ public final class TestType extends Bean<TestType>
 		@Deprecated
 		public HashSet<Long> unsafeV13()
 		{
+			checkLock();
 			return _bean.getV13();
 		}
 
@@ -976,6 +1021,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 排序集合容器(TreeSet) */
 		public SSSet<Float, Float> getV14()
 		{
+			checkLock();
 			if (CACHE_v14 == null) CACHE_v14 = new SSSet<>(this, _bean.getV14(), LISTENER_v14);
 			return CACHE_v14;
 		}
@@ -984,6 +1030,7 @@ public final class TestType extends Bean<TestType>
 		@Deprecated
 		public TreeSet<Float> unsafeV14()
 		{
+			checkLock();
 			return _bean.getV14();
 		}
 
@@ -996,6 +1043,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 有序集合容器(LinkedHashSet) */
 		public SSet<Double, Double> getV15()
 		{
+			checkLock();
 			if (CACHE_v15 == null) CACHE_v15 = new SSet<>(this, _bean.getV15(), LISTENER_v15);
 			return CACHE_v15;
 		}
@@ -1004,6 +1052,7 @@ public final class TestType extends Bean<TestType>
 		@Deprecated
 		public LinkedHashSet<Double> unsafeV15()
 		{
+			checkLock();
 			return _bean.getV15();
 		}
 
@@ -1016,6 +1065,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 无序映射容器(HashMap) */
 		public SMap<Long, String, String> getV16()
 		{
+			checkLock();
 			if (CACHE_v16 == null) CACHE_v16 = new SMap<>(this, _bean.getV16(), LISTENER_v16);
 			return CACHE_v16;
 		}
@@ -1024,6 +1074,7 @@ public final class TestType extends Bean<TestType>
 		@Deprecated
 		public HashMap<Long, String> unsafeV16()
 		{
+			checkLock();
 			return _bean.getV16();
 		}
 
@@ -1036,6 +1087,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 排序映射容器(TreeMap) */
 		public SSMap<TestBean, Boolean, Boolean> getV17()
 		{
+			checkLock();
 			if (CACHE_v17 == null) CACHE_v17 = new SSMap<>(this, _bean.getV17(), LISTENER_v17);
 			return CACHE_v17;
 		}
@@ -1044,6 +1096,7 @@ public final class TestType extends Bean<TestType>
 		@Deprecated
 		public TreeMap<TestBean, Boolean> unsafeV17()
 		{
+			checkLock();
 			return _bean.getV17();
 		}
 
@@ -1056,6 +1109,7 @@ public final class TestType extends Bean<TestType>
 		/** @return 有序映射容器(LinkedHashMap) */
 		public SMap<Octets, TestBean, TestBean.Safe> getV18()
 		{
+			checkLock();
 			if (CACHE_v18 == null) CACHE_v18 = new SMap<>(this, _bean.getV18(), LISTENER_v18);
 			return CACHE_v18;
 		}
@@ -1064,12 +1118,14 @@ public final class TestType extends Bean<TestType>
 		@Deprecated
 		public LinkedHashMap<Octets, TestBean> unsafeV18()
 		{
+			checkLock();
 			return _bean.getV18();
 		}
 
 		/** @return 嵌入其它bean */
 		public TestBean.Safe getV19()
 		{
+			checkLock();
 			return _bean.getV19().safe(this);
 		}
 
@@ -1077,12 +1133,14 @@ public final class TestType extends Bean<TestType>
 		@Deprecated
 		public TestBean unsafeV19()
 		{
+			checkLock();
 			return _bean.getV19();
 		}
 
 		/** @return 非序列化字段 */
 		public java.lang.String getV20()
 		{
+			checkLock();
 			return _bean.getV20();
 		}
 

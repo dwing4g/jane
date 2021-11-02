@@ -158,7 +158,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 		v = _stoTable.get(k);
 		if (v != null)
 		{
-			v.store();
+			v.storeAll();
 			_cache.put(k, new CacheRefK<>(_cache, k, v));
 		}
 		return v;
@@ -394,79 +394,70 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	{
 		if (v == null)
 			throw new NullPointerException();
-		Supplier<V> sOld = _cache.get(k);
-		V vOld = sOld != null ? sOld.get() : null;
-		if (vOld == v)
-			modify(k, v);
-		else
+		V vOld = getCacheUnsafe(k);
+		if (vOld != v)
 		{
-			if (!v.tryStore())
-				throw new IllegalStateException("put already stored bean: t=" +
-						_tableName + ",k=" + k + ",vOld=" + vOld + ",v=" + v);
+			v.checkStoreAll();
 			Procedure.incVersion(lockId(k));
 			if (_cacheMod != null)
 			{
 				_cache.put(k, new CacheRefK<>(_cache, k, v));
-				if (vOld != null)
-					vOld.unstore();
-				vOld = _cacheMod.put(k, v);
-				if (vOld != null)
-					vOld.unstore();
-				else
+				if (_cacheMod.put(k, v) == null)
 					_dbm.incModCount();
 			}
 			else
-			{
 				_cache.put(k, new StrongRef<>(v));
-				if (vOld != null)
-					vOld.unstore();
-			}
+			if (vOld != null)
+				vOld.unstoreAll();
 		}
 	}
 
 	/**
 	 * 同putUnsafe,但增加的安全封装,可回滚修改
-	 * @return 返回被覆盖的记录值,如果与覆盖值是不同的对象,则可用于再次put. 返回null则表示没有旧记录
 	 */
-	public V put(K k, V v)
+	public void put(K k, V v)
 	{
 		if (v == null)
 			throw new NullPointerException();
 		if (!Procedure.isLockedByCurrentThread(lockId(k)))
 			throw new IllegalAccessError("put unlocked record! table=" + _tableName + ",key=" + k);
-		V vOld = getNoCacheUnsafe(k);
-		if (vOld == v)
+		V vOld = getCacheUnsafe(k);
+		if (vOld != v)
 		{
-			if (_cacheMod != null && _cacheMod.get(k) != v)
-				modify(k, v); // 这里不考虑回滚也没什么问题
-			return v;
+			v.checkStoreAll();
+			Procedure.incVersion(lockId(k));
+			if (_cacheMod != null)
+			{
+				_cache.put(k, new CacheRefK<>(_cache, k, v));
+				if (_cacheMod.put(k, v) == null)
+					_dbm.incModCount();
+			}
+			else
+				_cache.put(k, new StrongRef<>(v));
+			if (vOld != null)
+				vOld.unstoreAll();
 		}
-		if (v.stored())
-			throw new IllegalStateException("put already stored bean: t=" + _tableName + ",k=" + k + ",v=" + v);
 		SContext.current().addOnRollbackDirty(() ->
 		{
 			if (vOld != null)
-			{
-				vOld.unstore();
 				putUnsafe(k, vOld);
-			}
 			else
-				removeUnsafe(k);
+			{
+				_cache.remove(k);
+				if (_cacheMod != null)
+					_cacheMod.remove(k);
+			}
 		});
-		putUnsafe(k, v);
-		if (vOld != null)
-			vOld.unstore();
-		return vOld;
 	}
 
 	@SuppressWarnings("deprecation")
-	public V put(K k, S s)
+	public void put(K k, S s)
 	{
 		V v = s.unsafe();
-		V vOld = put(k, v);
-		if (vOld != v)
+		boolean stored = v.stored();
+		put(k, v);
+		if (!stored)
 			s.record(new Record<>(this, k, s));
-		return vOld;
 	}
 
 	/**
@@ -496,11 +487,11 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 			return null;
 		SContext.current().addOnRollbackDirty(() ->
 		{
-			vOld.unstore(); // 确保可写入
+			vOld.unstoreAll(); // 确保可写入
 			putUnsafe(k, vOld);
 		});
 		removeUnsafe(k);
-		vOld.unstore();
+		vOld.unstoreAll();
 		return vOld;
 	}
 

@@ -114,7 +114,7 @@ public final class SSMap<K, V, S> extends SMap<K, V, S> implements NavigableMap<
 		if (e == null)
 			return null;
 		V v = e.getValue();
-		SContext.unstore(v);
+		SContext.unstoreAll(v);
 		addUndoRemove(ctx, e.getKey(), v);
 		return new SEntry(e);
 	}
@@ -127,7 +127,7 @@ public final class SSMap<K, V, S> extends SMap<K, V, S> implements NavigableMap<
 		if (e == null)
 			return null;
 		V v = e.getValue();
-		SContext.unstore(v);
+		SContext.unstoreAll(v);
 		addUndoRemove(ctx, e.getKey(), v);
 		return new SEntry(e);
 	}

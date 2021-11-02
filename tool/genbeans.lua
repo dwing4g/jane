@@ -160,6 +160,24 @@ public #(bean.final)class #(bean.name) extends Bean<#(bean.name)>
 	}
 #(bean.attach_java)
 	@Override
+	protected void checkStoreAll()
+	{
+		super.checkStoreAll();
+#(##(var.checkStoreAll)#)#	}
+
+	@Override
+	protected void storeAll()
+	{
+		super.storeAll();
+#(##(var.storeAll)#)#	}
+
+	@Override
+	protected void unstoreAll()
+	{
+		super.unstoreAll();
+#(##(var.unstoreAll)#)#	}
+
+	@Override
 	public Safe safe(SContext.Safe<?> _parent_)
 	{
 		return new Safe(this, _parent_);
@@ -447,6 +465,7 @@ typedef.byte =
 		/** @return #(var.comment1) */
 		public #(var.type) get#(var.name_u)()
 		{
+			checkLock();
 			return _bean.get#(var.name_u)();
 		}
 ]],
@@ -473,6 +492,9 @@ typedef.byte =
 	equals = "this.#(var.name) != _b_.#(var.name)",
 	compareto = "this.#(var.name) - _b_.#(var.name)",
 	tostring = "_s_.append(this.#(var.name))",
+	checkStoreAll = "",
+	storeAll = "",
+	unstoreAll = "",
 }
 typedef.char  = merge(typedef.byte, { type = "char",  type_i = "char",  type_o = "Char"  })
 typedef.short = merge(typedef.byte, { type = "short", type_i = "short", type_o = "Short" })
@@ -634,6 +656,7 @@ typedef.octets = merge(typedef.string,
 		/** @return #(var.comment1) */
 		public #(var.type) get#(var.name_u)()
 		{
+			checkLock();
 			return _bean.get#(var.name_u)().clone();
 		}
 
@@ -647,6 +670,7 @@ typedef.octets = merge(typedef.string,
 		/** #(var.comment1) */
 		public byte[] copyOf#(var.name_u)()
 		{
+			checkLock();
 			return _bean.get#(var.name_u)().getBytes();
 		}
 
@@ -660,12 +684,14 @@ typedef.octets = merge(typedef.string,
 		/** #(var.comment1) */
 		public <B extends Bean<B>> B unmarshal#(var.name_u)(B _b_) throws MarshalException
 		{
+			checkLock();
 			return _bean.unmarshal#(var.name_u)(_b_);
 		}
 
 		/** #(var.comment1) */
 		public DynBean unmarshal#(var.name_u)() throws MarshalException
 		{
+			checkLock();
 			return _bean.unmarshal#(var.name_u)();
 		}
 
@@ -673,6 +699,7 @@ typedef.octets = merge(typedef.string,
 		@Deprecated
 		public #(var.type) unsafe#(var.name_u)()
 		{
+			checkLock();
 			return _bean.get#(var.name_u)();
 		}
 ]],
@@ -707,6 +734,7 @@ typedef.vector = merge(typedef.octets,
 		/** @return #(var.comment1) */
 		public #(var.stype) get#(var.name_u)()
 		{
+			checkLock();
 			return new #(var.stype)(this, _bean.get#(var.name_u)());
 		}
 
@@ -714,6 +742,7 @@ typedef.vector = merge(typedef.octets,
 		@Deprecated
 		public #(var.type) unsafe#(var.name_u)()
 		{
+			checkLock();
 			return _bean.get#(var.name_u)();
 		}
 ]],
@@ -756,6 +785,9 @@ typedef.vector = merge(typedef.octets,
 	end,
 	compareto = "Util.compareTo(this.#(var.name), _b_.#(var.name))",
 	tostring = "Util.append(_s_, this.#(var.name))",
+	checkStoreAll = function(var) return typedef[var.k] and "" or "\t\tcheckStoreAll(this.#(var.name));\n" end,
+	storeAll = function(var) return typedef[var.k] and "" or "\t\tstoreAll(this.#(var.name));\n" end,
+	unstoreAll = function(var) return typedef[var.k] and "" or "\t\tunstoreAll(this.#(var.name));\n" end,
 })
 typedef.list = merge(typedef.vector,
 {
@@ -825,6 +857,7 @@ typedef.hashset = merge(typedef.list,
 		/** @return #(var.comment1) */
 		public #(var.stype) get#(var.name_u)()
 		{
+			checkLock();
 			if (CACHE_#(var.name) == null) CACHE_#(var.name) = new #(var.stype)(this, _bean.get#(var.name_u)(), LISTENER_#(var.name));
 			return CACHE_#(var.name);
 		}
@@ -833,6 +866,7 @@ typedef.hashset = merge(typedef.list,
 		@Deprecated
 		public #(var.type) unsafe#(var.name_u)()
 		{
+			checkLock();
 			return _bean.get#(var.name_u)();
 		}
 ]] end,
@@ -875,6 +909,7 @@ typedef.hashmap = merge(typedef.list,
 		/** @return #(var.comment1) */
 		public #(var.stype) get#(var.name_u)()
 		{
+			checkLock();
 			if (CACHE_#(var.name) == null) CACHE_#(var.name) = new #(var.stype)(this, _bean.get#(var.name_u)(), LISTENER_#(var.name));
 			return CACHE_#(var.name);
 		}
@@ -883,6 +918,7 @@ typedef.hashmap = merge(typedef.list,
 		@Deprecated
 		public #(var.type) unsafe#(var.name_u)()
 		{
+			checkLock();
 			return _bean.get#(var.name_u)();
 		}
 ]] end,
@@ -918,6 +954,9 @@ typedef.hashmap = merge(typedef.list,
 			} break;
 ]], get_unmarshal_kv(var, "k", "_k_"), get_unmarshal_kv(var, "v", "_t_"))
 	end,
+	checkStoreAll = function(var) return typedef[var.v] and "" or "\t\tcheckStoreAll(this.#(var.name));\n" end,
+	storeAll = function(var) return typedef[var.v] and "" or "\t\tstoreAll(this.#(var.name));\n" end,
+	unstoreAll = function(var) return typedef[var.v] and "" or "\t\tunstoreAll(this.#(var.name));\n" end,
 })
 typedef.treemap = merge(typedef.hashmap,
 {
@@ -954,6 +993,7 @@ typedef.bean = merge(typedef.octets,
 		/** @return #(var.comment1) */
 		public #(var.type).Safe get#(var.name_u)()
 		{
+			checkLock();
 			return _bean.get#(var.name_u)().safe(this);
 		}
 
@@ -961,6 +1001,7 @@ typedef.bean = merge(typedef.octets,
 		@Deprecated
 		public #(var.type) unsafe#(var.name_u)()
 		{
+			checkLock();
 			return _bean.get#(var.name_u)();
 		}
 ]],
@@ -988,6 +1029,9 @@ typedef.bean = merge(typedef.octets,
 	end,
 	unmarshal_kv = function(var, kv, t) if kv then return "_s_.unmarshalBeanKV(new " .. typename(var, var[kv]) .. "(), " .. t .. ")" end end,
 	compareto = "this.#(var.name).compareTo(_b_.#(var.name))",
+	checkStoreAll = function(var) return "\t\tcheckStoreAll(this.#(var.name));\n" end,
+	storeAll = function(var) return "\t\tstoreAll(this.#(var.name));\n" end,
+	unstoreAll = function(var) return "\t\tunstoreAll(this.#(var.name));\n" end,
 })
 typedef.ref = merge(typedef.bean,
 {
@@ -1011,6 +1055,7 @@ typedef.ref = merge(typedef.bean,
 		/** @return #(var.comment1) */
 		public #(var.type) get#(var.name_u)()
 		{
+			checkLock();
 			return _bean.get#(var.name_u)();
 		}
 ]],
@@ -1030,6 +1075,9 @@ typedef.ref = merge(typedef.bean,
 	equals = "",
 	compareto = "0",
 	tostring = "_s_.append(this.#(var.name))",
+	checkStoreAll = "",
+	storeAll = "",
+	unstoreAll = "",
 })
 typedef.boolean = typedef.bool
 typedef.integer = typedef.int
@@ -1164,6 +1212,7 @@ local function bean_const(code)
 		gsub("\tpublic void marshal.-\n\t}\n\n", ""):
 		gsub("\tpublic <B extends Bean<B>> B unmarshal.-\n\t}\n\n", ""):
 		gsub("\tpublic DynBean unmarshal.-\n\t}\n\n", ""):
+		gsub("\n\t@Override\n\tprotected void checkStoreAll.-\n\t}\n", ""):
 		gsub("\n\t@Override\n\tpublic Safe safe.-\n\t}\n", ""):
 		gsub("\t@Override\n\tpublic void reset%(.-\n\t}", [[
 	@Deprecated
@@ -1236,6 +1285,7 @@ function bean(bean)
 		gsub("\t\t_c_ = 0; if %(_c_ != 0%) return _c_;\n", ""):
 		gsub("( new %w+)<.->", "%1<>"):
 		gsub("%.append%(','%);\n\t\treturn _s_", ";\n\t\treturn _s_"):
+		gsub("\n\t@Override\n\tprotected void %a+All%(%)\n\t{\n\t\tsuper%.%a+All%(%);\n\t}\n", ""):
 		gsub("\n\n\n", "\n\n")
 	if not code:find("\tprivate static final Field ") then
 		code = code:gsub("import java%.lang%.reflect%.Field;\n", "")
@@ -1416,9 +1466,10 @@ for beanname, safe in spairs(need_save) do
 	local code = name_code[beanname]
 	if not code then error("ERROR: unknown bean: " .. beanname) end
 	if not safe then
-		code = code:gsub("\n\t@Override\n\tpublic Safe safe%(.*", "}\n")
-				   :gsub("import java%.lang%.reflect%.Field;\n", "")
-				   :gsub("import jane%.core%.S.-\n", "")
+		code = code:gsub("\n\t@Override\n\tprotected void checkStoreAll.*", "}\n"):
+					gsub("\n\t@Override\n\tpublic Safe safe.*", "}\n"):
+					gsub("import java%.lang%.reflect%.Field;\n", ""):
+					gsub("import jane%.core%.S.-\n", "")
 	end
 	checksave(outpath .. namespace_path .. "/" .. beanname .. ".java", code:gsub("\r", ""), 0)
 end

@@ -64,12 +64,12 @@ public class SSet<V, S> implements Set<S>, Cloneable
 
 	protected void addUndoRemove(SContext ctx, V v)
 	{
-		SContext.unstore(v);
+		SContext.unstoreAll(v);
 		if (_removed != null)
 			_removed.add(v);
 		ctx.addOnRollback(() ->
 		{
-			SContext.checkAndStore(v);
+			SContext.checkStoreAll(v);
 			_set.add(v);
 		});
 	}
@@ -116,12 +116,12 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	public boolean addDirect(V v)
 	{
 		SContext ctx = sContext();
-		SContext.checkAndStore(v);
+		SContext.checkStoreAll(v);
 		if (!_set.add(v))
 			return false;
 		if (_added != null)
 			_added.add(v);
-		ctx.addOnRollback(() -> _set.remove(SContext.unstore(v)));
+		ctx.addOnRollback(() -> _set.remove(SContext.unstoreAll(v)));
 		return true;
 	}
 
@@ -138,7 +138,6 @@ public class SSet<V, S> implements Set<S>, Cloneable
 		for (int i = 0; i < n; i++)
 		{
 			V v = saved[i];
-			SContext.store(v);
 			_set.add(v);
 			if (_added != null)
 				_added.add(v);
@@ -146,7 +145,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 		ctx.addOnRollback(() ->
 		{
 			for (int j = 0; j < n; j++)
-				_set.remove(SContext.unstore(saved[j]));
+				_set.remove(SContext.unstoreAll(saved[j]));
 		});
 		return true;
 	}
@@ -166,7 +165,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 		{
 			if (v == null || _set.contains(v))
 				continue;
-			SContext.checkUnstored(v);
+			SContext.checkStoreAll(v);
 			saved[i++] = v;
 		}
 		return addAll(ctx, saved, i);
@@ -198,7 +197,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 			V v = SContext.unwrap(s);
 			if (v == null || _set.contains(v))
 				continue;
-			SContext.checkUnstored(v);
+			SContext.checkStoreAll(v);
 			saved[i++] = v;
 		}
 		return addAll(ctx, saved, i);
@@ -223,7 +222,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 		{
 			V v = saved[i];
 			_set.remove(v);
-			SContext.unstore(v);
+			SContext.unstoreAll(v);
 			if (_removed != null)
 				_removed.add(v);
 		}
@@ -232,7 +231,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 			for (int j = 0; j < n; j++)
 			{
 				V v = saved[j];
-				SContext.checkAndStore(v);
+				SContext.checkStoreAll(v);
 				_set.add(v);
 			}
 		});
@@ -301,7 +300,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 		V[] saved = (V[])new Object[n];
 		int i = 0;
 		for (V v : _set)
-			saved[i++] = SContext.unstore(v);
+			saved[i++] = SContext.unstoreAll(v);
 		_set.clear();
 		ctx.addOnRollback(() ->
 		{
@@ -309,7 +308,7 @@ public class SSet<V, S> implements Set<S>, Cloneable
 			for (int j = 0; j < n; j++)
 			{
 				V v = saved[j];
-				SContext.checkAndStore(v);
+				SContext.checkStoreAll(v);
 				_set.add(v);
 			}
 		});

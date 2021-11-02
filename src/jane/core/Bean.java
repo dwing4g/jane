@@ -1,6 +1,7 @@
 package jane.core;
 
 import java.io.Serializable;
+import java.util.Map;
 import jane.core.SContext.Safe;
 import org.apache.mina.core.write.WriteRequest;
 
@@ -43,22 +44,14 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 		return _serial == 0x8000_0000;
 	}
 
-	final void store()
+	private void store()
 	{
 		_serial = 0x8000_0000;
 	}
 
-	final void unstore()
+	private void unstore()
 	{
 		_serial = 0;
-	}
-
-	final boolean tryStore()
-	{
-		if (_serial == 0x8000_0000)
-			return false;
-		_serial = 0x8000_0000;
-		return true;
 	}
 
 	/**
@@ -229,6 +222,68 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	public String toString()
 	{
 		return toStringBuilder(new StringBuilder(2 + initSize() * 2)).toString();
+	}
+
+	protected void checkStoreAll()
+	{
+		if (stored())
+			throw new IllegalStateException("already stored bean");
+		store();
+	}
+
+	protected void storeAll()
+	{
+		store();
+	}
+
+	protected void unstoreAll()
+	{
+		unstore();
+	}
+
+	protected static void checkStoreAll(Bean<?> b)
+	{
+		b.checkStoreAll();
+	}
+
+	protected static void storeAll(Bean<?> b)
+	{
+		b.storeAll();
+	}
+
+	protected static void unstoreAll(Bean<?> b)
+	{
+		b.unstoreAll();
+	}
+
+	protected static void checkStoreAll(Iterable<? extends Bean<?>> it)
+	{
+		it.forEach(b -> b.checkStoreAll());
+	}
+
+	protected static void checkStoreAll(Map<?, ? extends Bean<?>> m)
+	{
+		m.values().forEach(b -> b.checkStoreAll());
+	}
+
+	protected static void storeAll(Iterable<? extends Bean<?>> it)
+	{
+		it.forEach(b -> b.storeAll());
+	}
+
+	protected static void storeAll(Map<?, ? extends Bean<?>> m)
+	{
+		m.values().forEach(b -> b.storeAll());
+	}
+
+	protected static void unstoreAll(Iterable<? extends Bean<?>> it)
+	{
+		it.forEach(b -> b.unstoreAll());
+	}
+
+	protected static void unstoreAll(Map<?, ? extends Bean<?>> m)
+	{
+		m.values().forEach(b -> b.unstoreAll());
 	}
 
 	/**
