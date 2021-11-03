@@ -42,6 +42,8 @@ public class BeanCodec implements IoFilter
 		else
 		{
 			int serial = bean.serial();
+			if (serial == 0x8000_0000)
+				serial = 0;
 			int reserveLen = Octets.marshalUIntLen(type) + Octets.marshalLen(serial) + 5;
 			Octets os = new Octets(reserveLen + bean.initSize());
 			os.resize(reserveLen);
@@ -95,20 +97,21 @@ public class BeanCodec implements IoFilter
 				return false;
 			handler = _mgr.getHandler(_ptype);
 		}
+		int serial = _pserial;
 		Bean<?> bean;
 		if (handler != null && (bean = handler.beanStub().create()) != null)
 		{
 			int pos = os.position();
 			bean.unmarshalProtocol(os);
+			bean.serial(serial != 0x8000_0000 ? serial : 0);
 			int realSize = os.position() - pos;
 			if (realSize > _psize)
 				throw new DecodeException("bean realSize overflow: type=" + _ptype +
-						",serial=" + _pserial + ",size=" + _psize + ",realSize=" + realSize);
+						",serial=" + serial + ",size=" + _psize + ",realSize=" + realSize);
 			os.setPosition(pos + _psize);
 		}
 		else
-			bean = new RawBean(_ptype, _pserial, os.unmarshalRaw(_psize));
-		bean.serial(_pserial);
+			bean = new RawBean(_ptype, serial, os.unmarshalRaw(_psize));
 		_psize = -1;
 		next.messageReceived(bean);
 		return true;

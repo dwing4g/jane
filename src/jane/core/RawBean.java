@@ -22,7 +22,7 @@ public final class RawBean extends Bean<RawBean>
 
 	public RawBean(int type, int serial, Octets data)
 	{
-		serial(serial);
+		serial(serial != 0x8000_0000 ? serial : 0);
 		_type = type;
 		_data = data;
 	}
@@ -30,6 +30,11 @@ public final class RawBean extends Bean<RawBean>
 	public RawBean(Bean<?> bean)
 	{
 		setBean(bean);
+	}
+
+	public RawBean(Bean<?> bean, int serial)
+	{
+		setBean(bean, serial);
 	}
 
 	public int getType()
@@ -57,11 +62,20 @@ public final class RawBean extends Bean<RawBean>
 	 */
 	public RawBean setBean(Bean<?> bean)
 	{
+		return setBean(bean, bean.serial());
+	}
+
+	/**
+	 * data包含bean的头部
+	 */
+	public RawBean setBean(Bean<?> bean, int serial)
+	{
 		int type = bean.type();
-		int serial = bean.serial();
-		int reserveLen = Octets.marshalUIntLen(type) + Octets.marshalLen(serial) + 5;
 		_type = type;
+		if (serial == 0x8000_0000)
+			serial = 0;
 		serial(serial);
+		int reserveLen = Octets.marshalUIntLen(type) + Octets.marshalLen(serial) + 5;
 
 		OctetsStream os;
 		if (_data instanceof OctetsStream)
@@ -131,7 +145,8 @@ public final class RawBean extends Bean<RawBean>
 	public OctetsStream unmarshal(OctetsStream os) throws MarshalException
 	{
 		_type = os.unmarshalUInt();
-		serial(os.unmarshalInt());
+		int serial = os.unmarshalInt();
+		serial(serial != 0x8000_0000 ? serial : 0);
 		if (_data == null)
 			_data = new Octets();
 		return os.unmarshal(_data);

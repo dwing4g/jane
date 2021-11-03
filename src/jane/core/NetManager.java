@@ -53,13 +53,28 @@ public class NetManager implements IoHandler
 		}
 	}
 
-	private static final class BeanContext<B extends Bean<B>>
+	public static final class BeanContext<B extends Bean<B>>
 	{
-		final int		 askTime = (int)getTimeSec(); // 发送请求的时间戳(秒)
-		int				 timeout = Integer.MAX_VALUE; // 超时时间(秒)
-		IoSession		 session;					  // 请求时绑定的session
-		Bean<?>			 askBean;					  // 请求的bean
-		AnswerHandler<B> answerHandler;				  // 接收回复的回调,超时也会回调(传入的bean为null)
+		public final int			  askEndTime;	 // 超时时间(秒)
+		int							  askSerial;	 // 请求bean的serial
+		public final IoSession		  session;		 // 请求时绑定的session
+		public final AnswerHandler<B> answerHandler; // 接收回复的回调,超时也会回调(传入的bean为null)
+
+		BeanContext(int timeoutSec, IoSession session, AnswerHandler<B> answerHandler)
+		{
+			if (timeoutSec > 0x4000_0000) // 不能太大, 否则会判断出错
+				timeoutSec = 0x4000_0000;
+			else if (timeoutSec < 0)
+				timeoutSec = 0;
+			askEndTime = (int)_timeSec + timeoutSec;
+			this.session = session;
+			this.answerHandler = answerHandler;
+		}
+
+		public int getAskSerial()
+		{
+			return askSerial;
+		}
 	}
 
 	private static final LongConcurrentHashMap<BeanContext<?>> _beanCtxMap	  = new LongConcurrentHashMap<>();	   // 当前等待回复的所有请求上下文
@@ -95,16 +110,11 @@ public class NetManager implements IoHandler
 					for (MapIterator<BeanContext<?>> it = _beanCtxMap.entryIterator(); it.moveToNext();)
 					{
 						BeanContext<?> beanCtx = it.value();
-						if (now - beanCtx.askTime > beanCtx.timeout && _beanCtxMap.remove(it.key(), beanCtx))
+						if (now - beanCtx.askEndTime > 0 && _beanCtxMap.remove(it.key(), beanCtx))
 						{
 							IoSession session = beanCtx.session;
-							Bean<?> askBean = beanCtx.askBean;
-							AnswerHandler<?> answerHandler = beanCtx.answerHandler;
-							beanCtx.session = null;
-							beanCtx.askBean = null;
-							beanCtx.answerHandler = null;
 							if (session != null)
-								((NetManager)session.getHandler()).onAnswer(session, answerHandler, askBean, null);
+								((NetManager)session.getHandler()).onAnswer(beanCtx, null);
 						}
 					}
 				}
@@ -605,20 +615,20 @@ public class NetManager implements IoHandler
 	 */
 	public boolean send(IoSession session, Bean<?> bean)
 	{
+		int oldSerial = bean.serial();
 		bean.serial(0);
-		if (!write(session, bean))
-			return false;
-		if (_enableTrace)
+		boolean r = write(session, bean);
+		bean.serial(oldSerial);
+		if (r && _enableTrace)
 			Log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.typeName(), bean);
-		return true;
+		return r;
 	}
 
 	public boolean sendSafe(IoSession session, Bean<?> bean)
 	{
 		if (session.isClosing() || bean == null)
 			return false;
-		bean.serial(0);
-		RawBean rawbean = new RawBean(bean);
+		RawBean rawbean = new RawBean(bean, 0);
 		SContext.current().addOnCommit(() -> send(session, rawbean));
 		return true;
 	}
@@ -635,17 +645,14 @@ public class NetManager implements IoHandler
 	{
 		if (bean == null)
 			return false;
+		int oldSerial = bean.serial();
 		bean.serial(0);
+		boolean r;
 		if (onSent == null)
-		{
-			if (!write(session, bean))
-				return false;
-		}
+			r = write(session, bean);
 		else
 		{
-			if (session.isClosing())
-				return false;
-			if (write(session, bean, future ->
+			r = !session.isClosing() && write(session, bean, future ->
 			{
 				try
 				{
@@ -653,45 +660,39 @@ public class NetManager implements IoHandler
 				}
 				catch (Throwable e)
 				{
-					Log.error(e, "{}({}): callback exception: {}", _name, session.getId(), bean.typeName());
+					Log.error(e, "{}({}): callback exception:", _name, session.getId());
 				}
-			}) == null)
-				return false;
+			}) != null;
 		}
-		if (_enableTrace)
+		bean.serial(oldSerial);
+		if (r && _enableTrace)
 			Log.trace("{}({}): send: {}:{}", _name, session.getId(), bean.typeName(), bean);
-		return true;
+		return r;
 	}
 
 	public <B extends Bean<B>> boolean sendSafe(IoSession session, B bean, Runnable callback)
 	{
 		if (session.isClosing() || bean == null)
 			return false;
-		bean.serial(0);
-		RawBean rawbean = new RawBean(bean);
+		RawBean rawbean = new RawBean(bean, 0);
 		SContext.current().addOnCommit(() -> send(session, rawbean, callback));
 		return true;
 	}
 
-	private static <B extends Bean<B>> BeanContext<B> allocBeanContext(Bean<?> bean, IoSession session, AnswerHandler<B> onAnswer)
+	private static <B extends Bean<B>> BeanContext<B> allocBeanContext(int timeoutSec, IoSession session, AnswerHandler<B> onAnswer)
 	{
-		BeanContext<B> beanCtx = new BeanContext<>();
-		beanCtx.session = session;
-		beanCtx.askBean = bean;
-		beanCtx.answerHandler = onAnswer;
+		BeanContext<B> beanCtx = new BeanContext<>(timeoutSec, session, onAnswer);
 		for (;;)
 		{
 			int serial = _serialCounter.getAndIncrement();
 			if (serial > 0)
 			{
-				if (_beanCtxMap.putIfAbsent(serial, beanCtx) == null)
-				{
-					bean.serial(serial);
+				beanCtx.askSerial = serial;
+				if (_beanCtxMap.putIfAbsent(serial, beanCtx) == null) // 确保serial没同时在用
 					return beanCtx;
-				}
 			}
 			else
-				_serialCounter.compareAndSet(serial + 1, 1);
+				_serialCounter.compareAndSet(serial + 1, 1); // 回到1开始计数
 		}
 	}
 
@@ -709,26 +710,22 @@ public class NetManager implements IoHandler
 	 * <p>
 	 * 此操作是异步的
 	 * @param onAnswer 回调对象,不能为null,用于在回复和超时时回调(超时则回复bean的参数为null)
-	 * @param timeout 超时时间(秒)
+	 * @param timeoutSec 超时时间(秒)
 	 * @return 如果连接已经失效则返回false且不会有回复和超时的回调, 否则返回true
 	 */
-	public <B extends Bean<B>> boolean ask(IoSession session, Bean<?> bean, int timeout, AnswerHandler<B> onAnswer)
+	public <B extends Bean<B>> boolean ask(IoSession session, Bean<?> bean, int timeoutSec, AnswerHandler<B> onAnswer)
 	{
 		if (session.isClosing() || bean == null)
 			return false;
-		BeanContext<B> beanCtx = allocBeanContext(bean, session, onAnswer);
-		if (!send0(session, bean))
-		{
-			if (_beanCtxMap.remove(bean.serial(), beanCtx))
-			{
-				beanCtx.session = null;
-				beanCtx.askBean = null;
-				beanCtx.answerHandler = null;
-			}
-			return false;
-		}
-		beanCtx.timeout = timeout;
-		return true;
+		BeanContext<B> beanCtx = allocBeanContext(timeoutSec, session, onAnswer);
+		int askSerial = beanCtx.askSerial;
+		int oldSerial = bean.serial();
+		bean.serial(askSerial);
+		boolean r = send0(session, bean);
+		bean.serial(oldSerial);
+		if (!r)
+			_beanCtxMap.remove(askSerial, beanCtx);
+		return r;
 	}
 
 	public <B extends Bean<B>> boolean ask(IoSession session, Bean<?> bean, AnswerHandler<B> onAnswer)
@@ -744,15 +741,17 @@ public class NetManager implements IoHandler
 	 */
 	public boolean answer(IoSession session, Bean<?> askBean, Bean<?> answerBean)
 	{
-		int serial = askBean.serial();
-		answerBean.serial(serial > 0 ? -serial : 0);
-		return send0(session, answerBean);
+		return askBean != null && answer(session, askBean.serial(), answerBean);
 	}
 
 	public boolean answer(IoSession session, int askSerial, Bean<?> answerBean)
 	{
-		answerBean.serial(askSerial > 0 ? -askSerial : 0);
-		return send0(session, answerBean);
+		int answerSerial = askSerial > 0 ? -askSerial : 0;
+		int oldSerial = answerBean.serial();
+		answerBean.serial(answerSerial);
+		boolean r = send0(session, answerBean);
+		answerBean.serial(oldSerial);
+		return r;
 	}
 
 	/**
@@ -761,24 +760,21 @@ public class NetManager implements IoHandler
 	 * 此操作是异步的
 	 * @return 如果连接已经失效则返回null, 如果请求超时则对返回的CompletableFuture对象调用get方法时返回null
 	 */
-	public <B extends Bean<B>> CompletableFuture<B> askAsync(IoSession session, Bean<?> bean, int timeout)
+	public <B extends Bean<B>> CompletableFuture<B> askAsync(IoSession session, Bean<?> bean, int timeoutSec)
 	{
 		if (session.isClosing() || bean == null)
 			return null;
 		CompletableFuture<B> cf = new CompletableFuture<>();
-		BeanContext<B> beanCtx = allocBeanContext(bean, session, cf::complete);
-		if (!send0(session, bean))
-		{
-			if (_beanCtxMap.remove(bean.serial(), beanCtx))
-			{
-				beanCtx.session = null;
-				beanCtx.askBean = null;
-				beanCtx.answerHandler = null;
-			}
-			return null;
-		}
-		beanCtx.timeout = timeout;
-		return cf;
+		BeanContext<B> beanCtx = allocBeanContext(timeoutSec, session, cf::complete);
+		int askSerial = beanCtx.askSerial;
+		int oldSerial = bean.serial();
+		bean.serial(askSerial);
+		boolean r = send0(session, bean);
+		bean.serial(oldSerial);
+		if (r)
+			return cf;
+		_beanCtxMap.remove(askSerial, beanCtx);
+		return null;
 	}
 
 	public <B extends Bean<B>> CompletableFuture<B> askAsync(IoSession session, Bean<?> bean)
@@ -804,21 +800,14 @@ public class NetManager implements IoHandler
 	 */
 	public boolean answerSafe(IoSession session, Bean<?> askBean, Bean<?> answerBean)
 	{
-		if (session.isClosing() || askBean == null || answerBean == null)
-			return false;
-		int askSerial = askBean.serial();
-		answerBean.serial(askSerial > 0 ? -askSerial : 0);
-		RawBean rawbean = new RawBean(answerBean);
-		SContext.current().addOnCommit(() -> send0(session, rawbean));
-		return true;
+		return askBean != null && answerSafe(session, askBean.serial(), answerBean);
 	}
 
 	public boolean answerSafe(IoSession session, int askSerial, Bean<?> answerBean)
 	{
 		if (session.isClosing() || answerBean == null)
 			return false;
-		answerBean.serial(askSerial > 0 ? -askSerial : 0);
-		RawBean rawbean = new RawBean(answerBean);
+		RawBean rawbean = new RawBean(answerBean, askSerial > 0 ? -askSerial : 0);
 		SContext.current().addOnCommit(() -> send0(session, rawbean));
 		return true;
 	}
@@ -914,13 +903,8 @@ public class NetManager implements IoHandler
 			if (beanCtx != null && beanCtx.session == session) // 判断session是否一致,避免伪造影响其它session的answer处理
 			{
 				if (!_beanCtxMap.remove(-serial, beanCtx))
-					return; // 异常情况,刚刚被其它地方处理了,所以不再继续处理了
-				Bean<?> askBean = beanCtx.askBean;
-				AnswerHandler<?> answerHandler = beanCtx.answerHandler;
-				beanCtx.session = null;
-				beanCtx.askBean = null;
-				beanCtx.answerHandler = null;
-				if (onAnswer(session, answerHandler, askBean, bean))
+					return; // 异常情况,刚刚被其它地方处理了(比如超时),所以不再继续处理了
+				if (onAnswer(beanCtx, bean))
 					return;
 			}
 		}
@@ -929,25 +913,15 @@ public class NetManager implements IoHandler
 
 	/**
 	 * 处理回复bean的可重载方法(包括超时处理). 只有在之前发过ask才会在这里响应
-	 * @param session 关联的session. 不会为null
-	 * @param answerHandler 关联的处理. 有小概率情况为null,可忽略处理
-	 * @param askBean 之前发送的请求bean. 有小概率情况为null,可忽略处理
+	 * @param beanCtx 请求bean的上下文. 不会为null
 	 * @param answerBean 收到的回复bean. null表示接收超时
 	 * @return 接收到回复时返回true表示已处理,false表示继续用answerBean的BeanHandler处理; 超时(answerBean==null)时忽略返回值
 	 */
-	protected boolean onAnswer(IoSession session, AnswerHandler<?> answerHandler, Bean<?> askBean, Bean<?> answerBean)
+	protected boolean onAnswer(BeanContext<?> beanCtx, Bean<?> answerBean)
 	{
-		String askTypeName = null;
-		int askSerial = 0;
+		AnswerHandler<?> answerHandler = beanCtx.answerHandler;
 		if (answerBean == null)
-		{
-			if (askBean != null)
-			{
-				askTypeName = askBean.typeName();
-				askSerial = askBean.serial();
-			}
-			Log.warn("{}({}): ask timeout: {}({}):{}", _name, session.getId(), askTypeName, askSerial, askBean);
-		}
+			Log.warn("{}({}): ask timeout: askSerial={}", _name, beanCtx.session.getId(), beanCtx.askSerial);
 		if (answerHandler == null)
 			return false;
 		try
@@ -956,20 +930,9 @@ public class NetManager implements IoHandler
 		}
 		catch (Throwable e)
 		{
-			if (askTypeName == null && askBean != null)
-			{
-				askTypeName = askBean.typeName();
-				askSerial = askBean.serial();
-			}
-			String answerTypeName = null;
-			int answerSerial = 0;
-			if (answerBean != null)
-			{
-				answerTypeName = answerBean.typeName();
-				answerSerial = answerBean.serial();
-			}
-			Log.error(e, "{}({}): onAnswer exception: {}({}):{} => {}({}):{}", _name, session.getId(),
-					askTypeName, askSerial, askBean, answerTypeName, answerSerial, answerBean);
+			Log.error(e, "{}({}): onAnswer exception: askSerial={} => {}({}):{}",
+					_name, beanCtx.session.getId(), beanCtx.askSerial, answerBean != null ? answerBean.typeName() : null,
+					answerBean != null ? answerBean.serial() : 0, answerBean);
 		}
 		return true;
 	}

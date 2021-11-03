@@ -29,7 +29,6 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	 */
 	final void serial(int s)
 	{
-		assert s != 0x8000_0000;
 		_serial = s;
 	}
 
