@@ -30,7 +30,6 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 
 	protected final Safe<?>	  _parent;
 	protected final Map<K, V> _map;
-	private SContext		  _sctx;
 	protected final Map<K, V> _changed;
 
 	public SMap(Safe<?> parent, Map<K, V> map, SMapListener<K, V> listener)
@@ -61,10 +60,14 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	protected SContext sContext()
 	{
 		_parent.checkLock();
-		if (_sctx != null)
-			return _sctx;
 		_parent.dirty();
-		return _sctx = SContext.current();
+		return SContext.current();
+	}
+
+	@Deprecated
+	public Map<K, V> unsafe()
+	{
+		return _map;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -82,13 +85,15 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	{
 		ctx.addOnRollback(() ->
 		{
+			V v;
 			if (vOld != null)
 			{
 				SContext.checkStoreAll(vOld); // 这里不应该检查失败
-				SContext.unstoreAll(_map.put(k, vOld));
+				v = _map.put(k, vOld);
 			}
 			else
-				SContext.unstoreAll(_map.remove(k));
+				v = _map.remove(k);
+			SContext.unstoreAll(v);
 		});
 	}
 
@@ -125,13 +130,6 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 	public boolean containsValue(Object v)
 	{
 		return _map.containsValue(SContext.unwrap(v));
-	}
-
-	@Deprecated
-	public V getUnsafe(Object k)
-	{
-		//noinspection SuspiciousMethodCalls
-		return _map.get(k);
 	}
 
 	@Override
@@ -190,10 +188,11 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 				if (v != null)
 				{
 					SContext.checkStoreAll(v); // 这里不应该检查失败
-					SContext.unstoreAll(_map.put(k, v));
+					v = _map.put(k, v);
 				}
 				else
-					SContext.unstoreAll(_map.remove(k));
+					v = _map.remove(k);
+				SContext.unstoreAll(v);
 			}
 		});
 	}

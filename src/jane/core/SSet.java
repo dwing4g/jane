@@ -28,7 +28,6 @@ public class SSet<V, S> implements Set<S>, Cloneable
 
 	protected final Safe<?>	_parent;
 	protected final Set<V>	_set;
-	private SContext		_sctx;
 	private final Set<V>	_added, _removed;
 
 	public SSet(Safe<?> parent, Set<V> set, SSetListener<V> listener)
@@ -56,10 +55,14 @@ public class SSet<V, S> implements Set<S>, Cloneable
 	protected SContext sContext()
 	{
 		_parent.checkLock();
-		if (_sctx != null)
-			return _sctx;
 		_parent.dirty();
-		return _sctx = SContext.current();
+		return SContext.current();
+	}
+
+	@Deprecated
+	public Set<V> unsafe()
+	{
+		return _set;
 	}
 
 	protected void addUndoRemove(SContext ctx, V v)

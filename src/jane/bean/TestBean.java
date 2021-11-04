@@ -221,7 +221,8 @@ public class TestBean extends Bean<TestBean>
 		/** @param value1 字段的注释 */
 		public void setValue1(int value1)
 		{
-			if (initSContext()) _sctx.addOnRollback(new SBase.SInteger(_bean, FIELD_value1, _bean.getValue1()));
+			SContext _s_ = safeContext();
+			if (_s_ != null) _s_.addOnRollback(new SBase.SInteger(_bean, FIELD_value1, _bean.getValue1()));
 			_bean.setValue1(value1);
 		}
 
@@ -233,7 +234,8 @@ public class TestBean extends Bean<TestBean>
 
 		public void setValue2(long value2)
 		{
-			if (initSContext()) _sctx.addOnRollback(new SBase.SLong(_bean, FIELD_value2, _bean.getValue2()));
+			SContext _s_ = safeContext();
+			if (_s_ != null) _s_.addOnRollback(new SBase.SLong(_bean, FIELD_value2, _bean.getValue2()));
 			_bean.setValue2(value2);
 		}
 	}

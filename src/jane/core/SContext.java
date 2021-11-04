@@ -14,11 +14,10 @@ public final class SContext
 	{
 		protected final B	  _bean;
 		private final Safe<?> _parent;
-		protected SContext	  _sctx;
 		private Rec			  _rec;
 		private Runnable	  _onDirty;
 		private boolean		  _dirty;
-		protected boolean	  _fullUndo;
+		private boolean		  _fullUndo;
 
 		protected Safe(B bean, Safe<?> parent)
 		{
@@ -39,9 +38,14 @@ public final class SContext
 
 		public Rec record()
 		{
-			if (_rec != null)
-				return _rec;
-			return _parent != null ? _parent.record() : null;
+			for (Safe<?> s = this;;)
+			{
+				Rec rec = s._rec;
+				if (rec != null)
+					return rec;
+				if ((s = s._parent) == null)
+					return null;
+			}
 		}
 
 		void record(Rec rec)
@@ -49,33 +53,24 @@ public final class SContext
 			_rec = rec;
 		}
 
-		public final void checkLock()
+		public void checkLock()
 		{
-			Rec rec = _rec;
-			if (rec == null)
+			for (Safe<?> s = this;;)
 			{
-				for (Safe<?> parent = _parent;; parent = parent._parent)
+				Rec rec = s._rec;
+				if (rec != null)
 				{
-					if (parent == null)
-						return;
-					rec = parent._rec;
-					if (rec != null)
-						break;
+					rec.checkLock();
+					return;
 				}
+				if ((s = s._parent) == null)
+					return;
 			}
-			rec.checkLock();
 		}
 
 		public boolean isDirty()
 		{
 			return _dirty;
-		}
-
-		public boolean isDirtyAndClear()
-		{
-			boolean dirty = _dirty;
-			_dirty = false;
-			return dirty;
 		}
 
 		public void onDirty(Runnable onDirty)
@@ -85,35 +80,38 @@ public final class SContext
 
 		public void dirty()
 		{
-			_dirty = true;
-			if (_onDirty != null)
+			for (Safe<?> s = this;;)
 			{
-				_onDirty.run();
-				_onDirty = null;
+				if (s._dirty)
+					return;
+				s._dirty = true;
+				Runnable onDirty = s._onDirty;
+				if (onDirty != null)
+				{
+					s._onDirty = null;
+					onDirty.run();
+				}
+				if ((s = s._parent) == null)
+					return;
 			}
-			if (_parent != null)
-				_parent.dirty();
 		}
 
-		protected boolean initSContext()
+		protected SContext safeContext()
 		{
 			checkLock();
 			if (_fullUndo)
-				return false;
-			if (_sctx == null)
-			{
-				_sctx = current();
-				dirty();
-			}
-			return true;
+				return null;
+			dirty();
+			return current();
 		}
 
 		public void addFullUndo()
 		{
-			if (!initSContext())
+			SContext sctx = safeContext();
+			if (sctx == null)
 				return;
 			B saved = _bean.clone();
-			_sctx.addOnRollback(() -> _bean.assign(saved));
+			sctx.addOnRollback(() -> _bean.assign(saved));
 			_fullUndo = true;
 		}
 
@@ -417,7 +415,7 @@ public final class SContext
 			do
 			{
 				Record<?, ?, ?> r = _records.get(i);
-				if (r._value.isDirtyAndClear())
+				if (r._value.isDirty())
 					r._table.modify(r._key, r._value._bean);
 			}
 			while (++i < n);
@@ -431,7 +429,7 @@ public final class SContext
 			do
 			{
 				RecordLong<?, ?> r = _recordLongs.get(i);
-				if (r._value.isDirtyAndClear())
+				if (r._value.isDirty())
 					r._table.modify(r._key, r._value._bean);
 			}
 			while (++i < n);

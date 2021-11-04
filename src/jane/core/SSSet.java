@@ -19,82 +19,54 @@ public final class SSSet<V, S> extends SSet<V, S> implements NavigableSet<S>
 		_listener = listener;
 	}
 
+	@SuppressWarnings("deprecation")
+	@Deprecated
+	@Override
+	public NavigableSet<V> unsafe()
+	{
+		return (NavigableSet<V>)_set;
+	}
+
 	@Override
 	public Comparator<? super S> comparator()
 	{
 		return null;
 	}
 
-	@Deprecated
-	public V firstUnsafe()
-	{
-		return ((NavigableSet<V>)_set).first();
-	}
-
 	@Override
 	public S first()
 	{
-		return SContext.safe(_parent, firstUnsafe());
-	}
-
-	@Deprecated
-	public V lastUnsafe()
-	{
-		return ((NavigableSet<V>)_set).last();
+		return SContext.safe(_parent, ((NavigableSet<V>)_set).first());
 	}
 
 	@Override
 	public S last()
 	{
-		return SContext.safe(_parent, lastUnsafe());
-	}
-
-	@Deprecated
-	public V lowerUnsafe(V e)
-	{
-		return ((NavigableSet<V>)_set).lower(e);
+		return SContext.safe(_parent, ((NavigableSet<V>)_set).last());
 	}
 
 	@Override
 	public S lower(S s)
 	{
-		return SContext.safe(_parent, lowerUnsafe(SContext.unwrap(s)));
-	}
-
-	@Deprecated
-	public V floorUnsafe(V e)
-	{
-		return ((NavigableSet<V>)_set).floor(e);
-	}
-
-	@Override
-	public S floor(S s)
-	{
-		return SContext.safe(_parent, floorUnsafe(SContext.unwrap(s)));
-	}
-
-	@Deprecated
-	public V ceilingUnsafe(V e)
-	{
-		return ((NavigableSet<V>)_set).ceiling(e);
-	}
-
-	@Override
-	public S ceiling(S s)
-	{
-		return SContext.safe(_parent, ceilingUnsafe(SContext.unwrap(s)));
-	}
-
-	@Deprecated
-	public V higherUnsafe(V e)
-	{
-		return ((NavigableSet<V>)_set).higher(e);
+		return SContext.safe(_parent, ((NavigableSet<V>)_set).lower(SContext.unwrap(s)));
 	}
 
 	@Override
 	public S higher(S s)
 	{
-		return SContext.safe(_parent, higherUnsafe(SContext.unwrap(s)));
+		return SContext.safe(_parent, ((NavigableSet<V>)_set).higher(SContext.unwrap(s)));
+	}
+
+	@Override
+	public S floor(S s)
+	{
+		return SContext.safe(_parent, ((NavigableSet<V>)_set).floor(SContext.unwrap(s)));
+	}
+
+	@Override
+	public S ceiling(S s)
+	{
+		return SContext.safe(_parent, ((NavigableSet<V>)_set).ceiling(SContext.unwrap(s)));
 	}
 
 	@Deprecated

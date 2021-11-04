@@ -474,7 +474,8 @@ typedef.byte =
 		/** @param #(var.name) #(var.comment1) */
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			if (initSContext()) _sctx.addOnRollback(new SBase.S#(var.type_o)(_bean, FIELD_#(var.name), _bean.get#(var.name_u)()));
+			SContext _s_ = safeContext();
+			if (_s_ != null) _s_.addOnRollback(new SBase.S#(var.type_o)(_bean, FIELD_#(var.name), _bean.get#(var.name_u)()));
 			_bean.set#(var.name_u)(#(var.name));
 		}
 ]],
@@ -594,7 +595,8 @@ typedef.string = merge(typedef.byte,
 		/** @param #(var.name) #(var.comment1) */
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			if (initSContext()) _sctx.addOnRollback(new SBase.SObject(_bean, FIELD_#(var.name), _bean.get#(var.name_u)()));
+			SContext _s_ = safeContext();
+			if (_s_ != null) _s_.addOnRollback(new SBase.SObject(_bean, FIELD_#(var.name), _bean.get#(var.name_u)()));
 			_bean.set#(var.name_u)((#(var.name) != null ? #(var.name) : ""));
 		}
 ]],
@@ -663,12 +665,13 @@ typedef.octets = merge(typedef.string,
 		/** @param #(var.name) #(var.comment1) */
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			if (initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.get#(var.name_u)(), false));
+			SContext _s_ = safeContext();
+			if (_s_ != null) _s_.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.get#(var.name_u)(), false));
 			_bean.set#(var.name_u)((#(var.name) != null ? #(var.name).clone() : new Octets(#(var.cap))));
 		}
 
 		/** #(var.comment1) */
-		public byte[] copyOf#(var.name_u)()
+		public byte[] copy#(var.name_u)()
 		{
 			checkLock();
 			return _bean.get#(var.name_u)().getBytes();
@@ -677,7 +680,8 @@ typedef.octets = merge(typedef.string,
 		/** #(var.comment1) */
 		public void marshal#(var.name_u)(Bean<?> _b_)
 		{
-			if (initSContext()) _sctx.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.get#(var.name_u)(), false));
+			SContext _s_ = safeContext();
+			if (_s_ != null) _s_.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.get#(var.name_u)(), false));
 			_bean.set#(var.name_u)(_b_.marshal(new Octets(_b_.initSize())));
 		}
 
@@ -693,14 +697,6 @@ typedef.octets = merge(typedef.string,
 		{
 			checkLock();
 			return _bean.unmarshal#(var.name_u)();
-		}
-
-		/** @return #(var.comment1) */
-		@Deprecated
-		public #(var.type) unsafe#(var.name_u)()
-		{
-			checkLock();
-			return _bean.get#(var.name_u)();
 		}
 ]],
 	setsafe = "",
@@ -736,14 +732,6 @@ typedef.vector = merge(typedef.octets,
 		{
 			checkLock();
 			return new #(var.stype)(this, _bean.get#(var.name_u)());
-		}
-
-		/** @return #(var.comment1) */
-		@Deprecated
-		public #(var.type) unsafe#(var.name_u)()
-		{
-			checkLock();
-			return _bean.get#(var.name_u)();
 		}
 ]],
 	marshal = function(var)
@@ -858,16 +846,7 @@ typedef.hashset = merge(typedef.list,
 		public #(var.stype) get#(var.name_u)()
 		{
 			checkLock();
-			if (CACHE_#(var.name) == null) CACHE_#(var.name) = new #(var.stype)(this, _bean.get#(var.name_u)(), LISTENER_#(var.name));
-			return CACHE_#(var.name);
-		}
-
-		/** @return #(var.comment1) */
-		@Deprecated
-		public #(var.type) unsafe#(var.name_u)()
-		{
-			checkLock();
-			return _bean.get#(var.name_u)();
+			return CACHE_#(var.name) != null ? CACHE_#(var.name) : (CACHE_#(var.name) = new #(var.stype)(this, _bean.get#(var.name_u)(), LISTENER_#(var.name)));
 		}
 ]] end,
 })
@@ -910,16 +889,7 @@ typedef.hashmap = merge(typedef.list,
 		public #(var.stype) get#(var.name_u)()
 		{
 			checkLock();
-			if (CACHE_#(var.name) == null) CACHE_#(var.name) = new #(var.stype)(this, _bean.get#(var.name_u)(), LISTENER_#(var.name));
-			return CACHE_#(var.name);
-		}
-
-		/** @return #(var.comment1) */
-		@Deprecated
-		public #(var.type) unsafe#(var.name_u)()
-		{
-			checkLock();
-			return _bean.get#(var.name_u)();
+			return CACHE_#(var.name) != null ? CACHE_#(var.name) : (CACHE_#(var.name) = new #(var.stype)(this, _bean.get#(var.name_u)(), LISTENER_#(var.name)));
 		}
 ]] end,
 	marshal = function(var)
@@ -983,6 +953,7 @@ typedef.bean = merge(typedef.octets,
 	final = function(var) return var.id > 0 and "final " or "transient " end,
 	field = "",
 	fieldget = "",
+	safecache = "\t\tprivate #(var.type).Safe CACHE_#(var.name);\n",
 	new = function(var) return "\t\t#(var.name) = new " .. var.type .. "();\n" end,
 	init = function(var) return "this.#(var.name) = (#(var.name) != null ? #(var.name).clone() : new " .. var.type .. "())" end,
 	reset = "#(var.name).reset()",
@@ -994,15 +965,7 @@ typedef.bean = merge(typedef.octets,
 		public #(var.type).Safe get#(var.name_u)()
 		{
 			checkLock();
-			return _bean.get#(var.name_u)().safe(this);
-		}
-
-		/** @return #(var.comment1) */
-		@Deprecated
-		public #(var.type) unsafe#(var.name_u)()
-		{
-			checkLock();
-			return _bean.get#(var.name_u)();
+			return CACHE_#(var.name) != null ? CACHE_#(var.name) : (CACHE_#(var.name) = _bean.get#(var.name_u)().safe(this));
 		}
 ]],
 	setsafe = "",
@@ -1038,6 +1001,7 @@ typedef.ref = merge(typedef.bean,
 	final = function(var) return var.id > 0 and "" or "transient " end,
 	field = "\t\tprivate static final Field FIELD_#(var.name);\n",
 	fieldget = "\t\t\t\tFIELD_#(var.name) = _c_.getDeclaredField(\"#(var.name)\"); FIELD_#(var.name).setAccessible(true);\n",
+	safecache = "",
 	new = "\t\t#(var.name) = null;\n",
 	init = "this.#(var.name) = #(var.name)",
 	reset = "#(var.name) = null",
@@ -1064,7 +1028,8 @@ typedef.ref = merge(typedef.bean,
 		/** @param #(var.name) #(var.comment1) */
 		public void set#(var.name_u)(#(var.type) #(var.name))
 		{
-			if (initSContext()) _sctx.addOnRollback(new SBase.SObject(_bean, FIELD_#(var.name), _bean.get#(var.name_u)()));
+			SContext _s_ = safeContext();
+			if (_s_ != null) _s_.addOnRollback(new SBase.SObject(_bean, FIELD_#(var.name), _bean.get#(var.name_u)()));
 			_bean.set#(var.name_u)(#(var.name));
 		}
 ]] end,

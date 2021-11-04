@@ -22,7 +22,7 @@ public final class DynBean extends Bean<DynBean>
 
 	public DynBean(int type, int serial)
 	{
-		serial(serial != 0x8000_0000 ? serial : 0);
+		serial(serial != STORE_SERIAL ? serial : 0);
 		_type = type;
 	}
 

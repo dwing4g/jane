@@ -14,7 +14,8 @@ import org.apache.mina.core.write.WriteRequest;
 public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneable, Serializable, WriteRequest
 {
 	private static final long serialVersionUID = 1L;
-	private transient int	  _serial;				// 0x8000_0000:已存储状态; 其它:协议的序列号
+	static final int		  STORE_SERIAL	   = 0x8000_0000;
+	private transient int	  _serial;						 // STORE_SERIAL:已存储状态; 其它:协议的序列号
 
 	/**
 	 * 获取协议的序列号
@@ -40,12 +41,12 @@ public abstract class Bean<B extends Bean<B>> implements Comparable<B>, Cloneabl
 	 */
 	public final boolean stored()
 	{
-		return _serial == 0x8000_0000;
+		return _serial == STORE_SERIAL;
 	}
 
 	private void store()
 	{
-		_serial = 0x8000_0000;
+		_serial = STORE_SERIAL;
 	}
 
 	private void unstore()

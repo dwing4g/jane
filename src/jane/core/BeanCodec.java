@@ -42,7 +42,7 @@ public class BeanCodec implements IoFilter
 		else
 		{
 			int serial = bean.serial();
-			if (serial == 0x8000_0000)
+			if (serial == Bean.STORE_SERIAL)
 				serial = 0;
 			int reserveLen = Octets.marshalUIntLen(type) + Octets.marshalLen(serial) + 5;
 			Octets os = new Octets(reserveLen + bean.initSize());
@@ -103,7 +103,7 @@ public class BeanCodec implements IoFilter
 		{
 			int pos = os.position();
 			bean.unmarshalProtocol(os);
-			bean.serial(serial != 0x8000_0000 ? serial : 0);
+			bean.serial(serial != Bean.STORE_SERIAL ? serial : 0);
 			int realSize = os.position() - pos;
 			if (realSize > _psize)
 				throw new DecodeException("bean realSize overflow: type=" + _ptype +

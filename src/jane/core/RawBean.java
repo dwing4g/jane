@@ -22,7 +22,7 @@ public final class RawBean extends Bean<RawBean>
 
 	public RawBean(int type, int serial, Octets data)
 	{
-		serial(serial != 0x8000_0000 ? serial : 0);
+		serial(serial != STORE_SERIAL ? serial : 0);
 		_type = type;
 		_data = data;
 	}
@@ -72,7 +72,7 @@ public final class RawBean extends Bean<RawBean>
 	{
 		int type = bean.type();
 		_type = type;
-		if (serial == 0x8000_0000)
+		if (serial == STORE_SERIAL)
 			serial = 0;
 		serial(serial);
 		int reserveLen = Octets.marshalUIntLen(type) + Octets.marshalLen(serial) + 5;
@@ -146,7 +146,7 @@ public final class RawBean extends Bean<RawBean>
 	{
 		_type = os.unmarshalUInt();
 		int serial = os.unmarshalInt();
-		serial(serial != 0x8000_0000 ? serial : 0);
+		serial(serial != STORE_SERIAL ? serial : 0);
 		if (_data == null)
 			_data = new Octets();
 		return os.unmarshal(_data);

@@ -15,7 +15,6 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 {
 	private final Safe<?>  _parent;
 	private final Deque<V> _deque;
-	private SContext	   _sctx;
 
 	public SDeque(Safe<?> parent, Deque<V> deque)
 	{
@@ -26,10 +25,14 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	private SContext sContext()
 	{
 		_parent.checkLock();
-		if (_sctx != null)
-			return _sctx;
 		_parent.dirty();
-		return _sctx = SContext.current();
+		return SContext.current();
+	}
+
+	@Deprecated
+	public Deque<V> unsafe()
+	{
+		return _deque;
 	}
 
 	@Override
@@ -60,21 +63,16 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 	@Override
 	public Object[] toArray()
 	{
-		return _deque.toArray(); //unsafe
+		// return _deque.toArray(); //unsafe
+		throw new UnsupportedOperationException();
 	}
 
 	@Deprecated
 	@Override
 	public <T> T[] toArray(T[] a)
 	{
-		//noinspection SuspiciousToArrayCall
-		return _deque.toArray(a); //unsafe
-	}
-
-	@Deprecated
-	public V elementUnsafe()
-	{
-		return _deque.element();
+		// return _deque.toArray(a); //unsafe
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -83,22 +81,10 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		return SContext.safe(_parent, _deque.element());
 	}
 
-	@Deprecated
-	public V peekUnsafe() // =peekfirst, null if empty
-	{
-		return _deque.peek();
-	}
-
 	@Override
 	public S peek() // =peekfirst, null if empty
 	{
 		return SContext.safe(_parent, _deque.peek());
-	}
-
-	@Deprecated
-	public V getFirstUnsafe() // exception if empty
-	{
-		return _deque.getFirst();
 	}
 
 	@Override
@@ -107,34 +93,16 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		return SContext.safe(_parent, _deque.getFirst());
 	}
 
-	@Deprecated
-	public V getLastUnsafe() // exception if empty
-	{
-		return _deque.getLast();
-	}
-
 	@Override
 	public S getLast() // exception if empty
 	{
 		return SContext.safe(_parent, _deque.getLast());
 	}
 
-	@Deprecated
-	public V peekFirstUnsafe() // =peek, null if empty
-	{
-		return _deque.peekFirst();
-	}
-
 	@Override
 	public S peekFirst() // =peek, null if empty
 	{
 		return SContext.safe(_parent, _deque.peekFirst());
-	}
-
-	@Deprecated
-	public V peekLastUnsafe() // null if empty
-	{
-		return _deque.peekLast();
 	}
 
 	@Override

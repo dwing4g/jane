@@ -16,7 +16,6 @@ public final class SList<V, S> implements List<S>, Cloneable
 {
 	private final Safe<?> _parent;
 	private final List<V> _list;
-	private SContext	  _sctx;
 
 	public SList(Safe<?> parent, List<V> list)
 	{
@@ -27,10 +26,14 @@ public final class SList<V, S> implements List<S>, Cloneable
 	private SContext sContext()
 	{
 		_parent.checkLock();
-		if (_sctx != null)
-			return _sctx;
 		_parent.dirty();
-		return _sctx = SContext.current();
+		return SContext.current();
+	}
+
+	@Deprecated
+	public List<V> unsafe()
+	{
+		return _list;
 	}
 
 	@Override
@@ -73,15 +76,16 @@ public final class SList<V, S> implements List<S>, Cloneable
 	@Override
 	public Object[] toArray()
 	{
-		return _list.toArray(); //unsafe
+		// return _list.toArray(); //unsafe
+		throw new UnsupportedOperationException();
 	}
 
 	@Deprecated
 	@Override
 	public <T> T[] toArray(T[] a)
 	{
-		//noinspection SuspiciousToArrayCall
-		return _list.toArray(a); //unsafe
+		// return _list.toArray(a); //unsafe
+		throw new UnsupportedOperationException();
 	}
 
 	@Override

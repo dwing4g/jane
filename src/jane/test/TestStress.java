@@ -182,13 +182,15 @@ public final class TestStress extends Procedure
 
 			public int getValue1()
 			{
+				checkLock();
 				return _bean.getValue1();
 			}
 
 			public void setValue1(int value1)
 			{
-				if (initSContext())
-					_sctx.addOnRollback(new SBase.SInteger(_bean, FIELD_value1, _bean.getValue1()));
+				SContext sctx = safeContext();
+				if (sctx != null)
+					sctx.addOnRollback(new SBase.SInteger(_bean, FIELD_value1, _bean.getValue1()));
 				_bean.setValue1(value1);
 			}
 		}
