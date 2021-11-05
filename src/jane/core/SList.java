@@ -72,20 +72,40 @@ public final class SList<V, S> implements List<S>, Cloneable
 		return _list.lastIndexOf(SContext.unwrap(o));
 	}
 
-	@Deprecated
+	static Object[] cloneObjs(Object[] vs)
+	{
+		int n = vs.length;
+		if (n > 0 && vs[0] instanceof Bean)
+		{
+			for (int i = 0; i < n; i++)
+				vs[i] = ((Bean<?>)vs[i]).clone();
+		}
+		return vs;
+	}
+
+	@SuppressWarnings("unchecked")
+	static <T> T[] cloneTs(T[] vs)
+	{
+		int n = vs.length;
+		if (n > 0 && vs[0] instanceof Bean)
+		{
+			for (int i = 0; i < n; i++)
+				vs[i] = (T)((Bean<?>)vs[i]).clone();
+		}
+		return vs;
+	}
+
 	@Override
 	public Object[] toArray()
 	{
-		// return _list.toArray(); //unsafe
-		throw new UnsupportedOperationException();
+		return cloneObjs(_list.toArray());
 	}
 
-	@Deprecated
 	@Override
 	public <T> T[] toArray(T[] a)
 	{
-		// return _list.toArray(a); //unsafe
-		throw new UnsupportedOperationException();
+		//noinspection SuspiciousToArrayCall
+		return cloneTs(_list.toArray(a));
 	}
 
 	@Override

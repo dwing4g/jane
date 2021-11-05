@@ -232,7 +232,7 @@ public final class SContext
 		public void checkLock()
 		{
 			if (!Procedure.isLockedByCurrentThread(_lockId))
-				throw new IllegalAccessError("write unlocked record! table=" + _table.getTableName() + ",key=" + _key);
+				throw new IllegalAccessError("access unlocked record! table=" + _table.getTableName() + ",key=" + _key);
 		}
 	}
 

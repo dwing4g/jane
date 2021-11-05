@@ -59,20 +59,17 @@ public final class SDeque<V, S> implements Deque<S>, Cloneable
 		return _deque.containsAll(c);
 	}
 
-	@Deprecated
 	@Override
 	public Object[] toArray()
 	{
-		// return _deque.toArray(); //unsafe
-		throw new UnsupportedOperationException();
+		return SList.cloneObjs(_deque.toArray());
 	}
 
-	@Deprecated
 	@Override
 	public <T> T[] toArray(T[] a)
 	{
-		// return _deque.toArray(a); //unsafe
-		throw new UnsupportedOperationException();
+		//noinspection SuspiciousToArrayCall
+		return SList.cloneTs(_deque.toArray(a));
 	}
 
 	@Override

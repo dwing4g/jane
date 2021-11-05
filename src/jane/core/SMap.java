@@ -400,7 +400,7 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 
 	public final class SEntrySet extends AbstractSet<Entry<K, S>>
 	{
-		private Set<Entry<K, V>> _it;
+		private Set<Entry<K, V>> _es;
 
 		private SEntrySet()
 		{
@@ -431,9 +431,9 @@ public class SMap<K, V, S> implements Map<K, S>, Cloneable
 		@Override
 		public boolean contains(Object e)
 		{
-			if (_it == null)
-				_it = _map.entrySet();
-			return _it.contains(e instanceof SMap.SEntry ? ((SEntry)e)._e : e);
+			if (_es == null)
+				_es = _map.entrySet();
+			return _es.contains(e instanceof SMap.SEntry ? ((SEntry)e)._e : e);
 		}
 
 		@SuppressWarnings("unchecked")
