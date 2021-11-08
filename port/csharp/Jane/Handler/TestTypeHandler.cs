@@ -21,7 +21,7 @@ namespace Jane.Handler
 		|*| HashSet<float> v14; // 排序集合容器(TreeSet);
 		|*| HashSet<double> v15; // 有序集合容器(LinkedHashSet);
 		|*| Dictionary<long, string> v16; // 无序映射容器(HashMap);
-		|*| SortedDictionary<TestBean, bool> v17; // 排序映射容器(TreeMap);
+		|*| SortedDictionary<TestKeyBean, bool> v17; // 排序映射容器(TreeMap);
 		|*| Dictionary<Octets, TestBean> v18; // 有序映射容器(LinkedHashMap);
 		|*| TestBean v19; // 嵌入其它bean;
 		\*/

@@ -46,7 +46,7 @@ namespace Jane.Bean
 			return value1;
 		}
 
-		public void setValue1(int value1)
+		public void SetValue1(int value1)
 		{
 			this.value1 = value1;
 		}
@@ -56,7 +56,7 @@ namespace Jane.Bean
 			return value2;
 		}
 
-		public void setValue2(long value2)
+		public void SetValue2(long value2)
 		{
 			this.value2 = value2;
 		}

@@ -9,6 +9,10 @@ return require "util".initBeans {
 		[  1] = { name = "value1", type = num }, -- 字段的注释
 		[  2] = { name = "value2", type = num },
 	}},
+	TestKeyBean = { __type = 0, __base = { -- 作为key或配置的bean
+		[  1] = { name = "key1", type = num }, -- KEY-1
+		[  2] = { name = "key2", type = str }, -- KEY-2
+	}},
 	TestType = { __type = 2, __base = { -- 测试生成所有支持的类型
 		[  1] = { name = "v1", type = bool }, -- 1字节布尔,0表示假,1表示真,其它默认表示真
 		[  2] = { name = "v2", type = num }, -- 1字节整数
@@ -26,7 +30,7 @@ return require "util".initBeans {
 		[ 14] = { name = "v14", type = vec, value = num }, -- 排序集合容器(TreeSet)
 		[ 15] = { name = "v15", type = vec, value = num }, -- 有序集合容器(LinkedHashSet)
 		[ 16] = { name = "v16", type = map, key = num, value = str }, -- 无序映射容器(HashMap)
-		[ 17] = { name = "v17", type = map, key = "TestBean", value = bool }, -- 排序映射容器(TreeMap)
+		[ 17] = { name = "v17", type = map, key = "TestKeyBean", value = bool }, -- 排序映射容器(TreeMap)
 		[ 18] = { name = "v18", type = map, key = str, value = "TestBean" }, -- 有序映射容器(LinkedHashMap)
 		[ 19] = { name = "v19", type = "TestBean" }, -- 嵌入其它bean
 	}},

@@ -30,7 +30,7 @@ namespace Jane.Bean
 		public  /* 14*/ HashSet<float> v14; // 排序集合容器(TreeSet);
 		public  /* 15*/ HashSet<double> v15; // 有序集合容器(LinkedHashSet);
 		public  /* 16*/ Dictionary<long, string> v16; // 无序映射容器(HashMap);
-		public  /* 17*/ SortedDictionary<TestBean, bool> v17; // 排序映射容器(TreeMap);
+		public  /* 17*/ SortedDictionary<TestKeyBean, bool> v17; // 排序映射容器(TreeMap);
 		public  /* 18*/ Dictionary<Octets, TestBean> v18; // 有序映射容器(LinkedHashMap);
 		public  /* 19*/ TestBean v19; // 嵌入其它bean;
 
@@ -38,7 +38,7 @@ namespace Jane.Bean
 		{
 		}
 
-		public TestType(bool v1, sbyte v2, short v3, int v4, long v5, float v6, double v7, Octets v8, string v9, ICollection<bool> v10, ICollection<sbyte> v11, ICollection<int> v12, ICollection<long> v13, ICollection<float> v14, ICollection<double> v15, IDictionary<long, string> v16, IDictionary<TestBean, bool> v17, IDictionary<Octets, TestBean> v18, TestBean v19)
+		public TestType(bool v1, sbyte v2, short v3, int v4, long v5, float v6, double v7, Octets v8, string v9, ICollection<bool> v10, ICollection<sbyte> v11, ICollection<int> v12, ICollection<long> v13, ICollection<float> v14, ICollection<double> v15, IDictionary<long, string> v16, IDictionary<TestKeyBean, bool> v17, IDictionary<Octets, TestBean> v18, TestBean v19)
 		{
 			this.v1 = v1;
 			this.v2 = v2;
@@ -56,7 +56,7 @@ namespace Jane.Bean
 			this.v14 = new HashSet<float>(); if (v14 != null) this.v14.UnionWith(v14);
 			this.v15 = new HashSet<double>(); if (v15 != null) this.v15.UnionWith(v15);
 			this.v16 = new Dictionary<long, string>(0); if (v16 != null) Util.AddAll(this.v16, v16);
-			this.v17 = new SortedDictionary<TestBean, bool>(); if (v17 != null) Util.AddAll(this.v17, v17);
+			this.v17 = new SortedDictionary<TestKeyBean, bool>(); if (v17 != null) Util.AddAll(this.v17, v17);
 			this.v18 = new Dictionary<Octets, TestBean>(); if (v18 != null) Util.AddAll(this.v18, v18);
 			this.v19 = TestBean.Create();
 		}
@@ -102,7 +102,7 @@ namespace Jane.Bean
 			if (this.v14 == null) this.v14 = new HashSet<float>(); else this.v14.Clear(); if (b.v14 != null) this.v14.UnionWith(v14);
 			if (this.v15 == null) this.v15 = new HashSet<double>(); else this.v15.Clear(); if (b.v15 != null) this.v15.UnionWith(v15);
 			if (this.v16 == null) this.v16 = new Dictionary<long, string>(0); else this.v16.Clear(); if (b.v16 != null) Util.AddAll(this.v16, b.v16);
-			if (this.v17 == null) this.v17 = new SortedDictionary<TestBean, bool>(); else this.v17.Clear(); if (b.v17 != null) Util.AddAll(this.v17, b.v17);
+			if (this.v17 == null) this.v17 = new SortedDictionary<TestKeyBean, bool>(); else this.v17.Clear(); if (b.v17 != null) Util.AddAll(this.v17, b.v17);
 			if (this.v18 == null) this.v18 = new Dictionary<Octets, TestBean>(); else this.v18.Clear(); if (b.v18 != null) Util.AddAll(this.v18, b.v18);
 			if (this.v19 == null) this.v19 = TestBean.Create(); else this.v19.Reset(); if (b.v19 != null) this.v19.Assign(b.v19);
 		}
@@ -112,7 +112,7 @@ namespace Jane.Bean
 			return v1;
 		}
 
-		public void setV1(bool v1)
+		public void SetV1(bool v1)
 		{
 			this.v1 = v1;
 		}
@@ -122,7 +122,7 @@ namespace Jane.Bean
 			return v2;
 		}
 
-		public void setV2(sbyte v2)
+		public void SetV2(sbyte v2)
 		{
 			this.v2 = v2;
 		}
@@ -132,7 +132,7 @@ namespace Jane.Bean
 			return v3;
 		}
 
-		public void setV3(short v3)
+		public void SetV3(short v3)
 		{
 			this.v3 = v3;
 		}
@@ -142,7 +142,7 @@ namespace Jane.Bean
 			return v4;
 		}
 
-		public void setV4(int v4)
+		public void SetV4(int v4)
 		{
 			this.v4 = v4;
 		}
@@ -152,7 +152,7 @@ namespace Jane.Bean
 			return v5;
 		}
 
-		public void setV5(long v5)
+		public void SetV5(long v5)
 		{
 			this.v5 = v5;
 		}
@@ -162,7 +162,7 @@ namespace Jane.Bean
 			return v6;
 		}
 
-		public void setV6(float v6)
+		public void SetV6(float v6)
 		{
 			this.v6 = v6;
 		}
@@ -172,7 +172,7 @@ namespace Jane.Bean
 			return v7;
 		}
 
-		public void setV7(double v7)
+		public void SetV7(double v7)
 		{
 			this.v7 = v7;
 		}
@@ -182,7 +182,7 @@ namespace Jane.Bean
 			return v8;
 		}
 
-		public void setV8(Octets v8)
+		public void SetV8(Octets v8)
 		{
 			this.v8 = v8 ?? new Octets();
 		}
@@ -192,7 +192,7 @@ namespace Jane.Bean
 			return v9;
 		}
 
-		public void setV9(string v9)
+		public void SetV9(string v9)
 		{
 			this.v9 = v9 ?? string.Empty;
 		}
@@ -202,7 +202,7 @@ namespace Jane.Bean
 			return v10;
 		}
 
-		public void setV10(List<bool> v10)
+		public void SetV10(List<bool> v10)
 		{
 			this.v10 = v10 ?? new Octets();
 		}
@@ -212,7 +212,7 @@ namespace Jane.Bean
 			return v11;
 		}
 
-		public void setV11(LinkedList<sbyte> v11)
+		public void SetV11(LinkedList<sbyte> v11)
 		{
 			this.v11 = v11 ?? new Octets();
 		}
@@ -222,7 +222,7 @@ namespace Jane.Bean
 			return v12;
 		}
 
-		public void setV12(LinkedList<int> v12)
+		public void SetV12(LinkedList<int> v12)
 		{
 			this.v12 = v12 ?? new Octets();
 		}
@@ -232,7 +232,7 @@ namespace Jane.Bean
 			return v13;
 		}
 
-		public void setV13(HashSet<long> v13)
+		public void SetV13(HashSet<long> v13)
 		{
 			this.v13 = v13 ?? new Octets();
 		}
@@ -242,7 +242,7 @@ namespace Jane.Bean
 			return v14;
 		}
 
-		public void setV14(HashSet<float> v14)
+		public void SetV14(HashSet<float> v14)
 		{
 			this.v14 = v14 ?? new Octets();
 		}
@@ -252,7 +252,7 @@ namespace Jane.Bean
 			return v15;
 		}
 
-		public void setV15(HashSet<double> v15)
+		public void SetV15(HashSet<double> v15)
 		{
 			this.v15 = v15 ?? new Octets();
 		}
@@ -262,17 +262,17 @@ namespace Jane.Bean
 			return v16;
 		}
 
-		public void setV16(Dictionary<long, string> v16)
+		public void SetV16(Dictionary<long, string> v16)
 		{
 			this.v16 = v16 ?? new Octets();
 		}
 
-		public SortedDictionary<TestBean, bool> GetV17()
+		public SortedDictionary<TestKeyBean, bool> GetV17()
 		{
 			return v17;
 		}
 
-		public void setV17(SortedDictionary<TestBean, bool> v17)
+		public void SetV17(SortedDictionary<TestKeyBean, bool> v17)
 		{
 			this.v17 = v17 ?? new Octets();
 		}
@@ -282,7 +282,7 @@ namespace Jane.Bean
 			return v18;
 		}
 
-		public void setV18(Dictionary<Octets, TestBean> v18)
+		public void SetV18(Dictionary<Octets, TestBean> v18)
 		{
 			this.v18 = v18 ?? new Octets();
 		}
@@ -292,7 +292,7 @@ namespace Jane.Bean
 			return v19;
 		}
 
-		public void setV19(TestBean v19)
+		public void SetV19(TestBean v19)
 		{
 			this.v19 = v19 ?? new Octets();
 		}
@@ -323,7 +323,7 @@ namespace Jane.Bean
 			v14 = new HashSet<float>();
 			v15 = new HashSet<double>();
 			v16 = new Dictionary<long, string>(0);
-			v17 = new SortedDictionary<TestBean, bool>();
+			v17 = new SortedDictionary<TestKeyBean, bool>();
 			v18 = new Dictionary<Octets, TestBean>();
 			v19 = TestBean.Create();
 		}
@@ -398,7 +398,7 @@ namespace Jane.Bean
 			if (this.v17 != null && this.v17.Count > 0)
 			{
 				s.Marshal2(0x4750).MarshalUInt(this.v17.Count);
-				foreach(KeyValuePair<TestBean, bool> p in Util.Enum(this.v17))
+				foreach(KeyValuePair<TestKeyBean, bool> p in Util.Enum(this.v17))
 					s.Marshal(p.Key).Marshal(p.Value);
 			}
 			if (this.v18 != null && this.v18.Count > 0)
@@ -505,7 +505,7 @@ namespace Jane.Bean
 					if ((t >> 6) != 1) { s.UnmarshalSkipVarSub(t); break; }
 					int k = (t >> 3) & 7; t &= 7;
 					for (int n = s.UnmarshalUInt(); n > 0; --n)
-						this.v17.Add((TestBean)s.UnmarshalBeanKV(TestBean.Create(), k), (s.UnmarshalLongKV(t) != 0));
+						this.v17.Add((TestKeyBean)s.UnmarshalBeanKV(TestKeyBean.Create(), k), (s.UnmarshalLongKV(t) != 0));
 				} break;
 				case 18:
 				{

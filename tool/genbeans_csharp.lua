@@ -309,7 +309,7 @@ typedef.byte =
 	assign = "this.#(var.name) = b.#(var.name);",
 	set = [[
 
-		public void set#(var.name_u)(#(var.type) #(var.name))
+		public void Set#(var.name_u)(#(var.type) #(var.name))
 		{
 			this.#(var.name) = #(var.name);
 		}
@@ -400,7 +400,7 @@ typedef.string = merge(typedef.byte,
 	assign = "this.#(var.name) = b.#(var.name) ?? string.Empty;",
 	set = [[
 
-		public void set#(var.name_u)(#(var.type) #(var.name))
+		public void Set#(var.name_u)(#(var.type) #(var.name))
 		{
 			this.#(var.name) = #(var.name) ?? string.Empty;
 		}
@@ -429,7 +429,7 @@ typedef.octets = merge(typedef.string,
 	assign = "if (this.#(var.name) == null) { if (b.#(var.name) != null) this.#(var.name) = new Octets(b.#(var.name)); } else if (b.#(var.name) != null) this.#(var.name).Replace(b.#(var.name)); else this.#(var.name).Clear();",
 	set = [[
 
-		public void set#(var.name_u)(#(var.type) #(var.name))
+		public void Set#(var.name_u)(#(var.type) #(var.name))
 		{
 			this.#(var.name) = #(var.name) ?? new Octets();
 		}
@@ -696,10 +696,12 @@ local function bean_common(bean)
 end
 local function bean_const(code)
 	return code:gsub("public  /%*", "private /*"):
-		gsub("\t\tpublic void assign%(.-\n\t\t}\n\n", ""):
-		gsub("\t\tpublic void set.-\n\t\t}\n\n", ""):
-		gsub("\t\tpublic void reset%(.-\n\t\t}", [[
-		public void reset()
+		gsub("\n/%*\n", "\n\n"):
+		gsub("\n%*/\n", "\n\n"):
+		gsub("\t\tpublic void Assign%(.-\n\t\t}\n\n", ""):
+		gsub("\t\tpublic void Set.-\n\t\t}\n\n", ""):
+		gsub("\t\tpublic void Reset%(.-\n\t\t}", [[
+		public void Reset()
 		{
 			throw new NotSupportedException();
 		}]]):

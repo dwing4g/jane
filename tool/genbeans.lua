@@ -1061,6 +1061,7 @@ typedef.linkedmap = typedef.linkedhashmap
 local function trim(s)
 	return s:gsub("[%c%s]+", "")
 end
+local need_const = {}
 local function do_var(var)
 	if type(var.id) ~= "number" then var.id = -1 end
 	if var.id < -1 or var.id > 190 then error("ERROR: var.id=" .. var.id .. " must be in [1, 190]") end
@@ -1082,8 +1083,9 @@ local function do_var(var)
 	if not var.cap then var.cap = "" end
 	local def = typedef[basetype]
 	if not def and typedef[lower(basetype)] then basetype = lower(basetype) def = typedef[basetype] end
-	if var.k and not typedef[var.k] and typedef[lower(var.k)] then var.k = lower(var.k) end
-	if var.v and not typedef[var.v] and typedef[lower(var.v)] then var.v = lower(var.v) end
+	if var.k and var.k ~= "" and not typedef[var.k] and typedef[lower(var.k)] then var.k = lower(var.k) end
+	if var.v and var.v ~= "" and not typedef[var.v] and typedef[lower(var.v)] then var.v = lower(var.v) end
+	if var.k and var.k ~= "" and var.v and var.v ~= "" and not typedef[var.k] then need_const[var.k] = true end
 	if not def then def = var.id > 0 and typedef.bean or typedef.ref end
 	if type(def) == "table" then
 		for k, v in pairs(def) do
@@ -1308,6 +1310,9 @@ local function savebean(beanname, safe)
 	if not bean then
 		error("ERROR: not found bean.name: " .. beanname)
 	end
+	if need_const[bean.name] and not bean.const then
+		error("ERROR: need const for bean.name: " .. beanname)
+	end
 	for _, var in ipairs(bean) do
 		if name_bean[var.type] then savebean(var.type, safe) end
 		if name_bean[var.k] then savebean(var.k, safe) end
@@ -1346,6 +1351,7 @@ function dbt(table)
 		table.comma = ", "
 		tables.imports["jane.core.Table"] = true
 		need_save_dbt[table.key] = true
+		need_const[table.key] = true
 	end
 	table.values = "#(table.value).BEAN_STUB"
 	table.lock = table.lock or ""

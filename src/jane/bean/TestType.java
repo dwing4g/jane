@@ -37,7 +37,7 @@ import jane.core.Util;
 @SuppressWarnings({"RedundantIfStatement", "RedundantSuppression", "SwitchStatementWithTooFewBranches", "UnnecessaryLocalVariable"})
 public final class TestType extends Bean<TestType>
 {
-	private static final long serialVersionUID = 0xbeacabe90777739dL;
+	private static final long serialVersionUID = 0xbeacf7abb0b5c0adL;
 	public  static final int BEAN_TYPE = 2;
 	public  static final String BEAN_TYPENAME = TestType.class.getSimpleName();
 	public  static final TestType BEAN_STUB = new TestType();
@@ -58,7 +58,7 @@ public final class TestType extends Bean<TestType>
 	private /* 14*/ final TreeSet<Float> v14; // 排序集合容器(TreeSet)
 	private /* 15*/ final LinkedHashSet<Double> v15; // 有序集合容器(LinkedHashSet)
 	private /* 16*/ final HashMap<Long, String> v16; // 无序映射容器(HashMap)
-	private /* 17*/ final TreeMap<TestBean, Boolean> v17; // 排序映射容器(TreeMap)
+	private /* 17*/ final TreeMap<TestKeyBean, Boolean> v17; // 排序映射容器(TreeMap)
 	private /* 18*/ final LinkedHashMap<Octets, TestBean> v18; // 有序映射容器(LinkedHashMap)
 	private /* 19*/ final TestBean v19; // 嵌入其它bean
 	private /*  0*/ transient java.lang.String v20; // 非序列化字段
@@ -80,7 +80,7 @@ public final class TestType extends Bean<TestType>
 		v20 = null;
 	}
 
-	public TestType(boolean v1, byte v2, short v3, int v4, long v5, float v6, double v7, Octets v8, String v9, Collection<Boolean> v10, Collection<Byte> v11, Collection<Integer> v12, Collection<Long> v13, Collection<Float> v14, Collection<Double> v15, Map<Long, String> v16, Map<TestBean, Boolean> v17, Map<Octets, TestBean> v18, TestBean v19, java.lang.String v20)
+	public TestType(boolean v1, byte v2, short v3, int v4, long v5, float v6, double v7, Octets v8, String v9, Collection<Boolean> v10, Collection<Byte> v11, Collection<Integer> v12, Collection<Long> v13, Collection<Float> v14, Collection<Double> v15, Map<Long, String> v16, Map<TestKeyBean, Boolean> v17, Map<Octets, TestBean> v18, TestBean v19, java.lang.String v20)
 	{
 		this.v1 = v1;
 		this.v2 = v2;
@@ -330,7 +330,7 @@ public final class TestType extends Bean<TestType>
 	}
 
 	/** @return 排序映射容器(TreeMap) */
-	public TreeMap<TestBean, Boolean> getV17()
+	public TreeMap<TestKeyBean, Boolean> getV17()
 	{
 		return v17;
 	}
@@ -454,7 +454,7 @@ public final class TestType extends Bean<TestType>
 		if (!this.v17.isEmpty())
 		{
 			_s_.marshal2(0x4750).marshalUInt(this.v17.size());
-			for (Entry<TestBean, Boolean> e : this.v17.entrySet())
+			for (Entry<TestKeyBean, Boolean> e : this.v17.entrySet())
 				_s_.marshal(e.getKey()).marshal(e.getValue());
 		}
 		if (!this.v18.isEmpty())
@@ -560,7 +560,7 @@ public final class TestType extends Bean<TestType>
 				if ((_t_ >> 6) != 1) { _s_.unmarshalSkipVarSub(_t_); break; }
 				int _k_ = (_t_ >> 3) & 7; _t_ &= 7;
 				for (int _n_ = _s_.unmarshalUInt(); _n_ > 0; --_n_)
-					this.v17.put(_s_.unmarshalBeanKV(new TestBean(), _k_), (_s_.unmarshalLongKV(_t_) != 0));
+					this.v17.put(_s_.unmarshalBeanKV(new TestKeyBean(), _k_), (_s_.unmarshalLongKV(_t_) != 0));
 			} break;
 			case 18:
 			{
@@ -745,7 +745,7 @@ public final class TestType extends Bean<TestType>
 		private static SSetListener<Float> LISTENER_v14;
 		private static SSetListener<Double> LISTENER_v15;
 		private static SMapListener<Long, String> LISTENER_v16;
-		private static SMapListener<TestBean, Boolean> LISTENER_v17;
+		private static SMapListener<TestKeyBean, Boolean> LISTENER_v17;
 		private static SMapListener<Octets, TestBean> LISTENER_v18;
 		private static final Field FIELD_v20;
 
@@ -775,7 +775,7 @@ public final class TestType extends Bean<TestType>
 		private SSSet<Float, Float> CACHE_v14;
 		private SSet<Double, Double> CACHE_v15;
 		private SMap<Long, String, String> CACHE_v16;
-		private SSMap<TestBean, Boolean, Boolean> CACHE_v17;
+		private SSMap<TestKeyBean, Boolean, Boolean> CACHE_v17;
 		private SMap<Octets, TestBean, TestBean.Safe> CACHE_v18;
 		private TestBean.Safe CACHE_v19;
 
@@ -1022,13 +1022,13 @@ public final class TestType extends Bean<TestType>
 		}
 
 		/** 排序映射容器(TreeMap) */
-		public static void onListenV17(SMapListener<TestBean, Boolean> _listener_)
+		public static void onListenV17(SMapListener<TestKeyBean, Boolean> _listener_)
 		{
 			LISTENER_v17 = _listener_;
 		}
 
 		/** @return 排序映射容器(TreeMap) */
-		public SSMap<TestBean, Boolean, Boolean> getV17()
+		public SSMap<TestKeyBean, Boolean, Boolean> getV17()
 		{
 			checkLock();
 			return CACHE_v17 != null ? CACHE_v17 : (CACHE_v17 = new SSMap<>(this, _bean.getV17(), LISTENER_v17));

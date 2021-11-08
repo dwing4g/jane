@@ -45,6 +45,7 @@
     <Compile Include="Jane\Bean\AllBeans.cs" />
     <Compile Include="Jane\Bean\TestBean.cs" />
     <Compile Include="Jane\Bean\TestEmpty.cs" />
+    <Compile Include="Jane\Bean\TestKeyBean.cs" />
     <Compile Include="Jane\Bean\TestType.cs" />
     <Compile Include="Jane\DynBean.cs" />
     <Compile Include="Jane\Handler\TestBeanHandler.cs" />

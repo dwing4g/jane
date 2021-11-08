@@ -53,7 +53,7 @@ bean{ name="TestType", type=2, initsize=256, maxsize=65536, comment="测试生�
 	{ id=14, name="v14", type="treeset<float>",             comment="排序集合容器(TreeSet)" },
 	{ id=15, name="v15", type="linkedset<double>",          comment="有序集合容器(LinkedHashSet)" },
 	{ id=16, name="v16", type="map<long,string>(0)",        comment="无序映射容器(HashMap)" },
-	{ id=17, name="v17", type="treemap<TestBean,bool>",     comment="排序映射容器(TreeMap)" },
+	{ id=17, name="v17", type="treemap<TestKeyBean,bool>",  comment="排序映射容器(TreeMap)" },
 	{ id=18, name="v18", type="linkedmap<binary,TestBean>", comment="有序映射容器(LinkedHashMap)" },
 	{ id=19, name="v19", type="TestBean",                   comment="嵌入其它bean" },
 	{ id= 0, name="v20", type="java.lang.String",           comment="非序列化字段" },
