@@ -2,7 +2,6 @@ package jane.core;
 
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Supplier;
 import jane.core.SContext.Record;
@@ -19,7 +18,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 {
 	private final Storage.Table<K, V> _stoTable; // 存储引擎的表对象
 	private final Map<K, Supplier<V>> _cache;	 // 读缓存. 有大小限制,溢出自动清理
-	private final ConcurrentMap<K, V> _cacheMod; // 写缓存. 不会溢出,保存到数据库存储引擎后清理
+	private final Map<K, V>			  _cacheMod; // 写缓存. 不会溢出,保存到数据库存储引擎后清理
 
 	/**
 	 * 创建一个数据库表
@@ -356,60 +355,55 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	 */
 	public void modify(K k, V v)
 	{
+		if (v == null)
+			throw new NullPointerException();
 		Procedure.incVersion(lockId(k));
 		if (_cacheMod != null)
-		{
-			V vOld = _cacheMod.put(k, v);
-			if (vOld == null)
-				_dbm.incModCount();
-			else if (vOld != v)
-				_cacheMod.put(k, vOld); // 可能之前已经覆盖或删除过记录,然后再modify的话,就忽略本次modify了,因为SContext.commit无法识别这种情况
-		}
+			_cacheMod.putIfAbsent(k, v);
 	}
 
+	@SuppressWarnings("unchecked")
 	void modify(Object ko, Object vo)
 	{
-		@SuppressWarnings("unchecked")
+		if (vo == null)
+			throw new NullPointerException();
 		K k = (K)ko;
 		Procedure.incVersion(lockId(k));
 		if (_cacheMod != null)
-		{
-			@SuppressWarnings("unchecked")
-			V vOld = _cacheMod.put(k, (V)vo);
-			if (vOld == null)
-				_dbm.incModCount();
-			else if (vOld != vo)
-				_cacheMod.put(k, vOld); // 可能之前已经覆盖或删除过记录,然后再modify的话,就忽略本次modify了,因为SContext.commit无法识别这种情况
-		}
+			_cacheMod.putIfAbsent(k, (V)vo);
 	}
 
 	/**
 	 * 根据记录的key保存value
 	 * <p>
 	 * 必须在事务中已加锁的状态下调用此方法
-	 * @param v 如果是get获取到的对象引用,可调用modify来提高性能. 不能为null
 	 */
 	@Deprecated
 	public void putUnsafe(K k, V v)
 	{
 		if (v == null)
 			throw new NullPointerException();
-		V vOld = getCacheUnsafe(k);
-		if (vOld != v)
+		Supplier<V> sOld = _cache.get(k);
+		V vOldMod, vOld = sOld != null ? sOld.get() : null;
+		if (_cacheMod == null)
+			vOldMod = null;
+		else if ((vOldMod = _cacheMod.get(k)) == v)
+			return;
+		if (vOld == v)
+			return;
+		v.checkStoreAll();
+		Procedure.incVersion(lockId(k));
+		if (_cacheMod != null)
 		{
-			v.checkStoreAll();
-			Procedure.incVersion(lockId(k));
-			if (_cacheMod != null)
-			{
-				_cache.put(k, new CacheRefK<>(_cache, k, v));
-				if (_cacheMod.put(k, v) == null)
-					_dbm.incModCount();
-			}
-			else
-				_cache.put(k, new StrongRef<>(v));
-			if (vOld != null)
-				vOld.unstoreAll();
+			_cacheMod.put(k, v);
+			_cache.put(k, new CacheRefK<>(_cache, k, v));
 		}
+		else
+			_cache.put(k, new StrongRef<>(v));
+		if (vOld != null)
+			vOld.unstoreAll();
+		else if (vOldMod != null && vOldMod != _deleted)
+			vOldMod.unstoreAll();
 	}
 
 	/**
@@ -421,43 +415,50 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 			throw new NullPointerException();
 		if (!Procedure.isLockedByCurrentThread(lockId(k)))
 			throw new IllegalAccessError("put unlocked record! table=" + _tableName + ",key=" + k);
-		V vOld = getCacheUnsafe(k);
-		if (vOld != v)
+		Supplier<V> sOld = _cache.get(k);
+		V vOldMod, vOld = sOld != null ? sOld.get() : null;
+		if (_cacheMod == null)
+			vOldMod = null;
+		else if ((vOldMod = _cacheMod.get(k)) == v)
+			return;
+		if (vOld == v)
+			return;
+		v.checkStoreAll();
+		Procedure.incVersion(lockId(k));
+		if (_cacheMod != null)
 		{
-			v.checkStoreAll();
-			Procedure.incVersion(lockId(k));
-			if (_cacheMod != null)
-			{
-				_cache.put(k, new CacheRefK<>(_cache, k, v));
-				if (_cacheMod.put(k, v) == null)
-					_dbm.incModCount();
-			}
-			else
-				_cache.put(k, new StrongRef<>(v));
-			if (vOld != null)
-				vOld.unstoreAll();
+			_cacheMod.put(k, v);
+			_cache.put(k, new CacheRefK<>(_cache, k, v));
 		}
+		else
+			_cache.put(k, new StrongRef<>(v));
 		SContext.current().addOnRollbackDirty(() ->
 		{
 			if (vOld != null)
-				putUnsafe(k, vOld);
+				vOld.storeAll();
+			else if (vOldMod != null && vOldMod != _deleted)
+				vOldMod.storeAll();
+			if (vOld != null)
+				_cache.put(k, sOld);
 			else
-			{
 				_cache.remove(k);
-				if (_cacheMod != null)
-					_cacheMod.remove(k);
-			}
+			if (vOldMod != null)
+				_cacheMod.put(k, vOldMod);
+			else if (_cacheMod != null)
+				_cacheMod.remove(k);
+			v.unstoreAll();
 		});
+		if (vOld != null)
+			vOld.unstoreAll();
+		else if (vOldMod != null && vOldMod != _deleted)
+			vOldMod.unstoreAll();
 	}
 
 	@SuppressWarnings("deprecation")
 	public void put(K k, S s)
 	{
-		V v = s.unsafe();
-		boolean stored = v.stored();
-		put(k, v);
-		if (!stored)
-			s.record(new Record<>(this, k, s));
+		put(k, s.unsafe());
+		s.record(new Record<>(this, k, s));
 	}
 
 	/**
@@ -468,31 +469,64 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	@Deprecated
 	public void removeUnsafe(K k)
 	{
+		Supplier<V> sOld = _cache.get(k);
+		V vOldMod, vOld = sOld != null ? sOld.get() : null;
+		if (_cacheMod == null)
+		{
+			if (vOld == null)
+				return;
+			vOldMod = null;
+		}
+		else if ((vOldMod = _cacheMod.get(k)) == _deleted)
+			return;
 		Procedure.incVersion(lockId(k));
+		if (_cacheMod != null)
+			_cacheMod.put(k, _deleted);
 		_cache.remove(k);
-		if (_cacheMod != null && _cacheMod.put(k, _deleted) == null)
-			_dbm.incModCount();
+		if (vOld != null)
+			vOld.unstoreAll();
+		else if (vOldMod != null)
+			vOldMod.unstoreAll();
 	}
 
 	/**
 	 * 同removeUnsafe,但增加的安全封装,可回滚修改
-	 * @return 返回被移除的记录值,可用于再次put. 返回null则表示没有旧记录
 	 */
-	public V remove(K k)
+	public void remove(K k)
 	{
 		if (!Procedure.isLockedByCurrentThread(lockId(k)))
 			throw new IllegalAccessError("remove unlocked record! table=" + _tableName + ",key=" + k);
-		V vOld = getNoCacheUnsafe(k);
-		if (vOld == null)
-			return null;
+		Supplier<V> sOld = _cache.get(k);
+		V vOldMod, vOld = sOld != null ? sOld.get() : null;
+		if (_cacheMod == null)
+		{
+			if (vOld == null)
+				return;
+			vOldMod = null;
+		}
+		else if ((vOldMod = _cacheMod.get(k)) == _deleted)
+			return;
+		Procedure.incVersion(lockId(k));
+		if (_cacheMod != null)
+			_cacheMod.put(k, _deleted);
+		_cache.remove(k);
 		SContext.current().addOnRollbackDirty(() ->
 		{
-			vOld.unstoreAll(); // 确保可写入
-			putUnsafe(k, vOld);
+			if (vOld != null)
+				vOld.storeAll();
+			else if (vOldMod != null)
+				vOldMod.storeAll();
+			if (vOld != null)
+				_cache.put(k, sOld);
+			if (vOldMod != null)
+				_cacheMod.put(k, vOldMod);
+			else if (_cacheMod != null)
+				_cacheMod.remove(k);
 		});
-		removeUnsafe(k);
-		vOld.unstoreAll();
-		return vOld;
+		if (vOld != null)
+			vOld.unstoreAll();
+		else if (vOldMod != null)
+			vOldMod.unstoreAll();
 	}
 
 	/**

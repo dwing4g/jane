@@ -1,6 +1,5 @@
 package jane.core;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Supplier;
@@ -23,13 +22,13 @@ import jane.core.map.LongMap.MapIterator;
  */
 public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends TableBase<V>
 {
-	private final Storage.TableLong<V> _stoTable;							// 存储引擎的表对象
-	private final LongMap<Supplier<V>> _cache;								// 读缓存. 有大小限制,溢出自动清理
-	private final LongMap<V>		   _cacheMod;							// 写缓存. 不会溢出,保存到数据库存储引擎后清理
-	private final AtomicLong		   _idCounter	 = new AtomicLong();	// 用于自增长ID的计数器
-	private final AtomicBoolean		   _idCounterMod = new AtomicBoolean();	// idCounter是否待存状态(有修改未存库)
-	private int						   _autoIdBegin	 = Const.autoIdBegin;	// 自增长ID的初始值, 可运行时指定
-	private int						   _autoIdStride = Const.autoIdStride;	// 自增长ID的分配跨度, 可运行时指定
+	private final Storage.TableLong<V>	   _stoTable;						   // 存储引擎的表对象
+	private final LongMap<Supplier<V>>	   _cache;							   // 读缓存. 有大小限制,溢出自动清理
+	private final LongConcurrentHashMap<V> _cacheMod;						   // 写缓存. 不会溢出,保存到数据库存储引擎后清理
+	private final AtomicLong			   _idCounter	 = new AtomicLong();   // 用于自增长ID的计数器
+	private volatile boolean			   _idCounterMod;					   // idCounter是否待存状态(有修改未存库)
+	private int							   _autoIdBegin	 = Const.autoIdBegin;  // 自增长ID的初始值, 可运行时指定
+	private int							   _autoIdStride = Const.autoIdStride; // 自增长ID的分配跨度, 可运行时指定
 
 	/**
 	 * 创建一个数据库表
@@ -151,7 +150,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 		int m = _cacheMod.size();
 		_cacheMod.clear();
 		_stoTable.setIdCounter(_idCounter.get());
-		_idCounterMod.set(false);
+		_idCounterMod = false;
 		return m;
 	}
 
@@ -170,7 +169,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	@Override
 	public int getCacheModSize()
 	{
-		return _cacheMod != null ? _cacheMod.size() : 0;
+		return (_cacheMod != null ? _cacheMod.size() : 0) + (_idCounterMod ? 1 : 0);
 	}
 
 	/**
@@ -399,59 +398,54 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	 */
 	public void modify(long k, V v)
 	{
+		if (v == null)
+			throw new NullPointerException();
 		Procedure.incVersion(lockId(k));
 		if (_cacheMod != null)
-		{
-			V vOld = _cacheMod.put(k, v);
-			if (vOld == null)
-				_dbm.incModCount();
-			else if (vOld != v)
-				_cacheMod.put(k, vOld); // 可能之前已经覆盖或删除过记录,然后再modify的话,就忽略本次modify了,因为SContext.commit无法识别这种情况
-		}
+			_cacheMod.putIfAbsent(k, v);
 	}
 
+	@SuppressWarnings("unchecked")
 	void modify(long k, Object vo)
 	{
+		if (vo == null)
+			throw new NullPointerException();
 		Procedure.incVersion(lockId(k));
 		if (_cacheMod != null)
-		{
-			@SuppressWarnings("unchecked")
-			V vOld = _cacheMod.put(k, (V)vo);
-			if (vOld == null)
-				_dbm.incModCount();
-			else if (vOld != vo)
-				_cacheMod.put(k, vOld); // 可能之前已经覆盖或删除过记录,然后再modify的话,就忽略本次modify了,因为SContext.commit无法识别这种情况
-		}
+			_cacheMod.putIfAbsent(k, (V)vo);
 	}
 
 	/**
 	 * 根据记录的key保存value
 	 * <p>
-	 * 必须在事务中已加锁的状态下调用此方法<br>
-	 * 如果使用自增长ID来插入记录的表,则不能用此方法来插入新的记录
-	 * @param v 如果是get获取到的对象引用,可调用modify来提高性能. 不能为null
+	 * 必须在事务中已加锁的状态下调用此方法
 	 */
 	@Deprecated
 	public void putUnsafe(long k, V v)
 	{
 		if (v == null)
 			throw new NullPointerException();
-		V vOld = getCacheUnsafe(k);
-		if (vOld != v)
+		Supplier<V> sOld = _cache.get(k);
+		V vOldMod, vOld = sOld != null ? sOld.get() : null;
+		if (_cacheMod == null)
+			vOldMod = null;
+		else if ((vOldMod = _cacheMod.get(k)) == v)
+			return;
+		if (vOld == v)
+			return;
+		v.checkStoreAll();
+		Procedure.incVersion(lockId(k));
+		if (_cacheMod != null)
 		{
-			v.checkStoreAll();
-			Procedure.incVersion(lockId(k));
-			if (_cacheMod != null)
-			{
-				_cache.put(k, new CacheRefLong<>(_cache, k, v));
-				if (_cacheMod.put(k, v) == null)
-					_dbm.incModCount();
-			}
-			else
-				_cache.put(k, new StrongRef<>(v));
-			if (vOld != null)
-				vOld.unstoreAll();
+			_cacheMod.put(k, v);
+			_cache.put(k, new CacheRefLong<>(_cache, k, v));
 		}
+		else
+			_cache.put(k, new StrongRef<>(v));
+		if (vOld != null)
+			vOld.unstoreAll();
+		else if (vOldMod != null && vOldMod != _deleted)
+			vOldMod.unstoreAll();
 	}
 
 	/**
@@ -463,43 +457,50 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 			throw new NullPointerException();
 		if (!Procedure.isLockedByCurrentThread(lockId(k)))
 			throw new IllegalAccessError("put unlocked record! table=" + _tableName + ",key=" + k);
-		V vOld = getCacheUnsafe(k);
-		if (vOld != v)
+		Supplier<V> sOld = _cache.get(k);
+		V vOldMod, vOld = sOld != null ? sOld.get() : null;
+		if (_cacheMod == null)
+			vOldMod = null;
+		else if ((vOldMod = _cacheMod.get(k)) == v)
+			return;
+		if (vOld == v)
+			return;
+		v.checkStoreAll();
+		Procedure.incVersion(lockId(k));
+		if (_cacheMod != null)
 		{
-			v.checkStoreAll();
-			Procedure.incVersion(lockId(k));
-			if (_cacheMod != null)
-			{
-				_cache.put(k, new CacheRefLong<>(_cache, k, v));
-				if (_cacheMod.put(k, v) == null)
-					_dbm.incModCount();
-			}
-			else
-				_cache.put(k, new StrongRef<>(v));
-			if (vOld != null)
-				vOld.unstoreAll();
+			_cacheMod.put(k, v);
+			_cache.put(k, new CacheRefLong<>(_cache, k, v));
 		}
+		else
+			_cache.put(k, new StrongRef<>(v));
 		SContext.current().addOnRollbackDirty(() ->
 		{
 			if (vOld != null)
-				putUnsafe(k, vOld);
+				vOld.storeAll();
+			else if (vOldMod != null && vOldMod != _deleted)
+				vOldMod.storeAll();
+			if (vOld != null)
+				_cache.put(k, sOld);
 			else
-			{
 				_cache.remove(k);
-				if (_cacheMod != null)
-					_cacheMod.remove(k);
-			}
+			if (vOldMod != null)
+				_cacheMod.put(k, vOldMod);
+			else if (_cacheMod != null)
+				_cacheMod.remove(k);
+			v.unstoreAll();
 		});
+		if (vOld != null)
+			vOld.unstoreAll();
+		else if (vOldMod != null && vOldMod != _deleted)
+			vOldMod.unstoreAll();
 	}
 
 	@SuppressWarnings("deprecation")
 	public void put(long k, S s)
 	{
-		V v = s.unsafe();
-		boolean stored = v.stored();
-		put(k, v);
-		if (!stored)
-			s.record(new RecordLong<>(this, k, s));
+		put(k, s.unsafe());
+		s.record(new RecordLong<>(this, k, s));
 	}
 
 	/**
@@ -512,8 +513,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	 */
 	public long allocId()
 	{
-		if (_idCounterMod.compareAndSet(false, true))
-			_dbm.incModCount();
+		_idCounterMod = true;
 		for (;;)
 		{
 			long k = _idCounter.getAndIncrement() * _autoIdStride + _autoIdBegin;
@@ -548,31 +548,64 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	@Deprecated
 	public void removeUnsafe(long k)
 	{
+		Supplier<V> sOld = _cache.get(k);
+		V vOldMod, vOld = sOld != null ? sOld.get() : null;
+		if (_cacheMod == null)
+		{
+			if (vOld == null)
+				return;
+			vOldMod = null;
+		}
+		else if ((vOldMod = _cacheMod.get(k)) == _deleted)
+			return;
 		Procedure.incVersion(lockId(k));
+		if (_cacheMod != null)
+			_cacheMod.put(k, _deleted);
 		_cache.remove(k);
-		if (_cacheMod != null && _cacheMod.put(k, _deleted) == null)
-			_dbm.incModCount();
+		if (vOld != null)
+			vOld.unstoreAll();
+		else if (vOldMod != null)
+			vOldMod.unstoreAll();
 	}
 
 	/**
 	 * 同removeUnsafe,但增加的安全封装,可回滚修改
-	 * @return 返回被移除的记录值,可用于再次put. 返回null则表示没有旧记录
 	 */
-	public V remove(long k)
+	public void remove(long k)
 	{
 		if (!Procedure.isLockedByCurrentThread(lockId(k)))
 			throw new IllegalAccessError("remove unlocked record! table=" + _tableName + ",key=" + k);
-		V vOld = getNoCacheUnsafe(k);
-		if (vOld == null)
-			return null;
+		Supplier<V> sOld = _cache.get(k);
+		V vOldMod, vOld = sOld != null ? sOld.get() : null;
+		if (_cacheMod == null)
+		{
+			if (vOld == null)
+				return;
+			vOldMod = null;
+		}
+		else if ((vOldMod = _cacheMod.get(k)) == _deleted)
+			return;
+		Procedure.incVersion(lockId(k));
+		if (_cacheMod != null)
+			_cacheMod.put(k, _deleted);
+		_cache.remove(k);
 		SContext.current().addOnRollbackDirty(() ->
 		{
-			vOld.unstoreAll(); // 确保可写入
-			putUnsafe(k, vOld);
+			if (vOld != null)
+				vOld.storeAll();
+			else if (vOldMod != null)
+				vOldMod.storeAll();
+			if (vOld != null)
+				_cache.put(k, sOld);
+			if (vOldMod != null)
+				_cacheMod.put(k, vOldMod);
+			else if (_cacheMod != null)
+				_cacheMod.remove(k);
 		});
-		removeUnsafe(k);
-		vOld.unstoreAll();
-		return vOld;
+		if (vOld != null)
+			vOld.unstoreAll();
+		else if (vOldMod != null)
+			vOldMod.unstoreAll();
 	}
 
 	/**

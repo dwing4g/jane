@@ -39,7 +39,6 @@ public final class DBManager
 	private final ThreadPoolExecutor						   _procThreads;								// 事务线程池
 	private final ConcurrentMap<Object, ArrayDeque<Procedure>> _qmap		 = Util.newConcurrentHashMap();	// 当前sid队列的数量
 	private final AtomicLong								   _procCount	 = new AtomicLong();			// 绑定过sid的在队列中未运行的事务数量
-	private final AtomicLong								   _modCount	 = new AtomicLong();			// 当前缓存修改的记录数
 	private final FastRWLock								   _rwlCommit	 = new FastRWLock();			// 用于数据提交的读写锁
 	private String											   _dbBackupPath;								// 数据库的备份路径
 	private Storage											   _storage;									// 存储引擎
@@ -105,7 +104,7 @@ public final class DBManager
 			{
 				long t = System.currentTimeMillis();
 				long commitTime = _commitTime;
-				if (t < commitTime && _modCount.get() < Const.dbCommitModCount)
+				if (t < commitTime && getCacheModSize() < Const.dbCommitModCount)
 					return true;
 				synchronized (DBManager.this)
 				{
@@ -118,7 +117,7 @@ public final class DBManager
 					Storage storage = getStorage();
 					if (storage != null)
 					{
-						long t3, modCount = _modCount.get();
+						long t3, modCount = getCacheModSize();
 						if (modCount == 0 && !force)
 						{
 							Log.info("db-commit not found modified record");
@@ -149,7 +148,6 @@ public final class DBManager
 								_rwlCommit.writeLock();
 								try
 								{
-									_modCount.set(0);
 									Log.info("db-commit saving left...");
 									Log.info("db-commit saved: {}, flushing left...", saveModifiedAll());
 									storage.putFlush(true);
@@ -353,17 +351,17 @@ public final class DBManager
 		return _storage;
 	}
 
-	/**
-	 * 增加一次记录修改计数
-	 */
-	void incModCount()
-	{
-		_modCount.getAndIncrement();
-	}
-
 	public List<TableBase<?>> getTables()
 	{
 		return Collections.unmodifiableList(_tables);
+	}
+
+	public long getCacheModSize()
+	{
+		long r = 0;
+		for (int i = 0, n = _tables.size(); i < n; ++i)
+			r += _tables.get(i).getCacheModSize();
+		return r;
 	}
 
 	/**
