@@ -40,7 +40,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	 */
 	TableLong(DBManager dbm, int tableId, String tableName, Storage.TableLong<V> stoTable, String lockName, int cacheSize, V stubV)
 	{
-		super(dbm, tableId, tableName, stubV, (lockName != null && !(lockName = lockName.trim()).isEmpty() ? lockName.hashCode() : tableId) * 0x9e3779b1);
+		super(dbm, tableId, tableName, stubV, (lockName != null && !lockName.isBlank() ? lockName.hashCode() : tableId) * 0x9e3779b1);
 		_stoTable = stoTable;
 		_cache = Util.newLongConcurrentLRUMap(cacheSize, tableName);
 		_cacheMod = (stoTable != null ? new LongConcurrentHashMap<>() : null);
@@ -94,13 +94,15 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	@Override
 	protected void trySaveModified(long[] counts)
 	{
-		if (_cacheMod == null)
+		LongConcurrentHashMap<V> cacheMod = _cacheMod;
+		if (cacheMod == null)
 			return;
-		counts[0] += _cacheMod.size();
+		counts[0] += cacheMod.size();
+		Storage.TableLong<V> stoTable = _stoTable;
 		long n = 0;
 		try
 		{
-			for (LongIterator it = _cacheMod.keyIterator(); it.hasNext();)
+			for (LongIterator it = cacheMod.keyIterator(); it.hasNext();)
 			{
 				long k = it.next();
 				Lock lock = Procedure.tryLock(lockId(k));
@@ -109,12 +111,12 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 					try
 					{
 						++n;
-						V v = _cacheMod.get(k);
+						V v = cacheMod.get(k);
 						if (v == _deleted)
-							_stoTable.remove(k);
+							stoTable.remove(k);
 						else
-							_stoTable.put(k, v);
-						_cacheMod.remove(k, v);
+							stoTable.put(k, v);
+						cacheMod.remove(k, v);
 					}
 					finally
 					{
@@ -125,7 +127,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 		}
 		finally
 		{
-			counts[1] += _cacheMod.size();
+			counts[1] += cacheMod.size();
 			counts[2] += n;
 		}
 	}
@@ -136,20 +138,22 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	@Override
 	protected int saveModified()
 	{
-		if (_cacheMod == null)
+		LongConcurrentHashMap<V> cacheMod = _cacheMod;
+		if (cacheMod == null)
 			return 0;
-		for (MapIterator<V> it = _cacheMod.entryIterator(); it.moveToNext();)
+		Storage.TableLong<V> stoTable = _stoTable;
+		for (MapIterator<V> it = cacheMod.entryIterator(); it.moveToNext();)
 		{
 			long k = it.key();
 			V v = it.value();
 			if (v == _deleted)
-				_stoTable.remove(k);
+				stoTable.remove(k);
 			else
-				_stoTable.put(k, v);
+				stoTable.put(k, v);
 		}
-		int m = _cacheMod.size();
-		_cacheMod.clear();
-		_stoTable.setIdCounter(_idCounter.get());
+		int m = cacheMod.size();
+		cacheMod.clear();
+		stoTable.setIdCounter(_idCounter.get());
 		_idCounterMod = false;
 		return m;
 	}
@@ -182,7 +186,8 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	public V getUnsafe(long k)
 	{
 		_readCount.getAndIncrement();
-		Supplier<V> s = _cache.get(k);
+		LongMap<Supplier<V>> cache = _cache;
+		Supplier<V> s = cache.get(k);
 		V v;
 		if (s != null && (v = s.get()) != null)
 			return v;
@@ -193,7 +198,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 		{
 			if (v == _deleted)
 				return null;
-			_cache.put(k, new CacheRefLong<>(_cache, k, v));
+			cache.put(k, new CacheRefLong<>(cache, k, v));
 			return v;
 		}
 		_readStoCount.getAndIncrement();
@@ -201,7 +206,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 		if (v != null)
 		{
 			v.storeAll();
-			_cache.put(k, new CacheRefLong<>(_cache, k, v));
+			cache.put(k, new CacheRefLong<>(cache, k, v));
 		}
 		return v;
 	}
@@ -213,7 +218,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	public V getReadOnly(long k)
 	{
 		if (!Procedure.isLockedByCurrentThread(lockId(k)))
-			throw new IllegalAccessError("get unlocked record! table=" + _tableName + ",key=" + k);
+			SContext.throwIllegalAccess(_tableName, k);
 		return getUnsafe(k);
 	}
 
@@ -224,7 +229,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	public V getModified(long k)
 	{
 		if (!Procedure.isLockedByCurrentThread(lockId(k)))
-			throw new IllegalAccessError("get unlocked record! table=" + _tableName + ",key=" + k);
+			SContext.throwIllegalAccess(_tableName, k);
 		V v = getUnsafe(k);
 		if (v != null)
 			modify(k, v);
@@ -248,7 +253,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	public S get(long k)
 	{
 		if (!Procedure.isLockedByCurrentThread(lockId(k)))
-			throw new IllegalAccessError("get unlocked record! table=" + _tableName + ",key=" + k);
+			SContext.throwIllegalAccess(_tableName, k);
 		return getNoLock(k);
 	}
 
@@ -299,7 +304,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	{
 		Procedure proc = Procedure.getCurProcedure();
 		if (proc == null)
-			throw new IllegalStateException("invalid lockGet out of procedure");
+			throw new IllegalStateException("invalid lockGetOrNew out of procedure");
 		S s = lockGet(k);
 		if (s == null)
 		{
@@ -352,7 +357,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	public S getNoCache(long k)
 	{
 		if (!Procedure.isLockedByCurrentThread(lockId(k)))
-			throw new IllegalAccessError("get unlocked record! table=" + _tableName + ",key=" + k);
+			SContext.throwIllegalAccess(_tableName, k);
 		V v = getNoCacheUnsafe(k);
 		SContext sctx = SContext.current();
 		return v != null ? sctx.addRecord(this, k, v) : sctx.getRecord(this, k);
@@ -384,7 +389,7 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	public S getCache(long k)
 	{
 		if (!Procedure.isLockedByCurrentThread(lockId(k)))
-			throw new IllegalAccessError("get unlocked record! table=" + _tableName + ",key=" + k);
+			SContext.throwIllegalAccess(_tableName, k);
 		V v = getCacheUnsafe(k);
 		SContext sctx = SContext.current();
 		return v != null ? sctx.addRecord(this, k, v) : sctx.getRecord(this, k);
@@ -425,23 +430,25 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	{
 		if (v == null)
 			throw new NullPointerException();
-		Supplier<V> sOld = _cache.get(k);
+		LongMap<Supplier<V>> cache = _cache;
+		Supplier<V> sOld = cache.get(k);
 		V vOldMod, vOld = sOld != null ? sOld.get() : null;
-		if (_cacheMod == null)
+		LongConcurrentHashMap<V> cacheMod = _cacheMod;
+		if (cacheMod == null)
 			vOldMod = null;
-		else if ((vOldMod = _cacheMod.get(k)) == v)
+		else if ((vOldMod = cacheMod.get(k)) == v)
 			return;
 		if (vOld == v)
 			return;
 		v.checkStoreAll();
 		Procedure.incVersion(lockId(k));
-		if (_cacheMod != null)
+		if (cacheMod != null)
 		{
-			_cacheMod.put(k, v);
-			_cache.put(k, new CacheRefLong<>(_cache, k, v));
+			cacheMod.put(k, v);
+			cache.put(k, new CacheRefLong<>(cache, k, v));
 		}
 		else
-			_cache.put(k, new StrongRef<>(v));
+			cache.put(k, new StrongRef<>(v));
 		if (vOld != null)
 			vOld.unstoreAll();
 		else if (vOldMod != null && vOldMod != _deleted)
@@ -456,24 +463,26 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 		if (v == null)
 			throw new NullPointerException();
 		if (!Procedure.isLockedByCurrentThread(lockId(k)))
-			throw new IllegalAccessError("put unlocked record! table=" + _tableName + ",key=" + k);
-		Supplier<V> sOld = _cache.get(k);
+			SContext.throwIllegalAccess(_tableName, k);
+		LongMap<Supplier<V>> cache = _cache;
+		Supplier<V> sOld = cache.get(k);
 		V vOldMod, vOld = sOld != null ? sOld.get() : null;
-		if (_cacheMod == null)
+		LongConcurrentHashMap<V> cacheMod = _cacheMod;
+		if (cacheMod == null)
 			vOldMod = null;
-		else if ((vOldMod = _cacheMod.get(k)) == v)
+		else if ((vOldMod = cacheMod.get(k)) == v)
 			return;
 		if (vOld == v)
 			return;
 		v.checkStoreAll();
 		Procedure.incVersion(lockId(k));
-		if (_cacheMod != null)
+		if (cacheMod != null)
 		{
-			_cacheMod.put(k, v);
-			_cache.put(k, new CacheRefLong<>(_cache, k, v));
+			cacheMod.put(k, v);
+			cache.put(k, new CacheRefLong<>(cache, k, v));
 		}
 		else
-			_cache.put(k, new StrongRef<>(v));
+			cache.put(k, new StrongRef<>(v));
 		SContext.current().addOnRollbackDirty(() ->
 		{
 			if (vOld != null)
@@ -550,18 +559,20 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	{
 		Supplier<V> sOld = _cache.get(k);
 		V vOldMod, vOld = sOld != null ? sOld.get() : null;
-		if (_cacheMod == null)
+		LongConcurrentHashMap<V> cacheMod = _cacheMod;
+		if (cacheMod == null)
 		{
 			if (vOld == null)
 				return;
 			vOldMod = null;
 		}
-		else if ((vOldMod = _cacheMod.get(k)) == _deleted)
+		else if ((vOldMod = cacheMod.get(k)) == _deleted)
 			return;
 		Procedure.incVersion(lockId(k));
-		if (_cacheMod != null)
-			_cacheMod.put(k, _deleted);
-		_cache.remove(k);
+		if (cacheMod != null)
+			cacheMod.put(k, _deleted);
+		if (sOld != null)
+			_cache.remove(k);
 		if (vOld != null)
 			vOld.unstoreAll();
 		else if (vOldMod != null)
@@ -574,21 +585,24 @@ public final class TableLong<V extends Bean<V>, S extends Safe<V>> extends Table
 	public void remove(long k)
 	{
 		if (!Procedure.isLockedByCurrentThread(lockId(k)))
-			throw new IllegalAccessError("remove unlocked record! table=" + _tableName + ",key=" + k);
-		Supplier<V> sOld = _cache.get(k);
+			SContext.throwIllegalAccess(_tableName, k);
+		LongMap<Supplier<V>> cache = _cache;
+		Supplier<V> sOld = cache.get(k);
 		V vOldMod, vOld = sOld != null ? sOld.get() : null;
-		if (_cacheMod == null)
+		LongConcurrentHashMap<V> cacheMod = _cacheMod;
+		if (cacheMod == null)
 		{
 			if (vOld == null)
 				return;
 			vOldMod = null;
 		}
-		else if ((vOldMod = _cacheMod.get(k)) == _deleted)
+		else if ((vOldMod = cacheMod.get(k)) == _deleted)
 			return;
 		Procedure.incVersion(lockId(k));
-		if (_cacheMod != null)
-			_cacheMod.put(k, _deleted);
-		_cache.remove(k);
+		if (cacheMod != null)
+			cacheMod.put(k, _deleted);
+		if (sOld != null)
+			cache.remove(k);
 		SContext.current().addOnRollbackDirty(() ->
 		{
 			if (vOld != null)

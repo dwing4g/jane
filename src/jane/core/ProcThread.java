@@ -34,14 +34,15 @@ public class ProcThread extends Thread
 
 	private static boolean mayDeadLock0(java.util.ArrayList<ProcThread> otherLockingThreads, IndexLock checkLock, IndexLock nowLock)
 	{
-		for(ProcThread pt : otherLockingThreads)
+		for (ProcThread pt : otherLockingThreads)
 		{
-			if(pt.nowLock != checkLock) continue;
+			if (pt.nowLock != checkLock)
+				continue;
 			IndexLock[] ls = pt.locks;
-			for(int j = pt.lockCount - 1; j >= 0; --j)
+			for (int j = pt.lockCount - 1; j >= 0; --j)
 			{
 				IndexLock lk = ls[j];
-				if(lk != null && lk != checkLock && (lk == nowLock || mayDeadLock0(otherLockingThreads, lk, nowLock)))
+				if (lk != null && lk != checkLock && (lk == nowLock || mayDeadLock0(otherLockingThreads, lk, nowLock)))
 					return true;
 			}
 		}
@@ -50,18 +51,19 @@ public class ProcThread extends Thread
 
 	private boolean mayDeadLock()
 	{
-		if(lockCount < 1) return false;
+		if (lockCount < 1)
+			return false;
 		java.util.ArrayList<ProcThread> otherLockingThreads = new java.util.ArrayList<>();
-		for(ProcThread pt : _procThreads)
+		for (ProcThread pt : _procThreads)
 		{
-			if(pt != this && pt.nowLock != null)
+			if (pt != this && pt.nowLock != null)
 				otherLockingThreads.add(pt);
 		}
 		IndexLock[] ls = locks;
 		IndexLock nl = nowLock;
-		for(int i = lockCount - 1; i >= 0; --i)
+		for (int i = lockCount - 1; i >= 0; --i)
 		{
-			if(mayDeadLock0(otherLockingThreads, ls[i], nl))
+			if (mayDeadLock0(otherLockingThreads, ls[i], nl))
 				return true;
 		}
 		return false;
@@ -70,9 +72,9 @@ public class ProcThread extends Thread
 	void safeLock(IndexLock lock) throws InterruptedException
 	{
 		nowLock = lock;
-		if(!lock.tryLock())
+		if (!lock.tryLock())
 		{
-			if(mayDeadLock())
+			if (mayDeadLock())
 				Procedure.redo();
 			lock.lockInterruptibly();
 		}
@@ -84,9 +86,9 @@ public class ProcThread extends Thread
 	{
 		lockCount = i;
 		nowLock = lock;
-		if(!lock.tryLock())
+		if (!lock.tryLock())
 		{
-			if(mayDeadLock())
+			if (mayDeadLock())
 				Procedure.redo();
 			lock.lockInterruptibly();
 		}

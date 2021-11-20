@@ -30,7 +30,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	 */
 	Table(DBManager dbm, int tableId, String tableName, Storage.Table<K, V> stoTable, String lockName, int cacheSize, V stubV)
 	{
-		super(dbm, tableId, tableName, stubV, (lockName != null && !(lockName = lockName.trim()).isEmpty() ? lockName.hashCode() : tableId) * 0x9e3779b1);
+		super(dbm, tableId, tableName, stubV, (lockName != null && !lockName.isBlank() ? lockName.hashCode() : tableId) * 0x9e3779b1);
 		_stoTable = stoTable;
 		_cache = Util.newConcurrentLRUMap(cacheSize, tableName);
 		_cacheMod = (stoTable != null ? Util.newConcurrentHashMap() : null);
@@ -54,13 +54,15 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	@Override
 	protected void trySaveModified(long[] counts)
 	{
-		if (_cacheMod == null)
+		Map<K, V> cacheMod = _cacheMod;
+		if (cacheMod == null)
 			return;
-		counts[0] += _cacheMod.size();
+		counts[0] += cacheMod.size();
+		Storage.Table<K, V> stoTable = _stoTable;
 		long n = 0;
 		try
 		{
-			for (K k : _cacheMod.keySet())
+			for (K k : cacheMod.keySet())
 			{
 				Lock lock = Procedure.tryLock(lockId(k));
 				if (lock != null)
@@ -68,12 +70,12 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 					try
 					{
 						++n;
-						V v = _cacheMod.get(k);
+						V v = cacheMod.get(k);
 						if (v == _deleted)
-							_stoTable.remove(k);
+							stoTable.remove(k);
 						else
-							_stoTable.put(k, v);
-						_cacheMod.remove(k, v);
+							stoTable.put(k, v);
+						cacheMod.remove(k, v);
 					}
 					finally
 					{
@@ -84,7 +86,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 		}
 		finally
 		{
-			counts[1] += _cacheMod.size();
+			counts[1] += cacheMod.size();
 			counts[2] += n;
 		}
 	}
@@ -95,19 +97,21 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	@Override
 	protected int saveModified()
 	{
-		if (_cacheMod == null)
+		Map<K, V> cacheMod = _cacheMod;
+		if (cacheMod == null)
 			return 0;
-		for (Entry<K, V> e : _cacheMod.entrySet())
+		Storage.Table<K, V> stoTable = _stoTable;
+		for (Entry<K, V> e : cacheMod.entrySet())
 		{
 			K k = e.getKey();
 			V v = e.getValue();
 			if (v == _deleted)
-				_stoTable.remove(k);
+				stoTable.remove(k);
 			else
-				_stoTable.put(k, v);
+				stoTable.put(k, v);
 		}
-		int m = _cacheMod.size();
-		_cacheMod.clear();
+		int m = cacheMod.size();
+		cacheMod.clear();
 		return m;
 	}
 
@@ -139,7 +143,8 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	public V getUnsafe(K k)
 	{
 		_readCount.getAndIncrement();
-		Supplier<V> s = _cache.get(k);
+		Map<K, Supplier<V>> cache = _cache;
+		Supplier<V> s = cache.get(k);
 		V v;
 		if (s != null && (v = s.get()) != null)
 			return v;
@@ -150,7 +155,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 		{
 			if (v == _deleted)
 				return null;
-			_cache.put(k, new CacheRefK<>(_cache, k, v));
+			cache.put(k, new CacheRefK<>(cache, k, v));
 			return v;
 		}
 		_readStoCount.getAndIncrement();
@@ -158,7 +163,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 		if (v != null)
 		{
 			v.storeAll();
-			_cache.put(k, new CacheRefK<>(_cache, k, v));
+			cache.put(k, new CacheRefK<>(cache, k, v));
 		}
 		return v;
 	}
@@ -170,7 +175,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	public V getReadOnly(K k)
 	{
 		if (!Procedure.isLockedByCurrentThread(lockId(k)))
-			throw new IllegalAccessError("get unlocked record! table=" + _tableName + ",key=" + k);
+			SContext.throwIllegalAccess(_tableName, k);
 		return getUnsafe(k);
 	}
 
@@ -181,7 +186,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	public V getModified(K k)
 	{
 		if (!Procedure.isLockedByCurrentThread(lockId(k)))
-			throw new IllegalAccessError("get unlocked record! table=" + _tableName + ",key=" + k);
+			SContext.throwIllegalAccess(_tableName, k);
 		V v = getUnsafe(k);
 		if (v != null)
 			modify(k, v);
@@ -205,7 +210,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	public S get(K k)
 	{
 		if (!Procedure.isLockedByCurrentThread(lockId(k)))
-			throw new IllegalAccessError("get unlocked record! table=" + _tableName + ",key=" + k);
+			SContext.throwIllegalAccess(_tableName, k);
 		return getNoLock(k);
 	}
 
@@ -256,7 +261,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	{
 		Procedure proc = Procedure.getCurProcedure();
 		if (proc == null)
-			throw new IllegalStateException("invalid lockGet out of procedure");
+			throw new IllegalStateException("invalid lockGetOrNew out of procedure");
 		S s = lockGet(k);
 		if (s == null)
 		{
@@ -309,7 +314,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	public S getNoCache(K k)
 	{
 		if (!Procedure.isLockedByCurrentThread(lockId(k)))
-			throw new IllegalAccessError("get unlocked record! table=" + _tableName + ",key=" + k);
+			SContext.throwIllegalAccess(_tableName, k);
 		V v = getNoCacheUnsafe(k);
 		SContext sctx = SContext.current();
 		return v != null ? sctx.addRecord(this, k, v) : sctx.getRecord(this, k);
@@ -341,7 +346,7 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	public S getCache(K k)
 	{
 		if (!Procedure.isLockedByCurrentThread(lockId(k)))
-			throw new IllegalAccessError("get unlocked record! table=" + _tableName + ",key=" + k);
+			SContext.throwIllegalAccess(_tableName, k);
 		V v = getCacheUnsafe(k);
 		SContext sctx = SContext.current();
 		return v != null ? sctx.addRecord(this, k, v) : sctx.getRecord(this, k);
@@ -383,23 +388,25 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	{
 		if (v == null)
 			throw new NullPointerException();
-		Supplier<V> sOld = _cache.get(k);
+		Map<K, Supplier<V>> cache = _cache;
+		Supplier<V> sOld = cache.get(k);
 		V vOldMod, vOld = sOld != null ? sOld.get() : null;
-		if (_cacheMod == null)
+		Map<K, V> cacheMod = _cacheMod;
+		if (cacheMod == null)
 			vOldMod = null;
-		else if ((vOldMod = _cacheMod.get(k)) == v)
+		else if ((vOldMod = cacheMod.get(k)) == v)
 			return;
 		if (vOld == v)
 			return;
 		v.checkStoreAll();
 		Procedure.incVersion(lockId(k));
-		if (_cacheMod != null)
+		if (cacheMod != null)
 		{
-			_cacheMod.put(k, v);
-			_cache.put(k, new CacheRefK<>(_cache, k, v));
+			cacheMod.put(k, v);
+			cache.put(k, new CacheRefK<>(cache, k, v));
 		}
 		else
-			_cache.put(k, new StrongRef<>(v));
+			cache.put(k, new StrongRef<>(v));
 		if (vOld != null)
 			vOld.unstoreAll();
 		else if (vOldMod != null && vOldMod != _deleted)
@@ -414,24 +421,26 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 		if (v == null)
 			throw new NullPointerException();
 		if (!Procedure.isLockedByCurrentThread(lockId(k)))
-			throw new IllegalAccessError("put unlocked record! table=" + _tableName + ",key=" + k);
-		Supplier<V> sOld = _cache.get(k);
+			SContext.throwIllegalAccess(_tableName, k);
+		Map<K, Supplier<V>> cache = _cache;
+		Supplier<V> sOld = cache.get(k);
 		V vOldMod, vOld = sOld != null ? sOld.get() : null;
-		if (_cacheMod == null)
+		Map<K, V> cacheMod = _cacheMod;
+		if (cacheMod == null)
 			vOldMod = null;
-		else if ((vOldMod = _cacheMod.get(k)) == v)
+		else if ((vOldMod = cacheMod.get(k)) == v)
 			return;
 		if (vOld == v)
 			return;
 		v.checkStoreAll();
 		Procedure.incVersion(lockId(k));
-		if (_cacheMod != null)
+		if (cacheMod != null)
 		{
-			_cacheMod.put(k, v);
-			_cache.put(k, new CacheRefK<>(_cache, k, v));
+			cacheMod.put(k, v);
+			cache.put(k, new CacheRefK<>(cache, k, v));
 		}
 		else
-			_cache.put(k, new StrongRef<>(v));
+			cache.put(k, new StrongRef<>(v));
 		SContext.current().addOnRollbackDirty(() ->
 		{
 			if (vOld != null)
@@ -471,18 +480,20 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	{
 		Supplier<V> sOld = _cache.get(k);
 		V vOldMod, vOld = sOld != null ? sOld.get() : null;
-		if (_cacheMod == null)
+		Map<K, V> cacheMod = _cacheMod;
+		if (cacheMod == null)
 		{
 			if (vOld == null)
 				return;
 			vOldMod = null;
 		}
-		else if ((vOldMod = _cacheMod.get(k)) == _deleted)
+		else if ((vOldMod = cacheMod.get(k)) == _deleted)
 			return;
 		Procedure.incVersion(lockId(k));
-		if (_cacheMod != null)
-			_cacheMod.put(k, _deleted);
-		_cache.remove(k);
+		if (cacheMod != null)
+			cacheMod.put(k, _deleted);
+		if (sOld != null)
+			_cache.remove(k);
 		if (vOld != null)
 			vOld.unstoreAll();
 		else if (vOldMod != null)
@@ -495,21 +506,24 @@ public final class Table<K, V extends Bean<V>, S extends Safe<V>> extends TableB
 	public void remove(K k)
 	{
 		if (!Procedure.isLockedByCurrentThread(lockId(k)))
-			throw new IllegalAccessError("remove unlocked record! table=" + _tableName + ",key=" + k);
-		Supplier<V> sOld = _cache.get(k);
+			SContext.throwIllegalAccess(_tableName, k);
+		Map<K, Supplier<V>> cache = _cache;
+		Supplier<V> sOld = cache.get(k);
 		V vOldMod, vOld = sOld != null ? sOld.get() : null;
-		if (_cacheMod == null)
+		Map<K, V> cacheMod = _cacheMod;
+		if (cacheMod == null)
 		{
 			if (vOld == null)
 				return;
 			vOldMod = null;
 		}
-		else if ((vOldMod = _cacheMod.get(k)) == _deleted)
+		else if ((vOldMod = cacheMod.get(k)) == _deleted)
 			return;
 		Procedure.incVersion(lockId(k));
-		if (_cacheMod != null)
-			_cacheMod.put(k, _deleted);
-		_cache.remove(k);
+		if (cacheMod != null)
+			cacheMod.put(k, _deleted);
+		if (sOld != null)
+			cache.remove(k);
 		SContext.current().addOnRollbackDirty(() ->
 		{
 			if (vOld != null)

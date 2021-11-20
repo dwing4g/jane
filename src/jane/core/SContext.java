@@ -232,7 +232,7 @@ public final class SContext
 		public void checkLock()
 		{
 			if (!Procedure.isLockedByCurrentThread(_lockId))
-				throw new IllegalAccessError("access unlocked record! table=" + _table.getTableName() + ",key=" + _key);
+				throwIllegalAccess(_table.getTableName(), _key);
 		}
 	}
 
@@ -279,7 +279,7 @@ public final class SContext
 		public void checkLock()
 		{
 			if (!Procedure.isLockedByCurrentThread(_lockId))
-				throw new IllegalAccessError("access unlocked record! table=" + _table.getTableName() + ",key=" + _key);
+				throwIllegalAccess(_table.getTableName(), _key);
 		}
 	}
 
@@ -287,11 +287,19 @@ public final class SContext
 	private final ArrayList<RecordLong<?, ?>> _recordLongs = new ArrayList<>();
 	private final ArrayList<Runnable>		  _onRollbacks = new ArrayList<>();
 	private final ArrayList<Runnable>		  _onCommits   = new ArrayList<>();
+	private Throwable						  _illegalException;
 	private boolean							  _hasDirty;
 
 	public static SContext current()
 	{
 		return ((ProcThread)Thread.currentThread()).sctx;
+	}
+
+	static void throwIllegalAccess(String tableName, Object key)
+	{
+		IllegalAccessError error = new IllegalAccessError("access unlocked record! table=" + tableName + ",key=" + key);
+		current()._illegalException = error;
+		throw error;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -406,6 +414,8 @@ public final class SContext
 
 	void commit()
 	{
+		if (_illegalException != null)
+			throw new RuntimeException(_illegalException);
 		_onRollbacks.clear();
 
 		int n = _records.size();
@@ -476,6 +486,7 @@ public final class SContext
 			}
 		}
 		_onRollbacks.clear();
+		_illegalException = null;
 		_hasDirty = false;
 	}
 }
