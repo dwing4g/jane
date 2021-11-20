@@ -6,7 +6,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import jane.core.map.LongMap;
 
-public final class LongConcurrentHashMapWrap<V> extends LongMap<V>
+public final class LongConcurrentHashMapWrap<V> implements LongMap<V>
 {
 	private final ConcurrentHashMap<Long, V> map;
 

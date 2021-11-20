@@ -14,8 +14,9 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
+import sun.misc.Unsafe;
 
-public final class LongConcurrentHashMap<V> extends LongMap<V>
+public final class LongConcurrentHashMap<V> implements LongMap<V>
 {
 	/**
 	 * The largest possible table capacity.  This value must be
@@ -1349,14 +1350,14 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	}
 
 	// Unsafe mechanics
-	private static final sun.misc.Unsafe U;
-	private static final long			 SIZECTL;
-	private static final long			 TRANSFERINDEX;
-	private static final long			 BASECOUNT;
-	private static final long			 CELLSBUSY;
-	private static final long			 CELLVALUE;
-	private static final long			 ABASE;
-	private static final int			 ASHIFT;
+	private static final Unsafe	U;
+	private static final long	SIZECTL;
+	private static final long	TRANSFERINDEX;
+	private static final long	BASECOUNT;
+	private static final long	CELLSBUSY;
+	private static final long	CELLVALUE;
+	private static final long	ABASE;
+	private static final int	ASHIFT;
 
 	/**
 	 * Returns a sun.misc.Unsafe.  Suitable for use in a 3rd party package.
@@ -1364,20 +1365,20 @@ public final class LongConcurrentHashMap<V> extends LongMap<V>
 	 *
 	 * @return a sun.misc.Unsafe
 	 */
-	private static sun.misc.Unsafe getUnsafe()
+	private static Unsafe getUnsafe()
 	{
 		try
 		{
-			return sun.misc.Unsafe.getUnsafe();
+			return Unsafe.getUnsafe();
 		}
 		catch (SecurityException ignored)
 		{
 		}
 		try
 		{
-			return AccessController.doPrivileged((PrivilegedExceptionAction<sun.misc.Unsafe>)() ->
+			return AccessController.doPrivileged((PrivilegedExceptionAction<Unsafe>)() ->
 			{
-				Class<sun.misc.Unsafe> k = sun.misc.Unsafe.class;
+				Class<Unsafe> k = Unsafe.class;
 				for (Field f : k.getDeclaredFields())
 				{
 					f.setAccessible(true);

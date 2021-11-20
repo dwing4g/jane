@@ -28,11 +28,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import jane.core.Log;
 
 /**
- * A LRU cache implementation based upon ConcurrentHashMap and other techniques to reduce
+ * An LRU cache implementation based upon ConcurrentHashMap and other techniques to reduce
  * contention and synchronization overhead to utilize multiple CPU cores more effectively.
  * <p/>
  * Note that the implementation does not follow a true LRU (least-recently-used) eviction strategy.
- * Instead it strives to remove least recently used items but when the initial cleanup does not remove enough items
+ * Instead, it strives to remove least recently used items but when the initial cleanup does not remove enough items
  * to reach the 'acceptSize' limit, it can remove more items forcefully regardless of access order.
  *
  * MapDB note: Original comes from:

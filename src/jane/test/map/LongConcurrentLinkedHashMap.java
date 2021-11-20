@@ -33,7 +33,7 @@ import jane.test.map.ConcurrentLinkedHashMap.WeightedValue;
  * @see ConcurrentLinkedHashMap
  */
 // @ThreadSafe
-public final class LongConcurrentLinkedHashMap<V> extends LongMap<V> {
+public final class LongConcurrentLinkedHashMap<V> implements LongMap<V> {
   // The backing data store holding the key-value associations
   private final LongConcurrentHashMap<Node<V>> data;
 
