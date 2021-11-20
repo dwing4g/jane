@@ -6,6 +6,7 @@
     <exclude-output />
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/unittest" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/bin" />
       <excludeFolder url="file://$MODULE_DIR$/classes" />
       <excludeFolder url="file://$MODULE_DIR$/db" />
@@ -28,6 +29,17 @@
           <root url="jar://$MODULE_DIR$/lib/logback-classic-1.2.6-sources.jar!/" />
           <root url="jar://$MODULE_DIR$/lib/logback-core-1.2.6-sources.jar!/" />
           <root url="jar://$MODULE_DIR$/lib/slf4j-api-1.7.32-sources.jar!/" />
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" scope="TEST">
+      <library name="libs_test">
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/lib/junit-4.4.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/lib/junit-4.4-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
