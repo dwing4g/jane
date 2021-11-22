@@ -672,23 +672,7 @@ public abstract class Procedure implements Runnable
 	 */
 	protected final void lock(int... lockIds) throws InterruptedException
 	{
-		int n = lockIds.length;
-		for (int i = 0; i < n; ++i)
-			lockIds[i] &= _lockMask;
-		Arrays.sort(lockIds);
-		unlock();
-		ProcThread pt = _pt;
-		IndexLock[] locks = pt.locks;
-		for (int i = 0, j = 0, lastIdx = -1; i < n; ++i)
-		{
-			int lockIdx = lockIds[i];
-			if (lockIdx != lastIdx)
-			{
-				lastIdx = lockIdx;
-				(locks[j] = getLock(lockIdx)).lockInterruptibly();
-				pt.lockCount = ++j;
-			}
-		}
+		lock(lockIds, lockIds.length);
 	}
 
 	/**
