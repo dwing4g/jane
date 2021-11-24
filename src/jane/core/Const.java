@@ -12,68 +12,60 @@ import java.util.Properties;
  * <p>
  * 每项配置及说明见jane.properties的注释
  */
-public final class Const
-{
-	public static final long   startupTime = System.currentTimeMillis();
-	public static final int	   connectTimeout;
-	public static final int	   closeOnFlushTimeout;
-	public static final int	   askCheckInterval;
-	public static final int	   askDefaultTimeout;
-	public static final int	   beanDefaultMaxSize;
-	public static final int	   httpHeadMaxSize;
-	public static final int	   httpBodyDefaultMaxSize;
+public final class Const {
+	public static final long startupTime = System.currentTimeMillis();
+	public static final int connectTimeout;
+	public static final int closeOnFlushTimeout;
+	public static final int askCheckInterval;
+	public static final int askDefaultTimeout;
+	public static final int beanDefaultMaxSize;
+	public static final int httpHeadMaxSize;
+	public static final int httpBodyDefaultMaxSize;
 	public static final String dbFilename;
 	public static final String dbBackupPath;
-	public static final int	   dbThreadCount;
-	public static final int	   deadlockCheckInterval;
-	public static final int	   maxSessionProcedure;
-	public static final int	   maxBatchProceduer;
-	public static final int	   maxProceduerRedo;
-	public static final int	   lockPoolSize;
-	public static final int	   maxLockPerProcedure;
-	public static final int	   dbSimpleCacheSize;
-	public static final int	   dbCommitResaveCount;
-	public static final int	   dbCommitModCount;
-	public static final long   dbCommitPeriod;
+	public static final int dbThreadCount;
+	public static final int deadlockCheckInterval;
+	public static final int maxSessionProcedure;
+	public static final int maxBatchProceduer;
+	public static final int maxProceduerRedo;
+	public static final int lockPoolSize;
+	public static final int maxLockPerProcedure;
+	public static final int dbSimpleCacheSize;
+	public static final int dbCommitResaveCount;
+	public static final int dbCommitModCount;
+	public static final long dbCommitPeriod;
 	public static final String dbBackupBase;
-	public static final long   dbBackupPeriod;
-	public static final int	   procedureTimeout;
-	public static final int	   procedureDeadlockTimeout;
-	public static final int	   procedureShutdownTimeout;
-	public static final int	   procedureShutdownNowTimeout;
-	public static final int	   autoIdBegin;
-	public static final int	   autoIdStride;
+	public static final long dbBackupPeriod;
+	public static final int procedureTimeout;
+	public static final int procedureDeadlockTimeout;
+	public static final int procedureShutdownTimeout;
+	public static final int procedureShutdownNowTimeout;
+	public static final int autoIdBegin;
+	public static final int autoIdStride;
 	public static final String levelDBNativePath;
-	public static final int	   levelDBWriteBufferSize;
-	public static final int	   levelDBMaxOpenFiles;
-	public static final int	   levelDBCacheSize;
-	public static final int	   levelDBFileSize;
-	public static final long   levelDBFullBackupPeriod;
+	public static final int levelDBWriteBufferSize;
+	public static final int levelDBMaxOpenFiles;
+	public static final int levelDBCacheSize;
+	public static final int levelDBFileSize;
+	public static final long levelDBFullBackupPeriod;
 
-	static
-	{
+	static {
 		String janeProp = System.getProperty("jane.prop");
 		boolean hasJainProp = (janeProp != null && !(janeProp = janeProp.trim()).isEmpty());
 		if (!hasJainProp)
 			janeProp = "jane.properties";
-		try (InputStream isProp = (new File(janeProp).exists() ? new FileInputStream(janeProp) : Util.createStreamInJar(Const.class, janeProp)))
-		{
-			if (isProp != null)
-			{
+		try (InputStream isProp = (new File(janeProp).exists() ? new FileInputStream(janeProp) : Util.createStreamInJar(Const.class, janeProp))) {
+			if (isProp != null) {
 				Log.info("{}: load {} in {}", Const.class.getName(), janeProp, isProp.getClass().getSimpleName());
 				Properties props = new Properties();
 				props.load(isProp);
-				for (Entry<Object, Object> e : props.entrySet())
-				{
+				for (Entry<Object, Object> e : props.entrySet()) {
 					String k = String.valueOf(e.getKey());
 					System.setProperty(k.startsWith("jane.") ? k : "jane." + k, String.valueOf(e.getValue()));
 				}
-			}
-			else if (hasJainProp)
+			} else if (hasJainProp)
 				throw new FileNotFoundException();
-		}
-		catch (Exception e)
-		{
+		} catch (Exception e) {
 			Log.error(e, "{}: load {} failed", Const.class.getName(), janeProp);
 		}
 
@@ -113,31 +105,26 @@ public final class Const
 		levelDBFullBackupPeriod = getPropLong("jane.levelDBFullBackupPeriod", 604800, 1);
 	}
 
-	public static int getPropInt(String key, int def, int min)
-	{
+	public static int getPropInt(String key, int def, int min) {
 		int r = Integer.getInteger(key, def);
 		return r < min ? min : r;
 	}
 
-	public static int getPropInt(String key, int def, int min, int max)
-	{
+	public static int getPropInt(String key, int def, int min, int max) {
 		int r = Integer.getInteger(key, def);
 		return r < min ? min : (r > max ? max : r);
 	}
 
-	public static long getPropLong(String key, long def, long min)
-	{
+	public static long getPropLong(String key, long def, long min) {
 		long r = Long.getLong(key, def);
 		return r < min ? min : r;
 	}
 
-	public static long getPropLong(String key, long def, long min, long max)
-	{
+	public static long getPropLong(String key, long def, long min, long max) {
 		long r = Long.getLong(key, def);
 		return r < min ? min : (r > max ? max : r);
 	}
 
-	private Const()
-	{
+	private Const() {
 	}
 }

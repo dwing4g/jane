@@ -35,37 +35,34 @@ import org.apache.mina.filter.ssl.SslFilter;
  * 输出处理: 固定长度输出,chunked方式输出<br>
  * 不直接支持: mime, Connection:close/timeout, Accept-Encoding, Set-Cookie, Multi-Part, encodeUrl
  */
-public final class HttpCodec implements IoFilter
-{
-	private static final SundaySearch SS_CONT_CHUNK		= new SundaySearch("\nTransfer-Encoding: chunked");
-	private static final SundaySearch SS_CONT_LEN		= new SundaySearch("\nContent-Length: ");
-	private static final SundaySearch SS_CONT_TYPE		= new SundaySearch("\nContent-Type: ");
-	private static final SundaySearch SS_COOKIE			= new SundaySearch("\nCookie: ");
-	private static final byte[]		  RES_HEAD_OK		= "HTTP/1.1 200 OK".getBytes(StandardCharsets.ISO_8859_1);
-	private static final byte[]		  RES_HEAD_CONT_LEN	= "\r\nContent-Length: ".getBytes(StandardCharsets.ISO_8859_1);
-	private static final byte[]		  RES_HEAD_CHUNKED	= "\r\nTransfer-Encoding: chunked".getBytes(StandardCharsets.ISO_8859_1);
-	private static final byte[]		  RES_HEAD_END		= "\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1);
-	private static final byte[]		  RES_CHUNK_END		= "0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1);
-	private static final byte[]		  HEX				= { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
-	private static final String		  DEF_CONT_CHARSET	= "utf-8";
-	private static final Pattern	  PATTERN_COOKIE	= Pattern.compile("(\\w+)=(.*?)(; |$)");
-	private static final Pattern	  PATTERN_CHARSET	= Pattern.compile("charset=([\\w-]+)");
-	private static final ZoneId		  ZONE_ID			= ZoneId.of("GMT");
-	private static byte[]			  _dateLine;
-	private static long				  _lastSec;
+public final class HttpCodec implements IoFilter {
+	private static final SundaySearch SS_CONT_CHUNK = new SundaySearch("\nTransfer-Encoding: chunked");
+	private static final SundaySearch SS_CONT_LEN = new SundaySearch("\nContent-Length: ");
+	private static final SundaySearch SS_CONT_TYPE = new SundaySearch("\nContent-Type: ");
+	private static final SundaySearch SS_COOKIE = new SundaySearch("\nCookie: ");
+	private static final byte[] RES_HEAD_OK = "HTTP/1.1 200 OK".getBytes(StandardCharsets.ISO_8859_1);
+	private static final byte[] RES_HEAD_CONT_LEN = "\r\nContent-Length: ".getBytes(StandardCharsets.ISO_8859_1);
+	private static final byte[] RES_HEAD_CHUNKED = "\r\nTransfer-Encoding: chunked".getBytes(StandardCharsets.ISO_8859_1);
+	private static final byte[] RES_HEAD_END = "\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1);
+	private static final byte[] RES_CHUNK_END = "0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1);
+	private static final byte[] HEX = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+	private static final String DEF_CONT_CHARSET = "utf-8";
+	private static final Pattern PATTERN_COOKIE = Pattern.compile("(\\w+)=(.*?)(; |$)");
+	private static final Pattern PATTERN_CHARSET = Pattern.compile("charset=([\\w-]+)");
+	private static final ZoneId ZONE_ID = ZoneId.of("GMT");
+	private static byte[] _dateLine;
+	private static long _lastSec;
 
-	private final int		   _maxHttpBodySize;				// body大小限制,超过则抛异常. 0表示不接受body; <0表示分片获取HTTP请求
-	private final OctetsStream _buf	= new OctetsStreamEx(1024);	// 用于解码器的数据缓存
-	private int				   _state;							// 0:head; 1:body/chunkBody; 2:chunkPreSize; 3:chunkSize; 4:chunkPostSize;
-	private int				   _bodyLeft;						// 当前数据部分所需的剩余大小
-	private int				   _skipLeft;						// chunked模式时当前需要跳过的剩余大小
+	private final int _maxHttpBodySize; // body大小限制,超过则抛异常. 0表示不接受body; <0表示分片获取HTTP请求
+	private final OctetsStream _buf = new OctetsStreamEx(1024); // 用于解码器的数据缓存
+	private int _state; // 0:head; 1:body/chunkBody; 2:chunkPreSize; 3:chunkSize; 4:chunkPostSize;
+	private int _bodyLeft; // 当前数据部分所需的剩余大小
+	private int _skipLeft; // chunked模式时当前需要跳过的剩余大小
 
-	public static byte[] getDateLine()
-	{
+	public static byte[] getDateLine() {
 		long sec = NetManager.getTimeSec();
 		byte[] dateLine;
-		if (sec != _lastSec || (dateLine = _dateLine) == null)
-		{
+		if (sec != _lastSec || (dateLine = _dateLine) == null) {
 			_lastSec = sec;
 			_dateLine = dateLine = ("\r\nDate: " + DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.of(
 					LocalDateTime.ofEpochSecond(sec, 0, ZoneOffset.UTC), ZONE_ID))).getBytes(StandardCharsets.ISO_8859_1);
@@ -73,8 +70,7 @@ public final class HttpCodec implements IoFilter
 		return dateLine;
 	}
 
-	public static SslFilter getSslFilter(InputStream keyIs, char[] keyPw, InputStream trustIs, char[] trustPw) throws Exception
-	{
+	public static SslFilter getSslFilter(InputStream keyIs, char[] keyPw, InputStream trustIs, char[] trustPw) throws Exception {
 		KeyStore ks = KeyStore.getInstance("JKS");
 		ks.load(keyIs, keyPw);
 		KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
@@ -90,15 +86,13 @@ public final class HttpCodec implements IoFilter
 		return new SslFilter(ctx);
 	}
 
-	public static SslFilter getSslFilter(String keyFile, String keyPw) throws Exception
-	{
+	public static SslFilter getSslFilter(String keyFile, String keyPw) throws Exception {
 		byte[] key = Util.readFileData(keyFile);
 		char[] pw = keyPw.toCharArray();
 		return getSslFilter(new ByteArrayInputStream(key), pw, new ByteArrayInputStream(key), pw);
 	}
 
-	public static String decodeUrl(byte[] src, int srcPos, int srcLen)
-	{
+	public static String decodeUrl(byte[] src, int srcPos, int srcLen) {
 		if (srcPos < 0)
 			srcPos = 0;
 		if (srcPos + srcLen > src.length)
@@ -107,8 +101,7 @@ public final class HttpCodec implements IoFilter
 			return "";
 
 		int p = srcPos, e = srcPos + srcLen;
-		for (; p < e; ++p)
-		{
+		for (; p < e; ++p) {
 			byte b = src[p];
 			if (b == '%' || b == '+')
 				break;
@@ -119,17 +112,14 @@ public final class HttpCodec implements IoFilter
 		byte[] dst = new byte[srcLen];
 		int q = p - srcPos;
 		System.arraycopy(src, srcPos, dst, 0, q);
-		while (p < e)
-		{
+		while (p < e) {
 			int b = src[p++];
-			switch (b)
-			{
+			switch (b) {
 			case '+':
 				dst[q++] = (byte)' ';
 				break;
 			case '%':
-				if (p + 1 < e)
-				{
+				if (p + 1 < e) {
 					b = src[p++];
 					int v = (b < 'A' ? b - '0' : b - 'A' + 10) << 4;
 					b = src[p++];
@@ -145,28 +135,24 @@ public final class HttpCodec implements IoFilter
 		return new String(dst, 0, q, StandardCharsets.UTF_8);
 	}
 
-	public static String getHeadLine(OctetsStream head)
-	{
+	public static String getHeadLine(OctetsStream head) {
 		int p = head.find(0, head.position(), (byte)'\r');
 		return p < 0 ? "" : new String(head.array(), 0, p, StandardCharsets.UTF_8);
 	}
 
-	public static String getHeadVerb(OctetsStream head)
-	{
+	public static String getHeadVerb(OctetsStream head) {
 		int p = head.find(0, head.position(), (byte)' ');
 		return p < 0 ? "" : new String(head.array(), 0, p, StandardCharsets.UTF_8);
 	}
 
 	// GET /path/name.html?k=v&a=b HTTP/1.1
-	public static String getHeadPath(OctetsStream head)
-	{
+	public static String getHeadPath(OctetsStream head) {
 		byte[] buf = head.array();
 		int p, q, e = head.position();
-		for (p = 0; p < e;)
+		for (p = 0; p < e; )
 			if (buf[p++] == ' ')
 				break;
-		for (q = p; q < e; ++q)
-		{
+		for (q = p; q < e; ++q) {
 			byte b = buf[q];
 			if (b == ' ' || b == '?')
 				break;
@@ -174,11 +160,10 @@ public final class HttpCodec implements IoFilter
 		return decodeUrl(buf, p, q - p);
 	}
 
-	public static String getHeadPathParams(OctetsStream head)
-	{
+	public static String getHeadPathParams(OctetsStream head) {
 		byte[] buf = head.array();
 		int p, q, e = head.position();
-		for (p = 0; p < e;)
+		for (p = 0; p < e; )
 			if (buf[p++] == ' ')
 				break;
 		for (q = p; q < e; ++q)
@@ -187,11 +172,8 @@ public final class HttpCodec implements IoFilter
 		return decodeUrl(buf, p, q - p);
 	}
 
-	/**
-	 * @return 获取的参数数量
-	 */
-	public static int getParams(Octets oct, int pos, int len, Map<String, String> params)
-	{
+	/** @return 获取的参数数量 */
+	public static int getParams(Octets oct, int pos, int len, Map<String, String> params) {
 		byte[] buf = oct.array();
 		if (pos < 0)
 			pos = 0;
@@ -201,29 +183,23 @@ public final class HttpCodec implements IoFilter
 			return 0;
 		int end = pos + len;
 		int n = 0;
-		for (int p; pos < end; pos = p + 1, ++n)
-		{
+		for (int p; pos < end; pos = p + 1, ++n) {
 			p = oct.find(pos, end, (byte)'&');
 			if (p < 0)
 				p = end;
 			int r = oct.find(pos, p, (byte)'=');
-			if (r >= pos)
-			{
+			if (r >= pos) {
 				String k = decodeUrl(buf, pos, r - pos);
 				String v = decodeUrl(buf, r + 1, p - r - 1);
 				params.put(k, v);
-			}
-			else
+			} else
 				params.put(decodeUrl(buf, pos, p - pos), "");
 		}
 		return n;
 	}
 
-	/**
-	 * @return 获取的参数数量
-	 */
-	public static int getHeadParams(Octets oct, int pos, int len, Map<String, String> params)
-	{
+	/** @return 获取的参数数量 */
+	public static int getHeadParams(Octets oct, int pos, int len, Map<String, String> params) {
 		byte[] buf = oct.array();
 		if (pos < 0)
 			pos = 0;
@@ -244,13 +220,11 @@ public final class HttpCodec implements IoFilter
 		return getParams(oct, p, q - p, params);
 	}
 
-	public static int getHeadParams(OctetsStream os, Map<String, String> params)
-	{
+	public static int getHeadParams(OctetsStream os, Map<String, String> params) {
 		return getHeadParams(os, 0, os.position(), params);
 	}
 
-	public static int getBodyParams(OctetsStream os, Map<String, String> params)
-	{
+	public static int getBodyParams(OctetsStream os, Map<String, String> params) {
 		return getParams(os, os.position(), os.remain(), params);
 	}
 
@@ -258,27 +232,24 @@ public final class HttpCodec implements IoFilter
 	 * 获取HTTP请求头中long值的field
 	 * <p>
 	 * 注意: 重复的field-key只有第一个生效
+	 *
 	 * @param key 格式示例: "\nReferer: ".getBytes()
 	 */
-	public static long getHeadLong(OctetsStream head, byte[] key)
-	{
+	public static long getHeadLong(OctetsStream head, byte[] key) {
 		int p = head.find(15, head.position() - 5, key);
 		return p >= 0 ? getHeadLongValue(head, p + key.length) : -1;
 	}
 
-	public static long getHeadLong(OctetsStream head, SundaySearch ss)
-	{
+	public static long getHeadLong(OctetsStream head, SundaySearch ss) {
 		int p = ss.find(head.array(), 15, head.position() - 19);
 		return p >= 0 ? getHeadLongValue(head, p + ss.getPatLen()) : -1;
 	}
 
-	public static long getHeadLong(OctetsStream head, String key)
-	{
+	public static long getHeadLong(OctetsStream head, String key) {
 		return getHeadLong(head, ('\n' + key + ": ").getBytes(StandardCharsets.UTF_8));
 	}
 
-	private static long getHeadLongValue(OctetsStream head, int pos)
-	{
+	private static long getHeadLongValue(OctetsStream head, int pos) {
 		int e = head.find(pos, (byte)'\r');
 		if (e < 0)
 			return -1;
@@ -288,8 +259,7 @@ public final class HttpCodec implements IoFilter
 		return r;
 	}
 
-	private static int getUIntLen(long value)
-	{
+	private static int getUIntLen(long value) {
 		int n;
 		if (value >= 1_000_000_000_000_000_000L) // 0x7fff_ffff_ffff_ffff = 9,223,372,036,854,775,807
 			return 19;
@@ -299,29 +269,25 @@ public final class HttpCodec implements IoFilter
 		return n;
 	}
 
-	private static void appendUInt(Octets buf, long value)
-	{
+	private static void appendUInt(Octets buf, long value) {
 		int n = buf.size() + getUIntLen(value);
 		buf.resize(n);
 		byte[] b = buf.array();
-		do
-		{
+		do {
 			b[--n] = (byte)('0' + value % 10);
 			value /= 10;
 		}
 		while (value > 0);
 	}
 
-	private static IoBuffer createHexLine(int value)
-	{
+	private static IoBuffer createHexLine(int value) {
 		int bytes = (67 - Long.numberOfLeadingZeros(value)) >> 2;
 		if (bytes == 0)
 			bytes = 1;
 		byte[] buf = new byte[bytes + 2];
 		buf[bytes] = '\r';
 		buf[bytes + 1] = '\n';
-		do
-		{
+		do {
 			buf[--bytes] = HEX[value & 15];
 			value >>= 4;
 		}
@@ -333,33 +299,29 @@ public final class HttpCodec implements IoFilter
 	 * 获取HTTP请求头中的field
 	 * <p>
 	 * 注意: 重复的field-key只有第一个生效
+	 *
 	 * @param key 格式示例: "\nReferer: ".getBytes()
 	 */
-	public static String getHeadField(OctetsStream head, byte[] key)
-	{
+	public static String getHeadField(OctetsStream head, byte[] key) {
 		int p = head.find(15, head.position() - 4, key);
 		return p >= 0 ? getHeadFieldValue(head, p + key.length) : "";
 	}
 
-	public static String getHeadField(OctetsStream head, SundaySearch ss)
-	{
+	public static String getHeadField(OctetsStream head, SundaySearch ss) {
 		int p = ss.find(head.array(), 15, head.position() - 19);
 		return p >= 0 ? getHeadFieldValue(head, p + ss.getPatLen()) : "";
 	}
 
-	public static String getHeadField(OctetsStream head, String key)
-	{
+	public static String getHeadField(OctetsStream head, String key) {
 		return getHeadField(head, ('\n' + key + ": ").getBytes(StandardCharsets.UTF_8));
 	}
 
-	private static String getHeadFieldValue(OctetsStream head, int pos)
-	{
+	private static String getHeadFieldValue(OctetsStream head, int pos) {
 		int e = head.find(pos, (byte)'\r');
 		return e >= pos ? decodeUrl(head.array(), pos, e - pos) : "";
 	}
 
-	public static String getHeadCharset(OctetsStream head)
-	{
+	public static String getHeadCharset(OctetsStream head) {
 		String conttype = getHeadField(head, SS_CONT_TYPE);
 		if (conttype.isEmpty())
 			return DEF_CONT_CHARSET; // default charset
@@ -371,10 +333,10 @@ public final class HttpCodec implements IoFilter
 	 * 获取HTTP请求头中的所有cookie键值
 	 * <p>
 	 * 注意: 不支持cookie值中含有"; "
+	 *
 	 * @return 获取的cookie数量
 	 */
-	public static int getHeadCookie(OctetsStream head, Map<String, String> cookies)
-	{
+	public static int getHeadCookie(OctetsStream head, Map<String, String> cookies) {
 		String cookie = getHeadField(head, SS_COOKIE);
 		if (cookie.isEmpty())
 			return 0;
@@ -387,10 +349,10 @@ public final class HttpCodec implements IoFilter
 
 	/**
 	 * 创建额外发送的HTTP头的缓冲区(除了首行HTTP状态,Date,Content-Length,Transfer-Encoding)
+	 *
 	 * @param heads 每个元素表示一行文字(不含换行符),没有做验证,所以小心使用,可传null表示无任何额外的头信息
 	 */
-	public static Octets createExtraHead(String... heads)
-	{
+	public static Octets createExtraHead(String... heads) {
 		Octets buf = new Octets();
 		if (heads != null)
 			for (String head : heads)
@@ -401,17 +363,16 @@ public final class HttpCodec implements IoFilter
 
 	/**
 	 * 发送HTTP的回复头和可选的数据部分
-	 * @param code 回复的HTTP状态码字符串. 如"404 Not Found";null表示"200 OK"
-	 * @param len
-	 * <li>len < 0: 使用chunked模式,后续发送若干个{@link #sendChunk},最后发送{@link #sendChunkEnd}
-	 * <li>len = 0: 由data参数的长度确定
-	 * <li>len > 0: 后续使用{@link #send}发送固定长度的数据
+	 *
+	 * @param code      回复的HTTP状态码字符串. 如"404 Not Found";null表示"200 OK"
+	 * @param len       <li>len < 0: 使用chunked模式,后续发送若干个{@link #sendChunk},最后发送{@link #sendChunkEnd}
+	 *                  <li>len = 0: 由data参数的长度确定
+	 *                  <li>len > 0: 后续使用{@link #send}发送固定长度的数据
 	 * @param extraHead 额外发送的HTTP头. 可通过{@link #createExtraHead}创建,可传null表示无任何额外的头信息
-	 * @param data HTTP回复数据的内容. 有效范围是remain部分,null表示无数据
+	 * @param data      HTTP回复数据的内容. 有效范围是remain部分,null表示无数据
 	 */
 	@SuppressWarnings("null")
-	public static boolean sendHead(IoSession session, String code, long len, Octets extraHead, Octets data)
-	{
+	public static boolean sendHead(IoSession session, String code, long len, Octets extraHead, Octets data) {
 		if (session.isClosing())
 			return false;
 		int dataLen = (data != null ? data.remain() : 0);
@@ -443,115 +404,91 @@ public final class HttpCodec implements IoFilter
 		return send(session, buf) && (dataLen <= APPEND_DATA_MAX || send(session, data));
 	}
 
-	public static boolean sendHead(IoSession session, String code, long len, Octets extraHead)
-	{
+	public static boolean sendHead(IoSession session, String code, long len, Octets extraHead) {
 		return sendHead(session, code, len, extraHead, (Octets)null);
 	}
 
-	public static boolean sendHead(IoSession session, String code, long len, Octets data, String... extraHead)
-	{
+	public static boolean sendHead(IoSession session, String code, long len, Octets data, String... extraHead) {
 		return sendHead(session, code, len, createExtraHead(extraHead), data);
 	}
 
-	public static boolean sendHead(IoSession session, String code, long len, String... extraHead)
-	{
+	public static boolean sendHead(IoSession session, String code, long len, String... extraHead) {
 		return sendHead(session, code, len, null, extraHead);
 	}
 
-	public static boolean send(IoSession session, byte[] data)
-	{
+	public static boolean send(IoSession session, byte[] data) {
 		return NetManager.write(session, data);
 	}
 
-	public static boolean send(IoSession session, Octets data)
-	{
+	public static boolean send(IoSession session, Octets data) {
 		return NetManager.write(session, data);
 	}
 
-	public static boolean sendChunk(IoSession session, byte[] chunk)
-	{
+	public static boolean sendChunk(IoSession session, byte[] chunk) {
 		int n = chunk.length;
 		return n <= 0 || NetManager.write(session, ByteBuffer.wrap(chunk, 0, n));
 	}
 
-	public static boolean sendChunk(IoSession session, Octets chunk)
-	{
+	public static boolean sendChunk(IoSession session, Octets chunk) {
 		int n = chunk.remain();
 		return n <= 0 || NetManager.write(session, ByteBuffer.wrap(chunk.array(), chunk.position(), n));
 	}
 
-	public static boolean sendChunk(IoSession session, String chunk)
-	{
+	public static boolean sendChunk(IoSession session, String chunk) {
 		return sendChunk(session, chunk.getBytes(StandardCharsets.UTF_8));
 	}
 
-	public static boolean sendChunkEnd(IoSession session)
-	{
+	public static boolean sendChunkEnd(IoSession session) {
 		return send(session, RES_CHUNK_END);
 	}
 
-	public HttpCodec()
-	{
+	public HttpCodec() {
 		this(Const.httpBodyDefaultMaxSize);
 	}
 
-	public HttpCodec(int maxHttpBodySize)
-	{
+	public HttpCodec(int maxHttpBodySize) {
 		_maxHttpBodySize = maxHttpBodySize;
 	}
 
-	public static void write(NextFilter next, IoBuffer buf) throws Exception
-	{
+	public static void write(NextFilter next, IoBuffer buf) throws Exception {
 		next.filterWrite(buf);
 	}
 
-	public static void write(NextFilter next, WriteRequest writeRequest, IoBuffer buf) throws Exception
-	{
+	public static void write(NextFilter next, WriteRequest writeRequest, IoBuffer buf) throws Exception {
 		WriteFuture wf = writeRequest.writeRequestFuture();
 		next.filterWrite(wf == DefaultWriteRequest.UNUSED_FUTURE ? buf : new DefaultWriteRequest(buf, wf));
 	}
 
 	@Override
-	public void filterWrite(NextFilter next, IoSession session, WriteRequest writeRequest) throws Exception
-	{
+	public void filterWrite(NextFilter next, IoSession session, WriteRequest writeRequest) throws Exception {
 		Object message = writeRequest.writeRequestMessage();
-		if (message instanceof Octets) // for raw data
-		{
+		if (message instanceof Octets) { // for raw data
 			Octets oct = (Octets)message;
 			int n = oct.remain();
 			if (n > 0)
 				write(next, writeRequest, IoBuffer.wrap(oct.array(), oct.position(), n));
-		}
-		else if (message instanceof byte[]) // for raw data
-		{
+		} else if (message instanceof byte[]) { // for raw data
 			byte[] bytes = (byte[])message;
 			if (bytes.length > 0)
 				write(next, writeRequest, IoBuffer.wrap(bytes));
-		}
-		else if (message instanceof ByteBuffer) // for chunked data
-		{
+		} else if (message instanceof ByteBuffer) { // for chunked data
 			ByteBuffer bb = (ByteBuffer)message;
 			write(next, createHexLine((bb).remaining()));
 			write(next, IoBuffer.wrap(bb));
 			write(next, writeRequest, IoBuffer.wrap(RES_HEAD_END, 0, 2));
-		}
-		else
+		} else
 			next.filterWrite(writeRequest);
 	}
 
 	@Override
-	public void messageReceived(NextFilter next, IoSession session, Object message) throws Exception
-	{
+	public void messageReceived(NextFilter next, IoSession session, Object message) throws Exception {
 		final IoBuffer inBuf = (IoBuffer)message;
 		int state = _state;
-		try
-		{
+		try {
 			final OctetsStream buf = _buf;
 			int n, inLeft = inBuf.remaining();
-			while (inLeft > 0)
-			{
-				switch (state)
-				{
+			while (inLeft > 0) {
+				switch (state) {
 				case 0: // head
 					final int oldSize = buf.size();
 					n = Math.min(inLeft, Const.httpHeadMaxSize - oldSize);
@@ -562,44 +499,34 @@ public final class HttpCodec implements IoFilter
 					inBuf.get(b, oldSize, n);
 					inLeft -= n;
 					n += oldSize;
-					for (int i = Math.max(17, oldSize); i < n; i += 4) // minimum head: "GET / HTTP/1.1\r\n\r\n".length = 18
-					{
+					for (int i = Math.max(17, oldSize); i < n; i += 4) { // minimum head: "GET / HTTP/1.1\r\n\r\n".length = 18
 						final int c = b[i];
-						if (c == '\n') // not strict check but enough
-						{
+						if (c == '\n') { // not strict check but enough
 							if (b[i - 2] == '\n')
 								i++;
-							else
-							{
+							else {
 								if (i + 2 >= n || b[i + 2] != '\n')
 									continue;
 								i += 3;
 							}
-						}
-						else if (c == '\r')
-						{
+						} else if (c == '\r') {
 							if (b[i - 1] == '\n')
 								i += 2;
-							else
-							{
+							else {
 								if (i + 3 >= n || b[i + 3] != '\n')
 									continue;
 								i += 4;
 							}
-						}
-						else
+						} else
 							continue;
 						buf.setPosition(i);
-						if (SS_CONT_CHUNK.find(b, 15, i - 19) < 0) // empty or fix-sized body
-						{
+						if (SS_CONT_CHUNK.find(b, 15, i - 19) < 0) { // empty or fix-sized body
 							final long n2 = getHeadLong(buf, SS_CONT_LEN);
 							if (n2 > _maxHttpBodySize)
 								throw new DecodeException("http body size overflow: bodysize=" + n2 + ",maxsize=" + _maxHttpBodySize);
 							final int left = i + (n2 > 0 ? (int)n2 : 0) - n;
-							if (left <= 0)
-							{
-								if (left < 0) // unlikely over read
-								{
+							if (left <= 0) {
+								if (left < 0) { // unlikely over read
 									buf.resize(n + left);
 									inBuf.position(inBuf.position() + left);
 									inLeft -= left;
@@ -608,22 +535,17 @@ public final class HttpCodec implements IoFilter
 								buf.clear();
 								if (_maxHttpBodySize < 0)
 									next.messageReceived(null);
-							}
-							else
-							{
+							} else {
 								_bodyLeft = left;
 								state = 1; // to read body
 							}
-						}
-						else // chunked body
-						{
+						} else { // chunked body
 							n -= i;
 							buf.resize(i);
 							inBuf.position(inBuf.position() - n);
 							inLeft += n;
 							state = 3; // to read chunk size
-							if (_maxHttpBodySize < 0)
-							{
+							if (_maxHttpBodySize < 0) {
 								next.messageReceived(buf);
 								buf.clear();
 								buf.setPosition(0);
@@ -638,8 +560,7 @@ public final class HttpCodec implements IoFilter
 					buf.resize(i + n);
 					inBuf.get(buf.array(), i, n);
 					inLeft -= n;
-					if ((_bodyLeft -= n) <= 0 && (state = _skipLeft) == 0 || _maxHttpBodySize < 0)
-					{
+					if ((_bodyLeft -= n) <= 0 && (state = _skipLeft) == 0 || _maxHttpBodySize < 0) {
 						next.messageReceived(buf);
 						buf.clear();
 						buf.setPosition(0);
@@ -651,8 +572,7 @@ public final class HttpCodec implements IoFilter
 					n = Math.min(inLeft, _skipLeft);
 					inBuf.skip(n);
 					inLeft -= n;
-					if (_skipLeft > n)
-					{
+					if (_skipLeft > n) {
 						_skipLeft -= n;
 						return; // inLeft must be 0
 					}
@@ -661,12 +581,10 @@ public final class HttpCodec implements IoFilter
 						return;
 					//$FALL-THROUGH$
 				case 3: // chunkSize
-					for (;;)
-					{
+					for (; ; ) {
 						--inLeft;
 						final byte c = inBuf.get();
-						if (c < (byte)'0')
-						{
+						if (c < (byte)'0') {
 							if (buf.remain() + (_bodyLeft & 0xffff_ffffL) > _maxHttpBodySize)
 								throw new DecodeException(
 										"http body size overflow: bodysize=" + buf.remain() + '+' + _bodyLeft + ",maxsize=" + _maxHttpBodySize);
@@ -687,27 +605,21 @@ public final class HttpCodec implements IoFilter
 					inLeft -= n;
 					if (_skipLeft > n)
 						_skipLeft -= n;
-					else if (_bodyLeft <= 0) // end mark
-					{
+					else if (_bodyLeft <= 0) { // end mark
 						_skipLeft = state = 0;
-						if (buf.size() > 0)
-						{
+						if (buf.size() > 0) {
 							next.messageReceived(buf);
 							buf.clear();
 						}
 						if (_maxHttpBodySize < 0)
 							next.messageReceived(null);
-					}
-					else
-					{
+					} else {
 						state = 1; // to read chunk body
 						_skipLeft = 2; // next state & pre size("\r\n")
 					}
 				}
 			}
-		}
-		finally
-		{
+		} finally {
 			_state = state;
 			inBuf.free();
 		}

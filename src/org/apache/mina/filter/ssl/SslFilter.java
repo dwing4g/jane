@@ -139,7 +139,7 @@ public final class SslFilter implements IoFilter {
 	 * the handshake will start immediately after the filter has been added to the chain.
 	 *
 	 * @param sslContext The SSLContext to use
-	 * @param autoStart The flag used to tell the filter to start the handshake immediately
+	 * @param autoStart  The flag used to tell the filter to start the handshake immediately
 	 */
 	public SslFilter(SSLContext sslContext, boolean autoStart) {
 		if (sslContext == null)
@@ -172,8 +172,8 @@ public final class SslFilter implements IoFilter {
 	/**
 	 * @param session the session we want to check
 	 * @return <tt>true</tt> if and only if the specified <tt>session</tt> is encrypted/decrypted over SSL/TLS currently.
-	 * This method will start to return <tt>false</tt> after TLS <tt>close_notify</tt> message is sent
-	 * and any messages written after then is not going to get encrypted.
+	 * 		This method will start to return <tt>false</tt> after TLS <tt>close_notify</tt> message is sent
+	 * 		and any messages written after then is not going to get encrypted.
 	 */
 	public static boolean isSslStarted(IoSession session) {
 		SslHandler sslHandler = (SslHandler)session.getAttribute(SSL_HANDLER);
@@ -199,9 +199,7 @@ public final class SslFilter implements IoFilter {
 		}
 	}
 
-	/**
-	 * @return <tt>true</tt> if the engine is set to use client mode when handshaking.
-	 */
+	/** @return <tt>true</tt> if the engine is set to use client mode when handshaking. */
 	public boolean isUseClientMode() {
 		return client;
 	}
@@ -217,7 +215,7 @@ public final class SslFilter implements IoFilter {
 
 	/**
 	 * @return <tt>true</tt> if the engine will <em>require</em> client authentication.
-	 * This option is only useful to engines in the server mode.
+	 * 		This option is only useful to engines in the server mode.
 	 */
 	public boolean isNeedClientAuth() {
 		return needClientAuth;
@@ -235,7 +233,7 @@ public final class SslFilter implements IoFilter {
 
 	/**
 	 * @return <tt>true</tt> if the engine will <em>request</em> client authentication.
-	 * This option is only useful to engines in the server mode.
+	 * 		This option is only useful to engines in the server mode.
 	 */
 	public boolean isWantClientAuth() {
 		return wantClientAuth;
@@ -253,7 +251,7 @@ public final class SslFilter implements IoFilter {
 
 	/**
 	 * @return the list of cipher suites to be enabled when {@link SSLEngine} is initialized.
-	 * <tt>null</tt> means 'use {@link SSLEngine}'s default.'
+	 * 		<tt>null</tt> means 'use {@link SSLEngine}'s default.'
 	 */
 	public String[] getEnabledCipherSuites() {
 		return enabledCipherSuites;
@@ -270,7 +268,7 @@ public final class SslFilter implements IoFilter {
 
 	/**
 	 * @return the list of protocols to be enabled when {@link SSLEngine} is initialized.
-	 * <tt>null</tt> means 'use {@link SSLEngine}'s default.'
+	 * 		<tt>null</tt> means 'use {@link SSLEngine}'s default.'
 	 */
 	public String[] getEnabledProtocols() {
 		return enabledProtocols;
@@ -589,9 +587,7 @@ public final class SslFilter implements IoFilter {
 		return sslHandler;
 	}
 
-	/**
-	 * A message that is sent from {@link SslFilter} when the connection became secure or is not secure anymore.
-	 */
+	/** A message that is sent from {@link SslFilter} when the connection became secure or is not secure anymore. */
 	public static final class SslFilterMessage {
 		private final String message;
 

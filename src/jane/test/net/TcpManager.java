@@ -21,184 +21,137 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <p>
  * 所有公开方法都不会抛出异常(除了有throws标识的), 异常统一由onException处理
  */
-public class TcpManager implements Closeable
-{
-	public static final int						  DEF_TCP_THREAD_COUNT = Runtime.getRuntime().availableProcessors() * 2;
+public class TcpManager implements Closeable {
+	public static final int DEF_TCP_THREAD_COUNT = Runtime.getRuntime().availableProcessors() * 2;
 	private static final AsynchronousChannelGroup _defGroup;
 
-	private AsynchronousServerSocketChannel	  _acceptor;
-	private final Map<TcpSession, TcpSession> _sessions		  = new ConcurrentHashMap<>();
-	private final AcceptHandler				  _acceptHandler  = new AcceptHandler();
-	private final ConnectHandler			  _connectHandler = new ConnectHandler();
-	protected boolean						  _enableOnSend;
+	private AsynchronousServerSocketChannel _acceptor;
+	private final Map<TcpSession, TcpSession> _sessions = new ConcurrentHashMap<>();
+	private final AcceptHandler _acceptHandler = new AcceptHandler();
+	private final ConnectHandler _connectHandler = new ConnectHandler();
+	protected boolean _enableOnSend;
 
-	static
-	{
-		try
-		{
+	static {
+		try {
 			AtomicInteger counter = new AtomicInteger();
-			_defGroup = AsynchronousChannelGroup.withFixedThreadPool(DEF_TCP_THREAD_COUNT, r ->
-			{
+			_defGroup = AsynchronousChannelGroup.withFixedThreadPool(DEF_TCP_THREAD_COUNT, r -> {
 				Thread t = new Thread(r, "TcpManager-" + counter.incrementAndGet());
 				t.setDaemon(true);
 				return t;
 			});
-		}
-		catch (IOException e)
-		{
+		} catch (IOException e) {
 			throw new Error(e);
 		}
 	}
 
-	public synchronized void startServer(SocketAddress addr, Object attachment, AsynchronousChannelGroup group)
-	{
+	public synchronized void startServer(SocketAddress addr, Object attachment, AsynchronousChannelGroup group) {
 		stopServer();
-		try
-		{
+		try {
 			_acceptor = AsynchronousServerSocketChannel.open(group);
 			int backlog = onAcceptorCreated(_acceptor, attachment);
-			if (backlog >= 0)
-			{
+			if (backlog >= 0) {
 				_acceptor.bind(addr, backlog);
 				beginAccept();
 				return;
 			}
-		}
-		catch (Throwable e)
-		{
+		} catch (Throwable e) {
 			doException(null, e);
 		}
 		stopServer();
 	}
 
-	public void startServer(SocketAddress addr)
-	{
+	public void startServer(SocketAddress addr) {
 		startServer(addr, null, _defGroup);
 	}
 
-	public void startServer(int port)
-	{
+	public void startServer(int port) {
 		startServer(new InetSocketAddress(port));
 	}
 
-	/**
-	 * 停止服务器监听. 但不断开已建立的连接
-	 */
-	public synchronized void stopServer()
-	{
+	/** 停止服务器监听. 但不断开已建立的连接 */
+	public synchronized void stopServer() {
 		AsynchronousServerSocketChannel acceptor = _acceptor;
-		if (acceptor != null)
-		{
+		if (acceptor != null) {
 			_acceptor = null;
 			closeChannel(acceptor);
 		}
 	}
 
-	/**
-	 * 停止服务器监听. 但不断开已建立的连接
-	 */
+	/** 停止服务器监听. 但不断开已建立的连接 */
 	@Override
-	public void close()
-	{
+	public void close() {
 		stopServer();
 	}
 
-	public void startClient(SocketAddress addr, Object attachment, AsynchronousChannelGroup group)
-	{
+	public void startClient(SocketAddress addr, Object attachment, AsynchronousChannelGroup group) {
 		AsynchronousSocketChannel channel = null;
-		try
-		{
+		try {
 			channel = AsynchronousSocketChannel.open(group);
 			int recvBufSize = onChannelCreated(channel, attachment);
 			if (recvBufSize >= 0)
 				channel.connect(addr, new ConnectParam(channel, recvBufSize), _connectHandler);
 			else
 				channel.close();
-		}
-		catch (Throwable e)
-		{
+		} catch (Throwable e) {
 			doException(null, e);
 			closeChannel(channel);
 		}
 	}
 
-	public void startClient(SocketAddress addr)
-	{
+	public void startClient(SocketAddress addr) {
 		startClient(addr, null, _defGroup);
 	}
 
-	public void startClient(String hostname, int port)
-	{
+	public void startClient(String hostname, int port) {
 		startClient(new InetSocketAddress(hostname, port));
 	}
 
-	public final int getSessionCount()
-	{
+	public final int getSessionCount() {
 		return _sessions.size();
 	}
 
-	public final Iterator<TcpSession> getSessionIterator()
-	{
+	public final Iterator<TcpSession> getSessionIterator() {
 		return _sessions.keySet().iterator();
 	}
 
-	final void doException(TcpSession session, Throwable e)
-	{
-		try
-		{
+	final void doException(TcpSession session, Throwable e) {
+		try {
 			onException(session, e);
-		}
-		catch (Throwable ex)
-		{
+		} catch (Throwable ex) {
 			ex.printStackTrace();
 		}
 	}
 
-	private synchronized void beginAccept()
-	{
-		try
-		{
+	private synchronized void beginAccept() {
+		try {
 			_acceptor.accept(null, _acceptHandler);
-		}
-		catch (Throwable e)
-		{
+		} catch (Throwable e) {
 			doException(null, e);
 			stopServer();
 		}
 	}
 
-	final void closeChannel(Channel channel)
-	{
-		try
-		{
+	final void closeChannel(Channel channel) {
+		try {
 			if (channel instanceof AsynchronousSocketChannel)
 				((AsynchronousSocketChannel)channel).shutdownOutput();
-		}
-		catch (Throwable e)
-		{
+		} catch (Throwable e) {
 			doException(null, e);
 		}
-		try
-		{
+		try {
 			if (channel != null)
 				channel.close();
-		}
-		catch (Throwable e)
-		{
+		} catch (Throwable e) {
 			doException(null, e);
 		}
 	}
 
-	final boolean removeSession(TcpSession session, int reason)
-	{
+	final boolean removeSession(TcpSession session, int reason) {
 		if (_sessions.remove(session) == null)
 			return false;
-		try
-		{
+		try {
 			onSessionClosed(session, reason);
-		}
-		catch (Throwable e)
-		{
+		} catch (Throwable e) {
 			doException(session, e);
 		}
 		return true;
@@ -206,12 +159,12 @@ public class TcpManager implements Closeable
 
 	/**
 	 * 服务器开始监听前响应一次. 可以修改一些监听的设置
+	 *
 	 * @param attachment startServer传入的参数
 	 * @return 返回>=0表示监听的backlog值(0表示取默认值);返回<0表示关闭服务器监听
 	 */
 	@SuppressWarnings("static-method")
-	public int onAcceptorCreated(AsynchronousServerSocketChannel acceptor, Object attachment) throws IOException
-	{
+	public int onAcceptorCreated(AsynchronousServerSocketChannel acceptor, Object attachment) throws IOException {
 		acceptor.setOption(StandardSocketOptions.SO_REUSEADDR, true);
 		acceptor.setOption(StandardSocketOptions.SO_RCVBUF, TcpSession.DEF_RECV_SOBUF_SIZE);
 		return 0;
@@ -219,12 +172,12 @@ public class TcpManager implements Closeable
 
 	/**
 	 * 连接创建且在TcpSession创建前响应一次. 可以修改一些连接的设置
+	 *
 	 * @param attachment 作为客户端建立的连接时为startClient传入的参数; 作为服务器建立的连接时为null
 	 * @return 返回>=0表示读缓冲区大小(每次最多读的字节数,0表示取默认值);返回<0表示断开连接,不再创建TcpSession
 	 */
 	@SuppressWarnings("static-method")
-	public int onChannelCreated(AsynchronousSocketChannel channel, Object attachment) throws IOException
-	{
+	public int onChannelCreated(AsynchronousSocketChannel channel, Object attachment) throws IOException {
 		channel.setOption(StandardSocketOptions.TCP_NODELAY, false);
 		channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
 		channel.setOption(StandardSocketOptions.SO_KEEPALIVE, false);
@@ -234,68 +187,61 @@ public class TcpManager implements Closeable
 		return 0;
 	}
 
-	/**
-	 * TcpSession在刚刚连接上时响应一次
-	 */
-	public void onSessionCreated(@SuppressWarnings("unused") TcpSession session)
-	{
+	/** TcpSession在刚刚连接上时响应一次 */
+	public void onSessionCreated(@SuppressWarnings("unused") TcpSession session) {
 	}
 
 	/**
 	 * 已连接的TcpSession在断开后响应一次
+	 *
 	 * @param reason 断开原因. 见TcpSession.CLOSE_*
 	 */
-	public void onSessionClosed(@SuppressWarnings("unused") TcpSession session, int reason)
-	{
+	public void onSessionClosed(@SuppressWarnings("unused") TcpSession session, int reason) {
 	}
 
 	/**
 	 * 已连接的TcpSession接收一次数据的响应
+	 *
 	 * @param bb 接收的数据缓冲区,有效范围是[0,limit]部分,只在函数内有效,里面的数据在函数调用后失效
 	 */
-	public void onReceived(@SuppressWarnings("unused") TcpSession session, ByteBuffer bb)
-	{
+	public void onReceived(@SuppressWarnings("unused") TcpSession session, ByteBuffer bb) {
 	}
 
 	/**
 	 * 已成功发送数据到本地网络待发缓冲区时的响应. 需要开启_enableOnSend时才会响应
+	 *
 	 * @param bb 已经完整发送到TCP协议栈的缓冲区的ByteBuffer. 同send传入的对象
 	 */
-	public void onSent(@SuppressWarnings("unused") TcpSession session, ByteBuffer bb)
-	{
+	public void onSent(@SuppressWarnings("unused") TcpSession session, ByteBuffer bb) {
 	}
 
 	/**
 	 * 作为客户端连接失败后响应一次
+	 *
 	 * @param addr 远程连接的地址. 可能为null
 	 */
-	public void onConnectFailed(SocketAddress addr, @SuppressWarnings("unused") Throwable ex)
-	{
+	public void onConnectFailed(SocketAddress addr, @SuppressWarnings("unused") Throwable ex) {
 	}
 
 	/**
 	 * 所有TcpMananger和TcpSession内部出现的异常都会在这里触发. 如果这里也抛出异常,则输出到stderr
+	 *
 	 * @param session 可能为null
 	 */
 	@SuppressWarnings("static-method")
-	public void onException(TcpSession session, Throwable ex)
-	{
+	public void onException(TcpSession session, Throwable ex) {
 		if (!(ex instanceof IOException))
 			ex.printStackTrace();
 	}
 
-	private final class AcceptHandler implements CompletionHandler<AsynchronousSocketChannel, Object>
-	{
+	private final class AcceptHandler implements CompletionHandler<AsynchronousSocketChannel, Object> {
 		@Override
-		public void completed(AsynchronousSocketChannel channel, Object attachment)
-		{
+		public void completed(AsynchronousSocketChannel channel, Object attachment) {
 			beginAccept();
 			TcpSession session = null;
-			try
-			{
+			try {
 				int recvBufSize = onChannelCreated(channel, attachment);
-				if (recvBufSize < 0)
-				{
+				if (recvBufSize < 0) {
 					channel.close();
 					return;
 				}
@@ -303,9 +249,7 @@ public class TcpManager implements Closeable
 				_sessions.put(session, session);
 				onSessionCreated(session);
 				session.beginRecv();
-			}
-			catch (Throwable e)
-			{
+			} catch (Throwable e) {
 				doException(session, e);
 				if (session != null)
 					session.close(TcpSession.CLOSE_EXCEPTION);
@@ -315,39 +259,31 @@ public class TcpManager implements Closeable
 		}
 
 		@Override
-		public void failed(Throwable ex, Object attachment)
-		{
+		public void failed(Throwable ex, Object attachment) {
 			doException(null, ex);
 		}
 	}
 
-	private static final class ConnectParam
-	{
+	private static final class ConnectParam {
 		public final AsynchronousSocketChannel channel;
-		public final int					   recvBufSize;
+		public final int recvBufSize;
 
-		public ConnectParam(AsynchronousSocketChannel c, int s)
-		{
+		public ConnectParam(AsynchronousSocketChannel c, int s) {
 			channel = c;
 			recvBufSize = s;
 		}
 	}
 
-	private final class ConnectHandler implements CompletionHandler<Void, ConnectParam>
-	{
+	private final class ConnectHandler implements CompletionHandler<Void, ConnectParam> {
 		@Override
-		public void completed(Void result, ConnectParam param)
-		{
+		public void completed(Void result, ConnectParam param) {
 			TcpSession session = null;
-			try
-			{
+			try {
 				session = new TcpSession(TcpManager.this, param.channel, param.recvBufSize);
 				_sessions.put(session, session);
 				onSessionCreated(session);
 				session.beginRecv();
-			}
-			catch (Throwable e)
-			{
+			} catch (Throwable e) {
 				doException(session, e);
 				if (session != null)
 					session.close(TcpSession.CLOSE_EXCEPTION);
@@ -355,17 +291,13 @@ public class TcpManager implements Closeable
 		}
 
 		@Override
-		public void failed(Throwable ex, ConnectParam param)
-		{
+		public void failed(Throwable ex, ConnectParam param) {
 			AsynchronousSocketChannel channel = param.channel;
-			try
-			{
+			try {
 				SocketAddress addr = (channel.isOpen() ? channel.getRemoteAddress() : null);
 				closeChannel(channel);
 				onConnectFailed(addr, ex);
-			}
-			catch (Exception e)
-			{
+			} catch (Exception e) {
 				closeChannel(channel);
 				doException(null, e);
 			}

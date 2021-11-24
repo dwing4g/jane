@@ -7,8 +7,7 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-/**
- * 10M times block encrypt (160MB) benchmark
+/* 10M times block encrypt (160MB) benchmark
  * win,i5-4430(3GHz):
  *   32-bit pure asm:     656ms
  *   64-bit pure asm:     562ms
@@ -21,10 +20,8 @@ import javax.crypto.spec.SecretKeySpec;
  * linux,Xeon-E2630(2.2GHz)
  *   64-bit aes-ni:       253ms
  */
-public final class TestAes
-{
-	static
-	{
+public final class TestAes {
+	static {
 		String filename = System.mapLibraryName("aesjni64");
 		File file = new File("lib", filename);
 		if (!file.exists())
@@ -42,8 +39,7 @@ public final class TestAes
 
 	public static native void aes_destroy(long handle_aes);
 
-	public static void testAesEcb() throws Exception
-	{
+	public static void testAesEcb() throws Exception {
 		Cipher aes = Cipher.getInstance("AES/ECB/NoPadding");
 		aes.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(new byte[16], "AES"));
 		byte[] src = new byte[16];
@@ -53,8 +49,7 @@ public final class TestAes
 		System.out.println(System.currentTimeMillis() - t);
 	}
 
-	public static void testAesCtr() throws Exception
-	{
+	public static void testAesCtr() throws Exception {
 		Cipher aes = Cipher.getInstance("AES/CTR/NoPadding");
 		aes.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(new byte[16], "AES"), new IvParameterSpec(new byte[16]));
 		byte[] src = new byte[16];
@@ -64,8 +59,7 @@ public final class TestAes
 		System.out.println(System.currentTimeMillis() - t);
 	}
 
-	public static void testInternal() throws Exception
-	{
+	public static void testInternal() throws Exception {
 		Class<?> clsAESCrypt = Class.forName("com.sun.crypto.provider.AESCrypt");
 		Constructor<?> cons = clsAESCrypt.getDeclaredConstructor();
 		Method methodInit = clsAESCrypt.getDeclaredMethod("init", boolean.class, String.class, byte[].class);
@@ -86,8 +80,7 @@ public final class TestAes
 //		System.out.println(src[2]);
 	}
 
-	public static Object[] testInternalMem() throws Exception // 280B/AESCrypt
-	{
+	public static Object[] testInternalMem() throws Exception { // 280B/AESCrypt
 		Class<?> clsAESCrypt = Class.forName("com.sun.crypto.provider.AESCrypt");
 		Constructor<?> cons = clsAESCrypt.getDeclaredConstructor();
 		Method methodInit = clsAESCrypt.getDeclaredMethod("init", boolean.class, String.class, byte[].class);
@@ -98,8 +91,7 @@ public final class TestAes
 
 		byte[] src = new byte[16];
 		Object[] holds = new Object[100000];
-		for (int i = 0; i < holds.length; ++i)
-		{
+		for (int i = 0; i < holds.length; ++i) {
 			holds[i] = cons.newInstance();
 			methodInit.invoke(holds[i], false, "AES", new byte[16]);
 			methodEncrypt.invoke(holds[i], src, 0, src, 0);
@@ -109,8 +101,7 @@ public final class TestAes
 		return holds;
 	}
 
-	public static void testInternalStream() throws Exception
-	{
+	public static void testInternalStream() throws Exception {
 		Class<?> clsAESCrypt = Class.forName("com.sun.crypto.provider.AESCrypt");
 		Constructor<?> cons = clsAESCrypt.getDeclaredConstructor();
 		Method methodInit = clsAESCrypt.getDeclaredMethod("init", boolean.class, String.class, byte[].class);
@@ -125,8 +116,7 @@ public final class TestAes
 		//noinspection MismatchedReadAndWriteOfArray
 		byte[] dst = new byte[16];
 		long t = System.currentTimeMillis();
-		for (int i = 0; i < 10000000; ++i)
-		{
+		for (int i = 0; i < 10000000; ++i) {
 			methodEncrypt.invoke(aesCrypt, src, 0, src, 0);
 			for (int j = 0; j < 16; ++j)
 				dst[j] ^= src[j];
@@ -134,8 +124,7 @@ public final class TestAes
 		System.out.println(System.currentTimeMillis() - t);
 	}
 
-	public static void testNative()
-	{
+	public static void testNative() {
 		long aes = aes_create(new byte[16], 0, new byte[16], 0, false);
 
 		byte[] src = new byte[16];
@@ -150,8 +139,7 @@ public final class TestAes
 		aes_destroy(aes);
 	}
 
-	public static void testRc4()
-	{
+	public static void testRc4() {
 		TestRc4Filter rc4 = new TestRc4Filter();
 		rc4.setInputKey(new byte[16], 16);
 		byte[] src = new byte[16];
@@ -161,8 +149,7 @@ public final class TestAes
 		System.out.println(System.currentTimeMillis() - t);
 	}
 
-	public static void main(String[] args) throws Exception
-	{
+	public static void main(String[] args) throws Exception {
 //		testInternalMem();
 		testAesEcb();
 		testAesCtr();

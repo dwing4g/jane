@@ -34,25 +34,24 @@ import jane.core.Log;
  * Note that the implementation does not follow a true LRU (least-recently-used) eviction strategy.
  * Instead, it strives to remove least recently used items but when the initial cleanup does not remove enough items
  * to reach the 'acceptSize' limit, it can remove more items forcefully regardless of access order.
- *
+ * <p>
  * MapDB note: Original comes from:
  * https://svn.apache.org/repos/asf/lucene/dev/trunk/solr/core/src/java/org/apache/solr/util/ConcurrentLRUCache.java
  */
-public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
-{
-	private static final int							 UPPERSIZE_MIN	= 1024;
-	private final ConcurrentHashMap<K, CacheEntry<K, V>> map;
-	private final AtomicLong							 versionCounter	= new AtomicLong();
-	private final AtomicInteger							 size			= new AtomicInteger();
-	private final AtomicInteger							 sweepStatus	= new AtomicInteger();
-	private final int									 upperSize;
-	private final int									 lowerSize;
-	private final int									 acceptSize;
-	private final String								 name;
-	private long										 minVersion;
+public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable {
+	private static final int UPPERSIZE_MIN = 1024;
 
-	public ConcurrentLRUMap(int upperSize, int lowerSize, int acceptSize, int initialSize, float loadFactor, String name)
-	{
+	private final ConcurrentHashMap<K, CacheEntry<K, V>> map;
+	private final AtomicLong versionCounter = new AtomicLong();
+	private final AtomicInteger size = new AtomicInteger();
+	private final AtomicInteger sweepStatus = new AtomicInteger();
+	private final int upperSize;
+	private final int lowerSize;
+	private final int acceptSize;
+	private final String name;
+	private long minVersion;
+
+	public ConcurrentLRUMap(int upperSize, int lowerSize, int acceptSize, int initialSize, float loadFactor, String name) {
 		if (lowerSize <= 0)
 			throw new IllegalArgumentException("lowerSize must be > 0");
 		if (upperSize <= lowerSize)
@@ -64,18 +63,15 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 		this.name = name;
 	}
 
-	public ConcurrentLRUMap(int lowerSize, float loadFactor, String name)
-	{
+	public ConcurrentLRUMap(int lowerSize, float loadFactor, String name) {
 		this(Math.max(lowerSize + (lowerSize + 1) / 2, UPPERSIZE_MIN), lowerSize, lowerSize + lowerSize / 4,
 				Math.max(lowerSize + (lowerSize + 1) / 2, UPPERSIZE_MIN) + 256, loadFactor, name);
 	}
 
-	private static final class CacheEntry<K, V> extends CacheEntryBase<V>
-	{
+	private static final class CacheEntry<K, V> extends CacheEntryBase<V> {
 		final K key;
 
-		CacheEntry(K k, V v, long ver)
-		{
+		CacheEntry(K k, V v, long ver) {
 			key = k;
 			value = v;
 			version = ver;
@@ -83,33 +79,28 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 	}
 
 	@Override
-	public boolean isEmpty()
-	{
+	public boolean isEmpty() {
 		return map.isEmpty();
 	}
 
 	@Override
-	public int size()
-	{
+	public int size() {
 		return size.get();
 	}
 
 	@Override
-	public boolean containsKey(Object key)
-	{
+	public boolean containsKey(Object key) {
 		return map.containsKey(key);
 	}
 
 	@Deprecated
 	@Override
-	public boolean containsValue(Object value)
-	{
+	public boolean containsValue(Object value) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public V get(Object key)
-	{
+	public V get(Object key) {
 		CacheEntry<K, V> e = map.get(key);
 		if (e == null)
 			return null;
@@ -118,8 +109,7 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 	}
 
 	@Override
-	public V put(K key, V value)
-	{
+	public V put(K key, V value) {
 		if (value == null)
 			return null;
 		CacheEntry<K, V> ceOld = map.put(key, new CacheEntry<>(key, value, versionCounter.getAndIncrement()));
@@ -131,15 +121,13 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 	}
 
 	@Override
-	public void putAll(Map<? extends K, ? extends V> m)
-	{
+	public void putAll(Map<? extends K, ? extends V> m) {
 		for (Entry<? extends K, ? extends V> e : m.entrySet())
 			put(e.getKey(), e.getValue());
 	}
 
 	@Override
-	public V remove(Object key)
-	{
+	public V remove(Object key) {
 		CacheEntry<K, V> ceOld = map.remove(key);
 		if (ceOld == null)
 			return null;
@@ -148,14 +136,12 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 	}
 
 	@Override
-	public void clear()
-	{
+	public void clear() {
 		map.clear();
 		size.set(0);
 	}
 
-	private void evictEntry(Object key)
-	{
+	private void evictEntry(Object key) {
 		//noinspection SuspiciousMethodCalls
 		CacheEntry<K, V> o = map.remove(key);
 		if (o == null)
@@ -176,14 +162,12 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 	 * The second stage is more intensive and tries to bring down the cache size to the 'lowerSize'.
 	 */
 	@Override
-	public void sweep()
-	{
+	public void sweep() {
 		sweep(lowerSize, acceptSize);
 	}
 
 	@Override
-	public synchronized void sweep(int newLowerSize, int newAcceptSize)
-	{
+	public synchronized void sweep(int newLowerSize, int newAcceptSize) {
 		// if we want to keep at least 1000 entries, then timestamps of current through current-1000
 		// are guaranteed not to be the oldest (but that does not mean there are 1000 entries in that group...
 		// it's acutally anywhere between 1 and 1000).
@@ -194,8 +178,7 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 		final int sizeOld = size.get();
 		if (sizeOld <= newLowerSize)
 			return;
-		try
-		{
+		try {
 			final long nextV = versionCounter.get();
 			long minV = minVersion;
 			long maxVNew = -1;
@@ -208,27 +191,21 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 			CacheEntry<?, ?>[] eList = new CacheEntry<?, ?>[sizeOld];
 			int eSize = 0;
 
-			for (final CacheEntry<K, V> ce : map.values())
-			{
+			for (final CacheEntry<K, V> ce : map.values()) {
 				final long v = ce.version;
 				ce.versionCopy = v;
 
 				// since the numToKeep group is likely to be bigger than numToRemove, check it first
-				if (v >= nextV - numToKeep)
-				{
+				if (v >= nextV - numToKeep) {
 					// this entry is guaranteed not to be in the bottom group, so do nothing
 					numKept++;
 					if (minVNew > v)
 						minVNew = v;
-				}
-				else if (v < minV + numToRemove) // entry in bottom group?
-				{
+				} else if (v < minV + numToRemove) { // entry in bottom group?
 					// this entry is guaranteed to be in the bottom group, so immediately remove it from the map
 					evictEntry(ce.key);
 					numRemoved++;
-				}
-				else if (eSize < sizeOld - 1)
-				{
+				} else if (eSize < sizeOld - 1) {
 					// This entry *could* be in the bottom group.
 					// Collect these entries to avoid another full pass...
 					// this is wasted effort if enough entries are normally removed in this first pass.
@@ -244,8 +221,7 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 			// int numPasses = 1; // maximum number of linear passes over the data
 
 			// if we didn't remove enough entries, then make more passes over the values we collected, with updated min and max values
-			if (sizeOld - numRemoved > newAcceptSize) // while(sizeOld - numRemoved > newAcceptSize && --numPasses >= 0)
-			{
+			if (sizeOld - numRemoved > newAcceptSize) { // while(sizeOld - numRemoved > newAcceptSize && --numPasses >= 0)
 				if (minVNew != Long.MAX_VALUE)
 					minV = minVNew;
 				minVNew = Long.MAX_VALUE;
@@ -255,28 +231,22 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 				numToRemove = sizeOld - newLowerSize - numRemoved;
 
 				// iterate backward to make it easy to remove items
-				for (int i = eSize - 1; i >= 0; --i)
-				{
+				for (int i = eSize - 1; i >= 0; --i) {
 					final CacheEntry<?, ?> ce = eList[i];
 					final long v = ce.versionCopy;
 
-					if (v > maxV - numToKeep)
-					{
+					if (v > maxV - numToKeep) {
 						// this entry is guaranteed not to be in the bottom group, so do nothing but remove it from the eList
 						numKept++;
 						eList[i] = eList[--eSize]; // remove the entry by moving the last element to its position
 						if (minVNew > v)
 							minVNew = v;
-					}
-					else if (v < minV + numToRemove) // entry in bottom group?
-					{
+					} else if (v < minV + numToRemove) { // entry in bottom group?
 						// this entry is guaranteed to be in the bottom group, so immediately remove it from the map
 						evictEntry(ce.key);
 						numRemoved++;
 						eList[i] = eList[--eSize]; // remove the entry by moving the last element to its position
-					}
-					else
-					{
+					} else {
 						// This entry *could* be in the bottom group, so keep it in the eList, and update the stats
 						if (maxVNew < v)
 							maxVNew = v;
@@ -287,8 +257,7 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 			}
 
 			// if we still didn't remove enough entries, then make another pass while inserting into a priority queue
-			if (sizeOld - numRemoved > newAcceptSize)
-			{
+			if (sizeOld - numRemoved > newAcceptSize) {
 				if (minVNew != Long.MAX_VALUE)
 					minV = minVNew;
 				minVNew = Long.MAX_VALUE;
@@ -298,26 +267,20 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 				numToRemove = sizeOld - newLowerSize - numRemoved;
 				final LRUQueue<CacheEntry<?, ?>> queue = new LRUQueue<>(numToRemove, new CacheEntry<?, ?>[LRUQueue.calHeapSize(numToRemove)]);
 
-				for (int i = eSize - 1; i >= 0; --i)
-				{
+				for (int i = eSize - 1; i >= 0; --i) {
 					final CacheEntry<?, ?> ce = eList[i];
 					final long v = ce.versionCopy;
 
-					if (v > maxV - numToKeep)
-					{
+					if (v > maxV - numToKeep) {
 						// this entry is guaranteed not to be in the bottom group, so do nothing but remove it from the eList
 						numKept++;
 						if (minVNew > v)
 							minVNew = v;
-					}
-					else if (v < minV + numToRemove) // entry in bottom group?
-					{
+					} else if (v < minV + numToRemove) { // entry in bottom group?
 						// this entry is guaranteed to be in the bottom group so immediately remove it
 						evictEntry(ce.key);
 						numRemoved++;
-					}
-					else
-					{
+					} else {
 						// This entry *could* be in the bottom group. add it to the priority queue
 						// everything in the priority queue will be removed, so keep track of
 						// the lowest value that ever comes back out of the queue.
@@ -325,8 +288,7 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 						// the number of items we have already removed while executing this loop so far.
 						final int maxSize = sizeOld - newLowerSize - numRemoved;
 						queue.maxSize = maxSize;
-						while (queue.size > maxSize && queue.size > 0)
-						{
+						while (queue.size > maxSize && queue.size > 0) {
 							//noinspection ConstantConditions
 							final long otherEntryV = queue.pop().versionCopy;
 							if (minVNew > otherEntryV)
@@ -342,8 +304,7 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 				}
 
 				// Now delete everything in the priority queue. avoid using pop() since order doesn't matter anymore
-				for (final CacheEntry<?, ?> ce : queue.heap)
-				{
+				for (final CacheEntry<?, ?> ce : queue.heap) {
 					if (ce == null)
 						continue;
 					evictEntry(ce.key);
@@ -354,109 +315,87 @@ public final class ConcurrentLRUMap<K, V> implements Map<K, V>, Cleanable
 				//	+ " finalQueueSize=" + queue.size() + " sizeOld-numRemoved=" + (sizeOld-numRemoved));
 			}
 			minVersion = (minVNew == Long.MAX_VALUE ? minV : minVNew);
-		}
-		finally
-		{
+		} finally {
 			if (Log.hasDebug)
 				Log.debug("LRUMap.sweep({}: {}=>{}, {}ms)", name, sizeOld, size.get(), System.currentTimeMillis() - time);
 		}
 	}
 
 	@Override
-	public Set<K> keySet()
-	{
+	public Set<K> keySet() {
 		return map.keySet();
 	}
 
-	/**
-	 * use {@link #valueIterator} instead
-	 */
+	/** use {@link #valueIterator} instead */
 	@Deprecated
 	@Override
-	public Collection<V> values()
-	{
+	public Collection<V> values() {
 		throw new UnsupportedOperationException();
 	}
 
-	/**
-	 * use {@link #entryIterator} instead
-	 */
+	/** use {@link #entryIterator} instead */
 	@Deprecated
 	@Override
-	public Set<Entry<K, V>> entrySet()
-	{
+	public Set<Entry<K, V>> entrySet() {
 		throw new UnsupportedOperationException();
 	}
 
-	public Enumeration<K> keyIterator()
-	{
+	public Enumeration<K> keyIterator() {
 		return map.keys();
 	}
 
-	public Iterator<V> valueIterator()
-	{
+	public Iterator<V> valueIterator() {
 		return new ValueIterator<>(map);
 	}
 
-	public EntryIterator<K, V> entryIterator()
-	{
+	public EntryIterator<K, V> entryIterator() {
 		return new EntryIterator<>(map);
 	}
 
-	private static final class ValueIterator<K, V> implements Iterator<V>
-	{
+	private static final class ValueIterator<K, V> implements Iterator<V> {
 		private final Enumeration<CacheEntry<K, V>> it;
 
-		ValueIterator(ConcurrentHashMap<K, CacheEntry<K, V>> map)
-		{
+		ValueIterator(ConcurrentHashMap<K, CacheEntry<K, V>> map) {
 			it = map.elements();
 		}
 
 		@Override
-		public boolean hasNext()
-		{
+		public boolean hasNext() {
 			return it.hasMoreElements();
 		}
 
 		@Override
-		public V next()
-		{
+		public V next() {
 			return it.nextElement().value;
 		}
 
 		@Deprecated
 		@Override
-		public void remove()
-		{
+		public void remove() {
 			throw new UnsupportedOperationException();
 		}
 	}
 
-	public static final class EntryIterator<K, V>
-	{
+	public static final class EntryIterator<K, V> {
 		private final Iterator<Entry<K, CacheEntry<K, V>>> it;
-		private Entry<K, CacheEntry<K, V>>				   entry;
+		private Entry<K, CacheEntry<K, V>> entry;
 
-		private EntryIterator(ConcurrentHashMap<K, CacheEntry<K, V>> map)
-		{
+		private EntryIterator(ConcurrentHashMap<K, CacheEntry<K, V>> map) {
 			it = map.entrySet().iterator();
 		}
 
-		public boolean moveToNext()
-		{
+		public boolean moveToNext() {
 			if (!it.hasNext())
 				return false;
 			entry = it.next();
 			return true;
 		}
 
-		public K key()
-		{
+		public K key() {
 			return entry.getKey();
 		}
 
-		public V value()
-		{
+		public V value() {
 			return entry.getValue().value;
 		}
 	}

@@ -22,25 +22,21 @@ import java.util.Comparator;
 import org.apache.mina.core.write.WriteRequest;
 import org.apache.mina.core.write.WriteRequestQueue;
 
-/**
- * Provides data structures to a newly created session.
- */
+/** Provides data structures to a newly created session. */
 public interface IoSessionDataStructureFactory {
 	/**
-	 * @return an {@link IoSessionAttributeMap} which is going to be associated with the specified <tt>session</tt>.
-	 * Please note that the returned implementation must be thread-safe.
-	 *
 	 * @param session The session for which we want the Attribute Map
+	 * @return an {@link IoSessionAttributeMap} which is going to be associated with the specified <tt>session</tt>.
+	 * 		Please note that the returned implementation must be thread-safe.
 	 */
 	IoSessionAttributeMap getAttributeMap(IoSession session);
 
 	/**
-	 * @return an {@link WriteRequest} which is going to be associated with the specified <tt>session</tt>.
-	 * Please note that the returned implementation must be thread-safe and robust enough to deal
-	 * with various messages types (even what you didn't expect at all),
-	 * especially when you are going to implement a priority queue which involves {@link Comparator}.
-	 *
 	 * @param session The session for which we want the WriteRequest queue
+	 * @return an {@link WriteRequest} which is going to be associated with the specified <tt>session</tt>.
+	 * 		Please note that the returned implementation must be thread-safe and robust enough to deal
+	 * 		with various messages types (even what you didn't expect at all),
+	 * 		especially when you are going to implement a priority queue which involves {@link Comparator}.
 	 */
 	WriteRequestQueue getWriteRequestQueue(IoSession session);
 }

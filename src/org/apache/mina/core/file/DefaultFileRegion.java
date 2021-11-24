@@ -51,8 +51,8 @@ public final class DefaultFileRegion implements FileRegion {
 	/**
 	 * Creates a new DefaultFileRegion instance
 	 *
-	 * @param channel The channel mapped over the file
-	 * @param position The position in teh file
+	 * @param channel        The channel mapped over the file
+	 * @param position       The position in teh file
 	 * @param remainingBytes The remaining bytes
 	 */
 	public DefaultFileRegion(FileChannel channel, long position, long remainingBytes) {

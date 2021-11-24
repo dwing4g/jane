@@ -10,35 +10,30 @@ import jane.core.MarshalException.EOF;
  * 基于{@link Octets}的可扩展字节流的类型
  * <p>
  * 包括各种所需的序列化/反序列化
- * @formatter:off
  */
-public class OctetsStream extends Octets
-{
+public class OctetsStream extends Octets {
 	protected int _pos; // 当前的读位置(写是在_count位置之后追加)
 
-	public static OctetsStream wrap(byte[] data, int pos, int size)
-	{
+	public static OctetsStream wrap(byte[] data, int pos, int size) {
 		OctetsStream os = new OctetsStream();
 		os._buffer = data;
 		if (size > data.length) os._count = data.length;
-		else if (size <= 0)     os._count = 0;
-		else                    os._count = size;
+		else if (size <= 0) os._count = 0;
+		else os._count = size;
 		os._pos = pos;
 		return os;
 	}
 
-	public static OctetsStream wrap(byte[] data, int size)
-	{
+	public static OctetsStream wrap(byte[] data, int size) {
 		OctetsStream os = new OctetsStream();
 		os._buffer = data;
 		if (size > data.length) os._count = data.length;
-		else if (size <= 0)     os._count = 0;
-		else                    os._count = size;
+		else if (size <= 0) os._count = 0;
+		else os._count = size;
 		return os;
 	}
 
-	public static OctetsStream wrap(byte[] data)
-	{
+	public static OctetsStream wrap(byte[] data) {
 		if (data == null)
 			throw new NullPointerException();
 		OctetsStream os = new OctetsStream();
@@ -47,131 +42,107 @@ public class OctetsStream extends Octets
 		return os;
 	}
 
-	public static OctetsStream wrap(Octets o)
-	{
+	public static OctetsStream wrap(Octets o) {
 		OctetsStream os = new OctetsStream();
 		os._buffer = o._buffer;
 		os._count = o._count;
 		return os;
 	}
 
-	public static OctetsStream createSpace(int size)
-	{
+	public static OctetsStream createSpace(int size) {
 		OctetsStream os = new OctetsStream();
 		if (size > 0)
 			os._buffer = new byte[size];
 		return os;
 	}
 
-	public OctetsStream()
-	{
+	public OctetsStream() {
 	}
 
-	public OctetsStream(int size)
-	{
+	public OctetsStream(int size) {
 		super(size);
 	}
 
-	public OctetsStream(Octets o)
-	{
+	public OctetsStream(Octets o) {
 		super(o);
 	}
 
-	public OctetsStream(byte[] data)
-	{
+	public OctetsStream(byte[] data) {
 		super(data);
 	}
 
-	public OctetsStream(byte[] data, int pos, int size)
-	{
+	public OctetsStream(byte[] data, int pos, int size) {
 		super(data, pos, size);
 	}
 
-	public boolean eos()
-	{
+	public boolean eos() {
 		return _pos >= _count;
 	}
 
 	@Override
-	public int position()
-	{
+	public int position() {
 		return _pos;
 	}
 
-	public void setPosition(int pos)
-	{
+	public void setPosition(int pos) {
 		_pos = pos;
 	}
 
 	@Override
-	public int remain()
-	{
+	public int remain() {
 		return _count - _pos;
 	}
 
 	@Override
-	public OctetsStream wraps(byte[] data, int size)
-	{
+	public OctetsStream wraps(byte[] data, int size) {
 		super.wraps(data, size);
 		return this;
 	}
 
 	@Override
-	public OctetsStream wraps(byte[] data)
-	{
+	public OctetsStream wraps(byte[] data) {
 		super.wraps(data);
 		return this;
 	}
 
 	@Override
-	public OctetsStream wraps(Octets o)
-	{
+	public OctetsStream wraps(Octets o) {
 		super.wraps(o);
 		return this;
 	}
 
 	@Override
-	public OctetsStream clone()
-	{
+	public OctetsStream clone() {
 		OctetsStream os = OctetsStream.wrap(getBytes());
 		os._pos = _pos;
 		return os;
 	}
 
 	@Override
-	public String toString()
-	{
+	public String toString() {
 		return "[" + _pos + '/' + _count + '/' + _buffer.length + ']';
 	}
 
 	@Override
-	public StringBuilder dump(StringBuilder s)
-	{
+	public StringBuilder dump(StringBuilder s) {
 		if (s == null)
 			s = new StringBuilder(_count * 3 + 16);
 		return super.dump(s).append(':').append(_pos);
 	}
 
-	/**
-	 * 默认不需要详细的异常信息,可以提高unmarshal失败的性能. 如需要异常栈则应使用OctetsStreamEx
-	 */
+	/** 默认不需要详细的异常信息,可以提高unmarshal失败的性能. 如需要异常栈则应使用OctetsStreamEx */
 	@SuppressWarnings("static-method")
-	public MarshalException getMarshalException()
-	{
+	public MarshalException getMarshalException() {
 		return MarshalException.withoutTrace();
 	}
 
-	/**
-	 * 默认不需要详细的异常信息,可以提高unmarshal失败的性能. 如需要异常栈则应使用OctetsStreamEx
-	 */
+	/** 默认不需要详细的异常信息,可以提高unmarshal失败的性能. 如需要异常栈则应使用OctetsStreamEx */
 	@SuppressWarnings("static-method")
-	public EOF getEOFException()
-	{
+	public EOF getEOFException() {
 		return MarshalException.EOF.withoutTrace();
 	}
 
-	public byte unmarshalByte() throws MarshalException
-	{
+	public byte unmarshalByte() throws MarshalException {
 		int pos = _pos;
 		if (pos >= _count) throw getEOFException();
 		byte b = _buffer[pos];
@@ -179,8 +150,7 @@ public class OctetsStream extends Octets
 		return b;
 	}
 
-	public int unmarshalInt1() throws MarshalException
-	{
+	public int unmarshalInt1() throws MarshalException {
 		int pos = _pos;
 		if (pos >= _count) throw getEOFException();
 		byte b = _buffer[pos];
@@ -188,24 +158,23 @@ public class OctetsStream extends Octets
 		return b & 0xff;
 	}
 
-	public int unmarshalInt2() throws MarshalException
-	{
+	public int unmarshalInt2() throws MarshalException {
 		int pos = _pos;
 		int posNew = pos + 2;
 		if (posNew > _count) throw getEOFException();
 		byte[] buf = _buffer;
-		byte b0 = buf[pos    ];
+		byte b0 = buf[pos];
 		byte b1 = buf[pos + 1];
 		_pos = posNew;
 		return ((b0 & 0xff) << 8) + (b1 & 0xff);
 	}
 
-	public int unmarshalInt3() throws MarshalException
-	{
+	public int unmarshalInt3() throws MarshalException {
 		int pos = _pos;
 		int posNew = pos + 3;
 		if (posNew > _count) throw getEOFException();
 		byte[] buf = _buffer;
+		//@formatter:off
 		byte b0 = buf[pos    ];
 		byte b1 = buf[pos + 1];
 		byte b2 = buf[pos + 2];
@@ -213,14 +182,15 @@ public class OctetsStream extends Octets
 		return ((b0 & 0xff) << 16) +
 			   ((b1 & 0xff) <<  8) +
 				(b2 & 0xff);
+		//@formatter:on
 	}
 
-	public int unmarshalInt4() throws MarshalException
-	{
+	public int unmarshalInt4() throws MarshalException {
 		int pos = _pos;
 		int posNew = pos + 4;
 		if (posNew > _count) throw getEOFException();
 		byte[] buf = _buffer;
+		//@formatter:off
 		byte b0 = buf[pos    ];
 		byte b1 = buf[pos + 1];
 		byte b2 = buf[pos + 2];
@@ -230,14 +200,15 @@ public class OctetsStream extends Octets
 			   ((b1 & 0xff) << 16) +
 			   ((b2 & 0xff) <<  8) +
 				(b3 & 0xff);
+		//@formatter:on
 	}
 
-	public long unmarshalLong5() throws MarshalException
-	{
+	public long unmarshalLong5() throws MarshalException {
 		int pos = _pos;
 		int posNew = pos + 5;
 		if (posNew > _count) throw getEOFException();
 		byte[] buf = _buffer;
+		//@formatter:off
 		byte b0 = buf[pos    ];
 		byte b1 = buf[pos + 1];
 		byte b2 = buf[pos + 2];
@@ -249,14 +220,15 @@ public class OctetsStream extends Octets
 			   ((b2 & 0xff ) << 16) +
 			   ((b3 & 0xff ) <<  8) +
 				(b4 & 0xff );
+		//@formatter:on
 	}
 
-	public long unmarshalLong6() throws MarshalException
-	{
+	public long unmarshalLong6() throws MarshalException {
 		int pos = _pos;
 		int posNew = pos + 6;
 		if (posNew > _count) throw getEOFException();
 		byte[] buf = _buffer;
+		//@formatter:off
 		byte b0 = buf[pos    ];
 		byte b1 = buf[pos + 1];
 		byte b2 = buf[pos + 2];
@@ -270,14 +242,15 @@ public class OctetsStream extends Octets
 			   ((b3 & 0xff ) << 16) +
 			   ((b4 & 0xff ) <<  8) +
 				(b5 & 0xff );
+		//@formatter:on
 	}
 
-	public long unmarshalLong7() throws MarshalException
-	{
+	public long unmarshalLong7() throws MarshalException {
 		int pos = _pos;
 		int posNew = pos + 7;
 		if (posNew > _count) throw getEOFException();
 		byte[] buf = _buffer;
+		//@formatter:off
 		byte b0 = buf[pos    ];
 		byte b1 = buf[pos + 1];
 		byte b2 = buf[pos + 2];
@@ -293,14 +266,15 @@ public class OctetsStream extends Octets
 			   ((b4 & 0xff ) << 16) +
 			   ((b5 & 0xff ) <<  8) +
 				(b6 & 0xff );
+		//@formatter:on
 	}
 
-	public long unmarshalLong8() throws MarshalException
-	{
+	public long unmarshalLong8() throws MarshalException {
 		int pos = _pos;
 		int posNew = pos + 8;
 		if (posNew > _count) throw getEOFException();
 		byte[] buf = _buffer;
+		//@formatter:off
 		byte b0 = buf[pos    ];
 		byte b1 = buf[pos + 1];
 		byte b2 = buf[pos + 2];
@@ -318,20 +292,18 @@ public class OctetsStream extends Octets
 			   ((b5 & 0xff ) << 16) +
 			   ((b6 & 0xff ) <<  8) +
 				(b7 & 0xff );
+		//@formatter:on
 	}
 
-	public float unmarshalFloat() throws MarshalException
-	{
+	public float unmarshalFloat() throws MarshalException {
 		return Float.intBitsToFloat(unmarshalInt4());
 	}
 
-	public double unmarshalDouble() throws MarshalException
-	{
+	public double unmarshalDouble() throws MarshalException {
 		return Double.longBitsToDouble(unmarshalLong8());
 	}
 
-	public OctetsStream unmarshalSkip(int n) throws MarshalException
-	{
+	public OctetsStream unmarshalSkip(int n) throws MarshalException {
 		if (n < 0)
 			throw getMarshalException();
 		int pos = _pos;
@@ -344,15 +316,12 @@ public class OctetsStream extends Octets
 		return this;
 	}
 
-	public OctetsStream unmarshalSkipOctets() throws MarshalException
-	{
+	public OctetsStream unmarshalSkipOctets() throws MarshalException {
 		return unmarshalSkip(unmarshalUInt());
 	}
 
-	public OctetsStream unmarshalSkipBean() throws MarshalException
-	{
-		for (;;)
-		{
+	public OctetsStream unmarshalSkipBean() throws MarshalException {
+		for (; ; ) {
 			int tag = unmarshalByte();
 			if (tag == 0)
 				return this;
@@ -360,46 +329,49 @@ public class OctetsStream extends Octets
 		}
 	}
 
-	public OctetsStream unmarshalSkipVar(int type) throws MarshalException
-	{
-		switch (type)
-		{
-		case 0: return unmarshalSkipInt(); // int/long: [1~9]
-		case 1: return unmarshalSkipOctets(); // octets: n [n]
-		case 2: return unmarshalSkipBean(); // bean: ... 00
-		case 3: return unmarshalSkipVarSub(unmarshalInt1()); // float/double/collection/map: ...
-		default: throw getMarshalException();
+	public OctetsStream unmarshalSkipVar(int type) throws MarshalException {
+		switch (type) {
+		case 0:
+			return unmarshalSkipInt(); // int/long: [1~9]
+		case 1:
+			return unmarshalSkipOctets(); // octets: n [n]
+		case 2:
+			return unmarshalSkipBean(); // bean: ... 00
+		case 3:
+			return unmarshalSkipVarSub(unmarshalInt1()); // float/double/collection/map: ...
+		default:
+			throw getMarshalException();
 		}
 	}
 
-	public Object unmarshalVar(int type) throws MarshalException
-	{
-		switch (type)
-		{
-		case 0: return unmarshalLong();
-		case 1: return unmarshalOctets();
-		case 2: DynBean db = new DynBean(); db.unmarshal(this); return db;
-		case 3: return unmarshalVarSub(unmarshalInt1());
-		default: throw getMarshalException();
+	public Object unmarshalVar(int type) throws MarshalException {
+		switch (type) {
+		case 0:
+			return unmarshalLong();
+		case 1:
+			return unmarshalOctets();
+		case 2:
+			DynBean db = new DynBean();
+			db.unmarshal(this);
+			return db;
+		case 3:
+			return unmarshalVarSub(unmarshalInt1());
+		default:
+			throw getMarshalException();
 		}
 	}
 
-	public OctetsStream unmarshalSkipVarSub(int subType) throws MarshalException // [tkkkvvv] [4]/[8]/<n>[kv*n]
-	{
+	public OctetsStream unmarshalSkipVarSub(int subType) throws MarshalException { // [tkkkvvv] [4]/[8]/<n>[kv*n]
 		if (subType == 8) return unmarshalSkip(4); // float: [4]
 		if (subType == 9) return unmarshalSkip(8); // double: [8]
-		if (subType < 8) // collection: <n>[v*n]
-		{
+		if (subType < 8) { // collection: <n>[v*n]
 			subType &= 7;
 			for (int n = unmarshalUInt(); n > 0; --n)
 				unmarshalSkipKV(subType);
-		}
-		else // map: <n>[kv*n]
-		{
+		} else { // map: <n>[kv*n]
 			int keytype = (subType >> 3) & 7;
 			subType &= 7;
-			for (int n = unmarshalUInt(); n > 0; --n)
-			{
+			for (int n = unmarshalUInt(); n > 0; --n) {
 				unmarshalSkipKV(keytype);
 				unmarshalSkipKV(subType);
 			}
@@ -407,12 +379,10 @@ public class OctetsStream extends Octets
 		return this;
 	}
 
-	public Object unmarshalVarSub(int subType) throws MarshalException
-	{
+	public Object unmarshalVarSub(int subType) throws MarshalException {
 		if (subType == 8) return unmarshalFloat();
 		if (subType == 9) return unmarshalDouble();
-		if (subType < 8)
-		{
+		if (subType < 8) {
 			subType &= 7;
 			int n = unmarshalUInt();
 			Collection<Object> list = new ArrayList<>(n < 0x10000 ? n : 0x10000);
@@ -429,45 +399,53 @@ public class OctetsStream extends Octets
 		return map;
 	}
 
-	public OctetsStream unmarshalSkipKV(int kvType) throws MarshalException
-	{
-		switch (kvType)
-		{
-		case 0: return unmarshalSkipInt(); // int/long: [1~9]
-		case 1: return unmarshalSkipOctets(); // octets: n [n]
-		case 2: return unmarshalSkipBean(); // bean: ... 00
-		case 4: return unmarshalSkip(4); // float: [4]
-		case 5: return unmarshalSkip(8); // double: [8]
-		default: throw getMarshalException();
+	public OctetsStream unmarshalSkipKV(int kvType) throws MarshalException {
+		switch (kvType) {
+		case 0:
+			return unmarshalSkipInt(); // int/long: [1~9]
+		case 1:
+			return unmarshalSkipOctets(); // octets: n [n]
+		case 2:
+			return unmarshalSkipBean(); // bean: ... 00
+		case 4:
+			return unmarshalSkip(4); // float: [4]
+		case 5:
+			return unmarshalSkip(8); // double: [8]
+		default:
+			throw getMarshalException();
 		}
 	}
 
-	public Object unmarshalKV(int kvType) throws MarshalException
-	{
-		switch (kvType)
-		{
-		case 0: return unmarshalLong();
-		case 1: return unmarshalOctets();
-		case 2: DynBean db = new DynBean(); db.unmarshal(this); return db;
-		case 4: return unmarshalFloat();
-		case 5: return unmarshalDouble();
-		default: throw getMarshalException();
+	public Object unmarshalKV(int kvType) throws MarshalException {
+		switch (kvType) {
+		case 0:
+			return unmarshalLong();
+		case 1:
+			return unmarshalOctets();
+		case 2:
+			DynBean db = new DynBean();
+			db.unmarshal(this);
+			return db;
+		case 4:
+			return unmarshalFloat();
+		case 5:
+			return unmarshalDouble();
+		default:
+			throw getMarshalException();
 		}
 	}
 
-	public OctetsStream unmarshalSkipInt() throws MarshalException
-	{
+	public OctetsStream unmarshalSkipInt() throws MarshalException {
 		int b = unmarshalInt1();
-		switch (b >> 3)
-		{
+		switch (b >> 3) {
+		//@formatter:off
 		case 0x00: case 0x01: case 0x02: case 0x03: case 0x04: case 0x05: case 0x06: case 0x07:
 		case 0x18: case 0x19: case 0x1a: case 0x1b: case 0x1c: case 0x1d: case 0x1e: case 0x1f: break;
 		case 0x08: case 0x09: case 0x0a: case 0x0b: case 0x14: case 0x15: case 0x16: case 0x17: unmarshalSkip(1); break;
 		case 0x0c: case 0x0d: case 0x12: case 0x13: unmarshalSkip(2); break;
 		case 0x0e: case 0x11: unmarshalSkip(3); break;
 		case 0x0f:
-			switch (b & 7)
-			{
+			switch (b & 7) {
 			case 0: case 1: case 2: case 3: unmarshalSkip(4); break;
 			case 4: case 5:                 unmarshalSkip(5); break;
 			case 6:                         unmarshalSkip(6); break;
@@ -475,22 +453,21 @@ public class OctetsStream extends Octets
 			}
 			break;
 		default: // 0x10
-			switch (b & 7)
-			{
+			switch (b & 7) {
 			case 4: case 5: case 6: case 7: unmarshalSkip(4); break;
 			case 2: case 3:                 unmarshalSkip(5); break;
 			case 1:                         unmarshalSkip(6); break;
 			default: unmarshalSkip(7 + (unmarshalByte() >> 7)); break;
 			}
+		//@formatter:on
 		}
 		return this;
 	}
 
-	public int unmarshalInt() throws MarshalException
-	{
+	public int unmarshalInt() throws MarshalException {
 		int b = unmarshalByte();
-		switch ((b >> 3) & 0x1f)
-		{
+		switch ((b >> 3) & 0x1f) {
+		//@formatter:off
 		case 0x00: case 0x01: case 0x02: case 0x03: case 0x04: case 0x05: case 0x06: case 0x07:
 		case 0x18: case 0x19: case 0x1a: case 0x1b: case 0x1c: case 0x1d: case 0x1e: case 0x1f: return b;
 		case 0x08: case 0x09: case 0x0a: case 0x0b: return ((b - 0x40) <<  8) + unmarshalInt1();
@@ -500,29 +477,27 @@ public class OctetsStream extends Octets
 		case 0x0e:                                  return ((b - 0x70) << 24) + unmarshalInt3();
 		case 0x11:                                  return ((b + 0x70) << 24) + unmarshalInt3();
 		case 0x0f:
-			switch (b & 7)
-			{
+			switch (b & 7) {
 			case 0: case 1: case 2: case 3: return unmarshalInt4();
 			case 4: case 5:                 return unmarshalSkip(1).unmarshalInt4();
 			case 6:                         return unmarshalSkip(2).unmarshalInt4();
 			default: return unmarshalSkip(2 - (unmarshalByte() >> 7)).unmarshalInt4();
 			}
 		default: // 0x10
-			switch (b & 7)
-			{
+			switch (b & 7) {
 			case 4: case 5: case 6: case 7: return unmarshalInt4();
 			case 2: case 3:                 return unmarshalSkip(1).unmarshalInt4();
 			case 1:                         return unmarshalSkip(2).unmarshalInt4();
 			default: return unmarshalSkip(3 + (unmarshalByte() >> 7)).unmarshalInt4();
 			}
+		//@formatter:on
 		}
 	}
 
-	public long unmarshalLong() throws MarshalException
-	{
+	public long unmarshalLong() throws MarshalException {
 		int b = unmarshalByte();
-		switch ((b >> 3) & 0x1f)
-		{
+		switch ((b >> 3) & 0x1f) {
+		//@formatter:off
 		case 0x00: case 0x01: case 0x02: case 0x03: case 0x04: case 0x05: case 0x06: case 0x07:
 		case 0x18: case 0x19: case 0x1a: case 0x1b: case 0x1c: case 0x1d: case 0x1e: case 0x1f: return b;
 		case 0x08: case 0x09: case 0x0a: case 0x0b: return ((b - 0x40) <<  8) + unmarshalInt1();
@@ -532,8 +507,7 @@ public class OctetsStream extends Octets
 		case 0x0e:                                  return ((b - 0x70) << 24) + unmarshalInt3();
 		case 0x11:                                  return ((b + 0x70) << 24) + unmarshalInt3();
 		case 0x0f:
-			switch (b & 7)
-			{
+			switch (b & 7) {
 			case 0: case 1: case 2: case 3: return ((long)(b - 0x78) << 32) + (unmarshalInt4() & 0xffff_ffffL);
 			case 4: case 5:                 return ((long)(b - 0x7c) << 40) + unmarshalLong5();
 			case 6:                         return unmarshalLong6();
@@ -541,78 +515,75 @@ public class OctetsStream extends Octets
 					r : ((r - 0x80_0000_0000_0000L) << 8) + unmarshalInt1();
 			}
 		default: // 0x10
-			switch (b & 7)
-			{
+			switch (b & 7) {
 			case 4: case 5: case 6: case 7: return ((long)(b + 0x78) << 32) + (unmarshalInt4() & 0xffff_ffffL);
 			case 2: case 3:                 return ((long)(b + 0x7c) << 40) + unmarshalLong5();
 			case 1:                         return 0xffff_0000_0000_0000L + unmarshalLong6();
 			default: long r = unmarshalLong7(); return r >= 0x80_0000_0000_0000L ?
 					0xff00_0000_0000_0000L + r : ((r + 0x80_0000_0000_0000L) << 8) + unmarshalInt1();
 			}
+		//@formatter:on
 		}
 	}
 
-	public OctetsStream unmarshalSkipUInt() throws MarshalException
-	{
+	public OctetsStream unmarshalSkipUInt() throws MarshalException {
 		int b = unmarshalInt1(), s;
-		switch (b >> 4)
-		{
+		switch (b >> 4) {
+		//@formatter:off
 		case  0: case  1: case  2: case  3: case 4: case 5: case 6: case 7: return this;
 		case  8: case  9: case 10: case 11: s = 1; break;
 		case 12: case 13:                   s = 2; break;
 		case 14:                            s = 3; break;
 		default:                            s = 4; break;
+		//@formatter:on
 		}
 		return unmarshalSkip(s);
 	}
 
-	public int unmarshalUInt() throws MarshalException
-	{
+	public int unmarshalUInt() throws MarshalException {
 		int b = unmarshalInt1();
-		switch (b >> 4)
-		{
+		switch (b >> 4) {
+		//@formatter:off
 		case  0: case  1: case  2: case  3: case 4: case 5: case 6: case 7: return b;
 		case  8: case  9: case 10: case 11: return ((b & 0x3f) <<  8) + unmarshalInt1();
 		case 12: case 13:                   return ((b & 0x1f) << 16) + unmarshalInt2();
 		case 14:                            return ((b & 0x0f) << 24) + unmarshalInt3();
 		default:                            return                      unmarshalInt4();
+		//@formatter:on
 		}
 	}
 
-	public OctetsStream unmarshalSkipULong() throws MarshalException
-	{
+	public OctetsStream unmarshalSkipULong() throws MarshalException {
 		int b = unmarshalInt1(), s;
-		switch (b >> 4)
-		{
+		switch (b >> 4) {
+		//@formatter:off
 		case  0: case  1: case  2: case  3: case 4: case 5: case 6: case 7: return this;
 		case  8: case  9: case 10: case 11: s = 1; break;
 		case 12: case 13:                   s = 2; break;
 		case 14:                            s = 3; break;
 		default:
-			switch (b & 15)
-			{
+			switch (b & 15) {
 			case  0: case  1: case  2: case  3: case 4: case 5: case 6: case 7: s = 4; break;
 			case  8: case  9: case 10: case 11:                                 s = 5; break;
 			case 12: case 13:                                                   s = 6; break;
 			case 14:                                                            s = 7; break;
 			default:                                                            s = 8; break;
 			}
+		//@formatter:on
 		}
 		return unmarshalSkip(s);
 	}
 
-	public long unmarshalULong() throws MarshalException
-	{
+	public long unmarshalULong() throws MarshalException {
 		int b = unmarshalInt1();
-		switch (b >> 4)
-		{
+		switch (b >> 4) {
+		//@formatter:off
 		case  0: case  1: case  2: case  3: case 4: case 5: case 6: case 7: return b;
 		case  8: case  9: case 10: case 11: return ((b & 0x3f) <<  8) + unmarshalInt1();
 		case 12: case 13:                   return ((b & 0x1f) << 16) + unmarshalInt2();
 		case 14:                            return ((b & 0x0f) << 24) + unmarshalInt3();
 		default:
-			switch (b & 15)
-			{
+			switch (b & 15) {
 			case  0: case  1: case  2: case  3: case 4: case 5: case 6: case 7:
 												return ((long)(b & 7) << 32) + (unmarshalInt4() & 0xffff_ffffL);
 			case  8: case  9: case 10: case 11: return ((long)(b & 3) << 40) + unmarshalLong5();
@@ -620,34 +591,26 @@ public class OctetsStream extends Octets
 			case 14:                            return unmarshalLong7();
 			default:                            return unmarshalLong8();
 			}
+		//@formatter:on
 		}
 	}
 
-	public int unmarshalUTF8() throws MarshalException
-	{
+	public int unmarshalUTF8() throws MarshalException {
 		int c = unmarshalByte();
 		if (c >= 0)
 			return c;
-		c = (c << 6) + (unmarshalByte() & 0x3f);
-		if (c < -0x800)
-			return c & 0x7ff;
-		c = (c << 6) + (unmarshalByte() & 0x3f);
-		if (c < -0x1_0000)
-			return c & 0xffff;
-		c = (c << 6) + (unmarshalByte() & 0x3f);
-		if (c < -0x20_0000)
-			return c & 0x1f_ffff;
-		c = (c << 6) + (unmarshalByte() & 0x3f);
-		if (c < -0x400_0000)
-			return c & 0x3ff_ffff;
+		//@formatter:off
+		c = (c << 6) + (unmarshalByte() & 0x3f); if (c < -     0x800) return c &      0x7ff;
+		c = (c << 6) + (unmarshalByte() & 0x3f); if (c < -  0x1_0000) return c &     0xffff;
+		c = (c << 6) + (unmarshalByte() & 0x3f); if (c < - 0x20_0000) return c &  0x1f_ffff;
+		c = (c << 6) + (unmarshalByte() & 0x3f); if (c < -0x400_0000) return c & 0x3ff_ffff;
+		//@formatter:on
 		return (c << 6) + (unmarshalByte() & 0x3f);
 	}
 
-	public int unmarshalInt(int type) throws MarshalException
-	{
+	public int unmarshalInt(int type) throws MarshalException {
 		if (type == 0) return unmarshalInt();
-		if (type == 3)
-		{
+		if (type == 3) {
 			type = unmarshalInt1();
 			if (type == 8) return (int)unmarshalFloat();
 			if (type == 9) return (int)unmarshalDouble();
@@ -658,11 +621,9 @@ public class OctetsStream extends Octets
 		return 0;
 	}
 
-	public long unmarshalLong(int type) throws MarshalException
-	{
+	public long unmarshalLong(int type) throws MarshalException {
 		if (type == 0) return unmarshalLong();
-		if (type == 3)
-		{
+		if (type == 3) {
 			type = unmarshalInt1();
 			if (type == 8) return (long)unmarshalFloat();
 			if (type == 9) return (long)unmarshalDouble();
@@ -673,10 +634,8 @@ public class OctetsStream extends Octets
 		return 0;
 	}
 
-	public float unmarshalFloat(int type) throws MarshalException
-	{
-		if (type == 3)
-		{
+	public float unmarshalFloat(int type) throws MarshalException {
+		if (type == 3) {
 			type = unmarshalInt1();
 			if (type == 8) return unmarshalFloat();
 			if (type == 9) return (float)unmarshalDouble();
@@ -688,10 +647,8 @@ public class OctetsStream extends Octets
 		return 0;
 	}
 
-	public double unmarshalDouble(int type) throws MarshalException
-	{
-		if (type == 3)
-		{
+	public double unmarshalDouble(int type) throws MarshalException {
+		if (type == 3) {
 			type = unmarshalInt1();
 			if (type == 9) return unmarshalDouble();
 			if (type == 8) return unmarshalFloat();
@@ -703,8 +660,7 @@ public class OctetsStream extends Octets
 		return 0;
 	}
 
-	public int unmarshalIntKV(int type) throws MarshalException
-	{
+	public int unmarshalIntKV(int type) throws MarshalException {
 		if (type == 0) return unmarshalInt();
 		if (type == 4) return (int)unmarshalFloat();
 		if (type == 5) return (int)unmarshalDouble();
@@ -712,8 +668,7 @@ public class OctetsStream extends Octets
 		return 0;
 	}
 
-	public long unmarshalLongKV(int type) throws MarshalException
-	{
+	public long unmarshalLongKV(int type) throws MarshalException {
 		if (type == 0) return unmarshalLong();
 		if (type == 4) return (long)unmarshalFloat();
 		if (type == 5) return (long)unmarshalDouble();
@@ -721,8 +676,7 @@ public class OctetsStream extends Octets
 		return 0;
 	}
 
-	public float unmarshalFloatKV(int type) throws MarshalException
-	{
+	public float unmarshalFloatKV(int type) throws MarshalException {
 		if (type == 4) return unmarshalFloat();
 		if (type == 5) return (float)unmarshalDouble();
 		if (type == 0) return unmarshalLong();
@@ -730,8 +684,7 @@ public class OctetsStream extends Octets
 		return 0;
 	}
 
-	public double unmarshalDoubleKV(int type) throws MarshalException
-	{
+	public double unmarshalDoubleKV(int type) throws MarshalException {
 		if (type == 5) return unmarshalDouble();
 		if (type == 4) return unmarshalFloat();
 		if (type == 0) return unmarshalLong();
@@ -739,8 +692,7 @@ public class OctetsStream extends Octets
 		return 0;
 	}
 
-	public byte[] unmarshalBytes() throws MarshalException
-	{
+	public byte[] unmarshalBytes() throws MarshalException {
 		int size = unmarshalUInt();
 		if (size <= 0)
 			return EMPTY;
@@ -756,24 +708,20 @@ public class OctetsStream extends Octets
 		return r;
 	}
 
-	public Octets unmarshalOctets() throws MarshalException
-	{
+	public Octets unmarshalOctets() throws MarshalException {
 		return Octets.wrap(unmarshalBytes());
 	}
 
-	public Octets unmarshalOctetsKV(int type) throws MarshalException
-	{
+	public Octets unmarshalOctetsKV(int type) throws MarshalException {
 		if (type == 1)
 			return unmarshalOctets();
 		unmarshalSkipKV(type);
 		return new Octets();
 	}
 
-	public OctetsStream unmarshal(Octets o) throws MarshalException
-	{
+	public OctetsStream unmarshal(Octets o) throws MarshalException {
 		int size = unmarshalUInt();
-		if (size <= 0)
-		{
+		if (size <= 0) {
 			o.clear();
 			return this;
 		}
@@ -788,13 +736,11 @@ public class OctetsStream extends Octets
 		return this;
 	}
 
-	public OctetsStream unmarshal(Octets o, int type) throws MarshalException
-	{
+	public OctetsStream unmarshal(Octets o, int type) throws MarshalException {
 		return type == 1 ? unmarshal(o) : unmarshalSkipVar(type);
 	}
 
-	public Octets unmarshalRaw(int size) throws MarshalException
-	{
+	public Octets unmarshalRaw(int size) throws MarshalException {
 		if (size <= 0)
 			return new Octets();
 		int pos = _pos;
@@ -808,35 +754,29 @@ public class OctetsStream extends Octets
 		return o;
 	}
 
-	public OctetsStream unmarshal(Bean<?> b) throws MarshalException
-	{
+	public OctetsStream unmarshal(Bean<?> b) throws MarshalException {
 		return b.unmarshal(this);
 	}
 
-	public OctetsStream unmarshalProtocol(Bean<?> b) throws MarshalException
-	{
+	public OctetsStream unmarshalProtocol(Bean<?> b) throws MarshalException {
 		return b.unmarshalProtocol(this);
 	}
 
-	public OctetsStream unmarshalBean(Bean<?> b, int type) throws MarshalException
-	{
+	public OctetsStream unmarshalBean(Bean<?> b, int type) throws MarshalException {
 		return type == 2 ? b.unmarshal(this) : unmarshalSkipVar(type);
 	}
 
-	public <B extends Bean<B>> B unmarshalBean(B b) throws MarshalException
-	{
+	public <B extends Bean<B>> B unmarshalBean(B b) throws MarshalException {
 		b.unmarshal(this);
 		return b;
 	}
 
-	public <B extends Bean<B>> B unmarshalProtocolBean(B b) throws MarshalException
-	{
+	public <B extends Bean<B>> B unmarshalProtocolBean(B b) throws MarshalException {
 		b.unmarshalProtocol(this);
 		return b;
 	}
 
-	public <B extends Bean<B>> B unmarshalBeanKV(B b, int type) throws MarshalException
-	{
+	public <B extends Bean<B>> B unmarshalBeanKV(B b, int type) throws MarshalException {
 		if (type == 2)
 			b.unmarshal(this);
 		else
@@ -844,24 +784,21 @@ public class OctetsStream extends Octets
 		return b;
 	}
 
-	public byte[] unmarshalBytes(int type) throws MarshalException
-	{
+	public byte[] unmarshalBytes(int type) throws MarshalException {
 		if (type == 1)
 			return unmarshalBytes();
 		unmarshalSkipVar(type);
 		return EMPTY;
 	}
 
-	public byte[] unmarshalBytesKV(int type) throws MarshalException
-	{
+	public byte[] unmarshalBytesKV(int type) throws MarshalException {
 		if (type == 1)
 			return unmarshalBytes();
 		unmarshalSkipKV(type);
 		return EMPTY;
 	}
 
-	public String unmarshalString() throws MarshalException
-	{
+	public String unmarshalString() throws MarshalException {
 		int size = unmarshalUInt();
 		if (size <= 0)
 			return "";
@@ -879,24 +816,20 @@ public class OctetsStream extends Octets
 		return new String(tmp, 0, n);
 	}
 
-	public String unmarshalString(int type) throws MarshalException
-	{
+	public String unmarshalString(int type) throws MarshalException {
 		if (type == 1) return unmarshalString();
 		if (type == 0) return String.valueOf(unmarshalLong());
-		if (type == 3)
-		{
+		if (type == 3) {
 			type = unmarshalInt1();
 			if (type == 8) return String.valueOf(unmarshalFloat());
 			if (type == 9) return String.valueOf(unmarshalDouble());
 			unmarshalSkipVarSub(type);
-		}
-		else
+		} else
 			unmarshalSkipVar(type);
 		return "";
 	}
 
-	public String unmarshalStringKV(int type) throws MarshalException
-	{
+	public String unmarshalStringKV(int type) throws MarshalException {
 		if (type == 1) return unmarshalString();
 		if (type == 0) return String.valueOf(unmarshalLong());
 		if (type == 4) return String.valueOf(unmarshalFloat());

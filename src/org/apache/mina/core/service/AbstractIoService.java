@@ -44,7 +44,7 @@ import org.apache.mina.util.ExceptionMonitor;
 
 /**
  * Base implementation of {@link IoService}s.
- *
+ * <p>
  * An instance of IoService contains an Executor which will handle the incoming events.
  */
 public abstract class AbstractIoService implements IoService {

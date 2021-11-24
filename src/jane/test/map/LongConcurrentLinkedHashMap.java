@@ -29,9 +29,7 @@ import jane.test.map.ConcurrentLinkedHashMap.Builder;
 import jane.test.map.ConcurrentLinkedHashMap.DrainStatus;
 import jane.test.map.ConcurrentLinkedHashMap.WeightedValue;
 
-/**
- * @see ConcurrentLinkedHashMap
- */
+/** @see ConcurrentLinkedHashMap */
 // @ThreadSafe
 public final class LongConcurrentLinkedHashMap<V> implements LongMap<V> {
   // The backing data store holding the key-value associations
@@ -56,9 +54,7 @@ public final class LongConcurrentLinkedHashMap<V> implements LongMap<V> {
 
   private final AtomicReference<DrainStatus> drainStatus;
 
-  /**
-   * Creates an instance based on the builder's configuration.
-   */
+  /** Creates an instance based on the builder's configuration. */
   @SuppressWarnings({"unchecked"})
   LongConcurrentLinkedHashMap(Builder builder) {
     // The data store and its maximum capacity

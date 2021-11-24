@@ -1,13 +1,8 @@
 package jane.core.map;
 
-/**
- * Same as 'java.util.Map' but uses primitive 'long' keys to minimise boxing (and GC) overhead.
- */
-public interface LongMap<V> extends Iterable<V>
-{
-	/**
-	 * Returns the number of elements in this map.
-	 */
+/** Same as 'java.util.Map' but uses primitive 'long' keys to minimise boxing (and GC) overhead. */
+public interface LongMap<V> extends Iterable<V> {
+	/** Returns the number of elements in this map. */
 	int size();
 
 	/**
@@ -22,17 +17,17 @@ public interface LongMap<V> extends Iterable<V>
 	 *
 	 * @param key the key.
 	 * @return the value of the mapping with the specified key, or {@code null}
-	 *         if no mapping for the specified key is found.
+	 * 		if no mapping for the specified key is found.
 	 */
 	V get(long key);
 
 	/**
 	 * Maps the specified key to the specified value.
 	 *
-	 * @param key the key.
+	 * @param key   the key.
 	 * @param value the value.
 	 * @return the value of any previous mapping with the specified key or
-	 *         {@code null} if there was no such mapping.
+	 *        {@code null} if there was no such mapping.
 	 */
 	V put(long key, V value);
 
@@ -46,17 +41,14 @@ public interface LongMap<V> extends Iterable<V>
 
 	boolean remove(long key, V value);
 
-	/**
-	 * Removes all mappings from this hash map, leaving it empty.
-	 */
+	/** Removes all mappings from this hash map, leaving it empty. */
 	void clear();
 
 	LongIterator keyIterator();
 
 	MapIterator<V> entryIterator();
 
-	interface LongIterator
-	{
+	interface LongIterator {
 		boolean hasNext();
 
 		long next();
@@ -64,8 +56,7 @@ public interface LongMap<V> extends Iterable<V>
 		void remove();
 	}
 
-	interface MapIterator<V>
-	{
+	interface MapIterator<V> {
 		boolean moveToNext();
 
 		long key();

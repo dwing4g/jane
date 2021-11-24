@@ -48,7 +48,7 @@ public interface IoProcessor<S extends IoSession> {
 	/**
 	 * Writes the WriteRequest for the specified {@code session}.
 	 *
-	 * @param session The session we want the message to be written
+	 * @param session      The session we want the message to be written
 	 * @param writeRequest the WriteRequest to write
 	 */
 	void write(S session, WriteRequest writeRequest);
@@ -62,13 +62,11 @@ public interface IoProcessor<S extends IoSession> {
 
 	/**
 	 * @return <tt>true</tt> if and if only {@link #dispose()} method has been called.
-	 * Please note that this method will return <tt>true</tt> even after all the related resources are released.
+	 * 		Please note that this method will return <tt>true</tt> even after all the related resources are released.
 	 */
 	boolean isDisposing();
 
-	/**
-	 * @return <tt>true</tt> if and if only all resources of this processor have been disposed.
-	 */
+	/** @return <tt>true</tt> if and if only all resources of this processor have been disposed. */
 	boolean isDisposed();
 
 	/**

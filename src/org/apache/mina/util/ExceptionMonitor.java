@@ -34,13 +34,11 @@ public class ExceptionMonitor {
 
 	private final Logger logger = LoggerFactory.getLogger(ExceptionMonitor.class);
 
-	/**
-	 * @return the current exception monitor.
-	 */
+	/** @return the current exception monitor. */
 	public static ExceptionMonitor getInstance() {
 		ExceptionMonitor monitor = instance;
 		if (monitor == null) {
-			synchronized(ExceptionMonitor.class) {
+			synchronized (ExceptionMonitor.class) {
 				monitor = instance;
 				if (monitor == null)
 					instance = monitor = new ExceptionMonitor();

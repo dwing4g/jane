@@ -20,9 +20,7 @@ package org.apache.mina.core.write;
 
 import org.apache.mina.core.session.IoSession;
 
-/**
- * Stores {@link WriteRequest}s which are queued to an {@link IoSession}.
- */
+/** Stores {@link WriteRequest}s which are queued to an {@link IoSession}. */
 public interface WriteRequestQueue {
 	/**
 	 * Add a new WriteRequest to the session write's queue at last

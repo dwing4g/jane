@@ -20,9 +20,7 @@ package org.apache.mina.core.service;
 
 import org.apache.mina.core.session.IoSession;
 
-/**
- * Handles all I/O events fired by MINA.
- */
+/** Handles all I/O events fired by MINA. */
 public interface IoHandler {
 	/**
 	 * Invoked from an I/O processor thread when a new connection has been created.
@@ -74,7 +72,7 @@ public interface IoHandler {
 	 * Invoked when any exception is thrown by user {@link IoHandler} implementation or by MINA.
 	 *
 	 * @param session The session for which we have got an exception
-	 * @param cause The exception that has been caught
+	 * @param cause   The exception that has been caught
 	 * @throws Exception If we get an exception while processing the caught exception
 	 */
 	void exceptionCaught(IoSession session, Throwable cause) throws Exception;

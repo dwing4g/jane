@@ -24,38 +24,31 @@ java ...... -javaagent:lib/jane-core.jar ......
 
 WARNING: Eclipse JDT compiler is not compatible with javac when reloading class
 */
-public final class ClassReloader
-{
+public final class ClassReloader {
 	private static Instrumentation _inst;
 
-	private ClassReloader()
-	{
+	private ClassReloader() {
 	}
 
-	public static Instrumentation getInstrumentation()
-	{
+	public static Instrumentation getInstrumentation() {
 		return _inst;
 	}
 
-	public static void premain(@SuppressWarnings("unused") String args, Instrumentation inst)
-	{
+	public static void premain(@SuppressWarnings("unused") String args, Instrumentation inst) {
 		_inst = inst;
 	}
 
 	@SuppressWarnings("ResultOfMethodCallIgnored")
-	public static String getClassPathFromData(byte[] classData) throws IOException
-	{
+	public static String getClassPathFromData(byte[] classData) throws IOException {
 		DataInputStream dis = new DataInputStream(new ByteArrayInputStream(classData));
 		dis.readLong(); // skip magic[4] and version[4]
 		int constCount = dis.readUnsignedShort() - 1;
 		int[] classes = new int[constCount];
 		String[] strings = new String[constCount];
-		for (int i = 0; i < constCount; ++i)
-		{
+		for (int i = 0; i < constCount; ++i) {
 			int t = dis.read();
 			// System.out.println(String.format("%6X: %4d/%4d = %d", classData.length - dis.available(), i + 1, constCount, t));
-			switch (t)
-			{
+			switch (t) {
 			case 1:
 				strings[i] = dis.readUTF();
 				break;
@@ -83,15 +76,13 @@ public final class ClassReloader
 		return strings[classes[dis.readUnsignedShort() - 1] - 1].replace('/', '.');
 	}
 
-	public static void reloadClass(byte[] classData) throws Exception, Error
-	{
+	public static void reloadClass(byte[] classData) throws Exception, Error {
 		if (_inst == null)
 			throw new NullPointerException("Instrumentation not initialized");
 		_inst.redefineClasses(new ClassDefinition(Class.forName(getClassPathFromData(classData)), classData));
 	}
 
-	public static void reloadClasses(Collection<byte[]> classDatas) throws Exception, Error
-	{
+	public static void reloadClasses(Collection<byte[]> classDatas) throws Exception, Error {
 		if (_inst == null)
 			throw new NullPointerException("Instrumentation not initialized");
 		int i = 0, n = classDatas.size();
@@ -101,22 +92,18 @@ public final class ClassReloader
 		_inst.redefineClasses(clsDefs);
 	}
 
-	public static int reloadClasses(ZipFile zipFile) throws Exception, Error
-	{
+	public static int reloadClasses(ZipFile zipFile) throws Exception, Error {
 		if (_inst == null)
 			throw new NullPointerException("Instrumentation not initialized");
 		ArrayList<byte[]> classDatas = new ArrayList<>();
-		for (Enumeration<? extends ZipEntry> zipEnum = zipFile.entries(); zipEnum.hasMoreElements();)
-		{
+		for (Enumeration<? extends ZipEntry> zipEnum = zipFile.entries(); zipEnum.hasMoreElements(); ) {
 			ZipEntry ze = zipEnum.nextElement();
 			if (ze.isDirectory() || !ze.getName().endsWith(".class"))
 				continue;
 			int len = (int)ze.getSize();
-			if (len > 0)
-			{
+			if (len > 0) {
 				byte[] classData = new byte[len];
-				try (InputStream is = zipFile.getInputStream(ze))
-				{
+				try (InputStream is = zipFile.getInputStream(ze)) {
 					Util.readStream(is, ze.getName(), classData, len);
 				}
 				classDatas.add(classData);

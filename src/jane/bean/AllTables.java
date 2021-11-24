@@ -13,8 +13,7 @@ import jane.core.TableLong;
 import jane.core.map.IntHashMap;
 
 /** 全部的数据库表的注册和使用类(自动生成的静态类) */
-public final class AllTables
-{
+public final class AllTables {
 	private AllTables() {}
 	private static final DBManager _dbm = DBManager.instance();
 	/**
@@ -41,8 +40,7 @@ public final class AllTables
 	 */
 	public static final TableLong<TestBean, TestBean.Safe> Benchmark = _dbm.openTable(3, "Benchmark", "bench", 0, TestBean.BEAN_STUB);
 
-	public static final class MetaTable
-	{
+	public static final class MetaTable {
 		private static final ArrayList<MetaTable> metaList = new ArrayList<>(4);
 		private static final IntHashMap<MetaTable> idMetas = new IntHashMap<>(4 * 2);
 		private static final HashMap<String, MetaTable> nameMetas = new HashMap<>(4 * 2);
@@ -51,8 +49,7 @@ public final class AllTables
 		public final Object keyBeanStub; // Class<?> or Bean<?>
 		public final Bean<?> valueBeanStub;
 
-		private MetaTable(TableBase<?> tbl, Object kbs, Bean<?> vbs)
-		{
+		private MetaTable(TableBase<?> tbl, Object kbs, Bean<?> vbs) {
 			table = tbl;
 			keyBeanStub = kbs;
 			valueBeanStub = vbs;
@@ -60,26 +57,22 @@ public final class AllTables
 			nameMetas.put(tbl.getTableName(), this);
 		}
 
-		static
-		{
+		static {
 			metaList.add(new MetaTable(TestTable, long.class, TestType.BEAN_STUB));
 			metaList.add(new MetaTable(BeanTable, TestKeyBean.BEAN_STUB, TestBean.BEAN_STUB));
 			metaList.add(new MetaTable(OctetsTable, Octets.class, TestEmpty.BEAN_STUB));
 			metaList.add(new MetaTable(Benchmark, long.class, TestBean.BEAN_STUB));
 		}
 
-		public static MetaTable get(int tableId)
-		{
+		public static MetaTable get(int tableId) {
 			return idMetas.get(tableId);
 		}
 
-		public static MetaTable get(String tableName)
-		{
+		public static MetaTable get(String tableName) {
 			return nameMetas.get(tableName);
 		}
 
-		public static void foreach(Consumer<MetaTable> consumer)
-		{
+		public static void foreach(Consumer<MetaTable> consumer) {
 			metaList.forEach(consumer);
 		}
 	}
@@ -87,8 +80,7 @@ public final class AllTables
 	/**
 	 * 以下内部类可以单独使用,避免初始化前面的表对象
 	 */
-	public static final class SimpleMetaTable
-	{
+	public static final class SimpleMetaTable {
 		private static final ArrayList<SimpleMetaTable> metaList = new ArrayList<>(4);
 		private static final IntHashMap<SimpleMetaTable> idMetas = new IntHashMap<>(4 * 2);
 		private static final HashMap<String, SimpleMetaTable> nameMetas = new HashMap<>(4 * 2);
@@ -98,8 +90,7 @@ public final class AllTables
 		public final Object keyBeanStub; // Class<?> or Bean<?>
 		public final Bean<?> valueBeanStub;
 
-		private SimpleMetaTable(int id, String name, Object kbs, Bean<?> vbs)
-		{
+		private SimpleMetaTable(int id, String name, Object kbs, Bean<?> vbs) {
 			tableId = id;
 			tableName = name;
 			keyBeanStub = kbs;
@@ -108,26 +99,22 @@ public final class AllTables
 			nameMetas.put(name, this);
 		}
 
-		static
-		{
+		static {
 			metaList.add(new SimpleMetaTable(1, "TestTable", long.class, TestType.BEAN_STUB));
 			metaList.add(new SimpleMetaTable(2, "BeanTable", TestKeyBean.BEAN_STUB, TestBean.BEAN_STUB));
 			metaList.add(new SimpleMetaTable(-1, "OctetsTable", Octets.class, TestEmpty.BEAN_STUB));
 			metaList.add(new SimpleMetaTable(3, "Benchmark", long.class, TestBean.BEAN_STUB));
 		}
 
-		public static SimpleMetaTable get(int tableId)
-		{
+		public static SimpleMetaTable get(int tableId) {
 			return idMetas.get(tableId);
 		}
 
-		public static SimpleMetaTable get(String tableName)
-		{
+		public static SimpleMetaTable get(String tableName) {
 			return nameMetas.get(tableName);
 		}
 
-		public static void foreach(Consumer<SimpleMetaTable> consumer)
-		{
+		public static void foreach(Consumer<SimpleMetaTable> consumer) {
 			metaList.forEach(consumer);
 		}
 	}

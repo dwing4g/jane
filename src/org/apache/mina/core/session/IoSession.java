@@ -32,25 +32,25 @@ import org.apache.mina.transport.socket.AbstractSocketSessionConfig;
 
 /**
  * <p>
- *   A handle which represents connection between two end-points regardless of transport types.
+ * A handle which represents connection between two end-points regardless of transport types.
  * </p>
  * <p>
- *   {@link IoSession} provides user-defined attributes.
- *   User-defined attributes are application-specific data which are associated with a session.
- *   It often contains objects that represents the state of a higher-level protocol
- *   and becomes a way to exchange data between filters and handlers.
+ * {@link IoSession} provides user-defined attributes.
+ * User-defined attributes are application-specific data which are associated with a session.
+ * It often contains objects that represents the state of a higher-level protocol
+ * and becomes a way to exchange data between filters and handlers.
  * </p>
  * <h3>Adjusting Transport Type Specific Properties</h3>
  * <p>
- *   You can simply downcast the session to an appropriate subclass.
+ * You can simply downcast the session to an appropriate subclass.
  * </p>
  * <h3>Thread Safety</h3>
  * <p>
- *   {@link IoSession} is thread-safe.  But please note that performing
- *   more than one {@link #write(Object)} calls at the same time will
- *   cause the {@link IoFilter#filterWrite(IoFilter.NextFilter,IoSession,WriteRequest)}
- *   to be executed simultaneously, and therefore you have to make sure the
- *   {@link IoFilter} implementations you're using are thread-safe, too.
+ * {@link IoSession} is thread-safe.  But please note that performing
+ * more than one {@link #write(Object)} calls at the same time will
+ * cause the {@link IoFilter#filterWrite(IoFilter.NextFilter, IoSession, WriteRequest)}
+ * to be executed simultaneously, and therefore you have to make sure the
+ * {@link IoFilter} implementations you're using are thread-safe, too.
  * </p>
  * <h3>Equality of Sessions</h3>
  * TODO: The getId() method is totally wrong.
@@ -61,18 +61,14 @@ import org.apache.mina.transport.socket.AbstractSocketSessionConfig;
 public interface IoSession {
 	/**
 	 * @return a unique identifier for this session.
-	 *         Every session has its own ID which is different from each other.
+	 * 		Every session has its own ID which is different from each other.
 	 */
 	long getId();
 
-	/**
-	 * @return the socket address of local machine which is associated with this session.
-	 */
+	/** @return the socket address of local machine which is associated with this session. */
 	InetSocketAddress getLocalAddress();
 
-	/**
-	 * @return the socket address of remote peer.
-	 */
+	/** @return the socket address of remote peer. */
 	InetSocketAddress getRemoteAddress();
 
 	/**
@@ -82,35 +78,27 @@ public interface IoSession {
 	 */
 	boolean isReadSuspended();
 
-	/**
-	 * Suspends read operations for this session.
-	 */
+	/** Suspends read operations for this session. */
 	void suspendRead();
 
-	/**
-	 * Resumes read operations for this session.
-	 */
+	/** Resumes read operations for this session. */
 	void resumeRead();
 
-	/**
-	 * @return <tt>true</tt> if this session is active.
-	 */
+	/** @return <tt>true</tt> if this session is active. */
 	boolean isActive();
 
-	/**
-	 * @return <tt>true</tt> if this session is connected with remote peer.
-	 */
+	/** @return <tt>true</tt> if this session is connected with remote peer. */
 	boolean isConnected();
 
 	/**
 	 * @return <tt>true</tt> if and only if this session is being closed
-	 * (but not disconnected yet) or is closed.
+	 * 		(but not disconnected yet) or is closed.
 	 */
 	boolean isClosing();
 
 	/**
 	 * @return the {@link CloseFuture} of this session.
-	 * This method returns the same instance whenever user calls it.
+	 * 		This method returns the same instance whenever user calls it.
 	 */
 	CloseFuture getCloseFuture();
 
@@ -131,24 +119,16 @@ public interface IoSession {
 
 	void shutdownOnFlush();
 
-	/**
-	 * @return the {@link IoService} which provides I/O service to this session.
-	 */
+	/** @return the {@link IoService} which provides I/O service to this session. */
 	IoService getService();
 
-	/**
-	 * @return the {@link IoHandler} which handles this session.
-	 */
+	/** @return the {@link IoHandler} which handles this session. */
 	IoHandler getHandler();
 
-	/**
-	 * @return the configuration of this session.
-	 */
+	/** @return the configuration of this session. */
 	AbstractSocketSessionConfig getConfig();
 
-	/**
-	 * @return the filter chain that only affects this session.
-	 */
+	/** @return the filter chain that only affects this session. */
 	IoFilterChain getFilterChain();
 
 	/**
@@ -207,7 +187,7 @@ public interface IoSession {
 	 * }
 	 * </pre>
 	 *
-	 * @param key the key of the attribute we want to retreive
+	 * @param key          the key of the attribute we want to retreive
 	 * @param defaultValue the default value of the attribute
 	 * @return The retrieved attribute or <tt>null</tt> if not found
 	 */
@@ -216,7 +196,7 @@ public interface IoSession {
 	/**
 	 * Sets a user-defined attribute.
 	 *
-	 * @param key the key of the attribute
+	 * @param key   the key of the attribute
 	 * @param value the value of the attribute
 	 * @return The old value of the attribute.  <tt>null</tt> if it is new.
 	 */
@@ -233,7 +213,7 @@ public interface IoSession {
 	 * }
 	 * </pre>
 	 *
-	 * @param key The key of the attribute we want to set
+	 * @param key   The key of the attribute we want to set
 	 * @param value The value we want to set
 	 * @return The old value of the attribute.  <tt>null</tt> if not found.
 	 */
@@ -260,7 +240,7 @@ public interface IoSession {
 	 * }
 	 * </pre>
 	 *
-	 * @param key The key we want to remove
+	 * @param key   The key we want to remove
 	 * @param value The value we want to remove
 	 * @return <tt>true</tt> if the removal was successful
 	 */
@@ -279,7 +259,7 @@ public interface IoSession {
 	 * }
 	 * </pre>
 	 *
-	 * @param key The key we want to replace
+	 * @param key      The key we want to replace
 	 * @param oldValue The previous value
 	 * @param newValue The new value
 	 * @return <tt>true</tt> if the replacement was successful
@@ -292,8 +272,6 @@ public interface IoSession {
 	 */
 	boolean containsAttribute(Object key);
 
-	/**
-	 * @return the set of keys of all user-defined attributes.
-	 */
+	/** @return the set of keys of all user-defined attributes. */
 	Set<Object> getAttributeKeys();
 }

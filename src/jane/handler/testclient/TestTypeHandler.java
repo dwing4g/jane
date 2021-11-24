@@ -6,11 +6,9 @@ import jane.core.Log;
 import jane.core.NetManager;
 import org.apache.mina.core.session.IoSession;
 
-public final class TestTypeHandler implements BeanHandler<TestType>
-{
+public final class TestTypeHandler implements BeanHandler<TestType> {
 	@Override
-	public TestType beanStub()
-	{
+	public TestType beanStub() {
 		return TestType.BEAN_STUB;
 	}
 
@@ -38,8 +36,7 @@ public final class TestTypeHandler implements BeanHandler<TestType>
 	\*/
 
 	@Override
-	public void onProcess(final NetManager manager, final IoSession session, final TestType arg)
-	{
+	public void onProcess(final NetManager manager, final IoSession session, final TestType arg) {
 		Log.debug("{}.onProcess: arg={}", getClass().getName(), arg);
 		manager.answer(session, arg, arg);
 	}

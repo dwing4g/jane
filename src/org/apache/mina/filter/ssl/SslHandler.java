@@ -109,9 +109,7 @@ public final class SslHandler {
 		this.session = session;
 	}
 
-	/**
-	 * Initialize the SSL handshake.
-	 */
+	/** Initialize the SSL handshake. */
 	void init() {
 		if (sslEngine != null)
 			return; // We already have a SSL engine created, no need to create a new one
@@ -158,9 +156,7 @@ public final class SslHandler {
 		writingEncryptedData = false;
 	}
 
-	/**
-	 * Release allocated buffers.
-	 */
+	/** Release allocated buffers. */
 	void destroy() {
 		if (sslEngine == null)
 			return;
@@ -191,9 +187,7 @@ public final class SslHandler {
 		preHandshakeEventQueue.clear();
 	}
 
-	/**
-	 * @return The SSL filter which has created this handler
-	 */
+	/** @return The SSL filter which has created this handler */
 	public SslFilter getSslFilter() {
 		return sslFilter;
 	}
@@ -211,16 +205,12 @@ public final class SslHandler {
 		return entry != null ? entry.getNextFilter() : null;
 	}
 
-	/**
-	 * Check if we are writing encrypted data.
-	 */
+	/** Check if we are writing encrypted data. */
 	boolean isWritingEncryptedData() {
 		return writingEncryptedData;
 	}
 
-	/**
-	 * Check if handshake is completed.
-	 */
+	/** Check if handshake is completed. */
 	boolean isHandshakeComplete() {
 		return handshakeComplete;
 	}
@@ -251,7 +241,7 @@ public final class SslHandler {
 	 * Push the newly received data into a queue, waiting for the SSL session to be fully established
 	 *
 	 * @param nextFilter The next filter to call
-	 * @param message The incoming data
+	 * @param message    The incoming data
 	 */
 	void scheduleMessageReceived(NextFilter nextFilter, Object message) {
 		messageReceivedEventQueue.add(new SimpleEntry<>(nextFilter, message));
@@ -285,7 +275,7 @@ public final class SslHandler {
 	 * It will perform the initial hanshake or decrypt the data if SSL has been initialiaed.
 	 *
 	 * @param nextFilter Next filter in chain
-	 * @param buf buffer to decrypt
+	 * @param buf        buffer to decrypt
 	 * @throws SSLException on errors
 	 */
 	void messageReceived(NextFilter nextFilter, ByteBuffer buf) throws Exception {
@@ -401,7 +391,7 @@ public final class SslHandler {
 	 * Start SSL shutdown process.
 	 *
 	 * @return <tt>true</tt> if shutdown process is started.
-	 *         <tt>false</tt> if shutdown process is already finished.
+	 * 		<tt>false</tt> if shutdown process is already finished.
 	 * @throws SSLException on errors
 	 */
 	boolean closeOutbound() throws SSLException {
@@ -412,7 +402,7 @@ public final class SslHandler {
 
 		createOutNetBuffer(0);
 
-		for (;;) {
+		for (; ; ) {
 			SSLEngineResult result = sslEngine.wrap(SimpleBufferAllocator.emptyBuffer.buf(), outNetBuffer.buf());
 			if (result.getStatus() != Status.BUFFER_OVERFLOW) {
 				if (result.getStatus() != Status.CLOSED)
@@ -469,11 +459,9 @@ public final class SslHandler {
 		}
 	}
 
-	/**
-	 * Perform any handshaking processing.
-	 */
+	/** Perform any handshaking processing. */
 	void handshake(NextFilter nextFilter) throws Exception {
-		for (;;) {
+		for (; ; ) {
 			switch (handshakeStatus) {
 			case FINISHED:
 				// LOGGER.debug("{} processing the FINISHED state", SslFilter.getSessionInfo(session));
@@ -518,7 +506,7 @@ public final class SslHandler {
 
 				createOutNetBuffer(0);
 
-				for (;;) {
+				for (; ; ) {
 					SSLEngineResult result = sslEngine.wrap(SimpleBufferAllocator.emptyBuffer.buf(), outNetBuffer.buf());
 					if (result.getStatus() != Status.BUFFER_OVERFLOW) {
 						handshakeStatus = result.getHandshakeStatus();
@@ -636,9 +624,7 @@ public final class SslHandler {
 		}
 	}
 
-	/**
-	 * Decrypt the incoming buffer and move the decrypted data to an application buffer.
-	 */
+	/** Decrypt the incoming buffer and move the decrypted data to an application buffer. */
 	private SSLEngineResult unwrap() throws SSLException {
 		// We first have to create the application buffer if it does not exist
 		if (appBuffer == null)
@@ -677,9 +663,7 @@ public final class SslHandler {
 		return res;
 	}
 
-	/**
-	 * Do all the outstanding handshake tasks in the current Thread.
-	 */
+	/** Do all the outstanding handshake tasks in the current Thread. */
 	private HandshakeStatus doTasks() {
 		// We could run this in a separate thread, but I don't see the need for this when used from SSLFilter.
 		// Use thread filters in MINA instead?
@@ -703,9 +687,7 @@ public final class SslHandler {
 		return sb.append("; handshakeComplete:").append(handshakeComplete).append('>').toString();
 	}
 
-	/**
-	 * Free the allocated buffers
-	 */
+	/** Free the allocated buffers */
 	void release() {
 		if (inNetBuffer != null) {
 			inNetBuffer.free();

@@ -50,9 +50,7 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 	/** The list of filters */
 	private final CopyOnWriteArrayList<Entry> entries;
 
-	/**
-	 * Creates a new instance with an empty filter list.
-	 */
+	/** Creates a new instance with an empty filter list. */
 	public DefaultIoFilterChainBuilder() {
 		this(null);
 	}
@@ -67,10 +65,9 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 	}
 
 	/**
-	 * @see IoFilterChain#getEntry(String)
-	 *
 	 * @param name The Filter's name we are looking for
 	 * @return The found Entry
+	 * @see IoFilterChain#getEntry(String)
 	 */
 	public Entry getEntry(String name) {
 		for (Entry e : entries) {
@@ -82,10 +79,9 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 	}
 
 	/**
-	 * @see IoFilterChain#getEntry(IoFilter)
-	 *
 	 * @param filter The Filter we are looking for
 	 * @return The found Entry
+	 * @see IoFilterChain#getEntry(IoFilter)
 	 */
 	public Entry getEntry(IoFilter filter) {
 		for (Entry e : entries) {
@@ -97,10 +93,9 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 	}
 
 	/**
-	 * @see IoFilterChain#getEntry(Class)
-	 *
 	 * @param filterType The FilterType we are looking for
 	 * @return The found Entry
+	 * @see IoFilterChain#getEntry(Class)
 	 */
 	public Entry getEntry(Class<? extends IoFilter> filterType) {
 		for (Entry e : entries) {
@@ -112,18 +107,16 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 	}
 
 	/**
-	 * @see IoFilterChain#getAll()
-	 *
 	 * @return The list of Filters
+	 * @see IoFilterChain#getAll()
 	 */
 	public ArrayList<Entry> getAll() {
 		return new ArrayList<>(entries);
 	}
 
 	/**
-	 * @see IoFilterChain#getAllReversed()
-	 *
 	 * @return The list of Filters, reversed
+	 * @see IoFilterChain#getAllReversed()
 	 */
 	public ArrayList<Entry> getAllReversed() {
 		ArrayList<Entry> result = getAll();
@@ -132,34 +125,31 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 	}
 
 	/**
-	 * @see IoFilterChain#addFirst(String, IoFilter)
-	 *
-	 * @param name The filter's name
+	 * @param name   The filter's name
 	 * @param filter The filter to add
+	 * @see IoFilterChain#addFirst(String, IoFilter)
 	 */
 	public synchronized void addFirst(String name, IoFilter filter) {
 		register(0, new EntryImpl(name, filter));
 	}
 
 	/**
-	 * @see IoFilterChain#addLast(String, IoFilter)
-	 *
-	 * @param name The filter's name
+	 * @param name   The filter's name
 	 * @param filter The filter to add
+	 * @see IoFilterChain#addLast(String, IoFilter)
 	 */
 	public synchronized void addLast(String name, IoFilter filter) {
 		register(entries.size(), new EntryImpl(name, filter));
 	}
 
 	/**
-	 * @see IoFilterChain#addBefore(String, String, IoFilter)
-	 *
 	 * @param baseName The filter baseName
-	 * @param name The filter's name
-	 * @param filter The filter to add
+	 * @param name     The filter's name
+	 * @param filter   The filter to add
+	 * @see IoFilterChain#addBefore(String, String, IoFilter)
 	 */
 	public synchronized void addBefore(String baseName, String name, IoFilter filter) {
-		for (ListIterator<Entry> it = entries.listIterator(); it.hasNext();) {
+		for (ListIterator<Entry> it = entries.listIterator(); it.hasNext(); ) {
 			if (it.next().getName().equals(baseName)) {
 				register(it.previousIndex(), new EntryImpl(name, filter));
 				return;
@@ -170,14 +160,13 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 	}
 
 	/**
-	 * @see IoFilterChain#addAfter(String, String, IoFilter)
-	 *
 	 * @param baseName The filter baseName
-	 * @param name The filter's name
-	 * @param filter The filter to add
+	 * @param name     The filter's name
+	 * @param filter   The filter to add
+	 * @see IoFilterChain#addAfter(String, String, IoFilter)
 	 */
 	public synchronized void addAfter(String baseName, String name, IoFilter filter) {
-		for (ListIterator<Entry> it = entries.listIterator(); it.hasNext();) {
+		for (ListIterator<Entry> it = entries.listIterator(); it.hasNext(); ) {
 			if (it.next().getName().equals(baseName)) {
 				register(it.nextIndex(), new EntryImpl(name, filter));
 				return;
@@ -188,13 +177,12 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 	}
 
 	/**
-	 * @see IoFilterChain#remove(String)
-	 *
 	 * @param name The Filter's name to remove from the list of Filters
 	 * @return The removed IoFilter
+	 * @see IoFilterChain#remove(String)
 	 */
 	public synchronized IoFilter remove(String name) {
-		for (ListIterator<Entry> it = entries.listIterator(); it.hasNext();) {
+		for (ListIterator<Entry> it = entries.listIterator(); it.hasNext(); ) {
 			Entry e = it.next();
 			if (e.getName().equals(name)) {
 				entries.remove(it.previousIndex());
@@ -208,7 +196,7 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 	/**
 	 * Replace a filter by a new one.
 	 *
-	 * @param name The name of the filter to replace
+	 * @param name      The name of the filter to replace
 	 * @param newFilter The new filter to use
 	 * @return The replaced filter
 	 */
@@ -221,9 +209,7 @@ public final class DefaultIoFilterChainBuilder implements IoFilterChainBuilder {
 		return oldFilter;
 	}
 
-	/**
-	 * @see IoFilterChain#clear()
-	 */
+	/** @see IoFilterChain#clear() */
 	public synchronized void clear() {
 		entries.clear();
 	}

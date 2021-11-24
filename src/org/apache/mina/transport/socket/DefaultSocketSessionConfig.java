@@ -21,9 +21,7 @@ package org.apache.mina.transport.socket;
 import org.apache.mina.core.service.IoService;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 
-/**
- * A default implementation of {@link AbstractSocketSessionConfig}.
- */
+/** A default implementation of {@link AbstractSocketSessionConfig}. */
 public final class DefaultSocketSessionConfig extends AbstractSocketSessionConfig {
 	private static final int DEFAULT_SO_LINGER = -1;
 	private static final int DEFAULT_TRAFFIC_CLASS = 0;
@@ -42,9 +40,7 @@ public final class DefaultSocketSessionConfig extends AbstractSocketSessionConfi
 	private boolean keepAlive = DEFAULT_KEEP_ALIVE;
 	private boolean oobInline = DEFAULT_OOB_INLINE;
 
-	/**
-	 * @param p The parent IoService.
-	 */
+	/** @param p The parent IoService. */
 	public DefaultSocketSessionConfig(IoService p) {
 		reuseAddress = defaultReuseAddress = (p instanceof NioSocketAcceptor || DEFAULT_REUSE_ADDRESS);
 	}

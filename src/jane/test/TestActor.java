@@ -3,26 +3,21 @@ package jane.test;
 import jane.test.net.ActorThread;
 
 @SuppressWarnings("unused")
-public final class TestActor extends ActorThread
-{
-	protected TestActor(int id)
-	{
+public final class TestActor extends ActorThread {
+	protected TestActor(int id) {
 		super("TestActor-" + id);
 	}
 
-	private void on(Integer v)
-	{
+	private void on(Integer v) {
 		System.out.println(Thread.currentThread() + ": " + v);
 	}
 
-	private void on(ActorThread.Rpc<Integer> rpc)
-	{
+	private void on(ActorThread.Rpc<Integer> rpc) {
 		System.out.println(Thread.currentThread() + ": on Rpc");
 		rpc.answer(456);
 	}
 
-	public static void main(String[] args)
-	{
+	public static void main(String[] args) {
 		TestActor actor0 = new TestActor(0);
 		TestActor actor1 = new TestActor(1);
 		actor0.start();

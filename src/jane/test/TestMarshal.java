@@ -3,10 +3,8 @@ package jane.test;
 import jane.core.MarshalException;
 import jane.core.OctetsStream;
 
-public final class TestMarshal
-{
-	private static void testInt(int x) throws MarshalException
-	{
+public final class TestMarshal {
+	private static void testInt(int x) throws MarshalException {
 		OctetsStream os = new OctetsStream();
 		os.marshal(x);
 		int y = os.unmarshalInt();
@@ -16,8 +14,7 @@ public final class TestMarshal
 			throw new Error("unmarshal wrong position: " + x);
 	}
 
-	private static void testLong(long x) throws MarshalException
-	{
+	private static void testLong(long x) throws MarshalException {
 		OctetsStream os = new OctetsStream();
 		os.marshal(x);
 		long y = os.unmarshalLong();
@@ -27,8 +24,7 @@ public final class TestMarshal
 			throw new Error("unmarshal wrong position: " + x);
 	}
 
-	private static void testUInt(int x) throws MarshalException
-	{
+	private static void testUInt(int x) throws MarshalException {
 		OctetsStream os = new OctetsStream();
 		os.marshalUInt(x);
 		int y = os.unmarshalUInt();
@@ -38,8 +34,7 @@ public final class TestMarshal
 			throw new Error("unmarshal wrong position: " + x);
 	}
 
-	private static void testULong(long x) throws MarshalException
-	{
+	private static void testULong(long x) throws MarshalException {
 		OctetsStream os = new OctetsStream();
 		os.marshalULong(x);
 		long y = os.unmarshalULong();
@@ -49,8 +44,7 @@ public final class TestMarshal
 			throw new Error("unmarshal wrong position: " + x);
 	}
 
-	private static void testUTF8(char x) throws MarshalException
-	{
+	private static void testUTF8(char x) throws MarshalException {
 		OctetsStream os = new OctetsStream();
 		os.marshalUTF8(x);
 		int y = os.unmarshalUTF8();
@@ -60,8 +54,7 @@ public final class TestMarshal
 			throw new Error("unmarshal wrong position: " + (int)x);
 	}
 
-	private static void testAll(long x) throws MarshalException
-	{
+	private static void testAll(long x) throws MarshalException {
 		testInt((int)x);
 		testInt((int)-x);
 		testUInt((int)x & 0x7fff_ffff);
@@ -71,10 +64,8 @@ public final class TestMarshal
 		testLong(-x);
 	}
 
-	public static void main(String[] args) throws MarshalException
-	{
-		for (int i = 0; i <= 64; ++i)
-		{
+	public static void main(String[] args) throws MarshalException {
+		for (int i = 0; i <= 64; ++i) {
 			testAll(1L << i);
 			testAll((1L << i) - 1);
 			testAll(((1L << i) - 1) & 0x5555_5555_5555_5555L);

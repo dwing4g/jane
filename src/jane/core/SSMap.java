@@ -10,105 +10,88 @@ import jane.core.SContext.Safe;
  * <p>
  * 不支持key或value为null
  */
-public final class SSMap<K, V, S> extends SMap<K, V, S> implements NavigableMap<K, S>
-{
-	public SSMap(Safe<?> parent, NavigableMap<K, V> map, SMapListener<K, V> listener)
-	{
+public final class SSMap<K, V, S> extends SMap<K, V, S> implements NavigableMap<K, S> {
+	public SSMap(Safe<?> parent, NavigableMap<K, V> map, SMapListener<K, V> listener) {
 		super(parent, map, listener);
 	}
 
-	private SSMap(Safe<?> parent, NavigableMap<K, V> map, Map<K, V> changed)
-	{
+	private SSMap(Safe<?> parent, NavigableMap<K, V> map, Map<K, V> changed) {
 		super(parent, map, changed);
 	}
 
 	@Override
-	public Comparator<? super K> comparator()
-	{
+	public Comparator<? super K> comparator() {
 		return null;
 	}
 
 	@Override
-	public K firstKey()
-	{
+	public K firstKey() {
 		return ((NavigableMap<K, V>)_map).firstKey();
 	}
 
 	@Override
-	public K lastKey()
-	{
+	public K lastKey() {
 		return ((NavigableMap<K, V>)_map).lastKey();
 	}
 
 	@Override
-	public SEntry lowerEntry(K k)
-	{
+	public SEntry lowerEntry(K k) {
 		Entry<K, V> e = ((NavigableMap<K, V>)_map).lowerEntry(k);
 		return e != null ? new SEntry(e) : null;
 	}
 
 	@Override
-	public K lowerKey(K k)
-	{
+	public K lowerKey(K k) {
 		return ((NavigableMap<K, V>)_map).lowerKey(k);
 	}
 
 	@Override
-	public SEntry floorEntry(K k)
-	{
+	public SEntry floorEntry(K k) {
 		Entry<K, V> e = ((NavigableMap<K, V>)_map).floorEntry(k);
 		return e != null ? new SEntry(e) : null;
 	}
 
 	@Override
-	public K floorKey(K k)
-	{
+	public K floorKey(K k) {
 		return ((NavigableMap<K, V>)_map).floorKey(k);
 	}
 
 	@Override
-	public SEntry ceilingEntry(K k)
-	{
+	public SEntry ceilingEntry(K k) {
 		Entry<K, V> e = ((NavigableMap<K, V>)_map).ceilingEntry(k);
 		return e != null ? new SEntry(e) : null;
 	}
 
 	@Override
-	public K ceilingKey(K k)
-	{
+	public K ceilingKey(K k) {
 		return ((NavigableMap<K, V>)_map).ceilingKey(k);
 	}
 
 	@Override
-	public SEntry higherEntry(K k)
-	{
+	public SEntry higherEntry(K k) {
 		Entry<K, V> e = ((NavigableMap<K, V>)_map).higherEntry(k);
 		return e != null ? new SEntry(e) : null;
 	}
 
 	@Override
-	public K higherKey(K k)
-	{
+	public K higherKey(K k) {
 		return ((NavigableMap<K, V>)_map).higherKey(k);
 	}
 
 	@Override
-	public SEntry firstEntry()
-	{
+	public SEntry firstEntry() {
 		Entry<K, V> e = ((NavigableMap<K, V>)_map).firstEntry();
 		return e != null ? new SEntry(e) : null;
 	}
 
 	@Override
-	public SEntry lastEntry()
-	{
+	public SEntry lastEntry() {
 		Entry<K, V> e = ((NavigableMap<K, V>)_map).lastEntry();
 		return e != null ? new SEntry(e) : null;
 	}
 
 	@Override
-	public SEntry pollFirstEntry()
-	{
+	public SEntry pollFirstEntry() {
 		SContext ctx = sContext();
 		Entry<K, V> e = ((NavigableMap<K, V>)_map).pollFirstEntry();
 		if (e == null)
@@ -120,8 +103,7 @@ public final class SSMap<K, V, S> extends SMap<K, V, S> implements NavigableMap<
 	}
 
 	@Override
-	public SEntry pollLastEntry()
-	{
+	public SEntry pollLastEntry() {
 		SContext ctx = sContext();
 		Entry<K, V> e = ((NavigableMap<K, V>)_map).pollLastEntry();
 		if (e == null)
@@ -133,56 +115,47 @@ public final class SSMap<K, V, S> extends SMap<K, V, S> implements NavigableMap<
 	}
 
 	@Override
-	public SSMap<K, V, S> descendingMap()
-	{
+	public SSMap<K, V, S> descendingMap() {
 		return new SSMap<>(_parent, ((NavigableMap<K, V>)_map).descendingMap(), _changed);
 	}
 
 	@Override
-	public SSSet<K, K> navigableKeySet()
-	{
+	public SSSet<K, K> navigableKeySet() {
 		return new SSSet<>(_parent, ((NavigableMap<K, V>)_map).navigableKeySet(), null);
 	}
 
 	@Override
-	public SSSet<K, K> descendingKeySet()
-	{
+	public SSSet<K, K> descendingKeySet() {
 		return new SSSet<>(_parent, ((NavigableMap<K, V>)_map).descendingKeySet(), null);
 	}
 
 	@Override
-	public SSMap<K, V, S> subMap(K from, boolean fromInclusive, K to, boolean toInclusive)
-	{
+	public SSMap<K, V, S> subMap(K from, boolean fromInclusive, K to, boolean toInclusive) {
 		return new SSMap<>(_parent, ((NavigableMap<K, V>)_map).subMap(from, fromInclusive, to, toInclusive), _changed);
 	}
 
 	@Override
-	public SSMap<K, V, S> headMap(K to, boolean inclusive)
-	{
+	public SSMap<K, V, S> headMap(K to, boolean inclusive) {
 		return new SSMap<>(_parent, ((NavigableMap<K, V>)_map).headMap(to, inclusive), _changed);
 	}
 
 	@Override
-	public SSMap<K, V, S> tailMap(K from, boolean inclusive)
-	{
+	public SSMap<K, V, S> tailMap(K from, boolean inclusive) {
 		return new SSMap<>(_parent, ((NavigableMap<K, V>)_map).tailMap(from, inclusive), _changed);
 	}
 
 	@Override
-	public SSMap<K, V, S> subMap(K from, K to)
-	{
+	public SSMap<K, V, S> subMap(K from, K to) {
 		return subMap(from, true, to, false);
 	}
 
 	@Override
-	public SSMap<K, V, S> headMap(K to)
-	{
+	public SSMap<K, V, S> headMap(K to) {
 		return headMap(to, false);
 	}
 
 	@Override
-	public SSMap<K, V, S> tailMap(K from)
-	{
+	public SSMap<K, V, S> tailMap(K from) {
 		return tailMap(from, true);
 	}
 }

@@ -1,4 +1,5 @@
-# Default ignored files
+/dictionaries/
 /shelf/
+
 /uiDesigner.xml
 /workspace.xml

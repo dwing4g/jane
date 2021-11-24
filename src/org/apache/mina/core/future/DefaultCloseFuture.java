@@ -20,13 +20,9 @@ package org.apache.mina.core.future;
 
 import org.apache.mina.core.session.IoSession;
 
-/**
- * A default implementation of {@link CloseFuture}.
- */
+/** A default implementation of {@link CloseFuture}. */
 public final class DefaultCloseFuture extends DefaultIoFuture implements CloseFuture {
-	/**
-	 * @param session The associated session
-	 */
+	/** @param session The associated session */
 	public DefaultCloseFuture(IoSession session) {
 		super(session);
 	}

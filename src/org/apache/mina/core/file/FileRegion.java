@@ -20,9 +20,7 @@ package org.apache.mina.core.file;
 
 import java.nio.channels.FileChannel;
 
-/**
- * Indicates the region of a file to be sent to the remote host.
- */
+/** Indicates the region of a file to be sent to the remote host. */
 public interface FileRegion {
 	/**
 	 * The open <tt>FileChannel</tt> from which data will be read to send to remote host.

@@ -12,71 +12,59 @@ import jane.core.SContext.Safe;
  * <p>
  * 不支持value为null
  */
-public final class SList<V, S> implements List<S>, Cloneable
-{
+public final class SList<V, S> implements List<S>, Cloneable {
 	private final Safe<?> _parent;
 	private final List<V> _list;
 
-	public SList(Safe<?> parent, List<V> list)
-	{
+	public SList(Safe<?> parent, List<V> list) {
 		_parent = parent;
 		_list = list;
 	}
 
-	private SContext sContext()
-	{
+	private SContext sContext() {
 		_parent.checkLock();
 		_parent.dirty();
 		return SContext.current();
 	}
 
 	@Deprecated
-	public List<V> unsafe()
-	{
+	public List<V> unsafe() {
 		return _list;
 	}
 
 	@Override
-	public int size()
-	{
+	public int size() {
 		return _list.size();
 	}
 
 	@Override
-	public boolean isEmpty()
-	{
+	public boolean isEmpty() {
 		return _list.isEmpty();
 	}
 
 	@Override
-	public boolean contains(Object o)
-	{
+	public boolean contains(Object o) {
 		return _list.contains(SContext.unwrap(o));
 	}
 
 	@Override
-	public boolean containsAll(Collection<?> c)
-	{
+	public boolean containsAll(Collection<?> c) {
 		return _list.containsAll(c);
 	}
 
 	@Override
-	public int indexOf(Object o)
-	{
+	public int indexOf(Object o) {
 		return _list.indexOf(SContext.unwrap(o));
 	}
 
 	@Override
-	public int lastIndexOf(Object o)
-	{
+	public int lastIndexOf(Object o) {
 		return _list.lastIndexOf(SContext.unwrap(o));
 	}
 
-	static Object[] cloneObjs(Object[] vs)
-	{
+	static Object[] cloneObjs(Object[] vs) {
 		int n = vs.length;
-		if (n > 0 && vs[0] instanceof Bean)
-		{
+		if (n > 0 && vs[0] instanceof Bean) {
 			for (int i = 0; i < n; i++)
 				vs[i] = ((Bean<?>)vs[i]).clone();
 		}
@@ -84,11 +72,9 @@ public final class SList<V, S> implements List<S>, Cloneable
 	}
 
 	@SuppressWarnings("unchecked")
-	static <T> T[] cloneTs(T[] vs)
-	{
+	static <T> T[] cloneTs(T[] vs) {
 		int n = vs.length;
-		if (n > 0 && vs[0] instanceof Bean)
-		{
+		if (n > 0 && vs[0] instanceof Bean) {
 			for (int i = 0; i < n; i++)
 				vs[i] = (T)((Bean<?>)vs[i]).clone();
 		}
@@ -96,26 +82,22 @@ public final class SList<V, S> implements List<S>, Cloneable
 	}
 
 	@Override
-	public Object[] toArray()
-	{
+	public Object[] toArray() {
 		return cloneObjs(_list.toArray());
 	}
 
 	@Override
-	public <T> T[] toArray(T[] a)
-	{
+	public <T> T[] toArray(T[] a) {
 		//noinspection SuspiciousToArrayCall
 		return cloneTs(_list.toArray(a));
 	}
 
 	@Override
-	public S get(int idx)
-	{
+	public S get(int idx) {
 		return SContext.safe(_parent, _list.get(idx));
 	}
 
-	public boolean addDirect(V v)
-	{
+	public boolean addDirect(V v) {
 		SContext.checkStoreAll(v);
 		SContext ctx = sContext();
 		//noinspection ConstantConditions
@@ -126,13 +108,11 @@ public final class SList<V, S> implements List<S>, Cloneable
 	}
 
 	@Override
-	public boolean add(S s)
-	{
+	public boolean add(S s) {
 		return addDirect(SContext.unwrap(s));
 	}
 
-	public void addDirect(int idx, V v)
-	{
+	public void addDirect(int idx, V v) {
 		SContext.checkStoreAll(v);
 		SContext ctx = sContext();
 		_list.add(idx, v);
@@ -140,30 +120,23 @@ public final class SList<V, S> implements List<S>, Cloneable
 	}
 
 	@Override
-	public void add(int idx, S s)
-	{
+	public void add(int idx, S s) {
 		addDirect(idx, SContext.unwrap(s));
 	}
 
-	public boolean addAllDirect(Collection<? extends V> c)
-	{
-		if (!c.isEmpty())
-		{
+	public boolean addAllDirect(Collection<? extends V> c) {
+		if (!c.isEmpty()) {
 			for (V v : c)
 				SContext.checkStoreAll(v);
 			SContext ctx = sContext();
 			int n = _list.size();
 			if (!_list.addAll(c))
 				return false;
-			ctx.addOnRollback(() ->
-			{
-				if (n > 0)
-				{
+			ctx.addOnRollback(() -> {
+				if (n > 0) {
 					for (int i = _list.size() - 1; i >= n; --i)
 						SContext.unstoreAll(_list.remove(i));
-				}
-				else
-				{
+				} else {
 					_list.forEach(SContext::unstoreAll);
 					_list.clear();
 				}
@@ -173,25 +146,19 @@ public final class SList<V, S> implements List<S>, Cloneable
 	}
 
 	@Override
-	public boolean addAll(Collection<? extends S> c)
-	{
-		if (!c.isEmpty())
-		{
+	public boolean addAll(Collection<? extends S> c) {
+		if (!c.isEmpty()) {
 			for (S s : c)
 				SContext.checkStoreAll(SContext.unwrap(s));
 			SContext ctx = sContext();
 			int n = _list.size();
 			for (S s : c)
 				_list.add(SContext.unwrap(s));
-			ctx.addOnRollback(() ->
-			{
-				if (n > 0)
-				{
+			ctx.addOnRollback(() -> {
+				if (n > 0) {
 					for (int i = _list.size() - 1; i >= n; --i)
 						SContext.unstoreAll(_list.remove(i));
-				}
-				else
-				{
+				} else {
 					_list.forEach(SContext::unstoreAll);
 					_list.clear();
 				}
@@ -200,10 +167,8 @@ public final class SList<V, S> implements List<S>, Cloneable
 		return true;
 	}
 
-	public boolean addAllDirect(int idx, Collection<? extends V> c)
-	{
-		if (!c.isEmpty())
-		{
+	public boolean addAllDirect(int idx, Collection<? extends V> c) {
+		if (!c.isEmpty()) {
 			for (V v : c)
 				SContext.checkStoreAll(v);
 			SContext ctx = sContext();
@@ -211,15 +176,11 @@ public final class SList<V, S> implements List<S>, Cloneable
 			if (!_list.addAll(idx, c))
 				return false;
 			int nTail = n - idx;
-			ctx.addOnRollback(() ->
-			{
-				if (n > 0)
-				{
+			ctx.addOnRollback(() -> {
+				if (n > 0) {
 					for (int i = _list.size() - nTail - 1; i >= idx; i--)
 						SContext.unstoreAll(_list.remove(i));
-				}
-				else
-				{
+				} else {
 					_list.forEach(SContext::unstoreAll);
 					_list.clear();
 				}
@@ -229,10 +190,8 @@ public final class SList<V, S> implements List<S>, Cloneable
 	}
 
 	@Override
-	public boolean addAll(int idx, Collection<? extends S> c)
-	{
-		if (!c.isEmpty())
-		{
+	public boolean addAll(int idx, Collection<? extends S> c) {
+		if (!c.isEmpty()) {
 			for (S s : c)
 				SContext.checkStoreAll(SContext.unwrap(s));
 			SContext ctx = sContext();
@@ -240,15 +199,11 @@ public final class SList<V, S> implements List<S>, Cloneable
 			for (S s : c)
 				_list.add(SContext.unwrap(s));
 			int nTail = n - idx;
-			ctx.addOnRollback(() ->
-			{
-				if (n > 0)
-				{
+			ctx.addOnRollback(() -> {
+				if (n > 0) {
 					for (int i = _list.size() - nTail - 1; i >= idx; i--)
 						SContext.unstoreAll(_list.remove(i));
-				}
-				else
-				{
+				} else {
 					_list.forEach(SContext::unstoreAll);
 					_list.clear();
 				}
@@ -258,57 +213,48 @@ public final class SList<V, S> implements List<S>, Cloneable
 	}
 
 	@Deprecated
-	public V setUnsafe(int idx, V v)
-	{
+	public V setUnsafe(int idx, V v) {
 		SContext.checkStoreAll(v);
 		SContext ctx = sContext();
 		V vOld = _list.set(idx, v);
-		ctx.addOnRollback(() ->
-		{
+		ctx.addOnRollback(() -> {
 			SContext.checkStoreAll(vOld);
 			SContext.unstoreAll(_list.set(idx, vOld));
 		});
 		return SContext.unstoreAll(vOld);
 	}
 
-	public void setDirect(int idx, V v)
-	{
+	public void setDirect(int idx, V v) {
 		setUnsafe(idx, v);
 	}
 
 	@Override
-	public S set(int idx, S s)
-	{
+	public S set(int idx, S s) {
 		return SContext.safeAlone(setUnsafe(idx, SContext.unwrap(s)));
 	}
 
 	@Deprecated
-	public V removeUnsafe(int idx)
-	{
+	public V removeUnsafe(int idx) {
 		SContext ctx = sContext();
 		V vOld = _list.remove(idx);
-		ctx.addOnRollback(() ->
-		{
+		ctx.addOnRollback(() -> {
 			SContext.checkStoreAll(vOld);
 			_list.add(idx, vOld);
 		});
 		return SContext.unstoreAll(vOld);
 	}
 
-	public void removeDirect(int idx)
-	{
+	public void removeDirect(int idx) {
 		removeUnsafe(idx);
 	}
 
 	@Override
-	public S remove(int idx)
-	{
+	public S remove(int idx) {
 		return SContext.safeAlone(removeUnsafe(idx));
 	}
 
 	@Override
-	public boolean remove(Object o)
-	{
+	public boolean remove(Object o) {
 		int idx = indexOf(o);
 		if (idx < 0)
 			return false;
@@ -317,13 +263,10 @@ public final class SList<V, S> implements List<S>, Cloneable
 	}
 
 	@Override
-	public boolean removeAll(Collection<?> c)
-	{
+	public boolean removeAll(Collection<?> c) {
 		boolean r = false;
-		for (SIterator it = iterator(); it.hasNext();)
-		{
-			if (c.contains(it.nextUnsafe()))
-			{
+		for (SIterator it = iterator(); it.hasNext(); ) {
+			if (c.contains(it.nextUnsafe())) {
 				it.remove();
 				r = true;
 			}
@@ -332,13 +275,10 @@ public final class SList<V, S> implements List<S>, Cloneable
 	}
 
 	@Override
-	public boolean retainAll(Collection<?> c)
-	{
+	public boolean retainAll(Collection<?> c) {
 		boolean r = false;
-		for (SIterator it = iterator(); it.hasNext();)
-		{
-			if (!c.contains(it.nextUnsafe()))
-			{
+		for (SIterator it = iterator(); it.hasNext(); ) {
+			if (!c.contains(it.nextUnsafe())) {
 				it.remove();
 				r = true;
 			}
@@ -347,8 +287,7 @@ public final class SList<V, S> implements List<S>, Cloneable
 	}
 
 	@Override
-	public void clear()
-	{
+	public void clear() {
 		int n = _list.size();
 		if (n <= 0)
 			return;
@@ -359,11 +298,9 @@ public final class SList<V, S> implements List<S>, Cloneable
 		for (V v : _list)
 			saved[i++] = SContext.unstoreAll(v);
 		_list.clear();
-		ctx.addOnRollback(() ->
-		{
+		ctx.addOnRollback(() -> {
 			_list.clear();
-			for (int j = 0; j < n; j++)
-			{
+			for (int j = 0; j < n; j++) {
 				V v = saved[j];
 				SContext.checkStoreAll(v);
 				_list.add(v);
@@ -371,91 +308,77 @@ public final class SList<V, S> implements List<S>, Cloneable
 		});
 	}
 
-	public final class SIterator implements Iterator<S>
-	{
-		private final Iterator<V> _it  = _list.iterator();
-		private V				  _cur;
-		private int				  _idx = -1;
+	public final class SIterator implements Iterator<S> {
+		private final Iterator<V> _it = _list.iterator();
+		private V _cur;
+		private int _idx = -1;
 
-		private SIterator()
-		{
+		private SIterator() {
 		}
 
 		@Override
-		public boolean hasNext()
-		{
+		public boolean hasNext() {
 			return _it.hasNext();
 		}
 
 		@Deprecated
-		public V nextUnsafe()
-		{
+		public V nextUnsafe() {
 			_cur = _it.next();
 			++_idx;
 			return _cur;
 		}
 
 		@Override
-		public S next()
-		{
+		public S next() {
 			return SContext.safe(_parent, nextUnsafe());
 		}
 
 		@Override
-		public void remove()
-		{
+		public void remove() {
 			SContext ctx = sContext();
 			_it.remove();
 			int i = _idx--;
 			V v = SContext.unstoreAll(_cur);
-			ctx.addOnRollback(() ->
-			{
+			ctx.addOnRollback(() -> {
 				SContext.checkStoreAll(v);
 				_list.add(i, v);
 			});
 		}
 	}
 
-	public final class SListIterator implements ListIterator<S>
-	{
+	public final class SListIterator implements ListIterator<S> {
 		private final ListIterator<V> _it;
-		private V					  _cur;
-		private int					  _idx;
-		private int					  _idxOff;
+		private V _cur;
+		private int _idx;
+		private int _idxOff;
 
-		private SListIterator(int idx)
-		{
+		private SListIterator(int idx) {
 			_it = _list.listIterator(idx);
 			_idx = idx - 1;
 		}
 
 		@Override
-		public boolean hasNext()
-		{
+		public boolean hasNext() {
 			return _it.hasNext();
 		}
 
 		@Override
-		public boolean hasPrevious()
-		{
+		public boolean hasPrevious() {
 			return _it.hasPrevious();
 		}
 
 		@Override
-		public int nextIndex()
-		{
+		public int nextIndex() {
 			return _it.nextIndex();
 		}
 
 		@Override
-		public int previousIndex()
-		{
+		public int previousIndex() {
 			return _it.previousIndex();
 		}
 
 		@Deprecated
-		public V nextUnsafe()
-		{
+		public V nextUnsafe() {
 			_cur = _it.next();
 			++_idx;
 			_idxOff = 0;
@@ -463,14 +386,12 @@ public final class SList<V, S> implements List<S>, Cloneable
 		}
 
 		@Override
-		public S next()
-		{
+		public S next() {
 			return SContext.safe(_parent, nextUnsafe());
 		}
 
 		@Deprecated
-		public V previousUnsafe()
-		{
+		public V previousUnsafe() {
 			_cur = _it.previous();
 			--_idx;
 			_idxOff = 1;
@@ -478,48 +399,41 @@ public final class SList<V, S> implements List<S>, Cloneable
 		}
 
 		@Override
-		public S previous()
-		{
+		public S previous() {
 			return SContext.safe(_parent, previousUnsafe());
 		}
 
 		@Override
-		public void remove()
-		{
+		public void remove() {
 			SContext ctx = sContext();
 			_it.remove();
 			int i = _idx + _idxOff;
 			_idx -= 1 - _idxOff;
 			V v = SContext.unstoreAll(_cur);
-			ctx.addOnRollback(() ->
-			{
+			ctx.addOnRollback(() -> {
 				SContext.checkStoreAll(v);
 				_list.add(i, v);
 			});
 		}
 
-		public void setDirect(V v)
-		{
+		public void setDirect(V v) {
 			SContext.checkStoreAll(v);
 			SContext ctx = sContext();
 			_it.set(v);
 			int i = _idx + _idxOff;
 			V vOld = SContext.unstoreAll(_cur);
-			ctx.addOnRollback(() ->
-			{
+			ctx.addOnRollback(() -> {
 				SContext.checkStoreAll(vOld);
 				_list.set(i, vOld);
 			});
 		}
 
 		@Override
-		public void set(S s)
-		{
+		public void set(S s) {
 			setDirect(SContext.unwrap(s));
 		}
 
-		public void addDirect(V v)
-		{
+		public void addDirect(V v) {
 			SContext.checkStoreAll(v);
 			SContext ctx = sContext();
 			_it.add(v);
@@ -528,79 +442,66 @@ public final class SList<V, S> implements List<S>, Cloneable
 		}
 
 		@Override
-		public void add(S s)
-		{
+		public void add(S s) {
 			addDirect(SContext.unwrap(s));
 		}
 	}
 
 	@Override
-	public SIterator iterator()
-	{
+	public SIterator iterator() {
 		return new SIterator();
 	}
 
 	@Override
-	public SListIterator listIterator()
-	{
+	public SListIterator listIterator() {
 		return new SListIterator(0);
 	}
 
 	@Override
-	public SListIterator listIterator(int idx)
-	{
+	public SListIterator listIterator(int idx) {
 		return new SListIterator(idx);
 	}
 
 	@Override
-	public SList<V, S> subList(int idxFrom, int idxTo)
-	{
+	public SList<V, S> subList(int idxFrom, int idxTo) {
 		return new SList<>(_parent, _list.subList(idxFrom, idxTo));
 	}
 
-	public boolean foreachFilter(Predicate<V> filter, Predicate<S> consumer)
-	{
-		for (V v : _list)
-		{
+	public boolean foreachFilter(Predicate<V> filter, Predicate<S> consumer) {
+		for (V v : _list) {
 			if (filter.test(v) && !consumer.test(SContext.safe(_parent, v)))
 				return false;
 		}
 		return true;
 	}
 
-	public void appendTo(Collection<V> list)
-	{
+	public void appendTo(Collection<V> list) {
 		Util.appendDeep(_list, list);
 	}
 
-	public void cloneTo(Collection<V> list)
-	{
+	public void cloneTo(Collection<V> list) {
 		list.clear();
 		Util.appendDeep(_list, list);
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public List<V> clone()
-	{
+	public List<V> clone() {
 		return (List<V>)Util.appendDeep(_list, Util.newInstance(_list.getClass()));
 	}
 
 	@Override
-	public int hashCode()
-	{
+	public int hashCode() {
 		return _list.hashCode();
 	}
 
 	@Override
-	public boolean equals(Object o)
-	{
+	public boolean equals(Object o) {
 		return this == o || _list.equals(o);
 	}
 
 	@Override
-	public String toString()
-	{
+	public String toString() {
 		return _list.toString();
 	}
 }

@@ -175,9 +175,7 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
   private transient Collection<V> values;
   private transient Set<Entry<K, V>> entrySet;
 
-  /**
-   * Creates an instance based on the builder's configuration.
-   */
+  /** Creates an instance based on the builder's configuration. */
   @SuppressWarnings({"unchecked"})
   private ConcurrentLinkedHashMap(Builder builder) {
     // The data store and its maximum capacity
@@ -863,9 +861,7 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
       return (o == value) || value.equals(o);
     }
 
-    /**
-     * If the entry is available in the hash-table and page replacement policy.
-     */
+    /** If the entry is available in the hash-table and page replacement policy. */
     boolean isAlive() {
       return weight > 0;
     }

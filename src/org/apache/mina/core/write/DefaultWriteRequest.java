@@ -23,9 +23,7 @@ import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.session.IoSession;
 
-/**
- * The default implementation of {@link WriteRequest}.
- */
+/** The default implementation of {@link WriteRequest}. */
 public final class DefaultWriteRequest implements WriteRequest {
 	public static final WriteFuture UNUSED_FUTURE = new WriteFuture() {
 		@Override
@@ -102,7 +100,7 @@ public final class DefaultWriteRequest implements WriteRequest {
 
 	/**
 	 * @param message a message to write
-	 * @param future a future that needs to be notified when an operation is finished
+	 * @param future  a future that needs to be notified when an operation is finished
 	 */
 	public DefaultWriteRequest(Object message, WriteFuture future) {
 		if (message == null)

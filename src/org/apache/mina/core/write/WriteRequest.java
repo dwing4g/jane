@@ -21,20 +21,14 @@ package org.apache.mina.core.write;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.session.IoSession;
 
-/**
- * Represents write request fired by {@link IoSession#write(Object)}.
- */
+/** Represents write request fired by {@link IoSession#write(Object)}. */
 public interface WriteRequest {
-	/**
-	 * @return a message object to be written.
-	 */
+	/** @return a message object to be written. */
 	default Object writeRequestMessage() {
 		return this;
 	}
 
-	/**
-	 * @return {@link WriteFuture} that is associated with this write request.
-	 */
+	/** @return {@link WriteFuture} that is associated with this write request. */
 	default WriteFuture writeRequestFuture() {
 		return DefaultWriteRequest.UNUSED_FUTURE;
 	}

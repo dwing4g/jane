@@ -29,8 +29,8 @@ public interface IoBufferAllocator {
 	 * Returns the buffer which is capable of the specified size.
 	 *
 	 * @param capacity the capacity of the buffer
-	 * @param direct <tt>true</tt> to get a direct buffer,
-	 *               <tt>false</tt> to get a heap buffer.
+	 * @param direct   <tt>true</tt> to get a direct buffer,
+	 *                 <tt>false</tt> to get a heap buffer.
 	 * @return The allocated {@link IoBuffer}
 	 */
 	IoBuffer allocate(int capacity, boolean direct);
@@ -43,9 +43,7 @@ public interface IoBufferAllocator {
 	 */
 	IoBuffer wrap(ByteBuffer bb);
 
-	/**
-	 * Dispose of this allocator.
-	 */
+	/** Dispose of this allocator. */
 	default void dispose() {
 	}
 }

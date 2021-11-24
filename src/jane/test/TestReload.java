@@ -5,27 +5,22 @@ import jane.core.Util;
 import jane.tool.ClassReloader;
 
 // java -javaagent:jane-core.jar -cp bin jane.test.TestReload
-public final class TestReload
-{
+public final class TestReload {
 	private final int a = 123;
 
-	public void test()
-	{
+	public void test() {
 		System.out.println("func-1");
 
 		//noinspection Convert2Lambda,TrivialFunctionalExpressionUsage
-		new Runnable()
-		{
+		new Runnable() {
 			@Override
-			public void run()
-			{
+			public void run() {
 				System.out.println("inner-1: " + a);
 			}
 		}.run();
 	}
 
-	public static void main(String[] args) throws Exception
-	{
+	public static void main(String[] args) throws Exception {
 		TestReload a = new TestReload();
 		a.test();
 

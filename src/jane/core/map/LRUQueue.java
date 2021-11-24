@@ -1,17 +1,16 @@
 package jane.core.map;
 
-abstract class CacheEntryBase<V>
-{
+abstract class CacheEntryBase<V> {
 	protected long versionCopy;
-	protected long version;	   // volatile is not necessary for most situation
-	protected V	   value;
+	protected long version; // volatile is not necessary for most situation
+	protected V value;
 
 	/**
 	 * Determines the ordering of objects in this priority queue.
+	 *
 	 * @return <code>true</code> if parameter <tt>a</tt> is less than parameter <tt>b</tt>.
 	 */
-	final boolean lessThan(CacheEntryBase<?> that)
-	{
+	final boolean lessThan(CacheEntryBase<?> that) {
 		// reverse the parameter order so that the queue keeps the oldest items
 		return versionCopy > that.versionCopy;
 	}
@@ -23,20 +22,17 @@ abstract class CacheEntryBase<V>
  *
  * <p><b>NOTE</b>: This class will pre-allocate a full array of length <code>maxSize+1</code>.
  */
-final class LRUQueue<T extends CacheEntryBase<?>>
-{
+final class LRUQueue<T extends CacheEntryBase<?>> {
 	final T[] heap;
-	int		  size;	  // the number of elements currently stored in the PriorityQueue
-	int		  maxSize;
+	int size; // the number of elements currently stored in the PriorityQueue
+	int maxSize;
 
-	LRUQueue(int maxSize, T[] heap)
-	{
+	LRUQueue(int maxSize, T[] heap) {
 		this.heap = heap;
 		this.maxSize = maxSize;
 	}
 
-	static int calHeapSize(int maxSize)
-	{
+	static int calHeapSize(int maxSize) {
 		if (maxSize <= 0)
 			return 2; // allocate 1 extra to avoid if statement in top()
 		else if (maxSize == Integer.MAX_VALUE)
@@ -44,10 +40,8 @@ final class LRUQueue<T extends CacheEntryBase<?>>
 		return maxSize + 1; // +1 because all access to heap is 1-based. heap[0] is unused.
 	}
 
-	T insertWithOverflow(T element)
-	{
-		if (size < maxSize)
-		{
+	T insertWithOverflow(T element) {
+		if (size < maxSize) {
 			int i = ++size; // Adds an Object to a PriorityQueue in log(size) time
 			for (int j = i >>> 1; j > 0 && element.lessThan(heap[j]); i = j, j >>>= 1) // upHeap()
 				heap[i] = heap[j]; // shift parents down
@@ -62,13 +56,11 @@ final class LRUQueue<T extends CacheEntryBase<?>>
 	}
 
 	/** Removes and returns the least element of the PriorityQueue in log(size) time. */
-	T pop()
-	{
+	T pop() {
 		if (size <= 0)
 			return null;
 		T ret = heap[1]; // save first value
-		if (size == 1)
-		{
+		if (size == 1) {
 			heap[1] = null; // permit GC of objects
 			size = 0;
 			return ret;
@@ -79,14 +71,11 @@ final class LRUQueue<T extends CacheEntryBase<?>>
 		return ret;
 	}
 
-	private void downHeap(T node)
-	{
-		for (int i = 1, j = 2, k = 3;;) // j = i + i (find smaller child); k = j + 1;
-		{
+	private void downHeap(T node) {
+		for (int i = 1, j = 2, k = 3; ; ) { // j = i + i (find smaller child); k = j + 1;
 			if (k <= size && heap[k].lessThan(heap[j]))
 				j = k;
-			if (j > size || !heap[j].lessThan(node))
-			{
+			if (j > size || !heap[j].lessThan(node)) {
 				heap[i] = node; // install saved node
 				return;
 			}

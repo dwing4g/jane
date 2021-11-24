@@ -8,37 +8,33 @@ import jane.core.NetManager;
 import jane.core.Octets;
 import org.apache.mina.core.session.IoSession;
 
-public final class TestHttpBenchmark extends NetManager
-{
+public final class TestHttpBenchmark extends NetManager {
 	private static final Octets extraHead;
-	static
-	{
+
+	static {
 		extraHead = HttpCodec.createExtraHead(
 				"Server: jane",
 				"Connection: keep-alive",
 				"Content-Type: text/plain; charset=UTF-8");
 	}
+
 	private static final Octets body = Octets.wrap("Hello, World!\r\n".getBytes(StandardCharsets.UTF_8));
 
-	public TestHttpBenchmark()
-	{
+	public TestHttpBenchmark() {
 		setCodecFactory(HttpCodec::new);
 	}
 
 	@Override
-	protected void onAddSession(IoSession session)
-	{
+	protected void onAddSession(IoSession session) {
 		session.getConfig().setTcpNoDelay(true);
 	}
 
 	@Override
-	public void messageReceived(IoSession session, Object message)
-	{
+	public void messageReceived(IoSession session, Object message) {
 		HttpCodec.sendHead(session, "200 OK", 0, extraHead, body);
 	}
 
-	public static void main(String[] args)
-	{
+	public static void main(String[] args) {
 		Log.removeAppender("ASYNC_FILE");
 		Log.removeAppender("ASYNC_STDOUT");
 		setSharedIoThreadCount(args.length > 0 ? Integer.parseInt(args[0]) : Runtime.getRuntime().availableProcessors());

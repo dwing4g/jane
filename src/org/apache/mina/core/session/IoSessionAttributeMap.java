@@ -26,28 +26,27 @@ import java.util.Set;
  */
 public interface IoSessionAttributeMap {
 	/**
-	 * @return the value of user defined attribute associated with the specified key.
-	 * If there's no such attribute, the default value is returned.
 	 * This method is same with the following code except that the operation is performed atomically.
 	 * <pre>
-	 * if (containsAttribute(key)) {
-	 *     return getAttribute(key);
-	 * } else {
+	 * if (containsAttribute(key))
+	 * 	   return getAttribute(key);
+	 * else
 	 *     return defaultValue;
-	 * }
 	 * </pre>
 	 *
-	 * @param key The key we are looking for
+	 * @param key          The key we are looking for
 	 * @param defaultValue The default returned value if the attribute is not found
+	 * @return the value of user defined attribute associated with the specified key.
+	 * 		If there's no such attribute, the default value is returned.
 	 */
 	Object getAttribute(Object key, Object defaultValue);
 
 	/**
 	 * Sets a user-defined attribute.
 	 *
-	 * @param key the key of the attribute
+	 * @param key   the key of the attribute
 	 * @param value the value of the attribute
-	 * @return The old value of the attribute.  <tt>null</tt> if it is new.
+	 * @return The old value of the attribute. <tt>null</tt> if it is new.
 	 */
 	Object setAttribute(Object key, Object value);
 
@@ -55,14 +54,13 @@ public interface IoSessionAttributeMap {
 	 * Sets a user defined attribute if the attribute with the specified key is not set yet.
 	 * This method is same with the following code except that the operation is performed atomically.
 	 * <pre>
-	 * if (containsAttribute(key)) {
+	 * if (containsAttribute(key))
 	 *     return getAttribute(key);
-	 * } else {
+	 * else
 	 *     return setAttribute(key, value);
-	 * }
 	 * </pre>
 	 *
-	 * @param key The key we are looking for
+	 * @param key   The key we are looking for
 	 * @param value The value to inject
 	 * @return The previous attribute
 	 */
@@ -71,8 +69,8 @@ public interface IoSessionAttributeMap {
 	/**
 	 * Removes a user-defined attribute with the specified key.
 	 *
-	 * @return The old value of the attribute.  <tt>null</tt> if not found.
 	 * @param key The key we are looking for
+	 * @return The old value of the attribute.  <tt>null</tt> if not found.
 	 */
 	Object removeAttribute(Object key);
 
@@ -84,15 +82,14 @@ public interface IoSessionAttributeMap {
 	 * if (containsAttribute(key) &amp;&amp; getAttribute(key).equals(value)) {
 	 *     removeAttribute(key);
 	 *     return true;
-	 * } else {
+	 * } else
 	 *     return false;
-	 * }
 	 * </pre>
 	 *
-	 * @param key The key we are looking for
+	 * @param key   The key we are looking for
 	 * @param value The value to remove
 	 * @return <tt>true</tt> if the value has been removed,
-	 *         <tt>false</tt> if the key was not found of the value not removed
+	 * 		<tt>false</tt> if the key was not found of the value not removed
 	 */
 	boolean removeAttribute(Object key, Object value);
 
@@ -104,28 +101,24 @@ public interface IoSessionAttributeMap {
 	 * if (containsAttribute(key) &amp;&amp; getAttribute(key).equals(oldValue)) {
 	 *     setAttribute(key, newValue);
 	 *     return true;
-	 * } else {
+	 * } else
 	 *     return false;
-	 * }
 	 * </pre>
 	 *
-	 * @param key The key we are looking for
+	 * @param key      The key we are looking for
 	 * @param oldValue The old value to replace
 	 * @param newValue The new value to set
 	 * @return <tt>true</tt> if the value has been replaced,
-	 *         <tt>false</tt> if the key was not found of the value not replaced
+	 * 		<tt>false</tt> if the key was not found of the value not replaced
 	 */
 	boolean replaceAttribute(Object key, Object oldValue, Object newValue);
 
 	/**
-	 * @return <tt>true</tt> if this session contains the attribute with the specified <tt>key</tt>.
-	 *
 	 * @param key The key we are looking for
+	 * @return <tt>true</tt> if this session contains the attribute with the specified <tt>key</tt>.
 	 */
 	boolean containsAttribute(Object key);
 
-	/**
-	 * @return the set of keys of all user-defined attributes.
-	 */
+	/** @return the set of keys of all user-defined attributes. */
 	Set<Object> getAttributeKeys();
 }

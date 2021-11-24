@@ -16,12 +16,9 @@ import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.ssl.SslFilter;
 
-public final class TestHttpServer extends NetManager
-{
-	public TestHttpServer(String key_file, String key_pw) throws Exception
-	{
-		if (key_file != null && key_pw != null)
-		{
+public final class TestHttpServer extends NetManager {
+	public TestHttpServer(String key_file, String key_pw) throws Exception {
+		if (key_file != null && key_pw != null) {
 			SslFilter sf = HttpCodec.getSslFilter(key_file, key_pw);
 			sf.setUseClientMode(false);
 			getAcceptor().getDefaultIoFilterChainBuilder().addFirst("ssl", sf);
@@ -30,20 +27,17 @@ public final class TestHttpServer extends NetManager
 	}
 
 	@Override
-	protected void onAddSession(IoSession session)
-	{
+	protected void onAddSession(IoSession session) {
 		System.out.println("onAddSession");
 	}
 
 	@Override
-	protected void onDelSession(IoSession session)
-	{
+	protected void onDelSession(IoSession session) {
 		System.out.println("onDelSession");
 	}
 
 	@Override
-	public void messageReceived(IoSession session, Object message)
-	{
+	public void messageReceived(IoSession session, Object message) {
 		OctetsStream os = (OctetsStream)message;
 		System.out.println("messageReceived: " + os.position() + '/' + os.size());
 		System.out.println("verb: " + HttpCodec.getHeadVerb(os));
@@ -58,16 +52,14 @@ public final class TestHttpServer extends NetManager
 		HttpCodec.getHeadCookie(os, cookies);
 		for (Entry<String, String> e : cookies.entrySet())
 			System.out.println("cookie: " + e.getKey() + ": " + e.getValue());
-		String[] heads = new String[] {
+		String[] heads = new String[]{
 				"Server: jane",
 				"Connection: keep-alive",
 				"Cache-Control: no-cache",
 				"Pragma: no-cache",
-				null };
-		if (params.containsKey("file"))
-		{
-			try
-			{
+				null};
+		if (params.containsKey("file")) {
+			try {
 				heads[4] = "Content-Type: application/octet-stream";
 				final FileInputStream fis = new FileInputStream('.' + path);
 				final FileChannel fc = fis.getChannel();
@@ -77,29 +69,21 @@ public final class TestHttpServer extends NetManager
 				Throwable e = wf.getException();
 				if (e != null)
 					throw e;
-				wf.addListener(future ->
-				{
-					try
-					{
+				wf.addListener(future -> {
+					try {
 						fc.close();
 						fis.close();
-					}
-					catch (IOException ex)
-					{
+					} catch (IOException ex) {
 						ex.printStackTrace();
 					}
 				});
-			}
-			catch (Throwable e)
-			{
+			} catch (Throwable e) {
 				heads[4] = "Content-Type: text/html; charset=utf-8";
 				HttpCodec.sendHead(session, "404 Not Found", -1, heads);
 				HttpCodec.sendChunk(session, "<html><body><pre>" + e + "</pre></body></html>");
 				HttpCodec.sendChunkEnd(session);
 			}
-		}
-		else
-		{
+		} else {
 			heads[4] = "Content-Type: text/html; charset=utf-8";
 			HttpCodec.sendHead(session, "200", -1, heads);
 			HttpCodec.sendChunk(session, "<html><body>TestHttpServer OK</body></html>");
@@ -107,8 +91,7 @@ public final class TestHttpServer extends NetManager
 		}
 	}
 
-	public static void main(String[] args) throws Exception
-	{
+	public static void main(String[] args) throws Exception {
 		new TestHttpServer(null, null).startServer(new InetSocketAddress("0.0.0.0", 80));
 		if (new File("server.keystore").exists())
 			new TestHttpServer("server.keystore", "123456").startServer(new InetSocketAddress("0.0.0.0", 443));

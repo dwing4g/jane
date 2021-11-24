@@ -73,10 +73,9 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 	}
 
 	/**
-	 * @see AbstractIoService#AbstractIoService(Executor)
-	 *
 	 * @param processor the {@link IoProcessor} for processing the {@link IoSession} of this transport,
-	 *            triggering events to the bound {@link IoHandler} and processing the chains of {@link IoFilter}
+	 *                  triggering events to the bound {@link IoHandler} and processing the chains of {@link IoFilter}
+	 * @see AbstractIoService#AbstractIoService(Executor)
 	 */
 	public NioSocketConnector(IoProcessor<NioSession> processor) {
 		super(processor);
@@ -134,7 +133,7 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 			return DefaultConnectFuture.newFailedFuture(e);
 		}
 
-   		return connect0(channel, true);
+		return connect0(channel, true);
 	}
 
 	private synchronized ConnectionRequest connect0(SocketChannel channel, boolean doConnect) {
@@ -163,7 +162,7 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 	private final class Connector implements Runnable, Consumer<SelectionKey> {
 		@Override
 		public void run() {
-			for (;;) {
+			for (; ; ) {
 				try {
 					if (!register() || selector.keys().isEmpty()) {
 						connectorRef.set(null);
@@ -206,7 +205,7 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 		}
 
 		private boolean register() {
-			for (;;) {
+			for (; ; ) {
 				ConnectionRequest req = registerQueue.poll();
 				if (req == null)
 					return true;
@@ -269,8 +268,7 @@ public final class NioSocketConnector extends AbstractIoService implements IoCon
 			if (doConnect) {
 				int timeout = getConnectTimeoutMillis();
 				deadline = (timeout > 0 ? System.currentTimeMillis() + timeout : Long.MAX_VALUE);
-			}
-			else
+			} else
 				deadline = 0;
 		}
 

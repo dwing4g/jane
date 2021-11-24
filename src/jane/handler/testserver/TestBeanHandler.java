@@ -7,11 +7,9 @@ import jane.core.Log;
 import jane.core.NetManager;
 import org.apache.mina.core.session.IoSession;
 
-public final class TestBeanHandler implements BeanHandler<TestBean>
-{
+public final class TestBeanHandler implements BeanHandler<TestBean> {
 	@Override
-	public TestBean beanStub()
-	{
+	public TestBean beanStub() {
 		return TestBean.BEAN_STUB;
 	}
 
@@ -23,12 +21,10 @@ public final class TestBeanHandler implements BeanHandler<TestBean>
 	\*/
 
 	@Override
-	public void onProcess(final NetManager manager, final IoSession session, final TestBean arg)
-	{
+	public void onProcess(final NetManager manager, final IoSession session, final TestBean arg) {
 		Log.debug("{}: arg={}", getClass().getName(), arg);
 		TestType bean = new TestType();
-		manager.ask(session, bean, re ->
-		{
+		manager.ask(session, bean, re -> {
 			Log.info("{}: onAnswer: ask={},answer={}", getClass().getName(), bean, re);
 			session.closeNow();
 		});

@@ -7,12 +7,9 @@ import jane.core.ExitManager;
 import jane.core.Log;
 import jane.tool.StatusServer;
 
-public final class TestMain
-{
-	public static void main(String[] args)
-	{
-		try
-		{
+public final class TestMain {
+	public static void main(String[] args) {
+		try {
 			Log.removeAppendersFromArgs(args);
 			Log.info("================================ startup: begin");
 			Log.logSystemProperties(args);
@@ -24,9 +21,7 @@ public final class TestMain
 			new StatusServer().startServer(new InetSocketAddress("0.0.0.0", 80));
 			Log.info("================================ startup: end");
 			ExitManager.waitStdInToExit();
-		}
-		catch (Throwable e)
-		{
+		} catch (Throwable e) {
 			Log.error("startup exception:", e);
 			e.printStackTrace(System.err);
 		}

@@ -62,7 +62,7 @@ import org.apache.mina.core.write.WriteRequest;
  *   <li>{@link #onPostRemove(IoFilterChain, String, NextFilter)} is invoked to
  *       notify that the filter is removed from the chain.</li>
  * </ol>
- *
+ * <p>
  * You can implement this interface and selectively override required event filter methods only.
  * All methods forwards events to the next filter by default.
  */
@@ -72,10 +72,10 @@ public interface IoFilter {
 	 * Please note that this method can be invoked more than once if
 	 * this filter is added to more than one parents.
 	 *
-	 * @param parent the parent who called this method
-	 * @param name the name assigned to this filter
+	 * @param parent     the parent who called this method
+	 * @param name       the name assigned to this filter
 	 * @param nextFilter the {@link NextFilter} for this filter.
-	 *            You can reuse this object until this filter is removed from the chain.
+	 *                   You can reuse this object until this filter is removed from the chain.
 	 * @throws Exception If an error occurred while processing the event
 	 */
 	@SuppressWarnings("RedundantThrows")
@@ -87,10 +87,10 @@ public interface IoFilter {
 	 * Please note that this method can be invoked more than once if
 	 * this filter is added to more than one parents.
 	 *
-	 * @param parent the parent who called this method
-	 * @param name the name assigned to this filter
+	 * @param parent     the parent who called this method
+	 * @param name       the name assigned to this filter
 	 * @param nextFilter the {@link NextFilter} for this filter.
-	 *            You can reuse this object until this filter is removed from the chain.
+	 *                   You can reuse this object until this filter is removed from the chain.
 	 * @throws Exception If an error occurred while processing the event
 	 */
 	default void onPostAdd(IoFilterChain parent, String name, NextFilter nextFilter) throws Exception {
@@ -101,10 +101,10 @@ public interface IoFilter {
 	 * Please note that this method can be invoked more than once if
 	 * this filter is removed from more than one parents.
 	 *
-	 * @param parent the parent who called this method
-	 * @param name the name assigned to this filter
+	 * @param parent     the parent who called this method
+	 * @param name       the name assigned to this filter
 	 * @param nextFilter the {@link NextFilter} for this filter.
-	 *            You can reuse this object until this filter is removed from the chain.
+	 *                   You can reuse this object until this filter is removed from the chain.
 	 * @throws Exception If an error occurred while processing the event
 	 */
 	default void onPreRemove(IoFilterChain parent, String name, NextFilter nextFilter) throws Exception {
@@ -115,10 +115,10 @@ public interface IoFilter {
 	 * Please note that this method can be invoked more than once if
 	 * this filter is removed from more than one parents.
 	 *
-	 * @param parent the parent who called this method
-	 * @param name the name assigned to this filter
+	 * @param parent     the parent who called this method
+	 * @param name       the name assigned to this filter
 	 * @param nextFilter the {@link NextFilter} for this filter.
-	 *            You can reuse this object until this filter is removed from the chain.
+	 *                   You can reuse this object until this filter is removed from the chain.
 	 * @throws Exception If an error occurred while processing the event
 	 */
 	@SuppressWarnings("RedundantThrows")
@@ -129,8 +129,8 @@ public interface IoFilter {
 	 * Filters {@link IoHandler#sessionCreated(IoSession)} event.
 	 *
 	 * @param nextFilter the {@link NextFilter} for this filter.
-	 *            You can reuse this object until this filter is removed from the chain.
-	 * @param session The {@link IoSession} which has received this event
+	 *                   You can reuse this object until this filter is removed from the chain.
+	 * @param session    The {@link IoSession} which has received this event
 	 * @throws Exception If an error occurred while processing the event
 	 */
 	default void sessionCreated(NextFilter nextFilter, IoSession session) throws Exception {
@@ -141,8 +141,8 @@ public interface IoFilter {
 	 * Filters {@link IoHandler#sessionOpened(IoSession)} event.
 	 *
 	 * @param nextFilter the {@link NextFilter} for this filter.
-	 *            You can reuse this object until this filter is removed from the chain.
-	 * @param session The {@link IoSession} which has received this event
+	 *                   You can reuse this object until this filter is removed from the chain.
+	 * @param session    The {@link IoSession} which has received this event
 	 * @throws Exception If an error occurred while processing the event
 	 */
 	default void sessionOpened(NextFilter nextFilter, IoSession session) throws Exception {
@@ -150,12 +150,12 @@ public interface IoFilter {
 	}
 
 	/**
-	 * Filters {@link IoHandler#messageReceived(IoSession,Object)} event.
+	 * Filters {@link IoHandler#messageReceived(IoSession, Object)} event.
 	 *
 	 * @param nextFilter the {@link NextFilter} for this filter.
-	 *            You can reuse this object until this filter is removed from the chain.
-	 * @param session The {@link IoSession} which has received this event
-	 * @param message The received message
+	 *                   You can reuse this object until this filter is removed from the chain.
+	 * @param session    The {@link IoSession} which has received this event
+	 * @param message    The received message
 	 * @throws Exception If an error occurred while processing the event
 	 */
 	default void messageReceived(NextFilter nextFilter, IoSession session, Object message) throws Exception {
@@ -165,9 +165,9 @@ public interface IoFilter {
 	/**
 	 * Filters {@link IoSession#write(Object)} method invocation.
 	 *
-	 * @param nextFilter the {@link NextFilter} for this filter.
-	 *            You can reuse this object until this filter is removed from the chain.
-	 * @param session The {@link IoSession} which has to process this invocation
+	 * @param nextFilter   the {@link NextFilter} for this filter.
+	 *                     You can reuse this object until this filter is removed from the chain.
+	 * @param session      The {@link IoSession} which has to process this invocation
 	 * @param writeRequest The {@link WriteRequest} to process
 	 * @throws Exception If an error occurred while processing the event
 	 */
@@ -179,8 +179,8 @@ public interface IoFilter {
 	 * Filters {@link IoSession#closeNow()} or a {@link IoSession#closeOnFlush()} method invocations.
 	 *
 	 * @param nextFilter the {@link NextFilter} for this filter.
-	 *            You can reuse this object until this filter is removed from the chain.
-	 * @param session The {@link IoSession} which has to process this method invocation
+	 *                   You can reuse this object until this filter is removed from the chain.
+	 * @param session    The {@link IoSession} which has to process this method invocation
 	 * @throws Exception If an error occurred while processing the event
 	 */
 	default void filterClose(NextFilter nextFilter, IoSession session) throws Exception {
@@ -191,8 +191,8 @@ public interface IoFilter {
 	 * Filters {@link IoHandler#inputClosed(IoSession)} event.
 	 *
 	 * @param nextFilter the {@link NextFilter} for this filter.
-	 *            You can reuse this object until this filter is removed from the chain.
-	 * @param session The {@link IoSession} which has received this event
+	 *                   You can reuse this object until this filter is removed from the chain.
+	 * @param session    The {@link IoSession} which has received this event
 	 * @throws Exception If an error occurred while processing the event
 	 */
 	default void inputClosed(NextFilter nextFilter, IoSession session) throws Exception {
@@ -203,8 +203,8 @@ public interface IoFilter {
 	 * Filters {@link IoHandler#sessionClosed(IoSession)} event.
 	 *
 	 * @param nextFilter the {@link NextFilter} for this filter.
-	 *            You can reuse this object until this filter is removed from the chain.
-	 * @param session The {@link IoSession} which has received this event
+	 *                   You can reuse this object until this filter is removed from the chain.
+	 * @param session    The {@link IoSession} which has received this event
 	 * @throws Exception If an error occurred while processing the event
 	 */
 	default void sessionClosed(NextFilter nextFilter, IoSession session) throws Exception {
@@ -212,30 +212,24 @@ public interface IoFilter {
 	}
 
 	/**
-	 * Filters {@link IoHandler#exceptionCaught(IoSession,Throwable)} event.
+	 * Filters {@link IoHandler#exceptionCaught(IoSession, Throwable)} event.
 	 *
 	 * @param nextFilter the {@link NextFilter} for this filter.
-	 *            You can reuse this object until this filter is removed from the chain.
-	 * @param session The {@link IoSession} which has received this event
-	 * @param cause The exception that cause this event to be received
+	 *                   You can reuse this object until this filter is removed from the chain.
+	 * @param session    The {@link IoSession} which has received this event
+	 * @param cause      The exception that cause this event to be received
 	 * @throws Exception If an error occurred while processing the event
 	 */
 	default void exceptionCaught(NextFilter nextFilter, IoSession session, Throwable cause) throws Exception {
 		nextFilter.exceptionCaught(cause);
 	}
 
-	/**
-	 * Represents the next {@link IoFilter} in {@link IoFilterChain}.
-	 */
+	/** Represents the next {@link IoFilter} in {@link IoFilterChain}. */
 	interface NextFilter {
-		/**
-		 * Forwards <tt>sessionCreated</tt> event to next filter.
-		 */
+		/** Forwards <tt>sessionCreated</tt> event to next filter. */
 		void sessionCreated() throws Exception;
 
-		/**
-		 * Forwards <tt>sessionOpened</tt> event to next filter.
-		 */
+		/** Forwards <tt>sessionOpened</tt> event to next filter. */
 		void sessionOpened() throws Exception;
 
 		/**
@@ -252,19 +246,13 @@ public interface IoFilter {
 		 */
 		void filterWrite(WriteRequest writeRequest) throws Exception;
 
-		/**
-		 * Forwards <tt>filterClose</tt> event to next filter.
-		 */
+		/** Forwards <tt>filterClose</tt> event to next filter. */
 		void filterClose() throws Exception;
 
-		/**
-		 * Forwards <tt>inputClosed</tt> event to next filter.
-		 */
+		/** Forwards <tt>inputClosed</tt> event to next filter. */
 		void inputClosed() throws Exception;
 
-		/**
-		 * Forwards <tt>sessionClosed</tt> event to next filter.
-		 */
+		/** Forwards <tt>sessionClosed</tt> event to next filter. */
 		void sessionClosed() throws Exception;
 
 		/**

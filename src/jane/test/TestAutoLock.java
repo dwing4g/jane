@@ -7,10 +7,8 @@ import jane.core.Const;
 import jane.core.DBManager;
 import jane.core.Procedure;
 
-public final class TestAutoLock
-{
-	public static void main(String[] args) throws Exception
-	{
+public final class TestAutoLock {
+	public static void main(String[] args) throws Exception {
 		DBManager.instance().startup();
 		AllTables.register();
 
@@ -24,24 +22,20 @@ public final class TestAutoLock
 		final CountDownLatch cd1 = new CountDownLatch(2);
 		final CountDownLatch cd2 = new CountDownLatch(1);
 
-		DBManager.instance().submit(new Procedure()
-		{
+		DBManager.instance().submit(new Procedure() {
 			@Override
-			protected void onProcess() throws Exception
-			{
+			protected void onProcess() throws Exception {
 				System.out.println("A: begin");
 				TestType.Safe t1 = AllTables.TestTable.lockGet(k1);
 				System.out.println("A1: " + (t1 != null ? t1.getV4() : 0));
 				Thread.sleep(1000);
 				TestType.Safe t2 = AllTables.TestTable.lockGet(k2);
 				System.out.println("A2: " + (t2 != null ? t2.getV4() : 0));
-				if (t1 == null)
-				{
+				if (t1 == null) {
 					t1 = new TestType().safe();
 					AllTables.TestTable.put(k1, t1);
 				}
-				if (t2 == null)
-				{
+				if (t2 == null) {
 					t2 = new TestType().safe();
 					AllTables.TestTable.put(k2, t2);
 				}
@@ -55,11 +49,9 @@ public final class TestAutoLock
 			}
 		});
 
-		DBManager.instance().submit(new Procedure()
-		{
+		DBManager.instance().submit(new Procedure() {
 			@Override
-			protected void onProcess() throws Exception
-			{
+			protected void onProcess() throws Exception {
 				System.out.println("B: begin");
 				Thread.sleep(500);
 				TestType.Safe t2 = AllTables.TestTable.lockGet(k2);
@@ -67,13 +59,11 @@ public final class TestAutoLock
 				Thread.sleep(1000);
 				TestType.Safe t1 = AllTables.TestTable.lockGet(k1);
 				System.out.println("B1: " + (t1 != null ? t1.getV4() : 0));
-				if (t1 == null)
-				{
+				if (t1 == null) {
 					t1 = new TestType().safe();
 					AllTables.TestTable.put(k1, t1);
 				}
-				if (t2 == null)
-				{
+				if (t2 == null) {
 					t2 = new TestType().safe();
 					AllTables.TestTable.put(k2, t2);
 				}
@@ -87,11 +77,9 @@ public final class TestAutoLock
 			}
 		});
 
-		DBManager.instance().submit(new Procedure()
-		{
+		DBManager.instance().submit(new Procedure() {
 			@Override
-			protected void onProcess() throws Exception
-			{
+			protected void onProcess() throws Exception {
 				System.out.println("C: begin");
 				cd1.await();
 				TestType.Safe t1 = AllTables.TestTable.lockGet(k1);

@@ -151,7 +151,7 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 		@Override
 		public void run() {
 			processorThread = Thread.currentThread();
-			for (int nbTries = 10;;) {
+			for (int nbTries = 10; ; ) {
 				if (disposing) {
 					if (!isDisposed()) {
 						try {
@@ -277,10 +277,10 @@ public final class NioProcessor implements IoProcessor<NioSession> {
 						long len = region.getRemainingBytes();
 						if (len > 0) {
 							region.update(region.getFileChannel().transferTo(region.getPosition(), len, session.getChannel()));
-    						if (region.getRemainingBytes() > 0) {
-    							session.setInterestedInWrite(true);
-    							return;
-    						}
+							if (region.getRemainingBytes() > 0) {
+								session.setInterestedInWrite(true);
+								return;
+							}
 						}
 						req.writeRequestFuture().setWritten();
 					} else if (req == NioSession.CLOSE_REQUEST) {

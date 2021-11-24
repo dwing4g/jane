@@ -436,9 +436,7 @@ final class LinkedDeque<E extends Linked<E>> extends AbstractCollection<E> imple
   }
 }
 
-/**
- * An element that is linked on the {@link Deque}.
- */
+/** An element that is linked on the {@link Deque}. */
 interface Linked<T extends Linked<T>> {
   /**
    * Retrieves the previous element or <tt>null</tt> if either the element is

@@ -20,13 +20,9 @@ package org.apache.mina.core.future;
 
 import org.apache.mina.core.session.IoSession;
 
-/**
- * A default implementation of {@link WriteFuture}.
- */
+/** A default implementation of {@link WriteFuture}. */
 public final class DefaultWriteFuture extends DefaultIoFuture implements WriteFuture {
-	/**
-	 * @param session The associated session
-	 */
+	/** @param session The associated session */
 	public DefaultWriteFuture(IoSession session) {
 		super(session);
 	}
@@ -47,7 +43,7 @@ public final class DefaultWriteFuture extends DefaultIoFuture implements WriteFu
 	 * Returns a new {@link DefaultWriteFuture} which is already marked as 'not written'.
 	 *
 	 * @param session The associated session
-	 * @param cause The reason why the message has not be written
+	 * @param cause   The reason why the message has not be written
 	 * @return A new future for not written message
 	 */
 	public static WriteFuture newNotWrittenFuture(IoSession session, Throwable cause) {

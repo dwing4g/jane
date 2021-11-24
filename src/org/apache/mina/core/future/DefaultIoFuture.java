@@ -25,9 +25,7 @@ import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioProcessor;
 import org.apache.mina.util.ExceptionMonitor;
 
-/**
- * A default implementation of {@link IoFuture} associated with an {@link IoSession}.
- */
+/** A default implementation of {@link IoFuture} associated with an {@link IoSession}. */
 public class DefaultIoFuture implements IoFuture {
 	/** A number of milliseconds to wait between two deadlock controls ( 5 seconds ) */
 	private static final long DEAD_LOCK_CHECK_INTERVAL = 5000L;
@@ -142,7 +140,7 @@ public class DefaultIoFuture implements IoFuture {
 			waiters++;
 
 			try {
-				for (;;) {
+				for (; ; ) {
 					try {
 						// Wait for the requested period of time,
 						// but every DEAD_LOCK_CHECK_INTERVAL seconds, we will check that we aren't blocked.
@@ -169,9 +167,7 @@ public class DefaultIoFuture implements IoFuture {
 		}
 	}
 
-	/**
-	 * Check for a deadlock, ie look into the stack trace that we don't have already an instance of the caller.
-	 */
+	/** Check for a deadlock, ie look into the stack trace that we don't have already an instance of the caller. */
 	private void checkDeadLock() {
 		// Only read / write / connect / write future can cause dead lock.
 		if (!(this instanceof CloseFuture || this instanceof WriteFuture || this instanceof ConnectFuture))
@@ -214,9 +210,7 @@ public class DefaultIoFuture implements IoFuture {
 		return waiters < 0;
 	}
 
-	/**
-	 * @return the result of the asynchronous operation.
-	 */
+	/** @return the result of the asynchronous operation. */
 	public synchronized Object getValue() {
 		return result;
 	}
@@ -226,7 +220,7 @@ public class DefaultIoFuture implements IoFuture {
 	 *
 	 * @param newValue The result to store into the Future
 	 * @return {@code true} if the value has been set, {@code false} if
-	 * the future already has a value (thus is in ready state)
+	 * 		the future already has a value (thus is in ready state)
 	 */
 	public boolean setValue(Object newValue) {
 		synchronized (this) {
@@ -293,9 +287,7 @@ public class DefaultIoFuture implements IoFuture {
 		return this;
 	}
 
-	/**
-	 * Notify the listeners, if we have some.
-	 */
+	/** Notify the listeners, if we have some. */
 	private void notifyListeners() {
 		// There won't be any visibility problem or concurrent modification
 		// because 'ready' flag will be checked against both addListener and removeListener calls.

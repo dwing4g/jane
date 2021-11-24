@@ -23,35 +23,29 @@ import jane.core.Util;
  * 一般用于给出原版jar和新版jar,生成新版的补丁jar,空目录会被忽略
  * 也可用于zip格式
  */
-public final class DiffJars
-{
+public final class DiffJars {
 	private final MessageDigest md5;
 
-	public DiffJars() throws NoSuchAlgorithmException
-	{
+	public DiffJars() throws NoSuchAlgorithmException {
 		md5 = MessageDigest.getInstance("MD5");
 	}
 
-	public byte[] getMd5(byte[] data, int pos, int len)
-	{
+	public byte[] getMd5(byte[] data, int pos, int len) {
 		md5.reset();
 		md5.update(data, pos, len);
 		return md5.digest();
 	}
 
-	public static void ensurePath(ZipOutputStream zos, HashSet<String> pathes, String path) throws IOException
-	{
+	public static void ensurePath(ZipOutputStream zos, HashSet<String> pathes, String path) throws IOException {
 		int p = path.lastIndexOf('/');
 		if (p < 0 || pathes.contains(path.substring(0, p + 1)))
 			return;
-		for (p = 0;;)
-		{
+		for (p = 0; ; ) {
 			p = path.indexOf('/', p);
 			if (p < 0)
 				break;
 			String subPath = path.substring(0, ++p);
-			if (!pathes.contains(subPath))
-			{
+			if (!pathes.contains(subPath)) {
 				pathes.add(subPath);
 				zos.putNextEntry(new ZipEntry(subPath));
 				zos.closeEntry();
@@ -59,15 +53,13 @@ public final class DiffJars
 		}
 	}
 
-	public int diffJars(ZipFile jar1, ZipFile jar2, OutputStream osJar, PrintStream osLog) throws IOException
-	{
+	public int diffJars(ZipFile jar1, ZipFile jar2, OutputStream osJar, PrintStream osLog) throws IOException {
 		int count = 0;
 		HashMap<String, byte[]> jar1Md5s = new HashMap<>();
 		HashSet<String> pathes = new HashSet<>();
 		byte[] buf = new byte[0x10000];
 
-		for (Enumeration<? extends ZipEntry> zipEnum = jar1.entries(); zipEnum.hasMoreElements();)
-		{
+		for (Enumeration<? extends ZipEntry> zipEnum = jar1.entries(); zipEnum.hasMoreElements(); ) {
 			ZipEntry ze = zipEnum.nextElement();
 			if (ze.isDirectory())
 				continue;
@@ -76,19 +68,16 @@ public final class DiffJars
 				continue;
 			if (len > buf.length)
 				buf = new byte[len];
-			try (InputStream is = jar1.getInputStream(ze))
-			{
+			try (InputStream is = jar1.getInputStream(ze)) {
 				Util.readStream(is, ze.getName(), buf, len);
 			}
 			jar1Md5s.put(ze.getName(), getMd5(buf, 0, len));
 		}
 
-		try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(osJar)))
-		{
+		try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(osJar))) {
 			zos.setMethod(ZipOutputStream.DEFLATED);
 			zos.setLevel(Deflater.BEST_COMPRESSION);
-			for (Enumeration<? extends ZipEntry> zipEnum = jar2.entries(); zipEnum.hasMoreElements();)
-			{
+			for (Enumeration<? extends ZipEntry> zipEnum = jar2.entries(); zipEnum.hasMoreElements(); ) {
 				ZipEntry ze = zipEnum.nextElement();
 				if (ze.isDirectory())
 					continue;
@@ -98,8 +87,7 @@ public final class DiffJars
 				if (len > buf.length)
 					buf = new byte[len];
 				String name = ze.getName();
-				try (InputStream is = jar2.getInputStream(ze))
-				{
+				try (InputStream is = jar2.getInputStream(ze)) {
 					Util.readStream(is, name, buf, len);
 				}
 				if (Arrays.equals(getMd5(buf, 0, len), jar1Md5s.get(name)))
@@ -116,18 +104,15 @@ public final class DiffJars
 		return count;
 	}
 
-	public static void main(String[] args) throws Exception
-	{
-		if (args.length < 3)
-		{
+	public static void main(String[] args) throws Exception {
+		if (args.length < 3) {
 			System.err.println("USAGE: java -cp jane-core.jar jane.tool.DiffJars <file1.jar> <file2.jar> <diff.jar>");
 			return;
 		}
 
 		System.out.printf("%s -> %s = %s ... %n", args[0], args[1], args[2]);
 		int count;
-		try (ZipFile jar1 = new ZipFile(args[0]); ZipFile jar2 = new ZipFile(args[1]); FileOutputStream osJar = new FileOutputStream(args[2]))
-		{
+		try (ZipFile jar1 = new ZipFile(args[0]); ZipFile jar2 = new ZipFile(args[1]); FileOutputStream osJar = new FileOutputStream(args[2])) {
 			count = new DiffJars().diffJars(jar1, jar2, osJar, System.out);
 		}
 		System.out.printf("done! (%d files)%n", count);

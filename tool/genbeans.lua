@@ -26,8 +26,7 @@ import java.lang.reflect.Field;#>#
 import #(bean.imports);
 #(bean.comment)
 @SuppressWarnings({"RedundantIfStatement", "RedundantSuppression", "SwitchStatementWithTooFewBranches", "UnnecessaryLocalVariable"})
-public #(bean.final)class #(bean.name) extends Bean<#(bean.name)>
-{
+public #(bean.final)class #(bean.name) extends Bean<#(bean.name)> {
 	private static final long serialVersionUID = #(bean.uid);
 	public  static final int BEAN_TYPE = #(bean.type);
 	public  static final String BEAN_TYPENAME = #(bean.name).class.getSimpleName();
@@ -36,104 +35,87 @@ public #(bean.final)class #(bean.name) extends Bean<#(bean.name)>
 #}#
 #(#	#(bean.modifier) /*#(var.id3)*/ #(var.final)#(var.type) #(var.name);#(var.comment2)
 #)##<#
-	public #(bean.name)()
-	{
+	public #(bean.name)() {
 #(##(var.new)#)#	}
 
-	public #(bean.name)(#(##(var.type_i) #(var.name), #)#)
-	{
+	public #(bean.name)(#(##(var.type_i) #(var.name), #)#) {
 #(#		#(var.init);
 #)#	}
 
 #>#	@Override
-	public void reset()
-	{
+	public void reset() {
 #(#		#(var.reset);
 #)#	}
 
 	#(bean.param_warning)@Override
-	public void assign(#(bean.name) _b_)
-	{#<#
+	public void assign(#(bean.name) _b_) {#<#
 		if (_b_ == this) return;
 		if (_b_ == null) { reset(); return; }#>#
 #(#		#(var.assign);
 #)#	}
 #(#
 	/** @return #(var.comment1) */
-	public #(var.type) get#(var.name_u)()
-	{
+	public #(var.type) get#(var.name_u)() {
 		return #(var.name);
 	}
 #(var.set)#)#
 	@Override
-	public int type()
-	{
+	public int type() {
 		return BEAN_TYPE;
 	}
 
 	@Override
-	public String typeName()
-	{
+	public String typeName() {
 		return BEAN_TYPENAME;
 	}
 
 	@Override
-	public #(bean.name) stub()
-	{
+	public #(bean.name) stub() {
 		return BEAN_STUB;
 	}
 
 	@Override
-	public #(bean.name) create()
-	{
+	public #(bean.name) create() {
 		return new #(bean.name)();
 	}
 
 	@Override
-	public int initSize()
-	{
+	public int initSize() {
 		return #(bean.initsize);
 	}
 
 	@Override
-	public int maxSize()
-	{
+	public int maxSize() {
 		return #(bean.maxsize);
 	}
 
 	@Override
-	public Octets marshal(Octets _s_)
-	{
+	public Octets marshal(Octets _s_) {
 #(##(var.marshal)#)#		return _s_.marshalZero();
 	}
 
 	@Override
-	public OctetsStream unmarshal(OctetsStream _s_) throws MarshalException
-	{
-		for (;;) { int _i_ = _s_.unmarshalInt1(), _t_ = _i_ & 3; if ((_i_ >>= 2) == 63) _i_ += _s_.unmarshalInt1(); switch(_i_)
-		{
+	public OctetsStream unmarshal(OctetsStream _s_) throws MarshalException {
+		for (;;) { int _i_ = _s_.unmarshalInt1(), _t_ = _i_ & 3; if ((_i_ >>= 2) == 63) _i_ += _s_.unmarshalInt1(); switch(_i_) {
 			case 0: return _s_;
 #(##(var.unmarshal)#)#			default: _s_.unmarshalSkipVar(_t_);
 		}}
 	}
 
 	@Override
-	public #(bean.name) clone()
-	{
+	public #(bean.name) clone() {
 		return new #(bean.name)(#(##(var.name), #)#);
 	}
 
 	@Override
-	public int hashCode()
-	{
+	public int hashCode() {
 		int _h_ = (int)serialVersionUID;
 #(#		_h_ = _h_ * 16777619 + #(var.hashcode);
 #)#		return _h_;
 	}
 
 	@Override
-	public boolean equals(Object _o_)
-	{
+	public boolean equals(Object _o_) {
 		if (_o_ == this) return true;
 		if (!(_o_ instanceof #(bean.name))) return false;#<#
 		#(bean.name) _b_ = (#(bean.name))_o_;#>#
@@ -142,8 +124,7 @@ public #(bean.final)class #(bean.name) extends Bean<#(bean.name)>
 	}
 
 	@Override
-	public int compareTo(#(bean.name) _b_)
-	{
+	public int compareTo(#(bean.name) _b_) {
 		if (_b_ == this) return 0;
 		if (_b_ == null) return 1;#<#
 		int _c_;#>#
@@ -152,61 +133,49 @@ public #(bean.final)class #(bean.name) extends Bean<#(bean.name)>
 	}
 
 	@Override
-	public StringBuilder toStringBuilder(StringBuilder _s_)
-	{
+	public StringBuilder toStringBuilder(StringBuilder _s_) {
 		_s_.append('{');
 #(#		#(var.tostring).append(',');
 #)#		return _s_.append('}');
 	}
 #(bean.attach_java)
 	@Override
-	protected void checkStoreAll()
-	{
+	protected void checkStoreAll() {
 		super.checkStoreAll();
 #(##(var.checkStoreAll)#)#	}
 
 	@Override
-	protected void storeAll()
-	{
+	protected void storeAll() {
 		super.storeAll();
 #(##(var.storeAll)#)#	}
 
 	@Override
-	protected void unstoreAll()
-	{
+	protected void unstoreAll() {
 		super.unstoreAll();
 #(##(var.unstoreAll)#)#	}
 
 	@Override
-	public Safe safe(SContext.Safe<?> _parent_)
-	{
+	public Safe safe(SContext.Safe<?> _parent_) {
 		return new Safe(this, _parent_);
 	}
 
 	@Override
-	public Safe safe()
-	{
+	public Safe safe() {
 		return new Safe(this, null);
 	}
 
-	public static final class Safe extends SContext.Safe<#(bean.name)>
-	{
+	public static final class Safe extends SContext.Safe<#(bean.name)> {
 #(##(var.field)#)#
-		static
-		{
-			try
-			{
+		static {
+			try {
 				Class<#(bean.name)> _c_ = #(bean.name).class;
-#(##(var.fieldget)#)#			}
-			catch (Exception e)
-			{
+#(##(var.fieldget)#)#			} catch (Exception e) {
 				throw new Error(e);
 			}
 		}
 
 #(##(var.safecache)#)#
-		private Safe(#(bean.name) bean, SContext.Safe<?> _parent_)
-		{
+		private Safe(#(bean.name) bean, SContext.Safe<?> _parent_) {
 			super(bean, _parent_);
 		}
 #(##(var.getsafe)#(var.setsafe)#)#	}
@@ -220,17 +189,14 @@ import jane.core.BeanHandler;
 import jane.core.map.IntHashMap;
 #>#
 /** 全部handlers的获取(自动生成的静态类) */
-public final class AllBeans
-{
+public final class AllBeans {
 	private AllBeans() {}
 #[#
-	public static IntHashMap<BeanHandler<?>> get#(hdl.name)Handlers()
-	{
+	public static IntHashMap<BeanHandler<?>> get#(hdl.name)Handlers() {
 		return get#(hdl.name)Handlers(null);
 	}
 
-	public static IntHashMap<BeanHandler<?>> get#(hdl.name)Handlers(IntHashMap<BeanHandler<?>> r)
-	{
+	public static IntHashMap<BeanHandler<?>> get#(hdl.name)Handlers(IntHashMap<BeanHandler<?>> r) {
 		if (r == null) r = new IntHashMap<>(#(hdl.count) * 2);
 #(#		r.put(#(bean.type), new #(hdl.path).#(bean.name)Handler());
 #)#		return r;
@@ -247,11 +213,9 @@ import jane.core.Log;
 import jane.core.NetManager;
 import ]=] .. namespace .. [=[.#(bean.name);
 
-public final class #(bean.name)Handler implements BeanHandler<#(bean.name)>
-{
+public final class #(bean.name)Handler implements BeanHandler<#(bean.name)> {
 	@Override
-	public #(bean.name) beanStub()
-	{
+	public #(bean.name) beanStub() {
 		return #(bean.name).BEAN_STUB;
 	}
 
@@ -260,8 +224,7 @@ public final class #(bean.name)Handler implements BeanHandler<#(bean.name)>
 #)#	\*/
 
 	@Override
-	public void onProcess(final NetManager manager, final IoSession session, final #(bean.name) arg)
-	{
+	public void onProcess(final NetManager manager, final IoSession session, final #(bean.name) arg) {
 		Log.debug("{}.onProcess: arg={}", getClass().getName(), arg);
 	}
 }
@@ -273,8 +236,7 @@ package ]=] .. namespace .. [=[;
 import #(tables.imports);
 
 /** 全部的数据库表的注册和使用类(自动生成的静态类) */
-public final class AllTables
-{
+public final class AllTables {
 	private AllTables() {}
 	private static final DBManager _dbm = DBManager.instance();
 	/**
@@ -286,8 +248,7 @@ public final class AllTables
 #>#
 #(#	#(table.comment)public static final #(table.table)<#(table.key)#(table.comma)#(table.value), #(table.value).Safe> #(table.name) = _dbm.openTable(#(table.id), "#(table.name)", "#(table.lock)", #(table.cachesize)#(table.comma)#(table.keys), #(table.values));
 #)#
-	public static final class MetaTable
-	{
+	public static final class MetaTable {
 		private static final ArrayList<MetaTable> metaList = new ArrayList<>(#(tables.count));
 		private static final IntHashMap<MetaTable> idMetas = new IntHashMap<>(#(tables.count) * 2);
 		private static final HashMap<String, MetaTable> nameMetas = new HashMap<>(#(tables.count) * 2);
@@ -296,8 +257,7 @@ public final class AllTables
 		public final Object keyBeanStub; // Class<?> or Bean<?>
 		public final Bean<?> valueBeanStub;
 
-		private MetaTable(TableBase<?> tbl, Object kbs, Bean<?> vbs)
-		{
+		private MetaTable(TableBase<?> tbl, Object kbs, Bean<?> vbs) {
 			table = tbl;
 			keyBeanStub = kbs;
 			valueBeanStub = vbs;
@@ -305,23 +265,19 @@ public final class AllTables
 			nameMetas.put(tbl.getTableName(), this);
 		}
 #<#
-		static
-		{
+		static {
 #(#			metaList.add(new MetaTable(#(table.name), #(table.keyg), #(table.value).BEAN_STUB));
 #)#		}
 #>#
-		public static MetaTable get(int tableId)
-		{
+		public static MetaTable get(int tableId) {
 			return idMetas.get(tableId);
 		}
 
-		public static MetaTable get(String tableName)
-		{
+		public static MetaTable get(String tableName) {
 			return nameMetas.get(tableName);
 		}
 
-		public static void foreach(Consumer<MetaTable> consumer)
-		{
+		public static void foreach(Consumer<MetaTable> consumer) {
 			metaList.forEach(consumer);
 		}
 	}
@@ -329,8 +285,7 @@ public final class AllTables
 	/**
 	 * 以下内部类可以单独使用,避免初始化前面的表对象
 	 */
-	public static final class SimpleMetaTable
-	{
+	public static final class SimpleMetaTable {
 		private static final ArrayList<SimpleMetaTable> metaList = new ArrayList<>(#(tables.count));
 		private static final IntHashMap<SimpleMetaTable> idMetas = new IntHashMap<>(#(tables.count) * 2);
 		private static final HashMap<String, SimpleMetaTable> nameMetas = new HashMap<>(#(tables.count) * 2);
@@ -340,8 +295,7 @@ public final class AllTables
 		public final Object keyBeanStub; // Class<?> or Bean<?>
 		public final Bean<?> valueBeanStub;
 
-		private SimpleMetaTable(int id, String name, Object kbs, Bean<?> vbs)
-		{
+		private SimpleMetaTable(int id, String name, Object kbs, Bean<?> vbs) {
 			tableId = id;
 			tableName = name;
 			keyBeanStub = kbs;
@@ -350,23 +304,19 @@ public final class AllTables
 			nameMetas.put(name, this);
 		}
 #<#
-		static
-		{
+		static {
 #(#			metaList.add(new SimpleMetaTable(#(table.id), "#(table.name)", #(table.keyg), #(table.value).BEAN_STUB));
 #)#		}
 #>#
-		public static SimpleMetaTable get(int tableId)
-		{
+		public static SimpleMetaTable get(int tableId) {
 			return idMetas.get(tableId);
 		}
 
-		public static SimpleMetaTable get(String tableName)
-		{
+		public static SimpleMetaTable get(String tableName) {
 			return nameMetas.get(tableName);
 		}
 
-		public static void foreach(Consumer<SimpleMetaTable> consumer)
-		{
+		public static void foreach(Consumer<SimpleMetaTable> consumer) {
 			metaList.forEach(consumer);
 		}
 	}
@@ -455,16 +405,14 @@ typedef.byte =
 	set = [[
 
 	/** @param #(var.name) #(var.comment1) */
-	public void set#(var.name_u)(#(var.type) #(var.name))
-	{
+	public void set#(var.name_u)(#(var.type) #(var.name)) {
 		this.#(var.name) = #(var.name);
 	}
 ]],
 	getsafe = [[
 
 		/** @return #(var.comment1) */
-		public #(var.type) get#(var.name_u)()
-		{
+		public #(var.type) get#(var.name_u)() {
 			checkLock();
 			return _bean.get#(var.name_u)();
 		}
@@ -472,8 +420,7 @@ typedef.byte =
 	setsafe = [[
 
 		/** @param #(var.name) #(var.comment1) */
-		public void set#(var.name_u)(#(var.type) #(var.name))
-		{
+		public void set#(var.name_u)(#(var.type) #(var.name)) {
 			SContext _s_ = safeContext();
 			if (_s_ != null) _s_.addOnRollback(new SBase.S#(var.type_o)(_bean, FIELD_#(var.name), _bean.get#(var.name_u)()));
 			_bean.set#(var.name_u)(#(var.name));
@@ -585,16 +532,14 @@ typedef.string = merge(typedef.byte,
 	set = [[
 
 	/** @param #(var.name) #(var.comment1) */
-	public void set#(var.name_u)(#(var.type) #(var.name))
-	{
+	public void set#(var.name_u)(#(var.type) #(var.name)) {
 		this.#(var.name) = (#(var.name) != null ? #(var.name) : "");
 	}
 ]],
 	setsafe = [[
 
 		/** @param #(var.name) #(var.comment1) */
-		public void set#(var.name_u)(#(var.type) #(var.name))
-		{
+		public void set#(var.name_u)(#(var.type) #(var.name)) {
 			SContext _s_ = safeContext();
 			if (_s_ != null) _s_.addOnRollback(new SBase.SObject(_bean, FIELD_#(var.name), _bean.get#(var.name_u)()));
 			_bean.set#(var.name_u)((#(var.name) != null ? #(var.name) : ""));
@@ -625,29 +570,25 @@ typedef.octets = merge(typedef.string,
 	set = [[
 
 	/** @param #(var.name) #(var.comment1) */
-	public void set#(var.name_u)(#(var.type) #(var.name))
-	{
+	public void set#(var.name_u)(#(var.type) #(var.name)) {
 		this.#(var.name) = (#(var.name) != null ? #(var.name) : new Octets(#(var.cap)));
 	}
 
 	/** #(var.comment1) */
-	public void marshal#(var.name_u)(Bean<?> _b_)
-	{
+	public void marshal#(var.name_u)(Bean<?> _b_) {
 		this.#(var.name).resize(0);
 		this.#(var.name).reserve(_b_.initSize());
 		_b_.marshal(this.#(var.name));
 	}
 
 	/** #(var.comment1) */
-	public <B extends Bean<B>> B unmarshal#(var.name_u)(B _b_) throws MarshalException
-	{
+	public <B extends Bean<B>> B unmarshal#(var.name_u)(B _b_) throws MarshalException {
 		_b_.unmarshal(OctetsStream.wrap(this.#(var.name)));
 		return _b_;
 	}
 
 	/** #(var.comment1) */
-	public DynBean unmarshal#(var.name_u)() throws MarshalException
-	{
+	public DynBean unmarshal#(var.name_u)() throws MarshalException {
 		DynBean _b_ = new DynBean();
 		_b_.unmarshal(OctetsStream.wrap(this.#(var.name)));
 		return _b_;
@@ -656,45 +597,39 @@ typedef.octets = merge(typedef.string,
 	getsafe = [[
 
 		/** @return #(var.comment1) */
-		public #(var.type) get#(var.name_u)()
-		{
+		public #(var.type) get#(var.name_u)() {
 			checkLock();
 			return _bean.get#(var.name_u)().clone();
 		}
 
 		/** @param #(var.name) #(var.comment1) */
-		public void set#(var.name_u)(#(var.type) #(var.name))
-		{
+		public void set#(var.name_u)(#(var.type) #(var.name)) {
 			SContext _s_ = safeContext();
 			if (_s_ != null) _s_.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.get#(var.name_u)(), false));
 			_bean.set#(var.name_u)((#(var.name) != null ? #(var.name).clone() : new Octets(#(var.cap))));
 		}
 
 		/** #(var.comment1) */
-		public byte[] copy#(var.name_u)()
-		{
+		public byte[] copy#(var.name_u)() {
 			checkLock();
 			return _bean.get#(var.name_u)().getBytes();
 		}
 
 		/** #(var.comment1) */
-		public void marshal#(var.name_u)(Bean<?> _b_)
-		{
+		public void marshal#(var.name_u)(Bean<?> _b_) {
 			SContext _s_ = safeContext();
 			if (_s_ != null) _s_.addOnRollback(new SBase.SOctets(_bean, FIELD_#(var.name), _bean.get#(var.name_u)(), false));
 			_bean.set#(var.name_u)(_b_.marshal(new Octets(_b_.initSize())));
 		}
 
 		/** #(var.comment1) */
-		public <B extends Bean<B>> B unmarshal#(var.name_u)(B _b_) throws MarshalException
-		{
+		public <B extends Bean<B>> B unmarshal#(var.name_u)(B _b_) throws MarshalException {
 			checkLock();
 			return _bean.unmarshal#(var.name_u)(_b_);
 		}
 
 		/** #(var.comment1) */
-		public DynBean unmarshal#(var.name_u)() throws MarshalException
-		{
+		public DynBean unmarshal#(var.name_u)() throws MarshalException {
 			checkLock();
 			return _bean.unmarshal#(var.name_u)();
 		}
@@ -728,8 +663,7 @@ typedef.vector = merge(typedef.octets,
 	getsafe = [[
 
 		/** @return #(var.comment1) */
-		public #(var.stype) get#(var.name_u)()
-		{
+		public #(var.stype) get#(var.name_u)() {
 			checkLock();
 			return new #(var.stype)(this, _bean.get#(var.name_u)());
 		}
@@ -737,8 +671,7 @@ typedef.vector = merge(typedef.octets,
 	marshal = function(var)
 		if var.id <= 0 then return "" end
 		return var.id < 63 and
-			format([[		if (!this.#(var.name).isEmpty())
-		{
+			format([[		if (!this.#(var.name).isEmpty()) {
 			int _i_ = 0, _n_ = this.#(var.name).size();
 			_s_.marshal2(0x%04x).marshalUInt(_n_);
 			do
@@ -746,8 +679,7 @@ typedef.vector = merge(typedef.octets,
 			while (++_i_ < _n_);
 		}
 ]], var.id * 0x400 + 0x300 + subtypeid(var.k)) or
-			format([[		if (!this.#(var.name).isEmpty())
-		{
+			format([[		if (!this.#(var.name).isEmpty()) {
 			int _i_ = 0, _n_ = this.#(var.name).size();
 			_s_.marshal3(0x%06x).marshalUInt(_n_);
 			do
@@ -758,8 +690,7 @@ typedef.vector = merge(typedef.octets,
 	end,
 	unmarshal = function(var)
 		return var.id <= 0 and "" or format([[
-			case #(var.id):
-			{
+			case #(var.id): {
 				this.#(var.name).clear();
 				if (_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
 				_t_ = _s_.unmarshalInt1();
@@ -786,15 +717,13 @@ typedef.list = merge(typedef.vector,
 	marshal = function(var)
 		if var.id <= 0 then return "" end
 		return var.id < 63 and
-			format([[		if (!this.#(var.name).isEmpty())
-		{
+			format([[		if (!this.#(var.name).isEmpty()) {
 			_s_.marshal2(0x%04x).marshalUInt(this.#(var.name).size());
 			for (%s v : this.#(var.name))
 				_s_.marshal(v);
 		}
 ]], var.id * 0x400 + 0x300 + subtypeid(var.k), subtypename(var, var.k)) or
-			format([[		if (!this.#(var.name).isEmpty())
-		{
+			format([[		if (!this.#(var.name).isEmpty()) {
 			_s_.marshal3(0x%06x).marshalUInt(this.#(var.name).size());
 			for (%s v : this.#(var.name))
 				_s_.marshal(v);
@@ -803,8 +732,7 @@ typedef.list = merge(typedef.vector,
 	end,
 	unmarshal = function(var)
 		return var.id <= 0 and "" or format([[
-			case #(var.id):
-			{
+			case #(var.id): {
 				this.#(var.name).clear();
 				if (_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
 				_t_ = _s_.unmarshalInt1();
@@ -837,14 +765,12 @@ typedef.hashset = merge(typedef.list,
 	getsafe = function(var) return [[
 
 		/** #(var.comment1) */
-		public static void onListen#(var.name_u)(SSetListener<]] .. subtypename(var, var.k) .. [[> _listener_)
-		{
+		public static void onListen#(var.name_u)(SSetListener<]] .. subtypename(var, var.k) .. [[> _listener_) {
 			LISTENER_#(var.name) = _listener_;
 		}
 
 		/** @return #(var.comment1) */
-		public #(var.stype) get#(var.name_u)()
-		{
+		public #(var.stype) get#(var.name_u)() {
 			checkLock();
 			return CACHE_#(var.name) != null ? CACHE_#(var.name) : (CACHE_#(var.name) = new #(var.stype)(this, _bean.get#(var.name_u)(), LISTENER_#(var.name)));
 		}
@@ -880,14 +806,12 @@ typedef.hashmap = merge(typedef.list,
 	getsafe = function(var) return [[
 
 		/** #(var.comment1) */
-		public static void onListen#(var.name_u)(SMapListener<]] .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. [[> _listener_)
-		{
+		public static void onListen#(var.name_u)(SMapListener<]] .. subtypename(var, var.k) .. ", " .. subtypename(var, var.v) .. [[> _listener_) {
 			LISTENER_#(var.name) = _listener_;
 		}
 
 		/** @return #(var.comment1) */
-		public #(var.stype) get#(var.name_u)()
-		{
+		public #(var.stype) get#(var.name_u)() {
 			checkLock();
 			return CACHE_#(var.name) != null ? CACHE_#(var.name) : (CACHE_#(var.name) = new #(var.stype)(this, _bean.get#(var.name_u)(), LISTENER_#(var.name)));
 		}
@@ -895,15 +819,13 @@ typedef.hashmap = merge(typedef.list,
 	marshal = function(var)
 		if var.id <= 0 then return "" end
 		return var.id < 63 and
-			format([[		if (!this.#(var.name).isEmpty())
-		{
+			format([[		if (!this.#(var.name).isEmpty()) {
 			_s_.marshal2(0x%04x).marshalUInt(this.#(var.name).size());
 			for (Entry<%s, %s> e : this.#(var.name).entrySet())
 				_s_.marshal(e.getKey()).marshal(e.getValue());
 		}
 ]], var.id * 0x400 + 0x340 + subtypeid(var.k) * 8 + subtypeid(var.v), subtypename(var, var.k), subtypename(var, var.v)) or
-			format([[		if (!this.#(var.name).isEmpty())
-		{
+			format([[		if (!this.#(var.name).isEmpty()) {
 			_s_.marshal3(0x%06x).marshalUInt(this.#(var.name).size());
 			for (Entry<%s, %s> e : this.#(var.name).entrySet())
 				_s_.marshal(e.getKey()).marshal(e.getValue());
@@ -912,8 +834,7 @@ typedef.hashmap = merge(typedef.list,
 	end,
 	unmarshal = function(var)
 		return var.id <= 0 and "" or format([[
-			case #(var.id):
-			{
+			case #(var.id): {
 				this.#(var.name).clear();
 				if (_t_ != 3) { _s_.unmarshalSkipVar(_t_); break; }
 				_t_ = _s_.unmarshalInt1();
@@ -962,8 +883,7 @@ typedef.bean = merge(typedef.octets,
 	getsafe = [[
 
 		/** @return #(var.comment1) */
-		public #(var.type).Safe get#(var.name_u)()
-		{
+		public #(var.type).Safe get#(var.name_u)() {
 			checkLock();
 			return CACHE_#(var.name) != null ? CACHE_#(var.name) : (CACHE_#(var.name) = _bean.get#(var.name_u)().safe(this));
 		}
@@ -1009,16 +929,14 @@ typedef.ref = merge(typedef.bean,
 	set = [[
 
 	/** @param #(var.name) #(var.comment1) */
-	public void set#(var.name_u)(#(var.type) #(var.name))
-	{
+	public void set#(var.name_u)(#(var.type) #(var.name)) {
 		this.#(var.name) = #(var.name);
 	}
 ]],
 	getsafe = [[
 
 		/** @return #(var.comment1) */
-		public #(var.type) get#(var.name_u)()
-		{
+		public #(var.type) get#(var.name_u)() {
 			checkLock();
 			return _bean.get#(var.name_u)();
 		}
@@ -1026,8 +944,7 @@ typedef.ref = merge(typedef.bean,
 	setsafe = function() return [[
 
 		/** @param #(var.name) #(var.comment1) */
-		public void set#(var.name_u)(#(var.type) #(var.name))
-		{
+		public void set#(var.name_u)(#(var.type) #(var.name)) {
 			SContext _s_ = safeContext();
 			if (_s_ != null) _s_.addOnRollback(new SBase.SObject(_bean, FIELD_#(var.name), _bean.get#(var.name_u)()));
 			_bean.set#(var.name_u)(#(var.name));
@@ -1184,8 +1101,7 @@ local function bean_const(code)
 		gsub("\t@Override\n\tpublic void reset%(.-\n\t}", [[
 	@Deprecated
 	@Override
-	public void reset()
-	{
+	public void reset() {
 		throw new UnsupportedOperationException();
 	}]]):
 		gsub("\t@Override\n\tpublic OctetsStream unmarshal%(", "\t@Deprecated\n\t@Override\n\tpublic OctetsStream unmarshal%(")
@@ -1241,32 +1157,28 @@ function bean(bean)
 	code = code_conv(code, "bean", bean):
 		gsub("\r", ""):
 		gsub(#vartypes > 1 and "#[<>]#" or "#<#.-#>#", ""):
-		gsub("\n\t\tstatic\n\t\t{\n\t\t\ttry\n\t\t\t{\n\t\t\t\tClass<.-> _c_ = .-%.class;\n\t\t\t}\n\t\t\tcatch %(Exception e%)\n\t\t\t{\n\t\t\t\tthrow new Error%(e%);\n\t\t\t}\n\t\t}\n\n", ""):
+		gsub("\n\t\tstatic {\n\t\t\ttry {\n\t\t\t\tClass<.-> _c_ = .-%.class;\n\t\t\t} catch %(Exception e%) {\n\t\t\t\tthrow new Error%(e%);\n\t\t\t}\n\t\t}\n\n", ""):
 		gsub("int h = (%(int%)serialVersionUID;)\n\t\treturn h;", "return %1"):
 		gsub("\t+/%*%* @return  %*/\n", ""):
 		gsub("\t+/%*%* @param [%w_]+  %*/\n", ""):
 		gsub("\t+/%*%*  %*/\n", ""):
-		gsub("\n\t{\n\n\t\t", "\n\t{\n\t\t"):
+		gsub(" {\n\n\t\t", " {\n\t\t"):
 		gsub("\t\t_h_ = _h_ %* 16777619 %+ 0;\n", ""):
 		gsub("\t\tif %(%) return false;\n", ""):
 		gsub("\t\t_c_ = 0; if %(_c_ != 0%) return _c_;\n", ""):
 		gsub("( new %w+)<.->", "%1<>"):
 		gsub("%.append%(','%);\n\t\treturn _s_", ";\n\t\treturn _s_"):
-		gsub("\n\t@Override\n\tprotected void %a+All%(%)\n\t{\n\t\tsuper%.%a+All%(%);\n\t}\n", ""):
+		gsub("\n\t@Override\n\tprotected void %a+All%(%) {\n\t\tsuper%.%a+All%(%);\n\t}\n", ""):
 		gsub("\n\n\n", "\n\n")
 	if not code:find("\tprivate static final Field ") then
 		code = code:gsub("import java%.lang%.reflect%.Field;\n", "")
 	end
 	if bean.const then code = bean_const(code) end
 	local c, n = code:gsub([[
-	static
-	{
-		try
-		{
+	static {
+		try {
 			Class<[%w_%.]+> _c_ = [%w_%.]+%.class;
-		}
-		catch %(Exception e%)
-		{
+		} catch %(Exception e%) {
 		}
 	}
 

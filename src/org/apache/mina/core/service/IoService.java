@@ -26,19 +26,15 @@ import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.session.IoSessionDataStructureFactory;
 import org.apache.mina.transport.socket.DefaultSocketSessionConfig;
 
-/**
- * Base interface for all {@link IoAcceptor}s and {@link IoConnector}s that provide I/O service and manage {@link IoSession}s.
- */
+/** Base interface for all {@link IoAcceptor}s and {@link IoConnector}s that provide I/O service and manage {@link IoSession}s. */
 public interface IoService {
 	/**
 	 * @return <tt>true</tt> if only {@link #dispose()} method has been called.
-	 * Please note that this method will return <tt>true</tt> even after all the related resources are released.
+	 * 		Please note that this method will return <tt>true</tt> even after all the related resources are released.
 	 */
 	boolean isDisposing();
 
-	/**
-	 * @return <tt>true</tt> if only all resources of this processor have been disposed.
-	 */
+	/** @return <tt>true</tt> if only all resources of this processor have been disposed. */
 	boolean isDisposed();
 
 	/**
@@ -50,16 +46,14 @@ public interface IoService {
 	/**
 	 * Releases any resources allocated by this service.
 	 * Please note that this method might block as long as there are any sessions managed by this service.
-	 *
+	 * <p>
 	 * Warning: calling this method from a IoFutureListener with <code>awaitTermination</code> = true will probably lead to a deadlock.
 	 *
 	 * @param awaitTermination When true this method will block until the underlying ExecutorService is terminated
 	 */
 	void dispose(boolean awaitTermination);
 
-	/**
-	 * @return the handler which will handle all connections managed by this service.
-	 */
+	/** @return the handler which will handle all connections managed by this service. */
 	IoHandler getHandler();
 
 	/**
@@ -71,25 +65,21 @@ public interface IoService {
 
 	/**
 	 * @return the map of all sessions which are currently managed by this service.
-	 * The key of map is the {@link IoSession#getId() ID} of the session.
-	 * An empty collection if there's no session.
+	 * 		The key of map is the {@link IoSession#getId() ID} of the session.
+	 * 		An empty collection if there's no session.
 	 */
 	Map<Long, IoSession> getManagedSessions();
 
-	/**
-	 * @return the number of all sessions which are currently managed by this service.
-	 */
+	/** @return the number of all sessions which are currently managed by this service. */
 	int getManagedSessionCount();
 
-	/**
-	 * @return the default configuration of the new {@link IoSession}s created by this service.
-	 */
+	/** @return the default configuration of the new {@link IoSession}s created by this service. */
 	DefaultSocketSessionConfig getSessionConfig();
 
 	/**
 	 * @return the {@link IoFilterChainBuilder} which will build the {@link IoFilterChain} of
-	 * all {@link IoSession}s which is created by this service.
-	 * The default value is an empty {@link DefaultIoFilterChainBuilder}.
+	 * 		all {@link IoSession}s which is created by this service.
+	 * 		The default value is an empty {@link DefaultIoFilterChainBuilder}.
 	 */
 	IoFilterChainBuilder getFilterChainBuilder();
 
@@ -112,9 +102,7 @@ public interface IoService {
 	 */
 	DefaultIoFilterChainBuilder getDefaultIoFilterChainBuilder();
 
-	/**
-	 * @return the {@link IoSessionDataStructureFactory} that provides related data structures for a new session created by this service.
-	 */
+	/** @return the {@link IoSessionDataStructureFactory} that provides related data structures for a new session created by this service. */
 	IoSessionDataStructureFactory getSessionDataStructureFactory();
 
 	/**

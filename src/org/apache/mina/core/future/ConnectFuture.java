@@ -37,7 +37,7 @@ public interface ConnectFuture extends IoFuture {
 	 * Returns {@link IoSession} which is the result of connect operation.
 	 *
 	 * @return The {@link IoSession} instance that has been associated with the connection,
-	 *         if the connection was successful, {@code null} otherwise
+	 * 		if the connection was successful, {@code null} otherwise
 	 */
 	@Override
 	IoSession getSession();
@@ -46,18 +46,14 @@ public interface ConnectFuture extends IoFuture {
 	 * Returns the cause of the connection failure.
 	 *
 	 * @return <tt>null</tt> if the connect operation is not finished yet,
-	 *         or if the connection attempt is successful, otherwise returns the cause of the exception
+	 * 		or if the connection attempt is successful, otherwise returns the cause of the exception
 	 */
 	Throwable getException();
 
-	/**
-	 * @return {@code true} if the connect operation is finished successfully.
-	 */
+	/** @return {@code true} if the connect operation is finished successfully. */
 	boolean isConnected();
 
-	/**
-	 * @return {@code true} if the connect operation has been canceled by {@link #cancel()} method.
-	 */
+	/** @return {@code true} if the connect operation has been canceled by {@link #cancel()} method. */
 	boolean isCanceled();
 
 	/**
@@ -80,7 +76,7 @@ public interface ConnectFuture extends IoFuture {
 	 * Cancels the connection attempt and notifies all threads waiting for this future.
 	 *
 	 * @return {@code true} if the future has been cancelled by this call,
-	 *         {@code false} if the future was already cancelled.
+	 *        {@code false} if the future was already cancelled.
 	 */
 	boolean cancel();
 

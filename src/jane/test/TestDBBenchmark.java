@@ -1,6 +1,5 @@
 package jane.test;
 
-import static jane.bean.AllTables.Benchmark;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import jane.bean.AllTables;
@@ -10,13 +9,12 @@ import jane.core.DBManager;
 import jane.core.Log;
 import jane.core.ProcThread;
 import jane.core.Procedure;
+import static jane.bean.AllTables.Benchmark;
 
 // JVM: -Xms512M -Xmx512M
 // RUN: start.bat b 100000 50000 1000 500000
-public final class TestDBBenchmark
-{
-	public static void main(String[] args) throws Throwable
-	{
+public final class TestDBBenchmark {
+	public static void main(String[] args) throws Throwable {
 		final int keyAllCount = (args.length > 0 ? Integer.parseInt(args[0]) : 100000);
 		final int keyWinCount = Math.min(args.length > 1 ? Integer.parseInt(args[1]) : keyAllCount / 2, keyAllCount);
 		final int countIn = (args.length > 2 ? Integer.parseInt(args[2]) : 100);
@@ -30,47 +28,36 @@ public final class TestDBBenchmark
 		System.runFinalization();
 		Log.info("start");
 
-		Thread pt = new ProcThread(DBManager.instance(), null, () ->
-		{
+		Thread pt = new ProcThread(DBManager.instance(), null, () -> {
 			long t = System.currentTimeMillis();
 			final AtomicInteger checked = new AtomicInteger();
 			final int logCount = Math.max(10000000 / countIn, 1);
 			final ThreadLocalRandom rand = ThreadLocalRandom.current();
-			for (int i = 0, keyFrom = KEY_BEGIN, keyDelta = -1; i < countOut; keyFrom += keyDelta, ++i)
-			{
-				if (keyFrom < KEY_BEGIN)
-				{
+			for (int i = 0, keyFrom = KEY_BEGIN, keyDelta = -1; i < countOut; keyFrom += keyDelta, ++i) {
+				if (keyFrom < KEY_BEGIN) {
 					keyFrom = KEY_BEGIN;
 					keyDelta = 1;
-				}
-				else if (keyFrom > KEY_BEGIN + keyAllCount - keyWinCount)
-				{
+				} else if (keyFrom > KEY_BEGIN + keyAllCount - keyWinCount) {
 					keyFrom = KEY_BEGIN + keyAllCount - keyWinCount;
 					keyDelta = -1;
 				}
 
-				for (int j = 0; j < countIn; ++j)
-				{
+				for (int j = 0; j < countIn; ++j) {
 					final long id = (long)keyFrom + rand.nextInt(keyWinCount);
 					final long t0 = System.currentTimeMillis();
-					new Procedure()
-					{
+					new Procedure() {
 						@Override
-						protected void onProcess() throws Exception
-						{
+						protected void onProcess() throws Exception {
 							long t1 = System.currentTimeMillis();
 							long tt = t1 - t0;
 							if (tt >= 250)
 								Log.info("proc delay={}ms", tt);
 							TestBean.Safe a = lockGet(Benchmark, id);
-							if (a == null)
-							{
+							if (a == null) {
 								TestBean aa = new TestBean();
 								aa.setValue2(id);
 								Benchmark.put(id, aa);
-							}
-							else
-							{
+							} else {
 								if (a.getValue2() == id)
 									checked.getAndIncrement();
 								else
@@ -82,8 +69,7 @@ public final class TestDBBenchmark
 						}
 					}.run();
 				}
-				if (i % logCount == logCount - 1)
-				{
+				if (i % logCount == logCount - 1) {
 					long rc = Benchmark.getReadCount();
 					long rtc = Benchmark.getReadStoCount();
 					Log.info("{}ms checked={}/{} {}%", System.currentTimeMillis() - t, checked.get(), logCount * countIn, (rc - rtc) * 100.0 / rc);

@@ -5,23 +5,19 @@ import jane.core.map.LongMap;
 import jane.core.map.LongMap.LongIterator;
 import jane.test.map.ConcurrentLinkedHashMap;
 
-public class TestCache
-{
-	public static void printMap(LongMap<Integer> m)
-	{
+public class TestCache {
+	public static void printMap(LongMap<Integer> m) {
 		System.out.print('[');
 		System.out.print(m.size());
 		System.out.print(']');
-		for (LongIterator it = m.keyIterator(); it.hasNext();)
-		{
+		for (LongIterator it = m.keyIterator(); it.hasNext(); ) {
 			System.out.print(' ');
 			System.out.print(it.next());
 		}
 		System.out.println();
 	}
 
-	public static void test(LongMap<Integer> m)
-	{
+	public static void test(LongMap<Integer> m) {
 		for (int i = 0; i < 10; ++i)
 			m.put(i, i);
 		printMap(m);
@@ -37,8 +33,7 @@ public class TestCache
 		printMap(m);
 	}
 
-	public static void main(String[] args)
-	{
+	public static void main(String[] args) {
 		final int COUNT = 10;
 
 		test(new ConcurrentLinkedHashMap.Builder().concurrencyLevel(1)

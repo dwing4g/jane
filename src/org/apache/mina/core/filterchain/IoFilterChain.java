@@ -30,9 +30,7 @@ import org.apache.mina.core.write.WriteRequest;
  * Every {@link IoSession} has its own {@link IoFilterChain} (1-to-1 relationship).
  */
 public interface IoFilterChain {
-	/**
-	 * @return the parent {@link IoSession} of this chain.
-	 */
+	/** @return the parent {@link IoSession} of this chain. */
 	IoSession getSession();
 
 	/**
@@ -60,20 +58,16 @@ public interface IoFilterChain {
 	 */
 	Entry getEntry(Class<? extends IoFilter> filterType);
 
-	/**
-	 * @return The list of all {@link Entry}s this chain contains.
-	 */
+	/** @return The list of all {@link Entry}s this chain contains. */
 	ArrayList<Entry> getAll();
 
-	/**
-	 * @return The reversed list of all {@link Entry}s this chain contains.
-	 */
+	/** @return The reversed list of all {@link Entry}s this chain contains. */
 	ArrayList<Entry> getAllReversed();
 
 	/**
 	 * Adds the specified filter with the specified name at the beginning of this chain.
 	 *
-	 * @param name The filter's name
+	 * @param name   The filter's name
 	 * @param filter The filter to add
 	 */
 	void addFirst(String name, IoFilter filter);
@@ -81,7 +75,7 @@ public interface IoFilterChain {
 	/**
 	 * Adds the specified filter with the specified name at the end of this chain.
 	 *
-	 * @param name The filter's name
+	 * @param name   The filter's name
 	 * @param filter The filter to add
 	 */
 	void addLast(String name, IoFilter filter);
@@ -91,8 +85,8 @@ public interface IoFilterChain {
 	 * whose name is <code>baseName</code> in this chain.
 	 *
 	 * @param baseName The targeted Filter's name
-	 * @param name The filter's name
-	 * @param filter The filter to add
+	 * @param name     The filter's name
+	 * @param filter   The filter to add
 	 */
 	void addBefore(String baseName, String name, IoFilter filter);
 
@@ -101,8 +95,8 @@ public interface IoFilterChain {
 	 * whose name is <code>baseName</code> in this chain.
 	 *
 	 * @param baseName The targeted Filter's name
-	 * @param name The filter's name
-	 * @param filter The filter to add
+	 * @param name     The filter's name
+	 * @param filter   The filter to add
 	 */
 	void addAfter(String baseName, String name, IoFilter filter);
 
@@ -114,9 +108,7 @@ public interface IoFilterChain {
 	 */
 	boolean remove(Entry filter);
 
-	/**
-	 * Removes all filters added to this chain.
-	 */
+	/** Removes all filters added to this chain. */
 	void clear();
 
 	/**
@@ -181,29 +173,21 @@ public interface IoFilterChain {
 	 */
 	void fireFilterClose();
 
-	/**
-	 * Represents a name-filter pair that an {@link IoFilterChain} contains.
-	 */
+	/** Represents a name-filter pair that an {@link IoFilterChain} contains. */
 	interface Entry {
-		/**
-		 * @return the name of the filter.
-		 */
+		/** @return the name of the filter. */
 		String getName();
 
-		/**
-		 * @return the filter.
-		 */
+		/** @return the filter. */
 		IoFilter getFilter();
 
-		/**
-		 * @return The {@link NextFilter} of the filter.
-		 */
+		/** @return The {@link NextFilter} of the filter. */
 		NextFilter getNextFilter();
 
 		/**
 		 * Adds the specified filter with the specified name just before this entry.
 		 *
-		 * @param name The Filter's name
+		 * @param name   The Filter's name
 		 * @param filter The added Filter
 		 */
 		void addBefore(String name, IoFilter filter);
@@ -211,14 +195,12 @@ public interface IoFilterChain {
 		/**
 		 * Adds the specified filter with the specified name just after this entry.
 		 *
-		 * @param name The Filter's name
+		 * @param name   The Filter's name
 		 * @param filter The added Filter
 		 */
 		void addAfter(String name, IoFilter filter);
 
-		/**
-		 * Removes this entry from the chain it belongs to.
-		 */
+		/** Removes this entry from the chain it belongs to. */
 		void remove();
 	}
 }

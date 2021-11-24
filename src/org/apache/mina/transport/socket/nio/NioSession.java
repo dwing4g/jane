@@ -54,9 +54,7 @@ import org.apache.mina.core.write.WriteToClosedSessionException;
 import org.apache.mina.transport.socket.AbstractSocketSessionConfig;
 import org.apache.mina.util.ExceptionMonitor;
 
-/**
- * An {@link IoSession} which is managed by the NIO socket transport (TCP/IP).
- */
+/** An {@link IoSession} which is managed by the NIO socket transport (TCP/IP). */
 public final class NioSession implements IoSession {
 	/** Internal write request objects that trigger session close and shutdown */
 	public static final WriteRequest CLOSE_REQUEST = new DefaultWriteRequest("CLOSE_REQUEST", null);
@@ -320,15 +318,13 @@ public final class NioSession implements IoSession {
 		return scheduledForFlushUpdater.compareAndSet(this, 0, 1);
 	}
 
-	/**
-	 * Change the session's status: it's not anymore scheduled for flush
-	 */
+	/** Change the session's status: it's not anymore scheduled for flush */
 	void unscheduledForFlush() {
 		scheduledForFlushUpdater.compareAndSet(this, 1, 0);
 	}
 
 	boolean setScheduledForRemove() {
-		for (;;) {
+		for (; ; ) {
 			int v = scheduledForFlush;
 			if (v < 0)
 				return false;

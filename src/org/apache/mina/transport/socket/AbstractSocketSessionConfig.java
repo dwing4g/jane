@@ -20,9 +20,7 @@ package org.apache.mina.transport.socket;
 
 import java.net.Socket;
 
-/**
- * The TCP transport session configuration.
- */
+/** The TCP transport session configuration. */
 public abstract class AbstractSocketSessionConfig {
 	/** The default size of the buffer used to read incoming data */
 	private int readBufferSize = 2048;
@@ -35,7 +33,7 @@ public abstract class AbstractSocketSessionConfig {
 
 	/**
 	 * @return the size of the read buffer that I/O processor allocates per each read.
-	 * It's unusual to adjust this property because it's often adjusted automatically by the I/O processor.
+	 * 		It's unusual to adjust this property because it's often adjusted automatically by the I/O processor.
 	 */
 	public int getReadBufferSize() {
 		return readBufferSize;
@@ -55,7 +53,7 @@ public abstract class AbstractSocketSessionConfig {
 
 	/**
 	 * @return the minimum size of the read buffer that I/O processor allocates per each read.
-	 *         I/O processor will not decrease the read buffer size to the smaller value than this property value.
+	 * 		I/O processor will not decrease the read buffer size to the smaller value than this property value.
 	 */
 	public int getMinReadBufferSize() {
 		return minReadBufferSize;
@@ -77,7 +75,7 @@ public abstract class AbstractSocketSessionConfig {
 
 	/**
 	 * @return the maximum size of the read buffer that I/O processor allocates per each read.
-	 * I/O processor will not increase the read buffer size to the greater value than this property value.
+	 * 		I/O processor will not increase the read buffer size to the greater value than this property value.
 	 */
 	public int getMaxReadBufferSize() {
 		return maxReadBufferSize;
@@ -130,30 +128,26 @@ public abstract class AbstractSocketSessionConfig {
 	}
 
 	/**
-	 * @see Socket#getReceiveBufferSize()
-	 *
 	 * @return the size of the receive buffer
+	 * @see Socket#getReceiveBufferSize()
 	 */
 	public abstract int getReceiveBufferSize();
 
 	/**
-	 * @see Socket#setReceiveBufferSize(int)
-	 *
 	 * @param receiveBufferSize The size of the receive buffer
+	 * @see Socket#setReceiveBufferSize(int)
 	 */
 	public abstract void setReceiveBufferSize(int receiveBufferSize);
 
 	/**
-	 * @see Socket#getSendBufferSize()
-	 *
 	 * @return the size of the send buffer
+	 * @see Socket#getSendBufferSize()
 	 */
 	public abstract int getSendBufferSize();
 
 	/**
-	 * @see Socket#setSendBufferSize(int)
-	 *
 	 * @param sendBufferSize The size of the send buffer
+	 * @see Socket#setSendBufferSize(int)
 	 */
 	public abstract void setSendBufferSize(int sendBufferSize);
 
@@ -161,10 +155,9 @@ public abstract class AbstractSocketSessionConfig {
 	 * Please note that enabling <tt>SO_LINGER</tt> in Java NIO can result
 	 * in platform-dependent behavior and unexpected blocking of I/O thread.
 	 *
+	 * @return The value for <tt>SO_LINGER</tt>
 	 * @see Socket#getSoLinger()
 	 * @see <a href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6179351">Sun Bug Database</a>
-	 *
-	 * @return The value for <tt>SO_LINGER</tt>
 	 */
 	public abstract int getSoLinger();
 
@@ -173,89 +166,78 @@ public abstract class AbstractSocketSessionConfig {
 	 * in platform-dependent behavior and unexpected blocking of I/O thread.
 	 *
 	 * @param soLinger Please specify a negative value to disable <tt>SO_LINGER</tt>.
-	 *
 	 * @see Socket#setSoLinger(boolean, int)
 	 * @see <a href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6179351">Sun Bug Database</a>
 	 */
 	public abstract void setSoLinger(int soLinger);
 
 	/**
-	 * @see Socket#getTrafficClass()
-	 *
 	 * @return the traffic class
+	 * @see Socket#getTrafficClass()
 	 */
 	public abstract int getTrafficClass();
 
 	/**
-	 * @see Socket#setTrafficClass(int)
-	 *
 	 * @param trafficClass The traffic class to set, one of <tt>IPTOS_LOWCOST</tt> (0x02)
-	 * <tt>IPTOS_RELIABILITY</tt> (0x04), <tt>IPTOS_THROUGHPUT</tt> (0x08) or <tt>IPTOS_LOWDELAY</tt> (0x10)
+	 *                     <tt>IPTOS_RELIABILITY</tt> (0x04), <tt>IPTOS_THROUGHPUT</tt> (0x08) or <tt>IPTOS_LOWDELAY</tt> (0x10)
+	 * @see Socket#setTrafficClass(int)
 	 */
 	public abstract void setTrafficClass(int trafficClass);
 
 	/**
-	 * @see Socket#getReuseAddress()
-	 *
 	 * @return <tt>true</tt> if SO_REUSEADDR is enabled.
+	 * @see Socket#getReuseAddress()
 	 */
 	public abstract boolean isReuseAddress();
 
 	/**
-	 * @see Socket#setReuseAddress(boolean)
-	 *
 	 * @param reuseAddress Tells if SO_REUSEADDR is enabled or disabled
+	 * @see Socket#setReuseAddress(boolean)
 	 */
 	public abstract void setReuseAddress(boolean reuseAddress);
 
 	/**
-	 * @see Socket#getTcpNoDelay()
-	 *
 	 * @return <tt>true</tt> if <tt>TCP_NODELAY</tt> is enabled.
+	 * @see Socket#getTcpNoDelay()
 	 */
 	public abstract boolean isTcpNoDelay();
 
 	/**
-	 * @see Socket#setTcpNoDelay(boolean)
-	 *
 	 * @param tcpNoDelay <tt>true</tt> if <tt>TCP_NODELAY</tt> is to be enabled
+	 * @see Socket#setTcpNoDelay(boolean)
 	 */
 	public abstract void setTcpNoDelay(boolean tcpNoDelay);
 
 	/**
-	 * @see Socket#getKeepAlive()
-	 *
 	 * @return <tt>true</tt> if <tt>SO_KEEPALIVE</tt> is enabled.
+	 * @see Socket#getKeepAlive()
 	 */
 	public abstract boolean isKeepAlive();
 
 	/**
-	 * @see Socket#setKeepAlive(boolean)
-	 *
 	 * @param keepAlive if <tt>SO_KEEPALIVE</tt> is to be enabled
+	 * @see Socket#setKeepAlive(boolean)
 	 */
 	public abstract void setKeepAlive(boolean keepAlive);
 
 	/**
-	 * @see Socket#getOOBInline()
-	 *
 	 * @return <tt>true</tt> if <tt>SO_OOBINLINE</tt> is enabled.
+	 * @see Socket#getOOBInline()
 	 */
 	public abstract boolean isOobInline();
 
 	/**
-	 * @see Socket#setOOBInline(boolean)
-	 *
 	 * @param oobInline if <tt>SO_OOBINLINE</tt> is to be enabled
+	 * @see Socket#setOOBInline(boolean)
 	 */
 	public abstract void setOobInline(boolean oobInline);
 
 	/**
 	 * @return <tt>true</tt> if and only if the <tt>receiveBufferSize</tt> property
-	 * has been changed by its setter method.  The system call related with
-	 * the property is made only when this method returns <tt>true</tt>.  By
-	 * default, this method always returns <tt>true</tt> to simplify implementation
-	 * of subclasses, but overriding the default behavior is always encouraged.
+	 * 		has been changed by its setter method.  The system call related with
+	 * 		the property is made only when this method returns <tt>true</tt>.  By
+	 * 		default, this method always returns <tt>true</tt> to simplify implementation
+	 * 		of subclasses, but overriding the default behavior is always encouraged.
 	 */
 	@SuppressWarnings("static-method")
 	protected boolean isReceiveBufferSizeChanged() {
@@ -264,10 +246,10 @@ public abstract class AbstractSocketSessionConfig {
 
 	/**
 	 * @return <tt>true</tt> if and only if the <tt>sendBufferSize</tt> property
-	 * has been changed by its setter method.  The system call related with
-	 * the property is made only when this method returns <tt>true</tt>.  By
-	 * default, this method always returns <tt>true</tt> to simplify implementation
-	 * of subclasses, but overriding the default behavior is always encouraged.
+	 * 		has been changed by its setter method.  The system call related with
+	 * 		the property is made only when this method returns <tt>true</tt>.  By
+	 * 		default, this method always returns <tt>true</tt> to simplify implementation
+	 * 		of subclasses, but overriding the default behavior is always encouraged.
 	 */
 	@SuppressWarnings("static-method")
 	protected boolean isSendBufferSizeChanged() {
@@ -276,10 +258,10 @@ public abstract class AbstractSocketSessionConfig {
 
 	/**
 	 * @return <tt>true</tt> if and only if the <tt>soLinger</tt> property
-	 * has been changed by its setter method.  The system call related with
-	 * the property is made only when this method returns <tt>true</tt>.  By
-	 * default, this method always returns <tt>true</tt> to simplify implementation
-	 * of subclasses, but overriding the default behavior is always encouraged.
+	 * 		has been changed by its setter method.  The system call related with
+	 * 		the property is made only when this method returns <tt>true</tt>.  By
+	 * 		default, this method always returns <tt>true</tt> to simplify implementation
+	 * 		of subclasses, but overriding the default behavior is always encouraged.
 	 */
 	@SuppressWarnings("static-method")
 	protected boolean isSoLingerChanged() {
@@ -288,10 +270,10 @@ public abstract class AbstractSocketSessionConfig {
 
 	/**
 	 * @return <tt>true</tt> if and only if the <tt>trafficClass</tt> property
-	 * has been changed by its setter method.  The system call related with
-	 * the property is made only when this method returns <tt>true</tt>.  By
-	 * default, this method always returns <tt>true</tt> to simplify implementation
-	 * of subclasses, but overriding the default behavior is always encouraged.
+	 * 		has been changed by its setter method.  The system call related with
+	 * 		the property is made only when this method returns <tt>true</tt>.  By
+	 * 		default, this method always returns <tt>true</tt> to simplify implementation
+	 * 		of subclasses, but overriding the default behavior is always encouraged.
 	 */
 	@SuppressWarnings("static-method")
 	protected boolean isTrafficClassChanged() {
@@ -300,10 +282,10 @@ public abstract class AbstractSocketSessionConfig {
 
 	/**
 	 * @return <tt>true</tt> if and only if the <tt>reuseAddress</tt> property
-	 * has been changed by its setter method.  The system call related with
-	 * the property is made only when this method returns <tt>true</tt>.  By
-	 * default, this method always returns <tt>true</tt> to simplify implementation
-	 * of subclasses, but overriding the default behavior is always encouraged.
+	 * 		has been changed by its setter method.  The system call related with
+	 * 		the property is made only when this method returns <tt>true</tt>.  By
+	 * 		default, this method always returns <tt>true</tt> to simplify implementation
+	 * 		of subclasses, but overriding the default behavior is always encouraged.
 	 */
 	@SuppressWarnings("static-method")
 	protected boolean isReuseAddressChanged() {
@@ -312,10 +294,10 @@ public abstract class AbstractSocketSessionConfig {
 
 	/**
 	 * @return <tt>true</tt> if and only if the <tt>tcpNoDelay</tt> property
-	 * has been changed by its setter method.  The system call related with
-	 * the property is made only when this method returns <tt>true</tt>.  By
-	 * default, this method always returns <tt>true</tt> to simplify implementation
-	 * of subclasses, but overriding the default behavior is always encouraged.
+	 * 		has been changed by its setter method.  The system call related with
+	 * 		the property is made only when this method returns <tt>true</tt>.  By
+	 * 		default, this method always returns <tt>true</tt> to simplify implementation
+	 * 		of subclasses, but overriding the default behavior is always encouraged.
 	 */
 	@SuppressWarnings("static-method")
 	protected boolean isTcpNoDelayChanged() {
@@ -324,10 +306,10 @@ public abstract class AbstractSocketSessionConfig {
 
 	/**
 	 * @return <tt>true</tt> if and only if the <tt>keepAlive</tt> property
-	 * has been changed by its setter method.  The system call related with
-	 * the property is made only when this method returns <tt>true</tt>.  By
-	 * default, this method always returns <tt>true</tt> to simplify implementation
-	 * of subclasses, but overriding the default behavior is always encouraged.
+	 * 		has been changed by its setter method.  The system call related with
+	 * 		the property is made only when this method returns <tt>true</tt>.  By
+	 * 		default, this method always returns <tt>true</tt> to simplify implementation
+	 * 		of subclasses, but overriding the default behavior is always encouraged.
 	 */
 	@SuppressWarnings("static-method")
 	protected boolean isKeepAliveChanged() {
@@ -336,10 +318,10 @@ public abstract class AbstractSocketSessionConfig {
 
 	/**
 	 * @return <tt>true</tt> if and only if the <tt>oobInline</tt> property
-	 * has been changed by its setter method.  The system call related with
-	 * the property is made only when this method returns <tt>true</tt>.  By
-	 * default, this method always returns <tt>true</tt> to simplify implementation
-	 * of subclasses, but overriding the default behavior is always encouraged.
+	 * 		has been changed by its setter method.  The system call related with
+	 * 		the property is made only when this method returns <tt>true</tt>.  By
+	 * 		default, this method always returns <tt>true</tt> to simplify implementation
+	 * 		of subclasses, but overriding the default behavior is always encouraged.
 	 */
 	@SuppressWarnings("static-method")
 	protected boolean isOobInlineChanged() {

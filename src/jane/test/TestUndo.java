@@ -1,7 +1,5 @@
 package jane.test;
 
-import static jane.bean.AllTables.Benchmark;
-import static jane.bean.AllTables.TestTable;
 import java.util.Map;
 import java.util.Map.Entry;
 import jane.bean.AllTables;
@@ -11,37 +9,30 @@ import jane.core.DBManager;
 import jane.core.Octets;
 import jane.core.ProcThread;
 import jane.core.Procedure;
+import static jane.bean.AllTables.Benchmark;
+import static jane.bean.AllTables.TestTable;
 
-public final class TestUndo
-{
-	public static void main(String[] args) throws Throwable
-	{
+public final class TestUndo {
+	public static void main(String[] args) throws Throwable {
 		DBManager.instance().startup();
 		AllTables.register();
 		System.out.println("start");
 		final long id = 1;
 		final int v = 1;
 
-		Thread pt = new ProcThread(DBManager.instance(), null, () ->
-		{
-			new Procedure()
-			{
+		Thread pt = new ProcThread(DBManager.instance(), null, () -> {
+			new Procedure() {
 				@Override
-				protected void onProcess() throws Exception
-				{
+				protected void onProcess() throws Exception {
 					TestBean.Safe a = Benchmark.lockGet(id);
-					if (a == null)
-					{
+					if (a == null) {
 						TestBean aa = new TestBean();
 						aa.setValue1(v);
 						System.out.println("new: " + aa.getValue1());
 						Benchmark.put(id, aa);
-					}
-					else
-					{
+					} else {
 						System.out.println("get: " + a.getValue1());
-						if (a.getValue1() != v)
-						{
+						if (a.getValue1() != v) {
 							a.setValue1(v);
 							System.out.println("set: " + a.getValue1());
 						}
@@ -50,11 +41,9 @@ public final class TestUndo
 				}
 			}.run();
 
-			new Procedure()
-			{
+			new Procedure() {
 				@Override
-				protected void onProcess() throws Exception
-				{
+				protected void onProcess() throws Exception {
 					TestBean.Safe a = Benchmark.lockGet(id);
 					System.out.println("get: " + a.getValue1());
 					a.setValue1(v + 1);
@@ -64,11 +53,9 @@ public final class TestUndo
 				}
 			}.run();
 
-			new Procedure()
-			{
+			new Procedure() {
 				@Override
-				protected void onProcess() throws Exception
-				{
+				protected void onProcess() throws Exception {
 					TestBean.Safe a = Benchmark.lockGet(id);
 					System.out.println("get: " + a.getValue1());
 					a.setValue1(v + 2);
@@ -77,30 +64,25 @@ public final class TestUndo
 				}
 			}.run();
 
-			new Procedure()
-			{
+			new Procedure() {
 				@Override
-				protected void onProcess() throws Exception
-				{
+				protected void onProcess() throws Exception {
 					TestBean.Safe a = Benchmark.lockGet(id);
 					System.out.println("get: " + a.getValue1());
 					System.out.println("=== 4");
 				}
 			}.run();
 
-			TestType.Safe.onListenV18((rec, changed) ->
-			{
+			TestType.Safe.onListenV18((rec, changed) -> {
 				System.out.println("changed key: " + rec.getKey());
 				System.out.println("changed value:");
 				for (Entry<?, ?> e : changed.entrySet())
 					System.out.println(((Octets)e.getKey()).dump() + ": " + e.getValue());
 			});
 
-			new Procedure()
-			{
+			new Procedure() {
 				@Override
-				protected void onProcess() throws Exception
-				{
+				protected void onProcess() throws Exception {
 					TestType.Safe a = TestTable.lockGetOrNew(1);
 					Map<Octets, TestBean.Safe> map = a.getV18();
 					map.put(Octets.wrap("a"), new TestBean(11, 22).safe());
@@ -110,11 +92,9 @@ public final class TestUndo
 				}
 			}.run();
 
-			new Procedure()
-			{
+			new Procedure() {
 				@Override
-				protected void onProcess() throws Exception
-				{
+				protected void onProcess() throws Exception {
 					TestType.Safe a = TestTable.lockGet(1);
 					Map<Octets, TestBean.Safe> map = a.getV18();
 					map.remove(Octets.wrap("a"));

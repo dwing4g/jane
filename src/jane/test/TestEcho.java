@@ -15,49 +15,41 @@ import org.apache.mina.core.write.WriteRequest;
 import org.apache.mina.core.write.WriteRequestQueue;
 
 // start.bat jane.test.TestEcho 6 64 32 100000 1 64
-public final class TestEcho extends NetManager
-{
+public final class TestEcho extends NetManager {
 	private static int TEST_THREAD_COUNT = 6;
 	private static int TEST_CLIENT_COUNT = 64;
-	private static int TEST_ECHO_SIZE	 = 32;
-	private static int TEST_ECHO_COUNT	 = 100000;
+	private static int TEST_ECHO_SIZE = 32;
+	private static int TEST_ECHO_COUNT = 100000;
 
-	private static CountDownLatch	   _closedCount;
+	private static CountDownLatch _closedCount;
 	private static final AtomicInteger _recvCount = new AtomicInteger();
-	private static final AtomicInteger _wrqCount  = new AtomicInteger();
+	private static final AtomicInteger _wrqCount = new AtomicInteger();
 
-	private static final DefaultIoSessionDataStructureFactory _dsFactory = new DefaultIoSessionDataStructureFactory()
-	{
+	private static final DefaultIoSessionDataStructureFactory _dsFactory = new DefaultIoSessionDataStructureFactory() {
 		@Override
-		public WriteRequestQueue getWriteRequestQueue(IoSession session)
-		{
+		public WriteRequestQueue getWriteRequestQueue(IoSession session) {
 			_wrqCount.getAndIncrement();
-			return new WriteRequestQueue()
-			{
+			return new WriteRequestQueue() {
 				private final ArrayDeque<WriteRequest> _wrq = new ArrayDeque<>();
 
 				@Override
-				public synchronized boolean offer(WriteRequest writeRequest) // message must be IoBuffer or FileRegion
-				{
+				public synchronized boolean offer(WriteRequest writeRequest) { // message must be IoBuffer or FileRegion
 					_wrq.addLast(writeRequest);
 					return true;
 				}
 
 				@Override
-				public synchronized WriteRequest peek()
-				{
+				public synchronized WriteRequest peek() {
 					return _wrq.peekFirst();
 				}
 
 				@Override
-				public synchronized WriteRequest poll()
-				{
+				public synchronized WriteRequest poll() {
 					return _wrq.pollFirst();
 				}
 
 				@Override
-				public synchronized String toString()
-				{
+				public synchronized String toString() {
 					return _wrq.toString();
 				}
 			};
@@ -66,15 +58,13 @@ public final class TestEcho extends NetManager
 
 //	private static final TestPerf[] perf = new TestPerf[20];
 
-//	static
-//	{
+//	static {
 //		for (int i = 0; i < perf.length; ++i)
 //			perf[i] = new TestPerf();
 //	}
 
 	@Override
-	public synchronized void startServer(InetSocketAddress addr)
-	{
+	public synchronized void startServer(InetSocketAddress addr) {
 		// setIoThreadCount(TEST_THREAD_COUNT / 2);
 		getAcceptor().setSessionDataStructureFactory(_dsFactory);
 		getServerConfig().setTcpNoDelay(true);
@@ -82,8 +72,7 @@ public final class TestEcho extends NetManager
 	}
 
 	@Override
-	public synchronized ConnectFuture startClient(InetSocketAddress addr)
-	{
+	public synchronized ConnectFuture startClient(InetSocketAddress addr) {
 		// setIoThreadCount(TEST_THREAD_COUNT / 2);
 		getConnector().setSessionDataStructureFactory(_dsFactory);
 		getClientConfig().setTcpNoDelay(true);
@@ -91,45 +80,37 @@ public final class TestEcho extends NetManager
 	}
 
 	@Override
-	protected int onConnectFailed(ConnectFuture future, InetSocketAddress addr, int count, Object ctx)
-	{
+	protected int onConnectFailed(ConnectFuture future, InetSocketAddress addr, int count, Object ctx) {
 		return 0;
 	}
 
 	@Override
-	public void sessionCreated(IoSession session)
-	{
+	public void sessionCreated(IoSession session) {
 	}
 
 	@Override
-	public void sessionOpened(IoSession session)
-	{
+	public void sessionOpened(IoSession session) {
 //		perf[6].begin();
 		write(session, IoBuffer.allocate(TEST_ECHO_SIZE).sweep());
 //		perf[6].end();
 	}
 
 	@Override
-	public void sessionClosed(IoSession session)
-	{
+	public void sessionClosed(IoSession session) {
 		_closedCount.countDown();
 	}
 
 	@Override
-	public void messageReceived(IoSession session, Object message)
-	{
-		if (_recvCount.getAndIncrement() < TEST_ECHO_COUNT)
-		{
+	public void messageReceived(IoSession session, Object message) {
+		if (_recvCount.getAndIncrement() < TEST_ECHO_COUNT) {
 //			perf[6].begin();
 			write(session, message);
 //			perf[6].end();
-		}
-		else
+		} else
 			session.closeNow();
 	}
 
-	public static void main(String[] args) throws InterruptedException
-	{
+	public static void main(String[] args) throws InterruptedException {
 		Log.removeAppendersFromArgs(args);
 		if (args.length > 0)
 			TEST_THREAD_COUNT = Integer.parseInt(args[0]);

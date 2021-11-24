@@ -38,15 +38,13 @@ package org.apache.mina.core.future;
  * </pre>
  */
 public interface WriteFuture extends IoFuture {
-	/**
-	 * @return <tt>true</tt> if the write operation is finished successfully.
-	 */
+	/** @return <tt>true</tt> if the write operation is finished successfully. */
 	boolean isWritten();
 
 	/**
 	 * @return the cause of the write failure if and only if the write
-	 * operation has failed due to an {@link Exception}.
-	 * Otherwise, <tt>null</tt> is returned.
+	 * 		operation has failed due to an {@link Exception}.
+	 * 		Otherwise, <tt>null</tt> is returned.
 	 */
 	Throwable getException();
 

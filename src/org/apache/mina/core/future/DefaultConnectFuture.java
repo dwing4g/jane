@@ -20,9 +20,7 @@ package org.apache.mina.core.future;
 
 import org.apache.mina.core.session.IoSession;
 
-/**
- * A default implementation of {@link ConnectFuture}.
- */
+/** A default implementation of {@link ConnectFuture}. */
 public class DefaultConnectFuture extends DefaultIoFuture implements ConnectFuture {
 	/** A static object stored into the ConnectFuture when teh connection has been cancelled */
 	private static final Object CANCELED = DefaultConnectFuture.class;

@@ -7,32 +7,23 @@ import jane.core.Octets;
 import jane.core.OctetsStream;
 import jane.core.StorageLevelDB;
 
-public final class LevelDBClear
-{
-	private LevelDBClear()
-	{
+public final class LevelDBClear {
+	private LevelDBClear() {
 	}
 
-	public static void main(String[] args)
-	{
-		if (args.length < 1)
-		{
+	public static void main(String[] args) {
+		if (args.length < 1) {
 			System.err.println("USAGE: java -cp jane-core.jar jane.tool.LevelDBClear <databasePath> [tableId]");
 			return;
 		}
 		String pathname = args[0].trim();
 		int tableId = -1;
-		if (args.length > 1)
-		{
-			try
-			{
+		if (args.length > 1) {
+			try {
 				tableId = Integer.parseInt(args[1]);
+			} catch (NumberFormatException ignored) {
 			}
-			catch (NumberFormatException ignored)
-			{
-			}
-			if (tableId < 0)
-			{
+			if (tableId < 0) {
 				System.err.println("ERROR: invalid tableId: '" + args[1] + '\'');
 				return;
 			}
@@ -41,8 +32,7 @@ public final class LevelDBClear
 		long t = System.currentTimeMillis();
 		System.err.println("INFO: opening " + pathname + " ...");
 		long db = StorageLevelDB.leveldb_open3(pathname, 0, 0, 0, 0, true, false);
-		if (db == 0)
-		{
+		if (db == 0) {
 			System.err.println("ERROR: leveldb_open failed");
 			return;
 		}
@@ -61,8 +51,7 @@ public final class LevelDBClear
 			keyTo = new OctetsStream().marshal1((byte)0xf1);
 
 		Octets deleted = new Octets();
-		for (long iter = StorageLevelDB.leveldb_iter_new(db, keyFrom.array(), keyFrom.size(), 2);;)
-		{
+		for (long iter = StorageLevelDB.leveldb_iter_new(db, keyFrom.array(), keyFrom.size(), 2); ; ) {
 			byte[] key = StorageLevelDB.leveldb_iter_next(iter);
 			if (key == null)
 				break;
@@ -70,15 +59,13 @@ public final class LevelDBClear
 			if (keyTo != null && keyOs.compareTo(keyTo) >= 0)
 				break;
 			buf.add(new SimpleEntry<>(keyOs, deleted));
-			if (buf.size() >= 10000)
-			{
+			if (buf.size() >= 10000) {
 				count += buf.size();
 				StorageLevelDB.leveldb_write(db, buf.iterator());
 				buf.clear();
 			}
 		}
-		if (!buf.isEmpty())
-		{
+		if (!buf.isEmpty()) {
 			count += buf.size();
 			StorageLevelDB.leveldb_write(db, buf.iterator());
 			buf.clear();

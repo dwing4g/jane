@@ -20,9 +20,7 @@ package org.apache.mina.core.write;
 
 import java.io.IOException;
 
-/**
- * An exception which is thrown when one or more write operations were attempted on a closed session.
- */
+/** An exception which is thrown when one or more write operations were attempted on a closed session. */
 @SuppressWarnings("serial")
 public final class WriteToClosedSessionException extends IOException {
 	public WriteToClosedSessionException(Throwable cause) {

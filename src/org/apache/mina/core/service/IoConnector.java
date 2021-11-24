@@ -31,9 +31,7 @@ import org.apache.mina.core.future.ConnectFuture;
  * and stop when all connection attempts are finished.
  */
 public interface IoConnector extends IoService {
-	/**
-	 * @return the connect timeout in milliseconds. The default value is 1 minute.
-	 */
+	/** @return the connect timeout in milliseconds. The default value is 1 minute. */
 	int getConnectTimeoutMillis();
 
 	/**
@@ -48,7 +46,7 @@ public interface IoConnector extends IoService {
 	 *
 	 * @param remoteAddress The remote address to connect to
 	 * @return the {@link ConnectFuture} instance which is completed when the
-	 *         connection attempt initiated by this call succeeds or fails.
+	 * 		connection attempt initiated by this call succeeds or fails.
 	 */
 	ConnectFuture connect(InetSocketAddress remoteAddress);
 
@@ -56,10 +54,9 @@ public interface IoConnector extends IoService {
 	 * Connects to the specified remote address binding to the specified local address.
 	 *
 	 * @param remoteAddress The remote address to connect
-	 * @param localAddress The local address to bind
-	 *
+	 * @param localAddress  The local address to bind
 	 * @return the {@link ConnectFuture} instance which is completed when the
-	 *         connection attempt initiated by this call succeeds or fails.
+	 * 		connection attempt initiated by this call succeeds or fails.
 	 */
 	ConnectFuture connect(InetSocketAddress remoteAddress, InetSocketAddress localAddress);
 }

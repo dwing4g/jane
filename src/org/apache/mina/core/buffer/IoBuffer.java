@@ -34,19 +34,16 @@ import org.apache.mina.core.write.WriteRequest;
  * <h2>Allocation</h2>
  * <p>
  *   You can allocate a new heap buffer.
- *
  *   <pre>
  *     IoBuffer buf = IoBuffer.allocate(1024, false);
  *   </pre>
- *
+ * <p>
  *   You can also allocate a new direct buffer:
- *
  *   <pre>
  *     IoBuffer buf = IoBuffer.allocate(1024, true);
  *   </pre>
- *
+ * <p>
  *   or you can set the default buffer type.
- *
  *   <pre>
  *     // Allocate heap buffer by default.
  *     IoBuffer.setUseDirectBuffer(false);
@@ -75,9 +72,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	/** A flag indicating which type of buffer we are using: heap or direct */
 	private static boolean useDirectBuffer;
 
-	/**
-	 * @return the allocator used by existing and new buffers
-	 */
+	/** @return the allocator used by existing and new buffers */
 	public static IoBufferAllocator getAllocator() {
 		return allocator;
 	}
@@ -98,8 +93,8 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 
 	/**
 	 * @return <tt>true</tt> if and only if a direct buffer is allocated by
-	 * default when the type of the new buffer is not specified.
-	 * The default value is <tt>false</tt>.
+	 * 		default when the type of the new buffer is not specified.
+	 * 		The default value is <tt>false</tt>.
 	 */
 	public static boolean isUseDirectBuffer() {
 		return useDirectBuffer;
@@ -120,7 +115,6 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 *
 	 * @param capacity the capacity of the buffer
 	 * @return a IoBuffer which can hold up to capacity bytes
-	 *
 	 * @see #setUseDirectBuffer(boolean)
 	 */
 	public static IoBuffer allocate(int capacity) {
@@ -130,7 +124,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	/**
 	 * Returns a direct or heap IoBuffer which can contain the specified number of bytes.
 	 *
-	 * @param capacity the capacity of the buffer
+	 * @param capacity       the capacity of the buffer
 	 * @param isDirectBuffer <tt>true</tt> to get a direct buffer,
 	 *                       <tt>false</tt> to get a heap buffer.
 	 * @return a direct or heap  IoBuffer which can hold up to capacity bytes
@@ -198,23 +192,20 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 * so any modification done on it will be visible by both sides.
 	 *
 	 * @param byteArray The byte array to wrap
-	 * @param offset The starting point in the byte array
-	 * @param length The number of bytes to store
+	 * @param offset    The starting point in the byte array
+	 * @param length    The number of bytes to store
 	 * @return a heap IoBuffer containing the selected part of the byte array
 	 */
 	public static IoBuffer wrap(byte[] byteArray, int offset, int length) {
 		return wrap(ByteBuffer.wrap(byteArray, offset, length));
 	}
 
-	/**
-	 * @return the underlying NIO {@link ByteBuffer} instance.
-	 */
+	/** @return the underlying NIO {@link ByteBuffer} instance. */
 	public abstract ByteBuffer buf();
 
 	/**
-	 * @see ByteBuffer#duplicate()
-	 *
 	 * @return the modified IoBuffer
+	 * @see ByteBuffer#duplicate()
 	 */
 	public abstract IoBuffer duplicate();
 
@@ -227,37 +218,33 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	public abstract void free();
 
 	/**
-	 * @see ByteBuffer#isDirect()
-	 *
 	 * @return <tt>true</tt> if this is a direct buffer
+	 * @see ByteBuffer#isDirect()
 	 */
 	public final boolean isDirect() {
 		return buf().isDirect();
 	}
 
 	/**
-	 * @see ByteBuffer#capacity()
-	 *
 	 * @return the buffer capacity
+	 * @see ByteBuffer#capacity()
 	 */
 	public final int capacity() {
 		return buf().capacity();
 	}
 
 	/**
-	 * @see java.nio.Buffer#position()
-	 *
 	 * @return The current position in the buffer
+	 * @see java.nio.Buffer#position()
 	 */
 	public final int position() {
 		return buf().position();
 	}
 
 	/**
-	 * @see java.nio.Buffer#position(int)
-	 *
 	 * @param newPosition Sets the new position in the buffer
 	 * @return the modified IoBuffer
+	 * @see java.nio.Buffer#position(int)
 	 */
 	public final IoBuffer position(int newPosition) {
 		buf().position(newPosition);
@@ -265,19 +252,17 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	}
 
 	/**
-	 * @see java.nio.Buffer#limit()
-	 *
 	 * @return the modified IoBuffer's limit
+	 * @see java.nio.Buffer#limit()
 	 */
 	public final int limit() {
 		return buf().limit();
 	}
 
 	/**
-	 * @see java.nio.Buffer#limit(int)
-	 *
 	 * @param newLimit The new buffer's limit
 	 * @return the modified IoBuffer
+	 * @see java.nio.Buffer#limit(int)
 	 */
 	public final IoBuffer limit(int newLimit) {
 		buf().limit(newLimit);
@@ -285,9 +270,8 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	}
 
 	/**
-	 * @see java.nio.Buffer#clear()
-	 *
 	 * @return the modified IoBuffer
+	 * @see java.nio.Buffer#clear()
 	 */
 	public final IoBuffer clear() {
 		buf().clear();
@@ -316,9 +300,8 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	}
 
 	/**
-	 * @see java.nio.Buffer#flip()
-	 *
 	 * @return the modified IoBuffer
+	 * @see java.nio.Buffer#flip()
 	 */
 	public final IoBuffer flip() {
 		buf().flip();
@@ -326,9 +309,8 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	}
 
 	/**
-	 * @see java.nio.Buffer#rewind()
-	 *
 	 * @return the modified IoBuffer
+	 * @see java.nio.Buffer#rewind()
 	 */
 	public final IoBuffer rewind() {
 		buf().rewind();
@@ -336,54 +318,48 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	}
 
 	/**
-	 * @see java.nio.Buffer#remaining()
-	 *
 	 * @return The remaining bytes in the buffer
+	 * @see java.nio.Buffer#remaining()
 	 */
 	public final int remaining() {
 		return buf().remaining();
 	}
 
 	/**
-	 * @see java.nio.Buffer#hasRemaining()
-	 *
 	 * @return <tt>true</tt> if there are some remaining bytes in the buffer
+	 * @see java.nio.Buffer#hasRemaining()
 	 */
 	public final boolean hasRemaining() {
 		return buf().hasRemaining();
 	}
 
 	/**
-	 * @see ByteBuffer#hasArray()
-	 *
 	 * @return <tt>true</tt> if the {@link #array()} method will return a byte[]
+	 * @see ByteBuffer#hasArray()
 	 */
 	public final boolean hasArray() {
 		return buf().hasArray();
 	}
 
 	/**
-	 * @see ByteBuffer#array()
-	 *
 	 * @return A byte[] if this IoBuffer supports it
+	 * @see ByteBuffer#array()
 	 */
 	public final byte[] array() {
 		return buf().array();
 	}
 
 	/**
-	 * @see ByteBuffer#arrayOffset()
-	 *
 	 * @return The offset in the returned byte[] when the {@link #array()} method is called
+	 * @see ByteBuffer#arrayOffset()
 	 */
 	public final int arrayOffset() {
 		return buf().arrayOffset();
 	}
 
 	/**
-	 * @see ByteBuffer#get()
-	 *
 	 * @return The byte at the current position
+	 * @see ByteBuffer#get()
 	 */
 	public final byte get() {
 		return buf().get();
@@ -399,10 +375,9 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	}
 
 	/**
-	 * @see ByteBuffer#put(byte)
-	 *
 	 * @param b The byte to put in the buffer
 	 * @return the modified IoBuffer
+	 * @see ByteBuffer#put(byte)
 	 */
 	public final IoBuffer put(byte b) {
 		buf().put(b);
@@ -410,10 +385,9 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	}
 
 	/**
-	 * @see ByteBuffer#get(int)
-	 *
 	 * @param index The position for which we want to read a byte
 	 * @return the byte at the given position
+	 * @see ByteBuffer#get(int)
 	 */
 	public final byte get(int index) {
 		return buf().get(index);
@@ -430,11 +404,10 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	}
 
 	/**
-	 * @see ByteBuffer#put(int, byte)
-	 *
 	 * @param index The position where the byte will be put
-	 * @param b The byte to put
+	 * @param b     The byte to put
 	 * @return the modified IoBuffer
+	 * @see ByteBuffer#put(int, byte)
 	 */
 	public final IoBuffer put(int index, byte b) {
 		buf().put(index, b);
@@ -442,12 +415,11 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	}
 
 	/**
-	 * @see ByteBuffer#get(byte[], int, int)
-	 *
-	 * @param dst The destination buffer
+	 * @param dst    The destination buffer
 	 * @param offset The position in the original buffer
 	 * @param length The number of bytes to copy
 	 * @return the modified IoBuffer
+	 * @see ByteBuffer#get(byte[], int, int)
 	 */
 	public final IoBuffer get(byte[] dst, int offset, int length) {
 		buf().get(dst, offset, length);
@@ -455,10 +427,9 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	}
 
 	/**
-	 * @see ByteBuffer#get(byte[])
-	 *
 	 * @param dst The byte[] that will contain the read bytes
 	 * @return the IoBuffer
+	 * @see ByteBuffer#get(byte[])
 	 */
 	public final IoBuffer get(byte[] dst) {
 		return get(dst, 0, dst.length);
@@ -486,12 +457,11 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	}
 
 	/**
-	 * @see ByteBuffer#put(byte[], int, int)
-	 *
-	 * @param src The byte[] to put
+	 * @param src    The byte[] to put
 	 * @param offset The position in the source
 	 * @param length The number of bytes to copy
 	 * @return the modified IoBuffer
+	 * @see ByteBuffer#put(byte[], int, int)
 	 */
 	public final IoBuffer put(byte[] src, int offset, int length) {
 		buf().put(src, offset, length);
@@ -499,19 +469,17 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	}
 
 	/**
-	 * @see ByteBuffer#put(byte[])
-	 *
 	 * @param src The byte[] to put
 	 * @return the modified IoBuffer
+	 * @see ByteBuffer#put(byte[])
 	 */
 	public final IoBuffer put(byte[] src) {
 		return put(src, 0, src.length);
 	}
 
 	/**
-	 * @see ByteBuffer#compact()
-	 *
 	 * @return the modified IoBuffer
+	 * @see ByteBuffer#compact()
 	 */
 	public final IoBuffer compact() {
 		buf().compact();
@@ -529,7 +497,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	}
 
 	/** The getHexdump digits lookup table */
-	private static final byte[] digits = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+	private static final byte[] digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
 	/**
 	 * Return hexdump of this buffer with limited length.
@@ -552,7 +520,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 
 		StringBuilder out = new StringBuilder(len * 3 + 2);
 
-		for (;;) {
+		for (; ; ) {
 			int byteValue = get(pos) & 0xff;
 			out.append((char)digits[byteValue >> 4]);
 			out.append((char)digits[byteValue & 15]);
@@ -612,7 +580,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 * Fills this buffer with the specified value. This method moves buffer position forward.
 	 *
 	 * @param value The value to fill the IoBuffer with
-	 * @param size The added size
+	 * @param size  The added size
 	 * @return The modified IoBuffer
 	 */
 	public final IoBuffer fill(byte value, int size) {
@@ -651,7 +619,7 @@ public abstract class IoBuffer implements Comparable<IoBuffer>, WriteRequest {
 	 * Fills this buffer with the specified value. This method does not change buffer position.
 	 *
 	 * @param value The value to fill the IoBuffer with
-	 * @param size The added size
+	 * @param size  The added size
 	 * @return The modified IoBuffer
 	 */
 	public final IoBuffer fillAndReset(byte value, int size) {

@@ -7,40 +7,31 @@ import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.DefaultWriteRequest;
 import org.apache.mina.core.write.WriteRequest;
 
-/**
- * bean的mina协议编解码过滤器
- */
-public class BeanCodec implements IoFilter
-{
-	protected final NetManager	 _mgr;
-	protected final OctetsStream _os	= new OctetsStream(); // 用于解码器的数据缓存
-	protected int				 _ptype;					  // 当前数据缓存中获得的协议类型
-	protected int				 _pserial;					  // 当前数据缓存中获得的协议序列号
-	protected int				 _psize	= -1;				  // 当前数据缓存中获得的协议大小. -1表示没获取到
+/** bean的mina协议编解码过滤器 */
+public class BeanCodec implements IoFilter {
+	protected final NetManager _mgr;
+	protected final OctetsStream _os = new OctetsStream(); // 用于解码器的数据缓存
+	protected int _ptype; // 当前数据缓存中获得的协议类型
+	protected int _pserial; // 当前数据缓存中获得的协议序列号
+	protected int _psize = -1; // 当前数据缓存中获得的协议大小. -1表示没获取到
 
-	public BeanCodec(NetManager mgr)
-	{
+	public BeanCodec(NetManager mgr) {
 		_mgr = mgr;
 	}
 
 	@Override
-	public void filterWrite(NextFilter next, IoSession session, WriteRequest writeRequest) throws Exception
-	{
+	public void filterWrite(NextFilter next, IoSession session, WriteRequest writeRequest) throws Exception {
 		Bean<?> bean = (Bean<?>)writeRequest.writeRequestMessage();
 		int type = bean.type();
-		if (type == 0)
-		{
+		if (type == 0) {
 			Octets rawdata = ((RawBean)bean).getData();
 			int n = rawdata.remain();
-			if (n > 0)
-			{
+			if (n > 0) {
 				IoBuffer buf = IoBuffer.wrap(rawdata.array(), rawdata.position(), n);
 				WriteFuture wf = writeRequest.writeRequestFuture();
 				next.filterWrite(wf == DefaultWriteRequest.UNUSED_FUTURE ? buf : new DefaultWriteRequest(buf, wf));
 			}
-		}
-		else
-		{
+		} else {
 			int serial = bean.serial();
 			if (serial == Bean.STORE_SERIAL)
 				serial = 0;
@@ -58,8 +49,7 @@ public class BeanCodec implements IoFilter
 		}
 	}
 
-	protected BeanHandler<?> checkTypeSize(@SuppressWarnings("unused") IoSession session) throws Exception
-	{
+	protected BeanHandler<?> checkTypeSize(@SuppressWarnings("unused") IoSession session) throws Exception {
 		BeanHandler<?> handler = _mgr.getHandler(_ptype);
 		int maxSize;
 		if (handler == null || (maxSize = handler.beanStub().maxSize()) < 0)
@@ -70,37 +60,29 @@ public class BeanCodec implements IoFilter
 		return handler;
 	}
 
-	protected boolean decodeProtocol(IoSession session, OctetsStream os, NextFilter next) throws Exception
-	{
+	protected boolean decodeProtocol(IoSession session, OctetsStream os, NextFilter next) throws Exception {
 		BeanHandler<?> handler;
-		if (_psize < 0)
-		{
+		if (_psize < 0) {
 			int pos = os.position();
-			try
-			{
+			try {
 				_ptype = os.unmarshalUInt();
 				_pserial = os.unmarshalInt();
 				_psize = os.unmarshalUInt();
-			}
-			catch (MarshalException.EOF e)
-			{
+			} catch (MarshalException.EOF e) {
 				os.setPosition(pos);
 				return false;
 			}
 			handler = checkTypeSize(session);
 			if (_psize > os.remain())
 				return false;
-		}
-		else
-		{
+		} else {
 			if (_psize > os.remain())
 				return false;
 			handler = _mgr.getHandler(_ptype);
 		}
 		int serial = _pserial;
 		Bean<?> bean;
-		if (handler != null && (bean = handler.beanStub().create()) != null)
-		{
+		if (handler != null && (bean = handler.beanStub().create()) != null) {
 			int pos = os.position();
 			bean.unmarshalProtocol(os);
 			bean.serial(serial != Bean.STORE_SERIAL ? serial : 0);
@@ -109,8 +91,7 @@ public class BeanCodec implements IoFilter
 				throw new DecodeException("bean realSize overflow: type=" + _ptype +
 						",serial=" + serial + ",size=" + _psize + ",realSize=" + realSize);
 			os.setPosition(pos + _psize);
-		}
-		else
+		} else
 			bean = new RawBean(_ptype, serial, os.unmarshalRaw(_psize));
 		_psize = -1;
 		next.messageReceived(bean);
@@ -118,13 +99,10 @@ public class BeanCodec implements IoFilter
 	}
 
 	@Override
-	public void messageReceived(NextFilter next, IoSession session, Object message) throws Exception
-	{
+	public void messageReceived(NextFilter next, IoSession session, Object message) throws Exception {
 		IoBuffer in = (IoBuffer)message;
-		try
-		{
-			if (!_os.empty())
-			{
+		try {
+			if (!_os.empty()) {
 				int r = in.remaining();
 				int s = _os.size();
 				// 前者情况因3个int/uint整数unmarshal不会超过15字节,所以_os.remain()肯定<15或_psize
@@ -133,22 +111,18 @@ public class BeanCodec implements IoFilter
 				in.get(_os.array(), s, n);
 				r -= n;
 				s += n;
-				if (decodeProtocol(session, _os, next)) // 能正好解出一个协议,或者因之前无法解出头部或者in的数据还不够导致失败
-				{
+				if (decodeProtocol(session, _os, next)) { // 能正好解出一个协议,或者因之前无法解出头部或者in的数据还不够导致失败
 					n = _os.remain();
 					_os.clear();
 					if (n > 0) // 有很小的可能因为之前无法解出头部,而补足15字节却过多的情况,可以调整in的位置
 						in.position(in.position() - n);
 					else if (r <= 0)
 						return;
-				}
-				else
-				{
+				} else {
 					if (r <= 0)
 						return; // 如果in已经无数据可取就直接等下次
 					n = _psize - _os.remain(); // in还有数据,则_psize一定获取到了
-					if (r < n) // 如果数据不够多就先累积到缓存里
-					{
+					if (r < n) { // 如果数据不够多就先累积到缓存里
 						_os.resize(s + r);
 						in.get(_os.array(), s, r);
 						return;
@@ -163,13 +137,10 @@ public class BeanCodec implements IoFilter
 			}
 			int n = in.limit();
 			OctetsStream os;
-			if (in.hasArray())
-			{
+			if (in.hasArray()) {
 				os = OctetsStream.wrap(in.array(), in.position(), n);
 				in.position(n);
-			}
-			else
-			{
+			} else {
 				n = in.remaining();
 				byte[] buf = new byte[n];
 				in.get(buf, 0, n);
@@ -182,9 +153,7 @@ public class BeanCodec implements IoFilter
 				return; // 正好只解出头部的情况
 			_os.replace(os.array(), os.position(), os.remain());
 			_os.setPosition(0);
-		}
-		finally
-		{
+		} finally {
 			in.free();
 		}
 	}

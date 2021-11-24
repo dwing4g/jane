@@ -20,9 +20,7 @@ package org.apache.mina.core.buffer;
 
 import java.nio.ByteBuffer;
 
-/**
- * A simplistic singleton {@link IoBufferAllocator} which simply allocates a new buffer every time.
- */
+/** A simplistic singleton {@link IoBufferAllocator} which simply allocates a new buffer every time. */
 public final class SimpleBufferAllocator implements IoBufferAllocator {
 	public static final SimpleBufferAllocator instance = new SimpleBufferAllocator();
 	public static final IoBuffer emptyBuffer = new SimpleIoBuffer(0, false);

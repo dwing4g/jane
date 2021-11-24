@@ -6,27 +6,23 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import jane.test.net.Libuv;
 
-public final class TestLibuv implements Libuv.LibuvLoopHandler
-{
+public final class TestLibuv implements Libuv.LibuvLoopHandler {
 	private static ByteBuffer bb;
 
 	@Override
-	public void onOpen(long handle_stream, String ip, int port)
-	{
+	public void onOpen(long handle_stream, String ip, int port) {
 		// System.out.println("onOpen(" + handle_stream + "): " + ip + ':' + port);
 		Libuv.libuv_tcp_send(handle_stream, ByteBuffer.allocateDirect(TEST_ECHO_SIZE), 0, TEST_ECHO_SIZE);
 	}
 
 	@Override
-	public void onClose(long handle_stream, int from, int errcode)
-	{
+	public void onClose(long handle_stream, int from, int errcode) {
 		// System.out.println("onClose(" + handle_stream + "): " + from + ':' + errcode);
 		_closedCount.countDown();
 	}
 
 	@Override
-	public void onRecv(long handle_stream, int len)
-	{
+	public void onRecv(long handle_stream, int len) {
 		// System.out.println("onRecv(" + handle_stream + "): " + len);
 		// Libuv.libuv_tcp_send(handle_stream, bb, 0, len);
 		if (_recvCount.getAndIncrement() < TEST_ECHO_COUNT)
@@ -36,19 +32,16 @@ public final class TestLibuv implements Libuv.LibuvLoopHandler
 	}
 
 	@Override
-	public void onSend(long handle_stream, ByteBuffer buffer)
-	{
+	public void onSend(long handle_stream, ByteBuffer buffer) {
 		// System.out.println("onSend(" + handle_stream + "): " + System.identityHashCode(buffer));
 	}
 
 	@Override
-	public void onException(long handle_stream, Throwable ex)
-	{
+	public void onException(long handle_stream, Throwable ex) {
 		System.out.println("onException(" + handle_stream + "): " + ex.getMessage());
 	}
 
-	static
-	{
+	static {
 		String filename = System.mapLibraryName("uvjni64");
 		File file = new File("lib", filename);
 		if (!file.exists())
@@ -56,8 +49,7 @@ public final class TestLibuv implements Libuv.LibuvLoopHandler
 		System.load(file.getAbsolutePath());
 	}
 
-	public static void main2(@SuppressWarnings("unused") String[] args)
-	{
+	public static void main2(@SuppressWarnings("unused") String[] args) {
 		int r;
 
 		long hloop = Libuv.libuv_loop_create(new TestLibuv());
@@ -85,14 +77,13 @@ public final class TestLibuv implements Libuv.LibuvLoopHandler
 	}
 
 	private static int TEST_CLIENT_COUNT = 64;
-	private static int TEST_ECHO_SIZE	 = 32;
-	private static int TEST_ECHO_COUNT	 = 100000;
+	private static int TEST_ECHO_SIZE = 32;
+	private static int TEST_ECHO_COUNT = 100000;
 
-	private static CountDownLatch	   _closedCount;
+	private static CountDownLatch _closedCount;
 	private static final AtomicInteger _recvCount = new AtomicInteger();
 
-	public static void main(String[] args)
-	{
+	public static void main(String[] args) {
 		if (args.length > 0)
 			TEST_CLIENT_COUNT = Integer.parseInt(args[0]);
 		if (args.length > 1)
@@ -105,15 +96,13 @@ public final class TestLibuv implements Libuv.LibuvLoopHandler
 		long time = System.currentTimeMillis();
 
 		long hloop = Libuv.libuv_loop_create(new TestLibuv());
-		if (hloop == 0)
-		{
+		if (hloop == 0) {
 			System.out.println("libuv_loop_create: " + hloop);
 			return;
 		}
 		bb = Libuv.libuv_loop_buffer(hloop);
 		int r = Libuv.libuv_tcp_bind(hloop, null, 9123, 10);
-		if (r != 0)
-		{
+		if (r != 0) {
 			System.out.println("libuv_tcp_bind: " + r);
 			return;
 		}

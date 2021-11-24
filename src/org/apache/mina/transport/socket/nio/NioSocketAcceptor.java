@@ -89,10 +89,9 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 	}
 
 	/**
-	 * @see #AbstractIoService(AbstractSocketSessionConfig, Executor)
-	 *
 	 * @param processor the {@link IoProcessor} for processing the {@link IoSession} of this transport,
-	 *            triggering events to the bound {@link IoHandler} and processing the chains of {@link IoFilter}
+	 *                  triggering events to the bound {@link IoHandler} and processing the chains of {@link IoFilter}
+	 * @see #AbstractIoService(AbstractSocketSessionConfig, Executor)
 	 */
 	public NioSocketAcceptor(IoProcessor<NioSession> processor) {
 		super(processor);
@@ -219,7 +218,7 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 	protected void dispose0() {
 		AcceptorFuture future;
 		synchronized (this) {
-	   		future = bind1(null, false, true);
+			future = bind1(null, false, true);
 		}
 		future.awaitUninterruptibly();
 	}
@@ -232,7 +231,7 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 	private final class Acceptor implements Runnable, Consumer<SelectionKey> {
 		@Override
 		public void run() {
-			for (;;) {
+			for (; ; ) {
 				try {
 					if (!register() || selector.keys().isEmpty()) {
 						acceptorRef.set(null);
@@ -302,7 +301,7 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 		}
 
 		private boolean register() {
-			for (;;) {
+			for (; ; ) {
 				AcceptorFuture future = registerQueue.poll();
 				if (future == null)
 					return true;
@@ -313,10 +312,10 @@ public final class NioSocketAcceptor extends AbstractIoService implements IoAcce
 					try {
 						int i = 0;
 						for (InetSocketAddress localAddress : localAddresses)
-	   						channels[i++] = open(localAddress);
+							channels[i++] = open(localAddress);
 					} catch (Exception e) {
 						for (ServerSocketChannel channel : channels)
-	   						close(channel);
+							close(channel);
 						future.setValue(e);
 						continue;
 					}

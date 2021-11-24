@@ -12,36 +12,31 @@ import jane.test.net.TcpManager;
 import jane.test.net.TcpSession;
 
 // start.bat jane.test.TestEchoAio 32 100000 64
-public final class TestEchoAio extends TcpManager
-{
-	private static int TEST_ECHO_SIZE	  = 32;
+public final class TestEchoAio extends TcpManager {
+	private static int TEST_ECHO_SIZE = 32;
 	private static int TEST_ECHO_SIZE_ALL = 100000;
-	private static int TEST_CLIENT_COUNT  = 64;
+	private static int TEST_CLIENT_COUNT = 64;
 
 	private static CountDownLatch _closedCount;
 
-	public static final class SessionContext
-	{
-		public final AtomicInteger recvSize	= new AtomicInteger();
-		public final AtomicInteger sendSize	= new AtomicInteger();
+	public static final class SessionContext {
+		public final AtomicInteger recvSize = new AtomicInteger();
+		public final AtomicInteger sendSize = new AtomicInteger();
 	}
 
 	@Override
-	public int onChannelCreated(AsynchronousSocketChannel channel, Object attachment) throws IOException
-	{
+	public int onChannelCreated(AsynchronousSocketChannel channel, Object attachment) throws IOException {
 		super.onChannelCreated(channel, attachment);
 		channel.setOption(StandardSocketOptions.TCP_NODELAY, true);
 		return 0;
 	}
 
 	@Override
-	public void onSessionCreated(TcpSession session)
-	{
+	public void onSessionCreated(TcpSession session) {
 		SessionContext ctx = new SessionContext();
 		session.setUserObject(ctx);
 		byte[] buf = new byte[TEST_ECHO_SIZE];
-		for (int i = 0; i < 1; ++i)
-		{
+		for (int i = 0; i < 1; ++i) {
 			ByteBuffer bb = ByteBufferPool.def().allocateDirect(TEST_ECHO_SIZE);
 			bb.put(buf);
 			bb.flip();
@@ -51,33 +46,28 @@ public final class TestEchoAio extends TcpManager
 	}
 
 	@Override
-	public void onSessionClosed(TcpSession session, int reason)
-	{
+	public void onSessionClosed(TcpSession session, int reason) {
 		_closedCount.countDown();
 	}
 
 	@Override
-	public void onReceived(TcpSession session, ByteBuffer bb)
-	{
+	public void onReceived(TcpSession session, ByteBuffer bb) {
 		int size = bb.limit();
 		SessionContext ctx = (SessionContext)session.getUserObject();
 		int recvSize = ctx.recvSize.addAndGet(size);
 		int sendSize = ctx.sendSize.get();
-		if (sendSize < TEST_ECHO_SIZE_ALL)
-		{
+		if (sendSize < TEST_ECHO_SIZE_ALL) {
 			ByteBuffer bbSend = ByteBufferPool.def().allocateDirect(size);
 			bb.limit(size);
 			bbSend.put(bb);
 			bbSend.flip();
 			ctx.sendSize.getAndAdd(size);
 			session.send(bbSend);
-		}
-		else if (recvSize >= sendSize)
+		} else if (recvSize >= sendSize)
 			session.close();
 	}
 
-	public static void main(String[] args) throws InterruptedException
-	{
+	public static void main(String[] args) throws InterruptedException {
 		if (args.length > 0)
 			TEST_ECHO_SIZE = Integer.parseInt(args[0]);
 		if (args.length > 1)

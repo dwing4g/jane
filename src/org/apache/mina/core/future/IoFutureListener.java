@@ -21,9 +21,7 @@ package org.apache.mina.core.future;
 import java.util.EventListener;
 import org.apache.mina.core.session.IoSession;
 
-/**
- * Something interested in being notified when the completion of an asynchronous I/O operation: {@link IoFuture}.
- */
+/** Something interested in being notified when the completion of an asynchronous I/O operation: {@link IoFuture}. */
 public interface IoFutureListener<F extends IoFuture> extends EventListener {
 	/**
 	 * An {@link IoFutureListener} that closes the {@link IoSession} which is

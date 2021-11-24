@@ -10,8 +10,7 @@ import jane.core.OctetsStream;
  * 作为key或配置的bean
  */
 @SuppressWarnings({"RedundantIfStatement", "RedundantSuppression", "SwitchStatementWithTooFewBranches", "UnnecessaryLocalVariable"})
-public final class TestKeyBean extends Bean<TestKeyBean>
-{
+public final class TestKeyBean extends Bean<TestKeyBean> {
 	private static final long serialVersionUID = 0xbeac0364a4241981L;
 	public  static final int BEAN_TYPE = 0;
 	public  static final String BEAN_TYPENAME = TestKeyBean.class.getSimpleName();
@@ -20,75 +19,63 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 	private /*  1*/ int key1; // KEY-1
 	private /*  2*/ String key2; // KEY-2
 
-	public TestKeyBean()
-	{
+	public TestKeyBean() {
 		key2 = "";
 	}
 
-	public TestKeyBean(int key1, String key2)
-	{
+	public TestKeyBean(int key1, String key2) {
 		this.key1 = key1;
 		this.key2 = (key2 != null ? key2 : "");
 	}
 
 	@Deprecated
 	@Override
-	public void reset()
-	{
+	public void reset() {
 		throw new UnsupportedOperationException();
 	}
 
 	/** @return KEY-1 */
-	public int getKey1()
-	{
+	public int getKey1() {
 		return key1;
 	}
 
 	/** @return KEY-2 */
-	public String getKey2()
-	{
+	public String getKey2() {
 		return key2;
 	}
 
 	@Override
-	public int type()
-	{
+	public int type() {
 		return BEAN_TYPE;
 	}
 
 	@Override
-	public String typeName()
-	{
+	public String typeName() {
 		return BEAN_TYPENAME;
 	}
 
 	@Override
-	public TestKeyBean stub()
-	{
+	public TestKeyBean stub() {
 		return BEAN_STUB;
 	}
 
 	@Override
-	public TestKeyBean create()
-	{
+	public TestKeyBean create() {
 		return new TestKeyBean();
 	}
 
 	@Override
-	public int initSize()
-	{
+	public int initSize() {
 		return 16;
 	}
 
 	@Override
-	public int maxSize()
-	{
+	public int maxSize() {
 		return 2147483647;
 	}
 
 	@Override
-	public Octets marshal(Octets _s_)
-	{
+	public Octets marshal(Octets _s_) {
 		if(this.key1 != 0) _s_.marshal1((byte)0x04).marshal(this.key1);
 		if(!this.key2.isEmpty()) _s_.marshal1((byte)0x09).marshal(this.key2);
 		return _s_.marshalZero();
@@ -96,10 +83,8 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 
 	@Deprecated
 	@Override
-	public OctetsStream unmarshal(OctetsStream _s_) throws MarshalException
-	{
-		for (;;) { int _i_ = _s_.unmarshalInt1(), _t_ = _i_ & 3; if ((_i_ >>= 2) == 63) _i_ += _s_.unmarshalInt1(); switch(_i_)
-		{
+	public OctetsStream unmarshal(OctetsStream _s_) throws MarshalException {
+		for (;;) { int _i_ = _s_.unmarshalInt1(), _t_ = _i_ & 3; if ((_i_ >>= 2) == 63) _i_ += _s_.unmarshalInt1(); switch(_i_) {
 			case 0: return _s_;
 			case 1: this.key1 = _s_.unmarshalInt(_t_); break;
 			case 2: this.key2 = _s_.unmarshalString(_t_); break;
@@ -108,14 +93,12 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 	}
 
 	@Override
-	public TestKeyBean clone()
-	{
+	public TestKeyBean clone() {
 		return new TestKeyBean(key1, key2);
 	}
 
 	@Override
-	public int hashCode()
-	{
+	public int hashCode() {
 		int _h_ = (int)serialVersionUID;
 		_h_ = _h_ * 16777619 + this.key1;
 		_h_ = _h_ * 16777619 + this.key2.hashCode();
@@ -123,8 +106,7 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 	}
 
 	@Override
-	public boolean equals(Object _o_)
-	{
+	public boolean equals(Object _o_) {
 		if (_o_ == this) return true;
 		if (!(_o_ instanceof TestKeyBean)) return false;
 		TestKeyBean _b_ = (TestKeyBean)_o_;
@@ -134,8 +116,7 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 	}
 
 	@Override
-	public int compareTo(TestKeyBean _b_)
-	{
+	public int compareTo(TestKeyBean _b_) {
 		if (_b_ == this) return 0;
 		if (_b_ == null) return 1;
 		int _c_;
@@ -145,8 +126,7 @@ public final class TestKeyBean extends Bean<TestKeyBean>
 	}
 
 	@Override
-	public StringBuilder toStringBuilder(StringBuilder _s_)
-	{
+	public StringBuilder toStringBuilder(StringBuilder _s_) {
 		_s_.append('{');
 		_s_.append(this.key1).append(',');
 		_s_.append(this.key2);

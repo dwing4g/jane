@@ -7,11 +7,9 @@ import jane.core.NetManager;
 import jane.test.TestRc4Filter;
 import org.apache.mina.core.session.IoSession;
 
-public final class TestBeanHandler implements BeanHandler<TestBean>
-{
+public final class TestBeanHandler implements BeanHandler<TestBean> {
 	@Override
-	public TestBean beanStub()
-	{
+	public TestBean beanStub() {
 		return TestBean.BEAN_STUB;
 	}
 
@@ -23,13 +21,12 @@ public final class TestBeanHandler implements BeanHandler<TestBean>
 	\*/
 
 	@Override
-	public void onProcess(NetManager manager, IoSession session, TestBean arg)
-	{
+	public void onProcess(NetManager manager, IoSession session, TestBean arg) {
 		Log.debug("{}: arg={}", getClass().getName(), arg);
 
 		TestRc4Filter filter = new TestRc4Filter();
-		filter.setInputKey(new byte[] { 1, 2, 3 }, 3);
-		filter.setOutputKey(new byte[] { 1, 2, 3 }, 3);
+		filter.setInputKey(new byte[]{1, 2, 3}, 3);
+		filter.setOutputKey(new byte[]{1, 2, 3}, 3);
 		session.getFilterChain().addFirst("enc", filter);
 
 		manager.send(session, arg);

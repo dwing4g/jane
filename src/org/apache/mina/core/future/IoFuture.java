@@ -26,9 +26,7 @@ import org.apache.mina.core.session.IoSession;
  * Can be listened for completion using a {@link IoFutureListener}.
  */
 public interface IoFuture {
-	/**
-	 * @return the {@link IoSession} which is associated with this future.
-	 */
+	/** @return the {@link IoSession} which is associated with this future. */
 	IoSession getSession();
 
 	/**
@@ -36,7 +34,7 @@ public interface IoFuture {
 	 * The attached listeners will be notified when the operation is completed.
 	 *
 	 * @return The instance of IoFuture that we are waiting for
-	 * @exception InterruptedException If the thread is interrupted while waiting
+	 * @throws InterruptedException If the thread is interrupted while waiting
 	 */
 	IoFuture await() throws InterruptedException;
 
@@ -44,9 +42,9 @@ public interface IoFuture {
 	 * Wait for the asynchronous operation to complete with the specified timeout.
 	 *
 	 * @param timeout The maximum delay to wait before getting out
-	 * @param unit the type of unit for the delay (seconds, minutes...)
+	 * @param unit    the type of unit for the delay (seconds, minutes...)
 	 * @return <tt>true</tt> if the operation is completed.
-	 * @exception InterruptedException If the thread is interrupted while waiting
+	 * @throws InterruptedException If the thread is interrupted while waiting
 	 */
 	boolean await(long timeout, TimeUnit unit) throws InterruptedException;
 
@@ -55,7 +53,7 @@ public interface IoFuture {
 	 *
 	 * @param timeoutMillis The maximum milliseconds to wait before getting out
 	 * @return <tt>true</tt> if the operation is completed.
-	 * @exception InterruptedException If the thread is interrupted while waiting
+	 * @throws InterruptedException If the thread is interrupted while waiting
 	 */
 	boolean await(long timeoutMillis) throws InterruptedException;
 
@@ -71,7 +69,7 @@ public interface IoFuture {
 	 * Wait for the asynchronous operation to complete with the specified timeout uninterruptibly.
 	 *
 	 * @param timeout The maximum delay to wait before getting out
-	 * @param unit the type of unit for the delay (seconds, minutes...)
+	 * @param unit    the type of unit for the delay (seconds, minutes...)
 	 * @return <tt>true</tt> if the operation is completed.
 	 */
 	boolean awaitUninterruptibly(long timeout, TimeUnit unit);
@@ -84,9 +82,7 @@ public interface IoFuture {
 	 */
 	boolean awaitUninterruptibly(long timeoutMillis);
 
-	/**
-	 * @return <tt>true</tt> if the operation is completed.
-	 */
+	/** @return <tt>true</tt> if the operation is completed. */
 	boolean isDone();
 
 	/**

@@ -145,7 +145,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 
 	@Override
 	public synchronized void clear() {
-		for (EntryImpl entry; (entry = tail) != null;) {
+		for (EntryImpl entry; (entry = tail) != null; ) {
 			try {
 				deregister(entry);
 			} catch (Exception e) {
@@ -230,9 +230,7 @@ public final class DefaultIoFilterChain implements IoFilterChain {
 		return e;
 	}
 
-	/**
-	 * Checks the specified filter name is already taken and throws an exception if already taken.
-	 */
+	/** Checks the specified filter name is already taken and throws an exception if already taken. */
 	private void checkAddable(String name) {
 		if (getEntry(name) != null) {
 			throw new IllegalArgumentException("other filter is using the same name: " + name);
