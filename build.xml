@@ -101,6 +101,8 @@
 		<jar jarfile="${root}/jane-test-all.jar" level="9">
 			<manifest>
 				<attribute name="Created-Time" value="${time}"/>
+				<attribute name="Premain-Class" value="jane.tool.ClassReloader"/>
+				<attribute name="Can-Redefine-Classes" value="true"/>
 				<attribute name="Main-Class" value="jane.test.TestMain"/>
 			</manifest>
 			<zipfileset src="${lib}/slf4j-api-1.7.32.jar" includes="**/*.class"/>

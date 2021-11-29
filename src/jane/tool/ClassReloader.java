@@ -7,10 +7,12 @@ import java.io.InputStream;
 import java.lang.instrument.ClassDefinition;
 import java.lang.instrument.Instrumentation;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import jane.core.Octets;
 import jane.core.Util;
 
 /*
@@ -93,20 +95,47 @@ public final class ClassReloader {
 	}
 
 	public static int reloadClasses(ZipFile zipFile) throws Exception, Error {
+		return reloadClasses(null, zipFile, null);
+	}
+
+	public static int reloadClasses(ClassLoader classLoader, ZipFile zipFile, Appendable log) throws Exception, Error {
 		if (_inst == null)
 			throw new NullPointerException("Instrumentation not initialized");
 		ArrayList<byte[]> classDatas = new ArrayList<>();
+		Octets buf0 = new Octets(), buf1 = new Octets();
 		for (Enumeration<? extends ZipEntry> zipEnum = zipFile.entries(); zipEnum.hasMoreElements(); ) {
 			ZipEntry ze = zipEnum.nextElement();
-			if (ze.isDirectory() || !ze.getName().endsWith(".class"))
+			String name;
+			if (ze.isDirectory() || !(name = ze.getName()).endsWith(".class"))
 				continue;
 			int len = (int)ze.getSize();
 			if (len > 0) {
-				byte[] classData = new byte[len];
-				try (InputStream is = zipFile.getInputStream(ze)) {
-					Util.readStream(is, ze.getName(), classData, len);
+				buf1.clear();
+				if (classLoader != null) {
+					try (InputStream is = classLoader.getResourceAsStream(name)) {
+						if (is != null) {
+							buf0.clear();
+							Util.readStream(is, buf0);
+							if (buf0.size() == len) {
+								try (InputStream is2 = zipFile.getInputStream(ze)) {
+									Util.readStream(is2, buf1);
+								}
+								if (buf1.size() <= 0 || buf1.size() == len && Arrays.compare(buf0.array(), 0, len, buf1.array(), 0, len) == 0)
+									continue;
+							}
+						}
+					}
 				}
-				classDatas.add(classData);
+				if (buf1.size() <= 0) {
+					try (InputStream is2 = zipFile.getInputStream(ze)) {
+						Util.readStream(is2, buf1);
+					}
+				}
+				if (buf1.size() > 0) {
+					if (log != null)
+						log.append(name).append('\n');
+					classDatas.add(buf1.getBytes());
+				}
 			}
 		}
 		reloadClasses(classDatas);

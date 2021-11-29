@@ -221,11 +221,12 @@ public final class Util {
 	}
 
 	/** 从输入流中读取未知长度的数据,一直取到无法获取为止 */
-	public static Octets readStream(InputStream is) throws IOException {
+	public static Octets readStream(InputStream is, Octets res) throws IOException {
 		if (is == null)
 			return null;
-		Octets res = new Octets();
-		for (int size = 0; ; ) {
+		if (res == null)
+			res = new Octets();
+		for (int size = res.size(); ; ) {
 			res.reserve(size + 8192);
 			byte[] buf = res.array();
 			int n = is.read(buf, size, buf.length - size);
@@ -234,6 +235,10 @@ public final class Util {
 			res.resize(size += n);
 		}
 		return res;
+	}
+
+	public static Octets readStream(InputStream is) throws IOException {
+		return readStream(is, null);
 	}
 
 	/**
