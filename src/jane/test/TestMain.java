@@ -10,7 +10,6 @@ import jane.tool.StatusServer;
 public final class TestMain {
 	public static void main(String[] args) {
 		try {
-			Log.removeAppendersFromArgs(args);
 			Log.info("================================ startup: begin");
 			Log.logSystemProperties(args);
 			Log.logJarCreateTime();

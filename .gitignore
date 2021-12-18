@@ -17,7 +17,6 @@
 /jane-*.jar
 
 *.keystore
-.eclipse-pmd
 ~$*.*
 uvjni64.dll
 aesjni64.dll

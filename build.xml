@@ -28,12 +28,7 @@
 
 	<target name="compile">
 		<mkdir dir="${classes}/META-INF"/>
-		<path id="classpath">
-			<fileset dir="${lib}">
-				<include name="*.jar"/>
-			</fileset>
-		</path>
-		<javac destdir="${classes}" encoding="utf-8" classpathref="classpath" source="11" target="11" debug="on" debuglevel="lines,vars,source" includeantruntime="false">
+		<javac destdir="${classes}" encoding="utf-8" source="11" target="11" debug="on" debuglevel="lines,vars,source" includeantruntime="false">
 			<compilerarg value="-nowarn"/>
 			<!--compilerarg value="-Xlint:deprecation"/-->
 			<!--compilerarg value="-Xlint:unchecked"/-->
@@ -53,7 +48,7 @@
 	</target>
 
 	<target name="jar" depends="clean, compile">
-		<jar jarfile="${root}/jane-core.jar" basedir="${classes}" excludes="**/jane/bean/**,**/jane/handler/**,**/jane/test/**" level="9">
+		<jar jarfile="${root}/jane-core.jar" basedir="${classes}" excludes="**/jane/bean/**,**/jane/handler/**,**/jane/test/**,**/org/codehaus/**" level="9">
 			<manifest>
 				<attribute name="Created-Time" value="${time}"/>
 				<attribute name="Premain-Class" value="jane.tool.ClassReloader"/>
@@ -68,8 +63,8 @@
 				<exclude name="**/jane/bean/**"/>
 				<exclude name="**/jane/handler/**"/>
 				<exclude name="**/jane/test/**"/>
-				<exclude name="logback.xml"/>
-				<exclude name="jane.properties"/>
+				<exclude name="**/org/codehaus/**"/>
+				<exclude name="*.properties"/>
 			</fileset>
 			<fileset dir="${classes}/">
 				<include name="META-INF/jane-version.txt"/>
@@ -88,14 +83,13 @@
 				<include name="META-INF/jane-version.txt"/>
 			</fileset>
 		</jar>
-		<jar jarfile="${root}/jane-test.jar" basedir="${classes}" includes="**/jane/bean/**,**/jane/handler/**,**/jane/test/**,META-INF/**" level="9">
+		<jar jarfile="${root}/jane-test.jar" basedir="${classes}" includes="**/jane/bean/**,**/jane/handler/**,**/jane/test/**" level="9">
 			<manifest>
 				<attribute name="Created-Time" value="${time}"/>
 				<attribute name="Main-Class" value="jane.test.TestMain"/>
 			</manifest>
 			<fileset dir="${src}">
-				<include name="logback.xml"/>
-				<include name="jane.properties"/>
+				<include name="*.properties"/>
 			</fileset>
 		</jar>
 		<jar jarfile="${root}/jane-test-all.jar" level="9">
@@ -105,9 +99,6 @@
 				<attribute name="Can-Redefine-Classes" value="true"/>
 				<attribute name="Main-Class" value="jane.test.TestMain"/>
 			</manifest>
-			<zipfileset src="${lib}/slf4j-api-1.7.32.jar" includes="**/*.class"/>
-			<zipfileset src="${lib}/logback-core-1.2.6.jar" includes="**/*.class"/>
-			<zipfileset src="${lib}/logback-classic-1.2.6.jar" includes="**/*.class"/>
 			<zipfileset src="${root}/jane-core.jar" includes="**/*.class"/>
 			<zipfileset src="${root}/jane-native.jar" includes="*.dll,*.so,*.dylib"/>
 			<zipfileset src="${root}/jane-test.jar"/>

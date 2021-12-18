@@ -326,7 +326,6 @@ public final class TestHttpClient {
 		doGet("http://www.baidu.com", null, (status, content) -> {
 			Log.info("{}: {}", status, content.length());
 			System.out.println(content);
-			Log.shutdown();
 			System.exit(status);
 		});
 

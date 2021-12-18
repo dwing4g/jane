@@ -4,29 +4,26 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.jar.Manifest;
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.util.ContextInitializer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.helpers.MessageFormatter;
+import org.tinylog.Logger;
+import org.tinylog.configuration.ConfigurationLoader;
+import org.tinylog.configuration.PropertiesConfigurationLoader;
+import org.tinylog.configuration.ServiceLoader;
+import org.tinylog.core.TinylogLoggingProvider;
+import org.tinylog.policies.DailyPolicy;
+import org.tinylog.policies.Policy;
+import org.tinylog.policies.StartupPolicy;
+import org.tinylog.provider.LoggingProvider;
+import org.tinylog.provider.ProviderRegistry;
+import org.tinylog.writers.ConsoleWriter;
+import org.tinylog.writers.RollingFileWriter;
+import org.tinylog.writers.Writer;
 
 /** 日志相关(静态类) */
 public final class Log {
 	static {
 		System.setProperty("line.separator", "\n");
-	}
-
-	/** public给外面方便写日志 */
-	public static final Logger log = LoggerFactory.getLogger("jane");
-	public static final LoggerContext logCtx = (LoggerContext)LoggerFactory.getILoggerFactory();
-	public static final boolean hasTrace = log.isTraceEnabled();
-	public static final boolean hasDebug = log.isDebugEnabled();
-	public static final boolean hasInfo = log.isInfoEnabled();
-	public static final boolean hasWarn = log.isWarnEnabled();
-	public static final boolean hasError = log.isErrorEnabled();
-
-	static {
 		Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
 			try {
 				error(e, "thread({}): uncaught fatal exception:", t);
@@ -38,7 +35,25 @@ public final class Log {
 		});
 		//noinspection ResultOfMethodCallIgnored
 		ExitManager.getShutdownSystemCallbacks(); // ensure ExitManager initialized
+		ServiceLoader.customLoader = cls -> {
+			if (cls == ConfigurationLoader.class)
+				return List.of(PropertiesConfigurationLoader.class.getName());
+			if (cls == LoggingProvider.class)
+				return List.of(TinylogLoggingProvider.class.getName());
+			if (cls == Policy.class)
+				return List.of(StartupPolicy.class.getName(), DailyPolicy.class.getName());
+			if (cls == Writer.class)
+				return List.of(ConsoleWriter.class.getName(), RollingFileWriter.class.getName());
+			return null;
+		};
 	}
+
+	/** public给外面方便写日志 */
+	public static final boolean hasTrace = Logger.isTraceEnabled();
+	public static final boolean hasDebug = Logger.isDebugEnabled();
+	public static final boolean hasInfo = Logger.isInfoEnabled();
+	public static final boolean hasWarn = Logger.isWarnEnabled();
+	public static final boolean hasError = Logger.isErrorEnabled();
 
 	/** 在日志中记录一些系统信息 */
 	public static void logSystemProperties(String[] args) {
@@ -49,10 +64,6 @@ public final class Log {
 				runtime.totalMemory() >> 20, runtime.maxMemory() >> 20, System.getProperty("file.encoding"));
 		info("user.name = {}; user.dir = {}", System.getProperty("user.name"), System.getProperty("user.dir"));
 		info("java.class.path = {}", System.getProperty("java.class.path"));
-		URL url = new ContextInitializer(logCtx).findURLOfDefaultConfigurationFile(true);
-		if (url == null)
-			throw new Error("not found logback.xml from classpath");
-		info("logback.path = {}", url.getPath());
 		if (args != null) {
 			for (int i = 0, n = args.length; i < n; ++i)
 				info("arg{} = {}", i, args[i]);
@@ -73,152 +84,131 @@ public final class Log {
 		}
 	}
 
-	/** 关闭日志中的某个appender */
-	public static void removeAppender(String name) {
-		for (ch.qos.logback.classic.Logger lc : logCtx.getLoggerList())
-			lc.detachAppender(name);
-	}
-
-	/** 从命令行参数关闭日志中的某些appenders */
-	public static void removeAppendersFromArgs(String[] args) {
-		for (String s : args) {
-			if (s.startsWith("removeAppender="))
-				removeAppender(s.substring("removeAppender=".length()));
-		}
-	}
-
 	/**
 	 * 关闭日志系统
 	 * <p>
 	 * 应在系统退出前(ShutdownHook)最后执行
 	 */
-	public static synchronized void shutdown() {
-		logCtx.stop();
+	static synchronized void shutdown() {
+		try {
+			ProviderRegistry.getLoggingProvider().shutdown();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public static void trace(String msg) {
 		if (hasTrace)
-			log.trace(msg);
+			Logger.trace(msg);
 	}
 
 	public static void trace(String msg, Object arg) {
 		if (hasTrace)
-			log.trace(msg, arg);
+			Logger.trace(msg, arg);
 	}
 
 	public static void trace(String msg, Object arg1, Object arg2) {
 		if (hasTrace)
-			log.trace(msg, arg1, arg2);
+			Logger.trace(msg, arg1, arg2);
 	}
 
 	public static void trace(String msg, Object... args) {
 		if (hasTrace)
-			log.trace(msg, args);
+			Logger.trace(msg, args);
 	}
 
 	public static void trace(String msg, Throwable t) {
 		if (hasTrace)
-			log.trace(msg, t);
+			Logger.trace(t, msg);
 	}
 
 	public static void debug(String msg) {
 		if (hasDebug)
-			log.debug(msg);
+			Logger.debug(msg);
 	}
 
 	public static void debug(String msg, Object arg) {
 		if (hasDebug)
-			log.debug(msg, arg);
+			Logger.debug(msg, arg);
 	}
 
 	public static void debug(String msg, Object arg1, Object arg2) {
 		if (hasDebug)
-			log.debug(msg, arg1, arg2);
+			Logger.debug(msg, arg1, arg2);
 	}
 
 	public static void debug(String msg, Object... args) {
 		if (hasDebug)
-			log.debug(msg, args);
+			Logger.debug(msg, args);
 	}
 
 	public static void debug(String msg, Throwable t) {
 		if (hasDebug)
-			log.debug(msg, t);
+			Logger.debug(t, msg);
 	}
 
 	public static void info(String msg) {
-		if (hasInfo)
-			log.info(msg);
+		Logger.info(msg);
 	}
 
 	public static void info(String msg, Object arg) {
-		if (hasInfo)
-			log.info(msg, arg);
+		Logger.info(msg, arg);
 	}
 
 	public static void info(String msg, Object arg1, Object arg2) {
-		if (hasInfo)
-			log.info(msg, arg1, arg2);
+		Logger.info(msg, arg1, arg2);
 	}
 
 	public static void info(String msg, Object... args) {
-		if (hasInfo)
-			log.info(msg, args);
+		Logger.info(msg, args);
 	}
 
 	public static void info(String msg, Throwable t) {
-		if (hasInfo)
-			log.info(msg, t);
+		Logger.info(t, msg);
 	}
 
 	public static void warn(String msg) {
-		if (hasWarn)
-			log.warn(msg);
+		Logger.warn(msg);
 	}
 
 	public static void warn(String msg, Object arg) {
-		if (hasWarn)
-			log.warn(msg, arg);
+		Logger.warn(msg, arg);
 	}
 
 	public static void warn(String msg, Object arg1, Object arg2) {
-		if (hasWarn)
-			log.warn(msg, arg1, arg2);
+		Logger.warn(msg, arg1, arg2);
 	}
 
 	public static void warn(String msg, Object... args) {
-		if (hasWarn)
-			log.warn(msg, args);
+		Logger.warn(msg, args);
 	}
 
 	public static void warn(String msg, Throwable t) {
-		if (hasWarn)
-			log.warn(msg, t);
+		Logger.warn(t, msg);
 	}
 
 	public static void error(String msg) {
-		log.error(msg);
+		Logger.error(msg);
 	}
 
 	public static void error(String msg, Object arg) {
-		log.error(msg, arg);
+		Logger.error(msg, arg);
 	}
 
 	public static void error(String msg, Object arg1, Object arg2) {
-		log.error(msg, arg1, arg2);
+		Logger.error(msg, arg1, arg2);
 	}
 
 	public static void error(String msg, Object... args) {
-		log.error(msg, args);
+		Logger.error(msg, args);
 	}
 
 	public static void error(String msg, Throwable t) {
-		log.error(msg, t);
+		Logger.error(t, msg);
 	}
 
 	public static void error(Throwable t, String msg, Object... args) {
-		if (hasError)
-			log.error(MessageFormatter.arrayFormat(msg, args).getMessage(), t);
+		Logger.error(t, msg, args);
 	}
 
 	private Log() {

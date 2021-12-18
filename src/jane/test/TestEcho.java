@@ -111,7 +111,6 @@ public final class TestEcho extends NetManager {
 	}
 
 	public static void main(String[] args) throws InterruptedException {
-		Log.removeAppendersFromArgs(args);
 		if (args.length > 0)
 			TEST_THREAD_COUNT = Integer.parseInt(args[0]);
 		if (args.length > 1)

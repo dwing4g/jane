@@ -18,8 +18,7 @@
  */
 package org.apache.mina.util;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.tinylog.Logger;
 
 /**
  * Monitors uncaught exceptions.
@@ -31,8 +30,6 @@ import org.slf4j.LoggerFactory;
  */
 public class ExceptionMonitor {
 	private static volatile ExceptionMonitor instance;
-
-	private final Logger logger = LoggerFactory.getLogger(ExceptionMonitor.class);
 
 	/** @return the current exception monitor. */
 	public static ExceptionMonitor getInstance() {
@@ -61,15 +58,15 @@ public class ExceptionMonitor {
 	}
 
 	public void warn(String msg) {
-		logger.warn(msg);
+		Logger.warn(msg);
 	}
 
 	public void error(String msg) {
-		logger.error(msg);
+		Logger.error(msg);
 	}
 
 	public void error(String msg, Throwable e) {
-		logger.error(msg, e);
+		Logger.error(e, msg);
 	}
 
 	/**
@@ -81,6 +78,6 @@ public class ExceptionMonitor {
 		if (cause instanceof Error)
 			throw (Error)cause;
 
-		logger.error("unexpected exception:", cause);
+		Logger.error(cause, "unexpected exception:");
 	}
 }

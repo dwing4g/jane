@@ -229,7 +229,6 @@ public final class TestStress extends Procedure {
 	}
 
 	public static void main(String[] args) throws Exception {
-		Log.removeAppendersFromArgs(args);
 		DBManager dbm = DBManager.instance();
 		dbm.startup();
 		stressTable = dbm.openTable(TABLE_ID, "stressTable", "stress", TABLE_CACHE, StressBean.BEAN_STUB);

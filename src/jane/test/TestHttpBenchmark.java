@@ -3,7 +3,6 @@ package jane.test;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import jane.core.HttpCodec;
-import jane.core.Log;
 import jane.core.NetManager;
 import jane.core.Octets;
 import org.apache.mina.core.session.IoSession;
@@ -35,8 +34,8 @@ public final class TestHttpBenchmark extends NetManager {
 	}
 
 	public static void main(String[] args) {
-		Log.removeAppender("ASYNC_FILE");
-		Log.removeAppender("ASYNC_STDOUT");
+		System.setProperty("tinylog.writerFile.level", "off");
+		System.setProperty("tinylog.writerConsole.level", "off");
 		setSharedIoThreadCount(args.length > 0 ? Integer.parseInt(args[0]) : Runtime.getRuntime().availableProcessors());
 		new TestHttpBenchmark().startServer(new InetSocketAddress("0.0.0.0", args.length > 1 ? Integer.parseInt(args[1]) : 80));
 	}
