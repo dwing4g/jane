@@ -32,7 +32,7 @@ simple, fast, powerful application server framework based on tcp and embedded da
 
 ### 依赖库
  * JRE模块: java.base, jdk.unsupported, java.xml, java.naming, java.logging, java.security.sasl
- * 日志库: slf4j-1.7.x logback-1.2.x
+ * 日志库: tinylog-2.x (已精简优化并内置到jane中)
  * 网络库: mina-core-2.0.x (已精简优化并内置到jane中)
  * 数据库: leveldb-jni
 
@@ -50,6 +50,7 @@ simple, fast, powerful application server framework based on tcp and embedded da
   * gnu.trove.map:  https://bitbucket.org/trove4j/trove/
   * org.cliffc.high_scale_lib: https://sourceforge.net/projects/high-scale-lib/
 ###### 日志库:
+  * tinylog:        https://tinylog.org/v2/
   * slf4j:          http://www.slf4j.org/
   * logback:        https://logback.qos.ch/
   * log4j:          https://logging.apache.org/log4j/2.x/index.html
@@ -83,7 +84,7 @@ simple, fast, powerful application server framework based on tcp and embedded da
  * Eclipse:         https://www.eclipse.org/downloads/
 
 ### 特性
- * 内嵌精简优化的mina高性能网络库
+ * 内嵌精简优化的mina高性能网络库和精简优化的tinylog高性能日志库
  * 内嵌支持win,mac,linux平台native的LevelDB高性能数据库及优化的jni接口
  * 多线程并发事务, 异常时回滚修改
  * 透明的基于文件和内存的面向对象数据库的操作、缓存、事务型持久化、热备份和增量备份, 基于记录加锁，支持死锁超时打断
@@ -94,4 +95,4 @@ simple, fast, powerful application server framework based on tcp and embedded da
  * 支持简易高效的HTTP服务器响应及回应
  * 提供简单实用的压缩和加密算法
  * 提供简单高效的基于自动线程池的HTTP客户端异步请求
- * jane-core.jar不到400KB, jane-native.jar不到600KB
+ * jane-core.jar只有500+KB, jane-native.jar不到600KB
