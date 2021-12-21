@@ -3,15 +3,15 @@ package jane.test.net;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 public abstract class ActorThread extends Thread {
 	private static final ScheduledThreadPoolExecutor delayExecutor;
-	private final ConcurrentLinkedQueue<Object> msgQueue = new ConcurrentLinkedQueue<>();
+	private ArrayList<Object> msgQueue = new ArrayList<>();
 	private final HashMap<Class<?>, MethodHandle> dispatcher = new HashMap<>();
 	protected long lastMsgTimeBegin;
 
@@ -67,13 +67,20 @@ public abstract class ActorThread extends Thread {
 		return true;
 	}
 
-	public int getMsgQueueSize() {
+	public synchronized int getMsgQueueSize() {
 		return msgQueue.size();
+	}
+
+	private synchronized void put(Object msg) {
+		ArrayList<Object> mq = msgQueue;
+		mq.add(msg);
+		if (mq.size() == 1)
+			notify();
 	}
 
 	public void post(Object msg) {
 		if (msg != null)
-			msgQueue.offer(msg);
+			put(msg);
 	}
 
 	public void postDelay(long delayMs, Object msg) {
@@ -94,7 +101,7 @@ public abstract class ActorThread extends Thread {
 			if (caller != null) {
 				this.caller = null;
 				if (onResult != null)
-					caller.msgQueue.offer(this);
+					caller.put(this);
 			}
 		}
 
@@ -113,7 +120,7 @@ public abstract class ActorThread extends Thread {
 		if (msg != null) {
 			msg.caller = caller;
 			msg.onResult = onResult;
-			msgQueue.offer(msg);
+			put(msg);
 		}
 	}
 
@@ -121,9 +128,20 @@ public abstract class ActorThread extends Thread {
 	public void run() {
 		if (Thread.currentThread() != this || lastMsgTimeBegin != 0)
 			throw new IllegalStateException();
+		ArrayList<Object> swapMsgQueue = new ArrayList<>();
 		for (lastMsgTimeBegin = System.currentTimeMillis(); ; ) {
 			try {
-				for (Object msg; (msg = msgQueue.poll()) != null; ) {
+				swapMsgQueue.clear();
+				ArrayList<Object> mq;
+				synchronized (this) {
+					mq = msgQueue;
+					while (mq.isEmpty())
+						wait();
+					msgQueue = swapMsgQueue;
+				}
+				swapMsgQueue = mq;
+				for (int i = 0, n = mq.size(); i < n; i++) {
+					Object msg = mq.get(i);
 					Class<?> msgCls = msg.getClass();
 					MethodHandle mh = dispatcher.get(msgCls);
 					if (mh == null) {
