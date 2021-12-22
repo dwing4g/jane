@@ -11,8 +11,8 @@ import java.util.function.Consumer;
 
 public abstract class ActorThread extends Thread {
 	private static final ScheduledThreadPoolExecutor delayExecutor;
-	private ArrayList<Object> msgQueue = new ArrayList<>();
 	private final HashMap<Class<?>, MethodHandle> dispatcher = new HashMap<>();
+	private ArrayList<Object> msgQueue = new ArrayList<>();
 	protected long lastMsgTimeBegin;
 
 	static {
@@ -128,28 +128,30 @@ public abstract class ActorThread extends Thread {
 	public void run() {
 		if (Thread.currentThread() != this || lastMsgTimeBegin != 0)
 			throw new IllegalStateException();
-		ArrayList<Object> swapMsgQueue = new ArrayList<>();
-		for (lastMsgTimeBegin = System.currentTimeMillis(); ; ) {
+		lastMsgTimeBegin = System.currentTimeMillis();
+		HashMap<Class<?>, MethodHandle> disp = dispatcher;
+		for (ArrayList<Object> swapMsgQueue = new ArrayList<>(); ; ) {
 			try {
 				swapMsgQueue.clear();
-				ArrayList<Object> mq;
-				synchronized (this) {
-					mq = msgQueue;
-					while (mq.isEmpty())
-						wait();
-					msgQueue = swapMsgQueue;
+				{
+					ArrayList<Object> mq = msgQueue;
+					synchronized (this) {
+						while (mq.isEmpty())
+							wait();
+						msgQueue = swapMsgQueue;
+					}
+					swapMsgQueue = mq;
 				}
-				swapMsgQueue = mq;
-				for (int i = 0, n = mq.size(); i < n; i++) {
-					Object msg = mq.get(i);
+				for (int i = 0, n = swapMsgQueue.size(); i < n; i++) {
+					Object msg = swapMsgQueue.get(i);
 					Class<?> msgCls = msg.getClass();
-					MethodHandle mh = dispatcher.get(msgCls);
+					MethodHandle mh = disp.get(msgCls);
 					if (mh == null) {
 						Class<?> cls = msgCls;
 						do
 							cls = cls.getSuperclass();
-						while ((mh = dispatcher.get(cls)) == null);
-						dispatcher.put(msgCls, mh);
+						while ((mh = disp.get(cls)) == null);
+						disp.put(msgCls, mh);
 					}
 					if (msg instanceof Rpc) {
 						Rpc<?> rpcMsg = (Rpc<?>)msg;
