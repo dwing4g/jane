@@ -7,6 +7,7 @@ import jane.core.NetManager;
 import jane.core.Octets;
 import org.apache.mina.core.session.IoSession;
 
+// -Dtinylog.level=off
 public final class TestHttpBenchmark extends NetManager {
 	private static final Octets extraHead;
 
@@ -34,8 +35,6 @@ public final class TestHttpBenchmark extends NetManager {
 	}
 
 	public static void main(String[] args) {
-		System.setProperty("tinylog.writerFile.level", "off");
-		System.setProperty("tinylog.writerConsole.level", "off");
 		setSharedIoThreadCount(args.length > 0 ? Integer.parseInt(args[0]) : Runtime.getRuntime().availableProcessors());
 		new TestHttpBenchmark().startServer(new InetSocketAddress("0.0.0.0", args.length > 1 ? Integer.parseInt(args[1]) : 80));
 	}
